@@ -10,6 +10,7 @@ import { parseRequestBody } from '@prairielearn/zod';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { redirectToTermsPageIfNeeded } from '../../ee/lib/terms.js';
+import { hasRole } from '../../lib/authz-data-lib.js';
 import {
   checkCourseInstanceLegacyAccess,
   constructCourseOrInstanceContext,
@@ -17,25 +18,36 @@ import {
 import { extractPageContext } from '../../lib/client/page-context.js';
 import { StaffInstitutionSchema } from '../../lib/client/safe-db-types.js';
 import { config } from '../../lib/config.js';
+import type { CourseInstancePublishingExtension } from '../../lib/db-types.js';
+import { admitUserFromUidInvitation } from '../../lib/enrollment/admission.js';
 import {
-  admitUserFromUidInvitation,
-  rejectUserFromUidInvitation,
-} from '../../lib/enrollment/admission.js';
-import { selectEnrollmentAdmissionDecision } from '../../lib/enrollment/identity.js';
-import { EnrollmentAdmissionDeniedError } from '../../lib/enrollment/reconciliation.js';
+  type EnrollmentIdentityCandidate,
+  type EnrollmentIdentityClassification,
+  classifyEnrollmentIdentityCandidates,
+  selectEnrollmentAdmissionDecision,
+} from '../../lib/enrollment/identity.js';
+import {
+  EnrollmentAdmissionDeniedError,
+  rejectConventionalEnrollmentInvitation,
+} from '../../lib/enrollment/reconciliation.js';
 import { idsEqual } from '../../lib/id.js';
 import { isEnterprise } from '../../lib/license.js';
-import { computeStatus } from '../../lib/publishing.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { getUrl } from '../../lib/url.js';
-import { selectOptionalEnrollmentByUid, setEnrollmentStatus } from '../../models/enrollment.js';
+import { selectOptionalEnrollmentByUserId, setEnrollmentStatus } from '../../models/enrollment.js';
 import {
   markNewsItemsAsReadForUser,
   selectUnreadNewsItemsForUser,
 } from '../../models/news-items.js';
 
 import { Home } from './home.html.js';
-import { InstructorHomePageCourseSchema, StudentHomePageCourseSchema } from './home.types.js';
+import {
+  InstructorHomePageCourseSchema,
+  type StudentHomePageCourse,
+  type StudentHomePageCourseCandidateRow,
+  StudentHomePageCourseCandidateRowSchema,
+  type StudentHomePageCourseData,
+} from './home.types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 const router = Router();
@@ -43,10 +55,80 @@ const router = Router();
 const PostBodySchema = z.discriminatedUnion('__action', [
   z.object({ __action: z.literal('dismiss_news_alert') }),
   z.object({
-    __action: z.enum(['accept_invitation', 'reject_invitation', 'unenroll']),
+    __action: z.enum(['accept_invitation', 'reject_invitation']),
+    course_instance_id: z.string().min(1),
+    enrollment_id: z.string().min(1),
+  }),
+  z.object({
+    __action: z.literal('unenroll'),
     course_instance_id: z.string().min(1),
   }),
 ]);
+
+function isLaterPublishingExtension(
+  next: CourseInstancePublishingExtension,
+  current: CourseInstancePublishingExtension,
+): boolean {
+  const dateDifference = next.end_date.getTime() - current.end_date.getTime();
+  return dateDifference > 0 || (dateDifference === 0 && BigInt(next.id) > BigInt(current.id));
+}
+
+function groupStudentCourseCandidates(
+  rows: StudentHomePageCourseCandidateRow[],
+): (StudentHomePageCourseData & {
+  classification: EnrollmentIdentityClassification;
+})[] {
+  const groups = new Map<
+    string,
+    {
+      course: StudentHomePageCourseData;
+      candidates: EnrollmentIdentityCandidate[];
+    }
+  >();
+
+  for (const row of rows) {
+    let group = groups.get(row.course_instance.id);
+    if (group === undefined) {
+      group = {
+        course: {
+          course_id: row.course_id,
+          course_instance: row.course_instance,
+          course_short_name: row.course_short_name,
+          course_title: row.course_title,
+          start_date: row.start_date,
+          end_date: row.end_date,
+          latest_publishing_extension: null,
+        },
+        candidates: [],
+      };
+      groups.set(row.course_instance.id, group);
+    }
+
+    group.candidates.push({
+      enrollment: row.enrollment,
+      matches: {
+        boundUser: row.matches_bound_user,
+        institutionUin: row.matches_institution_uin,
+        lti13: row.matches_lti13,
+        pendingUid: row.matches_pending_uid,
+      },
+    });
+
+    const extension = row.latest_publishing_extension;
+    if (
+      extension !== null &&
+      (group.course.latest_publishing_extension === null ||
+        isLaterPublishingExtension(extension, group.course.latest_publishing_extension))
+    ) {
+      group.course.latest_publishing_extension = extension;
+    }
+  }
+
+  return [...groups.values()].map((group) => ({
+    ...group.course,
+    classification: classifyEnrollmentIdentityCandidates(group.candidates),
+  }));
+}
 
 router.get(
   '/',
@@ -71,13 +153,11 @@ router.get(
       InstructorHomePageCourseSchema,
     );
 
-    // Query all student courses (both legacy and modern publishing) in a single query
-    const allStudentCourses = await queryRows(
+    const studentCourseCandidateRows = await queryRows(
       sql.select_student_courses,
       {
         // Use the authenticated user, not the authorized user.
         user_id: res.locals.authn_user.id,
-        pending_uid: res.locals.authn_user.uid,
         // This is a somewhat ugly escape hatch specifically for load testing. In
         // general, we don't want to clutter the home page with example course
         // enrollments, but for load testing we want to enroll a large number of
@@ -87,8 +167,9 @@ router.get(
         include_example_course_enrollments: req.query.include_example_course_enrollments === 'true',
         req_date: res.locals.req_date,
       },
-      StudentHomePageCourseSchema,
+      StudentHomePageCourseCandidateRowSchema,
     );
+    const allStudentCourses = groupStudentCourseCandidates(studentCourseCandidateRows);
 
     const legacyCourseInstancesWithAccess = await checkCourseInstanceLegacyAccess({
       courseInstanceIds: allStudentCourses
@@ -98,7 +179,7 @@ router.get(
       reqDate: res.locals.req_date,
     });
 
-    const studentCourses = allStudentCourses.filter((entry) => {
+    const visibleStudentCourses = allStudentCourses.filter((entry) => {
       // Filter out courses where user also has instructor access.
       if (instructorCourses.some((course) => idsEqual(course.id, entry.course_id))) return false;
 
@@ -131,6 +212,26 @@ router.get(
         res.locals.req_date < endDate
       );
     });
+
+    const studentCourses = visibleStudentCourses
+      .map(({ classification, ...course }): StudentHomePageCourse | null => {
+        if (classification.boundCandidate?.enrollment.status === 'joined') {
+          return { ...course, access_type: 'joined' };
+        }
+        if (classification.actionableInstitutionRosterInvitation !== null) {
+          return { ...course, access_type: 'roster_available' };
+        }
+        if (classification.actionableConventionalInvitation !== null) {
+          return {
+            ...course,
+            access_type: 'conventional_invitation',
+            invitation_enrollment_id:
+              classification.actionableConventionalInvitation.enrollment.id,
+          };
+        }
+        return null;
+      })
+      .filter((entry): entry is StudentHomePageCourse => entry !== null);
 
     const adminInstitutions = await queryRows(
       sql.select_admin_institutions,
@@ -211,28 +312,11 @@ router.post(
       is_administrator: res.locals.is_administrator,
     });
 
-    if (authzData === null || courseInstance === null) {
+    if (authzData === null || courseInstance === null || !hasRole(authzData, ['Student'])) {
       throw new HttpStatusError(403, 'Access denied');
     }
 
-    // Invitations and rejections are only supported for modern publishing courses.
-    if (
-      !courseInstance.modern_publishing &&
-      ['accept_invitation', 'reject_invitation'].includes(body.__action)
-    ) {
-      flash(
-        'error',
-        'Invitations and rejections are only supported for courses using modern publishing.',
-      );
-      res.redirect(req.originalUrl);
-      return;
-    }
-
-    if (
-      courseInstance.modern_publishing &&
-      computeStatus(courseInstance.publishing_start_date, courseInstance.publishing_end_date) !==
-        'published'
-    ) {
+    if (!authzData.has_student_access) {
       flash('error', 'This course instance is not accessible to students');
       res.redirect(req.originalUrl);
       return;
@@ -245,7 +329,11 @@ router.post(
           source: { type: 'invitation', matchedBy: 'uid' },
           userId: res.locals.authn_user.id,
         });
-        if (!decision.allowed || decision.invitationCandidate === null) {
+        if (
+          !decision.allowed ||
+          decision.invitationCandidate === null ||
+          !idsEqual(decision.invitationCandidate.enrollment.id, body.enrollment_id)
+        ) {
           flash('error', 'Failed to accept invitation');
           break;
         }
@@ -266,18 +354,24 @@ router.post(
         break;
       }
       case 'reject_invitation': {
-        const rejected = await rejectUserFromUidInvitation({
-          authzData,
-          courseInstanceId: courseInstance.id,
-          userId: res.locals.authn_user.id,
-        });
-        if (!rejected) flash('error', 'Failed to reject invitation');
+        try {
+          await rejectConventionalEnrollmentInvitation({
+            agentAuthnUserId: res.locals.authn_user.id,
+            agentUserId: res.locals.authn_user.id,
+            courseInstanceId: courseInstance.id,
+            enrollmentId: body.enrollment_id,
+            userId: res.locals.authn_user.id,
+          });
+        } catch (error) {
+          if (!(error instanceof EnrollmentAdmissionDeniedError)) throw error;
+          flash('error', 'Failed to reject invitation');
+        }
         break;
       }
       case 'unenroll': {
-        const enrollment = await selectOptionalEnrollmentByUid({
+        const enrollment = await selectOptionalEnrollmentByUserId({
           courseInstance,
-          uid,
+          userId: res.locals.authn_user.id,
           requiredRole: ['Student'],
           authzData,
         });
