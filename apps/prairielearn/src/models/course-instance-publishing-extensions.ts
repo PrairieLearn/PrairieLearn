@@ -171,6 +171,42 @@ export async function removeStudentFromPublishingExtension({
   });
 }
 
+export async function updatePublishingExtensionEnrollments({
+  courseInstancePublishingExtension,
+  enrollmentsToAdd,
+  enrollmentsToRemove,
+}: {
+  courseInstancePublishingExtension: CourseInstancePublishingExtension;
+  enrollmentsToAdd: Enrollment[];
+  enrollmentsToRemove: Enrollment[];
+}): Promise<void> {
+  const affectedEnrollments = [...enrollmentsToAdd, ...enrollmentsToRemove];
+  for (const enrollment of affectedEnrollments) {
+    assertEnrollmentBelongsToPublishingExtensionCourseInstance(
+      enrollment,
+      courseInstancePublishingExtension,
+    );
+  }
+
+  await runInTransactionAsync(async () => {
+    await lockEnrollments(affectedEnrollments.map((enrollment) => enrollment.id));
+
+    for (const enrollment of enrollmentsToRemove) {
+      await removeStudentFromPublishingExtension({
+        courseInstancePublishingExtension,
+        enrollment,
+      });
+    }
+
+    for (const enrollment of enrollmentsToAdd) {
+      await addEnrollmentToPublishingExtension({
+        courseInstancePublishingExtension,
+        enrollment,
+      });
+    }
+  });
+}
+
 export async function createPublishingExtensionWithEnrollments({
   courseInstance,
   name,
