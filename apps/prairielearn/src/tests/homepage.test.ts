@@ -1,11 +1,18 @@
+import * as cheerio from 'cheerio';
 import fetchCookie from 'fetch-cookie';
 import { afterAll, assert, beforeAll, describe, it } from 'vitest';
+import { z } from 'zod';
 
-import { execute, loadSqlEquiv, queryRow } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, queryRow, queryRows, queryScalar } from '@prairielearn/postgres';
 
 import { dangerousFullSystemAuthz } from '../lib/authz-data-lib.js';
 import { config } from '../lib/config.js';
-import { type Enrollment, EnrollmentSchema, type EnumEnrollmentStatus } from '../lib/db-types.js';
+import {
+  CourseInstancePublishingExtensionSchema,
+  type Enrollment,
+  EnrollmentSchema,
+  type EnumEnrollmentStatus,
+} from '../lib/db-types.js';
 import { EXAMPLE_COURSE_PATH } from '../lib/paths.js';
 import { selectCourseInstanceById } from '../models/course-instances.js';
 import {
@@ -16,7 +23,7 @@ import {
 import { assertAlert, fetchCheerio } from './helperClient.js';
 import * as helperCourse from './helperCourse.js';
 import * as helperServer from './helperServer.js';
-import { getOrCreateUser, withUser } from './utils/auth.js';
+import { createInstitution, getOrCreateUser, withUser } from './utils/auth.js';
 import { getCsrfToken } from './utils/csrf.js';
 
 const sql = loadSqlEquiv(import.meta.url);
@@ -24,25 +31,30 @@ const sql = loadSqlEquiv(import.meta.url);
 const siteUrl = 'http://localhost:' + config.serverPort;
 const homeUrl = siteUrl + '/';
 
-/** Helper function to create enrollments with specific statuses for testing */
-async function createEnrollmentWithStatus({
+async function postHome(body: URLSearchParams) {
+  const response = await fetchCookie(fetch)(homeUrl, { method: 'POST', body });
+  return { $: cheerio.load(await response.text()), response };
+}
+
+async function createEnrollment({
   userId,
-  courseInstanceId,
-  status,
   pendingUid,
+  pendingUin,
+  status,
 }: {
   userId: string | null;
-  courseInstanceId: string;
-  status: EnumEnrollmentStatus;
   pendingUid?: string | null;
+  pendingUin?: string | null;
+  status: EnumEnrollmentStatus;
 }): Promise<Enrollment> {
   return await queryRow(
-    sql.create_enrollment_with_status,
+    sql.create_enrollment,
     {
       user_id: userId,
-      course_instance_id: courseInstanceId,
-      status,
+      course_instance_id: '1',
       pending_uid: pendingUid,
+      pending_uin: pendingUin,
+      status,
       first_joined_at: ['joined', 'left', 'removed', 'blocked'].includes(status)
         ? new Date()
         : null,
@@ -51,431 +63,320 @@ async function createEnrollmentWithStatus({
   );
 }
 
-describe('Homepage enrollment actions', () => {
+async function selectEnrollments(ids: string[]) {
+  return await queryRows(sql.select_enrollments_by_ids, { enrollment_ids: ids }, EnrollmentSchema);
+}
+
+async function countAuditEvents(ids: string[]) {
+  return await queryScalar(
+    sql.count_enrollment_audit_events,
+    { enrollment_ids: ids },
+    z.number(),
+  );
+}
+
+describe('Homepage enrollment candidates', () => {
   beforeAll(async () => {
     await helperServer.before()();
     await helperCourse.syncCourse(EXAMPLE_COURSE_PATH);
-
-    // Set uid_regexp for the default institution to allow @example.com UIDs
     await execute("UPDATE institutions SET uid_regexp = '@example\\.com$' WHERE id = 1");
+    await createInstitution('900002', 'other.example.com', 'Other institution');
   });
 
   afterAll(helperServer.after);
 
-  it('handles double accept invitation (no-op)', async () => {
+  it('does not discover or mutate a same-UIN roster invitation from another institution', async () => {
     const user = await getOrCreateUser({
-      uid: 'invited1@example.com',
-      name: 'Invited User 1',
-      uin: 'invited1',
-      email: 'invited1@example.com',
-      institutionId: '1',
+      uid: 'foreign-roster@other.example.com',
+      name: 'Foreign roster user',
+      uin: 'shared-roster-uin',
+      email: 'foreign-roster@other.example.com',
+      institutionId: '900002',
     });
-
-    // Create an invited enrollment
-    await createEnrollmentWithStatus({
+    const invitation = await createEnrollment({
       userId: null,
-      courseInstanceId: '1',
+      pendingUin: user.uin,
       status: 'invited',
-      pendingUid: user.uid,
-    });
-
-    await withUser(user, async () => {
-      const csrfToken = await getCsrfToken(homeUrl);
-
-      // First accept
-      const firstResponse = await fetchCheerio(homeUrl, {
-        method: 'POST',
-        body: new URLSearchParams({
-          __action: 'accept_invitation',
-          course_instance_id: '1',
-          __csrf_token: csrfToken,
-        }),
-      });
-      assert.equal(firstResponse.status, 200);
-      assert.equal(firstResponse.url, homeUrl);
-
-      // Verify enrollment is now joined
-      const courseInstance = await selectCourseInstanceById('1');
-      const enrollment = await selectOptionalEnrollmentByUserId({
-        userId: user.id,
-        courseInstance,
-        requiredRole: ['System'],
-        authzData: dangerousFullSystemAuthz(),
-      });
-      assert.isNotNull(enrollment);
-      assert.equal(enrollment.status, 'joined');
-
-      // Second accept (should be a no-op)
-      const csrfToken2 = await getCsrfToken(homeUrl);
-      const secondResponse = await fetchCheerio(homeUrl, {
-        method: 'POST',
-        body: new URLSearchParams({
-          __action: 'accept_invitation',
-          course_instance_id: '1',
-          __csrf_token: csrfToken2,
-        }),
-      });
-      assert.equal(secondResponse.status, 200);
-      assert.equal(secondResponse.url, homeUrl);
-
-      // Verify enrollment is still joined
-      const finalEnrollment = await selectOptionalEnrollmentByUserId({
-        userId: user.id,
-        courseInstance,
-        requiredRole: ['System'],
-        authzData: dangerousFullSystemAuthz(),
-      });
-      assert.isNotNull(finalEnrollment);
-      assert.equal(finalEnrollment.status, 'joined');
-    });
-
-    await execute(sql.delete_enrollment_by_course_instance_and_user, {
-      course_instance_id: '1',
-      user_id: user.id,
-    });
-  });
-
-  it('handles double reject invitation (no-op)', async () => {
-    const user = await getOrCreateUser({
-      uid: 'invited2@example.com',
-      name: 'Invited User 2',
-      uin: 'invited2',
-      email: 'invited2@example.com',
-      institutionId: '1',
-    });
-
-    // Create an invited enrollment
-    await createEnrollmentWithStatus({
-      userId: null,
-      courseInstanceId: '1',
-      status: 'invited',
-      pendingUid: user.uid,
-    });
-
-    await withUser(user, async () => {
-      const csrfToken = await getCsrfToken(homeUrl);
-
-      // First reject
-      const firstResponse = await fetchCheerio(homeUrl, {
-        method: 'POST',
-        body: new URLSearchParams({
-          __action: 'reject_invitation',
-          course_instance_id: '1',
-          __csrf_token: csrfToken,
-        }),
-      });
-      assert.equal(firstResponse.status, 200);
-      assert.equal(firstResponse.url, homeUrl);
-
-      // Verify enrollment is now rejected
-      const courseInstance = await selectCourseInstanceById('1');
-      const enrollment = await selectOptionalEnrollmentByPendingUid({
-        pendingUid: user.uid,
-        courseInstance,
-        requiredRole: ['System'],
-        authzData: dangerousFullSystemAuthz(),
-      });
-      assert.isNotNull(enrollment);
-      assert.equal(enrollment.status, 'rejected');
-
-      // Second reject (should be a no-op)
-      const csrfToken2 = await getCsrfToken(homeUrl);
-      const secondResponse = await fetchCheerio(homeUrl, {
-        method: 'POST',
-        body: new URLSearchParams({
-          __action: 'reject_invitation',
-          course_instance_id: '1',
-          __csrf_token: csrfToken2,
-        }),
-      });
-      assert.equal(secondResponse.status, 200);
-      assert.equal(secondResponse.url, homeUrl);
-
-      // Verify enrollment is still rejected
-      const finalEnrollment = await selectOptionalEnrollmentByPendingUid({
-        pendingUid: user.uid,
-        courseInstance,
-        requiredRole: ['System'],
-        authzData: dangerousFullSystemAuthz(),
-      });
-      assert.isNotNull(finalEnrollment);
-      assert.equal(finalEnrollment.status, 'rejected');
-    });
-
-    await execute(sql.delete_enrollment_by_course_instance_and_pending_uid, {
-      course_instance_id: '1',
-      pending_uid: user.uid,
-    });
-  });
-
-  it('shows error when rejecting after accepting invitation', async () => {
-    const user = await getOrCreateUser({
-      uid: 'invited3@example.com',
-      name: 'Invited User 3',
-      uin: 'invited3',
-      email: 'invited3@example.com',
-      institutionId: '1',
-    });
-
-    // Create an invited enrollment
-    await createEnrollmentWithStatus({
-      userId: null,
-      courseInstanceId: '1',
-      status: 'invited',
-      pendingUid: user.uid,
-    });
-
-    await withUser(user, async () => {
-      const fetchWithCookies = fetchCookie(fetch);
-
-      const csrfToken = await getCsrfToken(homeUrl);
-
-      // First accept the invitation
-      const acceptResponse = await fetchWithCookies(homeUrl, {
-        method: 'POST',
-        body: new URLSearchParams({
-          __action: 'accept_invitation',
-          course_instance_id: '1',
-          __csrf_token: csrfToken,
-        }),
-      });
-      assert.equal(acceptResponse.status, 200);
-      assert.equal(acceptResponse.url, homeUrl);
-
-      // Now try to reject (should fail with error)
-      const csrfToken2 = await getCsrfToken(homeUrl);
-      const rejectResponse = await fetchWithCookies(homeUrl, {
-        method: 'POST',
-        body: new URLSearchParams({
-          __action: 'reject_invitation',
-          course_instance_id: '1',
-          __csrf_token: csrfToken2,
-        }),
-      });
-      assert.equal(rejectResponse.status, 200);
-      assert.equal(rejectResponse.url, homeUrl);
-
-      // Get the HTML to check for flash message
-      const rejectResponseText = await rejectResponse.text();
-      const cheerio = await import('cheerio');
-      const $ = cheerio.load(rejectResponseText);
-
-      // Verify error message is shown
-      assertAlert($, 'Failed to reject invitation');
-
-      // Verify enrollment is still joined
-      const courseInstance = await selectCourseInstanceById('1');
-      const finalEnrollment = await selectOptionalEnrollmentByUserId({
-        userId: user.id,
-        courseInstance,
-        requiredRole: ['System'],
-        authzData: dangerousFullSystemAuthz(),
-      });
-      assert.isNotNull(finalEnrollment);
-      assert.equal(finalEnrollment.status, 'joined');
-    });
-
-    await execute(sql.delete_enrollment_by_course_instance_and_user, {
-      course_instance_id: '1',
-      user_id: user.id,
-    });
-  });
-
-  it.each(['left', 'removed', 'rejected'] as const)(
-    'does not treat a %s enrollment as an invitation',
-    async (status) => {
-      const user = await getOrCreateUser({
-        uid: `non-actionable-${status}@example.com`,
-        name: `Non-actionable ${status} user`,
-        uin: `non-actionable-${status}`,
-        email: `non-actionable-${status}@example.com`,
-        institutionId: '1',
-      });
-      const isPending = status === 'rejected';
-      await createEnrollmentWithStatus({
-        userId: isPending ? null : user.id,
-        courseInstanceId: '1',
-        status,
-        pendingUid: isPending ? user.uid : null,
-      });
-
-      try {
-        await withUser(user, async () => {
-          const fetchWithCookies = fetchCookie(fetch);
-          const response = await fetchWithCookies(homeUrl, {
-            method: 'POST',
-            body: new URLSearchParams({
-              __action: 'accept_invitation',
-              course_instance_id: '1',
-              __csrf_token: await getCsrfToken(homeUrl),
-            }),
-          });
-          assert.equal(response.status, 200);
-          const $ = (await import('cheerio')).load(await response.text());
-          assertAlert($, 'Failed to accept invitation');
-
-          const courseInstance = await selectCourseInstanceById('1');
-          const enrollment = isPending
-            ? await selectOptionalEnrollmentByPendingUid({
-                pendingUid: user.uid,
-                courseInstance,
-                requiredRole: ['System'],
-                authzData: dangerousFullSystemAuthz(),
-              })
-            : await selectOptionalEnrollmentByUserId({
-                userId: user.id,
-                courseInstance,
-                requiredRole: ['System'],
-                authzData: dangerousFullSystemAuthz(),
-              });
-          assert.isNotNull(enrollment);
-          assert.equal(enrollment.status, status);
-        });
-      } finally {
-        if (isPending) {
-          await execute(sql.delete_enrollment_by_course_instance_and_pending_uid, {
-            course_instance_id: '1',
-            pending_uid: user.uid,
-          });
-        } else {
-          await execute(sql.delete_enrollment_by_course_instance_and_user, {
-            course_instance_id: '1',
-            user_id: user.id,
-          });
-        }
-      }
-    },
-  );
-
-  it('does not show invited course that is not published', async () => {
-    const user = await getOrCreateUser({
-      uid: 'invited5@example.com',
-      name: 'Invited User 5',
-      uin: 'invited5',
-      email: 'invited5@example.com',
-      institutionId: '1',
-    });
-
-    const futureStart = new Date();
-    futureStart.setFullYear(futureStart.getFullYear() + 1);
-    const futureEnd = new Date();
-    futureEnd.setFullYear(futureEnd.getFullYear() + 2);
-
-    const existingCourseInstance = await selectCourseInstanceById('1');
-    assert.isNotNull(existingCourseInstance);
-    assert.equal(existingCourseInstance.modern_publishing, true);
-    assert.isNotNull(existingCourseInstance.publishing_start_date);
-    assert.isNotNull(existingCourseInstance.publishing_end_date);
-
-    await execute(sql.update_course_instance_publishing, {
-      course_instance_id: '1',
-      publishing_start_date: futureStart,
-      publishing_end_date: futureEnd,
     });
 
     try {
-      // Create an invited enrollment
-      await createEnrollmentWithStatus({
-        userId: null,
-        courseInstanceId: '1',
-        status: 'invited',
-        pendingUid: user.uid,
-      });
+      const before = await selectEnrollments([invitation.id]);
+      const beforeAuditCount = await countAuditEvents([invitation.id]);
 
       await withUser(user, async () => {
         const response = await fetchCheerio(homeUrl);
         assert.equal(response.status, 200);
-
-        const studentCoursesTable = response.$(
-          'table[aria-label="Courses with student access"], table[aria-label="Courses"]',
-        );
-
-        const studentRows = studentCoursesTable.find('tr');
-        assert.equal(studentRows.length, 0, 'No course rows should be visible');
+        assert.notInclude(response.$('body').text(), 'Available through roster');
       });
+
+      assert.deepEqual(await selectEnrollments([invitation.id]), before);
+      assert.equal(await countAuditEvents([invitation.id]), beforeAuditCount);
     } finally {
-      await execute(sql.delete_enrollment_by_course_instance_and_pending_uid, {
+      await execute(sql.delete_enrollment_by_id, { enrollment_id: invitation.id });
+    }
+  });
+
+  it('groups bound-left and pending roster candidates once using their maximum extension', async () => {
+    const user = await getOrCreateUser({
+      uid: 'grouped-roster@example.com',
+      name: 'Grouped roster user',
+      uin: 'grouped-roster-uin',
+      email: 'grouped-roster@example.com',
+      institutionId: '1',
+    });
+    const boundEnrollment = await createEnrollment({
+      userId: user.id,
+      status: 'left',
+    });
+    const rosterInvitation = await createEnrollment({
+      userId: null,
+      pendingUin: user.uin,
+      status: 'invited',
+    });
+    const conventionalInvitation = await createEnrollment({
+      userId: null,
+      pendingUid: user.uid,
+      status: 'invited',
+    });
+    const enrollmentIds = [
+      boundEnrollment.id,
+      rosterInvitation.id,
+      conventionalInvitation.id,
+    ];
+    const courseInstance = await selectCourseInstanceById('1');
+    const now = new Date();
+    const expiredExtension = await queryRow(
+      sql.create_publishing_extension,
+      {
         course_instance_id: '1',
-        pending_uid: user.uid,
+        name: 'Homepage expired candidate extension',
+        end_date: new Date(now.getTime() - 12 * 60 * 60 * 1000),
+      },
+      CourseInstancePublishingExtensionSchema,
+    );
+    const activeExtension = await queryRow(
+      sql.create_publishing_extension,
+      {
+        course_instance_id: '1',
+        name: 'Homepage active candidate extension',
+        end_date: new Date(now.getTime() + 24 * 60 * 60 * 1000),
+      },
+      CourseInstancePublishingExtensionSchema,
+    );
+    await execute(sql.add_publishing_extension_enrollment, {
+      publishing_extension_id: expiredExtension.id,
+      enrollment_id: boundEnrollment.id,
+    });
+    await execute(sql.add_publishing_extension_enrollment, {
+      publishing_extension_id: activeExtension.id,
+      enrollment_id: rosterInvitation.id,
+    });
+    await execute(sql.update_course_instance_publishing, {
+      course_instance_id: '1',
+      publishing_start_date: new Date(now.getTime() - 48 * 60 * 60 * 1000),
+      publishing_end_date: new Date(now.getTime() - 24 * 60 * 60 * 1000),
+    });
+
+    try {
+      const before = await selectEnrollments(enrollmentIds);
+      const beforeAuditCount = await countAuditEvents(enrollmentIds);
+
+      await withUser(user, async () => {
+        const response = await fetchCheerio(homeUrl);
+        const rows = response.$(
+          'table[aria-label="Courses with student access"] tr, table[aria-label="Courses"] tr',
+        );
+        assert.lengthOf(rows, 1);
+        assert.include(rows.text(), 'Available through roster');
+        assert.lengthOf(
+          rows.find('a').filter((_, el) => response.$(el).text().trim() === 'Open course'),
+          1,
+        );
+        assert.lengthOf(rows.find('input[name="__action"][value="accept_invitation"]'), 0);
+        assert.lengthOf(rows.find('input[name="__action"][value="reject_invitation"]'), 0);
+        assert.lengthOf(
+          rows.find('button').filter((_, el) => response.$(el).text().trim() === 'Remove'),
+          0,
+        );
       });
 
+      assert.deepEqual(await selectEnrollments(enrollmentIds), before);
+      assert.equal(await countAuditEvents(enrollmentIds), beforeAuditCount);
+    } finally {
       await execute(sql.update_course_instance_publishing, {
         course_instance_id: '1',
-        publishing_start_date: existingCourseInstance.publishing_start_date,
-        publishing_end_date: existingCourseInstance.publishing_end_date,
+        publishing_start_date: courseInstance.publishing_start_date,
+        publishing_end_date: courseInstance.publishing_end_date,
+      });
+      await execute(sql.delete_publishing_extension, {
+        publishing_extension_id: activeExtension.id,
+      });
+      await execute(sql.delete_publishing_extension, {
+        publishing_extension_id: expiredExtension.id,
+      });
+      for (const enrollmentId of enrollmentIds) {
+        await execute(sql.delete_enrollment_by_id, { enrollment_id: enrollmentId });
+      }
+    }
+  });
+
+  it('does not substitute a new conventional invitation for stale accept or reject targets', async () => {
+    const user = await getOrCreateUser({
+      uid: 'stale-home-invitation@example.com',
+      name: 'Stale homepage invitation user',
+      uin: 'stale-home-invitation-uin',
+      email: 'stale-home-invitation@example.com',
+      institutionId: '1',
+    });
+    const originalInvitation = await createEnrollment({
+      userId: null,
+      pendingUid: user.uid,
+      status: 'invited',
+    });
+    let replacementInvitation: Enrollment | null = null;
+
+    try {
+      await withUser(user, async () => {
+        const page = await fetchCheerio(homeUrl);
+        const invitationIdInput = page.$(
+          `input[name="enrollment_id"][value="${originalInvitation.id}"]`,
+        );
+        assert.lengthOf(invitationIdInput, 1);
+        assert.equal(
+          invitationIdInput.closest('form').find('input[name="__action"]').attr('value'),
+          'accept_invitation',
+        );
+      });
+
+      await execute(sql.delete_enrollment_by_id, { enrollment_id: originalInvitation.id });
+      replacementInvitation = await createEnrollment({
+        userId: null,
+        pendingUid: user.uid,
+        status: 'invited',
+      });
+
+      await withUser(user, async () => {
+        const acceptResponse = await postHome(
+          new URLSearchParams({
+            __action: 'accept_invitation',
+            __csrf_token: await getCsrfToken(homeUrl),
+            course_instance_id: '1',
+            enrollment_id: originalInvitation.id,
+          }),
+        );
+        assertAlert(acceptResponse.$, 'Failed to accept invitation');
+
+        const rejectResponse = await postHome(
+          new URLSearchParams({
+            __action: 'reject_invitation',
+            __csrf_token: await getCsrfToken(homeUrl),
+            course_instance_id: '1',
+            enrollment_id: originalInvitation.id,
+          }),
+        );
+        assertAlert(rejectResponse.$, 'Failed to reject invitation');
+      });
+
+      const remainingInvitation = await selectOptionalEnrollmentByPendingUid({
+        pendingUid: user.uid,
+        courseInstance: await selectCourseInstanceById('1'),
+        requiredRole: ['System'],
+        authzData: dangerousFullSystemAuthz(),
+      });
+      assert.isNotNull(remainingInvitation);
+      assert.equal(remainingInvitation.id, replacementInvitation.id);
+      assert.equal(remainingInvitation.status, 'invited');
+    } finally {
+      await execute(sql.delete_enrollment_by_id, {
+        enrollment_id: replacementInvitation?.id ?? originalInvitation.id,
       });
     }
   });
 
-  it('handles double unenroll (no-op)', async () => {
-    const user = await getOrCreateUser({
-      uid: 'joined1@example.com',
-      name: 'Joined User 1',
-      uin: 'joined1',
-      email: 'joined1@example.com',
+  it('accepts and rejects conventional invitations for legacy course instances', async () => {
+    const acceptingUser = await getOrCreateUser({
+      uid: 'legacy-accept@example.com',
+      name: 'Legacy accept user',
+      uin: 'legacy-accept-uin',
+      email: 'legacy-accept@example.com',
       institutionId: '1',
     });
-
-    // Create a joined enrollment
-    await createEnrollmentWithStatus({
-      userId: user.id,
-      courseInstanceId: '1',
-      status: 'joined',
+    const rejectingUser = await getOrCreateUser({
+      uid: 'legacy-reject@example.com',
+      name: 'Legacy reject user',
+      uin: 'legacy-reject-uin',
+      email: 'legacy-reject@example.com',
+      institutionId: '1',
     });
-
-    await withUser(user, async () => {
-      const csrfToken = await getCsrfToken(homeUrl);
-
-      // First unenroll
-      const firstResponse = await fetchCheerio(homeUrl, {
-        method: 'POST',
-        body: new URLSearchParams({
-          __action: 'unenroll',
-          course_instance_id: '1',
-          __csrf_token: csrfToken,
-        }),
-      });
-      assert.equal(firstResponse.status, 200);
-      assert.equal(firstResponse.url, homeUrl);
-
-      // Verify enrollment is now left
-      const courseInstance = await selectCourseInstanceById('1');
-      const enrollment = await selectOptionalEnrollmentByUserId({
-        userId: user.id,
-        courseInstance,
-        requiredRole: ['System'],
-        authzData: dangerousFullSystemAuthz(),
-      });
-      assert.isNotNull(enrollment);
-      assert.equal(enrollment.status, 'left');
-
-      // Second unenroll (should be a no-op)
-      const csrfToken2 = await getCsrfToken(homeUrl);
-      const secondResponse = await fetchCheerio(homeUrl, {
-        method: 'POST',
-        body: new URLSearchParams({
-          __action: 'unenroll',
-          course_instance_id: '1',
-          __csrf_token: csrfToken2,
-        }),
-      });
-      assert.equal(secondResponse.status, 200);
-      assert.equal(secondResponse.url, homeUrl);
-
-      // Verify enrollment is still left
-      const finalEnrollment = await selectOptionalEnrollmentByUserId({
-        userId: user.id,
-        courseInstance,
-        requiredRole: ['System'],
-        authzData: dangerousFullSystemAuthz(),
-      });
-      assert.isNotNull(finalEnrollment);
-      assert.equal(finalEnrollment.status, 'left');
+    const acceptingInvitation = await createEnrollment({
+      userId: null,
+      pendingUid: acceptingUser.uid,
+      status: 'invited',
     });
-
-    await execute(sql.delete_enrollment_by_course_instance_and_user, {
+    const rejectingInvitation = await createEnrollment({
+      userId: null,
+      pendingUid: rejectingUser.uid,
+      status: 'invited',
+    });
+    const courseInstance = await selectCourseInstanceById('1');
+    const accessRule = await queryRow(
+      sql.create_unrestricted_access_rule,
+      { course_instance_id: '1' },
+      z.object({ id: z.string() }),
+    );
+    await execute(sql.update_modern_publishing, {
       course_instance_id: '1',
-      user_id: user.id,
+      modern_publishing: false,
     });
+
+    try {
+      await withUser(acceptingUser, async () => {
+        const response = await postHome(
+          new URLSearchParams({
+            __action: 'accept_invitation',
+            __csrf_token: await getCsrfToken(homeUrl),
+            course_instance_id: '1',
+            enrollment_id: acceptingInvitation.id,
+          }),
+        );
+        assert.notInclude(response.$('body').text(), 'Failed to accept invitation');
+      });
+      const acceptedEnrollment = await selectOptionalEnrollmentByUserId({
+        userId: acceptingUser.id,
+        courseInstance,
+        requiredRole: ['System'],
+        authzData: dangerousFullSystemAuthz(),
+      });
+      assert.isNotNull(acceptedEnrollment);
+      assert.equal(acceptedEnrollment.status, 'joined');
+
+      await withUser(rejectingUser, async () => {
+        const response = await postHome(
+          new URLSearchParams({
+            __action: 'reject_invitation',
+            __csrf_token: await getCsrfToken(homeUrl),
+            course_instance_id: '1',
+            enrollment_id: rejectingInvitation.id,
+          }),
+        );
+        assert.notInclude(response.$('body').text(), 'Failed to reject invitation');
+      });
+      const rejectedEnrollment = await selectOptionalEnrollmentByPendingUid({
+        pendingUid: rejectingUser.uid,
+        courseInstance,
+        requiredRole: ['System'],
+        authzData: dangerousFullSystemAuthz(),
+      });
+      assert.isNotNull(rejectedEnrollment);
+      assert.equal(rejectedEnrollment.status, 'rejected');
+    } finally {
+      await execute(sql.update_modern_publishing, {
+        course_instance_id: '1',
+        modern_publishing: courseInstance.modern_publishing,
+      });
+      await execute(sql.delete_access_rule, { access_rule_id: accessRule.id });
+      await execute(sql.delete_enrollment_by_id, { enrollment_id: acceptingInvitation.id });
+      await execute(sql.delete_enrollment_by_id, { enrollment_id: rejectingInvitation.id });
+    }
   });
 });

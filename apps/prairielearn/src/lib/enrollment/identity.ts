@@ -120,7 +120,7 @@ function allowsUinOrLtiInvitation(
   return boundCandidate.enrollment.status === 'left';
 }
 
-function classifyEnrollmentIdentityCandidates(
+export function classifyEnrollmentIdentityCandidates(
   candidates: readonly EnrollmentIdentityCandidate[],
 ): EnrollmentIdentityClassification {
   const boundCandidates = candidates.filter((candidate) => candidate.matches.boundUser);

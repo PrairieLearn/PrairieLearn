@@ -73,6 +73,29 @@ export async function selectLatestPublishingExtensionByEnrollment({
 }
 
 /**
+ * Finds the latest publishing extension across enrollment identity candidates
+ * for a course instance.
+ */
+export async function selectLatestPublishingExtensionByEnrollmentIds({
+  courseInstance,
+  enrollmentIds,
+}: {
+  courseInstance: CourseInstance;
+  enrollmentIds: readonly string[];
+}) {
+  if (enrollmentIds.length === 0) return null;
+
+  return await queryOptionalRow(
+    sql.select_latest_publishing_extension_by_enrollment_ids,
+    {
+      course_instance_id: courseInstance.id,
+      enrollment_ids: [...enrollmentIds],
+    },
+    CourseInstancePublishingExtensionSchema,
+  );
+}
+
+/**
  * Finds a publishing extension by name within a course instance.
  */
 export async function selectPublishingExtensionByName({
