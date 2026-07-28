@@ -304,6 +304,8 @@ describe('Self-enrollment settings transitions', () => {
 
       const response = await fetch(assessmentsUrl);
       assert.equal(response.status, 200);
+      const repeatedResponse = await fetch(assessmentsUrl);
+      assert.equal(repeatedResponse.status, 200);
 
       const finalEnrollment = await selectOptionalEnrollmentByUserId({
         userId: invitedUser.id,
