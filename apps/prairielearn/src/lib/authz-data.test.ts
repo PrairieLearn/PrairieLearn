@@ -226,10 +226,9 @@ describe('calculateModernCourseInstanceStudentAccess', () => {
       candidates: [],
       ...classification,
     };
-    vi.spyOn(
-      enrollmentIdentityModel,
-      'selectEnrollmentIdentityClassification',
-    ).mockResolvedValue(resolved);
+    vi.spyOn(enrollmentIdentityModel, 'selectEnrollmentIdentityClassification').mockResolvedValue(
+      resolved,
+    );
     return resolved;
   }
 
@@ -409,10 +408,7 @@ describe('calculateModernCourseInstanceStudentAccess', () => {
         candidates: [boundCandidate, rosterCandidate],
       });
       const extensionSelector = vi
-        .spyOn(
-          publishingExtensionsModel,
-          'selectLatestPublishingExtensionByEnrollmentIds',
-        )
+        .spyOn(publishingExtensionsModel, 'selectLatestPublishingExtensionByEnrollmentIds')
         .mockResolvedValue(createMockPublishingExtension());
 
       const result = await calculateModernCourseInstanceStudentAccess(
