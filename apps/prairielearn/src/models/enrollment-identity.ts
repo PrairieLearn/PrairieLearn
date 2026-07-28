@@ -4,6 +4,8 @@ import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
 import { type Enrollment, EnrollmentSchema } from '../lib/db-types.js';
 
+import { lockEnrollments } from './enrollment-lock.js';
+
 const sql = loadSqlEquiv(import.meta.url);
 
 const EnrollmentIdentityCandidateRowSchema = z.object({
@@ -15,21 +17,21 @@ const EnrollmentIdentityCandidateRowSchema = z.object({
 });
 
 export interface EnrollmentIdentityContext {
-  courseInstanceId: string;
-  lti13Identity?: {
-    lti13CourseInstanceId: string;
-    sub: string;
+  readonly courseInstanceId: string;
+  readonly lti13Identity?: {
+    readonly lti13CourseInstanceId: string;
+    readonly sub: string;
   };
-  userId: string;
+  readonly userId: string;
 }
 
 export interface EnrollmentIdentityCandidate {
-  enrollment: Enrollment;
-  matches: {
-    boundUser: boolean;
-    institutionUin: boolean;
-    lti13: boolean;
-    pendingUid: boolean;
+  readonly enrollment: Enrollment;
+  readonly matches: {
+    readonly boundUser: boolean;
+    readonly institutionUin: boolean;
+    readonly lti13: boolean;
+    readonly pendingUid: boolean;
   };
 }
 
@@ -42,27 +44,27 @@ export type EnrollmentIdentityClassificationKind =
   | 'blocked';
 
 export interface EnrollmentIdentityClassification {
-  actionableConventionalInvitationCandidates: EnrollmentIdentityCandidate[];
-  actionableInstitutionRosterInvitationCandidates: EnrollmentIdentityCandidate[];
-  actionableLti13RosterInvitationCandidates: EnrollmentIdentityCandidate[];
-  actionableRosterInvitationCandidates: EnrollmentIdentityCandidate[];
-  boundCandidate: EnrollmentIdentityCandidate | null;
-  candidates: EnrollmentIdentityCandidate[];
-  conventionalInvitationCandidates: EnrollmentIdentityCandidate[];
-  institutionRosterInvitationCandidates: EnrollmentIdentityCandidate[];
-  kind: EnrollmentIdentityClassificationKind;
-  lti13RosterInvitationCandidates: EnrollmentIdentityCandidate[];
-  rosterInvitationCandidates: EnrollmentIdentityCandidate[];
+  readonly actionableConventionalInvitationCandidates: readonly EnrollmentIdentityCandidate[];
+  readonly actionableInstitutionRosterInvitationCandidates: readonly EnrollmentIdentityCandidate[];
+  readonly actionableLti13RosterInvitationCandidates: readonly EnrollmentIdentityCandidate[];
+  readonly actionableRosterInvitationCandidates: readonly EnrollmentIdentityCandidate[];
+  readonly boundCandidate: EnrollmentIdentityCandidate | null;
+  readonly candidates: readonly EnrollmentIdentityCandidate[];
+  readonly conventionalInvitationCandidates: readonly EnrollmentIdentityCandidate[];
+  readonly institutionRosterInvitationCandidates: readonly EnrollmentIdentityCandidate[];
+  readonly kind: EnrollmentIdentityClassificationKind;
+  readonly lti13RosterInvitationCandidates: readonly EnrollmentIdentityCandidate[];
+  readonly rosterInvitationCandidates: readonly EnrollmentIdentityCandidate[];
 }
 
 export type EnrollmentAdmissionSource =
-  | { type: 'ordinary' }
-  | { type: 'pending_uid' }
-  | { type: 'institution_uin' }
+  | { readonly type: 'ordinary' }
+  | { readonly type: 'pending_uid' }
+  | { readonly type: 'institution_uin' }
   | {
-      type: 'lti13';
-      lti13CourseInstanceId: string;
-      sub: string;
+      readonly type: 'lti13';
+      readonly lti13CourseInstanceId: string;
+      readonly sub: string;
     };
 
 export type EnrollmentInvitationAdmissionSource = Exclude<
@@ -79,19 +81,19 @@ export type EnrollmentAdmissionDenialReason =
 
 export type EnrollmentAdmissionDecision =
   | {
-      allowed: true;
-      invitationCandidate: null;
-      source: Extract<EnrollmentAdmissionSource, { type: 'ordinary' }>;
+      readonly allowed: true;
+      readonly invitationCandidate: null;
+      readonly source: Extract<EnrollmentAdmissionSource, { type: 'ordinary' }>;
     }
   | {
-      allowed: true;
-      invitationCandidate: EnrollmentIdentityCandidate;
-      source: EnrollmentInvitationAdmissionSource;
+      readonly allowed: true;
+      readonly invitationCandidate: EnrollmentIdentityCandidate;
+      readonly source: EnrollmentInvitationAdmissionSource;
     }
   | {
-      allowed: false;
-      reason: EnrollmentAdmissionDenialReason;
-      source: EnrollmentAdmissionSource;
+      readonly allowed: false;
+      readonly reason: EnrollmentAdmissionDenialReason;
+      readonly source: EnrollmentAdmissionSource;
     };
 
 function identityQueryParams(
@@ -121,20 +123,9 @@ function mapCandidateRows(
   }));
 }
 
-/**
- * Selects all enrollment rows matching the current bound-user, pending-UID,
- * institution-scoped UIN, or optional exact LTI identity. The query is strictly
- * read-only and returns one candidate per enrollment with every matching source
- * preserved as provenance.
- *
- * User identity fields and LTI link ownership are intentionally not locked.
- * Passing enrollment IDs limits the result to parents already locked by a
- * transaction. A rare concurrent user/LTI identity change may therefore be
- * completed by a later reconciliation call.
- */
-export async function selectEnrollmentIdentityCandidates(
+async function selectEnrollmentIdentityCandidates(
   context: EnrollmentIdentityContext,
-  { enrollmentIds = null }: { enrollmentIds?: string[] | null } = {},
+  enrollmentIds: string[] | null,
 ): Promise<EnrollmentIdentityCandidate[]> {
   if (enrollmentIds?.length === 0) return [];
   const rows = await queryRows(
@@ -152,8 +143,8 @@ function isPendingInvitation(candidate: EnrollmentIdentityCandidate): boolean {
 /**
  * Keeps diagnostic provenance separate from actionable invitation sets.
  */
-export function classifyEnrollmentIdentityCandidates(
-  candidates: EnrollmentIdentityCandidate[],
+function classifyEnrollmentIdentityCandidates(
+  candidates: readonly EnrollmentIdentityCandidate[],
 ): EnrollmentIdentityClassification {
   const boundCandidates = candidates.filter(
     (candidate) => candidate.matches.boundUser && candidate.enrollment.user_id !== null,
@@ -245,7 +236,7 @@ function sourceCandidates(
   classification: EnrollmentIdentityClassification,
   source: EnrollmentInvitationAdmissionSource,
   actionable: boolean,
-): EnrollmentIdentityCandidate[] {
+): readonly EnrollmentIdentityCandidate[] {
   if (source.type === 'pending_uid') {
     return actionable
       ? classification.actionableConventionalInvitationCandidates
@@ -267,7 +258,7 @@ function sourceCandidates(
  * mutation consumers. In particular, independently actionable UIN provenance
  * cannot make a mismatched LTI source actionable.
  */
-export function getEnrollmentAdmissionDecision(
+function getEnrollmentAdmissionDecision(
   classification: EnrollmentIdentityClassification,
   source: EnrollmentAdmissionSource,
 ): EnrollmentAdmissionDecision {
@@ -306,4 +297,71 @@ export function getEnrollmentAdmissionDecision(
     return { allowed: false, reason: 'non_actionable_bound_state', source };
   }
   return { allowed: false, reason: 'no_matching_invitation', source };
+}
+
+/**
+ * Selects and classifies the complete enrollment identity set for read-only
+ * render and authorization consumers. User identity fields and LTI link
+ * ownership are intentionally not locked; a rare concurrent identity change is
+ * reconciled by a later call.
+ */
+export async function selectEnrollmentIdentityClassification(
+  context: EnrollmentIdentityContext,
+): Promise<EnrollmentIdentityClassification> {
+  return classifyEnrollmentIdentityCandidates(
+    await selectEnrollmentIdentityCandidates(context, null),
+  );
+}
+
+/**
+ * Produces a source-specific decision from a fresh, complete identity set.
+ */
+export async function selectEnrollmentAdmissionDecision(
+  context: EnrollmentIdentityContext,
+  source: EnrollmentAdmissionSource,
+): Promise<EnrollmentAdmissionDecision> {
+  return getEnrollmentAdmissionDecision(
+    await selectEnrollmentIdentityClassification(context),
+    source,
+  );
+}
+
+export interface LockedEnrollmentIdentityDecision {
+  readonly classification: EnrollmentIdentityClassification;
+  readonly decision: EnrollmentAdmissionDecision;
+}
+
+/**
+ * Selects the complete identity set, locks every selected enrollment parent in
+ * ascending ID order, and revalidates only that locked set. This must run inside
+ * the shared course-instance enrollment barrier transaction. It intentionally
+ * does not lock users or LTI identities; a matching row created later with a
+ * different unique key may remain for a future reconciliation.
+ */
+export async function selectLockedEnrollmentIdentityDecision(
+  context: EnrollmentIdentityContext,
+  source: EnrollmentAdmissionSource,
+): Promise<LockedEnrollmentIdentityDecision> {
+  const initialCandidates = await selectEnrollmentIdentityCandidates(context, null);
+  const initialCandidateIds = initialCandidates.map((candidate) => candidate.enrollment.id);
+  await lockEnrollments(initialCandidateIds);
+  const classification = classifyEnrollmentIdentityCandidates(
+    await selectEnrollmentIdentityCandidates(context, initialCandidateIds),
+  );
+  return {
+    classification,
+    decision: getEnrollmentAdmissionDecision(classification, source),
+  };
+}
+
+/**
+ * Locked complete-set selection for merge-only reconciliation.
+ */
+export async function selectLockedEnrollmentIdentityClassification(
+  context: EnrollmentIdentityContext,
+): Promise<EnrollmentIdentityClassification> {
+  const { classification } = await selectLockedEnrollmentIdentityDecision(context, {
+    type: 'ordinary',
+  });
+  return classification;
 }
