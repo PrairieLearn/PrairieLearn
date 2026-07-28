@@ -20,7 +20,6 @@ function renderEnrollmentEventText(event: StaffAuditEvent): string {
     invited_by_manual_sync: 'Invited to course (manual student list sync)',
     invitation_accepted: 'Accepted invitation',
     invitation_rejected: 'Rejected invitation',
-    identity_reconciled: 'Enrollment identity reconciled',
     identity_merged: 'Enrollment identity merged',
     roster_admitted: 'Admitted from course roster',
     blocked: 'Blocked from course',

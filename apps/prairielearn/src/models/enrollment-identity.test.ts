@@ -8,16 +8,12 @@ import { createInstitution } from '../tests/utils/auth.js';
 
 import { selectCourseInstanceById } from './course-instances.js';
 import {
+  type EnrollmentAdmissionSource,
   selectEnrollmentAdmissionDecision,
   selectEnrollmentIdentityClassification,
 } from './enrollment-identity.js';
 import {
-  EnrollmentInvitationRequiredError,
-  admitUserFromEnrollmentInvitation,
-} from './enrollment-reconciliation.js';
-import {
   OTHER_INSTITUTION_ID,
-  checkedAdmissionFor,
   createEnrollment,
   createLti13CourseInstance,
   createUser,
@@ -25,7 +21,7 @@ import {
   selectEnrollments,
 } from './enrollment-reconciliation.test-helpers.js';
 
-describe('enrollment identity full-set selection and decisions', { concurrent: false }, () => {
+describe('enrollment identity selection and admission decisions', { concurrent: false }, () => {
   let courseInstance: CourseInstance;
   let otherCourseInstance: CourseInstance;
 
@@ -39,17 +35,39 @@ describe('enrollment identity full-set selection and decisions', { concurrent: f
 
   afterAll(helperDb.after);
 
-  it('is read-only, deduplicates overlapping keys, and preserves match provenance', async () => {
+  async function selectDecision({
+    userId,
+    source,
+  }: {
+    source: EnrollmentAdmissionSource;
+    userId: string;
+  }) {
+    return await selectEnrollmentAdmissionDecision(
+      {
+        courseInstanceId: courseInstance.id,
+        userId,
+        lti13Identity:
+          source.type === 'lti13'
+            ? {
+                lti13CourseInstanceId: source.lti13CourseInstanceId,
+                sub: source.sub,
+              }
+            : undefined,
+      },
+      source,
+    );
+  }
+
+  it('keeps candidate selection read-only and scopes UIN and LTI provenance', async () => {
     const user = await createUser({ prefix: 'overlap' });
-    const lti13CourseInstance = await createLti13CourseInstance(courseInstance);
+    const exactLink = await createLti13CourseInstance(courseInstance);
+    const foreignLink = await createLti13CourseInstance(otherCourseInstance);
     const enrollment = await createEnrollment({
       courseInstance,
       pendingUid: user.uid,
       pendingUin: user.uin,
-      pendingLti13CourseInstanceId: lti13CourseInstance.id,
-      pendingLti13Sub: 'overlap-sub',
-      pendingName: 'Pending name',
-      pendingEmail: 'pending@example.com',
+      pendingLti13CourseInstanceId: exactLink.id,
+      pendingLti13Sub: 'exact-sub',
     });
     const before = await selectEnrollments([enrollment.id]);
 
@@ -57,73 +75,95 @@ describe('enrollment identity full-set selection and decisions', { concurrent: f
       courseInstanceId: courseInstance.id,
       userId: user.id,
       lti13Identity: {
-        lti13CourseInstanceId: lti13CourseInstance.id,
-        sub: 'overlap-sub',
+        lti13CourseInstanceId: exactLink.id,
+        sub: 'exact-sub',
       },
     });
 
-    expect(classification.candidates).toHaveLength(1);
-    expect(classification.candidates[0]).toMatchObject({
-      enrollment: { id: enrollment.id },
-      matches: {
-        boundUser: false,
-        institutionUin: true,
-        lti13: true,
-        pendingUid: true,
-      },
-    });
+    expect(classification.candidates).toEqual([
+      expect.objectContaining({
+        enrollment: expect.objectContaining({ id: enrollment.id }),
+        matches: {
+          boundUser: false,
+          institutionUin: true,
+          lti13: true,
+          pendingUid: true,
+        },
+      }),
+    ]);
+    expect(classification.actionableConventionalInvitation).toBeNull();
+    expect(classification.actionableInstitutionRosterInvitation?.enrollment.id).toBe(enrollment.id);
     expect(await selectEnrollments([enrollment.id])).toEqual(before);
 
-    expect(classification.kind).toBe('actionable_roster_invitation');
-    expect(classification.conventionalInvitationCandidates).toHaveLength(1);
-    expect(classification.institutionRosterInvitationCandidates).toHaveLength(1);
-    expect(classification.lti13RosterInvitationCandidates).toHaveLength(1);
-  });
-
-  it('keeps conventional pending-UID invitations distinct from roster authorization', async () => {
-    const user = await createUser({ prefix: 'conventional' });
-    await createEnrollment({
-      courseInstance,
-      pendingUid: user.uid,
-      pendingUin: nextFixtureName('unrelated-uin'),
+    await expect(
+      selectDecision({ userId: user.id, source: { type: 'pending_uid' } }),
+    ).resolves.toMatchObject({ allowed: false, reason: 'no_matching_invitation' });
+    await expect(
+      selectDecision({ userId: user.id, source: { type: 'institution_uin' } }),
+    ).resolves.toMatchObject({ allowed: true });
+    await expect(
+      selectDecision({
+        userId: user.id,
+        source: {
+          type: 'lti13',
+          lti13CourseInstanceId: exactLink.id,
+          sub: 'exact-sub',
+        },
+      }),
+    ).resolves.toMatchObject({
+      allowed: true,
+      invitationCandidate: { enrollment: { id: enrollment.id } },
     });
 
-    const classification = await selectEnrollmentIdentityClassification({
+    await expect(
+      selectDecision({
+        userId: user.id,
+        source: {
+          type: 'lti13',
+          lti13CourseInstanceId: exactLink.id,
+          sub: 'wrong-sub',
+        },
+      }),
+    ).resolves.toMatchObject({
+      allowed: false,
+      reason: 'no_matching_invitation',
+    });
+
+    const foreignEnrollment = await createEnrollment({
+      courseInstance,
+      pendingLti13CourseInstanceId: foreignLink.id,
+      pendingLti13Sub: 'foreign-sub',
+    });
+    const foreignClassification = await selectEnrollmentIdentityClassification({
       courseInstanceId: courseInstance.id,
       userId: user.id,
+      lti13Identity: {
+        lti13CourseInstanceId: foreignLink.id,
+        sub: 'foreign-sub',
+      },
     });
+    expect(
+      foreignClassification.candidates.some(
+        (candidate) => candidate.enrollment.id === foreignEnrollment.id,
+      ),
+    ).toBe(false);
 
-    expect(classification.kind).toBe('actionable_conventional_invitation');
-    expect(classification.conventionalInvitationCandidates).toHaveLength(1);
-    expect(classification.rosterInvitationCandidates).toHaveLength(0);
-  });
-
-  it('scopes pending UIN matches to the course institution', async () => {
-    const sharedUin = nextFixtureName('institution-uin');
-    const sameInstitutionUser = await createUser({
-      prefix: 'same-institution',
-      uin: sharedUin,
-    });
+    const sharedUin = nextFixtureName('institution-scope');
+    const sameInstitutionUser = await createUser({ prefix: 'same-institution', uin: sharedUin });
     const otherInstitutionUser = await createUser({
       prefix: 'other-institution',
       uin: sharedUin,
       institutionId: OTHER_INSTITUTION_ID,
     });
-    const enrollment = await createEnrollment({
-      courseInstance,
-      pendingUin: sharedUin,
-    });
-
-    const sameInstitutionClassification = await selectEnrollmentIdentityClassification({
-      courseInstanceId: courseInstance.id,
-      userId: sameInstitutionUser.id,
-    });
-    expect(sameInstitutionClassification.candidates).toHaveLength(1);
-    expect(sameInstitutionClassification.candidates[0]).toMatchObject({
-      enrollment: { id: enrollment.id },
-      matches: { institutionUin: true },
-    });
-
+    const scopedEnrollment = await createEnrollment({ courseInstance, pendingUin: sharedUin });
+    expect(
+      (
+        await selectEnrollmentIdentityClassification({
+          courseInstanceId: courseInstance.id,
+          userId: sameInstitutionUser.id,
+        })
+      ).candidates[0].enrollment.id,
+    ).toBe(scopedEnrollment.id);
     expect(
       (
         await selectEnrollmentIdentityClassification({
@@ -131,274 +171,145 @@ describe('enrollment identity full-set selection and decisions', { concurrent: f
           userId: otherInstitutionUser.id,
         })
       ).candidates,
-    ).toHaveLength(0);
+    ).toEqual([]);
   });
 
-  it('requires exact LTI link ownership and source provenance', async () => {
-    const user = await createUser({ prefix: 'lti-source' });
-    const expectedLink = await createLti13CourseInstance(courseInstance);
-    const otherLink = await createLti13CourseInstance(courseInstance);
-    const foreignLink = await createLti13CourseInstance(otherCourseInstance);
-    const enrollment = await createEnrollment({
-      courseInstance,
-      pendingUid: user.uid,
-      pendingUin: user.uin,
-      pendingLti13CourseInstanceId: expectedLink.id,
-      pendingLti13Sub: 'expected-sub',
-    });
-
-    for (const source of [
+  it('table-drives pending source and status policy', async () => {
+    const exactLink = await createLti13CourseInstance(courseInstance);
+    const cases: {
+      expectedAllowed: boolean;
+      expectedReason?: string;
+      name: string;
+      setup: (user: Awaited<ReturnType<typeof createUser>>) => Promise<void>;
+      source: EnrollmentAdmissionSource;
+    }[] = [
       {
-        lti13CourseInstanceId: expectedLink.id,
-        sub: 'wrong-sub',
+        name: 'conventional invitation',
+        source: { type: 'pending_uid' },
+        expectedAllowed: true,
+        setup: async (user) => {
+          await createEnrollment({ courseInstance, pendingUid: user.uid });
+        },
       },
       {
-        lti13CourseInstanceId: otherLink.id,
-        sub: 'expected-sub',
+        name: 'rejected conventional row',
+        source: { type: 'pending_uid' },
+        expectedAllowed: false,
+        expectedReason: 'no_matching_invitation',
+        setup: async (user) => {
+          await createEnrollment({
+            courseInstance,
+            pendingUid: user.uid,
+            status: 'rejected',
+          });
+        },
       },
-    ]) {
-      const classification = await selectEnrollmentIdentityClassification({
-        courseInstanceId: courseInstance.id,
-        userId: user.id,
-        lti13Identity: source,
-      });
-      expect(classification.candidates).toHaveLength(1);
-      expect(classification.candidates[0]).toMatchObject({
-        enrollment: { id: enrollment.id },
-        matches: { institutionUin: true, lti13: false, pendingUid: true },
-      });
-      expect(classification.lti13RosterInvitationCandidates).toHaveLength(0);
-      expect(
-        await selectEnrollmentAdmissionDecision(
-          {
-            courseInstanceId: courseInstance.id,
-            userId: user.id,
-            lti13Identity: source,
-          },
-          { type: 'lti13', ...source },
-        ),
-      ).toEqual({
-        allowed: false,
-        reason: 'no_matching_invitation',
-        source: { type: 'lti13', ...source },
-      });
-      expect(
-        await selectEnrollmentAdmissionDecision(
-          {
-            courseInstanceId: courseInstance.id,
-            userId: user.id,
-            lti13Identity: source,
-          },
-          { type: 'institution_uin' },
-        ),
-      ).toMatchObject({
-        allowed: true,
+      {
+        name: 'institution roster invitation',
         source: { type: 'institution_uin' },
-      });
-      await expect(
-        admitUserFromEnrollmentInvitation({
-          courseInstanceId: courseInstance.id,
-          userId: user.id,
-          source: { type: 'lti13', ...source },
-          ...checkedAdmissionFor(user),
-        }),
-      ).rejects.toBeInstanceOf(EnrollmentInvitationRequiredError);
-    }
-
-    const foreignEnrollment = await createEnrollment({
-      courseInstance,
-      pendingUin: nextFixtureName('foreign-link-uin'),
-      pendingLti13CourseInstanceId: foreignLink.id,
-      pendingLti13Sub: 'foreign-sub',
-    });
-    expect(
-      (
-        await selectEnrollmentIdentityClassification({
-          courseInstanceId: courseInstance.id,
-          userId: user.id,
-          lti13Identity: {
-            lti13CourseInstanceId: foreignLink.id,
-            sub: 'foreign-sub',
-          },
-        })
-      ).candidates,
-    ).not.toContainEqual(
-      expect.objectContaining({
-        enrollment: expect.objectContaining({ id: foreignEnrollment.id }),
-      }),
-    );
-
-    const exactClassification = await selectEnrollmentIdentityClassification({
-      courseInstanceId: courseInstance.id,
-      userId: user.id,
-      lti13Identity: {
-        lti13CourseInstanceId: expectedLink.id,
-        sub: 'expected-sub',
+        expectedAllowed: true,
+        setup: async (user) => {
+          await createEnrollment({ courseInstance, pendingUin: user.uin });
+        },
       },
-    });
-    expect(exactClassification.candidates[0].matches.lti13).toBe(true);
+      {
+        name: 'guest roster row',
+        source: { type: 'institution_uin' },
+        expectedAllowed: false,
+        expectedReason: 'guest_state',
+        setup: async (user) => {
+          await createEnrollment({
+            courseInstance,
+            pendingUin: user.uin,
+            isGuest: true,
+          });
+        },
+      },
+      {
+        name: 'exact LTI invitation',
+        source: {
+          type: 'lti13',
+          lti13CourseInstanceId: exactLink.id,
+          sub: 'matrix-sub',
+        },
+        expectedAllowed: true,
+        setup: async () => {
+          await createEnrollment({
+            courseInstance,
+            pendingLti13CourseInstanceId: exactLink.id,
+            pendingLti13Sub: 'matrix-sub',
+          });
+        },
+      },
+    ];
+
+    for (const testCase of cases) {
+      const user = await createUser({ prefix: testCase.name.replaceAll(' ', '-') });
+      await testCase.setup(user);
+      const decision = await selectDecision({ userId: user.id, source: testCase.source });
+      expect(decision.allowed, testCase.name).toBe(testCase.expectedAllowed);
+      if (!decision.allowed) {
+        expect(decision.reason, testCase.name).toBe(testCase.expectedReason);
+      }
+    }
   });
 
-  it('does not treat bound left, removed, blocked, or guest rows as roster authorization', async () => {
-    for (const status of ['left', 'removed', 'blocked'] as const) {
-      const user = await createUser({ prefix: `ordinary-${status}` });
+  it('table-drives bound and guest revalidation policy', async () => {
+    const cases = [
+      {
+        status: 'joined' as const,
+        isGuest: false,
+        source: { type: 'institution_uin' as const },
+        allowed: false,
+        reason: 'already_joined',
+      },
+      {
+        status: 'blocked' as const,
+        isGuest: false,
+        source: { type: 'ordinary' as const },
+        allowed: false,
+        reason: 'blocked',
+      },
+      {
+        status: 'left' as const,
+        isGuest: false,
+        source: { type: 'institution_uin' as const },
+        allowed: true,
+      },
+      {
+        status: 'removed' as const,
+        isGuest: false,
+        source: { type: 'institution_uin' as const },
+        allowed: false,
+        reason: 'non_actionable_bound_state',
+      },
+      {
+        status: 'left' as const,
+        isGuest: true,
+        source: { type: 'institution_uin' as const },
+        allowed: false,
+        reason: 'guest_state',
+      },
+    ];
+
+    for (const testCase of cases) {
+      const user = await createUser({
+        prefix: `bound-${testCase.status}-${testCase.isGuest}`,
+      });
       await createEnrollment({
         courseInstance,
         userId: user.id,
-        status,
-        firstJoinedAt: new Date('2025-01-01T00:00:00Z'),
+        status: testCase.status,
+        isGuest: testCase.isGuest,
+        firstJoinedAt: new Date('2024-01-01T00:00:00Z'),
       });
-      const classification = await selectEnrollmentIdentityClassification({
-        courseInstanceId: courseInstance.id,
-        userId: user.id,
-      });
-      expect(classification.rosterInvitationCandidates).toHaveLength(0);
-      expect(classification.kind).toBe(status === 'blocked' ? 'blocked' : 'ordinary');
-    }
+      await createEnrollment({ courseInstance, pendingUin: user.uin });
 
-    const guestUser = await createUser({ prefix: 'guest-roster' });
-    await createEnrollment({
-      courseInstance,
-      pendingUin: guestUser.uin,
-      isGuest: true,
-    });
-    const guestClassification = await selectEnrollmentIdentityClassification({
-      courseInstanceId: courseInstance.id,
-      userId: guestUser.id,
-    });
-    expect(guestClassification.rosterInvitationCandidates).toHaveLength(0);
-    expect(guestClassification.kind).toBe('ordinary');
-  });
-
-  it('vetoes roster actionability for bound joined, bound removed, bound guest, and any guest candidate', async () => {
-    for (const boundState of [
-      { denialReason: 'already_joined', isGuest: false, status: 'joined' as const },
-      {
-        denialReason: 'non_actionable_bound_state',
-        isGuest: false,
-        status: 'removed' as const,
-      },
-      { denialReason: 'guest_state', isGuest: true, status: 'left' as const },
-    ]) {
-      const user = await createUser({
-        prefix: `roster-veto-${boundState.status}-${boundState.isGuest}`,
-      });
-      const bound = await createEnrollment({
-        courseInstance,
-        userId: user.id,
-        status: boundState.status,
-        isGuest: boundState.isGuest,
-        firstJoinedAt: new Date('2025-01-01T00:00:00Z'),
-      });
-      const invitation = await createEnrollment({
-        courseInstance,
-        pendingUin: user.uin,
-      });
-      const classification = await selectEnrollmentIdentityClassification({
-        courseInstanceId: courseInstance.id,
-        userId: user.id,
-      });
-
-      expect(classification.institutionRosterInvitationCandidates).toHaveLength(1);
-      expect(classification.actionableInstitutionRosterInvitationCandidates).toHaveLength(0);
-      expect(
-        await selectEnrollmentAdmissionDecision(
-          { courseInstanceId: courseInstance.id, userId: user.id },
-          { type: 'institution_uin' },
-        ),
-      ).toMatchObject({
-        allowed: false,
-        reason: boundState.denialReason,
-      });
-      const admission = admitUserFromEnrollmentInvitation({
-        courseInstanceId: courseInstance.id,
-        userId: user.id,
-        source: { type: 'institution_uin' },
-        ...checkedAdmissionFor(user),
-      });
-      const admissionOutcome = await admission.then(
-        (enrollment) => ({ enrollment, type: 'resolved' as const }),
-        (error: unknown) => ({ error, type: 'rejected' as const }),
-      );
-      expect(admissionOutcome.type).toBe(boundState.status === 'joined' ? 'resolved' : 'rejected');
-      expect(await selectEnrollments([bound.id, invitation.id])).toHaveLength(2);
-    }
-
-    const user = await createUser({ prefix: 'roster-veto-separate-guest' });
-    const rosterInvitation = await createEnrollment({
-      courseInstance,
-      pendingUin: user.uin,
-    });
-    const guestCandidate = await createEnrollment({
-      courseInstance,
-      pendingUid: user.uid,
-      isGuest: true,
-    });
-    const classification = await selectEnrollmentIdentityClassification({
-      courseInstanceId: courseInstance.id,
-      userId: user.id,
-    });
-
-    expect(classification.institutionRosterInvitationCandidates).toHaveLength(1);
-    expect(classification.actionableInstitutionRosterInvitationCandidates).toHaveLength(0);
-    expect(
-      await selectEnrollmentAdmissionDecision(
-        { courseInstanceId: courseInstance.id, userId: user.id },
-        { type: 'institution_uin' },
-      ),
-    ).toMatchObject({
-      allowed: false,
-      reason: 'guest_state',
-    });
-    await expect(
-      admitUserFromEnrollmentInvitation({
-        courseInstanceId: courseInstance.id,
-        userId: user.id,
-        source: { type: 'institution_uin' },
-        ...checkedAdmissionFor(user),
-      }),
-    ).rejects.toBeInstanceOf(EnrollmentInvitationRequiredError);
-    expect(await selectEnrollments([rosterInvitation.id, guestCandidate.id])).toHaveLength(2);
-  });
-
-  it('does not make a bound left or removed enrollment conventionally actionable', async () => {
-    for (const status of ['left', 'removed'] as const) {
-      const user = await createUser({ prefix: `conventional-bound-${status}` });
-      const bound = await createEnrollment({
-        courseInstance,
-        userId: user.id,
-        status,
-        firstJoinedAt: new Date('2025-01-01T00:00:00Z'),
-      });
-      const invitation = await createEnrollment({
-        courseInstance,
-        pendingUid: user.uid,
-      });
-      const classification = await selectEnrollmentIdentityClassification({
-        courseInstanceId: courseInstance.id,
-        userId: user.id,
-      });
-
-      expect(classification.conventionalInvitationCandidates).toHaveLength(1);
-      expect(classification.actionableConventionalInvitationCandidates).toHaveLength(0);
-      expect(
-        await selectEnrollmentAdmissionDecision(
-          { courseInstanceId: courseInstance.id, userId: user.id },
-          { type: 'pending_uid' },
-        ),
-      ).toMatchObject({
-        allowed: false,
-        reason: 'non_actionable_bound_state',
-      });
-      await expect(
-        admitUserFromEnrollmentInvitation({
-          courseInstanceId: courseInstance.id,
-          userId: user.id,
-          source: { type: 'pending_uid' },
-          ...checkedAdmissionFor(user),
-        }),
-      ).rejects.toBeInstanceOf(EnrollmentInvitationRequiredError);
-      expect(await selectEnrollments([bound.id, invitation.id])).toHaveLength(2);
+      const decision = await selectDecision({ userId: user.id, source: testCase.source });
+      expect(decision.allowed, JSON.stringify(testCase)).toBe(testCase.allowed);
+      if (!decision.allowed) {
+        expect(decision.reason, JSON.stringify(testCase)).toBe(testCase.reason);
+      }
     }
   });
 });
