@@ -5,7 +5,11 @@ import { afterAll, assert, beforeAll, beforeEach, describe, it, vi } from 'vites
 import { execute, loadSqlEquiv } from '@prairielearn/postgres';
 
 import * as publishingExtensionsModel from '../models/course-instance-publishing-extensions.js';
-import * as enrollmentModel from '../models/enrollment.js';
+import {
+  type EnrollmentIdentityCandidate,
+  type EnrollmentIdentityClassification,
+} from '../models/enrollment-identity.js';
+import * as enrollmentIdentityModel from '../models/enrollment-identity.js';
 import * as helperDb from '../tests/helperDb.js';
 
 import {
@@ -196,6 +200,45 @@ describe('calculateModernCourseInstanceStudentAccess', () => {
     };
   }
 
+  function createCandidate(
+    enrollment: Enrollment,
+    matches: Partial<EnrollmentIdentityCandidate['matches']> = {},
+  ): EnrollmentIdentityCandidate {
+    return {
+      enrollment,
+      matches: {
+        boundUser: false,
+        institutionUin: false,
+        lti13: false,
+        pendingUid: false,
+        ...matches,
+      },
+    };
+  }
+
+  function mockClassification(
+    classification: Partial<EnrollmentIdentityClassification> = {},
+  ): EnrollmentIdentityClassification {
+    const resolved = {
+      actionableConventionalInvitation: null,
+      actionableInstitutionRosterInvitation: null,
+      boundCandidate: null,
+      candidates: [],
+      ...classification,
+    };
+    vi.spyOn(
+      enrollmentIdentityModel,
+      'selectEnrollmentIdentityClassification',
+    ).mockResolvedValue(resolved);
+    return resolved;
+  }
+
+  function mockBoundEnrollment(enrollment: Enrollment | null) {
+    if (enrollment === null) return mockClassification();
+    const candidate = createCandidate(enrollment, { boundUser: true });
+    return mockClassification({ boundCandidate: candidate, candidates: [candidate] });
+  }
+
   describe('no publishing dates', () => {
     it('forbids access when publishing_start_date is null', async () => {
       const courseInstance = createMockCourseInstance({
@@ -204,7 +247,7 @@ describe('calculateModernCourseInstanceStudentAccess', () => {
       });
       const reqDate = new Date('2025-06-01T12:00:00Z');
 
-      vi.spyOn(enrollmentModel, 'selectOptionalEnrollmentByUserId').mockResolvedValue(null);
+      mockBoundEnrollment(null);
 
       const result = await calculateModernCourseInstanceStudentAccess(
         courseInstance,
@@ -225,7 +268,7 @@ describe('calculateModernCourseInstanceStudentAccess', () => {
       });
       const reqDate = new Date('2024-12-31T23:59:59Z');
 
-      vi.spyOn(enrollmentModel, 'selectOptionalEnrollmentByUserId').mockResolvedValue(null);
+      mockBoundEnrollment(null);
 
       const result = await calculateModernCourseInstanceStudentAccess(
         courseInstance,
@@ -245,7 +288,7 @@ describe('calculateModernCourseInstanceStudentAccess', () => {
       const reqDate = new Date('2024-12-31T23:59:59Z');
       const enrollment = createMockEnrollment();
 
-      vi.spyOn(enrollmentModel, 'selectOptionalEnrollmentByUserId').mockResolvedValue(enrollment);
+      mockBoundEnrollment(enrollment);
 
       const result = await calculateModernCourseInstanceStudentAccess(
         courseInstance,
@@ -266,7 +309,7 @@ describe('calculateModernCourseInstanceStudentAccess', () => {
       });
       const reqDate = new Date('2025-06-01T12:00:00Z');
 
-      vi.spyOn(enrollmentModel, 'selectOptionalEnrollmentByUserId').mockResolvedValue(null);
+      mockBoundEnrollment(null);
 
       const result = await calculateModernCourseInstanceStudentAccess(
         courseInstance,
@@ -286,7 +329,7 @@ describe('calculateModernCourseInstanceStudentAccess', () => {
       const reqDate = new Date('2025-06-01T12:00:00Z');
       const enrollment = createMockEnrollment();
 
-      vi.spyOn(enrollmentModel, 'selectOptionalEnrollmentByUserId').mockResolvedValue(enrollment);
+      mockBoundEnrollment(enrollment);
 
       const result = await calculateModernCourseInstanceStudentAccess(
         courseInstance,
@@ -307,7 +350,7 @@ describe('calculateModernCourseInstanceStudentAccess', () => {
       });
       const reqDate = new Date('2026-01-01T00:00:00Z');
 
-      vi.spyOn(enrollmentModel, 'selectOptionalEnrollmentByUserId').mockResolvedValue(null);
+      mockBoundEnrollment(null);
 
       const result = await calculateModernCourseInstanceStudentAccess(
         courseInstance,
@@ -327,10 +370,10 @@ describe('calculateModernCourseInstanceStudentAccess', () => {
       const reqDate = new Date('2026-01-01T00:00:00Z');
       const enrollment = createMockEnrollment();
 
-      vi.spyOn(enrollmentModel, 'selectOptionalEnrollmentByUserId').mockResolvedValue(enrollment);
+      mockBoundEnrollment(enrollment);
       vi.spyOn(
         publishingExtensionsModel,
-        'selectLatestPublishingExtensionByEnrollment',
+        'selectLatestPublishingExtensionByEnrollmentIds',
       ).mockResolvedValue(null);
 
       const result = await calculateModernCourseInstanceStudentAccess(
@@ -345,6 +388,48 @@ describe('calculateModernCourseInstanceStudentAccess', () => {
   });
 
   describe('with publishing extensions', () => {
+    it('uses every matching candidate for roster invitation access', async () => {
+      const courseInstance = createMockCourseInstance();
+      const boundCandidate = createCandidate(
+        createMockEnrollment({ id: 'bound', status: 'left' }),
+        { boundUser: true },
+      );
+      const rosterCandidate = createCandidate(
+        createMockEnrollment({
+          id: 'roster',
+          user_id: null,
+          status: 'invited',
+          pending_uin: 'uin',
+        }),
+        { institutionUin: true },
+      );
+      mockClassification({
+        actionableInstitutionRosterInvitation: rosterCandidate,
+        boundCandidate,
+        candidates: [boundCandidate, rosterCandidate],
+      });
+      const extensionSelector = vi
+        .spyOn(
+          publishingExtensionsModel,
+          'selectLatestPublishingExtensionByEnrollmentIds',
+        )
+        .mockResolvedValue(createMockPublishingExtension());
+
+      const result = await calculateModernCourseInstanceStudentAccess(
+        courseInstance,
+        'test-user-id',
+        new Date('2026-01-15T12:00:00Z'),
+      );
+
+      assert.deepEqual(result, {
+        has_student_access: true,
+        has_student_access_with_enrollment: false,
+      });
+      assert.deepEqual(extensionSelector.mock.calls, [
+        [{ courseInstance, enrollmentIds: ['bound', 'roster'] }],
+      ]);
+    });
+
     it('allows access when the request date is before the latest extension end date', async () => {
       const courseInstance = createMockCourseInstance({
         publishing_start_date: new Date('2025-01-01T00:00:00Z'),
@@ -357,10 +442,10 @@ describe('calculateModernCourseInstanceStudentAccess', () => {
         end_date: new Date('2026-02-28T23:59:59Z'),
       });
 
-      vi.spyOn(enrollmentModel, 'selectOptionalEnrollmentByUserId').mockResolvedValue(enrollment);
+      mockBoundEnrollment(enrollment);
       vi.spyOn(
         publishingExtensionsModel,
-        'selectLatestPublishingExtensionByEnrollment',
+        'selectLatestPublishingExtensionByEnrollmentIds',
       ).mockResolvedValue(extension);
 
       const result = await calculateModernCourseInstanceStudentAccess(
@@ -386,10 +471,10 @@ describe('calculateModernCourseInstanceStudentAccess', () => {
         end_date: new Date('2026-02-28T23:59:59Z'),
       });
 
-      vi.spyOn(enrollmentModel, 'selectOptionalEnrollmentByUserId').mockResolvedValue(enrollment);
+      mockBoundEnrollment(enrollment);
       vi.spyOn(
         publishingExtensionsModel,
-        'selectLatestPublishingExtensionByEnrollment',
+        'selectLatestPublishingExtensionByEnrollmentIds',
       ).mockResolvedValue(extension);
 
       const result = await calculateModernCourseInstanceStudentAccess(

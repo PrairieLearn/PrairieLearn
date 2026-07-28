@@ -21,15 +21,20 @@ export function StudentCoursesCard({
   setShowJoinModal: (value: boolean) => void;
 }) {
   const heading = hasInstructorCourses ? 'Courses with student access' : 'Courses';
-  const [rejectingCourseId, setRejectingCourseId] = useState<string | null>(null);
+  const [rejectingInvitation, setRejectingInvitation] = useState<{
+    courseInstanceId: string;
+    enrollmentId: string;
+  } | null>(null);
   const [removingCourseId, setRemovingCourseId] = useState<string | null>(null);
 
-  const invited: StudentHomePageCourse[] = studentCourses.filter(
-    (ci) => ci.enrollment.status === 'invited',
+  const conventionalInvitations = studentCourses.filter(
+    (course): course is StudentHomePageCourse & { access_type: 'conventional_invitation' } =>
+      course.access_type === 'conventional_invitation',
   );
-  const joined: StudentHomePageCourse[] = studentCourses.filter(
-    (ci) => ci.enrollment.status === 'joined',
+  const rosterAvailable = studentCourses.filter(
+    (course) => course.access_type === 'roster_available',
   );
+  const joined = studentCourses.filter((course) => course.access_type === 'joined');
 
   return (
     <div className="card mb-4">
@@ -69,7 +74,7 @@ export function StudentCoursesCard({
         <div className="table-responsive">
           <table className="table table-sm table-hover table-striped" aria-label={heading}>
             <tbody>
-              {invited.map((entry: StudentHomePageCourse) => (
+              {conventionalInvitations.map((entry) => (
                 <tr key={`invite-${entry.course_instance.id}`} className="table-warning">
                   <td className="align-middle">
                     <div className="d-flex align-items-center justify-content-between gap-2">
@@ -86,6 +91,11 @@ export function StudentCoursesCard({
                           <input type="hidden" name="__csrf_token" value={csrfToken} />
                           <input
                             type="hidden"
+                            name="enrollment_id"
+                            value={entry.invitation_enrollment_id}
+                          />
+                          <input
+                            type="hidden"
                             name="course_instance_id"
                             value={entry.course_instance.id}
                           />
@@ -96,11 +106,39 @@ export function StudentCoursesCard({
                         <button
                           type="button"
                           className="btn btn-danger btn-sm"
-                          onClick={() => setRejectingCourseId(entry.course_instance.id)}
+                          onClick={() =>
+                            setRejectingInvitation({
+                              courseInstanceId: entry.course_instance.id,
+                              enrollmentId: entry.invitation_enrollment_id,
+                            })
+                          }
                         >
                           Reject
                         </button>
                       </div>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              {rosterAvailable.map((entry) => (
+                <tr key={`roster-${entry.course_instance.id}`} className="table-info">
+                  <td className="align-middle">
+                    <div className="d-flex align-items-center justify-content-between gap-2">
+                      <div>
+                        <span className="fw-semibold">
+                          {entry.course_short_name}: {entry.course_title},{' '}
+                          {entry.course_instance.long_name}
+                        </span>
+                        <span className="ms-2 badge bg-info text-dark">
+                          Available through roster
+                        </span>
+                      </div>
+                      <a
+                        href={`${urlPrefix}/course_instance/${entry.course_instance.id}`}
+                        className="btn btn-primary btn-sm"
+                      >
+                        Open course
+                      </a>
                     </div>
                   </td>
                 </tr>
@@ -130,9 +168,9 @@ export function StudentCoursesCard({
       )}
 
       <Modal
-        show={rejectingCourseId !== null}
+        show={rejectingInvitation !== null}
         backdrop="static"
-        onHide={() => setRejectingCourseId(null)}
+        onHide={() => setRejectingInvitation(null)}
       >
         <Modal.Header closeButton>
           <Modal.Title>Reject invitation</Modal.Title>
@@ -147,14 +185,23 @@ export function StudentCoursesCard({
           <button
             type="button"
             className="btn btn-secondary"
-            onClick={() => setRejectingCourseId(null)}
+            onClick={() => setRejectingInvitation(null)}
           >
             Cancel
           </button>
           <form method="POST">
             <input type="hidden" name="__csrf_token" value={csrfToken} />
             <input type="hidden" name="__action" value="reject_invitation" />
-            <input type="hidden" name="course_instance_id" value={rejectingCourseId ?? ''} />
+            <input
+              type="hidden"
+              name="course_instance_id"
+              value={rejectingInvitation?.courseInstanceId ?? ''}
+            />
+            <input
+              type="hidden"
+              name="enrollment_id"
+              value={rejectingInvitation?.enrollmentId ?? ''}
+            />
             <button type="submit" className="btn btn-danger">
               Reject invitation
             </button>
