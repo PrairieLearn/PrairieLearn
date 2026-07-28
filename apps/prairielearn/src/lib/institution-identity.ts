@@ -11,6 +11,10 @@ const sql = loadSqlEquiv(import.meta.url);
 
 const AuthnProviderNameSchema = AuthnProviderSchema.shape.name;
 
+/**
+ * Institution-wide identity state spanning SAML, LTI, and authentication-provider configuration.
+ * This is used to enforce invariants when any one of those configurations changes.
+ */
 const InstitutionIdentityConfigurationStatusSchema = z.object({
   saml_uin_attribute: z.string().nullable(),
   enabled_authn_provider_names: AuthnProviderNameSchema.array(),
@@ -36,6 +40,11 @@ export function normalizeUinAttribute(value: unknown): string | null {
   return normalized || null;
 }
 
+/**
+ * Serializes identity-configuration changes across the institution's SAML, LTI, and
+ * authentication-provider records. This must be called inside the transaction that reads and
+ * updates those records.
+ */
 export async function lockInstitutionForIdentityConfiguration(
   institution_id: string,
 ): Promise<void> {
@@ -88,6 +97,11 @@ export function assertLti13UinCompatibilityConfirmed(body: Record<string, unknow
   }
 }
 
+/**
+ * Guards changes that introduce or alter an LTI UIN identity mapping. Configuration prerequisites
+ * can be checked automatically, but canonical-UIN compatibility and user backfilling require the
+ * operator confirmations carried in the request body.
+ */
 export async function assertLti13UinConfigurationAllowed(
   institution_id: string,
   body: Record<string, unknown>,

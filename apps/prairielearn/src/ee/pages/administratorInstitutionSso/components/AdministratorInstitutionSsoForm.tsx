@@ -41,9 +41,9 @@ export function AdministratorInstitutionSsoForm({
 
   const [defaultProviderId, setDefaultProviderId] = useState(institution.default_authn_provider_id);
 
-  // LTI providers are launch providers, so they are allowed alongside SAML when the LTI UIN
-  // guardrail is active.
-  const enabledPrimaryProviders = supportedAuthenticationProviders.filter(
+  // LTI sessions must start in an LMS, so LTI providers do not count as institutional sign-on
+  // providers for this guardrail.
+  const enabledInstitutionalProviders = supportedAuthenticationProviders.filter(
     (provider) =>
       enabledProviderIds.has(provider.id) && isInstitutionalAuthenticationProvider(provider.name),
   );
@@ -55,8 +55,8 @@ export function AdministratorInstitutionSsoForm({
         {hasConfiguredLti13Uin && (
           <div className="alert alert-info" role="alert">
             An LTI 1.3 instance uses a UIN attribute. SAML must remain the only enabled
-            institutional authentication provider. Secondary LTI launch providers may remain
-            enabled.
+            institutional sign-on provider. LTI and LTI 1.3 may remain enabled because those
+            sessions begin in a Learning Management System (LMS).
           </div>
         )}
         {supportedAuthenticationProviders.map((provider) => {
@@ -117,13 +117,13 @@ export function AdministratorInstitutionSsoForm({
             </div>
           );
         })}
-        {enabledPrimaryProviders.length > 1 && (
+        {enabledInstitutionalProviders.length > 1 && (
           <div className="alert alert-warning mt-2" role="alert">
             It is <strong>not recommended</strong> to enable{' '}
-            {formatProviderList(enabledPrimaryProviders)} at the same time. It may be appropriate in
-            situations where students use one sign-on provider and staff use a different one, or
-            while transitioning from one provider to another. Contact a technical administrator if
-            you have questions.
+            {formatProviderList(enabledInstitutionalProviders)} at the same time. It may be
+            appropriate in situations where students use one sign-on provider and staff use a
+            different one, or while transitioning from one provider to another. Contact a technical
+            administrator if you have questions.
           </div>
         )}
         {enabledProviderIds.size === 0 && (
