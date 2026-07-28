@@ -1,10 +1,3 @@
--- BLOCK update_enrollment_pending_name
-UPDATE enrollments
-SET
-  pending_name = $pending_name
-WHERE
-  id = $enrollment_id;
-
 -- BLOCK insert_student_label
 INSERT INTO
   student_labels (course_instance_id, name, color, uuid)
