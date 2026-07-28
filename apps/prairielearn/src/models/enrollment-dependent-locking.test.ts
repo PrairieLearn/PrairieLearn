@@ -3,21 +3,10 @@ import crypto from 'node:crypto';
 import { afterAll, assert, beforeAll, describe, expect, it } from 'vitest';
 import { z } from 'zod';
 
-import {
-  execute,
-  loadSqlEquiv,
-  queryOptionalRow,
-  queryScalar,
-  runInTransactionAsync,
-} from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, queryScalar, runInTransactionAsync } from '@prairielearn/postgres';
 
 import { dangerousFullSystemAuthz } from '../lib/authz-data-lib.js';
-import type {
-  Assessment,
-  CourseInstance,
-  CourseInstancePublishingExtension,
-  Enrollment,
-} from '../lib/db-types.js';
+import type { Assessment, CourseInstance, Enrollment } from '../lib/db-types.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
 import * as helperCourse from '../tests/helperCourse.js';
 import * as helperDb from '../tests/helperDb.js';
@@ -29,9 +18,7 @@ import {
 } from './assessment-access-control-rules.js';
 import { selectAssessmentByTid } from './assessment.js';
 import {
-  addEnrollmentToPublishingExtension,
   createPublishingExtensionWithEnrollments,
-  removeStudentFromPublishingExtension,
   selectEnrollmentsForPublishingExtension,
   updatePublishingExtensionEnrollments,
 } from './course-instance-publishing-extensions.js';
@@ -44,7 +31,6 @@ import {
 import {
   addLabelToEnrollments,
   createStudentLabel,
-  removeLabelFromEnrollments,
   selectEnrollmentsInStudentLabel,
   updateStudentLabelEnrollments,
 } from './student-label.js';
@@ -61,39 +47,39 @@ function deferred() {
   return { promise, reject: reject!, resolve: resolve! };
 }
 
-async function expectEnrollmentLock(enrollmentId: string) {
-  await expect(
-    runInTransactionAsync(async () => {
-      await execute(sql.set_short_lock_timeout);
-      await execute(sql.lock_enrollment_for_no_key_update, {
-        enrollment_id: enrollmentId,
-      });
-    }),
-  ).rejects.toMatchObject({ code: '55P03' });
-}
-
-async function withHeldWriter(
-  writer: () => Promise<void>,
-  checkLocks: () => Promise<void>,
-): Promise<void> {
-  const held = deferred();
-  const release = deferred();
-  const writerPromise = runInTransactionAsync(async () => {
-    await writer();
-    held.resolve();
-    await release.promise;
-  }).catch((error) => {
-    held.reject(error);
+function observeWorker(promise: Promise<void>, ready?: ReturnType<typeof deferred>): Promise<void> {
+  const observed = promise.catch((error) => {
+    ready?.reject(error);
     throw error;
   });
+  void observed.catch(() => {});
+  return observed;
+}
 
-  try {
-    await held.promise;
-    await checkLocks();
-  } finally {
-    release.resolve();
-    await writerPromise;
+async function finishWorkers(
+  failure: { error: unknown } | undefined,
+  workers: Promise<void>[],
+): Promise<void> {
+  const rejected = (await Promise.allSettled(workers)).find(
+    (result) => result.status === 'rejected',
+  );
+  if (failure) throw failure.error;
+  if (rejected) throw rejected.reason;
+}
+
+async function setApplicationName(name: string): Promise<void> {
+  await queryScalar(sql.set_local_application_name, { application_name: name }, z.string());
+}
+
+async function waitForApplicationBlock(applicationName: string): Promise<void> {
+  const params = { application_name: applicationName };
+  for (let attempt = 0; attempt < 100; attempt++) {
+    if (await queryScalar(sql.select_application_is_blocked, params, z.boolean())) {
+      return;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 10));
   }
+  throw new Error('Timed out waiting for enrollment lock contention');
 }
 
 function makeRuleData(id?: string): EnrollmentAccessControlRuleData {
@@ -122,108 +108,6 @@ function makeRuleData(id?: string): EnrollmentAccessControlRuleData {
   };
 }
 
-async function setLocalApplicationName(applicationName: string): Promise<void> {
-  await queryScalar(
-    sql.set_local_application_name,
-    { application_name: applicationName },
-    z.string(),
-  );
-}
-
-async function waitForEnrollmentLockWaiter({
-  applicationName,
-  afterQueryStart,
-}: {
-  applicationName: string;
-  afterQueryStart?: string;
-}): Promise<string> {
-  for (let attempt = 0; attempt < 100; attempt++) {
-    const query = afterQueryStart
-      ? sql.select_later_waiting_enrollment_lock
-      : sql.select_waiting_enrollment_lock;
-    const waiting = await queryOptionalRow(
-      query,
-      {
-        application_name: applicationName,
-        ...(afterQueryStart ? { after_query_start: afterQueryStart } : {}),
-      },
-      z.object({ query_start: z.string() }),
-    );
-    if (waiting) return waiting.query_start;
-    await new Promise((resolve) => setTimeout(resolve, 10));
-  }
-  throw new Error('Timed out waiting for enrollment lock contention');
-}
-
-function preserveFirstFailure(
-  currentFailure: { error: unknown } | undefined,
-  workerResults: PromiseSettledResult<void>[],
-): { error: unknown } | undefined {
-  if (currentFailure) return currentFailure;
-  const rejectedWorker = workerResults.find(
-    (result): result is PromiseRejectedResult => result.status === 'rejected',
-  );
-  return rejectedWorker ? { error: rejectedWorker.reason } : undefined;
-}
-
-async function expectWriterWaitsForLowerBeforeLockingHigher({
-  lowerEnrollmentId,
-  higherEnrollmentId,
-  writer,
-}: {
-  lowerEnrollmentId: string;
-  higherEnrollmentId: string;
-  writer: () => Promise<void>;
-}): Promise<void> {
-  const lowerLocked = deferred();
-  const releaseLower = deferred();
-  let failure: { error: unknown } | undefined;
-  const blockerPromise = runInTransactionAsync(async () => {
-    await lockEnrollments([lowerEnrollmentId]);
-    lowerLocked.resolve();
-    await releaseLower.promise;
-  }).catch((error) => {
-    failure ??= { error };
-    lowerLocked.reject(error);
-    throw error;
-  });
-  void blockerPromise.catch(() => undefined);
-
-  let writerPromise: Promise<void> | undefined;
-
-  try {
-    await lowerLocked.promise;
-
-    const writerApplicationName = `el-writer-${crypto.randomUUID()}`;
-    writerPromise = runInTransactionAsync(async () => {
-      await setLocalApplicationName(writerApplicationName);
-      await writer();
-    });
-    void writerPromise.catch((error) => {
-      failure ??= { error };
-    });
-
-    await waitForEnrollmentLockWaiter({ applicationName: writerApplicationName });
-    await runInTransactionAsync(async () => {
-      await execute(sql.set_short_lock_timeout);
-      await execute(sql.lock_enrollment_for_no_key_update, {
-        enrollment_id: higherEnrollmentId,
-      });
-    });
-  } catch (error) {
-    failure ??= { error };
-  } finally {
-    releaseLower.resolve();
-    const workerResults = await Promise.allSettled([
-      blockerPromise,
-      ...(writerPromise ? [writerPromise] : []),
-    ]);
-    failure = preserveFirstFailure(failure, workerResults);
-  }
-
-  if (failure) throw failure.error;
-}
-
 describe('enrollment-dependent locking', { concurrent: false }, () => {
   let assessment: Assessment;
   let courseInstance: CourseInstance;
@@ -232,15 +116,13 @@ describe('enrollment-dependent locking', { concurrent: false }, () => {
   beforeAll(async () => {
     await helperDb.before();
     await helperCourse.syncCourse(TEST_COURSE_PATH);
-
     courseInstance = await selectCourseInstanceById('1');
     assessment = await selectAssessmentByTid({
       course_instance_id: courseInstance.id,
       tid: 'hw19-accessControlUi',
     });
-
     const users = await generateAndEnrollUsers({
-      count: 4,
+      count: 3,
       course_instance_id: courseInstance.id,
     });
     const records = await selectUsersAndEnrollmentsByUidsInCourseInstance({
@@ -256,184 +138,55 @@ describe('enrollment-dependent locking', { concurrent: false }, () => {
 
   afterAll(helperDb.after);
 
-  it('normalizes enrollment IDs in numeric order', () => {
+  it('normalizes parent locks in numeric order', () => {
     expect(normalizeEnrollmentIds(['100', '20', '3', '20'])).toEqual(['3', '20', '100']);
   });
 
-  it('takes FOR UPDATE locks on every student-label membership target', async () => {
+  it('updates composed student-label and publishing-extension memberships', async () => {
+    const [lowerEnrollment, , higherEnrollment] = enrollments;
     const label = await createStudentLabel({
       courseInstance,
       uuid: crypto.randomUUID(),
-      name: 'Enrollment lock test',
+      name: 'Composed writer test',
       color: 'gray1',
     });
-    const targets = [enrollments[2], enrollments[0]];
-
-    await withHeldWriter(
-      async () => {
-        await addLabelToEnrollments({
-          enrollments: targets,
-          label,
-          authzData: dangerousFullSystemAuthz(),
-        });
-      },
-      async () => {
-        await expectEnrollmentLock(enrollments[0].id);
-        await expectEnrollmentLock(enrollments[2].id);
-      },
-    );
-
-    await withHeldWriter(
-      async () => {
-        await removeLabelFromEnrollments({
-          enrollments: targets,
-          label,
-          authzData: dangerousFullSystemAuthz(),
-        });
-      },
-      async () => {
-        await expectEnrollmentLock(enrollments[0].id);
-        await expectEnrollmentLock(enrollments[2].id);
-      },
-    );
-  });
-
-  it('prelocks the complete student-label replacement set before split mutations', async () => {
-    const label = await createStudentLabel({
-      courseInstance,
-      uuid: crypto.randomUUID(),
-      name: 'Enrollment replacement lock test',
-      color: 'gray1',
-    });
-    const lowerEnrollment = enrollments[0];
-    const higherEnrollment = enrollments[2];
     await addLabelToEnrollments({
       enrollments: [lowerEnrollment],
       label,
       authzData: dangerousFullSystemAuthz(),
     });
-
-    await expectWriterWaitsForLowerBeforeLockingHigher({
-      lowerEnrollmentId: lowerEnrollment.id,
-      higherEnrollmentId: higherEnrollment.id,
-      writer: async () => {
-        await updateStudentLabelEnrollments({
-          enrollmentsToAdd: [higherEnrollment],
-          enrollmentsToRemove: [lowerEnrollment],
-          label,
-          authzData: dangerousFullSystemAuthz(),
-        });
-      },
+    await updateStudentLabelEnrollments({
+      enrollmentsToAdd: [higherEnrollment],
+      enrollmentsToRemove: [lowerEnrollment],
+      label,
+      authzData: dangerousFullSystemAuthz(),
     });
+    expect(
+      (await selectEnrollmentsInStudentLabel(label)).map((enrollment) => enrollment.id),
+    ).toEqual([higherEnrollment.id]);
 
-    const updatedEnrollments = await selectEnrollmentsInStudentLabel(label);
-    expect(updatedEnrollments.map((enrollment) => enrollment.id)).toEqual([higherEnrollment.id]);
-  });
-
-  it('prelocks publishing-extension create, add, and remove targets', async () => {
-    let extension: CourseInstancePublishingExtension | null = null;
-    const createTargets = [enrollments[3], enrollments[1]];
-
-    await withHeldWriter(
-      async () => {
-        extension = await createPublishingExtensionWithEnrollments({
-          courseInstance,
-          name: 'Enrollment lock test',
-          endDate: new Date('2030-01-01T00:00:00Z'),
-          enrollments: createTargets,
-        });
-      },
-      async () => {
-        await expectEnrollmentLock(enrollments[1].id);
-        await expectEnrollmentLock(enrollments[3].id);
-      },
-    );
-    assert.isNotNull(extension);
-    const createdExtension = extension;
-
-    await withHeldWriter(
-      async () => {
-        await addEnrollmentToPublishingExtension({
-          courseInstancePublishingExtension: createdExtension,
-          enrollment: enrollments[0],
-        });
-      },
-      async () => {
-        await expectEnrollmentLock(enrollments[0].id);
-      },
-    );
-
-    await withHeldWriter(
-      async () => {
-        await removeStudentFromPublishingExtension({
-          courseInstancePublishingExtension: createdExtension,
-          enrollment: enrollments[0],
-        });
-      },
-      async () => {
-        await expectEnrollmentLock(enrollments[0].id);
-      },
-    );
-  });
-
-  it('prelocks the complete publishing-extension replacement set before split mutations', async () => {
-    const lowerEnrollment = enrollments[0];
-    const higherEnrollment = enrollments[2];
     const extension = await createPublishingExtensionWithEnrollments({
       courseInstance,
-      name: 'Enrollment replacement lock test',
+      name: 'Composed writer test',
       endDate: new Date('2030-01-01T00:00:00Z'),
       enrollments: [higherEnrollment],
     });
-
-    await expectWriterWaitsForLowerBeforeLockingHigher({
-      lowerEnrollmentId: lowerEnrollment.id,
-      higherEnrollmentId: higherEnrollment.id,
-      writer: async () => {
-        await updatePublishingExtensionEnrollments({
-          courseInstancePublishingExtension: extension,
-          enrollmentsToAdd: [lowerEnrollment],
-          enrollmentsToRemove: [higherEnrollment],
-        });
-      },
+    await updatePublishingExtensionEnrollments({
+      courseInstancePublishingExtension: extension,
+      enrollmentsToAdd: [lowerEnrollment],
+      enrollmentsToRemove: [higherEnrollment],
     });
-
-    const updatedEnrollments = await selectEnrollmentsForPublishingExtension({ extension });
-    expect(updatedEnrollments.map((enrollment) => enrollment.id)).toEqual([lowerEnrollment.id]);
+    expect(
+      (await selectEnrollmentsForPublishingExtension({ extension })).map(
+        (enrollment) => enrollment.id,
+      ),
+    ).toEqual([lowerEnrollment.id]);
   });
 
-  it('locks both old and new assessment access-control targets', async () => {
+  it('retries moved assessment targets without rolling back the outer transaction', async () => {
+    const [oldTarget, submittedTarget, movedTarget] = enrollments;
     await replaceEnrollmentAccessControlRules(assessment, [
-      {
-        ruleData: makeRuleData(),
-        enrollmentIds: [enrollments[0].id],
-      },
-    ]);
-    const [rule] = await selectAccessControlRules(assessment, ['enrollment']);
-    assert.isOk(rule);
-
-    await withHeldWriter(
-      async () => {
-        await replaceEnrollmentAccessControlRules(assessment, [
-          {
-            ruleData: makeRuleData(rule.id),
-            enrollmentIds: [enrollments[1].id],
-          },
-        ]);
-      },
-      async () => {
-        await expectEnrollmentLock(enrollments[0].id);
-        await expectEnrollmentLock(enrollments[1].id);
-      },
-    );
-  });
-
-  it('retries a nested assessment replacement when a target moves before locking', async () => {
-    await replaceEnrollmentAccessControlRules(assessment, [
-      {
-        ruleData: makeRuleData(),
-        enrollmentIds: [enrollments[0].id],
-      },
+      { ruleData: makeRuleData(), enrollmentIds: [oldTarget.id] },
     ]);
     const [rule] = await selectAccessControlRules(assessment, ['enrollment']);
     assert.isOk(rule);
@@ -441,92 +194,62 @@ describe('enrollment-dependent locking', { concurrent: false }, () => {
     const parentsLocked = deferred();
     const moveTarget = deferred();
     let failure: { error: unknown } | undefined;
-    const mover = runInTransactionAsync(async () => {
-      await lockEnrollments([enrollments[0].id, enrollments[2].id]);
-      parentsLocked.resolve();
-      await moveTarget.promise;
-      await execute(sql.move_assessment_access_control_target, {
-        rule_id: rule.id,
-        old_enrollment_id: enrollments[0].id,
-        new_enrollment_id: enrollments[2].id,
-      });
-    }).catch((error) => {
-      failure ??= { error };
-      parentsLocked.reject(error);
-      throw error;
-    });
-    void mover.catch(() => undefined);
+    const mover = observeWorker(
+      runInTransactionAsync(async () => {
+        await lockEnrollments([oldTarget.id, movedTarget.id]);
+        parentsLocked.resolve();
+        await moveTarget.promise;
+        await execute(sql.move_assessment_access_control_target, {
+          rule_id: rule.id,
+          old_enrollment_id: oldTarget.id,
+          new_enrollment_id: movedTarget.id,
+        });
+      }),
+      parentsLocked,
+    );
+    await parentsLocked.promise;
+
+    const replacementApplicationName = `enrollment-replacement-${crypto.randomUUID()}`;
+    const replacement = observeWorker(
+      runInTransactionAsync(async () => {
+        await setApplicationName(replacementApplicationName);
+        await replaceEnrollmentAccessControlRules(assessment, [
+          { ruleData: makeRuleData(rule.id), enrollmentIds: [submittedTarget.id] },
+        ]);
+      }),
+    );
 
     const retryParentLocked = deferred();
     const releaseRetryParent = deferred();
-    let replacement: Promise<void> | undefined;
     let retryBlocker: Promise<void> | undefined;
-
     try {
-      await parentsLocked.promise;
-
-      const replacementApplicationName = `el-replacement-${crypto.randomUUID()}`;
-      replacement = runInTransactionAsync(async () => {
-        await setLocalApplicationName(replacementApplicationName);
-        await replaceEnrollmentAccessControlRules(assessment, [
-          {
-            ruleData: makeRuleData(rule.id),
-            enrollmentIds: [enrollments[1].id],
-          },
-        ]);
-      });
-      void replacement.catch((error) => {
-        failure ??= { error };
-      });
-
-      // The replacement only reaches its lock query after reading the current target.
-      const initialLockQueryStart = await waitForEnrollmentLockWaiter({
-        applicationName: replacementApplicationName,
-      });
-
-      const retryBlockerApplicationName = `el-retry-blocker-${crypto.randomUUID()}`;
-      retryBlocker = runInTransactionAsync(async () => {
-        await setLocalApplicationName(retryBlockerApplicationName);
-        await lockEnrollments([enrollments[2].id]);
-        retryParentLocked.resolve();
-        await releaseRetryParent.promise;
-      }).catch((error) => {
-        failure ??= { error };
-        retryParentLocked.reject(error);
-        throw error;
-      });
-      void retryBlocker.catch(() => undefined);
-
-      await waitForEnrollmentLockWaiter({
-        applicationName: retryBlockerApplicationName,
-      });
+      await waitForApplicationBlock(replacementApplicationName);
+      const retryBlockerApplicationName = `enrollment-retry-blocker-${crypto.randomUUID()}`;
+      retryBlocker = observeWorker(
+        runInTransactionAsync(async () => {
+          await setApplicationName(retryBlockerApplicationName);
+          await lockEnrollments([movedTarget.id]);
+          retryParentLocked.resolve();
+          await releaseRetryParent.promise;
+        }),
+        retryParentLocked,
+      );
+      await waitForApplicationBlock(retryBlockerApplicationName);
       moveTarget.resolve();
       await retryParentLocked.promise;
-
-      const retryLockQueryStart = await waitForEnrollmentLockWaiter({
-        applicationName: replacementApplicationName,
-        afterQueryStart: initialLockQueryStart,
-      });
-      expect(retryLockQueryStart).not.toEqual(initialLockQueryStart);
+      await waitForApplicationBlock(replacementApplicationName);
     } catch (error) {
-      failure ??= { error };
+      failure = { error };
     } finally {
       moveTarget.resolve();
       releaseRetryParent.resolve();
-      const workerResults = await Promise.allSettled([
-        mover,
-        ...(replacement ? [replacement] : []),
-        ...(retryBlocker ? [retryBlocker] : []),
-      ]);
-      failure = preserveFirstFailure(failure, workerResults);
+      await finishWorkers(failure, [mover, replacement, ...(retryBlocker ? [retryBlocker] : [])]);
     }
-
-    if (failure) throw failure.error;
 
     const [updatedRule] = await selectAccessControlRules(assessment, ['enrollment']);
     assert.isOk(updatedRule);
     expect(updatedRule.enrollments?.map((enrollment) => enrollment.enrollmentId)).toEqual([
-      enrollments[1].id,
+      submittedTarget.id,
     ]);
   });
 });

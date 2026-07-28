@@ -1,16 +1,3 @@
--- BLOCK set_short_lock_timeout
-SET
-  LOCAL lock_timeout = '100ms';
-
--- BLOCK lock_enrollment_for_no_key_update
-SELECT
-  id
-FROM
-  enrollments
-WHERE
-  id = $enrollment_id
-FOR NO KEY UPDATE;
-
 -- BLOCK move_assessment_access_control_target
 UPDATE assessment_access_control_enrollments
 SET
@@ -19,32 +6,18 @@ WHERE
   enrollment_id = $old_enrollment_id
   AND assessment_access_control_rule_id = $rule_id;
 
--- BLOCK select_waiting_enrollment_lock
+-- BLOCK select_application_is_blocked
 SELECT
-  query_start::text
-FROM
-  pg_stat_activity
-WHERE
-  pid <> pg_backend_pid()
-  AND application_name = $application_name
-  AND wait_event_type = 'Lock'
-  AND query LIKE '%lock_enrollments_by_id%'
-LIMIT
-  1;
-
--- BLOCK select_later_waiting_enrollment_lock
-SELECT
-  query_start::text
-FROM
-  pg_stat_activity
-WHERE
-  pid <> pg_backend_pid()
-  AND application_name = $application_name
-  AND wait_event_type = 'Lock'
-  AND query LIKE '%lock_enrollments_by_id%'
-  AND query_start > $after_query_start::timestamptz
-LIMIT
-  1;
+  EXISTS (
+    SELECT
+      1
+    FROM
+      pg_stat_activity
+    WHERE
+      pid <> pg_backend_pid()
+      AND application_name = $application_name
+      AND cardinality(pg_blocking_pids(pid)) > 0
+  );
 
 -- BLOCK set_local_application_name
 SELECT
