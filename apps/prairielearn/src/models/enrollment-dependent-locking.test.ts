@@ -3,7 +3,13 @@ import crypto from 'node:crypto';
 import { afterAll, assert, beforeAll, describe, expect, it } from 'vitest';
 import { z } from 'zod';
 
-import { execute, loadSqlEquiv, queryScalar, runInTransactionAsync } from '@prairielearn/postgres';
+import {
+  execute,
+  loadSqlEquiv,
+  queryOptionalRow,
+  queryScalar,
+  runInTransactionAsync,
+} from '@prairielearn/postgres';
 
 import { dangerousFullSystemAuthz } from '../lib/authz-data-lib.js';
 import type {
@@ -26,6 +32,8 @@ import {
   addEnrollmentToPublishingExtension,
   createPublishingExtensionWithEnrollments,
   removeStudentFromPublishingExtension,
+  selectEnrollmentsForPublishingExtension,
+  updatePublishingExtensionEnrollments,
 } from './course-instance-publishing-extensions.js';
 import { selectCourseInstanceById } from './course-instances.js';
 import { lockEnrollments, normalizeEnrollmentIds } from './enrollment-lock.js';
@@ -37,6 +45,8 @@ import {
   addLabelToEnrollments,
   createStudentLabel,
   removeLabelFromEnrollments,
+  selectEnrollmentsInStudentLabel,
+  updateStudentLabelEnrollments,
 } from './student-label.js';
 
 const sql = loadSqlEquiv(import.meta.url);
@@ -112,13 +122,79 @@ function makeRuleData(id?: string): EnrollmentAccessControlRuleData {
   };
 }
 
-async function waitForEnrollmentLockWaiter(): Promise<void> {
+async function setLocalApplicationName(applicationName: string): Promise<void> {
+  await queryScalar(
+    sql.set_local_application_name,
+    { application_name: applicationName },
+    z.string(),
+  );
+}
+
+async function waitForEnrollmentLockWaiter({
+  applicationName,
+  afterQueryStart,
+}: {
+  applicationName: string;
+  afterQueryStart?: string;
+}): Promise<string> {
   for (let attempt = 0; attempt < 100; attempt++) {
-    const waiting = await queryScalar(sql.count_waiting_enrollment_locks, {}, z.number());
-    if (waiting > 0) return;
+    const query = afterQueryStart
+      ? sql.select_later_waiting_enrollment_lock
+      : sql.select_waiting_enrollment_lock;
+    const waiting = await queryOptionalRow(
+      query,
+      {
+        application_name: applicationName,
+        ...(afterQueryStart ? { after_query_start: afterQueryStart } : {}),
+      },
+      z.object({ query_start: z.string() }),
+    );
+    if (waiting) return waiting.query_start;
     await new Promise((resolve) => setTimeout(resolve, 10));
   }
   throw new Error('Timed out waiting for enrollment lock contention');
+}
+
+async function expectWriterWaitsForLowerBeforeLockingHigher({
+  lowerEnrollmentId,
+  higherEnrollmentId,
+  writer,
+}: {
+  lowerEnrollmentId: string;
+  higherEnrollmentId: string;
+  writer: () => Promise<void>;
+}): Promise<void> {
+  const lowerLocked = deferred();
+  const releaseLower = deferred();
+  const blockerPromise = runInTransactionAsync(async () => {
+    await lockEnrollments([lowerEnrollmentId]);
+    lowerLocked.resolve();
+    await releaseLower.promise;
+  }).catch((error) => {
+    lowerLocked.reject(error);
+    throw error;
+  });
+
+  await lowerLocked.promise;
+  const writerApplicationName = `el-writer-${crypto.randomUUID()}`;
+  const writerPromise = runInTransactionAsync(async () => {
+    await setLocalApplicationName(writerApplicationName);
+    await writer();
+  });
+  void writerPromise.catch(() => undefined);
+
+  try {
+    await waitForEnrollmentLockWaiter({ applicationName: writerApplicationName });
+    await runInTransactionAsync(async () => {
+      await execute(sql.set_short_lock_timeout);
+      await execute(sql.lock_enrollment_for_no_key_update, {
+        enrollment_id: higherEnrollmentId,
+      });
+    });
+  } finally {
+    releaseLower.resolve();
+    await Promise.all([blockerPromise, writerPromise]);
+  }
 }
 
 describe('enrollment-dependent locking', { concurrent: false }, () => {
@@ -195,6 +271,38 @@ describe('enrollment-dependent locking', { concurrent: false }, () => {
     );
   });
 
+  it('prelocks the complete student-label replacement set before split mutations', async () => {
+    const label = await createStudentLabel({
+      courseInstance,
+      uuid: crypto.randomUUID(),
+      name: 'Enrollment replacement lock test',
+      color: 'gray1',
+    });
+    const lowerEnrollment = enrollments[0];
+    const higherEnrollment = enrollments[2];
+    await addLabelToEnrollments({
+      enrollments: [lowerEnrollment],
+      label,
+      authzData: dangerousFullSystemAuthz(),
+    });
+
+    await expectWriterWaitsForLowerBeforeLockingHigher({
+      lowerEnrollmentId: lowerEnrollment.id,
+      higherEnrollmentId: higherEnrollment.id,
+      writer: async () => {
+        await updateStudentLabelEnrollments({
+          enrollmentsToAdd: [higherEnrollment],
+          enrollmentsToRemove: [lowerEnrollment],
+          label,
+          authzData: dangerousFullSystemAuthz(),
+        });
+      },
+    });
+
+    const updatedEnrollments = await selectEnrollmentsInStudentLabel(label);
+    expect(updatedEnrollments.map((enrollment) => enrollment.id)).toEqual([higherEnrollment.id]);
+  });
+
   it('prelocks publishing-extension create, add, and remove targets', async () => {
     let extension: CourseInstancePublishingExtension | null = null;
     const createTargets = [enrollments[3], enrollments[1]];
@@ -239,6 +347,32 @@ describe('enrollment-dependent locking', { concurrent: false }, () => {
         await expectEnrollmentLock(enrollments[0].id);
       },
     );
+  });
+
+  it('prelocks the complete publishing-extension replacement set before split mutations', async () => {
+    const lowerEnrollment = enrollments[0];
+    const higherEnrollment = enrollments[2];
+    const extension = await createPublishingExtensionWithEnrollments({
+      courseInstance,
+      name: 'Enrollment replacement lock test',
+      endDate: new Date('2030-01-01T00:00:00Z'),
+      enrollments: [higherEnrollment],
+    });
+
+    await expectWriterWaitsForLowerBeforeLockingHigher({
+      lowerEnrollmentId: lowerEnrollment.id,
+      higherEnrollmentId: higherEnrollment.id,
+      writer: async () => {
+        await updatePublishingExtensionEnrollments({
+          courseInstancePublishingExtension: extension,
+          enrollmentsToAdd: [lowerEnrollment],
+          enrollmentsToRemove: [higherEnrollment],
+        });
+      },
+    });
+
+    const updatedEnrollments = await selectEnrollmentsForPublishingExtension({ extension });
+    expect(updatedEnrollments.map((enrollment) => enrollment.id)).toEqual([lowerEnrollment.id]);
   });
 
   it('locks both old and new assessment access-control targets', async () => {
@@ -291,7 +425,9 @@ describe('enrollment-dependent locking', { concurrent: false }, () => {
     });
     await parentsLocked.promise;
 
+    const replacementApplicationName = `el-replacement-${crypto.randomUUID()}`;
     const replacement = runInTransactionAsync(async () => {
+      await setLocalApplicationName(replacementApplicationName);
       await replaceEnrollmentAccessControlRules(assessment, [
         {
           ruleData: makeRuleData(rule.id),
@@ -299,10 +435,46 @@ describe('enrollment-dependent locking', { concurrent: false }, () => {
         },
       ]);
     });
+    void replacement.catch(() => undefined);
 
-    await waitForEnrollmentLockWaiter();
-    moveTarget.resolve();
-    await Promise.all([mover, replacement]);
+    const retryParentLocked = deferred();
+    const releaseRetryParent = deferred();
+    let retryBlocker: Promise<void> | undefined;
+
+    try {
+      // The replacement only reaches its lock query after reading the current target.
+      const initialLockQueryStart = await waitForEnrollmentLockWaiter({
+        applicationName: replacementApplicationName,
+      });
+
+      const retryBlockerApplicationName = `el-retry-blocker-${crypto.randomUUID()}`;
+      retryBlocker = runInTransactionAsync(async () => {
+        await setLocalApplicationName(retryBlockerApplicationName);
+        await lockEnrollments([enrollments[2].id]);
+        retryParentLocked.resolve();
+        await releaseRetryParent.promise;
+      }).catch((error) => {
+        retryParentLocked.reject(error);
+        throw error;
+      });
+      void retryBlocker.catch(() => undefined);
+
+      await waitForEnrollmentLockWaiter({
+        applicationName: retryBlockerApplicationName,
+      });
+      moveTarget.resolve();
+      await retryParentLocked.promise;
+
+      const retryLockQueryStart = await waitForEnrollmentLockWaiter({
+        applicationName: replacementApplicationName,
+        afterQueryStart: initialLockQueryStart,
+      });
+      expect(retryLockQueryStart).not.toEqual(initialLockQueryStart);
+    } finally {
+      moveTarget.resolve();
+      releaseRetryParent.resolve();
+      await Promise.all([mover, replacement, ...(retryBlocker ? [retryBlocker] : [])]);
+    }
 
     const [updatedRule] = await selectAccessControlRules(assessment, ['enrollment']);
     assert.isOk(updatedRule);
