@@ -222,7 +222,11 @@ export async function selectEnrollmentIdentityClassification(
   );
 }
 
-/** @internal Restricted re-selection for enrollment parents already locked by reconciliation. */
+/**
+ * Restricted re-selection for enrollment parents already locked by reconciliation.
+ *
+ * @internal
+ */
 export async function selectEnrollmentIdentityClassificationForRevalidation(
   context: EnrollmentIdentityContext,
   enrollmentIds: string[],

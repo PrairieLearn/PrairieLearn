@@ -98,6 +98,7 @@ describe('checked enrollment admission concurrency and retry', { concurrent: fal
 
     let admission: Promise<{ admitted: Enrollment; preSavepointEnrollment: Enrollment }> | null =
       null;
+    let failure: unknown;
     try {
       await parentLocked.promise;
       const applicationName = `admit-${crypto.randomUUID()}`;
@@ -141,6 +142,8 @@ describe('checked enrollment admission concurrency and retry', { concurrent: fal
       expect(await selectEnrollments([preSavepointEnrollment.id])).toEqual([
         preSavepointEnrollment,
       ]);
+    } catch (error) {
+      failure = error;
     } finally {
       releaseParent.resolve();
       const results = await Promise.allSettled([
@@ -150,7 +153,11 @@ describe('checked enrollment admission concurrency and retry', { concurrent: fal
       const unexpectedFailure = results.find(
         (result): result is PromiseRejectedResult => result.status === 'rejected',
       );
-      if (unexpectedFailure) throw unexpectedFailure.reason;
+      failure ??= unexpectedFailure?.reason;
+    }
+    if (failure instanceof Error) throw failure;
+    if (failure !== undefined) {
+      throw new Error('Enrollment admission concurrency test failed', { cause: failure });
     }
   });
 

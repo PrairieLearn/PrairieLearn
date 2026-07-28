@@ -131,6 +131,7 @@ describe('enrollment identity selection and admission decisions', { concurrent: 
 
     const foreignEnrollment = await createEnrollment({
       courseInstance,
+      pendingUin: nextFixtureName('foreign-lti'),
       pendingLti13CourseInstanceId: foreignLink.id,
       pendingLti13Sub: 'foreign-sub',
     });
@@ -233,9 +234,10 @@ describe('enrollment identity selection and admission decisions', { concurrent: 
           sub: 'matrix-sub',
         },
         expectedAllowed: true,
-        setup: async () => {
+        setup: async (user) => {
           await createEnrollment({
             courseInstance,
+            pendingUin: user.uin,
             pendingLti13CourseInstanceId: exactLink.id,
             pendingLti13Sub: 'matrix-sub',
           });
@@ -247,10 +249,10 @@ describe('enrollment identity selection and admission decisions', { concurrent: 
       const user = await createUser({ prefix: testCase.name.replaceAll(' ', '-') });
       await testCase.setup(user);
       const decision = await selectDecision({ userId: user.id, source: testCase.source });
-      expect(decision.allowed, testCase.name).toBe(testCase.expectedAllowed);
-      if (!decision.allowed) {
-        expect(decision.reason, testCase.name).toBe(testCase.expectedReason);
-      }
+      expect(decision).toMatchObject({
+        allowed: testCase.expectedAllowed,
+        ...(testCase.expectedReason === undefined ? {} : { reason: testCase.expectedReason }),
+      });
     }
   });
 
@@ -306,10 +308,10 @@ describe('enrollment identity selection and admission decisions', { concurrent: 
       await createEnrollment({ courseInstance, pendingUin: user.uin });
 
       const decision = await selectDecision({ userId: user.id, source: testCase.source });
-      expect(decision.allowed, JSON.stringify(testCase)).toBe(testCase.allowed);
-      if (!decision.allowed) {
-        expect(decision.reason, JSON.stringify(testCase)).toBe(testCase.reason);
-      }
+      expect(decision).toMatchObject({
+        allowed: testCase.allowed,
+        ...('reason' in testCase ? { reason: testCase.reason } : {}),
+      });
     }
   });
 });
