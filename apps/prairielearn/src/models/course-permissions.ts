@@ -7,8 +7,10 @@ import {
   queryOptionalRow,
   queryOptionalScalar,
   queryRows,
+  queryScalars,
   runInTransactionAsync,
 } from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
 import {
   type CourseInstancePermission,
@@ -23,6 +25,7 @@ import {
   UserSchema,
 } from '../lib/db-types.js';
 
+import { runWithSharedEnrollmentBarrier } from './enrollment-barrier.js';
 import { selectOrInsertUserByUid } from './user.js';
 
 const sql = loadSqlEquiv(import.meta.url);
@@ -118,10 +121,20 @@ export async function deleteCoursePermissions({
   user_id: string | string[];
   authn_user_id: string;
 }): Promise<void> {
-  await execute(sql.delete_course_permissions, {
-    course_id,
-    user_ids: Array.isArray(user_id) ? user_id : [user_id],
-    authn_user_id,
+  await runInTransactionAsync(async () => {
+    const courseInstanceIds = await queryScalars(
+      sql.select_course_instance_ids_for_course,
+      { course_id },
+      IdSchema,
+    );
+
+    await runWithSharedEnrollmentBarrier(courseInstanceIds, async () => {
+      await execute(sql.delete_course_permissions, {
+        course_id,
+        user_ids: Array.isArray(user_id) ? user_id : [user_id],
+        authn_user_id,
+      });
+    });
   });
 }
 
