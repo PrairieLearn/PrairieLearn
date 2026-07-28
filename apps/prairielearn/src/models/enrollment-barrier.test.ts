@@ -80,7 +80,7 @@ describe('course-instance enrollment barriers', () => {
   it('blocks an exclusive barrier behind a shared barrier', async () => {
     const held = deferred();
     const release = deferred();
-    const holder = runWithSharedEnrollmentBarrier('1000000002', async () => {
+    const holder = runWithSharedEnrollmentBarrier('2147483648', async () => {
       held.resolve();
       await release.promise;
     });
@@ -88,7 +88,7 @@ describe('course-instance enrollment barriers', () => {
 
     try {
       await expectLockTimeout(async () => {
-        await runWithExclusiveEnrollmentBarrier('1000000002', async () => {});
+        await runWithExclusiveEnrollmentBarrier('2147483648', async () => {});
       });
     } finally {
       release.resolve();
