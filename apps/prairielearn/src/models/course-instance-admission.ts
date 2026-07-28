@@ -208,16 +208,11 @@ async function validateEnterpriseAdmission({
   }
 }
 
-/**
- * Treats the supplied plan as a render-time hint. The canonical checked
- * admission chooses its authoritative source from the locked classification.
- */
-export async function admitUserWithCourseInstanceAdmissionPlan({
+function createCourseInstanceAdmissionValidator({
   courseInstanceId,
   enrollmentCode,
   ip,
   isAdministrator,
-  plan,
   reqDate,
   userId,
 }: {
@@ -225,11 +220,10 @@ export async function admitUserWithCourseInstanceAdmissionPlan({
   enrollmentCode?: string;
   ip: string | null;
   isAdministrator: boolean;
-  plan: ActionableCourseInstanceAdmissionPlan;
   reqDate: Date;
   userId: string;
 }) {
-  async function validateAdmission({ source }: { source: EnrollmentAdmissionSource }) {
+  return async ({ source }: { source: EnrollmentAdmissionSource }) => {
     const user = await selectUserById(userId);
     const { authzData, course, courseInstance, institution } =
       await constructCourseOrInstanceContext({
@@ -278,8 +272,30 @@ export async function admitUserWithCourseInstanceAdmissionPlan({
       courseInstance,
       institution,
     });
-  }
+  };
+}
 
+/**
+ * Treats the supplied plan as a render-time hint. The canonical checked
+ * admission chooses its authoritative source from the locked classification.
+ */
+export async function admitUserWithCourseInstanceAdmissionPlan({
+  courseInstanceId,
+  enrollmentCode,
+  ip,
+  isAdministrator,
+  plan,
+  reqDate,
+  userId,
+}: {
+  courseInstanceId: string;
+  enrollmentCode?: string;
+  ip: string | null;
+  isAdministrator: boolean;
+  plan: ActionableCourseInstanceAdmissionPlan;
+  reqDate: Date;
+  userId: string;
+}) {
   return await admitUserToCourseInstance({
     agentAuthnUserId: userId,
     agentUserId: userId,
@@ -295,6 +311,54 @@ export async function admitUserWithCourseInstanceAdmissionPlan({
     },
     source: plan.source,
     userId,
-    validateAdmission,
+    validateAdmission: createCourseInstanceAdmissionValidator({
+      courseInstanceId,
+      enrollmentCode,
+      ip,
+      isAdministrator,
+      reqDate,
+      userId,
+    }),
+  });
+}
+
+/**
+ * Admits only from the exact LTI roster source supplied by a verified launch.
+ * The canonical checked path revalidates the fixed source after locking.
+ */
+export async function admitUserFromLti13RosterInvitation({
+  courseInstanceId,
+  ip,
+  isAdministrator,
+  lti13CourseInstanceId,
+  reqDate,
+  sub,
+  userId,
+}: {
+  courseInstanceId: string;
+  ip: string | null;
+  isAdministrator: boolean;
+  lti13CourseInstanceId: string;
+  reqDate: Date;
+  sub: string;
+  userId: string;
+}) {
+  return await admitUserToCourseInstance({
+    agentAuthnUserId: userId,
+    agentUserId: userId,
+    courseInstanceId,
+    source: {
+      type: 'lti13',
+      lti13CourseInstanceId,
+      sub,
+    },
+    userId,
+    validateAdmission: createCourseInstanceAdmissionValidator({
+      courseInstanceId,
+      ip,
+      isAdministrator,
+      reqDate,
+      userId,
+    }),
   });
 }

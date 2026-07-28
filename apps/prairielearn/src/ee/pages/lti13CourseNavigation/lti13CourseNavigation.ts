@@ -12,8 +12,11 @@ import {
   Lti13CourseInstanceSchema,
 } from '../../../lib/db-types.js';
 import { typedAsyncHandler } from '../../../lib/res-locals.js';
+import { admitUserFromLti13RosterInvitation } from '../../../models/course-instance-admission.js';
 import { selectCourseInstancesWithStaffAccess } from '../../../models/course-instances.js';
 import { selectCoursesWithEditAccess } from '../../../models/course.js';
+import { selectEnrollmentAdmissionDecision } from '../../../models/enrollment-identity.js';
+import { EnrollmentInvitationRequiredError } from '../../../models/enrollment-reconciliation.js';
 import { Lti13Claim } from '../../lib/lti13.js';
 
 import {
@@ -134,6 +137,18 @@ router.get(
     );
 
     if (lti13_course_instance) {
+      const lti13AdmissionContext = !role_instructor
+        ? Object.freeze({
+            courseInstanceId: lti13_course_instance.course_instance_id,
+            ip: req.ip ?? null,
+            isAdministrator: res.locals.is_administrator,
+            lti13CourseInstanceId: lti13_course_instance.id,
+            reqDate: res.locals.req_date,
+            sub: ltiClaim.sub,
+            userId: res.locals.authn_user.id,
+          })
+        : null;
+
       // Update lti13_course_instance on instructor login
       // helpful as LMS updates or we add features
       if (role_instructor) {
@@ -155,11 +170,43 @@ router.get(
       // LTI claims are not used after this page so remove them from the session
       ltiClaim.remove();
 
+      if (lti13AdmissionContext !== null) {
+        const source = Object.freeze({
+          type: 'lti13' as const,
+          lti13CourseInstanceId: lti13AdmissionContext.lti13CourseInstanceId,
+          sub: lti13AdmissionContext.sub,
+        });
+        const decision = await selectEnrollmentAdmissionDecision(
+          {
+            courseInstanceId: lti13AdmissionContext.courseInstanceId,
+            lti13Identity: {
+              lti13CourseInstanceId: lti13AdmissionContext.lti13CourseInstanceId,
+              sub: lti13AdmissionContext.sub,
+            },
+            userId: lti13AdmissionContext.userId,
+          },
+          source,
+        );
+
+        if (decision.allowed) {
+          try {
+            await admitUserFromLti13RosterInvitation(lti13AdmissionContext);
+          } catch (error) {
+            if (error instanceof EnrollmentInvitationRequiredError) {
+              // The exact invitation can disappear before the locked check. Continue
+              // to the ordinary course-instance admission path in that case.
+            } else {
+              throw error;
+            }
+          }
+        }
+      }
+
       // Redirect to linked course instance
+      const courseInstanceId =
+        lti13AdmissionContext?.courseInstanceId ?? lti13_course_instance.course_instance_id;
       res.redirect(
-        `/pl/course_instance/${lti13_course_instance.course_instance_id}/${
-          role_instructor ? 'instructor/' : ''
-        }`,
+        `/pl/course_instance/${courseInstanceId}/${role_instructor ? 'instructor/' : ''}`,
       );
       return;
     }
