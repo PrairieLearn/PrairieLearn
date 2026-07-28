@@ -333,18 +333,35 @@ router.post(
       const serverJob = await createServerJob(serverJobOptions);
 
       serverJob.executeInBackground(async (job) => {
+        let errorCount = 0;
         for (const targetInstance of targetInstances) {
-          await updateLti13Scores({
-            courseInstance: res.locals.course_instance,
-            unsafe_assessment_id: assessment.id,
-            instance: targetInstance,
-            job,
-          });
+          try {
+            await updateLti13Scores({
+              courseInstance: res.locals.course_instance,
+              unsafe_assessment_id: assessment.id,
+              instance: targetInstance,
+              job,
+            });
 
-          await execute(sql.update_lti13_assessment_last_activity, {
-            assessment_id: assessment.id,
-            lti13_course_instance_id: targetInstance.lti13_course_instance.id,
-          });
+            await execute(sql.update_lti13_assessment_last_activity, {
+              assessment_id: assessment.id,
+              lti13_course_instance_id: targetInstance.lti13_course_instance.id,
+            });
+          } catch (err) {
+            errorCount++;
+            job.error(
+              `Error sending grades to ${targetInstance.lti13_instance.name} course ` +
+                `${targetInstance.lti13_course_instance.context_label}:\n` +
+                error.formatErrorStack(err),
+            );
+          }
+        }
+
+        if (errorCount > 0) {
+          job.fail(
+            `Failed to send grades to ${errorCount} LMS course${errorCount === 1 ? '' : 's'}, ` +
+              'see output for details',
+          );
         }
       });
       return res.redirect(res.locals.urlPrefix + '/jobSequence/' + serverJob.jobSequenceId);

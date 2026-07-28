@@ -800,6 +800,7 @@ describe('LTI 1.3 course instance linking', { concurrent: false }, () => {
     let assessmentId: string;
     let app: express.Express;
     let scoredLineitems: string[];
+    let failingMembershipRlid: string | null = null;
 
     beforeAll(async () => {
       // Two LMS courses in the same LTI instance, both linked to course instance 1.
@@ -876,6 +877,11 @@ describe('LTI 1.3 course instance linking', { concurrent: false }, () => {
       });
       // Each LMS course must see its own context, which the rlid identifies here.
       app.get('/memberships', (req, res) => {
+        if (req.query.rlid === failingMembershipRlid) {
+          res.json({});
+          return;
+        }
+
         res.setHeader('Content-Type', 'application/vnd.ims.lti-nrps.v2.membershipcontainer+json');
         res.json({
           id: `http://localhost:${oidcProviderPort}/memberships`,
@@ -987,6 +993,46 @@ describe('LTI 1.3 course instance linking', { concurrent: false }, () => {
       });
 
       assert.deepEqual(scoredLineitems, ['0', '1']);
+    });
+
+    test('continues sending grades after one LMS course fails', async () => {
+      scoredLineitems = [];
+      failingMembershipRlid = lmsCourses[0].instance.lti13_course_instance.resource_link_id;
+      assert.ok(failingMembershipRlid);
+
+      const pageUrl = `${siteUrl}/pl/course_instance/1/instructor/instance_admin/lti13_instance/${lmsCourses[0].instance.lti13_course_instance.id}`;
+      const pageRes = await fetchCheerio(pageUrl);
+      assert.equal(pageRes.status, 200);
+
+      let jobSequenceId: string | null = null;
+      try {
+        await withServer(app, oidcProviderPort, async () => {
+          const postRes = await fetchCheerio(pageUrl, {
+            method: 'POST',
+            body: new URLSearchParams({
+              __csrf_token: pageRes.$('input[name="__csrf_token"]').first().val() as string,
+              __action: 'send_grades_all_lms_courses',
+              unsafe_assessment_id: assessmentId,
+            }),
+            redirect: 'manual',
+          });
+          assert.equal(postRes.status, 302);
+
+          jobSequenceId = postRes.headers.get('location')?.split('/jobSequence/')[1] ?? null;
+          assert.ok(jobSequenceId);
+          await helperServer.waitForJobSequenceStatus(jobSequenceId, 'Error');
+        });
+      } finally {
+        failingMembershipRlid = null;
+      }
+
+      assert.deepEqual(scoredLineitems, ['1']);
+
+      assert.ok(jobSequenceId);
+      const jobs = await selectJobsByJobSequenceId(jobSequenceId);
+      assert.lengthOf(jobs, 1);
+      assert.include(jobs[0].output, 'Error sending grades to');
+      assert.include(jobs[0].output, 'Failed to send grades to 1 LMS course');
     });
   });
 });
