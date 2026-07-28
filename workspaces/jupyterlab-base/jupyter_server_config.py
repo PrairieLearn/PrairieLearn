@@ -5,7 +5,7 @@
 
 import os
 
-c = get_config()  # type: ignore # noqa: F821
+c = get_config()  # type: ignore # ruff:ignore[undefined-name]
 
 c.ServerApp.base_url = "/"
 if "WORKSPACE_BASE_URL" in os.environ:

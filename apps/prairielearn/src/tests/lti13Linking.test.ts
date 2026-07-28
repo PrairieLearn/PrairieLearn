@@ -116,6 +116,7 @@ describe('LTI 1.3 course instance linking', { concurrent: false }, () => {
     // since the target user doesn't exist yet - grantCoursePermissions will create them.
     await grantCoursePermissions({
       uid: 'linking-instructor@example.com',
+      uin: '111222333',
       courseId: '1',
       courseRole: 'Editor',
       courseInstanceId: '1',
@@ -261,6 +262,7 @@ describe('LTI 1.3 course instance linking', { concurrent: false }, () => {
     // since the target user doesn't exist yet - grantCoursePermissions will create them.
     await grantCoursePermissions({
       uid: 'linked-instructor@example.com',
+      uin: '101010101',
       courseId: '1',
       courseRole: 'Editor',
       courseInstanceId: '1',
@@ -389,6 +391,7 @@ describe('LTI 1.3 course instance linking', { concurrent: false }, () => {
       // This user has permissions for course in institution 2, but the LTI instance is in institution 1
       await grantCoursePermissions({
         uid: 'cross-inst-instructor@example.com',
+        uin: '888000222',
         courseId,
         courseRole: 'Editor',
         courseInstanceId,
@@ -468,6 +471,7 @@ describe('LTI 1.3 course instance linking', { concurrent: false }, () => {
       // since the target user doesn't exist yet - grantCoursePermissions will create them.
       await grantCoursePermissions({
         uid: 'admin-test@example.com',
+        uin: '131313131',
         courseId: '1',
         courseRole: 'Editor',
         courseInstanceId: '1',
@@ -524,6 +528,7 @@ describe('LTI 1.3 course instance linking', { concurrent: false }, () => {
       // since the target user doesn't exist yet - grantCoursePermissions will create them.
       await grantCoursePermissions({
         uid: 'admin-redirect@example.com',
+        uin: '141414141',
         courseId: '1',
         courseRole: 'Editor',
         courseInstanceId: '1',
@@ -584,6 +589,7 @@ describe('LTI 1.3 course instance linking', { concurrent: false }, () => {
       const knownUin = '555000555';
       await grantCoursePermissions({
         uid: 'roster-inspector@example.com',
+        uin: knownUin,
         courseId: '1',
         courseRole: 'Editor',
         courseInstanceId: '1',
