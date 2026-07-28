@@ -30,14 +30,14 @@ from numpy.typing import ArrayLike, NDArray
 from pandas import DataFrame
 
 
-class GradingComplete(Exception):  # noqa: N818
+class GradingComplete(Exception):  # ruff:ignore[error-suffix-on-exception-name]
     """
     A general exception to mark that grading has completed early.
     All future test cases are skipped.
     """
 
 
-class TestComplete(Exception):  # noqa: N818
+class TestComplete(Exception):  # ruff:ignore[error-suffix-on-exception-name]
     """
     A general exception to mark that the current test case has finished early.
     Future test cases will still be executed.
@@ -208,9 +208,9 @@ class Feedback:
         name: str,
         ref: NDArray[Any],
         data: None | ArrayLike,
-        accuracy_critical: bool = False,  # noqa: FBT001
-        report_failure: bool = True,  # noqa: FBT001
-        report_success: bool = True,  # noqa: FBT001
+        accuracy_critical: bool = False,  # ruff:ignore[boolean-type-hint-positional-argument]
+        report_failure: bool = True,  # ruff:ignore[boolean-type-hint-positional-argument]
+        report_success: bool = True,  # ruff:ignore[boolean-type-hint-positional-argument]
     ) -> bool | None:
         """
         Check that a student NumPy array has the same shape and datatype as a reference solution NumPy array.
@@ -272,11 +272,11 @@ class Feedback:
         name: str,
         ref: NDArray[Any],
         data: ArrayLike,
-        accuracy_critical: bool = False,  # noqa: FBT001
+        accuracy_critical: bool = False,  # ruff:ignore[boolean-type-hint-positional-argument]
         rtol: float = 1e-05,
         atol: float = 1e-08,
-        report_success: bool = True,  # noqa: FBT001
-        report_failure: bool = True,  # noqa: FBT001
+        report_success: bool = True,  # ruff:ignore[boolean-type-hint-positional-argument]
+        report_failure: bool = True,  # ruff:ignore[boolean-type-hint-positional-argument]
     ) -> bool:
         """
         Check that a student NumPy array has similar values to a reference NumPy array. Note that this checks value according to the numpy.allclose function, which goes by the following check:
@@ -322,9 +322,9 @@ class Feedback:
         ref: list[Any],
         data: list[Any] | None,
         entry_type: Any | None = None,
-        accuracy_critical: bool = False,  # noqa: FBT001
-        report_failure: bool = True,  # noqa: FBT001
-        report_success: bool = True,  # noqa: FBT001
+        accuracy_critical: bool = False,  # ruff:ignore[boolean-type-hint-positional-argument]
+        report_failure: bool = True,  # ruff:ignore[boolean-type-hint-positional-argument]
+        report_success: bool = True,  # ruff:ignore[boolean-type-hint-positional-argument]
     ) -> bool:
         """
         Check that a student list has correct length with respect to a reference list. Can also check for a homogeneous data type for the list.
@@ -455,9 +455,9 @@ class Feedback:
         name: str,
         ref: tuple[Any],
         data: tuple[Any] | None,
-        accuracy_critical: bool = False,  # noqa: FBT001
-        report_failure: bool = True,  # noqa: FBT001
-        report_success: bool = True,  # noqa: FBT001
+        accuracy_critical: bool = False,  # ruff:ignore[boolean-type-hint-positional-argument]
+        report_failure: bool = True,  # ruff:ignore[boolean-type-hint-positional-argument]
+        report_success: bool = True,  # ruff:ignore[boolean-type-hint-positional-argument]
     ) -> bool:
         """
         Check that a student tuple has correct length with respect to a reference tuple, and same values.
@@ -495,7 +495,7 @@ class Feedback:
 
         good = True
         for i in range(nref):
-            if type(data[i]) != type(ref[i]):  # noqa: E721
+            if type(data[i]) != type(ref[i]):  # ruff:ignore[type-comparison]
                 good = False
                 if report_failure:
                     cls.add_feedback(
@@ -517,11 +517,11 @@ class Feedback:
         name: str,
         ref: complex | np.number[Any],
         data: complex | np.number[Any] | None,
-        accuracy_critical: bool = False,  # noqa: FBT001
+        accuracy_critical: bool = False,  # ruff:ignore[boolean-type-hint-positional-argument]
         rtol: float = 1e-5,
         atol: float = 1e-8,
-        report_success: bool = True,  # noqa: FBT001
-        report_failure: bool = True,  # noqa: FBT001
+        report_success: bool = True,  # ruff:ignore[boolean-type-hint-positional-argument]
+        report_failure: bool = True,  # ruff:ignore[boolean-type-hint-positional-argument]
     ) -> bool:
         """
         Check that a student scalar has correct value with respect to a reference scalar. This will mark a value as correct if it passes any of the following checks:
@@ -646,9 +646,9 @@ class Feedback:
         ref: Axes,
         plot: Axes,
         check_axes_scale: Literal[None, "x", "y", "xy"] = None,
-        accuracy_critical: bool = False,  # noqa: FBT001
-        report_failure: bool = True,  # noqa: FBT001
-        report_success: bool = True,  # noqa: FBT001
+        accuracy_critical: bool = False,  # ruff:ignore[boolean-type-hint-positional-argument]
+        report_failure: bool = True,  # ruff:ignore[boolean-type-hint-positional-argument]
+        report_success: bool = True,  # ruff:ignore[boolean-type-hint-positional-argument]
     ) -> bool:
         """
         Checks that a student plot has the same lines as a reference plot solution. Can optionally check the axis scales to ensure they are the same as the reference.
@@ -744,10 +744,10 @@ class Feedback:
         ref: DataFrame,
         data: DataFrame,
         subset_columns: list[str] | None = None,
-        check_values: bool = True,  # noqa: FBT001
-        allow_order_variance: bool = True,  # noqa: FBT001
-        display_input: bool = False,  # noqa: FBT001
-        report_success: bool = True,  # noqa: FBT001
+        check_values: bool = True,  # ruff:ignore[boolean-type-hint-positional-argument]
+        allow_order_variance: bool = True,  # ruff:ignore[boolean-type-hint-positional-argument]
+        display_input: bool = False,  # ruff:ignore[boolean-type-hint-positional-argument]
+        report_success: bool = True,  # ruff:ignore[boolean-type-hint-positional-argument]
     ) -> bool:
         """
         Checks and adds feedback regarding the correctness of a pandas! `DataFrame`.

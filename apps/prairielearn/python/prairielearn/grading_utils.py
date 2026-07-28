@@ -18,17 +18,17 @@ from prairielearn.timeout_utils import SignalTimeout, TimeoutState
 
 
 # This is a deprecated alias that will be removed in the future -- use the lowercase version instead.
-def is_correct_ndarray2D_dd(*args: Any, **kwargs: Any) -> bool:  # noqa: D103, N802
+def is_correct_ndarray2D_dd(*args: Any, **kwargs: Any) -> bool:  # ruff:ignore[undocumented-public-function, invalid-function-name]
     return is_correct_ndarray2d_dd(*args, **kwargs)
 
 
 # This is a deprecated alias that will be removed in the future -- use the lowercase version instead.
-def is_correct_ndarray2D_sf(*args: Any, **kwargs: Any) -> bool:  # noqa: D103, N802
+def is_correct_ndarray2D_sf(*args: Any, **kwargs: Any) -> bool:  # ruff:ignore[undocumented-public-function, invalid-function-name]
     return is_correct_ndarray2d_sf(*args, **kwargs)
 
 
 # This is a deprecated alias that will be removed in the future -- use the lowercase version instead.
-def is_correct_ndarray2D_ra(*args: Any, **kwargs: Any) -> bool:  # noqa: D103, N802
+def is_correct_ndarray2D_ra(*args: Any, **kwargs: Any) -> bool:  # ruff:ignore[undocumented-public-function, invalid-function-name]
     return is_correct_ndarray2d_ra(*args, **kwargs)
 
 

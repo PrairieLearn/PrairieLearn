@@ -102,7 +102,7 @@ def test_glob_to_regex_fn(glob_pattern: str, expected_output: str) -> None:
     ],
 )
 def test_glob_to_regex_errors(glob_pattern: str) -> None:
-    with pytest.raises(ValueError) as _:  # noqa: PT011
+    with pytest.raises(ValueError) as _:  # ruff:ignore[pytest-raises-too-broad]
         file_upload.glob_to_regex(glob_pattern)
 
 

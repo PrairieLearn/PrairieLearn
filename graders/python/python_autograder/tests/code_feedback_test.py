@@ -1,4 +1,4 @@
-# ruff: noqa: ARG001 ANN001
+# ruff:file-ignore[unused-function-argument, missing-type-function-argument]
 # pyright: reportUnknownParameterType=none, reportMissingParameterType=none
 import re
 from unittest.mock import mock_open, patch
