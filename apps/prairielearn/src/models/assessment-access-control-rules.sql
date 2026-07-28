@@ -122,6 +122,7 @@ WHERE
 ORDER BY
   aace.enrollment_id;
 
+-- noqa: disable=PRS
 -- BLOCK create_enrollment_target_lock_savepoint
 SAVEPOINT enrollment_target_lock_attempt;
 
@@ -131,6 +132,7 @@ ROLLBACK TO SAVEPOINT enrollment_target_lock_attempt;
 -- BLOCK release_enrollment_target_lock_savepoint
 RELEASE SAVEPOINT enrollment_target_lock_attempt;
 
+-- noqa: enable=PRS
 -- BLOCK select_prairietest_exam_metadata_by_uuids
 SELECT DISTINCT
   u::text AS uuid,
