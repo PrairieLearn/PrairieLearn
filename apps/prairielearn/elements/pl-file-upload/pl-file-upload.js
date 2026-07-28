@@ -553,12 +553,13 @@
      * text. Uses the same method as git: if the first 8000 bytes contain a
      * NUL character ('\0'), we consider the file to be binary.
      * http://stackoverflow.com/questions/6119956/how-to-determine-if-git-handles-a-file-as-binary-or-as-text
+     * We use 8001 bytes because it's a multiple of 3, which is simpler to handle for base64 input.
      * @param {string} base64FileData Base64-encoded file data to check
      * @returns {boolean} If the file is recognized as binary
      */
     isBinary(base64FileData) {
-      // Retrieve 8000 bytes, represented in base64 as ceil((8000 * 4) / 3) =
-      // 10668 characters, and only decode that segment for performance reasons
+      // Retrieve 8001 bytes, represented in base64 as (8001 * 4) / 3 = 10668
+      // characters, and only decode that segment for performance reasons
       const decodedSegment = atob(base64FileData.slice(0, 10668));
       return decodedSegment.includes('\0');
     }
