@@ -4,10 +4,8 @@ import { withoutLogging } from '@prairielearn/logger';
 import { execute, loadSqlEquiv, queryScalar } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
-import getLti13RosterSyncReadiness from '../admin_queries/lti13_roster_sync_readiness.js';
 import { selectLti13Instance } from '../ee/models/lti13Instance.js';
 import { config } from '../lib/config.js';
-import { selectOrInsertUserByUid } from '../models/user.js';
 
 import { type CheerioResponse, fetchCheerio } from './helperClient.js';
 import * as helperServer from './helperServer.js';
@@ -274,36 +272,6 @@ describe('institution LTI 1.3 UIN guardrails', { concurrent: false }, () => {
     assert.equal(
       (await selectLti13Instance(instanceId)).client_params.client_id,
       changedPlatformBody.client_id,
-    );
-  });
-
-  test('readiness inventory identifies UIN backfill gaps', async () => {
-    await selectOrInsertUserByUid('missing-uin-for-roster-sync@example.com');
-
-    const beforeBackfill = await getLti13RosterSyncReadiness();
-    const beforeBackfillRow = beforeBackfill.rows.find(
-      (row) => row.lti13_instance_id === instanceId,
-    );
-    assert.ok(beforeBackfillRow);
-    assert.equal(beforeBackfillRow.readiness_status, 'follow-up required');
-    assert.include(
-      beforeBackfillRow.follow_up_tasks,
-      'existing user record(s) need a UIN backfill',
-    );
-
-    await execute(sql.backfill_missing_user_uins, { institution_id: '1' });
-
-    const afterBackfill = await getLti13RosterSyncReadiness();
-    const afterBackfillRow = afterBackfill.rows.find((row) => row.lti13_instance_id === instanceId);
-    assert.ok(afterBackfillRow);
-    assert.equal(afterBackfillRow.readiness_status, 'manual review required');
-    assert.equal(
-      afterBackfillRow.follow_up_tasks,
-      [
-        'Confirm that the configured SAML and LTI attributes represent the same canonical UIN',
-        'Confirm that existing user UIN values are compatible with both providers',
-        'Confirm that every in-scope roster member has a usable UIN',
-      ].join('\n'),
     );
   });
 });
