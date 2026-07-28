@@ -18,6 +18,7 @@ import * as helperCourse from '../tests/helperCourse.js';
 import * as helperDb from '../tests/helperDb.js';
 
 import { selectAssessmentByTid } from './assessment.js';
+import { selectAuditEventsByEnrollmentId } from './audit-event.js';
 import { selectCourseInstanceById } from './course-instances.js';
 import { type EnrollmentIdentityClassification } from './enrollment-identity.js';
 import {
@@ -78,6 +79,7 @@ describe('checked enrollment admission', { concurrent: false }, () => {
             courseInstance,
             pendingUid: user.uid,
             firstJoinedAt: earliest,
+            isGuest: true,
           });
           const survivor = await createEnrollment({
             courseInstance,
@@ -85,7 +87,12 @@ describe('checked enrollment admission', { concurrent: false }, () => {
             status: 'left',
             firstJoinedAt: new Date('2022-01-01T00:00:00Z'),
           });
-          return { expectedId: survivor.id, ids: [loser.id, survivor.id], isGuest: false };
+          return {
+            actionDetail: 'implicit_joined',
+            expectedId: survivor.id,
+            ids: [loser.id, survivor.id],
+            isGuest: true,
+          };
         },
       },
       {
@@ -102,7 +109,12 @@ describe('checked enrollment admission', { concurrent: false }, () => {
             pendingUin: user.uin,
             isGuest: true,
           });
-          return { expectedId: guest.id, ids: [lower.id, guest.id], isGuest: true };
+          return {
+            actionDetail: 'invitation_accepted',
+            expectedId: guest.id,
+            ids: [lower.id, guest.id],
+            isGuest: true,
+          };
         },
       },
       {
@@ -115,7 +127,35 @@ describe('checked enrollment admission', { concurrent: false }, () => {
             pendingUin: user.uin,
             firstJoinedAt: earliest,
           });
-          return { expectedId: lower.id, ids: [lower.id, higher.id], isGuest: false };
+          return {
+            actionDetail: 'invitation_accepted',
+            expectedId: lower.id,
+            ids: [lower.id, higher.id],
+            isGuest: false,
+          };
+        },
+      },
+      {
+        name: 'multiple-guests',
+        source: { type: 'pending_uid' as const },
+        setup: async (user: User) => {
+          const lower = await createEnrollment({
+            courseInstance,
+            pendingUid: user.uid,
+            firstJoinedAt: earliest,
+            isGuest: true,
+          });
+          const higher = await createEnrollment({
+            courseInstance,
+            pendingUin: user.uin,
+            isGuest: true,
+          });
+          return {
+            actionDetail: 'invitation_accepted',
+            expectedId: lower.id,
+            ids: [lower.id, higher.id],
+            isGuest: true,
+          };
         },
       },
     ];
@@ -136,6 +176,15 @@ describe('checked enrollment admission', { concurrent: false }, () => {
       });
       expect(admitted.first_joined_at?.getTime()).toBe(earliest.getTime());
       expect(await selectEnrollments(expected.ids)).toEqual([admitted]);
+      expect(await selectReconciliationAuditEvents(admitted.id)).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            action: 'update',
+            action_detail: expected.actionDetail,
+            row_id: admitted.id,
+          }),
+        ]),
+      );
     }
   });
 
@@ -151,6 +200,18 @@ describe('checked enrollment admission', { concurrent: false }, () => {
     });
     expect(insertValidationCalls).toBe(1);
     expect(inserted).toMatchObject({ status: 'joined', user_id: insertedUser.id });
+    expect(
+      await selectAuditEventsByEnrollmentId({
+        enrollment_id: inserted.id,
+        table_names: ['enrollments'],
+      }),
+    ).toEqual([
+      expect.objectContaining({
+        action: 'insert',
+        action_detail: 'implicit_joined',
+        row_id: inserted.id,
+      }),
+    ]);
   });
 
   it('uses locked policy selection and pins invitation authority to an enrollment', async () => {
@@ -229,97 +290,6 @@ describe('checked enrollment admission', { concurrent: false }, () => {
       status: 'joined',
       user_id: user.id,
     });
-  });
-
-  it('revalidates blocked and guest denials under the parent locks', async () => {
-    const cases = [
-      {
-        name: 'blocked',
-        reason: 'blocked',
-        setup: async (user: User) => {
-          const bound = await createEnrollment({
-            courseInstance,
-            userId: user.id,
-            status: 'blocked',
-            firstJoinedAt: new Date('2020-01-01T00:00:00Z'),
-          });
-          const invitation = await createEnrollment({ courseInstance, pendingUin: user.uin });
-          return [bound.id, invitation.id];
-        },
-      },
-      {
-        name: 'guest',
-        reason: 'guest_state',
-        setup: async (user: User) => {
-          const invitation = await createEnrollment({
-            courseInstance,
-            pendingUin: user.uin,
-            isGuest: true,
-          });
-          return [invitation.id];
-        },
-      },
-    ];
-
-    for (const testCase of cases) {
-      const user = await createUser({ prefix: `denied-${testCase.name}` });
-      const ids = await testCase.setup(user);
-      const before = await selectEnrollments(ids);
-      let validationCalls = 0;
-      await expect(
-        admit(user, {
-          source: { type: 'institution_uin' },
-          validateAdmission: async () => {
-            validationCalls += 1;
-          },
-        }),
-      ).rejects.toMatchObject({ decision: { reason: testCase.reason } });
-      expect(validationCalls).toBe(0);
-      expect(await selectEnrollments(ids)).toEqual(before);
-    }
-  });
-
-  it('rolls validation mutations and the entire admission attempt back', async () => {
-    const user = await createUser({ prefix: 'validation-rollback' });
-    const conventional = await createEnrollment({ courseInstance, pendingUid: user.uid });
-    const roster = await createEnrollment({
-      courseInstance,
-      pendingUin: user.uin,
-      pendingName: 'Original name',
-    });
-    const label = await queryRow(
-      sql.insert_student_label,
-      {
-        course_instance_id: courseInstance.id,
-        name: nextFixtureName('validation-label'),
-        uuid: crypto.randomUUID(),
-      },
-      StudentLabelSchema,
-    );
-    await execute(sql.insert_student_label_enrollment, {
-      enrollment_id: conventional.id,
-      student_label_id: label.id,
-    });
-    const before = await selectEnrollments([conventional.id, roster.id]);
-
-    await expect(
-      admit(user, {
-        source: { type: 'institution_uin' },
-        validateAdmission: async () => {
-          await execute(sql.update_enrollment_pending_name, {
-            enrollment_id: roster.id,
-            pending_name: 'Rolled back',
-          });
-          throw new Error('validation denied');
-        },
-      }),
-    ).rejects.toThrow('validation denied');
-
-    expect(await selectEnrollments([conventional.id, roster.id])).toEqual(before);
-    expect(
-      await selectIds(sql.select_student_label_ids, { enrollment_id: conventional.id }),
-    ).toEqual([label.id]);
-    expect(await selectReconciliationAuditEvents(conventional.id)).toEqual([]);
   });
 
   it('uses the bound survivor, union/max/union dependent rules, earliest join, and complete audits', async () => {

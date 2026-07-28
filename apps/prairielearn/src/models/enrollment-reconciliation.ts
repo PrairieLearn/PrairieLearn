@@ -174,6 +174,10 @@ function lti13IdentityForSource(source: EnrollmentAdmissionSource) {
     : undefined;
 }
 
+/**
+ * Both callbacks can run twice after a uniqueness retry. `selectSource` must be pure;
+ * `validateAdmission` must keep effects within the transaction and avoid external side effects.
+ */
 export async function admitUserToCourseInstance({
   userId,
   courseInstanceId,
