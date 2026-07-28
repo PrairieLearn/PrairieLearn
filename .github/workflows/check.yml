@@ -61,7 +61,7 @@ jobs:
         with:
           version: 11
       - name: Set up Node
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v7
         with:
           node-version: '24'
           cache: 'pnpm'
@@ -185,7 +185,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v7
         with:
           python-version: '3.13'
       - name: Install uv
@@ -202,7 +202,7 @@ jobs:
         with:
           version: 11
       - name: Set up Node
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v7
         with:
           node-version: '24'
       - name: Install Node dependencies
@@ -259,7 +259,7 @@ jobs:
           sudo apt-get install -y graphviz libgraphviz-dev shellcheck
 
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v7
         with:
           python-version: '3.13'
       - name: Install uv
