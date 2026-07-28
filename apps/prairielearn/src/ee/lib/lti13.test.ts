@@ -4,6 +4,8 @@ import { z } from 'zod';
 
 import { withServer } from '@prairielearn/express-test-utils';
 
+import { LTI_USER_AGENT } from '../../lib/lti-http.js';
+
 import { fetchRetry, fetchRetryPaginated, findValueByKey } from './lti13.js';
 
 const PRODUCTS = [
@@ -114,6 +116,13 @@ describe('fetchRetry()', { concurrent: false }, () => {
     res.json({ page });
   });
 
+  app.get('/headers', (req, res) => {
+    res.json({
+      authorization: req.get('authorization'),
+      userAgent: req.get('user-agent'),
+    });
+  });
+
   app.get('/', productApi);
 
   let apiCount: number;
@@ -202,6 +211,19 @@ describe('fetchRetry()', { concurrent: false }, () => {
       const fullList = products.flat();
       assert.equal(fullList.length, 26);
       assert.equal(apiCount, 1);
+    });
+  });
+
+  test('sends the PrairieLearn user agent and preserves other headers', async () => {
+    await withServer(app, async ({ url }) => {
+      const res = await fetchRetry(url + '/headers', {
+        headers: { Authorization: 'Bearer secret' },
+      });
+
+      await expect(res.json()).resolves.toEqual({
+        authorization: 'Bearer secret',
+        userAgent: LTI_USER_AGENT,
+      });
     });
   });
 
