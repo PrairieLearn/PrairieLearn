@@ -15,6 +15,7 @@ import {
 } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
+import { setLti13CourseInstanceAdmissionContinuation } from '../lib/course-instance-admission-continuation.js';
 import {
   AssessmentAccessControlRuleSchema,
   type CourseInstance,
@@ -27,8 +28,10 @@ import * as helperCourse from '../tests/helperCourse.js';
 import * as helperDb from '../tests/helperDb.js';
 
 import { selectAssessmentByTid } from './assessment.js';
+import { admitUserWithCourseInstanceAdmissionSelection } from './course-instance-admission-continuation.js';
 import { deletePublishingExtension } from './course-instance-publishing-extensions.js';
 import { selectCourseInstanceById } from './course-instances.js';
+import { selectEnrollmentAdmissionDecision } from './enrollment-identity.js';
 import {
   admitUserFromEnrollmentInvitation,
   admitUserToCourseInstance,
@@ -37,6 +40,7 @@ import {
 import {
   actorFor,
   createEnrollment,
+  createLti13CourseInstance,
   createUser,
   nextFixtureName,
   nextFixtureNumber,
@@ -526,6 +530,113 @@ describe('enrollment reconciliation concurrency and retry', { concurrent: false 
       failure ??= { error };
     } finally {
       releaseParent.resolve();
+      const workerResults = await Promise.allSettled([
+        blockerPromise,
+        ...(admissionPromise ? [admissionPromise] : []),
+      ]);
+      failure = preserveFirstFailure(failure, workerResults);
+    }
+
+    if (failure) throw failure.error;
+  });
+
+  it('returns a blocked result when exact LTI admission becomes blocked under its lock', async () => {
+    const user = await createUser({ prefix: 'exact-lti-blocked-race' });
+    const lti13CourseInstance = await createLti13CourseInstance(courseInstance);
+    const sub = nextFixtureName('exact-lti-blocked-race-sub');
+    const invitation = await createEnrollment({
+      courseInstance,
+      pendingLti13CourseInstanceId: lti13CourseInstance.id,
+      pendingLti13Sub: sub,
+      pendingUin: user.uin,
+    });
+    const source = {
+      type: 'lti13' as const,
+      lti13CourseInstanceId: lti13CourseInstance.id,
+      sub,
+    };
+    const decision = await selectEnrollmentAdmissionDecision(
+      {
+        courseInstanceId: courseInstance.id,
+        lti13Identity: { lti13CourseInstanceId: lti13CourseInstance.id, sub },
+        userId: user.id,
+      },
+      source,
+    );
+    expect(decision.allowed).toBe(true);
+
+    const session: Record<string, unknown> = {};
+    const continuation = setLti13CourseInstanceAdmissionContinuation({
+      courseInstanceId: courseInstance.id,
+      launchExpiresAtSeconds: Math.floor(Date.now() / 1000) + 3600,
+      lti13CourseInstanceId: lti13CourseInstance.id,
+      session,
+      sub,
+      userId: user.id,
+    });
+    const invitationLocked = deferred();
+    const releaseInvitation = deferred();
+    let failure: { error: unknown } | undefined;
+    const blockerPromise = runInTransactionAsync(async () => {
+      await queryRow(
+        sql.lock_enrollment,
+        { enrollment_id: invitation.id },
+        z.object({ id: IdSchema }),
+      );
+      invitationLocked.resolve();
+      await releaseInvitation.promise;
+      await execute(sql.block_enrollment_for_user, {
+        enrollment_id: invitation.id,
+        user_id: user.id,
+      });
+    }).catch((error) => {
+      failure ??= { error };
+      invitationLocked.reject(error);
+      throw error;
+    });
+    void blockerPromise.catch(() => undefined);
+
+    let admissionPromise:
+      | Promise<Awaited<ReturnType<typeof admitUserWithCourseInstanceAdmissionSelection>>>
+      | undefined;
+    try {
+      await invitationLocked.promise;
+      const applicationName = `exact-lti-blocked-${crypto.randomUUID()}`;
+      admissionPromise = runInTransactionAsync(async () => {
+        await setLocalApplicationName(applicationName);
+        return await admitUserWithCourseInstanceAdmissionSelection({
+          courseInstanceId: courseInstance.id,
+          ip: null,
+          isAdministrator: false,
+          reqDate: new Date(),
+          selection: {
+            continuation,
+            plan: { source, type: 'lti13_roster_invitation' },
+            type: 'lti13',
+          },
+          session,
+          userId: user.id,
+        });
+      });
+      void admissionPromise.catch((error) => {
+        failure ??= { error };
+      });
+      await waitForApplicationLock(applicationName, '%lock_enrollments_by_id%');
+      releaseInvitation.resolve();
+
+      await expect(admissionPromise).resolves.toEqual({ type: 'blocked' });
+      expect(session).not.toHaveProperty('course_instance_admission_continuation');
+      expect(await selectEnrollments([invitation.id])).toEqual([
+        expect.objectContaining({
+          id: invitation.id,
+          status: 'blocked',
+          user_id: user.id,
+        }),
+      ]);
+    } catch (error) {
+      failure ??= { error };
+    } finally {
+      releaseInvitation.resolve();
       const workerResults = await Promise.allSettled([
         blockerPromise,
         ...(admissionPromise ? [admissionPromise] : []),

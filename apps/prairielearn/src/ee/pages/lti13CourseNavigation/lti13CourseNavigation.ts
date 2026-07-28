@@ -7,16 +7,21 @@ import { execute, loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres'
 import { type PageAuthzData, hasRole, makePageAuthzData } from '../../../lib/authz-data-lib.js';
 import { constructCourseOrInstanceContext } from '../../../lib/authz-data.js';
 import {
+  clearCourseInstanceAdmissionContinuation,
+  replaceLti13ContinuationWithOrdinary,
+  setLti13CourseInstanceAdmissionContinuation,
+} from '../../../lib/course-instance-admission-continuation.js';
+import {
   type Course,
   CourseInstanceSchema,
   Lti13CourseInstanceSchema,
 } from '../../../lib/db-types.js';
+import { idsEqual } from '../../../lib/id.js';
 import { typedAsyncHandler } from '../../../lib/res-locals.js';
-import { admitUserFromLti13RosterInvitation } from '../../../models/course-instance-admission.js';
+import { admitUserWithCourseInstanceAdmissionSelection } from '../../../models/course-instance-admission-continuation.js';
 import { selectCourseInstancesWithStaffAccess } from '../../../models/course-instances.js';
 import { selectCoursesWithEditAccess } from '../../../models/course.js';
 import { selectEnrollmentAdmissionDecision } from '../../../models/enrollment-identity.js';
-import { EnrollmentInvitationRequiredError } from '../../../models/enrollment-reconciliation.js';
 import { Lti13Claim } from '../../lib/lti13.js';
 
 import {
@@ -122,6 +127,16 @@ router.get(
     }
 
     const ltiClaim = new Lti13Claim(req);
+    const authnLti13InstanceId = req.session.authn_lti13_instance_id;
+    if (
+      (typeof authnLti13InstanceId !== 'string' && typeof authnLti13InstanceId !== 'number') ||
+      !idsEqual(authnLti13InstanceId, req.params.lti13_instance_id)
+    ) {
+      clearCourseInstanceAdmissionContinuation(req.session);
+      ltiClaim.remove();
+      throw new HttpStatusError(403, 'Access denied');
+    }
+
     const courseName = prettyCourseName(ltiClaim);
     const role_instructor = ltiClaim.isRoleInstructor();
 
@@ -142,6 +157,7 @@ router.get(
             courseInstanceId: lti13_course_instance.course_instance_id,
             ip: req.ip ?? null,
             isAdministrator: res.locals.is_administrator,
+            launchExpiresAtSeconds: ltiClaim.exp,
             lti13CourseInstanceId: lti13_course_instance.id,
             reqDate: res.locals.req_date,
             sub: ltiClaim.sub,
@@ -171,6 +187,14 @@ router.get(
       ltiClaim.remove();
 
       if (lti13AdmissionContext !== null) {
+        const continuation = setLti13CourseInstanceAdmissionContinuation({
+          courseInstanceId: lti13AdmissionContext.courseInstanceId,
+          launchExpiresAtSeconds: lti13AdmissionContext.launchExpiresAtSeconds,
+          lti13CourseInstanceId: lti13AdmissionContext.lti13CourseInstanceId,
+          session: req.session,
+          sub: lti13AdmissionContext.sub,
+          userId: lti13AdmissionContext.userId,
+        });
         const source = Object.freeze({
           type: 'lti13' as const,
           lti13CourseInstanceId: lti13AdmissionContext.lti13CourseInstanceId,
@@ -189,16 +213,26 @@ router.get(
         );
 
         if (decision.allowed) {
-          try {
-            await admitUserFromLti13RosterInvitation(lti13AdmissionContext);
-          } catch (error) {
-            if (error instanceof EnrollmentInvitationRequiredError) {
-              // The exact invitation can disappear before the locked check. Continue
-              // to the ordinary course-instance admission path in that case.
-            } else {
-              throw error;
-            }
+          const result = await admitUserWithCourseInstanceAdmissionSelection({
+            courseInstanceId: lti13AdmissionContext.courseInstanceId,
+            ip: lti13AdmissionContext.ip,
+            isAdministrator: lti13AdmissionContext.isAdministrator,
+            reqDate: lti13AdmissionContext.reqDate,
+            selection: {
+              continuation,
+              plan: { source, type: 'lti13_roster_invitation' },
+              type: 'lti13',
+            },
+            session: req.session,
+            userId: lti13AdmissionContext.userId,
+          });
+          if (result.type === 'blocked') {
+            clearCourseInstanceAdmissionContinuation(req.session);
           }
+        } else if (decision.reason === 'already_joined' || decision.reason === 'blocked') {
+          clearCourseInstanceAdmissionContinuation(req.session);
+        } else {
+          replaceLti13ContinuationWithOrdinary({ continuation, session: req.session });
         }
       }
 

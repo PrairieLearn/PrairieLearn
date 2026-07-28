@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { type Request, Router } from 'express';
 import type Stripe from 'stripe';
 import { z } from 'zod';
 
@@ -7,10 +7,14 @@ import { runInTransactionAsync } from '@prairielearn/postgres';
 
 import { EnrollmentPage } from '../../../components/EnrollmentPage.js';
 import { config } from '../../../lib/config.js';
+import { getCourseInstanceAdmissionContinuation } from '../../../lib/course-instance-admission-continuation.js';
 import {
+  type Course,
+  type CourseInstance,
   CourseInstanceSchema,
   CourseSchema,
   InstitutionSchema,
+  type User,
   UserSchema,
 } from '../../../lib/db-types.js';
 import {
@@ -20,9 +24,11 @@ import {
 import { typedAsyncHandler } from '../../../lib/res-locals.js';
 import { getCanonicalHost } from '../../../lib/url.js';
 import {
-  type CourseInstanceAdmissionPlan,
-  selectCourseInstanceAdmissionPlan,
-} from '../../../models/course-instance-admission.js';
+  type CourseInstanceAdmissionSelection,
+  admitUserWithCourseInstanceAdmissionSelection,
+  selectCourseInstanceAdmissionForRequest,
+} from '../../../models/course-instance-admission-continuation.js';
+import type { CourseInstanceAdmissionPlan } from '../../../models/course-instance-admission.js';
 import { checkPlanGrantsForLocals } from '../../lib/billing/plan-grants.js';
 import {
   getMissingPlanGrants,
@@ -58,6 +64,62 @@ function getAdmissionIneligibilityReason(
   return null;
 }
 
+async function completeAdmissionContinuation({
+  course,
+  courseInstance,
+  isAdministrator,
+  req,
+  reqDate,
+  user,
+}: {
+  course: Course;
+  courseInstance: CourseInstance;
+  isAdministrator: boolean;
+  req: Request;
+  reqDate: Date;
+  user: User;
+}) {
+  const continuation = getCourseInstanceAdmissionContinuation({
+    courseInstanceId: courseInstance.id,
+    session: req.session,
+    userId: user.id,
+  });
+  if (continuation === null) return;
+
+  const selection = await selectCourseInstanceAdmissionForRequest({
+    course,
+    courseInstance,
+    session: req.session,
+    user,
+  });
+  if (selection.plan.type === 'blocked') {
+    throw new error.HttpStatusError(403, getEligibilityErrorMessage('blocked'));
+  }
+  if (!isActionableAdmissionSelection(selection)) return;
+
+  const result = await admitUserWithCourseInstanceAdmissionSelection({
+    courseInstanceId: courseInstance.id,
+    ip: req.ip ?? null,
+    isAdministrator,
+    reqDate,
+    selection,
+    session: req.session,
+    userId: user.id,
+  });
+  if (result.type === 'blocked') {
+    throw new error.HttpStatusError(403, getEligibilityErrorMessage('blocked'));
+  }
+}
+
+function isActionableAdmissionSelection(selection: CourseInstanceAdmissionSelection): boolean {
+  return (
+    selection.plan.type === 'conventional_invitation' ||
+    selection.plan.type === 'institution_roster_invitation' ||
+    selection.plan.type === 'lti13_roster_invitation' ||
+    selection.plan.type === 'self_enrollment'
+  );
+}
+
 router.get(
   '/',
   typedAsyncHandler<'course-instance'>(async (req, res) => {
@@ -65,11 +127,13 @@ router.get(
     const course = CourseSchema.parse(res.locals.course);
     const user = UserSchema.parse(res.locals.authn_user);
 
-    const admissionPlan = await selectCourseInstanceAdmissionPlan({
+    const admissionSelection = await selectCourseInstanceAdmissionForRequest({
       course,
       courseInstance,
+      session: req.session,
       user,
     });
+    const admissionPlan = admissionSelection.plan;
     const ineligibilityReason = getAdmissionIneligibilityReason(admissionPlan);
     if (ineligibilityReason !== null) {
       res.status(403).send(EnrollmentPage({ resLocals: res.locals, type: ineligibilityReason }));
@@ -129,11 +193,13 @@ router.post(
       const courseInstance = CourseInstanceSchema.parse(res.locals.course_instance);
       const user = UserSchema.parse(res.locals.authn_user);
 
-      const admissionPlan = await selectCourseInstanceAdmissionPlan({
+      const admissionSelection = await selectCourseInstanceAdmissionForRequest({
         course,
         courseInstance,
+        session: req.session,
         user,
       });
+      const admissionPlan = admissionSelection.plan;
       const ineligibilityReason = getAdmissionIneligibilityReason(admissionPlan);
       if (ineligibilityReason !== null) {
         throw new error.HttpStatusError(403, getEligibilityErrorMessage(ineligibilityReason));
@@ -248,7 +314,27 @@ router.get(
     if (!localSession) {
       throw new Error(`Unknown Stripe session: ${stripeSessionId}`);
     }
+
+    // Verify that the session is associated with the current course instance
+    // and user. We shouldn't hit this during normal operations, but an attacker
+    // could try to replay a session ID from a different course instance or user.
+    if (
+      localSession.course_instance_id !== courseInstance.id ||
+      localSession.agent_user_id !== res.locals.authn_user.id
+    ) {
+      throw new error.HttpStatusError(400, 'Invalid session');
+    }
+
     if (localSession.completed_at) {
+      await completeAdmissionContinuation({
+        course,
+        courseInstance,
+        isAdministrator: res.locals.authz_data.authn_is_administrator,
+        req,
+        reqDate: res.locals.req_date,
+        user: authn_user,
+      });
+
       // We already processed this session; just show them the success page.
       res.send(
         CourseInstanceStudentUpdateSuccess({
@@ -263,16 +349,6 @@ router.get(
 
     const stripe = getStripeClient();
     const session = await stripe.checkout.sessions.retrieve(stripeSessionId);
-
-    // Verify that the session is associated with the current course instance
-    // and user. We shouldn't hit this during normal operations, but an attacker
-    // could try to replay a session ID from a different course instance or user.
-    if (
-      localSession.course_instance_id !== courseInstance.id ||
-      localSession.agent_user_id !== res.locals.authn_user.id
-    ) {
-      throw new error.HttpStatusError(400, 'Invalid session');
-    }
 
     if (session.payment_status === 'paid') {
       if (!localSession.plan_grants_created) {
@@ -303,6 +379,15 @@ router.get(
           await markStripeCheckoutSessionCompleted(session.id);
         });
       }
+
+      await completeAdmissionContinuation({
+        course,
+        courseInstance,
+        isAdministrator: res.locals.authz_data.authn_is_administrator,
+        req,
+        reqDate: res.locals.req_date,
+        user: authn_user,
+      });
 
       res.send(
         CourseInstanceStudentUpdateSuccess({

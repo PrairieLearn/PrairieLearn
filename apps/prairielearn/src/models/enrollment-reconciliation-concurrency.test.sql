@@ -139,6 +139,21 @@ DELETE FROM enrollments
 WHERE
   id = $enrollment_id;
 
+-- BLOCK block_enrollment_for_user
+UPDATE enrollments
+SET
+  first_joined_at = CURRENT_TIMESTAMP,
+  pending_email = NULL,
+  pending_lti13_course_instance_id = NULL,
+  pending_lti13_sub = NULL,
+  pending_name = NULL,
+  pending_uid = NULL,
+  pending_uin = NULL,
+  status = 'blocked',
+  user_id = $user_id
+WHERE
+  id = $enrollment_id;
+
 -- BLOCK set_local_application_name
 SELECT
   set_config('application_name', $application_name, true);

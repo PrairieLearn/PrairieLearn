@@ -41,6 +41,11 @@ interface InstitutionRosterInvitationAdmissionPlan {
   readonly type: 'institution_roster_invitation';
 }
 
+export interface Lti13RosterInvitationAdmissionPlan {
+  readonly source: Extract<EnrollmentAdmissionSource, { type: 'lti13' }>;
+  readonly type: 'lti13_roster_invitation';
+}
+
 interface SelfEnrollmentAdmissionPlan {
   readonly enrollmentCodeValidated: boolean;
   readonly source: Extract<EnrollmentAdmissionSource, { type: 'ordinary' }>;
@@ -61,13 +66,10 @@ export type CourseInstanceAdmissionPlan =
   | BlockedAdmissionPlan
   | ConventionalInvitationAdmissionPlan
   | InstitutionRosterInvitationAdmissionPlan
+  | Lti13RosterInvitationAdmissionPlan
   | SelfEnrollmentAdmissionPlan
   | EnrollmentCodeRequiredAdmissionPlan
   | IneligibleAdmissionPlan;
-
-export interface CourseInstanceAdmissionPlanLocals {
-  course_instance_admission_plan?: CourseInstanceAdmissionPlan;
-}
 
 export type ActionableCourseInstanceAdmissionPlan =
   | ConventionalInvitationAdmissionPlan
@@ -129,7 +131,34 @@ function getCourseInstanceAdmissionPlan({
       type: 'conventional_invitation',
     };
   }
+  return getOrdinaryCourseInstanceAdmissionPlan({
+    classification,
+    course,
+    courseInstance,
+    enrollmentCode,
+    user,
+  });
+}
 
+function getOrdinaryCourseInstanceAdmissionPlan({
+  classification,
+  course,
+  courseInstance,
+  enrollmentCode,
+  user,
+}: {
+  classification: EnrollmentIdentityClassification;
+  course: Course;
+  courseInstance: CourseInstance;
+  enrollmentCode?: string;
+  user: User;
+}): CourseInstanceAdmissionPlan {
+  if (classification.kind === 'joined') {
+    return { type: 'already_joined' };
+  }
+  if (classification.kind === 'blocked') {
+    return { type: 'blocked' };
+  }
   const eligibility = checkEnrollmentEligibility({
     user,
     course,
@@ -169,6 +198,34 @@ export async function selectCourseInstanceAdmissionPlan({
     userId: user.id,
   });
   return getCourseInstanceAdmissionPlan({
+    classification,
+    course,
+    courseInstance,
+    enrollmentCode,
+    user,
+  });
+}
+
+/**
+ * Selects only ordinary self-enrollment policy. Pending identity candidates
+ * remain available for reconciliation but cannot supply invitation authority.
+ */
+export async function selectOrdinaryCourseInstanceAdmissionPlan({
+  course,
+  courseInstance,
+  enrollmentCode,
+  user,
+}: {
+  course: Course;
+  courseInstance: CourseInstance;
+  enrollmentCode?: string;
+  user: User;
+}): Promise<CourseInstanceAdmissionPlan> {
+  const classification = await selectEnrollmentIdentityClassification({
+    courseInstanceId: courseInstance.id,
+    userId: user.id,
+  });
+  return getOrdinaryCourseInstanceAdmissionPlan({
     classification,
     course,
     courseInstance,
@@ -310,6 +367,42 @@ export async function admitUserWithCourseInstanceAdmissionPlan({
       return { type: 'ordinary' };
     },
     source: plan.source,
+    userId,
+    validateAdmission: createCourseInstanceAdmissionValidator({
+      courseInstanceId,
+      enrollmentCode,
+      ip,
+      isAdministrator,
+      reqDate,
+      userId,
+    }),
+  });
+}
+
+/**
+ * Admits only through independently validated ordinary self-enrollment policy.
+ * Unlike the ordinary web path, no locked invitation source selector runs.
+ */
+export async function admitUserFromOrdinarySelfEnrollment({
+  courseInstanceId,
+  enrollmentCode,
+  ip,
+  isAdministrator,
+  reqDate,
+  userId,
+}: {
+  courseInstanceId: string;
+  enrollmentCode?: string;
+  ip: string | null;
+  isAdministrator: boolean;
+  reqDate: Date;
+  userId: string;
+}) {
+  return await admitUserToCourseInstance({
+    agentAuthnUserId: userId,
+    agentUserId: userId,
+    courseInstanceId,
+    source: { type: 'ordinary' },
     userId,
     validateAdmission: createCourseInstanceAdmissionValidator({
       courseInstanceId,

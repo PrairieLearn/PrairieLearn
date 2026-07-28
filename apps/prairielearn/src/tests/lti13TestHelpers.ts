@@ -298,6 +298,8 @@ export async function createLti13Instance({
     }),
   });
   assert.equal(createKeyResponse.status, 200);
+
+  return IdSchema.parse(new URL(instanceUrl).pathname.split('/').at(-1));
 }
 
 /**

@@ -274,6 +274,11 @@ export class Lti13Claim {
     return this.claims.sub;
   }
 
+  get exp() {
+    this.assertValid();
+    return this.claims.exp;
+  }
+
   get deployment_id() {
     this.assertValid();
     return this.claims['https://purl.imsglobal.org/spec/lti/claim/deployment_id'];

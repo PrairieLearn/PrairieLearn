@@ -12,11 +12,18 @@ import { z } from 'zod';
 import { execute, queryOptionalRow, queryRow, queryScalar } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
+import {
+  reconcilePlanGrantsForCourseInstanceUser,
+  updateRequiredPlansForCourseInstance,
+} from '../ee/lib/billing/plans.js';
 import { Lti13CombinedInstanceSchema, inspectRoster } from '../ee/lib/lti13.js';
 import { config } from '../lib/config.js';
+import { CourseInstanceAdmissionContinuationSchema } from '../lib/course-instance-admission-continuation.js';
 import { EnrollmentSchema, Lti13CourseInstanceSchema } from '../lib/db-types.js';
 import { createServerJob, selectJobsByJobSequenceId } from '../lib/server-jobs.js';
+import { generateCsrfToken } from '../middlewares/csrfToken.js';
 import { selectAuditEventsByEnrollmentId } from '../models/audit-event.js';
+import { selectCourseInstanceById } from '../models/course-instances.js';
 import { selectOptionalUserByUid } from '../models/user.js';
 
 import { fetchCheerio } from './helperClient.js';
@@ -31,6 +38,7 @@ import {
   makeLoginExecutor,
   withServer,
 } from './lti13TestHelpers.js';
+import { updateCourseInstanceSettings } from './utils/auth.js';
 
 const siteUrl = 'http://localhost:' + config.serverPort;
 
@@ -38,14 +46,18 @@ describe('LTI 1.3 course instance linking', { concurrent: false }, () => {
   let oidcProviderPort: number;
   let keystore: nodeJose.JWK.KeyStore;
 
-  async function selectLinkedLtiCourseInstance(contextId = LTI_CONTEXT_ID) {
+  async function selectLinkedLtiCourseInstance(contextId = LTI_CONTEXT_ID, lti13InstanceId = '1') {
     return await queryRow(
       `SELECT *
        FROM lti13_course_instances
-       WHERE lti13_instance_id = '1'
+       WHERE lti13_instance_id = $lti13_instance_id
        AND deployment_id = $deployment_id
        AND context_id = $context_id`,
-      { deployment_id: LTI_DEPLOYMENT_ID, context_id: contextId },
+      {
+        deployment_id: LTI_DEPLOYMENT_ID,
+        context_id: contextId,
+        lti13_instance_id: lti13InstanceId,
+      },
       Lti13CourseInstanceSchema,
     );
   }
@@ -381,6 +393,10 @@ describe('LTI 1.3 course instance linking', { concurrent: false }, () => {
     const user = await selectOptionalUserByUid('linked-instructor@example.com');
     assert.ok(user);
     await assertLtiLaunchConsumed(user.id);
+    assert.notProperty(
+      await selectLatestSessionData(user.id),
+      'course_instance_admission_continuation',
+    );
   });
 
   test('already linked context redirects student to course instance', async () => {
@@ -411,6 +427,7 @@ describe('LTI 1.3 course instance linking', { concurrent: false }, () => {
 
   describe('LTI 1.3 roster admission', () => {
     afterEach(async () => {
+      await updateRequiredPlansForCourseInstance('1', [], '1');
       await execute(
         `UPDATE course_instances
          SET
@@ -418,6 +435,82 @@ describe('LTI 1.3 course instance linking', { concurrent: false }, () => {
            self_enrollment_enabled = TRUE,
            self_enrollment_use_enrollment_code = FALSE
          WHERE id = '1'`,
+      );
+    });
+
+    test('binds a verified launch to its LTI instance', async () => {
+      const secondLti13InstanceId = await createLti13Instance({
+        siteUrl,
+        issuer_params: {
+          issuer: `http://localhost:${oidcProviderPort}`,
+          authorization_endpoint: `http://localhost:${oidcProviderPort}/auth`,
+          jwks_uri: `http://localhost:${oidcProviderPort}/jwks`,
+          token_endpoint: `http://localhost:${oidcProviderPort}/token`,
+        },
+      });
+      await linkLtiContext({
+        lti13InstanceId: secondLti13InstanceId,
+        deploymentId: LTI_DEPLOYMENT_ID,
+        contextId: LTI_CONTEXT_ID,
+        courseInstanceId: '1',
+      });
+      const secondLti13CourseInstance = await selectLinkedLtiCourseInstance(
+        LTI_CONTEXT_ID,
+        secondLti13InstanceId,
+      );
+      const sub = 'cross-instance-launch-sub';
+      const uin = 'cross-instance-launch-uin';
+      const invitation = await insertLtiRosterInvitation({
+        lti13CourseInstanceId: secondLti13CourseInstance.id,
+        pendingUin: uin,
+        sub,
+      });
+      const fetchWithCookies = fetchCookie(fetch);
+      const targetLinkUri = `${siteUrl}/pl/lti13_instance/${secondLti13InstanceId}/course_navigation`;
+      const executor = await makeLoginExecutor({
+        user: {
+          name: 'Cross-instance Launch Student',
+          email: 'cross-instance-launch@example.com',
+          uin,
+          sub,
+        },
+        fetchWithCookies,
+        oidcProviderPort,
+        keystore,
+        loginUrl: `${siteUrl}/pl/lti13_instance/1/auth/login`,
+        callbackUrl: `${siteUrl}/pl/lti13_instance/1/auth/callback`,
+        targetLinkUri,
+        isInstructor: false,
+      });
+
+      const response = await executor.login();
+      assert.equal(response.status, 403);
+      assert.equal(response.url, targetLinkUri);
+
+      const persistedInvitation = await queryRow(
+        'SELECT * FROM enrollments WHERE id = $enrollment_id',
+        { enrollment_id: invitation.id },
+        EnrollmentSchema,
+      );
+      expect(persistedInvitation).toMatchObject({
+        pending_lti13_course_instance_id: secondLti13CourseInstance.id,
+        pending_lti13_sub: sub,
+        status: 'invited',
+        user_id: null,
+      });
+      const auditEvents = await selectAuditEventsByEnrollmentId({
+        enrollment_id: invitation.id,
+        table_names: ['enrollments'],
+      });
+      expect(auditEvents).not.toContainEqual(
+        expect.objectContaining({ action_detail: 'roster_admitted' }),
+      );
+      const user = await selectOptionalUserByUid('cross-instance-launch@example.com');
+      assert.ok(user);
+      await assertLtiLaunchConsumed(user.id);
+      assert.notProperty(
+        await selectLatestSessionData(user.id),
+        'course_instance_admission_continuation',
       );
     });
 
@@ -487,8 +580,125 @@ describe('LTI 1.3 course instance linking', { concurrent: false }, () => {
         }),
       );
       await assertLtiLaunchConsumed(user.id);
+      assert.notProperty(
+        await selectLatestSessionData(user.id),
+        'course_instance_admission_continuation',
+      );
       const consumedLaunchRes = await fetchWithCookies(targetLinkUri, { redirect: 'manual' });
       assert.equal(consumedLaunchRes.status, 403);
+    });
+
+    test('preserves exact LTI admission across a required-plan upgrade', async () => {
+      await updateRequiredPlansForCourseInstance('1', ['compute'], '1');
+      await updateCourseInstanceSettings('1', {
+        restrictToInstitution: false,
+        selfEnrollmentEnabled: false,
+        selfEnrollmentUseEnrollmentCode: true,
+      });
+      const lti13CourseInstance = await selectLinkedLtiCourseInstance();
+      const sub = 'upgrade-exact-roster-sub';
+      const invitation = await insertLtiRosterInvitation({
+        lti13CourseInstanceId: lti13CourseInstance.id,
+        pendingUin: 'upgrade-exact-roster-unmatched-uin',
+        sub,
+      });
+      const fetchWithCookies = fetchCookie(fetch);
+      const targetLinkUri = `${siteUrl}/pl/lti13_instance/1/course_navigation`;
+      const executor = await makeLoginExecutor({
+        user: {
+          name: 'Upgrade Exact Roster',
+          email: 'upgrade-exact-roster@example.com',
+          uin: 'upgrade-exact-roster-user-uin',
+          sub,
+        },
+        fetchWithCookies,
+        oidcProviderPort,
+        keystore,
+        loginUrl: `${siteUrl}/pl/lti13_instance/1/auth/login`,
+        callbackUrl: `${siteUrl}/pl/lti13_instance/1/auth/callback`,
+        targetLinkUri,
+        isInstructor: false,
+      });
+
+      const upgradeResponse = await executor.login();
+      assert.equal(upgradeResponse.status, 200);
+      assert.include(upgradeResponse.url, '/pl/course_instance/1/upgrade');
+
+      const user = await selectOptionalUserByUid('upgrade-exact-roster@example.com');
+      assert.ok(user);
+      const sessionData = await selectLatestSessionData(user.id);
+      assert.notProperty(sessionData, 'lti13_claims');
+      assert.notProperty(sessionData, 'authn_lti13_instance_id');
+      expect(
+        CourseInstanceAdmissionContinuationSchema.parse(
+          sessionData.course_instance_admission_continuation,
+        ),
+      ).toMatchObject({
+        course_instance_id: '1',
+        lti13_course_instance_id: lti13CourseInstance.id,
+        sub,
+        type: 'lti13',
+        user_id: user.id,
+      });
+
+      const csrfToken = generateCsrfToken({
+        authnUserId: user.id,
+        url: '/pl/course_instance/1/upgrade',
+      });
+      const upgradePostResponse = await fetchWithCookies(
+        `${siteUrl}/pl/course_instance/1/upgrade`,
+        {
+          method: 'POST',
+          body: new URLSearchParams({
+            __action: 'upgrade',
+            __csrf_token: csrfToken,
+            unsafe_plan_names: 'compute',
+          }),
+        },
+      );
+      assert.equal(upgradePostResponse.status, 400);
+      assert.property(
+        await selectLatestSessionData(user.id),
+        'course_instance_admission_continuation',
+      );
+
+      await reconcilePlanGrantsForCourseInstanceUser(
+        { institution_id: '1', course_instance_id: '1', user_id: user.id },
+        [{ plan: 'compute', grantType: 'invoice' }],
+        '1',
+      );
+      const assessmentsResponse = await fetchWithCookies(
+        `${siteUrl}/pl/course_instance/1/assessments`,
+      );
+      assert.equal(assessmentsResponse.status, 200);
+      assert.include(assessmentsResponse.url, '/pl/course_instance/1/assessments');
+
+      const enrollment = await queryRow(
+        'SELECT * FROM enrollments WHERE id = $enrollment_id',
+        { enrollment_id: invitation.id },
+        EnrollmentSchema,
+      );
+      expect(enrollment).toMatchObject({
+        pending_lti13_course_instance_id: null,
+        pending_lti13_sub: null,
+        pending_uin: null,
+        status: 'joined',
+        user_id: user.id,
+      });
+      const auditEvents = await selectAuditEventsByEnrollmentId({
+        enrollment_id: enrollment.id,
+        table_names: ['enrollments'],
+      });
+      expect(auditEvents).toContainEqual(
+        expect.objectContaining({
+          action_detail: 'roster_admitted',
+          context: expect.objectContaining({ admission_source: 'lti13' }),
+        }),
+      );
+      assert.notProperty(
+        await selectLatestSessionData(user.id),
+        'course_instance_admission_continuation',
+      );
     });
 
     test('does not grant LTI roster authority to a wrong sub', async () => {
@@ -500,9 +710,10 @@ describe('LTI 1.3 course instance linking', { concurrent: false }, () => {
          WHERE id = '1'`,
       );
       const lti13CourseInstance = await selectLinkedLtiCourseInstance();
+      const uin = 'wrong-sub-matching-uin';
       const invitation = await insertLtiRosterInvitation({
         lti13CourseInstanceId: lti13CourseInstance.id,
-        pendingUin: 'wrong-sub-unmatched-uin',
+        pendingUin: uin,
         sub: 'expected-roster-sub',
       });
       const fetchWithCookies = fetchCookie(fetch);
@@ -511,7 +722,7 @@ describe('LTI 1.3 course instance linking', { concurrent: false }, () => {
         user: {
           name: 'Wrong Sub Student',
           email: 'wrong-sub-student@example.com',
-          uin: 'wrong-sub-student-user-uin',
+          uin,
           sub: 'actual-roster-sub',
         },
         fetchWithCookies,
@@ -548,6 +759,16 @@ describe('LTI 1.3 course instance linking', { concurrent: false }, () => {
       const user = await selectOptionalUserByUid('wrong-sub-student@example.com');
       assert.ok(user);
       await assertLtiLaunchConsumed(user.id);
+      const sessionData = await selectLatestSessionData(user.id);
+      expect(
+        CourseInstanceAdmissionContinuationSchema.parse(
+          sessionData.course_instance_admission_continuation,
+        ),
+      ).toMatchObject({
+        course_instance_id: '1',
+        type: 'ordinary',
+        user_id: user.id,
+      });
     });
 
     test('falls back to independently allowed ordinary self-enrollment for a wrong sub', async () => {
@@ -559,9 +780,10 @@ describe('LTI 1.3 course instance linking', { concurrent: false }, () => {
          WHERE id = '1'`,
       );
       const lti13CourseInstance = await selectLinkedLtiCourseInstance();
+      const uin = 'ordinary-fallback-matching-uin';
       const invitation = await insertLtiRosterInvitation({
         lti13CourseInstanceId: lti13CourseInstance.id,
-        pendingUin: 'ordinary-fallback-unmatched-uin',
+        pendingUin: uin,
         sub: 'ordinary-fallback-expected-sub',
       });
       const fetchWithCookies = fetchCookie(fetch);
@@ -570,7 +792,7 @@ describe('LTI 1.3 course instance linking', { concurrent: false }, () => {
         user: {
           name: 'Ordinary Fallback Student',
           email: 'ordinary-fallback-student@example.com',
-          uin: 'ordinary-fallback-student-user-uin',
+          uin,
           sub: 'ordinary-fallback-actual-sub',
         },
         fetchWithCookies,
@@ -615,12 +837,98 @@ describe('LTI 1.3 course instance linking', { concurrent: false }, () => {
         EnrollmentSchema,
       );
       expect(persistedInvitation).toMatchObject({
-        pending_lti13_course_instance_id: lti13CourseInstance.id,
-        pending_lti13_sub: 'ordinary-fallback-expected-sub',
-        status: 'invited',
-        user_id: null,
+        pending_lti13_course_instance_id: null,
+        pending_lti13_sub: null,
+        pending_uin: null,
+        status: 'joined',
+        user_id: user.id,
       });
+      assert.equal(persistedInvitation.id, enrollment.id);
       await assertLtiLaunchConsumed(user.id);
+      const sessionData = await selectLatestSessionData(user.id);
+      assert.notProperty(sessionData, 'course_instance_admission_continuation');
+    });
+
+    test('preserves enrollment-code policy after exact LTI denial', async () => {
+      await updateCourseInstanceSettings('1', {
+        restrictToInstitution: false,
+        selfEnrollmentEnabled: true,
+        selfEnrollmentUseEnrollmentCode: true,
+      });
+      const enrollmentCode = (await selectCourseInstanceById('1')).enrollment_code;
+      const lti13CourseInstance = await selectLinkedLtiCourseInstance();
+      const uin = 'code-fallback-matching-uin';
+      const invitation = await insertLtiRosterInvitation({
+        lti13CourseInstanceId: lti13CourseInstance.id,
+        pendingUin: uin,
+        sub: 'code-fallback-expected-sub',
+      });
+      const fetchWithCookies = fetchCookie(fetch);
+      const targetLinkUri = `${siteUrl}/pl/lti13_instance/1/course_navigation`;
+      const executor = await makeLoginExecutor({
+        user: {
+          name: 'Code Fallback Student',
+          email: 'code-fallback-student@example.com',
+          uin,
+          sub: 'code-fallback-actual-sub',
+        },
+        fetchWithCookies,
+        oidcProviderPort,
+        keystore,
+        loginUrl: `${siteUrl}/pl/lti13_instance/1/auth/login`,
+        callbackUrl: `${siteUrl}/pl/lti13_instance/1/auth/callback`,
+        targetLinkUri,
+        isInstructor: false,
+      });
+
+      const loginResponse = await executor.login();
+      assert.equal(loginResponse.status, 200);
+      assert.include(loginResponse.url, '/pl/course_instance/1/join');
+
+      const user = await selectOptionalUserByUid('code-fallback-student@example.com');
+      assert.ok(user);
+      await assertLtiLaunchConsumed(user.id);
+      expect(
+        CourseInstanceAdmissionContinuationSchema.parse(
+          (await selectLatestSessionData(user.id)).course_instance_admission_continuation,
+        ),
+      ).toMatchObject({ type: 'ordinary', user_id: user.id });
+
+      const joinResponse = await fetchWithCookies(
+        `${siteUrl}/pl/course_instance/1/join/${enrollmentCode}`,
+      );
+      assert.equal(joinResponse.status, 200);
+      assert.include(joinResponse.url, '/pl/course_instance/1/assessments');
+
+      const enrollment = await queryRow(
+        'SELECT * FROM enrollments WHERE id = $enrollment_id',
+        { enrollment_id: invitation.id },
+        EnrollmentSchema,
+      );
+      expect(enrollment).toMatchObject({
+        pending_lti13_course_instance_id: null,
+        pending_lti13_sub: null,
+        pending_uin: null,
+        status: 'joined',
+        user_id: user.id,
+      });
+      const auditEvents = await selectAuditEventsByEnrollmentId({
+        enrollment_id: enrollment.id,
+        table_names: ['enrollments'],
+      });
+      expect(auditEvents).toContainEqual(
+        expect.objectContaining({
+          action_detail: 'implicit_joined',
+          context: expect.objectContaining({ admission_source: 'ordinary' }),
+        }),
+      );
+      expect(auditEvents).not.toContainEqual(
+        expect.objectContaining({ action_detail: 'roster_admitted' }),
+      );
+      assert.notProperty(
+        await selectLatestSessionData(user.id),
+        'course_instance_admission_continuation',
+      );
     });
 
     test('does not grant LTI roster authority through another course-instance link', async () => {
@@ -664,9 +972,10 @@ describe('LTI 1.3 course instance linking', { concurrent: false }, () => {
       });
       const otherLti13CourseInstance = await selectLinkedLtiCourseInstance(otherContextId);
       const sub = 'same-sub-other-link';
+      const uin = 'same-sub-other-link-matching-uin';
       const invitation = await insertLtiRosterInvitation({
         lti13CourseInstanceId: otherLti13CourseInstance.id,
-        pendingUin: 'same-sub-other-link-unmatched-uin',
+        pendingUin: uin,
         sub,
       });
       const fetchWithCookies = fetchCookie(fetch);
@@ -675,7 +984,7 @@ describe('LTI 1.3 course instance linking', { concurrent: false }, () => {
         user: {
           name: 'Same Sub Other Link',
           email: 'same-sub-other-link@example.com',
-          uin: 'same-sub-other-link-user-uin',
+          uin,
           sub,
         },
         fetchWithCookies,
@@ -712,6 +1021,16 @@ describe('LTI 1.3 course instance linking', { concurrent: false }, () => {
       const user = await selectOptionalUserByUid('same-sub-other-link@example.com');
       assert.ok(user);
       await assertLtiLaunchConsumed(user.id);
+      const sessionData = await selectLatestSessionData(user.id);
+      expect(
+        CourseInstanceAdmissionContinuationSchema.parse(
+          sessionData.course_instance_admission_continuation,
+        ),
+      ).toMatchObject({
+        course_instance_id: '1',
+        type: 'ordinary',
+        user_id: user.id,
+      });
     });
 
     test('consumes the launch before an exact admission limit redirect', async () => {
@@ -773,6 +1092,10 @@ describe('LTI 1.3 course instance linking', { concurrent: false }, () => {
       const user = await selectOptionalUserByUid('limited-exact-roster@example.com');
       assert.ok(user);
       await assertLtiLaunchConsumed(user.id);
+      assert.notProperty(
+        await selectLatestSessionData(user.id),
+        'course_instance_admission_continuation',
+      );
       const consumedLaunchRes = await fetchWithCookies(targetLinkUri, { redirect: 'manual' });
       assert.equal(consumedLaunchRes.status, 403);
     });

@@ -8,12 +8,13 @@ import { PageLayout } from '../../components/PageLayout.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
 import { idsEqual } from '../../lib/id.js';
 import {
+  admitUserWithCourseInstanceAdmissionSelection,
+  selectCourseInstanceAdmissionForRequest,
+} from '../../models/course-instance-admission-continuation.js';
+import {
   CourseInstanceAdmissionEligibilityError,
   CourseInstanceEnrollmentCodeRequiredError,
-  admitUserWithCourseInstanceAdmissionPlan,
-  selectCourseInstanceAdmissionPlan,
 } from '../../models/course-instance-admission.js';
-import { EnrollmentAdmissionBlockedError } from '../../models/enrollment-reconciliation.js';
 
 import { EnrollmentCodeRequired } from './enrollmentCodeRequired.html.js';
 
@@ -52,12 +53,14 @@ router.get(
       return;
     }
 
-    const admissionPlan = await selectCourseInstanceAdmissionPlan({
+    const admissionSelection = await selectCourseInstanceAdmissionForRequest({
       course: res.locals.course,
       courseInstance,
       enrollmentCode: code,
+      session: req.session,
       user: res.locals.authn_user,
     });
+    const admissionPlan = admissionSelection.plan;
 
     if (admissionPlan.type === 'blocked') {
       res.status(403).send(EnrollmentPage({ resLocals: res.locals, type: 'blocked' }));
@@ -76,24 +79,31 @@ router.get(
     if (
       admissionPlan.type === 'conventional_invitation' ||
       admissionPlan.type === 'institution_roster_invitation' ||
+      admissionPlan.type === 'lti13_roster_invitation' ||
       (admissionPlan.type === 'self_enrollment' && admissionPlan.enrollmentCodeValidated)
     ) {
       try {
-        await admitUserWithCourseInstanceAdmissionPlan({
+        const result = await admitUserWithCourseInstanceAdmissionSelection({
           courseInstanceId: courseInstance.id,
           enrollmentCode: code,
           ip: req.ip ?? null,
           isAdministrator: res.locals.authz_data.authn_is_administrator,
-          plan: admissionPlan,
           reqDate: res.locals.req_date,
+          selection: admissionSelection,
+          session: req.session,
           userId: res.locals.authn_user.id,
         });
+        if (result.type === 'retry_ordinary') {
+          res.redirect(req.originalUrl);
+          return;
+        }
+        if (result.type === 'blocked') {
+          res.status(403).send(EnrollmentPage({ resLocals: res.locals, type: 'blocked' }));
+          return;
+        }
       } catch (error) {
         if (error instanceof CourseInstanceAdmissionEligibilityError) {
           res.status(403).send(EnrollmentPage({ resLocals: res.locals, type: error.reason }));
-          return;
-        } else if (error instanceof EnrollmentAdmissionBlockedError) {
-          res.status(403).send(EnrollmentPage({ resLocals: res.locals, type: 'blocked' }));
           return;
         } else if (!(error instanceof CourseInstanceEnrollmentCodeRequiredError)) {
           throw error;

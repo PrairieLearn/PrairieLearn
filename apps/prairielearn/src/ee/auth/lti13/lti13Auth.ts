@@ -13,6 +13,7 @@ import { assertNever } from '@prairielearn/utils';
 
 import * as authnLib from '../../../lib/authn.js';
 import { clearCookie, setCookie } from '../../../lib/cookie.js';
+import { clearCourseInstanceAdmissionContinuation } from '../../../lib/course-instance-admission-continuation.js';
 import type { Lti13Instance } from '../../../lib/db-types.js';
 import { getCanonicalHost } from '../../../lib/url.js';
 import { getUsableLti13Uin } from '../../lib/lti13-identity.js';
@@ -225,6 +226,7 @@ router.post(
     // session. If this launch also needs secondary authentication, fresh state
     // and a fresh redirect cookie are installed below.
     clearPendingLti13Auth(req.session);
+    clearCourseInstanceAdmissionContinuation(req.session);
     clearCookie(res, ['preAuthUrl', 'pl2_pre_auth_url']);
 
     // Put the LTI 1.3 claims in the session

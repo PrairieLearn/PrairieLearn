@@ -114,6 +114,30 @@ describe('loadUser', () => {
     assert.deepEqual(req.session.lti13_claims, { sub: 'pending-sub' });
   });
 
+  it('does not transfer an admission continuation across identity transitions', async () => {
+    const req = makeReq();
+    const res = makeRes();
+    await loadTestUser(req, res);
+
+    req.session.course_instance_admission_continuation = {
+      course_instance_id: '1',
+      expires_at: new Date(Date.now() + 60_000).toISOString(),
+      lti13_course_instance_id: '1',
+      sub: 'launch-sub',
+      type: 'lti13',
+      user_id: req.session.user_id,
+    };
+
+    await loadUser(req, res, {
+      uid: 'different-browser-session-user@example.com',
+      name: 'Different Browser Session User',
+      uin: null,
+      provider: 'dev',
+    });
+
+    assert.notProperty(req.session, 'course_instance_admission_continuation');
+  });
+
   it('regenerates the session when elevating to LockDown Browser state', async () => {
     let regenerateCount = 0;
     const req = makeReq(() => {
