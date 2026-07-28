@@ -11,9 +11,13 @@ import {
   CourseInstanceSchema,
   Lti13CourseInstanceSchema,
 } from '../../../lib/db-types.js';
+import { idsEqual } from '../../../lib/id.js';
 import { typedAsyncHandler } from '../../../lib/res-locals.js';
+import { admitUserFromLti13CourseInstanceRequest } from '../../../models/course-instance-admission.js';
 import { selectCourseInstancesWithStaffAccess } from '../../../models/course-instances.js';
 import { selectCoursesWithEditAccess } from '../../../models/course.js';
+import { selectEnrollmentAdmissionDecision } from '../../../models/enrollment-identity.js';
+import { EnrollmentAdmissionDeniedError } from '../../../models/enrollment-reconciliation.js';
 import { Lti13Claim } from '../../lib/lti13.js';
 
 import {
@@ -119,6 +123,13 @@ router.get(
     }
 
     const ltiClaim = new Lti13Claim(req);
+    if (
+      req.session.authn_lti13_instance_id === undefined ||
+      !idsEqual(req.session.authn_lti13_instance_id, req.params.lti13_instance_id)
+    ) {
+      ltiClaim.remove();
+      throw new HttpStatusError(403, 'Access denied');
+    }
     const courseName = prettyCourseName(ltiClaim);
     const role_instructor = ltiClaim.isRoleInstructor();
 
@@ -134,6 +145,8 @@ router.get(
     );
 
     if (lti13_course_instance) {
+      const courseInstanceId = lti13_course_instance.course_instance_id;
+
       // Update lti13_course_instance on instructor login
       // helpful as LMS updates or we add features
       if (role_instructor) {
@@ -150,17 +163,47 @@ router.get(
         });
 
         // TODO: Set course/instance staff permissions for LMS course staff here?
+
+        ltiClaim.remove();
+        res.redirect(`/pl/course_instance/${courseInstanceId}/instructor/`);
+        return;
       }
 
-      // LTI claims are not used after this page so remove them from the session
+      const lti13CourseInstanceId = lti13_course_instance.id;
+      const sub = ltiClaim.sub;
+      const userId = res.locals.authn_user.id;
+      const source = { type: 'lti13' as const, lti13CourseInstanceId, sub };
+
+      // Exact LTI authority is request-local. Consume the verified launch
+      // before selection, checked admission, or any resulting redirect/error.
       ltiClaim.remove();
 
-      // Redirect to linked course instance
-      res.redirect(
-        `/pl/course_instance/${lti13_course_instance.course_instance_id}/${
-          role_instructor ? 'instructor/' : ''
-        }`,
+      const decision = await selectEnrollmentAdmissionDecision(
+        {
+          courseInstanceId,
+          lti13Identity: { lti13CourseInstanceId, sub },
+          userId,
+        },
+        source,
       );
+      if (decision.allowed && decision.invitationCandidate !== null) {
+        try {
+          await admitUserFromLti13CourseInstanceRequest({
+            courseInstanceId,
+            expectedInvitationEnrollmentId: decision.invitationCandidate.enrollment.id,
+            ip: req.ip ?? null,
+            isAdministrator: res.locals.is_administrator,
+            lti13CourseInstanceId,
+            reqDate: res.locals.req_date,
+            sub,
+            userId,
+          });
+        } catch (error) {
+          if (!(error instanceof EnrollmentAdmissionDeniedError)) throw error;
+        }
+      }
+
+      res.redirect(`/pl/course_instance/${courseInstanceId}/`);
       return;
     }
 
