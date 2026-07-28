@@ -1,0 +1,1 @@
+ALTER TABLE enrollments VALIDATE CONSTRAINT enrollments_pending_lti13_course_instance_id_fkey;

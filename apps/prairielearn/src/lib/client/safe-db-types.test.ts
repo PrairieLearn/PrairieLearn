@@ -310,12 +310,12 @@ const minimalRawStaffEnrollment: z.input<typeof RawStaffEnrollmentSchema> = {
   created_at: new Date(),
   first_joined_at: new Date(),
   id: '1',
-  lti_managed: false,
-  pending_lti13_email: null,
-  pending_lti13_instance_id: null,
-  pending_lti13_name: null,
+  pending_email: null,
+  pending_lti13_course_instance_id: null,
   pending_lti13_sub: null,
+  pending_name: null,
   pending_uid: null,
+  pending_uin: null,
   status: 'joined',
   user_id: '1',
 };
@@ -325,7 +325,6 @@ const minimalStudentEnrollment: z.input<typeof RawStudentEnrollmentSchema> = {
   created_at: new Date(),
   first_joined_at: new Date(),
   id: '1',
-  lti_managed: false,
   pending_uid: null,
   status: 'joined',
   user_id: null,
@@ -445,12 +444,12 @@ const minimalStaffEnrollment: z.input<typeof StaffEnrollmentSchema> = {
   created_at: null,
   first_joined_at: null,
   id: '9',
-  lti_managed: false,
-  pending_lti13_email: null,
-  pending_lti13_instance_id: null,
-  pending_lti13_name: null,
+  pending_email: null,
+  pending_lti13_course_instance_id: null,
   pending_lti13_sub: null,
+  pending_name: null,
   pending_uid: null,
+  pending_uin: null,
   status: 'joined',
   user_id: null,
 };
@@ -673,14 +672,28 @@ describe('safe-db-types schemas', () => {
   });
 
   it('parses valid RawStaffEnrollment and drops extra fields', () => {
-    const parsed = RawStaffEnrollmentSchema.parse({ ...minimalRawStaffEnrollment, extra: 123 });
+    const parsed = RawStaffEnrollmentSchema.parse({
+      ...minimalRawStaffEnrollment,
+      extra: 123,
+      is_guest: true,
+      lti_managed: false,
+    });
     expect(parsed).not.toHaveProperty('extra');
+    expect(parsed).not.toHaveProperty('is_guest');
+    expect(parsed).not.toHaveProperty('lti_managed');
     expect(parsed).toMatchObject(minimalRawStaffEnrollment);
   });
 
   it('parses valid RawStudentEnrollment and drops extra fields', () => {
-    const parsed = RawStudentEnrollmentSchema.parse({ ...minimalStudentEnrollment, extra: 123 });
+    const parsed = RawStudentEnrollmentSchema.parse({
+      ...minimalStudentEnrollment,
+      extra: 123,
+      is_guest: true,
+      lti_managed: false,
+    });
     expect(parsed).not.toHaveProperty('extra');
+    expect(parsed).not.toHaveProperty('is_guest');
+    expect(parsed).not.toHaveProperty('lti_managed');
     expect(parsed).toMatchObject(minimalStudentEnrollment);
   });
 

@@ -9,6 +9,7 @@ import { Hydrate } from '@prairielearn/react/server';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
+import { DUPLICATE_COURSE_INSTANCE_SHORT_NAME_ERROR } from '../../lib/course-instances.shared.js';
 import { CourseInstanceSchema, EnumCourseInstanceRoleSchema } from '../../lib/db-types.js';
 import { propertyValueWithDefault } from '../../lib/editorUtil.shared.js';
 import { CourseInstanceAddEditor } from '../../lib/editors.js';
@@ -152,25 +153,12 @@ router.post(
       const existingNames = await sqldb.queryRows(
         sql.select_names,
         { course_id: course.id },
-        z.object({ short_name: z.string(), long_name: z.string().nullable() }),
+        z.object({ short_name: z.string() }),
       );
       const existingShortNames = existingNames.map((name) => name.short_name.toLowerCase());
-      const existingLongNames = existingNames
-        .map((name) => name.long_name?.toLowerCase())
-        .filter((name) => name != null);
 
       if (existingShortNames.includes(short_name.toLowerCase())) {
-        throw new error.HttpStatusError(
-          400,
-          'A course instance with this short name already exists',
-        );
-      }
-
-      if (existingLongNames.includes(long_name.toLowerCase())) {
-        throw new error.HttpStatusError(
-          400,
-          'A course instance with this long name already exists',
-        );
+        throw new error.HttpStatusError(400, DUPLICATE_COURSE_INSTANCE_SHORT_NAME_ERROR);
       }
 
       // Parse dates if provided (empty strings mean unpublished)

@@ -98,8 +98,8 @@ class CGrader:
     def run_command(
         self,
         command: str | list[str],
-        input: Any | None = None,  # noqa: A002
-        sandboxed: bool = True,  # noqa: FBT001
+        input: Any | None = None,  # ruff:ignore[builtin-argument-shadowing]
+        sandboxed: bool = True,  # ruff:ignore[boolean-type-hint-positional-argument]
         timeout: float | None = None,
         env: dict[str, str] | None = None,
     ) -> str:
@@ -128,9 +128,9 @@ class CGrader:
         out = ""
         tostr = ""
         if isinstance(input, bytearray):
-            input = bytes(input)  # noqa: A001
+            input = bytes(input)  # ruff:ignore[builtin-variable-shadowing]
         if input is not None and not isinstance(input, bytes):
-            input = str(input).encode("utf-8")  # noqa: A001
+            input = str(input).encode("utf-8")  # ruff:ignore[builtin-variable-shadowing]
         try:
             proc.communicate(input=input, timeout=timeout)[0]
         except subprocess.TimeoutExpired:
@@ -154,10 +154,10 @@ class CGrader:
         compiler: str | None = None,
         flags: str | list[str] | None = None,
         pkg_config_flags: str | Iterable[str] | None = None,
-        add_warning_result_msg: bool = True,  # noqa: FBT001
-        ungradable_if_failed: bool = True,  # noqa: FBT001
-        return_objects: bool = False,  # noqa: FBT001
-        enable_asan: bool = False,  # noqa: FBT001
+        add_warning_result_msg: bool = True,  # ruff:ignore[boolean-type-hint-positional-argument]
+        ungradable_if_failed: bool = True,  # ruff:ignore[boolean-type-hint-positional-argument]
+        return_objects: bool = False,  # ruff:ignore[boolean-type-hint-positional-argument]
+        enable_asan: bool = False,  # ruff:ignore[boolean-type-hint-positional-argument]
         reject_symbols: Iterable[str] | None = None,
         objcopy_args: Iterable[str] | None = None,
     ) -> tuple[str, list[str]] | str:
@@ -283,9 +283,9 @@ class CGrader:
         compiler: str | None = None,
         flags: str | list[str] | None = None,
         pkg_config_flags: str | Iterable[str] | None = None,
-        add_warning_result_msg: bool = True,  # noqa: FBT001
-        ungradable_if_failed: bool = True,  # noqa: FBT001
-        enable_asan: bool = False,  # noqa: FBT001
+        add_warning_result_msg: bool = True,  # ruff:ignore[boolean-type-hint-positional-argument]
+        ungradable_if_failed: bool = True,  # ruff:ignore[boolean-type-hint-positional-argument]
+        enable_asan: bool = False,  # ruff:ignore[boolean-type-hint-positional-argument]
     ) -> str:
         if flags and isinstance(flags, str):
             flags = shlex.split(flags)
@@ -353,9 +353,9 @@ class CGrader:
         flags: str | list[str] | None = None,
         pkg_config_flags: str | Iterable[str] | None = None,
         name: str = "Compilation",
-        add_warning_result_msg: bool = True,  # noqa: FBT001
-        ungradable_if_failed: bool = True,  # noqa: FBT001
-        enable_asan: bool = False,  # noqa: FBT001
+        add_warning_result_msg: bool = True,  # ruff:ignore[boolean-type-hint-positional-argument]
+        ungradable_if_failed: bool = True,  # ruff:ignore[boolean-type-hint-positional-argument]
+        enable_asan: bool = False,  # ruff:ignore[boolean-type-hint-positional-argument]
         reject_symbols: Iterable[str] | None = None,
         objcopy_args: Iterable[str] | None = None,
     ) -> TestResult:
@@ -398,7 +398,7 @@ class CGrader:
         self,
         file: str,
         mode: str = "744",
-        change_parent: bool = True,  # noqa: FBT001
+        change_parent: bool = True,  # ruff:ignore[boolean-type-hint-positional-argument]
     ) -> None:
         file = os.path.abspath(file)
         self.run_command(["chmod", mode, file], sandboxed=False)
@@ -415,20 +415,20 @@ class CGrader:
     def test_run(
         self,
         command: str | Iterable[str],
-        input: str | None = None,  # noqa: A002
+        input: str | None = None,  # ruff:ignore[builtin-argument-shadowing]
         exp_output: OutputMatch | None = None,
-        must_match_all_outputs: OutputMatchingOption | bool = "any",  # noqa: FBT001
+        must_match_all_outputs: OutputMatchingOption | bool = "any",  # ruff:ignore[boolean-type-hint-positional-argument]
         reject_output: OutputMatch | None = None,
         field: str | None = None,
-        ignore_case: bool = True,  # noqa: FBT001
+        ignore_case: bool = True,  # ruff:ignore[boolean-type-hint-positional-argument]
         timeout: float = 1,
         size_limit: int = 10240,
-        ignore_consec_spaces: bool = True,  # noqa: FBT001
+        ignore_consec_spaces: bool = True,  # ruff:ignore[boolean-type-hint-positional-argument]
         args: str | float | Iterable[str | float | int] | None = None,
         name: str | None = None,
         msg: str | None = None,
         max_points: float = 1,
-        highlight_matches: bool = False,  # noqa: FBT001
+        highlight_matches: bool = False,  # ruff:ignore[boolean-type-hint-positional-argument]
     ) -> TestResult:
         if args is not None:
             if isinstance(args, (str, float, int)):
@@ -580,7 +580,7 @@ class CGrader:
         self,
         name: str,
         description: str = "",
-        points: bool | float = True,  # noqa: FBT001
+        points: bool | float = True,  # ruff:ignore[boolean-type-hint-positional-argument]
         msg: str | None = "",
         output: str = "",
         max_points: float = 1,
@@ -624,12 +624,12 @@ class CGrader:
         self,
         exec_file: str,
         args: str | Iterable[str] | None = None,
-        use_suite_title: bool = False,  # noqa: FBT001
-        use_case_name: bool = True,  # noqa: FBT001
-        use_unit_test_id: bool = True,  # noqa: FBT001
-        use_iteration: bool = False,  # noqa: FBT001
-        sandboxed: bool = False,  # noqa: FBT001
-        use_malloc_debug: bool = False,  # noqa: FBT001
+        use_suite_title: bool = False,  # ruff:ignore[boolean-type-hint-positional-argument]
+        use_case_name: bool = True,  # ruff:ignore[boolean-type-hint-positional-argument]
+        use_unit_test_id: bool = True,  # ruff:ignore[boolean-type-hint-positional-argument]
+        use_iteration: bool = False,  # ruff:ignore[boolean-type-hint-positional-argument]
+        sandboxed: bool = False,  # ruff:ignore[boolean-type-hint-positional-argument]
+        use_malloc_debug: bool = False,  # ruff:ignore[boolean-type-hint-positional-argument]
         env: dict[str, str] | None = None,
     ) -> None:
         if not args:
