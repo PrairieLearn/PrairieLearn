@@ -111,6 +111,26 @@ WHERE
   assessment_id = $assessment_id
   AND target_type = 'enrollment';
 
+-- BLOCK select_enrollment_access_control_target_ids
+SELECT DISTINCT
+  aace.enrollment_id
+FROM
+  assessment_access_control_enrollments AS aace
+  JOIN assessment_access_control_rules AS aacr ON (aacr.id = aace.assessment_access_control_rule_id)
+WHERE
+  aacr.assessment_id = $assessment_id
+ORDER BY
+  aace.enrollment_id;
+
+-- BLOCK create_enrollment_target_lock_savepoint
+SAVEPOINT enrollment_target_lock_attempt;
+
+-- BLOCK rollback_enrollment_target_lock_savepoint
+ROLLBACK TO SAVEPOINT enrollment_target_lock_attempt;
+
+-- BLOCK release_enrollment_target_lock_savepoint
+RELEASE SAVEPOINT enrollment_target_lock_attempt;
+
 -- BLOCK select_prairietest_exam_metadata_by_uuids
 SELECT DISTINCT
   u::text AS uuid,
