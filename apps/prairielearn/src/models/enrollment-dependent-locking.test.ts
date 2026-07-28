@@ -155,6 +155,17 @@ async function waitForEnrollmentLockWaiter({
   throw new Error('Timed out waiting for enrollment lock contention');
 }
 
+function preserveFirstFailure(
+  currentFailure: { error: unknown } | undefined,
+  workerResults: PromiseSettledResult<void>[],
+): { error: unknown } | undefined {
+  if (currentFailure) return currentFailure;
+  const rejectedWorker = workerResults.find(
+    (result): result is PromiseRejectedResult => result.status === 'rejected',
+  );
+  return rejectedWorker ? { error: rejectedWorker.reason } : undefined;
+}
+
 async function expectWriterWaitsForLowerBeforeLockingHigher({
   lowerEnrollmentId,
   higherEnrollmentId,
@@ -174,16 +185,21 @@ async function expectWriterWaitsForLowerBeforeLockingHigher({
     lowerLocked.reject(error);
     throw error;
   });
+  void blockerPromise.catch(() => undefined);
 
-  await lowerLocked.promise;
-  const writerApplicationName = `el-writer-${crypto.randomUUID()}`;
-  const writerPromise = runInTransactionAsync(async () => {
-    await setLocalApplicationName(writerApplicationName);
-    await writer();
-  });
-  void writerPromise.catch(() => undefined);
+  let writerPromise: Promise<void> | undefined;
+  let failure: { error: unknown } | undefined;
 
   try {
+    await lowerLocked.promise;
+
+    const writerApplicationName = `el-writer-${crypto.randomUUID()}`;
+    writerPromise = runInTransactionAsync(async () => {
+      await setLocalApplicationName(writerApplicationName);
+      await writer();
+    });
+    void writerPromise.catch(() => undefined);
+
     await waitForEnrollmentLockWaiter({ applicationName: writerApplicationName });
     await runInTransactionAsync(async () => {
       await execute(sql.set_short_lock_timeout);
@@ -191,10 +207,18 @@ async function expectWriterWaitsForLowerBeforeLockingHigher({
         enrollment_id: higherEnrollmentId,
       });
     });
+  } catch (error) {
+    failure = { error };
   } finally {
     releaseLower.resolve();
-    await Promise.all([blockerPromise, writerPromise]);
+    const workerResults = await Promise.allSettled([
+      blockerPromise,
+      ...(writerPromise ? [writerPromise] : []),
+    ]);
+    failure = preserveFirstFailure(failure, workerResults);
   }
+
+  if (failure) throw failure.error;
 }
 
 describe('enrollment-dependent locking', { concurrent: false }, () => {
@@ -422,26 +446,33 @@ describe('enrollment-dependent locking', { concurrent: false }, () => {
         old_enrollment_id: enrollments[0].id,
         new_enrollment_id: enrollments[2].id,
       });
+    }).catch((error) => {
+      parentsLocked.reject(error);
+      throw error;
     });
-    await parentsLocked.promise;
-
-    const replacementApplicationName = `el-replacement-${crypto.randomUUID()}`;
-    const replacement = runInTransactionAsync(async () => {
-      await setLocalApplicationName(replacementApplicationName);
-      await replaceEnrollmentAccessControlRules(assessment, [
-        {
-          ruleData: makeRuleData(rule.id),
-          enrollmentIds: [enrollments[1].id],
-        },
-      ]);
-    });
-    void replacement.catch(() => undefined);
+    void mover.catch(() => undefined);
 
     const retryParentLocked = deferred();
     const releaseRetryParent = deferred();
+    let replacement: Promise<void> | undefined;
     let retryBlocker: Promise<void> | undefined;
+    let failure: { error: unknown } | undefined;
 
     try {
+      await parentsLocked.promise;
+
+      const replacementApplicationName = `el-replacement-${crypto.randomUUID()}`;
+      replacement = runInTransactionAsync(async () => {
+        await setLocalApplicationName(replacementApplicationName);
+        await replaceEnrollmentAccessControlRules(assessment, [
+          {
+            ruleData: makeRuleData(rule.id),
+            enrollmentIds: [enrollments[1].id],
+          },
+        ]);
+      });
+      void replacement.catch(() => undefined);
+
       // The replacement only reaches its lock query after reading the current target.
       const initialLockQueryStart = await waitForEnrollmentLockWaiter({
         applicationName: replacementApplicationName,
@@ -470,11 +501,20 @@ describe('enrollment-dependent locking', { concurrent: false }, () => {
         afterQueryStart: initialLockQueryStart,
       });
       expect(retryLockQueryStart).not.toEqual(initialLockQueryStart);
+    } catch (error) {
+      failure = { error };
     } finally {
       moveTarget.resolve();
       releaseRetryParent.resolve();
-      await Promise.all([mover, replacement, ...(retryBlocker ? [retryBlocker] : [])]);
+      const workerResults = await Promise.allSettled([
+        mover,
+        ...(replacement ? [replacement] : []),
+        ...(retryBlocker ? [retryBlocker] : []),
+      ]);
+      failure = preserveFirstFailure(failure, workerResults);
     }
+
+    if (failure) throw failure.error;
 
     const [updatedRule] = await selectAccessControlRules(assessment, ['enrollment']);
     assert.isOk(updatedRule);
