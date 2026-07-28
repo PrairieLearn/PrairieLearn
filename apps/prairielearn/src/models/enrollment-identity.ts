@@ -332,11 +332,16 @@ export interface LockedEnrollmentIdentityDecision {
 }
 
 /**
- * Selects the complete identity set, locks every selected enrollment parent in
- * ascending ID order, and revalidates only that locked set. This must run inside
- * the shared course-instance enrollment barrier transaction. It intentionally
- * does not lock users or LTI identities; a matching row created later with a
- * different unique key may remain for a future reconciliation.
+ * Reconciliation implementation detail that selects the complete identity set,
+ * locks every selected enrollment parent in ascending ID order, and revalidates
+ * only that locked set. This must run inside the shared course-instance
+ * enrollment-barrier transaction. It intentionally does not lock users or LTI
+ * identities; a matching row created later with a different unique key may
+ * remain for a future reconciliation. Direct read and render consumers must use
+ * {@link selectEnrollmentIdentityClassification} or
+ * {@link selectEnrollmentAdmissionDecision}.
+ *
+ * @internal
  */
 export async function selectLockedEnrollmentIdentityDecision(
   context: EnrollmentIdentityContext,
@@ -355,7 +360,13 @@ export async function selectLockedEnrollmentIdentityDecision(
 }
 
 /**
- * Locked complete-set selection for merge-only reconciliation.
+ * Reconciliation implementation detail for locked complete-set merge-only
+ * selection. This must run inside the shared course-instance enrollment-barrier
+ * transaction. Direct read and render consumers must use
+ * {@link selectEnrollmentIdentityClassification} or
+ * {@link selectEnrollmentAdmissionDecision}.
+ *
+ * @internal
  */
 export async function selectLockedEnrollmentIdentityClassification(
   context: EnrollmentIdentityContext,
