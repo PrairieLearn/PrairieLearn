@@ -28,15 +28,14 @@ import {
   dangerousFullSystemAuthz,
   hasRole,
   isDangerousFullSystemAuthz,
+  makePageAuthzData,
 } from '../lib/authz-data-lib.js';
 import type { PageContext } from '../lib/client/page-context.js';
 import {
-  type Course,
   type CourseInstance,
   type Enrollment,
   EnrollmentSchema,
   type EnumEnrollmentStatus,
-  type Institution,
   UserSchema,
 } from '../lib/db-types.js';
 import { isEnterprise } from '../lib/license.js';
@@ -45,7 +44,9 @@ import { HttpRedirect } from '../lib/redirect.js';
 import { insertAuditEvent } from './audit-event.js';
 import type { SupportedActionsForTable } from './audit-event.types.js';
 import { selectCourseInstanceById } from './course-instances.js';
+import { selectCourseById } from './course.js';
 import { runWithSharedEnrollmentBarrier } from './enrollment-barrier.js';
+import { selectInstitutionForCourseInstance } from './institution.js';
 import { generateUsers, selectUserById } from './user.js';
 
 const sql = loadSqlEquiv(import.meta.url);
@@ -232,16 +233,12 @@ export async function ensureUncheckedEnrollment({
  *
  */
 export async function ensureEnrollment({
-  institution,
-  course,
   courseInstance,
   authzData,
   requiredRole,
   actionDetail,
   throwOnIneligible = true,
 }: {
-  institution: Institution;
-  course: Course;
   courseInstance: CourseInstance;
   authzData: Exclude<AuthzDataWithoutEffectiveUser, DangerousSystemAuthzData>;
   requiredRole: 'Student'[];
@@ -252,47 +249,55 @@ export async function ensureEnrollment({
   // We don't want to give instructors an enrollment.
   if (!hasRole(authzData, requiredRole)) return PotentialEnrollmentStatus.INELIGIBLE;
 
-  let status = PotentialEnrollmentStatus.ALLOWED;
+  return await runWithSharedEnrollmentBarrier(courseInstance.id, async () => {
+    assertHasRole(authzData, requiredRole);
+    let status = PotentialEnrollmentStatus.ALLOWED;
+    let authoritativeCourseInstance = courseInstance;
 
-  if (isEnterprise()) {
-    status = await checkPotentialEnterpriseEnrollment({
-      institution,
-      course,
-      courseInstance,
+    if (isEnterprise()) {
+      authoritativeCourseInstance = await selectCourseInstanceById(courseInstance.id);
+      const authoritativeCourse = await selectCourseById(authoritativeCourseInstance.course_id);
+      const authoritativeInstitution = await selectInstitutionForCourseInstance({
+        course_instance_id: authoritativeCourseInstance.id,
+      });
+      status = await checkPotentialEnterpriseEnrollment({
+        institution: authoritativeInstitution,
+        course: authoritativeCourse,
+        courseInstance: authoritativeCourseInstance,
+        authzData: makePageAuthzData({
+          authzData,
+          is_administrator: false,
+        }),
+      });
+
+      switch (status) {
+        case PotentialEnrollmentStatus.PLAN_GRANTS_REQUIRED:
+          if (throwOnIneligible) {
+            throw new HttpRedirect(`/pl/course_instance/${courseInstance.id}/upgrade`);
+          }
+          return status;
+        case PotentialEnrollmentStatus.LIMIT_EXCEEDED:
+          if (throwOnIneligible) {
+            throw new HttpRedirect('/pl/enroll/limit_exceeded');
+          }
+          return status;
+        case PotentialEnrollmentStatus.ALLOWED:
+          break;
+        default:
+          assertNever(status);
+      }
+    }
+
+    await ensureUncheckedEnrollment({
+      courseInstance: authoritativeCourseInstance,
+      userId: authzData.user.id,
+      requiredRole,
       authzData,
+      actionDetail,
     });
 
-    switch (status) {
-      case PotentialEnrollmentStatus.PLAN_GRANTS_REQUIRED: {
-        if (throwOnIneligible) {
-          throw new HttpRedirect(`/pl/course_instance/${courseInstance.id}/upgrade`);
-        } else {
-          return status;
-        }
-      }
-      case PotentialEnrollmentStatus.LIMIT_EXCEEDED: {
-        if (throwOnIneligible) {
-          throw new HttpRedirect('/pl/enroll/limit_exceeded');
-        } else {
-          return status;
-        }
-      }
-      case PotentialEnrollmentStatus.ALLOWED:
-        break;
-      default:
-        assertNever(status);
-    }
-  }
-
-  await ensureUncheckedEnrollment({
-    courseInstance,
-    userId: authzData.user.id,
-    requiredRole,
-    authzData,
-    actionDetail,
+    return status;
   });
-
-  return status;
 }
 
 export async function selectOptionalEnrollmentByUserId({

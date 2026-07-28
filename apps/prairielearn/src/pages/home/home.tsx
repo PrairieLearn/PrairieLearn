@@ -198,15 +198,14 @@ router.post(
       return;
     }
 
-    const { authzData, courseInstance, institution, course } =
-      await constructCourseOrInstanceContext({
-        user: res.locals.authn_user,
-        course_id: null,
-        course_instance_id: body.course_instance_id,
-        ip: req.ip ?? null,
-        req_date: res.locals.req_date,
-        is_administrator: res.locals.is_administrator,
-      });
+    const { authzData, courseInstance } = await constructCourseOrInstanceContext({
+      user: res.locals.authn_user,
+      course_id: null,
+      course_instance_id: body.course_instance_id,
+      ip: req.ip ?? null,
+      req_date: res.locals.req_date,
+      is_administrator: res.locals.is_administrator,
+    });
 
     if (authzData === null || courseInstance === null) {
       throw new HttpStatusError(403, 'Access denied');
@@ -252,8 +251,6 @@ router.post(
         }
 
         await ensureEnrollment({
-          institution,
-          course,
           courseInstance,
           authzData,
           requiredRole: ['Student'],

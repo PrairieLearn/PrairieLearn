@@ -38,11 +38,9 @@ export async function enrollUser(
     throw new Error(`Course instance ${courseInstanceId} not found`);
   }
 
-  const { authzData, course, institution, courseInstance } = context;
+  const { authzData, courseInstance } = context;
 
   return ensureEnrollment({
-    institution,
-    course,
     courseInstance,
     requiredRole: ['Student'],
     authzData,

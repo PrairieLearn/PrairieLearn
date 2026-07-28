@@ -137,15 +137,14 @@ router.post(
       user_id: userId,
       provider: 'LTI',
     });
-    const { authzData, institution, course, courseInstance } =
-      await constructCourseOrInstanceContext({
-        user,
-        course_id: null,
-        course_instance_id: ltiResult.course_instance_id,
-        ip: req.ip || null,
-        req_date: res.locals.req_date,
-        is_administrator: res.locals.is_administrator,
-      });
+    const { authzData, courseInstance } = await constructCourseOrInstanceContext({
+      user,
+      course_id: null,
+      course_instance_id: ltiResult.course_instance_id,
+      ip: req.ip || null,
+      req_date: res.locals.req_date,
+      is_administrator: res.locals.is_administrator,
+    });
 
     if (!authzData?.has_student_access) {
       throw new HttpStatusError(403, 'Access denied');
@@ -154,8 +153,6 @@ router.post(
     if (!authzData.has_student_access_with_enrollment) {
       assert(courseInstance);
       await ensureEnrollment({
-        institution,
-        course,
         courseInstance,
         actionDetail: 'implicit_joined',
         authzData,

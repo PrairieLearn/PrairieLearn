@@ -1,55 +1,22 @@
-import asyncHandler from 'express-async-handler';
-
-import { run } from '@prairielearn/run';
-
 import { EnrollmentPage } from '../components/EnrollmentPage.js';
-import { hasRole } from '../lib/authz-data-lib.js';
-import type { CourseInstance } from '../lib/db-types.js';
-import { checkEnrollmentEligibility } from '../lib/enrollment-eligibility.js';
 import { idsEqual } from '../lib/id.js';
-import { ensureEnrollment, selectOptionalEnrollmentByUid } from '../models/enrollment.js';
+import { typedAsyncHandler } from '../lib/res-locals.js';
+import {
+  CourseInstanceAdmissionEligibilityError,
+  CourseInstanceAdmissionPlanChangedError,
+  CourseInstanceEnrollmentCodeRequiredError,
+  type CourseInstanceAdmissionPlanLocals as PlanLocals,
+  admitUserWithCourseInstanceAdmissionPlan,
+  selectCourseInstanceAdmissionPlan,
+} from '../models/course-instance-admission.js';
+import { EnrollmentAdmissionBlockedError } from '../models/enrollment-reconciliation.js';
 
-export default asyncHandler(async (req, res, next) => {
+const autoEnroll = typedAsyncHandler<'course-instance', PlanLocals>(async (req, res, next) => {
   // If the user does not currently have access to the course, but could if
   // they were enrolled, automatically enroll them. However, we will not
   // attempt to enroll them if they are an instructor (that is, if they have
   // a specific role in the course or course instance) or if they are
   // impersonating another user.
-
-  // TODO: check if self-enrollment requires a secret link.
-
-  const courseInstance: CourseInstance = res.locals.course_instance;
-
-  // We select by user UID so that we can find invited/rejected enrollments as well
-  const existingEnrollment = await run(async () => {
-    // We only want to even try to lookup enrollment information if the user is a student.
-    if (!hasRole(res.locals.authz_data, ['Student'])) {
-      return null;
-    }
-    return await selectOptionalEnrollmentByUid({
-      uid: res.locals.authn_user.uid,
-      courseInstance,
-      requiredRole: ['Student'],
-      authzData: res.locals.authz_data,
-    });
-  });
-
-  const enrollmentEligibility = checkEnrollmentEligibility({
-    user: res.locals.authn_user,
-    course: res.locals.course,
-    courseInstance,
-    existingEnrollment,
-  });
-
-  // If the user is not enrolled, or is rejected/left/removed then they can enroll if self-enrollment is allowed.
-  const canSelfEnroll =
-    enrollmentEligibility.eligible &&
-    (existingEnrollment == null ||
-      ['rejected', 'left', 'removed'].includes(existingEnrollment.status));
-
-  // If the user is enrolled and is invited/joined, then they have access regardless of the self-enrollment status.
-  const canAccessCourseInstance =
-    existingEnrollment != null && ['invited', 'joined'].includes(existingEnrollment.status);
 
   if (
     idsEqual(res.locals.user.id, res.locals.authn_user.id) &&
@@ -58,26 +25,82 @@ export default asyncHandler(async (req, res, next) => {
     res.locals.authz_data.authn_has_student_access &&
     !res.locals.authz_data.authn_has_student_access_with_enrollment
   ) {
-    if (canSelfEnroll || canAccessCourseInstance) {
-      await ensureEnrollment({
-        institution: res.locals.institution,
+    const admissionPlan =
+      res.locals.course_instance_admission_plan ??
+      (await selectCourseInstanceAdmissionPlan({
         course: res.locals.course,
-        courseInstance,
-        authzData: res.locals.authz_data,
-        requiredRole: ['Student'],
-        actionDetail: 'implicit_joined',
-      });
+        courseInstance: res.locals.course_instance,
+        user: res.locals.authn_user,
+      }));
 
-      // This is the only part of the `authz_data` that would change as a
-      // result of this enrollment, so we can just update it directly.
+    if (
+      admissionPlan.type === 'conventional_invitation' ||
+      admissionPlan.type === 'institution_roster_invitation' ||
+      admissionPlan.type === 'self_enrollment'
+    ) {
+      try {
+        await admitUserWithCourseInstanceAdmissionPlan({
+          courseInstanceId: res.locals.course_instance.id,
+          ip: req.ip ?? null,
+          isAdministrator: res.locals.authz_data.authn_is_administrator,
+          plan: admissionPlan,
+          reqDate: res.locals.req_date,
+          userId: res.locals.authn_user.id,
+        });
+      } catch (error) {
+        if (error instanceof CourseInstanceAdmissionPlanChangedError) {
+          if (error.plan.type === 'blocked') {
+            res.status(403).send(EnrollmentPage({ resLocals: res.locals, type: 'blocked' }));
+            return;
+          }
+          if (error.plan.type === 'ineligible') {
+            res
+              .status(403)
+              .send(EnrollmentPage({ resLocals: res.locals, type: error.plan.reason }));
+            return;
+          }
+          if (error.plan.type !== 'already_joined') {
+            res.redirect(
+              `/pl/course_instance/${res.locals.course_instance.id}/join?url=${encodeURIComponent(req.originalUrl)}`,
+            );
+            return;
+          }
+        } else if (error instanceof CourseInstanceAdmissionEligibilityError) {
+          res.status(403).send(EnrollmentPage({ resLocals: res.locals, type: error.reason }));
+          return;
+        } else if (error instanceof EnrollmentAdmissionBlockedError) {
+          res.status(403).send(EnrollmentPage({ resLocals: res.locals, type: 'blocked' }));
+          return;
+        } else if (error instanceof CourseInstanceEnrollmentCodeRequiredError) {
+          res.redirect(
+            `/pl/course_instance/${res.locals.course_instance.id}/join?url=${encodeURIComponent(req.originalUrl)}`,
+          );
+          return;
+        } else {
+          throw error;
+        }
+      }
+
       res.locals.authz_data.has_student_access_with_enrollment = true;
-    } else if (!enrollmentEligibility.eligible) {
-      res
-        .status(403)
-        .send(EnrollmentPage({ resLocals: res.locals, type: enrollmentEligibility.reason }));
+      res.locals.authz_data.authn_has_student_access_with_enrollment = true;
+    } else if (admissionPlan.type === 'already_joined') {
+      res.locals.authz_data.has_student_access_with_enrollment = true;
+      res.locals.authz_data.authn_has_student_access_with_enrollment = true;
+    } else if (admissionPlan.type === 'blocked') {
+      res.status(403).send(EnrollmentPage({ resLocals: res.locals, type: 'blocked' }));
+      return;
+    } else if (admissionPlan.type === 'ineligible') {
+      res.status(403).send(EnrollmentPage({ resLocals: res.locals, type: admissionPlan.reason }));
+      return;
+    } else {
+      res.redirect(
+        `/pl/course_instance/${res.locals.course_instance.id}/join?url=${encodeURIComponent(req.originalUrl)}`,
+      );
       return;
     }
   }
 
   next();
 });
+
+export default autoEnroll;

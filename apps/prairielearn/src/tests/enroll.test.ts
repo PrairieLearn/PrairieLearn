@@ -19,6 +19,7 @@ import * as helperServer from './helperServer.js';
 import {
   createInstitution,
   deleteEnrollmentsInCourseInstance,
+  getConfiguredUser,
   getOrCreateUser,
   updateCourseInstanceSettings,
   withUser,
@@ -224,6 +225,27 @@ describe('Self-enrollment settings transitions', () => {
     });
   });
 
+  it('does not enroll an administrator who visits the join route', async () => {
+    await deleteEnrollmentsInCourseInstance('1');
+    await updateCourseInstanceSettings('1', {
+      selfEnrollmentEnabled: false,
+      selfEnrollmentUseEnrollmentCode: true,
+      restrictToInstitution: false,
+    });
+
+    const administrator = await getConfiguredUser();
+    const response = await fetch(`${courseInstanceUrl}/join`, { redirect: 'manual' });
+    assert.equal(response.status, 302);
+
+    const enrollment = await selectOptionalEnrollmentByUserId({
+      userId: administrator.id,
+      courseInstance,
+      requiredRole: ['System'],
+      authzData: dangerousFullSystemAuthz(),
+    });
+    assert.isNull(enrollment);
+  });
+
   it('allows user to self-enroll via the assessments endpoint when self-enrollment is enabled', async () => {
     await deleteEnrollmentsInCourseInstance('1');
     await updateCourseInstanceSettings('1', {
@@ -312,6 +334,270 @@ describe('Self-enrollment settings transitions', () => {
       assert.isNotNull(finalEnrollment);
       assert.equal(finalEnrollment.status, 'joined');
       assert.isNull(finalEnrollment.pending_uid);
+    });
+  });
+
+  it('allows a roster-invited user to enroll when self-enrollment is disabled and a code is required', async () => {
+    await deleteEnrollmentsInCourseInstance('1');
+    await updateCourseInstanceSettings('1', {
+      selfEnrollmentEnabled: false,
+      selfEnrollmentUseEnrollmentCode: true,
+      restrictToInstitution: false,
+    });
+
+    const rosterUser = await getOrCreateUser({
+      uid: 'roster@example.com',
+      name: 'Roster Student',
+      uin: 'roster1',
+      email: 'roster@example.com',
+      institutionId: '1',
+    });
+    await execute(
+      `INSERT INTO enrollments (course_instance_id, status, pending_uin)
+       VALUES ($course_instance_id, 'invited', $pending_uin)`,
+      {
+        course_instance_id: '1',
+        pending_uin: rosterUser.uin,
+      },
+    );
+
+    await withUser(rosterUser, async () => {
+      const response = await fetch(assessmentsUrl);
+      assert.equal(response.status, 200);
+
+      const enrollment = await selectOptionalEnrollmentByUserId({
+        userId: rosterUser.id,
+        courseInstance,
+        requiredRole: ['System'],
+        authzData: dangerousFullSystemAuthz(),
+      });
+      assert.isNotNull(enrollment);
+      assert.equal(enrollment.status, 'joined');
+      assert.isNull(enrollment.pending_uin);
+    });
+  });
+
+  it('allows a bound-left user with a roster invitation to bypass the enrollment code', async () => {
+    await deleteEnrollmentsInCourseInstance('1');
+    await updateCourseInstanceSettings('1', {
+      selfEnrollmentEnabled: true,
+      selfEnrollmentUseEnrollmentCode: true,
+      restrictToInstitution: false,
+    });
+
+    const rosterUser = await getOrCreateUser({
+      uid: 'left-roster@example.com',
+      name: 'Left Roster Student',
+      uin: 'left-roster1',
+      email: 'left-roster@example.com',
+      institutionId: '1',
+    });
+    await execute(
+      `INSERT INTO enrollments (user_id, course_instance_id, status, first_joined_at)
+       VALUES ($user_id, $course_instance_id, 'left', $first_joined_at)`,
+      {
+        user_id: rosterUser.id,
+        course_instance_id: '1',
+        first_joined_at: new Date('2024-01-01T00:00:00Z'),
+      },
+    );
+    await execute(
+      `INSERT INTO enrollments (course_instance_id, status, pending_uin)
+       VALUES ($course_instance_id, 'invited', $pending_uin)`,
+      {
+        course_instance_id: '1',
+        pending_uin: rosterUser.uin,
+      },
+    );
+
+    await withUser(rosterUser, async () => {
+      const response = await fetch(assessmentsUrl);
+      assert.equal(response.status, 200);
+
+      const enrollment = await selectOptionalEnrollmentByUserId({
+        userId: rosterUser.id,
+        courseInstance,
+        requiredRole: ['System'],
+        authzData: dangerousFullSystemAuthz(),
+      });
+      assert.isNotNull(enrollment);
+      assert.equal(enrollment.status, 'joined');
+      assert.equal(enrollment.first_joined_at?.toISOString(), '2024-01-01T00:00:00.000Z');
+      assert.isNull(enrollment.pending_uin);
+    });
+  });
+
+  it('requires a plain bound-left user to enter the enrollment code', async () => {
+    await deleteEnrollmentsInCourseInstance('1');
+    await updateCourseInstanceSettings('1', {
+      selfEnrollmentEnabled: true,
+      selfEnrollmentUseEnrollmentCode: true,
+      restrictToInstitution: false,
+    });
+
+    const leftUser = await getOrCreateUser({
+      uid: 'left@example.com',
+      name: 'Left Student',
+      uin: 'left1',
+      email: 'left@example.com',
+      institutionId: '1',
+    });
+    await execute(
+      `INSERT INTO enrollments (user_id, course_instance_id, status, first_joined_at)
+       VALUES ($user_id, $course_instance_id, 'left', $first_joined_at)`,
+      {
+        user_id: leftUser.id,
+        course_instance_id: '1',
+        first_joined_at: new Date('2024-01-01T00:00:00Z'),
+      },
+    );
+
+    await withUser(leftUser, async () => {
+      const response = await fetch(assessmentsUrl, { redirect: 'manual' });
+      assert.equal(response.status, 302);
+      assert.isTrue(response.headers.get('location')?.includes('/join'));
+
+      const joinResponse = await fetch(`${courseInstanceUrl}/join`);
+      assert.equal(joinResponse.status, 200);
+      assert.include(await joinResponse.text(), 'Join course via enrollment code');
+
+      const enrollment = await selectOptionalEnrollmentByUserId({
+        userId: leftUser.id,
+        courseInstance,
+        requiredRole: ['System'],
+        authzData: dangerousFullSystemAuthz(),
+      });
+      assert.isNotNull(enrollment);
+      assert.equal(enrollment.status, 'left');
+    });
+  });
+
+  it('does not treat a guest roster candidate as admission authority', async () => {
+    await deleteEnrollmentsInCourseInstance('1');
+    await updateCourseInstanceSettings('1', {
+      selfEnrollmentEnabled: false,
+      selfEnrollmentUseEnrollmentCode: true,
+      restrictToInstitution: false,
+    });
+
+    const guestUser = await getOrCreateUser({
+      uid: 'guest-roster@example.com',
+      name: 'Guest Roster Student',
+      uin: 'guest-roster1',
+      email: 'guest-roster@example.com',
+      institutionId: '1',
+    });
+    await execute(
+      `INSERT INTO enrollments (course_instance_id, status, pending_uin, is_guest)
+       VALUES ($course_instance_id, 'invited', $pending_uin, TRUE)`,
+      {
+        course_instance_id: '1',
+        pending_uin: guestUser.uin,
+      },
+    );
+
+    await withUser(guestUser, async () => {
+      const response = await fetch(assessmentsUrl);
+      assert.equal(response.status, 403);
+
+      const enrollment = await selectOptionalEnrollmentByUserId({
+        userId: guestUser.id,
+        courseInstance,
+        requiredRole: ['System'],
+        authzData: dangerousFullSystemAuthz(),
+      });
+      assert.isNull(enrollment);
+    });
+  });
+
+  it('does not let a bound-removed user gain authority from a roster candidate', async () => {
+    await deleteEnrollmentsInCourseInstance('1');
+    await updateCourseInstanceSettings('1', {
+      selfEnrollmentEnabled: false,
+      selfEnrollmentUseEnrollmentCode: true,
+      restrictToInstitution: false,
+    });
+
+    const removedUser = await getOrCreateUser({
+      uid: 'removed-roster@example.com',
+      name: 'Removed Roster Student',
+      uin: 'removed-roster1',
+      email: 'removed-roster@example.com',
+      institutionId: '1',
+    });
+    await execute(
+      `INSERT INTO enrollments (user_id, course_instance_id, status, first_joined_at)
+       VALUES ($user_id, $course_instance_id, 'removed', $first_joined_at)`,
+      {
+        user_id: removedUser.id,
+        course_instance_id: '1',
+        first_joined_at: new Date('2024-01-01T00:00:00Z'),
+      },
+    );
+    await execute(
+      `INSERT INTO enrollments (course_instance_id, status, pending_uin)
+       VALUES ($course_instance_id, 'invited', $pending_uin)`,
+      {
+        course_instance_id: '1',
+        pending_uin: removedUser.uin,
+      },
+    );
+
+    await withUser(removedUser, async () => {
+      const response = await fetch(assessmentsUrl);
+      assert.equal(response.status, 403);
+
+      const enrollment = await selectOptionalEnrollmentByUserId({
+        userId: removedUser.id,
+        courseInstance,
+        requiredRole: ['System'],
+        authzData: dangerousFullSystemAuthz(),
+      });
+      assert.isNotNull(enrollment);
+      assert.equal(enrollment.status, 'removed');
+    });
+  });
+
+  it('leaves an already-joined enrollment unchanged', async () => {
+    await deleteEnrollmentsInCourseInstance('1');
+    await updateCourseInstanceSettings('1', {
+      selfEnrollmentEnabled: false,
+      selfEnrollmentUseEnrollmentCode: true,
+      restrictToInstitution: false,
+    });
+
+    const joinedUser = await getOrCreateUser({
+      uid: 'joined@example.com',
+      name: 'Joined Student',
+      uin: 'joined1',
+      email: 'joined@example.com',
+      institutionId: '1',
+    });
+    const enrollment = await queryRow(
+      `INSERT INTO enrollments (user_id, course_instance_id, status, first_joined_at)
+       VALUES ($user_id, $course_instance_id, 'joined', $first_joined_at)
+       RETURNING *`,
+      {
+        user_id: joinedUser.id,
+        course_instance_id: '1',
+        first_joined_at: new Date('2024-01-01T00:00:00Z'),
+      },
+      EnrollmentSchema,
+    );
+
+    await withUser(joinedUser, async () => {
+      const response = await fetch(assessmentsUrl);
+      assert.equal(response.status, 200);
+
+      const finalEnrollment = await selectOptionalEnrollmentByUserId({
+        userId: joinedUser.id,
+        courseInstance,
+        requiredRole: ['System'],
+        authzData: dangerousFullSystemAuthz(),
+      });
+      assert.isNotNull(finalEnrollment);
+      assert.equal(finalEnrollment.id, enrollment.id);
+      assert.equal(finalEnrollment.first_joined_at?.toISOString(), '2024-01-01T00:00:00.000Z');
     });
   });
 

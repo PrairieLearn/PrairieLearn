@@ -2,14 +2,19 @@ import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 
 import { Hydrate } from '@prairielearn/react/server';
-import { run } from '@prairielearn/run';
 
 import { EnrollmentPage } from '../../components/EnrollmentPage.js';
 import { PageLayout } from '../../components/PageLayout.js';
-import { hasRole } from '../../lib/authz-data-lib.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
-import { authzCourseOrInstance } from '../../middlewares/authzCourseOrInstance.js';
-import { ensureEnrollment, selectOptionalEnrollmentByUid } from '../../models/enrollment.js';
+import { idsEqual } from '../../lib/id.js';
+import {
+  CourseInstanceAdmissionEligibilityError,
+  CourseInstanceAdmissionPlanChangedError,
+  CourseInstanceEnrollmentCodeRequiredError,
+  admitUserWithCourseInstanceAdmissionPlan,
+  selectCourseInstanceAdmissionPlan,
+} from '../../models/course-instance-admission.js';
+import { EnrollmentAdmissionBlockedError } from '../../models/enrollment-reconciliation.js';
 
 import { EnrollmentCodeRequired } from './enrollmentCodeRequired.html.js';
 
@@ -27,107 +32,97 @@ router.get(
       // We should be careful to not pass `courseInstance` to the hydrated page.
       accessType: 'instructor',
     });
-    const enrollmentCode = courseInstance.enrollment_code;
     const redirectUrl =
       typeof url === 'string' && url.startsWith('/') && !url.startsWith('//') ? url : null;
-    // Lookup if they have an existing enrollment
-    const existingEnrollment = await run(async () => {
-      // We don't want to 403 instructors
-      if (!hasRole(res.locals.authz_data, ['Student'])) return null;
-      return await selectOptionalEnrollmentByUid({
-        uid: res.locals.authn_user.uid,
-        courseInstance,
-        requiredRole: ['Student'],
-        authzData: res.locals.authz_data,
-      });
-    });
-
-    const needsToSelfEnroll =
-      existingEnrollment == null ||
-      !['joined', 'invited', 'left', 'removed'].includes(existingEnrollment.status);
-
-    const institutionRestrictionSatisfied =
-      res.locals.authn_user.institution_id === res.locals.course.institution_id ||
-      // The default value for self-enrollment restriction is true.
-      // In the old system (before publishing was introduced), the default was false.
-      // So if publishing is not set up, we should ignore the restriction.
-      !courseInstance.modern_publishing ||
-      !courseInstance.self_enrollment_restrict_to_institution;
-
-    const selfEnrollmentExpired =
-      courseInstance.self_enrollment_enabled_before_date != null &&
-      new Date() >= courseInstance.self_enrollment_enabled_before_date;
-
-    const selfEnrollmentEnabled = courseInstance.self_enrollment_enabled;
-
-    if (!selfEnrollmentEnabled && needsToSelfEnroll) {
-      res
-        .status(403)
-        .send(EnrollmentPage({ resLocals: res.locals, type: 'self-enrollment-disabled' }));
-      return;
-    }
-
-    if (selfEnrollmentExpired && needsToSelfEnroll) {
-      res
-        .status(403)
-        .send(EnrollmentPage({ resLocals: res.locals, type: 'self-enrollment-expired' }));
-      return;
-    }
-
-    if (!institutionRestrictionSatisfied && needsToSelfEnroll) {
-      res
-        .status(403)
-        .send(EnrollmentPage({ resLocals: res.locals, type: 'institution-restriction' }));
-      return;
-    }
-
-    // Check if the user is enrolled, but is in a status where they cannot rejoin the course.
-    if (
-      existingEnrollment != null &&
-      !['joined', 'invited', 'rejected', 'left', 'removed'].includes(existingEnrollment.status)
-    ) {
-      res.status(403).send(EnrollmentPage({ resLocals: res.locals, type: 'blocked' }));
-      return;
-    }
-
-    const userBypassesEnrollmentCodeRequirement =
-      existingEnrollment != null &&
-      ['joined', 'invited', 'left', 'removed'].includes(existingEnrollment.status);
-
-    if (
-      // No enrollment code required
-      !courseInstance.self_enrollment_use_enrollment_code ||
-      // Enrollment code is correct
-      code?.toUpperCase() === enrollmentCode.toUpperCase() ||
-      // Existing joined, invited, left, or removed enrollments can transition immediately.
-      // Rejected enrollments are treated as if they had no status.
-      userBypassesEnrollmentCodeRequirement
-    ) {
-      if (
-        code?.toUpperCase() === enrollmentCode.toUpperCase() ||
-        userBypassesEnrollmentCodeRequirement
-      ) {
-        // Authorize the user for the course instance
-        req.params.course_instance_id = courseInstance.id;
-        await authzCourseOrInstance(req, res);
-
-        // Enroll the user
-        await ensureEnrollment({
-          institution: res.locals.institution,
-          course: res.locals.course,
-          courseInstance: res.locals.course_instance,
-          authzData: res.locals.authz_data,
-          requiredRole: ['Student'],
-          actionDetail: 'implicit_joined',
-        });
-      }
-
-      // redirect to a different page, which will have proper authorization.
+    const redirectAfterJoin = () => {
       if (redirectUrl != null) {
         res.redirect(redirectUrl);
       } else {
         res.redirect(`/pl/course_instance/${courseInstance.id}/assessments`);
       }
+    };
+
+    if (
+      !idsEqual(res.locals.user.id, res.locals.authn_user.id) ||
+      res.locals.authz_data.authn_course_role !== 'None' ||
+      res.locals.authz_data.authn_course_instance_role !== 'None' ||
+      res.locals.is_administrator ||
+      !res.locals.authz_data.authn_has_student_access
+    ) {
+      redirectAfterJoin();
+      return;
+    }
+
+    const admissionPlan = await selectCourseInstanceAdmissionPlan({
+      course: res.locals.course,
+      courseInstance,
+      enrollmentCode: code,
+      user: res.locals.authn_user,
+    });
+
+    if (admissionPlan.type === 'blocked') {
+      res.status(403).send(EnrollmentPage({ resLocals: res.locals, type: 'blocked' }));
+      return;
+    }
+    if (admissionPlan.type === 'ineligible') {
+      res.status(403).send(EnrollmentPage({ resLocals: res.locals, type: admissionPlan.reason }));
+      return;
+    }
+    if (admissionPlan.type === 'already_joined') {
+      redirectAfterJoin();
+      return;
+    }
+
+    let shouldRenderEnrollmentCodeForm = admissionPlan.type === 'enrollment_code_required';
+    if (
+      admissionPlan.type === 'conventional_invitation' ||
+      admissionPlan.type === 'institution_roster_invitation' ||
+      (admissionPlan.type === 'self_enrollment' && admissionPlan.enrollmentCodeValidated)
+    ) {
+      try {
+        await admitUserWithCourseInstanceAdmissionPlan({
+          courseInstanceId: courseInstance.id,
+          enrollmentCode: code,
+          ip: req.ip ?? null,
+          isAdministrator: res.locals.authz_data.authn_is_administrator,
+          plan: admissionPlan,
+          reqDate: res.locals.req_date,
+          userId: res.locals.authn_user.id,
+        });
+      } catch (error) {
+        if (error instanceof CourseInstanceAdmissionPlanChangedError) {
+          if (error.plan.type === 'blocked') {
+            res.status(403).send(EnrollmentPage({ resLocals: res.locals, type: 'blocked' }));
+            return;
+          }
+          if (error.plan.type === 'ineligible') {
+            res
+              .status(403)
+              .send(EnrollmentPage({ resLocals: res.locals, type: error.plan.reason }));
+            return;
+          }
+          if (error.plan.type === 'enrollment_code_required') {
+            shouldRenderEnrollmentCodeForm = true;
+          } else {
+            redirectAfterJoin();
+            return;
+          }
+        } else if (error instanceof CourseInstanceAdmissionEligibilityError) {
+          res.status(403).send(EnrollmentPage({ resLocals: res.locals, type: error.reason }));
+          return;
+        } else if (error instanceof EnrollmentAdmissionBlockedError) {
+          res.status(403).send(EnrollmentPage({ resLocals: res.locals, type: 'blocked' }));
+          return;
+        } else if (!(error instanceof CourseInstanceEnrollmentCodeRequiredError)) {
+          throw error;
+        } else {
+          shouldRenderEnrollmentCodeForm = true;
+        }
+      }
+    }
+
+    if (!shouldRenderEnrollmentCodeForm) {
+      redirectAfterJoin();
       return;
     }
 
