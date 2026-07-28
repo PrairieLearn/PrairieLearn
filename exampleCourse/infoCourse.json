@@ -130,5 +130,18 @@
       "description": "Question originally written by andrewstec"
     },
     { "name": "pearl", "color": "yellow3", "description": "Question originally written by pearl" }
-  ]
+  ],
+  "sharedState": {
+    "assessmentTheme": {
+      "scope": "assessmentInstance",
+      "dataVersion": 1,
+      "properties": {
+        "theme": {
+          "type": "string",
+          "default": "sports",
+          "enum": ["sports", "cooking", "travel"]
+        }
+      }
+    }
+  }
 }

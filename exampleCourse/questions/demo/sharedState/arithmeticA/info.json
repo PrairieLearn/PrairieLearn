@@ -1,0 +1,8 @@
+{
+  "uuid": "b4739f9f-f3cf-4454-a746-1baab659f2e8",
+  "title": "Demo: Shared-state arithmetic (part A)",
+  "topic": "Demo",
+  "tags": ["v3"],
+  "type": "v3",
+  "sharedStateAccess": ["assessmentTheme"]
+}
