@@ -579,36 +579,16 @@
     }
 
     /**
-     * To support unicode strings, we use a method from Mozilla to decode:
-     * first we get the bytestream, then we percent-encode it, then we
-     * decode that to the original string.
-     * https://developer.mozilla.org/en-US/docs/Web/API/WindowBase64/Base64_encoding_and_decoding#The_Unicode_Problem
+     * To support unicode strings, we use a TextDecoder.
      * @param {string} str the base64 string to decode
      * @returns {string} the decoded string
      */
     b64DecodeUnicode(str) {
-      // Going backwards: from bytestream, to percent-encoding, to original string.
-      return decodeURIComponent(
-        atob(str)
-          .split('')
-          .map(function (c) {
-            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-          })
-          .join(''),
-      );
+      return new TextDecoder().decode(Uint8Array.from(atob(str), (c) => c.charCodeAt(0)));
     }
 
     b64ToBlobUrl(str, options = undefined) {
-      const blob = new Blob(
-        [
-          new Uint8Array(
-            atob(str)
-              .split('')
-              .map((c) => c.charCodeAt(0)),
-          ),
-        ],
-        options,
-      );
+      const blob = new Blob([Uint8Array.from(atob(str), (c) => c.charCodeAt(0))], options);
       return URL.createObjectURL(blob);
     }
   }

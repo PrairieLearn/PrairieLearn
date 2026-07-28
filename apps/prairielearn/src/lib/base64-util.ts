@@ -1,24 +1,9 @@
 export function b64EncodeUnicodeBrowser(str: string) {
-  // (1) use encodeURIComponent to get percent-encoded UTF-8
-  // (2) convert percent encodings to raw bytes
-  // (3) convert raw bytes to Base64
-  return btoa(
-    encodeURIComponent(str).replaceAll(/%([0-9A-F]{2})/g, (match, p1) => {
-      return String.fromCharCode(Number.parseInt('0x' + p1, 16));
-    }),
-  );
+  return btoa(String.fromCodePoint(...new TextEncoder().encode(str)));
 }
 
 export function b64DecodeUnicodeBrowser(str: string) {
-  // Going backwards: from bytestream, to percent-encoding, to original string.
-  return decodeURIComponent(
-    atob(str)
-      .split('')
-      .map((c) => {
-        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-      })
-      .join(''),
-  );
+  return new TextDecoder().decode(Uint8Array.from(atob(str), (c) => c.charCodeAt(0)));
 }
 
 export function b64EncodeUnicodeNode(str: string) {
