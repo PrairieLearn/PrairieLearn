@@ -21,12 +21,8 @@ const InstitutionIdentityConfigurationStatusSchema = z.object({
   has_roster_sync_permitted_lti13_instance: z.boolean(),
 });
 
-export type InstitutionIdentityConfigurationStatus = z.infer<
+type InstitutionIdentityConfigurationStatus = z.infer<
   typeof InstitutionIdentityConfigurationStatusSchema
->;
-type RosterSyncPrerequisites = Pick<
-  InstitutionIdentityConfigurationStatus,
-  'saml_uin_attribute' | 'enabled_authn_provider_names'
 >;
 
 export const LTI13_ROSTER_SYNC_CONFIRMATION_FIELDS = {
@@ -72,7 +68,7 @@ export async function selectAuthenticationProviderNames(
 }
 
 export function getLti13RosterSyncPermissionIssues(
-  status: RosterSyncPrerequisites,
+  status: InstitutionIdentityConfigurationStatus,
   lti13UinAttribute: string | null,
 ): string[] {
   const issues: string[] = [];
@@ -90,12 +86,6 @@ export function getLti13RosterSyncPermissionIssues(
   return issues;
 }
 
-function assertLti13RosterSyncConfirmed(body: Record<string, unknown>): void {
-  if (Object.values(LTI13_ROSTER_SYNC_CONFIRMATION_FIELDS).some((field) => body[field] !== '1')) {
-    throw new HttpStatusError(400, 'Both roster syncing confirmations are required');
-  }
-}
-
 /**
  * Roster syncing can create or match users using identity data from two independent systems. The
  * operator must confirm the compatibility checks that PrairieLearn cannot verify automatically.
@@ -110,5 +100,7 @@ export async function assertLti13RosterSyncCanBePermitted(
     lti13UinAttribute,
   );
   if (issues.length > 0) throw new HttpStatusError(400, issues.join('; '));
-  assertLti13RosterSyncConfirmed(body);
+  if (Object.values(LTI13_ROSTER_SYNC_CONFIRMATION_FIELDS).some((field) => body[field] !== '1')) {
+    throw new HttpStatusError(400, 'Both roster syncing confirmations are required');
+  }
 }
