@@ -1,7 +1,12 @@
--- The one-bigint advisory lock space is distinct from the two-integer space
--- used by the server-job and AI-grading locks. Course instance IDs are
--- positive, so negating them provides an injective key for the full positive bigint
--- range without colliding with positive one-bigint advisory locks.
 -- BLOCK acquire_shared_course_instance_enrollment_barrier
 SELECT
-  pg_advisory_xact_lock_shared(- ($course_instance_id::bigint));
+  pg_advisory_xact_lock_shared(
+    hashtextextended (
+      'course-instance-enrollment:' || course_instance_id::text,
+      0
+    )
+  )
+FROM
+  unnest($course_instance_ids::bigint[]) AS course_instance_ids (course_instance_id)
+ORDER BY
+  course_instance_id;

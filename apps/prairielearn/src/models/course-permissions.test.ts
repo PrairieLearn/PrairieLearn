@@ -1,6 +1,7 @@
 import { afterAll, assert, beforeAll, describe, expect, it } from 'vitest';
 
 import { execute, loadSqlEquiv, runInTransactionAsync } from '@prairielearn/postgres';
+import { withResolvers } from '@prairielearn/utils';
 
 import { dangerousFullSystemAuthz } from '../lib/authz-data-lib.js';
 import { EXAMPLE_COURSE_PATH } from '../lib/paths.js';
@@ -17,13 +18,8 @@ import { ensureUncheckedEnrollment, selectOptionalEnrollmentByUserId } from './e
 
 const sql = loadSqlEquiv(import.meta.url);
 
-function deferred() {
-  let resolve: () => void;
-  const promise = new Promise<void>((resolvePromise) => {
-    resolve = resolvePromise;
-  });
-  return { promise, resolve: resolve! };
-}
+// PostgreSQL SQLSTATE for lock_not_available.
+const POSTGRES_LOCK_NOT_AVAILABLE = '55P03';
 
 describe('deleteCoursePermissions', () => {
   beforeAll(async () => {
@@ -49,13 +45,13 @@ describe('deleteCoursePermissions', () => {
       requiredRole: ['System'],
     });
 
-    const barrierHeld = deferred();
-    const releaseBarrier = deferred();
+    const barrierHeld = withResolvers<undefined>();
+    const releaseBarrier = withResolvers<undefined>();
     const barrierHolder = runInTransactionAsync(async () => {
       await execute(sql.acquire_exclusive_course_instance_enrollment_barrier, {
         course_instance_id: courseInstance.id,
       });
-      barrierHeld.resolve();
+      barrierHeld.resolve(undefined);
       await releaseBarrier.promise;
     });
     await barrierHeld.promise;
@@ -70,9 +66,9 @@ describe('deleteCoursePermissions', () => {
             authn_user_id: '1',
           });
         }),
-      ).rejects.toMatchObject({ code: '55P03' });
+      ).rejects.toMatchObject({ code: POSTGRES_LOCK_NOT_AVAILABLE });
     } finally {
-      releaseBarrier.resolve();
+      releaseBarrier.resolve(undefined);
       await barrierHolder;
     }
 
