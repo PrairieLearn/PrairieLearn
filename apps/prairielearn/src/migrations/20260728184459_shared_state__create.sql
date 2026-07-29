@@ -2,6 +2,7 @@ CREATE TABLE IF NOT EXISTS shared_state_objects (
   id bigserial PRIMARY KEY,
   course_id bigint NOT NULL REFERENCES courses (id) ON UPDATE CASCADE ON DELETE CASCADE,
   name text NOT NULL,
+  current_revision_id bigint,
   created_at timestamptz NOT NULL DEFAULT now()
 );
 
@@ -22,10 +23,7 @@ CREATE TABLE IF NOT EXISTS shared_state_object_revisions (
 CREATE INDEX IF NOT EXISTS shared_state_object_revisions_shared_state_object_id_idx ON shared_state_object_revisions USING btree (shared_state_object_id);
 
 ALTER TABLE shared_state_objects
-ADD COLUMN IF NOT EXISTS current_revision_id BIGINT;
-
-ALTER TABLE shared_state_objects
-ADD CONSTRAINT shared_state_objects_current_revision_id_fkey FOREIGN KEY (current_revision_id) REFERENCES shared_state_object_revisions (id) ON UPDATE CASCADE ON DELETE SET NULL NOT VALID;
+ADD CONSTRAINT shared_state_objects_current_revision_id_fkey FOREIGN KEY (current_revision_id) REFERENCES shared_state_object_revisions (id) ON UPDATE CASCADE ON DELETE SET NULL;
 
 CREATE TABLE IF NOT EXISTS assessment_instance_shared_state_values (
   id bigserial PRIMARY KEY,
