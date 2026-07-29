@@ -48,6 +48,6 @@ export type StudentHomePageCourseCandidateRow = z.infer<
 export type StudentHomePageCourse = StudentHomePageCourseData &
   (
     | { access_type: 'joined' }
-    | { access_type: 'conventional_invitation'; invitation_enrollment_id: string }
-    | { access_type: 'roster_available' }
+    | { access_type: 'uid_invitation'; invitation_enrollment_id: string }
+    | { access_type: 'institution_uin_invitation' }
   );
