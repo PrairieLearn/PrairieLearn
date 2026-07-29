@@ -3,13 +3,13 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { execute, loadSqlEquiv, runInTransactionAsync } from '@prairielearn/postgres';
 import { withResolvers } from '@prairielearn/utils';
 
-import * as helperDb from '../tests/helperDb.js';
+import * as helperDb from '../../tests/helperDb.js';
 
 import {
   normalizeCourseInstanceIds,
   runWithExclusiveEnrollmentBarrier,
   runWithSharedEnrollmentBarrier,
-} from './enrollment-barrier.js';
+} from './barrier.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
