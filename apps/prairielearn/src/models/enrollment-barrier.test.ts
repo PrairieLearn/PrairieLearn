@@ -7,6 +7,7 @@ import * as helperDb from '../tests/helperDb.js';
 
 import {
   normalizeCourseInstanceIds,
+  runWithExclusiveEnrollmentBarrier,
   runWithSharedEnrollmentBarrier,
 } from './enrollment-barrier.js';
 
@@ -37,9 +38,7 @@ describe('course-instance enrollment barriers', () => {
       await expect(
         runInTransactionAsync(async () => {
           await execute(sql.set_short_lock_timeout);
-          await execute(sql.acquire_exclusive_course_instance_enrollment_barrier, {
-            course_instance_id: '2147483649',
-          });
+          await runWithExclusiveEnrollmentBarrier('2147483649', async () => {});
         }),
       ).rejects.toMatchObject({ code: POSTGRES_LOCK_NOT_AVAILABLE });
     } finally {
