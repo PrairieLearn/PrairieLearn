@@ -2,6 +2,7 @@
 
 import type { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
+import { setTimeout as setTimeoutAsync } from 'node:timers/promises';
 import * as path from 'path';
 
 import { ECRClient } from '@aws-sdk/client-ecr';
@@ -49,15 +50,45 @@ interface GradingResults {
   message?: string;
 }
 
-// catch SIGTERM and exit after waiting for all current jobs to finish
 let processTerminating = false;
-process.on('SIGTERM', () => {
-  globalLogger.info('caught SIGTERM, draining jobs to exit...');
+
+function startGracefulShutdown({
+  source,
+  recordLifecycleHeartbeats,
+}: {
+  source: string;
+  recordLifecycleHeartbeats: boolean;
+}) {
+  if (processTerminating) {
+    globalLogger.info(`Ignoring shutdown trigger from ${source}; shutdown is already in progress`);
+    return;
+  }
+
   processTerminating = true;
-  (function tryToExit() {
-    if (load.getCurrentJobs() === 0) process.exit(0);
-    setTimeout(tryToExit, 1000);
-  })();
+  globalLogger.info(`Starting graceful shutdown (source: ${source}); draining jobs`);
+  lifecycle.terminating({ recordHeartbeats: recordLifecycleHeartbeats });
+  void drainJobsAndExit();
+}
+
+async function drainJobsAndExit() {
+  while (load.getCurrentJobs() !== 0) {
+    await setTimeoutAsync(1_000);
+  }
+
+  try {
+    await lifecycle.completeTermination();
+  } catch (error) {
+    globalLogger.error('Error completing termination lifecycle action', error);
+  }
+
+  process.exit(0);
+}
+
+process.on('SIGTERM', () => {
+  startGracefulShutdown({
+    source: 'external SIGTERM',
+    recordLifecycleHeartbeats: false,
+  });
 });
 
 async.series(
@@ -122,6 +153,14 @@ async.series(
     },
     async () => {
       await lifecycle.inService();
+      lifecycle.startTerminationWatcher({
+        onTermination(state) {
+          startGracefulShutdown({
+            source: `IMDS Auto Scaling target lifecycle state ${state}`,
+            recordLifecycleHeartbeats: true,
+          });
+        },
+      });
     },
     async () => {
       globalLogger.info('Initialization complete; beginning to process jobs');
@@ -168,6 +207,8 @@ async.series(
     },
   ],
   (err) => {
+    if (processTerminating) return;
+
     Sentry.captureException(err, {
       level: 'fatal',
     });

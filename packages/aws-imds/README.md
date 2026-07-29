@@ -19,3 +19,22 @@ import { fetchInstanceHostname, fetchInstanceIdentity } from '@prairielearn/aws-
 const hostname = await fetchInstanceHostname();
 const identity = await fetchInstanceIdentity();
 ```
+
+Auto Scaling instances can also poll their target lifecycle state. This is useful for actions that must run on the instance during an Auto Scaling lifecycle transition.
+
+```ts
+import { watchAutoScalingTargetLifecycleState } from '@prairielearn/aws-imds';
+
+const controller = new AbortController();
+
+watchAutoScalingTargetLifecycleState({
+  targetStates: ['Terminated', 'Warmed:Terminated'],
+  signal: controller.signal,
+  onTargetState(state) {
+    console.log(`Instance is transitioning to ${state}`);
+  },
+});
+
+// Call this if the application no longer needs to watch the lifecycle state.
+controller.abort();
+```

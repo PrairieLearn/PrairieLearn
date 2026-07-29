@@ -80,6 +80,7 @@ import * as serverJobProgressSocket from './lib/serverJobProgressSocket.js';
 import { PostgresSessionStore } from './lib/session-store.js';
 import * as socketServer from './lib/socket-server.js';
 import { SocketActivityMetrics } from './lib/telemetry/socket-activity-metrics.js';
+import { recordGracefulShutdownSignal, triggerGracefulShutdown } from './lib/termination.js';
 import { getSearchParams } from './lib/url.js';
 import * as workspace from './lib/workspace.js';
 import { markAllWorkspaceHostsUnhealthy } from './lib/workspaceHost.js';
@@ -516,8 +517,6 @@ export async function initExpress(): Promise<Express> {
     app.use('/pl/prairietest/auth', (await import('./ee/auth/prairietest.js')).default);
   }
 
-  // Must come before CSRF middleware; we do our own signature verification here.
-  app.use('/pl/webhooks/terminate', (await import('./webhooks/terminate.js')).default);
   app.use(
     '/pl/webhooks/stripe',
     await enterpriseOnly(async () => (await import('./ee/webhooks/stripe/index.js')).default),
@@ -2622,11 +2621,13 @@ if (shouldStartServer) {
     throw err;
   }
 
-  // SIGTERM can be used to gracefully shut down the process. This signal
-  // may come from another process, but we also send it to ourselves if
-  // we want to gracefully shut down. This is used below in the ASG
-  // lifecycle handler, and also within the "terminate" webhook.
+  // SIGTERM can be used to gracefully shut down the process. This signal may
+  // come from another process, but we also send it to ourselves when IMDS
+  // reports that Auto Scaling is terminating the instance.
   process.once('SIGTERM', async () => {
+    const shutdownSource = recordGracefulShutdownSignal('external SIGTERM');
+    logger.info(`Starting graceful shutdown (source: ${shutdownSource})`);
+
     // In test environments, the entire process group receives SIGTERM, which
     // can cause in-flight outgoing HTTP requests to fail with ECONNRESET.
     // These unhandled 'error' events on ClientRequest objects would crash the
@@ -2698,6 +2699,12 @@ if (shouldStartServer) {
     } finally {
       process.exit(0);
     }
+  });
+
+  lifecycleHooks.startInstanceTerminationWatcher({
+    onTermination(state) {
+      triggerGracefulShutdown(`IMDS Auto Scaling target lifecycle state ${state}`);
+    },
   });
 
   setServerState('initialized');
