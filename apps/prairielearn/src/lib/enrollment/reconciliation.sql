@@ -1,7 +1,3 @@
--- Enrollment-dependent rows are mutated in this fixed table order:
--- student labels, publishing extensions, then assessment access controls.
--- Reconciliation never inserts a child row, which avoids taking a new lock on
--- an unchanged label, extension, or access-control owner.
 -- BLOCK deduplicate_student_label_enrollments
 WITH
   ranked_memberships AS (
