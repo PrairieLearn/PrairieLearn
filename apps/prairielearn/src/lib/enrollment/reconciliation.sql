@@ -135,7 +135,7 @@ VALUES
 RETURNING
   *;
 
--- BLOCK reject_conventional_invitation
+-- BLOCK reject_uid_invitation
 UPDATE enrollments
 SET
   status = 'rejected'

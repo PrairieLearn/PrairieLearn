@@ -27,12 +27,12 @@ export function StudentCoursesCard({
   } | null>(null);
   const [removingCourseId, setRemovingCourseId] = useState<string | null>(null);
 
-  const conventionalInvitations = studentCourses.filter(
-    (course): course is StudentHomePageCourse & { access_type: 'conventional_invitation' } =>
-      course.access_type === 'conventional_invitation',
+  const uidInvitations = studentCourses.filter(
+    (course): course is StudentHomePageCourse & { access_type: 'uid_invitation' } =>
+      course.access_type === 'uid_invitation',
   );
-  const rosterAvailable = studentCourses.filter(
-    (course) => course.access_type === 'roster_available',
+  const institutionUinInvitations = studentCourses.filter(
+    (course) => course.access_type === 'institution_uin_invitation',
   );
   const joined = studentCourses.filter((course) => course.access_type === 'joined');
 
@@ -74,7 +74,7 @@ export function StudentCoursesCard({
         <div className="table-responsive">
           <table className="table table-sm table-hover table-striped" aria-label={heading}>
             <tbody>
-              {conventionalInvitations.map((entry) => (
+              {uidInvitations.map((entry) => (
                 <tr key={`invite-${entry.course_instance.id}`} className="table-warning">
                   <td className="align-middle">
                     <div className="d-flex align-items-center justify-content-between gap-2">
@@ -120,8 +120,8 @@ export function StudentCoursesCard({
                   </td>
                 </tr>
               ))}
-              {rosterAvailable.map((entry) => (
-                <tr key={`roster-${entry.course_instance.id}`} className="table-info">
+              {institutionUinInvitations.map((entry) => (
+                <tr key={`institution-invite-${entry.course_instance.id}`} className="table-info">
                   <td className="align-middle">
                     <div className="d-flex align-items-center justify-content-between gap-2">
                       <div>
@@ -130,7 +130,7 @@ export function StudentCoursesCard({
                           {entry.course_instance.long_name}
                         </span>
                         <span className="ms-2 badge bg-info text-dark">
-                          Available through roster
+                          Available through your institution
                         </span>
                       </div>
                       <a
