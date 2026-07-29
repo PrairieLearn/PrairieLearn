@@ -14,19 +14,19 @@ export function normalizeCourseInstanceIds(courseInstanceIds: string | string[])
 
 /**
  * Runs individual enrollment mutations while allowing other individual
- * mutations for the same course instances to proceed concurrently. Nested
- * transactions keep the barriers until the outermost transaction completes.
+ * mutations for the same course instances to proceed concurrently. Multiple
+ * IDs support course-permission deletion, which removes enrollments across all
+ * instances of a course in one transaction. Nested transactions keep the
+ * barriers until the outermost transaction completes.
  */
 export async function runWithSharedEnrollmentBarrier<T>(
   courseInstanceIds: string | string[],
   fn: () => Promise<T>,
 ): Promise<T> {
   return await runInTransactionAsync(async () => {
-    for (const courseInstanceId of normalizeCourseInstanceIds(courseInstanceIds)) {
-      await execute(sql.acquire_shared_course_instance_enrollment_barrier, {
-        course_instance_id: courseInstanceId,
-      });
-    }
+    await execute(sql.acquire_shared_course_instance_enrollment_barrier, {
+      course_instance_ids: normalizeCourseInstanceIds(courseInstanceIds),
+    });
 
     return await fn();
   });

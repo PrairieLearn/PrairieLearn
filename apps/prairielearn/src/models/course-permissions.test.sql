@@ -4,4 +4,9 @@ SET
 
 -- BLOCK acquire_exclusive_course_instance_enrollment_barrier
 SELECT
-  pg_advisory_xact_lock(- ($course_instance_id::bigint));
+  pg_advisory_xact_lock(
+    hashtextextended (
+      'course-instance-enrollment:' || $course_instance_id::text,
+      0
+    )
+  );

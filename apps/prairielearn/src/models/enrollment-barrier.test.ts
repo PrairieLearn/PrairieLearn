@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { execute, loadSqlEquiv, runInTransactionAsync } from '@prairielearn/postgres';
+import { withResolvers } from '@prairielearn/utils';
 
 import * as helperDb from '../tests/helperDb.js';
 
@@ -11,13 +12,8 @@ import {
 
 const sql = loadSqlEquiv(import.meta.url);
 
-function deferred() {
-  let resolve: () => void;
-  const promise = new Promise<void>((resolvePromise) => {
-    resolve = resolvePromise;
-  });
-  return { promise, resolve: resolve! };
-}
+// PostgreSQL SQLSTATE for lock_not_available.
+const POSTGRES_LOCK_NOT_AVAILABLE = '55P03';
 
 describe('course-instance enrollment barriers', () => {
   beforeAll(helperDb.before);
@@ -28,11 +24,11 @@ describe('course-instance enrollment barriers', () => {
   });
 
   it('holds a nested shared barrier until the outer transaction completes', async () => {
-    const held = deferred();
-    const release = deferred();
+    const held = withResolvers<undefined>();
+    const release = withResolvers<undefined>();
     const holder = runInTransactionAsync(async () => {
-      await runWithSharedEnrollmentBarrier('2147483648', async () => {});
-      held.resolve();
+      await runWithSharedEnrollmentBarrier(['2147483648', '2147483649'], async () => {});
+      held.resolve(undefined);
       await release.promise;
     });
     await held.promise;
@@ -42,12 +38,12 @@ describe('course-instance enrollment barriers', () => {
         runInTransactionAsync(async () => {
           await execute(sql.set_short_lock_timeout);
           await execute(sql.acquire_exclusive_course_instance_enrollment_barrier, {
-            course_instance_id: '2147483648',
+            course_instance_id: '2147483649',
           });
         }),
-      ).rejects.toMatchObject({ code: '55P03' });
+      ).rejects.toMatchObject({ code: POSTGRES_LOCK_NOT_AVAILABLE });
     } finally {
-      release.resolve();
+      release.resolve(undefined);
       await holder;
     }
   });
