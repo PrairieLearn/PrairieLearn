@@ -6,25 +6,23 @@ import { z } from 'zod';
 import { execute, loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
+
+import { selectAssessmentByTid } from '../../models/assessment.js';
+import { selectAuditEventsByEnrollmentId } from '../../models/audit-event.js';
+import { selectCourseInstanceById } from '../../models/course-instances.js';
+import * as helperCourse from '../../tests/helperCourse.js';
+import * as helperDb from '../../tests/helperDb.js';
 import {
   AssessmentAccessControlRuleSchema,
   type CourseInstance,
   CourseInstancePublishingExtensionSchema,
   StudentLabelSchema,
   type User,
-} from '../lib/db-types.js';
-import { TEST_COURSE_PATH } from '../lib/paths.js';
-import * as helperCourse from '../tests/helperCourse.js';
-import * as helperDb from '../tests/helperDb.js';
+} from '../db-types.js';
+import { TEST_COURSE_PATH } from '../paths.js';
 
-import { selectAssessmentByTid } from './assessment.js';
-import { selectAuditEventsByEnrollmentId } from './audit-event.js';
-import { selectCourseInstanceById } from './course-instances.js';
-import { type EnrollmentIdentityClassification } from './enrollment-identity.js';
-import {
-  EnrollmentAdmissionDeniedError,
-  admitUserToCourseInstance,
-} from './enrollment-reconciliation.js';
+import { type EnrollmentIdentityClassification } from './identity.js';
+import { EnrollmentAdmissionDeniedError, admitUserToCourseInstance } from './reconciliation.js';
 import {
   actorFor,
   createEnrollment,
@@ -34,7 +32,7 @@ import {
   nextFixtureNumber,
   selectEnrollments,
   selectReconciliationAuditEvents,
-} from './enrollment-reconciliation.test-helpers.js';
+} from './reconciliation.test-helpers.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 

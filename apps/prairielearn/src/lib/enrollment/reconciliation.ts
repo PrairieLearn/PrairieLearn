@@ -1,9 +1,9 @@
 import { execute, loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 
-import { type Enrollment, EnrollmentSchema } from '../lib/db-types.js';
+import { insertAuditEvent } from '../../models/audit-event.js';
+import { type Enrollment, EnrollmentSchema } from '../db-types.js';
 
-import { insertAuditEvent } from './audit-event.js';
-import { runWithSharedEnrollmentBarrier } from './enrollment-barrier.js';
+import { runWithSharedEnrollmentBarrier } from './barrier.js';
 import {
   type EnrollmentAdmissionDecision,
   type EnrollmentAdmissionSource,
@@ -13,8 +13,8 @@ import {
   getEnrollmentAdmissionDecision,
   selectEnrollmentIdentityClassification,
   selectEnrollmentIdentityClassificationForRevalidation,
-} from './enrollment-identity.js';
-import { lockEnrollments, normalizeEnrollmentIds } from './enrollment-lock.js';
+} from './identity.js';
+import { lockEnrollments, normalizeEnrollmentIds } from './lock.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
