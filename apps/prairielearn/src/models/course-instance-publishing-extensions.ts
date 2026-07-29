@@ -17,8 +17,7 @@ import {
   type Enrollment,
   EnrollmentSchema,
 } from '../lib/db-types.js';
-
-import { lockEnrollments } from './enrollment-lock.js';
+import { lockEnrollments } from '../lib/enrollment/lock.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
