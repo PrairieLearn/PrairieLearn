@@ -27,7 +27,7 @@ import {
 } from '../../lib/enrollment/identity.js';
 import {
   EnrollmentAdmissionDeniedError,
-  rejectConventionalEnrollmentInvitation,
+  rejectUidInvitation,
 } from '../../lib/enrollment/reconciliation.js';
 import { idsEqual } from '../../lib/id.js';
 import { isEnterprise } from '../../lib/license.js';
@@ -204,14 +204,14 @@ router.get(
         if (classification.boundCandidate?.enrollment.status === 'joined') {
           return { ...course, access_type: 'joined' };
         }
-        if (classification.actionableInstitutionRosterInvitation !== null) {
-          return { ...course, access_type: 'roster_available' };
+        if (classification.actionableInstitutionUinInvitation !== null) {
+          return { ...course, access_type: 'institution_uin_invitation' };
         }
-        if (classification.actionableConventionalInvitation !== null) {
+        if (classification.actionableUidInvitation !== null) {
           return {
             ...course,
-            access_type: 'conventional_invitation',
-            invitation_enrollment_id: classification.actionableConventionalInvitation.enrollment.id,
+            access_type: 'uid_invitation',
+            invitation_enrollment_id: classification.actionableUidInvitation.enrollment.id,
           };
         }
         return null;
@@ -339,7 +339,7 @@ router.post(
       }
       case 'reject_invitation': {
         try {
-          await rejectConventionalEnrollmentInvitation({
+          await rejectUidInvitation({
             agentAuthnUserId: res.locals.authn_user.id,
             agentUserId: res.locals.authn_user.id,
             courseInstanceId: courseInstance.id,
