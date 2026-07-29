@@ -6,7 +6,7 @@ import { HttpStatusError } from '@prairielearn/error';
 
 import { hasRole } from '../../../lib/authz-data-lib.js';
 import { constructCourseOrInstanceContext } from '../../../lib/authz-data.js';
-import { selectOrdinaryCourseInstanceAdmissionDecision } from '../../../lib/enrollment/admission.js';
+import { selectEnrollmentAccessDecision } from '../../../lib/enrollment/admission.js';
 import { getEligibilityErrorMessage } from '../../../lib/enrollment/eligibility.js';
 import { selectOptionalCourseInstanceIdByEnrollmentCode } from '../../../models/course-instances.js';
 
@@ -56,7 +56,7 @@ router.get(
       throw new HttpStatusError(404, 'Only students can look up course instances');
     }
 
-    const decision = await selectOrdinaryCourseInstanceAdmissionDecision({
+    const decision = await selectEnrollmentAccessDecision({
       course,
       courseInstance,
       enrollmentCode: code,

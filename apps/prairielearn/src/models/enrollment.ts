@@ -222,9 +222,8 @@ export async function ensureUncheckedEnrollment({
 }
 
 /**
- * Legacy enrollment path for LTI 1.0, homepage invitation acceptance, and test
- * setup. Ordinary course-instance entry uses the checked reconciliation
- * admission path instead.
+ * Ensures enrollment without reconciling multiple identity candidates. Callers
+ * must establish any required enrollment authority before using this path.
  *
  * For enterprise installations, this will also check if the user is eligible
  * for an enrollment. They are considered eligible if they have all required
@@ -232,7 +231,7 @@ export async function ensureUncheckedEnrollment({
  * instance enrollment limit to be exceeded.
  *
  */
-export async function ensureLegacyEnrollment({
+export async function ensureEnrollmentWithoutReconciliation({
   institution,
   course,
   courseInstance,

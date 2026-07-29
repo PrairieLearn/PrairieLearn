@@ -14,8 +14,8 @@ import {
   UserSchema,
 } from '../../../lib/db-types.js';
 import {
-  type OrdinaryCourseInstanceAdmissionDecision,
-  selectOrdinaryCourseInstanceAdmissionDecision,
+  type EnrollmentAccessDecision,
+  selectEnrollmentAccessDecision,
 } from '../../../lib/enrollment/admission.js';
 import {
   type EnrollmentIneligibilityReason,
@@ -53,7 +53,7 @@ import {
 const router = Router({ mergeParams: true });
 
 function getAdmissionIneligibilityReason(
-  decision: OrdinaryCourseInstanceAdmissionDecision,
+  decision: EnrollmentAccessDecision,
   lti13Relaunch: boolean,
 ): EnrollmentIneligibilityReason | null {
   if (decision.allowed) return null;
@@ -88,7 +88,7 @@ router.get(
     const user = UserSchema.parse(res.locals.authn_user);
     const lti13Relaunch = canUseLti13RelaunchMarker(req.query.lti13_relaunch, res.locals);
 
-    const admissionDecision = await selectOrdinaryCourseInstanceAdmissionDecision({
+    const admissionDecision = await selectEnrollmentAccessDecision({
       course,
       courseInstance,
       user,
@@ -158,7 +158,7 @@ router.post(
       const user = UserSchema.parse(res.locals.authn_user);
       const lti13Relaunch = canUseLti13RelaunchMarker(req.query.lti13_relaunch, res.locals);
 
-      const admissionDecision = await selectOrdinaryCourseInstanceAdmissionDecision({
+      const admissionDecision = await selectEnrollmentAccessDecision({
         course,
         courseInstance,
         user,
