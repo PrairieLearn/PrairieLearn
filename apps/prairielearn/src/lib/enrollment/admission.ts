@@ -255,8 +255,10 @@ export async function admitUserFromOrdinaryCourseInstanceRequest({
   userId: string;
 }) {
   return await admitUserToCourseInstance({
-    agentAuthnUserId: userId,
-    agentUserId: userId,
+    actor: {
+      agentAuthnUserId: userId,
+      agentUserId: userId,
+    },
     courseInstanceId,
     selectSource: getOrdinaryAdmissionSource,
     source: decision.source,
@@ -297,8 +299,10 @@ export async function admitUserFromLti13CourseInstanceRequest({
     sub,
   };
   return await admitUserToCourseInstance({
-    agentAuthnUserId: userId,
-    agentUserId: userId,
+    actor: {
+      agentAuthnUserId: userId,
+      agentUserId: userId,
+    },
     courseInstanceId,
     expectedInvitationEnrollmentId,
     source,
