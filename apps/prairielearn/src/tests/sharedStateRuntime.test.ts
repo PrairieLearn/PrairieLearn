@@ -28,10 +28,17 @@ import { selectCourseById, updateCourseSharingName } from '../models/course.js';
 import { selectQuestionByQid } from '../models/question.js';
 import { selectOrInsertUserByUid } from '../models/user.js';
 
-import { extractAndSaveCSRFToken, extractAndSaveVariantId, fetchCheerio } from './helperClient.js';
+import {
+  extractAndSaveCSRFToken,
+  extractAndSaveVariantId,
+  fetchCheerio,
+  parseAssessmentInstanceId,
+} from './helperClient.js';
 import * as helperServer from './helperServer.js';
 import * as util from './sync/util.js';
+import { type AuthUser, withUser } from './utils/auth.js';
 import { withConfig } from './utils/config.js';
+import { enrollUser } from './utils/enrollments.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
@@ -113,6 +120,14 @@ async function buildOriginCourseDir({
   };
 
   if (includeAssessmentQuestions) {
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
+      util.ASSESSMENT_ID
+    ].allowAccess = [
+      {
+        startDate: '2000-01-01T00:00:00',
+        endDate: '3000-01-01T00:00:00',
+      },
+    ];
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[util.ASSESSMENT_ID].zones = [
       {
         title: 'zone 1',
@@ -403,6 +418,91 @@ describe('Shared-state runtime behavior', { timeout: 60_000 }, () => {
 
     assert.equal(readerVariant.broken_at, null, 'reader variant should not be broken');
     assert.equal(readerVariant.params?.observed_count, 5);
+  });
+
+  it('lets a later question see an earlier question’s graded shared-state write when a student answers through the real assessment pages', async () => {
+    // Unlike the test above, this drives the whole thing through the actual
+    // student-facing routes (start assessment, view question, submit answer)
+    // instead of calling `ensureVariant`/`saveAndGradeSubmission` directly,
+    // so it also exercises the assessment/instance-question controllers and
+    // the CSRF/variant-id form plumbing a real student's browser would use.
+    const studentUser: AuthUser = {
+      uid: 'shared-state-real-student@example.com',
+      name: 'Shared State Student',
+      uin: '00000098',
+    };
+    await enrollUser(runtimeCourseInstance.id, studentUser);
+
+    const courseInstanceBaseUrl = `http://localhost:${config.serverPort}/pl/course_instance/${runtimeCourseInstance.id}`;
+    const assessment = await selectAssessmentByTid({
+      course_instance_id: runtimeCourseInstance.id,
+      tid: util.ASSESSMENT_ID,
+    });
+    const assessmentUrl = `${courseInstanceBaseUrl}/assessment/${assessment.id}/`;
+
+    await withUser(studentUser, async () => {
+      const startPage = await fetchCheerio(assessmentUrl);
+      assert.equal(startPage.status, 200);
+
+      const context: Record<string, any> = {};
+      extractAndSaveCSRFToken(context, startPage.$, 'form');
+
+      const startResponse = await fetch(assessmentUrl, {
+        method: 'POST',
+        body: new URLSearchParams({
+          __action: 'new_instance',
+          __csrf_token: context.__csrf_token,
+        }),
+      });
+      assert.equal(startResponse.status, 200);
+      const assessmentInstanceId = String(parseAssessmentInstanceId(startResponse.url));
+
+      const writerInstanceQuestionId = await selectInstanceQuestionId({
+        assessmentInstanceId,
+        qid: WRITER_QID,
+      });
+      const writerUrl = `${courseInstanceBaseUrl}/instance_question/${writerInstanceQuestionId}/`;
+
+      const writerPage = await fetchCheerio(writerUrl);
+      assert.equal(writerPage.status, 200);
+      extractAndSaveCSRFToken(context, writerPage.$, '.question-form');
+      extractAndSaveVariantId(context, writerPage.$, '.question-form');
+
+      const writerGradeResponse = await fetch(writerUrl, {
+        method: 'POST',
+        body: new URLSearchParams({
+          __action: 'grade',
+          __csrf_token: context.__csrf_token,
+          __variant_id: context.__variant_id,
+          increment: '5',
+        }),
+      });
+      assert.equal(writerGradeResponse.status, 200);
+
+      const writerSubmission = await sqldb.queryRow(
+        sql.select_last_submission_for_variant,
+        { variant_id: context.__variant_id },
+        SubmissionSchema,
+      );
+      assert.equal(writerSubmission.broken, false, 'writer submission should not be broken');
+
+      const readerInstanceQuestionId = await selectInstanceQuestionId({
+        assessmentInstanceId,
+        qid: READER_QID,
+      });
+      const readerUrl = `${courseInstanceBaseUrl}/instance_question/${readerInstanceQuestionId}/`;
+      const readerPage = await fetchCheerio(readerUrl);
+      assert.equal(readerPage.status, 200);
+      extractAndSaveVariantId(context, readerPage.$, '.question-form');
+
+      const readerVariant = await sqldb.queryRow(
+        sql.select_variant_by_id,
+        { variant_id: context.__variant_id },
+        VariantSchema,
+      );
+      assert.equal(readerVariant.broken_at, null, 'reader variant should not be broken');
+      assert.equal(readerVariant.params?.observed_count, 5);
+    });
   });
 
   it('populates shared-state defaults (rather than an empty object) for a fresh instructor preview variant', async () => {
