@@ -14,7 +14,7 @@ Given an old key and a new key:
 4. Wait for old artifacts to expire, or re-encrypt persisted data as described below.
 5. Configure `[new]` and refresh every application instance.
 
-Do not skip the `[old, new]` stage. It proves every running instance can read an array before any instance begins using the new key.
+Do not skip the `[old, new]` stage. It ensures every instance can verify with the new key before any instance begins signing with it. During the subsequent rolling change to `[new, old]`, updated instances can sign with the new key while instances still using `[old, new]` can verify signatures from either key.
 
 ## `secretKey`
 
