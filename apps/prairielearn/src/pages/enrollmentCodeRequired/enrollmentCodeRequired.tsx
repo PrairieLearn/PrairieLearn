@@ -6,11 +6,11 @@ import { Hydrate } from '@prairielearn/react/server';
 import { EnrollmentPage } from '../../components/EnrollmentPage.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
-import { idsEqual } from '../../lib/id.js';
 import {
   admitUserFromOrdinaryCourseInstanceRequest,
   selectOrdinaryCourseInstanceAdmissionDecision,
-} from '../../models/course-instance-admission.js';
+} from '../../lib/enrollment/admission.js';
+import { idsEqual } from '../../lib/id.js';
 
 import { EnrollmentCodeRequired } from './enrollmentCodeRequired.html.js';
 

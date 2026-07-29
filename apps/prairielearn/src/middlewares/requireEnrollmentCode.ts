@@ -1,9 +1,9 @@
 import { extractPageContext } from '../lib/client/page-context.js';
-import { typedAsyncHandler } from '../lib/res-locals.js';
 import {
   type OrdinaryCourseInstanceAdmissionLocals,
   selectOrdinaryCourseInstanceAdmissionDecision,
-} from '../models/course-instance-admission.js';
+} from '../lib/enrollment/admission.js';
+import { typedAsyncHandler } from '../lib/res-locals.js';
 
 export default typedAsyncHandler<'course-instance', OrdinaryCourseInstanceAdmissionLocals>(
   async (req, res, next) => {

@@ -11,13 +11,13 @@ import {
   CourseInstanceSchema,
   Lti13CourseInstanceSchema,
 } from '../../../lib/db-types.js';
+import { admitUserFromLti13CourseInstanceRequest } from '../../../lib/enrollment/admission.js';
+import { selectEnrollmentAdmissionDecision } from '../../../lib/enrollment/identity.js';
+import { EnrollmentAdmissionDeniedError } from '../../../lib/enrollment/reconciliation.js';
 import { idsEqual } from '../../../lib/id.js';
 import { typedAsyncHandler } from '../../../lib/res-locals.js';
-import { admitUserFromLti13CourseInstanceRequest } from '../../../models/course-instance-admission.js';
 import { selectCourseInstancesWithStaffAccess } from '../../../models/course-instances.js';
 import { selectCoursesWithEditAccess } from '../../../models/course.js';
-import { selectEnrollmentAdmissionDecision } from '../../../models/enrollment-identity.js';
-import { EnrollmentAdmissionDeniedError } from '../../../models/enrollment-reconciliation.js';
 import { Lti13Claim } from '../../lib/lti13.js';
 
 import {
