@@ -229,7 +229,7 @@ export async function admitUserToCourseInstance(
       if (
         decision.reason === 'already_joined' &&
         classification.boundCandidate !== null &&
-        selectedSource.type !== 'pending_uid'
+        !(selectedSource.type === 'invitation' && selectedSource.matchedBy === 'uid')
       ) {
         return classification.boundCandidate.enrollment;
       }
@@ -329,10 +329,10 @@ export async function admitUserToCourseInstance(
 }
 
 /**
- * Rejects only the exact actionable conventional invitation selected by the
- * caller. Roster identity cannot authorize this mutation.
+ * Rejects only the exact actionable UID-matched invitation selected by the
+ * caller. UIN and LTI identity matches cannot authorize this mutation.
  */
-export async function rejectConventionalEnrollmentInvitation({
+export async function rejectUidInvitation({
   agentAuthnUserId,
   agentUserId,
   courseInstanceId,
@@ -343,7 +343,7 @@ export async function rejectConventionalEnrollmentInvitation({
   enrollmentId: string;
   userId: string;
 }): Promise<Enrollment> {
-  const source = { type: 'pending_uid' as const };
+  const source: EnrollmentAdmissionSource = { type: 'invitation', matchedBy: 'uid' };
   const context = { courseInstanceId, userId };
 
   return await runWithSharedEnrollmentBarrier(courseInstanceId, async () => {
@@ -369,7 +369,7 @@ export async function rejectConventionalEnrollmentInvitation({
 
     const oldEnrollment = decision.invitationCandidate.enrollment;
     const enrollment = await queryRow(
-      sql.reject_conventional_invitation,
+      sql.reject_uid_invitation,
       { enrollment_id: oldEnrollment.id },
       EnrollmentSchema,
     );

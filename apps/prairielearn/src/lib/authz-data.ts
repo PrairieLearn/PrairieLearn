@@ -9,7 +9,6 @@ import { IdSchema } from '@prairielearn/zod';
 
 import { selectLatestPublishingExtensionByEnrollmentIds } from '../models/course-instance-publishing-extensions.js';
 
-
 import {
   type ConstructedCourseOrInstanceContext,
   type PlainAuthzData,
@@ -134,8 +133,8 @@ export async function calculateModernCourseInstanceStudentAccess(
   // Joined students and actionable invitations can have an extension on any
   // enrollment candidate that would participate in admission reconciliation.
   const hasActionableInvitation =
-    classification.actionableConventionalInvitation !== null ||
-    classification.actionableInstitutionRosterInvitation !== null;
+    classification.actionableUidInvitation !== null ||
+    classification.actionableInstitutionUinInvitation !== null;
   if (!isJoined && !hasActionableInvitation) {
     return { has_student_access: false, has_student_access_with_enrollment: false };
   }

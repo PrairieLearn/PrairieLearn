@@ -265,7 +265,7 @@ export async function admitUserForCourseInstanceAccess({
   });
 }
 
-export async function admitUserFromConventionalEnrollmentInvitation({
+export async function admitUserFromUidInvitation({
   courseInstanceId,
   expectedInvitationEnrollmentId,
   ip,
