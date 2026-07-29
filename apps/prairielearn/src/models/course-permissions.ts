@@ -128,6 +128,11 @@ export async function deleteCoursePermissions({
       IdSchema,
     );
 
+    // The delete intentionally rechecks all instances in the course instead of
+    // filtering to this snapshot. A concurrently created instance can therefore
+    // have an enrollment deleted without its barrier, but filtering would leave
+    // stale enrollment after course permission removal. We accept that narrow
+    // race rather than add a course-wide creation mutex.
     await runWithSharedEnrollmentBarrier(courseInstanceIds, async () => {
       await execute(sql.delete_course_permissions, {
         course_id,

@@ -8,6 +8,8 @@ SELECT
   )
 FROM
   unnest($course_instance_ids::bigint[]) AS course_instance_ids (course_instance_id)
+  -- PostgreSQL evaluates the volatile lock call after sorting, so locks are
+  -- acquired in this order.
 ORDER BY
   course_instance_id;
 
@@ -21,5 +23,7 @@ SELECT
   )
 FROM
   unnest($course_instance_ids::bigint[]) AS course_instance_ids (course_instance_id)
+  -- PostgreSQL evaluates the volatile lock call after sorting, so locks are
+  -- acquired in this order.
 ORDER BY
   course_instance_id;

@@ -38,6 +38,12 @@ describe('course-instance enrollment barriers', () => {
       await expect(
         runInTransactionAsync(async () => {
           await execute(sql.set_short_lock_timeout);
+          await runWithSharedEnrollmentBarrier('2147483649', async () => {});
+        }),
+      ).resolves.toBeUndefined();
+      await expect(
+        runInTransactionAsync(async () => {
+          await execute(sql.set_short_lock_timeout);
           await runWithExclusiveEnrollmentBarrier('2147483649', async () => {});
         }),
       ).rejects.toMatchObject({ code: POSTGRES_LOCK_NOT_AVAILABLE });
