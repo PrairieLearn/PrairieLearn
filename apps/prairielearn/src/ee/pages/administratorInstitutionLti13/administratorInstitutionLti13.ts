@@ -3,7 +3,7 @@ import { Router } from 'express';
 import jose from 'node-jose';
 import { z } from 'zod';
 
-import * as error from '@prairielearn/error';
+import { HttpStatusError } from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import {
   execute,
@@ -29,6 +29,7 @@ import { createServerJob } from '../../../lib/server-jobs.js';
 import { getCanonicalHost } from '../../../lib/url.js';
 import { getInstitution } from '../../lib/institution.js';
 import { Lti13CombinedInstanceSchema, inspectRoster } from '../../lib/lti13.js';
+import { selectLti13InstanceForUpdate } from '../../models/lti13Instance.js';
 
 import {
   AdministratorInstitutionLti13,
@@ -98,7 +99,7 @@ router.get(
       paramInstance = lti13Instances.find(({ id }) => id === req.params.unsafe_lti13_instance_id);
 
       if (!paramInstance) {
-        throw new error.HttpStatusError(
+        throw new HttpStatusError(
           404,
           `LTI 1.3 instance ${req.params.unsafe_lti13_instance_id} not found`,
         );
@@ -199,7 +200,7 @@ router.post(
         flash('success', `Key ${key.kid} deleted.`);
         return res.redirect(req.originalUrl);
       } else {
-        throw new error.HttpStatusError(500, 'error removing key');
+        throw new HttpStatusError(500, 'error removing key');
       }
     } else if (
       req.body.__action === 'permit_roster_sync' ||
@@ -208,13 +209,9 @@ router.post(
       const rosterSyncPermitted = req.body.__action === 'permit_roster_sync';
       await runInTransactionAsync(async () => {
         await lockInstitutionForIdentityConfiguration(req.params.institution_id);
-        const instance = await queryRow(
-          sql.select_instance_for_update,
-          {
-            unsafe_lti13_instance_id: req.params.unsafe_lti13_instance_id,
-            institution_id: req.params.institution_id,
-          },
-          Lti13InstanceSchema,
+        const instance = await selectLti13InstanceForUpdate(
+          req.params.institution_id,
+          req.params.unsafe_lti13_instance_id,
         );
         if (rosterSyncPermitted) {
           await assertLti13RosterSyncCanBePermitted(
@@ -252,17 +249,13 @@ router.post(
 
       await runInTransactionAsync(async () => {
         await lockInstitutionForIdentityConfiguration(req.params.institution_id);
-        const instance = await queryRow(
-          sql.select_instance_for_update,
-          {
-            unsafe_lti13_instance_id: req.params.unsafe_lti13_instance_id,
-            institution_id: req.params.institution_id,
-          },
-          Lti13InstanceSchema,
+        const instance = await selectLti13InstanceForUpdate(
+          req.params.institution_id,
+          req.params.unsafe_lti13_instance_id,
         );
 
         if (instance.roster_sync_permitted) {
-          throw new error.HttpStatusError(
+          throw new HttpStatusError(
             400,
             'Disable roster syncing permission before changing the LTI platform configuration',
           );
@@ -304,21 +297,20 @@ router.post(
     } else if (req.body.__action === 'save_pl_config') {
       await runInTransactionAsync(async () => {
         await lockInstitutionForIdentityConfiguration(req.params.institution_id);
-        const instance = await queryRow(
-          sql.select_instance_for_update,
-          {
-            unsafe_lti13_instance_id: req.params.unsafe_lti13_instance_id,
-            institution_id: req.params.institution_id,
-          },
-          Lti13InstanceSchema,
+        const instance = await selectLti13InstanceForUpdate(
+          req.params.institution_id,
+          req.params.unsafe_lti13_instance_id,
         );
-        const uinAttribute = normalizeUinAttribute(req.body.uin_attribute);
+        // Disabled inputs are omitted from form submissions, so preserve the locked UIN.
+        const uinAttribute = normalizeUinAttribute(
+          req.body.uin_attribute ?? instance.uin_attribute,
+        );
 
         if (
           instance.roster_sync_permitted &&
           uinAttribute !== normalizeUinAttribute(instance.uin_attribute)
         ) {
-          throw new error.HttpStatusError(
+          throw new HttpStatusError(
             400,
             'Disable roster syncing permission before changing the LTI UIN attribute',
           );
@@ -378,7 +370,7 @@ router.post(
 
       return res.redirect(`/pl/administrator/jobSequence/${serverJob.jobSequenceId}`);
     } else {
-      throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
+      throw new HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }
   }),
 );

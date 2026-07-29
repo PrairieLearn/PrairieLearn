@@ -41,7 +41,9 @@ function getSamlSaveBody(page: CheerioResponse): URLSearchParams {
     'family_name_attribute',
     'email_attribute',
   ]) {
-    const value = form.find(`[name=${name}]`).val();
+    const input = form.find(`[name=${name}]`);
+    if (input.is('[disabled]')) continue;
+    const value = input.val();
     assert.isString(value);
     body.set(name, value as string);
   }
@@ -107,7 +109,7 @@ describe('institution LTI 1.3 roster syncing guardrails', { concurrent: false },
 
     const instancePage = await fetchCheerio(instanceUrl);
     const plForm = instancePage.$('button:contains(Save PrairieLearn config)').closest('form');
-    assert.isFalse(plForm.find('input[name=uin_attribute]').is('[readonly]'));
+    assert.isFalse(plForm.find('input[name=uin_attribute]').is('[disabled]'));
 
     const uinAttribute = '["https://purl.imsglobal.org/spec/lti/claim/custom"]["sis_user_id"]';
     const plResponse = await fetchCheerio(instanceUrl, {
@@ -176,7 +178,22 @@ describe('institution LTI 1.3 roster syncing guardrails', { concurrent: false },
       .closest('form');
     const plForm = instancePage.$('button:contains(Save PrairieLearn config)').closest('form');
     assert.isTrue(platformForm.find('button[type=submit]').is('[disabled]'));
-    assert.isTrue(plForm.find('input[name=uin_attribute]').is('[readonly]'));
+    assert.isTrue(plForm.find('input[name=uin_attribute]').is('[disabled]'));
+
+    const uinAttribute = plForm.find('input[name=uin_attribute]').val();
+    assert.isString(uinAttribute);
+    const safePlResponse = await fetchCheerio(instanceUrl, {
+      method: 'POST',
+      body: new URLSearchParams({
+        __csrf_token: getCSRFToken(plForm),
+        __action: 'save_pl_config',
+        name_attribute: 'name',
+        uid_attribute: 'email',
+        email_attribute: 'updated-email',
+      }),
+    });
+    assert.equal(safePlResponse.status, 200);
+    assert.equal((await selectLti13Instance(instanceId)).uin_attribute, uinAttribute);
 
     await expectBadRequest(instanceUrl, getPlatformBody(instancePage, 'while-permitted'));
     await expectBadRequest(instanceUrl, {
@@ -189,8 +206,8 @@ describe('institution LTI 1.3 roster syncing guardrails', { concurrent: false },
     });
 
     const samlPage = await fetchCheerio(`${siteUrl}/pl/administrator/institution/1/saml`);
-    assert.isTrue(samlPage.$('input[name=issuer]').is('[readonly]'));
-    assert.isTrue(samlPage.$('input[name=uin_attribute]').is('[readonly]'));
+    assert.isTrue(samlPage.$('input[name=issuer]').is('[disabled]'));
+    assert.isTrue(samlPage.$('input[name=uin_attribute]').is('[disabled]'));
     assert.lengthOf(
       samlPage.$(
         `#saml-lti-roster-sync-dependencies a[href$="/lti13/${instanceId}"]:contains("#${instanceId}")`,
@@ -267,7 +284,7 @@ describe('institution LTI 1.3 roster syncing guardrails', { concurrent: false },
         .$('button:contains(Save PrairieLearn config)')
         .closest('form')
         .find('input[name=uin_attribute]')
-        .is('[readonly]'),
+        .is('[disabled]'),
     );
     assert.equal(
       (

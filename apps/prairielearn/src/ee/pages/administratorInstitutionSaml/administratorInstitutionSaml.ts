@@ -8,7 +8,7 @@ import * as pem from 'pem/lib/pem.js';
 import formatXml from 'xml-formatter';
 import { z } from 'zod';
 
-import * as error from '@prairielearn/error';
+import { HttpStatusError } from '@prairielearn/error';
 import { execute, loadSqlEquiv, runInTransactionAsync } from '@prairielearn/postgres';
 
 import {
@@ -83,15 +83,18 @@ router.post(
         const identityConfigurationStatus = await selectInstitutionIdentityConfigurationStatus(
           req.params.institution_id,
         );
-        const issuer = z.string().parse(req.body.issuer);
-        const uinAttribute = normalizeUinAttribute(req.body.uin_attribute);
+        // Disabled inputs are omitted from form submissions, so preserve locked values.
+        const issuer = z.string().parse(req.body.issuer ?? samlProvider?.issuer);
+        const uinAttribute = normalizeUinAttribute(
+          req.body.uin_attribute ?? samlProvider?.uin_attribute,
+        );
 
         if (
           identityConfigurationStatus.has_roster_sync_permitted_lti13_instance &&
           (uinAttribute !== normalizeUinAttribute(samlProvider?.uin_attribute) ||
             issuer !== samlProvider?.issuer)
         ) {
-          throw new error.HttpStatusError(
+          throw new HttpStatusError(
             400,
             'Disable roster syncing permission for all affected LTI 1.3 instances before changing the SAML issuer or UIN attribute',
           );
@@ -144,7 +147,7 @@ router.post(
           req.params.institution_id,
         );
         if (identityConfigurationStatus.has_roster_sync_permitted_lti13_instance) {
-          throw new error.HttpStatusError(
+          throw new HttpStatusError(
             400,
             'Disable roster syncing permission for all affected LTI 1.3 instances before deleting the SAML configuration',
           );
@@ -190,7 +193,7 @@ router.post(
 
       res.send(DecodedAssertion({ xml, profile: JSON.stringify(profile, null, 2) }));
     } else {
-      throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
+      throw new HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }
   }),
 );

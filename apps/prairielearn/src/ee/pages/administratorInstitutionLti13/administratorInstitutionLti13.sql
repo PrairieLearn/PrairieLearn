@@ -70,17 +70,6 @@ WHERE
   AND id = $unsafe_lti13_instance_id
   AND deleted_at IS NULL;
 
--- BLOCK select_instance_for_update
-SELECT
-  *
-FROM
-  lti13_instances
-WHERE
-  institution_id = $institution_id
-  AND id = $unsafe_lti13_instance_id
-  AND deleted_at IS NULL
-FOR UPDATE;
-
 -- BLOCK update_keystore
 UPDATE lti13_instances
 SET

@@ -413,7 +413,7 @@ ${JSON.stringify(instance.custom_fields, null, 3)}</textarea
             aria-describedby="uinAttributeHelp${instance.roster_sync_permitted
               ? ' uinAttributeLockedHelp'
               : ''}"
-            ${instance.roster_sync_permitted ? 'readonly' : ''}
+            ${instance.roster_sync_permitted ? 'disabled' : ''}
           />
           <small id="uinAttributeHelp" class="form-text text-muted">
             The UIN is used as an internal, immutable identifier for the user. It
