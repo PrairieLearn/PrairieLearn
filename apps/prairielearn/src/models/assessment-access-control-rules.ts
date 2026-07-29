@@ -21,9 +21,6 @@ import { lockAssessment } from './assessment.js';
 import { lockEnrollments } from './enrollment-lock.js';
 
 const sql = loadSqlEquiv(import.meta.url);
-const MAX_ENROLLMENT_TARGET_LOCK_ATTEMPTS = 3;
-
-class EnrollmentTargetsChangedError extends Error {}
 
 interface AccessControlEnrollment {
   enrollmentId: string;
@@ -378,64 +375,45 @@ export async function replaceEnrollmentAccessControlRules(
   }
 
   await runInTransactionAsync(async () => {
-    for (let attempt = 1; attempt <= MAX_ENROLLMENT_TARGET_LOCK_ATTEMPTS; attempt++) {
-      await execute(sql.create_enrollment_target_lock_savepoint);
-      try {
-        const existingTargetIds = await selectEnrollmentAccessControlTargetIds(assessment);
-        const targetIdsToLock = new Set([
-          ...existingTargetIds,
-          ...rules.flatMap((rule) => rule.enrollmentIds),
-        ]);
-        await lockEnrollments(targetIdsToLock);
-        await lockAssessment(assessment);
+    const existingTargetIds = await selectEnrollmentAccessControlTargetIds(assessment);
+    const targetIdsToLock = new Set([
+      ...existingTargetIds,
+      ...rules.flatMap((rule) => rule.enrollmentIds),
+    ]);
+    await lockEnrollments(targetIdsToLock);
+    await lockAssessment(assessment);
 
-        const revalidatedTargetIds = await selectEnrollmentAccessControlTargetIds(assessment);
-        if (revalidatedTargetIds.some((id) => !targetIdsToLock.has(id))) {
-          // Reconciliation may have moved a target between the initial read and
-          // the enrollment locks. Roll back this attempt before acquiring
-          // another enrollment lock set in numeric order.
-          throw new EnrollmentTargetsChangedError();
-        }
+    const revalidatedTargetIds = await selectEnrollmentAccessControlTargetIds(assessment);
+    if (revalidatedTargetIds.some((id) => !targetIdsToLock.has(id))) {
+      // Reconciliation moved a target after the initial snapshot. Abort before
+      // mutation so a later request can take a fresh, correctly ordered lock set.
+      throw new Error('Enrollment access-control targets changed during replacement');
+    }
 
-        const currentRules = await selectAccessControlRules(assessment, ['enrollment']);
-        const existingIds = new Set(currentRules.map((rule) => rule.id));
-        const idsToDelete = [...existingIds].filter((id) => !submittedIds.has(id));
-        if (idsToDelete.length > 0) {
-          await execute(sql.delete_enrollment_rules_by_ids, {
-            ids: idsToDelete,
-            assessment_id: assessment.id,
-          });
-        }
+    const currentRules = await selectAccessControlRules(assessment, ['enrollment']);
+    const existingIds = new Set(currentRules.map((rule) => rule.id));
+    const idsToDelete = [...existingIds].filter((id) => !submittedIds.has(id));
+    if (idsToDelete.length > 0) {
+      await execute(sql.delete_enrollment_rules_by_ids, {
+        ids: idsToDelete,
+        assessment_id: assessment.id,
+      });
+    }
 
-        if (rules.length > 0) {
-          // Reordering can swap existing rule numbers, which would otherwise violate
-          // the unique constraint before the batch finishes. These temporary values
-          // stay inside this transaction and are replaced by the loop below.
-          await execute(sql.move_enrollment_rules_to_temporary_numbers, {
-            assessment_id: assessment.id,
-          });
-          for (const [index, rule] of rules.entries()) {
-            await syncEnrollmentAccessControlRule(
-              assessment,
-              rule.ruleData,
-              index + 1,
-              rule.enrollmentIds,
-            );
-          }
-        }
-
-        await execute(sql.release_enrollment_target_lock_savepoint);
-        return;
-      } catch (error) {
-        await execute(sql.rollback_enrollment_target_lock_savepoint);
-        await execute(sql.release_enrollment_target_lock_savepoint);
-
-        if (
-          !(error instanceof EnrollmentTargetsChangedError) ||
-          attempt === MAX_ENROLLMENT_TARGET_LOCK_ATTEMPTS
-        ) {
-          throw error;
-        }
+    if (rules.length > 0) {
+      // Reordering can swap existing rule numbers, which would otherwise violate
+      // the unique constraint before the batch finishes. These temporary values
+      // stay inside this transaction and are replaced by the loop below.
+      await execute(sql.move_enrollment_rules_to_temporary_numbers, {
+        assessment_id: assessment.id,
+      });
+      for (const [index, rule] of rules.entries()) {
+        await syncEnrollmentAccessControlRule(
+          assessment,
+          rule.ruleData,
+          index + 1,
+          rule.enrollmentIds,
+        );
       }
     }
   });
