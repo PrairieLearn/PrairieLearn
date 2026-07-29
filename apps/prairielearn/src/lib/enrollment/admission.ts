@@ -4,25 +4,25 @@ import { assertNever } from '@prairielearn/utils';
 import {
   PotentialEnrollmentStatus,
   checkPotentialEnterpriseEnrollment,
-} from '../ee/models/enrollment.js';
-import { hasRole, makePageAuthzData } from '../lib/authz-data-lib.js';
-import { constructCourseOrInstanceContext } from '../lib/authz-data.js';
-import type { Course, CourseInstance, User } from '../lib/db-types.js';
+} from '../../ee/models/enrollment.js';
+import { selectUserById } from '../../models/user.js';
+import { hasRole, makePageAuthzData } from '../authz-data-lib.js';
+import { constructCourseOrInstanceContext } from '../authz-data.js';
+import type { Course, CourseInstance, User } from '../db-types.js';
+import { isEnterprise } from '../license.js';
+import { HttpRedirect } from '../redirect.js';
+
 import {
   type EnrollmentIneligibilityReason,
   checkEnrollmentEligibility,
   getEligibilityErrorMessage,
-} from '../lib/enrollment-eligibility.js';
-import { isEnterprise } from '../lib/license.js';
-import { HttpRedirect } from '../lib/redirect.js';
-
+} from './eligibility.js';
 import {
   type EnrollmentAdmissionSource,
   type EnrollmentIdentityClassification,
   selectEnrollmentIdentityClassification,
-} from './enrollment-identity.js';
-import { admitUserToCourseInstance } from './enrollment-reconciliation.js';
-import { selectUserById } from './user.js';
+} from './identity.js';
+import { admitUserToCourseInstance } from './reconciliation.js';
 
 type OrdinaryAdmissionSource = Exclude<EnrollmentAdmissionSource, { type: 'lti13' }>;
 

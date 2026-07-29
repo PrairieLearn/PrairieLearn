@@ -1,11 +1,11 @@
 import { EnrollmentPage } from '../components/EnrollmentPage.js';
-import { idsEqual } from '../lib/id.js';
-import { typedAsyncHandler } from '../lib/res-locals.js';
 import {
   type OrdinaryCourseInstanceAdmissionLocals,
   admitUserFromOrdinaryCourseInstanceRequest,
   selectOrdinaryCourseInstanceAdmissionDecision,
-} from '../models/course-instance-admission.js';
+} from '../lib/enrollment/admission.js';
+import { idsEqual } from '../lib/id.js';
+import { typedAsyncHandler } from '../lib/res-locals.js';
 
 export default typedAsyncHandler<'course-instance', OrdinaryCourseInstanceAdmissionLocals>(
   async (req, res, next) => {
