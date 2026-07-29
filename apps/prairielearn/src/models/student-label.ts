@@ -21,10 +21,10 @@ import {
   StudentLabelEnrollmentSchema,
   StudentLabelSchema,
 } from '../lib/db-types.js';
+import { lockEnrollments } from '../lib/enrollment/lock.js';
 import type { ColorJson } from '../schemas/infoCourse.js';
 
 import { insertAuditEvent } from './audit-event.js';
-import { lockEnrollments } from './enrollment-lock.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 

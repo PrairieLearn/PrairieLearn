@@ -16,10 +16,10 @@ import {
   AssessmentAccessControlPrairietestExamSchema,
   AssessmentAccessControlRuleSchema,
 } from '../lib/db-types.js';
+import { lockEnrollments } from '../lib/enrollment/lock.js';
 import type { AccessControlJson } from '../schemas/accessControl.js';
 
 import { lockAssessment } from './assessment.js';
-import { lockEnrollments } from './enrollment-lock.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
