@@ -5,11 +5,6 @@ import { afterAll, assert, beforeAll, beforeEach, describe, it, vi } from 'vites
 import { execute, loadSqlEquiv } from '@prairielearn/postgres';
 
 import * as publishingExtensionsModel from '../models/course-instance-publishing-extensions.js';
-import {
-  type EnrollmentIdentityCandidate,
-  type EnrollmentIdentityClassification,
-} from '../models/enrollment-identity.js';
-import * as enrollmentIdentityModel from '../models/enrollment-identity.js';
 import * as helperDb from '../tests/helperDb.js';
 
 import {
@@ -17,6 +12,11 @@ import {
   checkCourseInstanceLegacyAccess,
 } from './authz-data.js';
 import type { CourseInstance, CourseInstancePublishingExtension, Enrollment } from './db-types.js';
+import * as enrollmentIdentityModel from './enrollment/identity.js';
+import {
+  type EnrollmentIdentityCandidate,
+  type EnrollmentIdentityClassification,
+} from './enrollment/identity.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
