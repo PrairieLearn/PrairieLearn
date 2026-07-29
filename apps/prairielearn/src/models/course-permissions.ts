@@ -24,8 +24,8 @@ import {
   type User,
   UserSchema,
 } from '../lib/db-types.js';
+import { runWithSharedEnrollmentBarrier } from '../lib/enrollment/barrier.js';
 
-import { runWithSharedEnrollmentBarrier } from './enrollment-barrier.js';
 import { selectOrInsertUserByUid } from './user.js';
 
 const sql = loadSqlEquiv(import.meta.url);

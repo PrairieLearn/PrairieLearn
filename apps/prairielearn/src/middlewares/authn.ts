@@ -10,8 +10,8 @@ import { type LoadUserAuth } from '../lib/authn.types.js';
 import { config } from '../lib/config.js';
 import { clearCookie, setCookie } from '../lib/cookie.js';
 import { EnrollmentSchema } from '../lib/db-types.js';
+import { runWithSharedEnrollmentBarrier } from '../lib/enrollment/barrier.js';
 import { insertAuditEvent } from '../models/audit-event.js';
-import { runWithSharedEnrollmentBarrier } from '../models/enrollment-barrier.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 

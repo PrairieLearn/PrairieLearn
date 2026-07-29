@@ -39,13 +39,13 @@ import {
   type Institution,
   UserSchema,
 } from '../lib/db-types.js';
+import { runWithSharedEnrollmentBarrier } from '../lib/enrollment/barrier.js';
 import { isEnterprise } from '../lib/license.js';
 import { HttpRedirect } from '../lib/redirect.js';
 
 import { insertAuditEvent } from './audit-event.js';
 import type { SupportedActionsForTable } from './audit-event.types.js';
 import { selectCourseInstanceById } from './course-instances.js';
-import { runWithSharedEnrollmentBarrier } from './enrollment-barrier.js';
 import { generateUsers, selectUserById } from './user.js';
 
 const sql = loadSqlEquiv(import.meta.url);
