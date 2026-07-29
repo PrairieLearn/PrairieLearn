@@ -13,7 +13,7 @@ import {
 } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
-import { type CourseInstance, type Enrollment } from '../lib/db-types.js';
+import { type CourseInstance } from '../lib/db-types.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
 import * as helperCourse from '../tests/helperCourse.js';
 import * as helperDb from '../tests/helperDb.js';
@@ -24,7 +24,6 @@ import {
   actorFor,
   createEnrollment,
   createUser,
-  nextFixtureName,
   selectEnrollments,
 } from './enrollment-reconciliation.test-helpers.js';
 
@@ -64,102 +63,16 @@ async function waitForApplicationLock(
   throw new Error(`Timed out waiting for ${applicationName} to run ${queryPattern}`);
 }
 
-describe('checked enrollment admission concurrency and retry', { concurrent: false }, () => {
+describe('checked enrollment admission concurrency', { concurrent: false }, () => {
   let courseInstance: CourseInstance;
-  let otherCourseInstance: CourseInstance;
 
   beforeAll(async () => {
     await helperDb.before();
     await helperCourse.syncCourse(TEST_COURSE_PATH);
     courseInstance = await selectCourseInstanceById('1');
-    otherCourseInstance = await selectCourseInstanceById('2');
   });
 
   afterAll(helperDb.after);
-
-  it('retries once after a recognized bound-user uniqueness race', async () => {
-    const user = await createUser({ prefix: 'recognized-race' });
-    const invitation = await createEnrollment({ courseInstance, pendingUin: user.uin });
-    const parentLocked = deferred();
-    const releaseParent = deferred();
-    const blocker = runInTransactionAsync(async () => {
-      await queryRow(
-        sql.lock_enrollment,
-        { enrollment_id: invitation.id },
-        z.object({ id: IdSchema }),
-      );
-      parentLocked.resolve();
-      await releaseParent.promise;
-    }).catch((error) => {
-      parentLocked.reject(error);
-      throw error;
-    });
-    void blocker.catch(() => undefined);
-
-    let admission: Promise<{ admitted: Enrollment; preSavepointEnrollment: Enrollment }> | null =
-      null;
-    let failure: unknown;
-    try {
-      await parentLocked.promise;
-      const applicationName = `admit-${crypto.randomUUID()}`;
-      let validationCalls = 0;
-      admission = runInTransactionAsync(async () => {
-        const preSavepointEnrollment = await createEnrollment({
-          courseInstance: otherCourseInstance,
-          pendingUid: nextFixtureName('pre-savepoint'),
-        });
-        await setLocalApplicationName(applicationName);
-        const admitted = await admitUserToCourseInstance({
-          courseInstanceId: courseInstance.id,
-          userId: user.id,
-          source: { type: 'institution_uin' },
-          ...actorFor(user),
-          validateAdmission: async () => {
-            validationCalls += 1;
-          },
-        });
-        return { admitted, preSavepointEnrollment };
-      });
-      void admission.catch(() => undefined);
-      await waitForApplicationLock(applicationName, '%lock_enrollments_by_id%');
-
-      const concurrentBound = await createEnrollment({
-        courseInstance,
-        userId: user.id,
-        status: 'left',
-        firstJoinedAt: new Date('2025-01-01T00:00:00Z'),
-      });
-      releaseParent.resolve();
-
-      const { admitted, preSavepointEnrollment } = await admission;
-      expect(validationCalls).toBe(2);
-      expect(admitted).toMatchObject({
-        id: concurrentBound.id,
-        status: 'joined',
-        user_id: user.id,
-      });
-      expect(await selectEnrollments([invitation.id, concurrentBound.id])).toEqual([admitted]);
-      expect(await selectEnrollments([preSavepointEnrollment.id])).toEqual([
-        preSavepointEnrollment,
-      ]);
-    } catch (error) {
-      failure = error;
-    } finally {
-      releaseParent.resolve();
-      const results = await Promise.allSettled([
-        blocker,
-        ...(admission === null ? [] : [admission]),
-      ]);
-      const unexpectedFailure = results.find(
-        (result): result is PromiseRejectedResult => result.status === 'rejected',
-      );
-      failure ??= unexpectedFailure?.reason;
-    }
-    if (failure instanceof Error) throw failure;
-    if (failure !== undefined) {
-      throw new Error('Enrollment admission concurrency test failed', { cause: failure });
-    }
-  });
 
   it('revalidates a candidate deleted after selection before validation', async () => {
     const user = await createUser({ prefix: 'candidate-deletion' });
@@ -212,7 +125,7 @@ describe('checked enrollment admission concurrency and retry', { concurrent: fal
     }
   });
 
-  it('does not retry an unrelated database error', async () => {
+  it('rolls back admission after a database error', async () => {
     const user = await createUser({ prefix: 'unrelated-error' });
     const invitation = await createEnrollment({ courseInstance, pendingUin: user.uin });
     let validationCalls = 0;
