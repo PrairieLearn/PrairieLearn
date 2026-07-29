@@ -47,31 +47,6 @@ function deferred() {
   return { promise, reject: reject!, resolve: resolve! };
 }
 
-function observeWorker(
-  promise: Promise<void>,
-  recordFailure: (error: unknown) => void,
-  ready?: ReturnType<typeof deferred>,
-): Promise<void> {
-  const observed = promise.catch((error) => {
-    recordFailure(error);
-    ready?.reject(error);
-    throw error;
-  });
-  void observed.catch(() => {});
-  return observed;
-}
-
-async function finishWorkers(
-  failure: { error: unknown } | undefined,
-  workers: Promise<void>[],
-): Promise<void> {
-  const rejected = (await Promise.allSettled(workers)).find(
-    (result) => result.status === 'rejected',
-  );
-  if (failure) throw failure.error;
-  if (rejected) throw rejected.reason;
-}
-
 async function setApplicationName(name: string): Promise<void> {
   await queryScalar(sql.set_local_application_name, { application_name: name }, z.string());
 }
@@ -188,7 +163,7 @@ describe('enrollment-dependent locking', { concurrent: false }, () => {
     ).toEqual([lowerEnrollment.id]);
   });
 
-  it('retries moved assessment targets without rolling back the outer transaction', async () => {
+  it('aborts when an assessment target moves after the initial snapshot', async () => {
     const [oldTarget, submittedTarget, movedTarget] = enrollments;
     await replaceEnrollmentAccessControlRules(assessment, [
       { ruleData: makeRuleData(), enrollmentIds: [oldTarget.id] },
@@ -198,69 +173,57 @@ describe('enrollment-dependent locking', { concurrent: false }, () => {
 
     const parentsLocked = deferred();
     const moveTarget = deferred();
-    let failure: { error: unknown } | undefined;
-    const recordFailure = (error: unknown) => {
-      failure ??= { error };
-    };
-    const mover = observeWorker(
-      runInTransactionAsync(async () => {
-        await lockEnrollments([oldTarget.id, movedTarget.id]);
-        parentsLocked.resolve();
-        await moveTarget.promise;
-        await execute(sql.move_assessment_access_control_target, {
-          rule_id: rule.id,
-          old_enrollment_id: oldTarget.id,
-          new_enrollment_id: movedTarget.id,
-        });
-      }),
-      recordFailure,
-      parentsLocked,
-    );
+    const mover = runInTransactionAsync(async () => {
+      await lockEnrollments([oldTarget.id, movedTarget.id]);
+      parentsLocked.resolve();
+      await moveTarget.promise;
+      await execute(sql.move_assessment_access_control_target, {
+        rule_id: rule.id,
+        old_enrollment_id: oldTarget.id,
+        new_enrollment_id: movedTarget.id,
+      });
+    }).catch((error) => {
+      parentsLocked.reject(error);
+      throw error;
+    });
+    void mover.catch(() => {});
     await parentsLocked.promise;
 
     const replacementApplicationName = `enrollment-replacement-${crypto.randomUUID()}`;
-    const replacement = observeWorker(
-      runInTransactionAsync(async () => {
-        await setApplicationName(replacementApplicationName);
-        await replaceEnrollmentAccessControlRules(assessment, [
-          { ruleData: makeRuleData(rule.id), enrollmentIds: [submittedTarget.id] },
-        ]);
-      }),
-      recordFailure,
-    );
+    const replacement = runInTransactionAsync(async () => {
+      await setApplicationName(replacementApplicationName);
+      await replaceEnrollmentAccessControlRules(assessment, [
+        { ruleData: makeRuleData(rule.id), enrollmentIds: [submittedTarget.id] },
+      ]);
+    });
+    void replacement.catch(() => {});
 
-    const retryParentLocked = deferred();
-    const releaseRetryParent = deferred();
-    let retryBlocker: Promise<void> | undefined;
     try {
-      await waitForApplicationBlock(replacementApplicationName);
-      const retryBlockerApplicationName = `enrollment-retry-blocker-${crypto.randomUUID()}`;
-      retryBlocker = observeWorker(
-        runInTransactionAsync(async () => {
-          await setApplicationName(retryBlockerApplicationName);
-          await lockEnrollments([movedTarget.id]);
-          retryParentLocked.resolve();
-          await releaseRetryParent.promise;
-        }),
-        recordFailure,
-        retryParentLocked,
-      );
-      await waitForApplicationBlock(retryBlockerApplicationName);
+      await Promise.race([
+        waitForApplicationBlock(replacementApplicationName),
+        replacement.then(
+          () => {
+            throw new Error('Replacement completed before waiting for enrollment locks');
+          },
+          (error) => {
+            throw error;
+          },
+        ),
+      ]);
       moveTarget.resolve();
-      await retryParentLocked.promise;
-      await waitForApplicationBlock(replacementApplicationName);
-    } catch (error) {
-      failure ??= { error };
+      await mover;
+      await expect(replacement).rejects.toThrow(
+        'Enrollment access-control targets changed during replacement',
+      );
     } finally {
       moveTarget.resolve();
-      releaseRetryParent.resolve();
-      await finishWorkers(failure, [mover, replacement, ...(retryBlocker ? [retryBlocker] : [])]);
+      await Promise.allSettled([mover, replacement]);
     }
 
     const [updatedRule] = await selectAccessControlRules(assessment, ['enrollment']);
     assert.isOk(updatedRule);
     expect(updatedRule.enrollments?.map((enrollment) => enrollment.enrollmentId)).toEqual([
-      submittedTarget.id,
+      movedTarget.id,
     ]);
   });
 });
