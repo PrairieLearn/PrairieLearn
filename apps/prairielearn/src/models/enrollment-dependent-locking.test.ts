@@ -4,6 +4,7 @@ import { afterAll, assert, beforeAll, describe, expect, it } from 'vitest';
 import { z } from 'zod';
 
 import { execute, loadSqlEquiv, queryScalar, runInTransactionAsync } from '@prairielearn/postgres';
+import { withResolvers } from '@prairielearn/utils';
 
 import { dangerousFullSystemAuthz } from '../lib/authz-data-lib.js';
 import type { Assessment, CourseInstance, Enrollment } from '../lib/db-types.js';
@@ -36,16 +37,6 @@ import {
 } from './student-label.js';
 
 const sql = loadSqlEquiv(import.meta.url);
-
-function deferred() {
-  let resolve: () => void;
-  let reject: (error: unknown) => void;
-  const promise = new Promise<void>((resolvePromise, rejectPromise) => {
-    resolve = resolvePromise;
-    reject = rejectPromise;
-  });
-  return { promise, reject: reject!, resolve: resolve! };
-}
 
 async function setApplicationName(name: string): Promise<void> {
   await queryScalar(sql.set_local_application_name, { application_name: name }, z.string());
@@ -171,11 +162,11 @@ describe('enrollment-dependent locking', { concurrent: false }, () => {
     const [rule] = await selectAccessControlRules(assessment, ['enrollment']);
     assert.isOk(rule);
 
-    const parentsLocked = deferred();
-    const moveTarget = deferred();
+    const parentsLocked = withResolvers<undefined>();
+    const moveTarget = withResolvers<undefined>();
     const mover = runInTransactionAsync(async () => {
       await lockEnrollments([oldTarget.id, movedTarget.id]);
-      parentsLocked.resolve();
+      parentsLocked.resolve(undefined);
       await moveTarget.promise;
       await execute(sql.move_assessment_access_control_target, {
         rule_id: rule.id,
@@ -210,13 +201,13 @@ describe('enrollment-dependent locking', { concurrent: false }, () => {
           },
         ),
       ]);
-      moveTarget.resolve();
+      moveTarget.resolve(undefined);
       await mover;
       await expect(replacement).rejects.toThrow(
         'Enrollment access-control targets changed during replacement',
       );
     } finally {
-      moveTarget.resolve();
+      moveTarget.resolve(undefined);
       await Promise.allSettled([mover, replacement]);
     }
 
