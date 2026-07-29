@@ -11,6 +11,7 @@ import {
   queryScalar,
   runInTransactionAsync,
 } from '@prairielearn/postgres';
+import { withResolvers } from '@prairielearn/utils';
 import { IdSchema } from '@prairielearn/zod';
 
 import { type CourseInstance } from '../lib/db-types.js';
@@ -28,16 +29,6 @@ import {
 } from './enrollment-reconciliation.test-helpers.js';
 
 const sql = loadSqlEquiv(import.meta.url);
-
-function deferred() {
-  let resolve: () => void;
-  let reject: (error: unknown) => void;
-  const promise = new Promise<void>((resolvePromise, rejectPromise) => {
-    resolve = resolvePromise;
-    reject = rejectPromise;
-  });
-  return { promise, reject: reject!, resolve: resolve! };
-}
 
 async function setLocalApplicationName(applicationName: string): Promise<void> {
   await queryScalar(
@@ -77,15 +68,15 @@ describe('checked enrollment admission concurrency', { concurrent: false }, () =
   it('revalidates a candidate deleted after selection before validation', async () => {
     const user = await createUser({ prefix: 'candidate-deletion' });
     const invitation = await createEnrollment({ courseInstance, pendingUid: user.uid });
-    const parentLocked = deferred();
-    const releaseDeletion = deferred();
+    const parentLocked = withResolvers<undefined>();
+    const releaseDeletion = withResolvers<undefined>();
     const deletion = runInTransactionAsync(async () => {
       await queryRow(
         sql.lock_enrollment,
         { enrollment_id: invitation.id },
         z.object({ id: IdSchema }),
       );
-      parentLocked.resolve();
+      parentLocked.resolve(undefined);
       await releaseDeletion.promise;
       await execute(sql.delete_enrollment, { enrollment_id: invitation.id });
     }).catch((error) => {
@@ -112,7 +103,7 @@ describe('checked enrollment admission concurrency', { concurrent: false }, () =
       });
       void admission.catch(() => undefined);
       await waitForApplicationLock(applicationName, '%lock_enrollments_by_id%');
-      releaseDeletion.resolve();
+      releaseDeletion.resolve(undefined);
 
       await expect(admission).rejects.toMatchObject({
         decision: { allowed: false, reason: 'no_matching_invitation' },
@@ -120,7 +111,7 @@ describe('checked enrollment admission concurrency', { concurrent: false }, () =
       expect(validationCalls).toBe(0);
       expect(await selectEnrollments([invitation.id])).toEqual([]);
     } finally {
-      releaseDeletion.resolve();
+      releaseDeletion.resolve(undefined);
       await deletion;
     }
   });
