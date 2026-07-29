@@ -7,8 +7,8 @@ import { EnrollmentPage } from '../../components/EnrollmentPage.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
 import {
-  admitUserFromOrdinaryCourseInstanceRequest,
-  selectOrdinaryCourseInstanceAdmissionDecision,
+  admitUserForCourseInstanceAccess,
+  selectEnrollmentAccessDecision,
 } from '../../lib/enrollment/admission.js';
 import { idsEqual } from '../../lib/id.js';
 
@@ -49,7 +49,7 @@ router.get(
       return;
     }
 
-    const decision = await selectOrdinaryCourseInstanceAdmissionDecision({
+    const decision = await selectEnrollmentAccessDecision({
       course: res.locals.course,
       courseInstance,
       enrollmentCode: code,
@@ -57,9 +57,8 @@ router.get(
     });
 
     if (decision.allowed) {
-      await admitUserFromOrdinaryCourseInstanceRequest({
+      await admitUserForCourseInstanceAccess({
         courseInstanceId: courseInstance.id,
-        decision,
         enrollmentCode: code,
         ip: req.ip ?? null,
         isAdministrator: res.locals.is_administrator,

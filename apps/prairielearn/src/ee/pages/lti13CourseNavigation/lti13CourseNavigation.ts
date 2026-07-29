@@ -11,7 +11,7 @@ import {
   CourseInstanceSchema,
   Lti13CourseInstanceSchema,
 } from '../../../lib/db-types.js';
-import { admitUserFromLti13CourseInstanceRequest } from '../../../lib/enrollment/admission.js';
+import { admitUserFromLti13Launch } from '../../../lib/enrollment/admission.js';
 import { selectEnrollmentAdmissionDecision } from '../../../lib/enrollment/identity.js';
 import { EnrollmentAdmissionDeniedError } from '../../../lib/enrollment/reconciliation.js';
 import { idsEqual } from '../../../lib/id.js';
@@ -172,7 +172,12 @@ router.get(
       const lti13CourseInstanceId = lti13_course_instance.id;
       const sub = ltiClaim.sub;
       const userId = res.locals.authn_user.id;
-      const source = { type: 'lti13' as const, lti13CourseInstanceId, sub };
+      const source = {
+        type: 'invitation' as const,
+        matchedBy: 'lti13' as const,
+        lti13CourseInstanceId,
+        sub,
+      };
 
       // Exact LTI authority is request-local. Consume the verified launch
       // before selection, checked admission, or any resulting redirect/error.
@@ -188,7 +193,7 @@ router.get(
       );
       if (decision.allowed && decision.invitationCandidate !== null) {
         try {
-          await admitUserFromLti13CourseInstanceRequest({
+          await admitUserFromLti13Launch({
             courseInstanceId,
             expectedInvitationEnrollmentId: decision.invitationCandidate.enrollment.id,
             ip: req.ip ?? null,

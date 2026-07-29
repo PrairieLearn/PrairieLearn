@@ -24,6 +24,14 @@ interface EnrollmentAuditActor {
   agentUserId: string | null;
 }
 
+type EnrollmentAdmissionSourceSelection =
+  | { source: EnrollmentAdmissionSource }
+  | {
+      selectSource: (
+        classification: EnrollmentIdentityClassification,
+      ) => Exclude<EnrollmentAdmissionSource, { matchedBy: 'lti13' }>;
+    };
+
 export class EnrollmentAdmissionDeniedError extends Error {
   constructor(readonly decision: Extract<EnrollmentAdmissionDecision, { allowed: false }>) {
     super(`Enrollment admission denied: ${decision.reason}`);
@@ -86,9 +94,20 @@ async function moveEnrollmentDependents(
 }
 
 function admissionActionDetail(source: EnrollmentAdmissionSource) {
-  if (source.type === 'ordinary') return 'implicit_joined' as const;
-  if (source.type === 'pending_uid') return 'invitation_accepted' as const;
-  return 'roster_admitted' as const;
+  return source.type === 'self_enrollment'
+    ? ('implicit_joined' as const)
+    : ('invitation_accepted' as const);
+}
+
+function admissionAuditContext(
+  reason: 'checked_admission' | 'identity_reconciliation',
+  source: EnrollmentAdmissionSource,
+) {
+  return {
+    reason,
+    admission_source: source.type,
+    ...(source.type === 'invitation' ? { invitation_match: source.matchedBy } : {}),
+  };
 }
 
 async function auditAdmission({
@@ -111,10 +130,7 @@ async function auditAdmission({
     rowId: newSurvivor.id,
     oldRow: oldSurvivor,
     newRow: newSurvivor,
-    context: {
-      reason: 'identity_reconciliation',
-      admission_source: source.type,
-    },
+    context: admissionAuditContext('identity_reconciliation', source),
     subjectUserId: newSurvivor.user_id,
     agentUserId: actor.agentUserId,
     agentAuthnUserId: actor.agentAuthnUserId,
@@ -158,36 +174,29 @@ async function auditAdmission({
  * the locked candidate set. The database uniqueness constraints fail that rare
  * race atomically; this function does not retry inside the caller's transaction.
  */
-export async function admitUserToCourseInstance({
-  actor,
-  userId,
-  courseInstanceId,
-  expectedInvitationEnrollmentId,
-  selectSource,
-  source,
-  validateAdmission,
-}: {
-  actor: EnrollmentAuditActor;
-  courseInstanceId: string;
-  expectedInvitationEnrollmentId?: string;
-  selectSource?: (
-    classification: EnrollmentIdentityClassification,
-  ) => Exclude<EnrollmentAdmissionSource, { type: 'lti13' }>;
-  source: EnrollmentAdmissionSource;
-  userId: string;
-  validateAdmission: (context: {
-    classification: EnrollmentIdentityClassification;
-    source: EnrollmentAdmissionSource;
-  }) => Promise<void>;
-}): Promise<Enrollment> {
+export async function admitUserToCourseInstance(
+  options: {
+    actor: EnrollmentAuditActor;
+    courseInstanceId: string;
+    expectedInvitationEnrollmentId?: string;
+    userId: string;
+    validateAdmission: (context: {
+      classification: EnrollmentIdentityClassification;
+      source: EnrollmentAdmissionSource;
+    }) => Promise<void>;
+  } & EnrollmentAdmissionSourceSelection,
+): Promise<Enrollment> {
+  const { actor, userId, courseInstanceId, expectedInvitationEnrollmentId, validateAdmission } =
+    options;
+  const explicitSource = 'source' in options ? options.source : null;
   const context: EnrollmentIdentityContext = {
     userId,
     courseInstanceId,
     lti13Identity:
-      source.type === 'lti13'
+      explicitSource?.type === 'invitation' && explicitSource.matchedBy === 'lti13'
         ? {
-            lti13CourseInstanceId: source.lti13CourseInstanceId,
-            sub: source.sub,
+            lti13CourseInstanceId: explicitSource.lti13CourseInstanceId,
+            sub: explicitSource.sub,
           }
         : undefined,
   };
@@ -202,7 +211,8 @@ export async function admitUserToCourseInstance({
     );
     await lockEnrollments(enrollmentIds);
     const classification = await selectEnrollmentIdentityClassification(context, enrollmentIds);
-    const selectedSource = selectSource?.(classification) ?? source;
+    const selectedSource =
+      'selectSource' in options ? options.selectSource(classification) : options.source;
     const decision = getEnrollmentAdmissionDecision(classification, selectedSource);
 
     if (!decision.allowed) {
@@ -244,10 +254,7 @@ export async function admitUserToCourseInstance({
         actionDetail: admissionActionDetail(selectedSource),
         rowId: enrollment.id,
         newRow: enrollment,
-        context: {
-          reason: 'checked_admission',
-          admission_source: selectedSource.type,
-        },
+        context: admissionAuditContext('checked_admission', selectedSource),
         subjectUserId: enrollment.user_id,
         agentUserId: actor.agentUserId,
         agentAuthnUserId: actor.agentAuthnUserId,

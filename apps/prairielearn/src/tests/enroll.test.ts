@@ -315,7 +315,7 @@ describe('Self-enrollment settings transitions', () => {
     });
   });
 
-  it('admits an institution-roster invitation without self-enrollment or a code', async () => {
+  it('admits an institution UIN invitation without self-enrollment or a code', async () => {
     await deleteEnrollmentsInCourseInstance('1');
     await updateCourseInstanceSettings('1', {
       selfEnrollmentEnabled: false,
@@ -323,22 +323,22 @@ describe('Self-enrollment settings transitions', () => {
       restrictToInstitution: false,
     });
 
-    const rosterUser = await getOrCreateUser({
-      uid: 'roster@example.com',
-      name: 'Roster Student',
-      uin: 'roster-uin',
-      email: 'roster@example.com',
+    const uinUser = await getOrCreateUser({
+      uid: 'uin-invitation@example.com',
+      name: 'UIN Invitation Student',
+      uin: 'invitation-uin',
+      email: 'uin-invitation@example.com',
       institutionId: '1',
     });
     const invitation = await queryRow(
       `INSERT INTO enrollments (course_instance_id, status, pending_uin)
        VALUES ('1', 'invited', $pending_uin)
        RETURNING *`,
-      { pending_uin: rosterUser.uin },
+      { pending_uin: uinUser.uin },
       EnrollmentSchema,
     );
 
-    await withUser(rosterUser, async () => {
+    await withUser(uinUser, async () => {
       const response = await fetch(assessmentsUrl);
       assert.equal(response.status, 200);
 
@@ -348,7 +348,7 @@ describe('Self-enrollment settings transitions', () => {
         EnrollmentSchema,
       );
       assert.equal(enrollment.status, 'joined');
-      assert.equal(enrollment.user_id, rosterUser.id);
+      assert.equal(enrollment.user_id, uinUser.id);
       assert.isNull(enrollment.pending_uin);
     });
   });

@@ -39,18 +39,25 @@ export interface EnrollmentIdentityCandidate {
 }
 
 export interface EnrollmentIdentityClassification {
-  readonly actionableConventionalInvitation: EnrollmentIdentityCandidate | null;
-  readonly actionableInstitutionRosterInvitation: EnrollmentIdentityCandidate | null;
+  readonly actionableInstitutionUinInvitation: EnrollmentIdentityCandidate | null;
+  readonly actionableUidInvitation: EnrollmentIdentityCandidate | null;
   readonly boundCandidate: EnrollmentIdentityCandidate | null;
   readonly candidates: readonly EnrollmentIdentityCandidate[];
 }
 
 export type EnrollmentAdmissionSource =
-  | { readonly type: 'ordinary' }
-  | { readonly type: 'pending_uid' }
-  | { readonly type: 'institution_uin' }
+  | { readonly type: 'self_enrollment' }
   | {
-      readonly type: 'lti13';
+      readonly type: 'invitation';
+      readonly matchedBy: 'uid';
+    }
+  | {
+      readonly type: 'invitation';
+      readonly matchedBy: 'institution_uin';
+    }
+  | {
+      readonly type: 'invitation';
+      readonly matchedBy: 'lti13';
       readonly lti13CourseInstanceId: string;
       readonly sub: string;
     };
@@ -77,12 +84,12 @@ function isPendingInvitation(candidate: EnrollmentIdentityCandidate): boolean {
 }
 
 /**
- * Roster identity can revive a non-guest `left` enrollment, but it cannot
- * override other bound states. Any guest candidate disables roster admission:
- * guest status is sticky when candidates are reconciled, so admitting through
- * a non-guest roster row would otherwise turn guest history into authority.
+ * A UIN or exact LTI identity match can revive a non-guest `left` enrollment,
+ * but it cannot override other bound states. Any guest candidate disables this
+ * path: guest status is sticky when candidates are reconciled, so a pending
+ * invitation must not turn guest history into admission authority.
  */
-function allowsRosterAdmission(
+function allowsUinOrLtiInvitation(
   candidates: readonly EnrollmentIdentityCandidate[],
   boundCandidate: EnrollmentIdentityCandidate | null,
 ): boolean {
@@ -99,10 +106,10 @@ function classifyEnrollmentIdentityCandidates(
 ): EnrollmentIdentityClassification {
   const boundCandidate = candidates.find((candidate) => candidate.matches.boundUser) ?? null;
 
-  // Conventional invitations are intentionally narrower than roster
-  // invitations. They require no bound enrollment and cannot consume a row
-  // carrying LTI provenance; exact LTI authority is checked separately.
-  const actionableConventionalInvitation =
+  // A UID match is intentionally narrower than a UIN or exact LTI match. It
+  // requires no bound enrollment and cannot consume an invitation carrying LTI
+  // identity; exact LTI authority is checked separately.
+  const actionableUidInvitation =
     boundCandidate === null
       ? (candidates.find(
           (candidate) =>
@@ -111,7 +118,7 @@ function classifyEnrollmentIdentityCandidates(
             candidate.enrollment.pending_lti13_course_instance_id === null,
         ) ?? null)
       : null;
-  const actionableInstitutionRosterInvitation = allowsRosterAdmission(candidates, boundCandidate)
+  const actionableInstitutionUinInvitation = allowsUinOrLtiInvitation(candidates, boundCandidate)
     ? (candidates.find(
         (candidate) =>
           isPendingInvitation(candidate) &&
@@ -121,23 +128,23 @@ function classifyEnrollmentIdentityCandidates(
     : null;
 
   return {
-    actionableConventionalInvitation,
-    actionableInstitutionRosterInvitation,
+    actionableInstitutionUinInvitation,
+    actionableUidInvitation,
     boundCandidate,
     candidates,
   };
 }
 
-function matchesAdmissionSource(
+function matchesInvitationSource(
   candidate: EnrollmentIdentityCandidate,
-  source: Exclude<EnrollmentAdmissionSource, { type: 'ordinary' }>,
+  source: Exclude<EnrollmentAdmissionSource, { type: 'self_enrollment' }>,
 ): boolean {
-  if (source.type === 'pending_uid') {
+  if (source.matchedBy === 'uid') {
     return (
       candidate.matches.pendingUid && candidate.enrollment.pending_lti13_course_instance_id === null
     );
   }
-  if (source.type === 'institution_uin') return candidate.matches.institutionUin;
+  if (source.matchedBy === 'institution_uin') return candidate.matches.institutionUin;
   return (
     candidate.matches.lti13 &&
     candidate.enrollment.pending_lti13_course_instance_id === source.lti13CourseInstanceId &&
@@ -151,36 +158,36 @@ export function getEnrollmentAdmissionDecision(
 ): EnrollmentAdmissionDecision {
   // Bound joined/blocked state wins over every pending identity. Other bound
   // states remain relevant below: only a non-guest `left` enrollment can be
-  // paired with roster authority.
+  // paired with a UIN- or LTI-matched invitation.
   const boundStatus = classification.boundCandidate?.enrollment.status;
   if (boundStatus === 'blocked') return { allowed: false, reason: 'blocked', source };
   if (boundStatus === 'joined') return { allowed: false, reason: 'already_joined', source };
-  if (source.type === 'ordinary') {
+  if (source.type === 'self_enrollment') {
     return { allowed: true, invitationCandidate: null, source };
   }
 
   const invitationCandidate =
-    source.type === 'pending_uid'
-      ? classification.actionableConventionalInvitation
-      : source.type === 'institution_uin'
-        ? classification.actionableInstitutionRosterInvitation
-        : allowsRosterAdmission(classification.candidates, classification.boundCandidate)
+    source.matchedBy === 'uid'
+      ? classification.actionableUidInvitation
+      : source.matchedBy === 'institution_uin'
+        ? classification.actionableInstitutionUinInvitation
+        : allowsUinOrLtiInvitation(classification.candidates, classification.boundCandidate)
           ? (classification.candidates.find(
               (candidate) =>
                 isPendingInvitation(candidate) &&
                 !candidate.enrollment.is_guest &&
-                matchesAdmissionSource(candidate, source),
+                matchesInvitationSource(candidate, source),
             ) ?? null)
           : null;
   if (invitationCandidate !== null) {
     return { allowed: true, invitationCandidate, source };
   }
 
-  if (!classification.candidates.some((candidate) => matchesAdmissionSource(candidate, source))) {
+  if (!classification.candidates.some((candidate) => matchesInvitationSource(candidate, source))) {
     return { allowed: false, reason: 'no_matching_invitation', source };
   }
   if (
-    source.type !== 'pending_uid' &&
+    source.matchedBy !== 'uid' &&
     classification.candidates.some((candidate) => candidate.enrollment.is_guest)
   ) {
     return { allowed: false, reason: 'guest_state', source };

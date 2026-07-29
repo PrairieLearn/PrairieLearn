@@ -84,6 +84,18 @@ interface SurvivorSelectionCase {
   source: EnrollmentAdmissionSource;
 }
 
+type AdmissionInput = {
+  expectedInvitationEnrollmentId?: string;
+  validateAdmission: Parameters<typeof admitUserToCourseInstance>[0]['validateAdmission'];
+} & (
+  | { source: EnrollmentAdmissionSource }
+  | {
+      selectSource: (
+        classification: EnrollmentIdentityClassification,
+      ) => Exclude<EnrollmentAdmissionSource, { matchedBy: 'lti13' }>;
+    }
+);
+
 describe('checked enrollment admission', { concurrent: false }, () => {
   let courseInstance: CourseInstance;
 
@@ -95,13 +107,7 @@ describe('checked enrollment admission', { concurrent: false }, () => {
 
   afterAll(helperDb.after);
 
-  async function admit(
-    user: User,
-    input: Pick<
-      Parameters<typeof admitUserToCourseInstance>[0],
-      'expectedInvitationEnrollmentId' | 'selectSource' | 'source' | 'validateAdmission'
-    >,
-  ) {
+  async function admit(user: User, input: AdmissionInput) {
     return await admitUserToCourseInstance({
       actor: {
         agentAuthnUserId: user.id,
@@ -118,7 +124,7 @@ describe('checked enrollment admission', { concurrent: false }, () => {
   it.each<SurvivorSelectionCase>([
     {
       name: 'uses the bound enrollment as the survivor',
-      source: { type: 'ordinary' },
+      source: { type: 'self_enrollment' },
       setup: async (user) => {
         const loser = await createEnrollment({
           courseInstance,
@@ -142,7 +148,7 @@ describe('checked enrollment admission', { concurrent: false }, () => {
     },
     {
       name: 'uses a sole guest enrollment as the survivor',
-      source: { type: 'pending_uid' },
+      source: { type: 'invitation', matchedBy: 'uid' },
       setup: async (user) => {
         const lower = await createEnrollment({
           courseInstance,
@@ -164,7 +170,7 @@ describe('checked enrollment admission', { concurrent: false }, () => {
     },
     {
       name: 'uses the lowest ID when no guest enrollment exists',
-      source: { type: 'pending_uid' },
+      source: { type: 'invitation', matchedBy: 'uid' },
       setup: async (user) => {
         const lower = await createEnrollment({ courseInstance, pendingUid: user.uid });
         const higher = await createEnrollment({
@@ -182,7 +188,7 @@ describe('checked enrollment admission', { concurrent: false }, () => {
     },
     {
       name: 'uses the lowest ID when multiple guest enrollments exist',
-      source: { type: 'pending_uid' },
+      source: { type: 'invitation', matchedBy: 'uid' },
       setup: async (user) => {
         const lower = await createEnrollment({
           courseInstance,
@@ -230,14 +236,14 @@ describe('checked enrollment admission', { concurrent: false }, () => {
     );
   });
 
-  it('inserts an ordinary checked admission', async () => {
-    const insertedUser = await createUser({ prefix: 'ordinary-insert' });
+  it('inserts a self-enrollment admission', async () => {
+    const insertedUser = await createUser({ prefix: 'self-enrollment-insert' });
     let insertValidationCalls = 0;
     const inserted = await admit(insertedUser, {
-      source: { type: 'ordinary' },
+      source: { type: 'self_enrollment' },
       validateAdmission: async ({ source }) => {
         insertValidationCalls += 1;
-        expect(source).toEqual({ type: 'ordinary' });
+        expect(source).toEqual({ type: 'self_enrollment' });
       },
     });
     expect(insertValidationCalls).toBe(1);
@@ -259,35 +265,36 @@ describe('checked enrollment admission', { concurrent: false }, () => {
   it('uses locked policy selection and pins invitation authority to an enrollment', async () => {
     const user = await createUser({ prefix: 'source-policy' });
     const invitation = await createEnrollment({ courseInstance, pendingUin: user.uin });
-    let validatedSource: string | undefined;
+    let validatedSource: EnrollmentAdmissionSource | undefined;
     const selectSource = (classification: EnrollmentIdentityClassification) =>
-      classification.actionableInstitutionRosterInvitation === null
-        ? ({ type: 'ordinary' } as const)
-        : ({ type: 'institution_uin' } as const);
+      classification.actionableInstitutionUinInvitation === null
+        ? ({ type: 'self_enrollment' } as const)
+        : ({ type: 'invitation', matchedBy: 'institution_uin' } as const);
 
     await expect(
       admit(user, {
-        source: { type: 'ordinary' },
         expectedInvitationEnrollmentId: `${BigInt(invitation.id) + 1n}`,
         selectSource,
         validateAdmission: async ({ source }) => {
-          validatedSource = source.type;
+          validatedSource = source;
         },
       }),
     ).rejects.toMatchObject({
-      decision: { reason: 'no_matching_invitation', source: { type: 'institution_uin' } },
+      decision: {
+        reason: 'no_matching_invitation',
+        source: { type: 'invitation', matchedBy: 'institution_uin' },
+      },
     });
     expect(validatedSource).toBeUndefined();
 
     const admitted = await admit(user, {
-      source: { type: 'ordinary' },
       expectedInvitationEnrollmentId: invitation.id,
       selectSource,
       validateAdmission: async ({ source }) => {
-        validatedSource = source.type;
+        validatedSource = source;
       },
     });
-    expect(validatedSource).toBe('institution_uin');
+    expect(validatedSource).toEqual({ type: 'invitation', matchedBy: 'institution_uin' });
     expect(admitted.id).toBe(invitation.id);
   });
 
@@ -306,7 +313,7 @@ describe('checked enrollment admission', { concurrent: false }, () => {
 
     await expect(
       admit(user, {
-        source: { type: 'pending_uid' },
+        source: { type: 'invitation', matchedBy: 'uid' },
         validateAdmission: async () => {},
       }),
     ).rejects.toBeInstanceOf(EnrollmentAdmissionDeniedError);
@@ -314,7 +321,8 @@ describe('checked enrollment admission', { concurrent: false }, () => {
 
     const admitted = await admit(user, {
       source: {
-        type: 'lti13',
+        type: 'invitation',
+        matchedBy: 'lti13',
         lti13CourseInstanceId: link.id,
         sub: 'exact-sub',
       },
@@ -441,7 +449,7 @@ describe('checked enrollment admission', { concurrent: false }, () => {
     }
 
     const admitted = await admit(user, {
-      source: { type: 'institution_uin' },
+      source: { type: 'invitation', matchedBy: 'institution_uin' },
       validateAdmission: async () => {},
     });
     expect(admitted).toMatchObject({
@@ -475,7 +483,7 @@ describe('checked enrollment admission', { concurrent: false }, () => {
       expect.arrayContaining([
         expect.objectContaining({
           action: 'update',
-          action_detail: 'roster_admitted',
+          action_detail: 'invitation_accepted',
           row_id: survivor.id,
         }),
         expect.objectContaining({
@@ -526,7 +534,7 @@ describe('checked enrollment admission', { concurrent: false }, () => {
           },
           courseInstanceId: courseInstance.id,
           userId: user.id,
-          source: { type: 'pending_uid' },
+          source: { type: 'invitation', matchedBy: 'uid' },
           validateAdmission: async () => {
             validationCalls += 1;
           },
