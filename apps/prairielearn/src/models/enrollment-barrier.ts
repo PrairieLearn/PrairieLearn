@@ -31,3 +31,21 @@ export async function runWithSharedEnrollmentBarrier<T>(
     return await fn();
   });
 }
+
+/**
+ * Runs a bulk enrollment mutation while preventing other enrollment mutations
+ * for the same course instances. Nested transactions keep the barriers until
+ * the outermost transaction completes.
+ */
+export async function runWithExclusiveEnrollmentBarrier<T>(
+  courseInstanceIds: string | string[],
+  fn: () => Promise<T>,
+): Promise<T> {
+  return await runInTransactionAsync(async () => {
+    await execute(sql.acquire_exclusive_course_instance_enrollment_barrier, {
+      course_instance_ids: normalizeCourseInstanceIds(courseInstanceIds),
+    });
+
+    return await fn();
+  });
+}
