@@ -23,6 +23,11 @@ export interface EnrollmentIdentityContext {
   readonly userId: string;
 }
 
+/**
+ * An enrollment appears at most once in the candidate list, but can match more
+ * than one identity key. Preserve that provenance: finding a row is not enough
+ * to decide whether a particular admission source is allowed to use it.
+ */
 export interface EnrollmentIdentityCandidate {
   readonly enrollment: Enrollment;
   readonly matches: {
@@ -99,6 +104,10 @@ async function selectEnrollmentIdentityCandidates(
   enrollmentIds: string[] | null,
 ): Promise<EnrollmentIdentityCandidate[]> {
   if (enrollmentIds?.length === 0) return [];
+
+  // The SQL performs one indexed lookup per identity key and unions the IDs
+  // before fetching complete enrollment rows. This avoids scanning every
+  // enrollment in a large course instance and deduplicates multi-key matches.
   return mapCandidateRows(
     await queryRows(
       sql.select_enrollment_identity_candidates,
@@ -112,6 +121,12 @@ function isPendingInvitation(candidate: EnrollmentIdentityCandidate): boolean {
   return candidate.enrollment.user_id === null && candidate.enrollment.status === 'invited';
 }
 
+/**
+ * Roster identity can revive a non-guest `left` enrollment, but it cannot
+ * override other bound states. Any guest candidate disables roster admission:
+ * guest status is sticky when candidates are reconciled, so admitting through
+ * a non-guest roster row would otherwise turn guest history into authority.
+ */
 function allowsRosterAdmission(
   candidates: readonly EnrollmentIdentityCandidate[],
   boundCandidate: EnrollmentIdentityCandidate | null,
@@ -128,6 +143,10 @@ function classifyEnrollmentIdentityCandidates(
   candidates: readonly EnrollmentIdentityCandidate[],
 ): EnrollmentIdentityClassification {
   const boundCandidate = candidates.find((candidate) => candidate.matches.boundUser) ?? null;
+
+  // Conventional invitations are intentionally narrower than roster
+  // invitations. They require no bound enrollment and cannot consume a row
+  // carrying LTI provenance; exact LTI authority is checked separately.
   const actionableConventionalInvitation =
     boundCandidate === null
       ? (candidates.find(
@@ -175,6 +194,9 @@ export function getEnrollmentAdmissionDecision(
   classification: EnrollmentIdentityClassification,
   source: EnrollmentAdmissionSource,
 ): EnrollmentAdmissionDecision {
+  // Bound joined/blocked state wins over every pending identity. Other bound
+  // states remain relevant below: only a non-guest `left` enrollment can be
+  // paired with roster authority.
   const boundStatus = classification.boundCandidate?.enrollment.status;
   if (boundStatus === 'blocked') return { allowed: false, reason: 'blocked', source };
   if (boundStatus === 'joined') return { allowed: false, reason: 'already_joined', source };
@@ -223,7 +245,15 @@ export async function selectEnrollmentIdentityClassification(
 }
 
 /**
- * Restricted re-selection for enrollment parents already locked by reconciliation.
+ * Reconciliation first discovers candidate enrollment IDs, locks those parents
+ * in numeric order, and then calls this restricted selector. Restricting the
+ * second read prevents a newly matching enrollment from expanding the lock set
+ * out of order after locks have already been acquired.
+ *
+ * User and external-identity rows are deliberately not locked. If identity
+ * data changes during the narrow selection-to-lock window, this attempt uses
+ * only the locked candidates; a conflicting bind fails atomically on the
+ * enrollment uniqueness constraints and a later request can retry.
  *
  * @internal
  */

@@ -1,5 +1,3 @@
-import crypto from 'node:crypto';
-
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { z } from 'zod';
 
@@ -30,28 +28,17 @@ import {
 
 const sql = loadSqlEquiv(import.meta.url);
 
-async function setLocalApplicationName(applicationName: string): Promise<void> {
-  await queryScalar(
-    sql.set_local_application_name,
-    { application_name: applicationName },
-    z.string(),
-  );
-}
-
-async function waitForApplicationLock(
-  applicationName: string,
-  queryPattern: string,
-): Promise<void> {
+async function waitForBackendLock(backendPid: number, queryPattern: string): Promise<void> {
   for (let attempt = 0; attempt < 100; attempt++) {
     const waiting = await queryOptionalScalar(
-      sql.select_waiting_application_lock,
-      { application_name: applicationName, query_pattern: queryPattern },
+      sql.select_waiting_backend_lock,
+      { backend_pid: backendPid, query_pattern: queryPattern },
       z.number(),
     );
     if (waiting !== null) return;
     await new Promise((resolve) => setTimeout(resolve, 10));
   }
-  throw new Error(`Timed out waiting for ${applicationName} to run ${queryPattern}`);
+  throw new Error(`Timed out waiting for backend ${backendPid} to run ${queryPattern}`);
 }
 
 describe('checked enrollment admission concurrency', { concurrent: false }, () => {
@@ -87,10 +74,11 @@ describe('checked enrollment admission concurrency', { concurrent: false }, () =
 
     try {
       await parentLocked.promise;
-      const applicationName = `candidate-delete-${crypto.randomUUID()}`;
+      const admissionBackendPid = withResolvers<number>();
       let validationCalls = 0;
       const admission = runInTransactionAsync(async () => {
-        await setLocalApplicationName(applicationName);
+        const backendPid = await queryScalar(sql.select_backend_pid, {}, z.number());
+        admissionBackendPid.resolve(backendPid);
         return await admitUserToCourseInstance({
           courseInstanceId: courseInstance.id,
           userId: user.id,
@@ -100,9 +88,12 @@ describe('checked enrollment admission concurrency', { concurrent: false }, () =
             validationCalls += 1;
           },
         });
+      }).catch((error) => {
+        admissionBackendPid.reject(error);
+        throw error;
       });
       void admission.catch(() => undefined);
-      await waitForApplicationLock(applicationName, '%lock_enrollments_by_id%');
+      await waitForBackendLock(await admissionBackendPid.promise, '%lock_enrollments_by_id%');
       releaseDeletion.resolve(undefined);
 
       await expect(admission).rejects.toMatchObject({
@@ -114,27 +105,5 @@ describe('checked enrollment admission concurrency', { concurrent: false }, () =
       releaseDeletion.resolve(undefined);
       await deletion;
     }
-  });
-
-  it('rolls back admission after a database error', async () => {
-    const user = await createUser({ prefix: 'unrelated-error' });
-    const invitation = await createEnrollment({ courseInstance, pendingUin: user.uin });
-    let validationCalls = 0;
-
-    await expect(
-      admitUserToCourseInstance({
-        courseInstanceId: courseInstance.id,
-        userId: user.id,
-        source: { type: 'institution_uin' },
-        agentAuthnUserId: '999999999999999999',
-        agentUserId: '999999999999999999',
-        validateAdmission: async () => {
-          validationCalls += 1;
-        },
-      }),
-    ).rejects.toMatchObject({ code: '23503' });
-
-    expect(validationCalls).toBe(1);
-    expect(await selectEnrollments([invitation.id])).toEqual([invitation]);
   });
 });

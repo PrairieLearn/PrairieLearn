@@ -5,7 +5,7 @@
 -- enrollment parents already locked by the caller.
 -- BLOCK select_enrollment_identity_candidates
 WITH
-  user_identity AS (
+  user_identity AS MATERIALIZED (
     SELECT
       u.id AS user_id,
       u.uid,
@@ -27,43 +27,73 @@ WITH
     WHERE
       u.id = $user_id
   ),
-  candidate_matches AS (
+  -- Each branch matches an enrollment identity uniqueness index. UNION
+  -- deduplicates a row that matches the user through multiple identity keys.
+  candidate_ids AS (
     SELECT
-      to_jsonb(e.*) AS enrollment,
-      coalesce(e.user_id = user_identity.user_id, FALSE) AS matches_bound_user,
-      coalesce(e.pending_uid = user_identity.uid, FALSE) AS matches_pending_uid,
-      coalesce(
-        user_identity.institution_matches
-        AND user_identity.uin IS NOT NULL
-        AND e.pending_uin = user_identity.uin,
-        FALSE
-      ) AS matches_institution_uin,
-      coalesce(
-        $lti13_course_instance_id::bigint IS NOT NULL
-        AND $lti13_sub::text IS NOT NULL
-        AND user_identity.lti13_course_instance_matches
-        AND e.pending_lti13_course_instance_id = $lti13_course_instance_id
-        AND e.pending_lti13_sub = $lti13_sub,
-        FALSE
-      ) AS matches_lti13
+      e.id
     FROM
       enrollments AS e
       CROSS JOIN user_identity
     WHERE
-      e.course_instance_id = $course_instance_id
-      AND (
-        $enrollment_ids::bigint[] IS NULL
-        OR e.id = ANY ($enrollment_ids::bigint[])
-      )
+      e.user_id = user_identity.user_id
+      AND e.course_instance_id = $course_instance_id
+    UNION
+    SELECT
+      e.id
+    FROM
+      enrollments AS e
+      CROSS JOIN user_identity
+    WHERE
+      e.pending_uid = user_identity.uid
+      AND e.course_instance_id = $course_instance_id
+    UNION
+    SELECT
+      e.id
+    FROM
+      enrollments AS e
+      CROSS JOIN user_identity
+    WHERE
+      user_identity.institution_matches
+      AND user_identity.uin IS NOT NULL
+      AND e.pending_uin = user_identity.uin
+      AND e.course_instance_id = $course_instance_id
+    UNION
+    SELECT
+      e.id
+    FROM
+      enrollments AS e
+      CROSS JOIN user_identity
+    WHERE
+      user_identity.lti13_course_instance_matches
+      AND e.pending_lti13_course_instance_id = $lti13_course_instance_id
+      AND e.pending_lti13_sub = $lti13_sub
+      AND e.course_instance_id = $course_instance_id
   )
 SELECT
-  *
+  to_jsonb(e.*) AS enrollment,
+  coalesce(e.user_id = user_identity.user_id, FALSE) AS matches_bound_user,
+  coalesce(e.pending_uid = user_identity.uid, FALSE) AS matches_pending_uid,
+  coalesce(
+    user_identity.institution_matches
+    AND user_identity.uin IS NOT NULL
+    AND e.pending_uin = user_identity.uin,
+    FALSE
+  ) AS matches_institution_uin,
+  coalesce(
+    user_identity.lti13_course_instance_matches
+    AND e.pending_lti13_course_instance_id = $lti13_course_instance_id
+    AND e.pending_lti13_sub = $lti13_sub,
+    FALSE
+  ) AS matches_lti13
 FROM
-  candidate_matches
+  candidate_ids
+  JOIN enrollments AS e USING (id)
+  CROSS JOIN user_identity
 WHERE
-  matches_bound_user
-  OR matches_pending_uid
-  OR matches_institution_uin
-  OR matches_lti13
+  (
+    $enrollment_ids::bigint[] IS NULL
+    OR e.id = ANY ($enrollment_ids::bigint[])
+  )
 ORDER BY
-  (enrollment ->> 'id')::bigint;
+  e.id;
