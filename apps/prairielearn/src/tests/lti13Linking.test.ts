@@ -71,7 +71,7 @@ describe('LTI 1.3 course instance linking', { concurrent: false }, () => {
     );
   }
 
-  async function insertLtiRosterInvitation({
+  async function insertLti13Invitation({
     lti13CourseInstanceId,
     pendingUin,
     sub,
@@ -397,7 +397,7 @@ describe('LTI 1.3 course instance linking', { concurrent: false }, () => {
     assert.notInclude(res.url, '/instructor/');
   });
 
-  describe('LTI 1.3 roster admission', () => {
+  describe('LTI 1.3 invitation admission', () => {
     beforeAll(async () => {
       const linkedCourseInstance = await queryOptionalRow(
         `SELECT *
@@ -439,19 +439,19 @@ describe('LTI 1.3 course instance linking', { concurrent: false }, () => {
          WHERE id = '1'`,
       );
       const lti13CourseInstance = await selectLinkedLtiCourseInstance();
-      const sub = 'exact-roster-admission-sub';
-      const invitation = await insertLtiRosterInvitation({
+      const sub = 'exact-invitation-admission-sub';
+      const invitation = await insertLti13Invitation({
         lti13CourseInstanceId: lti13CourseInstance.id,
-        pendingUin: 'exact-roster-unmatched-uin',
+        pendingUin: 'exact-invitation-unmatched-uin',
         sub,
       });
       const fetchWithCookies = fetchCookie(fetch);
       const targetLinkUri = `${siteUrl}/pl/lti13_instance/1/course_navigation`;
       const executor = await makeLoginExecutor({
         user: {
-          name: 'Exact Roster Admission',
-          email: 'exact-roster-admission@example.com',
-          uin: 'exact-roster-user-uin',
+          name: 'Exact Invitation Admission',
+          email: 'exact-invitation-admission@example.com',
+          uin: 'exact-invitation-user-uin',
           sub,
         },
         fetchWithCookies,
@@ -466,7 +466,7 @@ describe('LTI 1.3 course instance linking', { concurrent: false }, () => {
       const response = await executor.login();
       assert.include(response.url, '/pl/course_instance/1/assessments');
 
-      const user = await selectOptionalUserByUid('exact-roster-admission@example.com');
+      const user = await selectOptionalUserByUid('exact-invitation-admission@example.com');
       assert.ok(user);
       const enrollment = await queryRow(
         'SELECT * FROM enrollments WHERE id = $enrollment_id',
@@ -478,12 +478,12 @@ describe('LTI 1.3 course instance linking', { concurrent: false }, () => {
       await assertLtiLaunchConsumed(user.id);
     });
 
-    test('rejects a wrong sub and falls back to ordinary self-enrollment', async () => {
+    test('rejects a wrong sub and falls back to self-enrollment', async () => {
       const lti13CourseInstance = await selectLinkedLtiCourseInstance();
-      const invitation = await insertLtiRosterInvitation({
+      const invitation = await insertLti13Invitation({
         lti13CourseInstanceId: lti13CourseInstance.id,
         pendingUin: 'wrong-sub-unmatched-uin',
-        sub: 'expected-roster-sub',
+        sub: 'expected-invitation-sub',
       });
       const fetchWithCookies = fetchCookie(fetch);
       const targetLinkUri = `${siteUrl}/pl/lti13_instance/1/course_navigation`;
@@ -492,7 +492,7 @@ describe('LTI 1.3 course instance linking', { concurrent: false }, () => {
           name: 'Wrong Sub Student',
           email: 'wrong-sub-student@example.com',
           uin: 'wrong-sub-user-uin',
-          sub: 'actual-roster-sub',
+          sub: 'actual-invitation-sub',
         },
         fetchWithCookies,
         oidcProviderPort,
@@ -515,7 +515,7 @@ describe('LTI 1.3 course instance linking', { concurrent: false }, () => {
       );
       assert.equal(persistedInvitation.status, 'invited');
       assert.isNull(persistedInvitation.user_id);
-      const ordinaryEnrollment = await queryRow(
+      const selfEnrollment = await queryRow(
         `SELECT *
          FROM enrollments
          WHERE course_instance_id = '1'
@@ -523,7 +523,7 @@ describe('LTI 1.3 course instance linking', { concurrent: false }, () => {
         { user_id: user.id },
         EnrollmentSchema,
       );
-      assert.equal(ordinaryEnrollment.status, 'joined');
+      assert.equal(selfEnrollment.status, 'joined');
       await assertLtiLaunchConsumed(user.id);
     });
 
@@ -537,19 +537,19 @@ describe('LTI 1.3 course instance linking', { concurrent: false }, () => {
          WHERE id = '1'`,
       );
       const lti13CourseInstance = await selectLinkedLtiCourseInstance();
-      const sub = 'upgrade-exact-roster-sub';
-      const invitation = await insertLtiRosterInvitation({
+      const sub = 'upgrade-exact-invitation-sub';
+      const invitation = await insertLti13Invitation({
         lti13CourseInstanceId: lti13CourseInstance.id,
-        pendingUin: 'upgrade-exact-roster-unmatched-uin',
+        pendingUin: 'upgrade-exact-invitation-unmatched-uin',
         sub,
       });
       const fetchWithCookies = fetchCookie(fetch);
       const targetLinkUri = `${siteUrl}/pl/lti13_instance/1/course_navigation`;
       const executor = await makeLoginExecutor({
         user: {
-          name: 'Upgrade Exact Roster',
-          email: 'upgrade-exact-roster@example.com',
-          uin: 'upgrade-exact-roster-user-uin',
+          name: 'Upgrade Exact Invitation',
+          email: 'upgrade-exact-invitation@example.com',
+          uin: 'upgrade-exact-invitation-user-uin',
           sub,
         },
         fetchWithCookies,
@@ -573,7 +573,7 @@ describe('LTI 1.3 course instance linking', { concurrent: false }, () => {
       );
       assert.equal(persistedInvitation.status, 'invited');
       assert.isNull(persistedInvitation.user_id);
-      const user = await selectOptionalUserByUid('upgrade-exact-roster@example.com');
+      const user = await selectOptionalUserByUid('upgrade-exact-invitation@example.com');
       assert.ok(user);
       await assertLtiLaunchConsumed(user.id);
 

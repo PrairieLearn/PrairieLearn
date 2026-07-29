@@ -24,32 +24,31 @@ import {
 } from './identity.js';
 import { admitUserToCourseInstance } from './reconciliation.js';
 
-type OrdinaryAdmissionSource = Exclude<EnrollmentAdmissionSource, { type: 'lti13' }>;
+type CourseInstanceAccessAdmissionSource = Exclude<
+  EnrollmentAdmissionSource,
+  { matchedBy: 'lti13' }
+>;
 
-export type OrdinaryCourseInstanceAdmissionDecision =
+export type EnrollmentAccessDecision =
   | {
       allowed: true;
-      source: OrdinaryAdmissionSource;
+      source: CourseInstanceAccessAdmissionSource;
     }
   | {
       allowed: false;
       reason: EnrollmentIneligibilityReason | 'already_joined' | 'enrollment_code_required';
     };
 
-export interface OrdinaryCourseInstanceAdmissionLocals {
-  ordinary_course_instance_admission_decision?: OrdinaryCourseInstanceAdmissionDecision;
-}
-
-function getOrdinaryAdmissionSource(
+function getEnrollmentAdmissionSource(
   classification: EnrollmentIdentityClassification,
-): OrdinaryAdmissionSource {
-  if (classification.actionableInstitutionRosterInvitation !== null) {
-    return { type: 'institution_uin' };
+): CourseInstanceAccessAdmissionSource {
+  if (classification.actionableInstitutionUinInvitation !== null) {
+    return { type: 'invitation', matchedBy: 'institution_uin' };
   }
-  if (classification.actionableConventionalInvitation !== null) {
-    return { type: 'pending_uid' };
+  if (classification.actionableUidInvitation !== null) {
+    return { type: 'invitation', matchedBy: 'uid' };
   }
-  return { type: 'ordinary' };
+  return { type: 'self_enrollment' };
 }
 
 function enrollmentCodeMatches(
@@ -59,7 +58,7 @@ function enrollmentCodeMatches(
   return enrollmentCode?.toUpperCase() === courseInstance.enrollment_code.toUpperCase();
 }
 
-function getOrdinaryCourseInstanceAdmissionDecision({
+function getEnrollmentAccessDecision({
   classification,
   course,
   courseInstance,
@@ -71,13 +70,13 @@ function getOrdinaryCourseInstanceAdmissionDecision({
   courseInstance: CourseInstance;
   enrollmentCode?: string;
   user: User;
-}): OrdinaryCourseInstanceAdmissionDecision {
+}): EnrollmentAccessDecision {
   const boundStatus = classification.boundCandidate?.enrollment.status;
   if (boundStatus === 'joined') return { allowed: false, reason: 'already_joined' };
   if (boundStatus === 'blocked') return { allowed: false, reason: 'blocked' };
 
-  const source = getOrdinaryAdmissionSource(classification);
-  if (source.type !== 'ordinary') {
+  const source = getEnrollmentAdmissionSource(classification);
+  if (source.type !== 'self_enrollment') {
     return { allowed: true, source };
   }
 
@@ -99,7 +98,7 @@ function getOrdinaryCourseInstanceAdmissionDecision({
   return { allowed: true, source };
 }
 
-export async function selectOrdinaryCourseInstanceAdmissionDecision({
+export async function selectEnrollmentAccessDecision({
   course,
   courseInstance,
   enrollmentCode,
@@ -109,12 +108,12 @@ export async function selectOrdinaryCourseInstanceAdmissionDecision({
   courseInstance: CourseInstance;
   enrollmentCode?: string;
   user: User;
-}): Promise<OrdinaryCourseInstanceAdmissionDecision> {
+}): Promise<EnrollmentAccessDecision> {
   const classification = await selectEnrollmentIdentityClassification({
     courseInstanceId: courseInstance.id,
     userId: user.id,
   });
-  return getOrdinaryCourseInstanceAdmissionDecision({
+  return getEnrollmentAccessDecision({
     classification,
     course,
     courseInstance,
@@ -202,8 +201,8 @@ function createAdmissionValidator({
       throw new HttpStatusError(403, 'Access denied');
     }
 
-    if (source.type !== 'lti13') {
-      const decision = getOrdinaryCourseInstanceAdmissionDecision({
+    if (!(source.type === 'invitation' && source.matchedBy === 'lti13')) {
+      const decision = getEnrollmentAccessDecision({
         classification,
         user,
         course,
@@ -219,9 +218,6 @@ function createAdmissionValidator({
         }
         throw new HttpStatusError(403, getEligibilityErrorMessage(decision.reason));
       }
-      if (decision.source.type !== source.type) {
-        throw new Error('Locked ordinary admission source changed during validation');
-      }
     }
 
     await validateEnterpriseAdmission({
@@ -232,14 +228,13 @@ function createAdmissionValidator({
       course,
       courseInstance,
       institution,
-      lti13Relaunch: source.type === 'lti13',
+      lti13Relaunch: source.type === 'invitation' && source.matchedBy === 'lti13',
     });
   };
 }
 
-export async function admitUserFromOrdinaryCourseInstanceRequest({
+export async function admitUserForCourseInstanceAccess({
   courseInstanceId,
-  decision,
   enrollmentCode,
   ip,
   isAdministrator,
@@ -247,7 +242,6 @@ export async function admitUserFromOrdinaryCourseInstanceRequest({
   userId,
 }: {
   courseInstanceId: string;
-  decision: Extract<OrdinaryCourseInstanceAdmissionDecision, { allowed: true }>;
   enrollmentCode?: string;
   ip: string | null;
   isAdministrator: boolean;
@@ -260,8 +254,7 @@ export async function admitUserFromOrdinaryCourseInstanceRequest({
       agentUserId: userId,
     },
     courseInstanceId,
-    selectSource: getOrdinaryAdmissionSource,
-    source: decision.source,
+    selectSource: getEnrollmentAdmissionSource,
     userId,
     validateAdmission: createAdmissionValidator({
       courseInstanceId,
@@ -274,7 +267,7 @@ export async function admitUserFromOrdinaryCourseInstanceRequest({
   });
 }
 
-export async function admitUserFromLti13CourseInstanceRequest({
+export async function admitUserFromLti13Launch({
   courseInstanceId,
   expectedInvitationEnrollmentId,
   ip,
@@ -294,7 +287,8 @@ export async function admitUserFromLti13CourseInstanceRequest({
   userId: string;
 }) {
   const source = {
-    type: 'lti13' as const,
+    type: 'invitation' as const,
+    matchedBy: 'lti13' as const,
     lti13CourseInstanceId,
     sub,
   };

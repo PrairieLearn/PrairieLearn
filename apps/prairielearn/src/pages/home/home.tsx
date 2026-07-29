@@ -23,7 +23,7 @@ import { computeStatus } from '../../lib/publishing.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { getUrl } from '../../lib/url.js';
 import {
-  ensureLegacyEnrollment,
+  ensureEnrollmentWithoutReconciliation,
   selectOptionalEnrollmentByUid,
   setEnrollmentStatus,
 } from '../../models/enrollment.js';
@@ -253,7 +253,7 @@ router.post(
           break;
         }
 
-        await ensureLegacyEnrollment({
+        await ensureEnrollmentWithoutReconciliation({
           institution,
           course,
           courseInstance,
