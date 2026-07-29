@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
-import { type Enrollment, EnrollmentSchema } from '../lib/db-types.js';
+import { type Enrollment, EnrollmentSchema } from '../db-types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 

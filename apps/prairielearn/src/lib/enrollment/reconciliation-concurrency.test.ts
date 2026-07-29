@@ -14,19 +14,19 @@ import {
 import { withResolvers } from '@prairielearn/utils';
 import { IdSchema } from '@prairielearn/zod';
 
-import { type CourseInstance } from '../lib/db-types.js';
-import { TEST_COURSE_PATH } from '../lib/paths.js';
-import * as helperCourse from '../tests/helperCourse.js';
-import * as helperDb from '../tests/helperDb.js';
+import { selectCourseInstanceById } from '../../models/course-instances.js';
+import * as helperCourse from '../../tests/helperCourse.js';
+import * as helperDb from '../../tests/helperDb.js';
+import { type CourseInstance } from '../db-types.js';
+import { TEST_COURSE_PATH } from '../paths.js';
 
-import { selectCourseInstanceById } from './course-instances.js';
-import { admitUserToCourseInstance } from './enrollment-reconciliation.js';
+import { admitUserToCourseInstance } from './reconciliation.js';
 import {
   actorFor,
   createEnrollment,
   createUser,
   selectEnrollments,
-} from './enrollment-reconciliation.test-helpers.js';
+} from './reconciliation.test-helpers.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 

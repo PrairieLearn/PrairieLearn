@@ -1,17 +1,17 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
-import { type CourseInstance } from '../lib/db-types.js';
-import { TEST_COURSE_PATH } from '../lib/paths.js';
-import * as helperCourse from '../tests/helperCourse.js';
-import * as helperDb from '../tests/helperDb.js';
-import { createInstitution } from '../tests/utils/auth.js';
+import { selectCourseInstanceById } from '../../models/course-instances.js';
+import * as helperCourse from '../../tests/helperCourse.js';
+import * as helperDb from '../../tests/helperDb.js';
+import { createInstitution } from '../../tests/utils/auth.js';
+import { type CourseInstance } from '../db-types.js';
+import { TEST_COURSE_PATH } from '../paths.js';
 
-import { selectCourseInstanceById } from './course-instances.js';
 import {
   type EnrollmentAdmissionSource,
   selectEnrollmentAdmissionDecision,
   selectEnrollmentIdentityClassification,
-} from './enrollment-identity.js';
+} from './identity.js';
 import {
   OTHER_INSTITUTION_ID,
   createEnrollment,
@@ -19,7 +19,7 @@ import {
   createUser,
   nextFixtureName,
   selectEnrollments,
-} from './enrollment-reconciliation.test-helpers.js';
+} from './reconciliation.test-helpers.js';
 
 describe('enrollment identity selection and admission decisions', { concurrent: false }, () => {
   let courseInstance: CourseInstance;
