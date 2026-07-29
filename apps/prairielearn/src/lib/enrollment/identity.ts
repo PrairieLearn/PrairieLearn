@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
+import { run } from '@prairielearn/run';
 
 import { type Enrollment, EnrollmentSchema } from '../db-types.js';
 
@@ -166,19 +167,25 @@ export function getEnrollmentAdmissionDecision(
     return { allowed: true, invitationCandidate: null, source };
   }
 
-  const invitationCandidate =
-    source.matchedBy === 'uid'
-      ? classification.actionableUidInvitation
-      : source.matchedBy === 'institution_uin'
-        ? classification.actionableInstitutionUinInvitation
-        : allowsUinOrLtiInvitation(classification.candidates, classification.boundCandidate)
-          ? (classification.candidates.find(
-              (candidate) =>
-                isPendingInvitation(candidate) &&
-                !candidate.enrollment.is_guest &&
-                matchesInvitationSource(candidate, source),
-            ) ?? null)
-          : null;
+  const invitationCandidate = run(() => {
+    if (source.matchedBy === 'uid') {
+      return classification.actionableUidInvitation;
+    }
+    if (source.matchedBy === 'institution_uin') {
+      return classification.actionableInstitutionUinInvitation;
+    }
+    if (!allowsUinOrLtiInvitation(classification.candidates, classification.boundCandidate)) {
+      return null;
+    }
+    return (
+      classification.candidates.find(
+        (candidate) =>
+          isPendingInvitation(candidate) &&
+          !candidate.enrollment.is_guest &&
+          matchesInvitationSource(candidate, source),
+      ) ?? null
+    );
+  });
   if (invitationCandidate !== null) {
     return { allowed: true, invitationCandidate, source };
   }

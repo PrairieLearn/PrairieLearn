@@ -24,12 +24,22 @@ interface EnrollmentAuditActor {
   agentUserId: string | null;
 }
 
+/**
+ * Sources that can be selected after the initial candidate query. Exact LTI
+ * identity must participate in that query, so an LTI source must instead be
+ * supplied explicitly with its link and subject.
+ */
+export type SelectableEnrollmentAdmissionSource = Exclude<
+  EnrollmentAdmissionSource,
+  { matchedBy: 'lti13' }
+>;
+
 type EnrollmentAdmissionSourceSelection =
   | { source: EnrollmentAdmissionSource }
   | {
       selectSource: (
         classification: EnrollmentIdentityClassification,
-      ) => Exclude<EnrollmentAdmissionSource, { matchedBy: 'lti13' }>;
+      ) => SelectableEnrollmentAdmissionSource;
     };
 
 export class EnrollmentAdmissionDeniedError extends Error {
@@ -93,10 +103,10 @@ async function moveEnrollmentDependents(
   await execute(sql.move_assessment_access_control_enrollments, params);
 }
 
-function admissionActionDetail(source: EnrollmentAdmissionSource) {
-  return source.type === 'self_enrollment'
-    ? ('implicit_joined' as const)
-    : ('invitation_accepted' as const);
+function admissionActionDetail(
+  source: EnrollmentAdmissionSource,
+): 'implicit_joined' | 'invitation_accepted' {
+  return source.type === 'self_enrollment' ? 'implicit_joined' : 'invitation_accepted';
 }
 
 function admissionAuditContext(

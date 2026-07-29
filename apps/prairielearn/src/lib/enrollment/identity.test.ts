@@ -248,9 +248,9 @@ describe('enrollment identity selection and admission decisions', { concurrent: 
       expectedAllowed: true,
       setup: async (user) => {
         const exactLink = await createLti13CourseInstance(courseInstance);
-        const source = {
-          type: 'invitation' as const,
-          matchedBy: 'lti13' as const,
+        const source: EnrollmentAdmissionSource = {
+          type: 'invitation',
+          matchedBy: 'lti13',
           lti13CourseInstanceId: exactLink.id,
           sub: 'matrix-sub',
         };

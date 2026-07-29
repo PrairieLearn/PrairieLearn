@@ -33,7 +33,11 @@ import {
   type EnrollmentAdmissionSource,
   type EnrollmentIdentityClassification,
 } from './identity.js';
-import { EnrollmentAdmissionDeniedError, admitUserToCourseInstance } from './reconciliation.js';
+import {
+  EnrollmentAdmissionDeniedError,
+  type SelectableEnrollmentAdmissionSource,
+  admitUserToCourseInstance,
+} from './reconciliation.js';
 import {
   createEnrollment,
   createLti13CourseInstance,
@@ -92,7 +96,7 @@ type AdmissionInput = {
   | {
       selectSource: (
         classification: EnrollmentIdentityClassification,
-      ) => Exclude<EnrollmentAdmissionSource, { matchedBy: 'lti13' }>;
+      ) => SelectableEnrollmentAdmissionSource;
     }
 );
 
@@ -266,10 +270,12 @@ describe('checked enrollment admission', { concurrent: false }, () => {
     const user = await createUser({ prefix: 'source-policy' });
     const invitation = await createEnrollment({ courseInstance, pendingUin: user.uin });
     let validatedSource: EnrollmentAdmissionSource | undefined;
-    const selectSource = (classification: EnrollmentIdentityClassification) =>
+    const selectSource = (
+      classification: EnrollmentIdentityClassification,
+    ): SelectableEnrollmentAdmissionSource =>
       classification.actionableInstitutionUinInvitation === null
-        ? ({ type: 'self_enrollment' } as const)
-        : ({ type: 'invitation', matchedBy: 'institution_uin' } as const);
+        ? { type: 'self_enrollment' }
+        : { type: 'invitation', matchedBy: 'institution_uin' };
 
     await expect(
       admit(user, {
