@@ -2,7 +2,7 @@ import * as crypto from 'node:crypto';
 
 import * as jose from 'jose';
 
-import { type KeyRing, getKeyRing } from './key-ring.js';
+import type { KeyRing } from './key-ring.js';
 
 /**
  * Verifies an HMAC JWT against every key in an ordered key ring.
@@ -17,9 +17,7 @@ export async function jwtVerifyWithKeyRing(
   options?: jose.JWTVerifyOptions,
 ) {
   const results = await Promise.allSettled(
-    getKeyRing(keyRing).map((key) =>
-      jose.jwtVerify(jwt, crypto.createSecretKey(key, 'utf-8'), options),
-    ),
+    keyRing.map((key) => jose.jwtVerify(jwt, crypto.createSecretKey(key, 'utf-8'), options)),
   );
   const successfulResult = results.find((result) => result.status === 'fulfilled');
   if (successfulResult) {

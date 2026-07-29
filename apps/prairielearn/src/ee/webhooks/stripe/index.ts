@@ -6,6 +6,7 @@ import * as error from '@prairielearn/error';
 import { runInTransactionAsync } from '@prairielearn/postgres';
 
 import { config } from '../../../lib/config.js';
+import { tryWithKeyRing } from '../../../lib/key-ring.js';
 import { selectInstitutionForCourseInstance } from '../../../models/institution.js';
 import { clearStripeProductCache, getStripeClient } from '../../lib/billing/stripe.js';
 import {
@@ -19,8 +20,6 @@ import {
   updateStripeCheckoutSessionData,
 } from '../../models/stripe-checkout-sessions.js';
 
-import { constructStripeEventWithKeyRing } from './stripe-signature.js';
-
 const router = Router({ mergeParams: true });
 
 function constructEvent(req: Request) {
@@ -30,12 +29,9 @@ function constructEvent(req: Request) {
 
   const stripe = getStripeClient();
   try {
-    return constructStripeEventWithKeyRing({
-      stripe,
-      payload: req.body,
-      signature: req.headers['stripe-signature'] as string,
-      signingSecrets: config.stripeWebhookSigningSecret,
-    });
+    return tryWithKeyRing(config.stripeWebhookSigningSecret, (secret) =>
+      stripe.webhooks.constructEvent(req.body, req.headers['stripe-signature'] as string, secret),
+    );
   } catch (cause) {
     const message =
       cause instanceof Error ? cause.message : 'Unknown signature verification failure';

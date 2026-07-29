@@ -1,5 +1,5 @@
 import { config } from './config.js';
-import { type KeyRing, getActiveKey, getKeyRing } from './key-ring.js';
+import { type KeyRing, getActiveKey, tryWithKeyRing } from './key-ring.js';
 import { decrypt, encrypt } from './symmetric-crypto.js';
 
 function encryptForStorageWithKeyRing(plaintext: string, keyRing: KeyRing): string {
@@ -7,20 +7,11 @@ function encryptForStorageWithKeyRing(plaintext: string, keyRing: KeyRing): stri
 }
 
 function decryptFromStorageWithKeyRing(ciphertext: string, keyRing: KeyRing): string {
-  const results = getKeyRing(keyRing).map((key) => {
-    try {
-      return { plaintext: decrypt(ciphertext, key) };
-    } catch (error) {
-      return { error };
-    }
-  });
-  const successfulResult = results.find((result) => result.plaintext !== undefined);
-  if (successfulResult?.plaintext !== undefined) {
-    return successfulResult.plaintext;
+  try {
+    return tryWithKeyRing(keyRing, (key) => decrypt(ciphertext, key));
+  } catch (cause) {
+    throw new Error('Stored ciphertext could not be decrypted with any configured key', { cause });
   }
-  throw new Error('Stored ciphertext could not be decrypted with any configured key', {
-    cause: results[0].error,
-  });
 }
 
 /**

@@ -10,7 +10,7 @@ import {
 } from '@prairielearn/config';
 import { logger } from '@prairielearn/logger';
 
-import { getActiveKey, getKeyRing } from './key-ring.js';
+import { getActiveKey } from './key-ring.js';
 import { EXAMPLE_COURSE_PATH, TEST_COURSE_PATH } from './paths.js';
 
 const DEV_MODE = process.env.NODE_ENV !== 'production';
@@ -42,12 +42,13 @@ function makeKeyRingSchema(keySchema: z.ZodString) {
     .array(keySchema)
     .min(1)
     .refine((keys): keys is [string, ...string[]] => keys.length > 0);
-  return z.union([keySchema, nonemptyArraySchema]);
+  return z
+    .union([keySchema, nonemptyArraySchema])
+    .transform((keys): [string, ...string[]] => (typeof keys === 'string' ? [keys] : keys));
 }
 
 const KeyRingSchema = makeKeyRingSchema(z.string());
-const DatabaseEncryptionKeySchema = z.string().regex(/^[0-9a-f]{64}$/i);
-const DatabaseEncryptionKeyRingSchema = makeKeyRingSchema(DatabaseEncryptionKeySchema);
+const DatabaseEncryptionKeyRingSchema = makeKeyRingSchema(z.string().regex(/^[0-9a-f]{64}$/i));
 
 export const STANDARD_COURSE_DIRS = [
   '/course',
@@ -238,12 +239,12 @@ export const ConfigSchema = z.object({
    * Ordered signing key ring. The first key signs new artifacts and all keys
    * are accepted for verification.
    */
-  secretKey: KeyRingSchema.default('THIS_IS_THE_SECRET_KEY'),
+  secretKey: KeyRingSchema.prefault('THIS_IS_THE_SECRET_KEY'),
   /**
    * Ordered storage encryption key ring. The first key encrypts new data and
    * all keys are available to decrypt existing data.
    */
-  databaseEncryptionKey: DatabaseEncryptionKeyRingSchema.default('0'.repeat(64)),
+  databaseEncryptionKey: DatabaseEncryptionKeyRingSchema.prefault('0'.repeat(64)),
   secretSlackOpsBotEndpoint: z.string().nullable().default(null),
   secretSlackToken: z.string().nullable().default(null),
   secretSlackCourseRequestChannel: z.string().nullable().default(null),
@@ -488,7 +489,7 @@ export const ConfigSchema = z.object({
    * signs new JWTs and all secrets are accepted for verification. PrairieTest
    * must be configured with the same values in the same order.
    */
-  prairieTestSharedAuthSecret: KeyRingSchema.default('CHANGE_ME_PRAIRIE_TEST_SHARED_AUTH_SECRET'),
+  prairieTestSharedAuthSecret: KeyRingSchema.prefault('CHANGE_ME_PRAIRIE_TEST_SHARED_AUTH_SECRET'),
   openTelemetryEnabled: z.boolean().default(false),
   /**
    * Note that the `console` exporter should almost definitely NEVER be used in
@@ -605,7 +606,7 @@ export const ConfigSchema = z.object({
    * webhook events. Only useful for enterprise installations. See
    * https://stripe.com/docs/webhooks.
    */
-  stripeWebhookSigningSecret: KeyRingSchema.nullable().default(null),
+  stripeWebhookSigningSecret: KeyRingSchema.nullable().prefault(null),
   /**
    * Maps a plan name ("basic", "compute", etc.) to a Stripe product ID.
    */
@@ -768,7 +769,7 @@ export async function loadConfig(paths: string[]) {
     }
 
     const defaultKey = ConfigSchema.parse({}).databaseEncryptionKey;
-    if (getKeyRing(config.databaseEncryptionKey).includes(getActiveKey(defaultKey))) {
+    if (config.databaseEncryptionKey.includes(getActiveKey(defaultKey))) {
       throw new Error(
         'databaseEncryptionKey must be set to a secure value in production environments',
       );
