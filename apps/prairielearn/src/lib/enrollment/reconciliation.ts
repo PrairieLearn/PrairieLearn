@@ -30,6 +30,12 @@ export class EnrollmentAdmissionDeniedError extends Error {
   }
 }
 
+/**
+ * Prefer the enrollment already bound to the user, then a sole guest
+ * enrollment, and otherwise the lowest numeric ID. The deterministic fallback
+ * also handles zero or multiple guest candidates; guest status itself is
+ * merged separately with sticky OR semantics.
+ */
 function selectSurvivor(
   candidates: readonly EnrollmentIdentityCandidate[],
   boundCandidate: EnrollmentIdentityCandidate | null,
@@ -62,8 +68,12 @@ async function moveEnrollmentDependents(
     survivor_enrollment_id: survivorEnrollmentId,
   };
 
-  // Parent-first locking from enrollment-dependent writers makes the child rows
-  // quiescent. Mutating each table in this order supplies the remaining lock order.
+  // All dependent writers lock enrollment parents first, so the parent locks
+  // held by reconciliation make these child sets quiescent. Reconciliation then
+  // always mutates tables in this order: student labels, publishing extensions,
+  // and assessment access controls. Labels and access-control references are
+  // unioned; publishing extensions keep the latest end date. No new child rows
+  // are inserted, avoiding locks on unrelated label, extension, or rule owners.
   await execute(sql.deduplicate_student_label_enrollments, params);
   await execute(sql.move_student_label_enrollments, params);
   await execute(sql.keep_best_publishing_extension_enrollment, params);
@@ -136,6 +146,24 @@ function lti13IdentityForSource(source: EnrollmentAdmissionSource) {
     : undefined;
 }
 
+/**
+ * Performs checked admission and identity reconciliation in one transaction.
+ *
+ * The transaction takes the shared course-instance barrier, discovers identity
+ * candidates without locking user or external-identity rows, locks the selected
+ * enrollment parents in numeric order, and reselects only those locked rows.
+ * Admission policy and caller validation therefore run against a stable
+ * enrollment set before any mutation occurs.
+ *
+ * Reconciliation moves dependents to a deterministic survivor, deletes losers
+ * before binding the survivor so pending unique keys are released, and records
+ * every update/deletion in the same transaction. The survivor preserves the
+ * earliest join time and sticky guest status across all candidates.
+ *
+ * A concurrent writer can still create or bind a matching enrollment outside
+ * the locked candidate set. The database uniqueness constraints fail that rare
+ * race atomically; this function does not retry inside the caller's transaction.
+ */
 export async function admitUserToCourseInstance({
   userId,
   courseInstanceId,
@@ -163,6 +191,9 @@ export async function admitUserToCourseInstance({
   const actor = { agentUserId, agentAuthnUserId };
 
   return await runWithSharedEnrollmentBarrier(courseInstanceId, async () => {
+    // Candidate IDs must be known before they can be locked. The second,
+    // restricted selection is the authoritative classification for this
+    // transaction; it cannot add an unlocked enrollment parent.
     const initialClassification = await selectEnrollmentIdentityClassification(context);
     const enrollmentIds = initialClassification.candidates.map(
       (candidate) => candidate.enrollment.id,
@@ -192,6 +223,8 @@ export async function admitUserToCourseInstance({
       });
     }
 
+    // Eligibility, limits, and source-specific policy are checked only after
+    // identity authority has been revalidated under the enrollment locks.
     await validateAdmission({ source: decision.source });
 
     const survivorCandidate = selectSurvivor(
@@ -247,6 +280,8 @@ export async function admitUserToCourseInstance({
       sql.admit_reconciled_enrollment,
       {
         enrollment_id: survivorCandidate.enrollment.id,
+        // Guest status is sticky and first_joined_at preserves the earliest
+        // non-null value; the admitting SQL supplies now() only when none exists.
         first_joined_at: selectEarliestFirstJoinedAt(classification.candidates),
         is_guest: classification.candidates.some((candidate) => candidate.enrollment.is_guest),
         user_id: userId,

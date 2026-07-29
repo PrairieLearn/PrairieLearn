@@ -6,7 +6,6 @@ import { z } from 'zod';
 import { execute, loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
-
 import { selectAssessmentByTid } from '../../models/assessment.js';
 import { selectAuditEventsByEnrollmentId } from '../../models/audit-event.js';
 import { selectCourseInstanceById } from '../../models/course-instances.js';
@@ -21,7 +20,10 @@ import {
 } from '../db-types.js';
 import { TEST_COURSE_PATH } from '../paths.js';
 
-import { type EnrollmentIdentityClassification } from './identity.js';
+import {
+  type EnrollmentAdmissionSource,
+  type EnrollmentIdentityClassification,
+} from './identity.js';
 import { EnrollmentAdmissionDeniedError, admitUserToCourseInstance } from './reconciliation.js';
 import {
   actorFor,
@@ -38,6 +40,17 @@ const sql = loadSqlEquiv(import.meta.url);
 
 async function selectIds(query: string, params: Record<string, unknown>): Promise<string[]> {
   return (await queryRows(query, params, z.object({ id: IdSchema }))).map((row) => row.id);
+}
+
+interface SurvivorSelectionCase {
+  name: string;
+  setup: (user: User) => Promise<{
+    actionDetail: 'implicit_joined' | 'invitation_accepted';
+    expectedId: string;
+    ids: string[];
+    isGuest: boolean;
+  }>;
+  source: EnrollmentAdmissionSource;
 }
 
 describe('checked enrollment admission', { concurrent: false }, () => {
@@ -66,124 +79,121 @@ describe('checked enrollment admission', { concurrent: false }, () => {
     });
   }
 
-  it('table-drives bound, sole-guest, and lowest-ID survivor choice', async () => {
-    const earliest = new Date('2021-01-01T00:00:00Z');
-    const cases = [
-      {
-        name: 'bound',
-        source: { type: 'ordinary' as const },
-        setup: async (user: User) => {
-          const loser = await createEnrollment({
-            courseInstance,
-            pendingUid: user.uid,
-            firstJoinedAt: earliest,
-            isGuest: true,
-          });
-          const survivor = await createEnrollment({
-            courseInstance,
-            userId: user.id,
-            status: 'left',
-            firstJoinedAt: new Date('2022-01-01T00:00:00Z'),
-          });
-          return {
-            actionDetail: 'implicit_joined',
-            expectedId: survivor.id,
-            ids: [loser.id, survivor.id],
-            isGuest: true,
-          };
-        },
-      },
-      {
-        name: 'sole-guest',
-        source: { type: 'pending_uid' as const },
-        setup: async (user: User) => {
-          const lower = await createEnrollment({
-            courseInstance,
-            pendingUid: user.uid,
-            firstJoinedAt: earliest,
-          });
-          const guest = await createEnrollment({
-            courseInstance,
-            pendingUin: user.uin,
-            isGuest: true,
-          });
-          return {
-            actionDetail: 'invitation_accepted',
-            expectedId: guest.id,
-            ids: [lower.id, guest.id],
-            isGuest: true,
-          };
-        },
-      },
-      {
-        name: 'lowest-id',
-        source: { type: 'pending_uid' as const },
-        setup: async (user: User) => {
-          const lower = await createEnrollment({ courseInstance, pendingUid: user.uid });
-          const higher = await createEnrollment({
-            courseInstance,
-            pendingUin: user.uin,
-            firstJoinedAt: earliest,
-          });
-          return {
-            actionDetail: 'invitation_accepted',
-            expectedId: lower.id,
-            ids: [lower.id, higher.id],
-            isGuest: false,
-          };
-        },
-      },
-      {
-        name: 'multiple-guests',
-        source: { type: 'pending_uid' as const },
-        setup: async (user: User) => {
-          const lower = await createEnrollment({
-            courseInstance,
-            pendingUid: user.uid,
-            firstJoinedAt: earliest,
-            isGuest: true,
-          });
-          const higher = await createEnrollment({
-            courseInstance,
-            pendingUin: user.uin,
-            isGuest: true,
-          });
-          return {
-            actionDetail: 'invitation_accepted',
-            expectedId: lower.id,
-            ids: [lower.id, higher.id],
-            isGuest: true,
-          };
-        },
-      },
-    ];
+  const earliestJoinedAt = new Date('2021-01-01T00:00:00Z');
 
-    for (const testCase of cases) {
-      const user = await createUser({ prefix: `survivor-${testCase.name}` });
-      const expected = await testCase.setup(user);
-      const admitted = await admit(user, {
-        source: testCase.source,
-        validateAdmission: async () => {},
-      });
+  it.each<SurvivorSelectionCase>([
+    {
+      name: 'uses the bound enrollment as the survivor',
+      source: { type: 'ordinary' },
+      setup: async (user) => {
+        const loser = await createEnrollment({
+          courseInstance,
+          pendingUid: user.uid,
+          firstJoinedAt: earliestJoinedAt,
+          isGuest: true,
+        });
+        const survivor = await createEnrollment({
+          courseInstance,
+          userId: user.id,
+          status: 'left',
+          firstJoinedAt: new Date('2022-01-01T00:00:00Z'),
+        });
+        return {
+          actionDetail: 'implicit_joined',
+          expectedId: survivor.id,
+          ids: [loser.id, survivor.id],
+          isGuest: true,
+        };
+      },
+    },
+    {
+      name: 'uses a sole guest enrollment as the survivor',
+      source: { type: 'pending_uid' },
+      setup: async (user) => {
+        const lower = await createEnrollment({
+          courseInstance,
+          pendingUid: user.uid,
+          firstJoinedAt: earliestJoinedAt,
+        });
+        const guest = await createEnrollment({
+          courseInstance,
+          pendingUin: user.uin,
+          isGuest: true,
+        });
+        return {
+          actionDetail: 'invitation_accepted',
+          expectedId: guest.id,
+          ids: [lower.id, guest.id],
+          isGuest: true,
+        };
+      },
+    },
+    {
+      name: 'uses the lowest ID when no guest enrollment exists',
+      source: { type: 'pending_uid' },
+      setup: async (user) => {
+        const lower = await createEnrollment({ courseInstance, pendingUid: user.uid });
+        const higher = await createEnrollment({
+          courseInstance,
+          pendingUin: user.uin,
+          firstJoinedAt: earliestJoinedAt,
+        });
+        return {
+          actionDetail: 'invitation_accepted',
+          expectedId: lower.id,
+          ids: [lower.id, higher.id],
+          isGuest: false,
+        };
+      },
+    },
+    {
+      name: 'uses the lowest ID when multiple guest enrollments exist',
+      source: { type: 'pending_uid' },
+      setup: async (user) => {
+        const lower = await createEnrollment({
+          courseInstance,
+          pendingUid: user.uid,
+          firstJoinedAt: earliestJoinedAt,
+          isGuest: true,
+        });
+        const higher = await createEnrollment({
+          courseInstance,
+          pendingUin: user.uin,
+          isGuest: true,
+        });
+        return {
+          actionDetail: 'invitation_accepted',
+          expectedId: lower.id,
+          ids: [lower.id, higher.id],
+          isGuest: true,
+        };
+      },
+    },
+  ])('$name', async ({ name, source, setup }) => {
+    const user = await createUser({ prefix: `survivor-${name.replaceAll(' ', '-')}` });
+    const expected = await setup(user);
+    const admitted = await admit(user, {
+      source,
+      validateAdmission: async () => {},
+    });
 
-      expect(admitted).toMatchObject({
-        id: expected.expectedId,
-        is_guest: expected.isGuest,
-        status: 'joined',
-        user_id: user.id,
-      });
-      expect(admitted.first_joined_at?.getTime()).toBe(earliest.getTime());
-      expect(await selectEnrollments(expected.ids)).toEqual([admitted]);
-      expect(await selectReconciliationAuditEvents(admitted.id)).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({
-            action: 'update',
-            action_detail: expected.actionDetail,
-            row_id: admitted.id,
-          }),
-        ]),
-      );
-    }
+    expect(admitted).toMatchObject({
+      id: expected.expectedId,
+      is_guest: expected.isGuest,
+      status: 'joined',
+      user_id: user.id,
+    });
+    expect(admitted.first_joined_at?.getTime()).toBe(earliestJoinedAt.getTime());
+    expect(await selectEnrollments(expected.ids)).toEqual([admitted]);
+    expect(await selectReconciliationAuditEvents(admitted.id)).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          action: 'update',
+          action_detail: expected.actionDetail,
+          row_id: admitted.id,
+        }),
+      ]),
+    );
   });
 
   it('inserts an ordinary checked admission', async () => {

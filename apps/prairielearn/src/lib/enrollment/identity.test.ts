@@ -4,10 +4,11 @@ import { selectCourseInstanceById } from '../../models/course-instances.js';
 import * as helperCourse from '../../tests/helperCourse.js';
 import * as helperDb from '../../tests/helperDb.js';
 import { createInstitution } from '../../tests/utils/auth.js';
-import { type CourseInstance } from '../db-types.js';
+import { type CourseInstance, type Enrollment, type User } from '../db-types.js';
 import { TEST_COURSE_PATH } from '../paths.js';
 
 import {
+  type EnrollmentAdmissionDecision,
   type EnrollmentAdmissionSource,
   selectEnrollmentAdmissionDecision,
   selectEnrollmentIdentityClassification,
@@ -20,6 +21,22 @@ import {
   nextFixtureName,
   selectEnrollments,
 } from './reconciliation.test-helpers.js';
+
+interface AdmissionDecisionCase {
+  expectedAllowed: boolean;
+  expectedReason?: Extract<EnrollmentAdmissionDecision, { allowed: false }>['reason'];
+  name: string;
+  setup: (user: User) => Promise<EnrollmentAdmissionSource>;
+}
+
+interface BoundAdmissionDecisionCase {
+  expectedAllowed: boolean;
+  expectedReason?: Extract<EnrollmentAdmissionDecision, { allowed: false }>['reason'];
+  isGuest: boolean;
+  name: string;
+  source: EnrollmentAdmissionSource;
+  status: Enrollment['status'];
+}
 
 describe('enrollment identity selection and admission decisions', { concurrent: false }, () => {
   let courseInstance: CourseInstance;
@@ -175,143 +192,135 @@ describe('enrollment identity selection and admission decisions', { concurrent: 
     ).toEqual([]);
   });
 
-  it('table-drives pending source and status policy', async () => {
-    const exactLink = await createLti13CourseInstance(courseInstance);
-    const cases: {
-      expectedAllowed: boolean;
-      expectedReason?: string;
-      name: string;
-      setup: (user: Awaited<ReturnType<typeof createUser>>) => Promise<void>;
-      source: EnrollmentAdmissionSource;
-    }[] = [
-      {
-        name: 'conventional invitation',
-        source: { type: 'pending_uid' },
-        expectedAllowed: true,
-        setup: async (user) => {
-          await createEnrollment({ courseInstance, pendingUid: user.uid });
-        },
+  it.each<AdmissionDecisionCase>([
+    {
+      name: 'allows a conventional invitation',
+      expectedAllowed: true,
+      setup: async (user) => {
+        await createEnrollment({ courseInstance, pendingUid: user.uid });
+        return { type: 'pending_uid' };
       },
-      {
-        name: 'rejected conventional row',
-        source: { type: 'pending_uid' },
-        expectedAllowed: false,
-        expectedReason: 'no_matching_invitation',
-        setup: async (user) => {
-          await createEnrollment({
-            courseInstance,
-            pendingUid: user.uid,
-            status: 'rejected',
-          });
-        },
+    },
+    {
+      name: 'denies a rejected conventional invitation',
+      expectedAllowed: false,
+      expectedReason: 'no_matching_invitation',
+      setup: async (user) => {
+        await createEnrollment({
+          courseInstance,
+          pendingUid: user.uid,
+          status: 'rejected',
+        });
+        return { type: 'pending_uid' };
       },
-      {
-        name: 'institution roster invitation',
-        source: { type: 'institution_uin' },
-        expectedAllowed: true,
-        setup: async (user) => {
-          await createEnrollment({ courseInstance, pendingUin: user.uin });
-        },
+    },
+    {
+      name: 'allows an institution roster invitation',
+      expectedAllowed: true,
+      setup: async (user) => {
+        await createEnrollment({ courseInstance, pendingUin: user.uin });
+        return { type: 'institution_uin' };
       },
-      {
-        name: 'guest roster row',
-        source: { type: 'institution_uin' },
-        expectedAllowed: false,
-        expectedReason: 'guest_state',
-        setup: async (user) => {
-          await createEnrollment({
-            courseInstance,
-            pendingUin: user.uin,
-            isGuest: true,
-          });
-        },
+    },
+    {
+      name: 'denies a guest roster invitation',
+      expectedAllowed: false,
+      expectedReason: 'guest_state',
+      setup: async (user) => {
+        await createEnrollment({
+          courseInstance,
+          pendingUin: user.uin,
+          isGuest: true,
+        });
+        return { type: 'institution_uin' };
       },
-      {
-        name: 'exact LTI invitation',
-        source: {
-          type: 'lti13',
+    },
+    {
+      name: 'allows an exact LTI invitation',
+      expectedAllowed: true,
+      setup: async (user) => {
+        const exactLink = await createLti13CourseInstance(courseInstance);
+        const source = {
+          type: 'lti13' as const,
           lti13CourseInstanceId: exactLink.id,
           sub: 'matrix-sub',
-        },
-        expectedAllowed: true,
-        setup: async (user) => {
-          await createEnrollment({
-            courseInstance,
-            pendingUin: user.uin,
-            pendingLti13CourseInstanceId: exactLink.id,
-            pendingLti13Sub: 'matrix-sub',
-          });
-        },
+        };
+        await createEnrollment({
+          courseInstance,
+          pendingUin: user.uin,
+          pendingLti13CourseInstanceId: exactLink.id,
+          pendingLti13Sub: source.sub,
+        });
+        return source;
       },
-    ];
-
-    for (const testCase of cases) {
-      const user = await createUser({ prefix: testCase.name.replaceAll(' ', '-') });
-      await testCase.setup(user);
-      const decision = await selectDecision({ userId: user.id, source: testCase.source });
-      expect(decision).toMatchObject({
-        allowed: testCase.expectedAllowed,
-        ...(testCase.expectedReason === undefined ? {} : { reason: testCase.expectedReason }),
-      });
-    }
+    },
+  ])('$name', async ({ name, setup, expectedAllowed, expectedReason }) => {
+    const user = await createUser({ prefix: name.replaceAll(' ', '-') });
+    const source = await setup(user);
+    const decision = await selectDecision({ userId: user.id, source });
+    expect(decision).toMatchObject({
+      allowed: expectedAllowed,
+      ...(expectedReason === undefined ? {} : { reason: expectedReason }),
+    });
   });
 
-  it('table-drives bound and guest revalidation policy', async () => {
-    const cases = [
-      {
-        status: 'joined' as const,
-        isGuest: false,
-        source: { type: 'institution_uin' as const },
-        allowed: false,
-        reason: 'already_joined',
-      },
-      {
-        status: 'blocked' as const,
-        isGuest: false,
-        source: { type: 'ordinary' as const },
-        allowed: false,
-        reason: 'blocked',
-      },
-      {
-        status: 'left' as const,
-        isGuest: false,
-        source: { type: 'institution_uin' as const },
-        allowed: true,
-      },
-      {
-        status: 'removed' as const,
-        isGuest: false,
-        source: { type: 'institution_uin' as const },
-        allowed: false,
-        reason: 'non_actionable_bound_state',
-      },
-      {
-        status: 'left' as const,
-        isGuest: true,
-        source: { type: 'institution_uin' as const },
-        allowed: false,
-        reason: 'guest_state',
-      },
-    ];
+  it.each<BoundAdmissionDecisionCase>([
+    {
+      name: 'denies an already joined bound enrollment',
+      status: 'joined',
+      isGuest: false,
+      source: { type: 'institution_uin' },
+      expectedAllowed: false,
+      expectedReason: 'already_joined',
+    },
+    {
+      name: 'denies a blocked bound enrollment',
+      status: 'blocked',
+      isGuest: false,
+      source: { type: 'ordinary' },
+      expectedAllowed: false,
+      expectedReason: 'blocked',
+    },
+    {
+      name: 'allows roster admission with a non-guest left enrollment',
+      status: 'left',
+      isGuest: false,
+      source: { type: 'institution_uin' },
+      expectedAllowed: true,
+    },
+    {
+      name: 'denies roster admission with a removed enrollment',
+      status: 'removed',
+      isGuest: false,
+      source: { type: 'institution_uin' },
+      expectedAllowed: false,
+      expectedReason: 'non_actionable_bound_state',
+    },
+    {
+      name: 'denies roster admission with a guest left enrollment',
+      status: 'left',
+      isGuest: true,
+      source: { type: 'institution_uin' },
+      expectedAllowed: false,
+      expectedReason: 'guest_state',
+    },
+  ])('$name', async ({ status, isGuest, source, expectedAllowed, expectedReason }) => {
+    const user = await createUser({
+      prefix: `bound-${status}-${isGuest}`,
+    });
+    await createEnrollment({
+      courseInstance,
+      userId: user.id,
+      status,
+      isGuest,
+      firstJoinedAt: new Date('2024-01-01T00:00:00Z'),
+    });
+    await createEnrollment({ courseInstance, pendingUin: user.uin });
 
-    for (const testCase of cases) {
-      const user = await createUser({
-        prefix: `bound-${testCase.status}-${testCase.isGuest}`,
-      });
-      await createEnrollment({
-        courseInstance,
-        userId: user.id,
-        status: testCase.status,
-        isGuest: testCase.isGuest,
-        firstJoinedAt: new Date('2024-01-01T00:00:00Z'),
-      });
-      await createEnrollment({ courseInstance, pendingUin: user.uin });
-
-      const decision = await selectDecision({ userId: user.id, source: testCase.source });
-      expect(decision).toMatchObject({
-        allowed: testCase.allowed,
-        ...('reason' in testCase ? { reason: testCase.reason } : {}),
-      });
-    }
+    const decision = await selectDecision({ userId: user.id, source });
+    expect(decision).toMatchObject({
+      allowed: expectedAllowed,
+      ...(expectedReason === undefined ? {} : { reason: expectedReason }),
+    });
   });
 });
