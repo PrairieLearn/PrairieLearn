@@ -22,17 +22,15 @@ import {
   type EnrollmentIdentityClassification,
   selectEnrollmentIdentityClassification,
 } from './identity.js';
-import { admitUserToCourseInstance } from './reconciliation.js';
-
-type CourseInstanceAccessAdmissionSource = Exclude<
-  EnrollmentAdmissionSource,
-  { matchedBy: 'lti13' }
->;
+import {
+  type SelectableEnrollmentAdmissionSource,
+  admitUserToCourseInstance,
+} from './reconciliation.js';
 
 export type EnrollmentAccessDecision =
   | {
       allowed: true;
-      source: CourseInstanceAccessAdmissionSource;
+      source: SelectableEnrollmentAdmissionSource;
     }
   | {
       allowed: false;
@@ -41,7 +39,7 @@ export type EnrollmentAccessDecision =
 
 function getEnrollmentAdmissionSource(
   classification: EnrollmentIdentityClassification,
-): CourseInstanceAccessAdmissionSource {
+): SelectableEnrollmentAdmissionSource {
   if (classification.actionableInstitutionUinInvitation !== null) {
     return { type: 'invitation', matchedBy: 'institution_uin' };
   }
@@ -286,9 +284,9 @@ export async function admitUserFromLti13Launch({
   sub: string;
   userId: string;
 }) {
-  const source = {
-    type: 'invitation' as const,
-    matchedBy: 'lti13' as const,
+  const source: EnrollmentAdmissionSource = {
+    type: 'invitation',
+    matchedBy: 'lti13',
     lti13CourseInstanceId,
     sub,
   };
