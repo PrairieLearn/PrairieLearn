@@ -1,3 +1,17 @@
+-- BLOCK insert_user
+INSERT INTO
+  users (uid, name, uin, email, institution_id)
+VALUES
+  (
+    $uid,
+    $name,
+    $uin,
+    $email,
+    COALESCE($institution_id, 1)
+  )
+RETURNING
+  *;
+
 -- BLOCK insert_enrollment
 INSERT INTO
   enrollments (
