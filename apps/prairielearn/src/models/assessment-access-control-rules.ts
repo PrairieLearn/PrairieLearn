@@ -6,6 +6,7 @@ import {
   loadSqlEquiv,
   queryRows,
   queryScalar,
+  queryScalars,
   runInTransactionAsync,
 } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
@@ -277,12 +278,11 @@ export async function countEnrollmentAccessControlRules(assessment: Assessment):
 }
 
 async function selectEnrollmentAccessControlTargetIds(assessment: Assessment): Promise<string[]> {
-  const rows = await queryRows(
+  return await queryScalars(
     sql.select_enrollment_access_control_target_ids,
     { assessment_id: assessment.id },
-    z.object({ enrollment_id: IdSchema }),
+    IdSchema,
   );
-  return rows.map((row) => row.enrollment_id);
 }
 
 const PrairieTestExamMetadataSchema = z.object({
@@ -375,6 +375,24 @@ export async function replaceEnrollmentAccessControlRules(
   }
 
   await runInTransactionAsync(async () => {
+    // Enrollment rows must be locked before the access-control rows that
+    // reference them, so we cannot lock the assessment first to stabilize its
+    // target set. Instead, snapshot the existing targets, lock their union with
+    // the submitted targets, lock the assessment, and then verify that the
+    // snapshot still covered every current target.
+    //
+    // For example, suppose a rule targets enrollment A and this request changes
+    // it to C. After we snapshot A, reconciliation may lock A and B, move the
+    // rule from A to B, and commit while this request is waiting to lock A. This
+    // request would then hold A and C but not the now-current target B. Continuing
+    // would mutate B's dependent rows without first locking B, violating the lock
+    // order that prevents deadlocks and concurrent dependent changes.
+    //
+    // If that rare overlap occurs, this transaction leaves the enrollment rules
+    // unchanged and the access-control UI displays the error below. JSON-backed
+    // rules may already have been saved by the caller, so the instructor must
+    // refresh to load both the saved JSON and current enrollment targets, then
+    // retry the student-specific change.
     const existingTargetIds = await selectEnrollmentAccessControlTargetIds(assessment);
     const targetIdsToLock = new Set([
       ...existingTargetIds,
@@ -385,9 +403,9 @@ export async function replaceEnrollmentAccessControlRules(
 
     const revalidatedTargetIds = await selectEnrollmentAccessControlTargetIds(assessment);
     if (revalidatedTargetIds.some((id) => !targetIdsToLock.has(id))) {
-      // Reconciliation moved a target after the initial snapshot. Abort before
-      // mutation so a later request can take a fresh, correctly ordered lock set.
-      throw new Error('Enrollment access-control targets changed during replacement');
+      throw new Error(
+        'Student-specific access control targets changed while saving. Refresh the page and try again.',
+      );
     }
 
     const currentRules = await selectAccessControlRules(assessment, ['enrollment']);
