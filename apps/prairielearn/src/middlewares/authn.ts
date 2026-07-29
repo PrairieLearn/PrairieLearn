@@ -60,38 +60,35 @@ export default asyncHandler(async (req, res, next) => {
       redirect: false,
     });
 
-    await sqldb.runInTransactionAsync(async () => {
-      const courseInstanceId = await sqldb.queryOptionalScalar(
-        sql.select_example_course_instance_id,
-        {},
-        IdSchema,
+    const courseInstanceId = await sqldb.queryOptionalScalar(
+      sql.select_example_course_instance_id,
+      IdSchema,
+    );
+
+    if (!courseInstanceId) return next();
+
+    await runWithSharedEnrollmentBarrier(courseInstanceId, async () => {
+      // Enroll the load test user in the example course.
+      const enrollment = await sqldb.queryOptionalRow(
+        sql.enroll_user_in_example_course,
+        {
+          user_id: res.locals.authn_user.id,
+          course_instance_id: courseInstanceId,
+        },
+        EnrollmentSchema,
       );
 
-      if (!courseInstanceId) return;
-
-      await runWithSharedEnrollmentBarrier(courseInstanceId, async () => {
-        // Enroll the load test user in the example course.
-        const enrollment = await sqldb.queryOptionalRow(
-          sql.enroll_user_in_example_course,
-          {
-            user_id: res.locals.authn_user.id,
-            course_instance_id: courseInstanceId,
-          },
-          EnrollmentSchema,
-        );
-
-        if (enrollment) {
-          await insertAuditEvent({
-            tableName: 'enrollments',
-            action: 'insert',
-            actionDetail: 'implicit_joined',
-            rowId: enrollment.id,
-            newRow: enrollment,
-            agentUserId: res.locals.user.id,
-            agentAuthnUserId: res.locals.authn_user.id,
-          });
-        }
-      });
+      if (enrollment) {
+        await insertAuditEvent({
+          tableName: 'enrollments',
+          action: 'insert',
+          actionDetail: 'implicit_joined',
+          rowId: enrollment.id,
+          newRow: enrollment,
+          agentUserId: res.locals.user.id,
+          agentAuthnUserId: res.locals.authn_user.id,
+        });
+      }
     });
 
     return next();
