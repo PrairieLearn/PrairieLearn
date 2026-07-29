@@ -3,7 +3,16 @@ import crypto from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { z } from 'zod';
 
-import { execute, loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
+import {
+  execute,
+  loadSqlEquiv,
+  queryOptionalScalar,
+  queryRow,
+  queryRows,
+  queryScalar,
+  runInTransactionAsync,
+} from '@prairielearn/postgres';
+import { withResolvers } from '@prairielearn/utils';
 import { IdSchema } from '@prairielearn/zod';
 
 import { selectAssessmentByTid } from '../../models/assessment.js';
@@ -26,20 +35,42 @@ import {
 } from './identity.js';
 import { EnrollmentAdmissionDeniedError, admitUserToCourseInstance } from './reconciliation.js';
 import {
-  actorFor,
   createEnrollment,
   createLti13CourseInstance,
   createUser,
   nextFixtureName,
-  nextFixtureNumber,
   selectEnrollments,
-  selectReconciliationAuditEvents,
-} from './reconciliation.test-helpers.js';
+} from './test-utils.js';
 
 const sql = loadSqlEquiv(import.meta.url);
+let assessmentAccessControlRuleNumber = 90_000;
 
 async function selectIds(query: string, params: Record<string, unknown>): Promise<string[]> {
   return (await queryRows(query, params, z.object({ id: IdSchema }))).map((row) => row.id);
+}
+
+async function selectReconciliationAuditEvents(enrollmentId: string) {
+  const events = await selectAuditEventsByEnrollmentId({
+    enrollment_id: enrollmentId,
+    table_names: ['enrollments'],
+  });
+  return events.filter(
+    (event) =>
+      (event.context as Record<string, unknown> | null)?.reason === 'identity_reconciliation',
+  );
+}
+
+async function waitForBackendLock(backendPid: number, queryPattern: string): Promise<void> {
+  for (let attempt = 0; attempt < 100; attempt++) {
+    const waiting = await queryOptionalScalar(
+      sql.select_waiting_backend_lock,
+      { backend_pid: backendPid, query_pattern: queryPattern },
+      z.number(),
+    );
+    if (waiting !== null) return;
+    await new Promise((resolve) => setTimeout(resolve, 10));
+  }
+  throw new Error(`Timed out waiting for backend ${backendPid} to run ${queryPattern}`);
 }
 
 interface SurvivorSelectionCase {
@@ -72,9 +103,12 @@ describe('checked enrollment admission', { concurrent: false }, () => {
     >,
   ) {
     return await admitUserToCourseInstance({
+      actor: {
+        agentAuthnUserId: user.id,
+        agentUserId: user.id,
+      },
       courseInstanceId: courseInstance.id,
       userId: user.id,
-      ...actorFor(user),
       ...input,
     });
   }
@@ -381,7 +415,7 @@ describe('checked enrollment admission', { concurrent: false }, () => {
       sql.insert_assessment_access_control_rule,
       {
         assessment_id: assessment.id,
-        number: 90_000 + nextFixtureNumber(),
+        number: ++assessmentAccessControlRuleNumber,
         uuid: crypto.randomUUID(),
       },
       AssessmentAccessControlRuleSchema,
@@ -390,7 +424,7 @@ describe('checked enrollment admission', { concurrent: false }, () => {
       sql.insert_assessment_access_control_rule,
       {
         assessment_id: assessment.id,
-        number: 90_000 + nextFixtureNumber(),
+        number: ++assessmentAccessControlRuleNumber,
         uuid: crypto.randomUUID(),
       },
       AssessmentAccessControlRuleSchema,
@@ -456,5 +490,63 @@ describe('checked enrollment admission', { concurrent: false }, () => {
         }),
       ]),
     );
+  });
+
+  it('revalidates a candidate deleted after selection before validation', async () => {
+    const user = await createUser({ prefix: 'candidate-deletion' });
+    const invitation = await createEnrollment({ courseInstance, pendingUid: user.uid });
+    const parentLocked = withResolvers<undefined>();
+    const releaseDeletion = withResolvers<undefined>();
+    const deletion = runInTransactionAsync(async () => {
+      await queryRow(
+        sql.lock_enrollment,
+        { enrollment_id: invitation.id },
+        z.object({ id: IdSchema }),
+      );
+      parentLocked.resolve(undefined);
+      await releaseDeletion.promise;
+      await execute(sql.delete_enrollment, { enrollment_id: invitation.id });
+    }).catch((error) => {
+      parentLocked.reject(error);
+      throw error;
+    });
+    void deletion.catch(() => undefined);
+
+    try {
+      await parentLocked.promise;
+      const admissionBackendPid = withResolvers<number>();
+      let validationCalls = 0;
+      const admission = runInTransactionAsync(async () => {
+        const backendPid = await queryScalar(sql.select_backend_pid, {}, z.number());
+        admissionBackendPid.resolve(backendPid);
+        return await admitUserToCourseInstance({
+          actor: {
+            agentAuthnUserId: user.id,
+            agentUserId: user.id,
+          },
+          courseInstanceId: courseInstance.id,
+          userId: user.id,
+          source: { type: 'pending_uid' },
+          validateAdmission: async () => {
+            validationCalls += 1;
+          },
+        });
+      }).catch((error) => {
+        admissionBackendPid.reject(error);
+        throw error;
+      });
+      void admission.catch(() => undefined);
+      await waitForBackendLock(await admissionBackendPid.promise, '%lock_enrollments_by_id%');
+      releaseDeletion.resolve(undefined);
+
+      await expect(admission).rejects.toMatchObject({
+        decision: { allowed: false, reason: 'no_matching_invitation' },
+      });
+      expect(validationCalls).toBe(0);
+      expect(await selectEnrollments([invitation.id])).toEqual([]);
+    } finally {
+      releaseDeletion.resolve(undefined);
+      await deletion;
+    }
   });
 });

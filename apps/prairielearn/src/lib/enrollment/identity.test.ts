@@ -20,7 +20,7 @@ import {
   createUser,
   nextFixtureName,
   selectEnrollments,
-} from './reconciliation.test-helpers.js';
+} from './test-utils.js';
 
 interface AdmissionDecisionCase {
   expectedAllowed: boolean;
