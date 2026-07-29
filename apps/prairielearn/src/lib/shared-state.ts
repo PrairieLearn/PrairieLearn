@@ -133,12 +133,6 @@ export function normalizeSharedStateObjectValueForRead(
   return normalized;
 }
 
-/**
- * Strictly validates a value returned by question code against the current
- * schema. Unlike `normalizeSharedStateObjectValueForRead`, this never
- * silently substitutes defaults: an invalid write is an author error and
- * should become a fatal course issue.
- */
 export function validateSharedStateObjectValueForWrite(
   value: SharedStateObjectValue,
   properties: SharedStateObjectPropertiesJson,

@@ -9,7 +9,7 @@ import { IdSchema } from '@prairielearn/zod';
 
 import { makeAssessmentInstance } from '../lib/assessment.js';
 import { config } from '../lib/config.js';
-import { SubmissionSchema, VariantSchema } from '../lib/db-types.js';
+import { SubmissionSchema, UserSharedStateValueSchema, VariantSchema } from '../lib/db-types.js';
 import { features } from '../lib/features/index.js';
 import { saveAndGradeSubmission } from '../lib/grading.js';
 import { ensureVariant } from '../lib/question-variant.js';
@@ -203,7 +203,7 @@ describe(
       assert.equal(readerVariant.params?.observed_count, 5);
     });
 
-    it('populates shared-state defaults (rather than an empty object) for an instructor preview variant', async () => {
+    it('populates shared-state defaults (rather than an empty object) for a fresh instructor preview variant', async () => {
       // Instructor preview variants have no instance_question_id, and so no
       // assessment_instance_id to read live values from. `data["shared_state"]`
       // must still be populated with each object's schema defaults here —
@@ -212,7 +212,7 @@ describe(
       // issue (the variant/submission gets marked broken).
       const course = await selectOrInsertCourseByPath(courseDir);
       const writerQuestion = await selectQuestionByQid({ course_id: course.id, qid: WRITER_QID });
-      const user = await selectOrInsertUserByUid('shared-state-preview-user@example.com');
+      const user = await selectOrInsertUserByUid('shared-state-preview-defaults-user@example.com');
 
       const previewVariant = await ensureVariant({
         question_id: writerQuestion.id,
@@ -252,11 +252,77 @@ describe(
         null,
         'grading a preview variant should not break it, even though it has no assessment instance',
       );
+    });
 
-      // Preview mode has nowhere to persist a write, so a second, independent
-      // preview variant should still see the schema default (0), not the
-      // first preview's graded value (5).
-      const secondPreviewVariant = await ensureVariant({
+    it('persists preview shared-state writes for the previewing user, across variants and across questions', async () => {
+      // A preview variant has no assessment instance to scope shared state
+      // to, so it's scoped to the previewing user instead: writes made while
+      // previewing one question, or one variant, are visible when the same
+      // user previews another question (or clicks "New variant") that reads
+      // the same shared-state object.
+      const course = await selectOrInsertCourseByPath(courseDir);
+      const writerQuestion = await selectQuestionByQid({ course_id: course.id, qid: WRITER_QID });
+      const readerQuestion = await selectQuestionByQid({ course_id: course.id, qid: READER_QID });
+      const user = await selectOrInsertUserByUid('shared-state-preview-persist-user@example.com');
+
+      const firstWriterVariant = await ensureVariant({
+        question_id: writerQuestion.id,
+        instance_question_id: null,
+        user_id: user.id,
+        authn_user_id: user.id,
+        course_instance: null,
+        variant_course: course,
+        question_course: course,
+        options: {},
+        require_open: true,
+        client_fingerprint_id: null,
+      });
+
+      await saveAndGradeSubmission(
+        {
+          variant_id: firstWriterVariant.id,
+          user_id: user.id,
+          auth_user_id: user.id,
+          submitted_answer: { increment: 5 },
+        },
+        firstWriterVariant,
+        writerQuestion,
+        course,
+        true,
+        true,
+      );
+
+      const storedValue = await sqldb.queryRow(
+        sql.select_user_shared_state_value,
+        { user_id: user.id, name: 'labProgress' },
+        UserSharedStateValueSchema,
+      );
+      assert.equal(storedValue.data.count, 5, 'the write should be persisted for this user');
+
+      // A brand-new preview variant of a *different* question, for the same
+      // user, should see the persisted count rather than the schema default.
+      const readerPreviewVariant = await ensureVariant({
+        question_id: readerQuestion.id,
+        instance_question_id: null,
+        user_id: user.id,
+        authn_user_id: user.id,
+        course_instance: null,
+        variant_course: course,
+        question_course: course,
+        options: {},
+        require_open: false,
+        client_fingerprint_id: null,
+      });
+      assert.equal(
+        readerPreviewVariant.broken_at,
+        null,
+        'reader preview variant should not be broken',
+      );
+      assert.equal(readerPreviewVariant.params?.observed_count, 5);
+
+      // Submitting again, on a new writer preview variant, should accumulate
+      // onto the persisted value rather than restarting from the default.
+      const secondWriterVariant = await ensureVariant({
         question_id: writerQuestion.id,
         instance_question_id: null,
         user_id: user.id,
@@ -270,27 +336,42 @@ describe(
       });
       await saveAndGradeSubmission(
         {
-          variant_id: secondPreviewVariant.id,
+          variant_id: secondWriterVariant.id,
           user_id: user.id,
           auth_user_id: user.id,
           submitted_answer: { increment: 1 },
         },
-        secondPreviewVariant,
+        secondWriterVariant,
         writerQuestion,
         course,
         true,
         true,
       );
-      const submission = await sqldb.queryRow(
-        sql.select_last_submission_for_variant,
-        { variant_id: secondPreviewVariant.id },
-        SubmissionSchema,
+      const accumulatedValue = await sqldb.queryRow(
+        sql.select_user_shared_state_value,
+        { user_id: user.id, name: 'labProgress' },
+        UserSharedStateValueSchema,
       );
-      assert.equal(
-        submission.score,
-        1,
-        'preview grading should compute from the default (0), not a persisted value',
+      assert.equal(accumulatedValue.data.count, 6);
+
+      // A different user previewing the reader question should still see the
+      // schema default — preview shared state is scoped per-user, not global.
+      const otherUser = await selectOrInsertUserByUid(
+        'shared-state-preview-other-user@example.com',
       );
+      const otherReaderVariant = await ensureVariant({
+        question_id: readerQuestion.id,
+        instance_question_id: null,
+        user_id: otherUser.id,
+        authn_user_id: otherUser.id,
+        course_instance: null,
+        variant_course: course,
+        question_course: course,
+        options: {},
+        require_open: true,
+        client_fingerprint_id: null,
+      });
+      assert.equal(otherReaderVariant.params?.observed_count, 0);
     });
 
     it('works the same way through the public question preview route', async () => {
@@ -345,10 +426,10 @@ describe(
       assert.equal(submission.broken, false);
       assert.equal(submission.score, 1);
 
-      // A fresh, independent public preview of the reader question has
-      // nowhere to read a persisted write from (no assessment instance), so
-      // it should still see the schema default (0), not the writer preview's
-      // graded value (5).
+      // A fresh, independent public preview of the reader question has no
+      // assessment instance either, so it's scoped to the previewing user
+      // instead — the same (default, unauthenticated-test) user as the
+      // writer preview above — and should see that preview's graded write.
       const readerPreviewUrl = `${publicBaseUrl}/${readerQuestion.id}/preview`;
       const readerPage = await fetchCheerio(readerPreviewUrl);
       assert.equal(readerPage.status, 200);
@@ -365,7 +446,7 @@ describe(
         null,
         'public preview reader variant should not be broken',
       );
-      assert.equal(readerVariant.params?.observed_count, 0);
+      assert.equal(readerVariant.params?.observed_count, 5);
     });
   },
 );

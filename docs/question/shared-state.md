@@ -82,7 +82,7 @@ If your questions must be answered in a specific order, enforce that explicitly 
 
 ## Instructor preview
 
-Shared state is currently only available to questions accessed through a real assessment instance. Previewing a question directly (from the question page, or in a course with no assessment) does not read or write any stored value.
+Previewing a question directly (from the question page, or in a course with no assessment) has no assessment instance to scope shared state to, so values are instead scoped to the user doing the preview. Each object's value persists across submissions and across "New variant" clicks for that user, independently of any real assessment instance's stored value, but is shared across every question in every course that previews the same object.
 
 ## Limits
 

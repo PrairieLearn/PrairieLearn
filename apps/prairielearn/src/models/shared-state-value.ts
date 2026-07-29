@@ -6,6 +6,7 @@ import {
   type Course,
   type Question,
   type SharedStateObjectValue,
+  UserSharedStateValueSchema,
 } from '../lib/db-types.js';
 import {
   diffSharedStateObjectValue,
@@ -154,9 +155,103 @@ export async function writeSharedStateValuesForAssessmentInstance({
   return { issues };
 }
 
+/**
+ * Reads the current, schema-normalized value of each given object for a
+ * user. This is the preview-mode counterpart to
+ * `readSharedStateValuesForAssessmentInstance`, used when a variant has no
+ * assessment instance (e.g. an instructor or public question preview) so
+ * that shared state can still persist across "New variant" clicks for the
+ * user previewing the question.
+ */
+export async function readSharedStateValuesForUser({
+  user_id,
+  objects,
+}: {
+  user_id: string;
+  objects: Record<string, ResolvedSharedStateObject>;
+}): Promise<Record<string, SharedStateObjectValue>> {
+  const values: Record<string, SharedStateObjectValue> = {};
+  for (const [name, object] of Object.entries(objects)) {
+    const row = await sqldb.queryOptionalRow(
+      sql.select_user_value,
+      { user_id, shared_state_object_id: object.id },
+      UserSharedStateValueSchema,
+    );
+    const base =
+      row?.revision_id === object.revisionId
+        ? row.data
+        : extractSharedStateObjectDefaults(object.properties);
+    values[name] = normalizeSharedStateObjectValueForRead(base, object.properties);
+  }
+  return values;
+}
+
+/**
+ * The preview-mode counterpart to
+ * `writeSharedStateValuesForAssessmentInstance`, persisting a phase's patch
+ * per-user instead of per-assessment-instance.
+ */
+export async function writeSharedStateValuesForUser({
+  user_id,
+  objects,
+  before,
+  after,
+}: {
+  user_id: string;
+  objects: Record<string, ResolvedSharedStateObject>;
+  before: Partial<Record<string, SharedStateObjectValue>>;
+  after: Partial<Record<string, SharedStateObjectValue>>;
+}): Promise<{ issues: string[] }> {
+  const issues: string[] = [];
+
+  for (const [name, object] of Object.entries(objects)) {
+    const patch = diffSharedStateObjectValue(before[name] ?? {}, after[name] ?? before[name] ?? {});
+    if (Object.keys(patch).length === 0) continue;
+
+    await sqldb.runInTransactionAsync(async () => {
+      const row = await sqldb.queryOptionalRow(
+        sql.select_user_value_for_update,
+        { user_id, shared_state_object_id: object.id },
+        UserSharedStateValueSchema,
+      );
+      const base =
+        row?.revision_id === object.revisionId
+          ? row.data
+          : extractSharedStateObjectDefaults(object.properties);
+      const merged = { ...base, ...patch };
+
+      const validationErrors = validateSharedStateObjectValueForWrite(merged, object.properties);
+      if (validationErrors.length > 0) {
+        issues.push(`Shared-state object "${name}": ${validationErrors.join('; ')}`);
+        return;
+      }
+
+      await sqldb.queryRow(
+        sql.upsert_user_value,
+        {
+          user_id,
+          shared_state_object_id: object.id,
+          revision_id: object.revisionId,
+          data: JSON.stringify(merged),
+        },
+        UserSharedStateValueSchema,
+      );
+    });
+  }
+
+  return { issues };
+}
+
 export interface SharedStateResolution {
   objects: Record<string, ResolvedSharedStateObject>;
   assessment_instance_id: string | null;
+  /**
+   * The user to persist preview-mode shared state for, when this variant
+   * has no assessment instance. Null whenever `assessment_instance_id` is
+   * set, or when there's no user to scope a preview write to (e.g. a group
+   * variant with no assessment instance).
+   */
+  user_id: string | null;
   before: Record<string, SharedStateObjectValue>;
 }
 
@@ -164,10 +259,12 @@ export async function resolveSharedStateForPhase({
   question,
   question_course,
   instance_question_id,
+  user_id,
 }: {
   question: Question;
   question_course: Course;
   instance_question_id: string | null;
+  user_id: string | null;
 }): Promise<SharedStateResolution> {
   const objects = await selectSharedStateObjectsForQuestion({
     course_id: question_course.id,
@@ -175,7 +272,7 @@ export async function resolveSharedStateForPhase({
   });
 
   if (Object.keys(objects).length === 0) {
-    return { objects, assessment_instance_id: null, before: {} };
+    return { objects, assessment_instance_id: null, user_id: null, before: {} };
   }
 
   const assessment_instance_id =
@@ -186,19 +283,25 @@ export async function resolveSharedStateForPhase({
           { instance_question_id },
           IdSchema,
         );
-  if (assessment_instance_id == null) {
-    return {
+  if (assessment_instance_id != null) {
+    const before = await readSharedStateValuesForAssessmentInstance({
+      assessment_instance_id,
       objects,
-      assessment_instance_id: null,
-      before: extractSharedStateDefaultsForObjects(objects),
-    };
+    });
+    return { objects, assessment_instance_id, user_id: null, before };
   }
 
-  const before = await readSharedStateValuesForAssessmentInstance({
-    assessment_instance_id,
+  if (user_id != null) {
+    const before = await readSharedStateValuesForUser({ user_id, objects });
+    return { objects, assessment_instance_id: null, user_id, before };
+  }
+
+  return {
     objects,
-  });
-  return { objects, assessment_instance_id, before };
+    assessment_instance_id: null,
+    user_id: null,
+    before: extractSharedStateDefaultsForObjects(objects),
+  };
 }
 
 export function validateSharedStatePatch({

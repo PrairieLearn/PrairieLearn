@@ -19,3 +19,4 @@ foreign-key constraints
 referenced by
     assessment_instance_shared_state_values: FOREIGN KEY (revision_id) REFERENCES shared_state_object_revisions(id) ON UPDATE CASCADE ON DELETE CASCADE
     shared_state_objects: FOREIGN KEY (current_revision_id) REFERENCES shared_state_object_revisions(id) ON UPDATE CASCADE ON DELETE SET NULL
+    user_shared_state_values: FOREIGN KEY (revision_id) REFERENCES shared_state_object_revisions(id) ON UPDATE CASCADE ON DELETE CASCADE

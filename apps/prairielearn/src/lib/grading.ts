@@ -14,6 +14,7 @@ import {
   resolveSharedStateForPhase,
   validateSharedStatePatch,
   writeSharedStateValuesForAssessmentInstance,
+  writeSharedStateValuesForUser,
 } from '../models/shared-state-value.js';
 import { lockVariant } from '../models/variant.js';
 import * as questionServers from '../question-servers/index.js';
@@ -251,6 +252,7 @@ export async function saveSubmission(
     question,
     question_course,
     instance_question_id: variant.instance_question_id,
+    user_id: variant.user_id,
   });
   const { courseIssues, data } = await questionModule.parse(
     submission,
@@ -294,17 +296,22 @@ export async function saveSubmission(
     broken: hasFatalIssue,
   });
 
-  if (
-    sharedStateIssues.length === 0 &&
-    Object.keys(sharedState.objects).length > 0 &&
-    sharedState.assessment_instance_id != null
-  ) {
-    await writeSharedStateValuesForAssessmentInstance({
-      assessment_instance_id: sharedState.assessment_instance_id,
-      objects: sharedState.objects,
-      before: sharedState.before,
-      after: data.shared_state ?? {},
-    });
+  if (sharedStateIssues.length === 0 && Object.keys(sharedState.objects).length > 0) {
+    if (sharedState.assessment_instance_id != null) {
+      await writeSharedStateValuesForAssessmentInstance({
+        assessment_instance_id: sharedState.assessment_instance_id,
+        objects: sharedState.objects,
+        before: sharedState.before,
+        after: data.shared_state ?? {},
+      });
+    } else if (sharedState.user_id != null) {
+      await writeSharedStateValuesForUser({
+        user_id: sharedState.user_id,
+        objects: sharedState.objects,
+        before: sharedState.before,
+        after: data.shared_state ?? {},
+      });
+    }
   }
 
   return { submission_id, variant: updatedVariant };
@@ -457,6 +464,7 @@ export async function gradeVariant({
       question,
       question_course,
       instance_question_id: variant.instance_question_id,
+      user_id: variant.user_id,
     });
     const { courseIssues, data } = await questionModule.grade(
       submission,
@@ -515,17 +523,22 @@ export async function gradeVariant({
     // LTI updates.
     if (!grading_job_post_update.gradable) return;
 
-    if (
-      sharedStateIssues.length === 0 &&
-      Object.keys(sharedState.objects).length > 0 &&
-      sharedState.assessment_instance_id != null
-    ) {
-      await writeSharedStateValuesForAssessmentInstance({
-        assessment_instance_id: sharedState.assessment_instance_id,
-        objects: sharedState.objects,
-        before: sharedState.before,
-        after: data.shared_state ?? {},
-      });
+    if (sharedStateIssues.length === 0 && Object.keys(sharedState.objects).length > 0) {
+      if (sharedState.assessment_instance_id != null) {
+        await writeSharedStateValuesForAssessmentInstance({
+          assessment_instance_id: sharedState.assessment_instance_id,
+          objects: sharedState.objects,
+          before: sharedState.before,
+          after: data.shared_state ?? {},
+        });
+      } else if (sharedState.user_id != null) {
+        await writeSharedStateValuesForUser({
+          user_id: sharedState.user_id,
+          objects: sharedState.objects,
+          before: sharedState.before,
+          after: data.shared_state ?? {},
+        });
+      }
     }
 
     const assessment_instance_id = await sqldb.queryOptionalScalar(

@@ -28,3 +28,13 @@ ORDER BY
   date DESC
 LIMIT
   1;
+
+-- BLOCK select_user_shared_state_value
+SELECT
+  v.*
+FROM
+  user_shared_state_values AS v
+  JOIN shared_state_objects AS o ON (o.id = v.shared_state_object_id)
+WHERE
+  v.user_id = $user_id
+  AND o.name = $name;
