@@ -61,19 +61,21 @@ export default asyncHandler(async (req, res, next) => {
     });
 
     await sqldb.runInTransactionAsync(async () => {
-      const courseInstanceIds = await sqldb.queryScalars(
-        sql.select_example_course_instance_ids,
+      const courseInstanceId = await sqldb.queryOptionalScalar(
+        sql.select_example_course_instance_id,
         {},
         IdSchema,
       );
 
-      await runWithSharedEnrollmentBarrier(courseInstanceIds, async () => {
+      if (!courseInstanceId) return;
+
+      await runWithSharedEnrollmentBarrier(courseInstanceId, async () => {
         // Enroll the load test user in the example course.
         const enrollment = await sqldb.queryOptionalRow(
           sql.enroll_user_in_example_course,
           {
             user_id: res.locals.authn_user.id,
-            course_instance_ids: courseInstanceIds,
+            course_instance_id: courseInstanceId,
           },
           EnrollmentSchema,
         );

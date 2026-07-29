@@ -1,4 +1,4 @@
--- BLOCK select_example_course_instance_ids
+-- BLOCK select_example_course_instance_id
 SELECT
   ci.id
 FROM
@@ -26,7 +26,7 @@ INSERT INTO
       JOIN courses AS c ON (c.id = ci.course_id)
     WHERE
       u.id = $user_id
-      AND ci.id = ANY ($course_instance_ids::bigint[])
+      AND ci.id = $course_instance_id
       AND c.example_course IS TRUE
   )
 ON CONFLICT DO NOTHING
