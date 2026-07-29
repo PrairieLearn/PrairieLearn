@@ -12,7 +12,10 @@ import {
   Lti13CourseInstanceSchema,
 } from '../../../lib/db-types.js';
 import { admitUserFromLti13Launch } from '../../../lib/enrollment/admission.js';
-import { selectEnrollmentAdmissionDecision } from '../../../lib/enrollment/identity.js';
+import {
+  type EnrollmentAdmissionSource,
+  selectEnrollmentAdmissionDecision,
+} from '../../../lib/enrollment/identity.js';
 import { EnrollmentAdmissionDeniedError } from '../../../lib/enrollment/reconciliation.js';
 import { idsEqual } from '../../../lib/id.js';
 import { typedAsyncHandler } from '../../../lib/res-locals.js';
@@ -172,9 +175,9 @@ router.get(
       const lti13CourseInstanceId = lti13_course_instance.id;
       const sub = ltiClaim.sub;
       const userId = res.locals.authn_user.id;
-      const source = {
-        type: 'invitation' as const,
-        matchedBy: 'lti13' as const,
+      const source: EnrollmentAdmissionSource = {
+        type: 'invitation',
+        matchedBy: 'lti13',
         lti13CourseInstanceId,
         sub,
       };
