@@ -81,12 +81,12 @@ describe('Homepage enrollment candidates', () => {
 
   afterAll(helperServer.after);
 
-  it('does not discover or mutate a same-UIN roster invitation from another institution', async () => {
+  it('does not discover or mutate a same-UIN invitation from another institution', async () => {
     const user = await getOrCreateUser({
-      uid: 'foreign-roster@other.example.com',
-      name: 'Foreign roster user',
-      uin: 'shared-roster-uin',
-      email: 'foreign-roster@other.example.com',
+      uid: 'foreign-uin-invitation@other.example.com',
+      name: 'Foreign UIN invitation user',
+      uin: 'shared-invitation-uin',
+      email: 'foreign-uin-invitation@other.example.com',
       institutionId: '900002',
     });
     const invitation = await createEnrollment({
@@ -102,7 +102,7 @@ describe('Homepage enrollment candidates', () => {
       await withUser(user, async () => {
         const response = await fetchCheerio(homeUrl);
         assert.equal(response.status, 200);
-        assert.notInclude(response.$('body').text(), 'Available through roster');
+        assert.notInclude(response.$('body').text(), 'Available through your institution');
       });
 
       assert.deepEqual(await selectEnrollments([invitation.id]), before);
@@ -112,29 +112,29 @@ describe('Homepage enrollment candidates', () => {
     }
   });
 
-  it('groups bound-left and pending roster candidates once using their maximum extension', async () => {
+  it('groups bound-left and pending UIN candidates once using their maximum extension', async () => {
     const user = await getOrCreateUser({
-      uid: 'grouped-roster@example.com',
-      name: 'Grouped roster user',
-      uin: 'grouped-roster-uin',
-      email: 'grouped-roster@example.com',
+      uid: 'grouped-uin-invitation@example.com',
+      name: 'Grouped UIN invitation user',
+      uin: 'grouped-invitation-uin',
+      email: 'grouped-uin-invitation@example.com',
       institutionId: '1',
     });
     const boundEnrollment = await createEnrollment({
       userId: user.id,
       status: 'left',
     });
-    const rosterInvitation = await createEnrollment({
+    const uinInvitation = await createEnrollment({
       userId: null,
       pendingUin: user.uin,
       status: 'invited',
     });
-    const conventionalInvitation = await createEnrollment({
+    const uidInvitation = await createEnrollment({
       userId: null,
       pendingUid: user.uid,
       status: 'invited',
     });
-    const enrollmentIds = [boundEnrollment.id, rosterInvitation.id, conventionalInvitation.id];
+    const enrollmentIds = [boundEnrollment.id, uinInvitation.id, uidInvitation.id];
     const courseInstance = await selectCourseInstanceById('1');
     const now = new Date();
     const expiredExtension = await queryRow(
@@ -161,7 +161,7 @@ describe('Homepage enrollment candidates', () => {
     });
     await execute(sql.add_publishing_extension_enrollment, {
       publishing_extension_id: activeExtension.id,
-      enrollment_id: rosterInvitation.id,
+      enrollment_id: uinInvitation.id,
     });
     await execute(sql.update_course_instance_publishing, {
       course_instance_id: '1',
@@ -179,7 +179,7 @@ describe('Homepage enrollment candidates', () => {
           'table[aria-label="Courses with student access"] tr, table[aria-label="Courses"] tr',
         );
         assert.lengthOf(rows, 1);
-        assert.include(rows.text(), 'Available through roster');
+        assert.include(rows.text(), 'Available through your institution');
         assert.lengthOf(
           rows.find('a').filter((_, el) => response.$(el).text().trim() === 'Open course'),
           1,
@@ -212,7 +212,7 @@ describe('Homepage enrollment candidates', () => {
     }
   });
 
-  it('does not substitute a new conventional invitation for stale accept or reject targets', async () => {
+  it('does not substitute a new UID invitation for stale accept or reject targets', async () => {
     const user = await getOrCreateUser({
       uid: 'stale-home-invitation@example.com',
       name: 'Stale homepage invitation user',
@@ -285,7 +285,7 @@ describe('Homepage enrollment candidates', () => {
     }
   });
 
-  it('accepts and rejects conventional invitations for legacy course instances', async () => {
+  it('accepts and rejects UID invitations for legacy course instances', async () => {
     const acceptingUser = await getOrCreateUser({
       uid: 'legacy-accept@example.com',
       name: 'Legacy accept user',

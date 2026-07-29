@@ -220,8 +220,8 @@ describe('calculateModernCourseInstanceStudentAccess', () => {
     classification: Partial<EnrollmentIdentityClassification> = {},
   ): EnrollmentIdentityClassification {
     const resolved = {
-      actionableConventionalInvitation: null,
-      actionableInstitutionRosterInvitation: null,
+      actionableInstitutionUinInvitation: null,
+      actionableUidInvitation: null,
       boundCandidate: null,
       candidates: [],
       ...classification,
@@ -387,15 +387,15 @@ describe('calculateModernCourseInstanceStudentAccess', () => {
   });
 
   describe('with publishing extensions', () => {
-    it('uses every matching candidate for roster invitation access', async () => {
+    it('uses every matching candidate for institution UIN invitation access', async () => {
       const courseInstance = createMockCourseInstance();
       const boundCandidate = createCandidate(
         createMockEnrollment({ id: 'bound', status: 'left' }),
         { boundUser: true },
       );
-      const rosterCandidate = createCandidate(
+      const uinInvitationCandidate = createCandidate(
         createMockEnrollment({
-          id: 'roster',
+          id: 'uin-invitation',
           user_id: null,
           status: 'invited',
           pending_uin: 'uin',
@@ -403,9 +403,9 @@ describe('calculateModernCourseInstanceStudentAccess', () => {
         { institutionUin: true },
       );
       mockClassification({
-        actionableInstitutionRosterInvitation: rosterCandidate,
+        actionableInstitutionUinInvitation: uinInvitationCandidate,
         boundCandidate,
-        candidates: [boundCandidate, rosterCandidate],
+        candidates: [boundCandidate, uinInvitationCandidate],
       });
       const extensionSelector = vi
         .spyOn(publishingExtensionsModel, 'selectLatestPublishingExtensionByEnrollmentIds')
@@ -422,7 +422,7 @@ describe('calculateModernCourseInstanceStudentAccess', () => {
         has_student_access_with_enrollment: false,
       });
       assert.deepEqual(extensionSelector.mock.calls, [
-        [{ courseInstance, enrollmentIds: ['bound', 'roster'] }],
+        [{ courseInstance, enrollmentIds: ['bound', 'uin-invitation'] }],
       ]);
     });
 
