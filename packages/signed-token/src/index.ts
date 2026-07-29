@@ -11,14 +11,28 @@ interface CheckOptions {
   maxAge?: number;
 }
 
-export function generateSignedToken(data: any, secretKey: string) {
+export type SecretKey = string | readonly [string, ...string[]];
+
+function getSecretKeys(secretKey: SecretKey): readonly [string, ...string[]] {
+  if (typeof secretKey === 'string') {
+    return [secretKey];
+  }
+  if (secretKey.length === 0) {
+    throw new Error('Secret key ring must contain at least one key');
+  }
+  return secretKey;
+}
+
+export function generateSignedToken(data: any, secretKey: SecretKey) {
   debug(`generateSignedToken(): data = ${JSON.stringify(data)}`);
-  debug(`generateSignedToken(): secretKey = ${secretKey}`);
   const dataJSON = JSON.stringify(data);
   const dataString = base64url.default.encode(dataJSON);
   const dateString = Date.now().toString(36);
   const checkString = dateString + sep + dataString;
-  const signature = crypto.createHmac('sha256', secretKey).update(checkString).digest('hex');
+  const signature = crypto
+    .createHmac('sha256', getSecretKeys(secretKey)[0])
+    .update(checkString)
+    .digest('hex');
   const encodedSignature = base64url.default.encode(signature);
   debug(
     `generateSignedToken(): ${JSON.stringify({
@@ -35,11 +49,10 @@ export function generateSignedToken(data: any, secretKey: string) {
 
 export function getCheckedSignedTokenData(
   token: string,
-  secretKey: string,
+  secretKey: SecretKey,
   options: CheckOptions = {},
 ) {
   debug(`getCheckedSignedTokenData(): token = ${token}`);
-  debug(`getCheckedSignedTokenData(): secretKey = ${secretKey}`);
   debug(`getCheckedSignedTokenData(): options = ${JSON.stringify(options)}`);
   if (typeof token !== 'string') {
     debug('getCheckedSignedTokenData(): FAIL - token is not string');
@@ -58,12 +71,18 @@ export function getCheckedSignedTokenData(
 
   // check the signature
   const checkString = tokenDateString + sep + tokenDataString;
-  const checkSignature = crypto.createHmac('sha256', secretKey).update(checkString).digest('hex');
-  const encodedCheckSignature = base64url.default.encode(checkSignature);
-  if (encodedCheckSignature !== tokenSignature) {
-    debug(
-      `getCheckedSignedTokenData(): FAIL - signature mismatch: checkSig=${encodedCheckSignature} != tokenSig=${tokenSignature}`,
+  const tokenSignatureBuffer = Buffer.from(tokenSignature);
+  const signatureMatches = getSecretKeys(secretKey).map((key) => {
+    const checkSignature = crypto.createHmac('sha256', key).update(checkString).digest('hex');
+    const encodedCheckSignature = base64url.default.encode(checkSignature);
+    const checkSignatureBuffer = Buffer.from(encodedCheckSignature);
+    return (
+      checkSignatureBuffer.length === tokenSignatureBuffer.length &&
+      crypto.timingSafeEqual(checkSignatureBuffer, tokenSignatureBuffer)
     );
+  });
+  if (!signatureMatches.some(Boolean)) {
+    debug('getCheckedSignedTokenData(): FAIL - signature mismatch');
     return null;
   }
 
@@ -107,12 +126,11 @@ export function getCheckedSignedTokenData(
 export function checkSignedToken(
   token: string,
   data: any,
-  secretKey: string,
+  secretKey: SecretKey,
   options: CheckOptions = {},
 ) {
   debug(`checkSignedToken(): token = ${token}`);
   debug(`checkSignedToken(): data = ${JSON.stringify(data)}`);
-  debug(`checkSignedToken(): secretKey = ${secretKey}`);
   debug(`checkSignedToken(): options = ${JSON.stringify(options)}`);
   debug(`checkSignedToken(): data = ${JSON.stringify(data)}`);
   const tokenData = getCheckedSignedTokenData(token, secretKey, options);
@@ -130,7 +148,7 @@ export function checkSignedToken(
  */
 export function generatePrefixCsrfToken(
   data: { url: string; authn_user_id: string },
-  secretKey: string,
+  secretKey: SecretKey,
 ) {
   return generateSignedToken({ ...data, type: 'prefix' }, secretKey);
 }
@@ -150,7 +168,7 @@ export function generatePrefixCsrfToken(
 export function checkSignedTokenPrefix(
   token: string,
   requestData: { url: string; authn_user_id: string },
-  secretKey: string,
+  secretKey: SecretKey,
   options: CheckOptions = {},
 ): boolean {
   debug(`checkSignedTokenPrefix(): token = ${token}`);

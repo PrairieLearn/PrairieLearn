@@ -19,6 +19,8 @@ import {
   updateStripeCheckoutSessionData,
 } from '../../models/stripe-checkout-sessions.js';
 
+import { constructStripeEventWithKeyRing } from './stripe-signature.js';
+
 const router = Router({ mergeParams: true });
 
 function constructEvent(req: Request) {
@@ -28,13 +30,16 @@ function constructEvent(req: Request) {
 
   const stripe = getStripeClient();
   try {
-    return stripe.webhooks.constructEvent(
-      req.body,
-      req.headers['stripe-signature'] as string,
-      config.stripeWebhookSigningSecret,
-    );
-  } catch (err: any) {
-    throw new error.HttpStatusError(400, `Webhook error: ${err.message}`);
+    return constructStripeEventWithKeyRing({
+      stripe,
+      payload: req.body,
+      signature: req.headers['stripe-signature'] as string,
+      signingSecrets: config.stripeWebhookSigningSecret,
+    });
+  } catch (cause) {
+    const message =
+      cause instanceof Error ? cause.message : 'Unknown signature verification failure';
+    throw new error.HttpStatusError(400, `Webhook error: ${message}`, { cause });
   }
 }
 

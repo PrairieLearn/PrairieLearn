@@ -6,6 +6,7 @@ import * as jose from 'jose';
 import { logger } from '@prairielearn/logger';
 
 import { config } from '../lib/config.js';
+import { getActiveKey } from '../lib/key-ring.js';
 
 const router = Router();
 
@@ -33,7 +34,7 @@ router.post('/', async (req, res) => {
     }
 
     try {
-      const key = crypto.createSecretKey(config.secretKey, 'utf-8');
+      const key = crypto.createSecretKey(getActiveKey(config.secretKey), 'utf-8');
       await jose.jwtVerify(jwt, key, {
         issuer: 'PrairieLearn',
         subject: 'terminate',
