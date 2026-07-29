@@ -2,7 +2,6 @@ import crypto from 'node:crypto';
 
 import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 
-import { selectAuditEventsByEnrollmentId } from '../../models/audit-event.js';
 import {
   type CourseInstance,
   type Enrollment,
@@ -13,7 +12,6 @@ import {
   UserSchema,
 } from '../db-types.js';
 
-
 const sql = loadSqlEquiv(import.meta.url);
 
 export const OTHER_INSTITUTION_ID = '900001';
@@ -23,11 +21,6 @@ let fixtureCounter = 0;
 export function nextFixtureName(prefix: string): string {
   fixtureCounter += 1;
   return `${prefix}-${fixtureCounter}-${crypto.randomUUID()}`;
-}
-
-export function nextFixtureNumber(): number {
-  fixtureCounter += 1;
-  return fixtureCounter;
 }
 
 export async function createUser({
@@ -120,22 +113,4 @@ export async function createLti13CourseInstance(
     },
     Lti13CourseInstanceSchema.pick({ id: true }),
   );
-}
-
-export async function selectReconciliationAuditEvents(enrollmentId: string) {
-  const events = await selectAuditEventsByEnrollmentId({
-    enrollment_id: enrollmentId,
-    table_names: ['enrollments'],
-  });
-  return events.filter(
-    (event) =>
-      (event.context as Record<string, unknown> | null)?.reason === 'identity_reconciliation',
-  );
-}
-
-export function actorFor(user: User) {
-  return {
-    agentAuthnUserId: user.id,
-    agentUserId: user.id,
-  };
 }
