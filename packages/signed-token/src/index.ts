@@ -72,7 +72,7 @@ export function getCheckedSignedTokenData(
   // check the signature
   const checkString = tokenDateString + sep + tokenDataString;
   const tokenSignatureBuffer = Buffer.from(tokenSignature);
-  const signatureMatches = getSecretKeys(secretKey).map((key) => {
+  const signatureMatches = getSecretKeys(secretKey).some((key) => {
     const checkSignature = crypto.createHmac('sha256', key).update(checkString).digest('hex');
     const encodedCheckSignature = base64url.default.encode(checkSignature);
     const checkSignatureBuffer = Buffer.from(encodedCheckSignature);
@@ -81,7 +81,7 @@ export function getCheckedSignedTokenData(
       crypto.timingSafeEqual(checkSignatureBuffer, tokenSignatureBuffer)
     );
   });
-  if (!signatureMatches.some(Boolean)) {
+  if (!signatureMatches) {
     debug('getCheckedSignedTokenData(): FAIL - signature mismatch');
     return null;
   }
