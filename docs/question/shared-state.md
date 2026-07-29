@@ -11,15 +11,14 @@ Add a `sharedState` entry to `infoCourse.json`:
 ```json title="infoCourse.json"
 {
   "sharedState": {
-    "labProgress": {
+    "assessmentTheme": {
       "scope": "assessmentInstance",
       "dataVersion": 1,
       "properties": {
-        "stage": { "type": "number", "default": 0 },
-        "status": {
+        "theme": {
           "type": "string",
-          "default": "notStarted",
-          "enum": ["notStarted", "inProgress", "complete"]
+          "default": "sports",
+          "enum": ["sports", "cooking", "travel"]
         }
       }
     }
@@ -37,24 +36,40 @@ A question that reads or writes a shared-state object must declare it in its own
 
 ```json title="info.json"
 {
-  "sharedStateAccess": ["labProgress"]
+  "sharedStateAccess": ["assessmentTheme"]
 }
 ```
 
 Sync reports an error if a question declares access to an object name that isn't defined in the course's `sharedState`.
 
+A question that declares `sharedStateAccess` cannot also set `shareSourcePublicly`: copying a question's source into another course doesn't yet carry over its shared-state object definition, so this combination is rejected as a sync error. [Sharing the question itself](../contentSharing.md) (`sharePublicly`, or via a sharing set) is unaffected — the shared-state object continues to resolve against the question's owning course.
+
 ## Using shared state in `server.py`
 
-Declared objects are available under `data["shared_state"]`, keyed by object name, in `generate`, `prepare`, `parse`, and `grade`:
+Declared objects are available under `data["shared_state"]`, keyed by object name, in `generate`, `prepare`, `parse`, and `grade`. For example, a "pick an assessment theme" question can write the student's choice when it's graded:
 
 ```python title="server.py"
-def generate(data):
-    stage = data["shared_state"]["labProgress"]["stage"]
-    data["params"]["stage_description"] = f"You are on stage {stage}."
-
 def grade(data):
-    data["shared_state"]["labProgress"]["stage"] += 1
-    data["score"] = 1
+    theme = data["submitted_answers"].get("theme")
+    if theme in ("sports", "cooking", "travel"):
+        data["shared_state"]["assessmentTheme"]["theme"] = theme
+    data["score"] = 1.0
+```
+
+and a later arithmetic question can read it in `generate()` to flavor its wording:
+
+```python title="server.py"
+THEME_PROMPTS = {
+    "sports": "A track coach organizes {a} practice sessions, each with {b} laps.",
+    "cooking": "A chef prepares {a} batches of cookies, with {b} cookies in each batch.",
+    "travel": "A tour guide leads {a} tours, each visiting {b} stops.",
+}
+
+def generate(data):
+    theme = data["shared_state"]["assessmentTheme"]["theme"]
+    a, b = 6, 4
+    data["params"]["prompt"] = THEME_PROMPTS[theme].format(a=a, b=b)
+    data["correct_answers"]["c"] = a * b
 ```
 
 Reads always see the current, live value, normalized against the object's schema (missing properties are filled with their default; a stored value of the wrong type or outside its `enum` is replaced with the default rather than raised as an error). Writes are validated strictly — an out-of-schema value (wrong type, value outside `enum`, or exceeding the size limit) becomes a fatal course issue rather than being silently accepted or truncated. Two questions writing different properties of the same object at the same time will both be applied; two questions writing the _same_ property at the same time will end up with whichever write is applied last.
@@ -63,24 +78,13 @@ Reads always see the current, live value, normalized against the object's schema
 
 ## Ordering is not guaranteed
 
-Questions in an assessment can be opened, and their variants generated, in any order — this is especially true on exams, where question order can be randomized per student. Never assume an earlier question in the zone has already been visited when a later question's `generate()` runs. Guard reads with a check for whether the value has been initialized, and pick sensible defaults for the case where it hasn't:
+Questions in an assessment can be opened, and their variants generated, in any order — this is especially true on exams, where question order can be randomized per student. Never assume an earlier question in the zone has already been visited when a later question's `generate()` runs. Instead, pick a default that works as a sensible fallback, as `"sports"` does above: an arithmetic question reads `assessmentTheme.theme` without checking whether the "pick a theme" question has run yet, because the default theme produces a perfectly good prompt either way.
 
-```python title="server.py"
-def generate(data):
-    status = data["shared_state"]["labProgress"]["status"]
-    if status == "notStarted":
-        # The student hasn't reached the setup question yet; fall back to a
-        # sensible default rather than assuming it has already run.
-        data["params"]["assumed_value"] = 10
-    else:
-        data["params"]["assumed_value"] = data["shared_state"]["labProgress"]["derived_value"]
-```
-
-If your questions must be answered in a specific order, enforce that explicitly — for example with [assessment lockpoints](../assessment/configuration.md#lockpoints), or by having `parse()` reject a submission as invalid when a prerequisite object property hasn't been set yet.
+If a property's default _can't_ double as a sensible fallback — for example, you need to tell "not yet set" apart from "explicitly set to the default value" — add an explicit flag property (e.g. `"themeChosen": { "type": "boolean", "default": false }`) and check it before trusting the rest of the object. If your questions must be answered in a specific order, enforce that explicitly — for example with [assessment lockpoints](../assessment/configuration.md#lockpoints), or by having `parse()` reject a submission as invalid when a prerequisite object property hasn't been set yet.
 
 ## Instructor preview
 
-Shared state is currently only available to questions accessed through a real assessment instance. Previewing a question directly (from the question page, or in a course with no assessment) does not read or write any stored value.
+Previewing a question directly (from the question page, or in a course with no assessment) has no assessment instance to scope shared state to, so values are instead scoped to the user doing the preview. Each object's value persists across submissions and across "New variant" clicks for that user, independently of any real assessment instance's stored value, but is shared across every question in every course that previews the same object.
 
 ## Limits
 

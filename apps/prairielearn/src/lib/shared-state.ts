@@ -26,8 +26,6 @@ export function validateSharedStateObjectProperties(
       errors.push(
         `properties.${key}: default value must be of type "${field.type}", got ${typeof field.default}`,
       );
-    } else if (field.type === 'number' && !Number.isFinite(field.default)) {
-      errors.push(`properties.${key}: default value must be a finite number`);
     }
     if (field.enum) {
       if (field.type === 'boolean') {
@@ -38,8 +36,6 @@ export function validateSharedStateObjectProperties(
             errors.push(
               `properties.${key}.enum[${i}]: enum values must be of type "${field.type}", got ${typeof val}`,
             );
-          } else if (field.type === 'number' && !Number.isFinite(val)) {
-            errors.push(`properties.${key}.enum[${i}]: enum values must be finite numbers`);
           }
         }
         if (!field.enum.includes(field.default as string | number)) {
@@ -133,12 +129,6 @@ export function normalizeSharedStateObjectValueForRead(
   return normalized;
 }
 
-/**
- * Strictly validates a value returned by question code against the current
- * schema. Unlike `normalizeSharedStateObjectValueForRead`, this never
- * silently substitutes defaults: an invalid write is an author error and
- * should become a fatal course issue.
- */
 export function validateSharedStateObjectValueForWrite(
   value: SharedStateObjectValue,
   properties: SharedStateObjectPropertiesJson,
@@ -157,9 +147,6 @@ export function validateSharedStateObjectValueForWrite(
     if (typeof val !== field.type) {
       errors.push(`property "${key}" must be of type "${field.type}", got ${typeof val}`);
       continue;
-    }
-    if (field.type === 'number' && !Number.isFinite(val)) {
-      errors.push(`property "${key}" must be a finite number`);
     }
     if (field.enum && !field.enum.includes(val as string | number)) {
       errors.push(`property "${key}" must be one of: ${field.enum.join(', ')}`);

@@ -14,8 +14,10 @@ import { selectQuestionById, selectQuestionByInstanceQuestionId } from '../model
 import {
   extractSharedStateDefaultsForObjects,
   readSharedStateValuesForAssessmentInstance,
+  readSharedStateValuesForUser,
   selectSharedStateObjectsForQuestion,
   writeSharedStateValuesForAssessmentInstance,
+  writeSharedStateValuesForUser,
 } from '../models/shared-state-value.js';
 import * as questionServers from '../question-servers/index.js';
 
@@ -329,15 +331,25 @@ async function makeAndInsertVariant({
     assessment_instance_id = instance_question?.assessment_instance_id ?? null;
   }
 
-  const sharedStateBefore: SharedStateValues =
-    Object.keys(sharedStateObjects).length === 0
-      ? {}
-      : assessment_instance_id != null
-        ? await readSharedStateValuesForAssessmentInstance({
-            assessment_instance_id,
-            objects: sharedStateObjects,
-          })
-        : extractSharedStateDefaultsForObjects(sharedStateObjects);
+  let sharedStateBefore: SharedStateValues = {};
+  if (Object.keys(sharedStateObjects).length > 0) {
+    if (assessment_instance_id != null) {
+      sharedStateBefore = await readSharedStateValuesForAssessmentInstance({
+        assessment_instance_id,
+        objects: sharedStateObjects,
+      });
+    } else if (instance_question_id == null) {
+      // A floating/preview variant has no assessment instance to scope shared
+      // state to, so it's scoped to the previewing user instead, letting
+      // writes persist across "New variant" clicks.
+      sharedStateBefore = await readSharedStateValuesForUser({
+        user_id,
+        objects: sharedStateObjects,
+      });
+    } else {
+      sharedStateBefore = extractSharedStateDefaultsForObjects(sharedStateObjects);
+    }
+  }
 
   const { courseIssues, variant: variantData } = await makeVariant({
     question,
@@ -428,6 +440,24 @@ async function makeAndInsertVariant({
 
       if (course_instance != null && !idsEqual(course_instance.course_id, variant_course.id)) {
         throw new error.HttpStatusError(403, 'Course instance not found in course');
+      }
+
+      // Persist this floating/preview variant's shared-state patch, scoped to
+      // the previewing user since there's no assessment instance to scope it
+      // to instead.
+      if (Object.keys(sharedStateObjects).length > 0) {
+        const { issues } = await writeSharedStateValuesForUser({
+          user_id,
+          objects: sharedStateObjects,
+          before: sharedStateBefore,
+          after: variantData.shared_state,
+        });
+        if (issues.length > 0) {
+          variantData.broken = true;
+          courseIssues.push(
+            ...issues.map((issue) => Object.assign(new Error(issue), { fatal: true })),
+          );
+        }
       }
     }
 

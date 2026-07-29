@@ -11,7 +11,9 @@ import { selectSharedStateObjectWithRevisionByName } from './shared-state-object
 import {
   type ResolvedSharedStateObject,
   readSharedStateValuesForAssessmentInstance,
+  readSharedStateValuesForUser,
   writeSharedStateValuesForAssessmentInstance,
+  writeSharedStateValuesForUser,
 } from './shared-state-value.js';
 import { selectOrInsertUserByUid } from './user.js';
 
@@ -87,6 +89,49 @@ async function setUpObjectAndTwoAssessmentInstances(): Promise<{
   };
 
   return { object, assessmentInstanceIdA, assessmentInstanceIdB };
+}
+
+async function setUpObjectAndTwoUsers(): Promise<{
+  object: ResolvedSharedStateObject;
+  userIdA: string;
+  userIdB: string;
+}> {
+  const courseData: util.CourseData = util.getCourseData();
+  courseData.course.sharedState = {
+    [OBJECT_NAME]: {
+      scope: 'assessmentInstance',
+      dataVersion: 1,
+      properties: {
+        count: { type: 'number', default: 0 },
+        theme: { type: 'string', default: 'sports', enum: ['sports', 'cooking'] },
+      },
+    },
+  };
+  const courseDir = await util.writeCourseToTempDirectory(courseData);
+  const syncResults = await util.syncCourseData(courseDir);
+  if (syncResults.status !== 'complete') {
+    throw new Error(`Unexpected sync status: ${syncResults.status}`);
+  }
+  const courseId = syncResults.courseId;
+
+  const userA = await selectOrInsertUserByUid('shared-state-preview-test-user-a@example.com');
+  const userB = await selectOrInsertUserByUid('shared-state-preview-test-user-b@example.com');
+
+  const objectWithRevision = await selectSharedStateObjectWithRevisionByName({
+    course_id: courseId,
+    name: OBJECT_NAME,
+  });
+  if (objectWithRevision?.revision == null) {
+    throw new Error('Expected shared-state object to have a current revision after sync');
+  }
+
+  const object: ResolvedSharedStateObject = {
+    id: objectWithRevision.id,
+    revisionId: objectWithRevision.revision.id,
+    properties: objectWithRevision.revision.properties,
+  };
+
+  return { object, userIdA: userA.id, userIdB: userB.id };
 }
 
 describe('Shared-state value read/write', () => {
@@ -219,6 +264,117 @@ describe('Shared-state value read/write', () => {
       assessment_instance_id: assessmentInstanceIdA,
       objects,
     });
+    assert.deepEqual(values[OBJECT_NAME], baseline);
+  });
+});
+
+describe('Shared-state value read/write, scoped to a user (preview mode)', () => {
+  beforeAll(helperDb.before);
+  afterAll(helperDb.after);
+  beforeEach(helperDb.resetDatabase);
+
+  it('reads schema defaults when nothing has been written', async () => {
+    const { object, userIdA } = await setUpObjectAndTwoUsers();
+
+    const values = await readSharedStateValuesForUser({
+      user_id: userIdA,
+      objects: { [OBJECT_NAME]: object },
+    });
+
+    assert.deepEqual(values[OBJECT_NAME], { count: 0, theme: 'sports' });
+  });
+
+  it('persists a write and reflects it on the next read', async () => {
+    const { object, userIdA } = await setUpObjectAndTwoUsers();
+    const objects = { [OBJECT_NAME]: object };
+
+    const { issues } = await writeSharedStateValuesForUser({
+      user_id: userIdA,
+      objects,
+      before: { [OBJECT_NAME]: { count: 0, theme: 'sports' } },
+      after: { [OBJECT_NAME]: { count: 3, theme: 'sports' } },
+    });
+    assert.isEmpty(issues);
+
+    const values = await readSharedStateValuesForUser({ user_id: userIdA, objects });
+    assert.deepEqual(values[OBJECT_NAME], { count: 3, theme: 'sports' });
+  });
+
+  it('keeps different users isolated from each other', async () => {
+    const { object, userIdA, userIdB } = await setUpObjectAndTwoUsers();
+    const objects = { [OBJECT_NAME]: object };
+
+    await writeSharedStateValuesForUser({
+      user_id: userIdA,
+      objects,
+      before: { [OBJECT_NAME]: { count: 0, theme: 'sports' } },
+      after: { [OBJECT_NAME]: { count: 5, theme: 'sports' } },
+    });
+
+    const valuesA = await readSharedStateValuesForUser({ user_id: userIdA, objects });
+    const valuesB = await readSharedStateValuesForUser({ user_id: userIdB, objects });
+
+    assert.equal(valuesA[OBJECT_NAME].count, 5);
+    assert.equal(valuesB[OBJECT_NAME].count, 0);
+  });
+
+  it('merges concurrent disjoint-field writes for the same user', async () => {
+    const { object, userIdA } = await setUpObjectAndTwoUsers();
+    const objects = { [OBJECT_NAME]: object };
+    const baseline = { [OBJECT_NAME]: { count: 0, theme: 'sports' } };
+
+    const [resultA, resultB] = await Promise.all([
+      writeSharedStateValuesForUser({
+        user_id: userIdA,
+        objects,
+        before: baseline,
+        after: { [OBJECT_NAME]: { count: 7, theme: 'sports' } },
+      }),
+      writeSharedStateValuesForUser({
+        user_id: userIdA,
+        objects,
+        before: baseline,
+        after: { [OBJECT_NAME]: { count: 0, theme: 'cooking' } },
+      }),
+    ]);
+    assert.isEmpty(resultA.issues);
+    assert.isEmpty(resultB.issues);
+
+    const values = await readSharedStateValuesForUser({ user_id: userIdA, objects });
+    assert.deepEqual(values[OBJECT_NAME], { count: 7, theme: 'cooking' });
+  });
+
+  it('rejects a patch with an invalid value and leaves the stored value unchanged', async () => {
+    const { object, userIdA } = await setUpObjectAndTwoUsers();
+    const objects = { [OBJECT_NAME]: object };
+
+    const { issues } = await writeSharedStateValuesForUser({
+      user_id: userIdA,
+      objects,
+      before: { [OBJECT_NAME]: { count: 0, theme: 'sports' } },
+      after: { [OBJECT_NAME]: { count: 0, theme: 'travel' } },
+    });
+    assert.lengthOf(issues, 1);
+    assert.match(issues[0], /must be one of: sports, cooking/);
+
+    const values = await readSharedStateValuesForUser({ user_id: userIdA, objects });
+    assert.deepEqual(values[OBJECT_NAME], { count: 0, theme: 'sports' });
+  });
+
+  it('treats a no-op patch as nothing to write', async () => {
+    const { object, userIdA } = await setUpObjectAndTwoUsers();
+    const objects = { [OBJECT_NAME]: object };
+    const baseline = { count: 0, theme: 'sports' };
+
+    const { issues } = await writeSharedStateValuesForUser({
+      user_id: userIdA,
+      objects,
+      before: { [OBJECT_NAME]: baseline },
+      after: { [OBJECT_NAME]: baseline },
+    });
+    assert.isEmpty(issues);
+
+    const values = await readSharedStateValuesForUser({ user_id: userIdA, objects });
     assert.deepEqual(values[OBJECT_NAME], baseline);
   });
 });

@@ -546,6 +546,17 @@ export type AssessmentInstanceSharedStateValue = z.infer<
   typeof AssessmentInstanceSharedStateValueSchema
 >;
 
+export const UserSharedStateValueSchema = z.object({
+  data: SharedStateObjectValueSchema,
+  id: IdSchema,
+  revision_id: IdSchema,
+  shared_state_object_id: IdSchema,
+  updated_at: DateFromISOString,
+  user_id: IdSchema,
+  write_seq: z.number(),
+});
+export type UserSharedStateValue = z.infer<typeof UserSharedStateValueSchema>;
+
 export const AssessmentModuleSchema = z.object({
   course_id: IdSchema,
   heading: z.string(),
@@ -1924,6 +1935,7 @@ export const TableNames = [
   'time_series',
   'topics',
   'user_sessions',
+  'user_shared_state_values',
   'users',
   'variants',
   'workspace_host_logs',
