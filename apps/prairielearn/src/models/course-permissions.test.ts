@@ -14,6 +14,7 @@ import {
   insertCoursePermissionsByUserUid,
   selectCoursePermissionForUser,
 } from './course-permissions.js';
+import { runWithExclusiveEnrollmentBarrier } from './enrollment-barrier.js';
 import { ensureUncheckedEnrollment, selectOptionalEnrollmentByUserId } from './enrollment.js';
 
 const sql = loadSqlEquiv(import.meta.url);
@@ -47,10 +48,7 @@ describe('deleteCoursePermissions', () => {
 
     const barrierHeld = withResolvers<undefined>();
     const releaseBarrier = withResolvers<undefined>();
-    const barrierHolder = runInTransactionAsync(async () => {
-      await execute(sql.acquire_exclusive_course_instance_enrollment_barrier, {
-        course_instance_id: courseInstance.id,
-      });
+    const barrierHolder = runWithExclusiveEnrollmentBarrier(courseInstance.id, async () => {
       barrierHeld.resolve(undefined);
       await releaseBarrier.promise;
     });
