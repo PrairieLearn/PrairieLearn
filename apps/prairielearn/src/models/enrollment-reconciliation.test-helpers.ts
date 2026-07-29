@@ -9,8 +9,8 @@ import {
   type EnumEnrollmentStatus,
   Lti13CourseInstanceSchema,
   type User,
+  UserSchema,
 } from '../lib/db-types.js';
-import { getOrCreateUser } from '../tests/utils/auth.js';
 
 import { selectAuditEventsByEnrollmentId } from './audit-event.js';
 
@@ -42,13 +42,17 @@ export async function createUser({
   const uid = `${nextFixtureName(prefix)}@${
     institutionId === OTHER_INSTITUTION_ID ? 'other.example' : 'example.com'
   }`;
-  return await getOrCreateUser({
-    uid,
-    name: prefix,
-    uin,
-    email: uid,
-    institutionId,
-  });
+  return await queryRow(
+    sql.insert_user,
+    {
+      email: uid,
+      institution_id: institutionId,
+      name: prefix,
+      uid,
+      uin,
+    },
+    UserSchema,
+  );
 }
 
 export async function createEnrollment({
