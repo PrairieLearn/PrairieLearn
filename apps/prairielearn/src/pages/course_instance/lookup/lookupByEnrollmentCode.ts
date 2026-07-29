@@ -7,8 +7,8 @@ import { parseRequestQuery } from '@prairielearn/zod';
 
 import { hasRole } from '../../../lib/authz-data-lib.js';
 import { constructCourseOrInstanceContext } from '../../../lib/authz-data.js';
-import { getEligibilityErrorMessage } from '../../../lib/enrollment-eligibility.js';
-import { selectOrdinaryCourseInstanceAdmissionDecision } from '../../../models/course-instance-admission.js';
+import { selectOrdinaryCourseInstanceAdmissionDecision } from '../../../lib/enrollment/admission.js';
+import { getEligibilityErrorMessage } from '../../../lib/enrollment/eligibility.js';
 import { selectOptionalCourseInstanceIdByEnrollmentCode } from '../../../models/course-instances.js';
 
 const router = Router();
