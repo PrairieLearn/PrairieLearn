@@ -1,3 +1,5 @@
+import assert from 'node:assert';
+
 import { execute, loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 
 import { insertAuditEvent } from '../../models/audit-event.js';
@@ -12,7 +14,6 @@ import {
   type EnrollmentIdentityContext,
   getEnrollmentAdmissionDecision,
   selectEnrollmentIdentityClassification,
-  selectEnrollmentIdentityClassificationForRevalidation,
 } from './identity.js';
 import { lockEnrollments, normalizeEnrollmentIds } from './lock.js';
 
@@ -51,6 +52,8 @@ function selectSurvivor(
 function selectEarliestFirstJoinedAt(
   candidates: readonly EnrollmentIdentityCandidate[],
 ): Date | null {
+  // Re-inviting an existing enrollment retains its join history, so multiple
+  // pending and bound candidates may legitimately have first_joined_at values.
   const joinedAt = candidates.flatMap((candidate) =>
     candidate.enrollment.first_joined_at === null ? [] : [candidate.enrollment.first_joined_at],
   );
@@ -137,15 +140,6 @@ async function auditAdmission({
   }
 }
 
-function lti13IdentityForSource(source: EnrollmentAdmissionSource) {
-  return source.type === 'lti13'
-    ? {
-        lti13CourseInstanceId: source.lti13CourseInstanceId,
-        sub: source.sub,
-      }
-    : undefined;
-}
-
 /**
  * Performs checked admission and identity reconciliation in one transaction.
  *
@@ -165,15 +159,15 @@ function lti13IdentityForSource(source: EnrollmentAdmissionSource) {
  * race atomically; this function does not retry inside the caller's transaction.
  */
 export async function admitUserToCourseInstance({
+  actor,
   userId,
   courseInstanceId,
   expectedInvitationEnrollmentId,
   selectSource,
   source,
   validateAdmission,
-  agentUserId,
-  agentAuthnUserId,
-}: EnrollmentAuditActor & {
+}: {
+  actor: EnrollmentAuditActor;
   courseInstanceId: string;
   expectedInvitationEnrollmentId?: string;
   selectSource?: (
@@ -186,9 +180,14 @@ export async function admitUserToCourseInstance({
   const context: EnrollmentIdentityContext = {
     userId,
     courseInstanceId,
-    lti13Identity: lti13IdentityForSource(source),
+    lti13Identity:
+      source.type === 'lti13'
+        ? {
+            lti13CourseInstanceId: source.lti13CourseInstanceId,
+            sub: source.sub,
+          }
+        : undefined,
   };
-  const actor = { agentUserId, agentAuthnUserId };
 
   return await runWithSharedEnrollmentBarrier(courseInstanceId, async () => {
     // Candidate IDs must be known before they can be locked. The second,
@@ -199,10 +198,7 @@ export async function admitUserToCourseInstance({
       (candidate) => candidate.enrollment.id,
     );
     await lockEnrollments(enrollmentIds);
-    const classification = await selectEnrollmentIdentityClassificationForRevalidation(
-      context,
-      enrollmentIds,
-    );
+    const classification = await selectEnrollmentIdentityClassification(context, enrollmentIds);
     const selectedSource = selectSource?.(classification) ?? source;
     const decision = getEnrollmentAdmissionDecision(classification, selectedSource);
 
@@ -250,8 +246,8 @@ export async function admitUserToCourseInstance({
           admission_source: selectedSource.type,
         },
         subjectUserId: enrollment.user_id,
-        agentUserId,
-        agentAuthnUserId,
+        agentUserId: actor.agentUserId,
+        agentAuthnUserId: actor.agentAuthnUserId,
       });
       return enrollment;
     }
@@ -259,9 +255,18 @@ export async function admitUserToCourseInstance({
     const candidateEnrollmentIds = classification.candidates.map(
       (candidate) => candidate.enrollment.id,
     );
-    const loserEnrollmentIds = candidateEnrollmentIds.filter(
-      (enrollmentId) => enrollmentId !== survivorCandidate.enrollment.id,
+    const loserCandidates = classification.candidates.filter(
+      (candidate) => candidate.enrollment.id !== survivorCandidate.enrollment.id,
     );
+    // Resolved enrollments cannot carry pending identity keys, the database
+    // permits at most one enrollment bound to this user, and selectSurvivor
+    // always chooses it. Fail closed before moving dependents if those
+    // assumptions ever change: reconciliation must never delete a bound row.
+    assert(
+      loserCandidates.every((candidate) => candidate.enrollment.user_id === null),
+      'Enrollment reconciliation cannot delete a bound enrollment',
+    );
+    const loserEnrollmentIds = loserCandidates.map((candidate) => candidate.enrollment.id);
     if (loserEnrollmentIds.length > 0) {
       await moveEnrollmentDependents(candidateEnrollmentIds, survivorCandidate.enrollment.id);
     }

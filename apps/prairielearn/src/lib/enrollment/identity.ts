@@ -72,51 +72,6 @@ export type EnrollmentAdmissionDecision =
       readonly source: EnrollmentAdmissionSource;
     };
 
-function identityQueryParams(
-  { courseInstanceId, userId, lti13Identity }: EnrollmentIdentityContext,
-  enrollmentIds: string[] | null,
-) {
-  return {
-    course_instance_id: courseInstanceId,
-    enrollment_ids: enrollmentIds,
-    lti13_course_instance_id: lti13Identity?.lti13CourseInstanceId ?? null,
-    lti13_sub: lti13Identity?.sub ?? null,
-    user_id: userId,
-  };
-}
-
-function mapCandidateRows(
-  rows: z.infer<typeof EnrollmentIdentityCandidateRowSchema>[],
-): EnrollmentIdentityCandidate[] {
-  return rows.map((row) => ({
-    enrollment: row.enrollment,
-    matches: {
-      boundUser: row.matches_bound_user,
-      institutionUin: row.matches_institution_uin,
-      lti13: row.matches_lti13,
-      pendingUid: row.matches_pending_uid,
-    },
-  }));
-}
-
-async function selectEnrollmentIdentityCandidates(
-  context: EnrollmentIdentityContext,
-  enrollmentIds: string[] | null,
-): Promise<EnrollmentIdentityCandidate[]> {
-  if (enrollmentIds?.length === 0) return [];
-
-  // The SQL performs one indexed lookup per identity key and unions the IDs
-  // before fetching complete enrollment rows. This avoids scanning every
-  // enrollment in a large course instance and deduplicates multi-key matches.
-  return mapCandidateRows(
-    await queryRows(
-      sql.select_enrollment_identity_candidates,
-      identityQueryParams(context, enrollmentIds),
-      EnrollmentIdentityCandidateRowSchema,
-    ),
-  );
-}
-
 function isPendingInvitation(candidate: EnrollmentIdentityCandidate): boolean {
   return candidate.enrollment.user_id === null && candidate.enrollment.status === 'invited';
 }
@@ -236,33 +191,47 @@ export function getEnrollmentAdmissionDecision(
   return { allowed: false, reason: 'no_matching_invitation', source };
 }
 
-export async function selectEnrollmentIdentityClassification(
-  context: EnrollmentIdentityContext,
-): Promise<EnrollmentIdentityClassification> {
-  return classifyEnrollmentIdentityCandidates(
-    await selectEnrollmentIdentityCandidates(context, null),
-  );
-}
-
 /**
- * Reconciliation first discovers candidate enrollment IDs, locks those parents
- * in numeric order, and then calls this restricted selector. Restricting the
- * second read prevents a newly matching enrollment from expanding the lock set
- * out of order after locks have already been acquired.
+ * Omitting `enrollmentIds` selects every identity candidate. Reconciliation
+ * first discovers those IDs, locks the enrollment parents in numeric order, and
+ * then restricts its second selection to the locked IDs. This prevents a newly
+ * matching enrollment from expanding the lock set out of order.
  *
  * User and external-identity rows are deliberately not locked. If identity
  * data changes during the narrow selection-to-lock window, this attempt uses
  * only the locked candidates; a conflicting bind fails atomically on the
  * enrollment uniqueness constraints and a later request can retry.
- *
- * @internal
  */
-export async function selectEnrollmentIdentityClassificationForRevalidation(
+export async function selectEnrollmentIdentityClassification(
   context: EnrollmentIdentityContext,
-  enrollmentIds: string[],
+  enrollmentIds?: string[],
 ): Promise<EnrollmentIdentityClassification> {
+  if (enrollmentIds?.length === 0) return classifyEnrollmentIdentityCandidates([]);
+
+  // The SQL performs one indexed lookup per identity key and unions the IDs
+  // before fetching complete enrollment rows. This avoids scanning every
+  // enrollment in a large course instance and deduplicates multi-key matches.
+  const rows = await queryRows(
+    sql.select_enrollment_identity_candidates,
+    {
+      course_instance_id: context.courseInstanceId,
+      enrollment_ids: enrollmentIds ?? null,
+      lti13_course_instance_id: context.lti13Identity?.lti13CourseInstanceId ?? null,
+      lti13_sub: context.lti13Identity?.sub ?? null,
+      user_id: context.userId,
+    },
+    EnrollmentIdentityCandidateRowSchema,
+  );
   return classifyEnrollmentIdentityCandidates(
-    await selectEnrollmentIdentityCandidates(context, enrollmentIds),
+    rows.map((row) => ({
+      enrollment: row.enrollment,
+      matches: {
+        boundUser: row.matches_bound_user,
+        institutionUin: row.matches_institution_uin,
+        lti13: row.matches_lti13,
+        pendingUid: row.matches_pending_uid,
+      },
+    })),
   );
 }
 
