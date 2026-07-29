@@ -517,6 +517,7 @@ export async function initExpress(): Promise<Express> {
     app.use('/pl/prairietest/auth', (await import('./ee/auth/prairietest.js')).default);
   }
 
+  // Must come before CSRF middleware; Stripe webhooks use their own signature verification.
   app.use(
     '/pl/webhooks/stripe',
     await enterpriseOnly(async () => (await import('./ee/webhooks/stripe/index.js')).default),
