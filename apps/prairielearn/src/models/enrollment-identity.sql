@@ -5,7 +5,7 @@
 -- enrollment parents already locked by the caller.
 -- BLOCK select_enrollment_identity_candidates
 WITH
-  identity AS (
+  user_identity AS (
     SELECT
       u.id AS user_id,
       u.uid,
@@ -30,25 +30,25 @@ WITH
   candidate_matches AS (
     SELECT
       to_jsonb(e.*) AS enrollment,
-      coalesce(e.user_id = identity.user_id, FALSE) AS matches_bound_user,
-      coalesce(e.pending_uid = identity.uid, FALSE) AS matches_pending_uid,
+      coalesce(e.user_id = user_identity.user_id, FALSE) AS matches_bound_user,
+      coalesce(e.pending_uid = user_identity.uid, FALSE) AS matches_pending_uid,
       coalesce(
-        identity.institution_matches
-        AND identity.uin IS NOT NULL
-        AND e.pending_uin = identity.uin,
+        user_identity.institution_matches
+        AND user_identity.uin IS NOT NULL
+        AND e.pending_uin = user_identity.uin,
         FALSE
       ) AS matches_institution_uin,
       coalesce(
         $lti13_course_instance_id::bigint IS NOT NULL
         AND $lti13_sub::text IS NOT NULL
-        AND identity.lti13_course_instance_matches
+        AND user_identity.lti13_course_instance_matches
         AND e.pending_lti13_course_instance_id = $lti13_course_instance_id
         AND e.pending_lti13_sub = $lti13_sub,
         FALSE
       ) AS matches_lti13
     FROM
       enrollments AS e
-      CROSS JOIN identity
+      CROSS JOIN user_identity
     WHERE
       e.course_instance_id = $course_instance_id
       AND (
