@@ -352,10 +352,7 @@ export async function rejectConventionalEnrollmentInvitation({
       (candidate) => candidate.enrollment.id,
     );
     await lockEnrollments(enrollmentIds);
-    const classification = await selectEnrollmentIdentityClassificationForRevalidation(
-      context,
-      enrollmentIds,
-    );
+    const classification = await selectEnrollmentIdentityClassification(context, enrollmentIds);
     const decision = getEnrollmentAdmissionDecision(classification, source);
 
     if (!decision.allowed || decision.invitationCandidate?.enrollment.id !== enrollmentId) {
