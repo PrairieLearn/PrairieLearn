@@ -8,7 +8,7 @@ import { withBrand } from '@prairielearn/utils';
 import { IdSchema } from '@prairielearn/zod';
 
 import { selectLatestPublishingExtensionByEnrollmentIds } from '../models/course-instance-publishing-extensions.js';
-import { selectEnrollmentIdentityClassification } from '../models/enrollment-identity.js';
+
 
 import {
   type ConstructedCourseOrInstanceContext,
@@ -27,6 +27,7 @@ import {
   InstitutionSchema,
   type User,
 } from './db-types.js';
+import { selectEnrollmentIdentityClassification } from './enrollment/identity.js';
 import { ipToMode } from './exam-mode.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
