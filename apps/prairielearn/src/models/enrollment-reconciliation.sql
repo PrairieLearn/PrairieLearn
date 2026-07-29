@@ -145,18 +145,3 @@ WHERE
   id = ANY ($loser_enrollment_ids::bigint[])
 RETURNING
   *;
-
--- A savepoint is required because runInTransactionAsync reuses an existing
--- transaction. Rolling back the failed attempt releases its row locks and
--- clears PostgreSQL's failed-transaction state before the one allowed retry.
--- noqa: disable=PRS
--- BLOCK create_enrollment_identity_reconciliation_savepoint
-SAVEPOINT enrollment_identity_reconciliation_attempt;
-
--- BLOCK rollback_enrollment_identity_reconciliation_savepoint
-ROLLBACK TO SAVEPOINT enrollment_identity_reconciliation_attempt;
-
--- BLOCK release_enrollment_identity_reconciliation_savepoint
-RELEASE SAVEPOINT enrollment_identity_reconciliation_attempt;
-
--- noqa: enable=PRS

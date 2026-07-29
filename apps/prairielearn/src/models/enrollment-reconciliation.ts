@@ -18,13 +18,6 @@ import { lockEnrollments, normalizeEnrollmentIds } from './enrollment-lock.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
-const ENROLLMENT_IDENTITY_UNIQUE_CONSTRAINTS = new Set([
-  'enrollments_course_instance_id_pending_uin_key',
-  'enrollments_pending_lti13_ciid_sub_course_instance_id_key',
-  'enrollments_pending_uid_course_instance_id_key',
-  'enrollments_user_id_course_instance_id_key',
-]);
-
 interface EnrollmentAuditActor {
   agentAuthnUserId: string | null;
   agentUserId: string | null;
@@ -134,37 +127,6 @@ async function auditAdmission({
   }
 }
 
-function isEnrollmentIdentityUniquenessViolation(error: unknown): boolean {
-  if (typeof error !== 'object' || error === null) return false;
-  const { code, constraint } = error as { code?: unknown; constraint?: unknown };
-  return (
-    code === '23505' &&
-    typeof constraint === 'string' &&
-    ENROLLMENT_IDENTITY_UNIQUE_CONSTRAINTS.has(constraint)
-  );
-}
-
-async function runAdmissionWithRetry<T>(
-  courseInstanceId: string,
-  attempt: () => Promise<T>,
-): Promise<T> {
-  return await runWithSharedEnrollmentBarrier(courseInstanceId, async () => {
-    for (let attemptNumber = 0; attemptNumber < 2; attemptNumber++) {
-      await execute(sql.create_enrollment_identity_reconciliation_savepoint);
-      try {
-        const result = await attempt();
-        await execute(sql.release_enrollment_identity_reconciliation_savepoint);
-        return result;
-      } catch (error) {
-        await execute(sql.rollback_enrollment_identity_reconciliation_savepoint);
-        await execute(sql.release_enrollment_identity_reconciliation_savepoint);
-        if (attemptNumber === 1 || !isEnrollmentIdentityUniquenessViolation(error)) throw error;
-      }
-    }
-    throw new Error('Unreachable enrollment admission retry state');
-  });
-}
-
 function lti13IdentityForSource(source: EnrollmentAdmissionSource) {
   return source.type === 'lti13'
     ? {
@@ -174,10 +136,6 @@ function lti13IdentityForSource(source: EnrollmentAdmissionSource) {
     : undefined;
 }
 
-/**
- * Both callbacks can run twice after a uniqueness retry. `selectSource` must be pure;
- * `validateAdmission` must keep effects within the transaction and avoid external side effects.
- */
 export async function admitUserToCourseInstance({
   userId,
   courseInstanceId,
@@ -204,7 +162,7 @@ export async function admitUserToCourseInstance({
   };
   const actor = { agentUserId, agentAuthnUserId };
 
-  return await runAdmissionWithRetry(courseInstanceId, async () => {
+  return await runWithSharedEnrollmentBarrier(courseInstanceId, async () => {
     const initialClassification = await selectEnrollmentIdentityClassification(context);
     const enrollmentIds = initialClassification.candidates.map(
       (candidate) => candidate.enrollment.id,
@@ -240,6 +198,8 @@ export async function admitUserToCourseInstance({
       classification.candidates,
       classification.boundCandidate,
     );
+    // A concurrent writer can bind this user after candidate selection. Let the
+    // unique constraint abort atomically; a later request will select the winner.
     if (survivorCandidate === null) {
       const enrollment = await queryRow(
         sql.insert_joined_enrollment,
@@ -274,7 +234,7 @@ export async function admitUserToCourseInstance({
     }
 
     // A loser may own a pending unique key. Delete it before binding the survivor;
-    // the attempt savepoint restores every mutation if the update loses a race.
+    // the transaction restores every mutation if the update loses a race.
     const deletedEnrollments =
       loserEnrollmentIds.length === 0
         ? []
