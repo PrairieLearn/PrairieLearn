@@ -15,16 +15,16 @@ import {
   UserSchema,
 } from '../../../lib/db-types.js';
 import {
+  type OrdinaryCourseInstanceAdmissionDecision,
+  selectOrdinaryCourseInstanceAdmissionDecision,
+} from '../../../lib/enrollment/admission.js';
+import {
   type EnrollmentIneligibilityReason,
   getEligibilityErrorMessage,
-} from '../../../lib/enrollment-eligibility.js';
+} from '../../../lib/enrollment/eligibility.js';
 import { idsEqual } from '../../../lib/id.js';
 import { type ResLocalsForPage, typedAsyncHandler } from '../../../lib/res-locals.js';
 import { getCanonicalHost } from '../../../lib/url.js';
-import {
-  type OrdinaryCourseInstanceAdmissionDecision,
-  selectOrdinaryCourseInstanceAdmissionDecision,
-} from '../../../models/course-instance-admission.js';
 import { checkPlanGrantsForLocals } from '../../lib/billing/plan-grants.js';
 import {
   getMissingPlanGrants,
