@@ -18,8 +18,8 @@ import {
 import { config } from '../../../lib/config.js';
 import { type Lti13Instance, Lti13InstanceSchema } from '../../../lib/db-types.js';
 import {
-  assertLti13RosterSyncCanBePermitted,
-  getLti13RosterSyncPermissionIssues,
+  assertLti13RosterSyncCanBeAllowed,
+  getLti13RosterSyncPrerequisiteIssues,
   lockInstitutionForIdentityConfiguration,
   normalizeUinAttribute,
   selectInstitutionIdentityConfigurationStatus,
@@ -106,8 +106,8 @@ router.get(
       }
     }
 
-    const rosterSyncPermissionIssues = paramInstance
-      ? getLti13RosterSyncPermissionIssues(
+    const rosterSyncPrerequisiteIssues = paramInstance
+      ? getLti13RosterSyncPrerequisiteIssues(
           await selectInstitutionIdentityConfigurationStatus(req.params.institution_id),
           paramInstance.uin_attribute,
         )
@@ -130,7 +130,7 @@ router.get(
         resLocals: res.locals,
         platform_defaults,
         canonicalHost: getCanonicalHost(req),
-        rosterSyncPermissionIssues,
+        rosterSyncPrerequisiteIssues,
       }),
     );
   }),
@@ -203,32 +203,32 @@ router.post(
         throw new HttpStatusError(500, 'error removing key');
       }
     } else if (
-      req.body.__action === 'permit_roster_sync' ||
-      req.body.__action === 'revoke_roster_sync_permission'
+      req.body.__action === 'allow_roster_sync' ||
+      req.body.__action === 'disallow_roster_sync'
     ) {
-      const rosterSyncPermitted = req.body.__action === 'permit_roster_sync';
+      const rosterSyncAllowed = req.body.__action === 'allow_roster_sync';
       await runInTransactionAsync(async () => {
         await lockInstitutionForIdentityConfiguration(req.params.institution_id);
         const instance = await selectLti13InstanceForUpdate(
           req.params.institution_id,
           req.params.unsafe_lti13_instance_id,
         );
-        if (rosterSyncPermitted) {
-          await assertLti13RosterSyncCanBePermitted(
+        if (rosterSyncAllowed) {
+          await assertLti13RosterSyncCanBeAllowed(
             req.params.institution_id,
             instance.uin_attribute,
             req.body,
           );
         }
-        await execute(sql.update_roster_sync_permission, {
+        await execute(sql.update_roster_sync_allowed, {
           institution_id: req.params.institution_id,
           unsafe_lti13_instance_id: req.params.unsafe_lti13_instance_id,
-          roster_sync_permitted: rosterSyncPermitted,
+          roster_sync_allowed: rosterSyncAllowed,
         });
       });
       flash(
         'success',
-        rosterSyncPermitted ? 'Roster syncing permitted.' : 'Roster syncing permission disabled.',
+        rosterSyncAllowed ? 'Roster syncing allowed.' : 'Roster syncing disallowed.',
       );
       return res.redirect(req.originalUrl);
     } else if (req.body.__action === 'update_platform') {
@@ -254,10 +254,10 @@ router.post(
           req.params.unsafe_lti13_instance_id,
         );
 
-        if (instance.roster_sync_permitted) {
+        if (instance.roster_sync_allowed) {
           throw new HttpStatusError(
             400,
-            'Disable roster syncing permission before changing the LTI platform configuration',
+            'Disallow roster syncing before changing the LTI platform configuration',
           );
         }
 
@@ -307,12 +307,12 @@ router.post(
         );
 
         if (
-          instance.roster_sync_permitted &&
+          instance.roster_sync_allowed &&
           uinAttribute !== normalizeUinAttribute(instance.uin_attribute)
         ) {
           throw new HttpStatusError(
             400,
-            'Disable roster syncing permission before changing the LTI UIN attribute',
+            'Disallow roster syncing before changing the LTI UIN attribute',
           );
         }
 

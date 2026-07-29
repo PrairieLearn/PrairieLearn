@@ -37,7 +37,7 @@ export function AdministratorInstitutionLti13({
   resLocals,
   platform_defaults,
   canonicalHost,
-  rosterSyncPermissionIssues,
+  rosterSyncPrerequisiteIssues,
 }: {
   institution: Institution;
   lti13Instances: Lti13Instance[];
@@ -46,7 +46,7 @@ export function AdministratorInstitutionLti13({
   resLocals: ResLocalsForPage<'plain'>;
   platform_defaults: LTI13InstancePlatforms;
   canonicalHost: string;
-  rosterSyncPermissionIssues: string[];
+  rosterSyncPrerequisiteIssues: string[];
 }): string {
   return PageLayout({
     resLocals: {
@@ -99,7 +99,7 @@ export function AdministratorInstitutionLti13({
             resLocals,
             platform_defaults,
             canonicalHost,
-            rosterSyncPermissionIssues,
+            rosterSyncPrerequisiteIssues,
           })}
         </div>
       </div>
@@ -113,17 +113,17 @@ function LTI13Instance({
   resLocals,
   platform_defaults,
   canonicalHost,
-  rosterSyncPermissionIssues,
+  rosterSyncPrerequisiteIssues,
 }: {
   instance: Lti13Instance | null;
   linkedCourseInstances: LinkedCourseInstance[];
   resLocals: ResLocalsForPage<'plain'>;
   platform_defaults: LTI13InstancePlatforms;
   canonicalHost: string;
-  rosterSyncPermissionIssues: string[];
+  rosterSyncPrerequisiteIssues: string[];
 }) {
   if (instance) {
-    const platformConfigurationLocked = instance.roster_sync_permitted;
+    const platformConfigurationLocked = instance.roster_sync_allowed;
 
     return html`
       <h3>${instance.name} (ID #${instance.id})</h3>
@@ -209,9 +209,9 @@ function LTI13Instance({
         ${platformConfigurationLocked
           ? html`
               <div class="alert alert-info">
-                Platform configuration is locked while roster syncing is permitted.
-                <a href="#roster-sync-permission">Disable roster syncing permission below</a> before
-                changing these options.
+                Platform configuration is locked while roster syncing is allowed.
+                <a href="#roster-sync-controls">Disallow roster syncing below</a> before changing
+                these options.
               </div>
             `
           : ''}
@@ -410,10 +410,10 @@ ${JSON.stringify(instance.custom_fields, null, 3)}</textarea
             name="uin_attribute"
             id="uin_attribute"
             value="${instance.uin_attribute ?? ''}"
-            aria-describedby="uinAttributeHelp${instance.roster_sync_permitted
+            aria-describedby="uinAttributeHelp${instance.roster_sync_allowed
               ? ' uinAttributeLockedHelp'
               : ''}"
-            ${instance.roster_sync_permitted ? 'disabled' : ''}
+            ${instance.roster_sync_allowed ? 'disabled' : ''}
           />
           <small id="uinAttributeHelp" class="form-text text-muted">
             The UIN is used as an internal, immutable identifier for the user. It
@@ -422,11 +422,11 @@ ${JSON.stringify(instance.custom_fields, null, 3)}</textarea
             <code>["https://purl.imsglobal.org/spec/lti/claim/lis"]["person_sourcedid"]</code> or
             <code>["https://purl.imsglobal.org/spec/lti/claim/custom"]["uin"]</code>
           </small>
-          ${instance.roster_sync_permitted
+          ${instance.roster_sync_allowed
             ? html`
                 <small id="uinAttributeLockedHelp" class="form-text text-muted d-block">
-                  This attribute is locked while roster syncing is permitted.
-                  <a href="#roster-sync-permission">Disable roster syncing permission below</a>
+                  This attribute is locked while roster syncing is allowed.
+                  <a href="#roster-sync-controls">Disallow roster syncing below</a>
                   before changing it.
                 </small>
               `
@@ -474,9 +474,9 @@ ${JSON.stringify(instance.custom_fields, null, 3)}</textarea
       </form>
 
       <hr />
-      ${RosterSyncPermission({
+      ${RosterSyncControls({
         instance,
-        rosterSyncPermissionIssues,
+        rosterSyncPrerequisiteIssues,
         resLocals,
       })}
 
@@ -508,41 +508,41 @@ ${JSON.stringify(instance.custom_fields, null, 3)}</textarea
   }
 }
 
-function RosterSyncPermission({
+function RosterSyncControls({
   instance,
-  rosterSyncPermissionIssues,
+  rosterSyncPrerequisiteIssues,
   resLocals,
 }: {
   instance: Lti13Instance;
-  rosterSyncPermissionIssues: string[];
+  rosterSyncPrerequisiteIssues: string[];
   resLocals: ResLocalsForPage<'plain'>;
 }) {
   return html`
-    <h5 id="roster-sync-permission">Roster syncing</h5>
-    ${instance.roster_sync_permitted
+    <h5 id="roster-sync-controls">Roster syncing</h5>
+    ${instance.roster_sync_allowed
       ? html`
           <div class="alert alert-success">
-            Roster syncing is permitted for this LTI 1.3 instance. Its platform and UIN settings,
-            and the institution's SAML identity settings, are locked to protect user matching.
+            Roster syncing is allowed for this LTI 1.3 instance. Its platform and UIN settings, and
+            the institution's SAML identity settings, are locked to protect user matching.
           </div>
           <form method="POST">
             <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
-            <input type="hidden" name="__action" value="revoke_roster_sync_permission" />
+            <input type="hidden" name="__action" value="disallow_roster_sync" />
             <button
               type="submit"
               class="btn btn-outline-danger"
-              onclick="return confirm('Disable roster syncing permission for this instance?')"
+              onclick="return confirm('Disallow roster syncing for this instance?')"
             >
-              Disable roster syncing permission
+              Disallow roster syncing
             </button>
           </form>
         `
-      : rosterSyncPermissionIssues.length > 0
+      : rosterSyncPrerequisiteIssues.length > 0
         ? html`
             <div class="alert alert-warning mb-0">
-              <p>Roster syncing cannot be permitted until the following prerequisites are met:</p>
+              <p>Roster syncing cannot be allowed until the following prerequisites are met:</p>
               <ul>
-                ${rosterSyncPermissionIssues.map((issue) => html`<li>${issue}</li>`)}
+                ${rosterSyncPrerequisiteIssues.map((issue) => html`<li>${issue}</li>`)}
               </ul>
               <p class="mb-0">
                 Update the UIN attribute above or the institution's
@@ -553,12 +553,12 @@ function RosterSyncPermission({
           `
         : html`
             <p>
-              Permit roster syncing only after confirming that SAML and LTI identify users with the
+              Allow roster syncing only after confirming that SAML and LTI identify users with the
               same immutable UIN.
             </p>
             <form method="POST">
               <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
-              <input type="hidden" name="__action" value="permit_roster_sync" />
+              <input type="hidden" name="__action" value="allow_roster_sync" />
               <div class="form-check mb-2">
                 <input
                   class="form-check-input"
@@ -586,7 +586,7 @@ function RosterSyncPermission({
                   this UIN.
                 </label>
               </div>
-              <button type="submit" class="btn btn-primary">Permit roster syncing</button>
+              <button type="submit" class="btn btn-primary">Allow roster syncing</button>
             </form>
           `}
   `;

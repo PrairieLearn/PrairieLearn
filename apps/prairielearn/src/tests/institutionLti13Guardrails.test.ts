@@ -86,7 +86,7 @@ describe('institution LTI 1.3 roster syncing guardrails', { concurrent: false },
     config.hasOauth = false;
   });
 
-  test('LTI configuration remains editable until roster syncing is permitted', async () => {
+  test('LTI configuration remains editable until roster syncing is allowed', async () => {
     const page = await fetchCheerio(`${siteUrl}/pl/administrator/institution/1/lti13`);
     const button = page.$('button:contains(Add a new LTI 1.3 instance)');
     const response = await fetchCheerio(page.url, {
@@ -105,7 +105,7 @@ describe('institution LTI 1.3 roster syncing guardrails', { concurrent: false },
       instance.uin_attribute,
       '["https://purl.imsglobal.org/spec/lti/claim/custom"]["uin"]',
     );
-    assert.isFalse(instance.roster_sync_permitted);
+    assert.isFalse(instance.roster_sync_allowed);
 
     const instancePage = await fetchCheerio(instanceUrl);
     const plForm = instancePage.$('button:contains(Save PrairieLearn config)').closest('form');
@@ -127,23 +127,23 @@ describe('institution LTI 1.3 roster syncing guardrails', { concurrent: false },
 
     const platformResponse = await fetchCheerio(instanceUrl, {
       method: 'POST',
-      body: getPlatformBody(plResponse, 'before-permission'),
+      body: getPlatformBody(plResponse, 'before-allowing'),
     });
     assert.equal(platformResponse.status, 200);
 
     instance = await selectLti13Instance(instanceId);
     assert.equal(instance.uin_attribute, uinAttribute);
-    assert.equal(instance.client_params.client_id, 'before-permission');
+    assert.equal(instance.client_params.client_id, 'before-allowing');
   });
 
-  test('permitting roster syncing requires prerequisites and both confirmations', async () => {
+  test('allowing roster syncing requires prerequisites and both confirmations', async () => {
     let page = await fetchCheerio(instanceUrl);
     const csrfToken = getCSRFToken(
       page.$('button:contains(Save PrairieLearn config)').closest('form'),
     );
     const confirmedBody = {
       __csrf_token: csrfToken,
-      __action: 'permit_roster_sync',
+      __action: 'allow_roster_sync',
       [LTI13_ROSTER_SYNC_CONFIRMATION_FIELDS.sameCanonicalUin]: '1',
       [LTI13_ROSTER_SYNC_CONFIRMATION_FIELDS.usersBackfilled]: '1',
     };
@@ -152,26 +152,26 @@ describe('institution LTI 1.3 roster syncing guardrails', { concurrent: false },
     await configureInstitutionSamlForLtiUin();
 
     page = await fetchCheerio(instanceUrl);
-    const permitForm = page.$('button:contains(Permit roster syncing)').closest('form');
-    assert.lengthOf(permitForm.find('input[type=checkbox][required]'), 2);
+    const allowForm = page.$('button:contains(Allow roster syncing)').closest('form');
+    assert.lengthOf(allowForm.find('input[type=checkbox][required]'), 2);
 
     await expectBadRequest(instanceUrl, {
-      __csrf_token: getCSRFToken(permitForm),
-      __action: 'permit_roster_sync',
+      __csrf_token: getCSRFToken(allowForm),
+      __action: 'allow_roster_sync',
     });
 
     const response = await fetchCheerio(instanceUrl, {
       method: 'POST',
       body: new URLSearchParams({
         ...confirmedBody,
-        __csrf_token: getCSRFToken(permitForm),
+        __csrf_token: getCSRFToken(allowForm),
       }),
     });
     assert.equal(response.status, 200);
-    assert.isTrue((await selectLti13Instance(instanceId)).roster_sync_permitted);
+    assert.isTrue((await selectLti13Instance(instanceId)).roster_sync_allowed);
   });
 
-  test('identity-critical settings are locked while roster syncing is permitted', async () => {
+  test('identity-critical settings are locked while roster syncing is allowed', async () => {
     const instancePage = await fetchCheerio(instanceUrl);
     const platformForm = instancePage
       .$('input[name=__action][value=update_platform]')
@@ -195,7 +195,7 @@ describe('institution LTI 1.3 roster syncing guardrails', { concurrent: false },
     assert.equal(safePlResponse.status, 200);
     assert.equal((await selectLti13Instance(instanceId)).uin_attribute, uinAttribute);
 
-    await expectBadRequest(instanceUrl, getPlatformBody(instancePage, 'while-permitted'));
+    await expectBadRequest(instanceUrl, getPlatformBody(instancePage, 'while-allowed'));
     await expectBadRequest(instanceUrl, {
       __csrf_token: getCSRFToken(plForm),
       __action: 'save_pl_config',
@@ -258,18 +258,18 @@ describe('institution LTI 1.3 roster syncing guardrails', { concurrent: false },
     await expectBadRequest(ssoPage.url, ssoBody);
   });
 
-  test('explicitly disabling permission unlocks configuration', async () => {
+  test('disallowing roster syncing unlocks configuration', async () => {
     const page = await fetchCheerio(instanceUrl);
-    const revokeForm = page.$('button:contains(Disable roster syncing permission)').closest('form');
+    const disallowForm = page.$('button:contains(Disallow roster syncing)').closest('form');
     const response = await fetchCheerio(instanceUrl, {
       method: 'POST',
       body: new URLSearchParams({
-        __csrf_token: getCSRFToken(revokeForm),
-        __action: 'revoke_roster_sync_permission',
+        __csrf_token: getCSRFToken(disallowForm),
+        __action: 'disallow_roster_sync',
       }),
     });
     assert.equal(response.status, 200);
-    assert.isFalse((await selectLti13Instance(instanceId)).roster_sync_permitted);
+    assert.isFalse((await selectLti13Instance(instanceId)).roster_sync_allowed);
 
     const unlockedPage = await fetchCheerio(instanceUrl);
     assert.isFalse(
@@ -290,7 +290,7 @@ describe('institution LTI 1.3 roster syncing guardrails', { concurrent: false },
       (
         await fetchCheerio(instanceUrl, {
           method: 'POST',
-          body: getPlatformBody(unlockedPage, 'after-permission'),
+          body: getPlatformBody(unlockedPage, 'after-disallowing'),
         })
       ).status,
       200,

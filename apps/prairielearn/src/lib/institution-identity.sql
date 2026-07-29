@@ -41,8 +41,8 @@ SELECT
     WHERE
       li.institution_id = i.id
       AND li.deleted_at IS NULL
-      AND li.roster_sync_permitted
-  ) AS has_roster_sync_permitted_lti13_instance
+      AND li.roster_sync_allowed
+  ) AS has_lti13_instance_with_roster_sync_allowed
 FROM
   institutions AS i
 WHERE

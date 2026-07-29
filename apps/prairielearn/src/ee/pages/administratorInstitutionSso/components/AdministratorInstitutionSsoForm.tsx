@@ -23,7 +23,7 @@ export function AdministratorInstitutionSsoForm({
   hasSamlProvider,
   supportedAuthenticationProviders,
   institutionAuthenticationProviders,
-  hasRosterSyncPermitted,
+  hasRosterSyncAllowed,
   urlPrefix,
   csrfToken,
 }: {
@@ -31,7 +31,7 @@ export function AdministratorInstitutionSsoForm({
   hasSamlProvider: boolean;
   supportedAuthenticationProviders: StaffAuthnProvider[];
   institutionAuthenticationProviders: StaffAuthnProvider[];
-  hasRosterSyncPermitted: boolean;
+  hasRosterSyncAllowed: boolean;
   urlPrefix: string;
   csrfToken: string;
 }) {
@@ -52,21 +52,20 @@ export function AdministratorInstitutionSsoForm({
     <form method="POST">
       <div className="mb-3">
         <h2 className="h4">Enabled single sign-on providers</h2>
-        {hasRosterSyncPermitted && (
+        {hasRosterSyncAllowed && (
           <div className="alert alert-info" role="alert">
-            Roster syncing is permitted for an LTI 1.3 instance. SAML must remain the only enabled
+            Roster syncing is allowed for an LTI 1.3 instance. SAML must remain the only enabled
             institutional sign-on provider. LTI and LTI 1.3 may remain enabled because those
-            sessions begin in a Learning Management System (LMS). Disable roster syncing permission
-            for all affected LTI 1.3 instances before changing these settings.
+            sessions begin in a Learning Management System (LMS). Disallow roster syncing for all
+            affected LTI 1.3 instances before changing these settings.
           </div>
         )}
         {supportedAuthenticationProviders.map((provider) => {
           const isEnabled = enabledProviderIds.has(provider.id);
           const isInstitutionalProvider = isInstitutionalAuthenticationProvider(provider.name);
-          const isLockedEnabledSaml =
-            hasRosterSyncPermitted && provider.name === 'SAML' && isEnabled;
+          const isLockedEnabledSaml = hasRosterSyncAllowed && provider.name === 'SAML' && isEnabled;
           const isLockedDisabledProvider =
-            hasRosterSyncPermitted &&
+            hasRosterSyncAllowed &&
             isInstitutionalProvider &&
             provider.name !== 'SAML' &&
             !isEnabled;

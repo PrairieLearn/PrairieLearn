@@ -23,7 +23,7 @@ import {
   getInstitutionAuthenticationProviders,
   getInstitutionSamlProvider,
 } from '../../lib/institution.js';
-import { selectLti13InstancesWithRosterSyncPermitted } from '../../models/lti13Instance.js';
+import { selectLti13InstancesWithRosterSyncAllowed } from '../../models/lti13Instance.js';
 
 import {
   AdministratorInstitutionSaml,
@@ -52,7 +52,7 @@ router.get(
     const institutionAuthenticationProviders = await getInstitutionAuthenticationProviders(
       req.params.institution_id,
     );
-    const lti13InstancesWithRosterSyncPermitted = await selectLti13InstancesWithRosterSyncPermitted(
+    const lti13InstancesWithRosterSyncAllowed = await selectLti13InstancesWithRosterSyncAllowed(
       req.params.institution_id,
     );
 
@@ -61,7 +61,7 @@ router.get(
         institution,
         samlProvider,
         institutionAuthenticationProviders,
-        lti13InstancesWithRosterSyncPermitted,
+        lti13InstancesWithRosterSyncAllowed,
         host: z.string().parse(req.headers.host),
         resLocals: res.locals,
       }),
@@ -90,13 +90,13 @@ router.post(
         );
 
         if (
-          identityConfigurationStatus.has_roster_sync_permitted_lti13_instance &&
+          identityConfigurationStatus.has_lti13_instance_with_roster_sync_allowed &&
           (uinAttribute !== normalizeUinAttribute(samlProvider?.uin_attribute) ||
             issuer !== samlProvider?.issuer)
         ) {
           throw new HttpStatusError(
             400,
-            'Disable roster syncing permission for all affected LTI 1.3 instances before changing the SAML issuer or UIN attribute',
+            'Disallow roster syncing for all affected LTI 1.3 instances before changing the SAML issuer or UIN attribute',
           );
         }
 
@@ -146,10 +146,10 @@ router.post(
         const identityConfigurationStatus = await selectInstitutionIdentityConfigurationStatus(
           req.params.institution_id,
         );
-        if (identityConfigurationStatus.has_roster_sync_permitted_lti13_instance) {
+        if (identityConfigurationStatus.has_lti13_instance_with_roster_sync_allowed) {
           throw new HttpStatusError(
             400,
-            'Disable roster syncing permission for all affected LTI 1.3 instances before deleting the SAML configuration',
+            'Disallow roster syncing for all affected LTI 1.3 instances before deleting the SAML configuration',
           );
         }
 

@@ -19,11 +19,11 @@ export async function selectLti13InstanceForUpdate(
   );
 }
 
-export async function selectLti13InstancesWithRosterSyncPermitted(
+export async function selectLti13InstancesWithRosterSyncAllowed(
   institution_id: string,
 ): Promise<Lti13Instance[]> {
   return await queryRows(
-    sql.select_lti13_instances_with_roster_sync_permitted,
+    sql.select_lti13_instances_with_roster_sync_allowed,
     { institution_id },
     Lti13InstanceSchema,
   );

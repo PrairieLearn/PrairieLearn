@@ -14,7 +14,7 @@ columns
     name_attribute: text
     platform: text not null default 'Unknown'::text
     require_linked_lti_user: boolean default false
-    roster_sync_permitted: boolean not null default false
+    roster_sync_allowed: boolean not null default false
     tool_platform_name: text
     uid_attribute: text
     uin_attribute: text

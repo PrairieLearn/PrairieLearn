@@ -18,7 +18,7 @@ const AuthnProviderNameSchema = AuthnProviderSchema.shape.name;
 const InstitutionIdentityConfigurationStatusSchema = z.object({
   saml_uin_attribute: z.string().nullable(),
   enabled_authn_provider_names: AuthnProviderNameSchema.array(),
-  has_roster_sync_permitted_lti13_instance: z.boolean(),
+  has_lti13_instance_with_roster_sync_allowed: z.boolean(),
 });
 
 type InstitutionIdentityConfigurationStatus = z.infer<
@@ -67,7 +67,7 @@ export async function selectAuthenticationProviderNames(
   );
 }
 
-export function getLti13RosterSyncPermissionIssues(
+export function getLti13RosterSyncPrerequisiteIssues(
   status: InstitutionIdentityConfigurationStatus,
   lti13UinAttribute: string | null,
 ): string[] {
@@ -90,12 +90,12 @@ export function getLti13RosterSyncPermissionIssues(
  * Roster syncing can create or match users using identity data from two independent systems. The
  * operator must confirm the compatibility checks that PrairieLearn cannot verify automatically.
  */
-export async function assertLti13RosterSyncCanBePermitted(
+export async function assertLti13RosterSyncCanBeAllowed(
   institution_id: string,
   lti13UinAttribute: string | null,
   body: Record<string, unknown>,
 ): Promise<void> {
-  const issues = getLti13RosterSyncPermissionIssues(
+  const issues = getLti13RosterSyncPrerequisiteIssues(
     await selectInstitutionIdentityConfigurationStatus(institution_id),
     lti13UinAttribute,
   );
