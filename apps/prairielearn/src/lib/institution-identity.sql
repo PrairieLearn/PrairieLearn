@@ -41,8 +41,8 @@ SELECT
     WHERE
       li.institution_id = i.id
       AND li.deleted_at IS NULL
-      AND NULLIF(btrim(li.uin_attribute), '') IS NOT NULL
-  ) AS has_configured_lti13_uin
+      AND li.roster_sync_permitted
+  ) AS has_roster_sync_permitted_lti13_instance
 FROM
   institutions AS i
 WHERE

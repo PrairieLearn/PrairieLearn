@@ -1,20 +1,15 @@
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
 import { withoutLogging } from '@prairielearn/logger';
-import { execute, loadSqlEquiv, queryScalar } from '@prairielearn/postgres';
-import { IdSchema } from '@prairielearn/zod';
 
 import { selectLti13Instance } from '../ee/models/lti13Instance.js';
 import { config } from '../lib/config.js';
+import { LTI13_ROSTER_SYNC_CONFIRMATION_FIELDS } from '../lib/institution-identity.js';
 
-import { type CheerioResponse, fetchCheerio } from './helperClient.js';
+import { type CheerioResponse, fetchCheerio, getCSRFToken } from './helperClient.js';
 import * as helperServer from './helperServer.js';
-import {
-  configureInstitutionSamlForLtiUin,
-  withLti13UinConfirmations,
-} from './lti13TestHelpers.js';
+import { configureInstitutionSamlForLtiUin } from './lti13TestHelpers.js';
 
-const sql = loadSqlEquiv(import.meta.url);
 const siteUrl = 'http://localhost:' + config.serverPort;
 
 async function expectBadRequest(
@@ -30,9 +25,9 @@ async function expectBadRequest(
   });
 }
 
-function getSamlSaveBody(page: CheerioResponse, uinAttribute: string): URLSearchParams {
+function getSamlSaveBody(page: CheerioResponse): URLSearchParams {
   const form = page.$('button[value=save]').closest('form');
-  const body = new URLSearchParams({ __action: 'save', uin_attribute: uinAttribute });
+  const body = new URLSearchParams({ __action: 'save' });
 
   for (const name of [
     '__csrf_token',
@@ -40,6 +35,7 @@ function getSamlSaveBody(page: CheerioResponse, uinAttribute: string): URLSearch
     'issuer',
     'certificate',
     'uid_attribute',
+    'uin_attribute',
     'name_attribute',
     'given_name_attribute',
     'family_name_attribute',
@@ -61,7 +57,19 @@ function getSamlSaveBody(page: CheerioResponse, uinAttribute: string): URLSearch
   return body;
 }
 
-describe('institution LTI 1.3 UIN guardrails', { concurrent: false }, () => {
+function getPlatformBody(page: CheerioResponse, clientId: string): URLSearchParams {
+  const form = page.$('input[name=__action][value=update_platform]').closest('form');
+  return new URLSearchParams({
+    __csrf_token: getCSRFToken(form),
+    __action: 'update_platform',
+    platform: form.find('[name=platform]').val() as string,
+    issuer_params: form.find('[name=issuer_params]').val() as string,
+    client_id: clientId,
+    custom_fields: form.find('[name=custom_fields]').val() as string,
+  });
+}
+
+describe('institution LTI 1.3 roster syncing guardrails', { concurrent: false }, () => {
   let instanceId: string;
   let instanceUrl: string;
 
@@ -76,15 +84,13 @@ describe('institution LTI 1.3 UIN guardrails', { concurrent: false }, () => {
     config.hasOauth = false;
   });
 
-  test('new LTI instances do not configure a UIN by default', async () => {
+  test('LTI configuration remains editable until roster syncing is permitted', async () => {
     const page = await fetchCheerio(`${siteUrl}/pl/administrator/institution/1/lti13`);
     const button = page.$('button:contains(Add a new LTI 1.3 instance)');
-    const form = button.closest('form');
-
     const response = await fetchCheerio(page.url, {
       method: 'POST',
       body: new URLSearchParams({
-        __csrf_token: form.find('input[name=__csrf_token]').val() as string,
+        __csrf_token: getCSRFToken(button.closest('form')),
         __action: button.attr('value')!,
       }),
     });
@@ -92,56 +98,123 @@ describe('institution LTI 1.3 UIN guardrails', { concurrent: false }, () => {
 
     instanceUrl = response.url;
     instanceId = instanceUrl.split('/').at(-1)!;
-    const instance = await selectLti13Instance(instanceId);
-    assert.isNull(instance.uin_attribute);
+    let instance = await selectLti13Instance(instanceId);
+    assert.equal(
+      instance.uin_attribute,
+      '["https://purl.imsglobal.org/spec/lti/claim/custom"]["uin"]',
+    );
+    assert.isFalse(instance.roster_sync_permitted);
+
+    const instancePage = await fetchCheerio(instanceUrl);
+    const plForm = instancePage.$('button:contains(Save PrairieLearn config)').closest('form');
+    assert.isFalse(plForm.find('input[name=uin_attribute]').is('[readonly]'));
+
+    const uinAttribute = '["https://purl.imsglobal.org/spec/lti/claim/custom"]["sis_user_id"]';
+    const plResponse = await fetchCheerio(instanceUrl, {
+      method: 'POST',
+      body: new URLSearchParams({
+        __csrf_token: getCSRFToken(plForm),
+        __action: 'save_pl_config',
+        name_attribute: 'name',
+        uid_attribute: 'email',
+        uin_attribute: uinAttribute,
+        email_attribute: 'email',
+      }),
+    });
+    assert.equal(plResponse.status, 200);
+
+    const platformResponse = await fetchCheerio(instanceUrl, {
+      method: 'POST',
+      body: getPlatformBody(plResponse, 'before-permission'),
+    });
+    assert.equal(platformResponse.status, 200);
+
+    instance = await selectLti13Instance(instanceId);
+    assert.equal(instance.uin_attribute, uinAttribute);
+    assert.equal(instance.client_params.client_id, 'before-permission');
   });
 
-  test('configuring an LTI UIN requires all explicit confirmations', async () => {
-    const page = await fetchCheerio(instanceUrl);
-    const form = page.$('button:contains(Save PrairieLearn config)').closest('form');
-    assert.isTrue(form.find('input[name=uin_attribute]').is('[disabled]'));
-    assert.lengthOf(form.find('[data-lti13-uin-confirmations]'), 0);
-
-    const baseBody = {
-      __action: 'save_pl_config',
-      __csrf_token: form.find('input[name=__csrf_token]').val() as string,
-      name_attribute: 'name',
-      uid_attribute: 'email',
-      uin_attribute: '["https://purl.imsglobal.org/spec/lti/claim/custom"]["uin"]',
-      email_attribute: 'email',
+  test('permitting roster syncing requires prerequisites and both confirmations', async () => {
+    let page = await fetchCheerio(instanceUrl);
+    const csrfToken = getCSRFToken(
+      page.$('button:contains(Save PrairieLearn config)').closest('form'),
+    );
+    const confirmedBody = {
+      __csrf_token: csrfToken,
+      __action: 'permit_roster_sync',
+      [LTI13_ROSTER_SYNC_CONFIRMATION_FIELDS.sameCanonicalUin]: '1',
+      [LTI13_ROSTER_SYNC_CONFIRMATION_FIELDS.usersBackfilled]: '1',
     };
-    const confirmedBody = withLti13UinConfirmations(baseBody);
 
     await expectBadRequest(instanceUrl, confirmedBody);
-
     await configureInstitutionSamlForLtiUin();
 
-    const availablePage = await fetchCheerio(instanceUrl);
-    const availableForm = availablePage
-      .$('button:contains(Save PrairieLearn config)')
-      .closest('form');
-    assert.isFalse(availableForm.find('input[name=uin_attribute]').is('[disabled]'));
-    assert.lengthOf(availableForm.find('[data-lti13-uin-confirmations]'), 1);
-    assert.equal(
-      availableForm.find('label:contains("UID attribute")').attr('for'),
-      'uid_attribute',
-    );
-    assert.equal(
-      availableForm.find('label:contains("UIN attribute")').attr('for'),
-      'uin_attribute',
-    );
+    page = await fetchCheerio(instanceUrl);
+    const permitForm = page.$('button:contains(Permit roster syncing)').closest('form');
+    assert.lengthOf(permitForm.find('input[type=checkbox][required]'), 2);
 
-    await expectBadRequest(instanceUrl, baseBody);
+    await expectBadRequest(instanceUrl, {
+      __csrf_token: getCSRFToken(permitForm),
+      __action: 'permit_roster_sync',
+    });
 
     const response = await fetchCheerio(instanceUrl, {
       method: 'POST',
-      body: new URLSearchParams(confirmedBody),
+      body: new URLSearchParams({
+        ...confirmedBody,
+        __csrf_token: getCSRFToken(permitForm),
+      }),
     });
     assert.equal(response.status, 200);
-    assert.equal((await selectLti13Instance(instanceId)).uin_attribute, baseBody.uin_attribute);
+    assert.isTrue((await selectLti13Instance(instanceId)).roster_sync_permitted);
   });
 
-  test('SSO, SAML, and LTI platform changes cannot bypass the guardrail', async () => {
+  test('identity-critical settings are locked while roster syncing is permitted', async () => {
+    const instancePage = await fetchCheerio(instanceUrl);
+    const platformForm = instancePage
+      .$('input[name=__action][value=update_platform]')
+      .closest('form');
+    const plForm = instancePage.$('button:contains(Save PrairieLearn config)').closest('form');
+    assert.isTrue(platformForm.find('button[type=submit]').is('[disabled]'));
+    assert.isTrue(plForm.find('input[name=uin_attribute]').is('[readonly]'));
+
+    await expectBadRequest(instanceUrl, getPlatformBody(instancePage, 'while-permitted'));
+    await expectBadRequest(instanceUrl, {
+      __csrf_token: getCSRFToken(plForm),
+      __action: 'save_pl_config',
+      name_attribute: 'name',
+      uid_attribute: 'email',
+      uin_attribute: 'different-uin',
+      email_attribute: 'email',
+    });
+
+    const samlPage = await fetchCheerio(`${siteUrl}/pl/administrator/institution/1/saml`);
+    assert.isTrue(samlPage.$('input[name=issuer]').is('[readonly]'));
+    assert.isTrue(samlPage.$('input[name=uin_attribute]').is('[readonly]'));
+    assert.lengthOf(
+      samlPage.$(
+        `#saml-lti-roster-sync-dependencies a[href$="/lti13/${instanceId}"]:contains("#${instanceId}")`,
+      ),
+      1,
+    );
+
+    const safeSamlChange = getSamlSaveBody(samlPage);
+    safeSamlChange.set('certificate', 'replacement certificate');
+    assert.equal(
+      (await fetchCheerio(samlPage.url, { method: 'POST', body: safeSamlChange })).status,
+      200,
+    );
+
+    const changedIssuer = getSamlSaveBody(await fetchCheerio(samlPage.url));
+    changedIssuer.set('issuer', 'https://replacement.example.com/saml');
+    await expectBadRequest(samlPage.url, changedIssuer);
+
+    const deleteForm = samlPage.$('button[value=delete]').closest('form');
+    await expectBadRequest(samlPage.url, {
+      __csrf_token: getCSRFToken(deleteForm),
+      __action: 'delete',
+    });
+
     config.hasOauth = true;
     const ssoPage = await fetchCheerio(`${siteUrl}/pl/administrator/institution/1/sso`);
     const ssoForm = ssoPage.$('button:contains(Save)').closest('form');
@@ -157,121 +230,53 @@ describe('institution LTI 1.3 UIN guardrails', { concurrent: false }, () => {
       .attr('value');
     assert.ok(samlProviderId);
     assert.ok(googleProviderId);
+    assert.isTrue(ssoForm.find(`input[value=${googleProviderId}]`).is('[disabled]'));
 
     const ssoBody = new URLSearchParams({
-      __csrf_token: ssoForm.find('input[name=__csrf_token]').val() as string,
+      __csrf_token: getCSRFToken(ssoForm),
       default_authn_provider_id: '',
     });
     ssoBody.append('enabled_authn_provider_ids', samlProviderId);
     ssoBody.append('enabled_authn_provider_ids', googleProviderId);
-
     await expectBadRequest(ssoPage.url, ssoBody);
+  });
 
-    const unnamedProviderId = await queryScalar(sql.insert_unnamed_authn_provider, IdSchema);
-    ssoBody.set('enabled_authn_provider_ids', samlProviderId);
-    ssoBody.append('enabled_authn_provider_ids', unnamedProviderId);
+  test('explicitly disabling permission unlocks configuration', async () => {
+    const page = await fetchCheerio(instanceUrl);
+    const revokeForm = page.$('button:contains(Disable roster syncing permission)').closest('form');
+    const response = await fetchCheerio(instanceUrl, {
+      method: 'POST',
+      body: new URLSearchParams({
+        __csrf_token: getCSRFToken(revokeForm),
+        __action: 'revoke_roster_sync_permission',
+      }),
+    });
+    assert.equal(response.status, 200);
+    assert.isFalse((await selectLti13Instance(instanceId)).roster_sync_permitted);
 
-    await expectBadRequest(ssoPage.url, ssoBody);
-    config.hasOauth = false;
-
-    let samlPage = await fetchCheerio(`${siteUrl}/pl/administrator/institution/1/saml`);
-    assert.lengthOf(
-      samlPage.$(
-        `#saml-lti-uin-dependencies a[href$="/lti13/${instanceId}"]:contains("#${instanceId}")`,
-      ),
-      1,
+    const unlockedPage = await fetchCheerio(instanceUrl);
+    assert.isFalse(
+      unlockedPage
+        .$('input[name=__action][value=update_platform]')
+        .closest('form')
+        .find('button[type=submit]')
+        .is('[disabled]'),
     );
-
-    let response = await fetchCheerio(samlPage.url, {
-      method: 'POST',
-      body: getSamlSaveBody(samlPage, 'uin'),
-    });
-    assert.equal(response.status, 200);
-
-    samlPage = await fetchCheerio(samlPage.url);
-    const issuerChangeBody = getSamlSaveBody(samlPage, 'uin');
-    issuerChangeBody.set('issuer', 'https://replacement.example.com/saml');
-    await expectBadRequest(samlPage.url, issuerChangeBody);
-    response = await fetchCheerio(samlPage.url, {
-      method: 'POST',
-      body: new URLSearchParams(withLti13UinConfirmations(Object.fromEntries(issuerChangeBody))),
-    });
-    assert.equal(response.status, 200);
-
-    await execute(sql.clear_saml_uin_attribute, { institution_id: '1' });
-    samlPage = await fetchCheerio(samlPage.url);
-    assert.equal(samlPage.$('input[name=uin_attribute]').val(), '');
-    const unavailablePlatformPage = await fetchCheerio(instanceUrl);
-    const unavailablePlatformForm = unavailablePlatformPage
-      .$('input[name=__action][value=update_platform]')
-      .closest('form');
-    assert.isTrue(
-      unavailablePlatformForm.find('button:contains("Save platform options")').is('[disabled]'),
+    assert.isFalse(
+      unlockedPage
+        .$('button:contains(Save PrairieLearn config)')
+        .closest('form')
+        .find('input[name=uin_attribute]')
+        .is('[readonly]'),
     );
-
-    response = await fetchCheerio(samlPage.url, {
-      method: 'POST',
-      body: getSamlSaveBody(samlPage, ''),
-    });
-    assert.equal(response.status, 200);
-
-    samlPage = await fetchCheerio(samlPage.url);
-    await expectBadRequest(samlPage.url, getSamlSaveBody(samlPage, 'uin'));
-
-    response = await fetchCheerio(samlPage.url, {
-      method: 'POST',
-      body: new URLSearchParams(
-        withLti13UinConfirmations(Object.fromEntries(getSamlSaveBody(samlPage, 'uin'))),
-      ),
-    });
-    assert.equal(response.status, 200);
-
-    samlPage = await fetchCheerio(samlPage.url);
-    const deleteForm = samlPage.$('button[value=delete]').closest('form');
-    await expectBadRequest(samlPage.url, {
-      __csrf_token: deleteForm.find('input[name=__csrf_token]').val() as string,
-      __action: 'delete',
-    });
-
-    await expectBadRequest(
-      samlPage.url,
-      new URLSearchParams(
-        withLti13UinConfirmations(Object.fromEntries(getSamlSaveBody(samlPage, ''))),
-      ),
-    );
-
-    let platformPage = await fetchCheerio(instanceUrl);
-    let platformForm = platformPage.$('button:contains(Save platform options)').closest('form');
-    const getPlatformBody = () => ({
-      __csrf_token: platformForm.find('input[name=__csrf_token]').val() as string,
-      __action: 'update_platform',
-      platform: platformForm.find('[name=platform]').val() as string,
-      issuer_params: platformForm.find('[name=issuer_params]').val() as string,
-      client_id: platformForm.find('[name=client_id]').val() as string,
-      custom_fields: platformForm.find('[name=custom_fields]').val() as string,
-    });
-
-    response = await fetchCheerio(instanceUrl, {
-      method: 'POST',
-      body: new URLSearchParams(getPlatformBody()),
-    });
-    assert.equal(response.status, 200);
-
-    platformPage = await fetchCheerio(instanceUrl);
-    platformForm = platformPage.$('button:contains(Save platform options)').closest('form');
-    const changedPlatformBody = {
-      ...getPlatformBody(),
-      client_id: 'guardrail-test',
-    };
-    await expectBadRequest(instanceUrl, changedPlatformBody);
-    response = await fetchCheerio(instanceUrl, {
-      method: 'POST',
-      body: new URLSearchParams(withLti13UinConfirmations(changedPlatformBody)),
-    });
-    assert.equal(response.status, 200);
     assert.equal(
-      (await selectLti13Instance(instanceId)).client_params.client_id,
-      changedPlatformBody.client_id,
+      (
+        await fetchCheerio(instanceUrl, {
+          method: 'POST',
+          body: getPlatformBody(unlockedPage, 'after-permission'),
+        })
+      ).status,
+      200,
     );
   });
 });

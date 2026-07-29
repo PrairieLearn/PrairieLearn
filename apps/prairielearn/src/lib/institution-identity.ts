@@ -18,20 +18,20 @@ const AuthnProviderNameSchema = AuthnProviderSchema.shape.name;
 const InstitutionIdentityConfigurationStatusSchema = z.object({
   saml_uin_attribute: z.string().nullable(),
   enabled_authn_provider_names: AuthnProviderNameSchema.array(),
-  has_configured_lti13_uin: z.boolean(),
+  has_roster_sync_permitted_lti13_instance: z.boolean(),
 });
 
 export type InstitutionIdentityConfigurationStatus = z.infer<
   typeof InstitutionIdentityConfigurationStatusSchema
 >;
-type Lti13UinPrerequisites = Pick<
+type RosterSyncPrerequisites = Pick<
   InstitutionIdentityConfigurationStatus,
   'saml_uin_attribute' | 'enabled_authn_provider_names'
 >;
 
-export const LTI13_UIN_COMPATIBILITY_CONFIRMATION_FIELDS = {
-  sameCanonicalUin: 'lti13_uin_same_canonical_uin_confirmed',
-  usersBackfilled: 'lti13_uin_users_backfilled_confirmed',
+export const LTI13_ROSTER_SYNC_CONFIRMATION_FIELDS = {
+  sameCanonicalUin: 'lti13_roster_sync_same_canonical_uin_confirmed',
+  usersBackfilled: 'lti13_roster_sync_users_backfilled_confirmed',
 } as const;
 
 export function normalizeUinAttribute(value: unknown): string | null {
@@ -71,9 +71,15 @@ export async function selectAuthenticationProviderNames(
   );
 }
 
-export function getLti13UinConfigurationIssues(status: Lti13UinPrerequisites): string[] {
+export function getLti13RosterSyncPermissionIssues(
+  status: RosterSyncPrerequisites,
+  lti13UinAttribute: string | null,
+): string[] {
   const issues: string[] = [];
 
+  if (!normalizeUinAttribute(lti13UinAttribute)) {
+    issues.push('LTI 1.3 must have a UIN attribute configured');
+  }
   if (!hasSamlAsSoleInstitutionalAuthenticationProvider(status.enabled_authn_provider_names)) {
     issues.push('SAML must be the sole enabled institutional authentication provider');
   }
@@ -84,31 +90,25 @@ export function getLti13UinConfigurationIssues(status: Lti13UinPrerequisites): s
   return issues;
 }
 
-export function assertLti13UinCompatibilityConfirmed(body: Record<string, unknown>): void {
-  const missingConfirmations = Object.values(LTI13_UIN_COMPATIBILITY_CONFIRMATION_FIELDS).filter(
-    (field) => body[field] !== '1',
-  );
-
-  if (missingConfirmations.length > 0) {
-    throw new HttpStatusError(
-      400,
-      'All LTI/SAML UIN compatibility confirmations are required for this change',
-    );
+function assertLti13RosterSyncConfirmed(body: Record<string, unknown>): void {
+  if (Object.values(LTI13_ROSTER_SYNC_CONFIRMATION_FIELDS).some((field) => body[field] !== '1')) {
+    throw new HttpStatusError(400, 'Both roster syncing confirmations are required');
   }
 }
 
 /**
- * Guards changes that introduce or alter an LTI UIN identity mapping. Configuration prerequisites
- * can be checked automatically, but canonical-UIN compatibility and user backfilling require the
- * operator confirmations carried in the request body.
+ * Roster syncing can create or match users using identity data from two independent systems. The
+ * operator must confirm the compatibility checks that PrairieLearn cannot verify automatically.
  */
-export async function assertLti13UinConfigurationAllowed(
+export async function assertLti13RosterSyncCanBePermitted(
   institution_id: string,
+  lti13UinAttribute: string | null,
   body: Record<string, unknown>,
 ): Promise<void> {
-  const issues = getLti13UinConfigurationIssues(
+  const issues = getLti13RosterSyncPermissionIssues(
     await selectInstitutionIdentityConfigurationStatus(institution_id),
+    lti13UinAttribute,
   );
   if (issues.length > 0) throw new HttpStatusError(400, issues.join('; '));
-  assertLti13UinCompatibilityConfirmed(body);
+  assertLti13RosterSyncConfirmed(body);
 }

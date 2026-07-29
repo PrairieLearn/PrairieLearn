@@ -19,7 +19,6 @@ import { fetchCheerio } from './helperClient.js';
 import * as helperServer from './helperServer.js';
 import {
   CLIENT_ID,
-  configureInstitutionSamlForLtiUin,
   createLti13Instance,
   enableLti13Authentication,
   makeLoginExecutor,
@@ -73,7 +72,6 @@ describe('LTI 1.3 authentication', { concurrent: false }, () => {
     await helperServer.before()();
 
     await execute("UPDATE institutions SET uid_regexp = '@example\\.com$'");
-    await configureInstitutionSamlForLtiUin();
 
     oidcProviderPort = await getPort();
 

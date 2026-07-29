@@ -153,6 +153,15 @@ WHERE
   AND id = $unsafe_lti13_instance_id
   AND deleted_at IS NULL;
 
+-- BLOCK update_roster_sync_permission
+UPDATE lti13_instances
+SET
+  roster_sync_permitted = $roster_sync_permitted
+WHERE
+  institution_id = $institution_id
+  AND id = $unsafe_lti13_instance_id
+  AND deleted_at IS NULL;
+
 -- BLOCK remove_instance
 UPDATE lti13_instances
 SET

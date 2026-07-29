@@ -42,7 +42,7 @@ export async function updateInstitutionAuthnProviders({
 
     const identityStatus = await selectInstitutionIdentityConfigurationStatus(institution_id);
 
-    if (identityStatus.has_configured_lti13_uin) {
+    if (identityStatus.has_roster_sync_permitted_lti13_instance) {
       const enabledProviderNames = await selectAuthenticationProviderNames(
         enabled_authn_provider_ids,
       );
@@ -52,7 +52,7 @@ export async function updateInstitutionAuthnProviders({
       ) {
         throw new HttpStatusError(
           400,
-          'Institutions with an LTI 1.3 UIN attribute must keep SAML as their sole enabled institutional authentication provider with a configured UIN attribute',
+          'Institutions with roster syncing permission must keep SAML as their sole enabled institutional authentication provider with a configured UIN attribute',
         );
       }
     }

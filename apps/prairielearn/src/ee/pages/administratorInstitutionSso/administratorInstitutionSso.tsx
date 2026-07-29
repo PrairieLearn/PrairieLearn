@@ -94,7 +94,9 @@ router.get(
               institutionAuthenticationProviders={StaffAuthnProviderSchema.array().parse(
                 institutionAuthenticationProviders,
               )}
-              hasConfiguredLti13Uin={identityConfigurationStatus.has_configured_lti13_uin}
+              hasRosterSyncPermitted={
+                identityConfigurationStatus.has_roster_sync_permitted_lti13_instance
+              }
               urlPrefix={pageContext.urlPrefix}
               csrfToken={pageContext.__csrf_token}
             />

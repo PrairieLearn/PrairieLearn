@@ -20,7 +20,6 @@ import * as helperServer from './helperServer.js';
 import {
   LTI_CONTEXT_ID,
   LTI_DEPLOYMENT_ID,
-  configureInstitutionSamlForLtiUin,
   createCrossInstitutionFixture,
   createLti13Instance,
   enableLti13Authentication,
@@ -41,7 +40,6 @@ describe('LTI 1.3 course instance linking', { concurrent: false }, () => {
     await helperServer.before()();
 
     await execute("UPDATE institutions SET uid_regexp = '@example\\.com$'");
-    await configureInstitutionSamlForLtiUin();
 
     oidcProviderPort = await getPort();
 

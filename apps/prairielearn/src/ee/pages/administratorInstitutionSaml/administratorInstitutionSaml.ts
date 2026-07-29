@@ -12,7 +12,6 @@ import * as error from '@prairielearn/error';
 import { execute, loadSqlEquiv, runInTransactionAsync } from '@prairielearn/postgres';
 
 import {
-  assertLti13UinCompatibilityConfirmed,
   lockInstitutionForIdentityConfiguration,
   normalizeUinAttribute,
   selectInstitutionIdentityConfigurationStatus,
@@ -24,7 +23,7 @@ import {
   getInstitutionAuthenticationProviders,
   getInstitutionSamlProvider,
 } from '../../lib/institution.js';
-import { selectLti13InstancesWithConfiguredUin } from '../../models/lti13Instance.js';
+import { selectLti13InstancesWithRosterSyncPermitted } from '../../models/lti13Instance.js';
 
 import {
   AdministratorInstitutionSaml,
@@ -53,7 +52,7 @@ router.get(
     const institutionAuthenticationProviders = await getInstitutionAuthenticationProviders(
       req.params.institution_id,
     );
-    const lti13InstancesWithConfiguredUin = await selectLti13InstancesWithConfiguredUin(
+    const lti13InstancesWithRosterSyncPermitted = await selectLti13InstancesWithRosterSyncPermitted(
       req.params.institution_id,
     );
 
@@ -62,7 +61,7 @@ router.get(
         institution,
         samlProvider,
         institutionAuthenticationProviders,
-        lti13InstancesWithConfiguredUin,
+        lti13InstancesWithRosterSyncPermitted,
         host: z.string().parse(req.headers.host),
         resLocals: res.locals,
       }),
@@ -87,21 +86,15 @@ router.post(
         const issuer = z.string().parse(req.body.issuer);
         const uinAttribute = normalizeUinAttribute(req.body.uin_attribute);
 
-        if (identityConfigurationStatus.has_configured_lti13_uin) {
-          const existingUinAttribute = normalizeUinAttribute(samlProvider?.uin_attribute);
-
-          if (existingUinAttribute && !uinAttribute) {
-            throw new error.HttpStatusError(
-              400,
-              'The SAML UIN attribute cannot be removed while an LTI 1.3 instance uses a UIN attribute',
-            );
-          }
-          if (
-            uinAttribute &&
-            (uinAttribute !== existingUinAttribute || issuer !== samlProvider?.issuer)
-          ) {
-            assertLti13UinCompatibilityConfirmed(req.body);
-          }
+        if (
+          identityConfigurationStatus.has_roster_sync_permitted_lti13_instance &&
+          (uinAttribute !== normalizeUinAttribute(samlProvider?.uin_attribute) ||
+            issuer !== samlProvider?.issuer)
+        ) {
+          throw new error.HttpStatusError(
+            400,
+            'Disable roster syncing permission for all affected LTI 1.3 instances before changing the SAML issuer or UIN attribute',
+          );
         }
 
         let publicKey, privateKey;
@@ -150,10 +143,10 @@ router.post(
         const identityConfigurationStatus = await selectInstitutionIdentityConfigurationStatus(
           req.params.institution_id,
         );
-        if (identityConfigurationStatus.has_configured_lti13_uin) {
+        if (identityConfigurationStatus.has_roster_sync_permitted_lti13_instance) {
           throw new error.HttpStatusError(
             400,
-            'SAML configuration cannot be deleted while an LTI 1.3 instance uses a UIN attribute',
+            'Disable roster syncing permission for all affected LTI 1.3 instances before deleting the SAML configuration',
           );
         }
 
