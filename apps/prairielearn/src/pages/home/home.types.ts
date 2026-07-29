@@ -23,7 +23,7 @@ export const InstructorHomePageCourseSchema = z.object({
 });
 export type InstructorHomePageCourse = z.infer<typeof InstructorHomePageCourseSchema>;
 
-export const StudentHomePageCourseDataSchema = z.object({
+const StudentHomePageCourseDataSchema = z.object({
   course_id: RawStudentCourseSchema.shape.id,
   course_instance: RawStudentCourseInstanceSchema,
   course_short_name: RawStudentCourseSchema.shape.short_name,

@@ -267,7 +267,7 @@ ORDER BY
   start_date DESC NULLS LAST,
   end_date DESC NULLS LAST,
   ci.id DESC,
-  e.id;
+  e.id DESC;
 
 -- BLOCK select_admin_institutions
 -- Note that we only consider institutions where the user is explicitly
