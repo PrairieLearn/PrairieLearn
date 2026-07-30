@@ -9,15 +9,19 @@ it('retries transient errors and invokes the target callback once', async () => 
     .mockResolvedValueOnce('InService')
     .mockResolvedValue('Terminated');
   const onError = vi.fn();
-  const onTargetState = vi.fn();
-
-  await watchAutoScalingTargetLifecycleState({
-    targetStates: ['Terminated'],
-    pollIntervalMs: 0,
-    fetchState,
-    onError,
-    onTargetState,
+  const onTargetState = vi.fn(() => {
+    throw new Error('callback failed');
   });
+
+  await expect(
+    watchAutoScalingTargetLifecycleState({
+      targetStates: ['Terminated'],
+      pollIntervalMs: 0,
+      fetchState,
+      onError,
+      onTargetState,
+    }),
+  ).rejects.toThrow('callback failed');
   expect(onError).toHaveBeenCalledOnce();
   expect(onTargetState).toHaveBeenCalledExactlyOnceWith('Terminated');
 });

@@ -49,7 +49,6 @@ interface GradingResults {
   message?: string;
 }
 
-let processTerminating = false;
 const workerAbortController = new AbortController();
 const terminationLifecycleActionAbortController = new AbortController();
 let workersFinished: Promise<void> = Promise.resolve();
@@ -61,12 +60,11 @@ function startGracefulShutdown({
   source: string;
   waitForLifecycleAction: boolean;
 }) {
-  if (processTerminating) {
+  if (workerAbortController.signal.aborted) {
     globalLogger.info(`Ignoring shutdown trigger from ${source}; shutdown is already in progress`);
     return;
   }
 
-  processTerminating = true;
   workerAbortController.abort();
   globalLogger.info(`Starting graceful shutdown (source: ${source}); draining jobs`);
   lifecycle.terminating(waitForLifecycleAction);
@@ -178,7 +176,7 @@ async.series(
 
       async function worker() {
         while (true) {
-          if (!healthCheck.isHealthy() || processTerminating) return;
+          if (!healthCheck.isHealthy() || workerAbortController.signal.aborted) return;
 
           await receiveNextJob(async (job) => {
             globalLogger.info(`received ${job.jobId} from queue`);
@@ -224,7 +222,7 @@ async.series(
     },
   ],
   (err) => {
-    if (processTerminating) return;
+    if (workerAbortController.signal.aborted) return;
 
     Sentry.captureException(err, {
       level: 'fatal',

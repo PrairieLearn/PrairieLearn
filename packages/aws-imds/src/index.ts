@@ -138,18 +138,20 @@ export async function watchAutoScalingTargetLifecycleState({
   let errorReported = false;
 
   while (!signal?.aborted) {
+    let state: AutoScalingTargetLifecycleState | undefined;
     try {
-      const state = await fetchState();
+      state = await fetchState();
       errorReported = false;
-      if (signal?.aborted) return;
-      if (targetStateSet.has(state)) {
-        onTargetState(state);
-        return;
-      }
     } catch (error) {
       if (signal?.aborted) return;
       if (!errorReported) onError?.(error);
       errorReported = true;
+    }
+
+    if (signal?.aborted) return;
+    if (state !== undefined && targetStateSet.has(state)) {
+      onTargetState(state);
+      return;
     }
 
     await sleep(pollIntervalMs, undefined, { ref: false, signal }).catch(() => {});
