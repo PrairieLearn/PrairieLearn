@@ -33,9 +33,11 @@ function constructEvent(req: Request) {
       stripe.webhooks.constructEvent(req.body, req.headers['stripe-signature'] as string, secret),
     );
   } catch (cause) {
-    const message =
-      cause instanceof Error ? cause.message : 'Unknown signature verification failure';
-    throw new error.HttpStatusError(400, `Webhook error: ${message}`, { cause });
+    throw new error.HttpStatusError(
+      400,
+      'Stripe webhook signature could not be verified with any configured secret',
+      { cause },
+    );
   }
 }
 
