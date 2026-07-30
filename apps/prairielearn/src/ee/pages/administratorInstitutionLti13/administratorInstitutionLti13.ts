@@ -68,6 +68,19 @@ router.get(
           uin: '$Canvas.user.sisIntegrationId',
         },
       },
+      {
+        platform: 'Canvas Test',
+        display_order: 20,
+        issuer_params: {
+          issuer: 'https://canvas.test.instructure.com',
+          jwks_uri: 'https://sso.test.canvaslms.com/api/lti/security/jwks',
+          token_endpoint: 'https://sso.test.canvaslms.com/login/oauth2/token',
+          authorization_endpoint: 'https://sso.test.canvaslms.com/api/lti/authorize_redirect',
+        },
+        custom_fields: {
+          uin: '$Canvas.user.sisIntegrationId',
+        },
+      },
     ];
 
     const platform_defaults = sortBy(
