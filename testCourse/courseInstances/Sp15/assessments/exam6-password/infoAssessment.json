@@ -4,20 +4,17 @@
   "title": "Exam with password diamond",
   "set": "Exam",
   "number": "6",
-  "allowAccess": [
+  "accessControl": [
     {
-      "mode": "Exam",
-      "credit": 100,
-      "startDate": "1900-07-07T23:59:59",
-      "endDate": "2300-07-10T23:59:59",
-      "timeLimitMin": 50,
-      "password": "diamond"
+      "dateControl": {
+        "release": { "date": "1900-07-07T23:59:59" },
+        "due": { "date": "2300-07-10T23:59:59" },
+        "durationMinutes": 50,
+        "password": "diamond"
+      }
     }
   ],
   "zones": [
-    {
-      "title": "Hard questions",
-      "questions": [{ "id": "positionTimeGraph", "points": [10] }]
-    }
+    { "title": "Hard questions", "questions": [{ "id": "positionTimeGraph", "autoPoints": [10] }] }
   ]
 }

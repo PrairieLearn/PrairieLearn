@@ -1,7 +1,7 @@
 import { RuleTester } from '@typescript-eslint/rule-tester';
 import { afterAll, describe, it } from 'vitest';
 
-import rule from '../rules/aws-client-mandatory-config';
+import rule from '../rules/aws-client-mandatory-config.js';
 
 RuleTester.afterAll = afterAll;
 RuleTester.describe = describe;

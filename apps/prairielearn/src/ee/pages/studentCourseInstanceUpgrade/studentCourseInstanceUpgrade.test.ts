@@ -1,4 +1,3 @@
-import fetch from 'node-fetch';
 import { afterEach, assert, beforeEach, describe, it } from 'vitest';
 
 import { dangerousFullSystemAuthz } from '../../../lib/authz-data-lib.js';

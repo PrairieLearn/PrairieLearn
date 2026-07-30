@@ -25,6 +25,8 @@ The `pl-image-capture` element is particularly useful for capturing handwritten 
 
 `pl-image-capture` allows users to submit images through their camera, whether it’s a local device like a webcam or an external device such as a mobile phone or tablet camera. Users can submit by capturing a new image with their camera or uploading existing images from their device (when `manual-upload-enabled` is `true`). `pl-image-capture` does not save images to their device.
 
+AI grading supports `pl-image-capture`. Handwritten mathematical work, graphs, diagrams, and any other free-form image submissions can be graded automatically. Learn more in the [AI grading docs](../aiGrading/index.md).
+
 A single question page can contain multiple `pl-image-capture` elements, each operating independently and saving files under its specified `file-name`.
 
 In manual grading mode, staff can view submitted images in the submission panel and, if added, through the [`pl-file-preview`](pl-file-preview.md) element, where submitted images will appear under their associated `file-name`.
@@ -40,6 +42,7 @@ Using mobile device capture in a local development environment requires addition
 ## See also
 
 - [`pl-file-preview` to display previously submitted files](pl-file-preview.md)
+- [AI grading for handwritten and image submissions](../aiGrading/index.md)
 
 ---
 

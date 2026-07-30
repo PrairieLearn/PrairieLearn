@@ -93,6 +93,14 @@ WHERE
 ORDER BY
   j.number_in_sequence;
 
+-- BLOCK select_issues_for_question
+SELECT
+  *
+FROM
+  issues
+WHERE
+  question_id = $question_id;
+
 -- BLOCK select_issues_for_last_variant
 WITH
   last_variant AS (

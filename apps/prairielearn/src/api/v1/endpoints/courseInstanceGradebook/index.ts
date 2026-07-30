@@ -2,6 +2,7 @@ import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import z from 'zod';
 
+import { SECOND_IN_MILLISECONDS, formatDateISO } from '@prairielearn/formatter';
 import * as sqldb from '@prairielearn/postgres';
 
 import {
@@ -31,8 +32,8 @@ const GradebookDataSchema = z.object({
       score_perc: AssessmentInstanceSchema.shape.score_perc.nullable(),
       max_points: AssessmentInstanceSchema.shape.max_points.nullable(),
       points: AssessmentInstanceSchema.shape.points.nullable(),
-      start_date: z.string().nullable(),
-      duration_seconds: z.number().nullable(),
+      date: AssessmentInstanceSchema.shape.date.nullable(),
+      duration: AssessmentInstanceSchema.shape.duration.nullable(),
       assessment_instance_id: AssessmentInstanceSchema.shape.id.nullable(),
     }),
   ),
@@ -46,7 +47,16 @@ router.get(
       { course_instance_id: res.locals.course_instance.id },
       GradebookDataSchema,
     );
-    res.status(200).send(data);
+    res.status(200).send(
+      data.map(({ assessments, ...user }) => ({
+        ...user,
+        assessments: assessments.map(({ date, duration, ...assessment }) => ({
+          ...assessment,
+          start_date: formatDateISO(date, res.locals.course_instance.display_timezone),
+          duration_seconds: duration == null ? null : duration / SECOND_IN_MILLISECONDS,
+        })),
+      })),
+    );
   }),
 );
 

@@ -15,6 +15,7 @@ else
     echo "https://docs.prairielearn.com/installing/#support-for-external-graders-and-workspaces" 1>&2
 fi
 
+# Even though we no longer use NODEMON, we keep supporting `NODEMON=true` for backwards compatibility.
 if [[ $NODEMON == "true" || $DEV == "true" ]]; then
     make migrate-dev > /dev/null
     make dev$SUFFIX

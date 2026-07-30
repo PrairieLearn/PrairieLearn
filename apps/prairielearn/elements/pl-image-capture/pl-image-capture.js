@@ -42,8 +42,6 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
       this.mobile_capture_enabled = options.mobile_capture_enabled;
       this.manual_upload_enabled = options.manual_upload_enabled;
 
-      /** Flag representing the current state of the capture before entering crop/zoom */
-      this.previousCaptureChangedFlag = false;
       this.previousCropRotateState = null;
       this.selectedContainerName = 'capture-preview';
       this.handwritingEnhanced = false;
@@ -53,6 +51,7 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
       this.resizingCtx = null;
 
       /** Original captured image width and height */
+      this.originalImageCaptureDataUrl = null;
       this.originalImageWidth = null;
       this.originalImageHeight = null;
 
@@ -342,8 +341,6 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
       this.setNoCaptureAvailableYetState(uploadedImageContainer);
 
       this.setShowDeletionButton(false);
-
-      this.setCaptureChangedFlag(true);
     }
 
     createDeletionListeners() {
@@ -368,8 +365,6 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
         this.setNoCaptureAvailableYetState(uploadedImageContainer);
 
         this.setShowDeletionButton(false);
-
-        this.setCaptureChangedFlag(true);
       };
 
       deleteCapturedImageButton.addEventListener('shown.bs.popover', () => {
@@ -512,7 +507,6 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
           data: msg.file_content,
           type: 'image/jpeg',
         });
-        this.setCaptureChangedFlag(true);
 
         // Acknowledge that the external image capture was received.
         socket.emit(
@@ -628,6 +622,7 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
       } else {
         // No submitted image available, yet
         this.setNoCaptureAvailableYetState(uploadedImageContainer);
+        this.setHiddenCaptureInputValue('');
       }
     }
 
@@ -682,7 +677,7 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
 
         hiddenCaptureInput.value = this.resizingCanvas.toDataURL('image/jpeg');
       } else {
-        hiddenCaptureInput.removeAttribute('value');
+        hiddenCaptureInput.value = '';
       }
     }
 
@@ -892,16 +887,8 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
         this.setHiddenCaptureInputValue(dataUrl);
 
         if (originalCapture) {
-          const hiddenOriginalCaptureInput = this.imageCaptureDiv.querySelector(
-            '.js-hidden-original-capture-input',
-          );
-
-          this.ensureElementsExist({
-            hiddenOriginalCaptureInput,
-          });
-
           if (dataUrl) {
-            hiddenOriginalCaptureInput.value = dataUrl;
+            this.originalImageCaptureDataUrl = dataUrl;
             if (capturePreview.complete) {
               this.originalImageWidth = capturePreview.naturalWidth;
               this.originalImageHeight = capturePreview.naturalHeight;
@@ -912,7 +899,7 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
               };
             }
           } else {
-            hiddenOriginalCaptureInput.removeAttribute('value');
+            this.originalImageCaptureDataUrl = null;
           }
           if (this.cropper) {
             this.resetCropRotateInterfaceState();
@@ -933,28 +920,6 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
 
     loadCapturePreview({ data, type }) {
       this.loadCapturePreviewFromDataUrl({ dataUrl: `data:${type};base64,${data}` });
-    }
-
-    /**
-     * Updates the hidden capture changed flag, ensuring that users receive an unsaved changes
-     * warning if they attempt to leave the question without saving.
-     *
-     * This flag is not included in the submission data; it is used solely by the question
-     * unload event handler to detect unsaved edits to the image (e.g., after
-     * capturing, cropping, or rotating).
-     */
-    setCaptureChangedFlag(value) {
-      const hiddenCaptureChangedFlag = this.imageCaptureDiv.querySelector(
-        '.js-hidden-capture-changed-flag',
-      );
-      this.ensureElementsExist({
-        hiddenCaptureChangedFlag,
-      });
-
-      hiddenCaptureChangedFlag.value = value;
-
-      // Disable the flag if no changes have been made.
-      hiddenCaptureChangedFlag.disabled = !value;
     }
 
     async startLocalCameraCapture() {
@@ -1084,7 +1049,6 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
       this.loadCapturePreviewFromDataUrl({
         dataUrl: localCameraImagePreviewCanvas.toDataURL('image/jpeg'),
       });
-      this.setCaptureChangedFlag(true);
       this.openContainer('capture-preview');
     }
 
@@ -1151,18 +1115,6 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
     }
 
     async startCropRotate() {
-      const hiddenCaptureChangedFlag = this.imageCaptureDiv.querySelector(
-        '.js-hidden-capture-changed-flag',
-      );
-      this.ensureElementsExist({
-        hiddenCaptureChangedFlag,
-      });
-
-      this.previousCaptureChangedFlag = hiddenCaptureChangedFlag.value === 'true';
-
-      // To simplify this logic, we assume that the user will make changes if they are in the crop/rotate interface.
-      this.setCaptureChangedFlag(true);
-
       this.openContainer('crop-rotate');
 
       if (!this.cropper) {
@@ -1172,9 +1124,7 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
           cropperImage,
         });
 
-        cropperImage.src = this.imageCaptureDiv.querySelector(
-          '.js-hidden-original-capture-input',
-        ).value;
+        cropperImage.src = this.originalImageCaptureDataUrl;
 
         this.cropper = new Cropper.default(
           `#image-capture-${this.uuid} .js-cropper-container .js-cropper-base-image`,
@@ -1184,9 +1134,7 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
         this.cropper.getCropperCanvas().scaleStep = 0;
       } else {
         // If the cropper already exists, update its image source to the original capture.
-        this.cropper.getCropperImage().src = this.imageCaptureDiv.querySelector(
-          '.js-hidden-original-capture-input',
-        ).value;
+        this.cropper.getCropperImage().src = this.originalImageCaptureDataUrl;
       }
 
       const cropperHandle = this.imageCaptureDiv.querySelector(
@@ -1394,20 +1342,12 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
      * Resets the crop/rotation interface state and any transformations applied to the image.
      */
     resetAllCropRotation() {
-      const hiddenOriginalCaptureInput = this.imageCaptureDiv.querySelector(
-        '.js-hidden-original-capture-input',
-      );
-
-      this.ensureElementsExist({
-        hiddenOriginalCaptureInput,
-      });
-
       this.previousCropRotateState = null;
 
       this.cancelCropRotate(false);
 
       this.loadCapturePreviewFromDataUrl({
-        dataUrl: hiddenOriginalCaptureInput.value,
+        dataUrl: this.originalImageCaptureDataUrl,
         originalCapture: false,
       });
     }
@@ -1547,10 +1487,6 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
       if (revertToLastImage) {
         await this.setHiddenCaptureInputToCapturePreview();
       }
-
-      // Restore the previous hidden capture changed flag value.
-      // Needed for the case that the user had no changes before starting crop/rotate.
-      this.setCaptureChangedFlag(this.previousCaptureChangedFlag);
     }
 
     /**

@@ -6,10 +6,10 @@ import { z } from 'zod';
 import { logger } from '@prairielearn/logger';
 import { defaultPool } from '@prairielearn/postgres';
 
-export const AdministratorQuerySpecsSchema = z.object({
+const AdministratorQuerySpecsSchema = z.object({
   description: z.string(),
   enabled: z.boolean().optional(),
-  resultFormats: z.record(z.enum(['pre'])).optional(),
+  resultFormats: z.record(z.string(), z.enum(['pre'])).optional(),
   params: z
     .array(
       z.object({
@@ -22,11 +22,10 @@ export const AdministratorQuerySpecsSchema = z.object({
 });
 export type AdministratorQuerySpecs = z.infer<typeof AdministratorQuerySpecsSchema>;
 
-export const AdministratorQueryResultSchema = z.object({
-  rows: z.record(z.any()).array(),
-  columns: z.string().array().readonly(),
-});
-export type AdministratorQueryResult = z.infer<typeof AdministratorQueryResultSchema>;
+export interface AdministratorQueryResult {
+  rows: Record<string, any>[];
+  columns: readonly string[];
+}
 
 export async function runLegacySqlAdminQuery(
   metaUrl: string,
@@ -36,6 +35,7 @@ export async function runLegacySqlAdminQuery(
     encoding: 'utf8',
   });
   // We wanted to discourage the use of queryAsync, but it is still needed here.
+  // eslint-disable-next-line @typescript-eslint/no-deprecated
   const result = await defaultPool.queryAsync(sql, params);
   return { rows: result.rows, columns: result.fields.map((field: { name: string }) => field.name) };
 }

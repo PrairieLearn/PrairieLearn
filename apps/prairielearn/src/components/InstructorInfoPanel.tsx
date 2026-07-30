@@ -208,10 +208,14 @@ function QuestionInfo({
           </div>
         `
       : ''}
-    <div class="d-flex flex-wrap">
-      <div class="pe-1">Title:</div>
-      <div>${question.title}</div>
-    </div>
+    ${question.title?.trim()
+      ? html`
+          <div class="d-flex flex-wrap">
+            <div class="pe-1">Title:</div>
+            <div>${question.title}</div>
+          </div>
+        `
+      : ''}
   `;
 }
 

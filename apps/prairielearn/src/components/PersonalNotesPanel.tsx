@@ -12,6 +12,7 @@ export function PersonalNotesPanel({
   authz_result,
   variantId,
   allowNewUploads = true,
+  lockdownBrowser = false,
   csrfToken,
   context,
 }: {
@@ -21,6 +22,8 @@ export function PersonalNotesPanel({
   authz_result: Record<string, any>;
   variantId?: string;
   allowNewUploads?: boolean;
+  /** Hides the file-picker form; its OS file dialog would let students open desktop files. */
+  lockdownBrowser?: boolean;
   csrfToken: string;
   context: 'question' | 'assessment';
 }) {
@@ -77,8 +80,14 @@ export function PersonalNotesPanel({
                       </div>
                     `
                   : html`
-                      ${AttachFileForm({ variantId, csrfToken })}
-                      ${UploadTextForm({ variantId, csrfToken })}
+                      ${lockdownBrowser ? '' : AttachFileForm({ variantId, csrfToken })}
+                      ${UploadTextForm({
+                        variantId,
+                        csrfToken,
+                        defaultFilename: getAvailableFilename(
+                          fileList.map((file) => file.display_filename),
+                        ),
+                      })}
                     `}
             </div>
           `
@@ -128,15 +137,14 @@ function AttachFileForm({ variantId, csrfToken }: { variantId?: string; csrfToke
           </div>
         </form>
 
-        <script>
-          $(() => {
+        <script type="module">
+          // This script is type="module" so that it is deferred and runs after the DOM is ready.
+          const form = document.querySelector('form.attach-file-form');
+          const fileInput = form.querySelector('#attachFileInput');
+          const submitButton = form.querySelector('button[type="submit"]');
+          fileInput.addEventListener('change', (e) => {
             // Only enable the "submit" button if a file is selected.
-            const form = document.querySelector('form.attach-file-form');
-            const fileInput = form.querySelector('#attachFileInput');
-            const submitButton = form.querySelector('button[type="submit"]');
-            fileInput.addEventListener('change', (e) => {
-              submitButton.disabled = fileInput.files.length === 0;
-            });
+            submitButton.disabled = fileInput.files.length === 0;
           });
         </script>
       </div>
@@ -144,7 +152,15 @@ function AttachFileForm({ variantId, csrfToken }: { variantId?: string; csrfToke
   `;
 }
 
-function UploadTextForm({ variantId, csrfToken }: { variantId?: string; csrfToken: string }) {
+function UploadTextForm({
+  variantId,
+  csrfToken,
+  defaultFilename,
+}: {
+  variantId?: string;
+  csrfToken: string;
+  defaultFilename: string;
+}) {
   return html`
     <div>
       <button
@@ -168,9 +184,9 @@ function UploadTextForm({ variantId, csrfToken }: { variantId?: string; csrfToke
             class="form-control"
             aria-label="Text filename"
             name="filename"
-            value="notes.txt"
+            value="${defaultFilename}"
           />
-          <div class="mb-3">
+          <div class="mt-1 mb-3">
             <textarea
               class="form-control"
               rows="5"
@@ -232,4 +248,17 @@ function DeletePersonalNoteButton({
       <i class="far fa-trash-alt"></i>
     </button>
   `;
+}
+
+/**
+ * Returns a display filename for notes file that does not collide with any existing name
+ */
+function getAvailableFilename(existingNames: Iterable<string>): string {
+  const taken = new Set(existingNames);
+  if (!taken.has('notes.txt')) return 'notes.txt';
+
+  for (let n = 2; ; n++) {
+    const candidate = `notes${n}.txt`;
+    if (!taken.has(candidate)) return candidate;
+  }
 }

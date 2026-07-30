@@ -66,7 +66,7 @@ function productApi(req: Request, res: Response) {
   res.json(returning);
 }
 
-describe('fetchRetry()', () => {
+describe('fetchRetry()', { concurrent: false }, () => {
   const app = express();
 
   // Run a server to respond to API requests.
@@ -78,22 +78,48 @@ describe('fetchRetry()', () => {
   });
 
   app.get('/403all', (req, res) => {
-    res.status(403).json([]);
+    res.status(403).header('X-Rate-Limit-Remaining', '0.0').json([]);
   });
 
   app.get('/403oddAttempt', (req, res) => {
     if (apiCount % 2 === 1) {
-      res.status(403).json([]);
+      res.status(403).header('X-Rate-Limit-Remaining', '0.0').json([]);
     } else {
       productApi(req, res);
     }
   });
 
+  app.get('/socketCloseOdd', (req, res) => {
+    if (apiCount % 2 === 1) {
+      res.socket!.destroy(new Error('Simulated socket close'));
+    } else {
+      productApi(req, res);
+    }
+  });
+
+  app.get('/relative', (req, res) => {
+    relativeAuthorizationHeaders.push(req.get('authorization'));
+    const page = req.query.page === '2' ? 2 : 1;
+    if (page === 1) res.set('Link', '</relative?page=2>; rel="next"');
+    res.json({ page });
+  });
+
+  app.get('/redirect', (_req, res) => {
+    res.redirect('/redirected/1');
+  });
+
+  app.get('/redirected/:page', (req, res) => {
+    const page = Number(req.params.page);
+    if (page === 1) res.set('Link', '<2>; rel="next"');
+    res.json({ page });
+  });
+
   app.get('/', productApi);
 
   let apiCount: number;
+  let relativeAuthorizationHeaders: (string | undefined)[];
 
-  test.sequential('should return the full list by iterating', async () => {
+  test('should return the full list by iterating', async () => {
     apiCount = 0;
     await withServer(app, async ({ url }) => {
       const resultArray = await fetchRetryPaginated(url, {}, { sleepMs: 100 });
@@ -106,7 +132,66 @@ describe('fetchRetry()', () => {
     });
   });
 
-  test.sequential('should return the full list with a large limit', async () => {
+  test('follows relative same-origin links with the original authorization', async () => {
+    apiCount = 0;
+    relativeAuthorizationHeaders = [];
+
+    await withServer(app, async ({ url }) => {
+      await expect(
+        fetchRetryPaginated(`${url}/relative`, {
+          headers: { Authorization: 'Bearer secret' },
+        }),
+      ).resolves.toEqual([{ page: 1 }, { page: 2 }]);
+    });
+
+    expect(relativeAuthorizationHeaders).toEqual(['Bearer secret', 'Bearer secret']);
+    assert.equal(apiCount, 2);
+  });
+
+  test('resolves relative links against the effective response URL after a redirect', async () => {
+    apiCount = 0;
+
+    await withServer(app, async ({ url }) => {
+      await expect(fetchRetryPaginated(`${url}/redirect`)).resolves.toEqual([
+        { page: 1 },
+        { page: 2 },
+      ]);
+    });
+
+    assert.equal(apiCount, 3);
+  });
+
+  test('rejects a cross-origin next link before forwarding authorization', async () => {
+    let targetRequestCount = 0;
+    const target = express();
+    target.get('/', (_req, res) => {
+      targetRequestCount++;
+      res.json([]);
+    });
+
+    await withServer(target, async ({ url: targetUrl }) => {
+      const source = express();
+      source.get('/', (_req, res) => {
+        // This request handler will run on the `source` server. The `target` server
+        // is on a different port and thus a different origin, so this counts as a
+        // cross-origin link.
+        res.set('Link', `<${targetUrl}>; rel="next"`);
+        res.json({ page: 1 });
+      });
+
+      await withServer(source, async ({ url }) => {
+        await expect(
+          fetchRetryPaginated(url, {
+            headers: { Authorization: 'Bearer secret' },
+          }),
+        ).rejects.toThrow('cross-origin pagination link');
+      });
+    });
+
+    assert.equal(targetRequestCount, 0);
+  });
+
+  test('should return the full list with a large limit', async () => {
     apiCount = 0;
     await withServer(app, async ({ url }) => {
       const res = await fetchRetry(url + '?limit=100', {}, { sleepMs: 100 });
@@ -120,7 +205,7 @@ describe('fetchRetry()', () => {
     });
   });
 
-  test.sequential('should throw an error on all 403s', async () => {
+  test('should throw an error on all 403s', async () => {
     apiCount = 0;
     await withServer(app, async ({ url }) => {
       await expect(fetchRetry(url + '/403all', {}, { sleepMs: 100 })).rejects.toThrow(
@@ -130,10 +215,22 @@ describe('fetchRetry()', () => {
     });
   });
 
-  test.sequential('should return the full list by iterating with intermittent 403s', async () => {
+  test('should return the full list by iterating with intermittent 403s', async () => {
     apiCount = 0;
     await withServer(app, async ({ url }) => {
       const resultArray = await fetchRetryPaginated(url + '/403oddAttempt', {}, { sleepMs: 100 });
+      assert.equal(resultArray.length, 3);
+      const products = z.string().array().array().parse(resultArray);
+      const fullList = products.flat();
+      assert.equal(fullList.length, 26);
+      assert.equal(apiCount, 6);
+    });
+  });
+
+  test('should return the full list by iterating with intermittent connection interruptions', async () => {
+    apiCount = 0;
+    await withServer(app, async ({ url }) => {
+      const resultArray = await fetchRetryPaginated(url + '/socketCloseOdd', {}, { sleepMs: 100 });
       assert.equal(resultArray.length, 3);
       const products = z.string().array().array().parse(resultArray);
       const fullList = products.flat();

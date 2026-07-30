@@ -86,7 +86,11 @@ function connection(socket: Socket) {
       num_failed: progressData.num_failed,
       num_total: progressData.num_total,
       job_failure_message: progressData.job_failure_message,
+      job_failure_detail: progressData.job_failure_detail,
       item_statuses: progressData.item_statuses,
+      total_cost_milli_dollars: progressData.total_cost_milli_dollars,
+      num_items_incurred_cost: progressData.num_items_incurred_cost,
+      stop_state: progressData.stop_state,
     } satisfies ProgressUpdateMessage);
   });
 }
@@ -105,4 +109,20 @@ export async function emitServerJobProgressUpdate(progress: JobProgress) {
     progress,
     5 * 60 * 1000, // 5 minutes
   );
+}
+
+/**
+ * Reads the cached progress payload, merges in the provided patch, and emits
+ * a fresh update. Used to flip stop-related flags without blocking on the
+ * next item to complete.
+ */
+export async function patchServerJobProgress(
+  job_sequence_id: string,
+  patch: Partial<JobProgress>,
+): Promise<void> {
+  const cache = await getServerJobProgressCache();
+  const existing = await cache.get(`server-job-progress-${job_sequence_id}`);
+  const parsed = JobProgressSchema.safeParse(existing);
+  if (!parsed.success) return;
+  await emitServerJobProgressUpdate({ ...parsed.data, ...patch, job_sequence_id });
 }

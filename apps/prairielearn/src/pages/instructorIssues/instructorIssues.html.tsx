@@ -154,6 +154,7 @@ export function InstructorIssues({
                 type="submit"
                 data-bs-toggle="tooltip"
                 data-bs-title="Search"
+                aria-label="Search issues"
               >
                 <i className="fa fa-search" aria-hidden="true" />
               </button>
@@ -162,6 +163,7 @@ export function InstructorIssues({
                 href={`${urlPrefix}/course_admin/issues?q=`}
                 data-bs-toggle="tooltip"
                 data-bs-title="Clear filters"
+                aria-label="Clear filters"
               >
                 <i className="fa fa-times" aria-hidden="true" />
               </a>
@@ -222,6 +224,8 @@ function IssueRow({
   hasCoursePermissionEdit: boolean;
   csrfToken: string;
 }) {
+  // eslint-disable-next-line @eslint-react/purity -- server-rendered only, no re-renders
+  const now = Date.now();
   const mailtoLink = `mailto:${
     issue.user_email || issue.user_uid || '-'
   }?subject=Reported%20PrairieLearn%20Issue&body=${encodeURIComponent(
@@ -302,7 +306,7 @@ function IssueRow({
           #{issue.id} reported{' '}
           {issue.date && (
             <span title={formatDate(issue.date, issue.display_timezone)}>
-              {formatDistance(issue.date, Date.now(), { addSuffix: true })}
+              {formatDistance(issue.date, now, { addSuffix: true })}
             </span>
           )}{' '}
           {issue.showUser && (

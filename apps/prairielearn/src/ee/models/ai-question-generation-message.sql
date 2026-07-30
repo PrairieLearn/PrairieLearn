@@ -1,13 +1,15 @@
 -- BLOCK select_ai_question_generation_messages
 SELECT
-  *
+  m.*,
+  u.name AS user_name
 FROM
-  ai_question_generation_messages
+  ai_question_generation_messages AS m
+  LEFT JOIN users AS u ON u.id = m.authn_user_id
 WHERE
-  question_id = $question_id
+  m.question_id = $question_id
 ORDER BY
-  created_at ASC,
-  id ASC;
+  m.created_at ASC,
+  m.id ASC;
 
 -- BLOCK select_ai_question_generation_context_messages
 SELECT

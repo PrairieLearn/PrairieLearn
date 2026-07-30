@@ -1,17 +1,38 @@
+import { z } from 'zod';
+
 import { EncodedData } from '@prairielearn/browser-utils';
 import { html } from '@prairielearn/html';
 
 import { PageLayout } from '../../../components/PageLayout.js';
 import { compiledScriptTag } from '../../../lib/assets.js';
-import { type Institution, type Lti13Instance } from '../../../lib/db-types.js';
+import {
+  type Institution,
+  Lti13CourseInstanceSchema,
+  type Lti13Instance,
+} from '../../../lib/db-types.js';
 import type { ResLocalsForPage } from '../../../lib/res-locals.js';
 
 import { type LTI13InstancePlatforms } from './administratorInstitutionLti13.types.js';
+
+export const LinkedCourseInstanceSchema = z.object({
+  lti13_course_instance: Lti13CourseInstanceSchema,
+  course_instance_short_name: z.string().nullable(),
+  course_short_name: z.string().nullable(),
+  lineitem_resource_links: z
+    .object({
+      resource_link_id: z.string(),
+      label: z.string().nullable(),
+      assessment_title: z.string().nullable(),
+    })
+    .array(),
+});
+type LinkedCourseInstance = z.infer<typeof LinkedCourseInstanceSchema>;
 
 export function AdministratorInstitutionLti13({
   institution,
   lti13Instances,
   instance,
+  linkedCourseInstances,
   resLocals,
   platform_defaults,
   canonicalHost,
@@ -19,6 +40,7 @@ export function AdministratorInstitutionLti13({
   institution: Institution;
   lti13Instances: Lti13Instance[];
   instance: Lti13Instance | null;
+  linkedCourseInstances: LinkedCourseInstance[];
   resLocals: ResLocalsForPage<'plain'>;
   platform_defaults: LTI13InstancePlatforms;
   canonicalHost: string;
@@ -68,19 +90,32 @@ export function AdministratorInstitutionLti13({
         </div>
 
         <div class="col-9">
-          ${LTI13Instance(instance, resLocals, platform_defaults, canonicalHost)}
+          ${LTI13Instance({
+            instance,
+            linkedCourseInstances,
+            resLocals,
+            platform_defaults,
+            canonicalHost,
+          })}
         </div>
       </div>
     `,
   });
 }
 
-function LTI13Instance(
-  instance: Lti13Instance | null,
-  resLocals: ResLocalsForPage<'plain'>,
-  platform_defaults: LTI13InstancePlatforms,
-  canonicalHost: string,
-) {
+function LTI13Instance({
+  instance,
+  linkedCourseInstances,
+  resLocals,
+  platform_defaults,
+  canonicalHost,
+}: {
+  instance: Lti13Instance | null;
+  linkedCourseInstances: LinkedCourseInstance[];
+  resLocals: ResLocalsForPage<'plain'>;
+  platform_defaults: LTI13InstancePlatforms;
+  canonicalHost: string;
+}) {
   if (instance) {
     return html`
       <h3>${instance.name} (ID #${instance.id})</h3>
@@ -387,6 +422,9 @@ ${JSON.stringify(instance.custom_fields, null, 3)}</textarea
       </form>
 
       <hr />
+      ${RosterInspector({ linkedCourseInstances, resLocals })}
+
+      <hr />
       <p>
         For testing, have the LMS admin configure their OpenID Connect Initiation URL to
         <a href="${canonicalHost}/pl/lti13_instance/${instance.id}/auth/login?test">
@@ -409,4 +447,93 @@ ${JSON.stringify(instance.custom_fields, null, 3)}</textarea
   } else {
     return html`Please select an instance on the left.`;
   }
+}
+
+function RosterInspector({
+  linkedCourseInstances,
+  resLocals,
+}: {
+  linkedCourseInstances: LinkedCourseInstance[];
+  resLocals: ResLocalsForPage<'plain'>;
+}) {
+  return html`
+    <h5>NRPS roster inspector</h5>
+    <p class="text-muted">
+      Read-only diagnostic. Dumps the raw Names and Role Provisioning Service (NRPS) roster for a
+      linked course instance, optionally requesting per-member custom claims for a chosen resource
+      link. This exposes every member's <code>sub</code>, email, and UIN. No enrollments or users
+      are created or modified.
+    </p>
+    ${linkedCourseInstances.length === 0
+      ? html`<p>No course instances are linked to this LTI 1.3 instance yet.</p>`
+      : linkedCourseInstances.map((linked) => RosterInspectorForm({ linked, resLocals }))}
+  `;
+}
+
+function RosterInspectorForm({
+  linked,
+  resLocals,
+}: {
+  linked: LinkedCourseInstance;
+  resLocals: ResLocalsForPage<'plain'>;
+}) {
+  const lci = linked.lti13_course_instance;
+  const courseLabel =
+    `${linked.course_short_name ?? ''} ${linked.course_instance_short_name ?? ''}`.trim() ||
+    `Course instance ${lci.course_instance_id}`;
+
+  return html`
+    <div class="card mb-2">
+      <div class="card-body">
+        <h6 class="card-title mb-1">
+          <a
+            href="/pl/course_instance/${lci.course_instance_id}/instructor/instance_admin/lti13_instance/${lci.id}"
+            target="_blank"
+            rel="noreferrer"
+          >
+            ${courseLabel}
+          </a>
+          <span class="text-muted fw-normal">(${lci.context_label ?? 'no context label'})</span>
+        </h6>
+        ${lci.context_memberships_url === null
+          ? html`
+              <p class="text-muted mb-0">
+                No <code>context_memberships_url</code> stored yet. Have an instructor launch
+                PrairieLearn from this course in the LMS to populate it.
+              </p>
+            `
+          : html`
+              <form method="POST" class="row g-2 align-items-end">
+                <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+                <input type="hidden" name="__action" value="inspect_roster" />
+                <input type="hidden" name="lti13_course_instance_id" value="${lci.id}" />
+                <div class="col-md-9">
+                  <label class="form-label" for="rlid-${lci.id}">Resource link</label>
+                  <select class="form-select" id="rlid-${lci.id}" name="rlid">
+                    <option value="">None (plain roster, no custom claims)</option>
+                    ${lci.resource_link_id
+                      ? html`
+                          <option value="${lci.resource_link_id}">
+                            Course navigation (${lci.resource_link_id})
+                          </option>
+                        `
+                      : ''}
+                    ${linked.lineitem_resource_links.map(
+                      (li) => html`
+                        <option value="${li.resource_link_id}">
+                          Assessment: ${li.assessment_title ?? li.label ?? li.resource_link_id}
+                          (${li.resource_link_id})
+                        </option>
+                      `,
+                    )}
+                  </select>
+                </div>
+                <div class="col-md-3">
+                  <button type="submit" class="btn btn-primary w-100">Dump roster</button>
+                </div>
+              </form>
+            `}
+      </div>
+    </div>
+  `;
 }

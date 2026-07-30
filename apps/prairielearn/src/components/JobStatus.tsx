@@ -1,17 +1,24 @@
 import { type HtmlSafeString, html } from '@prairielearn/html';
+import { assertNever } from '@prairielearn/utils';
 
 import type { Job } from '../lib/db-types.js';
 
 export function JobStatus({ status }: { status: Job['status'] }) {
-  if (status === 'Running') {
-    return <span className="badge text-bg-primary">Running</span>;
-  } else if (status === 'Success') {
-    return <span className="badge text-bg-success">Success</span>;
-  } else if (status === 'Error') {
-    return <span className="badge text-bg-danger">Error</span>;
+  if (status == null) return <span className="badge text-bg-secondary">Unknown</span>;
+  switch (status) {
+    case 'Running':
+      return <span className="badge text-bg-primary">Running</span>;
+    case 'Stopping':
+      return <span className="badge text-bg-warning">Stopping</span>;
+    case 'Stopped':
+      return <span className="badge text-bg-secondary">Stopped</span>;
+    case 'Success':
+      return <span className="badge text-bg-success">Success</span>;
+    case 'Error':
+      return <span className="badge text-bg-danger">Error</span>;
+    default:
+      assertNever(status);
   }
-
-  return <span className="badge text-bg-secondary">Unknown</span>;
 }
 
 // This is intentionally a separate `html` tagged-template implementation rather
@@ -21,13 +28,19 @@ export function JobStatus({ status }: { status: Job['status'] }) {
 // the course syncs page).
 
 export function JobStatusHtml({ status }: { status: Job['status'] }): HtmlSafeString {
-  if (status === 'Running') {
-    return html`<span class="badge text-bg-primary">Running</span>`;
-  } else if (status === 'Success') {
-    return html`<span class="badge text-bg-success">Success</span>`;
-  } else if (status === 'Error') {
-    return html`<span class="badge text-bg-danger">Error</span>`;
+  if (status == null) return html`<span class="badge text-bg-secondary">Unknown</span>`;
+  switch (status) {
+    case 'Running':
+      return html`<span class="badge text-bg-primary">Running</span>`;
+    case 'Stopping':
+      return html`<span class="badge text-bg-warning">Stopping</span>`;
+    case 'Stopped':
+      return html`<span class="badge text-bg-secondary">Stopped</span>`;
+    case 'Success':
+      return html`<span class="badge text-bg-success">Success</span>`;
+    case 'Error':
+      return html`<span class="badge text-bg-danger">Error</span>`;
+    default:
+      assertNever(status);
   }
-
-  return html`<span class="badge text-bg-secondary">Unknown</span>`;
 }

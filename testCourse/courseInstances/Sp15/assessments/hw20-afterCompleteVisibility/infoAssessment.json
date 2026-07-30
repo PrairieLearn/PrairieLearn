@@ -1,0 +1,21 @@
+{
+  "uuid": "b1c2d3e4-f5a6-4b7c-8d9e-0f1a2b3c4d5e",
+  "type": "Homework",
+  "title": "After complete visibility",
+  "set": "Homework",
+  "number": "20",
+  "accessControl": [
+    {
+      "dateControl": {
+        "release": { "date": "2026-01-01T00:00:00" },
+        "due": { "date": "2026-04-10T00:00:00" },
+        "afterLastDeadline": { "allowSubmissions": false }
+      },
+      "afterComplete": {
+        "questions": { "hidden": true },
+        "score": { "hidden": true }
+      }
+    }
+  ],
+  "zones": [{ "questions": [{ "id": "addNumbers", "points": 1 }] }]
+}

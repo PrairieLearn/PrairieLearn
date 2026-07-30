@@ -60,7 +60,13 @@ function CalculationClient() {
 
 CalculationClient.prototype.initialize = function (questionData, callback) {
   var that = this;
-  requirejs(['backbone'], function (Backbone) {
+  requirejs(['backbone', 'underscore'], function (Backbone, _) {
+    // Expose underscore as `window._` for legacy v2 question factories that
+    // reference `_` without declaring it as an AMD dependency. Vendored
+    // underscore <1.10.0 set the global as a side effect of being loaded in
+    // the browser; the rollup-built UMD wrapper in newer versions does not.
+    // See https://github.com/PrairieLearn/PrairieLearn/issues/14779.
+    window._ = _;
     require([questionData.questionFilePath + '/client.js'], function (qc) {
       that.questionDataModel = new Backbone.Model();
       that.questionDataModel.set('questionFilePath', questionData.questionFilePath);

@@ -1,0 +1,15 @@
+<pl-question-panel>
+  <p>Give an example of a $2\times 2$ matrix $A$ such that $\det(A) = {{params.d}}$.</p>
+</pl-question-panel>
+
+<pl-answer-panel>
+  <p>This question has many correct answers; the answer shown here is just one example.</p>
+</pl-answer-panel>
+
+<pl-matrix-component-input answers-name="A" label="$A = $"></pl-matrix-component-input>
+
+<pl-submission-panel>
+  {{#feedback.A}}
+  <p>{{.}}</p>
+  {{/feedback.A}}
+</pl-submission-panel>

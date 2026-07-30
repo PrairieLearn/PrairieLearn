@@ -197,8 +197,8 @@ async function createMiddleware(server: ViteDevServer): Promise<Connect.HandleFu
 
 const PLUGIN_NAME = 'vite-plugin-express';
 
-type InternalModuleFormat = 'amd' | 'cjs' | 'es' | 'iife' | 'system' | 'umd';
-type ModuleFormat = InternalModuleFormat | 'commonjs' | 'esm' | 'module' | 'systemjs';
+type ModuleFormat = 'es' | 'cjs' | 'esm' | 'module' | 'commonjs' | 'iife' | 'umd';
+
 interface VitePluginExpressConfig {
   appPath: string;
   appName?: string;

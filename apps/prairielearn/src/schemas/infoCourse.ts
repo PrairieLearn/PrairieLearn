@@ -91,7 +91,8 @@ const CourseOptionsJsonSchema = z
     comment: CommentJsonSchema.optional(),
     useNewQuestionRenderer: z
       .boolean()
-      .describe('[DEPRECATED, DO NOT USE] Feature flag to enable the new question renderer.')
+      .describe('Feature flag to enable the new question renderer.')
+      .meta({ deprecated: true })
       .optional(),
     devModeFeatures: z
       .union([
@@ -102,6 +103,12 @@ const CourseOptionsJsonSchema = z
       ])
       .describe('Feature flags to enable/disable in development mode.')
       .optional(),
+    questionsReceiveUserData: z
+      .boolean()
+      .describe(
+        'If true, server.py receives the variant owner\'s identity (UID, UIN, name) and group data (if applicable) via `data["options"]["user"]` and `data["options"]["group"]`. The user value is null for group variants. Only takes effect when the question is rendered in its owning course; data is omitted for questions imported via sharing. This JSON setting is honored only in development mode. In production, configure this on the course settings page; sync reports a warning if the JSON value differs from the production setting.',
+      )
+      .optional(),
   })
   .strict()
   .describe('Options for this course.');
@@ -109,11 +116,7 @@ const CourseOptionsJsonSchema = z
 export const CourseJsonSchema = z
   .object({
     comment: CommentJsonSchema.optional(),
-    uuid: z
-      .string()
-      .regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/)
-      .describe('[DEPRECATED, DO NOT USE] Unique identifier (UUID v4).')
-      .optional(),
+    uuid: z.guid().describe('Unique identifier (UUID).').meta({ deprecated: true }).optional(),
     name: z.string().describe("The course name (e.g., 'TAM 212')."),
     title: z.string().describe("The course title (e.g., 'Introductory Dynamics')."),
     timezone: z
@@ -152,7 +155,8 @@ export const CourseJsonSchema = z
       .optional(),
   })
   .strict()
-  .describe('The specification file for a course.');
+  .describe('The specification file for a course.')
+  .meta({ title: 'Course information' });
 
 export type CourseJson = z.infer<typeof CourseJsonSchema>;
 export type CourseJsonInput = z.input<typeof CourseJsonSchema>;

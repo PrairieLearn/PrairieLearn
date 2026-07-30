@@ -187,6 +187,13 @@ def grade(data):
         data["feedback"]["y"] = "Your value for $y$ is larger than $x$, but incorrect."
 ```
 
+### Grading without a fixed correct answer
+
+A custom `grade` function is not limited to comparing the submission against `data["correct_answers"]`:
+
+- For questions with many correct answers (e.g., "give an example of a matrix with some property"), the grade function can check that the submitted answer satisfies the required property. In this case, `data["correct_answers"]` can hold one example of a valid answer to show to students. See [this demo question](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/custom/gradeAnyValidAnswer) for an example.
+- For questions where students collect their own data (e.g., measurements from a lab experiment), the grade function can compute the expected answer from the student's own submitted values, so that any answer consistent with their data is accepted. See [this demo question](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/custom/gradeFromStudentData) for an example.
+
 ### Providing feedback
 
 To set custom feedback, the grading function should set the corresponding entry in the `data["feedback"]` dictionary. These feedback entries are passed in when rendering the `question.html`, which can be accessed by using the mustache prefix `{{feedback.}}`. See the [above example](#complete-example) or [this demo question](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/custom/gradeFunction) for examples of this.
@@ -320,22 +327,63 @@ As shown in the table, all functions (except for `render`) accept a single argum
 
 ### `data` dictionary
 
-| Attribute               | Type    | Description                                                                                                                          |
-| ----------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| `params`                | `dict`  | Parameters for the question variant. These are set in the `generate()` function and can be used in the `question.html` file.         |
-| `correct_answers`       | `dict`  | Correct answers for the question variant. Each item maps from a named answer to a value.                                             |
-| `submitted_answers`     | `dict`  | Student answers submitted for the question after parsing.                                                                            |
-| `raw_submitted_answers` | `dict`  | Raw student answers submitted for the question.                                                                                      |
-| `format_errors`         | `dict`  | Dictionary of format errors for each answer. Each item maps from a named answer to an error message.                                 |
-| `partial_scores`        | `dict`  | Dictionary of partial scores for each answer. Each entry is a dictionary with the keys `score` (float) and `weight` (int, optional). |
-| `score`                 | `float` | The total score for the question variant.                                                                                            |
-| `feedback`              | `dict`  | Dictionary of [feedback](#providing-feedback) for each answer. Each item maps from a named answer to a feedback message.             |
-| `variant_seed`          | `int`   | The [random seed](#randomization) for this question variant.                                                                         |
-| `options`               | `dict`  | Any options associated with the question, e.g. for [accessing files](#accessing-files-on-disk)                                       |
-| `filename`              | `str`   | The name of the [dynamic file requested](#generating-dynamic-files-with-file) in the `file()` function.                              |
-| `test_type`             | `str`   | The type of test being run in the [`test()` function](#testing-questions-with-test).                                                 |
+| Attribute               | Type    | Description                                                                                                                                                         |
+| ----------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `params`                | `dict`  | Parameters for the question variant. These are set in the `generate()` function and can be used in the `question.html` file.                                        |
+| `correct_answers`       | `dict`  | Correct answers for the question variant. Each item maps from a named answer to a value.                                                                            |
+| `submitted_answers`     | `dict`  | Student answers submitted for the question after parsing.                                                                                                           |
+| `raw_submitted_answers` | `dict`  | Raw student answers submitted for the question.                                                                                                                     |
+| `format_errors`         | `dict`  | Dictionary of format errors for each answer. Each item maps from a named answer to an error message.                                                                |
+| `partial_scores`        | `dict`  | Dictionary of partial scores for each answer. Each entry is a dictionary with the keys `score` (float) and `weight` (int, optional).                                |
+| `score`                 | `float` | The total score for the question variant.                                                                                                                           |
+| `feedback`              | `dict`  | Dictionary of [feedback](#providing-feedback) for each answer. Each item maps from a named answer to a feedback message.                                            |
+| `variant_seed`          | `int`   | The [random seed](#randomization) for this question variant.                                                                                                        |
+| `preferences`           | `dict`  | Read-only [question preferences](preferences.md) for the current assessment context. Values come from the question's defaults merged with any assessment overrides. |
+| `options`               | `dict`  | System-provided options such as file paths and URLs (see [accessing files](#accessing-files-on-disk)).                                                              |
+| `filename`              | `str`   | The name of the [dynamic file requested](#generating-dynamic-files-with-file) in the `file()` function.                                                             |
+| `test_type`             | `str`   | The type of test being run in the [`test()` function](#testing-questions-with-test).                                                                                |
+| `answers_names`         | `dict`  | A dictionary whose keys list the names of the answers in the question.                                                                                              |
+| `panel`                 | `str`   | Which panel is being rendered (`question`, `submission`, or `answer`).                                                                                              |
+| `correct_answer_shown`  | `bool`  | Whether the answer panel is being rendered (for use when rendering other panels).                                                                                   |
+| `editable`              | `bool`  | Whether the question is currently in an editable state.                                                                                                             |
+| `num_valid_submissions` | `int`   | The number of valid (not containing format errors) submissions by the student for the current variant.                                                              |
+| `manual_grading`        | `bool`  | Whether manual-grading content should be shown. This is `true` in the manual grading view, and also for question and answer panels when rendered for AI grading.    |
+| `ai_grading`            | `bool`  | Whether the question is being rendered for AI grading.                                                                                                              |
+| `gradable`              | `bool`  | Whether the submission can be graded. Automatically set to `false` if there are format errors.                                                                      |
 
-The key `data` fields and their types are described above. You can view a full list of all fields in the [`QuestionData` reference](../python-reference/prairielearn/question_utils.md#prairielearn.question_utils.QuestionData).
+Not all fields are available in every function — some are only present in specific phases. See the [data field scopes](#data-field-scopes) table below for details. You can also view a full list of all fields in the [`QuestionData` reference](../python-reference/prairielearn/question_utils.md#prairielearn.question_utils.QuestionData).
+
+### Data field scopes
+
+Each field in the `data` dictionary is either stored **per-variant** (shared across all submissions) or **per-submission** (unique to each student submission). Certain fields are only available in specific functions.
+
+| Field                   | Scope            | Notes                                           |
+| ----------------------- | ---------------- | ----------------------------------------------- |
+| `params`                | Both             | Stored on both the variant and each submission. |
+| `correct_answers`       | Both             | Stored on both the variant and each submission. |
+| `submitted_answers`     | Submission       | —                                               |
+| `raw_submitted_answers` | Submission       | —                                               |
+| `format_errors`         | Submission       | —                                               |
+| `partial_scores`        | Submission       | —                                               |
+| `score`                 | Submission       | —                                               |
+| `feedback`              | Submission       | —                                               |
+| `preferences`           | Variant          |                                                 |
+| `variant_seed`          | Variant          | —                                               |
+| `options`               | Variant          | —                                               |
+| `filename`              | None (not saved) | Only in `file()`.                               |
+| `test_type`             | None (not saved) | Only in `test()`.                               |
+| `answers_names`         | None (not saved) | Only in `prepare()`.                            |
+| `panel`                 | None (not saved) | Only in `render()`.                             |
+| `correct_answer_shown`  | None (not saved) | Only in `render()`.                             |
+| `editable`              | None (not saved) | Only in `render()`.                             |
+| `num_valid_submissions` | None (not saved) | Only in `render()`.                             |
+| `manual_grading`        | None (not saved) | Only in `render()`.                             |
+| `ai_grading`            | None (not saved) | Only in `render()`.                             |
+| `gradable`              | Submission       | Only in `parse()`, `grade()`, and `test()`.     |
+
+!!! note
+
+    `params` and `correct_answers` are set per-variant in `generate()` and stored on both the variant and each submission. The submission copies are point-in-time snapshots. If `parse()` or `grade()` modifies these values, the updated values are saved to both the variant and the submission.
 
 ## Question data storage
 
@@ -362,30 +410,43 @@ The [`pl.to_json`][prairielearn.conversion_utils.to_json] function supports keyw
 
 ## Accessing files on disk
 
-From within `server.py` functions, directories can be accessed as:
+The functions in `server.py` can also retrieve the content from various directories related to the question, such as `serverFilesCourse/` and `clientFilesQuestion/`, through the `data["options"]` dictionary. For more details, see the [documentation on client and server files](../clientServerFiles.md#accessing-files-from-serverpy-question-code).
+
+### Accessing user and group identity
+
+Courses can opt in so that `server.py` receives user and group identity. A course owner can enable this on the course settings page. When enabled, `data["options"]` contains two extra keys: `data["options"]["user"]` and `data["options"]["group"]`.
 
 ```python
-# on-disk location of the current question directory
-data["options"]["question_path"]
+def generate(data):
+    user = data["options"]["user"]    # Variant owner; None on group assessments
+    # { "uid": "student@example.com", "uin": "123456", "name": "John Doe" }
+    group = data["options"]["group"]  # None on individual assessments
+    # { "name": "Group 1", "members": [ { "uid": "student@example.com", "uin": "123456", "name": "John Doe" } ] }
 
-# on-disk location of clientFilesQuestion/
-data["options"]["client_files_question_path"]
+    if user is not None:
+        data["params"]["greeting"] = f"Hello, {user['name']}!"
 
-# URL location of clientFilesQuestion/ (only in render() function)
-data["options"]["client_files_question_url"]
-
-# URL location of dynamically-generated question files (only in render() function)
-data["options"]["client_files_question_dynamic_url"]
-
-# on-disk location of clientFilesCourse/
-data["options"]["client_files_course_path"]
-
-# URL location of clientFilesCourse/ (only in render() function)
-data["options"]["client_files_course_url"]
-
-# on-disk location of serverFilesCourse/
-data["options"]["server_files_course_path"]
+    if group is not None:
+        # group["members"] entries have the same shape as `user`.
+        data["params"]["group_member_uids"] = [m["uid"] for m in group["members"]]
 ```
+
+The `user` dict has the keys `uid` (always present), `uin`, and `name` (the latter two may be `None`). It is `None` on group assessments.
+The `group` dict has `name` and `members` (a list with the same shape as `user`). It is `None` if the assessment is individual work.
+
+??? info "Whose identity is provided"
+
+    When a staff member opens a student variant (e.g., in manual grading or opening student view), the `user` corresponds to the student that owns the variant, not the staff member or current viewer. Group assessments receive `None` because the shared variant has no single owner.
+
+    A group's members can change over time: the members when a question was generated may be different than when a question is graded. Similarly, a user's name, UID, and UIN may also change over time. The value of `options["user"]` and `options["group"]` will always reflect the latest information.
+
+User and group data are provided to `server.py` only when **all** of the following are true:
+
+1. The course has opted in so that `server.py` receives user data. In production, a course owner enables this on the course settings page; for local development, it can instead be set with `"questionsReceiveUserData": true` under `"options"` in `infoCourse.json`, which is honored only in development mode.
+2. The question is not shared. Once a question is shared publicly or has its source shared publicly, `server.py` never receives user data, including in the question's own course and in public previews.
+3. The question is rendered in its original course. For questions imported from another course via a sharing set, `server.py` never receives user data, regardless of either course's settings.
+
+When user data is not provided to `server.py`, `data["options"]["user"]` and `data["options"]["group"]` are both `None`. The keys are always present.
 
 ## Generating dynamic files with `file()`
 
@@ -428,6 +489,49 @@ We recommend using the [`pl-figure`](../elements/pl-figure.md) and [`pl-file-dow
     <p>Here is a dynamically-rendered figure showing a line of slope $a = {{params.a}}$:</p>
     <img src="{{options.client_files_question_dynamic_url}}/fig.png" />
     ```
+
+### Dynamic files that rely on submission data
+
+When a dynamic file is included in a submission panel, it will also get access to the submission information, including `data["submitted_answers"]`, `data["score"]`, `data["partial_scores"]`, and [all other submission-related data listed above](#data-field-scopes).
+
+If your dynamic file relies on submission data (e.g., `data["submitted_answers"]`), you should ensure that the `pl-figure` or `pl-file-download` element is only visible in the submission panel. This can be done by wrapping the element in a `<pl-submission-panel>` tag, as shown below. This ensures that the file is only generated after the student has submitted an answer.
+
+```html title="question.html"
+<pl-submission-panel>
+  <p>Here is a dynamically-rendered figure showing your submitted answer:</p>
+  <pl-figure file-name="submitted.png" type="dynamic"></pl-figure>
+</pl-submission-panel>
+```
+
+Note that the submission panel will include the file for any kind of submission, including:
+
+- Valid (correct or incorrect) submissions.
+- Invalid submissions (e.g., submissions with format errors).
+- "Save only" submissions (e.g., when the student clicks "Save only" or in an assessment without real-time grading).
+
+You should ensure that your file generation code can handle all of these cases. For example, if the file relies on a valid submitted answer, you should check that the answer is present and valid in `data["submitted_answers"]` before using it. If the answer is not present, you can generate a default file or a blank image.
+
+```python title="server.py"
+def file(data):
+    if data["filename"] == "submitted.png":
+        if data["submitted_answers"].get("y") is None:
+            # generate a default image
+        else:
+            # generate the file using data["submitted_answers"]["y"]
+```
+
+Alternatively, you can include the image in the HTML only when the answer is present and valid, using a mustache conditional on `data["format_errors"]`:
+
+```html title="question.html"
+<pl-submission-panel>
+  {{^format_errors.y}}
+  <p>Here is a dynamically-rendered figure showing your submitted answer:</p>
+  <pl-figure file-name="submitted.png" type="dynamic"></pl-figure>
+  {{/format_errors.y}}
+</pl-submission-panel>
+```
+
+In particular, note that for "Save only" submissions, scores will not be populated. If your dynamic file uses score information, you should check that `data["score"]` or the values in `data["partial_scores"]` are not `None` before using them.
 
 ## Testing questions with `test()`
 

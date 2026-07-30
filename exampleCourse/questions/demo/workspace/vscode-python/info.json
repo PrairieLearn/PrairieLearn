@@ -7,13 +7,10 @@
   "singleVariant": true,
   "workspaceOptions": {
     "image": "prairielearn/workspace-vscode-python",
-    "port": 8080,
-    "home": "/home/coder/workspace",
     "gradedFiles": ["fibonacci.py"]
   },
   "gradingMethod": "External",
   "externalGradingOptions": {
-    "enabled": true,
     "image": "prairielearn/grader-python",
     "timeout": 20
   }

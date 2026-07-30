@@ -77,4 +77,13 @@ onDocumentReady(() => {
     const tooltip = window.bootstrap.Tooltip.getInstance(event.target as HTMLElement);
     if (tooltip) openTooltips.delete(tooltip);
   });
+
+  // WCAG 1.4.13: content shown on hover/focus must be dismissible without
+  // moving the pointer or focus. Bootstrap tooltips don't do this on their own,
+  // so we hide any open tooltips when Escape is pressed (mirroring popovers).
+  on('keydown', 'body', (event) => {
+    if (event.key === 'Escape') {
+      closeOpenTooltips();
+    }
+  });
 });

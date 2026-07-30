@@ -1,0 +1,23 @@
+{
+  "uuid": "c3d4e5f6-a7b8-49c0-9d1e-2f3a4b5c6d7e",
+  "type": "Exam",
+  "title": "Password-protected timed exam",
+  "set": "Exam",
+  "number": "22",
+  "requireHonorCode": false,
+  "accessControl": [
+    {
+      "dateControl": {
+        "release": { "date": "2026-01-01T00:00:00" },
+        "due": { "date": "2026-04-10T00:00:00" },
+        "durationMinutes": 10,
+        "password": "secret"
+      },
+      "afterComplete": {
+        "questions": { "hidden": false },
+        "score": { "hidden": false }
+      }
+    }
+  ],
+  "zones": [{ "questions": [{ "id": "addNumbers", "autoPoints": 1 }] }]
+}

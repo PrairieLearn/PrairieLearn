@@ -89,26 +89,83 @@ FROM
   new_job_sequence,
   new_job;
 
+-- BLOCK stop_job_sequence
+UPDATE job_sequences
+SET
+  status = 'Stopping',
+  stop_requested_by_authn_user_id = $authn_user_id
+WHERE
+  id = $job_sequence_id
+  AND status = 'Running'
+  AND (
+    $type::text IS NULL
+    OR type = $type::text
+  )
+  AND (
+    $assessment_question_id::bigint IS NULL
+    OR assessment_question_id = $assessment_question_id::bigint
+  );
+
+-- BLOCK select_ongoing_job_sequences
+SELECT
+  id
+FROM
+  job_sequences
+WHERE
+  status IN ('Running', 'Stopping')
+  AND (
+    $type::text IS NULL
+    OR type = $type::text
+  )
+  AND (
+    $assessment_question_id::bigint IS NULL
+    OR assessment_question_id = $assessment_question_id::bigint
+  );
+
+-- BLOCK select_job_sequence_status
+SELECT
+  status
+FROM
+  job_sequences
+WHERE
+  id = $job_sequence_id;
+
 -- BLOCK update_job_on_finish
+-- Atomically project 'Stopping' → 'Stopped' on a successful finish so a
+-- concurrent stop click can't be overwritten by Success.
 WITH
   updated_job AS (
     UPDATE jobs AS j
     SET
       finish_date = CURRENT_TIMESTAMP,
-      status = $status::enum_job_status,
+      status = CASE
+        WHEN js.status = 'Stopping'::enum_job_status
+        AND $status::enum_job_status = 'Success'::enum_job_status THEN 'Stopped'::enum_job_status
+        ELSE $status::enum_job_status
+      END,
       output = $output,
       data = $data::jsonb
+    FROM
+      job_sequences AS js
     WHERE
       j.id = $job_id
       AND j.status = 'Running'::enum_job_status
+      AND js.id = $job_sequence_id
   )
 UPDATE job_sequences AS js
 SET
   finish_date = CURRENT_TIMESTAMP,
-  status = $status::enum_job_status
+  status = CASE
+    WHEN js.status = 'Stopping'::enum_job_status
+    AND $status::enum_job_status = 'Success'::enum_job_status THEN 'Stopped'::enum_job_status
+    ELSE $status::enum_job_status
+  END
 WHERE
   js.id = $job_sequence_id
-  AND js.status = 'Running'::enum_job_status;
+  AND js.status IN (
+    'Running'::enum_job_status,
+    'Stopping'::enum_job_status
+  );
 
 -- BLOCK select_job_output
 SELECT
@@ -176,7 +233,12 @@ FROM
   job_sequence_updates AS j
 WHERE
   js.id = j.job_sequence_id
-  AND j.update_job_sequence;
+  AND j.update_job_sequence
+  -- Don't overwrite a sequence that already reached a terminal state via
+  -- another path. Without this guard, an orchestrator that landed the
+  -- sequence in Stopped before the inner job naturally settled could see
+  -- the abandoned-job sweeper overwrite Stopped with Error.
+  AND js.status NOT IN ('Stopped', 'Success', 'Error');
 
 -- BLOCK select_abandoned_jobs
 SELECT
@@ -193,10 +255,12 @@ WHERE
 -- BLOCK error_abandoned_job_sequences
 UPDATE job_sequences AS js
 SET
-  status = 'Error',
+  -- Abandoned workers always land Error so failures aren't masked.
+  -- Cancellation intent stays recorded on stop_requested_by_authn_user_id.
+  status = 'Error'::enum_job_status,
   finish_date = CURRENT_TIMESTAMP
 WHERE
-  js.status = 'Running'
+  js.status IN ('Running', 'Stopping')
   AND age (js.start_date) > interval '1 hours'
   AND (
     (
@@ -275,30 +339,3 @@ SET
   heartbeat_at = CURRENT_TIMESTAMP
 WHERE
   j.id = ANY ($job_ids::bigint[]);
-
--- BLOCK select_job_sequence_ids
-SELECT
-  js.id
-FROM
-  job_sequences AS js
-WHERE
-  (
-    $assessment_question_id::bigint IS NULL
-    OR js.assessment_question_id = $assessment_question_id::bigint
-  )
-  AND (
-    $course_id::bigint IS NULL
-    OR js.course_id = $course_id::bigint
-  )
-  AND (
-    $course_instance_id::bigint IS NULL
-    OR js.course_instance_id = $course_instance_id::bigint
-  )
-  AND (
-    $status::enum_job_status IS NULL
-    OR js.status = $status::enum_job_status
-  )
-  AND (
-    $type::text IS NULL
-    OR js.type = $type::text
-  );

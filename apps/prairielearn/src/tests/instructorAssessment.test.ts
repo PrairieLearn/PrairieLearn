@@ -2,6 +2,8 @@ import * as cheerio from 'cheerio';
 import type { DataNode, Element } from 'domhandler';
 import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
+import { selectAssessmentInstancesForTable } from '../trpc/assessment/assessment-instances.js';
+
 import * as helperExam from './helperExam.js';
 import type { TestExamQuestion } from './helperExam.js';
 import * as helperQuestion from './helperQuestion.js';
@@ -174,23 +176,15 @@ describe('Instructor assessment editing', { timeout: 20_000 }, function () {
     it('should parse', function () {
       locals.$ = cheerio.load(page);
     });
-    it('should load raw data file successfully', async () => {
-      locals.instructorAssessmentInstancesUrl =
-        locals.instructorAssessmentUrl + 'instances/raw_data.json';
-      const res = await fetch(locals.instructorAssessmentInstancesUrl);
-      assert.equal(res.status, 200);
-      page = await res.text();
-    });
-    it('should parse as JSON array of objects', function () {
-      locals.pageData = JSON.parse(page);
-      assert.isArray(locals.pageData);
-      locals.pageData.forEach((obj) => assert.isObject(obj));
-    });
-    it('should contain the assessment instance', function () {
-      const pageItems = locals.pageData.filter((row) => row.uid === 'dev@example.com');
+    it('should contain the assessment instance', async () => {
+      const rows = await selectAssessmentInstancesForTable({
+        assessment_id: locals.assessment_id,
+        timezone: 'UTC',
+      });
+      const pageItems = rows.filter((row) => row.user?.uid === 'dev@example.com');
       assert.lengthOf(pageItems, 1);
       locals.instructorAssessmentInstanceUrl =
-        locals.instructorBaseUrl + '/assessment_instance/' + pageItems[0].assessment_instance_id;
+        locals.instructorBaseUrl + '/assessment_instance/' + pageItems[0].assessment_instance.id;
     });
   });
 

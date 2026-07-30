@@ -4,6 +4,9 @@ body:
   - type: textarea
     attributes:
       label: Details
+      description: >-
+        Please explain what problem you are trying to solve. This helps avoid the
+        [XY problem](https://en.wikipedia.org/wiki/XY_problem).
       placeholder: Type your description here...
     validations:
       required: true

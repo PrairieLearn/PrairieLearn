@@ -5,6 +5,8 @@ Some questions may require manual grading, either fully (e.g., freeform essay-ty
 - Course staff may download a CSV file with student answers, perform any grading tasks offline, and upload a CSV file with question scores and optional per-question feedback.
 - An online web interface is available for grading individual instance questions.
 
+Manually graded questions can also be graded with [AI grading](../aiGrading/index.md), which uses a large language model to apply your rubric to each submission.
+
 ## Configuring a question for manual grading
 
 For questions that require manual grading, the question can be set up for manual grading by using `manualPoints` in the [assessment configuration](../assessment/configuration.md#question-specification), like this:
@@ -62,7 +64,7 @@ The `<assessment>_files_for_manual_grading.zip` file contains all files uploaded
 
 ### Uploading the scores and feedback
 
-After editing the percentage score and/or feedback for each submitted answer, upload the CSV file by going to the assessment page, then the "Uploads" tab, and selecting "Upload new question scores". If you leave either `score_perc` or `feedback` (or both) blank for any student, then the corresponding entry will not be updated.
+After editing the percentage score and/or feedback for each submitted answer, upload the CSV file by going to the assessment page, then the "Students" tab, and selecting "Upload question scores" from the "Upload" menu. If you leave either `score_perc` or `feedback` (or both) blank for any student, then the corresponding entry will not be updated.
 
 The submission associated with each row in the CSV file is identified through one of the following methods (in order of precedence):
 

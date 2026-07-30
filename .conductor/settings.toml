@@ -1,0 +1,13 @@
+"$schema" = "https://conductor.build/schemas/settings.repo.schema.json"
+
+[scripts]
+setup = "./scripts/conductor-setup.sh"
+
+[scripts.run.app]
+command = "make dev"
+default = true
+icon = "play"
+
+[scripts.run.docs]
+command = "make dev-docs"
+icon = "book-open"

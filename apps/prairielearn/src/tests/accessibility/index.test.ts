@@ -1,9 +1,8 @@
 import { A11yError, A11yResults } from '@sa11y/format';
-import axe from 'axe-core';
+import axe, { type RuleObject } from 'axe-core';
 import { HTMLRewriter } from 'html-rewriter-wasm';
-import { HtmlValidate, formatterFactory } from 'html-validate';
+import { HtmlValidate, type RuleConfig, formatterFactory } from 'html-validate';
 import { JSDOM, VirtualConsole } from 'jsdom';
-import fetch from 'node-fetch';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
 import expressListEndpoints, { type Endpoint } from '@prairielearn/express-list-endpoints';
@@ -74,10 +73,68 @@ async function loadPageJsdom(url: string): Promise<{ text: string; jsdom: JSDOM 
   return { text: output, jsdom: new JSDOM(output, { virtualConsole }) };
 }
 
+const BASE_HTML_VALIDATE_RULES: RuleConfig = {
+  // React 19's renderToString outputs camelCase attribute names (e.g., colSpan
+  // instead of colspan). HTML is case-insensitive, so we accept both.
+  'attr-case': ['error', { style: ['lowercase', 'camelcase'] }],
+  'bootstrap4-construct': 'error',
+  // The assessment password page uses autocomplete="off" because the input
+  // is for a proctor-provided password, not a user account password.
+  'autocomplete-password': 'off',
+  'attribute-boolean-style': 'off',
+  'attribute-empty-style': 'off',
+  deprecated: ['error', { exclude: ['tt'] }],
+  'doctype-style': 'off',
+  // Multiple form controls with the same name is valid HTML for array submission.
+  // This is used by multi-select comboboxes to submit arrays of values.
+  'form-dup-name': 'off',
+  // This rule is mostly relevant for SEO, which doesn't matter since our
+  // pages aren't ever crawled by search engines.
+  'long-title': 'off',
+  'no-inline-style': 'off',
+  'no-trailing-whitespace': 'off',
+  'script-type': 'off',
+  'unique-landmark': 'off',
+  // React 19's useId() generates IDs like "_R_1lc_" which don't begin with a
+  // letter. We use relaxed mode to allow any non-empty ID without whitespace.
+  'valid-id': ['error', { relaxed: true }],
+  'void-style': 'off',
+  'wcag/h63': 'off',
+  // We use `role="radiogroup"` and `role="radio"` for custom radio buttons.
+  'prefer-native-element': ['error', { exclude: ['radiogroup', 'radio'] }],
+};
+
+/**
+ * Per-route rule overrides for the HTML validator. Use this when a specific
+ * page has legitimate violations that don't apply globally.
+ */
+const ROUTE_RULE_OVERRIDES: Record<string, RuleConfig> = {
+  // The assessment editor tree rows use <div role="button"> because they
+  // contain interactive children (links, drag handles) that cannot be nested
+  // inside a native <button>.
+  '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/questions': {
+    'prefer-native-element': ['error', { exclude: ['radiogroup', 'radio', 'button'] }],
+  },
+  // The access control summary uses table roles on a CSS grid so that
+  // columns can span and collapse responsively, which a native <table> can't do.
+  '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/access': {
+    'prefer-native-element': [
+      'error',
+      { exclude: ['radiogroup', 'radio', 'table', 'row', 'columnheader', 'cell'] },
+    ],
+  },
+};
+
+const A11Y_RULE_OVERRIDES: Record<string, RuleObject> = {
+  '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/questions': {
+    'nested-interactive': { enabled: false },
+  },
+};
+
 /**
  * Checks the given URL for accessibility violations.
  */
-async function checkPage(url: string) {
+async function checkPage(url: string, routePath?: string) {
   const { text, jsdom } = await loadPageJsdom(SITE_URL + url);
 
   let messages = '';
@@ -86,34 +143,12 @@ async function checkPage(url: string) {
   // pretty much every page in the application, we'll piggyback on them
   // to also run HTML validation.
   const validator = new HtmlValidate();
+  const routeOverrides = routePath ? (ROUTE_RULE_OVERRIDES[routePath] ?? {}) : {};
   const validationResults = await validator.validateString(text, {
     plugins: [Bootstrap4ConstructPlugin],
     rules: {
-      // React 19's renderToString outputs camelCase attribute names (e.g., colSpan
-      // instead of colspan). HTML is case-insensitive, so we accept both.
-      'attr-case': ['error', { style: ['lowercase', 'camelcase'] }],
-      'bootstrap4-construct': 'error',
-      // The assessment password page uses autocomplete="off" because the input
-      // is for a proctor-provided password, not a user account password.
-      'autocomplete-password': 'off',
-      'attribute-boolean-style': 'off',
-      'attribute-empty-style': 'off',
-      deprecated: ['error', { exclude: ['tt'] }],
-      'doctype-style': 'off',
-      // This rule is mostly relevant for SEO, which doesn't matter since our
-      // pages aren't ever crawled by search engines.
-      'long-title': 'off',
-      'no-inline-style': 'off',
-      'no-trailing-whitespace': 'off',
-      'script-type': 'off',
-      'unique-landmark': 'off',
-      // React 19's useId() generates IDs like "_R_1lc_" which don't begin with a
-      // letter. We use relaxed mode to allow any non-empty ID without whitespace.
-      'valid-id': ['error', { relaxed: true }],
-      'void-style': 'off',
-      'wcag/h63': 'off',
-      // We use `role="radiogroup"` and `role="radio"` for custom radio buttons.
-      'prefer-native-element': ['error', { exclude: ['radiogroup', 'radio'] }],
+      ...BASE_HTML_VALIDATE_RULES,
+      ...routeOverrides,
     },
   });
 
@@ -152,6 +187,7 @@ async function checkPage(url: string) {
 
   const axeResults = await axe.run(jsdom.window.document.documentElement, {
     resultTypes: ['violations', 'incomplete'],
+    rules: routePath && routePath in A11Y_RULE_OVERRIDES ? A11Y_RULE_OVERRIDES[routePath] : {},
   });
   if (axeResults.violations.length > 0) {
     const err = new A11yError(
@@ -209,11 +245,11 @@ const SKIP_ROUTES = [
   // These routes just render JSON.
   /^\/pl\/api\/v1\//,
   /\.json$/,
+  '/pl/request_course/check',
 
   // Static assets.
   '/assets/elements/:cachebuster/*',
   '/pl/static/elements/*',
-  '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/instances/client.js',
 
   // File downloads.
   '/pl/course_instance/:course_instance_id/assessment_instance/:assessment_instance_id/file/:unsafe_file_id/:unsafe_display_filename',
@@ -231,16 +267,16 @@ const SKIP_ROUTES = [
   '/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/clientFilesCourse/*',
   '/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/clientFilesQuestion/*',
   '/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/generatedFilesQuestion/variant/:unsafe_variant_id/*',
+  '/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/generatedFilesQuestion/submission/:unsafe_submission_id/*',
   '/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/submission/:unsafe_submission_id/file/*',
   '/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/text/:filename',
   '/pl/course_instance/:course_instance_id/instructor/assessment_instance/:assessment_instance_id/:filename',
-  '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/assessment_statistics/:filename',
+  '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/statistics/:filename',
   '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/clientFilesCourse/*',
   '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/clientFilesCourseInstance/*',
   '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/clientFilesAssessment/*',
   '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/downloads/:filename',
   '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/file_download/*',
-  '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/question_statistics/:filename',
   '/pl/course_instance/:course_instance_id/instructor/cacheableElementExtensions/:cachebuster/*',
   '/pl/course_instance/:course_instance_id/instructor/cacheableElements/:cachebuster/*',
   '/pl/course_instance/:course_instance_id/instructor/clientFilesCourse/*',
@@ -256,10 +292,12 @@ const SKIP_ROUTES = [
   '/pl/course_instance/:course_instance_id/instructor/instance_question/:instance_question_id/clientFilesCourse/*',
   '/pl/course_instance/:course_instance_id/instructor/instance_question/:instance_question_id/clientFilesQuestion/*',
   '/pl/course_instance/:course_instance_id/instructor/instance_question/:instance_question_id/generatedFilesQuestion/variant/:unsafe_variant_id/*',
+  '/pl/course_instance/:course_instance_id/instructor/instance_question/:instance_question_id/generatedFilesQuestion/submission/:unsafe_submission_id/*',
   '/pl/course_instance/:course_instance_id/instructor/instance_question/:instance_question_id/submission/:unsafe_submission_id/file/*',
   '/pl/course_instance/:course_instance_id/instructor/question/:question_id/clientFilesCourse/*',
   '/pl/course_instance/:course_instance_id/instructor/question/:question_id/clientFilesQuestion/*',
   '/pl/course_instance/:course_instance_id/instructor/question/:question_id/generatedFilesQuestion/variant/:unsafe_variant_id/*',
+  '/pl/course_instance/:course_instance_id/instructor/question/:question_id/generatedFilesQuestion/submission/:unsafe_submission_id/*',
   '/pl/course_instance/:course_instance_id/instructor/question/:question_id/file_download/*',
   '/pl/course_instance/:course_instance_id/instructor/question/:question_id/file/:filename',
   '/pl/course_instance/:course_instance_id/instructor/question/:question_id/preview/file/:filename',
@@ -282,6 +320,7 @@ const SKIP_ROUTES = [
   '/pl/course/:course_id/question/:question_id/file_download/*',
   '/pl/course/:course_id/question/:question_id/file/:filename',
   '/pl/course/:course_id/question/:question_id/generatedFilesQuestion/variant/:unsafe_variant_id/*',
+  '/pl/course/:course_id/question/:question_id/generatedFilesQuestion/submission/:unsafe_submission_id/*',
   '/pl/course/:course_id/question/:question_id/preview/file/:filename',
   '/pl/course/:course_id/question/:question_id/preview/text/:filename',
   '/pl/course/:course_id/question/:question_id/statistics/:filename',
@@ -295,6 +334,7 @@ const SKIP_ROUTES = [
   '/pl/public/course/:course_id/question/:question_id/clientFilesQuestion/*',
   '/pl/public/course/:course_id/question/:question_id/file_download/*',
   '/pl/public/course/:course_id/question/:question_id/generatedFilesQuestion/variant/:unsafe_variant_id/*',
+  '/pl/public/course/:course_id/question/:question_id/generatedFilesQuestion/submission/:unsafe_submission_id/*',
   '/pl/public/course/:course_id/question/:question_id/submission/:unsafe_submission_id/file/*',
 
   // File upload pages for external image capture.
@@ -493,7 +533,7 @@ describe('accessibility', () => {
       }
 
       const url = substituteParams(endpoint.path, routeParams);
-      const messages = await checkPage(url);
+      const messages = await checkPage(url, endpoint.path);
       if (messages !== '') {
         failingEndpoints.push([endpoint, messages]);
       }

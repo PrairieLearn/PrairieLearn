@@ -6,7 +6,12 @@ import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
-import { assessmentInstanceLabel } from '../lib/assessment.shared.js';
+import { resolveModernAssessmentInstanceAccess } from '../lib/assessment-access-control/authz.js';
+import {
+  type AssessmentInstanceTimeLimit,
+  assessmentInstanceLabel,
+  getAssessmentInstanceTimeLimit,
+} from '../lib/assessment.shared.js';
 import {
   AssessmentInstanceSchema,
   AssessmentQuestionSchema,
@@ -23,12 +28,12 @@ import {
   UserSchema,
 } from '../lib/db-types.js';
 import {
-  type GroupInfo,
   type QuestionGroupPermissions,
   getGroupConfig,
   getGroupInfo,
   getQuestionGroupPermissions,
 } from '../lib/groups.js';
+import type { GroupInfo } from '../lib/groups.shared.js';
 import type { SimpleVariantWithScore } from '../models/variant.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -50,12 +55,7 @@ const InstanceQuestionInfoSchema = z.object({
 type InstanceQuestionInfo = z.infer<typeof InstanceQuestionInfoSchema>;
 
 const SelectAndAuthzInstanceQuestionSchema = z.object({
-  assessment_instance: AssessmentInstanceSchema.extend({
-    formatted_date: z.string(),
-  }),
-  assessment_instance_remaining_ms: z.number().nullable(),
-  assessment_instance_time_limit_ms: z.number().nullable(),
-  assessment_instance_time_limit_expired: z.boolean(),
+  assessment_instance: AssessmentInstanceSchema,
   instance_user: UserSchema.nullable(),
   instance_role: SprocUsersGetDisplayedRoleSchema,
   instance_group: GroupSchema.nullable(),
@@ -70,20 +70,21 @@ const SelectAndAuthzInstanceQuestionSchema = z.object({
   file_list: z.array(FileSchema),
 });
 
-export type ResLocalsInstanceQuestion = z.infer<typeof SelectAndAuthzInstanceQuestionSchema> & {
-  assessment_instance_label: string;
+export type ResLocalsInstanceQuestion = z.infer<typeof SelectAndAuthzInstanceQuestionSchema> &
+  AssessmentInstanceTimeLimit & {
+    assessment_instance_label: string;
 
-  instance_question_info: InstanceQuestionInfo & {
-    previous_variants?: SimpleVariantWithScore[];
+    instance_question_info: InstanceQuestionInfo & {
+      previous_variants?: SimpleVariantWithScore[];
+    };
+
+    /** These are only set if the assessment has group work. */
+    prev_instance_question_role_permissions?: QuestionGroupPermissions;
+    next_instance_question_role_permissions?: QuestionGroupPermissions;
+    group_config?: GroupConfig;
+    group_info?: GroupInfo;
+    group_role_permissions?: QuestionGroupPermissions;
   };
-
-  /** These are only set if the assessment has group work. */
-  prev_instance_question_role_permissions?: QuestionGroupPermissions;
-  next_instance_question_role_permissions?: QuestionGroupPermissions;
-  group_config?: GroupConfig;
-  group_info?: GroupInfo;
-  group_role_permissions?: QuestionGroupPermissions;
-};
 
 export async function selectAndAuthzInstanceQuestion(req: Request, res: Response) {
   const row = await sqldb.queryOptionalRow(
@@ -99,10 +100,39 @@ export async function selectAndAuthzInstanceQuestion(req: Request, res: Response
   );
   if (row === null) throw new error.HttpStatusError(403, 'Access denied');
 
-  // TODO: consider row.assessment.modern_access_control
+  // Sequence/lockpoint restrictions should not block instructors from accessing
+  // student question instances (e.g. for manual grading or viewing submissions).
+  // We check *effective* permissions so that an instructor emulating a student
+  // still sees the same restrictions the student sees.
+  const isInstructor =
+    res.locals.authz_data?.has_course_permission_preview ||
+    res.locals.authz_data?.has_course_instance_permission_view;
+  const accessMode = row.instance_question_info.question_access_mode;
+  if (!isInstructor && (accessMode === 'blocked_sequence' || accessMode === 'blocked_lockpoint')) {
+    throw new error.HttpStatusError(403, 'Access denied');
+  }
+
+  if (row.assessment.modern_access_control) {
+    const modernResult = await resolveModernAssessmentInstanceAccess({
+      assessment: row.assessment,
+      userId: res.locals.authz_data.user.id,
+      courseInstance: res.locals.course_instance,
+      authzData: res.locals.authz_data,
+      reqDate: res.locals.req_date,
+      assessmentInstance: row.assessment_instance,
+    });
+    row.authz_result = modernResult;
+  }
+
   if (!row.authz_result.authorized) throw new error.HttpStatusError(403, 'Access denied');
 
   Object.assign(res.locals, row, {
+    ...getAssessmentInstanceTimeLimit({
+      examAccessEnd: row.authz_result.exam_access_end,
+      date: row.assessment_instance.date,
+      dateLimit: row.assessment_instance.date_limit,
+      reqDate: res.locals.req_date,
+    }),
     assessment_instance_label: assessmentInstanceLabel(
       row.assessment_instance,
       row.assessment,

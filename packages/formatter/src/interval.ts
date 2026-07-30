@@ -48,19 +48,19 @@ export function formatInterval(
   const parts: string[] = [];
 
   if (days > 0) {
-    parts.push(`${sign}${days} ${fullPartNames ? (days === 1 ? 'day' : 'days') : 'd'}`);
+    parts.push(`${sign}${days}${fullPartNames ? (days === 1 ? ' day' : ' days') : 'd'}`);
   }
   if (hours > 0) {
-    parts.push(`${sign}${hours} ${fullPartNames ? (hours === 1 ? 'hour' : 'hours') : 'h'}`);
+    parts.push(`${sign}${hours}${fullPartNames ? (hours === 1 ? ' hour' : ' hours') : 'h'}`);
   }
   if (mins > 0) {
-    parts.push(`${sign}${mins} ${fullPartNames ? (mins === 1 ? 'minute' : 'minutes') : 'min'}`);
+    parts.push(`${sign}${mins}${fullPartNames ? (mins === 1 ? ' minute' : ' minutes') : 'min'}`);
   }
   if (secs > 0) {
-    parts.push(`${sign}${secs} ${fullPartNames ? (secs === 1 ? 'second' : 'seconds') : 's'}`);
+    parts.push(`${sign}${secs}${fullPartNames ? (secs === 1 ? ' second' : ' seconds') : 's'}`);
   }
   if (parts.length === 0) {
-    parts.push(`0 ${fullPartNames ? 'seconds' : 's'}`);
+    parts.push(`0${fullPartNames ? ' seconds' : 's'}`);
   }
 
   return firstOnly ? parts[0] : parts.join(' ');

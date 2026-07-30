@@ -9,7 +9,7 @@ prairielearn_url: https://us.prairielearn.com/pl/course_instance/4970/assessment
 Studies have shown that learning and retention of knowledge is enhanced through retrieval practice that incorporates feedback and increased use of formative assessments.
 Here we describe how we use PrairieLearn to create quizzes where students get immediate feedback, shortening the feedback cycle between student learning and assessment performance. This shorter cycle enables the use of frequent and second-chance testing, especially in large courses, which has been shown to lead to significant improvements in learning outcomes and better final exam performance.
 
-We will use the assessment [E1: Auto-graded randomized exams](https://us.prairielearn.com/pl/course_instance/128605/assessment/2310709) to highlight some of the PrairieLearn features to deliver auto-graded and randomized exams.
+We will use the assessment [E1: Auto-graded randomized exams](https://us.prairielearn.com/pl/course_instance/4970/assessment/2316935) to highlight some of the PrairieLearn features to deliver auto-graded and randomized exams.
 
 ### Instant feedback with retry attempts
 
@@ -30,7 +30,7 @@ Since the solution involves multiple computation steps, students get 5 attempts 
 
 ### Creating exams from question pools
 
-Exams that are delivered asynchronously or in online unproctored environments create an opportunity for _collaborative cheating_, where a student can gain advantage by receiving information about the exam from another student. Generating random exams from pools of problems has been shown to mitigate collaborative cheating. In PrairieLearn, question generators can be selected from what we call **alternative groups or pools**. For example, an alternative group with 4 question generators can select 2 of them at random to create a version of the exam. In the figure below, an exam with 4 questions is created from a set of 8 question generators.
+Exams that are delivered asynchronously or in online unproctored environments create an opportunity for _collaborative cheating_, where a student can gain advantage by receiving information about the exam from another student. Generating random exams from pools of problems has been shown to mitigate collaborative cheating. In PrairieLearn, question generators can be selected from what we call **alternative pools**. For example, an alternative pool with 4 question generators can select 2 of them at random to create a version of the exam. In the figure below, an exam with 4 questions is created from a set of 8 question generators.
 
 ![](assessment-generator.png)
 
@@ -38,7 +38,7 @@ In addition, question generators will create different question variants based o
 
 ### Using information from previous exams to generate randomized exams with reduced difficulty variance
 
-A concern with randomized exams is how one can ensure students receive problems of roughly similar difficulty. Problems can be binned into pools by topic coverage and difficulty, but it can be challenging to generate problems of identical difficulty. When creating question generators for the first time, a instructor can use previous experiences to decide which ones should be combined in an alternative group. PrairieLearn will collect data from these questions, which later can be used by instructors to improve fairness of these randomized exams.
+A concern with randomized exams is how one can ensure students receive problems of roughly similar difficulty. Problems can be binned into pools by topic coverage and difficulty, but it can be challenging to generate problems of identical difficulty. When creating question generators for the first time, an instructor can use previous experiences to decide which ones should be combined in an alternative pool. PrairieLearn will collect data from these questions, which later can be used by instructors to improve fairness of these randomized exams.
 
 ![](question-generator.png)
 

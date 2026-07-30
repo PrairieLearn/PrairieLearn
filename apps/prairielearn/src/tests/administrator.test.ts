@@ -1,5 +1,4 @@
 import * as cheerio from 'cheerio';
-import fetch from 'node-fetch';
 import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
 import { config } from '../lib/config.js';
@@ -48,13 +47,6 @@ describe('Administrator pages', { timeout: 20_000 }, function () {
       const $ = cheerio.load(await res.text());
       const elemList = $('#courses td:contains("QA 101")');
       assert.lengthOf(elemList, 1);
-    });
-  });
-
-  describe('view administrator exam-mode networks page', () => {
-    it('should load successfully', async () => {
-      const res = await fetch(baseUrl + '/administrator/networks');
-      assert(res.ok);
     });
   });
 });

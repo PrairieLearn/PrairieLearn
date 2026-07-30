@@ -1,7 +1,7 @@
 import path from 'node:path';
 
 import type { OpenAIResponsesProviderOptions } from '@ai-sdk/openai';
-import { type LanguageModel, generateObject } from 'ai';
+import { type LanguageModel, Output, generateText } from 'ai';
 import { execa } from 'execa';
 import fs from 'fs-extra';
 import * as tmp from 'tmp-promise';
@@ -220,7 +220,7 @@ export async function benchmarkAiQuestionGeneration({
 
     // Sync the course to the database so future edits will do their thing.
     job.info('Syncing course to database');
-    const syncResult = await syncDiskToSql(course.id, course.path, job);
+    const syncResult = await syncDiskToSql(course, job);
     if (syncResult.status !== 'complete' || syncResult.hadJsonErrorsOrWarnings) {
       // Sync should never fail when creating a brand new course, if we hit this
       // then we have a problem.
@@ -386,11 +386,11 @@ async function evaluateGeneratedQuestion({
     generatedQuestion.push('', 'No Python file was generated.');
   }
 
-  const response = await generateObject({
+  const response = await generateText({
     model,
     system: systemPrompt,
     prompt: generatedQuestion.join('\n'),
-    schema: QuestionGenerationEvaluationSchema,
+    output: Output.object({ schema: QuestionGenerationEvaluationSchema }),
     providerOptions: {
       openai: {
         strictJsonSchema: true,
@@ -399,5 +399,5 @@ async function evaluateGeneratedQuestion({
     },
   });
 
-  return response.object;
+  return response.output;
 }

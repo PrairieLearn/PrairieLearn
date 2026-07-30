@@ -3,7 +3,9 @@ SELECT
   to_jsonb(a.*) AS assessment,
   to_jsonb(ai.*) AS assessment_instance,
   to_jsonb(aset.*) AS assessment_set,
-  aa.show_closed_assessment_score
+  aa.show_closed_assessment_score,
+  a.modern_access_control,
+  a.id AS assessment_id
 FROM
   assessment_instances AS ai
   JOIN assessments AS a ON (a.id = ai.assessment_id)

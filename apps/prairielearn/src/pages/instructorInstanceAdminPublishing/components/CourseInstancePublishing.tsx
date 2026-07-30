@@ -55,7 +55,7 @@ export function CourseInstancePublishing({
 
   const startDate = watch('start_date');
 
-  const onSubmit = (e: React.FormEvent) => {
+  const onSubmit = (e: React.SubmitEvent<HTMLFormElement>) => {
     if (!isValid) {
       e.preventDefault();
       return;

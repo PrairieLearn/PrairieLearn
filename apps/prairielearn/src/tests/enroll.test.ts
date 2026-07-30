@@ -61,7 +61,7 @@ describe('Enrollment status pages', function () {
   });
 });
 
-describe('Enrollment limits (enterprise)', function () {
+describe('Enrollment limits (enterprise)', { concurrent: false }, function () {
   beforeAll(helperServer.before());
   afterAll(helperServer.after);
 
@@ -69,67 +69,67 @@ describe('Enrollment limits (enterprise)', function () {
   beforeAll(() => (config.isEnterprise = true));
   afterAll(() => (config.isEnterprise = originalIsEnterprise));
 
-  test.sequential('enroll a single student', async () => {
+  test('enroll a single student', async () => {
     const status = await enrollUser('1', USER_1);
     assert.equal(status, PotentialEnrollmentStatus.ALLOWED);
   });
 
-  test.sequential('enrolls the same student again', async () => {
+  test('enrolls the same student again', async () => {
     const status = await enrollUser('1', USER_1);
     assert.equal(status, PotentialEnrollmentStatus.ALLOWED);
   });
 
-  test.sequential('unenroll a single student', async () => {
+  test('unenroll a single student', async () => {
     const res = await unenrollUser('1', USER_1);
     assert.isOk(res.ok);
     assert.equal(res.url, siteUrl + '/');
   });
 
-  test.sequential('unenroll the same student again', async () => {
+  test('unenroll the same student again', async () => {
     const res = await unenrollUser('1', USER_1);
     assert.isOk(res.ok);
     assert.equal(res.url, siteUrl + '/');
   });
 
-  test.sequential('apply a course instance enrollment limit', async () => {
+  test('apply a course instance enrollment limit', async () => {
     await execute('UPDATE course_instances SET enrollment_limit = 1 WHERE id = 1');
   });
 
-  test.sequential('enroll one student', async () => {
+  test('enroll one student', async () => {
     const status = await enrollUser('1', USER_1);
     assert.equal(status, PotentialEnrollmentStatus.ALLOWED);
   });
 
-  test.sequential('fail to enroll a second student', async () => {
+  test('fail to enroll a second student', async () => {
     const status = await enrollUser('1', USER_2);
     assert.equal(status, PotentialEnrollmentStatus.LIMIT_EXCEEDED);
   });
 
-  test.sequential('apply an institution-level course instance enrollment limit', async () => {
+  test('apply an institution-level course instance enrollment limit', async () => {
     await execute('UPDATE course_instances SET enrollment_limit = NULL WHERE id = 1');
     await execute('UPDATE institutions SET course_instance_enrollment_limit = 1 WHERE id = 1');
   });
 
-  test.sequential('fail to enroll a second student', async () => {
+  test('fail to enroll a second student', async () => {
     const status = await enrollUser('1', USER_2);
     assert.equal(status, PotentialEnrollmentStatus.LIMIT_EXCEEDED);
   });
 
-  test.sequential('set a higher course instance enrollment limit', async () => {
+  test('set a higher course instance enrollment limit', async () => {
     await execute('UPDATE course_instances SET enrollment_limit = 2 WHERE id = 1');
   });
 
-  test.sequential('enroll a second student', async () => {
+  test('enroll a second student', async () => {
     const status = await enrollUser('1', USER_2);
     assert.equal(status, PotentialEnrollmentStatus.ALLOWED);
   });
 
-  test.sequential('fail to enroll a third student', async () => {
+  test('fail to enroll a third student', async () => {
     const status = await enrollUser('1', USER_3);
     assert.equal(status, PotentialEnrollmentStatus.LIMIT_EXCEEDED);
   });
 
-  test.sequential('set a yearly enrollment limit', async () => {
+  test('set a yearly enrollment limit', async () => {
     await execute('UPDATE course_instances SET enrollment_limit = NULL WHERE id = 1');
     await execute(
       'UPDATE institutions SET course_instance_enrollment_limit = 100000, yearly_enrollment_limit = 2 WHERE id = 1',
@@ -137,27 +137,27 @@ describe('Enrollment limits (enterprise)', function () {
     );
   });
 
-  test.sequential('fail to enroll a third student', async () => {
+  test('fail to enroll a third student', async () => {
     const status = await enrollUser('1', USER_3);
     assert.equal(status, PotentialEnrollmentStatus.LIMIT_EXCEEDED);
   });
 });
 
 // Enrollment limits should not apply for non-enterprise instances (the default).
-describe('Enrollment limits (non-enterprise)', () => {
+describe('Enrollment limits (non-enterprise)', { concurrent: false }, () => {
   beforeAll(helperServer.before());
   afterAll(helperServer.after);
 
-  test.sequential('apply a course instance enrollment limit', async () => {
+  test('apply a course instance enrollment limit', async () => {
     await execute('UPDATE course_instances SET enrollment_limit = 1 WHERE id = 1');
   });
 
-  test.sequential('enroll one student', async () => {
+  test('enroll one student', async () => {
     const status = await enrollUser('1', USER_1);
     assert.equal(status, PotentialEnrollmentStatus.ALLOWED);
   });
 
-  test.sequential('enroll a second student (limits not enforced in non-enterprise)', async () => {
+  test('enroll a second student (limits not enforced in non-enterprise)', async () => {
     const status = await enrollUser('1', USER_2);
     // In non-enterprise mode, limits are not enforced
     assert.equal(status, PotentialEnrollmentStatus.ALLOWED);

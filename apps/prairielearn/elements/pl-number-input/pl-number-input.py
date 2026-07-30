@@ -1,13 +1,14 @@
+import pathlib
 import random
 from decimal import Decimal, InvalidOperation
 from enum import Enum
-from typing import Any
+from typing import Any, assert_never
 
 import chevron
 import lxml.html
 import numpy as np
 import prairielearn as pl
-from typing_extensions import assert_never
+from prairielearn.to_precision import to_precision
 
 
 class DisplayType(Enum):
@@ -46,35 +47,12 @@ ANSWER_INSUFFICIENT_PRECISION_WARNING = (
 ANSWER_BLANK_CORRECT_FEEDBACK = "The correct answer used for grading was blank."
 NUMBER_INPUT_MUSTACHE_TEMPLATE_NAME = "pl-number-input.mustache"
 
+SCHEMA_PATH = pathlib.Path(__file__).parent / "schemas" / "pl-number-input.json"
+
 
 def prepare(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
-    required_attribs = ["answers-name"]
-    optional_attribs = [
-        "weight",
-        "correct-answer",
-        "label",
-        "aria-label",
-        "suffix",
-        "display",
-        "comparison",
-        "rtol",
-        "atol",
-        "digits",
-        "allow-complex",
-        "show-help-text",
-        "size",
-        "show-correct-answer",
-        "show-placeholder",
-        "allow-fractions",
-        "allow-blank",
-        "blank-value",
-        "custom-format",
-        "placeholder",
-        "show-score",
-        "initial-value",
-    ]
-    pl.check_attribs(element, required_attribs, optional_attribs)
+    pl.validate_element(element, SCHEMA_PATH)
     name = pl.get_string_attrib(element, "answers-name")
     pl.check_answers_names(data, name)
 
@@ -104,7 +82,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 
 def format_true_ans(
     element: lxml.html.HtmlElement, data: pl.QuestionData, name: str
-) -> str:
+) -> str | None:
     correct_answer = pl.from_json(data["correct_answers"].get(name, None))
     if correct_answer is not None and correct_answer != "":
         # Get format and comparison parameters
@@ -261,11 +239,28 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 raise ValueError(f"Attribute rtol = {rtol:g} must be non-negative")
             if atol < 0:
                 raise ValueError(f"Attribute atol = {atol:g} must be non-negative")
+            # Hide the default atol since it's too small to be useful context
+            # for students. Show any explicitly-set non-zero value.
+            show_atol = pl.has_attrib(element, "atol") and atol > 0
+            example_true = 100
+            rtol_term = f"{example_true * rtol:g}"
+            atol_term = f"{atol:g}"
+            if rtol > 0 and show_atol:
+                example_eps = f"({rtol_term} + {atol_term})"
+            elif rtol > 0:
+                example_eps = rtol_term
+            else:
+                example_eps = atol_term
             info_params = {
                 "format": True,
                 "relabs": True,
-                "rtol": f"{rtol:g}",
-                "atol": f"{atol:g}",
+                "rtol_pct": f"{(rtol * 100):g}",
+                "nonzero_rtol": rtol != 0,
+                "atol": atol_term,
+                "show_atol": show_atol,
+                "show_tolerance": rtol != 0 or show_atol,
+                "example_true": example_true,
+                "example_eps": example_eps,
             }
         elif comparison is ComparisonType.SIGFIG:
             digits = pl.get_integer_attrib(element, "digits", DIGITS_DEFAULT)
@@ -275,7 +270,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 "format": True,
                 "sigfig": True,
                 "digits": f"{digits:d}",
-                "comparison_eps": 0.51 * (10 ** -(digits - 1)),
+                "comparison_eps": to_precision(0.51 * (10 ** -(digits - 1)), 2),
                 "digits_plural": digits > 1,
             }
         elif comparison is ComparisonType.DECDIG:
@@ -286,7 +281,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 "format": True,
                 "decdig": True,
                 "digits": f"{digits:d}",
-                "comparison_eps": 0.51 * (10 ** -(digits - 0)),
+                "comparison_eps": to_precision(0.51 * (10 ** -(digits - 0)), 2),
                 "digits_plural": digits > 1,
             }
         else:

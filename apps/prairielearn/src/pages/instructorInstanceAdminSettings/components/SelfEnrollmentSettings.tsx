@@ -5,18 +5,13 @@ import { type Control, type UseFormTrigger, useWatch } from 'react-hook-form';
 
 import { OverlayTrigger } from '@prairielearn/ui';
 
+import { CopyButton } from '../../../components/CopyButton.js';
 import { StudentLinkSharing } from '../../../components/LinkSharing.js';
 import { QRCodeModal } from '../../../components/QRCodeModal.js';
 import type { StaffInstitution } from '../../../lib/client/safe-db-types.js';
 import type { SettingsFormValues } from '../instructorInstanceAdminSettings.types.js';
 
-async function copyToClipboard(text: string) {
-  await navigator.clipboard.writeText(text);
-}
-
 function SelfEnrollmentCode({ enrollmentCode }: { enrollmentCode: string }) {
-  const [copied, setCopied] = useState(false);
-
   const enrollmentCodeDashed =
     enrollmentCode.slice(0, 3) + '-' + enrollmentCode.slice(3, 6) + '-' + enrollmentCode.slice(6);
 
@@ -32,25 +27,11 @@ function SelfEnrollmentCode({ enrollmentCode }: { enrollmentCode: string }) {
           style={{ fontFamily: 'monospace', fontSize: '1.1em', letterSpacing: '0.1em' }}
           disabled
         />
-        <OverlayTrigger
-          tooltip={{
-            body: copied ? 'Copied!' : 'Copy',
-            props: { id: 'self-enrollment-code-copy-tooltip' },
-          }}
-        >
-          <Button
-            size="sm"
-            variant="outline-secondary"
-            aria-label="Copy self-enrollment code"
-            onClick={async () => {
-              await copyToClipboard(enrollmentCodeDashed);
-              setCopied(true);
-              setTimeout(() => setCopied(false), 1500);
-            }}
-          >
-            <i className="bi bi-clipboard" />
-          </Button>
-        </OverlayTrigger>
+        <CopyButton
+          text={enrollmentCodeDashed}
+          ariaLabel="Copy self-enrollment code"
+          className="btn-sm btn-outline-secondary"
+        />
       </InputGroup>
       <small className="form-text text-muted">
         Students can use this code to enroll in the course by entering it on the homepage or after
@@ -69,36 +50,21 @@ function SelfEnrollmentLink({
   csrfToken: string;
   canEdit: boolean;
 }) {
-  const [copied, setCopied] = useState(false);
   const [showQR, setShowQR] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   return (
     <>
-      <div className="mb-3">
+      <div className="mb-0">
         <label className="form-label" htmlFor="self_enrollment_link">
           Self-enrollment link
         </label>
         <InputGroup>
           <Form.Control id="self_enrollment_link" value={selfEnrollLink} disabled />
-          <OverlayTrigger
-            tooltip={{
-              body: copied ? 'Copied!' : 'Copy',
-              props: { id: 'self-enrollment-link-copy-tooltip' },
-            }}
-          >
-            <Button
-              size="sm"
-              variant="outline-secondary"
-              aria-label="Copy self-enrollment link"
-              onClick={async () => {
-                await copyToClipboard(selfEnrollLink);
-                setCopied(true);
-                setTimeout(() => setCopied(false), 1500);
-              }}
-            >
-              <i className="bi bi-clipboard" />
-            </Button>
-          </OverlayTrigger>
+          <CopyButton
+            text={selfEnrollLink}
+            ariaLabel="Copy self-enrollment link"
+            className="btn-sm btn-outline-secondary"
+          />
           <OverlayTrigger
             tooltip={{
               body: 'View QR Code',
@@ -218,8 +184,6 @@ export function SelfEnrollmentSettings({
 
   return (
     <>
-      <h2 className="h4">Self-enrollment</h2>
-
       {!hasModernPublishing ? (
         <div className="alert alert-warning">
           You are using access rules to control who can access the course instance.{' '}
@@ -241,6 +205,7 @@ export function SelfEnrollmentSettings({
           type="checkbox"
           id="self_enrollment_enabled"
           disabled={!canEdit || !hasModernPublishing}
+          defaultChecked={selfEnrollmentEnabled}
           {...control.register('self_enrollment_enabled')}
         />
         {(!canEdit || !hasModernPublishing) && (
@@ -254,7 +219,7 @@ export function SelfEnrollmentSettings({
           Allow self-enrollment
         </label>
         <div className="small text-muted">
-          If not checked, students will need to be invited to this course instance.
+          If self-enrollment is disabled, students must be invited to this course instance.
         </div>
       </div>
 
@@ -264,6 +229,7 @@ export function SelfEnrollmentSettings({
           type="checkbox"
           id="self_enrollment_use_enrollment_code"
           disabled={!canEdit || !selfEnrollmentEnabled || !hasModernPublishing}
+          defaultChecked={selfEnrollmentUseEnrollmentCode}
           {...control.register('self_enrollment_use_enrollment_code')}
         />
         {(!canEdit || !selfEnrollmentEnabled || !hasModernPublishing) && (
@@ -274,10 +240,11 @@ export function SelfEnrollmentSettings({
           />
         )}
         <label className="form-check-label" htmlFor="self_enrollment_use_enrollment_code">
-          Use enrollment code for self-enrollment
+          Require enrollment code for self-enrollment
         </label>
         <div className="small text-muted">
-          If not checked, any link to anything in the course instance will allow self-enrollment.
+          If an enrollment code is not required, any course instance or assessment link allows
+          self-enrollment.
         </div>
       </div>
 
@@ -287,6 +254,7 @@ export function SelfEnrollmentSettings({
           type="checkbox"
           id="self_enrollment_restrict_to_institution"
           disabled={!canEdit || !selfEnrollmentEnabled || !hasModernPublishing}
+          defaultChecked={selfEnrollmentRestrictToInstitution}
           {...control.register('self_enrollment_restrict_to_institution')}
         />
         {(!canEdit || !selfEnrollmentEnabled || !hasModernPublishing) && (
@@ -300,7 +268,7 @@ export function SelfEnrollmentSettings({
           Restrict self-enrollment to institution "{institution.long_name}"
         </label>
         <div className="small text-muted">
-          If not checked, users from any institution can self-enroll.
+          If the institution restriction is disabled, users from any institution can self-enroll.
         </div>
       </div>
 
@@ -310,6 +278,7 @@ export function SelfEnrollmentSettings({
           type="checkbox"
           id="disable_self_enrollment_after_date"
           disabled={!canEdit || !hasModernPublishing || !selfEnrollmentEnabled}
+          defaultChecked={selfEnrollmentEnabledBeforeDateEnabled}
           {...control.register('self_enrollment_enabled_before_date_enabled', {
             onChange: async (event) => {
               if (!event.target.checked) {
@@ -353,6 +322,7 @@ export function SelfEnrollmentSettings({
             !selfEnrollmentEnabled
           }
           step="1"
+          defaultValue={selfEnrollmentEnabledBeforeDate}
           {...control.register('self_enrollment_enabled_before_date', {
             validate: (value, { self_enrollment_enabled_before_date_enabled }) => {
               if (self_enrollment_enabled_before_date_enabled && !value) {

@@ -61,10 +61,10 @@ router.get(
           navContext: {
             type: 'instructor',
             page: 'instance_admin',
-            subPage: 'integrations',
+            subPage: 'lms_connections',
           },
           courseOwners,
-          pageTitle: 'Integrations',
+          pageTitle: 'LMS connections',
           requiredPermissions: 'Student Data Editor',
         }),
       );
@@ -184,6 +184,7 @@ router.post(
           },
           Lti13CourseInstanceSchema,
         );
+        // eslint-disable-next-line @typescript-eslint/no-deprecated
         await insertAuditLog({
           authn_user_id: res.locals.authn_user.id,
           table_name: 'lti13_course_instances',
@@ -271,6 +272,7 @@ router.post(
         sql.select_assessments_to_create,
         {
           course_instance_id: instance.lti13_course_instance.course_instance_id,
+          lti13_course_instance_id: instance.lti13_course_instance.id,
           group_id,
           assessments_group_by: res.locals.course_instance.assessments_group_by,
         },
@@ -299,7 +301,12 @@ router.post(
         }
       });
       return res.redirect(res.locals.urlPrefix + '/jobSequence/' + serverJob.jobSequenceId);
-    } else if (req.body.__action === 'send_grades') {
+    } else if (
+      req.body.__action === 'send_grades' ||
+      req.body.__action === 'send_grades_all_lms_courses'
+    ) {
+      const sendToAllLmsCourses = req.body.__action === 'send_grades_all_lms_courses';
+
       const assessment = await queryRow(
         sql.select_assessment_in_course_instance,
         {
@@ -309,21 +316,53 @@ router.post(
         AssessmentSchema,
       );
 
-      serverJobOptions.description = 'LTI 1.3 send assessment grades to LMS';
+      const targetInstances = sendToAllLmsCourses
+        ? await queryRows(
+            sql.select_combined_lti13_instances_for_assessment,
+            {
+              course_instance_id: res.locals.course_instance.id,
+              assessment_id: assessment.id,
+            },
+            Lti13CombinedInstanceSchema,
+          )
+        : [instance];
+
+      serverJobOptions.description = sendToAllLmsCourses
+        ? 'LTI 1.3 send assessment grades to all LMS courses'
+        : 'LTI 1.3 send assessment grades to LMS';
       const serverJob = await createServerJob(serverJobOptions);
 
       serverJob.executeInBackground(async (job) => {
-        await updateLti13Scores({
-          courseInstance: res.locals.course_instance,
-          authzData: res.locals.authz_data,
-          unsafe_assessment_id: assessment.id,
-          instance,
-          job,
-        });
+        let errorCount = 0;
+        for (const targetInstance of targetInstances) {
+          try {
+            await updateLti13Scores({
+              courseInstance: res.locals.course_instance,
+              unsafe_assessment_id: assessment.id,
+              instance: targetInstance,
+              job,
+            });
 
-        await execute(sql.update_lti13_assessment_last_activity, {
-          assessment_id: assessment.id,
-        });
+            await execute(sql.update_lti13_assessment_last_activity, {
+              assessment_id: assessment.id,
+              lti13_course_instance_id: targetInstance.lti13_course_instance.id,
+            });
+          } catch (err) {
+            errorCount++;
+            job.error(
+              `Error sending grades to ${targetInstance.lti13_instance.name} course ` +
+                `${targetInstance.lti13_course_instance.context_label}:\n` +
+                error.formatErrorStack(err),
+            );
+          }
+        }
+
+        if (errorCount > 0) {
+          job.fail(
+            `Failed to send grades to ${errorCount} LMS course${errorCount === 1 ? '' : 's'}, ` +
+              'see output for details',
+          );
+        }
       });
       return res.redirect(res.locals.urlPrefix + '/jobSequence/' + serverJob.jobSequenceId);
     } else {

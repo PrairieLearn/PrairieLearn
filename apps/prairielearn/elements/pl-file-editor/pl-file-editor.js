@@ -83,7 +83,9 @@ window.PLFileEditor = function (uuid, options) {
 
   this.initSettingsButton(uuid);
 
-  this.initRestoreOriginalButton();
+  if (!options.readOnly) {
+    this.initRestoreOriginalButton();
+  }
 };
 
 window.PLFileEditor.prototype.syncSettings = function () {

@@ -48,6 +48,24 @@ let splitEsbuildServer: esbuild.ServeResult | null = null;
 
 let relativeSourcePaths: string[] | null = null;
 
+/**
+ * Node built-in modules to mark as external.
+ *
+ * See https://github.com/tree-sitter/tree-sitter/pull/5546.
+ */
+const NODE_ONLY_EXTERNALS = ['fs/promises', 'module'];
+
+async function serveEsbuildContext(context: esbuild.BuildContext): Promise<esbuild.ServeResult> {
+  // This must stay in sync with the Host header workaround in `handler()`.
+  // esbuild 0.25+ validates proxied requests against the server's listening host.
+  return context.serve({
+    host: '0.0.0.0',
+    // Use an OS-assigned port to avoid esbuild's default port 8000, which
+    // conflicts with mkdocs when running `make dev-docs`.
+    port: 0,
+  });
+}
+
 export async function init(newOptions: Partial<CompiledAssetsOptions>): Promise<void> {
   options = {
     ...DEFAULT_OPTIONS,
@@ -87,8 +105,9 @@ export async function init(newOptions: Partial<CompiledAssetsOptions>): Promise<
       define: {
         'process.env.NODE_ENV': '"development"',
       },
+      external: NODE_ONLY_EXTERNALS,
     });
-    esbuildServer = await esbuildContext.serve({ host: '0.0.0.0' });
+    esbuildServer = await serveEsbuildContext(esbuildContext);
 
     const splitSourceGlob = path.join(
       options.sourceDirectory,
@@ -117,8 +136,9 @@ export async function init(newOptions: Partial<CompiledAssetsOptions>): Promise<
       define: {
         'process.env.NODE_ENV': '"development"',
       },
+      external: NODE_ONLY_EXTERNALS,
     });
-    splitEsbuildServer = await splitEsbuildContext.serve({ host: '0.0.0.0' });
+    splitEsbuildServer = await serveEsbuildContext(splitEsbuildContext);
   }
 }
 
@@ -299,12 +319,13 @@ async function buildAssets(sourceDirectory: string, buildDirectory: string): Pro
     define: {
       'process.env.NODE_ENV': '"production"',
     },
+    external: NODE_ONLY_EXTERNALS,
     metafile: true, // Write metadata about the build
   });
 
-  // For now, we only build ESM bundles for scripts that are split into chunks (i.e. React components)
-  // Using 'type=module' in the script tag for ESM means that it is loaded after all 'classic' scripts,
-  // which causes issues with bootstrap-table. See https://github.com/PrairieLearn/PrairieLearn/pull/12180.
+  // We only build ESM bundles for scripts that are split into chunks (i.e. React components). The classic
+  // (IIFE) bundles can't yet be switched to `type=module` due to load-ordering constraints; see the blockers
+  // tracked in https://github.com/PrairieLearn/PrairieLearn/issues/15151.
   const scriptBundleFiles = await globby(
     path.join(sourceDirectory, 'scripts', 'esm-bundles', '**/*.{js,jsx,ts,tsx}'),
   );
@@ -322,6 +343,7 @@ async function buildAssets(sourceDirectory: string, buildDirectory: string): Pro
     define: {
       'process.env.NODE_ENV': '"production"',
     },
+    external: NODE_ONLY_EXTERNALS,
     metafile: true,
   });
 
@@ -351,6 +373,9 @@ function makeManifest(
     // Recursively walk the `imports` dependency tree
     const visit = (entry: (typeof meta)['imports'][number]) => {
       if (!['import-statement', 'dynamic-import'].includes(entry.kind)) return;
+      // External imports aren't emitted to disk,
+      // so they shouldn't be added to preloads.
+      if (entry.external) return;
       const preloadPath = path.relative(buildDirectory, entry.path);
       if (preloads.has(preloadPath)) return;
       preloads.add(preloadPath);

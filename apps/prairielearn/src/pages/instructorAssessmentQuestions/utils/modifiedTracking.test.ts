@@ -14,7 +14,7 @@ function makeZone(
   return {
     questions: [],
     ...overrides,
-  } as ZoneAssessmentForm;
+  };
 }
 
 type QuestionForm = ZoneAssessmentForm['questions'][number];
@@ -178,7 +178,6 @@ describe('computeChangeTracking', () => {
         questions: [
           makeQuestion({
             trackingId: questionId,
-            id: 'q1',
             alternatives: [makeAlternative({ trackingId: altId, id: 'alt1' })],
           }),
         ],

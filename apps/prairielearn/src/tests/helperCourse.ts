@@ -1,3 +1,4 @@
+import { strict as assert } from 'node:assert';
 import * as path from 'node:path';
 
 import { execa } from 'execa';
@@ -10,6 +11,7 @@ import { TEST_COURSE_PATH } from '../lib/paths.js';
 import * as syncFromDisk from '../sync/syncFromDisk.js';
 
 import { makeMockLogger } from './mockLogger.js';
+import { syncCourseData } from './sync/util.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -97,4 +99,29 @@ export async function createCourseRepoFixture(
     courseLiveDir,
     courseDevDir,
   };
+}
+
+/**
+ * Commits all (or a specified subset of) changes in the origin repo, pulls them
+ * into the live repo, and runs a sync. Asserts that the sync completes without
+ * JSON errors or warnings.
+ */
+export async function commitOriginAndSync(
+  fixture: CourseRepoFixture,
+  message: string,
+  files: string[] | 'all' = 'all',
+): Promise<syncFromDisk.SyncResults> {
+  const addArgs = files === 'all' ? ['-A'] : files;
+  await execa('git', ['add', ...addArgs], {
+    cwd: fixture.courseOriginDir,
+    env: process.env,
+  });
+  await execa('git', ['commit', '-m', message], {
+    cwd: fixture.courseOriginDir,
+    env: process.env,
+  });
+  await execa('git', ['pull'], { cwd: fixture.courseLiveDir, env: process.env });
+  const syncResult = await syncCourseData(fixture.courseLiveDir);
+  assert(syncResult.status === 'complete' && !syncResult.hadJsonErrorsOrWarnings);
+  return syncResult;
 }

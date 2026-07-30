@@ -1,5 +1,56 @@
-import type { Assessment, AssessmentInstance, AssessmentSet } from './db-types.js';
+import type {
+  Assessment,
+  AssessmentInstance,
+  AssessmentSet,
+  EnumAssessmentType,
+} from './db-types.js';
 import type { UntypedResLocals } from './res-locals.types.js';
+
+export interface AssessmentInstanceTimeLimit {
+  /** Milliseconds remaining until the instance's time runs out; null if untimed. */
+  assessment_instance_remaining_ms: number | null;
+  /** Total duration of the instance's time limit in milliseconds; null if untimed. */
+  assessment_instance_time_limit_ms: number | null;
+  /** Whether the instance's `date_limit` has passed. */
+  assessment_instance_time_limit_expired: boolean;
+}
+
+/**
+ * Computes the time-limit display values for an assessment instance from its
+ * resolved access result. The effective end is the earlier of the PrairieTest
+ * exam access end (`exam_access_end`, null when not in a reservation) and the
+ * instance's own `date_limit` (null when untimed).
+ *
+ * This is the single source of truth for these values, called after access
+ * control is resolved. Both the legacy (sproc) and modern (TypeScript resolver)
+ * paths feed their resolved `exam_access_end` through here, so the timer can't
+ * diverge from the access decision that produced it.
+ */
+export function getAssessmentInstanceTimeLimit({
+  examAccessEnd,
+  date,
+  dateLimit,
+  reqDate,
+}: {
+  examAccessEnd: Date | null;
+  date: Date | null;
+  dateLimit: Date | null;
+  reqDate: Date;
+}): AssessmentInstanceTimeLimit {
+  // The earlier of the two ends, ignoring nulls; null only if both are null.
+  const effectiveEnd =
+    examAccessEnd === null || (dateLimit !== null && dateLimit < examAccessEnd)
+      ? dateLimit
+      : examAccessEnd;
+
+  return {
+    assessment_instance_remaining_ms:
+      effectiveEnd === null ? null : effectiveEnd.getTime() - reqDate.getTime(),
+    assessment_instance_time_limit_ms:
+      effectiveEnd === null || date === null ? null : effectiveEnd.getTime() - date.getTime(),
+    assessment_instance_time_limit_expired: dateLimit !== null && dateLimit <= reqDate,
+  };
+}
 
 export function assessmentLabel(
   assessment: { number: string },
@@ -18,6 +69,27 @@ export function assessmentInstanceLabel(
     label += '#' + assessmentInstance.number;
   }
   return label;
+}
+
+export function formatStudentQuestionTitle({
+  assessmentType,
+  questionNumber,
+  questionTitle,
+  showQuestionTitles,
+}: {
+  assessmentType: EnumAssessmentType;
+  questionNumber: string;
+  questionTitle: string | null | undefined;
+  showQuestionTitles: boolean | undefined;
+}): string {
+  const title = questionTitle?.trim() ? questionTitle : null;
+  if (assessmentType === 'Exam') {
+    return showQuestionTitles && title
+      ? `Question ${questionNumber}: ${title}`
+      : `Question ${questionNumber}`;
+  }
+
+  return showQuestionTitles && title ? `${questionNumber}. ${title}` : questionNumber;
 }
 
 /**

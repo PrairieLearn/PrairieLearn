@@ -5,18 +5,19 @@ import * as cheerio from 'cheerio';
 import { execa } from 'execa';
 import fs from 'fs-extra';
 import klaw from 'klaw';
-import fetch from 'node-fetch';
 import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
+import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
-import { getCourseInstanceSettingsUrl } from '../lib/client/url.js';
+import { getAssessmentTrpcUrl, getCourseInstanceSettingsUrl } from '../lib/client/url.js';
 import { config } from '../lib/config.js';
 import { JobSequenceSchema } from '../lib/db-types.js';
 import { features } from '../lib/features/index.js';
 import { generateCsrfToken } from '../middlewares/csrfToken.js';
 import { updateCourseSharingName } from '../models/course.js';
+import { createAssessmentTrpcClient } from '../trpc/assessment/client.js';
 
 import {
   type CourseRepoFixture,
@@ -64,6 +65,20 @@ interface EditData {
     csrfToken: string | undefined;
     url?: string;
   };
+  trpcCall?: () => Promise<void>;
+  validateInfo?: (infoJson: any) => void | Promise<void>;
+}
+
+function assertNoEnrollmentSpecificAccessControlRules(infoJson: any) {
+  assert.deepEqual(infoJson.accessControl, [
+    {
+      dateControl: {
+        release: {
+          date: '2000-01-01T00:00:00',
+        },
+      },
+    },
+  ]);
 }
 
 function getCourseInstanceCreatePostInfo(page: cheerio.Cheerio<any>) {
@@ -221,8 +236,11 @@ const testEditData: EditData[] = [
   },
   {
     url: newAssessmentSettingsUrl,
-    formSelector: '#deleteAssessmentModal',
-    action: 'delete_assessment',
+    formSelector: 'body',
+    trpcCall: async () => {
+      const trpcClient = createTrpcClientForAssessment('2');
+      await trpcClient.assessmentSettings.deleteAssessment.mutate();
+    },
     files: new Set([
       'README.md',
       'infoCourse.json',
@@ -235,9 +253,23 @@ const testEditData: EditData[] = [
   },
   {
     url: `${courseInstanceUrl}/assessment/1/settings`,
-    formSelector: 'form[name="copy-assessment-form"]',
-    action: 'copy_assessment',
+    formSelector: 'body',
+    trpcCall: async () => {
+      const trpcClient = createTrpcClientForAssessment('1');
+      const result = await trpcClient.assessmentSettings.copyAssessment.mutate({
+        aid: 'HW1_copy1',
+        title: 'Homework 1 (copy 1)',
+        number: '1',
+        set: 'Homework',
+      });
+      const settingsUrl = `${courseInstanceUrl}/assessment/${result.assessmentId}/settings`;
+      const res = await fetch(settingsUrl);
+      assert.isOk(res.ok);
+      currentUrl = res.url;
+      currentPage$ = cheerio.load(await res.text());
+    },
     info: 'courseInstances/Fa18/assessments/HW1_copy1/infoAssessment.json',
+    validateInfo: assertNoEnrollmentSpecificAccessControlRules,
     files: new Set([
       'README.md',
       'infoCourse.json',
@@ -250,8 +282,14 @@ const testEditData: EditData[] = [
     ]),
   },
   {
-    formSelector: '#deleteAssessmentModal',
-    action: 'delete_assessment',
+    formSelector: 'body',
+    trpcCall: async () => {
+      // Extract assessment ID from the current URL set by the previous copy test
+      const match = currentUrl.match(/\/assessment\/(\d+)\//);
+      assert.ok(match, 'Could not extract assessment ID from current URL');
+      const trpcClient = createTrpcClientForAssessment(match[1]);
+      await trpcClient.assessmentSettings.deleteAssessment.mutate();
+    },
     files: new Set([
       'README.md',
       'infoCourse.json',
@@ -316,6 +354,16 @@ const testEditData: EditData[] = [
     },
     isJSON: true,
     info: 'courseInstances/Fa18_copy1/infoCourseInstance.json',
+    validateInfo: async () => {
+      const contents = await fs.readFile(
+        path.join(
+          courseRepo.courseDevDir,
+          'courseInstances/Fa18_copy1/assessments/HW1/infoAssessment.json',
+        ),
+        'utf-8',
+      );
+      assertNoEnrollmentSpecificAccessControlRules(JSON.parse(contents));
+    },
     files: new Set([
       'README.md',
       'infoCourse.json',
@@ -394,6 +442,26 @@ function getQuestion3DeletePostInfo() {
   };
 }
 
+function createTrpcClientForAssessment(assessmentId: string) {
+  const trpcPath = getAssessmentTrpcUrl({
+    courseInstanceId: '1',
+    assessmentId,
+  });
+  const csrfToken = generatePrefixCsrfToken(
+    {
+      url: trpcPath,
+      authn_user_id: '1',
+    },
+    config.secretKey,
+  );
+  return createAssessmentTrpcClient({
+    csrfToken,
+    courseInstanceId: '1',
+    assessmentId,
+    urlBase: siteUrl,
+  });
+}
+
 function getQuestionDeleteFromCurrentUrlPostInfo() {
   // The delete modal is rendered by React and only contains content when shown.
   // Use currentUrl which was set by the previous test's POST response.
@@ -439,7 +507,11 @@ const publicCopyTestData: EditData[] = [
       end_date: '',
       course_instance_permission: 'Student Data Editor',
     },
-    info: 'questions/shared-publicly/info.json',
+    info: 'courseInstances/Fa19/assessments/test/infoAssessment.json',
+    validateInfo: (infoJson) => {
+      assert.notProperty(infoJson, 'allowAccess');
+      assert.deepEqual(infoJson.accessControl, []);
+    },
     files: new Set([
       'README.md',
       'infoCourse.json',
@@ -555,86 +627,106 @@ let currentPage$: cheerio.CheerioAPI;
 
 function testEdit(params: EditData) {
   let __csrf_token: string;
-  describe(`GET to ${params.url}`, () => {
-    if (params.url) {
-      const url = params.url;
+  if (params.trpcCall) {
+    const trpcCall = params.trpcCall;
+    describe(`GET to ${params.url}`, () => {
+      if (params.url) {
+        const url = params.url;
+        it('should load successfully', async () => {
+          const res = await fetch(url);
+          assert.isOk(res.ok);
+          currentPage$ = cheerio.load(await res.text());
+        });
+      }
+    });
+
+    describe(`tRPC call for ${params.url}`, function () {
       it('should load successfully', async () => {
-        const res = await fetch(url);
-
-        assert.isOk(res.ok);
-        currentPage$ = cheerio.load(await res.text());
+        await trpcCall();
       });
-    }
-    it('should have a CSRF token', () => {
-      let maybeToken: string | undefined;
-      if (params.dynamicPostInfo) {
-        const postInfo = params.dynamicPostInfo(currentPage$(`${params.formSelector}`));
-        maybeToken = postInfo.csrfToken;
-        if (postInfo.url !== undefined) {
-          params.url = `${siteUrl}${postInfo.url}`;
-        }
-      } else if (params.button) {
-        let elem = currentPage$(params.button);
-        assert.lengthOf(elem, 1);
-        const formContent = elem.attr('data-bs-content');
-        assert.ok(formContent);
-        const $ = cheerio.load(formContent);
-        elem = $(`${params.formSelector} input[name="__csrf_token"]`);
-        assert.lengthOf(elem, 1);
-        maybeToken = elem.attr('value');
-      } else {
-        const elem = currentPage$(`${params.formSelector} input[name="__csrf_token"]`);
-        assert.lengthOf(elem, 1);
-        maybeToken = elem.attr('value');
-      }
-      assert.ok(maybeToken);
-      __csrf_token = maybeToken;
     });
-  });
+  } else {
+    describe(`GET to ${params.url}`, () => {
+      if (params.url) {
+        const url = params.url;
+        it('should load successfully', async () => {
+          const res = await fetch(url);
 
-  describe(`POST to ${params.url} with action ${params.action}`, function () {
-    it('should load successfully', async () => {
-      const url = run(() => {
-        // to handle the difference between POSTing to the same URL as the page you are
-        // on vs. POSTing to a different URL
-        if (!params.action) {
-          const elem = currentPage$(params.formSelector);
+          assert.isOk(res.ok);
+          currentPage$ = cheerio.load(await res.text());
+        });
+      }
+      it('should have a CSRF token', () => {
+        let maybeToken: string | undefined;
+        if (params.dynamicPostInfo) {
+          const postInfo = params.dynamicPostInfo(currentPage$(`${params.formSelector}`));
+          maybeToken = postInfo.csrfToken;
+          if (postInfo.url !== undefined) {
+            params.url = `${siteUrl}${postInfo.url}`;
+          }
+        } else if (params.button) {
+          let elem = currentPage$(params.button);
           assert.lengthOf(elem, 1);
-          return `${siteUrl}${elem.attr('action')}`;
+          const formContent = elem.attr('data-bs-content');
+          assert.ok(formContent);
+          const $ = cheerio.load(formContent);
+          elem = $(`${params.formSelector} input[name="__csrf_token"]`);
+          assert.lengthOf(elem, 1);
+          maybeToken = elem.attr('value');
         } else {
-          return params.url || currentUrl;
+          const elem = currentPage$(`${params.formSelector} input[name="__csrf_token"]`);
+          assert.lengthOf(elem, 1);
+          maybeToken = elem.attr('value');
+        }
+        assert.ok(maybeToken);
+        __csrf_token = maybeToken;
+      });
+    });
+
+    describe(`POST to ${params.url} with action ${params.action}`, function () {
+      it('should load successfully', async () => {
+        const url = run(() => {
+          // to handle the difference between POSTing to the same URL as the page you are
+          // on vs. POSTing to a different URL
+          if (!params.action) {
+            const elem = currentPage$(params.formSelector);
+            assert.lengthOf(elem, 1);
+            return `${siteUrl}${elem.attr('action')}`;
+          } else {
+            return params.url || currentUrl;
+          }
+        });
+        const urlParams: Record<string, string> = {
+          __csrf_token,
+          ...(params.action ? { __action: params.action } : {}),
+          ...params.data,
+        };
+        const res = await fetch(url, {
+          method: 'POST',
+          body: params.isJSON ? JSON.stringify(urlParams) : new URLSearchParams(urlParams),
+          headers: params.isJSON
+            ? { 'Content-Type': 'application/json', Accept: 'application/json' }
+            : { 'Content-Type': 'application/x-www-form-urlencoded' },
+        });
+
+        const text = await res.text();
+        if (!params.isJSON) {
+          currentUrl = res.url;
+          currentPage$ = cheerio.load(text);
+        } else {
+          // This is a hack to get the CSRF token for the next test since copy_course_instance returns an id.
+          assert.equal(params.action, 'copy_course_instance');
+          const body = JSON.parse(text);
+          const courseInstanceId = body.course_instance_id;
+          const settingsUrl = getCourseInstanceSettingsUrl(courseInstanceId);
+          const settingsRes = await fetch(siteUrl + settingsUrl);
+          assert.isOk(settingsRes.ok);
+          currentUrl = settingsRes.url;
+          currentPage$ = cheerio.load(await settingsRes.text());
         }
       });
-      const urlParams: Record<string, string> = {
-        __csrf_token,
-        ...(params.action ? { __action: params.action } : {}),
-        ...params.data,
-      };
-      const res = await fetch(url, {
-        method: 'POST',
-        body: params.isJSON ? JSON.stringify(urlParams) : new URLSearchParams(urlParams),
-        headers: params.isJSON
-          ? { 'Content-Type': 'application/json', Accept: 'application/json' }
-          : { 'Content-Type': 'application/x-www-form-urlencoded' },
-      });
-
-      const text = await res.text();
-      if (!params.isJSON) {
-        currentUrl = res.url;
-        currentPage$ = cheerio.load(text);
-      } else {
-        // This is a hack to get the CSRF token for the next test since copy_course_instance returns an id.
-        assert.equal(params.action, 'copy_course_instance');
-        const body = JSON.parse(text);
-        const courseInstanceId = body.course_instance_id;
-        const settingsUrl = getCourseInstanceSettingsUrl(courseInstanceId);
-        const settingsRes = await fetch(siteUrl + settingsUrl);
-        assert.isOk(settingsRes.ok);
-        currentUrl = settingsRes.url;
-        currentPage$ = cheerio.load(await settingsRes.text());
-      }
     });
-  });
+  }
 
   describe('The job sequence', () => {
     let job_sequence_id: string;
@@ -673,6 +765,7 @@ function testEdit(params: EditData) {
         const contents = await fs.readFile(path.join(courseRepo.courseDevDir, info), 'utf-8');
         const infoJson = JSON.parse(contents);
         assert.isString(infoJson.uuid);
+        await params.validateInfo?.(infoJson);
       });
     }
   });
@@ -716,6 +809,7 @@ async function createSharedCourse() {
     },
   ];
   sharingCourseData.courseInstances['Fa19'].assessments['test'].shareSourcePublicly = true;
+  sharingCourseData.courseInstances['Fa19'].assessments['test'].accessControl = [{}];
   sharingCourseData.courseInstances['Fa19'].courseInstance.shareSourcePublicly = true;
 
   sharingCourseData.courseInstances['Fa19'].assessments['nested/dir/test'] = structuredClone(

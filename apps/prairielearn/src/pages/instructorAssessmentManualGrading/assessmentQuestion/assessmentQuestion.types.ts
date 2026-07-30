@@ -7,14 +7,20 @@ import {
   RawStaffInstanceQuestionSchema,
   StaffAssessmentQuestionSchema,
   StaffInstanceQuestionSchema,
+  StaffUserSchema,
 } from '../../../lib/client/safe-db-types.js';
 
 export const InstanceQuestionRowSchema = z.object({
   instance_question: StaffInstanceQuestionSchema,
   assessment_open: z.boolean(),
   uid: z.string().nullable(),
+  uid_list: z.array(z.string()),
+  user: StaffUserSchema.nullable(),
+  group_members: z.array(StaffUserSchema),
   assigned_grader_name: z.string().nullable(),
   last_grader_name: z.string().nullable(),
+  assigned_grader: StaffUserSchema.nullable(),
+  last_grader: StaffUserSchema.nullable(),
   assessment_question: StaffAssessmentQuestionSchema,
   user_or_group_name: z.string().nullable(),
   open_issue_count: z.number().nullable(),

@@ -105,7 +105,7 @@ export function FilterDropdown({
         maxHeight={maxHeight}
         style={{ width: '250px' }}
       >
-        <div className="pt-2 flex-grow-1 overflow-auto" style={{ minHeight: 0 }}>
+        <div className="py-2 flex-grow-1 overflow-auto" style={{ minHeight: 0 }}>
           <ListBox
             aria-label={ariaLabel ?? `Filter by ${label}`}
             className="list-unstyled m-0"

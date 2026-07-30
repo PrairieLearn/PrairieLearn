@@ -21,5 +21,6 @@ FROM
   LEFT JOIN students_in_groups AS sig ON (sig.user_id = u.id)
 WHERE
   a.id = $assessment_id
+  AND e.status = 'joined'
   AND NOT users_is_instructor_in_course_instance (e.user_id, e.course_instance_id)
   AND sig.team_id IS NULL;

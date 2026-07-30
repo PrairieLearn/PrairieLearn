@@ -1,0 +1,18 @@
+columns
+    assessment_access_control_rule_id: bigint not null
+    enrollment_id: bigint not null
+    id: bigint not null default nextval('assessment_access_control_enrollments_id_seq'::regclass)
+    target_type: enum_assessment_access_control_target_type not null default 'enrollment'::enum_assessment_access_control_target_type
+
+indexes
+    assessment_access_control_enrollments_pkey: PRIMARY KEY (id) USING btree (id)
+    aac_enrollments_rule_id_enrollment_id_unique: UNIQUE (assessment_access_control_rule_id, enrollment_id) USING btree (assessment_access_control_rule_id, enrollment_id)
+    aac_enrollments_enrollment_id_idx: USING btree (enrollment_id)
+    aac_enrollments_rule_id_idx: USING btree (assessment_access_control_rule_id)
+
+check constraints
+    assessment_access_control_enrollments_target_type_check: CHECK (target_type = 'enrollment'::enum_assessment_access_control_target_type)
+
+foreign-key constraints
+    aac_enrollments_rule_id_target_type_fkey: FOREIGN KEY (assessment_access_control_rule_id, target_type) REFERENCES assessment_access_control_rules(id, target_type) ON UPDATE CASCADE ON DELETE CASCADE
+    assessment_access_control_enrollments_enrollment_id_fkey: FOREIGN KEY (enrollment_id) REFERENCES enrollments(id) ON UPDATE CASCADE ON DELETE CASCADE

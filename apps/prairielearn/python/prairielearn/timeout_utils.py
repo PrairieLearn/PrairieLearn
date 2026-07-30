@@ -1,4 +1,4 @@
-"""Utilities for performing local, threaded timeouts.
+"""Utilities for performing local, signal-based timeouts.
 Implementation from https://github.com/glenfant/stopit under the MIT license.
 
 ```python
@@ -6,14 +6,17 @@ from prairielearn.timeout_utils import ...
 ```
 """
 
-import ctypes
+from __future__ import annotations
+
+import signal
 import threading
+import time
 from enum import IntEnum
-from types import TracebackType
+from typing import TYPE_CHECKING
 
-from typing_extensions import Self
-
-tid_ctype = ctypes.c_ulong
+if TYPE_CHECKING:
+    from types import FrameType, TracebackType
+    from typing import Self
 
 
 class TimeoutState(IntEnum):
@@ -30,13 +33,64 @@ class TimeoutExceptionError(Exception):
     than the allowed maximum timeout value.
     """
 
+    def __init__(self, timeout: SignalTimeout | None = None) -> None:
+        super().__init__()
+        self.timeout = timeout
 
-class ThreadingTimeout:
-    """Context manager for limiting in the time the execution of a block
+
+class _SignalTimeoutState:
+    def __init__(self) -> None:
+        self.active_timeouts: list[SignalTimeout] = []
+        self.prev_handler: signal._HANDLER | None = None
+
+
+_signal_state = _SignalTimeoutState()
+
+
+def _schedule_next_signal_alarm(now: float | None = None) -> None:
+    executable_timeouts = [
+        timeout
+        for timeout in _signal_state.active_timeouts
+        if timeout.state == TimeoutState.EXECUTING
+    ]
+    if not executable_timeouts:
+        signal.setitimer(signal.ITIMER_REAL, 0)
+        return
+
+    if now is None:
+        now = time.monotonic()
+
+    next_timeout = min(executable_timeouts, key=lambda t: t._deadline)
+    signal.setitimer(signal.ITIMER_REAL, max(next_timeout._deadline - now, 1e-6))
+
+
+def _signal_timeout_handler(_signum: int, _frame: FrameType | None) -> None:
+    now = time.monotonic()
+    executable_timeouts = [
+        timeout
+        for timeout in _signal_state.active_timeouts
+        if timeout.state == TimeoutState.EXECUTING
+    ]
+    if not executable_timeouts:
+        signal.setitimer(signal.ITIMER_REAL, 0)
+        return
+
+    timed_out = min(executable_timeouts, key=lambda t: t._deadline)
+    if timed_out._deadline > now:
+        _schedule_next_signal_alarm(now)
+        return
+
+    timed_out.state = TimeoutState.TIMED_OUT
+    signal.setitimer(signal.ITIMER_REAL, 0)
+    raise TimeoutExceptionError(timed_out)
+
+
+class SignalTimeout:
+    """Context manager for limiting the execution time of a block.
 
     Parameters:
         seconds (float | int): duration to run the context manager block
-        swallow_exc (bool): ``False`` if you want to manage ``TimeoutException``
+        swallow_exc (bool): ``False`` if you want to manage ``TimeoutExceptionError``
             (or any other) in an outer ``try ... except`` structure. ``True`` (default)
             if you just want to check the execution of the block with the
             ``state`` attribute of the context manager.
@@ -46,13 +100,11 @@ class ThreadingTimeout:
         self.seconds = seconds
         self.swallow_exc = swallow_exc
         self.state = TimeoutState.EXECUTED
-        tid = threading.current_thread().ident
-        if tid is None:
-            raise RuntimeError(
-                "Cannot create timeout context: thread ID is unavailable."
-            )
-        self.target_tid = tid
-        self.timer = None
+        if threading.current_thread() is not threading.main_thread():
+            raise RuntimeError("SignalTimeout requires the main thread.")
+        if not hasattr(signal, "SIGALRM"):
+            raise RuntimeError("SignalTimeout requires SIGALRM support.")
+        self._deadline: float = 0.0
 
     def __bool__(self) -> bool:
         """Return whether the context is not TIMED_OUT or INTERRUPTED"""
@@ -79,23 +131,22 @@ class ThreadingTimeout:
         traceback: TracebackType | None,
     ) -> bool:
         """Manages exceptions & timeout."""
-        if exc_type is TimeoutExceptionError:
-            if self.state != TimeoutState.TIMED_OUT:
-                self.state = TimeoutState.INTERRUPTED
-                self.suppress_interrupt()
-            return self.swallow_exc
-        else:
-            if exc_type is None:
-                self.state = TimeoutState.EXECUTED
+        if exc_type is None:
+            self.state = TimeoutState.EXECUTED
             self.suppress_interrupt()
-        return False
-
-    def stop(self) -> None:
-        """Called by timer thread at timeout. Raises a Timeout exception in the
-        caller thread
-        """
-        self.state = TimeoutState.TIMED_OUT
-        async_raise(self.target_tid, TimeoutExceptionError)
+            return False
+        if exc_type is not TimeoutExceptionError:
+            self.suppress_interrupt()
+            return False
+        assert isinstance(exc_value, TimeoutExceptionError)
+        is_own_timeout = exc_value.timeout is None or exc_value.timeout is self
+        # Set state before suppress_interrupt: rescheduling the next alarm can
+        # fire immediately if an outer deadline has already passed, and the
+        # handler must not preempt this assignment.
+        if not is_own_timeout:
+            self.state = TimeoutState.INTERRUPTED
+        self.suppress_interrupt()
+        return self.swallow_exc if is_own_timeout else False
 
     def cancel(self) -> None:
         """In case in the block you realize you don't need anymore
@@ -106,40 +157,37 @@ class ThreadingTimeout:
 
     def setup_interrupt(self) -> None:
         """Setting up the resource that interrupts the block"""
-        self.timer = threading.Timer(self.seconds, self.stop)
-        self.timer.start()
+        self._deadline = time.monotonic() + self.seconds
+        if not _signal_state.active_timeouts:
+            previous_handler = signal.getsignal(signal.SIGALRM)
+            prev_timer = signal.setitimer(signal.ITIMER_REAL, 0)
+            if prev_timer[0] > 0:
+                signal.setitimer(signal.ITIMER_REAL, *prev_timer)
+                raise RuntimeError(
+                    "SignalTimeout cannot run while an ITIMER_REAL timer is active."
+                )
+            _signal_state.prev_handler = previous_handler
+            signal.signal(signal.SIGALRM, _signal_timeout_handler)
+        _signal_state.active_timeouts.append(self)
+        _schedule_next_signal_alarm()
 
     def suppress_interrupt(self) -> None:
         """Removing the resource that interrupts the block"""
-        if self.timer is not None:
-            self.timer.cancel()
+        if self not in _signal_state.active_timeouts:
+            return
+
+        _signal_state.active_timeouts.remove(self)
+
+        if _signal_state.active_timeouts:
+            _schedule_next_signal_alarm()
         else:
-            raise ValueError("No timer has been initialized")
+            signal.setitimer(signal.ITIMER_REAL, 0)
+            if _signal_state.prev_handler is not None:
+                signal.signal(signal.SIGALRM, _signal_state.prev_handler)
+            _signal_state.prev_handler = None
 
 
-def async_raise(target_tid: int, exception: type[Exception]) -> None:
-    """Raises an asynchronous exception in another thread.
-    Read http://docs.python.org/c-api/init.html#PyThreadState_SetAsyncExc
-    for further enlightenments.
-
-    Parameters:
-        target_tid: target thread identifier
-        exception: Exception class to be raised in that thread
-
-    Raises:
-        ValueError: If the thread ID is invalid.
-        SystemError: If the process fails to set AsyncExec
-    """
-    # TODO: Update this code when we are running no-GIL Python version 3.14+.
-
-    # Ensuring and releasing GIL are useless since we're not in C
-    # gil_state = ctypes.pythonapi.PyGILState_Ensure()
-    ret = ctypes.pythonapi.PyThreadState_SetAsyncExc(
-        tid_ctype(target_tid), ctypes.py_object(exception)
-    )
-    # ctypes.pythonapi.PyGILState_Release(gil_state)
-    if ret == 0:
-        raise ValueError(f"Invalid thread ID {target_tid}")
-    if ret > 1:
-        ctypes.pythonapi.PyThreadState_SetAsyncExc(tid_ctype(target_tid), None)
-        raise SystemError("PyThreadState_SetAsyncExc failed")
+# The previous implementation was based on threading.Timer,
+# which had asynchronous behavior. See https://github.com/PrairieLearn/PrairieLearn/pull/14417
+class ThreadingTimeout(SignalTimeout):
+    """Deprecated alias for SignalTimeout."""

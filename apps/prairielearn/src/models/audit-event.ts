@@ -63,6 +63,20 @@ export async function selectAuditEvents({
   );
 }
 
+export async function selectAuditEventsByInstitutionId({
+  institution_id,
+  table_names,
+}: {
+  institution_id: string;
+  table_names: (keyof typeof requiredTableFields)[];
+}): Promise<AuditEvent[]> {
+  return await queryRows(
+    sql.select_audit_events_by_institution_id_table_names,
+    { institution_id, table_names },
+    AuditEventSchema,
+  );
+}
+
 type InsertAuditEventParams = SupportedTableActionCombination & {
   action: EnumAuditEventAction;
   rowId: string;

@@ -19,7 +19,9 @@ from pygments.token import Token, _TokenType
 from pygments_ansi_color import color_tokens
 
 LANGUAGE_DEFAULT = None
-STYLE_NAME_DEFAULT = "friendly"
+# `xcode` is used as the default because it is the light Pygments style whose
+# every token color meets AA contrast (4.5:1) against its background.
+STYLE_NAME_DEFAULT = "xcode"
 NO_HIGHLIGHT_DEFAULT = False
 SOURCE_FILE_NAME_DEFAULT = None
 PREVENT_SELECT_DEFAULT = False
@@ -110,7 +112,7 @@ class HighlightingHtmlFormatter(pygments.formatters.HtmlFormatter[str]):
 
     def _highlight_lines(
         self, tokensource: Iterable[tuple[int, str]]
-    ) -> Generator[tuple[int, str], None, None]:
+    ) -> Generator[tuple[int, str]]:
         """
         Highlighted the lines specified in the `hl_lines` option by post-processing the token stream.
         Based on the code at "https://github.com/pygments/pygments/blob/master/pygments/formatters/html.py#L816"
@@ -174,7 +176,7 @@ def get_formatter(
 ) -> HighlightingHtmlFormatter:
     class CustomStyleWithAnsiColors(BaseStyle):
         # pygments did not annotate their class variables correctly (https://github.com/pygments/pygments/pull/2838)
-        styles = {**BaseStyle.styles, **get_ansi_color_tokens()}  # noqa: RUF012
+        styles = {**BaseStyle.styles, **get_ansi_color_tokens()}  # ruff:ignore[mutable-class-default]
 
         highlight_color = (
             highlight_lines_color or BaseStyle.highlight_color or "#b3d7ff"
@@ -326,11 +328,20 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         # to make it easier for a human to read.
         return f"<pre><code>\n{code.strip()}\n</code></pre>"
 
-    lexer = NoHighlightingLexer() if language is None else get_lexer_by_name(language)
+    if language is None:
+        lexer = NoHighlightingLexer()
+    else:
+        named_lexer = get_lexer_by_name(language)
+        if named_lexer is None:
+            raise KeyError(
+                f'Unknown language: "{language}". Must be one of the aliases listed in https://pygments.org/languages/, or the special language "ansi-color".'
+            )
+        lexer = named_lexer
 
     pygments_style = get_style_by_name(style_name)
 
     background_color = pygments_style.background_color or "transparent"
+    foreground_color = pygments_style.style_for_token(Token.Text).get("color")
     line_number_color = pygments_style.line_number_color
 
     formatter = get_formatter(pygments_style, highlight_lines_color)
@@ -345,6 +356,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         "code": code,
         "prevent_select": prevent_select,
         "background_color": background_color,
+        "foreground_color": foreground_color,
         "line_number_color": line_number_color,
         "show_line_numbers": show_line_numbers,
         "copy_code_button": pl.get_boolean_attrib(

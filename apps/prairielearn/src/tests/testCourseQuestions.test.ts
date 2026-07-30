@@ -1,18 +1,10 @@
-import { afterAll, beforeAll, describe } from 'vitest';
+import * as os from 'node:os';
 
-import { config } from '../lib/config.js';
+import { afterAll, beforeAll, describe, it } from 'vitest';
 
 import * as helperQuestion from './helperQuestion.js';
 import * as helperServer from './helperServer.js';
-
-const locals: Record<string, any> = { siteUrl: 'http://localhost:' + config.serverPort };
-
-locals.baseUrl = locals.siteUrl + '/pl';
-locals.courseInstanceBaseUrl = locals.baseUrl + '/course_instance/1/instructor';
-locals.questionBaseUrl = locals.courseInstanceBaseUrl + '/question';
-locals.questionPreviewTabUrl = '/preview';
-locals.questionsUrl = locals.courseInstanceBaseUrl + '/questions';
-locals.isStudentPage = false;
+import { withConfig } from './utils/config.js';
 
 const qidsTestCourse = [
   'addNumbers',
@@ -24,9 +16,17 @@ const qidsTestCourse = [
 ];
 
 describe('Auto-test questions in testCourse', { timeout: 60_000 }, function () {
-  beforeAll(helperServer.before());
+  beforeAll(async () => {
+    await withConfig({ workersCount: os.cpus().length }, async () => {
+      await helperServer.before()();
+    });
+  });
 
   afterAll(helperServer.after);
 
-  qidsTestCourse.forEach((qid) => helperQuestion.autoTestQuestion(locals, qid));
+  qidsTestCourse.forEach((qid) => {
+    it.concurrent(`auto-test ${qid}`, async () => {
+      await helperQuestion.autoTestQuestion({ qid });
+    });
+  });
 });

@@ -1,8 +1,13 @@
 <pl-question-panel>
+    <p>Consider the following plot of the linear function $f(x)={{params.formula_latex}}$:</p>
     {{! "figure.png" here is not a physical file. Since this pl-figure is the "dynamic" type, the figure is generated via server.py's `file()`. }}
-    <pl-figure file-name="figure.png" type="dynamic" width="500"></pl-figure>
+    <pl-figure file-name="figure.png" type="dynamic" width="500" alt="Plot of the linear function f(x)={{params.formula_latex}}"></pl-figure>
     <p>
         What is $f({{params.x}})$?
     </p>
 </pl-question-panel>
 <pl-number-input answers-name="f" comparison="decdig" digits="0" label="$f({{params.x}})=$" display="block"></pl-number-input>
+
+<pl-submission-panel>
+  <pl-figure file-name="submission.png" type="dynamic" width="500" alt="Plot of the same function f(x)={{params.formula_latex}}{{^format_errors.f}} with the submitted point ({{params.x}}, {{submitted_answers.f}}){{/format_errors.f}}"></pl-figure>
+</pl-submission-panel>

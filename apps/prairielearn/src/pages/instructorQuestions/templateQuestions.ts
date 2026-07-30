@@ -4,7 +4,7 @@ import fs from 'fs-extra';
 
 import { config } from '../../lib/config.js';
 import { EXAMPLE_COURSE_PATH } from '../../lib/paths.js';
-import { type QuestionsPageData } from '../../models/questions.js';
+import { type QuestionsPageData } from '../../models/questions.types.js';
 import { AssessmentJsonSchema, type ZoneAssessmentJson } from '../../schemas/index.js';
 import { loadQuestions } from '../../sync/course-db.js';
 import { hasWireframePreview } from '../instructorQuestionCreate/components/WireframePreview.js';

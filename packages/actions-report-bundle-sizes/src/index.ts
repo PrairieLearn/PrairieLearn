@@ -7,6 +7,8 @@ const SECTION_START = '<!-- bundle-sizes -->';
 const SECTION_END = '<!-- /bundle-sizes -->';
 const BASELINE_BRANCH = 'size-report';
 const BASELINE_PATH = 'bundle-sizes.json';
+const UPSTREAM_OWNER = 'PrairieLearn';
+const UPSTREAM_REPO = 'PrairieLearn';
 
 interface AssetSizes {
   raw: number;
@@ -163,8 +165,8 @@ async function fetchBaseline(
 ): Promise<SizesJson | null> {
   try {
     const response = await octokit.rest.repos.getContent({
-      owner: github.context.repo.owner,
-      repo: github.context.repo.repo,
+      owner: UPSTREAM_OWNER,
+      repo: UPSTREAM_REPO,
       path: BASELINE_PATH,
       ref: BASELINE_BRANCH,
     });
@@ -188,8 +190,8 @@ async function isLatestMasterCommit(
   octokit: ReturnType<typeof github.getOctokit>,
 ): Promise<boolean> {
   const { data: branch } = await octokit.rest.repos.getBranch({
-    owner: github.context.repo.owner,
-    repo: github.context.repo.repo,
+    owner: UPSTREAM_OWNER,
+    repo: UPSTREAM_REPO,
     branch: 'master',
   });
   return branch.commit.sha === github.context.sha;
@@ -199,6 +201,14 @@ async function pushBaseline(
   octokit: ReturnType<typeof github.getOctokit>,
   sizes: SizesJson,
 ): Promise<void> {
+  // Only the upstream repo should update the baseline. Forks don't have the
+  // size-report branch and their GITHUB_TOKEN can't write to the upstream.
+  const { owner, repo } = github.context.repo;
+  if (owner !== UPSTREAM_OWNER || repo !== UPSTREAM_REPO) {
+    core.info('Skipping baseline update on fork');
+    return;
+  }
+
   // Skip if a newer commit has already landed on master, since that build
   // will (or already did) write a more up-to-date baseline.
   if (!(await isLatestMasterCommit(octokit))) {
@@ -212,8 +222,8 @@ async function pushBaseline(
   let existingSha: string | undefined;
   try {
     const response = await octokit.rest.repos.getContent({
-      owner: github.context.repo.owner,
-      repo: github.context.repo.repo,
+      owner: UPSTREAM_OWNER,
+      repo: UPSTREAM_REPO,
       path: BASELINE_PATH,
       ref: BASELINE_BRANCH,
     });
@@ -231,8 +241,8 @@ async function pushBaseline(
 
   try {
     await octokit.rest.repos.createOrUpdateFileContents({
-      owner: github.context.repo.owner,
-      repo: github.context.repo.repo,
+      owner: UPSTREAM_OWNER,
+      repo: UPSTREAM_REPO,
       path: BASELINE_PATH,
       message: 'Update bundle size baseline',
       content,

@@ -14,7 +14,9 @@ import networkx as nx
 import numpy as np
 import pandas as pd
 import prairielearn as pl
+import prairielearn.sympy_utils as psu
 import pytest
+import sympy
 from numpy.typing import ArrayLike
 
 
@@ -270,6 +272,27 @@ def test_legacy_serialization(object_to_encode: Any, expected_result: Any) -> No
     assert decoded_json_object == expected_result
 
 
+@pytest.mark.parametrize(
+    "sympy_set",
+    [
+        sympy.FiniteSet(1, 2, 3),
+        sympy.FiniteSet(),
+        sympy.Interval(0, 1),
+        sympy.Interval.open(0, 1),
+        sympy.Union(sympy.FiniteSet(1, 2), sympy.Interval(3, 4)),
+        sympy.Intersection(sympy.Interval(0, 2), sympy.Interval(1, 3)),
+    ],
+)
+def test_to_json_sympy_set(sympy_set: sympy.Set) -> None:
+    encoded = cast(psu.SympyJson, pl.to_json(sympy_set))
+
+    assert encoded["_type"] == "sympy"
+
+    json.dumps(encoded, allow_nan=False)
+
+    assert psu.json_to_sympy(encoded, allow_sets=True) == sympy_set
+
+
 class DummyEnum(Enum):
     DEFAULT = 0
     DUMMY_CHOICE_1 = 1
@@ -325,7 +348,7 @@ def test_get_enum_attrib(
 def test_get_enum_attrib_exceptions(html_str: str) -> None:
     element = lxml.html.fragment_fromstring(html_str)
 
-    with pytest.raises(ValueError):  # noqa: PT011
+    with pytest.raises(ValueError):  # ruff:ignore[pytest-raises-too-broad]
         pl.get_enum_attrib(element, "test-choice", DummyEnum)
 
 
@@ -346,7 +369,7 @@ def test_grade_answer_parametrized_correct(
     question_name: str,
     student_answer: str,
     weight: int,
-    expected_grade: bool,  # noqa: FBT001
+    expected_grade: bool,  # ruff:ignore[boolean-type-hint-positional-argument]
 ) -> None:
     question_data["submitted_answers"] = {question_name: student_answer}
 
@@ -887,17 +910,17 @@ def test_get_boolean_attrib_invalid(html_str: str) -> None:
         ("<pl-thing></pl-thing>", False),
     ],
 )
-def test_get_boolean_attrib_libxml(html_str: str, expected_result: bool | None) -> None:  # noqa: FBT001
+def test_get_boolean_attrib_libxml(html_str: str, expected_result: bool | None) -> None:  # ruff:ignore[boolean-type-hint-positional-argument]
     """Test that using HTML boolean attributes is only valid when reading as boolean with default False."""
     element = lxml.html.fragment_fromstring(html_str)
-    result = pl.get_boolean_attrib(element, "checked", False)  # noqa: FBT003
+    result = pl.get_boolean_attrib(element, "checked", False)  # ruff:ignore[boolean-positional-value-in-call]
     assert result == expected_result
     if not expected_result:
         expected_result = None
     result = pl.get_boolean_attrib(element, "checked")
     assert result == expected_result
     with pytest.raises(ValueError, match="boolean attribute"):
-        pl.get_boolean_attrib(element, "checked", True)  # noqa: FBT003
+        pl.get_boolean_attrib(element, "checked", True)  # ruff:ignore[boolean-positional-value-in-call]
     with pytest.raises(ValueError, match="boolean attribute"):
         pl.get_string_attrib(element, "checked", "")
     with pytest.raises(ValueError, match="boolean attribute"):
@@ -1069,6 +1092,14 @@ def test_get_color_attrib_invalid(html_str: str) -> None:
         ("1/2", True, False, 0.5, {"submitted_answers": 0.5}),
         # Basic decimals
         ("0.25", True, False, 0.25, {"submitted_answers": 0.25}),
+        # Basic decimals with thousands separators
+        (
+            "12 345.678 901 2",
+            True,
+            False,
+            12345.6789012,
+            {"submitted_answers": 12345.6789012},
+        ),
         # Complex numbers
         (
             "1+2j",
@@ -1229,40 +1260,21 @@ def test_is_correct_ndarray2d_sf(
     assert pl.is_correct_ndarray2d_sf(submitted, true, digits) == expected
 
 
-def test_load_extension() -> None:
+def test_load_extension(question_data: pl.QuestionData) -> None:
     """Test loading extensions with the load_extension function."""
     director = Path(__file__).parent
     controller = "dummy_extension.py"
 
-    # Create mock data with extension info
-    data: pl.QuestionData = {
-        "extensions": {
-            "dummy": {
-                "directory": director,
-                "controller": controller,
-            }
-        },
-        # Fill required fields with empty values
-        "params": {},
-        "correct_answers": {},
-        "submitted_answers": {},
-        "format_errors": {},
-        "partial_scores": {},
-        "score": 0,
-        "feedback": {},
-        "variant_seed": "",
-        "options": {},
-        "raw_submitted_answers": {},
-        "editable": True,
-        "panel": "question",
-        "num_valid_submissions": 0,
-        "manual_grading": False,
-        "ai_grading": False,
-        "answers_names": {},
+    question_data["extensions"] = {
+        "dummy": {
+            "directory": director,
+            "controller": controller,
+        }
     }
+    question_data["editable"] = True
 
     # Test successful loading
-    ext = pl.load_extension(data, "dummy")
+    ext = pl.load_extension(question_data, "dummy")
     assert ext.sample_function() == "Hello from dummy extension"
     assert ext.SAMPLE_CONSTANT == 42
     with pytest.raises(AttributeError):
@@ -1270,10 +1282,10 @@ def test_load_extension() -> None:
 
     # Test loading non-existent extension
     with pytest.raises(ValueError, match="Could not find extension"):
-        pl.load_extension(data, "nonexistent")
+        pl.load_extension(question_data, "nonexistent")
 
     # Test loading all extensions
-    exts = pl.load_all_extensions(data)
+    exts = pl.load_all_extensions(question_data)
     assert len(exts) == 1
     assert "dummy" in exts
     assert exts["dummy"].sample_function() == "Hello from dummy extension"
@@ -1404,6 +1416,8 @@ def test_add_submitted_file(question_data: pl.QuestionData) -> None:
     [
         ({"x": None, "y": None}, "z", False),
         ({"x": None, "y": None}, "x", True),
+        ({"x": None, "y": None}, "", True),
+        ({"x": None, "y": None}, " ", True),
         ({}, "y", False),
     ],
 )

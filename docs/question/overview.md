@@ -12,6 +12,8 @@ A question is made up of three main components:
 2. **`question.html`**: The HTML template that defines the question. This is where you write the question text and define the input elements. Reference the [question template documentation](template.md) for more details.
 3. **`server.py`**: This is where you write the logic for generating random values, grading student responses, and any other server-side code. This file is optional, but it is necessary for any question that has non-trivial randomization or custom grading behavior. Reference the [server documentation](server.md) for more details.
 
+You can also include an optional `README.md` file directly in the question directory. PrairieLearn renders it as Markdown above the question on the instructor **Preview** page; it is not visible to students. Use it to document the question's intent, variants, or maintenance notes.
+
 ## Creating a question
 
 To create a new question through the PrairieLearn web interface:
@@ -89,7 +91,7 @@ The `info.json` file for each question defines properties of the question. For e
 | Property                 | Type    | Description                                                                                                                                                                                                                                                                                                        |
 | ------------------------ | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `uuid`                   | string  | [Unique identifier](../uuid.md). (Required; no default)                                                                                                                                                                                                                                                            |
-| `type`                   | enum    | Type of the test. Must be `"v3"` for new-style questions. (Required; no default)                                                                                                                                                                                                                                   |
+| `type`                   | enum    | Type of the question. Must be `"v3"` for new-style questions. (Required; no default)                                                                                                                                                                                                                               |
 | `title`                  | string  | The title of the question (e.g., `"Addition of vectors in Cartesian coordinates"`). (Required; no default)                                                                                                                                                                                                         |
 | `topic`                  | string  | The category of question (e.g., `"Vectors"`, `"Energy"`). Like the chapter in a textbook. (Required; no default)                                                                                                                                                                                                   |
 | `tags`                   | array   | Optional extra tags associated with the question (e.g., `["secret", "concept"]`). (Optional; default: no tags)                                                                                                                                                                                                     |
@@ -100,6 +102,7 @@ The `info.json` file for each question defines properties of the question. For e
 | `partialCredit`          | boolean | Whether the question will give partial points for fractional scores. (Optional; default: `true`)                                                                                                                                                                                                                   |
 | `externalGradingOptions` | object  | Options for externally graded questions. See the [external grading docs](../externalGrading.md). (Optional; default: none)                                                                                                                                                                                         |
 | `dependencies`           | object  | External JavaScript or CSS dependencies to load. See below. (Optional; default: `{}`)                                                                                                                                                                                                                              |
+| `preferences`            | object  | A schema defining [question preferences](preferences.md) that can be overridden per-assessment. (Optional; default: none)                                                                                                                                                                                          |
 | `sharePublicly`          | boolean | Whether the question should be available for anyone to preview or use in their course                                                                                                                                                                                                                              |
 | `shareSourcePublicly`    | boolean | Whether the source code of the question should be available                                                                                                                                                                                                                                                        |
 | `sharingSets`            | array   | Sharing sets which the question belongs to                                                                                                                                                                                                                                                                         |
@@ -145,12 +148,16 @@ The different types of dependency properties available are summarized in this ta
 | ---------------------------- | ------------------------------------------------------------------------------------------------- |
 | `nodeModulesStyles`          | The styles required by this question, relative to `[PrairieLearn directory]/node_modules`.        |
 | `nodeModulesScripts`         | The scripts required by this question, relative to `[PrairieLearn directory]/node_modules`.       |
-| `clientFilesQuestionStyles`  | The scripts required by this question relative to the question's `clientFilesQuestion` directory. |
+| `clientFilesQuestionStyles`  | The styles required by this question relative to the question's `clientFilesQuestion` directory.  |
 | `clientFilesQuestionScripts` | The scripts required by this question relative to the question's `clientFilesQuestion` directory. |
 | `clientFilesCourseStyles`    | The styles required by this question relative to `[course directory]/clientFilesCourse`.          |
 | `clientFilesCourseScripts`   | The scripts required by this question relative to `[course directory]/clientFilesCourse`.         |
 
-Additional details about how to access these fields from `server.py` can be found in the [`server.py` documentation](server.md#accessing-files-on-disk).
+Additional details about how to access these fields from `server.py` can be found in the [clientFiles and serverFiles documentation](../clientServerFiles.md#accessing-files-from-serverpy-question-code).
+
+!!! warning
+
+    Keep in mind that node module dependencies should be avoided, as they may be updated without warning, which in some cases may break your question. More information can be found in the [element developer guide](../devElements.md#using-node-dependencies-in-element-code).
 
 ### Non-randomized questions
 
@@ -204,7 +211,7 @@ The `question.html` is regular HTML, with a few special features:
 
 3. A special `<markdown>` tag allows you to write Markdown inline in questions.
 4. LaTeX equations are available within HTML by using `$x^2$` for inline equations, and `$$x^2$$` or `\[x^2\]` for display equations.
-5. Special layout elements like `<pl-question-panel>` and `<pl-answer-panel>` can be used to show content to students in different contexts.
+5. Special layout elements like [`<pl-question-panel>`](../elements/pl-question-panel.md) and [`<pl-answer-panel>`](../elements/pl-answer-panel.md) can be used to show content to students in different contexts.
 
 !!! info
 

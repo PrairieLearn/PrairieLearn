@@ -5,7 +5,7 @@ WITH
       w.id,
       w.state,
       w.workspace_host_id,
-      format_interval (
+      (
         CASE
           WHEN w.state = 'launching' THEN (NOW() - w.launched_at)
           ELSE (NOW() - w.running_at)
@@ -36,7 +36,7 @@ WITH
   )
 SELECT
   to_jsonb(wh.*) AS workspace_host,
-  format_interval (
+  (
     CASE
       WHEN wh.state = 'launching' THEN (NOW() - wh.launched_at)
       WHEN wh.state = 'ready' THEN (NOW() - wh.ready_at)

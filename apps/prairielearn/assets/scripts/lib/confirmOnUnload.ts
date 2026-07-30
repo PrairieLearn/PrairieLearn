@@ -116,18 +116,12 @@ export function confirmOnUnload(form: HTMLFormElement): () => void {
     const isSameForm = form.dataset.originalFormData === getQuestionFormData(form);
 
     if (!isSameForm) {
-      // event.preventDefault() is used in Safari/Firefox, but not supported by Chrome/Edge/etc.
-      // Returning a string is supported in almost all browsers that support beforeunload.
-      // Newer versions of Chrome/Edge appear to no longer support returning a string,
-      // but they do seem to support setting `event.returnValue`.
+      // Best practice per MDN is to call preventDefault() and set returnValue for legacy support.
       // Safari on iOS does not support confirmation on beforeunload at all.
       // https://developer.mozilla.org/en-US/docs/Web/API/Window/beforeunload_event#compatibility_notes
-      // Note that per the spec, we must technically return a non-empty string,
-      // although the contents of the string should always be ignored.
-      // https://html.spec.whatwg.org/multipage/browsing-the-web.html#unloading-documents:event-beforeunload
       event.preventDefault();
+      // eslint-disable-next-line @typescript-eslint/no-deprecated -- https://developer.mozilla.org/en-US/docs/Web/API/Window/beforeunload_event#usage_notes
       event.returnValue = 'prompt';
-      return 'prompt';
     }
   };
   window.addEventListener('beforeunload', handleBeforeUnload);

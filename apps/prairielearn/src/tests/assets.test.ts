@@ -1,7 +1,6 @@
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 
-import fetch from 'node-fetch';
 import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
 import * as assets from '../lib/assets.js';
@@ -19,12 +18,14 @@ async function getOrLoadElementsInfo() {
   if (!cachedElementsInfo) {
     const elementsInfo: Record<string, any> = {};
 
-    const elements = await fs.readdir(ELEMENTS_PATH);
+    const elements = await fs.readdir(ELEMENTS_PATH, { withFileTypes: true });
 
     for (const element of elements) {
-      const elementInfoPath = path.join(ELEMENTS_PATH, element, 'info.json');
+      if (!element.isDirectory()) continue;
+
+      const elementInfoPath = path.join(ELEMENTS_PATH, element.name, 'info.json');
       const elementInfo = JSON.parse(await fs.readFile(elementInfoPath, 'utf-8'));
-      elementsInfo[element] = elementInfo;
+      elementsInfo[element.name] = elementInfo;
     }
     cachedElementsInfo = elementsInfo;
   }

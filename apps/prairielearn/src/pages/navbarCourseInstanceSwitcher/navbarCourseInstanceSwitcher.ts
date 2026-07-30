@@ -20,7 +20,6 @@ router.get(
     const course_instances = await selectCourseInstancesWithStaffAccess({
       course,
       authzData,
-      requiredRole: ['Previewer', 'Student Data Viewer'],
     });
 
     res.send(

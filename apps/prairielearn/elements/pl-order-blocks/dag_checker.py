@@ -2,9 +2,9 @@ import itertools
 from collections import Counter
 from collections.abc import Generator, Iterable, Mapping, Sequence
 from copy import deepcopy
+from typing import TypeIs
 
 import networkx as nx
-from typing_extensions import TypeIs
 
 ColoredEdges = list[list[str]]
 Edges = list[str]
@@ -354,7 +354,7 @@ def dfs_until(
 
     Raises:
         - If a cycle is found in the multigraph.
-    """  # noqa: DOC501 (false positive)
+    """  # ruff:ignore[docstring-missing-exception] (false positive)
     # ruff throws an error for sphinx style doc strings: https://github.com/astral-sh/ruff/issues/12434
     stack: list[tuple[str, list[str]]] = []
     visited: list[str] = []

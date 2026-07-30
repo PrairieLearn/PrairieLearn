@@ -33,14 +33,14 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           # We need the whole history so we can diff against `master` to determine
           # what images need to be built.
           fetch-depth: 0
       - name: Login to DockerHub
         if: ${{ env.CAN_PUSH_IMAGE == 'true' }}
-        uses: docker/login-action@v3 # https://github.com/marketplace/actions/docker-login
+        uses: docker/login-action@v4 # https://github.com/marketplace/actions/docker-login
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
@@ -80,10 +80,10 @@ jobs:
       CAN_PUSH_IMAGE: ${{ secrets.DOCKERHUB_USERNAME != '' }}
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Login to DockerHub
         if: ${{ env.CAN_PUSH_IMAGE == 'true' }}
-        uses: docker/login-action@v3 # https://github.com/marketplace/actions/docker-login
+        uses: docker/login-action@v4 # https://github.com/marketplace/actions/docker-login
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}

@@ -247,6 +247,11 @@ export async function saveSubmission(
     variant,
     question,
     question_course,
+    {
+      userId: variant.user_id,
+      groupId: variant.team_id,
+      variantCourse: variant_course,
+    },
   );
 
   const studentMessage = 'Error parsing submission';
@@ -418,6 +423,11 @@ export async function gradeVariant({
       variant,
       question,
       question_course,
+      {
+        userId: variant.user_id,
+        groupId: variant.team_id,
+        variantCourse: variant_course,
+      },
     );
     const hasFatalIssue = courseIssues.some((issue) => issue.fatal);
 

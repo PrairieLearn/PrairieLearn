@@ -4,6 +4,10 @@ body:
   - type: textarea
     attributes:
       label: Details
+      description: >-
+        Please include steps for reproducing the issue and a PrairieLearn URL where the issue can be seen, if applicable.
+        If you haven't already discussed this in the `#pl-help` channel on [Slack](https://prairielearn.com/slack),
+        consider doing so to confirm it's a bug.
       placeholder: Type your description here...
     validations:
       required: true

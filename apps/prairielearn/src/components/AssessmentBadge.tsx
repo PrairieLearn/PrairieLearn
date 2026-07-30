@@ -1,22 +1,31 @@
+import type { ReactNode } from 'react';
+
 import { renderHtml } from '@prairielearn/react';
 
-import { type AssessmentInstanceUrlParts, getAssessmentInstanceUrl } from '../lib/client/url.js';
+import { type AssessmentUrlParts, getAssessmentUrl } from '../lib/client/url.js';
 
 type AssessmentBadgeProps = {
   assessment: { assessment_id: string; color: string; label: string };
+  prefix?: ReactNode;
+  publicURL?: boolean;
 } & (
-  | ({ hideLink: true } & Partial<AssessmentInstanceUrlParts> & { publicURL?: boolean })
-  | ({ hideLink?: false } & AssessmentInstanceUrlParts & { publicURL?: boolean })
+  | { hideLink: true; courseInstanceId?: string; urlPrefix?: string }
+  | ({ hideLink?: false } & AssessmentUrlParts)
 );
 
 export function AssessmentBadge(props: AssessmentBadgeProps) {
-  const { assessment } = props;
+  const { assessment, prefix } = props;
 
   if (props.hideLink) {
-    return <span className={`badge color-${assessment.color}`}>{assessment.label}</span>;
+    return (
+      <span className={`badge color-${assessment.color}`}>
+        {prefix}
+        {assessment.label}
+      </span>
+    );
   }
 
-  const link = getAssessmentInstanceUrl(
+  const link = getAssessmentUrl(
     props.urlPrefix !== undefined
       ? {
           urlPrefix: props.urlPrefix,
@@ -32,6 +41,7 @@ export function AssessmentBadge(props: AssessmentBadgeProps) {
 
   return (
     <a href={link} className={`btn btn-badge color-${assessment.color}`}>
+      {prefix}
       {assessment.label}
     </a>
   );
@@ -47,7 +57,7 @@ export function AssessmentBadgeHtml({
   assessment: { assessment_id: string; color: string; label: string };
   hideLink?: boolean;
   publicURL?: boolean;
-} & AssessmentInstanceUrlParts) {
+} & AssessmentUrlParts) {
   if (urlPrefix === undefined) {
     return renderHtml(
       <AssessmentBadge

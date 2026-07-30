@@ -3,6 +3,7 @@ import prairielearn.sympy_utils as psu
 import pytest
 
 VARIABLES = ["n"]
+MULTI_VARIATE = ["n", "m"]
 
 ALL_GRADING_FUNCTIONS = [
     bou.grade_o_expression,
@@ -145,6 +146,95 @@ class TestBigOInput:
 
         assert 0.0 < score < 1.0
         assert feedback == bou.TOO_LOOSE_FEEDBACK
+
+    @pytest.mark.parametrize(
+        ("a_true", "a_sub"),
+        [
+            ("n*m", "(n**2)*m"),
+            ("n*m", "n*(m**2)"),
+            ("n+m", "n+m**2"),
+            ("n+m", "n+factorial(m)"),
+            ("n+m", "n**2+m**2"),
+            ("n", "n*m"),
+        ],
+    )
+    def test_multivariate_too_loose(self, a_true: str, a_sub: str) -> None:
+        score, feedback = bou.grade_o_expression(a_true, a_sub, MULTI_VARIATE)
+
+        assert 0.0 < score < 1.0
+        assert feedback == bou.TOO_LOOSE_FEEDBACK
+
+    @pytest.mark.parametrize(
+        ("a_true", "a_sub"),
+        [
+            ("n*m", "n*m + n"),
+            ("n*m", "n*m + m"),
+            ("n*m", "n*m + log(n)"),
+            ("n*m", "n*m + log(m)"),
+            ("n+m", "n+m + log(n)"),
+            ("n+m", "n+m + log(m)"),
+            ("n**2*m**3", "n**2*m**3 + n**2"),
+            ("n**2*m**3", "n**2*m**3 + m**3"),
+            ("n**2*m**3", "n**2*m**3 + log(n)"),
+        ],
+    )
+    def test_multivariate_lower_order(self, a_true: str, a_sub: str) -> None:
+        score, feedback = bou.grade_o_expression(a_true, a_sub, MULTI_VARIATE)
+
+        assert 0.0 < score < 1.0
+        assert feedback == bou.LOWER_ORDER_TERMS_FEEDBACK
+
+    @pytest.mark.parametrize(
+        ("a_true", "a_sub"),
+        [
+            ("n*m", "-n*m"),
+            ("n+m", "n-m"),
+            ("n*m**2", "-n*m**2"),
+            ("n**2+m", "-(n**2)+m"),
+            ("n*log(m)", "n*log(2/m)"),
+        ],
+    )
+    def test_multivariate_negative(self, a_true: str, a_sub: str) -> None:
+        score, feedback = bou.grade_o_expression(a_true, a_sub, MULTI_VARIATE)
+
+        assert score == pytest.approx(0.0)
+        assert feedback == bou.NEGATIVE_FEEDBACK
+
+    @pytest.mark.parametrize(
+        ("a_true", "a_sub"),
+        [
+            ("n*m", "2*n*m"),
+            ("n+m", "2*n+m"),
+            ("n+m", "n+2*m"),
+            ("n*m**2", "2*n*m**2"),
+            ("n**2+m", "2*n**2+m"),
+            ("n*log(m)", "2*n*log(m)"),
+        ],
+    )
+    def test_multivariate_unnecessary_constants(self, a_true: str, a_sub: str) -> None:
+        score, feedback = bou.grade_o_expression(a_true, a_sub, MULTI_VARIATE)
+
+        assert 0.0 < score < 1.0
+        assert feedback == bou.CONSTANT_FACTORS_FEEDBACK
+
+    @pytest.mark.parametrize(
+        ("a_true", "a_sub"),
+        [
+            ("n*m", "n"),
+            ("n*m", "m"),
+            ("n+m", "n"),
+            ("n+m", "m"),
+            ("n**2*m**3", "n**2*m**2"),
+            ("n**2*m**3", "n**1*m**3"),
+            ("n*log(m)", "n"),
+            ("n*log(m)", "log(m)"),
+        ],
+    )
+    def test_multivariate_incorrect(self, a_true: str, a_sub: str) -> None:
+        score, feedback = bou.grade_o_expression(a_true, a_sub, MULTI_VARIATE)
+
+        assert score == pytest.approx(0.0)
+        assert feedback == bou.INCORRECT_FEEDBACK
 
     @pytest.mark.parametrize(
         ("a_true", "a_sub"),

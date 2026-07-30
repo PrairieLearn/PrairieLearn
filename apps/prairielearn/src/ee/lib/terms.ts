@@ -29,11 +29,7 @@ function hasUserAcceptedTerms(user: User): boolean {
 async function shouldRedirectToTermsPage(user: User, ip: string | undefined) {
   if (!config.requireTermsAcceptance || hasUserAcceptedTerms(user)) return false;
 
-  const { mode } = await ipToMode({
-    ip,
-    date: new Date(),
-    authn_user_id: user.id,
-  });
+  const mode = await ipToMode({ ip, date: new Date(), authn_user_id: user.id });
   return mode === 'Public';
 }
 

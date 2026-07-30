@@ -49,7 +49,7 @@ def get_current_platform() -> str:
 
 
 @contextmanager
-def local_registry(name: str) -> Generator[None, None, None]:
+def local_registry(name: str) -> Generator[None]:
     """Create a local Docker registry."""
     # Stop any existing registry container.
     with contextlib.suppress(subprocess.CalledProcessError):
@@ -82,7 +82,7 @@ def local_registry(name: str) -> Generator[None, None, None]:
 
 
 @contextmanager
-def buildx_builder(name: str) -> Generator[None, None, None]:
+def buildx_builder(name: str) -> Generator[None]:
     """Create a Docker buildx builder."""
     # Remove any existing builder with the same name.
     with contextlib.suppress(subprocess.CalledProcessError):

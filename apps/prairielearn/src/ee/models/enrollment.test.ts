@@ -42,9 +42,10 @@ describe('getEnrollmentCountsForInstitution', () => {
     // The test course only has a single course instance, so we'll create a
     // second one for more complete tests.
     const courseInstance = await queryRow(
-      'INSERT INTO course_instances (course_id, display_timezone, enrollment_code) VALUES ($course_id, $display_timezone, $enrollment_code) RETURNING *',
+      'INSERT INTO course_instances (course_id, short_name, display_timezone, enrollment_code) VALUES ($course_id, $short_name, $display_timezone, $enrollment_code) RETURNING *',
       {
         course_id: 1,
+        short_name: 'Test CI',
         display_timezone: 'UTC',
         enrollment_code: await uniqueEnrollmentCode(),
       },

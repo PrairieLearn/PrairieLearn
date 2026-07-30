@@ -130,7 +130,6 @@ const RichTextEditor = ({
     if (editor) {
       // Shut up linter. This is how we have to do this. `useEditor` doesn't react
       // to changes in the `editable` option after initialization.
-      // eslint-disable-next-line react-you-might-not-need-an-effect/no-derived-state
       editor.setEditable(!isGenerating);
     }
   }, [editor, isGenerating]);

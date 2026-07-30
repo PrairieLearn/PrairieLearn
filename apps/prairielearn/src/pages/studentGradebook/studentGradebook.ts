@@ -30,7 +30,7 @@ function mapRow(
   raw: StudentGradebookRow,
   prev: StudentGradebookRow | null,
 ): StudentGradebookTableRow {
-  const start_new_set = !prev || raw.assessment_set.id !== prev.assessment_set.id;
+  const start_new_set = raw.assessment_set.id !== prev?.assessment_set.id;
   return {
     assessment_id: raw.assessment.id,
     assessment_instance_id: raw.assessment_instance.id,
@@ -50,10 +50,10 @@ router.get(
   logPageView('studentGradebook'),
   typedAsyncHandler<'course-instance'>(async (req, res) => {
     const rawRows = await getGradebookRows({
-      course_instance_id: res.locals.course_instance.id,
-      user_id: res.locals.user.id,
-      authz_data: res.locals.authz_data,
-      req_date: res.locals.req_date,
+      courseInstance: res.locals.course_instance,
+      userId: res.locals.user.id,
+      authzData: res.locals.authz_data,
+      reqDate: res.locals.req_date,
       auth: 'student',
     });
     const rows = rawRows.map((row, index) => mapRow(row, rawRows[index - 1]));
@@ -75,10 +75,10 @@ router.get(
     }
 
     const rows = await getGradebookRows({
-      course_instance_id: res.locals.course_instance.id,
-      user_id: res.locals.user.id,
-      authz_data: res.locals.authz_data,
-      req_date: res.locals.req_date,
+      courseInstance: res.locals.course_instance,
+      userId: res.locals.user.id,
+      authzData: res.locals.authz_data,
+      reqDate: res.locals.req_date,
       auth: 'student',
     });
 

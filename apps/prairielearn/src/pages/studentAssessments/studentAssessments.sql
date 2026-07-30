@@ -8,6 +8,7 @@ WITH
       a.order_by AS assessment_order_by,
       a.title,
       a.team_work,
+      a.modern_access_control,
       aset.id AS assessment_set_id,
       aset.name AS assessment_set_name,
       aset.heading AS assessment_set_heading,
@@ -23,6 +24,7 @@ WITH
       NULL::integer AS assessment_instance_number,
       NULL::integer AS assessment_instance_score_perc,
       NULL::boolean AS assessment_instance_open,
+      NULL::timestamptz AS assessment_instance_date_limit,
       am.id AS assessment_module_id,
       am.name AS assessment_module_name,
       am.heading AS assessment_module_heading,
@@ -46,6 +48,7 @@ WITH
       mia.assessment_order_by,
       mia.title || ' instance #' || ai.number,
       NULL::boolean AS team_work,
+      mia.modern_access_control,
       mia.assessment_set_id,
       mia.assessment_set_name,
       mia.assessment_set_heading,
@@ -61,6 +64,7 @@ WITH
       ai.number AS assessment_instance_number,
       ai.score_perc AS assessment_instance_score_perc,
       ai.open AS assessment_instance_open,
+      ai.date_limit AS assessment_instance_date_limit,
       am.id AS assessment_module_id,
       am.name AS assessment_module_name,
       am.heading AS assessment_module_heading,
@@ -81,6 +85,7 @@ WITH
       a.order_by AS assessment_order_by,
       a.title,
       a.team_work,
+      a.modern_access_control,
       aset.id AS assessment_set_id,
       aset.name AS assessment_set_name,
       aset.heading AS assessment_set_heading,
@@ -96,6 +101,7 @@ WITH
       ai.number AS assessment_instance_number,
       ai.score_perc AS assessment_instance_score_perc,
       ai.open AS assessment_instance_open,
+      ai.date_limit AS assessment_instance_date_limit,
       am.id AS assessment_module_id,
       am.name AS assessment_module_name,
       am.heading AS assessment_module_heading,
@@ -168,29 +174,11 @@ SELECT
     ELSE '/assessment_instance/' || assessment_instance_id || '/'
   END AS link,
   (
-    LAG(
-      CASE
-        WHEN $assessments_group_by = 'Set' THEN assessment_set_id
-        ELSE assessment_module_id
-      END
-    ) OVER (
-      PARTITION BY
-        (
-          CASE
-            WHEN $assessments_group_by = 'Set' THEN assessment_set_id
-            ELSE assessment_module_id
-          END
-        )
-        -- Note that we set `NULLS FIRST` to ensure that the rows from
-        -- `multiple_instance_assessments` are always first, as they have a
-        -- null `assessment_instance_number`.
-      ORDER BY
-        assessment_set_number,
-        assessment_order_by,
-        assessment_id,
-        assessment_instance_number NULLS FIRST
-    ) IS NULL
-  ) AS start_new_assessment_group,
+    CASE
+      WHEN $assessments_group_by = 'Set' THEN assessment_set_id
+      ELSE assessment_module_id
+    END
+  ) AS assessment_group_id,
   (
     CASE
       WHEN $assessments_group_by = 'Set' THEN assessment_set_heading
@@ -200,8 +188,8 @@ SELECT
 FROM
   all_rows
 WHERE
-  -- TODO: shift this check into typescript so that we are setup for evaluation of modern access control.
   authorized
+  OR modern_access_control
 ORDER BY
   CASE
     WHEN $assessments_group_by = 'Module' THEN assessment_module_number

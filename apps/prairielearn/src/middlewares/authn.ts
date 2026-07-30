@@ -1,4 +1,5 @@
 import asyncHandler from 'express-async-handler';
+import z from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
 import { getCheckedSignedTokenData } from '@prairielearn/signed-token';
@@ -12,10 +13,9 @@ import { insertAuditEvent } from '../models/audit-event.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-const UUID_REGEXP = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
-
 export default asyncHandler(async (req, res, next) => {
   res.locals.is_administrator = false;
+  res.locals.lockdown_browser = false;
 
   if (req.method === 'OPTIONS') {
     // don't authenticate for OPTIONS requests, as these are just for CORS
@@ -41,7 +41,7 @@ export default asyncHandler(async (req, res, next) => {
       maxAge: 24 * 60 * 60 * 1000,
     });
 
-    if (!data?.uuid || typeof data.uuid !== 'string' || !UUID_REGEXP.test(data.uuid)) {
+    if (!data?.uuid || typeof data.uuid !== 'string' || !z.uuid().safeParse(data.uuid).success) {
       throw new Error('invalid load_test_token');
     }
 
@@ -175,7 +175,14 @@ export default asyncHandler(async (req, res, next) => {
 
   await authnLib.loadUser(req, res, authnParams, {
     redirect: false,
+    preserveLockdownBrowser: true,
   });
+
+  // Surface the LockDown Browser flag recorded on the session at PT->PL
+  // login so pages can gate LDB-specific UI: showing the navbar "End exam"
+  // control and hiding the file-picker form whose OS dialog would let
+  // students open desktop files.
+  res.locals.lockdown_browser = req.session.lockdown_browser ?? false;
 
   next();
 });

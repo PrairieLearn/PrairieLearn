@@ -53,7 +53,11 @@ async function createEnrollment(courseInstanceId = '1'): Promise<Enrollment> {
 
 async function createTestLabel(
   name: string,
-  { courseInstanceId = '1', color = 'gray1' as ColorJson, uuid = crypto.randomUUID() } = {},
+  {
+    courseInstanceId = '1',
+    color = 'gray1',
+    uuid = crypto.randomUUID(),
+  }: { courseInstanceId?: string; color?: ColorJson; uuid?: string } = {},
 ) {
   const courseInstance = await selectCourseInstanceById(courseInstanceId);
   return createStudentLabel({ courseInstance, uuid, name, color });
@@ -189,16 +193,12 @@ describe('Student Label Model', () => {
       await helperDb.runInTransactionAndRollback(async () => {
         const courseInstance = await selectCourseInstanceById('1');
 
-        await expect(
-          selectStudentLabelById({ id: '999999', courseInstance }),
-        ).rejects.toThrowError();
+        await expect(selectStudentLabelById({ id: '999999', courseInstance })).rejects.toThrow();
 
         const label = await createTestLabel('Test Label');
         await deleteStudentLabel(label);
 
-        await expect(
-          selectStudentLabelById({ id: label.id, courseInstance }),
-        ).rejects.toThrowError();
+        await expect(selectStudentLabelById({ id: label.id, courseInstance })).rejects.toThrow();
       });
     });
 
@@ -212,7 +212,7 @@ describe('Student Label Model', () => {
             id: label.id,
             courseInstance: courseInstance2,
           }),
-        ).rejects.toThrowError(
+        ).rejects.toThrow(
           expect.objectContaining({
             status: 403,
           }),
@@ -232,7 +232,7 @@ describe('Student Label Model', () => {
             color: 'gray1',
             uuid: crypto.randomUUID(),
           }),
-        ).rejects.toThrowError();
+        ).rejects.toThrow();
       });
     });
   });

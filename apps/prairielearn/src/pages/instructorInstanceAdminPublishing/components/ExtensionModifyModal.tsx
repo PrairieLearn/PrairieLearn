@@ -88,7 +88,7 @@ export function ExtensionModifyModal({
       return 'At least one UID is required';
     }
 
-    const invalidEmails = uids.filter((uid) => !z.string().email().safeParse(uid).success);
+    const invalidEmails = uids.filter((uid) => !z.email().safeParse(uid).success);
 
     if (invalidEmails.length > 0) {
       return `The following UIDs were invalid: "${invalidEmails.join('", "')}"`;

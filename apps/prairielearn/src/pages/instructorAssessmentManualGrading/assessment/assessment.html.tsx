@@ -15,8 +15,8 @@ export const ManualGradingQuestionSchema = AssessmentQuestionSchema.extend({
   qid: z.string(),
   title: z.string(),
   number: z.string().nullable(),
-  alternative_group_number: z.number(),
-  alternative_group_size: z.coerce.number(),
+  alternative_pool_number: z.number(),
+  alternative_pool_size: z.coerce.number(),
   num_instance_questions: z.coerce.number(),
   num_instance_questions_to_grade: z.coerce.number(),
   num_instance_questions_assigned: z.coerce.number(),
@@ -81,7 +81,7 @@ export function ManualGradingAssessment({
                 // React doesn't let us emit raw event handlers, so
                 // instead we render these buttons inside a `dangerouslySetInnerHTML` block.
 
-                // eslint-disable-next-line @eslint-react/dom/no-dangerously-set-innerhtml
+                // eslint-disable-next-line @eslint-react/dom-no-dangerously-set-innerhtml
                 dangerouslySetInnerHTML={{
                   __html: html`
                     <form method="POST" class="d-inline">
@@ -139,7 +139,9 @@ export function ManualGradingAssessment({
                   <th>QID</th>
                   <th>Auto Points</th>
                   <th>Manual Points</th>
-                  <th colSpan={2}>Submissions to grade</th>
+                  <th colSpan={2} scope="colgroup">
+                    Submissions to grade
+                  </th>
                   <th>Grading assigned to</th>
                   <th>Graded by</th>
                   <th>Actions</th>
@@ -182,8 +184,8 @@ function AssessmentQuestionRow({
     <tr>
       <td className="align-middle">
         <a href={gradingUrl}>
-          {question.alternative_group_number}.
-          {question.alternative_group_size === 1 ? '' : `${question.number_in_alternative_group}.`}{' '}
+          {question.alternative_pool_number}.
+          {question.alternative_pool_size === 1 ? '' : `${question.number_in_alternative_group}.`}{' '}
           {question.title}
         </a>
         {question.manual_rubric_id != null && (

@@ -9,6 +9,7 @@ import { HttpStatusError } from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
+import * as authnLib from '../../lib/authn.js';
 import { constructCourseOrInstanceContext } from '../../lib/authz-data.js';
 import { config } from '../../lib/config.js';
 import {
@@ -17,7 +18,6 @@ import {
   SprocUsersIsInstructorInCourseInstanceSchema,
 } from '../../lib/db-types.js';
 import { ensureEnrollment } from '../../models/enrollment.js';
-import { selectUserById } from '../../models/user.js';
 
 const TIME_TOLERANCE_SEC = 3000;
 
@@ -133,11 +133,10 @@ router.post(
     // checking authorization so that user information is available for any
     // subsequent requests or redirects (e.g. if `ensureCheckedEnrollment`
     // redirects to a payment page).
-    req.session.user_id = userId;
-    req.session.authn_provider_name = 'LTI';
-
-    // Check if the user would have access to the course instance.
-    const user = await selectUserById(userId);
+    const { user } = await authnLib.loadUser(req, res, {
+      user_id: userId,
+      provider: 'LTI',
+    });
     const { authzData, institution, course, courseInstance } =
       await constructCourseOrInstanceContext({
         user,

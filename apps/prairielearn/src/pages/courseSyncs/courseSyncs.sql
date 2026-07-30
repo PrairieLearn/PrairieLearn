@@ -34,24 +34,40 @@ WITH
       course_id = $course_id
       AND deleted_at IS NULL
   ),
-  questions_and_images AS (
+  question_image_uses AS (
     SELECT
       id,
       qid,
-      external_grading_image AS image
+      external_grading_image AS image,
+      'external_grading' AS image_type
     FROM
       questions_list
     WHERE
       external_grading_image IS NOT NULL
-    UNION
+    UNION ALL
     SELECT
       id,
       qid,
-      workspace_image AS image
+      workspace_image AS image,
+      'workspace' AS image_type
     FROM
       questions_list
     WHERE
       workspace_image IS NOT NULL
+  ),
+  image_question_uses AS (
+    SELECT
+      image,
+      id,
+      qid,
+      bool_or(image_type = 'external_grading') AS uses_external_grading_image,
+      bool_or(image_type = 'workspace') AS uses_workspace_image
+    FROM
+      question_image_uses
+    GROUP BY
+      image,
+      id,
+      qid
   )
 SELECT
   image,
@@ -62,9 +78,31 @@ SELECT
         qid
     ),
     '[]'::jsonb
-  ) AS questions
+  ) AS questions,
+  coalesce(
+    jsonb_agg(
+      jsonb_build_object('id', id, 'qid', qid)
+      ORDER BY
+        qid
+    ) FILTER (
+      WHERE
+        uses_external_grading_image
+    ),
+    '[]'::jsonb
+  ) AS external_grading_questions,
+  coalesce(
+    jsonb_agg(
+      jsonb_build_object('id', id, 'qid', qid)
+      ORDER BY
+        qid
+    ) FILTER (
+      WHERE
+        uses_workspace_image
+    ),
+    '[]'::jsonb
+  ) AS workspace_questions
 FROM
-  questions_and_images
+  image_question_uses
 GROUP BY
   image
 ORDER BY

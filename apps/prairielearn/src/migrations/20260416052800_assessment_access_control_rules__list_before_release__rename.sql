@@ -1,0 +1,2 @@
+ALTER TABLE assessment_access_control_rules
+RENAME COLUMN list_before_release TO before_release_listed;

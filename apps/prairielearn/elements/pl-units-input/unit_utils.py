@@ -1,11 +1,10 @@
 from collections.abc import Callable
 from enum import Enum
-from typing import Any
+from typing import Any, assert_never
 
 import numpy as np
 import prairielearn as pl
 from pint import UnitRegistry
-from typing_extensions import assert_never
 
 CORRECT_UNITS_INCORRECT_MAGNITUDE_FEEDBACK = (
     "Your answer has correct units, but incorrect magnitude."

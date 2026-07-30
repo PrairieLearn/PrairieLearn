@@ -1,3 +1,5 @@
+import clsx from 'clsx';
+
 import { html } from '@prairielearn/html';
 
 import { getNavPageTabs } from '../lib/navPageTabs.js';
@@ -9,10 +11,16 @@ export function ContextNavigation({
   resLocals,
   navPage,
   navSubPage,
+  embedded = false,
 }: {
   resLocals: UntypedResLocals;
   navPage: NavPage;
   navSubPage: NavSubPage;
+  /**
+   * When true, the tabs render inline inside the shared navigation bar next to
+   * the assessment switcher.
+   */
+  embedded?: boolean;
 }) {
   if (!navPage) return '';
 
@@ -23,8 +31,8 @@ export function ContextNavigation({
   if (!navPageTabs) return '';
 
   return html`
-    <nav>
-      <ul class="nav nav-tabs pl-nav-tabs-bar pt-2 px-3 bg-light">
+    <nav class="${clsx(embedded && 'flex-grow-1 flex-shrink-0')}">
+      <ul class="${clsx('nav nav-tabs pl-nav-tabs-bar', !embedded && 'pt-2 px-3 bg-light')}">
         ${navPageTabs.map((tabInfo) => NavbarTab({ navSubPage, resLocals, tabInfo }))}
       </ul>
     </nav>
@@ -48,16 +56,14 @@ function NavbarTab({
   const urlSuffix =
     typeof tabInfo.urlSuffix === 'function' ? tabInfo.urlSuffix(resLocals) : tabInfo.urlSuffix;
 
-  const activeClasses =
+  const active =
     navSubPage === activeSubPage ||
-    (Array.isArray(activeSubPage) && navSubPage != null && activeSubPage.includes(navSubPage))
-      ? 'active text-dark'
-      : 'text-secondary';
+    (Array.isArray(activeSubPage) && navSubPage != null && activeSubPage.includes(navSubPage));
 
   return html`
     <li class="nav-item">
       <a
-        class="nav-link d-flex align-items-center ${activeClasses}"
+        class="${clsx('nav-link d-flex align-items-center', active && 'active text-dark')}"
         href="${urlPrefix}${urlSuffix}"
       >
         <i class="me-1 ${iconClasses}"></i>${tabLabel}${htmlSuffix?.(resLocals) || ''}

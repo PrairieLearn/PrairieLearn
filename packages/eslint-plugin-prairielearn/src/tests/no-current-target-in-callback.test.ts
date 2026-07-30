@@ -38,9 +38,39 @@ ruleTester.run('no-current-target-in-callback', rule, {
     {
       code: '<Component render={(e) => setFoo(() => e.currentTarget)} />',
     },
+    // Synchronous nested callbacks are safe
+    {
+      code: '<input onChange={(e) => items.map(() => e.currentTarget.value)} />',
+    },
+    {
+      code: `const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+        fields.find((field) => field.name === e.currentTarget.name);
+      };`,
+    },
+    {
+      code: `const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+        const cursorPosition = run(() => e.currentTarget.selectionStart ?? 0);
+        return cursorPosition;
+      };`,
+    },
     // Direct setState without callback
     {
       code: '<input onChange={(e) => setChecks({ value: e.currentTarget.checked })} />',
+    },
+    // Capturing currentTarget before await is safe
+    {
+      code: `const handleSubmit = async (e: React.SubmitEvent<HTMLFormElement>) => {
+        const form = e.currentTarget;
+        await trigger();
+        form.submit();
+      };`,
+    },
+    // Destructuring currentTarget before await is safe
+    {
+      code: `const handleSubmit = async ({ currentTarget }: React.SubmitEvent<HTMLFormElement>) => {
+        await trigger();
+        currentTarget.submit();
+      };`,
     },
     // Event target (not currentTarget) - different issue, not covered by this rule
     {
@@ -79,19 +109,9 @@ ruleTester.run('no-current-target-in-callback', rule, {
       code: '<button onClick={(e) => setFoo((prev) => ({ ...prev, clicked: e.currentTarget.id }))} />',
       errors: [{ messageId: 'noCurrentTargetInCallback' }],
     },
-    // Nested arrow function in array method
-    {
-      code: '<input onChange={(e) => items.map(() => e.currentTarget.value)} />',
-      errors: [{ messageId: 'noCurrentTargetInCallback' }],
-    },
     // Function expression callback
     {
       code: '<input onChange={(e) => setChecks(function(c) { return { ...c, value: e.currentTarget.checked }; })} />',
-      errors: [{ messageId: 'noCurrentTargetInCallback' }],
-    },
-    // Deeply nested
-    {
-      code: '<input onChange={(e) => outer(() => inner(() => e.currentTarget.value))} />',
       errors: [{ messageId: 'noCurrentTargetInCallback' }],
     },
     // With block body
@@ -101,6 +121,43 @@ ruleTester.run('no-current-target-in-callback', rule, {
           return { ...c, value: e.currentTarget.checked };
         });
       }} />`,
+      errors: [{ messageId: 'noCurrentTargetInCallback' }],
+    },
+    // Promise callbacks are deferred
+    {
+      code: `<input onChange={(e) => {
+        Promise.resolve().then(() => e.currentTarget.value);
+      }} />`,
+      errors: [{ messageId: 'noCurrentTargetInCallback' }],
+    },
+    // Timer callbacks are deferred
+    {
+      code: `<input onChange={(e) => {
+        setTimeout(() => e.currentTarget.value, 0);
+      }} />`,
+      errors: [{ messageId: 'noCurrentTargetInCallback' }],
+    },
+    // Access after await in a typed event handler
+    {
+      code: `const handleSubmit = async (e: React.SubmitEvent<HTMLFormElement>) => {
+        await trigger();
+        e.currentTarget.submit();
+      };`,
+      errors: [{ messageId: 'noCurrentTargetInCallback' }],
+    },
+    // Access after await in an inline JSX handler
+    {
+      code: `<form onSubmit={async (e) => {
+        await trigger();
+        e.currentTarget.submit();
+      }} />`,
+      errors: [{ messageId: 'noCurrentTargetInCallback' }],
+    },
+    // react-hook-form handleSubmit callbacks are also after the original event boundary
+    {
+      code: `const onSubmit = handleSubmit((_data, e) => {
+        e.currentTarget.submit();
+      });`,
       errors: [{ messageId: 'noCurrentTargetInCallback' }],
     },
   ],

@@ -1,7 +1,6 @@
 -- BLOCK select_names
 SELECT
-  ci.short_name,
-  ci.long_name
+  ci.short_name
 FROM
   course_instances AS ci
 WHERE
@@ -16,6 +15,19 @@ FROM
 WHERE
   e.course_instance_id = $course_instance_id
   AND NOT users_is_instructor_in_course_instance (e.user_id, e.course_instance_id);
+
+-- BLOCK select_access_control_migration_needed
+SELECT
+  EXISTS (
+    SELECT
+      1
+    FROM
+      assessments AS a
+      JOIN assessment_access_rules AS aar ON aar.assessment_id = a.id
+    WHERE
+      a.course_instance_id = $course_instance_id
+      AND a.deleted_at IS NULL
+  ) AS migration_needed;
 
 -- BLOCK update_enrollment_code
 UPDATE course_instances

@@ -1,0 +1,68 @@
+{{#no_answer}}
+  No answer to display.
+{{/no_answer}}
+{{^no_answer}}
+  {{^read_only}}
+    {{#scored}}
+      <span class="badge badge-{{score_class}} badge-large">
+        {{#score_icon}}<i class="fas {{score_icon}}" aria-hidden="true"></i>{{/score_icon}}
+        {{score}}%
+      </span>
+    {{/scored}}
+  {{/read_only}}
+  {{#format_error}}
+    <div class="d-flex align-items-center gap-2 w-100">
+      <button
+        type="button"
+        class="btn btn-light border d-flex align-items-center text-danger"
+        data-bs-toggle="popover"
+        data-bs-html="true"
+        title="Format Error"
+        data-bs-placement="auto"
+        data-bs-content="{{format_error}}"
+      >
+        <span class="me-1">Invalid</span>
+        <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
+      </button>
+    </div>
+  {{/format_error}}
+  <div class="sketchresponse">
+    {{! Base64-encoded config data for SketchResponse }}
+    <div id="{{id}}-sketchresponse-data" style="display:none">{{config}}</div>
+    {{! Base64-encoded submission data for SketchResponse (set by the client) }}
+    <input type="hidden" id="{{id}}-sketchresponse-submission" name="{{id}}-sketchresponse-submission" />
+    <div id="{{id}}-si-container" class="si-container" tabindex="0">
+      Loading SketchInput canvas...
+    </div>
+  </div>
+  <script>
+    window.SketchInput('{{id}}', {{overlay_solution}})
+  </script>
+  {{^read_only}}
+    {{#scored}}
+      <div class="alert alert-{{alert_class}}">
+        <strong>Feedback:</strong>
+        <ul>
+          {{#feedback}}
+            <li>
+              <span>
+                {{#correct}}<i class="fas fa-check text-success" aria-hidden="true"></i>{{/correct}}
+                {{^correct}}<i class="fas fa-xmark text-danger" aria-hidden="true"></i>{{/correct}}
+              </span>
+              {{feedback_text}}
+              {{#debug_mode}}
+                <div class="sketchresponse-debug">
+                  <ul>
+                    {{#debug}}
+                      <li><div>&gt;&gt; {{message}}</div></li>
+                    {{/debug}}
+                  </ul>
+                </div>
+              {{/debug_mode}}
+            </li>
+          {{/feedback}}
+        </ul>
+      </div>
+    {{/scored}}
+  {{/read_only}}
+{{/no_answer}}

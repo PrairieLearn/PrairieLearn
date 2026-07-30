@@ -1,0 +1,16 @@
+{
+  "uuid": "d13435d9-186c-42b4-a974-a5e200684787",
+  "title": "Workspace demo: VS Code (Python)",
+  "topic": "Workspace",
+  "type": "v3",
+  "singleVariant": true,
+  "workspaceOptions": {
+    "image": "prairielearn/workspace-vscode-python",
+    "gradedFiles": ["fibonacci.py"]
+  },
+  "gradingMethod": "External",
+  "externalGradingOptions": {
+    "image": "prairielearn/grader-python",
+    "timeout": 20
+  }
+}

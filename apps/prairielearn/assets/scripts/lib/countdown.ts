@@ -66,7 +66,7 @@ export function setupCountdown(options: {
   let serverUpdateIntervalId: ReturnType<typeof setInterval> | null = null;
 
   countdownProgress.classList.add('progress');
-  countdownProgress.innerHTML = '<div class="progress-bar progress-bar-primary"></div>';
+  countdownProgress.innerHTML = '<div class="progress-bar bg-primary"></div>';
   const countdownProgressBar = countdownProgress.querySelector('div');
 
   handleServerResponseRemainingMS({

@@ -1,20 +1,7 @@
 import { useState } from 'react';
 import { Modal } from 'react-bootstrap';
-import z from 'zod';
 
-import {
-  RawStudentCourseInstanceSchema,
-  RawStudentCourseSchema,
-  StudentEnrollmentSchema,
-} from '../../../lib/client/safe-db-types.js';
-
-export const StudentHomePageCourseSchema = z.object({
-  course_instance: RawStudentCourseInstanceSchema,
-  course_short_name: RawStudentCourseSchema.shape.short_name,
-  course_title: RawStudentCourseSchema.shape.title,
-  enrollment: StudentEnrollmentSchema,
-});
-export type StudentHomePageCourse = z.infer<typeof StudentHomePageCourseSchema>;
+import type { StudentHomePageCourse } from '../home.types.js';
 
 export function StudentCoursesCard({
   studentCourses,
@@ -69,7 +56,7 @@ export function StudentCoursesCard({
           </div>
         ) : isDevMode ? (
           <div className="card-body">
-            No courses loaded. Click <strong>"Load from disk"</strong> above and then click
+            No courses loaded. Click <strong>"Load from disk"</strong> above and then click{' '}
             <strong>"PrairieLearn"</strong> in the top left corner to come back to this page.
           </div>
         ) : (
@@ -88,7 +75,7 @@ export function StudentCoursesCard({
                     <div className="d-flex align-items-center justify-content-between gap-2">
                       <div>
                         <span className="fw-semibold">
-                          {entry.course_short_name}: {entry.course_title},
+                          {entry.course_short_name}: {entry.course_title},{' '}
                           {entry.course_instance.long_name}
                         </span>
                         <span className="ms-2 badge bg-warning text-dark">Invitation</span>
@@ -123,7 +110,7 @@ export function StudentCoursesCard({
                   <td className="align-middle">
                     <div className="d-flex align-items-center justify-content-between gap-2">
                       <a href={`${urlPrefix}/course_instance/${entry.course_instance.id}`}>
-                        {entry.course_short_name}: {entry.course_title},
+                        {entry.course_short_name}: {entry.course_title},{' '}
                         {entry.course_instance.long_name}
                       </a>
                       <button

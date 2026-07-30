@@ -4,6 +4,11 @@ import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import z from 'zod';
 
+import {
+  MINUTE_IN_MILLISECONDS,
+  SECOND_IN_MILLISECONDS,
+  formatDateISO,
+} from '@prairielearn/formatter';
 import * as sqldb from '@prairielearn/postgres';
 
 import {
@@ -11,7 +16,8 @@ import {
   AssessmentInstanceSchema,
   AssessmentSchema,
   AssessmentSetSchema,
-  SprocTeamInfoSchema,
+  CourseInstanceSchema,
+  GroupSchema,
   SprocUsersGetDisplayedRoleSchema,
   UserSchema,
 } from '../../../../lib/db-types.js';
@@ -35,55 +41,76 @@ const AssessmentDataSchema = z.object({
   assessment_set_color: AssessmentSetSchema.shape.color,
 });
 
-const AssessmentAccessRuleDataSchema = z.object({
-  assessment_id: AssessmentSchema.shape.id,
-  assessment_name: AssessmentSchema.shape.tid,
-  assessment_title: AssessmentSchema.shape.title,
-  assessment_label: z.string(),
-  assessment_set_abbreviation: AssessmentSetSchema.shape.abbreviation,
-  assessment_number: AssessmentSchema.shape.number,
-  credit: AssessmentAccessRuleSchema.shape.credit,
-  end_date: z.string().nullable(),
-  exam_uuid: AssessmentAccessRuleSchema.shape.exam_uuid,
-  assessment_access_rule_id: AssessmentAccessRuleSchema.shape.id,
-  mode: AssessmentAccessRuleSchema.shape.mode,
-  assessment_access_rule_number: AssessmentAccessRuleSchema.shape.number,
-  password: AssessmentAccessRuleSchema.shape.password,
-  show_closed_assessment: AssessmentAccessRuleSchema.shape.show_closed_assessment,
-  show_closed_assessment_score: AssessmentAccessRuleSchema.shape.show_closed_assessment_score,
-  start_date: z.string().nullable(),
-  time_limit_min: AssessmentAccessRuleSchema.shape.time_limit_min,
-  uids: AssessmentAccessRuleSchema.shape.uids,
-});
+const AssessmentAccessRuleDataSchema = z
+  .object({
+    assessment_id: AssessmentSchema.shape.id,
+    assessment_name: AssessmentSchema.shape.tid,
+    assessment_title: AssessmentSchema.shape.title,
+    assessment_set_abbreviation: AssessmentSetSchema.shape.abbreviation,
+    assessment_number: AssessmentSchema.shape.number,
+    credit: AssessmentAccessRuleSchema.shape.credit,
+    end_date: AssessmentAccessRuleSchema.shape.end_date,
+    exam_uuid: AssessmentAccessRuleSchema.shape.exam_uuid,
+    assessment_access_rule_id: AssessmentAccessRuleSchema.shape.id,
+    mode: AssessmentAccessRuleSchema.shape.mode,
+    assessment_access_rule_number: AssessmentAccessRuleSchema.shape.number,
+    password: AssessmentAccessRuleSchema.shape.password,
+    show_closed_assessment: AssessmentAccessRuleSchema.shape.show_closed_assessment,
+    show_closed_assessment_score: AssessmentAccessRuleSchema.shape.show_closed_assessment_score,
+    start_date: AssessmentAccessRuleSchema.shape.start_date,
+    time_limit_min: AssessmentAccessRuleSchema.shape.time_limit_min,
+    uids: AssessmentAccessRuleSchema.shape.uids,
+    display_timezone: CourseInstanceSchema.shape.display_timezone,
+  })
+  .transform(({ start_date, end_date, display_timezone, ...row }) => ({
+    ...row,
+    assessment_label: row.assessment_set_abbreviation + row.assessment_number,
+    start_date: formatDateISO(start_date, display_timezone),
+    end_date: formatDateISO(end_date, display_timezone),
+  }));
 
-export const AssessmentInstanceDataSchema = z.object({
-  assessment_instance_id: AssessmentInstanceSchema.shape.id,
-  assessment_id: AssessmentInstanceSchema.shape.assessment_id,
-  assessment_name: AssessmentSchema.shape.tid,
-  assessment_title: AssessmentSchema.shape.title,
-  assessment_label: z.string(),
-  assessment_set_abbreviation: AssessmentSetSchema.shape.abbreviation,
-  assessment_number: AssessmentSchema.shape.number,
-  user_id: UserSchema.shape.id.nullable(),
-  user_uid: UserSchema.shape.uid.nullable(),
-  user_uin: UserSchema.shape.uin.nullable(),
-  user_name: UserSchema.shape.name.nullable(),
-  user_role: SprocUsersGetDisplayedRoleSchema,
-  max_points: AssessmentInstanceSchema.shape.max_points,
-  max_bonus_points: AssessmentInstanceSchema.shape.max_bonus_points,
-  points: AssessmentInstanceSchema.shape.points,
-  score_perc: AssessmentInstanceSchema.shape.score_perc,
-  assessment_instance_number: AssessmentInstanceSchema.shape.number,
-  open: AssessmentInstanceSchema.shape.open,
-  modified_at: z.string(),
-  group_id: AssessmentInstanceSchema.shape.team_id.nullable(),
-  group_name: SprocTeamInfoSchema.shape.name.nullable(),
-  group_uids: SprocTeamInfoSchema.shape.uid_list.nullable(),
-  time_remaining: z.string(),
-  start_date: z.string().nullable(),
-  duration_seconds: z.number(),
-  highest_score: z.boolean(),
-});
+export const AssessmentInstanceDataSchema = z
+  .object({
+    assessment_instance_id: AssessmentInstanceSchema.shape.id,
+    assessment_id: AssessmentInstanceSchema.shape.assessment_id,
+    assessment_name: AssessmentSchema.shape.tid,
+    assessment_title: AssessmentSchema.shape.title,
+    assessment_set_abbreviation: AssessmentSetSchema.shape.abbreviation,
+    assessment_number: AssessmentSchema.shape.number,
+    user_id: UserSchema.shape.id.nullable(),
+    user_uid: UserSchema.shape.uid.nullable(),
+    user_uin: UserSchema.shape.uin.nullable(),
+    user_name: UserSchema.shape.name.nullable(),
+    user_role: SprocUsersGetDisplayedRoleSchema,
+    max_points: AssessmentInstanceSchema.shape.max_points,
+    max_bonus_points: AssessmentInstanceSchema.shape.max_bonus_points,
+    points: AssessmentInstanceSchema.shape.points,
+    score_perc: AssessmentInstanceSchema.shape.score_perc,
+    assessment_instance_number: AssessmentInstanceSchema.shape.number,
+    open: AssessmentInstanceSchema.shape.open,
+    modified_at: AssessmentInstanceSchema.shape.modified_at,
+    group_id: AssessmentInstanceSchema.shape.team_id.nullable(),
+    group_name: GroupSchema.shape.name.nullable(),
+    group_uids: UserSchema.shape.uid.array().nullable(),
+    date_limit: AssessmentInstanceSchema.shape.date_limit,
+    date: AssessmentInstanceSchema.shape.date,
+    duration: AssessmentInstanceSchema.shape.duration,
+    highest_score: z.boolean(),
+    display_timezone: CourseInstanceSchema.shape.display_timezone,
+  })
+  .transform(({ date_limit, date, duration, modified_at, display_timezone, ...instance }) => ({
+    ...instance,
+    assessment_label: instance.assessment_set_abbreviation + instance.assessment_number,
+    modified_at: formatDateISO(modified_at, display_timezone),
+    time_remaining: instance.open
+      ? date_limit
+        ? Math.max(0, Math.floor((date_limit.getTime() - Date.now()) / MINUTE_IN_MILLISECONDS)) +
+          ' min'
+        : 'Open'
+      : 'Closed',
+    start_date: formatDateISO(date, display_timezone),
+    duration_seconds: duration == null ? null : duration / SECOND_IN_MILLISECONDS,
+  }));
 
 router.get(
   '/',

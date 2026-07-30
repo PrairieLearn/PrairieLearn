@@ -1,3 +1,4 @@
+import type { RankingInfo } from '@tanstack/match-sorter-utils';
 import type { RowData } from '@tanstack/react-table';
 
 declare module '@tanstack/react-table' {
@@ -10,6 +11,18 @@ declare module '@tanstack/react-table' {
     label?: string;
     /** If true, the column will be automatically sized based on the header content. */
     autoSize?: boolean;
+    /**
+     * When `autoSize` is true, optionally provide a function that selects which
+     * row indices to render in the hidden measurement container.
+     * Receives the table's raw data array, returns indices of rows to measure.
+     * If omitted, only the header is measured (current behavior).
+     */
+    autoSizeSample?: (data: TData[]) => number[];
+  }
+
+  /** Extends the default FilterMeta to include ranking information from `@tanstack/match-sorter-utils` for fuzzy filtering. */
+  interface FilterMeta {
+    itemRank?: RankingInfo;
   }
 }
 

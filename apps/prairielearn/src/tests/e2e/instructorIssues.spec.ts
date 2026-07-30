@@ -318,13 +318,12 @@ test.describe('Instructor issues page', () => {
   test.describe('Deleted assessment', () => {
     test('shows deleted assessment badge with label for soft-deleted assessments', async ({
       page,
-      course,
       courseInstance,
     }) => {
       const user = await getOrCreateUser(TEST_USER);
       const addNumbersQuestion = await selectQuestionByQid({
         qid: 'addNumbers',
-        course_id: course.id,
+        course_id: courseInstance.course_id,
       });
 
       const assessment = await selectAssessmentByTid({
@@ -334,7 +333,7 @@ test.describe('Instructor issues page', () => {
 
       const variantId = await insertTestVariant({
         questionId: addNumbersQuestion.id,
-        courseId: course.id,
+        courseId: courseInstance.course_id,
         authnUserId: user.id,
         userId: user.id,
       });
@@ -359,15 +358,11 @@ test.describe('Instructor issues page', () => {
       await expect(page.getByText('E1 (deleted)').first()).toBeVisible();
     });
 
-    test('falls back to tid when assessment set is missing', async ({
-      page,
-      course,
-      courseInstance,
-    }) => {
+    test('falls back to tid when assessment set is missing', async ({ page, courseInstance }) => {
       const user = await getOrCreateUser(TEST_USER);
       const addNumbersQuestion = await selectQuestionByQid({
         qid: 'addNumbers',
-        course_id: course.id,
+        course_id: courseInstance.course_id,
       });
 
       const assessment = await selectAssessmentByTid({
@@ -377,7 +372,7 @@ test.describe('Instructor issues page', () => {
 
       const variantId = await insertTestVariant({
         questionId: addNumbersQuestion.id,
-        courseId: course.id,
+        courseId: courseInstance.course_id,
         authnUserId: user.id,
         userId: user.id,
       });

@@ -1,521 +1,396 @@
-import { z } from 'zod';
+import { QueryClient, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
+import { Alert } from 'react-bootstrap';
 
-import { escapeHtml, html } from '@prairielearn/html';
-import { IdSchema } from '@prairielearn/zod';
+import { run } from '@prairielearn/run';
 
-import { Modal } from '../../components/Modal.js';
-import { PageLayout } from '../../components/PageLayout.js';
-import { nodeModulesAssetPath } from '../../lib/assets.js';
-import { type GroupConfig, UserSchema } from '../../lib/db-types.js';
-import type { ResLocalsForPage } from '../../lib/res-locals.js';
+import { getAppError } from '../../lib/client/errors.js';
+import type {
+  StaffAssessment,
+  StaffAssessmentSet,
+  StaffGroupConfig,
+} from '../../lib/client/safe-db-types.js';
+import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
+import { type GroupSettingsFormValues } from '../../lib/group-config.js';
+import type { GroupUsersRow } from '../../models/group.js';
+import type { AssessmentGroupsError } from '../../trpc/assessment/assessment-groups.js';
+import { createAssessmentTrpcClient } from '../../trpc/assessment/client.js';
+import { TRPCProvider, useTRPC } from '../../trpc/assessment/context.js';
 
-export const GroupUsersRowSchema = z.object({
-  group_id: IdSchema,
-  name: z.string(),
-  size: z.number(),
-  users: z.array(UserSchema.pick({ id: true, uid: true })),
-});
-type GroupUsersRow = z.infer<typeof GroupUsersRowSchema>;
+import { GroupSettingsCard } from './components/GroupSettingsCard.js';
+import { GroupWorkInstancesWarning } from './components/GroupWorkInstancesWarning.js';
+import { GroupsCard } from './components/GroupsCard.js';
+import { ManageGroupWorkCard } from './components/ManageGroupWorkCard.js';
+import type { ActionAccess } from './types.js';
+
+const ALLOWED_ACCESS = { status: 'allowed' } satisfies ActionAccess;
+
+function NoGroupConfigCard({
+  origHash,
+  enableAccess,
+  hasAssessmentInstances,
+  courseInstanceId,
+  assessment,
+  onEnable,
+}: {
+  origHash: string | null;
+  enableAccess: ActionAccess;
+  hasAssessmentInstances: boolean;
+  courseInstanceId: string;
+  assessment: StaffAssessment;
+  onEnable: (result: {
+    origHash: string;
+    groupConfig: StaffGroupConfig;
+    groupSettingsDefaults: GroupSettingsFormValues | null;
+  }) => void;
+}) {
+  const trpc = useTRPC();
+  const mutation = useMutation(trpc.assessmentGroups.enableGroupWork.mutationOptions());
+  const appError = getAppError<AssessmentGroupsError['EnableGroupWork']>(mutation.error);
+
+  const canEdit = enableAccess.status === 'allowed';
+  const description = canEdit
+    ? 'Enable group work to allow students to collaborate and submit as groups.'
+    : 'Group work is not enabled for this assessment.';
+
+  return (
+    <div className="container py-3">
+      <div className="card">
+        <div className="card-body text-center">
+          {appError && (
+            <Alert variant="danger" dismissible onClose={() => mutation.reset()}>
+              {appError.message}
+            </Alert>
+          )}
+          <i className="bi bi-people fs-1 mb-2" />
+          <h2 className="h5">This is not a group assessment.</h2>
+          <div className="text-muted">{description}</div>
+          {enableAccess.status === 'denied' && (
+            <Alert variant="info" className="mt-3 mb-0">
+              {enableAccess.reason}
+            </Alert>
+          )}
+          {canEdit && hasAssessmentInstances && (
+            <GroupWorkInstancesWarning
+              action="enabling"
+              courseInstanceId={courseInstanceId}
+              assessmentId={assessment.id}
+              className="mt-3 mb-0"
+            />
+          )}
+          {canEdit && (
+            <button
+              type="button"
+              className="btn btn-outline-primary mt-3"
+              disabled={mutation.isPending || hasAssessmentInstances}
+              onClick={() => mutation.mutate({ origHash }, { onSuccess: onEnable })}
+            >
+              Enable group work
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+interface InstructorAssessmentGroupsPermissions {
+  isExampleCourse: boolean;
+  hasCoursePermissionEdit: boolean;
+  hasCourseInstancePermissionView: boolean;
+  hasCourseInstancePermissionEdit: boolean;
+}
+
+interface InstructorAssessmentGroupsProps {
+  courseInstanceId: string;
+  assessment: StaffAssessment;
+  assessmentSet: StaffAssessmentSet;
+  permissions: InstructorAssessmentGroupsPermissions;
+  csrfToken: string;
+  groupsCsvFilename: string;
+  groupConfigInfo?: StaffGroupConfig;
+  groups?: GroupUsersRow[];
+  notAssigned?: string[];
+  trpcCsrfToken: string;
+  isDevMode: boolean;
+  origHash: string | null;
+  groupSettingsDefaults: GroupSettingsFormValues | null;
+  hasAssessmentInstances: boolean;
+}
 
 export function InstructorAssessmentGroups({
+  courseInstanceId,
+  assessment,
+  assessmentSet,
+  permissions,
+  csrfToken,
   groupsCsvFilename,
   groupConfigInfo,
   groups,
   notAssigned,
-  resLocals,
-}: {
-  groupsCsvFilename?: string;
-  groupConfigInfo?: GroupConfig;
-  groups?: GroupUsersRow[];
-  notAssigned?: string[];
-  resLocals: ResLocalsForPage<'assessment'>;
-}) {
-  return PageLayout({
-    resLocals,
-    pageTitle: 'Groups',
-    navContext: {
-      type: 'instructor',
-      page: 'assessment',
-      subPage: 'groups',
-    },
-    options: {
-      fullWidth: true,
-    },
-    headContent: html`
-      <link
-        href="${nodeModulesAssetPath('tablesorter/dist/css/theme.bootstrap.min.css')}"
-        rel="stylesheet"
+  trpcCsrfToken,
+  isDevMode,
+  origHash,
+  groupSettingsDefaults,
+  hasAssessmentInstances,
+}: InstructorAssessmentGroupsProps) {
+  const [queryClient] = useState(() => new QueryClient());
+  const [trpcClient] = useState(() =>
+    createAssessmentTrpcClient({
+      csrfToken: trpcCsrfToken,
+      courseInstanceId,
+      assessmentId: assessment.id,
+    }),
+  );
+
+  return (
+    <QueryClientProviderDebug client={queryClient} isDevMode={isDevMode}>
+      <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
+        <InstructorAssessmentGroupsInner
+          courseInstanceId={courseInstanceId}
+          assessment={assessment}
+          assessmentSet={assessmentSet}
+          permissions={permissions}
+          csrfToken={csrfToken}
+          groupsCsvFilename={groupsCsvFilename}
+          groupConfigInfo={groupConfigInfo}
+          groups={groups}
+          notAssigned={notAssigned}
+          origHash={origHash}
+          groupSettingsDefaults={groupSettingsDefaults}
+          hasAssessmentInstances={hasAssessmentInstances}
+        />
+      </TRPCProvider>
+    </QueryClientProviderDebug>
+  );
+}
+
+InstructorAssessmentGroups.displayName = 'InstructorAssessmentGroups';
+
+function InstructorAssessmentGroupsInner({
+  courseInstanceId,
+  assessment,
+  assessmentSet,
+  permissions,
+  csrfToken,
+  groupsCsvFilename,
+  groupConfigInfo: initialGroupConfigInfo,
+  groups: initialGroups,
+  notAssigned: initialNotAssigned,
+  origHash: initialOrigHash,
+  groupSettingsDefaults: initialGroupSettingsDefaults,
+  hasAssessmentInstances,
+}: Omit<InstructorAssessmentGroupsProps, 'trpcCsrfToken' | 'isDevMode'>) {
+  const [groupConfigInfo, setGroupConfigInfo] = useState(initialGroupConfigInfo);
+  const [groupSettingsDefaults, setGroupSettingsDefaults] = useState(initialGroupSettingsDefaults);
+  const [origHash, setOrigHash] = useState(initialOrigHash);
+  const [minGroupSize, setMinGroupSize] = useState(
+    groupSettingsDefaults?.minMembers ?? groupConfigInfo?.minimum ?? 2,
+  );
+  const [maxGroupSize, setMaxGroupSize] = useState(
+    groupSettingsDefaults?.maxMembers ?? groupConfigInfo?.maximum ?? 4,
+  );
+  const [saveStatus, setSaveStatus] = useState<
+    { kind: 'success' } | { kind: 'error'; message: string } | null
+  >(null);
+  const canEditGroupSettings = permissions.hasCoursePermissionEdit && !permissions.isExampleCourse;
+  const canViewStudentData = permissions.hasCourseInstancePermissionView;
+  const canEditStudentData =
+    permissions.hasCourseInstancePermissionEdit && !permissions.isExampleCourse;
+  const showDisableGroupWorkAction =
+    permissions.hasCoursePermissionEdit || permissions.hasCourseInstancePermissionEdit;
+  const trpc = useTRPC();
+  const queryClient = useQueryClient();
+  const groupMembershipQueryKey = trpc.assessmentGroups.membership.queryKey();
+  const groupMembershipQuery = useQuery({
+    ...trpc.assessmentGroups.membership.queryOptions(),
+    enabled: groupConfigInfo != null && canViewStudentData,
+    initialData:
+      groupConfigInfo === initialGroupConfigInfo && initialGroups && initialNotAssigned
+        ? { groups: initialGroups, notAssigned: initialNotAssigned }
+        : undefined,
+    staleTime: Infinity,
+  });
+
+  const refreshGroupMembership = () => {
+    void queryClient.invalidateQueries({ queryKey: groupMembershipQueryKey });
+  };
+  const assignmentSummary = run(() => {
+    if (!canViewStudentData || !groupMembershipQuery.data) return undefined;
+    const unassignedStudentCount = groupMembershipQuery.data.notAssigned.length;
+    const assignedStudentCount = groupMembershipQuery.data.groups.reduce(
+      (sum, group) => sum + group.size,
+      0,
+    );
+    return {
+      totalStudentCount: assignedStudentCount + unassignedStudentCount,
+      unassignedStudentCount,
+    };
+  });
+
+  if (!groupConfigInfo) {
+    return (
+      <NoGroupConfigCard
+        origHash={origHash}
+        enableAccess={run<ActionAccess>(() => {
+          if (canEditGroupSettings) return ALLOWED_ACCESS;
+          if (permissions.isExampleCourse) {
+            return {
+              status: 'denied',
+              reason: 'Enabling group work is not permitted for the example course.',
+            };
+          }
+          return {
+            status: 'denied',
+            reason: 'Enabling group work requires course editor permissions.',
+          };
+        })}
+        hasAssessmentInstances={hasAssessmentInstances}
+        courseInstanceId={courseInstanceId}
+        assessment={assessment}
+        onEnable={({ origHash: newHash, groupConfig, groupSettingsDefaults: newDefaults }) => {
+          setOrigHash(newHash);
+          // Setting `groupConfigInfo` flips the membership query's `enabled`
+          // from false to true, which triggers an auto-fetch on the next render.
+          setGroupConfigInfo(groupConfig);
+          setGroupSettingsDefaults(newDefaults);
+        }}
       />
-      <script src="${nodeModulesAssetPath(
-          'tablesorter/dist/js/jquery.tablesorter.min.js',
-        )}"></script>
-      <script src="${nodeModulesAssetPath(
-          'tablesorter/dist/js/jquery.tablesorter.widgets.min.js',
-        )}"></script>
-    `,
-    content: html`
-      ${!groupConfigInfo
-        ? html`
-            <div class="card mb-4">
-              <div class="card-header bg-primary text-white d-flex align-items-center">
-                <h1>${resLocals.assessment_set.name} ${resLocals.assessment.number}: Groups</h1>
-              </div>
-              <div class="card-body">
-                This is not a group assessment. To enable this functionality, please set
-                <code>"groupWork": true</code> in <code>infoAssessment.json</code>.
-              </div>
-            </div>
-          `
-        : html`
-            ${resLocals.authz_data.has_course_instance_permission_edit
-              ? html`
-                  ${UploadAssessmentGroupsModal({ csrfToken: resLocals.__csrf_token })}
-                  ${RandomAssessmentGroupsModal({
-                    groupMin: groupConfigInfo.minimum ?? 2,
-                    groupMax: groupConfigInfo.maximum ?? 5,
-                    csrfToken: resLocals.__csrf_token,
-                  })}
-                  ${AddGroupModal({ csrfToken: resLocals.__csrf_token })}
-                  ${DeleteAllGroupsModal({
-                    assessmentSetName: resLocals.assessment_set.name,
-                    assessmentNumber: resLocals.assessment.number,
-                    csrfToken: resLocals.__csrf_token,
-                  })}
-                `
-              : ''}
-            <div class="card mb-4">
-              <div class="card-header bg-primary text-white d-flex align-items-center gap-2">
-                <h1>${resLocals.assessment_set.name} ${resLocals.assessment.number}: Groups</h1>
-                ${resLocals.authz_data.has_course_instance_permission_edit
-                  ? html`
-                      <div class="ms-auto">
-                        <button
-                          type="button"
-                          class="btn btn-sm btn-light"
-                          data-bs-toggle="modal"
-                          data-bs-target="#addGroupModal"
-                        >
-                          <i class="fa fa-plus" aria-hidden="true"></i> Add a group
-                        </button>
-                        <button
-                          type="button"
-                          class="btn btn-sm btn-danger"
-                          data-bs-toggle="modal"
-                          data-bs-target="#deleteAllGroupsModal"
-                        >
-                          <i class="fa fa-times" aria-hidden="true"></i> Delete all groups
-                        </button>
-                      </div>
-                    `
-                  : ''}
-              </div>
-              ${resLocals.authz_data.has_course_instance_permission_edit
-                ? html`
-                    <div class="container-fluid">
-                      <div class="row">
-                        <div class="col-sm bg-light py-4 border text-center">
-                          <button
-                            type="button"
-                            class="btn btn-primary text-nowrap"
-                            data-bs-toggle="modal"
-                            data-bs-target="#uploadAssessmentGroupsModal"
-                          >
-                            <i class="fas fa-upload" aria-hidden="true"></i> Upload
-                          </button>
-                          <div class="mt-2">Upload a CSV file with group assignments.</div>
-                        </div>
-                        <div class="col-sm bg-light py-4 border text-center">
-                          <button
-                            type="button"
-                            class="btn btn-primary text-nowrap"
-                            data-bs-toggle="modal"
-                            data-bs-target="#randomAssessmentGroupsModal"
-                          >
-                            <i class="fas fa-shuffle" aria-hidden="true"></i> Random
-                          </button>
-                          <div class="mt-2">Randomly assign students to groups.</div>
-                        </div>
-                      </div>
-                    </div>
-                  `
-                : ''}
-              <div class="table-responsive">
-                <table
-                  id="usersTable"
-                  class="table table-sm table-hover tablesorter"
-                  aria-label="Groups"
-                >
-                  <thead>
-                    <tr>
-                      <th>Name</th>
-                      <th>Size</th>
-                      <th class="text-center">Group Members (UIDs)</th>
-                      ${resLocals.authz_data.has_course_instance_permission_edit
-                        ? html` <th class="sorter-false"></th> `
-                        : ''}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    ${groups?.map(function (row) {
-                      return html` <tr data-test-group-id="${row.group_id}">
-                        <td>${row.name}</td>
-                        <td class="text-center">${row.size}</td>
-                        <td class="text-center">
-                          <small>
-                            ${row.users.length > 0
-                              ? row.users.map((user) => user.uid).join(', ')
-                              : '(empty)'}
-                          </small>
-                        </td>
-                        ${resLocals.authz_data.has_course_instance_permission_edit
-                          ? html`
-                              <td class="text-center">
-                                <div class="dropdown js-group-action-dropdown">
-                                  <button
-                                    type="button"
-                                    class="btn btn-xs btn-ghost dropdown-toggle"
-                                    data-bs-toggle="dropdown"
-                                    data-bs-boundary="window"
-                                    aria-haspopup="true"
-                                    aria-expanded="false"
-                                  >
-                                    Action <span class="caret"></span>
-                                  </button>
-                                  <div class="dropdown-menu">
-                                    <button
-                                      class="dropdown-item js-group-action"
-                                      data-bs-toggle="popover"
-                                      data-bs-container="body"
-                                      data-bs-html="true"
-                                      data-bs-placement="auto"
-                                      data-bs-title="Add members"
-                                      data-bs-content="${escapeHtml(
-                                        AddMembersForm({
-                                          row,
-                                          csrfToken: resLocals.__csrf_token,
-                                        }),
-                                      )}"
-                                    >
-                                      <i class="fa fa-user-plus" aria-hidden="true"></i> Add members
-                                    </button>
-                                    ${row.users.length > 0
-                                      ? html`
-                                          <button
-                                            class="dropdown-item js-group-action"
-                                            data-bs-toggle="popover"
-                                            data-bs-container="body"
-                                            data-bs-html="true"
-                                            data-bs-placement="auto"
-                                            data-bs-title="Remove members"
-                                            data-bs-content="${escapeHtml(
-                                              RemoveMembersForm({
-                                                row,
-                                                csrfToken: resLocals.__csrf_token,
-                                              }),
-                                            )}"
-                                          >
-                                            <i class="fa fa-user-minus" aria-hidden="true"></i>
-                                            Remove members
-                                          </button>
-                                        `
-                                      : html`
-                                          <button class="dropdown-item js-group-action" disabled>
-                                            <i class="fa fa-user-minus" aria-hidden="true"></i>
-                                            Remove members
-                                          </button>
-                                        `}
-                                    <button
-                                      class="dropdown-item js-group-action"
-                                      data-bs-toggle="popover"
-                                      data-bs-container="body"
-                                      data-bs-html="true"
-                                      data-bs-placement="auto"
-                                      data-bs-title="Delete group"
-                                      data-bs-content="${escapeHtml(
-                                        DeleteGroupForm({
-                                          row,
-                                          csrfToken: resLocals.__csrf_token,
-                                        }),
-                                      )}"
-                                    >
-                                      <i class="fa fa-times" aria-hidden="true"></i> Delete group
-                                    </button>
-                                  </div>
-                                </div>
-                              </td>
-                            `
-                          : ''}
-                      </tr>`;
-                    })}
-                  </tbody>
-                </table>
-                <div class="card-footer">
-                  <p>
-                    Download
-                    <a
-                      href="${resLocals.urlPrefix}/assessment/${resLocals.assessment
-                        .id}/downloads/${groupsCsvFilename}"
-                    >
-                      ${groupsCsvFilename}
-                    </a>
-                  </p>
-                  <small>
-                    ${notAssigned?.length === 0
-                      ? html` <strong> All students have been assigned groups. </strong> `
-                      : html`
-                          <strong>
-                            ${notAssigned?.length
-                              ? html`
-                        ${notAssigned.length}
-                        student${notAssigned.length > 1 ? html`s` : ''} not yet
-                        assigned:
-                      </strong>
-                      `
-                              : ''}
-                            <ul class="mb-0">
-                              ${notAssigned?.map(function (uid) {
-                                return html` <li>${uid}</li> `;
-                              })}
-                            </ul>
-                          </strong>
-                        `}
-                  </small>
-                </div>
-              </div>
-              <script>
-                $(function () {
-                  $('#usersTable').tablesorter({
-                    theme: 'bootstrap',
-                    widthFixed: true,
-                    headerTemplate: '{content} {icon}',
-                    widgets: ['uitheme'],
-                    headers: {
-                      3: { sorter: false },
-                    },
-                  });
-                });
-              </script>
-            </div>
-          `}
-    `,
-  });
-}
+    );
+  }
 
-function AddMembersForm({ row, csrfToken }: { row: GroupUsersRow; csrfToken: string }) {
-  return html`
-    <form name="add-member-form" method="POST">
-      <div class="mb-3">
-        <label class="form-label" for="add_member_uids">UIDs</label>
-        <input
-          type="text"
-          class="form-control"
-          placeholder="student@example.com"
-          name="add_member_uids"
-          aria-describedby="add_member_uids_help"
+  return (
+    <>
+      <div className="container d-flex flex-column gap-3 py-3">
+        <ManageGroupWorkCard
+          origHash={origHash}
+          hasAssessmentInstances={hasAssessmentInstances}
+          courseInstanceId={courseInstanceId}
+          assessmentId={assessment.id}
+          assignmentSummary={assignmentSummary}
+          disableAccess={
+            showDisableGroupWorkAction
+              ? run<ActionAccess>(() => {
+                  if (canEditGroupSettings && canEditStudentData) return ALLOWED_ACCESS;
+                  if (permissions.isExampleCourse) {
+                    return {
+                      status: 'denied',
+                      reason: 'Disabling group work is not permitted for the example course.',
+                    };
+                  }
+                  if (!permissions.hasCoursePermissionEdit) {
+                    return {
+                      status: 'denied',
+                      reason:
+                        'Disabling group work requires course editor permissions because it changes group settings.',
+                    };
+                  }
+                  return {
+                    status: 'denied',
+                    reason:
+                      'Disabling group work requires student data editor permissions because it permanently removes group memberships.',
+                  };
+                })
+              : undefined
+          }
+          onDisable={({ origHash: newHash }) => {
+            setOrigHash(newHash);
+            setGroupSettingsDefaults(null);
+            setGroupConfigInfo(undefined);
+            queryClient.removeQueries({ queryKey: groupMembershipQueryKey });
+          }}
         />
-        <small id="add_member_uids_help" class="form-text text-muted">
-          Separate multiple UIDs with commas.
-        </small>
-      </div>
-      <input type="hidden" name="__action" value="add_member" />
-      <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-      <input type="hidden" name="group_id" value="${row.group_id}" />
-      <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
-      <button type="submit" class="btn btn-primary">Add</button>
-    </form>
-  `;
-}
-
-function DeleteGroupForm({ row, csrfToken }: { row: GroupUsersRow; csrfToken: string }) {
-  return html`
-    <form name="delete-group-form" method="POST">
-      <p>Are you sure you want to delete the group <strong>${row.name}</strong>?</p>
-      <input type="hidden" name="__action" value="delete_group" />
-      <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-      <input type="hidden" name="group_id" value="${row.group_id}" />
-      <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
-      <button type="submit" class="btn btn-danger">Delete</button>
-    </form>
-  `;
-}
-
-function RemoveMembersForm({ row, csrfToken }: { row: GroupUsersRow; csrfToken: string }) {
-  return html`
-    <form name="delete-member-form" method="POST">
-      <div class="mb-3">
-        <label class="form-label" for="delete-member-form-${row.group_id}">UID:</label>
-        <select class="form-select" name="user_id" id="delete-member-form-${row.group_id}">
-          ${row.users.map((user) => {
-            return html` <option value="${user.id}">${user.uid}</option> `;
+        <GroupSettingsCard
+          groupConfigInfo={groupConfigInfo}
+          groupSettingsDefaults={groupSettingsDefaults}
+          origHash={origHash}
+          editAccess={run<ActionAccess>(() => {
+            if (canEditGroupSettings) return ALLOWED_ACCESS;
+            if (permissions.isExampleCourse) {
+              return {
+                status: 'denied',
+                reason: 'Editing group settings is not permitted for the example course.',
+              };
+            }
+            return {
+              status: 'denied',
+              reason: 'Editing group settings requires course editor permissions.',
+            };
           })}
-        </select>
-      </div>
-      <input type="hidden" name="__action" value="delete_member" />
-      <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-      <input type="hidden" name="group_id" value="${row.group_id}" />
-      <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
-      <button type="submit" class="btn btn-danger" ${row.users.length > 0 ? '' : 'disabled'}>
-        Delete
-      </button>
-    </form>
-  `;
-}
+          onOrigHashChange={setOrigHash}
+          onGroupSizeSaved={(min, max) => {
+            setMinGroupSize(min ?? 2);
+            setMaxGroupSize(max ?? 4);
+          }}
+          onSaved={() => setSaveStatus({ kind: 'success' })}
+          onSaveError={(message) => setSaveStatus({ kind: 'error', message })}
+          onClearSaveStatus={() => setSaveStatus(null)}
+        />
 
-function UploadAssessmentGroupsModal({ csrfToken }: { csrfToken: string }) {
-  return Modal({
-    id: 'uploadAssessmentGroupsModal',
-    title: 'Upload new group assignments',
-    formEncType: 'multipart/form-data',
-    body: html`
-      <p>Upload a CSV file in the format of:</p>
-      <code class="text-dark">
-        group_name,uid<br />
-        groupA,one@example.com<br />
-        groupA,two@example.com<br />
-        groupB,three@example.com<br />
-        groupB,four@example.com</code
-      >
-      <!-- Closing code tag not on its own line to improve copy/paste formatting -->
-      <p class="mt-3">
-        The <code>group_name</code> column should be a unique identifier for each group. To change
-        the grouping, link uids to the group name.
-      </p>
-      <div class="mb-3">
-        <label class="form-label" for="uploadAssessmentGroupsFileInput"> Choose CSV file </label>
-        <input
-          type="file"
-          accept=".csv"
-          name="file"
-          class="form-control"
-          id="uploadAssessmentGroupsFileInput"
-        />
+        {canViewStudentData ? (
+          <GroupsCard
+            groupsCsvFilename={groupsCsvFilename}
+            membershipQuery={groupMembershipQuery}
+            assessment={assessment}
+            assessmentSet={assessmentSet}
+            courseInstanceId={courseInstanceId}
+            csrfToken={csrfToken}
+            editAccess={run<ActionAccess>(() => {
+              if (canEditStudentData) return ALLOWED_ACCESS;
+              if (permissions.isExampleCourse) {
+                return {
+                  status: 'denied',
+                  reason: 'Editing group memberships is not permitted for the example course.',
+                };
+              }
+              return {
+                status: 'denied',
+                reason: 'Editing group memberships requires student data editor permissions.',
+              };
+            })}
+            minGroupSize={minGroupSize}
+            maxGroupSize={maxGroupSize}
+            onRefresh={refreshGroupMembership}
+          />
+        ) : (
+          <div className="card">
+            <div className="card-body">
+              <h5 className="mb-1">Groups</h5>
+              <div className="text-muted small mb-3">
+                View and manage student group memberships for this assessment.
+              </div>
+              <Alert variant="info" className="mb-0">
+                You must have student data viewer permissions to view student group memberships.
+              </Alert>
+            </div>
+          </div>
+        )}
       </div>
-    `,
-    footer: html`
-      <input type="hidden" name="__action" value="upload_assessment_groups" />
-      <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-      <button type="submit" class="btn btn-primary">Upload</button>
-    `,
-  });
-}
 
-function RandomAssessmentGroupsModal({
-  groupMin,
-  groupMax,
-  csrfToken,
-}: {
-  groupMin: number;
-  groupMax: number;
-  csrfToken: string;
-}) {
-  return Modal({
-    id: 'randomAssessmentGroupsModal',
-    title: 'Random group assignments',
-    body: html`
-      <div class="mb-3">
-        <label class="form-label" for="formMin">Min number of members in a group</label>
-        <input
-          type="number"
-          required
-          min="1"
-          value="${groupMin}"
-          class="form-control"
-          id="formMin"
-          name="min_group_size"
-        />
-      </div>
-      <div class="mb-3">
-        <label class="form-label" for="formMax">Max number of members in a group</label>
-        <input
-          type="number"
-          required
-          min="1"
-          value="${groupMax}"
-          class="form-control"
-          id="formMax"
-          name="max_group_size"
-        />
-      </div>
-    `,
-    footer: html`
-      <input type="hidden" name="__action" value="random_assessment_groups" />
-      <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-      <button type="submit" class="btn btn-primary">Group</button>
-    `,
-  });
-}
-
-function AddGroupModal({ csrfToken }: { csrfToken: string }) {
-  return Modal({
-    id: 'addGroupModal',
-    title: 'Add a group',
-    body: html`
-      <div class="mb-3">
-        <label class="form-label" for="formName">Group Name</label>
-        <input
-          type="text"
-          class="form-control"
-          id="formName"
-          name="group_name"
-          aria-describedby="addGroupNameHelp"
-          maxlength="30"
-          pattern="[0-9a-zA-Z]+"
-        />
-        <small id="addGroupNameHelp" class="form-text text-muted">
-          Keep blank to use a default name. If provided, the name must be at most 30 characters long
-          and may only contain letters and numbers.
-        </small>
-      </div>
-      <div class="mb-3">
-        <label class="form-label" for="addGroupUids">UIDs</label>
-        <input
-          type="text"
-          class="form-control"
-          id="addGroupUids"
-          name="uids"
-          placeholder="student1@example.com, student2@example.com"
-          aria-describedby="addGroupUidsHelp"
-          required
-        />
-        <small id="addGroupUidsHelp" class="form-text text-muted">
-          Separate multiple UIDs with commas.
-        </small>
-      </div>
-    `,
-    footer: html`
-      <input type="hidden" name="__action" value="add_group" />
-      <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-      <button type="submit" class="btn btn-primary">Add</button>
-    `,
-  });
-}
-
-function DeleteAllGroupsModal({
-  csrfToken,
-  assessmentSetName,
-  assessmentNumber,
-}: {
-  csrfToken: string;
-  assessmentSetName: string;
-  assessmentNumber: string;
-}) {
-  return Modal({
-    id: 'deleteAllGroupsModal',
-    title: 'Delete all existing groups',
-    body: html`
-      <p>
-        Are you sure you want to delete all existing groups for
-        <strong>${assessmentSetName} ${assessmentNumber}</strong>? This cannot be undone.
-      </p>
-    `,
-    footer: html`
-      <input type="hidden" name="__action" value="delete_all" />
-      <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-      <button type="submit" class="btn btn-danger">Delete all</button>
-    `,
-  });
+      {canEditGroupSettings && saveStatus && (
+        <div className="position-sticky bottom-0 z-3 bg-body border-top">
+          {saveStatus.kind === 'success' && (
+            <Alert
+              className="mb-0 rounded-0 border-start-0 border-end-0 border-bottom"
+              variant="success"
+              dismissible
+              onClose={() => setSaveStatus(null)}
+            >
+              Group configuration saved.
+            </Alert>
+          )}
+          {saveStatus.kind === 'error' && (
+            <Alert
+              className="mb-0 rounded-0 border-start-0 border-end-0 border-bottom"
+              variant="danger"
+              dismissible
+              onClose={() => setSaveStatus(null)}
+            >
+              {saveStatus.message}
+            </Alert>
+          )}
+        </div>
+      )}
+    </>
+  );
 }

@@ -22,6 +22,11 @@ SELECT
   q.grading_method,
   q.external_grading_image,
   q.workspace_image,
+  coalesce(q.single_variant, FALSE) AS single_variant,
+  (
+    q.preferences_schema IS NOT NULL
+    AND q.preferences_schema != '{}'::jsonb
+  ) AS has_preferences,
   CASE
     WHEN q.type = 'Freeform' THEN 'v3'
     ELSE 'v2 (' || q.type || ')'
@@ -104,6 +109,19 @@ GROUP BY
 ORDER BY
   q.qid;
 
+-- BLOCK select_course_has_questions
+SELECT
+  EXISTS (
+    SELECT
+      1
+    FROM
+      questions AS q
+    WHERE
+      q.course_id = $course_id
+      AND q.deleted_at IS NULL
+      AND q.draft IS FALSE
+  );
+
 -- BLOCK select_public_questions_for_course
 SELECT
   q.id,
@@ -112,6 +130,11 @@ SELECT
   q.grading_method,
   q.external_grading_image,
   q.workspace_image,
+  coalesce(q.single_variant, FALSE) AS single_variant,
+  (
+    q.preferences_schema IS NOT NULL
+    AND q.preferences_schema != '{}'::jsonb
+  ) AS has_preferences,
   CASE
     WHEN q.type = 'Freeform' THEN 'v3'
     ELSE 'v2 (' || q.type || ')'

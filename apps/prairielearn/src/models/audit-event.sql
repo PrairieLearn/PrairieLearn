@@ -33,6 +33,18 @@ WHERE
 ORDER BY
   date DESC;
 
+-- BLOCK select_audit_events_by_institution_id_table_names
+SELECT
+  *
+FROM
+  audit_events
+WHERE
+  institution_id = $institution_id
+  AND table_name = ANY ($table_names::text[])
+ORDER BY
+  date DESC,
+  id DESC;
+
 -- BLOCK insert_audit_event
 WITH
   assessment_instance_meta AS (

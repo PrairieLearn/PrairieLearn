@@ -1,16 +1,14 @@
+import crypto from 'node:crypto';
 import * as path from 'path';
 
-import sha256 from 'crypto-js/sha256.js';
 import { execa } from 'execa';
 import fs from 'fs-extra';
-import fetch from 'node-fetch';
 import * as tmp from 'tmp';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
 import { b64EncodeUnicode } from '../lib/base64-util.js';
 import { config } from '../lib/config.js';
-import { getOriginalHash } from '../lib/editors.js';
-import { features } from '../lib/features/index.js';
+import { getOriginalHash } from '../lib/editorUtil.js';
 import { insertCoursePermissionsByUserUid } from '../models/course-permissions.js';
 
 import { fetchCheerio } from './helperClient.js';
@@ -28,10 +26,8 @@ const assessmentLiveInfoPath = path.join(assessmentLiveDir, 'HW1', 'infoAssessme
 
 const siteUrl = `http://localhost:${config.serverPort}`;
 
-describe('Editing assessment questions', () => {
-  // Capture original state to restore after tests
+describe('Editing assessment questions', { concurrent: false }, () => {
   let originalDevMode: boolean;
-  let wasFeatureEnabled: boolean;
 
   /**
    * Helper function to get CSRF token and calculate orig_hash for POST requests.
@@ -66,33 +62,21 @@ describe('Editing assessment questions', () => {
     await execa('git', ['push', 'origin', 'master'], execOptions);
     await execa('git', ['clone', courseOriginDir, courseDevDir], { cwd: '.', env: process.env });
 
-    // Capture original state before modifying
     originalDevMode = config.devMode;
     config.devMode = true;
 
     await helperServer.before(courseLiveDir)();
 
     await updateCourseRepository({ courseId: '1', repository: courseOriginDir });
-
-    // Check if feature was already enabled before enabling it
-    wasFeatureEnabled = await features.enabled('assessment-questions-editor');
-    // Enable the assessment-questions-editor feature flag for these tests
-    await features.enable('assessment-questions-editor');
   });
 
   afterAll(async () => {
-    // Restore original state
     config.devMode = originalDevMode;
-
-    // Only disable the feature if it wasn't enabled before these tests
-    if (!wasFeatureEnabled) {
-      await features.disable('assessment-questions-editor');
-    }
 
     await helperServer.after();
   });
 
-  test.sequential('access the test assessment info file', async () => {
+  test('access the test assessment info file', async () => {
     const assessmentInfo = JSON.parse(await fs.readFile(assessmentLiveInfoPath, 'utf8'));
     assert.equal(assessmentInfo.title, 'Homework for file editor test');
     assert.equal(assessmentInfo.zones.length, 1);
@@ -100,14 +84,14 @@ describe('Editing assessment questions', () => {
     assert.equal(assessmentInfo.zones[0].questions[0].id, 'test/question');
   });
 
-  test.sequential('access the assessment questions page', async () => {
+  test('access the assessment questions page', async () => {
     const questionsPageResponse = await fetchCheerio(
       `${siteUrl}/pl/course_instance/1/instructor/assessment/1/questions`,
     );
     assert.equal(questionsPageResponse.status, 200);
   });
 
-  test.sequential('verify saving without changes should not modify the json', async () => {
+  test('verify saving without changes should not modify the json', async () => {
     // Read the original file content
     const originalContent = await fs.readFile(assessmentLiveInfoPath, 'utf8');
     const originalInfo = JSON.parse(originalContent);
@@ -148,7 +132,7 @@ describe('Editing assessment questions', () => {
     assert.deepEqual(updatedInfo, originalInfo);
   });
 
-  test.sequential('add a new question to assessment', async () => {
+  test('add a new question to assessment', async () => {
     const { csrfToken, origHash } = await getRequestData();
 
     const response = await fetch(
@@ -193,7 +177,7 @@ describe('Editing assessment questions', () => {
     assert.equal(assessmentInfo.zones[0].questions[1].points, 5);
   });
 
-  test.sequential('change question points', async () => {
+  test('change question points', async () => {
     const { csrfToken, origHash } = await getRequestData();
 
     const response = await fetch(
@@ -230,13 +214,13 @@ describe('Editing assessment questions', () => {
     );
   });
 
-  test.sequential('verify question points were changed', async () => {
+  test('verify question points were changed', async () => {
     const assessmentInfo = JSON.parse(await fs.readFile(assessmentLiveInfoPath, 'utf8'));
     assert.equal(assessmentInfo.zones[0].questions[0].points, 20);
     assert.equal(assessmentInfo.zones[0].questions[1].points, 15);
   });
 
-  test.sequential('remove a question from assessment', async () => {
+  test('remove a question from assessment', async () => {
     const { csrfToken, origHash } = await getRequestData();
 
     const response = await fetch(
@@ -265,14 +249,14 @@ describe('Editing assessment questions', () => {
     assert.equal(response.url, `${siteUrl}/pl/course_instance/1/instructor/assessment/1/questions`);
   });
 
-  test.sequential('verify question was removed', async () => {
+  test('verify question was removed', async () => {
     const assessmentInfo = JSON.parse(await fs.readFile(assessmentLiveInfoPath, 'utf8'));
     assert.equal(assessmentInfo.zones[0].questions.length, 1);
     assert.equal(assessmentInfo.zones[0].questions[0].id, 'test/question');
     assert.equal(assessmentInfo.zones[0].questions[0].points, 20);
   });
 
-  test.sequential('change question points again', async () => {
+  test('change question points again', async () => {
     const { csrfToken, origHash } = await getRequestData();
 
     const response = await fetch(
@@ -301,13 +285,13 @@ describe('Editing assessment questions', () => {
     assert.equal(response.url, `${siteUrl}/pl/course_instance/1/instructor/assessment/1/questions`);
   });
 
-  test.sequential('verify question points were changed', async () => {
+  test('verify question points were changed', async () => {
     const assessmentInfo = JSON.parse(await fs.readFile(assessmentLiveInfoPath, 'utf8'));
     assert.equal(assessmentInfo.zones[0].questions[0].id, 'test/question');
     assert.equal(assessmentInfo.zones[0].questions[0].points, 25);
   });
 
-  test.sequential('add zone with title and questions', async () => {
+  test('add zone with title and questions', async () => {
     const { csrfToken, origHash } = await getRequestData();
 
     const response = await fetch(
@@ -349,7 +333,7 @@ describe('Editing assessment questions', () => {
     );
   });
 
-  test.sequential('verify zone was added', async () => {
+  test('verify zone was added', async () => {
     const assessmentInfo = JSON.parse(await fs.readFile(assessmentLiveInfoPath, 'utf8'));
     assert.equal(assessmentInfo.zones.length, 2);
     assert.equal(assessmentInfo.zones[1].title, 'Zone 2');
@@ -358,7 +342,7 @@ describe('Editing assessment questions', () => {
     assert.equal(assessmentInfo.zones[1].questions[0].points, 10);
   });
 
-  test.sequential('pull and verify changes in dev repo', async () => {
+  test('pull and verify changes in dev repo', async () => {
     await execa('git', ['pull'], { cwd: courseDevDir, env: process.env });
     const assessmentDevInfoPath = path.join(
       courseDevDir,
@@ -374,7 +358,7 @@ describe('Editing assessment questions', () => {
     assert.equal(assessmentDevInfo.zones[1].title, 'Zone 2');
   });
 
-  test.sequential('should not be able to submit without being an authorized user', async () => {
+  test('should not be able to submit without being an authorized user', async () => {
     const user = await getOrCreateUser({
       uid: 'viewer@example.com',
       name: 'Viewer User',
@@ -415,7 +399,7 @@ describe('Editing assessment questions', () => {
     });
   });
 
-  test.sequential('should not be able to submit without assessment info file', async () => {
+  test('should not be able to submit without assessment info file', async () => {
     // Move the assessment info file to cause an error
     await fs.move(assessmentLiveInfoPath, `${assessmentLiveInfoPath}.bak`);
     try {
@@ -456,57 +440,57 @@ describe('Editing assessment questions', () => {
     }
   });
 
-  test.sequential(
-    'should not be able to submit if repo assessment info file has been changed',
-    async () => {
-      const questionsPageResponse = await fetchCheerio(
-        `${siteUrl}/pl/course_instance/1/instructor/assessment/1/questions`,
-      );
-      assert.equal(questionsPageResponse.status, 200);
+  test('should not be able to submit if repo assessment info file has been changed', async () => {
+    const questionsPageResponse = await fetchCheerio(
+      `${siteUrl}/pl/course_instance/1/instructor/assessment/1/questions`,
+    );
+    assert.equal(questionsPageResponse.status, 200);
 
-      const csrfToken = questionsPageResponse.$('#test_csrf_token').text();
-      // Calculate the orig_hash BEFORE we change the file
-      const origContent = await fs.readFile(assessmentLiveInfoPath, 'utf8');
-      const origHash = sha256(b64EncodeUnicode(origContent)).toString();
+    const csrfToken = questionsPageResponse.$('#test_csrf_token').text();
+    // Calculate the orig_hash BEFORE we change the file
+    const origContent = await fs.readFile(assessmentLiveInfoPath, 'utf8');
+    const origHash = crypto
+      .createHash('sha256')
+      .update(b64EncodeUnicode(origContent))
+      .digest('hex');
 
-      // Now change the file
-      const assessmentInfo = JSON.parse(origContent);
-      const newAssessmentInfo = { ...assessmentInfo, title: 'Changed title' };
-      await fs.writeFile(assessmentLiveInfoPath, JSON.stringify(newAssessmentInfo, null, 2));
-      await execa('git', ['add', '-A'], { cwd: courseLiveDir, env: process.env });
-      await execa('git', ['commit', '-m', 'Change assessment info'], {
-        cwd: courseLiveDir,
-        env: process.env,
-      });
-      await execa('git', ['push', 'origin', 'master'], { cwd: courseLiveDir, env: process.env });
+    // Now change the file
+    const assessmentInfo = JSON.parse(origContent);
+    const newAssessmentInfo = { ...assessmentInfo, title: 'Changed title' };
+    await fs.writeFile(assessmentLiveInfoPath, JSON.stringify(newAssessmentInfo, null, 2));
+    await execa('git', ['add', '-A'], { cwd: courseLiveDir, env: process.env });
+    await execa('git', ['commit', '-m', 'Change assessment info'], {
+      cwd: courseLiveDir,
+      env: process.env,
+    });
+    await execa('git', ['push', 'origin', 'master'], { cwd: courseLiveDir, env: process.env });
 
-      const response = await fetch(
-        `${siteUrl}/pl/course_instance/1/instructor/assessment/1/questions`,
-        {
-          method: 'POST',
-          body: new URLSearchParams({
-            __action: 'save_questions',
-            __csrf_token: csrfToken,
-            orig_hash: origHash,
-            zones: JSON.stringify([
-              {
-                questions: [
-                  {
-                    id: 'test/question',
-                    points: 10,
-                  },
-                ],
-              },
-            ]),
-          }),
-        },
-      );
-      assert.equal(response.status, 200);
-      assert.match(response.url, /\/pl\/course_instance\/1\/instructor\/edit_error\/\d+$/);
-    },
-  );
+    const response = await fetch(
+      `${siteUrl}/pl/course_instance/1/instructor/assessment/1/questions`,
+      {
+        method: 'POST',
+        body: new URLSearchParams({
+          __action: 'save_questions',
+          __csrf_token: csrfToken,
+          orig_hash: origHash,
+          zones: JSON.stringify([
+            {
+              questions: [
+                {
+                  id: 'test/question',
+                  points: 10,
+                },
+              ],
+            },
+          ]),
+        }),
+      },
+    );
+    assert.equal(response.status, 200);
+    assert.match(response.url, /\/pl\/course_instance\/1\/instructor\/edit_error\/\d+$/);
+  });
 
-  test.sequential('add alternative group with multiple alternatives', async () => {
+  test('add alternative pool with multiple alternatives', async () => {
     const { csrfToken, origHash } = await getRequestData();
 
     const response = await fetch(
@@ -548,7 +532,7 @@ describe('Editing assessment questions', () => {
     );
   });
 
-  test.sequential('verify alternative group was added', async () => {
+  test('verify alternative pool was added', async () => {
     const assessmentInfo = JSON.parse(await fs.readFile(assessmentLiveInfoPath, 'utf8'));
     assert.equal(assessmentInfo.zones.length, 1);
     assert.equal(assessmentInfo.zones[0].questions.length, 1);
@@ -565,7 +549,7 @@ describe('Editing assessment questions', () => {
     assert.equal(assessmentInfo.zones[0].questions[0].alternatives[1].points, 15);
   });
 
-  test.sequential('modify alternative points in alternative group', async () => {
+  test('modify alternative points in alternative pool', async () => {
     const { csrfToken, origHash } = await getRequestData();
 
     const response = await fetch(
@@ -607,13 +591,13 @@ describe('Editing assessment questions', () => {
     );
   });
 
-  test.sequential('verify alternative points were changed', async () => {
+  test('verify alternative points were changed', async () => {
     const assessmentInfo = JSON.parse(await fs.readFile(assessmentLiveInfoPath, 'utf8'));
     assert.equal(assessmentInfo.zones[0].questions[0].alternatives[0].points, 20);
     assert.equal(assessmentInfo.zones[0].questions[0].alternatives[1].points, 25);
   });
 
-  test.sequential('zone with maxPoints and numberChoose properties', async () => {
+  test('zone with maxPoints and numberChoose properties', async () => {
     const { csrfToken, origHash } = await getRequestData();
 
     const response = await fetch(
@@ -657,7 +641,7 @@ describe('Editing assessment questions', () => {
     );
   });
 
-  test.sequential('verify zone properties and questions', async () => {
+  test('verify zone properties and questions', async () => {
     const assessmentInfo = JSON.parse(await fs.readFile(assessmentLiveInfoPath, 'utf8'));
     assert.equal(assessmentInfo.zones.length, 1);
     assert.equal(assessmentInfo.zones[0].title, 'Test Zone');
@@ -666,44 +650,13 @@ describe('Editing assessment questions', () => {
     assert.equal(assessmentInfo.zones[0].questions.length, 3);
   });
 
-  test.sequential(
-    'default value filtering - removing default points should omit field',
-    async () => {
-      // First, set up a question with non-default points
-      let requestData = await getRequestData();
+  test('default value filtering - removing default points should omit field', async () => {
+    // First, set up a question with non-default points
+    let requestData = await getRequestData();
 
-      let response = await fetch(
-        `${siteUrl}/pl/course_instance/1/instructor/assessment/1/questions`,
-        {
-          method: 'POST',
-          body: new URLSearchParams({
-            __action: 'save_questions',
-            __csrf_token: requestData.csrfToken,
-            orig_hash: requestData.origHash,
-            zones: JSON.stringify([
-              {
-                questions: [
-                  {
-                    id: 'test/question',
-                    points: 10,
-                  },
-                ],
-              },
-            ]),
-          }),
-        },
-      );
-
-      assert.equal(response.status, 200);
-
-      // Verify points is present
-      let assessmentInfo = JSON.parse(await fs.readFile(assessmentLiveInfoPath, 'utf8'));
-      assert.equal(assessmentInfo.zones[0].questions[0].points, 10);
-
-      // Now set points to default value (0) - it should be omitted from the JSON
-      requestData = await getRequestData();
-
-      response = await fetch(`${siteUrl}/pl/course_instance/1/instructor/assessment/1/questions`, {
+    let response = await fetch(
+      `${siteUrl}/pl/course_instance/1/instructor/assessment/1/questions`,
+      {
         method: 'POST',
         body: new URLSearchParams({
           __action: 'save_questions',
@@ -714,20 +667,48 @@ describe('Editing assessment questions', () => {
               questions: [
                 {
                   id: 'test/question',
-                  points: 0,
+                  points: 10,
                 },
               ],
             },
           ]),
         }),
-      });
+      },
+    );
 
-      assert.equal(response.status, 200);
+    assert.equal(response.status, 200);
 
-      // Verify points field is omitted (or is 0 if present)
-      assessmentInfo = JSON.parse(await fs.readFile(assessmentLiveInfoPath, 'utf8'));
-      const points = assessmentInfo.zones[0].questions[0].points;
-      assert.ok(points === undefined || points === 0, 'Points should be omitted or 0');
-    },
-  );
+    // Verify points is present
+    let assessmentInfo = JSON.parse(await fs.readFile(assessmentLiveInfoPath, 'utf8'));
+    assert.equal(assessmentInfo.zones[0].questions[0].points, 10);
+
+    // Now set points to default value (0) - it should be omitted from the JSON
+    requestData = await getRequestData();
+
+    response = await fetch(`${siteUrl}/pl/course_instance/1/instructor/assessment/1/questions`, {
+      method: 'POST',
+      body: new URLSearchParams({
+        __action: 'save_questions',
+        __csrf_token: requestData.csrfToken,
+        orig_hash: requestData.origHash,
+        zones: JSON.stringify([
+          {
+            questions: [
+              {
+                id: 'test/question',
+                points: 0,
+              },
+            ],
+          },
+        ]),
+      }),
+    });
+
+    assert.equal(response.status, 200);
+
+    // Verify points field is omitted (or is 0 if present)
+    assessmentInfo = JSON.parse(await fs.readFile(assessmentLiveInfoPath, 'utf8'));
+    const points = assessmentInfo.zones[0].questions[0].points;
+    assert.ok(points === undefined || points === 0, 'Points should be omitted or 0');
+  });
 });

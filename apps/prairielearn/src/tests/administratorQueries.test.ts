@@ -11,12 +11,12 @@ const queriesUrl = `${baseUrl}/administrator/queries`;
 const queryRunningQueriesUrl = `${baseUrl}/administrator/query/db_running_queries`;
 const queryGenerateAndEnrollUrl = `${baseUrl}/administrator/query/generate_and_enroll_users`;
 
-describe('AdministratorQuery page', { timeout: 60_000 }, function () {
+describe('AdministratorQuery page', { timeout: 60_000, concurrent: false }, function () {
   beforeAll(helperServer.before());
 
   afterAll(helperServer.after);
 
-  test.sequential('visit queries page', async () => {
+  test('visit queries page', async () => {
     const response = await helperClient.fetchCheerio(queriesUrl);
     assert.isTrue(response.ok);
 
@@ -29,7 +29,7 @@ describe('AdministratorQuery page', { timeout: 60_000 }, function () {
     assert.lengthOf(query2, 1);
   });
 
-  test.sequential('visit query page for a query without params (runs immediately)', async () => {
+  test('visit query page for a query without params (runs immediately)', async () => {
     const response = await helperClient.fetchCheerio(queryRunningQueriesUrl);
     assert.isTrue(response.ok);
 
@@ -38,7 +38,7 @@ describe('AdministratorQuery page', { timeout: 60_000 }, function () {
     assert.lengthOf(results, 1);
   });
 
-  test.sequential('visit query page for a query with params (runs on submit)', async () => {
+  test('visit query page for a query with params (runs on submit)', async () => {
     const response = await helperClient.fetchCheerio(queryGenerateAndEnrollUrl);
     assert.isTrue(response.ok);
     const __csrf_token = response.$('#test_csrf_token').text();

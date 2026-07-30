@@ -29,13 +29,7 @@
 # Set up your question with these options in info.json, editing the "image"
 # parameter if you are using a custom image build for testing:
 
-#    "workspaceOptions": {
-#        "image": "prairielearn/workspace-rstudio",
-#        "port": 3939,
-#        "args": "",
-#        "rewriteUrl": false,
-#        "home": "/home/rstudio/workspace"
-#    }
+#    "workspaceOptions": { "image": "prairielearn/workspace-rstudio" }
 
 # If you just want to use RStudio locally for its own sake:
 # $ docker build -t rstudio-local .
@@ -44,8 +38,11 @@
 # However, you could use the Rocker base images in that case.
 # Their site has more documentation.
 
-FROM rocker/rstudio:4.5.2
-ARG CACHEBUST=2026-02-15-14-23-34
+FROM rocker/rstudio:4.6.1
+ARG CACHEBUST=2026-07-15-14-34-04
+LABEL com.prairielearn.workspace.home="/home/rstudio/workspace"
+LABEL com.prairielearn.workspace.port="3939"
+LABEL com.prairielearn.workspace.rewrite-url="false"
 
 # On PL, we need to use 1001:1001 for the default user account. We adjust the
 # pre-existing rstudio user which is typically uid 1000 otherwise.

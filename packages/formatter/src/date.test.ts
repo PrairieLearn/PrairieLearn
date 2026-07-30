@@ -3,6 +3,7 @@ import { assert, describe, it } from 'vitest';
 import {
   formatDate,
   formatDateFriendly,
+  formatDateISO,
   formatDateRangeFriendly,
   formatDateWithinRange,
   formatDateYMD,
@@ -12,35 +13,104 @@ import {
 describe('date formatting', () => {
   describe('formatDate', () => {
     it('formats a UTC date', () => {
-      const date = new Date(Date.UTC(2018, 0, 1, 12, 0, 0));
-      assert.equal(formatDate(date, 'UTC'), '2018-01-01 12:00:00 (UTC)');
+      const date1 = new Date(Date.UTC(2018, 0, 1, 12, 0, 0));
+      const date2 = new Date(Date.UTC(2023, 0, 1, 18, 59, 32));
+      assert.equal(formatDate(date1, 'UTC'), '2018-01-01 12:00:00 (UTC)');
+      assert.equal(formatDate(date2, 'UTC'), '2023-01-01 18:59:32 (UTC)');
     });
     it('formats a CST date', () => {
-      const date = new Date(Date.UTC(2018, 0, 1, 12, 0, 0));
-      assert.equal(formatDate(date, 'America/Chicago'), '2018-01-01 06:00:00 (CST)');
+      const date1 = new Date(Date.UTC(2018, 0, 1, 12, 0, 0));
+      const date2 = new Date(Date.UTC(2023, 0, 1, 20, 59, 32));
+      assert.equal(formatDate(date1, 'America/Chicago'), '2018-01-01 06:00:00 (CST)');
+      assert.equal(formatDate(date2, 'America/Chicago'), '2023-01-01 14:59:32 (CST)');
     });
     it('formats a CDT date', () => {
-      const date = new Date(Date.UTC(2018, 6, 1, 12, 0, 0));
-      assert.equal(formatDate(date, 'America/Chicago'), '2018-07-01 07:00:00 (CDT)');
+      const date1 = new Date(Date.UTC(2018, 6, 1, 12, 0, 0));
+      const date2 = new Date(Date.UTC(2023, 6, 1, 18, 59, 32));
+      assert.equal(formatDate(date1, 'America/Chicago'), '2018-07-01 07:00:00 (CDT)');
+      assert.equal(formatDate(date2, 'America/Chicago'), '2023-07-01 13:59:32 (CDT)');
     });
     it('formats dates with zero hours', () => {
       const date = new Date(Date.UTC(2018, 0, 1, 0, 1, 0));
       assert.equal(formatDate(date, 'UTC'), '2018-01-01 00:01:00 (UTC)');
     });
     it('formats dates with milliseconds', () => {
-      const date = new Date(Date.UTC(2018, 0, 1, 4, 1, 3, 12));
-      assert.equal(formatDate(date, 'UTC', { includeMs: true }), '2018-01-01 04:01:03.012 (UTC)');
+      const date1 = new Date(Date.UTC(2018, 0, 1, 4, 1, 3, 12));
+      const date2 = new Date(Date.UTC(2023, 0, 1, 18, 59, 32, 456));
+      assert.equal(formatDate(date1, 'UTC', { includeMs: true }), '2018-01-01 04:01:03.012 (UTC)');
+      assert.equal(formatDate(date2, 'UTC', { includeMs: true }), '2023-01-01 18:59:32.456 (UTC)');
     });
     it('formats dates without the timezone', () => {
-      const date = new Date(Date.UTC(2018, 0, 1, 12, 0, 0));
-      assert.equal(formatDate(date, 'UTC', { includeTz: false }), '2018-01-01 12:00:00');
+      const date1 = new Date(Date.UTC(2018, 0, 1, 12, 0, 0));
+      const date2 = new Date(Date.UTC(2023, 0, 1, 18, 59, 32));
+      assert.equal(formatDate(date1, 'UTC', { includeTz: false }), '2018-01-01 12:00:00');
+      assert.equal(formatDate(date2, 'UTC', { includeTz: false }), '2023-01-01 18:59:32');
     });
     it('formats dates with the long timezone name', () => {
-      const date = new Date(Date.UTC(2018, 0, 1, 12, 0, 0));
+      const date1 = new Date(Date.UTC(2018, 0, 1, 12, 0, 0));
+      const date2 = new Date(Date.UTC(2023, 0, 1, 20, 59, 32));
       assert.equal(
-        formatDate(date, 'America/Chicago', { longTz: true }),
+        formatDate(date1, 'America/Chicago', { longTz: true }),
         '2018-01-01 06:00:00 (Central Standard Time)',
       );
+      assert.equal(
+        formatDate(date2, 'America/Chicago', { longTz: true }),
+        '2023-01-01 14:59:32 (Central Standard Time)',
+      );
+    });
+  });
+
+  describe('formatDateISO', () => {
+    it('returns null for a null date', () => {
+      assert.isNull(formatDateISO(null, 'UTC'));
+    });
+
+    it('formats a UTC date with timezone offset', () => {
+      const date1 = new Date(Date.UTC(2018, 0, 1, 12, 0, 0));
+      const date2 = new Date(Date.UTC(2023, 0, 1, 18, 59, 32));
+      assert.equal(formatDateISO(date1, 'UTC'), '2018-01-01T12:00:00+00:00');
+      assert.equal(formatDateISO(date2, 'UTC'), '2023-01-01T18:59:32+00:00');
+    });
+
+    it('formats a CST date with timezone offset', () => {
+      const date1 = new Date(Date.UTC(2018, 0, 1, 12, 0, 0));
+      const date2 = new Date(Date.UTC(2023, 0, 1, 20, 59, 32));
+      assert.equal(formatDateISO(date1, 'America/Chicago'), '2018-01-01T06:00:00-06:00');
+      assert.equal(formatDateISO(date2, 'America/Chicago'), '2023-01-01T14:59:32-06:00');
+    });
+
+    it('formats a date in Asia/Kolkata with timezone offset', () => {
+      const date1 = new Date(Date.UTC(2018, 0, 1, 12, 0, 0));
+      const date2 = new Date(Date.UTC(2023, 0, 1, 19, 59, 32));
+      assert.equal(formatDateISO(date1, 'Asia/Kolkata'), '2018-01-01T17:30:00+05:30');
+      assert.equal(formatDateISO(date2, 'Asia/Kolkata'), '2023-01-02T01:29:32+05:30');
+    });
+
+    it('formats a date in Asia/Tokyo with timezone offset', () => {
+      const date1 = new Date(Date.UTC(2018, 0, 1, 12, 0, 0));
+      const date2 = new Date(Date.UTC(2023, 0, 1, 18, 59, 32));
+      assert.equal(formatDateISO(date1, 'Asia/Tokyo'), '2018-01-01T21:00:00+09:00');
+      assert.equal(formatDateISO(date2, 'Asia/Tokyo'), '2023-01-02T03:59:32+09:00');
+    });
+
+    it('formats a date with milliseconds', () => {
+      const date1 = new Date(Date.UTC(2018, 0, 1, 4, 1, 3, 12));
+      const date2 = new Date(Date.UTC(2023, 0, 1, 18, 59, 32, 456));
+      assert.equal(
+        formatDateISO(date1, 'UTC', { includeMs: true }),
+        '2018-01-01T04:01:03.012+00:00',
+      );
+      assert.equal(
+        formatDateISO(date2, 'UTC', { includeMs: true }),
+        '2023-01-01T18:59:32.456+00:00',
+      );
+    });
+
+    it('formats a date without the timezone', () => {
+      const date1 = new Date(Date.UTC(2018, 0, 1, 12, 0, 0));
+      const date2 = new Date(Date.UTC(2023, 0, 1, 18, 59, 32));
+      assert.equal(formatDateISO(date1, 'UTC', { includeTz: false }), '2018-01-01T12:00:00');
+      assert.equal(formatDateISO(date2, 'UTC', { includeTz: false }), '2023-01-01T18:59:32');
     });
   });
 
@@ -65,16 +135,22 @@ describe('date formatting', () => {
 
   describe('formatDateYMDHM()', () => {
     it('should handle a UTC date', () => {
-      const date = new Date(Date.UTC(2018, 0, 1, 12, 34, 7));
-      assert.equal(formatDateYMDHM(date, 'UTC'), '2018-01-01 12:34');
+      const date1 = new Date(Date.UTC(2018, 0, 1, 12, 34, 7));
+      const date2 = new Date(Date.UTC(2023, 0, 1, 18, 59, 32));
+      assert.equal(formatDateYMDHM(date1, 'UTC'), '2018-01-01 12:34');
+      assert.equal(formatDateYMDHM(date2, 'UTC'), '2023-01-01 18:59');
     });
     it('should handle a CST date', () => {
-      const date = new Date(Date.UTC(2018, 0, 3, 5, 10, 50));
-      assert.equal(formatDateYMDHM(date, 'America/Chicago'), '2018-01-02 23:10');
+      const date1 = new Date(Date.UTC(2018, 0, 3, 5, 10, 50));
+      const date2 = new Date(Date.UTC(2023, 0, 1, 15, 59, 32));
+      assert.equal(formatDateYMDHM(date1, 'America/Chicago'), '2018-01-02 23:10');
+      assert.equal(formatDateYMDHM(date2, 'America/Chicago'), '2023-01-01 09:59');
     });
     it('should handle a CDT date', () => {
-      const date = new Date(Date.UTC(2018, 6, 1, 19, 8, 19));
-      assert.equal(formatDateYMDHM(date, 'America/Chicago'), '2018-07-01 14:08');
+      const date1 = new Date(Date.UTC(2018, 6, 1, 19, 8, 19));
+      const date2 = new Date(Date.UTC(2023, 6, 1, 15, 59, 32));
+      assert.equal(formatDateYMDHM(date1, 'America/Chicago'), '2018-07-01 14:08');
+      assert.equal(formatDateYMDHM(date2, 'America/Chicago'), '2023-07-01 10:59');
     });
     it('should correctly format dates with zero hours', () => {
       const date = new Date(Date.UTC(2018, 0, 1, 0, 1, 0));
@@ -84,28 +160,36 @@ describe('date formatting', () => {
 
   describe('formatDateWithinRange()', () => {
     it('should handle a date within the same day in UTC', () => {
-      const date = new Date(Date.UTC(2018, 0, 1, 12, 34, 7));
+      const date1 = new Date(Date.UTC(2018, 0, 1, 12, 34, 7));
+      const date2 = new Date(Date.UTC(2018, 0, 1, 19, 58, 31));
       const start = new Date(Date.UTC(2018, 0, 1, 12, 0, 0));
       const end = new Date(Date.UTC(2018, 0, 1, 12, 59, 59));
-      assert.equal(formatDateWithinRange(date, start, end, 'UTC'), '12:34');
+      assert.equal(formatDateWithinRange(date1, start, end, 'UTC'), '12:34');
+      assert.equal(formatDateWithinRange(date2, start, end, 'UTC'), '19:58');
     });
     it('should handle a date within the same day in CST', () => {
-      const date = new Date(Date.UTC(2018, 0, 1, 23, 8, 57));
+      const date1 = new Date(Date.UTC(2018, 0, 1, 23, 8, 57));
+      const date2 = new Date(Date.UTC(2018, 0, 1, 13, 58, 31));
       const start = new Date(Date.UTC(2018, 0, 1, 21, 0, 0));
       const end = new Date(Date.UTC(2018, 0, 2, 2, 14, 0));
-      assert.equal(formatDateWithinRange(date, start, end, 'America/Chicago'), '17:08');
+      assert.equal(formatDateWithinRange(date1, start, end, 'America/Chicago'), '17:08');
+      assert.equal(formatDateWithinRange(date2, start, end, 'America/Chicago'), '07:58');
     });
     it('should handle a date within the same year in UTC', () => {
-      const date = new Date(Date.UTC(2018, 0, 1, 12, 34, 7));
+      const date1 = new Date(Date.UTC(2018, 0, 1, 12, 34, 7));
+      const date2 = new Date(Date.UTC(2018, 6, 1, 18, 34, 7));
       const start = new Date(Date.UTC(2018, 0, 1, 12, 0, 0));
       const end = new Date(Date.UTC(2018, 0, 4, 12, 59, 59));
-      assert.equal(formatDateWithinRange(date, start, end, 'UTC'), 'Jan 1, 12:34');
+      assert.equal(formatDateWithinRange(date1, start, end, 'UTC'), 'Jan 1, 12:34');
+      assert.equal(formatDateWithinRange(date2, start, end, 'UTC'), 'Jul 1, 18:34');
     });
     it('should handle a date within different years in UTC', () => {
-      const date = new Date(Date.UTC(2018, 0, 1, 12, 34, 7));
+      const date1 = new Date(Date.UTC(2018, 0, 1, 12, 34, 7));
+      const date2 = new Date(Date.UTC(2018, 6, 1, 18, 34, 7));
       const start = new Date(Date.UTC(2018, 0, 1, 12, 0, 0));
       const end = new Date(Date.UTC(2019, 0, 1, 12, 59, 59));
-      assert.equal(formatDateWithinRange(date, start, end, 'UTC'), '2018-01-01 12:34');
+      assert.equal(formatDateWithinRange(date1, start, end, 'UTC'), '2018-01-01 12:34');
+      assert.equal(formatDateWithinRange(date2, start, end, 'UTC'), '2018-07-01 18:34');
     });
   });
 
@@ -298,13 +382,109 @@ describe('date formatting', () => {
     it('should handle midnight', () => {
       const baseDate = new Date(Date.UTC(2018, 0, 1, 12, 34, 2));
       const date = new Date(Date.UTC(2018, 0, 1, 0, 0, 0));
-      assert.equal(formatDateFriendly(date, 'UTC', { baseDate }), 'today, 12am (UTC)');
+      assert.equal(formatDateFriendly(date, 'UTC', { baseDate }), 'start of today (UTC)');
     });
 
     it('should handle noon', () => {
       const baseDate = new Date(Date.UTC(2018, 0, 1, 12, 34, 2));
       const date = new Date(Date.UTC(2018, 0, 1, 12, 0, 0));
       assert.equal(formatDateFriendly(date, 'UTC', { baseDate }), 'today, 12pm (UTC)');
+    });
+
+    describe('day boundary labels', () => {
+      it('should show "start of today" for midnight (00:00:00)', () => {
+        const baseDate = new Date(Date.UTC(2018, 0, 1, 12, 0, 0));
+        const date = new Date(Date.UTC(2018, 0, 1, 0, 0, 0));
+        assert.equal(formatDateFriendly(date, 'UTC', { baseDate }), 'start of today (UTC)');
+      });
+
+      it('should show "start of today" for 00:00:01', () => {
+        const baseDate = new Date(Date.UTC(2018, 0, 1, 12, 0, 0));
+        const date = new Date(Date.UTC(2018, 0, 1, 0, 0, 1));
+        assert.equal(formatDateFriendly(date, 'UTC', { baseDate }), 'start of today (UTC)');
+      });
+
+      it('should show "end of today" for 23:59:59', () => {
+        const baseDate = new Date(Date.UTC(2018, 0, 1, 12, 0, 0));
+        const date = new Date(Date.UTC(2018, 0, 1, 23, 59, 59));
+        assert.equal(formatDateFriendly(date, 'UTC', { baseDate }), 'end of today (UTC)');
+      });
+
+      it('should show "start of tomorrow"', () => {
+        const baseDate = new Date(Date.UTC(2018, 0, 1, 12, 0, 0));
+        const date = new Date(Date.UTC(2018, 0, 2, 0, 0, 1));
+        assert.equal(formatDateFriendly(date, 'UTC', { baseDate }), 'start of tomorrow (UTC)');
+      });
+
+      it('should show "end of tomorrow"', () => {
+        const baseDate = new Date(Date.UTC(2018, 0, 1, 12, 0, 0));
+        const date = new Date(Date.UTC(2018, 0, 2, 23, 59, 59));
+        assert.equal(formatDateFriendly(date, 'UTC', { baseDate }), 'end of tomorrow (UTC)');
+      });
+
+      it('should show "start of day" for an absolute date', () => {
+        const baseDate = new Date(Date.UTC(2018, 0, 1, 12, 0, 0));
+        const date = new Date(Date.UTC(2018, 3, 15, 0, 0, 0));
+        assert.equal(
+          formatDateFriendly(date, 'UTC', { baseDate }),
+          'Sun, Apr\u00a015, start of day (UTC)',
+        );
+      });
+
+      it('should show "end of day" for an absolute date', () => {
+        const baseDate = new Date(Date.UTC(2018, 0, 1, 12, 0, 0));
+        const date = new Date(Date.UTC(2018, 3, 15, 23, 59, 59));
+        assert.equal(
+          formatDateFriendly(date, 'UTC', { baseDate }),
+          'Sun, Apr\u00a015, end of day (UTC)',
+        );
+      });
+
+      it('should show "start of day" for a far date with year', () => {
+        const baseDate = new Date(Date.UTC(2018, 0, 1, 12, 0, 0));
+        const date = new Date(Date.UTC(2018, 9, 15, 0, 0, 0));
+        assert.equal(
+          formatDateFriendly(date, 'UTC', { baseDate }),
+          'Mon, Oct\u00a015, 2018, start of day (UTC)',
+        );
+      });
+
+      it('should show boundary labels without timezone', () => {
+        const baseDate = new Date(Date.UTC(2018, 0, 1, 12, 0, 0));
+        const date = new Date(Date.UTC(2018, 0, 1, 0, 0, 1));
+        assert.equal(
+          formatDateFriendly(date, 'UTC', { baseDate, includeTz: false }),
+          'start of today',
+        );
+      });
+
+      it('should show normal date-only output for day boundaries with dateOnly', () => {
+        const baseDate = new Date(Date.UTC(2018, 0, 1, 12, 0, 0));
+        const date = new Date(Date.UTC(2018, 0, 1, 0, 0, 0));
+        assert.equal(formatDateFriendly(date, 'UTC', { baseDate, dateOnly: true }), 'today (UTC)');
+      });
+
+      it('should show "start of day" / "end of day" with timeOnly', () => {
+        const baseDate = new Date(Date.UTC(2018, 0, 1, 12, 0, 0));
+        const startDate = new Date(Date.UTC(2018, 0, 1, 0, 0, 0));
+        assert.equal(
+          formatDateFriendly(startDate, 'UTC', { baseDate, timeOnly: true }),
+          'start of day (UTC)',
+        );
+        const endDate = new Date(Date.UTC(2018, 0, 1, 23, 59, 59));
+        assert.equal(
+          formatDateFriendly(endDate, 'UTC', { baseDate, timeOnly: true }),
+          'end of day (UTC)',
+        );
+      });
+
+      it('should not apply boundary labels for non-boundary times', () => {
+        const baseDate = new Date(Date.UTC(2018, 0, 1, 12, 0, 0));
+        const date1 = new Date(Date.UTC(2018, 0, 1, 0, 0, 2));
+        assert.equal(formatDateFriendly(date1, 'UTC', { baseDate }), 'today, 12:00:02am (UTC)');
+        const date2 = new Date(Date.UTC(2018, 0, 1, 23, 59, 58));
+        assert.equal(formatDateFriendly(date2, 'UTC', { baseDate }), 'today, 11:59:58pm (UTC)');
+      });
     });
 
     describe('maxPrecision option', () => {

@@ -9,6 +9,10 @@ SET
   END,
   example_course = $example_course,
   options = $options,
+  questions_receive_user_data = COALESCE(
+    $questions_receive_user_data::boolean,
+    questions_receive_user_data
+  ),
   json_comment = $comment::jsonb,
   sync_errors = NULL,
   sync_warnings = $sync_warnings

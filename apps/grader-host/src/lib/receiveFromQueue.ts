@@ -25,7 +25,7 @@ const GradingJobMessageSchema = z.object({
   /** Whether or not the container should have internet access. */
   enableNetworking: z.boolean(),
   /** Environment variables for the container. */
-  environment: z.record(z.string()),
+  environment: z.record(z.string(), z.string()),
   /** The AWS S3 bucket containing this job's files. */
   s3Bucket: z.string(),
   /** The root key for the job's files. */

@@ -28,16 +28,16 @@ dnf -y install \
     postgresql17-server \
     postgresql17-contrib \
     procps-ng \
-    redis6 \
+    valkey \
     tar \
     texlive \
     texlive-dvipng \
     texlive-type1cm \
     tmux
 
-# Redis 7 isn't available on Amazon Linux 2023. Symlink the versioned
-# executables to make them work with scripts that expect unversioned ones.
-ln -s /usr/bin/redis6-cli /usr/bin/redis-cli && ln -s /usr/bin/redis6-server /usr/bin/redis-server
+# Valkey uses different executable names than Redis. Symlink them to the names
+# expected by the existing startup scripts.
+ln -s /usr/bin/valkey-cli /usr/bin/redis-cli && ln -s /usr/bin/valkey-server /usr/bin/redis-server
 
 echo "installing node via nvm"
 git clone https://github.com/creationix/nvm.git /nvm
@@ -46,7 +46,8 @@ git checkout "$(git describe --abbrev=0 --tags --match "v[0-9]*" "$(git rev-list
 source /nvm/nvm.sh
 export NVM_SYMLINK_CURRENT=true
 nvm install 24
-npm install yarn@latest -g
+# Install the latest pnpm 11; package.json enforces the minimum supported version.
+npm install -g pnpm@latest-11
 for f in /nvm/current/bin/*; do ln -s $f "/usr/local/bin/$(basename $f)"; done
 
 echo "setting up postgres..."
@@ -74,8 +75,13 @@ cd /
 curl -LO https://astral.sh/uv/install.sh
 env UV_INSTALL_DIR=/usr/local/bin sh /install.sh && rm /install.sh
 
-# /PrairieLearn/.venv/bin/python3 -> /usr/local/bin/python3 -> /usr/share/uv/python/*/bin/python3.13
-UV_PYTHON_BIN_DIR=/usr/local/bin uv python install python3.13
+# Install Python outside of /root/ so it remains accessible after the
+# executor's privilege drop to a non-root user (see #14197).
+# UV_PYTHON_BIN_DIR adds a versioned symlink to the PATH, and the venv links
+# straight to the install dir:
+#   /usr/local/bin/python3.13     -> /opt/uv/python/*/bin/python3.13
+#   /PrairieLearn/.venv/bin/python -> /opt/uv/python/*/bin/python3.13
+UV_PYTHON_INSTALL_DIR=/opt/uv/python UV_PYTHON_BIN_DIR=/usr/local/bin uv python install python3.13
 
 # Clear various caches to minimize the final image size.
 dnf clean all

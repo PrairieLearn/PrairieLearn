@@ -33,7 +33,7 @@ export function GroupInfoModal({
   }, [onHide, mutation]);
 
   const handleSubmit = useCallback(
-    (e: React.FormEvent) => {
+    (e: React.SubmitEvent<HTMLFormElement>) => {
       e.preventDefault();
       if (!modalState) return;
 

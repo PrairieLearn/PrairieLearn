@@ -80,7 +80,7 @@ export async function updateAiInstanceQuestionGroup({
 
 /**
  * Set the instance question group of an instance question manually.
- * Manual group assignments take precedence over AI assignments.
+ * Manual grouping choices take precedence over AI grouping.
  */
 export async function updateManualInstanceQuestionGroup({
   instance_question_id,

@@ -9,6 +9,15 @@ import { syncCourse } from '../helperCourse.js';
 
 import { expect, test } from './fixtures.js';
 
+async function waitForBrowserFrames(page: Page): Promise<void> {
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve) => {
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+      }),
+  );
+}
+
 async function enterEditMode(page: Page, ciId: string, aId: string): Promise<void> {
   await page.goto(`/pl/course_instance/${ciId}/instructor/assessment/${aId}/questions`);
   await page.getByRole('button', { name: 'Edit', exact: true }).click();
@@ -24,10 +33,30 @@ async function keyboardDrag(page: Page, source: Locator, direction: 'up' | 'down
   const arrowKey = direction === 'up' ? 'ArrowUp' : 'ArrowDown';
   await source.focus();
   await page.keyboard.press(' ');
+  await expect(source).toHaveAttribute('aria-pressed', 'true');
+  await waitForBrowserFrames(page);
   for (let i = 0; i < steps; i++) {
     await page.keyboard.press(arrowKey);
+    // dnd-kit's sortableKeyboardCoordinates reads DOM rects to compute
+    // the next drop position. Wait for layout/measurement work to settle
+    // before sending the next key or dropping the item.
+    await waitForBrowserFrames(page);
   }
   await page.keyboard.press(' ');
+  await expect(source).not.toHaveAttribute('aria-pressed', 'true');
+}
+
+async function expectHiddenZoneQuestionIds(
+  page: Page,
+  expectedQuestionIds: string[][],
+): Promise<void> {
+  await expect(async () => {
+    const hiddenZones = await page.locator('input[name="zones"]').inputValue();
+    const parsedZones: { questions: { id: string }[] }[] = JSON.parse(hiddenZones);
+    expect(parsedZones.map((zone) => zone.questions.map((question) => question.id))).toEqual(
+      expectedQuestionIds,
+    );
+  }).toPass({ timeout: 5000 });
 }
 
 async function resetAssessmentFromTemplate({
@@ -52,10 +81,6 @@ async function resetAssessmentFromTemplate({
 }
 
 test.describe('Assessment questions', () => {
-  test.beforeEach(async ({ enableFeatureFlag }) => {
-    await enableFeatureFlag('assessment-questions-editor');
-  });
-
   test.describe('exam5-perZoneGrading mutations', () => {
     const assessmentTid = 'exam5-perZoneGrading';
 
@@ -80,8 +105,12 @@ test.describe('Assessment questions', () => {
 
       // Move partialCredit3 (index 2) up one position before partialCredit2
       await keyboardDrag(page, dragHandles.nth(2), 'up', 1);
+      await expectHiddenZoneQuestionIds(page, [
+        ['partialCredit1'],
+        ['partialCredit3', 'partialCredit2', 'partialCredit4_v2'],
+      ]);
 
-      await page.getByRole('button', { name: 'Save and sync' }).click();
+      await page.getByRole('button', { name: 'Save' }).click();
       await expect(page.getByRole('button', { name: 'Edit', exact: true })).toBeVisible();
 
       const infoAssessmentPath = path.join(
@@ -126,8 +155,12 @@ test.describe('Assessment questions', () => {
       // Drag partialCredit4_v2 (last, zone 2) up to zone 1.
       // 4 steps: 3 questions + 1 zone header (also a droppable) in between.
       await keyboardDrag(page, dragHandles.nth(3), 'up', 4);
+      await expectHiddenZoneQuestionIds(page, [
+        ['partialCredit4_v2', 'partialCredit1'],
+        ['partialCredit2', 'partialCredit3'],
+      ]);
 
-      await page.getByRole('button', { name: 'Save and sync' }).click();
+      await page.getByRole('button', { name: 'Save' }).click();
       await expect(page.getByRole('button', { name: 'Edit', exact: true })).toBeVisible();
 
       const infoAssessmentPath = path.join(
@@ -190,7 +223,7 @@ test.describe('Assessment questions', () => {
       expect(parsedZones[1].bestQuestions).toBe(2);
     }).toPass({ timeout: 5000 });
 
-    await page.getByRole('button', { name: 'Save and sync' }).click();
+    await page.getByRole('button', { name: 'Save' }).click();
     await expect(page.getByRole('button', { name: 'Edit', exact: true })).toBeVisible();
 
     const infoAssessmentPath = path.join(
@@ -262,7 +295,7 @@ test.describe('Assessment questions', () => {
     await expect(page.getByLabel('QID', { exact: true })).toHaveValue('differentiatePolynomial');
     await expect(page.getByLabel('Auto points', { exact: true })).toHaveValue('7');
 
-    await page.getByRole('button', { name: 'Save and sync' }).click();
+    await page.getByRole('button', { name: 'Save' }).click();
     await expect(page.getByRole('button', { name: 'Edit', exact: true })).toBeVisible();
 
     const infoAssessmentPath = path.join(
@@ -287,14 +320,14 @@ test.describe('Assessment questions', () => {
     ]);
   });
 
-  test.describe('hw16-editorTest alt group mutations', () => {
+  test.describe('hw16-editorTest alt pool mutations', () => {
     const assessmentTid = 'hw16-editorTest';
 
     test.beforeEach(async ({ testCoursePath }) => {
       await resetAssessmentFromTemplate({ assessmentTid, testCoursePath });
     });
 
-    test('can add an alternative to an alt group and save', async ({
+    test('can add an alternative to an alt pool and save', async ({
       page,
       testCoursePath,
       courseInstance,
@@ -308,10 +341,10 @@ test.describe('Assessment questions', () => {
 
       await page
         .getByRole('button')
-        .filter({ hasText: /Choose 1 of 2/ })
+        .filter({ hasText: /2 alternatives \(1 chosen\)/ })
         .click();
 
-      await page.getByRole('button', { name: 'Add alternative', exact: true }).last().click();
+      await page.getByRole('button', { name: 'Add alternative', exact: true }).first().click();
       await expect(page.getByLabel('Search by QID or title')).toBeVisible();
 
       await page.getByLabel('Search by QID or title').fill('addNumbers');
@@ -319,7 +352,7 @@ test.describe('Assessment questions', () => {
 
       await page.getByRole('button', { name: 'Done' }).click();
 
-      await page.getByRole('button', { name: 'Save and sync' }).click();
+      await page.getByRole('button', { name: 'Save' }).click();
       await expect(page.getByRole('button', { name: 'Edit', exact: true })).toBeVisible();
 
       const infoAssessmentPath = path.join(
@@ -331,10 +364,10 @@ test.describe('Assessment questions', () => {
       const savedContent = await fs.readFile(infoAssessmentPath, 'utf-8');
       const savedAssessment = JSON.parse(savedContent);
 
-      const lastBlock = savedAssessment.zones.at(-1).questions.at(-1);
-      expect(lastBlock.numberChoose).toBe(1);
-      expect(lastBlock.alternatives).toHaveLength(3);
-      expect(lastBlock.alternatives[2].id).toBe('addNumbers');
+      const altPoolBlock = savedAssessment.zones[2].questions[1];
+      expect(altPoolBlock.numberChoose).toBe(1);
+      expect(altPoolBlock.alternatives).toHaveLength(3);
+      expect(altPoolBlock.alternatives[2].id).toBe('addNumbers');
     });
 
     test('revalidates number to choose when alternatives are deleted from the tree', async ({
@@ -350,19 +383,20 @@ test.describe('Assessment questions', () => {
 
       await page
         .getByRole('button')
-        .filter({ hasText: /Choose 1 of 2/ })
+        .filter({ hasText: /2 alternatives \(1 chosen\)/ })
         .click();
 
       const numberChooseInput = page.getByLabel('Number to choose');
       await numberChooseInput.clear();
       await numberChooseInput.fill('2');
-      await expect(page.getByText('Cannot exceed number of alternatives (2).')).not.toBeVisible();
+      const warningText = 'Number to choose exceeds the number of alternatives in this pool.';
+      await expect(page.getByText(warningText)).not.toBeVisible();
 
       await page
-        .getByRole('button', { name: 'Delete aiGradingMultiImageCapture', exact: true })
+        .getByRole('button', { name: 'Delete question aiGradingMultiImageCapture', exact: true })
         .click();
 
-      await expect(page.getByText('Cannot exceed number of alternatives (1).')).toBeVisible();
+      await expect(page.getByText(warningText)).toBeVisible();
     });
   });
 
@@ -376,17 +410,17 @@ test.describe('Assessment questions', () => {
     await enterEditMode(page, courseInstance.id, assessment.id);
 
     await page.getByRole('button').filter({ hasText: 'partialCredit1' }).first().click();
-    await page.getByRole('button', { name: 'Delete', exact: true }).click();
+    await page.locator('[aria-label="Delete question partialCredit1"]').first().click();
 
     await page.getByRole('button').filter({ hasText: 'partialCredit2' }).first().click();
-    await page.getByRole('button', { name: 'Delete', exact: true }).click();
+    await page.locator('[aria-label="Delete question partialCredit2"]').first().click();
 
     // Save should be disabled because the zone has 0 questions
-    const saveButton = page.getByRole('button', { name: 'Save and sync' });
+    const saveButton = page.getByRole('button', { name: 'Save' });
     await expect(saveButton).toBeDisabled();
 
     await page.getByRole('button').filter({ hasText: 'Zone to delete' }).first().click();
-    await page.getByRole('button', { name: 'Delete zone', exact: true }).last().click();
+    await page.locator('[aria-label="Delete zone \'Zone to delete\'"]').last().click();
 
     await saveButton.click();
     await expect(page.getByRole('button', { name: 'Edit', exact: true })).toBeVisible();
@@ -468,7 +502,7 @@ test.describe('Assessment questions', () => {
       expect(parsedZones[1].questions[0].autoPoints).toEqual([8, 4, 2]);
     }).toPass({ timeout: 5000 });
 
-    await page.getByRole('button', { name: 'Save and sync' }).click();
+    await page.getByRole('button', { name: 'Save' }).click();
     await expect(page.getByRole('button', { name: 'Edit', exact: true })).toBeVisible();
 
     const infoAssessmentPath = path.join(
@@ -483,7 +517,7 @@ test.describe('Assessment questions', () => {
     expect(savedAssessment.zones[1].questions[0].autoPoints).toEqual([8, 4, 2]);
   });
 
-  test('can add a question to an empty assessment via zone and picker', async ({
+  test('can add a question to an empty assessment via the empty-state CTA', async ({
     page,
     testCoursePath,
     courseInstance,
@@ -497,10 +531,11 @@ test.describe('Assessment questions', () => {
     await page.goto(
       `/pl/course_instance/${courseInstance.id}/instructor/assessment/${assessment.id}/questions`,
     );
-    await page.getByRole('button', { name: 'Edit', exact: true }).click();
 
-    await page.getByRole('button', { name: 'Add zone' }).click();
-    await page.getByRole('button', { name: 'Add question' }).click();
+    // An assessment with no zones shows an empty state. Its call-to-action
+    // enters edit mode, creates the first zone, and opens the question picker.
+    await expect(page.getByText('This assessment has no questions yet')).toBeVisible();
+    await page.getByRole('button', { name: 'Add questions' }).click();
     await expect(page.getByLabel('Search by QID or title')).toBeVisible();
 
     await page.getByLabel('Search by QID or title').fill('partialCredit1');
@@ -520,7 +555,7 @@ test.describe('Assessment questions', () => {
       expect(parsedZones[0].questions[0].autoPoints).toBe(5);
     }).toPass({ timeout: 5000 });
 
-    await page.getByRole('button', { name: 'Save and sync' }).click();
+    await page.getByRole('button', { name: 'Save' }).click();
     await expect(page.getByRole('button', { name: 'Edit', exact: true })).toBeVisible();
 
     const infoAssessmentPath = path.join(
@@ -567,7 +602,7 @@ test.describe('Assessment questions', () => {
       expect(parsedZones[0].questions[0].autoPoints).toBe(2);
     }).toPass({ timeout: 5000 });
 
-    await page.getByRole('button', { name: 'Save and sync' }).click();
+    await page.getByRole('button', { name: 'Save' }).click();
     await expect(page.getByRole('button', { name: 'Edit', exact: true })).toBeVisible();
 
     const infoAssessmentPath = path.join(

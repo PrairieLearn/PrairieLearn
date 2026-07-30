@@ -20,7 +20,8 @@ export const QuestionOptionsMultipleChoiceJsonSchema = z
       .optional(),
   })
   .strict()
-  .describe('Options for a MultipleChoice question.');
+  .describe('Options for a MultipleChoice question.')
+  .meta({ title: 'MultipleChoice question options' });
 
 export type QuestionOptionsMultipleChoiceJson = z.infer<
   typeof QuestionOptionsMultipleChoiceJsonSchema

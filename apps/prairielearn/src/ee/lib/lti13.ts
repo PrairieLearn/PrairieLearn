@@ -4,7 +4,6 @@ import { parseLinkHeader } from '@web3-storage/parse-link-header';
 import { get } from 'es-toolkit/compat';
 import type { Request } from 'express';
 import * as jose from 'jose';
-import fetch, { type RequestInfo, type RequestInit, type Response } from 'node-fetch';
 import * as client from 'openid-client';
 import { z } from 'zod';
 
@@ -19,7 +18,6 @@ import {
 import { DateFromISOString, IdSchema } from '@prairielearn/zod';
 
 import { selectAssessmentInstanceLastSubmissionDate } from '../../lib/assessment.js';
-import type { AuthzData } from '../../lib/authz-data-lib.js';
 import { config } from '../../lib/config.js';
 import {
   AssessmentSchema,
@@ -31,7 +29,17 @@ import {
 } from '../../lib/db-types.js';
 import { type ServerJob } from '../../lib/server-jobs.js';
 import { selectUsersWithCourseInstanceAccess } from '../../models/course-instances.js';
+import { selectOptionalUserByUin } from '../../models/user.js';
+import { selectOptionalUserByLti13Sub } from '../models/lti13-user.js';
 import { selectLti13Instance } from '../models/lti13Instance.js';
+
+import {
+  Lti13MembershipIndex,
+  RosterMemberSchema,
+  analyzeRosterMemberUin,
+  appendRlidToMembershipsUrl,
+  parseContextMemberships,
+} from './lti13-memberships.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -68,7 +76,7 @@ const LineitemSchema = z.object({
 });
 type Lineitem = z.infer<typeof LineitemSchema>;
 
-export const LineitemsSchema = z.array(LineitemSchema);
+const LineitemsSchema = z.array(LineitemSchema);
 export type Lineitems = z.infer<typeof LineitemsSchema>;
 
 // Validate LTI 1.3
@@ -155,43 +163,37 @@ const Lti13ClaimBaseSchema = z.object({
 });
 
 // https://www.imsglobal.org/spec/lti/v1p3#required-message-claims
-const Lti13ResourceLinkRequestSchema = Lti13ClaimBaseSchema.merge(
-  z.object({
-    'https://purl.imsglobal.org/spec/lti/claim/message_type': z.literal('LtiResourceLinkRequest'),
-    'https://purl.imsglobal.org/spec/lti/claim/resource_link': z.object({
-      id: z.string(),
-      description: z.string().nullish(),
-      title: z.string().nullish(),
-    }),
+const Lti13ResourceLinkRequestSchema = Lti13ClaimBaseSchema.extend({
+  'https://purl.imsglobal.org/spec/lti/claim/message_type': z.literal('LtiResourceLinkRequest'),
+  'https://purl.imsglobal.org/spec/lti/claim/resource_link': z.object({
+    id: z.string(),
+    description: z.string().nullish(),
+    title: z.string().nullish(),
   }),
-);
+});
 
 // https://www.imsglobal.org/spec/lti-dl/v2p0#message-claims
-const Lti13DeepLinkingRequestSchema = Lti13ClaimBaseSchema.merge(
-  z.object({
-    'https://purl.imsglobal.org/spec/lti/claim/message_type': z.literal('LtiDeepLinkingRequest'),
-    'https://purl.imsglobal.org/spec/lti-dl/claim/deep_linking_settings': z.object({
-      deep_link_return_url: z.string(),
-      accept_types: z.string().array(),
-      accept_presentation_document_targets: z.enum(['embed', 'iframe', 'window']).array(),
-      accept_media_types: z.string().optional(),
-      accept_multiple: z.boolean().optional(),
-      accept_lineitem: z.boolean().optional(),
-      auto_create: z.boolean().optional(),
-      title: z.string().optional(),
-      text: z.string().optional(),
-      data: z.any().optional(),
-    }),
+const Lti13DeepLinkingRequestSchema = Lti13ClaimBaseSchema.extend({
+  'https://purl.imsglobal.org/spec/lti/claim/message_type': z.literal('LtiDeepLinkingRequest'),
+  'https://purl.imsglobal.org/spec/lti-dl/claim/deep_linking_settings': z.object({
+    deep_link_return_url: z.string(),
+    accept_types: z.string().array(),
+    accept_presentation_document_targets: z.enum(['embed', 'iframe', 'window']).array(),
+    accept_media_types: z.string().optional(),
+    accept_multiple: z.boolean().optional(),
+    accept_lineitem: z.boolean().optional(),
+    auto_create: z.boolean().optional(),
+    title: z.string().optional(),
+    text: z.string().optional(),
+    data: z.any().optional(),
   }),
-);
+});
 
 export const Lti13ClaimSchema = z.discriminatedUnion(
   'https://purl.imsglobal.org/spec/lti/claim/message_type',
   [Lti13ResourceLinkRequestSchema, Lti13DeepLinkingRequestSchema],
 );
 type Lti13ClaimType = z.infer<typeof Lti13ClaimSchema>;
-
-export const STUDENT_ROLE = 'http://purl.imsglobal.org/vocab/lis/v2/membership#Learner';
 
 export async function getOpenidClientConfig(
   lti13_instance: Lti13Instance,
@@ -227,6 +229,7 @@ export async function getOpenidClientConfig(
 
   // Only for testing
   if (config.devMode) {
+    // eslint-disable-next-line @typescript-eslint/no-deprecated
     client.allowInsecureRequests(openidClientConfig);
   }
 
@@ -285,6 +288,22 @@ export class Lti13Claim {
     this.assertValid();
     return this.claims['https://purl.imsglobal.org/spec/lti-nrps/claim/namesroleservice']
       ?.context_memberships_url;
+  }
+
+  /**
+   * The resource link id for the launch. Only present on resource link requests
+   * (e.g. the course-navigation launch), not deep linking requests. Returns null
+   * when absent.
+   */
+  get resource_link_id(): string | null {
+    this.assertValid();
+    if (
+      this.claims['https://purl.imsglobal.org/spec/lti/claim/message_type'] !==
+      'LtiResourceLinkRequest'
+    ) {
+      return null;
+    }
+    return this.claims['https://purl.imsglobal.org/spec/lti/claim/resource_link'].id;
   }
 
   // Functions
@@ -645,22 +664,44 @@ export async function fetchRetry(
       errorMsg = resString;
     }
 
+    // Rate Limit Exceeded may return 403 or 429 depending on Canvas settings.
+    // https://github.com/instructure/canvas-lms/blob/1c9f0bb8013ed69c4f2efe11fd483025469b7e6c/app/middleware/request_throttle.rb#L298-L305
+    // Change to 429 to simplify handling of both cases.
+    let status = response.status;
+    if (
+      response.status === 403 &&
+      Number(response.headers.get('x-rate-limit-remaining') ?? 'NaN') === 0
+    ) {
+      status = 429;
+    }
+
     throw new AugmentedError(`LTI 1.3 fetch error: ${response.statusText}: ${errorMsg}`, {
-      status: response.status,
+      status,
       data: {
         statusText: response.statusText,
         body: resString,
       },
     });
   } catch (err: any) {
-    // https://canvas.instructure.com/doc/api/file.throttling.html
-    // 403 Forbidden (Rate Limit Exceeded)
     if (
-      // Common retry codes
-      [403, 429, 502, 503, 504].includes(err.status) ||
-      // node-fetch transient errors
-      err.name === 'FetchError' ||
-      err.code === 'ECONNRESET'
+      [429, 502, 503, 504].includes(err.status) ||
+      // Network failures may be triggered by a lower-level socket failure, so
+      // we check the code on the error code or the code of its cause (if it exists)
+      [
+        'ECONNRESET', // Existing TCP connection was forcibly closed by the peer.
+        'ECONNREFUSED', // Target host actively refused the connection request.
+        'ETIMEDOUT', // Connection or request timed out before completion.
+        'ENETUNREACH', // Network path to the target host is unreachable.
+        'EADDRINUSE', // No available local ports to bind for the outgoing connection.
+        'EPIPE', // Connection closed/broken pipe while sending request data.
+        'EAI_AGAIN', // DNS lookup failed temporarily; retry may succeed.
+        'UND_ERR_CONNECT_TIMEOUT', // Undici-specific timeout while establishing connection.
+        'UND_ERR_HEADERS_TIMEOUT', // Undici-specific timeout waiting for response headers.
+        'UND_ERR_BODY_TIMEOUT', // Undici-specific timeout while receiving response body.
+        'UND_ERR_SOCKET', // Undici reported a generic socket-level failure.
+      ].includes(err.cause?.code ?? err.code) ||
+      // HTTP parser errors
+      (err.cause?.code ?? err.code)?.startsWith('HPE_')
     ) {
       // Retry logic
       fetchRetryOpts.retryLeft -= 1;
@@ -668,7 +709,11 @@ export async function fetchRetry(
         throw err;
       }
       await sleep(fetchRetryOpts.sleepMs);
-      return await fetchRetry(input, opts, fetchRetryOpts);
+      return await fetchRetry(input, opts, {
+        ...fetchRetryOpts,
+        // Exponential backoff
+        sleepMs: fetchRetryOpts.sleepMs * 2,
+      });
     } else {
       // Error immediately
       throw err;
@@ -678,6 +723,10 @@ export async function fetchRetry(
 
 /**
  * Pagination wrapper around fetchRetry
+ *
+ * Only same-origin `rel="next"` links are followed so bearer credentials cannot
+ * be forwarded to another origin.
+ *
  * @param input URL to visit
  * @param opts fetch options
  * @param incomingfetchRetryOpts options specific to fetchRetry
@@ -694,6 +743,9 @@ export async function fetchRetryPaginated(
   },
 ): Promise<unknown[]> {
   const output: unknown[] = [];
+  const origin = new URL(
+    typeof input === 'string' ? input : input instanceof URL ? input.href : input.url,
+  ).origin;
 
   while (true) {
     const res = await fetchRetry(input, opts, incomingfetchRetryOpts);
@@ -701,7 +753,11 @@ export async function fetchRetryPaginated(
 
     const parsed = parseLinkHeader(res.headers.get('link')) ?? {};
     if ('next' in parsed) {
-      input = parsed.next.url;
+      const nextUrl = new URL(parsed.next.url, res.url);
+      if (nextUrl.origin !== origin) {
+        throw new Error('Refusing to follow a cross-origin pagination link');
+      }
+      input = nextUrl;
     } else {
       return output;
     }
@@ -731,120 +787,60 @@ type Lti13Score = z.infer<typeof Lti13ScoreSchema>;
 const UserWithLti13SubSchema = UserSchema.extend({
   lti13_sub: z.string().nullable(),
 });
-type UserWithLti13Sub = z.infer<typeof UserWithLti13SubSchema>;
 
-// https://www.imsglobal.org/spec/lti-nrps/v2p0/#sharing-of-personal-data
-const ContextMembershipSchema = z.object({
-  user_id: z.string(),
-  roles: z.string().array(), // https://www.imsglobal.org/spec/lti/v1p3#role-vocabularies
-  status: z.enum(['Active', 'Inactive', 'Deleted']).optional(),
-  email: z.string().optional(),
-});
-type ContextMembership = z.infer<typeof ContextMembershipSchema>;
-
-const ContextMembershipContainerSchema = z.object({
-  id: z.string(),
-  context: z.object({
-    id: z.string(),
-  }),
-  members: ContextMembershipSchema.array(),
-});
-
-class Lti13ContextMembership {
-  #membershipsByEmail: Record<string, ContextMembership[]> = {};
-  #membershipsBySub: Record<string, ContextMembership> = {};
-
-  private constructor(memberships: ContextMembership[]) {
-    // Turn array into an object for efficient lookups. We need to retain duplicates
-    // so that we can detect and handle the case where two users have the same email.
-    for (const member of memberships) {
-      this.#membershipsBySub[member.user_id] = member;
-
-      if (member.email === undefined) {
-        continue;
-      }
-      this.#membershipsByEmail[member.email] ??= [];
-      this.#membershipsByEmail[member.email].push(member);
-    }
+function getLti13RosterUrl(
+  { lti13_course_instance }: Lti13CombinedInstance,
+  rlid: string | null,
+): string {
+  if (lti13_course_instance.context_memberships_url === null) {
+    throw new HttpStatusError(
+      403,
+      'LTI 1.3 course instance context_memberships_url not configured',
+    );
   }
 
-  static async loadForInstance({
-    lti13_instance,
-    lti13_course_instance,
-  }: Lti13CombinedInstance): Promise<Lti13ContextMembership> {
-    if (lti13_course_instance.context_memberships_url === null) {
-      throw new HttpStatusError(
-        403,
-        'LTI 1.3 course instance context_memberships_url not configured',
-      );
-    }
+  return appendRlidToMembershipsUrl(lti13_course_instance.context_memberships_url, rlid);
+}
 
-    const token = await getAccessToken(lti13_instance.id);
-    const fetchArray = await fetchRetryPaginated(lti13_course_instance.context_memberships_url, {
-      method: 'GET',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-type': 'application/vnd.ims.lti-nrps.v2.membershipcontainer+json',
-      },
-    });
+async function fetchLti13RosterPages(
+  instance: Lti13CombinedInstance,
+  url: string,
+): Promise<unknown[]> {
+  const token = await getAccessToken(instance.lti13_instance.id);
+  return fetchRetryPaginated(url, {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      Accept: 'application/vnd.ims.lti-nrps.v2.membershipcontainer+json',
+    },
+  });
+}
 
-    const containers = ContextMembershipContainerSchema.array().parse(fetchArray);
-    const ltiMemberships = containers.flatMap((c) => {
-      return c.members;
-    });
+async function loadLti13MembershipIndex(
+  instance: Lti13CombinedInstance,
+): Promise<Lti13MembershipIndex> {
+  const { lti13_instance, lti13_course_instance } = instance;
+  const url = getLti13RosterUrl(instance, lti13_course_instance.resource_link_id);
+  const rawRosterPages = await fetchLti13RosterPages(instance, url);
 
-    const filteredMemberships = ltiMemberships.filter((member: ContextMembership) => {
-      // Skip invalid cases
-      if (
-        member.roles.includes('http://purl.imsglobal.org/vocab/lti/system/person#TestUser') ||
-        !('email' in member)
-      ) {
-        return false;
-      }
+  const memberships = parseContextMemberships(rawRosterPages, lti13_course_instance.context_id);
 
-      return true;
-    });
-
-    return new Lti13ContextMembership(filteredMemberships);
-  }
-
-  /**
-   * @param user The user to look up with optional lti13_sub
-   * @returns The LTI 1.3 record for the user, or null if not found.
-   */
-  lookup(user: UserWithLti13Sub): ContextMembership | null {
-    if (user.lti13_sub !== null) {
-      return this.#membershipsBySub[user.lti13_sub] ?? null;
-    }
-    for (const match of ['uid', 'email'] as const) {
-      const key = user[match];
-      if (key == null) continue;
-
-      const memberResults = this.#membershipsByEmail[key];
-
-      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-      if (!memberResults) continue;
-
-      // member.email cannot be duplicated in memberships
-      if (memberResults.length > 1) return null;
-
-      return memberResults[0];
-    }
-
-    // The user wasn't found.
-    return null;
-  }
+  return new Lti13MembershipIndex(memberships, {
+    institution_id: lti13_instance.institution_id,
+    uin_attribute: lti13_instance.uin_attribute,
+    // TODO(2027-01-01): Remove this compatibility fallback after existing course
+    // instances have had a full fall term to capture resource link IDs.
+    allowLegacyFallbackWithoutUin: !lti13_course_instance.resource_link_id,
+  });
 }
 
 export async function updateLti13Scores({
   courseInstance,
-  authzData,
   unsafe_assessment_id,
   instance,
   job,
 }: {
   courseInstance: CourseInstance;
-  authzData: AuthzData;
   unsafe_assessment_id: string | number;
   instance: Lti13CombinedInstance;
   job: ServerJob;
@@ -863,11 +859,14 @@ export async function updateLti13Scores({
     }),
   );
 
-  job.info(`Working on assessment ${assessment.title} (${assessment.tid})`);
+  job.info(
+    `Working on assessment ${assessment.title} (${assessment.tid}) in ` +
+      `${instance.lti13_instance.name} course ${instance.lti13_course_instance.context_label}`,
+  );
 
   const assessment_instances = await queryRows(
     sql.select_assessment_instances_for_scores,
-    { assessment_id: assessment.id },
+    { assessment_id: assessment.id, lti13_instance_id: assessment.lti13_instance_id },
     z.object({
       id: IdSchema,
       score_perc: z.number(),
@@ -879,13 +878,11 @@ export async function updateLti13Scores({
 
   const courseStaff = await selectUsersWithCourseInstanceAccess({
     courseInstance,
-    authzData,
-    requiredRole: ['Student Data Viewer'],
     minimalRole: 'Student Data Viewer',
   });
   const courseStaffUids = new Set(courseStaff.map((staff) => staff.uid));
 
-  const memberships = await Lti13ContextMembership.loadForInstance(instance);
+  const memberships = await loadLti13MembershipIndex(instance);
 
   const timestamp = new Date();
   const counts = {
@@ -899,25 +896,25 @@ export async function updateLti13Scores({
     const token = await getAccessToken(instance.lti13_instance.id);
 
     const user = assessment_instance.user;
-    const ltiUser = memberships.lookup(user);
     const isCourseStaff = courseStaffUids.has(user.uid);
 
-    // User not found in LTI, reporting only
-    if (ltiUser === null) {
+    if (isCourseStaff) {
       job.info(
         `Not sending grade ${assessment_instance.score_perc.toFixed(2)}% for ${user.uid}.` +
-          ` Could not find ${isCourseStaff ? 'course staff' : 'student'} ${user.uid}` +
+          ` Course staff ${user.uid} is excluded from grade passback` +
           ` in ${instance.lti13_instance.name} course ${instance.lti13_course_instance.context_label}`,
       );
       counts.not_sent++;
       continue;
     }
 
-    // User is not a student in LTI, reporting only
-    if (!ltiUser.roles.includes(STUDENT_ROLE)) {
+    const ltiMember = memberships.lookup(user);
+
+    // User not found in LTI, reporting only
+    if (ltiMember === null) {
       job.info(
         `Not sending grade ${assessment_instance.score_perc.toFixed(2)}% for ${user.uid}.` +
-          ` ${isCourseStaff ? 'Course staff' : 'Student'} ${user.uid} is not a student` +
+          ` Could not find student ${user.uid}` +
           ` in ${instance.lti13_instance.name} course ${instance.lti13_course_instance.context_label}`,
       );
       counts.not_sent++;
@@ -939,7 +936,7 @@ export async function updateLti13Scores({
       scoreMaximum: 100,
       activityProgress: assessment_instance.open ? 'Submitted' : 'Completed',
       gradingProgress: 'FullyGraded',
-      userId: ltiUser.user_id,
+      userId: ltiMember.user_id,
       submission: {
         startedAt: assessment_instance.date,
         submittedAt: submittedAt ?? undefined,
@@ -974,4 +971,131 @@ export async function updateLti13Scores({
     );
   }
   job.info(`${counts.not_sent} score${counts.not_sent === 1 ? '' : 's'} skipped (not sent).`);
+}
+
+/**
+ * Read-only NRPS roster inspector. Fetches the membership roster (optionally with
+ * a resource link id so the platform resolves per-member custom claims), dumps the
+ * raw per-member payloads, and annotates each member with how it could be matched
+ * to a PrairieLearn user. Does not create or modify any enrollments or users.
+ */
+export async function inspectRoster({
+  instance,
+  rlid,
+  job,
+}: {
+  instance: Lti13CombinedInstance;
+  rlid: string | null;
+  job: ServerJob;
+}) {
+  const { lti13_instance, lti13_course_instance } = instance;
+  const url = getLti13RosterUrl(instance, rlid);
+
+  job.info(
+    `Fetching roster for ${lti13_instance.name}: ${lti13_course_instance.context_label ?? '(no context label)'}`,
+  );
+  job.info(`NRPS URL: ${url}`);
+  if (rlid) {
+    job.info(`Requesting per-member custom data for resource link id: ${rlid}`);
+  } else {
+    job.info('No resource link id selected; fetching a plain roster (no custom claims).');
+  }
+
+  const rawRosterPages = await fetchLti13RosterPages(instance, url);
+
+  const members = rawRosterPages
+    .flatMap((container) => {
+      const parsed = z.object({ members: z.array(z.unknown()).optional() }).safeParse(container);
+      return parsed.success ? (parsed.data.members ?? []) : [];
+    })
+    .map((raw) => ({ raw, parsed: RosterMemberSchema.safeParse(raw) }));
+
+  job.info(`\nFound ${members.length} member${members.length === 1 ? '' : 's'}.\n`);
+  job.info(
+    'Identity annotations show independent database candidates and obvious conflicts; they are not grade-routing decisions and do not check snapshot-wide ambiguity.\n',
+  );
+
+  const hasConfiguredUin = Boolean(lti13_instance.uin_attribute);
+  const counts = {
+    sub_bindings: 0,
+    uin_users: 0,
+    no_candidates: 0,
+    unparseable: 0,
+  };
+
+  for (const { raw, parsed } of members) {
+    job.info(JSON.stringify(raw, null, 2));
+
+    if (!parsed.success) {
+      counts.unparseable++;
+      job.warn('  Could not parse member; skipping match annotation.');
+      continue;
+    }
+    const member = parsed.data;
+
+    const userBySub = await selectOptionalUserByLti13Sub({
+      lti13_instance_id: lti13_instance.id,
+      sub: member.user_id,
+    });
+
+    const { uin } = analyzeRosterMemberUin(member, lti13_instance.uin_attribute);
+    const userByUin = uin
+      ? await selectOptionalUserByUin({ uin, institution_id: lti13_instance.institution_id })
+      : null;
+
+    if (userBySub) {
+      counts.sub_bindings++;
+      job.info(
+        `  Stored sub binding: PrairieLearn user ${userBySub.uid} (UIN ${userBySub.uin ?? 'none'}).`,
+      );
+    } else {
+      job.info('  Stored sub binding: none.');
+    }
+
+    if (!uin) {
+      job.info('  Usable roster UIN: none.');
+    } else if (userByUin) {
+      counts.uin_users++;
+      job.info(`  Roster UIN ${uin}: PrairieLearn user ${userByUin.uid}.`);
+    } else {
+      job.info(`  Roster UIN ${uin}: no PrairieLearn user in this institution.`);
+    }
+
+    if (hasConfiguredUin && !uin) {
+      job.warn('  Configured-UIN grade routing would fail: no usable roster UIN resolved.');
+    }
+
+    if (hasConfiguredUin && userBySub && uin) {
+      if (userByUin?.id === userBySub.id) {
+        job.info('  Stored sub and roster UIN identify the same PrairieLearn user.');
+      } else {
+        job.warn('  Stored sub and roster UIN do not identify the same PrairieLearn user.');
+      }
+    }
+
+    if (!userBySub && !userByUin) {
+      counts.no_candidates++;
+    }
+  }
+
+  job.info('\nDone.\n\nSummary:');
+  job.info(`Stored LTI sub bindings: ${counts.sub_bindings}.`);
+  job.info(`UIN-resolved PrairieLearn users: ${counts.uin_users}.`);
+  job.info(`Members with neither identity candidate: ${counts.no_candidates}.`);
+  job.info(`Unparseable members: ${counts.unparseable}.`);
+
+  // Whether the platform returned any per-member custom data (`message`). If a
+  // resource link was requested but none came back, the rlid is likely stale.
+  const anyMessage = members.some(
+    ({ parsed }) => parsed.success && (parsed.data.message?.length ?? 0) > 0,
+  );
+
+  if (rlid && !anyMessage) {
+    job.warn(
+      '\nThe platform returned no per-member custom data (`message`). The selected resource link id may be stale.',
+    );
+    job.warn(
+      'Have an instructor re-launch from the course navigation link to refresh custom data.',
+    );
+  }
 }

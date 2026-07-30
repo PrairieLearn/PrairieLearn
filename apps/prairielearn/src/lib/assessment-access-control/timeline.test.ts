@@ -1,0 +1,565 @@
+import { describe, expect, it } from 'vitest';
+
+import {
+  type AccessTimelineEntry,
+  type RuntimeDateControl,
+  buildAccessTimeline,
+} from './timeline.js';
+
+interface TimelineCase {
+  name: string;
+  dateControl: RuntimeDateControl | undefined;
+  currentDate: Date;
+  expected: AccessTimelineEntry[];
+}
+
+describe('buildAccessTimeline', () => {
+  it.each<TimelineCase>([
+    {
+      name: 'returns empty for no dateControl',
+      dateControl: undefined,
+      currentDate: new Date('2025-03-15T12:00:00Z'),
+      expected: [],
+    },
+    {
+      name: 'returns empty for no release',
+      dateControl: {},
+      currentDate: new Date('2025-03-15T12:00:00Z'),
+      expected: [],
+    },
+    {
+      name: 'returns empty when dueDate <= release date',
+      dateControl: {
+        release: { date: new Date('2025-03-15T00:00:00Z') },
+        due: { date: new Date('2025-03-14T00:00:00Z') },
+      },
+      currentDate: new Date('2025-03-15T12:00:00Z'),
+      expected: [],
+    },
+    {
+      name: 'release + due, mid-on-time date',
+      dateControl: {
+        release: { date: new Date('2025-03-01T00:00:00Z') },
+        due: { date: new Date('2025-03-15T00:00:00Z') },
+      },
+      currentDate: new Date('2025-03-10T00:00:00Z'),
+      expected: [
+        {
+          kind: 'beforeRelease',
+          credit: 0,
+          startDate: null,
+          endDate: new Date('2025-03-01T00:00:00Z'),
+          current: false,
+          submittable: false,
+        },
+        {
+          kind: 'deadline',
+          credit: 100,
+          startDate: new Date('2025-03-01T00:00:00Z'),
+          endDate: new Date('2025-03-15T00:00:00Z'),
+          current: true,
+          submittable: true,
+        },
+        {
+          kind: 'afterLastDeadline',
+          credit: 0,
+          startDate: new Date('2025-03-15T00:00:00Z'),
+          endDate: null,
+          current: false,
+          submittable: false,
+        },
+      ],
+    },
+    {
+      name: 'release + due + early + late + afterLastDeadline, mid-on-time date',
+      dateControl: {
+        release: { date: new Date('2025-03-01T00:00:00Z') },
+        due: { date: new Date('2025-03-15T00:00:00Z') },
+        earlyDeadlines: [{ date: '2025-03-08T00:00:00Z', credit: 120 }],
+        lateDeadlines: [{ date: '2025-03-22T00:00:00Z', credit: 50 }],
+        afterLastDeadline: { allowSubmissions: false },
+      },
+      currentDate: new Date('2025-03-10T00:00:00Z'),
+      expected: [
+        {
+          kind: 'beforeRelease',
+          credit: 0,
+          startDate: null,
+          endDate: new Date('2025-03-01T00:00:00Z'),
+          current: false,
+          submittable: false,
+        },
+        {
+          kind: 'deadline',
+          credit: 120,
+          startDate: new Date('2025-03-01T00:00:00Z'),
+          endDate: new Date('2025-03-08T00:00:00Z'),
+          current: false,
+          submittable: true,
+        },
+        {
+          kind: 'deadline',
+          credit: 100,
+          startDate: new Date('2025-03-08T00:00:00Z'),
+          endDate: new Date('2025-03-15T00:00:00Z'),
+          current: true,
+          submittable: true,
+        },
+        {
+          kind: 'deadline',
+          credit: 50,
+          startDate: new Date('2025-03-15T00:00:00Z'),
+          endDate: new Date('2025-03-22T00:00:00Z'),
+          current: false,
+          submittable: true,
+        },
+        {
+          kind: 'afterLastDeadline',
+          credit: 0,
+          startDate: new Date('2025-03-22T00:00:00Z'),
+          endDate: null,
+          current: false,
+          submittable: false,
+        },
+      ],
+    },
+    {
+      name: 'afterLastDeadline submittable when allowSubmissions is true, post-due date',
+      dateControl: {
+        release: { date: new Date('2025-03-01T00:00:00Z') },
+        due: { date: new Date('2025-03-15T00:00:00Z') },
+        afterLastDeadline: { credit: 50, allowSubmissions: true },
+      },
+      currentDate: new Date('2025-03-20T00:00:00Z'),
+      expected: [
+        {
+          kind: 'beforeRelease',
+          credit: 0,
+          startDate: null,
+          endDate: new Date('2025-03-01T00:00:00Z'),
+          current: false,
+          submittable: false,
+        },
+        {
+          kind: 'deadline',
+          credit: 100,
+          startDate: new Date('2025-03-01T00:00:00Z'),
+          endDate: new Date('2025-03-15T00:00:00Z'),
+          current: false,
+          submittable: true,
+        },
+        {
+          kind: 'afterLastDeadline',
+          credit: 50,
+          startDate: new Date('2025-03-15T00:00:00Z'),
+          endDate: null,
+          current: true,
+          submittable: true,
+        },
+      ],
+    },
+    {
+      name: 'pre-release: pre-release segment is current',
+      dateControl: {
+        release: { date: new Date('2025-03-15T00:00:00Z') },
+        due: { date: new Date('2025-04-01T00:00:00Z') },
+      },
+      currentDate: new Date('2025-03-10T00:00:00Z'),
+      expected: [
+        {
+          kind: 'beforeRelease',
+          credit: 0,
+          startDate: null,
+          endDate: new Date('2025-03-15T00:00:00Z'),
+          current: true,
+          submittable: false,
+        },
+        {
+          kind: 'deadline',
+          credit: 100,
+          startDate: new Date('2025-03-15T00:00:00Z'),
+          endDate: new Date('2025-04-01T00:00:00Z'),
+          current: false,
+          submittable: true,
+        },
+        {
+          kind: 'afterLastDeadline',
+          credit: 0,
+          startDate: new Date('2025-04-01T00:00:00Z'),
+          endDate: null,
+          current: false,
+          submittable: false,
+        },
+      ],
+    },
+    {
+      name: 'post-release: pre-release segment present but not current',
+      dateControl: {
+        release: { date: new Date('2025-03-01T00:00:00Z') },
+        due: { date: new Date('2025-04-01T00:00:00Z') },
+      },
+      currentDate: new Date('2025-03-10T00:00:00Z'),
+      expected: [
+        {
+          kind: 'beforeRelease',
+          credit: 0,
+          startDate: null,
+          endDate: new Date('2025-03-01T00:00:00Z'),
+          current: false,
+          submittable: false,
+        },
+        {
+          kind: 'deadline',
+          credit: 100,
+          startDate: new Date('2025-03-01T00:00:00Z'),
+          endDate: new Date('2025-04-01T00:00:00Z'),
+          current: true,
+          submittable: true,
+        },
+        {
+          kind: 'afterLastDeadline',
+          credit: 0,
+          startDate: new Date('2025-04-01T00:00:00Z'),
+          endDate: null,
+          current: false,
+          submittable: false,
+        },
+      ],
+    },
+    {
+      name: 'pre-release with no deadlines: pre-release segment is current',
+      dateControl: {
+        release: { date: new Date('2025-04-01T00:00:00Z') },
+      },
+      currentDate: new Date('2025-03-15T00:00:00Z'),
+      expected: [
+        {
+          kind: 'beforeRelease',
+          credit: 0,
+          startDate: null,
+          endDate: new Date('2025-04-01T00:00:00Z'),
+          current: true,
+          submittable: false,
+        },
+        {
+          kind: 'noDeadline',
+          credit: 100,
+          startDate: new Date('2025-04-01T00:00:00Z'),
+          endDate: null,
+          current: false,
+          submittable: true,
+        },
+      ],
+    },
+    {
+      name: 'post-due with no afterLastDeadline config: closed final segment',
+      dateControl: {
+        release: { date: new Date('2025-03-01T00:00:00Z') },
+        due: { date: new Date('2025-03-15T00:00:00Z') },
+      },
+      currentDate: new Date('2025-03-20T00:00:00Z'),
+      expected: [
+        {
+          kind: 'beforeRelease',
+          credit: 0,
+          startDate: null,
+          endDate: new Date('2025-03-01T00:00:00Z'),
+          current: false,
+          submittable: false,
+        },
+        {
+          kind: 'deadline',
+          credit: 100,
+          startDate: new Date('2025-03-01T00:00:00Z'),
+          endDate: new Date('2025-03-15T00:00:00Z'),
+          current: false,
+          submittable: true,
+        },
+        {
+          kind: 'afterLastDeadline',
+          credit: 0,
+          startDate: new Date('2025-03-15T00:00:00Z'),
+          endDate: null,
+          current: true,
+          submittable: false,
+        },
+      ],
+    },
+    {
+      name: 'custom due credit applied during on-time window',
+      dateControl: {
+        release: { date: new Date('2025-03-01T00:00:00Z') },
+        due: { date: new Date('2025-04-01T00:00:00Z'), credit: 80 },
+      },
+      currentDate: new Date('2025-03-15T00:00:00Z'),
+      expected: [
+        {
+          kind: 'beforeRelease',
+          credit: 0,
+          startDate: null,
+          endDate: new Date('2025-03-01T00:00:00Z'),
+          current: false,
+          submittable: false,
+        },
+        {
+          kind: 'deadline',
+          credit: 80,
+          startDate: new Date('2025-03-01T00:00:00Z'),
+          endDate: new Date('2025-04-01T00:00:00Z'),
+          current: true,
+          submittable: true,
+        },
+        {
+          kind: 'afterLastDeadline',
+          credit: 0,
+          startDate: new Date('2025-04-01T00:00:00Z'),
+          endDate: null,
+          current: false,
+          submittable: false,
+        },
+      ],
+    },
+    {
+      name: 'custom due credit caps late-deadline credit',
+      dateControl: {
+        release: { date: new Date('2025-03-01T00:00:00Z') },
+        due: { date: new Date('2025-04-01T00:00:00Z'), credit: 80 },
+        lateDeadlines: [
+          { date: '2025-04-15T00:00:00Z', credit: 90 },
+          { date: '2025-04-30T00:00:00Z', credit: 70 },
+        ],
+      },
+      currentDate: new Date('2025-04-10T00:00:00Z'),
+      expected: [
+        {
+          kind: 'beforeRelease',
+          credit: 0,
+          startDate: null,
+          endDate: new Date('2025-03-01T00:00:00Z'),
+          current: false,
+          submittable: false,
+        },
+        {
+          kind: 'deadline',
+          credit: 80,
+          startDate: new Date('2025-03-01T00:00:00Z'),
+          endDate: new Date('2025-04-01T00:00:00Z'),
+          current: false,
+          submittable: true,
+        },
+        {
+          kind: 'deadline',
+          credit: 80,
+          startDate: new Date('2025-04-01T00:00:00Z'),
+          endDate: new Date('2025-04-15T00:00:00Z'),
+          current: true,
+          submittable: true,
+        },
+        {
+          kind: 'deadline',
+          credit: 70,
+          startDate: new Date('2025-04-15T00:00:00Z'),
+          endDate: new Date('2025-04-30T00:00:00Z'),
+          current: false,
+          submittable: true,
+        },
+        {
+          kind: 'afterLastDeadline',
+          credit: 0,
+          startDate: new Date('2025-04-30T00:00:00Z'),
+          endDate: null,
+          current: false,
+          submittable: false,
+        },
+      ],
+    },
+    {
+      name: 'custom due credit floors early-deadline credit when above 100',
+      dateControl: {
+        release: { date: new Date('2025-01-01T00:00:00Z') },
+        due: { date: new Date('2025-04-01T00:00:00Z'), credit: 120 },
+        earlyDeadlines: [
+          { date: '2025-02-01T00:00:00Z', credit: 130 },
+          { date: '2025-03-01T00:00:00Z', credit: 110 },
+        ],
+      },
+      currentDate: new Date('2025-02-15T00:00:00Z'),
+      expected: [
+        {
+          kind: 'beforeRelease',
+          credit: 0,
+          startDate: null,
+          endDate: new Date('2025-01-01T00:00:00Z'),
+          current: false,
+          submittable: false,
+        },
+        {
+          kind: 'deadline',
+          credit: 130,
+          startDate: new Date('2025-01-01T00:00:00Z'),
+          endDate: new Date('2025-02-01T00:00:00Z'),
+          current: false,
+          submittable: true,
+        },
+        {
+          kind: 'deadline',
+          credit: 120,
+          startDate: new Date('2025-02-01T00:00:00Z'),
+          endDate: new Date('2025-03-01T00:00:00Z'),
+          current: true,
+          submittable: true,
+        },
+        {
+          kind: 'deadline',
+          credit: 120,
+          startDate: new Date('2025-03-01T00:00:00Z'),
+          endDate: new Date('2025-04-01T00:00:00Z'),
+          current: false,
+          submittable: true,
+        },
+        {
+          kind: 'afterLastDeadline',
+          credit: 0,
+          startDate: new Date('2025-04-01T00:00:00Z'),
+          endDate: null,
+          current: false,
+          submittable: false,
+        },
+      ],
+    },
+    {
+      name: 'indefinite due credit (due date null with credit) and no other deadlines',
+      dateControl: {
+        release: { date: new Date('2025-03-01T00:00:00Z') },
+        due: { date: null, credit: 50 },
+      },
+      currentDate: new Date('2030-01-01T00:00:00Z'),
+      expected: [
+        {
+          kind: 'beforeRelease',
+          credit: 0,
+          startDate: null,
+          endDate: new Date('2025-03-01T00:00:00Z'),
+          current: false,
+          submittable: false,
+        },
+        {
+          kind: 'noDeadline',
+          credit: 50,
+          startDate: new Date('2025-03-01T00:00:00Z'),
+          endDate: null,
+          current: true,
+          submittable: true,
+        },
+      ],
+    },
+    {
+      name: 'indefinite default credit (due date null, no credit) and no other deadlines',
+      dateControl: {
+        release: { date: new Date('2025-03-01T00:00:00Z') },
+        due: { date: null },
+      },
+      currentDate: new Date('2030-01-01T00:00:00Z'),
+      expected: [
+        {
+          kind: 'beforeRelease',
+          credit: 0,
+          startDate: null,
+          endDate: new Date('2025-03-01T00:00:00Z'),
+          current: false,
+          submittable: false,
+        },
+        {
+          kind: 'noDeadline',
+          credit: 100,
+          startDate: new Date('2025-03-01T00:00:00Z'),
+          endDate: null,
+          current: true,
+          submittable: true,
+        },
+      ],
+    },
+    {
+      name: 'indefinite due credit shadows afterLastDeadline after early deadlines',
+      dateControl: {
+        release: { date: new Date('2025-01-01T00:00:00Z') },
+        due: { date: null, credit: 80 },
+        earlyDeadlines: [{ date: '2025-02-01T00:00:00Z', credit: 120 }],
+        afterLastDeadline: { credit: 50, allowSubmissions: true },
+      },
+      currentDate: new Date('2030-01-01T00:00:00Z'),
+      expected: [
+        {
+          kind: 'beforeRelease',
+          credit: 0,
+          startDate: null,
+          endDate: new Date('2025-01-01T00:00:00Z'),
+          current: false,
+          submittable: false,
+        },
+        {
+          kind: 'deadline',
+          credit: 120,
+          startDate: new Date('2025-01-01T00:00:00Z'),
+          endDate: new Date('2025-02-01T00:00:00Z'),
+          current: false,
+          submittable: true,
+        },
+        {
+          kind: 'noDeadline',
+          credit: 80,
+          startDate: new Date('2025-02-01T00:00:00Z'),
+          endDate: null,
+          current: true,
+          submittable: true,
+        },
+      ],
+    },
+    {
+      name: 'pre-release with late deadlines and afterLastDeadline credit',
+      dateControl: {
+        release: { date: new Date('2025-03-15T00:00:00Z') },
+        due: { date: new Date('2025-04-01T00:00:00Z') },
+        lateDeadlines: [{ date: '2025-04-08T00:00:00Z', credit: 50 }],
+        afterLastDeadline: { allowSubmissions: true, credit: 10 },
+      },
+      currentDate: new Date('2025-03-10T00:00:00Z'),
+      expected: [
+        {
+          kind: 'beforeRelease',
+          credit: 0,
+          startDate: null,
+          endDate: new Date('2025-03-15T00:00:00Z'),
+          current: true,
+          submittable: false,
+        },
+        {
+          kind: 'deadline',
+          credit: 100,
+          startDate: new Date('2025-03-15T00:00:00Z'),
+          endDate: new Date('2025-04-01T00:00:00Z'),
+          current: false,
+          submittable: true,
+        },
+        {
+          kind: 'deadline',
+          credit: 50,
+          startDate: new Date('2025-04-01T00:00:00Z'),
+          endDate: new Date('2025-04-08T00:00:00Z'),
+          current: false,
+          submittable: true,
+        },
+        {
+          kind: 'afterLastDeadline',
+          credit: 10,
+          startDate: new Date('2025-04-08T00:00:00Z'),
+          endDate: null,
+          current: false,
+          submittable: true,
+        },
+      ],
+    },
+  ])('$name', ({ dateControl, currentDate, expected }) => {
+    expect(buildAccessTimeline(dateControl, currentDate)).toEqual(expected);
+  });
+});

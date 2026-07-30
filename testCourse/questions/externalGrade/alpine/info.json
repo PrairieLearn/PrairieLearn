@@ -8,7 +8,6 @@
   "gradingMethod": "External",
   "sharePublicly": true,
   "externalGradingOptions": {
-    "enabled": true,
     "image": "alpine:latest",
     "entrypoint": "/grade/tests/grade.sh",
     "timeout": 10

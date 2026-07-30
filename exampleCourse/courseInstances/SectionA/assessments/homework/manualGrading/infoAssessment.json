@@ -5,33 +5,23 @@
   "set": "Homework",
   "module": "IntroModule",
   "number": "3",
-  "allowAccess": [
+  "accessControl": [
     {
-      "comment": "Set end date for 100% credit",
-      "credit": 100,
-      "startDate": "2021-01-01T00:00:01",
-      "endDate": "2023-11-15T23:59:59"
-    },
-    {
-      "comment": "Set later end date for reduced credit",
-      "credit": 50,
-      "startDate": "2021-01-01T00:00:01",
-      "endDate": "2023-11-30T23:59:59"
-    },
-    {
-      "comment": "Set another end date, potentially end of the term, for zero credit (can practice, but no longer earn points for the assessment)",
-      "credit": 0,
-      "startDate": "2021-01-01T00:00:01",
-      "endDate": "2023-12-31T23:59:59"
+      "dateControl": {
+        "release": { "date": "2021-01-01T00:00:01" },
+        "due": { "date": "2023-11-15T23:59:59" },
+        "lateDeadlines": [{ "date": "2023-11-30T23:59:59", "credit": 50 }],
+        "afterLastDeadline": { "allowSubmissions": true, "credit": 0 }
+      }
     }
   ],
   "zones": [
     {
       "title": "Unlimited question variants with one single attempt",
       "questions": [
-        { "id": "template/checkbox/random-prompt", "points": 1, "maxPoints": 6 },
-        { "id": "template/string-input/random", "points": 1, "maxPoints": 3 },
-        { "id": "template/symbolic-input/random", "points": 1, "maxPoints": 6 }
+        { "id": "template/checkbox/random-prompt", "autoPoints": 1, "maxAutoPoints": 6 },
+        { "id": "template/string-input/random", "autoPoints": 1, "maxAutoPoints": 3 },
+        { "id": "template/symbolic-input/random", "autoPoints": 1, "maxAutoPoints": 6 }
       ]
     },
     {
@@ -39,23 +29,28 @@
       "questions": [
         {
           "id": "demo/annotated/engVectorDrawing",
-          "points": 2,
-          "maxPoints": 6,
+          "autoPoints": 2,
+          "maxAutoPoints": 6,
           "triesPerVariant": 2
         },
-        { "id": "demo/annotated/engBeamStress", "points": 2, "maxPoints": 6, "triesPerVariant": 3 }
+        {
+          "id": "demo/annotated/engBeamStress",
+          "autoPoints": 2,
+          "maxAutoPoints": 6,
+          "triesPerVariant": 3
+        }
       ]
     },
     {
       "title": "Single question variant with unlimited number of attempts",
-      "questions": [{ "id": "demo/annotated/engMarkovBrewing", "points": 8 }]
+      "questions": [{ "id": "demo/annotated/engMarkovBrewing", "autoPoints": 8 }]
     },
     {
       "title": "Manually graded questions",
       "questions": [
         { "id": "demo/autograder/codeUpload", "autoPoints": 10, "manualPoints": 5 },
-        { "id": "demo/fileDownloadUpload", "points": 10 },
-        { "id": "demo/markdownEditorLivePreview", "points": 5 }
+        { "id": "demo/fileDownloadUpload", "manualPoints": 10 },
+        { "id": "demo/markdownEditorLivePreview", "manualPoints": 5 }
       ]
     }
   ]

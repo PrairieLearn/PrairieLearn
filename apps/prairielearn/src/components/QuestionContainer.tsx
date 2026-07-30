@@ -1,16 +1,19 @@
 import { EncodedData } from '@prairielearn/browser-utils';
-import { escapeHtml, html, unsafeHtml } from '@prairielearn/html';
+import { formatDate } from '@prairielearn/formatter';
+import { type HtmlValue, escapeHtml, html, unsafeHtml } from '@prairielearn/html';
 import { run } from '@prairielearn/run';
 
 import type {
   CounterClockwiseRotationDegrees,
   InstanceQuestionAIGradingInfo,
 } from '../ee/lib/ai-grading/types.js';
+import { formatStudentQuestionTitle } from '../lib/assessment.shared.js';
 import { ansiToHtml } from '../lib/chalk.js';
 import { config } from '../lib/config.js';
 import { type CopyTarget } from '../lib/copy-content.js';
 import type {
   AssessmentQuestion,
+  Course,
   CourseInstance,
   GroupConfig,
   InstanceQuestion,
@@ -18,7 +21,7 @@ import type {
   User,
   Variant,
 } from '../lib/db-types.js';
-import { type GroupInfo, getRoleNamesForUser } from '../lib/groups.js';
+import { type GroupInfo, getRoleNamesForUser } from '../lib/groups.shared.js';
 import { idsEqual } from '../lib/id.js';
 import type { IssueRenderData } from '../lib/question-render.types.js';
 import type { UntypedResLocals } from '../lib/res-locals.types.js';
@@ -59,10 +62,11 @@ export function QuestionContainer({
     variant,
     variantToken,
     questionJsonBase64,
+    course,
     course_instance,
     authz_data,
     is_administrator,
-    showTrueAnswer,
+    showCorrectAnswer,
     submissions,
     submissionHtmls,
     answerHtml,
@@ -80,7 +84,7 @@ export function QuestionContainer({
         ? html`<div hidden class="question-data">${questionJsonBase64}</div>`
         : ''}
       ${issues.map((issue: IssueRenderData) =>
-        IssuePanel({ issue, course_instance, authz_data, is_administrator }),
+        IssuePanel({ issue, course, course_instance, authz_data, is_administrator }),
       )}
       ${question.type === 'Freeform'
         ? html`
@@ -102,29 +106,32 @@ export function QuestionContainer({
         // it here to avoid confusion.
         questionRenderContext !== 'ai_grading'
           ? html`
-              <div class="card mb-3 grading-block${showTrueAnswer ? '' : ' d-none'}">
+              <div class="card mb-3 grading-block${showCorrectAnswer ? '' : ' d-none'}">
                 <div class="card-header bg-secondary text-white">
                   <h2>Correct answer</h2>
                 </div>
                 <div class="card-body overflow-x-auto answer-body">
-                  ${showTrueAnswer ? unsafeHtml(answerHtml) : ''}
+                  ${showCorrectAnswer ? unsafeHtml(answerHtml) : ''}
                 </div>
               </div>
             `
           : ''
       }
-      ${['instructor', 'manual_grading'].includes(questionContext) && aiGradingInfo
-        ? AIGradingExplanation({
-            explanation: aiGradingInfo.explanation,
-            hasImage: aiGradingInfo.hasImage,
-            rotationCorrectionDegrees: aiGradingInfo.rotationCorrectionDegrees,
-          })
-        : ''}
-      ${(questionContext === 'instructor' || questionContext === 'manual_grading') &&
-      aiGradingInfo?.prompt
-        ? AIGradingPrompt({
-            prompt: aiGradingInfo.prompt,
-          })
+      ${['instructor', 'manual_grading'].includes(questionContext)
+        ? html`
+            <div class="js-ai-grading-explanation-slot">
+              ${aiGradingInfo
+                ? AIGradingExplanation({
+                    explanation: aiGradingInfo.explanation,
+                    hasImage: aiGradingInfo.hasImage,
+                    rotationCorrectionDegrees: aiGradingInfo.rotationCorrectionDegrees,
+                  })
+                : ''}
+            </div>
+            <div class="js-ai-grading-prompt-slot">
+              ${aiGradingInfo?.prompt ? AIGradingPrompt({ prompt: aiGradingInfo.prompt }) : ''}
+            </div>
+          `
         : ''}
       ${submissions.length > 0
         ? html`
@@ -173,7 +180,7 @@ export function QuestionContainer({
   `;
 }
 
-function AIGradingPrompt({ prompt }: { prompt: string }) {
+export function AIGradingPrompt({ prompt }: { prompt: string }) {
   return html`
     <div class="card mb-3 grading-block">
       <div
@@ -202,7 +209,7 @@ function AIGradingPrompt({ prompt }: { prompt: string }) {
   `;
 }
 
-function AIGradingExplanation({
+export function AIGradingExplanation({
   explanation,
   hasImage,
   rotationCorrectionDegrees,
@@ -215,7 +222,11 @@ function AIGradingExplanation({
     rotationCorrectionDegrees && Object.keys(rotationCorrectionDegrees).length > 0;
 
   return html`
-    <div class="card mb-3 grading-block">
+    <div
+      id="ai-grading-explanation"
+      class="card mb-3 grading-block"
+      style="scroll-margin-top: 10px;"
+    >
       <div
         class="card-header collapsible-card-header bg-secondary text-white d-flex align-items-center"
       >
@@ -236,37 +247,33 @@ function AIGradingExplanation({
         id="ai-grading-explanation-body"
       >
         <div class="card-body">
-          ${hasImage
-            ? rotationCorrectionApplied
-              ? html`<div class="alert alert-warning mb-3" role="alert">
-                  <p>
-                    One or more images were uploaded in a rotated state by the student (this was an
-                    error by the student). The system corrected their rotation prior to AI grading.
-                  </p>
-                  <div class="card table-responsive mb-0" style="max-width: 800px;">
-                    <table class="table table-sm mb-0">
-                      <thead class="table-light">
-                        <tr>
-                          <th class="text-nowrap">Filename</th>
-                          <th class="text-nowrap">Correction (counterclockwise)</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        ${Object.entries(rotationCorrectionDegrees).map(
-                          ([filename, degrees]) => html`
-                            <tr>
-                              <td class="text-nowrap"><code>${filename}</code></td>
-                              <td>${degrees}&deg;</td>
-                            </tr>
-                          `,
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>`
-              : html`<div class="alert alert-info mb-3" role="alert">
-                  None of the submitted images required rotation correction.
-                </div>`
+          ${hasImage && rotationCorrectionApplied
+            ? html`<div class="alert alert-warning mb-3" role="alert">
+                <p>
+                  One or more images were uploaded in a rotated state by the student (this was an
+                  error by the student). The system corrected their rotation prior to AI grading.
+                </p>
+                <div class="card table-responsive mb-0" style="max-width: 800px;">
+                  <table class="table table-sm mb-0">
+                    <thead class="table-light">
+                      <tr>
+                        <th class="text-nowrap">Filename</th>
+                        <th class="text-nowrap">Correction (counterclockwise)</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      ${Object.entries(rotationCorrectionDegrees).map(
+                        ([filename, degrees]) => html`
+                          <tr>
+                            <td class="text-nowrap"><code>${filename}</code></td>
+                            <td>${degrees}&deg;</td>
+                          </tr>
+                        `,
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>`
             : ''}
           ${explanation
             ? html`
@@ -283,11 +290,13 @@ ${explanation}
 
 function IssuePanel({
   issue,
+  course,
   course_instance,
   authz_data,
   is_administrator,
 }: {
   issue: IssueRenderData;
+  course: Course;
   course_instance?: CourseInstance;
   authz_data: Record<string, any>;
   is_administrator: boolean;
@@ -368,7 +377,12 @@ function IssuePanel({
             </tr>
             <tr>
               <th>Date:</th>
-              <td>${issue.formatted_date}</td>
+              <td>
+                ${formatDate(
+                  issue.date!,
+                  course_instance?.display_timezone ?? course.display_timezone,
+                )}
+              </td>
             </tr>
           </tbody>
         </table>
@@ -376,59 +390,69 @@ function IssuePanel({
 
       ${config.devMode || authz_data.has_course_permission_view
         ? html`
-            <div class="card-body border border-bottom-0 border-start-0 border-end-0">
+            <ul
+              class="list-group list-group-flush border-top"
+              style="--bs-list-group-item-padding-x: 1.25rem; --bs-list-group-item-padding-y: 0.25rem;"
+            >
               ${issue.system_data?.courseErrData
                 ? html`
-                    <p><strong>Console log:</strong></p>
-                    <pre class="bg-dark text-white rounded p-3">
+                    <li class="list-group-item">
+                      <p class="mb-2"><strong>Console log:</strong></p>
+                      <pre class="bg-dark text-white rounded p-3 mb-0" style="max-height: 60vh;">
 ${unsafeHtml(ansiToHtml(issue.system_data.courseErrData.outputBoth))}</pre
-                    >
+                      >
+                    </li>
                   `
                 : ''}
-              <p>
-                <strong>Associated data:</strong>
-                <button
-                  type="button"
-                  class="btn btn-xs btn-secondary"
-                  data-bs-toggle="collapse"
-                  href="#issue-course-data-${issue.id}"
-                  aria-expanded="false"
-                  aria-controls="#issue-course-data-${issue.id}"
-                >
-                  Show/hide
-                </button>
-              </p>
-              <div class="collapse" id="issue-course-data-${issue.id}">
-                <pre class="bg-dark text-white rounded p-3">
-${JSON.stringify(issue.course_data, null, '    ')}</pre
-                >
-              </div>
+              ${IssueDataCollapse({
+                label: 'Associated data',
+                collapseId: `issue-course-data-${issue.id}`,
+                data: issue.course_data,
+              })}
               ${is_administrator
-                ? html`
-                    <p>
-                      <strong>System data:</strong>
-                      <button
-                        type="button"
-                        class="btn btn-xs btn-secondary"
-                        data-bs-toggle="collapse"
-                        href="#issue-system-data-${issue.id}"
-                        aria-expanded="false"
-                        aria-controls="#issue-system-data-${issue.id}"
-                      >
-                        Show/hide
-                      </button>
-                    </p>
-                    <div class="collapse" id="issue-system-data-${issue.id}">
-                      <pre class="bg-dark text-white rounded p-3">
-${JSON.stringify(issue.system_data, null, '    ')}</pre
-                      >
-                    </div>
-                  `
+                ? IssueDataCollapse({
+                    label: 'System data',
+                    collapseId: `issue-system-data-${issue.id}`,
+                    data: issue.system_data,
+                  })
                 : ''}
-            </div>
+            </ul>
           `
         : ''}
     </div>
+  `;
+}
+
+function IssueDataCollapse({
+  label,
+  collapseId,
+  data,
+}: {
+  label: string;
+  collapseId: string;
+  data: unknown;
+}) {
+  return html`
+    <li class="list-group-item">
+      <p class="mb-0">
+        <strong>${label}:</strong>
+        <button
+          type="button"
+          class="btn btn-xs btn-secondary"
+          data-bs-toggle="collapse"
+          href="#${collapseId}"
+          aria-expanded="false"
+          aria-controls="${collapseId}"
+        >
+          Show/hide
+        </button>
+      </p>
+      <div class="collapse" id="${collapseId}">
+        <pre class="bg-dark text-white rounded p-3 mt-2 mb-0" style="max-height: 60vh;">
+${JSON.stringify(data, null, '    ')}</pre
+        >
+      </div>
+    </li>
   `;
 }
 
@@ -436,18 +460,34 @@ export function QuestionTitle({
   questionContext,
   question,
   questionNumber,
+  showQuestionTitles,
 }: {
   questionContext: QuestionContext;
   question: Question;
   questionNumber: string;
-}) {
+  showQuestionTitles?: boolean;
+}): HtmlValue {
+  const hasTitle = !!question.title?.trim();
+
   if (questionContext === 'student_homework') {
-    return `${questionNumber}. ${question.title}`;
-  } else if (questionContext === 'student_exam') {
-    return `Question ${questionNumber}: ${question.title}`;
-  } else {
-    return question.title;
+    return formatStudentQuestionTitle({
+      assessmentType: 'Homework',
+      questionNumber,
+      questionTitle: question.title,
+      showQuestionTitles,
+    });
   }
+
+  if (questionContext === 'student_exam') {
+    return formatStudentQuestionTitle({
+      assessmentType: 'Exam',
+      questionNumber,
+      questionTitle: question.title,
+      showQuestionTitles,
+    });
+  }
+
+  return hasTitle ? question.title : html`<span class="font-monospace">${question.qid}</span>`;
 }
 
 interface QuestionFooterResLocals {
@@ -859,6 +899,11 @@ function QuestionPanel({
             questionContext,
             question,
             questionNumber: instance_question_info?.question_number,
+            // Student contexts honor the assessment setting; other contexts always render titles.
+            showQuestionTitles:
+              questionContext === 'student_exam' || questionContext === 'student_homework'
+                ? !!resLocals.assessment?.show_question_titles
+                : false,
           })}
         </h1>
         <div class="ms-auto d-flex flex-row gap-1">
@@ -955,7 +1000,8 @@ function SubmissionList({
       assessment_question: resLocals.assessment_question,
       instance_question: resLocals.instance_question,
       variant_id: resLocals.variant.id,
-      course_instance_id: resLocals.course_instance?.id,
+      course_instance: resLocals.course_instance,
+      course: resLocals.course,
       submission,
       submissionHtml: submissionHtmls[idx],
       submissionCount,

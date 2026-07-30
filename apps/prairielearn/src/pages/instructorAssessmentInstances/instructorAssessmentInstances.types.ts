@@ -3,41 +3,47 @@ import { z } from 'zod';
 import { IdSchema } from '@prairielearn/zod';
 
 import {
-  AssessmentInstanceSchema,
-  GroupSchema,
-  SprocUsersGetDisplayedRoleSchema,
-  UserSchema,
-} from '../../lib/db-types.js';
+  StaffAssessmentInstanceSchema,
+  StaffGroupSchema,
+  StaffUserSchema,
+} from '../../lib/client/safe-db-types.js';
 
-export const AssessmentInstanceRowSchema = z.object({
-  assessment_instance_id: IdSchema,
+// A row in the assessment instances table. It is sent to a hydrated client
+// component, so the per-table data is parsed with the branded `Staff*` schemas
+// from `safe-db-types.ts` (see the `safe-db-types` lint rule). The remaining
+// fields are values computed by the `select_assessment_instances` query that
+// don't belong to a single table.
+export const AssessmentInstanceRowQuerySchema = z.object({
+  assessment_instance: StaffAssessmentInstanceSchema,
+  user: StaffUserSchema.nullable(),
+  enrollment_id: IdSchema.nullable(),
+  group: StaffGroupSchema.nullable(),
   assessment_label: z.string(),
-  client_fingerprint_id_change_count:
-    AssessmentInstanceSchema.shape.client_fingerprint_id_change_count,
-  date_formatted: z.string(),
-  date: AssessmentInstanceSchema.shape.date,
-  duration_mins: z.number(),
-  duration_secs: z.number(),
-  duration: z.string(),
-  group_id: AssessmentInstanceSchema.shape.team_id,
-  group_name: GroupSchema.shape.name.nullable(),
+  role: z.enum(['Staff', 'Student', 'None']),
+  username: z.string().nullable(),
+  uid_list: z.array(z.string()).nullable(),
+  user_name_list: z.array(z.string().nullable()).nullable(),
   group_roles: z.array(z.string()).nullable(),
   highest_score: z.boolean(),
-  max_points: AssessmentInstanceSchema.shape.max_points,
-  name: UserSchema.shape.name.nullable(),
-  number: AssessmentInstanceSchema.shape.number,
-  open: AssessmentInstanceSchema.shape.open,
-  points: AssessmentInstanceSchema.shape.points,
-  role: SprocUsersGetDisplayedRoleSchema,
-  score_perc: AssessmentInstanceSchema.shape.score_perc.nullable(),
-  time_remaining_sec: z.number().nullable(),
   time_remaining: z.string(),
-  total_time_sec: z.number().nullable(),
+  time_remaining_sec: z.number().nullable(),
   total_time: z.string(),
-  uid_list: z.array(UserSchema.shape.uid).nullable(),
-  uid: UserSchema.shape.uid.nullable(),
-  user_id: UserSchema.shape.id.nullable(),
-  user_name_list: z.array(UserSchema.shape.name).nullable(),
-  username: z.string().nullable(),
+  total_time_sec: z.number().nullable(),
 });
-export type AssessmentInstanceRow = z.infer<typeof AssessmentInstanceRowSchema>;
+type AssessmentInstanceRowQuery = z.infer<typeof AssessmentInstanceRowQuerySchema>;
+export type AssessmentInstanceRow = AssessmentInstanceRowQuery & {
+  date_formatted: string;
+  duration_formatted: string;
+};
+
+// A question that a regrade of the selected instances would set to full credit:
+// its assessment question has `forceMaxPoints` and at least one selected instance
+// is currently below the maximum. `instance_count` is how many of the selected
+// instances would change for this question.
+export const PendingRegradeQuestionSchema = z.object({
+  id: IdSchema,
+  qid: z.string().nullable(),
+  title: z.string().nullable(),
+  instance_count: z.coerce.number(),
+});
+export type PendingRegradeQuestion = z.infer<typeof PendingRegradeQuestionSchema>;

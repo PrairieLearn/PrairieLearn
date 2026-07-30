@@ -10,7 +10,7 @@
 //
 // Note that the zygote will load the *transpiled* version of this file in the
 // `dist` directory, not the original source file in `src`. If you're making
-// changes to this file, you'll need to run `yarn build` in `apps/prairielearn`
+// changes to this file, you'll need to run `pnpm build` in `apps/prairielearn`
 // in order to update the file in `dist`.
 
 import assert from 'node:assert';

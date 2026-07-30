@@ -32,6 +32,7 @@ export const QuestionOptionsCheckboxJsonSchema = z
       .optional(),
   })
   .strict()
-  .describe('Options for a Checkbox question.');
+  .describe('Options for a Checkbox question.')
+  .meta({ title: 'Checkbox question options' });
 
 export type QuestionOptionsCheckboxJson = z.infer<typeof QuestionOptionsCheckboxJsonSchema>;

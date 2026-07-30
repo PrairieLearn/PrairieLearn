@@ -3,7 +3,6 @@ import assert from 'node:assert';
 import { S3 } from '@aws-sdk/client-s3';
 import {
   DeleteMessageCommand,
-  GetQueueUrlCommand,
   ReceiveMessageCommand,
   type ReceiveMessageResult,
   SQSClient,
@@ -23,6 +22,7 @@ import { GradingJobSchema } from './db-types.js';
 import { processGradingResult } from './externalGrader.js';
 import * as externalGraderCommon from './externalGraderCommon.js';
 import { gradingJobStatusUpdated } from './externalGradingSocket.js';
+import { getQueueUrl } from './sqs.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
@@ -34,7 +34,7 @@ export async function init() {
   if (!config.externalGradingUseAws) return;
 
   const sqs = new SQSClient(makeAwsClientConfig());
-  const queueUrl = await loadQueueUrl(sqs);
+  const queueUrl = await getQueueUrl(sqs, config.externalGradingResultsQueueName);
 
   // Start work in an IIFE so we can keep going asynchronously
   // after we return to the caller.
@@ -58,9 +58,15 @@ export async function init() {
               QueueUrl: queueUrl,
               WaitTimeSeconds: 20,
             }),
+            { abortSignal: abortController.signal },
           );
           messages = data.Messages;
         } catch (err) {
+          // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- aborted from another context
+          if (abortController.signal.aborted) {
+            processingFinished.resolve(null);
+            return;
+          }
           logger.error('Error receiving messages from SQS', err);
           Sentry.captureException(err);
           continue;
@@ -109,26 +115,6 @@ export async function stop() {
   // The main work loop will resolve this deferred promise when it's finished
   // with any current processing.
   await processingFinished.promise;
-}
-
-/**
- * @returns The URL of the results queue.
- */
-async function loadQueueUrl(sqs: SQSClient): Promise<string> {
-  logger.verbose(
-    `External grading results queue ${config.externalGradingResultsQueueName}: getting URL...`,
-  );
-  const data = await sqs.send(
-    new GetQueueUrlCommand({ QueueName: config.externalGradingResultsQueueName }),
-  );
-  const queueUrl = data.QueueUrl;
-  if (!queueUrl) {
-    throw new Error(`Could not get URL for queue ${config.externalGradingResultsQueueName}`);
-  }
-  logger.verbose(
-    `External grading results queue ${config.externalGradingResultsQueueName}: got URL ${queueUrl}`,
-  );
-  return queueUrl;
 }
 
 async function processMessage(data: {

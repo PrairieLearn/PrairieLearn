@@ -1,5 +1,5 @@
+import { globalIgnores } from '@eslint/config-helpers';
 import type { TSESLint } from '@typescript-eslint/utils';
-import { globalIgnores } from 'eslint/config';
 import tseslint from 'typescript-eslint';
 
 import { baseConfig } from './configs/base.js';
@@ -169,10 +169,7 @@ export function prairielearn(
   );
 
   // Default ignores
-  return [
-    ...configs,
-    globalIgnores(['.yarn/*', 'node_modules/*', 'dist/*', 'coverage/*', ...ignores]),
-  ];
+  return [...configs, globalIgnores(['node_modules/*', 'dist/*', 'coverage/*', ...ignores])];
 }
 
 // Re-export individual configs for advanced use

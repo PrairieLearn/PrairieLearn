@@ -14,25 +14,26 @@
       { "name": "Reflector", "minMembers": 1, "maxMembers": 1 },
       { "name": "Contributor" }
     ],
-    "studentPermissions": {
-      "canCreateGroup": true,
-      "canJoinGroup": true,
-      "canLeaveGroup": true
-    },
+    "studentPermissions": { "canCreateGroup": true, "canJoinGroup": true, "canLeaveGroup": true },
     "rolePermissions": {
       "canAssignRoles": ["Manager"],
       "canView": ["Manager", "Reflector", "Recorder", "Contributor"]
     }
   },
-  "allowAccess": [{ "credit": 100 }],
+  "accessControl": [{ "dateControl": { "release": { "date": "2000-01-01T00:00:00" } } }],
   "zones": [
     {
       "canSubmit": ["Recorder"],
       "title": "Hard questions",
       "questions": [
-        { "id": "demo/demoNewton-page1", "points": 1 },
-        { "id": "demo/demoNewton-page2", "points": 1, "canView": ["Recorder"] },
-        { "id": "addNumbers", "points": 1, "canView": ["Reflector"], "canSubmit": ["Reflector"] }
+        { "id": "demo/demoNewton-page1", "autoPoints": 1 },
+        { "id": "demo/demoNewton-page2", "autoPoints": 1, "canView": ["Recorder"] },
+        {
+          "id": "addNumbers",
+          "autoPoints": 1,
+          "canView": ["Reflector"],
+          "canSubmit": ["Reflector"]
+        }
       ]
     }
   ]

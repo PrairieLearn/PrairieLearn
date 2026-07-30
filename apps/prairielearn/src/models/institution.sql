@@ -26,3 +26,36 @@ ORDER BY
   i.short_name,
   i.long_name,
   i.id;
+
+-- BLOCK select_all_institutions_with_settings
+SELECT
+  to_jsonb(i.*) AS institution,
+  CASE
+    WHEN ist.institution_id IS NULL THEN NULL
+    ELSE to_jsonb(ist.*)
+  END AS institution_settings
+FROM
+  institutions AS i
+  LEFT JOIN institution_settings AS ist ON ist.institution_id = i.id
+ORDER BY
+  i.short_name,
+  i.long_name,
+  i.id;
+
+-- BLOCK insert_institution
+INSERT INTO
+  institutions (
+    long_name,
+    short_name,
+    display_timezone,
+    uid_regexp
+  )
+VALUES
+  (
+    $long_name,
+    $short_name,
+    $display_timezone,
+    $uid_regexp
+  )
+RETURNING
+  id;

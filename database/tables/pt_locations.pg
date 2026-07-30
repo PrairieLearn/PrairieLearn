@@ -1,6 +1,7 @@
 columns
     filter_networks: boolean not null default false
     id: bigint not null default nextval('pt_locations_id_seq'::regclass)
+    lockdown_browser_enabled: boolean not null default false
 
 indexes
     pt_locations_pkey: PRIMARY KEY (id) USING btree (id)
