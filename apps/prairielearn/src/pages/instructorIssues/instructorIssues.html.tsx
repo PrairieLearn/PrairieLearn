@@ -261,32 +261,18 @@ function IssueRow({
               {' '}
               (<a href={`${questionPreviewUrl}?variant_id=${issue.variant_id}`}>instructor view</a>)
             </>
-          ) : !issue.assessment || issue.assessment.deleted_at ? (
-            // Assessment is deleted or has a missing assessment set
-            <>
-              {' '}
-              (
-              <a
-                href={`${questionPreviewUrl}?variant_${issue.showUser ? `id=${issue.variant_id}` : `seed=${issue.variant_seed}`}`}
-              >
-                instructor view
-              </a>
-              )
-              {!issue.showUser && (
-                <>
-                  {' '}
-                  <NoStudentDataAccessBadge issue={issue} />
-                </>
-              )}
-            </>
           ) : issue.showUser ? (
             <>
               {' '}
-              (<a href={`${questionPreviewUrl}?variant_id=${issue.variant_id}`}>
-                instructor view
-              </a>, <a href={studentViewUrl}>student view</a>,{' '}
-              <a href={manualGradingUrl}>manual grading</a>,{' '}
-              <a href={assessmentInstanceUrl}> assessment details</a>)
+              (<a href={`${questionPreviewUrl}?variant_id=${issue.variant_id}`}>instructor view</a>
+              {!issue.assessment?.deleted_at && (
+                <>
+                  , <a href={studentViewUrl}>student view</a>,{' '}
+                  <a href={manualGradingUrl}>manual grading</a>,{' '}
+                  <a href={assessmentInstanceUrl}> assessment details</a>
+                </>
+              )}
+              )
             </>
           ) : (
             <>
@@ -295,7 +281,16 @@ function IssueRow({
               <a href={`${questionPreviewUrl}?variant_seed=${issue.variant_seed}`}>
                 instructor view
               </a>
-              ) <NoStudentDataAccessBadge issue={issue} />
+              ){' '}
+              <button
+                type="button"
+                className="badge text-bg-warning badge-sm"
+                data-bs-toggle="tooltip"
+                data-bs-html="true"
+                title={`This issue was raised in course instance <strong>${issue.course_instance_short_name}</strong>. You do not have student data access for ${issue.course_instance_short_name}, so you can't view some of the issue details. Student data access can be granted by a course owner on the Staff page.`}
+              >
+                No student data access
+              </button>
             </>
           )}
         </div>
@@ -316,34 +311,26 @@ function IssueRow({
             </>
           )}
         </small>
-        <span className="d-inline-flex gap-1 align-items-center">
-          {issue.manually_reported ? (
-            <span className="badge text-bg-info">Manually reported</span>
+        {issue.manually_reported ? (
+          <span className="badge text-bg-info">Manually reported</span>
+        ) : (
+          <span className="badge text-bg-warning">Automatically reported</span>
+        )}
+        {issue.assessment &&
+          (issue.assessment.deleted_at ? (
+            <span className="badge color-red3 ms-1">{issue.assessment.label} (deleted)</span>
           ) : (
-            <span className="badge text-bg-warning">Automatically reported</span>
-          )}
-          {issue.assessment && !issue.assessment.deleted_at && issue.course_instance_id ? (
-            <AssessmentBadge
-              courseInstanceId={issue.course_instance_id}
-              hideLink={issue.hideAssessmentLink}
-              assessment={issue.assessment}
-            />
-          ) : (
-            issue.assessment?.deleted_at && (
+            issue.course_instance_id && (
               <AssessmentBadge
-                assessment={{
-                  ...issue.assessment,
-                  label: `${issue.assessment.label} (deleted)`,
-                  color: 'red3',
-                }}
-                hideLink
+                courseInstanceId={issue.course_instance_id}
+                hideLink={issue.hideAssessmentLink}
+                assessment={issue.assessment}
               />
             )
-          )}
-          {issue.course_instance_short_name && (
-            <span className="badge text-bg-dark">{issue.course_instance_short_name}</span>
-          )}
-        </span>
+          ))}
+        {issue.course_instance_short_name && (
+          <span className="badge text-bg-dark">{issue.course_instance_short_name}</span>
+        )}
       </div>
       {hasCoursePermissionEdit && (
         <div className="ms-auto ps-4">
@@ -544,20 +531,6 @@ function FilterHelpModal() {
         </div>
       </div>
     </div>
-  );
-}
-
-function NoStudentDataAccessBadge({ issue }: { issue: IssueComputedRow }) {
-  return (
-    <button
-      type="button"
-      className="badge text-bg-warning badge-sm"
-      data-bs-toggle="tooltip"
-      data-bs-html="true"
-      title={`This issue was raised in course instance <strong>${issue.course_instance_short_name}</strong>. You do not have student data access for ${issue.course_instance_short_name}, so you can't view some of the issue details. Student data access can be granted by a course owner on the Staff page.`}
-    >
-      No student data access
-    </button>
   );
 }
 

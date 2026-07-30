@@ -15,27 +15,6 @@ async function closeIssue(issueId: string) {
   await sqldb.execute(sql.close_issue, { issue_id: issueId });
 }
 
-async function updateAssessmentDeletedAt(assessmentId: string, deletedAt: Date | null) {
-  await sqldb.execute(sql.update_assessment_deleted_at, {
-    assessment_id: assessmentId,
-    deleted_at: deletedAt,
-  });
-}
-
-async function updateAssessmentSetId(assessmentId: string, assessmentSetId: string | null) {
-  await sqldb.execute(sql.update_assessment_set_id, {
-    assessment_id: assessmentId,
-    assessment_set_id: assessmentSetId,
-  });
-}
-
-async function updateAssessmentTid(assessmentId: string, tid: string | null) {
-  await sqldb.execute(sql.update_assessment_tid, {
-    assessment_id: assessmentId,
-    tid,
-  });
-}
-
 async function insertTestVariant({
   questionId,
   courseId,
@@ -150,66 +129,6 @@ async function createTestIssues(courseId: string) {
       await closeIssue(issueId);
     }
   }
-}
-
-async function createAssessmentIssue({
-  courseId,
-  courseInstanceId,
-  assessmentTid,
-  questionQid,
-  studentMessage,
-}: {
-  courseId: string;
-  courseInstanceId: string;
-  assessmentTid: string;
-  questionQid: string;
-  studentMessage: string;
-}) {
-  const user = await getOrCreateUser(TEST_USER);
-  const question = await selectQuestionByQid({ qid: questionQid, course_id: courseId });
-  const assessment = await selectAssessmentByTid({
-    course_instance_id: courseInstanceId,
-    tid: assessmentTid,
-  });
-  const assessmentInstanceId = await makeAssessmentInstance({
-    assessment,
-    user_id: user.id,
-    authn_user_id: user.id,
-    mode: 'Public',
-    time_limit_min: null,
-    date: new Date(),
-    client_fingerprint_id: null,
-  });
-  const instanceQuestionId = await sqldb.queryScalar(
-    sql.select_instance_question_id,
-    {
-      assessment_instance_id: assessmentInstanceId,
-      question_id: question.id,
-    },
-    IdSchema,
-  );
-  const variantId = await insertTestVariant({
-    questionId: question.id,
-    courseId,
-    courseInstanceId,
-    instanceQuestionId,
-    authnUserId: user.id,
-    userId: user.id,
-  });
-
-  const issueId = await insertIssue({
-    variantId,
-    studentMessage,
-    instructorMessage: 'test issue for deleted assessment',
-    manuallyReported: true,
-    courseCaused: true,
-    courseData: {},
-    systemData: {},
-    userId: user.id,
-    authnUserId: user.id,
-  });
-
-  return { assessment, issueId, variantId };
 }
 
 test.describe('Instructor issues page', () => {
@@ -384,76 +303,103 @@ test.describe('Instructor issues page', () => {
       await expect(page.getByTestId('issue-list-item')).toHaveCount(countBefore);
     });
   });
+});
 
-  test.describe('Deleted assessment', () => {
-    test('shows deleted assessment badge with label for soft-deleted assessments', async ({
-      page,
-      courseInstance,
-    }) => {
-      const studentMessage = 'Issue on deleted assessment';
-      const { assessment, issueId, variantId } = await createAssessmentIssue({
-        courseId: courseInstance.course_id,
-        courseInstanceId: courseInstance.id,
-        assessmentTid: 'exam1-automaticTestSuite',
-        questionQid: 'addNumbers',
-        studentMessage,
-      });
-      const originalDeletedAt = assessment.deleted_at;
-
-      try {
-        await updateAssessmentDeletedAt(assessment.id, new Date());
-        await page.goto(`/pl/course/${courseInstance.course_id}/course_admin/issues`);
-
-        const issueItem = page
-          .getByTestId('issue-list-item')
-          .filter({ hasText: `#${issueId} reported` });
-        await expect(issueItem.getByText('E1 (deleted)')).toBeVisible();
-        await expect(issueItem.getByRole('link', { name: 'instructor view' })).toHaveAttribute(
-          'href',
-          new RegExp(`\\?variant_id=${variantId}$`),
-        );
-        await expect(issueItem.getByRole('link', { name: 'student view' })).toHaveCount(0);
-        await expect(issueItem.getByRole('link', { name: 'manual grading' })).toHaveCount(0);
-        await expect(issueItem.getByRole('link', { name: 'assessment details' })).toHaveCount(0);
-      } finally {
-        await updateAssessmentDeletedAt(assessment.id, originalDeletedAt);
-      }
-    });
-
-    test('falls back to the TID or an unknown label when assessment set is missing', async ({
-      page,
-      courseInstance,
-    }) => {
-      const studentMessage = 'Issue on assessment without set';
-      const { assessment, issueId } = await createAssessmentIssue({
-        courseId: courseInstance.course_id,
-        courseInstanceId: courseInstance.id,
-        assessmentTid: 'exam2-miscProblems',
-        questionQid: 'positionTimeGraph',
-        studentMessage,
-      });
-      const originalDeletedAt = assessment.deleted_at;
-      const originalAssessmentSetId = assessment.assessment_set_id;
-      const originalTid = assessment.tid;
-
-      try {
-        await updateAssessmentDeletedAt(assessment.id, new Date());
-        await updateAssessmentSetId(assessment.id, null);
-        await page.goto(`/pl/course/${courseInstance.course_id}/course_admin/issues`);
-
-        const issueItem = page
-          .getByTestId('issue-list-item')
-          .filter({ hasText: `#${issueId} reported` });
-        await expect(issueItem.getByText('exam2-miscProblems (deleted)')).toBeVisible();
-
-        await updateAssessmentTid(assessment.id, null);
-        await page.reload();
-        await expect(issueItem.getByText('Unknown assessment (deleted)')).toBeVisible();
-      } finally {
-        await updateAssessmentTid(assessment.id, originalTid);
-        await updateAssessmentSetId(assessment.id, originalAssessmentSetId);
-        await updateAssessmentDeletedAt(assessment.id, originalDeletedAt);
-      }
-    });
+test('shows a safe label and only an instructor link for deleted assessments', async ({
+  page,
+  courseInstance,
+}) => {
+  const user = await getOrCreateUser(TEST_USER);
+  const assessment = await selectAssessmentByTid({
+    course_instance_id: courseInstance.id,
+    tid: 'exam1-automaticTestSuite',
   });
+  const question = await selectQuestionByQid({
+    qid: 'addNumbers',
+    course_id: courseInstance.course_id,
+  });
+  const assessmentInstanceId = await makeAssessmentInstance({
+    assessment,
+    user_id: user.id,
+    authn_user_id: user.id,
+    mode: 'Public',
+    time_limit_min: null,
+    date: new Date(),
+    client_fingerprint_id: null,
+  });
+  const instanceQuestionId = await sqldb.queryScalar(
+    sql.select_instance_question_id,
+    {
+      assessment_instance_id: assessmentInstanceId,
+      question_id: question.id,
+    },
+    IdSchema,
+  );
+  const variantId = await insertTestVariant({
+    questionId: question.id,
+    courseId: courseInstance.course_id,
+    courseInstanceId: courseInstance.id,
+    instanceQuestionId,
+    authnUserId: user.id,
+    userId: user.id,
+  });
+  const issueId = await insertIssue({
+    variantId,
+    studentMessage: 'Issue on deleted assessment',
+    instructorMessage: 'test issue for deleted assessment',
+    manuallyReported: true,
+    courseCaused: true,
+    courseData: {},
+    systemData: {},
+    userId: user.id,
+    authnUserId: user.id,
+  });
+  const deletedAt = new Date();
+  const originalAssessmentState = {
+    assessment_id: assessment.id,
+    assessment_set_id: assessment.assessment_set_id,
+    deleted_at: assessment.deleted_at,
+    tid: assessment.tid,
+  };
+
+  try {
+    await sqldb.execute(sql.set_assessment_state, {
+      ...originalAssessmentState,
+      deleted_at: deletedAt,
+    });
+    await page.goto(`/pl/course/${courseInstance.course_id}/course_admin/issues`);
+
+    const issueItem = page
+      .getByTestId('issue-list-item')
+      .filter({ hasText: `#${issueId} reported` });
+    await expect(issueItem.getByText('E1 (deleted)')).toBeVisible();
+    await expect(issueItem.getByRole('link', { name: 'instructor view' })).toHaveAttribute(
+      'href',
+      new RegExp(`\\?variant_id=${variantId}$`),
+    );
+    await expect(
+      issueItem.getByRole('link', {
+        name: /student view|manual grading|assessment details/,
+      }),
+    ).toHaveCount(0);
+
+    await sqldb.execute(sql.set_assessment_state, {
+      ...originalAssessmentState,
+      assessment_set_id: null,
+      deleted_at: deletedAt,
+    });
+    await page.reload();
+    await expect(issueItem.getByText('exam1-automaticTestSuite (deleted)')).toBeVisible();
+
+    await sqldb.execute(sql.set_assessment_state, {
+      ...originalAssessmentState,
+      assessment_set_id: null,
+      deleted_at: deletedAt,
+      tid: null,
+    });
+    await page.reload();
+    await expect(issueItem.getByText('Unknown assessment (deleted)')).toBeVisible();
+  } finally {
+    await sqldb.execute(sql.set_assessment_state, originalAssessmentState);
+  }
 });

@@ -91,7 +91,6 @@ SELECT
   CASE
     WHEN a.id IS NOT NULL THEN JSONB_BUILD_OBJECT(
       'label',
-      -- Fall back to the assessment TID or a generic label if the assessment set is not found
       COALESCE(
         aset.abbreviation || a.number,
         a.tid,

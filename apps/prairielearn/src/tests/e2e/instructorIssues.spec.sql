@@ -5,24 +5,12 @@ SET
 WHERE
   id = $issue_id;
 
--- BLOCK update_assessment_deleted_at
+-- BLOCK set_assessment_state
 UPDATE assessments
 SET
-  deleted_at = $deleted_at::timestamptz
-WHERE
-  id = $assessment_id;
-
--- BLOCK update_assessment_tid
-UPDATE assessments
-SET
+  assessment_set_id = $assessment_set_id,
+  deleted_at = $deleted_at::timestamptz,
   tid = $tid
-WHERE
-  id = $assessment_id;
-
--- BLOCK update_assessment_set_id
-UPDATE assessments
-SET
-  assessment_set_id = $assessment_set_id
 WHERE
   id = $assessment_id;
 
