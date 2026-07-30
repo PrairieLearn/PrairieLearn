@@ -123,7 +123,7 @@ These per-exam settings do not support reveal dates. Use the top-level **After c
 
 You can also enable **Read-only mode**. During a read-only reservation, students can view previous submissions but cannot submit new answers or start the assessment if they have not already started. Questions and scores are always shown during read-only reservations, regardless of the per-exam visibility settings.
 
-**Read-only mode** applies to assessment submissions, not workspace file access. Students can still open and modify workspaces for questions they can review, but they cannot submit those changed files for grading.
+**Read-only mode** applies to assessment submissions, not workspace file access. Students can still open and modify [workspaces](../workspaces/index.md) for questions they can review, but they cannot submit those changed files for grading.
 
 #### PrairieTest precedence
 
