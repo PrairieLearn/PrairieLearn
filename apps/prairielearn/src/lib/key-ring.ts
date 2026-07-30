@@ -1,5 +1,7 @@
 export type KeyRing = readonly [string, ...string[]];
 
+type NonPromise<T> = T extends PromiseLike<unknown> ? never : T;
+
 /**
  * Returns the key used for new signatures and ciphertext.
  */
@@ -10,7 +12,10 @@ export function getActiveKey(keyRing: KeyRing): string {
 /**
  * Returns the first successful result, or rethrows the last error if every key fails.
  */
-export function tryWithKeyRing<T>(keyRing: KeyRing, fn: (key: string) => T): T {
+export function tryWithKeyRing<T>(
+  keyRing: KeyRing,
+  fn: (key: string) => NonPromise<T>,
+): NonPromise<T> {
   let lastError: unknown;
   for (const key of keyRing) {
     try {
