@@ -87,7 +87,9 @@ Configure what happens after all deadlines have passed. The setting is labeled *
 - **Allow practice submissions**: students can submit for feedback, but receive 0% credit.
 - **Allow submissions for partial credit**: students can submit for the credit percentage you choose.
 
-This setting controls submission permission only. If submissions are not allowed after the final deadline, the **After completion** visibility settings determine what students can review. If after-deadline submissions are allowed, **After completion** applies only after the student's assessment instance closes or its time limit expires.
+This setting controls submission permission only; it does not make associated [workspaces](../workspaces/index.md) read-only. If **After completion** allows students to review a workspace question, they can still open the workspace and modify its files, but they cannot submit those changes for grading.
+
+If submissions are not allowed after the final deadline, the **After completion** visibility settings determine what students can review. If after-deadline submissions are allowed, **After completion** applies only after the student's assessment instance closes or its time limit expires.
 
 #### Time limits
 
@@ -120,6 +122,8 @@ For each PrairieTest exam, configure what students see after they finish **while
 These per-exam settings do not support reveal dates. Use the top-level **After completion** settings for visibility after the active reservation ends.
 
 You can also enable **Read-only mode**. During a read-only reservation, students can view previous submissions but cannot submit new answers or start the assessment if they have not already started. Questions and scores are always shown during read-only reservations, regardless of the per-exam visibility settings.
+
+**Read-only mode** applies to assessment submissions, not workspace file access. Students can still open and modify workspaces for questions they can review, but they cannot submit those changed files for grading.
 
 #### PrairieTest precedence
 
