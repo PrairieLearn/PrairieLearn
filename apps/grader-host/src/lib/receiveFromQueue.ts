@@ -103,14 +103,8 @@ export async function receiveFromQueue(
   globalLogger.info('Waiting for next job...');
   const { parsedMessage, receiptHandle } = await receiveMessageFromQueue(sqs, queueUrl, signal);
 
-  signal?.throwIfAborted();
   const validatedMessage = GradingJobMessageSchema.parse(parsedMessage);
   const heartbeatAbortController = await startHeartbeat(sqs, queueUrl, receiptHandle);
-
-  if (signal?.aborted) {
-    heartbeatAbortController.abort();
-    signal.throwIfAborted();
-  }
 
   await receiveCallback(validatedMessage)
     .finally(() => {

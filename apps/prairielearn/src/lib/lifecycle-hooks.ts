@@ -6,10 +6,7 @@ import {
   DescribeAutoScalingInstancesCommand,
 } from '@aws-sdk/client-auto-scaling';
 
-import {
-  type AutoScalingTargetLifecycleState,
-  watchAutoScalingTargetLifecycleState,
-} from '@prairielearn/aws-imds';
+import { watchAutoScalingTargetLifecycleState } from '@prairielearn/aws-imds';
 import { logger } from '@prairielearn/logger';
 
 import { makeAwsClientConfig } from './aws.js';
@@ -51,7 +48,7 @@ async function waitForInstanceTerminationLifecycleAction() {
       }
     }
 
-    await sleep(1_000);
+    await sleep(5_000);
   }
 }
 
@@ -116,9 +113,7 @@ export async function completeInstanceTermination() {
   logger.info('Completed Auto Scaling lifecycle action for instance termination');
 }
 
-export function startInstanceTerminationWatcher(
-  onTermination: (state: AutoScalingTargetLifecycleState) => void,
-) {
+export function startInstanceTerminationWatcher(onTermination: () => void) {
   if (
     !config.runningInEc2 ||
     !config.autoScalingGroupName ||
@@ -134,7 +129,7 @@ export function startInstanceTerminationWatcher(
     onTargetState(state) {
       logger.info(`Detected Auto Scaling termination target state from IMDS: ${state}`);
       void waitForInstanceTerminationLifecycleAction()
-        .then(() => onTermination(state))
+        .then(onTermination)
         .catch((error) => {
           logger.error('Error waiting for Auto Scaling termination lifecycle action', error);
         });

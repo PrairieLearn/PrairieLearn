@@ -2621,27 +2621,15 @@ if (shouldStartServer) {
     throw err;
   }
 
-  let gracefulShutdownSource: string | null = null;
-
-  function triggerGracefulShutdown(source: string) {
-    if (gracefulShutdownSource !== null) {
-      logger.info(
-        `Ignoring graceful shutdown trigger from ${source}; already triggered by ${gracefulShutdownSource}`,
-      );
-      return;
-    }
-
-    gracefulShutdownSource = source;
-    logger.info(`Triggering graceful shutdown (source: ${source})`);
-    process.kill(process.pid, 'SIGTERM');
-  }
+  let gracefulShutdownStarted = false;
 
   // SIGTERM can be used to gracefully shut down the process. This signal may
   // come from another process, but we also send it to ourselves when IMDS
   // reports that Auto Scaling is terminating the instance.
-  process.once('SIGTERM', async () => {
-    gracefulShutdownSource ??= 'external SIGTERM';
-    logger.info(`Starting graceful shutdown (source: ${gracefulShutdownSource})`);
+  process.on('SIGTERM', async () => {
+    if (gracefulShutdownStarted) return;
+    gracefulShutdownStarted = true;
+    logger.info('Starting graceful shutdown');
 
     // In test environments, the entire process group receives SIGTERM, which
     // can cause in-flight outgoing HTTP requests to fail with ECONNRESET.
@@ -2716,8 +2704,8 @@ if (shouldStartServer) {
     }
   });
 
-  lifecycleHooks.startInstanceTerminationWatcher((state) => {
-    triggerGracefulShutdown(`IMDS Auto Scaling target lifecycle state ${state}`);
+  lifecycleHooks.startInstanceTerminationWatcher(() => {
+    process.kill(process.pid, 'SIGTERM');
   });
 
   setServerState('initialized');
