@@ -81,6 +81,11 @@ function assertNoEnrollmentSpecificAccessControlRules(infoJson: any) {
   ]);
 }
 
+function assertAccessControlCleared(infoJson: any) {
+  assert.notProperty(infoJson, 'allowAccess');
+  assert.deepEqual(infoJson.accessControl, []);
+}
+
 function getCourseInstanceCreatePostInfo(page: cheerio.Cheerio<any>) {
   const csrfToken = page.find('#test_csrf_token').text();
 
@@ -507,7 +512,8 @@ const publicCopyTestData: EditData[] = [
       end_date: '',
       course_instance_permission: 'Student Data Editor',
     },
-    info: 'questions/shared-publicly/info.json',
+    info: 'courseInstances/Fa19/assessments/test/infoAssessment.json',
+    validateInfo: assertAccessControlCleared,
     files: new Set([
       'README.md',
       'infoCourse.json',
@@ -805,6 +811,7 @@ async function createSharedCourse() {
     },
   ];
   sharingCourseData.courseInstances['Fa19'].assessments['test'].shareSourcePublicly = true;
+  sharingCourseData.courseInstances['Fa19'].assessments['test'].accessControl = [{}];
   sharingCourseData.courseInstances['Fa19'].courseInstance.shareSourcePublicly = true;
 
   sharingCourseData.courseInstances['Fa19'].assessments['nested/dir/test'] = structuredClone(
