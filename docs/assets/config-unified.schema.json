@@ -212,6 +212,17 @@
         }
       ]
     },
+    "autoScalingTerminatingLifecycleHookName": {
+      "default": null,
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
     "instanceId": {
       "default": "server",
       "type": "string"
@@ -1486,17 +1497,6 @@
       ]
     },
     "autoScalingLaunchingLifecycleHookName": {
-      "default": null,
-      "anyOf": [
-        {
-          "type": "string"
-        },
-        {
-          "type": "null"
-        }
-      ]
-    },
-    "autoScalingTerminatingLifecycleHookName": {
       "default": null,
       "anyOf": [
         {
