@@ -1,5 +1,6 @@
 ---
+'@prairielearn/aws': minor
 '@prairielearn/aws-imds': minor
 ---
 
-Add typed fetching and polling for the EC2 Auto Scaling target lifecycle state.
+Add utilities for detecting and waiting for EC2 Auto Scaling lifecycle transitions.

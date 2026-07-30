@@ -1,8 +1,8 @@
 import * as assert from 'node:assert';
-import { setTimeout as sleep } from 'node:timers/promises';
 
 import { AutoScaling } from '@aws-sdk/client-auto-scaling';
 
+import { waitForAutoScalingTerminationLifecycleAction } from '@prairielearn/aws';
 import {
   type AutoScalingTargetLifecycleState,
   watchAutoScalingTargetLifecycleState,
@@ -19,7 +19,6 @@ import logger from './logger.js';
  *    null -> Launching -> AbandoningLaunch
  */
 let lifecycleState: 'Launching' | 'InService' | 'Terminating' | 'AbandoningLaunch' | null = null;
-let terminationLifecycleActionCompleted = false;
 
 export function getState() {
   return lifecycleState;
@@ -121,13 +120,11 @@ export function startTerminationWatcher(
   });
 }
 
-export function terminating(recordHeartbeats: boolean) {
+export function terminating() {
   if (config.autoScalingGroupName === null) return;
 
   lifecycleState = 'Terminating';
-  terminationLifecycleActionCompleted = !recordHeartbeats;
   logger.info(`lifecycle.terminating(): changing to state ${lifecycleState}`);
-  if (recordHeartbeats) heartbeat();
 }
 
 export async function completeTermination(signal: AbortSignal) {
@@ -146,44 +143,41 @@ export async function completeTermination(signal: AbortSignal) {
     LifecycleHookName: config.autoScalingTerminatingLifecycleHookName,
     InstanceId: config.instanceId,
   };
-  let errorReported = false;
 
-  // IMDS can report the target state `Terminated` before Auto Scaling reaches
-  // `Terminating:Wait`. Grading jobs start draining immediately, so retry
-  // completion here until the lifecycle action exists or SIGTERM arrives.
-  logger.info('lifecycle.completeTermination(): completing lifecycle action', params);
-  while (!signal.aborted) {
-    try {
-      await autoscaling.completeLifecycleAction(params);
-      logger.info('lifecycle.completeTermination(): completed lifecycle action', params);
-      break;
-    } catch (error) {
-      if (!errorReported) {
-        errorReported = true;
-        logger.error('lifecycle.completeTermination(): error; retrying', error);
-      }
+  try {
+    // Graders begin draining as soon as IMDS reports `Terminated`. Wait until
+    // the regional state reaches `Terminating:Wait` before using the lifecycle
+    // API, which can happen after draining has already finished.
+    await waitForAutoScalingTerminationLifecycleAction({
+      client: autoscaling,
+      instanceId: config.instanceId,
+      signal,
+      onError(error) {
+        logger.error(
+          'lifecycle.completeTermination(): error checking lifecycle state; retrying',
+          error,
+        );
+      },
+    });
+    if (signal.aborted) return;
+
+    logger.info('lifecycle.completeTermination(): lifecycle action is ready');
+    logger.info('lifecycle.completeTermination(): completing lifecycle action', params);
+    await autoscaling.completeLifecycleAction(params, { abortSignal: signal });
+    logger.info('lifecycle.completeTermination(): completed lifecycle action', params);
+  } catch (error) {
+    if (!signal.aborted) throw error;
+  } finally {
+    if (signal.aborted) {
+      logger.info('lifecycle.completeTermination(): stopped waiting after external SIGTERM');
     }
-
-    await sleep(1_000, undefined, { signal }).catch(() => {});
-  }
-
-  terminationLifecycleActionCompleted = true;
-  if (signal.aborted) {
-    logger.info('lifecycle.completeTermination(): stopped waiting after external SIGTERM');
   }
 }
 
 function heartbeat() {
   if (config.autoScalingGroupName == null) return;
 
-  const lifecycleHookName =
-    lifecycleState === 'Launching'
-      ? 'launching'
-      : lifecycleState === 'Terminating' &&
-          config.autoScalingTerminatingLifecycleHookName !== null &&
-          !terminationLifecycleActionCompleted
-        ? config.autoScalingTerminatingLifecycleHookName
-        : null;
+  const lifecycleHookName = lifecycleState === 'Launching' ? 'launching' : null;
   if (lifecycleHookName === null) {
     logger.info(`lifecycle.heartbeat(): in state ${lifecycleState}, not sending heartbeat`);
     return;

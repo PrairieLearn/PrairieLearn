@@ -67,7 +67,7 @@ function startGracefulShutdown({
 
   workerAbortController.abort();
   globalLogger.info(`Starting graceful shutdown (source: ${source}); draining jobs`);
-  lifecycle.terminating(waitForLifecycleAction);
+  lifecycle.terminating();
   void drainJobsAndExit(waitForLifecycleAction);
 }
 
