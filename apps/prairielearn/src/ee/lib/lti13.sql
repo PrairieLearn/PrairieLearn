@@ -149,7 +149,10 @@ FROM
   JOIN lti13_course_instances ON (
     lti13_course_instances.course_instance_id = a.course_instance_id
   )
-  JOIN lti13_assessments AS la ON (la.assessment_id = a.id)
+  JOIN lti13_assessments AS la ON (
+    la.assessment_id = a.id
+    AND la.lti13_course_instance_id = lti13_course_instances.id
+  )
 WHERE
   a.id = $unsafe_assessment_id
   AND lti13_course_instances.id = $lti13_course_instance_id
