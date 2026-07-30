@@ -27,8 +27,8 @@ import { watchAutoScalingTargetLifecycleState } from '@prairielearn/aws-imds';
 
 const controller = new AbortController();
 
-watchAutoScalingTargetLifecycleState({
-  targetStates: ['Terminated', 'Warmed:Terminated'],
+void watchAutoScalingTargetLifecycleState({
+  targetStates: ['Terminated'],
   signal: controller.signal,
   onTargetState(state) {
     console.log(`Instance is transitioning to ${state}`);

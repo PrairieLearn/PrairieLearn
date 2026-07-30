@@ -1,4 +1,5 @@
 import * as assert from 'node:assert';
+import { setTimeout as sleep } from 'node:timers/promises';
 
 import { AutoScaling } from '@aws-sdk/client-auto-scaling';
 
@@ -91,11 +92,9 @@ export async function abandonLaunch() {
   }
 }
 
-export function startTerminationWatcher({
-  onTermination,
-}: {
-  onTermination: (state: AutoScalingTargetLifecycleState) => void;
-}) {
+export function startTerminationWatcher(
+  onTermination: (state: AutoScalingTargetLifecycleState) => void,
+) {
   if (
     config.autoScalingGroupName === null ||
     config.autoScalingTerminatingLifecycleHookName === null
@@ -105,8 +104,8 @@ export function startTerminationWatcher({
   }
 
   logger.info('lifecycle.startTerminationWatcher(): watching IMDS for termination');
-  watchAutoScalingTargetLifecycleState({
-    targetStates: ['Terminated', 'Warmed:Terminated'],
+  void watchAutoScalingTargetLifecycleState({
+    targetStates: ['Terminated'],
     onTargetState(state) {
       logger.info(
         `lifecycle.startTerminationWatcher(): detected Auto Scaling target state ${state}`,
@@ -122,15 +121,16 @@ export function startTerminationWatcher({
   });
 }
 
-export function terminating({ recordHeartbeats }: { recordHeartbeats: boolean }) {
+export function terminating(recordHeartbeats: boolean) {
   if (config.autoScalingGroupName === null) return;
 
   lifecycleState = 'Terminating';
+  terminationLifecycleActionCompleted = !recordHeartbeats;
   logger.info(`lifecycle.terminating(): changing to state ${lifecycleState}`);
   if (recordHeartbeats) heartbeat();
 }
 
-export async function completeTermination() {
+export async function completeTermination(signal: AbortSignal) {
   if (
     config.autoScalingGroupName === null ||
     config.autoScalingTerminatingLifecycleHookName === null
@@ -140,31 +140,37 @@ export async function completeTermination() {
   }
 
   const autoscaling = new AutoScaling(makeAwsClientConfig());
-  const data = await autoscaling.describeAutoScalingInstances({
-    InstanceIds: [config.instanceId],
-  });
-  const autoScalingLifecycleState = data.AutoScalingInstances?.[0]?.LifecycleState;
-  if (
-    autoScalingLifecycleState !== 'Terminating:Wait' &&
-    autoScalingLifecycleState !== 'Warmed:Terminating:Wait'
-  ) {
-    terminationLifecycleActionCompleted = true;
-    logger.info(
-      `lifecycle.completeTermination(): instance is not in a termination wait state (${autoScalingLifecycleState})`,
-    );
-    return;
-  }
-
   const params = {
     AutoScalingGroupName: config.autoScalingGroupName,
     LifecycleActionResult: 'CONTINUE',
     LifecycleHookName: config.autoScalingTerminatingLifecycleHookName,
     InstanceId: config.instanceId,
   };
+  let errorReported = false;
+
+  // IMDS can report the target state `Terminated` before Auto Scaling reaches
+  // `Terminating:Wait`. Grading jobs start draining immediately, so retry
+  // completion here until the lifecycle action exists or SIGTERM arrives.
   logger.info('lifecycle.completeTermination(): completing lifecycle action', params);
-  await autoscaling.completeLifecycleAction(params);
+  while (!signal.aborted) {
+    try {
+      await autoscaling.completeLifecycleAction(params);
+      logger.info('lifecycle.completeTermination(): completed lifecycle action', params);
+      break;
+    } catch (error) {
+      if (!errorReported) {
+        errorReported = true;
+        logger.error('lifecycle.completeTermination(): error; retrying', error);
+      }
+    }
+
+    await sleep(1_000, undefined, { signal }).catch(() => {});
+  }
+
   terminationLifecycleActionCompleted = true;
-  logger.info('lifecycle.completeTermination(): completed lifecycle action', params);
+  if (signal.aborted) {
+    logger.info('lifecycle.completeTermination(): stopped waiting after external SIGTERM');
+  }
 }
 
 function heartbeat() {

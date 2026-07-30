@@ -80,7 +80,6 @@ import * as serverJobProgressSocket from './lib/serverJobProgressSocket.js';
 import { PostgresSessionStore } from './lib/session-store.js';
 import * as socketServer from './lib/socket-server.js';
 import { SocketActivityMetrics } from './lib/telemetry/socket-activity-metrics.js';
-import { recordGracefulShutdownSignal, triggerGracefulShutdown } from './lib/termination.js';
 import { getSearchParams } from './lib/url.js';
 import * as workspace from './lib/workspace.js';
 import { markAllWorkspaceHostsUnhealthy } from './lib/workspaceHost.js';
@@ -2622,12 +2621,27 @@ if (shouldStartServer) {
     throw err;
   }
 
+  let gracefulShutdownSource: string | null = null;
+
+  function triggerGracefulShutdown(source: string) {
+    if (gracefulShutdownSource !== null) {
+      logger.info(
+        `Ignoring graceful shutdown trigger from ${source}; already triggered by ${gracefulShutdownSource}`,
+      );
+      return;
+    }
+
+    gracefulShutdownSource = source;
+    logger.info(`Triggering graceful shutdown (source: ${source})`);
+    process.kill(process.pid, 'SIGTERM');
+  }
+
   // SIGTERM can be used to gracefully shut down the process. This signal may
   // come from another process, but we also send it to ourselves when IMDS
   // reports that Auto Scaling is terminating the instance.
   process.once('SIGTERM', async () => {
-    const shutdownSource = recordGracefulShutdownSignal('external SIGTERM');
-    logger.info(`Starting graceful shutdown (source: ${shutdownSource})`);
+    gracefulShutdownSource ??= 'external SIGTERM';
+    logger.info(`Starting graceful shutdown (source: ${gracefulShutdownSource})`);
 
     // In test environments, the entire process group receives SIGTERM, which
     // can cause in-flight outgoing HTTP requests to fail with ECONNRESET.
@@ -2702,10 +2716,8 @@ if (shouldStartServer) {
     }
   });
 
-  lifecycleHooks.startInstanceTerminationWatcher({
-    onTermination(state) {
-      triggerGracefulShutdown(`IMDS Auto Scaling target lifecycle state ${state}`);
-    },
+  lifecycleHooks.startInstanceTerminationWatcher((state) => {
+    triggerGracefulShutdown(`IMDS Auto Scaling target lifecycle state ${state}`);
   });
 
   setServerState('initialized');

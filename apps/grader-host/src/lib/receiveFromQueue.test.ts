@@ -149,4 +149,28 @@ describe('receiveFromQueue', () => {
     assert.equal(sqs.deleteMessage.mock.calls[0][0].input.QueueUrl, 'goodbyeworld');
     assert.equal(sqs.deleteMessage.mock.calls[0][0].input.ReceiptHandle, sqs.receiptHandle);
   });
+
+  it('aborts a pending receive when the signal is aborted', async () => {
+    const controller = new AbortController();
+    const send = vi.fn(
+      (
+        _command: Parameters<SQSClient['send']>[0],
+        options?: { abortSignal?: AbortSignal },
+      ): Promise<never> =>
+        new Promise((_resolve, reject) => {
+          options?.abortSignal?.addEventListener('abort', () => {
+            const error = new Error('aborted');
+            error.name = 'AbortError';
+            reject(error);
+          });
+        }),
+    );
+    const sqs = { send } as unknown as SQSClient;
+
+    const receivePromise = receiveFromQueue(sqs, 'queue', async () => {}, controller.signal);
+    await vi.waitFor(() => expect(send).toHaveBeenCalledOnce());
+    controller.abort();
+
+    await expect(receivePromise).rejects.toMatchObject({ name: 'AbortError' });
+  });
 });

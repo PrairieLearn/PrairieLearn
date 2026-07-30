@@ -1,3 +1,5 @@
+import { setTimeout as sleep } from 'node:timers/promises';
+
 import { z } from 'zod';
 
 const IMDS_URI = 'http://169.254.169.254';
@@ -59,12 +61,27 @@ async function getToken(): Promise<string> {
 export async function fetchImdsText(path: string): Promise<string> {
   const token = await getToken();
 
-  const res = await fetch(`${IMDS_URI}${path}`, {
+  let res = await fetch(`${IMDS_URI}${path}`, {
     headers: {
       'X-aws-ec2-metadata-token': token,
     },
     signal: AbortSignal.timeout(5_000),
   });
+
+  if (res.status === 401) {
+    if (cachedToken === token) {
+      cachedToken = null;
+      cachedTokenExpiration = 0;
+    }
+
+    const refreshedToken = await getToken();
+    res = await fetch(`${IMDS_URI}${path}`, {
+      headers: {
+        'X-aws-ec2-metadata-token': refreshedToken,
+      },
+      signal: AbortSignal.timeout(5_000),
+    });
+  }
 
   if (!res.ok) {
     throw new Error(`Failed to fetch IMDS path ${path}: ${res.status} ${res.statusText}`);
@@ -100,7 +117,7 @@ export async function fetchAutoScalingTargetLifecycleState(): Promise<AutoScalin
  * startup. Fetch failures are retried and only the first error in each
  * consecutive run of failures is reported.
  */
-export function watchAutoScalingTargetLifecycleState({
+export async function watchAutoScalingTargetLifecycleState({
   targetStates,
   onTargetState,
   onError,
@@ -114,54 +131,27 @@ export function watchAutoScalingTargetLifecycleState({
   pollIntervalMs?: number;
   fetchState?: () => Promise<AutoScalingTargetLifecycleState>;
   signal?: AbortSignal;
-}): void {
+}): Promise<void> {
   const targetStateSet = new Set(targetStates);
-  let stopped = false;
-  let timeout: NodeJS.Timeout | undefined;
+  if (signal?.aborted) return;
+
   let errorReported = false;
 
-  const stop = () => {
-    stopped = true;
-    if (timeout) clearTimeout(timeout);
-    signal?.removeEventListener('abort', stop);
-  };
-
-  if (signal?.aborted) return;
-  signal?.addEventListener('abort', stop, { once: true });
-
-  const schedulePoll = () => {
-    if (stopped) return;
-
-    timeout = setTimeout(poll, pollIntervalMs);
-    timeout.unref();
-  };
-
-  const poll = async () => {
-    let state: AutoScalingTargetLifecycleState;
+  while (!signal?.aborted) {
     try {
-      state = await fetchState();
+      const state = await fetchState();
       errorReported = false;
-    } catch (error) {
-      if (stopped) return;
-
-      if (!errorReported) {
-        errorReported = true;
-        onError?.(error);
+      if (signal?.aborted) return;
+      if (targetStateSet.has(state)) {
+        onTargetState(state);
+        return;
       }
-      schedulePoll();
-      return;
+    } catch (error) {
+      if (signal?.aborted) return;
+      if (!errorReported) onError?.(error);
+      errorReported = true;
     }
 
-    if (stopped) return;
-
-    if (targetStateSet.has(state)) {
-      stop();
-      onTargetState(state);
-      return;
-    }
-
-    schedulePoll();
-  };
-
-  void poll();
+    await sleep(pollIntervalMs, undefined, { ref: false, signal }).catch(() => {});
+  }
 }

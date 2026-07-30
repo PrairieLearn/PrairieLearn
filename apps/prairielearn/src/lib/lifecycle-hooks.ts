@@ -1,3 +1,5 @@
+import { setTimeout as sleep } from 'node:timers/promises';
+
 import {
   AutoScalingClient,
   CompleteLifecycleActionCommand,
@@ -26,6 +28,33 @@ async function getInstanceLifecycleState(client: AutoScalingClient): Promise<str
   return res.AutoScalingInstances?.[0]?.LifecycleState;
 }
 
+async function waitForInstanceTerminationLifecycleAction() {
+  const client = new AutoScalingClient(makeAwsClientConfig());
+  let errorReported = false;
+
+  // IMDS can report the target state `Terminated` before Auto Scaling reaches
+  // `Terminating:Wait`. Wait for the lifecycle action so shutdown does not race
+  // load balancer draining.
+  while (true) {
+    try {
+      const lifecycleState = await getInstanceLifecycleState(client);
+      errorReported = false;
+
+      if (lifecycleState === 'Terminating:Wait') {
+        logger.info('Auto Scaling termination lifecycle action is ready');
+        return;
+      }
+    } catch (error) {
+      if (!errorReported) {
+        errorReported = true;
+        logger.warn('Error checking Auto Scaling termination lifecycle state; retrying', error);
+      }
+    }
+
+    await sleep(1_000);
+  }
+}
+
 export async function completeInstanceLaunch() {
   if (
     !config.runningInEc2 ||
@@ -36,7 +65,7 @@ export async function completeInstanceLaunch() {
     return;
   }
 
-  const client = new AutoScalingClient(makeAwsClientConfig({ maxAttempts: 3 }));
+  const client = new AutoScalingClient(makeAwsClientConfig());
 
   // If we're starting outside the context of an Auto Scaling lifecycle change
   // (e.g. a restart after a process crash), there won't be a lifecycle action
@@ -68,14 +97,12 @@ export async function completeInstanceTermination() {
     return;
   }
 
-  const client = new AutoScalingClient(makeAwsClientConfig({ maxAttempts: 3 }));
+  const client = new AutoScalingClient(makeAwsClientConfig());
 
   // If we're terminating outside the context of an Auto Scaling lifecycle change
   // (e.g. via `systemctl stop`), there won't be a lifecycle action to complete.
   const lifecycleState = await getInstanceLifecycleState(client);
-  if (lifecycleState !== 'Terminating:Wait' && lifecycleState !== 'Warmed:Terminating:Wait') {
-    return;
-  }
+  if (lifecycleState !== 'Terminating:Wait') return;
 
   logger.info('Completing Auto Scaling lifecycle action for instance termination...');
   await client.send(
@@ -89,11 +116,9 @@ export async function completeInstanceTermination() {
   logger.info('Completed Auto Scaling lifecycle action for instance termination');
 }
 
-export function startInstanceTerminationWatcher({
-  onTermination,
-}: {
-  onTermination: (state: AutoScalingTargetLifecycleState) => void;
-}) {
+export function startInstanceTerminationWatcher(
+  onTermination: (state: AutoScalingTargetLifecycleState) => void,
+) {
   if (
     !config.runningInEc2 ||
     !config.autoScalingGroupName ||
@@ -104,11 +129,15 @@ export function startInstanceTerminationWatcher({
   }
 
   logger.info('Watching IMDS for Auto Scaling termination');
-  watchAutoScalingTargetLifecycleState({
-    targetStates: ['Terminated', 'Warmed:Terminated'],
+  void watchAutoScalingTargetLifecycleState({
+    targetStates: ['Terminated'],
     onTargetState(state) {
       logger.info(`Detected Auto Scaling termination target state from IMDS: ${state}`);
-      onTermination(state);
+      void waitForInstanceTerminationLifecycleAction()
+        .then(() => onTermination(state))
+        .catch((error) => {
+          logger.error('Error waiting for Auto Scaling termination lifecycle action', error);
+        });
     },
     onError(error) {
       logger.warn('Error polling IMDS for Auto Scaling target lifecycle state; retrying', error);
