@@ -30,6 +30,7 @@ import { createServerJob, selectJobsByJobSequenceId } from '../lib/server-jobs.j
 import { selectCourseInstanceById } from '../models/course-instances.js';
 import { selectOptionalUserByUid, selectOrInsertUserByUid } from '../models/user.js';
 
+import { fetchCheerio } from './helperClient.js';
 import * as helperServer from './helperServer.js';
 import {
   LTI_CONTEXT_ID,

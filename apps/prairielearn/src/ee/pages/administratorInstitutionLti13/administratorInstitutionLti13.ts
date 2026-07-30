@@ -27,6 +27,7 @@ import {
 import { typedAsyncHandler } from '../../../lib/res-locals.js';
 import { createServerJob } from '../../../lib/server-jobs.js';
 import { getCanonicalHost } from '../../../lib/url.js';
+import { insertAuditEvent } from '../../../models/audit-event.js';
 import { getInstitution } from '../../lib/institution.js';
 import { Lti13CombinedInstanceSchema, inspectRoster } from '../../lib/lti13.js';
 import { selectLti13InstanceForUpdate } from '../../models/lti13Instance.js';
@@ -237,6 +238,17 @@ router.post(
           institution_id: req.params.institution_id,
           unsafe_lti13_instance_id: req.params.unsafe_lti13_instance_id,
           roster_sync_allowed: shouldAllowRosterSync,
+        });
+        await insertAuditEvent({
+          tableName: 'lti13_instances',
+          action: 'update',
+          actionDetail: 'roster_sync_allowed',
+          rowId: instance.id,
+          institutionId: req.params.institution_id,
+          oldRow: { roster_sync_allowed: instance.roster_sync_allowed },
+          newRow: { roster_sync_allowed: shouldAllowRosterSync },
+          agentAuthnUserId: res.locals.authn_user.id,
+          agentUserId: res.locals.authn_user.id,
         });
       });
       flash(
