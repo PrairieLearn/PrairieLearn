@@ -88,6 +88,8 @@ export type SupportedTableActionCombination =
         | 'invited_by_manual_sync'
         | 'invitation_accepted'
         | 'invitation_rejected'
+        | 'identity_merged'
+        | 'roster_admitted'
         | 'blocked'
         | 'unblocked'
         | 'unblocked_by_manual_sync'
