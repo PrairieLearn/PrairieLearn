@@ -120,7 +120,6 @@ SELECT
 values
 FROM
   pg_type t
-  JOIN pg_catalog.pg_namespace n ON n.oid = t.typnamespace
 WHERE
   -- 'E' is the type category for enums.
   t.typcategory = 'E';
