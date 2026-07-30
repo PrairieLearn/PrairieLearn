@@ -206,14 +206,14 @@ router.post(
       req.body.__action === 'allow_roster_sync' ||
       req.body.__action === 'disallow_roster_sync'
     ) {
-      const rosterSyncAllowed = req.body.__action === 'allow_roster_sync';
+      const shouldAllowRosterSync = req.body.__action === 'allow_roster_sync';
       await runInTransactionAsync(async () => {
         await lockInstitutionForIdentityConfiguration(req.params.institution_id);
         const instance = await selectLti13InstanceForUpdate(
           req.params.institution_id,
           req.params.unsafe_lti13_instance_id,
         );
-        if (rosterSyncAllowed) {
+        if (shouldAllowRosterSync) {
           await assertLti13RosterSyncCanBeAllowed(
             req.params.institution_id,
             instance.uin_attribute,
@@ -223,12 +223,12 @@ router.post(
         await execute(sql.update_roster_sync_allowed, {
           institution_id: req.params.institution_id,
           unsafe_lti13_instance_id: req.params.unsafe_lti13_instance_id,
-          roster_sync_allowed: rosterSyncAllowed,
+          roster_sync_allowed: shouldAllowRosterSync,
         });
       });
       flash(
         'success',
-        rosterSyncAllowed ? 'Roster syncing allowed.' : 'Roster syncing disallowed.',
+        shouldAllowRosterSync ? 'Roster syncing allowed.' : 'Roster syncing disallowed.',
       );
       return res.redirect(req.originalUrl);
     } else if (req.body.__action === 'update_platform') {
