@@ -81,11 +81,6 @@ function assertNoEnrollmentSpecificAccessControlRules(infoJson: any) {
   ]);
 }
 
-function assertAccessControlCleared(infoJson: any) {
-  assert.notProperty(infoJson, 'allowAccess');
-  assert.deepEqual(infoJson.accessControl, []);
-}
-
 function getCourseInstanceCreatePostInfo(page: cheerio.Cheerio<any>) {
   const csrfToken = page.find('#test_csrf_token').text();
 
@@ -513,7 +508,10 @@ const publicCopyTestData: EditData[] = [
       course_instance_permission: 'Student Data Editor',
     },
     info: 'courseInstances/Fa19/assessments/test/infoAssessment.json',
-    validateInfo: assertAccessControlCleared,
+    validateInfo: (infoJson) => {
+      assert.notProperty(infoJson, 'allowAccess');
+      assert.deepEqual(infoJson.accessControl, []);
+    },
     files: new Set([
       'README.md',
       'infoCourse.json',
