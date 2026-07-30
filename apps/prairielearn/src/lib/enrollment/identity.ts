@@ -102,7 +102,7 @@ function allowsUinOrLtiInvitation(
   );
 }
 
-function classifyEnrollmentIdentityCandidates(
+export function classifyEnrollmentIdentityCandidates(
   candidates: readonly EnrollmentIdentityCandidate[],
 ): EnrollmentIdentityClassification {
   const boundCandidate = candidates.find((candidate) => candidate.matches.boundUser) ?? null;

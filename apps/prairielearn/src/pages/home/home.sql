@@ -166,113 +166,101 @@ ORDER BY
 
 -- BLOCK select_student_courses
 WITH
-  -- Base query: all enrollments for this user with course/course_instance data
-  base_enrollments AS (
+  user_identity AS (
     SELECT
-      e.id AS enrollment_id,
-      c.id AS course_id,
-      c.short_name AS course_short_name,
-      c.title AS course_title,
-      ci.id AS course_instance_id,
-      ci.modern_publishing,
-      ci.publishing_start_date,
-      ci.publishing_end_date,
-      to_jsonb(ci) AS course_instance,
-      to_jsonb(e) AS enrollment,
-      u.uid,
-      u.institution_id
+      id,
+      institution_id,
+      uid,
+      uin
     FROM
-      enrollments AS e
-      LEFT JOIN users AS u ON (u.id = e.user_id)
-      JOIN course_instances AS ci ON (
-        ci.id = e.course_instance_id
-        AND ci.deleted_at IS NULL
-      )
-      JOIN courses AS c ON (
-        c.id = ci.course_id
-        AND c.deleted_at IS NULL
-        AND (
-          c.example_course IS FALSE
-          OR $include_example_course_enrollments
-        )
-      )
+      users
     WHERE
-      e.user_id = $user_id
-      OR e.pending_uid = $pending_uid
-  ),
-  -- Legacy courses: use access rules for dates and initial filtering
-  legacy_courses AS (
-    SELECT
-      be.course_id,
-      be.course_short_name,
-      be.course_title,
-      be.course_instance,
-      be.enrollment,
-      NULL::jsonb AS latest_publishing_extension,
-      NULLIF(d.min_start_date, '-infinity'::timestamptz) AS start_date,
-      NULLIF(d.max_end_date, 'infinity'::timestamptz) AS end_date,
-      be.course_instance_id
-    FROM
-      base_enrollments AS be,
-      LATERAL (
-        SELECT
-          min(coalesce(ar.start_date, '-infinity'::timestamptz)) AS min_start_date,
-          max(coalesce(ar.end_date, 'infinity'::timestamptz)) AS max_end_date
-        FROM
-          course_instance_access_rules AS ar
-        WHERE
-          ar.course_instance_id = be.course_instance_id
-      ) AS d
-    WHERE
-      be.modern_publishing IS FALSE
-      AND $req_date BETWEEN d.min_start_date AND d.max_end_date
-  ),
-  -- Modern courses: use publishing dates directly and fetch extension data
-  modern_courses AS (
-    SELECT
-      be.course_id,
-      be.course_short_name,
-      be.course_title,
-      be.course_instance,
-      be.enrollment,
-      to_jsonb(cie) AS latest_publishing_extension,
-      be.publishing_start_date AS start_date,
-      be.publishing_end_date AS end_date,
-      be.course_instance_id
-    FROM
-      base_enrollments AS be
-      LEFT JOIN LATERAL (
-        SELECT
-          cie.*
-        FROM
-          course_instance_publishing_extension_enrollments AS ciee
-          JOIN course_instance_publishing_extensions AS cie ON (
-            cie.id = ciee.course_instance_publishing_extension_id
-          )
-        WHERE
-          ciee.enrollment_id = be.enrollment_id
-        ORDER BY
-          cie.end_date DESC NULLS LAST,
-          cie.id DESC
-        LIMIT
-          1
-      ) AS cie ON TRUE
-    WHERE
-      be.modern_publishing IS TRUE
+      id = $user_id
   )
 SELECT
-  *
+  c.id AS course_id,
+  c.short_name AS course_short_name,
+  c.title AS course_title,
+  to_jsonb(ci.*) AS course_instance,
+  to_jsonb(e.*) AS enrollment,
+  CASE
+    WHEN ci.modern_publishing THEN ci.publishing_start_date
+    ELSE NULLIF(d.min_start_date, '-infinity'::timestamptz)
+  END AS start_date,
+  CASE
+    WHEN ci.modern_publishing THEN ci.publishing_end_date
+    ELSE NULLIF(d.max_end_date, 'infinity'::timestamptz)
+  END AS end_date,
+  to_jsonb(extension.*) AS latest_publishing_extension,
+  coalesce(e.user_id = identity.id, FALSE) AS matches_bound_user,
+  coalesce(e.pending_uid = identity.uid, FALSE) AS matches_pending_uid,
+  coalesce(
+    identity.institution_id = c.institution_id
+    AND identity.uin IS NOT NULL
+    AND e.pending_uin = identity.uin,
+    FALSE
+  ) AS matches_institution_uin,
+  FALSE AS matches_lti13
 FROM
-  legacy_courses
-UNION ALL
-SELECT
-  *
-FROM
-  modern_courses
+  enrollments AS e
+  JOIN course_instances AS ci ON (
+    ci.id = e.course_instance_id
+    AND ci.deleted_at IS NULL
+  )
+  JOIN courses AS c ON (
+    c.id = ci.course_id
+    AND c.deleted_at IS NULL
+    AND (
+      c.example_course IS FALSE
+      OR $include_example_course_enrollments
+    )
+  )
+  CROSS JOIN user_identity AS identity
+  CROSS JOIN LATERAL (
+    SELECT
+      min(coalesce(ar.start_date, '-infinity'::timestamptz)) AS min_start_date,
+      max(coalesce(ar.end_date, 'infinity'::timestamptz)) AS max_end_date
+    FROM
+      course_instance_access_rules AS ar
+    WHERE
+      ar.course_instance_id = ci.id
+  ) AS d
+  LEFT JOIN LATERAL (
+    SELECT
+      publishing_extension.*
+    FROM
+      course_instance_publishing_extension_enrollments AS extension_enrollment
+      JOIN course_instance_publishing_extensions AS publishing_extension ON (
+        publishing_extension.id = extension_enrollment.course_instance_publishing_extension_id
+      )
+    WHERE
+      extension_enrollment.enrollment_id = e.id
+      AND publishing_extension.course_instance_id = ci.id
+    ORDER BY
+      publishing_extension.end_date DESC,
+      publishing_extension.id DESC
+    LIMIT
+      1
+  ) AS extension ON ci.modern_publishing
+WHERE
+  (
+    e.user_id = identity.id
+    OR e.pending_uid = identity.uid
+    OR (
+      identity.institution_id = c.institution_id
+      AND identity.uin IS NOT NULL
+      AND e.pending_uin = identity.uin
+    )
+  )
+  AND (
+    ci.modern_publishing
+    OR $req_date BETWEEN d.min_start_date AND d.max_end_date
+  )
 ORDER BY
   start_date DESC NULLS LAST,
   end_date DESC NULLS LAST,
-  course_instance_id DESC;
+  ci.id DESC,
+  e.id DESC;
 
 -- BLOCK select_admin_institutions
 -- Note that we only consider institutions where the user is explicitly
