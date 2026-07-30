@@ -5,6 +5,7 @@ import { useController, useForm } from 'react-hook-form';
 
 import { ComboBox, type ComboBoxItem, StickySaveBar, TagPicker } from '@prairielearn/ui';
 
+import { PublicLinkSharing } from '../../components/LinkSharing.js';
 import { QuestionShortNameDescription } from '../../components/ShortNameDescriptions.js';
 import { TagBadge } from '../../components/TagBadge.js';
 import { TagDescription } from '../../components/TagDescription.js';
@@ -188,6 +189,7 @@ export const InstructorQuestionSettingsForm = ({
   hasCoursePermissionView,
   editableCourses,
   questionGHLink,
+  publicLink,
   sharing,
   questionTest,
 }: {
@@ -205,6 +207,7 @@ export const InstructorQuestionSettingsForm = ({
   hasCoursePermissionView: boolean;
   editableCourses: EditableCourse[];
   questionGHLink: string | null;
+  publicLink: string;
   sharing: {
     enabled: boolean;
     sets: QuestionSharingSetRow[];
@@ -1157,6 +1160,21 @@ export const InstructorQuestionSettingsForm = ({
                   </>
                 )}
               </div>
+
+              {question.share_publicly || question.share_source_publicly ? (
+                <div className="mt-3">
+                  <PublicLinkSharing
+                    publicLink={publicLink}
+                    badgeLabel={question.share_source_publicly ? 'Public source' : 'Public'}
+                    sharingMessage={
+                      question.share_source_publicly
+                        ? "This question's source is publicly shared."
+                        : 'This question is publicly shared.'
+                    }
+                    publicLinkMessage="The link that other instructors can use to view this question."
+                  />
+                </div>
+              ) : null}
             </div>
           </div>
         )}
