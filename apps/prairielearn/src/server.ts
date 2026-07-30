@@ -2629,7 +2629,6 @@ if (shouldStartServer) {
   process.on('SIGTERM', async () => {
     if (gracefulShutdownStarted) return;
     gracefulShutdownStarted = true;
-    logger.info('Starting graceful shutdown');
 
     // In test environments, the entire process group receives SIGTERM, which
     // can cause in-flight outgoing HTTP requests to fail with ECONNRESET.

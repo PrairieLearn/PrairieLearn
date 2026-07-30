@@ -31,7 +31,8 @@ async function waitForInstanceTerminationLifecycleAction() {
 
   // IMDS can report the target state `Terminated` before Auto Scaling reaches
   // `Terminating:Wait`. Wait for the lifecycle action so shutdown does not race
-  // load balancer draining.
+  // load balancer draining. If the hook is absent or bypassed, EC2's eventual
+  // SIGTERM remains the fallback.
   while (true) {
     try {
       const lifecycleState = await getInstanceLifecycleState(client);
