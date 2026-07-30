@@ -10,12 +10,14 @@ import { formatStripePrice } from '../../lib/billing/stripe.shared.js';
 export function StudentCourseInstanceUpgrade({
   course,
   courseInstance,
+  lti13Relaunch,
   missingPlans,
   planPrices,
   resLocals,
 }: {
   course: Course;
   courseInstance: CourseInstance;
+  lti13Relaunch: boolean;
   missingPlans: PlanName[];
   /**
    * `null` here will indicate that we aren't configured with Stripe credentials
@@ -47,7 +49,12 @@ export function StudentCourseInstanceUpgrade({
         : html`
             ${PriceTable({ planNames: missingPlans, planPrices })}
 
-            <form method="POST">
+            <form
+              method="POST"
+              action="/pl/course_instance/${courseInstance.id}/upgrade${lti13Relaunch
+                ? '?lti13_relaunch=1'
+                : ''}"
+            >
               <div class="form-check mb-3">
                 <input
                   type="checkbox"
@@ -83,17 +90,49 @@ export function StudentCourseInstanceUpgrade({
   });
 }
 
+export function Lti13CourseInstanceRelaunch({
+  course,
+  courseInstance,
+  resLocals,
+}: {
+  course: Course;
+  courseInstance: CourseInstance;
+  resLocals: ResLocalsForPage<'course-instance'>;
+}) {
+  return PageLayout({
+    resLocals,
+    pageTitle: 'Return to your LMS',
+    navContext: {
+      type: 'student',
+      page: 'upgrade',
+    },
+    content: html`
+      <h1>Return to your LMS</h1>
+      <p>
+        ${course.short_name}: ${courseInstance.long_name} is ready. Return to your LMS and relaunch
+        this course to finish enrollment.
+      </p>
+    `,
+  });
+}
+
 export function CourseInstanceStudentUpdateSuccess({
   course,
   courseInstance,
+  lti13Relaunch,
   paid,
   resLocals,
 }: {
   course: Course;
   courseInstance: CourseInstance;
+  lti13Relaunch: boolean;
   paid: boolean;
   resLocals: ResLocalsForPage<'course-instance'>;
 }) {
+  if (lti13Relaunch) {
+    return Lti13CourseInstanceRelaunch({ course, courseInstance, resLocals });
+  }
+
   return PageLayout({
     resLocals,
     pageTitle: 'Upgrade successful',

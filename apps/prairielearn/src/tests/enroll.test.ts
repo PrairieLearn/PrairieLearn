@@ -315,6 +315,44 @@ describe('Self-enrollment settings transitions', () => {
     });
   });
 
+  it('admits an institution UIN invitation without self-enrollment or a code', async () => {
+    await deleteEnrollmentsInCourseInstance('1');
+    await updateCourseInstanceSettings('1', {
+      selfEnrollmentEnabled: false,
+      selfEnrollmentUseEnrollmentCode: true,
+      restrictToInstitution: false,
+    });
+
+    const uinUser = await getOrCreateUser({
+      uid: 'uin-invitation@example.com',
+      name: 'UIN Invitation Student',
+      uin: 'invitation-uin',
+      email: 'uin-invitation@example.com',
+      institutionId: '1',
+    });
+    const invitation = await queryRow(
+      `INSERT INTO enrollments (course_instance_id, status, pending_uin)
+       VALUES ('1', 'invited', $pending_uin)
+       RETURNING *`,
+      { pending_uin: uinUser.uin },
+      EnrollmentSchema,
+    );
+
+    await withUser(uinUser, async () => {
+      const response = await fetch(assessmentsUrl);
+      assert.equal(response.status, 200);
+
+      const enrollment = await queryRow(
+        'SELECT * FROM enrollments WHERE id = $enrollment_id',
+        { enrollment_id: invitation.id },
+        EnrollmentSchema,
+      );
+      assert.equal(enrollment.status, 'joined');
+      assert.equal(enrollment.user_id, uinUser.id);
+      assert.isNull(enrollment.pending_uin);
+    });
+  });
+
   it('does not allow rejected user to self-enroll via the assessments endpoint when self-enrollment is disabled', async () => {
     await deleteEnrollmentsInCourseInstance('1');
     await updateCourseInstanceSettings('1', {

@@ -4,10 +4,8 @@ import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import { runInTransactionAsync } from '@prairielearn/postgres';
-import { run } from '@prairielearn/run';
 
 import { EnrollmentPage } from '../../../components/EnrollmentPage.js';
-import { hasRole } from '../../../lib/authz-data-lib.js';
 import { config } from '../../../lib/config.js';
 import {
   CourseInstanceSchema,
@@ -16,12 +14,16 @@ import {
   UserSchema,
 } from '../../../lib/db-types.js';
 import {
-  checkEnrollmentEligibility,
+  type EnrollmentAccessDecision,
+  selectEnrollmentAccessDecision,
+} from '../../../lib/enrollment/admission.js';
+import {
+  type EnrollmentIneligibilityReason,
   getEligibilityErrorMessage,
-} from '../../../lib/enrollment-eligibility.js';
-import { typedAsyncHandler } from '../../../lib/res-locals.js';
+} from '../../../lib/enrollment/eligibility.js';
+import { idsEqual } from '../../../lib/id.js';
+import { type ResLocalsForPage, typedAsyncHandler } from '../../../lib/res-locals.js';
 import { getCanonicalHost } from '../../../lib/url.js';
-import { selectOptionalEnrollmentByUid } from '../../../models/enrollment.js';
 import { checkPlanGrantsForLocals } from '../../lib/billing/plan-grants.js';
 import {
   getMissingPlanGrants,
@@ -44,10 +46,39 @@ import {
 
 import {
   CourseInstanceStudentUpdateSuccess,
+  Lti13CourseInstanceRelaunch,
   StudentCourseInstanceUpgrade,
 } from './studentCourseInstanceUpgrade.html.js';
 
 const router = Router({ mergeParams: true });
+
+function getAdmissionIneligibilityReason(
+  decision: EnrollmentAccessDecision,
+  lti13Relaunch: boolean,
+): EnrollmentIneligibilityReason | null {
+  if (decision.allowed) return null;
+  if (decision.reason === 'already_joined' || decision.reason === 'enrollment_code_required') {
+    return null;
+  }
+  if (lti13Relaunch && decision.reason !== 'blocked') return null;
+  return decision.reason;
+}
+
+function canUseLti13RelaunchMarker(
+  marker: unknown,
+  resLocals: ResLocalsForPage<'course-instance'>,
+) {
+  // This marker only changes upgrade and payment routing. A fresh checked LTI
+  // admission is still required to enroll after the upgrade.
+  return (
+    marker === '1' &&
+    idsEqual(resLocals.user.id, resLocals.authn_user.id) &&
+    resLocals.authz_data.authn_course_role === 'None' &&
+    resLocals.authz_data.authn_course_instance_role === 'None' &&
+    resLocals.authz_data.authn_has_student_access &&
+    !resLocals.is_administrator
+  );
+}
 
 router.get(
   '/',
@@ -55,31 +86,16 @@ router.get(
     const courseInstance = CourseInstanceSchema.parse(res.locals.course_instance);
     const course = CourseSchema.parse(res.locals.course);
     const user = UserSchema.parse(res.locals.authn_user);
+    const lti13Relaunch = canUseLti13RelaunchMarker(req.query.lti13_relaunch, res.locals);
 
-    // Check enrollment eligibility before showing the upgrade page.
-    // This prevents students from paying when they wouldn't be able to enroll
-    // (e.g., due to institution restrictions).
-    const existingEnrollment = await run(async () => {
-      if (!hasRole(res.locals.authz_data, ['Student'])) {
-        return null;
-      }
-      return await selectOptionalEnrollmentByUid({
-        uid: user.uid,
-        courseInstance,
-        requiredRole: ['Student'],
-        authzData: res.locals.authz_data,
-      });
-    });
-
-    const enrollmentInfo = checkEnrollmentEligibility({
-      user,
+    const admissionDecision = await selectEnrollmentAccessDecision({
       course,
       courseInstance,
-      existingEnrollment,
+      user,
     });
-
-    if (!enrollmentInfo.eligible) {
-      res.status(403).send(EnrollmentPage({ resLocals: res.locals, type: enrollmentInfo.reason }));
+    const ineligibilityReason = getAdmissionIneligibilityReason(admissionDecision, lti13Relaunch);
+    if (ineligibilityReason !== null) {
+      res.status(403).send(EnrollmentPage({ resLocals: res.locals, type: ineligibilityReason }));
       return;
     }
 
@@ -88,7 +104,11 @@ router.get(
     // redirect them back to the assessments page.
     const hasPlanGrants = await checkPlanGrantsForLocals(res.locals);
     if (hasPlanGrants) {
-      res.redirect(`/pl/course_instance/${res.locals.course_instance.id}/assessments`);
+      if (lti13Relaunch) {
+        res.send(Lti13CourseInstanceRelaunch({ course, courseInstance, resLocals: res.locals }));
+      } else {
+        res.redirect(`/pl/course_instance/${res.locals.course_instance.id}/assessments`);
+      }
       return;
     }
 
@@ -109,6 +129,7 @@ router.get(
       StudentCourseInstanceUpgrade({
         course,
         courseInstance,
+        lti13Relaunch,
         missingPlans,
         planPrices,
         resLocals: res.locals,
@@ -135,29 +156,16 @@ router.post(
       const course = CourseSchema.parse(res.locals.course);
       const courseInstance = CourseInstanceSchema.parse(res.locals.course_instance);
       const user = UserSchema.parse(res.locals.authn_user);
+      const lti13Relaunch = canUseLti13RelaunchMarker(req.query.lti13_relaunch, res.locals);
 
-      // Check enrollment eligibility before processing payment.
-      const existingEnrollment = await run(async () => {
-        if (!hasRole(res.locals.authz_data, ['Student'])) {
-          return null;
-        }
-        return await selectOptionalEnrollmentByUid({
-          uid: user.uid,
-          courseInstance,
-          requiredRole: ['Student'],
-          authzData: res.locals.authz_data,
-        });
-      });
-
-      const enrollmentInfo = checkEnrollmentEligibility({
-        user,
+      const admissionDecision = await selectEnrollmentAccessDecision({
         course,
         courseInstance,
-        existingEnrollment,
+        user,
       });
-
-      if (!enrollmentInfo.eligible) {
-        throw new error.HttpStatusError(403, getEligibilityErrorMessage(enrollmentInfo.reason));
+      const ineligibilityReason = getAdmissionIneligibilityReason(admissionDecision, lti13Relaunch);
+      if (ineligibilityReason !== null) {
+        throw new error.HttpStatusError(403, getEligibilityErrorMessage(ineligibilityReason));
       }
 
       const body = UpgradeBodySchema.parse(req.body);
@@ -205,6 +213,7 @@ router.post(
 
       const host = getCanonicalHost(req);
       const urlBase = `${host}/pl/course_instance/${courseInstance.id}/upgrade`;
+      const lti13RelaunchQuery = lti13Relaunch ? '&lti13_relaunch=1' : '';
 
       const stripe = getStripeClient();
       const customerId = await getOrCreateStripeCustomerId(user.id, {
@@ -227,8 +236,8 @@ router.post(
         },
         line_items: lineItems,
         mode: 'payment',
-        success_url: `${urlBase}/success?session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: urlBase,
+        success_url: `${urlBase}/success?session_id={CHECKOUT_SESSION_ID}${lti13RelaunchQuery}`,
+        cancel_url: `${urlBase}${lti13Relaunch ? '?lti13_relaunch=1' : ''}`,
         metadata,
         payment_intent_data: {
           metadata,
@@ -260,6 +269,7 @@ router.get(
     const course = CourseSchema.parse(res.locals.course);
     const courseInstance = CourseInstanceSchema.parse(res.locals.course_instance);
     const authn_user = UserSchema.parse(res.locals.authn_user);
+    const lti13Relaunch = req.query.lti13_relaunch === '1';
 
     if (!req.query.session_id) throw new error.HttpStatusError(400, 'Missing session_id');
 
@@ -275,6 +285,7 @@ router.get(
         CourseInstanceStudentUpdateSuccess({
           course,
           courseInstance,
+          lti13Relaunch,
           paid: true,
           resLocals: res.locals,
         }),
@@ -329,6 +340,7 @@ router.get(
         CourseInstanceStudentUpdateSuccess({
           course,
           courseInstance,
+          lti13Relaunch,
           paid: true,
           resLocals: res.locals,
         }),
@@ -346,6 +358,7 @@ router.get(
         CourseInstanceStudentUpdateSuccess({
           course,
           courseInstance,
+          lti13Relaunch: false,
           paid: false,
           resLocals: res.locals,
         }),
