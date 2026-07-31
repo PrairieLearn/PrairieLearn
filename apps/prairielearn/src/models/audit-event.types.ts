@@ -94,7 +94,6 @@ export type SupportedTableActionCombination =
         | 'invitation_accepted'
         | 'invitation_rejected'
         | 'identity_merged'
-        | 'roster_admitted'
         | 'blocked'
         | 'unblocked'
         | 'unblocked_by_manual_sync'
