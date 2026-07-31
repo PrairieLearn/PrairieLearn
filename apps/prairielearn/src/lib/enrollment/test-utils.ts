@@ -16,23 +16,20 @@ const sql = loadSqlEquiv(import.meta.url);
 
 export const OTHER_INSTITUTION_ID = '900001';
 
-let fixtureCounter = 0;
-
-export function nextFixtureName(prefix: string): string {
-  fixtureCounter += 1;
-  return `${prefix}-${fixtureCounter}-${crypto.randomUUID()}`;
+export function uniqueTestValue(prefix: string): string {
+  return `${prefix}-${crypto.randomUUID()}`;
 }
 
 export async function createUser({
   prefix,
-  uin = nextFixtureName(`${prefix}-uin`),
+  uin = uniqueTestValue(`${prefix}-uin`),
   institutionId,
 }: {
   institutionId?: string;
   prefix: string;
   uin?: string;
 }): Promise<User> {
-  const uid = `${nextFixtureName(prefix)}@${
+  const uid = `${uniqueTestValue(prefix)}@${
     institutionId === OTHER_INSTITUTION_ID ? 'other.example' : 'example.com'
   }`;
   return await getOrCreateUser({
@@ -99,7 +96,7 @@ export async function selectEnrollments(enrollmentIds: string[]): Promise<Enroll
 export async function createLti13CourseInstance(
   courseInstance: CourseInstance,
 ): Promise<{ id: string }> {
-  const identity = nextFixtureName('lti-link');
+  const identity = uniqueTestValue('lti-link');
   return await queryRow(
     sql.insert_lti13_course_instance,
     {
