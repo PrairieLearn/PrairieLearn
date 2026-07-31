@@ -342,11 +342,8 @@ export async function admitUserToCourseInstance(
   });
 }
 
-/**
- * Rejects only the exact actionable UID-matched invitation selected by the
- * caller. UIN and LTI identity matches cannot authorize this mutation.
- */
-export async function rejectUidInvitation({
+async function rejectInvitation({
+  source,
   agentAuthnUserId,
   agentUserId,
   courseInstanceId,
@@ -355,9 +352,12 @@ export async function rejectUidInvitation({
 }: EnrollmentAuditActor & {
   courseInstanceId: string;
   enrollmentId: string;
+  source: Extract<
+    EnrollmentAdmissionSource,
+    { type: 'invitation'; matchedBy: 'institution_uin' | 'uid' }
+  >;
   userId: string;
 }): Promise<Enrollment> {
-  const source: EnrollmentAdmissionSource = { type: 'invitation', matchedBy: 'uid' };
   const context = { courseInstanceId, userId };
 
   return await runWithSharedEnrollmentBarrier(courseInstanceId, async () => {
@@ -383,7 +383,7 @@ export async function rejectUidInvitation({
 
     const oldEnrollment = decision.invitationCandidate.enrollment;
     const enrollment = await queryRow(
-      sql.reject_uid_invitation,
+      sql.reject_invitation,
       { enrollment_id: oldEnrollment.id },
       EnrollmentSchema,
     );
@@ -398,5 +398,40 @@ export async function rejectUidInvitation({
       agentUserId,
     });
     return enrollment;
+  });
+}
+
+/**
+ * Rejects only the exact actionable UID-matched invitation selected by the
+ * caller. UIN and LTI identity matches cannot authorize this mutation.
+ */
+export async function rejectUidInvitation(
+  options: EnrollmentAuditActor & {
+    courseInstanceId: string;
+    enrollmentId: string;
+    userId: string;
+  },
+): Promise<Enrollment> {
+  return await rejectInvitation({
+    ...options,
+    source: { type: 'invitation', matchedBy: 'uid' },
+  });
+}
+
+/**
+ * Hides institution-provided course access without binding the user or changing
+ * a paired left enrollment. A later roster sync may make the course available
+ * again by reinviting the exact same identity.
+ */
+export async function rejectInstitutionUinInvitation(
+  options: EnrollmentAuditActor & {
+    courseInstanceId: string;
+    enrollmentId: string;
+    userId: string;
+  },
+): Promise<Enrollment> {
+  return await rejectInvitation({
+    ...options,
+    source: { type: 'invitation', matchedBy: 'institution_uin' },
   });
 }
