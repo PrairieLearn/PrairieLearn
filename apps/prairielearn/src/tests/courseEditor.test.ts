@@ -507,7 +507,11 @@ const publicCopyTestData: EditData[] = [
       end_date: '',
       course_instance_permission: 'Student Data Editor',
     },
-    info: 'questions/shared-publicly/info.json',
+    info: 'courseInstances/Fa19/assessments/test/infoAssessment.json',
+    validateInfo: (infoJson) => {
+      assert.notProperty(infoJson, 'allowAccess');
+      assert.deepEqual(infoJson.accessControl, []);
+    },
     files: new Set([
       'README.md',
       'infoCourse.json',
@@ -805,6 +809,7 @@ async function createSharedCourse() {
     },
   ];
   sharingCourseData.courseInstances['Fa19'].assessments['test'].shareSourcePublicly = true;
+  sharingCourseData.courseInstances['Fa19'].assessments['test'].accessControl = [{}];
   sharingCourseData.courseInstances['Fa19'].courseInstance.shareSourcePublicly = true;
 
   sharingCourseData.courseInstances['Fa19'].assessments['nested/dir/test'] = structuredClone(

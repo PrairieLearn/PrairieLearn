@@ -178,6 +178,7 @@ export function InstructorInstanceAdminLti13({
                     lms_name,
                     assessments,
                     lineitems,
+                    hasMultipleLmsCourses: instances.length > 1,
                   })
                 : html`
                     <p>
@@ -215,11 +216,13 @@ function LinkedAssessments({
   lms_name,
   assessments,
   lineitems,
+  hasMultipleLmsCourses,
 }: {
   resLocals: ResLocalsForPage<'course-instance'>;
   lms_name: string;
   assessments: AssessmentRow[];
   lineitems: Lti13Assessment[];
+  hasMultipleLmsCourses: boolean;
 }): HtmlSafeString {
   const { urlPrefix } = resLocals;
   const { assessments_group_by } = resLocals.course_instance;
@@ -419,6 +422,19 @@ function LinkedAssessments({
                                   aria-label="Toggle dropdown"
                                 ></button>
                                 <ul class="dropdown-menu">
+                                  ${hasMultipleLmsCourses
+                                    ? html`
+                                        <li>
+                                          <button
+                                            class="dropdown-item"
+                                            name="__action"
+                                            value="send_grades_all_lms_courses"
+                                          >
+                                            Send grades to all LMS courses
+                                          </button>
+                                        </li>
+                                      `
+                                    : ''}
                                   <li>
                                     <button
                                       class="dropdown-item"
