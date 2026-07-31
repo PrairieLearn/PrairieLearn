@@ -13,6 +13,8 @@ on:
       - master
     paths:
       - 'pnpm-lock.yaml'
+      - '.github/actions/**'
+      - '.github/workflows/**'
 
 jobs:
   dedupe:
@@ -60,7 +62,7 @@ jobs:
       - name: 'Pin GitHub Actions'
         run: |
           pnpm --filter @prairielearn/pin-github-actions build
-          node packages/pin-github-actions/dist/cli.js
+          pnpm exec pin-github-actions
         env:
           # Use GitHub token to avoid hitting the GitHub API rate limit when
           # checking for the latest version of each action.

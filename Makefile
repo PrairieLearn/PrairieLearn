@@ -170,7 +170,7 @@ lint-actions:
 	@actionlint
 lint-actions-version:
 	@pnpm --filter @prairielearn/pin-github-actions build
-	@pnpm --filter @prairielearn/pin-github-actions run start --check
+	@pnpm exec pin-github-actions --check
 lint-changeset:
 	@pnpm changeset status
 
@@ -184,7 +184,7 @@ format-sql:
 	@uv run sqlfluff fix
 format-actions-version:
 	@pnpm --filter @prairielearn/pin-github-actions build
-	@pnpm --filter @prairielearn/pin-github-actions run start
+	@pnpm exec pin-github-actions
 
 fix-js:
 	@pnpm eslint --ext js --fix "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,html,mustache}"

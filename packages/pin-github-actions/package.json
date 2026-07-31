@@ -15,8 +15,7 @@
   },
   "main": "dist/cli.js",
   "scripts": {
-    "build": "tsgo",
-    "start": "node ./dist/cli.js"
+    "build": "tsgo"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
