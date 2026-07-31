@@ -209,3 +209,9 @@ SET
 UPDATE pt_reservations
 SET
   access_end = $access_end;
+
+-- BLOCK select_reservation_id
+SELECT
+  id
+FROM
+  pt_reservations;

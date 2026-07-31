@@ -521,7 +521,7 @@ describe('ipToMode tests', function () {
           await execute(sql.enable_cheating_reports_on_center);
           await execute(sql.start_reservations);
 
-          const reservation_id = await queryScalar('SELECT id FROM pt_reservations', IdSchema);
+          const reservation_id = await queryScalar(sql.select_reservation_id, IdSchema);
           const date = new Date();
           const activeInfo = await selectActiveReservationInfo({
             ip: '10.0.0.1',
@@ -585,7 +585,7 @@ describe('ipToMode tests', function () {
           await execute(sql.enable_cheating_reports_on_course);
           await execute(sql.start_reservations);
 
-          const reservation_id = await queryScalar('SELECT id FROM pt_reservations', IdSchema);
+          const reservation_id = await queryScalar(sql.select_reservation_id, IdSchema);
           const info = await selectActiveReservationInfo({
             ip: '192.168.0.1',
             date: new Date(),
