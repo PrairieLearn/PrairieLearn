@@ -2,6 +2,7 @@ import crypto from 'node:crypto';
 
 import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 
+import { getOrCreateUser } from '../../tests/utils/auth.js';
 import {
   type CourseInstance,
   type Enrollment,
@@ -9,7 +10,6 @@ import {
   type EnumEnrollmentStatus,
   Lti13CourseInstanceSchema,
   type User,
-  UserSchema,
 } from '../db-types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
@@ -35,17 +35,13 @@ export async function createUser({
   const uid = `${nextFixtureName(prefix)}@${
     institutionId === OTHER_INSTITUTION_ID ? 'other.example' : 'example.com'
   }`;
-  return await queryRow(
-    sql.insert_user,
-    {
-      email: uid,
-      institution_id: institutionId,
-      name: prefix,
-      uid,
-      uin,
-    },
-    UserSchema,
-  );
+  return await getOrCreateUser({
+    email: uid,
+    institutionId,
+    name: prefix,
+    uid,
+    uin,
+  });
 }
 
 export async function createEnrollment({
