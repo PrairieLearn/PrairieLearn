@@ -311,26 +311,28 @@ function IssueRow({
             </>
           )}
         </small>
-        {issue.manually_reported ? (
-          <span className="badge text-bg-info">Manually reported</span>
-        ) : (
-          <span className="badge text-bg-warning">Automatically reported</span>
-        )}
-        {issue.assessment &&
-          (issue.assessment.deleted_at ? (
-            <span className="badge color-red3 ms-1">{issue.assessment.label} (deleted)</span>
+        <span className="d-inline-flex flex-wrap align-items-center gap-1">
+          {issue.manually_reported ? (
+            <span className="badge text-bg-info">Manually reported</span>
           ) : (
-            issue.course_instance_id && (
-              <AssessmentBadge
-                courseInstanceId={issue.course_instance_id}
-                hideLink={issue.hideAssessmentLink}
-                assessment={issue.assessment}
-              />
-            )
-          ))}
-        {issue.course_instance_short_name && (
-          <span className="badge text-bg-dark">{issue.course_instance_short_name}</span>
-        )}
+            <span className="badge text-bg-warning">Automatically reported</span>
+          )}
+          {issue.assessment &&
+            (issue.assessment.deleted_at ? (
+              <span className="badge color-red3">{issue.assessment.label} (deleted)</span>
+            ) : (
+              issue.course_instance_id && (
+                <AssessmentBadge
+                  courseInstanceId={issue.course_instance_id}
+                  hideLink={issue.hideAssessmentLink}
+                  assessment={issue.assessment}
+                />
+              )
+            ))}
+          {issue.course_instance_short_name && (
+            <span className="badge text-bg-dark">{issue.course_instance_short_name}</span>
+          )}
+        </span>
       </div>
       {hasCoursePermissionEdit && (
         <div className="ms-auto ps-4">
