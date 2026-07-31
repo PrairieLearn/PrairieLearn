@@ -16,14 +16,20 @@ WITH
         -- The reservation has had their access start at some point, and the current
         -- time is within the access window.
         r.access_start IS NOT NULL
-        AND r.access_end IS NOT NULL
-        AND $date BETWEEN r.access_start AND r.access_end
+        AND $date >= r.access_start
+        AND (
+          r.access_end IS NULL
+          OR $date < r.access_end
+        )
       ) AS reservation_active,
       (
         -- PrairieTest accepts reports only while access is open.
         r.access_start IS NOT NULL
-        AND r.access_end IS NOT NULL
-        AND $date BETWEEN r.access_start AND r.access_end
+        AND $date >= r.access_start
+        AND (
+          r.access_end IS NULL
+          OR $date < r.access_end
+        )
       ) AS reservation_in_access_window,
       r.id AS reservation_id,
       l.id AS location_id,
@@ -71,7 +77,12 @@ WITH
         -- access ends, which would give students a chance to exfiltrate exam
         -- content via Public-mode assessments.
         OR (
-          $date BETWEEN r.access_start AND r.access_end  + '30 minutes'::interval
+          r.access_start IS NOT NULL
+          AND $date >= r.access_start
+          AND (
+            r.access_end IS NULL
+            OR $date < r.access_end + '30 minutes'::interval
+          )
         )
       )
   )

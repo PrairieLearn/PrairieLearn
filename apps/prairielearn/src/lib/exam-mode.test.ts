@@ -515,19 +515,36 @@ describe('ipToMode tests', function () {
 
   describe('cheating_report_reservation_id', () => {
     describe('center exam', () => {
-      it('should return the reservation id when access is open and the center has opted in', async () => {
+      it('should return the reservation id while PrairieTest considers access open', async () => {
         await helperDb.runInTransactionAndRollback(async () => {
           await createCenterExamReservation();
           await execute(sql.enable_cheating_reports_on_center);
           await execute(sql.start_reservations);
 
           const reservation_id = await queryScalar('SELECT id FROM pt_reservations', IdSchema);
-          const info = await selectActiveReservationInfo({
+          const date = new Date();
+          const activeInfo = await selectActiveReservationInfo({
             ip: '10.0.0.1',
-            date: new Date(),
+            date,
             authn_user_id,
           });
-          assert.equal(info.cheating_report_reservation_id, reservation_id);
+          assert.equal(activeInfo.cheating_report_reservation_id, reservation_id);
+
+          await execute(sql.set_reservation_access_end, { access_end: date });
+          const endedInfo = await selectActiveReservationInfo({
+            ip: '10.0.0.1',
+            date,
+            authn_user_id,
+          });
+          assert.isNull(endedInfo.cheating_report_reservation_id);
+
+          await execute(sql.set_reservation_access_end, { access_end: null });
+          const openEndedInfo = await selectActiveReservationInfo({
+            ip: '10.0.0.1',
+            date,
+            authn_user_id,
+          });
+          assert.equal(openEndedInfo.cheating_report_reservation_id, reservation_id);
         });
       });
 
