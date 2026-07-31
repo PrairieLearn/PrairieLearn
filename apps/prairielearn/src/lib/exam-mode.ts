@@ -77,7 +77,7 @@ export async function ipToMode({
  * Error thrown when a user with an active LockDown-Browser-required reservation
  * accesses PrairieLearn from a session that was not established inside LockDown
  * Browser. The denial is global (not just exam pages), so it's raised from the
- * `enforceLockdownBrowser` middleware rather than per page.
+ * `selectAndAuthzPrairieTestReservation` middleware rather than per page.
  *
  * Attack vector this guards against:
  *

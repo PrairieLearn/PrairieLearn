@@ -11,12 +11,13 @@ function isPrairieTestAuthRequest(req: Request): boolean {
 }
 
 /**
- * Denies all PrairieLearn access to a user with an active
+ * Selects active PrairieTest reservation information for downstream authorization
+ * and UI code. It also denies all PrairieLearn access to a user with an active
  * LockDown-Browser-required reservation whose session was not established from
  * inside LockDown Browser. This runs against the authenticated user right after
- * authentication so the denial applies to every page, not just exam-scoped
- * ones. Staff emulating a student are unaffected: emulation overrides the
- * effective user, not the authenticated user, and staff hold no reservation. The
+ * authentication so the denial applies to every page, not just exam-scoped ones.
+ * Staff emulating a student are unaffected: emulation overrides the effective
+ * user, not the authenticated user, and staff hold no reservation. The
  * PrairieLearn-to-PrairieTest authentication handoff is exempt because students
  * must complete it before they can launch LockDown Browser.
  */
