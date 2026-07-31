@@ -54,10 +54,10 @@ SELECT
   CASE
     WHEN ai.team_id IS NOT NULL THEN (
       SELECT
-        COALESCE(ARRAY_AGG(u.uid), '{}'::text[])
+        COALESCE(ARRAY_AGG(ou.uid), '{}'::text[])
       FROM
         team_users gu
-        JOIN users u ON (u.id = gu.user_id)
+        JOIN users ou ON (ou.id = gu.user_id)
       WHERE
         gu.team_id = ai.team_id
     )
@@ -226,10 +226,10 @@ SELECT
   CASE
     WHEN ai.team_id IS NOT NULL THEN (
       SELECT
-        COALESCE(ARRAY_AGG(u.uid), '{}'::text[])
+        COALESCE(ARRAY_AGG(ou.uid), '{}'::text[])
       FROM
         team_users gu
-        JOIN users u ON (u.id = gu.user_id)
+        JOIN users ou ON (ou.id = gu.user_id)
       WHERE
         gu.team_id = ai.team_id
     )
