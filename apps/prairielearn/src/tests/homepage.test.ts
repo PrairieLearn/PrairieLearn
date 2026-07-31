@@ -102,7 +102,12 @@ describe('Homepage enrollment candidates', () => {
       await withUser(user, async () => {
         const response = await fetchCheerio(homeUrl);
         assert.equal(response.status, 200);
-        assert.notInclude(response.$('body').text(), 'Available through your institution');
+        assert.lengthOf(
+          response.$(
+            'table[aria-label="Courses with student access"] tr, table[aria-label="Courses"] tr',
+          ),
+          0,
+        );
       });
 
       assert.deepEqual(await selectEnrollments([invitation.id]), before);
@@ -179,21 +184,38 @@ describe('Homepage enrollment candidates', () => {
           'table[aria-label="Courses with student access"] tr, table[aria-label="Courses"] tr',
         );
         assert.lengthOf(rows, 1);
-        assert.include(rows.text(), 'Available through your institution');
-        assert.lengthOf(
-          rows.find('a').filter((_, el) => response.$(el).text().trim() === 'Open course'),
-          1,
-        );
+        assert.lengthOf(rows.find(`a[href="/pl/course_instance/${courseInstance.id}"]`), 1);
+        assert.notInclude(rows.text(), 'Available through your institution');
+        assert.notInclude(rows.text(), 'Open course');
         assert.lengthOf(rows.find('input[name="__action"][value="accept_invitation"]'), 0);
         assert.lengthOf(rows.find('input[name="__action"][value="reject_invitation"]'), 0);
         assert.lengthOf(
           rows.find('button').filter((_, el) => response.$(el).text().trim() === 'Remove'),
-          0,
+          1,
         );
       });
 
       assert.deepEqual(await selectEnrollments(enrollmentIds), before);
       assert.equal(await countAuditEvents(enrollmentIds), beforeAuditCount);
+
+      await withUser(user, async () => {
+        const response = await postHome(
+          new URLSearchParams({
+            __action: 'remove_institution_access',
+            __csrf_token: await getCsrfToken(homeUrl),
+            course_instance_id: courseInstance.id,
+            enrollment_id: uinInvitation.id,
+          }),
+        );
+        assert.notInclude(response.$('body').text(), 'Failed to remove course');
+      });
+
+      const [updatedBoundEnrollment, updatedUinInvitation, updatedUidInvitation] =
+        await selectEnrollments(enrollmentIds);
+      assert.equal(updatedBoundEnrollment.status, 'left');
+      assert.equal(updatedUinInvitation.status, 'rejected');
+      assert.equal(updatedUidInvitation.status, 'invited');
+      assert.equal(await countAuditEvents(enrollmentIds), beforeAuditCount + 1);
     } finally {
       await execute(sql.update_course_instance_publishing, {
         course_instance_id: '1',
