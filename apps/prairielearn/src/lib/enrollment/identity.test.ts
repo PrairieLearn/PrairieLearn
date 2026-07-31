@@ -4,6 +4,14 @@ import { selectCourseInstanceById } from '../../models/course-instances.js';
 import * as helperCourse from '../../tests/helperCourse.js';
 import * as helperDb from '../../tests/helperDb.js';
 import { createInstitution } from '../../tests/utils/auth.js';
+import {
+  OTHER_INSTITUTION_ID,
+  createEnrollment,
+  createLti13CourseInstance,
+  createUser,
+  selectEnrollments,
+  uniqueTestValue,
+} from '../../tests/utils/enrollment-identity.js';
 import { type CourseInstance, type Enrollment, type User } from '../db-types.js';
 import { TEST_COURSE_PATH } from '../paths.js';
 
@@ -13,14 +21,6 @@ import {
   selectEnrollmentAdmissionDecision,
   selectEnrollmentIdentityClassification,
 } from './identity.js';
-import {
-  OTHER_INSTITUTION_ID,
-  createEnrollment,
-  createLti13CourseInstance,
-  createUser,
-  selectEnrollments,
-  uniqueTestValue,
-} from './test-utils.js';
 
 interface AdmissionDecisionCase {
   expectedAllowed: boolean;

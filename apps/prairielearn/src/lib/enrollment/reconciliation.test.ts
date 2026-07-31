@@ -12,6 +12,13 @@ import { selectCourseInstanceById } from '../../models/course-instances.js';
 import * as helperCourse from '../../tests/helperCourse.js';
 import * as helperDb from '../../tests/helperDb.js';
 import {
+  createEnrollment,
+  createLti13CourseInstance,
+  createUser,
+  selectEnrollments,
+  uniqueTestValue,
+} from '../../tests/utils/enrollment-identity.js';
+import {
   AssessmentAccessControlRuleSchema,
   type CourseInstance,
   CourseInstancePublishingExtensionSchema,
@@ -29,13 +36,6 @@ import {
   type SelectableEnrollmentAdmissionSource,
   admitUserToCourseInstance,
 } from './reconciliation.js';
-import {
-  createEnrollment,
-  createLti13CourseInstance,
-  createUser,
-  selectEnrollments,
-  uniqueTestValue,
-} from './test-utils.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 let assessmentAccessControlRuleNumber = 90_000;
