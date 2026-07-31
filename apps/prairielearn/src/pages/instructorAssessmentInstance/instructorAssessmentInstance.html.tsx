@@ -2,7 +2,7 @@ import { UAParser } from 'ua-parser-js';
 import { z } from 'zod';
 
 import { formatDate, formatInterval } from '@prairielearn/formatter';
-import { escapeHtml, html } from '@prairielearn/html';
+import { type HtmlSafeString, escapeHtml, html } from '@prairielearn/html';
 import { run } from '@prairielearn/run';
 import { DateFromISOString, IdSchema } from '@prairielearn/zod';
 
@@ -743,7 +743,7 @@ export function InstructorAssessmentInstance({
                     </td>
                     ${row.event_name !== 'External grading results'
                       ? html`<td style="word-break: break-all;">
-                          ${row.data != null ? JSON.stringify(row.data) : ''}
+                          ${row.data != null ? formattedLogData(row.data) : ''}
                         </td>`
                       : html`
                           <td>
@@ -789,6 +789,31 @@ export function InstructorAssessmentInstance({
       </div>
     `,
   });
+}
+
+function formattedLogData(data: any): HtmlSafeString {
+  if (data == null) return html`<code>null</code>`;
+  if (Array.isArray(data) && data.length > 0) {
+    return html`<ol>
+      ${data.map((entry) => html`<li>${formattedLogData(entry)}</li>`)}
+    </ol>`;
+  }
+  if (typeof data === 'object' && Object.keys(data).length > 0) {
+    return html`<ul>
+      ${Object.entries(data).map(([key, value]) =>
+        (Array.isArray(value) && value.length > 0) ||
+        (typeof value === 'object' && Object.keys(value ?? {}).length > 0)
+          ? html`<li>
+              <details>
+                <summary><strong>${key}</strong></summary>
+                ${formattedLogData(value)}
+              </details>
+            </li>`
+          : html`<li><strong>${key}</strong>: ${formattedLogData(value)}</li>`,
+      )}
+    </ul>`;
+  }
+  return html`<code>${JSON.stringify(data)}</code>`;
 }
 
 function FingerprintContent({ fingerprint }: { fingerprint: ClientFingerprint }) {
