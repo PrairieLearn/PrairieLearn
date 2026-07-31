@@ -25,16 +25,18 @@ export function StudentCoursesCard({
     courseInstanceId: string;
     enrollmentId: string;
   } | null>(null);
-  const [removingCourseId, setRemovingCourseId] = useState<string | null>(null);
+  const [removingCourse, setRemovingCourse] = useState<{
+    courseInstanceId: string;
+    invitationEnrollmentId?: string;
+  } | null>(null);
 
   const uidInvitations = studentCourses.filter(
     (course): course is StudentHomePageCourse & { access_type: 'uid_invitation' } =>
       course.access_type === 'uid_invitation',
   );
-  const institutionUinInvitations = studentCourses.filter(
-    (course) => course.access_type === 'institution_uin_invitation',
+  const accessibleCourses = studentCourses.filter(
+    (course) => course.access_type === 'institution_access' || course.access_type === 'joined',
   );
-  const joined = studentCourses.filter((course) => course.access_type === 'joined');
 
   return (
     <div className="card mb-4">
@@ -120,30 +122,7 @@ export function StudentCoursesCard({
                   </td>
                 </tr>
               ))}
-              {institutionUinInvitations.map((entry) => (
-                <tr key={`institution-invite-${entry.course_instance.id}`} className="table-info">
-                  <td className="align-middle">
-                    <div className="d-flex align-items-center justify-content-between gap-2">
-                      <div>
-                        <span className="fw-semibold">
-                          {entry.course_short_name}: {entry.course_title},{' '}
-                          {entry.course_instance.long_name}
-                        </span>
-                        <span className="ms-2 badge bg-info text-dark">
-                          Available through your institution
-                        </span>
-                      </div>
-                      <a
-                        href={`${urlPrefix}/course_instance/${entry.course_instance.id}`}
-                        className="btn btn-primary btn-sm"
-                      >
-                        Open course
-                      </a>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-              {joined.map((entry) => (
+              {accessibleCourses.map((entry) => (
                 <tr key={entry.course_instance.id}>
                   <td className="align-middle">
                     <div className="d-flex align-items-center justify-content-between gap-2">
@@ -154,7 +133,14 @@ export function StudentCoursesCard({
                       <button
                         type="button"
                         className="btn btn-danger btn-sm"
-                        onClick={() => setRemovingCourseId(entry.course_instance.id)}
+                        onClick={() =>
+                          setRemovingCourse({
+                            courseInstanceId: entry.course_instance.id,
+                            ...(entry.access_type === 'institution_access'
+                              ? { invitationEnrollmentId: entry.invitation_enrollment_id }
+                              : {}),
+                          })
+                        }
                       >
                         Remove
                       </button>
@@ -210,9 +196,9 @@ export function StudentCoursesCard({
       </Modal>
 
       <Modal
-        show={removingCourseId !== null}
+        show={removingCourse !== null}
         backdrop="static"
-        onHide={() => setRemovingCourseId(null)}
+        onHide={() => setRemovingCourse(null)}
       >
         <Modal.Header closeButton>
           <Modal.Title>Remove course</Modal.Title>
@@ -223,19 +209,41 @@ export function StudentCoursesCard({
             Removing courses here only affects what is visible to you on PrairieLearn. This does not
             change your university course registration.
           </p>
+          {removingCourse?.invitationEnrollmentId !== undefined && (
+            <p>The course may appear again after your institution's enrollment data is updated.</p>
+          )}
         </Modal.Body>
         <Modal.Footer>
           <button
             type="button"
             className="btn btn-secondary"
-            onClick={() => setRemovingCourseId(null)}
+            onClick={() => setRemovingCourse(null)}
           >
             Cancel
           </button>
           <form method="POST">
             <input type="hidden" name="__csrf_token" value={csrfToken} />
-            <input type="hidden" name="__action" value="unenroll" />
-            <input type="hidden" name="course_instance_id" value={removingCourseId ?? ''} />
+            <input
+              type="hidden"
+              name="__action"
+              value={
+                removingCourse?.invitationEnrollmentId === undefined
+                  ? 'unenroll'
+                  : 'remove_institution_access'
+              }
+            />
+            <input
+              type="hidden"
+              name="course_instance_id"
+              value={removingCourse?.courseInstanceId ?? ''}
+            />
+            {removingCourse?.invitationEnrollmentId !== undefined && (
+              <input
+                type="hidden"
+                name="enrollment_id"
+                value={removingCourse.invitationEnrollmentId}
+              />
+            )}
             <button type="submit" className="btn btn-danger">
               Remove course
             </button>

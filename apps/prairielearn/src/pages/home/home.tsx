@@ -27,6 +27,7 @@ import {
 } from '../../lib/enrollment/identity.js';
 import {
   EnrollmentAdmissionDeniedError,
+  rejectInstitutionUinInvitation,
   rejectUidInvitation,
 } from '../../lib/enrollment/reconciliation.js';
 import { idsEqual } from '../../lib/id.js';
@@ -205,7 +206,12 @@ router.get(
           return { ...course, access_type: 'joined' };
         }
         if (classification.actionableInstitutionUinInvitation !== null) {
-          return { ...course, access_type: 'institution_uin_invitation' };
+          return {
+            ...course,
+            access_type: 'institution_access',
+            invitation_enrollment_id:
+              classification.actionableInstitutionUinInvitation.enrollment.id,
+          };
         }
         if (classification.actionableUidInvitation !== null) {
           return {
@@ -282,6 +288,11 @@ router.post(
       z.object({
         __action: z.literal('unenroll'),
         course_instance_id: z.string().min(1),
+      }),
+      z.object({
+        __action: z.literal('remove_institution_access'),
+        course_instance_id: z.string().min(1),
+        enrollment_id: z.string().min(1),
       }),
     ]);
     const body = BodySchema.parse(req.body);
@@ -371,6 +382,21 @@ router.post(
           authzData,
           requiredRole: ['Student'],
         });
+        break;
+      }
+      case 'remove_institution_access': {
+        try {
+          await rejectInstitutionUinInvitation({
+            agentAuthnUserId: res.locals.authn_user.id,
+            agentUserId: res.locals.authn_user.id,
+            courseInstanceId: courseInstance.id,
+            enrollmentId: body.enrollment_id,
+            userId: res.locals.authn_user.id,
+          });
+        } catch (error) {
+          if (!(error instanceof EnrollmentAdmissionDeniedError)) throw error;
+          flash('error', 'Failed to remove course');
+        }
         break;
       }
       default: {

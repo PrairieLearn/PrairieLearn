@@ -49,5 +49,5 @@ export type StudentHomePageCourse = StudentHomePageCourseData &
   (
     | { access_type: 'joined' }
     | { access_type: 'uid_invitation'; invitation_enrollment_id: string }
-    | { access_type: 'institution_uin_invitation' }
+    | { access_type: 'institution_access'; invitation_enrollment_id: string }
   );
