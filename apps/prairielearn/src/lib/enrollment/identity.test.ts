@@ -64,7 +64,7 @@ describe('enrollment identity selection and admission decisions', { concurrent: 
         courseInstanceId: courseInstance.id,
         userId,
         lti13Identity:
-          source.type === 'lti13'
+          source.type === 'invitation' && source.matchedBy === 'lti13'
             ? {
                 lti13CourseInstanceId: source.lti13CourseInstanceId,
                 sub: source.sub,
@@ -108,21 +108,28 @@ describe('enrollment identity selection and admission decisions', { concurrent: 
         },
       }),
     ]);
-    expect(classification.actionableConventionalInvitation).toBeNull();
-    expect(classification.actionableInstitutionRosterInvitation?.enrollment.id).toBe(enrollment.id);
+    expect(classification.actionableUidInvitation).toBeNull();
+    expect(classification.actionableInstitutionUinInvitation?.enrollment.id).toBe(enrollment.id);
     expect(await selectEnrollments([enrollment.id])).toEqual(before);
 
     await expect(
-      selectDecision({ userId: user.id, source: { type: 'pending_uid' } }),
+      selectDecision({
+        userId: user.id,
+        source: { type: 'invitation', matchedBy: 'uid' },
+      }),
     ).resolves.toMatchObject({ allowed: false, reason: 'no_matching_invitation' });
     await expect(
-      selectDecision({ userId: user.id, source: { type: 'institution_uin' } }),
+      selectDecision({
+        userId: user.id,
+        source: { type: 'invitation', matchedBy: 'institution_uin' },
+      }),
     ).resolves.toMatchObject({ allowed: true });
     await expect(
       selectDecision({
         userId: user.id,
         source: {
-          type: 'lti13',
+          type: 'invitation',
+          matchedBy: 'lti13',
           lti13CourseInstanceId: exactLink.id,
           sub: 'exact-sub',
         },
@@ -136,7 +143,8 @@ describe('enrollment identity selection and admission decisions', { concurrent: 
       selectDecision({
         userId: user.id,
         source: {
-          type: 'lti13',
+          type: 'invitation',
+          matchedBy: 'lti13',
           lti13CourseInstanceId: exactLink.id,
           sub: 'wrong-sub',
         },
@@ -194,15 +202,15 @@ describe('enrollment identity selection and admission decisions', { concurrent: 
 
   it.each<AdmissionDecisionCase>([
     {
-      name: 'allows a conventional invitation',
+      name: 'allows a UID invitation',
       expectedAllowed: true,
       setup: async (user) => {
         await createEnrollment({ courseInstance, pendingUid: user.uid });
-        return { type: 'pending_uid' };
+        return { type: 'invitation', matchedBy: 'uid' };
       },
     },
     {
-      name: 'denies a rejected conventional invitation',
+      name: 'denies a rejected UID invitation',
       expectedAllowed: false,
       expectedReason: 'no_matching_invitation',
       setup: async (user) => {
@@ -211,19 +219,19 @@ describe('enrollment identity selection and admission decisions', { concurrent: 
           pendingUid: user.uid,
           status: 'rejected',
         });
-        return { type: 'pending_uid' };
+        return { type: 'invitation', matchedBy: 'uid' };
       },
     },
     {
-      name: 'allows an institution roster invitation',
+      name: 'allows an institution UIN invitation',
       expectedAllowed: true,
       setup: async (user) => {
         await createEnrollment({ courseInstance, pendingUin: user.uin });
-        return { type: 'institution_uin' };
+        return { type: 'invitation', matchedBy: 'institution_uin' };
       },
     },
     {
-      name: 'denies a guest roster invitation',
+      name: 'denies a guest institution UIN invitation',
       expectedAllowed: false,
       expectedReason: 'guest_state',
       setup: async (user) => {
@@ -232,7 +240,7 @@ describe('enrollment identity selection and admission decisions', { concurrent: 
           pendingUin: user.uin,
           isGuest: true,
         });
-        return { type: 'institution_uin' };
+        return { type: 'invitation', matchedBy: 'institution_uin' };
       },
     },
     {
@@ -240,8 +248,9 @@ describe('enrollment identity selection and admission decisions', { concurrent: 
       expectedAllowed: true,
       setup: async (user) => {
         const exactLink = await createLti13CourseInstance(courseInstance);
-        const source = {
-          type: 'lti13' as const,
+        const source: EnrollmentAdmissionSource = {
+          type: 'invitation',
+          matchedBy: 'lti13',
           lti13CourseInstanceId: exactLink.id,
           sub: 'matrix-sub',
         };
@@ -269,7 +278,7 @@ describe('enrollment identity selection and admission decisions', { concurrent: 
       name: 'denies an already joined bound enrollment',
       status: 'joined',
       isGuest: false,
-      source: { type: 'institution_uin' },
+      source: { type: 'invitation', matchedBy: 'institution_uin' },
       expectedAllowed: false,
       expectedReason: 'already_joined',
     },
@@ -277,30 +286,30 @@ describe('enrollment identity selection and admission decisions', { concurrent: 
       name: 'denies a blocked bound enrollment',
       status: 'blocked',
       isGuest: false,
-      source: { type: 'ordinary' },
+      source: { type: 'self_enrollment' },
       expectedAllowed: false,
       expectedReason: 'blocked',
     },
     {
-      name: 'allows roster admission with a non-guest left enrollment',
+      name: 'allows a UIN invitation with a non-guest left enrollment',
       status: 'left',
       isGuest: false,
-      source: { type: 'institution_uin' },
+      source: { type: 'invitation', matchedBy: 'institution_uin' },
       expectedAllowed: true,
     },
     {
-      name: 'denies roster admission with a removed enrollment',
+      name: 'denies a UIN invitation with a removed enrollment',
       status: 'removed',
       isGuest: false,
-      source: { type: 'institution_uin' },
+      source: { type: 'invitation', matchedBy: 'institution_uin' },
       expectedAllowed: false,
       expectedReason: 'non_actionable_bound_state',
     },
     {
-      name: 'denies roster admission with a guest left enrollment',
+      name: 'denies a UIN invitation with a guest left enrollment',
       status: 'left',
       isGuest: true,
-      source: { type: 'institution_uin' },
+      source: { type: 'invitation', matchedBy: 'institution_uin' },
       expectedAllowed: false,
       expectedReason: 'guest_state',
     },
