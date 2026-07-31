@@ -48,6 +48,10 @@ export async function getModeForRequest(req: Request, res: Response): Promise<En
     return req.cookies.pl_test_mode;
   }
 
+  if (res.locals.prairietest_reservation_info) {
+    return res.locals.prairietest_reservation_info.exam_mode ? 'Exam' : 'Public';
+  }
+
   return await ipToMode({
     ip: req.ip,
     date: res.locals.req_date,

@@ -39,6 +39,7 @@ export default asyncHandler(async (req, res, next) => {
     authn_user_id: res.locals.authn_user.id,
   });
 
+  res.locals.prairietest_reservation_info = info;
   res.locals.cheating_report_reservation_id = info.cheating_report_reservation_id;
 
   // API requests can lack sessions.
