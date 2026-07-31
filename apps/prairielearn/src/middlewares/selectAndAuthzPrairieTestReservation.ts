@@ -1,7 +1,9 @@
 import type { Request } from 'express';
 import asyncHandler from 'express-async-handler';
 
-import { LockdownBrowserRequiredError, selectActiveReservationInfo } from '../lib/exam-mode.js';
+import { HttpStatusError } from '@prairielearn/error';
+
+import { selectActiveReservationInfo } from '../lib/exam-mode.js';
 
 function isPrairieTestAuthRequest(req: Request): boolean {
   return (
@@ -47,7 +49,12 @@ export default asyncHandler(async (req, res, next) => {
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
   const session_is_lockdown_browser = req.session?.lockdown_browser ?? false;
   if (info.requires_lockdown_browser && !session_is_lockdown_browser) {
-    throw new LockdownBrowserRequiredError();
+    // A separate regular-browser session would otherwise have Exam-mode access
+    // without LockDown Browser's restrictions.
+    throw new HttpStatusError(
+      403,
+      'This user has an active LockDown Browser reservation. PrairieLearn must be accessed from inside LockDown Browser for the duration of the exam.',
+    );
   }
 
   next();

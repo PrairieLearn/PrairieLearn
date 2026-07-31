@@ -1,7 +1,6 @@
 import type { Request, Response } from 'express';
 import z from 'zod';
 
-import { HttpStatusError } from '@prairielearn/error';
 import { loadSqlEquiv, queryRow } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
@@ -71,37 +70,4 @@ export async function ipToMode({
   const { exam_mode } = await selectActiveReservationInfo({ ip, date, authn_user_id });
 
   return exam_mode ? 'Exam' : 'Public';
-}
-
-/**
- * Error thrown when a user with an active LockDown-Browser-required reservation
- * accesses PrairieLearn from a session that was not established inside LockDown
- * Browser. The denial is global (not just exam pages), so it's raised from the
- * `selectAndAuthzPrairieTestReservation` middleware rather than per page.
- *
- * Attack vector this guards against:
- *
- *   1. A student launches their LDB-required PrairieTest reservation
- *      through LockDown Browser, completing the PT → PL auth handoff.
- *      LDB enforces its restrictions only on that browser process.
- *   2. A second person opens a separate browser on a different computer
- *      on the same network, signs in to PrairieLearn as that student
- *      directly via Shibboleth / Google / SAML / LTI, and helps with the
- *      exam. Without this check, that session is in `'Exam'` mode (active
- *      PT reservation, matching IP) but has none of LDB's restrictions —
- *      they can copy/paste, open external tabs, screenshot, screen-share,
- *      etc.
- *
- * Refusing all access matches the policy that an LDB-required reservation
- * confines the user to LDB for its full duration. A student in a non-LDB
- * browser would otherwise be free to look up answers in other course pages
- * while the exam runs.
- */
-export class LockdownBrowserRequiredError extends HttpStatusError {
-  constructor() {
-    super(
-      403,
-      'This user has an active LockDown Browser reservation. PrairieLearn must be accessed from inside LockDown Browser for the duration of the exam.',
-    );
-  }
 }
