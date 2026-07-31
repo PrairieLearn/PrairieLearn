@@ -65,7 +65,6 @@ export const EnumEnrollmentStatusSchema = z.enum([
   'removed',
   'rejected',
   'blocked',
-  'lti13_pending',
 ]);
 export type EnumEnrollmentStatus = z.infer<typeof EnumEnrollmentStatusSchema>;
 
@@ -887,12 +886,13 @@ export const EnrollmentSchema = z.object({
   created_at: DateFromISOString.nullable(),
   first_joined_at: DateFromISOString.nullable(),
   id: IdSchema,
-  lti_managed: z.boolean(),
-  pending_lti13_email: z.string().nullable(),
-  pending_lti13_instance_id: IdSchema.nullable(),
-  pending_lti13_name: z.string().nullable(),
+  is_guest: z.boolean(),
+  pending_email: z.string().nullable(),
+  pending_lti13_course_instance_id: IdSchema.nullable(),
   pending_lti13_sub: z.string().nullable(),
+  pending_name: z.string().nullable(),
   pending_uid: z.string().nullable(),
+  pending_uin: z.string().nullable(),
   status: EnumEnrollmentStatusSchema,
   user_id: IdSchema.nullable(),
 });
@@ -1312,6 +1312,7 @@ export const Lti13InstanceSchema = z.object({
   name_attribute: z.string().nullable(),
   platform: z.string(),
   require_linked_lti_user: z.boolean(),
+  roster_sync_allowed: z.boolean(),
   tool_platform_name: z.string().nullable(),
   uid_attribute: z.string().nullable(),
   uin_attribute: z.string().nullable(),

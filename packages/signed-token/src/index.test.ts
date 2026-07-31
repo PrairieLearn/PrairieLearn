@@ -9,6 +9,7 @@ import {
 } from './index.js';
 
 const SECRET_KEY = 'test-secret-key';
+const OLD_SECRET_KEY = 'old-test-secret-key';
 const TEST_DATA = { url: '/test', authn_user_id: '123' };
 
 describe('generateSignedToken', () => {
@@ -30,13 +31,41 @@ describe('generateSignedToken', () => {
 
     assert.isFalse(checkSignedToken(token, TEST_DATA, 'wrong-secret'));
   });
+
+  it('uses the first key in a key ring to generate a token', () => {
+    const token = generateSignedToken(TEST_DATA, [SECRET_KEY, OLD_SECRET_KEY]);
+
+    assert.isTrue(checkSignedToken(token, TEST_DATA, SECRET_KEY));
+    assert.isFalse(checkSignedToken(token, TEST_DATA, OLD_SECRET_KEY));
+  });
+
+  it('validates a token with a fallback key', () => {
+    const token = generateSignedToken(TEST_DATA, OLD_SECRET_KEY);
+
+    assert.isTrue(checkSignedToken(token, TEST_DATA, [SECRET_KEY, OLD_SECRET_KEY]));
+  });
+
+  it('fails validation when no key matches', () => {
+    const token = generateSignedToken(TEST_DATA, OLD_SECRET_KEY);
+
+    assert.isFalse(checkSignedToken(token, TEST_DATA, [SECRET_KEY, 'another-secret']));
+  });
+
+  it('rejects an empty key ring', () => {
+    assert.throws(
+      // @ts-expect-error Testing runtime validation for JavaScript callers.
+      () => generateSignedToken(TEST_DATA, []),
+      'Secret key ring must contain at least one key',
+    );
+  });
 });
 
 describe('getCheckedSignedTokenData', () => {
   it('returns null for invalid tokens', () => {
     assert.isNull(getCheckedSignedTokenData('invalid', SECRET_KEY));
     assert.isNull(getCheckedSignedTokenData('', SECRET_KEY));
-    assert.isNull(getCheckedSignedTokenData(123 as any, SECRET_KEY));
+    // @ts-expect-error Testing runtime input validation.
+    assert.isNull(getCheckedSignedTokenData(123, SECRET_KEY));
   });
 
   it('returns token data for valid tokens', () => {

@@ -18,7 +18,7 @@ class DoNotRunError(Exception):
     pass
 
 
-class GradingSkipped(Exception):  # noqa: N818
+class GradingSkipped(Exception):  # ruff:ignore[error-suffix-on-exception-name]
     pass
 
 
@@ -119,7 +119,7 @@ def not_repeated(f: Callable[..., Any]) -> Callable[..., None]:
 def print_student_code(
     st_code: str = "user_code.py",
     ipynb_key: str = "#grade",
-    as_feedback: bool = True,  # noqa: FBT001
+    as_feedback: bool = True,  # ruff:ignore[boolean-type-hint-positional-argument]
 ) -> None | str:
     """
     Print the student's code, with syntax highlighting.

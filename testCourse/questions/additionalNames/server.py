@@ -7,11 +7,11 @@ def generate(data: pl.QuestionData) -> None:
     n = np.random.randint(3, 5)
     m = np.random.randint(2, 4)
 
-    A = np.round(np.random.rand(m, n), 2)  # noqa: N806
+    A = np.round(np.random.rand(m, n), 2)  # ruff:ignore[non-lowercase-variable-in-function]
     b = np.round(np.random.rand(n), 2)
 
     # Product of these two matrices
-    C = A @ b  # noqa: N806
+    C = A @ b  # ruff:ignore[non-lowercase-variable-in-function]
 
     # # Modify data and return
     data["params"]["A"] = pl.to_json(A)

@@ -87,7 +87,9 @@ Configure what happens after all deadlines have passed. The setting is labeled *
 - **Allow practice submissions**: students can submit for feedback, but receive 0% credit.
 - **Allow submissions for partial credit**: students can submit for the credit percentage you choose.
 
-This setting controls submission permission only. If submissions are not allowed after the final deadline, the **After completion** visibility settings determine what students can review. If after-deadline submissions are allowed, **After completion** applies only after the student's assessment instance closes or its time limit expires.
+This setting controls submission permission only; it does not make associated [workspaces](../workspaces/index.md) read-only. If **After completion** allows students to review a workspace question, they can still open the workspace and modify its files, but they cannot submit those changes for grading.
+
+If submissions are not allowed after the final deadline, the **After completion** visibility settings determine what students can review. If after-deadline submissions are allowed, **After completion** applies only after the student's assessment instance closes or its time limit expires.
 
 #### Time limits
 
@@ -121,6 +123,8 @@ These per-exam settings do not support reveal dates. Use the top-level **After c
 
 You can also enable **Read-only mode**. During a read-only reservation, students can view previous submissions but cannot submit new answers or start the assessment if they have not already started. Questions and scores are always shown during read-only reservations, regardless of the per-exam visibility settings.
 
+**Read-only mode** applies to assessment submissions, not workspace file access. Students can still open and modify [workspaces](../workspaces/index.md) for questions they can review, but they cannot submit those changed files for grading.
+
 #### PrairieTest precedence
 
 When a PrairieTest exam is associated with the assessment, PrairieLearn resolves access in this order:
@@ -141,7 +145,7 @@ Disable it when the assessment should be completely hidden until release.
 
 Use **Question visibility** and **Score visibility** to decide what students can see after the assessment is complete.
 
-These settings apply once submissions are no longer allowed: after the final deadline, when a timed assessment closes, when an Exam assessment auto-closes after inactivity, or when an instructor closes it. If after-deadline submissions are allowed, **After completion** applies only after the student's assessment instance closes or its time limit expires.
+An assessment instance is considered to be complete once submissions are no longer allowed: after the final deadline, when a timed assessment closes, when an Exam assessment auto-closes after inactivity, or when an instructor closes it. If after-deadline submissions are allowed, **After completion** applies only after the student's assessment instance closes or its time limit expires.
 
 Question visibility options:
 

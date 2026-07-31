@@ -104,8 +104,8 @@ Preferences can also be set on individual alternatives within a question alterna
       "preferences": { "gravitational_constant": 9.8 }
     },
     {
-      "id": "forces/fallingObject",
-      "preferences": { "gravitational_constant": 1.6 }
+      "id": "kinematics/projectileRange",
+      "preferences": { "unit_system": "imperial" }
     }
   ]
 }

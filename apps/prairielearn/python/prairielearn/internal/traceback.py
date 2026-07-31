@@ -16,8 +16,8 @@ def _suppress_panel_border() -> Generator[None]:
 
     def _borderless(
         self: Panel,
-        console: Console,  # noqa: ARG001
-        options: ConsoleOptions,  # noqa: ARG001
+        console: Console,  # ruff:ignore[unused-function-argument]
+        options: ConsoleOptions,  # ruff:ignore[unused-function-argument]
     ) -> RenderResult:
         # Rich's Traceback wraps its output in a Panel, which adds a
         # box-drawing border.

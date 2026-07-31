@@ -10,6 +10,7 @@ import {
 } from '@prairielearn/config';
 import { logger } from '@prairielearn/logger';
 
+import { getActiveKey } from './key-ring.js';
 import { EXAMPLE_COURSE_PATH, TEST_COURSE_PATH } from './paths.js';
 
 const DEV_MODE = process.env.NODE_ENV !== 'production';
@@ -35,6 +36,19 @@ const CreditPoolLimitRangeSchema = z
   .refine(({ minMilliDollars, maxMilliDollars }) => minMilliDollars <= maxMilliDollars, {
     message: 'minMilliDollars must be less than or equal to maxMilliDollars',
   });
+
+function makeKeyRingSchema(keySchema: z.ZodString) {
+  const nonemptyArraySchema = z
+    .array(keySchema)
+    .min(1)
+    .refine((keys): keys is [string, ...string[]] => keys.length > 0);
+  return z
+    .union([keySchema, nonemptyArraySchema])
+    .transform((keys): [string, ...string[]] => (typeof keys === 'string' ? [keys] : keys));
+}
+
+const KeyRingSchema = makeKeyRingSchema(z.string());
+const DatabaseEncryptionKeyRingSchema = makeKeyRingSchema(z.string().regex(/^[0-9a-f]{64}$/i));
 
 export const STANDARD_COURSE_DIRS = [
   '/course',
@@ -221,11 +235,16 @@ export const ConfigSchema = z.object({
   autoFinishAgeMins: z.number().default(6 * 60),
   // TODO: tweak this value once we see the data from #2267
   questionTimeoutMilliseconds: z.number().default(10000),
-  secretKey: z.string().default('THIS_IS_THE_SECRET_KEY'),
-  databaseEncryptionKey: z
-    .string()
-    .regex(/^[0-9a-f]{64}$/i)
-    .default('0'.repeat(64)),
+  /**
+   * Ordered signing key ring. The first key signs new artifacts and all keys
+   * are accepted for verification.
+   */
+  secretKey: KeyRingSchema.prefault('THIS_IS_THE_SECRET_KEY'),
+  /**
+   * Ordered storage encryption key ring. The first key encrypts new data and
+   * all keys are available to decrypt existing data.
+   */
+  databaseEncryptionKey: DatabaseEncryptionKeyRingSchema.prefault('0'.repeat(64)),
   secretSlackOpsBotEndpoint: z.string().nullable().default(null),
   secretSlackToken: z.string().nullable().default(null),
   secretSlackCourseRequestChannel: z.string().nullable().default(null),
@@ -466,11 +485,12 @@ export const ConfigSchema = z.object({
    */
   isEnterprise: z.boolean().default(false),
   /**
-   * Shared secret used to sign and verify auth JWTs exchanged between
-   * PrairieLearn and PrairieTest in both directions. PrairieTest must be
-   * configured with the same value under the same key.
+   * Ordered shared secret ring used to sign and verify auth JWTs exchanged
+   * between PrairieLearn and PrairieTest in both directions. The first secret
+   * signs new JWTs and all secrets are accepted for verification. PrairieTest
+   * must be configured with the same values in the same order.
    */
-  prairieTestSharedAuthSecret: z.string().default('CHANGE_ME_PRAIRIE_TEST_SHARED_AUTH_SECRET'),
+  prairieTestSharedAuthSecret: KeyRingSchema.prefault('CHANGE_ME_PRAIRIE_TEST_SHARED_AUTH_SECRET'),
   openTelemetryEnabled: z.boolean().default(false),
   /**
    * Note that the `console` exporter should almost definitely NEVER be used in
@@ -583,10 +603,11 @@ export const ConfigSchema = z.object({
    */
   stripeSecretKey: z.string().nullable().default(null),
   /**
-   * A secret key used to sign Stripe webhook events. Only useful for enterprise
-   * installations. See https://stripe.com/docs/webhooks.
+   * A secret key or ordered list of secret keys accepted when verifying Stripe
+   * webhook events. Only useful for enterprise installations. See
+   * https://stripe.com/docs/webhooks.
    */
-  stripeWebhookSigningSecret: z.string().nullable().default(null),
+  stripeWebhookSigningSecret: KeyRingSchema.nullable().prefault(null),
   /**
    * Maps a plan name ("basic", "compute", etc.) to a Stripe product ID.
    */
@@ -749,7 +770,7 @@ export async function loadConfig(paths: string[]) {
     }
 
     const defaultKey = ConfigSchema.parse({}).databaseEncryptionKey;
-    if (config.databaseEncryptionKey === defaultKey) {
+    if (config.databaseEncryptionKey.includes(getActiveKey(defaultKey))) {
       throw new Error(
         'databaseEncryptionKey must be set to a secure value in production environments',
       );

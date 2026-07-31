@@ -309,7 +309,7 @@ export function generateDefaultRuleDateTableRows(
       access: afterLastDeadline.allowSubmissions
         ? afterLastDeadline.credit > 0
           ? formatCreditPercent(afterLastDeadline.credit)
-          : 'Practice'
+          : 'Practice for zero credit'
         : 'No submissions allowed',
       error: get(formErrors, 'afterLastDeadline.credit')?.message,
       current: isAfterLastSegment,
@@ -539,7 +539,9 @@ function formatAfterLastDeadline(afterLastDeadline: AfterLastDeadlineValue): str
     parts.push(`${afterLastDeadline.credit}% credit`);
   }
   if (afterLastDeadline.allowSubmissions) {
-    parts.push(parts.length > 0 ? 'submissions allowed' : 'Practice submissions allowed');
+    parts.push(
+      parts.length > 0 ? 'submissions allowed' : 'Practice submissions allowed for zero credit',
+    );
   } else {
     parts.push('No submissions allowed');
   }

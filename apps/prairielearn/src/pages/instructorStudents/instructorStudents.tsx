@@ -106,7 +106,6 @@ interface InviteCounts {
   invited: number;
   unblocked: number;
   reenrolled: number;
-  skippedLti13Pending: number;
   skippedInstructor: number;
   skippedAlreadyInvited: number;
   skippedAlreadyJoined: number;
@@ -173,13 +172,6 @@ async function processInvitations({
       if (existingEnrollment?.status === 'invited') {
         job.info(`${uid}: Skipped (already invited)`);
         counts.skippedAlreadyInvited++;
-        continue;
-      }
-      if (existingEnrollment?.status === 'lti13_pending') {
-        // TODO: this is intentionally skipped until LTI roster syncing is supported.
-        // Once it exists, handle this status from the LTI source of truth.
-        job.info(`${uid}: Skipped (LTI-managed enrollment)`);
-        counts.skippedLti13Pending++;
         continue;
       }
       if (skipBlocked && existingEnrollment?.status === 'blocked') {
@@ -275,7 +267,6 @@ router.post(
             invited: 0,
             unblocked: 0,
             reenrolled: 0,
-            skippedLti13Pending: 0,
             skippedInstructor: 0,
             skippedAlreadyInvited: 0,
             skippedAlreadyJoined: 0,
@@ -301,7 +292,6 @@ router.post(
             [counts.skippedAlreadyInvited, 'Skipped (already invited)'],
             [counts.skippedAlreadyBlocked, 'Skipped (blocked)'],
             [counts.skippedAlreadyRemoved, 'Skipped (removed)'],
-            [counts.skippedLti13Pending, 'Skipped (LTI-managed)'],
             [counts.skippedInstructor, 'Skipped (instructor)'],
             [counts.errors, 'Errors'],
           ];
@@ -332,7 +322,6 @@ router.post(
             invited: 0,
             unblocked: 0,
             reenrolled: 0,
-            skippedLti13Pending: 0,
             skippedInstructor: 0,
             skippedAlreadyInvited: 0,
             skippedAlreadyJoined: 0,
@@ -440,7 +429,6 @@ router.post(
             [syncCounts.reenrolled, 'Reenrolled'],
             [syncCounts.skippedAlreadyJoined, 'Skipped (already joined)'],
             [syncCounts.skippedAlreadyInvited, 'Skipped (already invited)'],
-            [syncCounts.skippedLti13Pending, 'Skipped (LTI-managed)'],
             [syncCounts.skippedInstructor, 'Skipped (instructor)'],
             [totalErrors, 'Errors'],
           ];
