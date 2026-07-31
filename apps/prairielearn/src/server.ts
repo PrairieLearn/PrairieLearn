@@ -516,8 +516,7 @@ export async function initExpress(): Promise<Express> {
     app.use('/pl/prairietest/auth', (await import('./ee/auth/prairietest.js')).default);
   }
 
-  // Must come before CSRF middleware; we do our own signature verification here.
-  app.use('/pl/webhooks/terminate', (await import('./webhooks/terminate.js')).default);
+  // Must come before CSRF middleware; Stripe webhooks use their own signature verification.
   app.use(
     '/pl/webhooks/stripe',
     await enterpriseOnly(async () => (await import('./ee/webhooks/stripe/index.js')).default),
@@ -2636,11 +2635,15 @@ if (shouldStartServer) {
     throw err;
   }
 
-  // SIGTERM can be used to gracefully shut down the process. This signal
-  // may come from another process, but we also send it to ourselves if
-  // we want to gracefully shut down. This is used below in the ASG
-  // lifecycle handler, and also within the "terminate" webhook.
-  process.once('SIGTERM', async () => {
+  let gracefulShutdownStarted = false;
+
+  // SIGTERM can be used to gracefully shut down the process. This signal may
+  // come from another process, but we also send it to ourselves when IMDS
+  // reports that Auto Scaling is terminating the instance.
+  process.on('SIGTERM', async () => {
+    if (gracefulShutdownStarted) return;
+    gracefulShutdownStarted = true;
+
     // In test environments, the entire process group receives SIGTERM, which
     // can cause in-flight outgoing HTTP requests to fail with ECONNRESET.
     // These unhandled 'error' events on ClientRequest objects would crash the
@@ -2712,6 +2715,10 @@ if (shouldStartServer) {
     } finally {
       process.exit(0);
     }
+  });
+
+  lifecycleHooks.startInstanceTerminationWatcher(() => {
+    process.kill(process.pid, 'SIGTERM');
   });
 
   setServerState('initialized');

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 
+import { isInstitutionalAuthenticationProvider } from '../../../../lib/authn-provider-classification.js';
 import type { StaffAuthnProvider, StaffInstitution } from '../../../../lib/client/safe-db-types.js';
 import type { AuthnProvider } from '../../../../lib/db-types.js';
 
@@ -22,6 +23,7 @@ export function AdministratorInstitutionSsoForm({
   hasSamlProvider,
   supportedAuthenticationProviders,
   institutionAuthenticationProviders,
+  hasRosterSyncAllowed,
   urlPrefix,
   csrfToken,
 }: {
@@ -29,6 +31,7 @@ export function AdministratorInstitutionSsoForm({
   hasSamlProvider: boolean;
   supportedAuthenticationProviders: StaffAuthnProvider[];
   institutionAuthenticationProviders: StaffAuthnProvider[];
+  hasRosterSyncAllowed: boolean;
   urlPrefix: string;
   csrfToken: string;
 }) {
@@ -38,32 +41,43 @@ export function AdministratorInstitutionSsoForm({
 
   const [defaultProviderId, setDefaultProviderId] = useState(institution.default_authn_provider_id);
 
-  const googleProvider = supportedAuthenticationProviders.find((p) => p.name === 'Google');
-  const microsoftProvider = supportedAuthenticationProviders.find((p) => p.name === 'Azure');
-  const samlProvider = supportedAuthenticationProviders.find((p) => p.name === 'SAML');
-
-  // A "primary provider" is one of Google, Microsoft, or SAML. These are the ones will
-  // actually provision accounts for users. Other providers (e.g. LTI) are secondary
-  // and do not provision accounts.
-  //
-  // Note that LTI 1.3 *does* provision accounts, but we're in the process of changing that,
-  // so it's not included here.
-  const enabledPrimaryProviders = [...enabledProviderIds]
-    .filter((id) => {
-      return [googleProvider, microsoftProvider, samlProvider].some((p) => p?.id === id);
-    })
-    .map((id) => {
-      return supportedAuthenticationProviders.find((p) => p.id === id)!;
-    });
+  // LTI sessions must start in an LMS, so LTI providers do not count as institutional sign-on
+  // providers for this guardrail.
+  const enabledInstitutionalProviders = supportedAuthenticationProviders.filter(
+    (provider) =>
+      enabledProviderIds.has(provider.id) && isInstitutionalAuthenticationProvider(provider.name),
+  );
 
   return (
     <form method="POST">
       <div className="mb-3">
         <h2 className="h4">Enabled single sign-on providers</h2>
+        {hasRosterSyncAllowed && (
+          <div className="alert alert-info" role="alert">
+            Roster syncing is allowed for an LTI 1.3 instance. SAML must remain the only enabled
+            institutional sign-on provider. LTI and LTI 1.3 may remain enabled because those
+            sessions begin in a Learning Management System (LMS). Disallow roster syncing for all
+            affected LTI 1.3 instances before changing these settings.
+          </div>
+        )}
         {supportedAuthenticationProviders.map((provider) => {
           const isEnabled = enabledProviderIds.has(provider.id);
+          const isInstitutionalProvider = isInstitutionalAuthenticationProvider(provider.name);
+          const isLockedEnabledSaml = hasRosterSyncAllowed && provider.name === 'SAML' && isEnabled;
+          const isLockedDisabledProvider =
+            hasRosterSyncAllowed &&
+            isInstitutionalProvider &&
+            provider.name !== 'SAML' &&
+            !isEnabled;
+          const isDisabled =
+            (provider.name === 'SAML' && !hasSamlProvider) ||
+            isLockedEnabledSaml ||
+            isLockedDisabledProvider;
           return (
             <div key={provider.id} className="form-check">
+              {isLockedEnabledSaml && (
+                <input type="hidden" name="enabled_authn_provider_ids" value={provider.id} />
+              )}
               <input
                 className="form-check-input js-authentication-provider"
                 type="checkbox"
@@ -71,7 +85,7 @@ export function AdministratorInstitutionSsoForm({
                 id={`provider-${provider.id}-enabled`}
                 name="enabled_authn_provider_ids"
                 checked={isEnabled}
-                disabled={provider.name === 'SAML' && !hasSamlProvider}
+                disabled={isDisabled}
                 onChange={({ currentTarget }) => {
                   setEnabledProviderIds((prev) => {
                     const newSet = new Set(prev);
@@ -103,13 +117,13 @@ export function AdministratorInstitutionSsoForm({
             </div>
           );
         })}
-        {enabledPrimaryProviders.length > 1 && (
+        {enabledInstitutionalProviders.length > 1 && (
           <div className="alert alert-warning mt-2" role="alert">
             It is <strong>not recommended</strong> to enable{' '}
-            {formatProviderList(enabledPrimaryProviders)} at the same time. It may be appropriate in
-            situations where students use one sign-on provider and staff use a different one, or
-            while transitioning from one provider to another. Contact a technical administrator if
-            you have questions.
+            {formatProviderList(enabledInstitutionalProviders)} at the same time. It may be
+            appropriate in situations where students use one sign-on provider and staff use a
+            different one, or while transitioning from one provider to another. Contact a technical
+            administrator if you have questions.
           </div>
         )}
         {enabledProviderIds.size === 0 && (
