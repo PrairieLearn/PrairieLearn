@@ -18,8 +18,8 @@ import {
   createEnrollment,
   createLti13CourseInstance,
   createUser,
-  nextFixtureName,
   selectEnrollments,
+  uniqueTestValue,
 } from './test-utils.js';
 
 interface AdmissionDecisionCase {
@@ -156,7 +156,7 @@ describe('enrollment identity selection and admission decisions', { concurrent: 
 
     const foreignEnrollment = await createEnrollment({
       courseInstance,
-      pendingUin: nextFixtureName('foreign-lti'),
+      pendingUin: uniqueTestValue('foreign-lti'),
       pendingLti13CourseInstanceId: foreignLink.id,
       pendingLti13Sub: 'foreign-sub',
     });
@@ -174,7 +174,7 @@ describe('enrollment identity selection and admission decisions', { concurrent: 
       ),
     ).toBe(false);
 
-    const sharedUin = nextFixtureName('institution-scope');
+    const sharedUin = uniqueTestValue('institution-scope');
     const sameInstitutionUser = await createUser({ prefix: 'same-institution', uin: sharedUin });
     const otherInstitutionUser = await createUser({
       prefix: 'other-institution',

@@ -1,7 +1,10 @@
+import assert from 'node:assert';
+
 import { z } from 'zod';
 
 import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
+import { assertNever } from '@prairielearn/utils';
 
 import { type Enrollment, EnrollmentSchema } from '../db-types.js';
 
@@ -111,18 +114,20 @@ function allowsUinOrLtiInvitation(
   candidates: readonly EnrollmentIdentityCandidate[],
   boundCandidate: EnrollmentIdentityCandidate | null,
 ): boolean {
-  const boundEnrollment = boundCandidate?.enrollment;
-  return (
-    (boundEnrollment === undefined ||
-      (boundEnrollment.status === 'left' && !boundEnrollment.is_guest)) &&
-    !candidates.some((candidate) => candidate.enrollment.is_guest)
-  );
+  if (candidates.some((candidate) => candidate.enrollment.is_guest)) return false;
+  if (boundCandidate === null) return true;
+  return boundCandidate.enrollment.status === 'left';
 }
 
 function classifyEnrollmentIdentityCandidates(
   candidates: readonly EnrollmentIdentityCandidate[],
 ): EnrollmentIdentityClassification {
-  const boundCandidate = candidates.find((candidate) => candidate.matches.boundUser) ?? null;
+  const boundCandidates = candidates.filter((candidate) => candidate.matches.boundUser);
+  assert(
+    boundCandidates.length <= 1,
+    'Multiple enrollments are bound to the same user in a course instance',
+  );
+  const boundCandidate = boundCandidates.at(0) ?? null;
 
   // A UID match is intentionally narrower than a UIN or exact LTI match. It
   // requires no bound enrollment and cannot consume an invitation carrying LTI
@@ -157,17 +162,23 @@ function matchesInvitationSource(
   candidate: EnrollmentIdentityCandidate,
   source: Exclude<EnrollmentAdmissionSource, { type: 'self_enrollment' }>,
 ): boolean {
-  if (source.matchedBy === 'uid') {
-    return (
-      candidate.matches.pendingUid && candidate.enrollment.pending_lti13_course_instance_id === null
-    );
+  switch (source.matchedBy) {
+    case 'uid':
+      return (
+        candidate.matches.pendingUid &&
+        candidate.enrollment.pending_lti13_course_instance_id === null
+      );
+    case 'institution_uin':
+      return candidate.matches.institutionUin;
+    case 'lti13':
+      return (
+        candidate.matches.lti13 &&
+        candidate.enrollment.pending_lti13_course_instance_id === source.lti13CourseInstanceId &&
+        candidate.enrollment.pending_lti13_sub === source.sub
+      );
+    default:
+      return assertNever(source);
   }
-  if (source.matchedBy === 'institution_uin') return candidate.matches.institutionUin;
-  return (
-    candidate.matches.lti13 &&
-    candidate.enrollment.pending_lti13_course_instance_id === source.lti13CourseInstanceId &&
-    candidate.enrollment.pending_lti13_sub === source.sub
-  );
 }
 
 export function getEnrollmentAdmissionDecision(

@@ -33,8 +33,8 @@ import {
   createEnrollment,
   createLti13CourseInstance,
   createUser,
-  nextFixtureName,
   selectEnrollments,
+  uniqueTestValue,
 } from './test-utils.js';
 
 const sql = loadSqlEquiv(import.meta.url);
@@ -346,7 +346,7 @@ describe('checked enrollment admission', { concurrent: false }, () => {
       sql.insert_student_label,
       {
         course_instance_id: courseInstance.id,
-        name: nextFixtureName('label-one'),
+        name: uniqueTestValue('label-one'),
         uuid: crypto.randomUUID(),
       },
       StudentLabelSchema,
@@ -355,7 +355,7 @@ describe('checked enrollment admission', { concurrent: false }, () => {
       sql.insert_student_label,
       {
         course_instance_id: courseInstance.id,
-        name: nextFixtureName('label-two'),
+        name: uniqueTestValue('label-two'),
         uuid: crypto.randomUUID(),
       },
       StudentLabelSchema,
@@ -376,7 +376,7 @@ describe('checked enrollment admission', { concurrent: false }, () => {
       {
         course_instance_id: courseInstance.id,
         end_date: new Date('2024-01-01T00:00:00Z'),
-        name: nextFixtureName('extension-old'),
+        name: uniqueTestValue('extension-old'),
       },
       CourseInstancePublishingExtensionSchema,
     );
@@ -385,7 +385,7 @@ describe('checked enrollment admission', { concurrent: false }, () => {
       {
         course_instance_id: courseInstance.id,
         end_date: new Date('2025-01-01T00:00:00Z'),
-        name: nextFixtureName('extension-new'),
+        name: uniqueTestValue('extension-new'),
       },
       CourseInstancePublishingExtensionSchema,
     );
