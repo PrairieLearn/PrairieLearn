@@ -7,13 +7,21 @@ import { config } from '../../lib/config.js';
 // Limit replay if a token is exposed.
 const PRAIRIE_TEST_JWT_LIFETIME = '5m';
 
-interface PrairieTestJwtPayload extends jose.JWTPayload {
-  purpose: 'cheating_report' | 'end_exam';
+type PrairieTestJwtPayload = jose.JWTPayload & {
   user_id: string;
   reservation_id: string;
-  report?: string;
-  submission_id?: string;
-}
+} & (
+    | {
+        purpose: 'end_exam';
+        report?: never;
+        submission_id?: never;
+      }
+    | {
+        purpose: 'cheating_report';
+        report: string;
+        submission_id: string;
+      }
+  );
 
 export async function signPrairieTestJwt(payload: PrairieTestJwtPayload): Promise<string> {
   const key = crypto.createSecretKey(config.prairieTestSharedAuthSecret, 'utf-8');
