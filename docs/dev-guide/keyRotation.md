@@ -18,9 +18,9 @@ Do not skip the `[old, new]` stage. It ensures every instance can verify with th
 
 ## `secretKey`
 
-`secretKey` signs session cookies and the signed tokens used for CSRF protection, assessment-password cookies, load testing, workspaces, jobs, variants, actions, and trace sampling. Session cookies have a maximum lifetime of `sessionStoreExpireSeconds` (30 days by default); assessment-password, load-test, job-sequence, and variant checks are bounded at 24 hours or less in their verification paths, and workspace authorization cookies default to one minute.
+`secretKey` signs session cookies and the signed tokens used for CSRF protection, assessment-password cookies, load testing, workspaces, jobs, variants, actions, and trace sampling. Session cookies have a maximum lifetime of `sessionStoreExpireSeconds` (30 days by default); assessment-password, load-test, and variant checks are bounded at 24 hours or less in their verification paths, and workspace authorization cookies default to one minute.
 
-Some page-scoped CSRF and socket tokens do not have a hard time limit. Keep the fallback key for at least the configured session lifetime and any longer operationally configured artifact lifetime. Retiring the fallback after that window can still invalidate an exceptionally old open form or socket page; a page refresh obtains a token signed by the new active key.
+Job-sequence tokens accepted through the Socket.IO join path, along with some page-scoped CSRF and other socket tokens, do not have a hard time limit. Keep the fallback key for at least the configured session lifetime and any longer operationally configured artifact lifetime. Retiring the fallback after that window can still invalidate an exceptionally old open form or socket page; a page refresh obtains a token signed by the new active key.
 
 The trace-sampling cookie generator accepts a scalar or array-valued `secretKey` and explicitly signs with array index 0.
 
