@@ -2,7 +2,6 @@ import crypto from 'node:crypto';
 
 import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 
-import { getOrCreateUser } from '../../tests/utils/auth.js';
 import {
   type CourseInstance,
   type Enrollment,
@@ -10,7 +9,9 @@ import {
   type EnumEnrollmentStatus,
   Lti13CourseInstanceSchema,
   type User,
-} from '../db-types.js';
+} from '../../lib/db-types.js';
+
+import { getOrCreateUser } from './auth.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
