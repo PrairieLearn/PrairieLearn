@@ -89,12 +89,13 @@ async function moveEnrollmentDependents(
     survivor_enrollment_id: survivorEnrollmentId,
   };
 
-  // All dependent writers lock enrollment parents first, so the parent locks
-  // held by reconciliation make these child sets quiescent. Reconciliation then
-  // always mutates tables in this order: student labels, publishing extensions,
-  // and assessment access controls. Labels and access-control references are
-  // unioned; publishing extensions keep the latest end date. No new child rows
-  // are inserted, avoiding locks on unrelated label, extension, or rule owners.
+  // All dependent writers lock enrollment parents first, so these child rows
+  // cannot change while reconciliation holds the parent locks. Reconciliation
+  // then always mutates tables in this order: student labels, publishing
+  // extensions, and assessment access controls. Labels and access-control
+  // references are unioned; publishing extensions keep the latest end date. No
+  // new child rows are inserted, avoiding locks on unrelated label, extension,
+  // or rule owners.
   await execute(sql.deduplicate_student_label_enrollments, params);
   await execute(sql.move_student_label_enrollments, params);
   await execute(sql.keep_best_publishing_extension_enrollment, params);
@@ -128,10 +129,10 @@ async function auditAdmission({
   deletedEnrollments,
 }: {
   actor: EnrollmentAuditActor;
-  deletedEnrollments: Enrollment[];
-  newSurvivor: Enrollment;
-  oldSurvivor: Enrollment;
   source: EnrollmentAdmissionSource;
+  oldSurvivor: Enrollment;
+  newSurvivor: Enrollment;
+  deletedEnrollments: Enrollment[];
 }): Promise<void> {
   await insertAuditEvent({
     tableName: 'enrollments',
@@ -188,6 +189,10 @@ export async function admitUserToCourseInstance(
   options: {
     actor: EnrollmentAuditActor;
     courseInstanceId: string;
+    /**
+     * Pin admission to the invitation selected by an earlier read, such as an
+     * LTI launch or homepage form, rather than accepting a different match.
+     */
     expectedInvitationEnrollmentId?: string;
     userId: string;
     validateAdmission: (context: { source: EnrollmentAdmissionSource }) => Promise<void>;
@@ -209,14 +214,18 @@ export async function admitUserToCourseInstance(
   };
 
   return await runWithSharedEnrollmentBarrier(courseInstanceId, async () => {
-    // Candidate IDs must be known before they can be locked. The second,
-    // restricted selection is the authoritative classification for this
-    // transaction; it cannot add an unlocked enrollment parent.
+    // This first query only determines which enrollment parents must be locked.
+    // It must not authorize admission: a matching invitation can be changed or
+    // deleted while this transaction waits to acquire those locks.
     const initialClassification = await selectEnrollmentIdentityClassification(context);
     const enrollmentIds = initialClassification.candidates.map(
       (candidate) => candidate.enrollment.id,
     );
     await lockEnrollments(enrollmentIds);
+    // Re-read the candidates after acquiring their parent locks. Do not reuse
+    // initialClassification here: that could admit a user from an invitation
+    // whose pending identity changed while lock acquisition was waiting. The
+    // restricted query cannot add an enrollment parent that was not locked.
     const classification = await selectEnrollmentIdentityClassification(context, enrollmentIds);
     const selectedSource =
       'selectSource' in options ? options.selectSource(classification) : options.source;
@@ -250,6 +259,12 @@ export async function admitUserToCourseInstance(
     // A concurrent writer can bind this user after candidate selection. Let the
     // unique constraint abort atomically; a later request will select the winner.
     if (survivorCandidate === null) {
+      // A first-time self-enrollment has no existing enrollment to reconcile.
+      // Invitation admission always requires a matching enrollment candidate.
+      assert(
+        selectedSource.type === 'self_enrollment',
+        'Invitation admission requires an enrollment candidate',
+      );
       const enrollment = await queryRow(
         sql.insert_joined_enrollment,
         { course_instance_id: courseInstanceId, user_id: userId },
@@ -302,9 +317,9 @@ export async function admitUserToCourseInstance(
       sql.admit_reconciled_enrollment,
       {
         enrollment_id: survivorCandidate.enrollment.id,
-        // Guest status is sticky and first_joined_at preserves the earliest
-        // non-null value; the admitting SQL supplies now() only when none exists.
+        // The admitting SQL supplies now() only when no candidate has joined before.
         first_joined_at: selectEarliestFirstJoinedAt(classification.candidates),
+        // Guest status remains sticky across all merged candidates.
         is_guest: classification.candidates.some((candidate) => candidate.enrollment.is_guest),
         user_id: userId,
       },
