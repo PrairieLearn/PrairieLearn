@@ -1,8 +1,5 @@
 -- PrairieLearn tests do not run PrairieTest migrations; production shares the schema.
-CREATE TABLE IF NOT EXISTS pt_centers (
-  id bigserial PRIMARY KEY,
-  cheating_reports_enabled boolean NOT NULL DEFAULT false
-);
+CREATE TABLE IF NOT EXISTS pt_centers (id bigserial PRIMARY KEY);
 
 ALTER TABLE IF EXISTS pt_centers
 ADD COLUMN IF NOT EXISTS cheating_reports_enabled boolean NOT NULL DEFAULT false;
