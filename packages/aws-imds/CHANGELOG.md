@@ -1,5 +1,11 @@
 # @prairielearn/aws-imds
 
+## 3.1.0
+
+### Minor Changes
+
+- 0ae4ba8: Add utilities for detecting and waiting for EC2 Auto Scaling lifecycle transitions.
+
 ## 3.0.8
 
 ### Patch Changes
