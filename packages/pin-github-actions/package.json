@@ -11,7 +11,7 @@
     "node": ">=24.0.0"
   },
   "bin": {
-    "pin-github-actions": "dist/cli.js"
+    "pin-github-actions": "bin/cli.js"
   },
   "main": "dist/cli.js",
   "scripts": {
