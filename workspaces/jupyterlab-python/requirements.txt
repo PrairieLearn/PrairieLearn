@@ -1,9 +1,9 @@
 automata-lib==9.2.0
 beautifulsoup4==4.15.0
-bokeh==3.9.1
+bokeh==3.9.2
 colormath==3.0.0
 defusedxml==0.7.1
-Faker==40.35.0
+Faker==40.36.0
 folium==0.20.0
 ipython==9.15.0
 matplotlib==3.11.1
