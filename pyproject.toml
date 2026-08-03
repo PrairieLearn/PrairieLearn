@@ -104,13 +104,12 @@ select = ["ALL"]
 
 ignore = [
   # These rules provide little value to us
-  "BLE",                        # flake8-blind-except
-  "COM",                        # flake8-commas
+  "blind-except",
+  "missing-trailing-comma",
   "missing-copyright-notice",
   "complex-structure",
-  "ERA",                        # eradicate (code in comments)
+  "commented-out-code",         # too many false positives
   "EM",                         # flake8-errmsg
-  "EXE",                        # flake8-executable
   "line-too-long",
   "FIX",                        # flake8-fixme
   "implicit-namespace-package",
