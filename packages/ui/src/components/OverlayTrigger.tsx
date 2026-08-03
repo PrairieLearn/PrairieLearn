@@ -5,11 +5,25 @@ import {
   type OverlayTriggerProps as BootstrapOverlayTriggerProps,
   Popover,
   type PopoverProps,
-  Tooltip,
   type TooltipProps,
 } from 'react-bootstrap';
 
 import { type FocusTrap, focusFirstFocusableChild, trapFocus } from '@prairielearn/browser-utils';
+
+import { Tooltip as AriaTooltip, type TooltipProps as AriaTooltipProps } from './Tooltip.js';
+
+function getAriaTooltipPlacement(
+  placement: BootstrapOverlayTriggerProps['placement'],
+): AriaTooltipProps['placement'] {
+  if (typeof placement !== 'string' || placement === 'auto') return 'top';
+  if (placement === 'auto-start') return 'top start';
+  if (placement === 'auto-end') return 'top end';
+  if (placement === 'left-start') return 'left top';
+  if (placement === 'left-end') return 'left bottom';
+  if (placement === 'right-start') return 'right top';
+  if (placement === 'right-end') return 'right bottom';
+  return placement.replace('-', ' ') as AriaTooltipProps['placement'];
+}
 
 export interface OverlayTriggerProps extends Omit<BootstrapOverlayTriggerProps, 'overlay'> {
   popover?: {
@@ -29,6 +43,8 @@ export interface OverlayTriggerProps extends Omit<BootstrapOverlayTriggerProps, 
   tooltip?: {
     /**
      * Additional props to pass to the Tooltip component. `id` is required for accessibility.
+     *
+     * @deprecated Use the React Aria-based `Tooltip` component directly for new code.
      */
     props: Omit<TooltipProps, 'children' | 'id'> & { id: string };
     /**
@@ -57,7 +73,9 @@ export interface OverlayTriggerProps extends Omit<BootstrapOverlayTriggerProps, 
  * - Automatically constructs a Popover with proper ref management
  *
  * This component provides a simpler API than react-bootstrap's OverlayTrigger by
- * handling the Popover construction and ref management internally.
+ * handling the Popover construction and ref management internally. Its legacy
+ * tooltip API delegates to the React Aria-based Tooltip component for backwards
+ * compatibility; new tooltip call sites should use Tooltip directly.
  *
  * @example
  * ```tsx
@@ -153,6 +171,42 @@ export function OverlayTrigger({
     throw new Error('Only one of popover or tooltip must be provided');
   }
 
+  if (tooltip) {
+    if (typeof children === 'function') {
+      throw new Error('Tooltip children must be a focusable element');
+    }
+
+    const isClickTriggered = Array.isArray(props.trigger)
+      ? props.trigger.includes('click')
+      : props.trigger === 'click';
+    if (isClickTriggered) {
+      throw new Error('Use a popover for content that opens on click');
+    }
+
+    const delay = typeof props.delay === 'number' ? props.delay : props.delay?.show;
+    const closeDelay = typeof props.delay === 'number' ? props.delay : props.delay?.hide;
+    const trigger =
+      props.trigger === 'focus' ||
+      (Array.isArray(props.trigger) &&
+        props.trigger.includes('focus') &&
+        !props.trigger.includes('hover'))
+        ? 'focus'
+        : 'hover';
+
+    return (
+      <AriaTooltip
+        id={tooltip.props.id}
+        content={tooltip.body}
+        placement={getAriaTooltipPlacement(props.placement)}
+        delay={delay}
+        closeDelay={closeDelay}
+        trigger={trigger}
+      >
+        {children}
+      </AriaTooltip>
+    );
+  }
+
   // Construct the popover with our managed ref
   const popoverOverlay = popover ? (
     <Popover {...popover.props}>
@@ -161,12 +215,10 @@ export function OverlayTrigger({
     </Popover>
   ) : null;
 
-  const tooltipOverlay = tooltip ? <Tooltip {...tooltip.props}>{tooltip.body}</Tooltip> : null;
-
   return (
     <BootstrapOverlayTrigger
       {...props}
-      overlay={popoverOverlay ?? tooltipOverlay!}
+      overlay={popoverOverlay!}
       onEntered={handleEntered}
       onExit={handleExit}
     >

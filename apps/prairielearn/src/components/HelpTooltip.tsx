@@ -1,8 +1,7 @@
 import clsx from 'clsx';
 import type { ReactNode } from 'react';
-import type { Placement } from 'react-bootstrap/types';
 
-import { OverlayTrigger } from '@prairielearn/ui';
+import { Tooltip, type TooltipProps } from '@prairielearn/ui';
 
 export function HelpTooltip({
   body,
@@ -14,11 +13,11 @@ export function HelpTooltip({
   body: ReactNode;
   id: string;
   ariaLabel: string;
-  placement?: Placement;
+  placement?: TooltipProps['placement'];
   className?: string;
 }) {
   return (
-    <OverlayTrigger placement={placement} tooltip={{ body, props: { id } }}>
+    <Tooltip id={id} placement={placement} content={body}>
       <button
         type="button"
         className={clsx('btn btn-xs btn-ghost p-0 border-0 lh-1 align-middle', className)}
@@ -26,6 +25,6 @@ export function HelpTooltip({
       >
         <i className="bi bi-question-circle text-muted" aria-hidden="true" />
       </button>
-    </OverlayTrigger>
+    </Tooltip>
   );
 }

@@ -2,7 +2,7 @@ import clsx from 'clsx';
 import type { ReactNode } from 'react';
 import Alert from 'react-bootstrap/Alert';
 
-import { OverlayTrigger } from './OverlayTrigger.js';
+import { Tooltip } from './Tooltip.js';
 
 export interface StickySaveBarAlert {
   variant: 'success' | 'danger';
@@ -49,20 +49,15 @@ export function StickySaveBar({
   fullWidth,
 }: StickySaveBarProps) {
   const isSaveDisabled = isSaving || Boolean(saveDisabledReason);
-
-  const saveButton = (
-    <button
-      type="submit"
-      form={formId}
-      className={clsx(
-        'btn btn-sm d-inline-flex align-items-center gap-1',
-        isSaveDisabled ? 'btn-outline-secondary' : 'btn-primary',
-      )}
-      disabled={isSaveDisabled}
-    >
+  const saveButtonClassName = clsx(
+    'btn btn-sm d-inline-flex align-items-center gap-1',
+    isSaveDisabled ? 'btn-outline-secondary' : 'btn-primary',
+  );
+  const saveButtonContent = (
+    <>
       <i className="bi bi-floppy" aria-hidden="true" />
       {isSaving ? 'Saving...' : 'Save'}
-    </button>
+    </>
   );
 
   return (
@@ -95,16 +90,20 @@ export function StickySaveBar({
             Cancel
           </button>
           {saveDisabledReason ? (
-            <OverlayTrigger
-              tooltip={{
-                props: { id: 'pl-ui-sticky-save-bar-tooltip' },
-                body: saveDisabledReason,
-              }}
-            >
-              <span className="d-inline-block">{saveButton}</span>
-            </OverlayTrigger>
+            <Tooltip id="pl-ui-sticky-save-bar-tooltip" content={saveDisabledReason}>
+              <span className={saveButtonClassName} role="button" tabIndex={0} aria-disabled="true">
+                {saveButtonContent}
+              </span>
+            </Tooltip>
           ) : (
-            saveButton
+            <button
+              type="submit"
+              form={formId}
+              className={saveButtonClassName}
+              disabled={isSaveDisabled}
+            >
+              {saveButtonContent}
+            </button>
           )}
         </div>
       </div>

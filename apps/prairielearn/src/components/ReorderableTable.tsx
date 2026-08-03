@@ -126,9 +126,9 @@ export function ReorderableRowActionsCell({
         {deleteDisabledReason ? (
           <OverlayTrigger
             trigger="click"
-            tooltip={{
+            popover={{
               body: deleteDisabledReason,
-              props: { id: `delete-tooltip-${trackingId}` },
+              props: { id: `delete-popover-${trackingId}` },
             }}
             rootClose
           >

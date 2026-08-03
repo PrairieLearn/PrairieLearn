@@ -345,14 +345,5 @@ function addInstanceQuestionGroupSelectionDropdownListeners() {
 
     groupDescriptionTooltip.setAttribute('data-bs-title', selectedGroupDescription);
     groupDescriptionTooltip.setAttribute('aria-label', selectedGroupDescription);
-
-    // Update the tooltip title
-    const tooltip = window.bootstrap.Tooltip.getInstance(groupDescriptionTooltip);
-    if (tooltip) {
-      // Dispose the current tooltip instance
-      tooltip.dispose();
-      // Re-initialize the tooltip
-      new window.bootstrap.Tooltip(groupDescriptionTooltip);
-    }
   });
 }
