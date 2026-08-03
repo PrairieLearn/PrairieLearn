@@ -98,6 +98,8 @@ If a migration was created on the current feature branch (i.e., it has not been 
 
 If you make a change to the database, make sure to update the database schema description in `database/` and the Zod types/table list in `apps/prairielearn/src/lib/db-types.ts`.
 
+After any migration or `database/` schema-description change, run `apps/prairielearn/src/tests/database.test.ts` after the final edit. Re-run it after renaming a constraint or index: entry ordering in `database/tables/*.pg` is significant and must match the generated database description.
+
 Dropping a sproc (stored procedure) only requires removing the file from `apps/prairielearn/src/sprocs` and updating `apps/prairielearn/src/sprocs/index.ts`. Do not author a migration that uses `DROP FUNCTION`.
 
 When inserting audit events (`insertAuditEvent`), always do so inside the same transaction as the action being audited. Use `runInTransactionAsync` to wrap the original database mutation and its corresponding audit log insertion together. This ensures that if either the action or the audit event fails, both are rolled back.

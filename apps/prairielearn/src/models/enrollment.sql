@@ -18,6 +18,11 @@ SET
   status = 'joined',
   user_id = $user_id,
   pending_uid = NULL,
+  pending_uin = NULL,
+  pending_name = NULL,
+  pending_email = NULL,
+  pending_lti13_sub = NULL,
+  pending_lti13_course_instance_id = NULL,
   first_joined_at = COALESCE(first_joined_at, now())
 WHERE
   id = $enrollment_id

@@ -859,7 +859,10 @@ export async function updateLti13Scores({
     }),
   );
 
-  job.info(`Working on assessment ${assessment.title} (${assessment.tid})`);
+  job.info(
+    `Working on assessment ${assessment.title} (${assessment.tid}) in ` +
+      `${instance.lti13_instance.name} course ${instance.lti13_course_instance.context_label}`,
+  );
 
   const assessment_instances = await queryRows(
     sql.select_assessment_instances_for_scores,

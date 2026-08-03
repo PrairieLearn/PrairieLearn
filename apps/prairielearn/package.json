@@ -45,6 +45,7 @@
     "@octokit/rest": "^22.0.1",
     "@panzoom/panzoom": "^4.6.2",
     "@prairielearn/aws": "workspace:^",
+    "@prairielearn/aws-imds": "workspace:^",
     "@prairielearn/bind-mount": "workspace:^",
     "@prairielearn/browser-utils": "workspace:^",
     "@prairielearn/cache": "workspace:^",

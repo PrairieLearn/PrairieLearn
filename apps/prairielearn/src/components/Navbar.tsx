@@ -18,6 +18,7 @@ export function Navbar({
   navSubPage,
   navbarType,
   sideNavEnabled = false,
+  hideSessionControls = false,
 }: {
   resLocals: UntypedResLocals;
   navPage?: NavPage;
@@ -27,11 +28,14 @@ export function Navbar({
    * Indicates if the side nav is enabled for the current page.
    */
   sideNavEnabled?: boolean;
+  /** Whether to hide all controls associated with the current session. */
+  hideSessionControls?: boolean;
 }) {
-  const { __csrf_token, course } = resLocals;
-  navPage ??= resLocals.navPage;
-  navSubPage ??= resLocals.navSubPage;
-  navbarType ??= resLocals.navbarType;
+  const navbarResLocals = hideSessionControls ? {} : resLocals;
+  const { __csrf_token, course } = navbarResLocals;
+  navPage ??= navbarResLocals.navPage;
+  navSubPage ??= navbarResLocals.navSubPage;
+  navbarType ??= navbarResLocals.navbarType;
 
   return html`
     ${config.devMode && __csrf_token
@@ -107,7 +111,7 @@ export function Navbar({
         <div id="course-nav" class="collapse navbar-collapse mobile-collapsed">
           <ul class="nav navbar-nav me-auto" id="main-nav">
             ${NavbarByType({
-              resLocals,
+              resLocals: navbarResLocals,
               navPage,
               navbarType,
             })}
@@ -124,8 +128,11 @@ export function Navbar({
                 </a>
               `
             : ''}
-          ${ReportCheatingControl({ resLocals, navPage })} ${EndExamControl({ resLocals })}
-          ${UserDropdownMenu({ resLocals, navPage, navbarType })}
+          ${ReportCheatingControl({ resLocals, navPage })}
+          ${EndExamControl({ resLocals: navbarResLocals })}
+          ${hideSessionControls
+            ? ''
+            : UserDropdownMenu({ resLocals: navbarResLocals, navPage, navbarType })}
         </div>
       </div>
     </nav>

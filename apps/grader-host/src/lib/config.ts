@@ -73,6 +73,7 @@ export const ConfigSchema = z.object({
     ])
     .default(false),
   autoScalingGroupName: z.string().nullable().default(null),
+  autoScalingTerminatingLifecycleHookName: z.string().nullable().default(null),
   // Will be automatically detected when running in EC2.
   instanceId: z.string().default('server'),
   sentryDsn: z.string().nullable().default(null),

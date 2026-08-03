@@ -89,13 +89,19 @@ SELECT
   COALESCE(ci.display_timezone, c.display_timezone) AS display_timezone,
   a.id AS assessment_id,
   CASE
-    WHEN i.assessment_id IS NOT NULL THEN JSONB_BUILD_OBJECT(
+    WHEN a.id IS NOT NULL THEN JSONB_BUILD_OBJECT(
       'label',
-      aset.abbreviation || a.number,
+      COALESCE(
+        aset.abbreviation || a.number,
+        a.tid,
+        'Unknown assessment'
+      ),
       'assessment_id',
       a.id,
       'color',
-      aset.color
+      COALESCE(aset.color, 'red3'),
+      'deleted_at',
+      a.deleted_at
     )
   END AS assessment,
   iq.assessment_instance_id,
