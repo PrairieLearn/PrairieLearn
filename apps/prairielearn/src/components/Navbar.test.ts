@@ -29,7 +29,7 @@ describe('ReportCheatingControl', () => {
     const navbar = renderNavbar({});
     assert.include(navbar, 'Report cheating');
     assert.include(navbar, 'class="btn btn-danger btn-sm');
-    assert.include(navbar, 'name="submission_id"');
+    assert.include(navbar, 'name="request_id"');
   });
 
   it('does not render outside the active exam assessment', () => {

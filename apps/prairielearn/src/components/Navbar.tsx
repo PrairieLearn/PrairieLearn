@@ -247,18 +247,12 @@ function ReportCheatingControl({
     </button>
     ${ReportCheatingModal({
       csrfToken: reportCheatingCsrfToken,
-      submissionId: crypto.randomUUID(),
+      requestId: crypto.randomUUID(),
     })}
   `;
 }
 
-function ReportCheatingModal({
-  csrfToken,
-  submissionId,
-}: {
-  csrfToken: string;
-  submissionId: string;
-}) {
+function ReportCheatingModal({ csrfToken, requestId }: { csrfToken: string; requestId: string }) {
   return Modal({
     title: 'Report cheating',
     id: 'reportCheatingModal',
@@ -296,7 +290,7 @@ function ReportCheatingModal({
     `,
     footer: html`
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-      <input type="hidden" name="submission_id" value="${submissionId}" />
+      <input type="hidden" name="request_id" value="${requestId}" />
       <button
         type="button"
         class="btn btn-secondary js-report-cheating-cancel"

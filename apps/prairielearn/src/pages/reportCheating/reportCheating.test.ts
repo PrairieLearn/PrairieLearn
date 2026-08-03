@@ -1,6 +1,7 @@
 import * as crypto from 'node:crypto';
 
 import express, { type ErrorRequestHandler, type Express } from 'express';
+import { Redis } from 'ioredis';
 import * as jose from 'jose';
 import { afterEach, assert, describe, it, vi } from 'vitest';
 
@@ -8,15 +9,16 @@ import type { HttpStatusError } from '@prairielearn/error';
 import { withServer } from '@prairielearn/express-test-utils';
 
 import { config } from '../../lib/config.js';
+import { RedisRateLimiter } from '../../lib/redis-rate-limiter.js';
 
 import { createReportCheatingRouter } from './reportCheating.js';
 
 function createApp({
   ptFetch,
-  reportCount = 1,
+  rateLimiter = { addToIntervalUsageOnce: async () => 1 },
 }: {
   ptFetch: typeof fetch;
-  reportCount?: number;
+  rateLimiter?: Pick<RedisRateLimiter, 'addToIntervalUsageOnce'>;
 }): Express {
   const app = express();
   app.use(express.json());
@@ -28,7 +30,7 @@ function createApp({
   app.use(
     createReportCheatingRouter({
       ptFetch,
-      rateLimiter: { addToIntervalUsage: vi.fn(async () => reportCount) },
+      rateLimiter,
     }),
   );
   app.use(((err, _req, res, _next) => {
@@ -57,7 +59,7 @@ async function postReport(
 }
 
 function validBody() {
-  return { report: 'Student nearby is using a phone.', submission_id: crypto.randomUUID() };
+  return { report: 'Student nearby is using a phone.', request_id: crypto.randomUUID() };
 }
 
 describe('POST /pl/report-cheating', () => {
@@ -85,33 +87,59 @@ describe('POST /pl/report-cheating', () => {
       reservation_id: '2',
       report: 'Student nearby is using a phone.',
     });
-    assert.match(String(payload.submission_id), /^[0-9a-f-]{36}$/);
+    assert.match(String(payload.request_id), /^[0-9a-f-]{36}$/);
   });
 
   it('rejects invalid input before calling PrairieTest', async () => {
     const ptFetch = vi.fn<typeof fetch>();
     const { response } = await postReport(createApp({ ptFetch }), {
       report: '   ',
-      submission_id: crypto.randomUUID(),
+      request_id: crypto.randomUUID(),
     });
 
     assert.equal(response.status, 400);
     assert.equal(ptFetch.mock.calls.length, 0);
   });
 
-  it('enforces the report rate limit', async () => {
-    const ptFetch = vi.fn<typeof fetch>();
-    const { response, json } = await postReport(
-      createApp({ ptFetch, reportCount: 6 }),
-      validBody(),
-    );
+  it('rate-limits distinct requests without charging retries', async () => {
+    const redisUrl = config.nonVolatileRedisUrl;
+    assert(redisUrl);
+    const redis = new Redis(redisUrl);
+    const keyPrefix = `${config.cacheKeyPrefix}test:report-cheating:${crypto.randomUUID()}:`;
+    const rateLimiter = new RedisRateLimiter({
+      redis: () => redis,
+      keyPrefix: () => keyPrefix,
+      intervalSeconds: 60 * 60,
+    });
+    const ptFetch = vi.fn(async () => new Response(null, { status: 200 }));
+    const app = createApp({ ptFetch, rateLimiter });
+    const firstRequest = validBody();
 
-    assert.equal(response.status, 429);
-    assert.equal(
-      json.error,
-      'You have submitted too many reports. Please tell your proctor directly.',
-    );
-    assert.equal(ptFetch.mock.calls.length, 0);
+    try {
+      assert.equal((await postReport(app, firstRequest)).response.status, 200);
+      assert.equal((await postReport(app, firstRequest)).response.status, 200);
+
+      for (let i = 0; i < 4; i++) {
+        assert.equal((await postReport(app, validBody())).response.status, 200);
+      }
+
+      const rejectedRequest = validBody();
+      const rejected = await postReport(app, rejectedRequest);
+      assert.equal(rejected.response.status, 429);
+      assert.equal(
+        rejected.json.error,
+        'You have submitted too many reports. Please tell your proctor directly.',
+      );
+      assert.equal(ptFetch.mock.calls.length, 6);
+
+      assert.equal((await postReport(app, firstRequest)).response.status, 200);
+      assert.equal((await postReport(app, rejectedRequest)).response.status, 429);
+      assert.equal(ptFetch.mock.calls.length, 7);
+    } finally {
+      const keys = await redis.keys(`${keyPrefix}*`);
+      if (keys.length > 0) await redis.del(keys[0], ...keys.slice(1));
+      await rateLimiter.close();
+    }
   });
 
   it('distinguishes declined and failed PrairieTest requests', async () => {

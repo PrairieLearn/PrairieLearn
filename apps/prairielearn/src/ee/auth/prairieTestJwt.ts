@@ -14,12 +14,12 @@ type PrairieTestJwtPayload = jose.JWTPayload & {
     | {
         purpose: 'end_exam';
         report?: never;
-        submission_id?: never;
+        request_id?: never;
       }
     | {
         purpose: 'cheating_report';
         report: string;
-        submission_id: string;
+        request_id: string;
       }
   );
 

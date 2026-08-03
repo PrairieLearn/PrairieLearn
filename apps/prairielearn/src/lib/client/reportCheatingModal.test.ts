@@ -35,7 +35,7 @@ describe('setupReportCheatingModal', () => {
             <div class="d-none js-report-cheating-success"></div>
             <div class="d-none js-report-cheating-error"></div>
             <input name="__csrf_token" value="csrf-token">
-            <input name="submission_id" value="11111111-1111-4111-8111-111111111111">
+            <input name="request_id" value="11111111-1111-4111-8111-111111111111">
             <button type="button" class="js-report-cheating-cancel">Cancel</button>
             <button type="submit" class="js-report-cheating-submit">
               <span class="js-report-cheating-submit-label">Submit report</span>
@@ -92,7 +92,7 @@ describe('setupReportCheatingModal', () => {
     assert.isFalse(hideAfterSuccess.defaultPrevented);
   });
 
-  it('retries an unchanged report with the same submission ID', async () => {
+  it('retries an unchanged report with the same request ID', async () => {
     const fetchMock = vi
       .fn<typeof fetch>()
       .mockResolvedValueOnce(jsonResponse('error', 502))
@@ -113,10 +113,10 @@ describe('setupReportCheatingModal', () => {
 
     const firstBody = JSON.parse(fetchMock.mock.calls[0][1]!.body as string);
     const secondBody = JSON.parse(fetchMock.mock.calls[1][1]!.body as string);
-    assert.equal(firstBody.submission_id, secondBody.submission_id);
+    assert.equal(firstBody.request_id, secondBody.request_id);
   });
 
-  it('rotates the submission ID when the report changes after a failed attempt', async () => {
+  it('rotates the request ID when the report changes after a failed attempt', async () => {
     const fetchMock = vi
       .fn<typeof fetch>()
       .mockResolvedValueOnce(jsonResponse('error', 502))
@@ -142,7 +142,7 @@ describe('setupReportCheatingModal', () => {
 
     const firstBody = JSON.parse(fetchMock.mock.calls[0][1]!.body as string);
     const secondBody = JSON.parse(fetchMock.mock.calls[1][1]!.body as string);
-    assert.notEqual(firstBody.submission_id, secondBody.submission_id);
+    assert.notEqual(firstBody.request_id, secondBody.request_id);
     assert.equal(secondBody.report, 'Edited report');
   });
 });

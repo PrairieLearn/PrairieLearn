@@ -12,13 +12,13 @@ export function setupReportCheatingModal() {
   const submitLabel = form.querySelector<HTMLElement>('.js-report-cheating-submit-label');
   const report = form.querySelector<HTMLTextAreaElement>('textarea[name="report"]');
   const csrfToken = form.querySelector<HTMLInputElement>('input[name="__csrf_token"]');
-  const submissionId = form.querySelector<HTMLInputElement>('input[name="submission_id"]');
+  const requestId = form.querySelector<HTMLInputElement>('input[name="request_id"]');
   let submissionSucceeded = false;
   let submitting = false;
   let submittedReport: string | null = null;
 
-  function rotateSubmissionId() {
-    if (submissionId) submissionId.value = crypto.randomUUID();
+  function rotateRequestId() {
+    if (requestId) requestId.value = crypto.randomUUID();
     submittedReport = null;
   }
 
@@ -84,7 +84,7 @@ export function setupReportCheatingModal() {
         body: JSON.stringify({
           __csrf_token: csrfToken?.value,
           report: report?.value,
-          submission_id: submissionId?.value,
+          request_id: requestId?.value,
         }),
         redirect: 'error',
       });
@@ -112,7 +112,7 @@ export function setupReportCheatingModal() {
 
   report?.addEventListener('input', () => {
     if (submittedReport !== null && report.value !== submittedReport) {
-      rotateSubmissionId();
+      rotateRequestId();
     }
   });
 
@@ -123,7 +123,7 @@ export function setupReportCheatingModal() {
   modal?.addEventListener('hidden.bs.modal', () => {
     if (!submissionSucceeded) return;
     form.reset();
-    rotateSubmissionId();
+    rotateRequestId();
     submissionSucceeded = false;
     showForm();
   });
