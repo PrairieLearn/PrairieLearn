@@ -1,6 +1,6 @@
 import { QueryClient, useMutation } from '@tanstack/react-query';
 import clsx from 'clsx';
-import { useMemo, useState } from 'react';
+import { useId, useMemo, useState } from 'react';
 import { type FieldArrayPath, useFieldArray, useForm } from 'react-hook-form';
 
 import { StickySaveBar } from '@prairielearn/ui';
@@ -100,6 +100,9 @@ function SharedDataCardInner({
 
   const { fields, append, remove } = useFieldArray({ control, name: 'objects' });
   const objects = watch('objects');
+  // useFieldArray's field.id isn't stable between server and client render, so it can't be
+  // used to build DOM ids without causing a hydration mismatch; useId() is.
+  const objectsId = useId();
 
   const onSubmit = (data: SharedDataFormValues) => {
     mutation.mutate(
@@ -195,7 +198,7 @@ function SharedDataCardInner({
               <div key={field.id} className="border rounded p-3 mb-3">
                 <div className="d-flex align-items-end flex-wrap gap-3 mb-3">
                   <div>
-                    <label className="form-label" htmlFor={`shared-data-name-${field.id}`}>
+                    <label className="form-label" htmlFor={`${objectsId}-${index}-name`}>
                       Name
                     </label>
                     <input
@@ -204,7 +207,7 @@ function SharedDataCardInner({
                         'form-control form-control-sm font-monospace',
                         errors.objects?.[index]?.name && 'is-invalid',
                       )}
-                      id={`shared-data-name-${field.id}`}
+                      id={`${objectsId}-${index}-name`}
                       disabled={!canEdit}
                       defaultValue={field.name}
                       {...register(`objects.${index}.name`, {
@@ -233,7 +236,7 @@ function SharedDataCardInner({
                     </span>
                   </div>
                   <div>
-                    <label className="form-label" htmlFor={`shared-data-version-${field.id}`}>
+                    <label className="form-label" htmlFor={`${objectsId}-${index}-version`}>
                       Data version
                     </label>
                     <input
@@ -244,7 +247,7 @@ function SharedDataCardInner({
                         'form-control form-control-sm',
                         errors.objects?.[index]?.dataVersion && 'is-invalid',
                       )}
-                      id={`shared-data-version-${field.id}`}
+                      id={`${objectsId}-${index}-version`}
                       disabled={!canEdit}
                       defaultValue={field.dataVersion}
                       {...register(`objects.${index}.dataVersion`, {
