@@ -29,7 +29,6 @@ jobs:
           app-id: ${{ secrets.CI_BOT_APP_ID }}
           private-key: ${{ secrets.CI_BOT_APP_PRIVATE_KEY }}
           permission-contents: write
-          permission-workflows: write
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -54,23 +53,6 @@ jobs:
         run: |
           git add .
           git diff --cached --quiet || git commit -m 'Dedupe dependencies'
-
-      # While dependabot uses hash versions for GitHub Actions if the action is
-      # pinned to a hash, it will not include the comment with the corresponding
-      # tag in the format used by our package. Therefore, we run the package to
-      # add the comment after deduping.
-      - name: 'Pin GitHub Actions'
-        run: |
-          pnpm --filter @prairielearn/pin-github-actions build
-          pnpm exec pin-github-actions
-        env:
-          # Use GitHub token to avoid hitting the GitHub API rate limit when
-          # checking for the latest version of each action.
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: 'Commit changes'
-        run: |
-          git add .
-          git diff --cached --quiet || git commit -m 'Pin GitHub Actions'
 
       - name: 'Push changes'
         run: |
