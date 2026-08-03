@@ -1,5 +1,3 @@
-import * as crypto from 'node:crypto';
-
 import { type FlashMessageType, flash } from '@prairielearn/flash';
 import { type HtmlValue, html, unsafeHtml } from '@prairielearn/html';
 import { run } from '@prairielearn/run';
@@ -252,14 +250,11 @@ function ReportCheatingControl({
     >
       Report cheating
     </button>
-    ${ReportCheatingModal({
-      csrfToken: reportCheatingCsrfToken,
-      requestId: crypto.randomUUID(),
-    })}
+    ${ReportCheatingModal({ csrfToken: reportCheatingCsrfToken })}
   `;
 }
 
-function ReportCheatingModal({ csrfToken, requestId }: { csrfToken: string; requestId: string }) {
+function ReportCheatingModal({ csrfToken }: { csrfToken: string }) {
   return Modal({
     title: 'Report cheating',
     id: 'reportCheatingModal',
@@ -297,7 +292,6 @@ function ReportCheatingModal({ csrfToken, requestId }: { csrfToken: string; requ
     `,
     footer: html`
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-      <input type="hidden" name="request_id" value="${requestId}" />
       <button
         type="button"
         class="btn btn-secondary js-report-cheating-cancel"

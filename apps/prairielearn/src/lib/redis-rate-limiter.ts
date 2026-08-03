@@ -2,24 +2,6 @@ import type { Redis } from 'ioredis';
 import memoize from 'p-memoize';
 import { z } from 'zod';
 
-const ADD_TO_INTERVAL_USAGE_ONCE_SCRIPT = `
-local request_field = 'request:' .. ARGV[1]
-local previous_usage = redis.call('HGET', KEYS[1], request_field)
-if previous_usage then
-  return previous_usage
-end
-
-local usage = tonumber(redis.call('HGET', KEYS[1], 'usage')) or 0
-local next_usage = usage + tonumber(ARGV[2])
-if next_usage > tonumber(ARGV[3]) then
-  return next_usage
-end
-
-redis.call('HSET', KEYS[1], 'usage', next_usage, request_field, next_usage)
-redis.call('EXPIRE', KEYS[1], ARGV[4], 'NX')
-return next_usage
-`;
-
 interface RedisRateLimiterOptions {
   redis: () => Redis;
   keyPrefix: () => string;
@@ -90,35 +72,6 @@ export class RedisRateLimiter {
     const [expireErr] = result[1];
     if (expireErr) throw expireErr;
 
-    return z.coerce.number().parse(usage);
-  }
-
-  /**
-   * Adds usage at most once for a request, provided the addition does not exceed the limit.
-   * Retries return the usage recorded for the original request, so they receive the same
-   * rate-limit decision even if later requests have exhausted the interval's budget.
-   */
-  async addToIntervalUsageOnce({
-    key,
-    amount,
-    requestId,
-    limit,
-  }: {
-    key: string;
-    amount: number;
-    requestId: string;
-    limit: number;
-  }): Promise<number> {
-    const redis = await this.getRedis();
-    const usage = await redis.eval(
-      ADD_TO_INTERVAL_USAGE_ONCE_SCRIPT,
-      1,
-      this.getKey(key),
-      requestId,
-      amount,
-      limit,
-      this.getTtl(),
-    );
     return z.coerce.number().parse(usage);
   }
 

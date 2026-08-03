@@ -1,7 +1,6 @@
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import { Redis } from 'ioredis';
-import { z } from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
 import { logger } from '@prairielearn/logger';
@@ -32,7 +31,7 @@ const defaultRateLimiter = new RedisRateLimiter({
 export function createReportCheatingRouter({
   rateLimiter = defaultRateLimiter,
 }: {
-  rateLimiter?: Pick<RedisRateLimiter, 'addToIntervalUsageOnce'>;
+  rateLimiter?: Pick<RedisRateLimiter, 'addToIntervalUsage'>;
 } = {}) {
   const router = Router();
 
@@ -52,14 +51,6 @@ export function createReportCheatingRouter({
         throw new HttpStatusError(400, `Reports are limited to ${MAX_REPORT_LENGTH} characters.`);
       }
 
-      const requestIdResult = z.uuid().safeParse(req.body.request_id);
-      if (!requestIdResult.success) {
-        throw new HttpStatusError(
-          400,
-          'Your report could not be submitted. Please reload the page and try again.',
-        );
-      }
-
       const reservation_id: string | null = res.locals.cheating_report_reservation_id;
       if (!reservation_id) {
         throw new HttpStatusError(
@@ -68,12 +59,7 @@ export function createReportCheatingRouter({
         );
       }
 
-      const reportCount = await rateLimiter.addToIntervalUsageOnce({
-        key: `${user_id}:${reservation_id}`,
-        amount: 1,
-        requestId: requestIdResult.data,
-        limit: MAX_REPORTS_PER_HOUR,
-      });
+      const reportCount = await rateLimiter.addToIntervalUsage(`${user_id}:${reservation_id}`, 1);
       if (reportCount > MAX_REPORTS_PER_HOUR) {
         throw new HttpStatusError(
           429,
@@ -86,7 +72,6 @@ export function createReportCheatingRouter({
         user_id,
         reservation_id,
         report,
-        request_id: requestIdResult.data,
       });
 
       const outcome = await run(async (): Promise<'ok' | 'declined' | 'failed'> => {

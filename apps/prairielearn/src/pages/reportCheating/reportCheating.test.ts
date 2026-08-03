@@ -9,14 +9,15 @@ import type { HttpStatusError } from '@prairielearn/error';
 import { withServer } from '@prairielearn/express-test-utils';
 
 import { config } from '../../lib/config.js';
+import { getActiveKey } from '../../lib/key-ring.js';
 import { RedisRateLimiter } from '../../lib/redis-rate-limiter.js';
 import { withConfig } from '../../tests/utils/config.js';
 
 import { createReportCheatingRouter } from './reportCheating.js';
 
 function createApp(
-  rateLimiter: Pick<RedisRateLimiter, 'addToIntervalUsageOnce'> = {
-    addToIntervalUsageOnce: async () => 1,
+  rateLimiter: Pick<RedisRateLimiter, 'addToIntervalUsage'> = {
+    addToIntervalUsage: async () => 1,
   },
 ): Express {
   const app = express();
@@ -47,7 +48,7 @@ async function withTestServers(
     rateLimiter,
   }: {
     prairieTestApp: Express;
-    rateLimiter?: Pick<RedisRateLimiter, 'addToIntervalUsageOnce'>;
+    rateLimiter?: Pick<RedisRateLimiter, 'addToIntervalUsage'>;
   },
   fn: (prairieLearnUrl: string) => Promise<void>,
 ) {
@@ -76,7 +77,7 @@ async function postReport(
 }
 
 function validBody() {
-  return { report: 'Student nearby is using a phone.', request_id: crypto.randomUUID() };
+  return { report: 'Student nearby is using a phone.' };
 }
 
 describe('POST /pl/report-cheating', () => {
@@ -94,7 +95,7 @@ describe('POST /pl/report-cheating', () => {
     });
 
     assert(jwt);
-    const key = crypto.createSecretKey(config.prairieTestSharedAuthSecret, 'utf-8');
+    const key = crypto.createSecretKey(getActiveKey(config.prairieTestSharedAuthSecret), 'utf-8');
     const { payload } = await jose.jwtVerify(jwt, key, { audience: 'prairietest' });
     assert.deepInclude(payload, {
       purpose: 'cheating_report',
@@ -102,7 +103,6 @@ describe('POST /pl/report-cheating', () => {
       reservation_id: '2',
       report: 'Student nearby is using a phone.',
     });
-    assert.match(String(payload.request_id), /^[0-9a-f-]{36}$/);
   });
 
   it('rejects invalid input before calling PrairieTest', async () => {
@@ -115,14 +115,13 @@ describe('POST /pl/report-cheating', () => {
     await withTestServers({ prairieTestApp }, async (prairieLearnUrl) => {
       const { response } = await postReport(prairieLearnUrl, {
         report: '   ',
-        request_id: crypto.randomUUID(),
       });
       assert.equal(response.status, 400);
     });
     assert.equal(requestCount, 0);
   });
 
-  it('rate-limits distinct requests without charging retries', async () => {
+  it('rate-limits report attempts', async () => {
     const redisUrl = config.nonVolatileRedisUrl;
     assert(redisUrl);
     const redis = new Redis(redisUrl);
@@ -137,29 +136,19 @@ describe('POST /pl/report-cheating', () => {
       prairieTestRequestCount++;
       res.sendStatus(200);
     });
-    const firstRequest = validBody();
-
     try {
       await withTestServers({ prairieTestApp, rateLimiter }, async (prairieLearnUrl) => {
-        assert.equal((await postReport(prairieLearnUrl, firstRequest)).response.status, 200);
-        assert.equal((await postReport(prairieLearnUrl, firstRequest)).response.status, 200);
-
-        for (let i = 0; i < 4; i++) {
+        for (let i = 0; i < 5; i++) {
           assert.equal((await postReport(prairieLearnUrl, validBody())).response.status, 200);
         }
 
-        const rejectedRequest = validBody();
-        const rejected = await postReport(prairieLearnUrl, rejectedRequest);
+        const rejected = await postReport(prairieLearnUrl, validBody());
         assert.equal(rejected.response.status, 429);
         assert.equal(
           rejected.json.error,
           'You have submitted too many reports. Please tell your proctor directly.',
         );
-        assert.equal(prairieTestRequestCount, 6);
-
-        assert.equal((await postReport(prairieLearnUrl, firstRequest)).response.status, 200);
-        assert.equal((await postReport(prairieLearnUrl, rejectedRequest)).response.status, 429);
-        assert.equal(prairieTestRequestCount, 7);
+        assert.equal(prairieTestRequestCount, 5);
       });
     } finally {
       const keys = await redis.keys(`${keyPrefix}*`);

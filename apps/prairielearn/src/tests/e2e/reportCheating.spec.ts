@@ -18,11 +18,12 @@ const STUDENT = {
   uin: 'E2E-REPORT-CHEATING',
   email: 'report-cheating-e2e@example.com',
 };
-const ReportRequestSchema = z.object({
-  __csrf_token: z.string(),
-  report: z.string(),
-  request_id: z.uuid(),
-});
+const ReportRequestSchema = z
+  .object({
+    __csrf_token: z.string(),
+    report: z.string(),
+  })
+  .strict();
 const test = createTest({
   authUid: STUDENT.uid,
   authName: STUDENT.name,
@@ -114,13 +115,13 @@ test('submits cheating reports from an active exam', async ({ page, courseInstan
     await modal.getByRole('button', { name: 'Try again' }).click();
     await expect.poll(() => requests.length).toBe(2);
     await expect(modal.getByRole('button', { name: 'Try again' })).toBeEnabled();
-    expect(requests[1].request_id).toBe(requests[0].request_id);
+    expect(requests[1].report).toBe(requests[0].report);
 
     await report.fill('Edited report');
     await modal.getByRole('button', { name: 'Try again' }).click();
     await expect(modal.getByRole('status')).toHaveText('Thank you. Your report was submitted.');
     expect(requests).toHaveLength(3);
-    expect(requests[2].request_id).not.toBe(requests[1].request_id);
+    expect(requests[2].report).not.toBe(requests[1].report);
     expect(requests[2].report).toBe('Edited report');
 
     await modal.getByRole('button', { name: 'Close' }).click();
