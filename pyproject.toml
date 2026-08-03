@@ -104,23 +104,24 @@ select = ["ALL"]
 
 ignore = [
   # These rules provide little value to us
+  "EM",                         # flake8-errmsg
+  "EXE",                        # flake8-executable
+  "FIX",                        # flake8-fixme
+  "S",                          # flake8-bandit (security rules)
+  "TD",                         # flake8-todos
+  "PTH",                        # flake8-use-pathlib
   "blind-except",
   "missing-trailing-comma",
   "missing-copyright-notice",
   "complex-structure",
   "commented-out-code",         # too many false positives
-  "EM",                         # flake8-errmsg
   "line-too-long",
-  "FIX",                        # flake8-fixme
   "implicit-namespace-package",
-  "S",                          # flake8-bandit (security rules)
   "private-member-access",
   "print",
   "debugger",
-  "TD",                         # flake8-todos
   "blanket-type-ignore",
   "invalid-character-esc",
-  "PTH",                        # flake8-use-pathlib
 
   # These rules were discussed and disabled
   "any-type",
