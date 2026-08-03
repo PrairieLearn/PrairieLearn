@@ -19,7 +19,7 @@ function createApp({
   reportCount?: number;
 }): Express {
   const app = express();
-  app.use(express.urlencoded({ extended: false }));
+  app.use(express.json());
   app.use((_req, res, next) => {
     res.locals.authn_user = { id: '1' };
     res.locals.cheating_report_reservation_id = '2';
@@ -48,9 +48,9 @@ async function postReport(
       method: 'POST',
       headers: {
         Accept: 'application/json',
-        'Content-Type': 'application/x-www-form-urlencoded',
+        'Content-Type': 'application/json',
       },
-      body: new URLSearchParams(body),
+      body: JSON.stringify(body),
     });
   });
   return { response, json: await response.json() };

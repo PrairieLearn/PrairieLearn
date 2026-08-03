@@ -11,6 +11,7 @@ export function setupReportCheatingModal() {
   const submitButton = form.querySelector<HTMLButtonElement>('.js-report-cheating-submit');
   const submitLabel = form.querySelector<HTMLElement>('.js-report-cheating-submit-label');
   const report = form.querySelector<HTMLTextAreaElement>('textarea[name="report"]');
+  const csrfToken = form.querySelector<HTMLInputElement>('input[name="__csrf_token"]');
   const submissionId = form.querySelector<HTMLInputElement>('input[name="submission_id"]');
   let submissionSucceeded = false;
   let submitting = false;
@@ -76,16 +77,15 @@ export function setupReportCheatingModal() {
     submittedReport = report?.value ?? null;
     showLoading();
 
-    const body = new URLSearchParams();
-    new FormData(form).forEach((value, key) => {
-      if (typeof value === 'string') body.append(key, value);
-    });
-
     try {
       const response = await fetch(form.action, {
         method: 'POST',
-        headers: { Accept: 'application/json' },
-        body,
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({
+          __csrf_token: csrfToken?.value,
+          report: report?.value,
+          submission_id: submissionId?.value,
+        }),
         redirect: 'error',
       });
       const result: unknown = await response.json();

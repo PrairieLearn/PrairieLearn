@@ -34,6 +34,7 @@ describe('setupReportCheatingModal', () => {
             <div class="d-none js-report-cheating-loading"></div>
             <div class="d-none js-report-cheating-success"></div>
             <div class="d-none js-report-cheating-error"></div>
+            <input name="__csrf_token" value="csrf-token">
             <input name="submission_id" value="11111111-1111-4111-8111-111111111111">
             <button type="button" class="js-report-cheating-cancel">Cancel</button>
             <button type="submit" class="js-report-cheating-submit">
@@ -67,6 +68,10 @@ describe('setupReportCheatingModal', () => {
     dispatchFormEvent('submit');
     dispatchFormEvent('submit');
     assert.equal(fetchMock.mock.calls.length, 1);
+    assert.deepEqual(fetchMock.mock.calls[0][1]?.headers, {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+    });
 
     const modal = dom.window.document.querySelector<HTMLElement>('#reportCheatingModal')!;
     const hideEvent = new dom.window.Event('hide.bs.modal', { cancelable: true });
@@ -106,11 +111,9 @@ describe('setupReportCheatingModal', () => {
     dispatchFormEvent('submit');
     await vi.waitFor(() => assert.equal(fetchMock.mock.calls.length, 2));
 
-    const firstBody = fetchMock.mock.calls[0][1]!.body;
-    const secondBody = fetchMock.mock.calls[1][1]!.body;
-    assert.instanceOf(firstBody, URLSearchParams);
-    assert.instanceOf(secondBody, URLSearchParams);
-    assert.equal(firstBody.get('submission_id'), secondBody.get('submission_id'));
+    const firstBody = JSON.parse(fetchMock.mock.calls[0][1]!.body as string);
+    const secondBody = JSON.parse(fetchMock.mock.calls[1][1]!.body as string);
+    assert.equal(firstBody.submission_id, secondBody.submission_id);
   });
 
   it('rotates the submission ID when the report changes after a failed attempt', async () => {
@@ -137,11 +140,9 @@ describe('setupReportCheatingModal', () => {
     dispatchFormEvent('submit');
     await vi.waitFor(() => assert.equal(fetchMock.mock.calls.length, 2));
 
-    const firstBody = fetchMock.mock.calls[0][1]!.body;
-    const secondBody = fetchMock.mock.calls[1][1]!.body;
-    assert.instanceOf(firstBody, URLSearchParams);
-    assert.instanceOf(secondBody, URLSearchParams);
-    assert.notEqual(firstBody.get('submission_id'), secondBody.get('submission_id'));
-    assert.equal(secondBody.get('report'), 'Edited report');
+    const firstBody = JSON.parse(fetchMock.mock.calls[0][1]!.body as string);
+    const secondBody = JSON.parse(fetchMock.mock.calls[1][1]!.body as string);
+    assert.notEqual(firstBody.submission_id, secondBody.submission_id);
+    assert.equal(secondBody.report, 'Edited report');
   });
 });
