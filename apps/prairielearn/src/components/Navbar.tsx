@@ -126,7 +126,7 @@ export function Navbar({
                 </a>
               `
             : ''}
-          ${ReportCheatingControl({ resLocals, navPage })}
+          ${ReportCheatingControl({ resLocals: navbarResLocals, navPage })}
           ${EndExamControl({ resLocals: navbarResLocals })}
           ${hideSessionControls
             ? ''
