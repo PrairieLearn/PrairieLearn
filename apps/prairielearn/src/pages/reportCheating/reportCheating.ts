@@ -105,7 +105,11 @@ export function createReportCheatingRouter({
           return ptResponse.status === 403 ? 'declined' : 'failed';
         } catch (err) {
           logger.error('PrairieTest cheating-report call threw', { err, user_id, reservation_id });
-          return 'failed';
+          throw new HttpStatusError(
+            502,
+            'We could not confirm whether your report was submitted. Please try again, or tell your proctor directly.',
+            { cause: err },
+          );
         }
       });
 
