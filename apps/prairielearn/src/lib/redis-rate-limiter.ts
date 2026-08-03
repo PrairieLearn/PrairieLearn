@@ -64,6 +64,10 @@ export class RedisRateLimiter {
     if (!incrementResult) throw new Error('Redis rate-limit increment returned no result');
     const [err, usage] = incrementResult;
     if (err) throw err;
+
+    const [expireErr] = result[1];
+    if (expireErr) throw expireErr;
+
     return z.coerce.number().parse(usage);
   }
 
