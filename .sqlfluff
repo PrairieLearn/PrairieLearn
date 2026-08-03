@@ -8,8 +8,6 @@ exclude_rules = aliasing.column,
     aliasing.table,
     # False positives with to_jsonb(ALIAS). See https://github.com/sqlfluff/sqlfluff/issues/7235
     aliasing.unused,
-    # TODO: Consider enabling this.
-    aliasing.unique.table,
     # We are fine with using SELECT * in queries.
     ambiguous.column_count,
     ambiguous.join,
