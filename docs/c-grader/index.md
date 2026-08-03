@@ -92,12 +92,10 @@ After compiling the student and instructor code, tests may be created using one 
 To compile a C or C++ file, you may use the method `self.compile_file()`. A typical call to this method, assuming students write a complete C file including the `main` function, will include two parameters: the name of the C or C++ file to be compiled (the file submitted by the student), and the name of an executable file to be created.
 
 ```python
-self.compile_file(
-    "square.c", "square"
-)  # Compile the file, but do not create a unit test result
-self.test_compile_file(
-    "square.c", "square"
-)  # Compile the file and give one point to student if compilation is successful
+# Compile the file, but do not create a unit test result
+self.compile_file("square.c", "square")
+# Compile the file and give one point to student if compilation is successful
+self.test_compile_file("square.c", "square")
 ```
 
 By default, these methods use `gcc` and `g++` (for `CGrader` and `CPPGrader`, respectively) to compile the code. To use a different compiler (e.g., `clang`), set the `compiler` argument:
@@ -222,9 +220,8 @@ self.compile_file(
 To create a test result based on the compilation itself, use `self.test_compile_file()` instead of `self.compile_file()`. This method accepts the same arguments as `self.compile_file()`, but will create a test named "Compilation" worth one point by default.
 
 ```python
-self.test_compile_file(
-    "square.c", "square"
-)  # Compile the file and give one point to student if compilation is successful
+# Compile the file and give one point to student if compilation is successful
+self.test_compile_file("square.c", "square")
 ```
 
 To change the name and/or points, set the `name` or `points` argument as follows:
@@ -266,14 +263,14 @@ The `exp_output` argument can also be used to check for multiple output patterns
 - `must_match_all_outputs="partial"`: the points assigned to the test are based on the number of patterns that are found in the program output (for example, if three patterns out of four are found, then the test is assigned 0.75 points).
 
 ```python
-self.test_run(
-    "./square", exp_output=["SUCCESS", "CORRECT"]
-)  # default, either SUCCESS or CORRECT are enough for full points
+# default, either SUCCESS or CORRECT are enough for full points
+self.test_run("./square", exp_output=["SUCCESS", "CORRECT"])
+# Test passes with 0, 0.5 or 1, depending on if none, one or two patterns are found
 self.test_run(
     "./square",
     exp_output=["TEST 1 PASSED", "TEST 2 PASSED"],
     must_match_all_outputs="partial",
-)  # Test passes with 0, 0.5 or 1, depending on if none, one or two patterns are found
+)
 ```
 
 Sometimes a test must ensure that some strings are _not_ found in the output of the program. This can be achieved with the `reject_output` argument, which again can be an array or a single string.
