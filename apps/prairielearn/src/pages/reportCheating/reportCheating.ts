@@ -30,10 +30,8 @@ const defaultRateLimiter = new RedisRateLimiter({
 });
 
 export function createReportCheatingRouter({
-  ptFetch = fetch,
   rateLimiter = defaultRateLimiter,
 }: {
-  ptFetch?: typeof fetch;
   rateLimiter?: Pick<RedisRateLimiter, 'addToIntervalUsageOnce'>;
 } = {}) {
   const router = Router();
@@ -93,15 +91,12 @@ export function createReportCheatingRouter({
 
       const outcome = await run(async (): Promise<'ok' | 'declined' | 'failed'> => {
         try {
-          const ptResponse = await ptFetch(
-            new URL('/pt/cheating-report', config.ptHost).toString(),
-            {
-              method: 'POST',
-              body: new URLSearchParams({ jwt }),
-              redirect: 'error',
-              signal: AbortSignal.timeout(PT_CHEATING_REPORT_TIMEOUT_MS),
-            },
-          );
+          const ptResponse = await fetch(new URL('/pt/cheating-report', config.ptHost).toString(), {
+            method: 'POST',
+            body: new URLSearchParams({ jwt }),
+            redirect: 'error',
+            signal: AbortSignal.timeout(PT_CHEATING_REPORT_TIMEOUT_MS),
+          });
           if (ptResponse.status === 200) return 'ok';
           logger.error('PrairieTest cheating-report call returned non-ok', {
             status: ptResponse.status,
