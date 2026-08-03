@@ -119,7 +119,10 @@ describe('POST /pl/report-cheating', () => {
     declinedFetch.mockResolvedValue(new Response(null, { status: 403 }));
     const declined = await postReport(createApp({ ptFetch: declinedFetch }), validBody());
     assert.equal(declined.response.status, 403);
-    assert.equal(declined.json.error, 'Cheating reports are not available for your exam.');
+    assert.equal(
+      declined.json.error,
+      'Cheating reports are no longer available. Please tell your proctor directly.',
+    );
 
     const failedFetch = vi.fn<typeof fetch>();
     failedFetch.mockResolvedValue(new Response(null, { status: 302 }));

@@ -64,7 +64,10 @@ export function createReportCheatingRouter({
 
       const reservation_id: string | null = res.locals.cheating_report_reservation_id;
       if (!reservation_id) {
-        throw new HttpStatusError(403, 'Cheating reports are not available for you right now.');
+        throw new HttpStatusError(
+          403,
+          'Cheating reports are no longer available. Please tell your proctor directly.',
+        );
       }
 
       const reportCount = await rateLimiter.addToIntervalUsage(`${user_id}:${reservation_id}`, 1);
@@ -118,7 +121,10 @@ export function createReportCheatingRouter({
           res.json({ message: 'Your report has been submitted.' });
           return;
         case 'declined':
-          throw new HttpStatusError(403, 'Cheating reports are not available for your exam.');
+          throw new HttpStatusError(
+            403,
+            'Cheating reports are no longer available. Please tell your proctor directly.',
+          );
         case 'failed':
           throw new HttpStatusError(
             502,
