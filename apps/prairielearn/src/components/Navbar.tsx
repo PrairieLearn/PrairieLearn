@@ -239,7 +239,7 @@ function ReportCheatingControl({
   return html`
     <button
       type="button"
-      class="btn btn-danger btn-sm ms-2 me-2 mb-2 mb-md-0"
+      class="btn btn-outline-light btn-sm ms-2 me-2 mb-2 mb-md-0"
       data-bs-toggle="modal"
       data-bs-target="#reportCheatingModal"
     >
@@ -298,7 +298,7 @@ function ReportCheatingModal({ csrfToken, requestId }: { csrfToken: string; requ
       >
         Cancel
       </button>
-      <button type="submit" class="btn btn-danger js-report-cheating-submit">
+      <button type="submit" class="btn btn-primary js-report-cheating-submit">
         <span class="js-report-cheating-submit-label">Submit report</span>
       </button>
     `,
