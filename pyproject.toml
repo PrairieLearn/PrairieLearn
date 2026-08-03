@@ -191,9 +191,6 @@ convention = "google"
 
 # Ignore uppercase variables and function parameters (e.g. G for a graph)
 "exampleCourse/questions/**/*.py" = ["non-lowercase-variable-in-function", "invalid-argument-name"]
-# The zygote specifically uses imports in strange places to facilitate the
-# preloading of commonly-used modules.
-"zygote.py" = ["module-import-not-at-top-of-file", "unused-import"]
 "apps/prairielearn/elements/**/*.py" = [
   # Ignore uppercase function parameters (e.g. G for a graph)
   "invalid-argument-name",
@@ -209,11 +206,6 @@ convention = "google"
   "undocumented-public-function",
 ]
 "apps/prairielearn/python/**/*.py" = ["invalid-argument-name"]
-# Do not require self in method params
-"apps/prairielearn/elements/pl-drawing/elements.py" = ["invalid-first-argument-name-for-method"]
-"exampleCourse/elementExtensions/pl-drawing/example-logo/example-logo.py" = [
-  "invalid-first-argument-name-for-method",
-]
 
 "graders/**/*.py" = [
   # Boolean default positional argument
@@ -229,12 +221,6 @@ convention = "google"
 
 # Directories we don't want strict annotation linting or docstring linting on
 # For example, code with no public API, elements with known issues, or course content.
-"apps/prairielearn/python/zygote.py" = [
-  "undocumented-public-module",
-  "undocumented-public-class",
-  "undocumented-public-function",
-  "docstring-missing-returns",
-]
 "apps/prairielearn/python/prairielearn/internal/**/*.py" = [
   "undocumented-public-module",
   "undocumented-public-function",
@@ -256,8 +242,6 @@ convention = "google"
 "apps/prairielearn/elements/pl-drawing/**/*.py" = ["ANN"]
 "apps/prairielearn/elements/pl-prairiedraw-figure/**/*.py" = ["ANN"]
 "apps/prairielearn/elements/pl-checkbox/**/*.py" = ["ANN"]
-# Issues rebuilding workspace
-"workspaces/jupyterlab-base/jupyter_server_config.py" = ["invalid-envvar-default"]
 
 [tool.ruff.lint.pydoclint]
 # Skip docstrings which fit on a single line.

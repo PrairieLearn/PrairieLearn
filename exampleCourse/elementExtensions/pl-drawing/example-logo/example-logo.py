@@ -1,3 +1,5 @@
+# ruff:file-ignore[invalid-first-argument-name-for-method]
+# pyright: reportSelfClsParameterName=false, reportMissingParameterType=false, reportUnknownParameterType=false
 from os import path
 
 import prairielearn as pl
