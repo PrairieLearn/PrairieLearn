@@ -46,9 +46,9 @@ INSERT INTO
 SELECT
   NOW() - INTERVAL '1 minute',
   NOW() + INTERVAL '1 hour',
-  enrollment.id,
-  exam.id,
-  session.id
+  enrollment.id AS enrollment_id,
+  exam.id AS exam_id,
+  session.id AS session_id
 FROM
   created_enrollment AS enrollment,
   created_exam AS exam,
