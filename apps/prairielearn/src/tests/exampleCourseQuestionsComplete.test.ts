@@ -289,9 +289,12 @@ const accessibilitySkip = new Set([
 
 describe('Internally graded question lifecycle tests', { timeout: 60_000 }, function () {
   beforeAll(async function () {
-    await withConfig({ workersCount: os.cpus().length }, async () => {
-      await helperServer.before()();
-    });
+    await withConfig(
+      { questionTimeoutMilliseconds: 30_000, workersCount: os.cpus().length },
+      async () => {
+        await helperServer.before()();
+      },
+    );
   });
 
   afterAll(helperServer.after);
