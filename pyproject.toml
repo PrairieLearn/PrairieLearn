@@ -127,7 +127,7 @@ ignore = [
   "undocumented-public-init",
   "incorrect-blank-line-before-class",
   "multi-line-summary-first-line",
-  "missing-blank-line-after-summary",  #  (we use a multi-line description instead of summaries sometimes)
+  "missing-blank-line-after-summary",  #  we use a multi-line description instead of summaries sometimes
   "missing-trailing-period",
   "missing-terminal-punctuation",
   "docstring-missing-yields",
