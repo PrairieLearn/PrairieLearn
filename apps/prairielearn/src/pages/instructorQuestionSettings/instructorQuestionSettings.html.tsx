@@ -1165,7 +1165,6 @@ export const InstructorQuestionSettingsForm = ({
                 <div className="mt-3">
                   <PublicLinkSharing
                     publicLink={publicLink}
-                    badgeLabel={question.share_source_publicly ? 'Public source' : 'Public'}
                     sharingMessage={
                       question.share_source_publicly
                         ? "This question's source is publicly shared."

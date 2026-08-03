@@ -10,18 +10,16 @@ export function PublicLinkSharing({
   publicLink,
   sharingMessage,
   publicLinkMessage,
-  badgeLabel = 'Public source',
 }: {
   publicLink: string;
   sharingMessage: string;
   publicLinkMessage: string;
-  badgeLabel?: string;
 }) {
   const [showQR, setShowQR] = useState(false);
   return (
     <>
       <p>
-        <span className="badge color-green3 me-1">{badgeLabel}</span>
+        <span className="badge color-green3 me-1">Public source</span>
         {sharingMessage}
       </p>
       <div className="mb-3">
