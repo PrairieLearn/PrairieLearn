@@ -3,6 +3,7 @@ import * as crypto from 'node:crypto';
 import * as jose from 'jose';
 
 import { config } from '../../lib/config.js';
+import { getActiveKey } from '../../lib/key-ring.js';
 
 /**
  * Short-lived JWT used to authenticate the LockDown Browser "End exam"
@@ -22,7 +23,7 @@ export async function generateEndExamJwt({
   user_id: string;
   reservation_id: string;
 }): Promise<string> {
-  const key = crypto.createSecretKey(config.prairieTestSharedAuthSecret, 'utf-8');
+  const key = crypto.createSecretKey(getActiveKey(config.prairieTestSharedAuthSecret), 'utf-8');
   return await new jose.SignJWT({ user_id, reservation_id })
     .setProtectedHeader({ alg: 'HS512' })
     .setAudience('prairietest')

@@ -90,13 +90,22 @@ try {
       const configContent = await readFile(values.config, 'utf-8');
       const config = JSON.parse(configContent);
 
-      if (!config.secretKey) {
+      if (
+        !config.secretKey ||
+        (Array.isArray(config.secretKey) &&
+          (config.secretKey.length === 0 ||
+            !config.secretKey.every((key) => typeof key === 'string')))
+      ) {
         console.error('❌ Error: Config file does not contain a "secretKey" property');
-        throw new Error('Missing secretKey in config');
+        throw new Error('Missing or invalid secretKey in config');
       }
 
-      secretKey = config.secretKey;
-      console.log('✅ Secret key loaded from config file');
+      if (typeof config.secretKey !== 'string' && !Array.isArray(config.secretKey)) {
+        throw new Error('Missing or invalid secretKey in config');
+      }
+
+      secretKey = Array.isArray(config.secretKey) ? config.secretKey[0] : config.secretKey;
+      console.log('✅ Active secret key loaded from config file');
     } catch (err) {
       if (err instanceof Error && 'code' in err && err.code === 'ENOENT') {
         console.error(`❌ Error: Config file not found: ${values.config}`);

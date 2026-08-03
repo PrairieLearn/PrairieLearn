@@ -168,17 +168,23 @@ lint-sql-migrations:
 	@uv run squawk apps/prairielearn/src/migrations/*.sql
 lint-actions:
 	@actionlint
+lint-actions-version:
+	@pnpm --filter @prairielearn/pin-github-actions build
+	@pnpm exec pin-github-actions --check
 lint-changeset:
 	@pnpm changeset status
 
 # Runs additional third-party formatters
-format-all: format-js format-python format-sql format-mustache
+format-all: format-js format-python format-sql format-mustache format-actions-version
 
 fix: fix-js fix-python
 format: format-js format-python
 
 format-sql:
 	@uv run sqlfluff fix
+format-actions-version:
+	@pnpm --filter @prairielearn/pin-github-actions build
+	@pnpm exec pin-github-actions
 
 fix-js:
 	@pnpm eslint --ext js --fix "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,html,mustache}"

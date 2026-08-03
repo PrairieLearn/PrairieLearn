@@ -3,7 +3,7 @@ import * as jose from 'jose';
 import type nodeJose from 'node-jose';
 import { assert } from 'vitest';
 
-import { execute, queryScalar } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, queryScalar } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
 import { selectOrInsertUserId } from '../lib/authn-user.js';
@@ -12,13 +12,40 @@ import {
   insertCoursePermissionsByUserUid,
 } from '../models/course-permissions.js';
 
-import { fetchCheerio } from './helperClient.js';
+import { fetchCheerio, getCSRFToken } from './helperClient.js';
 
 export const CLIENT_ID = 'prairielearn_test_lms';
+const sql = loadSqlEquiv(import.meta.url);
 
 // LTI claim constants - used in JWT tokens and must match across test files
 export const LTI_DEPLOYMENT_ID = '7fdce954-4c33-47c9-97b4-e435dbbed9bb';
 export const LTI_CONTEXT_ID = 'f6bc7a50-448c-4469-94f7-54d6ea882c2a';
+
+export async function configureInstitutionSamlForLtiUin(institutionId = '1'): Promise<void> {
+  await execute(sql.configure_institution_saml_for_lti_uin, { institution_id: institutionId });
+}
+
+export async function enableLti13Authentication(siteUrl: string): Promise<void> {
+  const page = await fetchCheerio(`${siteUrl}/pl/administrator/institution/1/sso`);
+  assert.equal(page.status, 200);
+  const form = page.$('button:contains(Save)').closest('form');
+  const providerId = form
+    .find('label:contains("LTI 1.3")')
+    .closest('div')
+    .find('input[type=checkbox]')
+    .attr('value');
+  assert.ok(providerId);
+
+  const response = await fetchCheerio(page.url, {
+    method: 'POST',
+    body: new URLSearchParams({
+      __csrf_token: getCSRFToken(form),
+      enabled_authn_provider_ids: providerId,
+      default_authn_provider_id: '',
+    }),
+  });
+  assert.equal(response.status, 200);
+}
 
 export async function withServer<T>(app: express.Express, port: number, fn: () => Promise<T>) {
   const server = app.listen(port);
@@ -215,8 +242,7 @@ export async function createLti13Instance({
   const newInstanceButtonValue = newInstanceButton.attr('value');
   assert.ok(newInstanceButtonValue);
 
-  const newInstanceCsrfToken = newInstanceForm.find('input[name=__csrf_token]').val();
-  assert.ok(typeof newInstanceCsrfToken === 'string', 'CSRF token not found in new instance form');
+  const newInstanceCsrfToken = getCSRFToken(newInstanceForm);
 
   const createInstanceResponse = await fetchCheerio(ltiInstancesResponse.url, {
     method: 'POST',
@@ -234,9 +260,8 @@ export async function createLti13Instance({
   const savePlatformOptionsButton = ltiInstanceResponse.$('button:contains(Save platform options)');
   const platformOptionsForm = savePlatformOptionsButton.closest('form');
 
-  const platformCsrfToken = platformOptionsForm.find('input[name=__csrf_token]').val();
+  const platformCsrfToken = getCSRFToken(platformOptionsForm);
   const platformAction = platformOptionsForm.find('input[name=__action]').val();
-  assert.ok(typeof platformCsrfToken === 'string', 'CSRF token not found in platform options form');
   assert.ok(typeof platformAction === 'string', 'Action not found in platform options form');
 
   const updatePlatformOptionsResponse = await fetchCheerio(instanceUrl, {
@@ -257,28 +282,18 @@ export async function createLti13Instance({
   const addKeyButton = updatePlatformOptionsResponse.$('button:contains(Add key to keystore)');
   const keystoreForm = addKeyButton.closest('form');
 
-  // Update the attributes if needed.
   if (attributes) {
     const savePrairieLearnConfigButton = ltiInstanceResponse.$(
       'button:contains(Save PrairieLearn config)',
     );
     const prairieLearnOptionsForm = savePrairieLearnConfigButton.closest('form');
 
-    const plConfigCsrfToken = prairieLearnOptionsForm.find('input[name=__csrf_token]').val();
-    assert.ok(
-      typeof plConfigCsrfToken === 'string',
-      'CSRF token not found in PrairieLearn config form',
-    );
-
     const updateRes = await fetchCheerio(instanceUrl, {
       method: 'POST',
       body: new URLSearchParams({
         __action: 'save_pl_config',
-        __csrf_token: plConfigCsrfToken,
-        uid_attribute: attributes.uid_attribute,
-        uin_attribute: attributes.uin_attribute,
-        email_attribute: attributes.email_attribute,
-        name_attribute: attributes.name_attribute,
+        __csrf_token: getCSRFToken(prairieLearnOptionsForm),
+        ...attributes,
       }),
     });
     assert.equal(updateRes.status, 200);
@@ -287,8 +302,7 @@ export async function createLti13Instance({
   const addKeyButtonValue = addKeyButton.attr('value');
   assert.ok(addKeyButtonValue);
 
-  const keystoreCsrfToken = keystoreForm.find('input[name=__csrf_token]').val();
-  assert.ok(typeof keystoreCsrfToken === 'string', 'CSRF token not found in keystore form');
+  const keystoreCsrfToken = getCSRFToken(keystoreForm);
 
   const createKeyResponse = await fetchCheerio(instanceUrl, {
     method: 'POST',

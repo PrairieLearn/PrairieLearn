@@ -10,6 +10,7 @@ import {
   Lti13CourseInstanceSchema,
   type Lti13Instance,
 } from '../../../lib/db-types.js';
+import { LTI13_ROSTER_SYNC_CONFIRMATION_FIELDS } from '../../../lib/institution-identity.js';
 import type { ResLocalsForPage } from '../../../lib/res-locals.js';
 
 import { type LTI13InstancePlatforms } from './administratorInstitutionLti13.types.js';
@@ -36,6 +37,7 @@ export function AdministratorInstitutionLti13({
   resLocals,
   platform_defaults,
   canonicalHost,
+  rosterSyncPrerequisiteIssues,
 }: {
   institution: Institution;
   lti13Instances: Lti13Instance[];
@@ -44,6 +46,7 @@ export function AdministratorInstitutionLti13({
   resLocals: ResLocalsForPage<'plain'>;
   platform_defaults: LTI13InstancePlatforms;
   canonicalHost: string;
+  rosterSyncPrerequisiteIssues: string[];
 }): string {
   return PageLayout({
     resLocals: {
@@ -96,6 +99,7 @@ export function AdministratorInstitutionLti13({
             resLocals,
             platform_defaults,
             canonicalHost,
+            rosterSyncPrerequisiteIssues,
           })}
         </div>
       </div>
@@ -109,14 +113,18 @@ function LTI13Instance({
   resLocals,
   platform_defaults,
   canonicalHost,
+  rosterSyncPrerequisiteIssues,
 }: {
   instance: Lti13Instance | null;
   linkedCourseInstances: LinkedCourseInstance[];
   resLocals: ResLocalsForPage<'plain'>;
   platform_defaults: LTI13InstancePlatforms;
   canonicalHost: string;
+  rosterSyncPrerequisiteIssues: string[];
 }) {
   if (instance) {
+    const platformConfigurationLocked = instance.roster_sync_allowed;
+
     return html`
       <h3>${instance.name} (ID #${instance.id})</h3>
       <p>
@@ -194,17 +202,34 @@ function LTI13Instance({
 
       ${EncodedData(platform_defaults, 'platform_defaults_data')}
 
-      <form class="form" method="POST">
+      <form class="form" method="POST" data-lti13-platform-configuration>
         <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
         <input type="hidden" name="__action" value="update_platform" />
 
+        ${platformConfigurationLocked
+          ? html`
+              <div class="alert alert-info">
+                Platform configuration is locked while roster syncing is allowed.
+                <a href="#roster-sync-controls">Disallow roster syncing below</a> before changing
+                these options.
+              </div>
+            `
+          : ''}
+
         <div class="mb-3">
           <label class="form-label" for="choosePlatform">Platform type: </label>
-          <select class="form-select mb-2" id="choosePlatform" name="platform">
+          <select
+            class="form-select mb-2"
+            id="choosePlatform"
+            name="platform"
+            ${platformConfigurationLocked ? 'disabled' : ''}
+          >
             ${platform_defaults.map((d) => {
-              return html`<option ${d.platform === instance.platform ? 'selected' : ''}>
-                ${d.platform}
-              </option>`;
+              return html`
+                <option value="${d.platform}" ${d.platform === instance.platform ? 'selected' : ''}>
+                  ${d.platform}
+                </option>
+              `;
             })}
           </select>
 
@@ -217,6 +242,7 @@ function LTI13Instance({
                 name="platform_update"
                 value="1"
                 checked
+                ${platformConfigurationLocked ? 'disabled' : ''}
               />
               On change, load defaults into form&nbsp;<em>(remember to edit and save!)</em>
             </label>
@@ -231,6 +257,7 @@ function LTI13Instance({
             name="issuer_params"
             rows="8"
             spellcheck="false"
+            ${platformConfigurationLocked ? 'disabled' : ''}
           >
 ${JSON.stringify(instance.issuer_params, null, 3)}</textarea
           >
@@ -246,6 +273,7 @@ ${JSON.stringify(instance.issuer_params, null, 3)}</textarea
             name="client_id"
             value="${instance.client_params?.client_id}"
             aria-describedby="client_idHelp"
+            ${platformConfigurationLocked ? 'disabled' : ''}
           />
           <small id="client_idHelp" class="form-text text-muted">
             Get this unique ID from the LMS.
@@ -260,6 +288,7 @@ ${JSON.stringify(instance.issuer_params, null, 3)}</textarea
             name="custom_fields"
             rows="4"
             spellcheck="false"
+            ${platformConfigurationLocked ? 'disabled' : ''}
           >
 ${JSON.stringify(instance.custom_fields, null, 3)}</textarea
           >
@@ -276,8 +305,19 @@ ${JSON.stringify(instance.custom_fields, null, 3)}</textarea
         </div>
 
         <div class="mb-3">
-          <button type="submit" class="btn btn-info">Save platform options</button>
-          <input type="reset" class="btn btn-secondary" value="Reset options" />
+          <button
+            type="submit"
+            class="btn btn-info"
+            ${platformConfigurationLocked ? 'disabled' : ''}
+          >
+            Save platform options
+          </button>
+          <input
+            type="reset"
+            class="btn btn-secondary"
+            value="Reset options"
+            ${platformConfigurationLocked ? 'disabled' : ''}
+          />
         </div>
       </form>
 
@@ -345,7 +385,7 @@ ${JSON.stringify(instance.custom_fields, null, 3)}</textarea
         </div>
 
         <div class="mb-3">
-          <label class="form-label" for="name_attribute">UID attribute</label>
+          <label class="form-label" for="uid_attribute">UID attribute</label>
           <input
             type="text"
             class="form-control"
@@ -363,14 +403,17 @@ ${JSON.stringify(instance.custom_fields, null, 3)}</textarea
         </div>
 
         <div class="mb-3">
-          <label class="form-label" for="name_attribute">UIN attribute</label>
+          <label class="form-label" for="uin_attribute">UIN attribute</label>
           <input
             type="text"
             class="form-control"
             name="uin_attribute"
             id="uin_attribute"
-            value="${instance.uin_attribute}"
-            aria-describedby="uinAttributeHelp"
+            value="${instance.uin_attribute ?? ''}"
+            aria-describedby="uinAttributeHelp${instance.roster_sync_allowed
+              ? ' uinAttributeLockedHelp'
+              : ''}"
+            ${instance.roster_sync_allowed ? 'disabled' : ''}
           />
           <small id="uinAttributeHelp" class="form-text text-muted">
             The UIN is used as an internal, immutable identifier for the user. It
@@ -379,6 +422,15 @@ ${JSON.stringify(instance.custom_fields, null, 3)}</textarea
             <code>["https://purl.imsglobal.org/spec/lti/claim/lis"]["person_sourcedid"]</code> or
             <code>["https://purl.imsglobal.org/spec/lti/claim/custom"]["uin"]</code>
           </small>
+          ${instance.roster_sync_allowed
+            ? html`
+                <small id="uinAttributeLockedHelp" class="form-text text-muted d-block">
+                  This attribute is locked while roster syncing is allowed.
+                  <a href="#roster-sync-controls">Disallow roster syncing below</a>
+                  before changing it.
+                </small>
+              `
+            : ''}
         </div>
 
         <div class="mb-3">
@@ -422,6 +474,13 @@ ${JSON.stringify(instance.custom_fields, null, 3)}</textarea
       </form>
 
       <hr />
+      ${RosterSyncControls({
+        instance,
+        rosterSyncPrerequisiteIssues,
+        resLocals,
+      })}
+
+      <hr />
       ${RosterInspector({ linkedCourseInstances, resLocals })}
 
       <hr />
@@ -447,6 +506,90 @@ ${JSON.stringify(instance.custom_fields, null, 3)}</textarea
   } else {
     return html`Please select an instance on the left.`;
   }
+}
+
+function RosterSyncControls({
+  instance,
+  rosterSyncPrerequisiteIssues,
+  resLocals,
+}: {
+  instance: Lti13Instance;
+  rosterSyncPrerequisiteIssues: string[];
+  resLocals: ResLocalsForPage<'plain'>;
+}) {
+  return html`
+    <h5 id="roster-sync-controls">Roster syncing</h5>
+    ${instance.roster_sync_allowed
+      ? html`
+          <div class="alert alert-success">
+            Roster syncing is allowed for this LTI 1.3 instance. Its platform and UIN settings, and
+            the institution's SAML identity settings, are locked to protect user matching.
+          </div>
+          <form method="POST">
+            <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+            <input type="hidden" name="__action" value="disallow_roster_sync" />
+            <button
+              type="submit"
+              class="btn btn-outline-danger"
+              onclick="return confirm('Disallow roster syncing for this instance?')"
+            >
+              Disallow roster syncing
+            </button>
+          </form>
+        `
+      : rosterSyncPrerequisiteIssues.length > 0
+        ? html`
+            <div class="alert alert-warning mb-0">
+              <p>Roster syncing cannot be allowed until the following prerequisites are met:</p>
+              <ul>
+                ${rosterSyncPrerequisiteIssues.map((issue) => html`<li>${issue}</li>`)}
+              </ul>
+              <p class="mb-0">
+                Update the UIN attribute above or the institution's
+                <a href="${resLocals.urlPrefix}/saml">SAML</a> and
+                <a href="${resLocals.urlPrefix}/sso">single sign-on</a> settings as needed.
+              </p>
+            </div>
+          `
+        : html`
+            <p>
+              Allow roster syncing only after confirming that SAML and LTI identify users with the
+              same immutable UIN.
+            </p>
+            <form method="POST">
+              <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+              <input type="hidden" name="__action" value="allow_roster_sync" />
+              <div class="form-check mb-2">
+                <input
+                  class="form-check-input"
+                  type="checkbox"
+                  id="lti13-roster-sync-same-canonical-uin"
+                  name="${LTI13_ROSTER_SYNC_CONFIRMATION_FIELDS.sameCanonicalUin}"
+                  value="1"
+                  required
+                />
+                <label class="form-check-label" for="lti13-roster-sync-same-canonical-uin">
+                  I confirm that SAML and LTI provide the same canonical UIN for each user.
+                </label>
+              </div>
+              <div class="form-check mb-3">
+                <input
+                  class="form-check-input"
+                  type="checkbox"
+                  id="lti13-roster-sync-users-backfilled"
+                  name="${LTI13_ROSTER_SYNC_CONFIRMATION_FIELDS.usersBackfilled}"
+                  value="1"
+                  required
+                />
+                <label class="form-check-label" for="lti13-roster-sync-users-backfilled">
+                  I confirm that existing users who may be roster-synced have been backfilled with
+                  this UIN.
+                </label>
+              </div>
+              <button type="submit" class="btn btn-primary">Allow roster syncing</button>
+            </form>
+          `}
+  `;
 }
 
 function RosterInspector({
