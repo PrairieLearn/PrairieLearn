@@ -105,7 +105,7 @@ export function setupReportCheatingModal() {
     } catch {
       submitting = false;
       showError(
-        'We could not confirm whether your report was submitted. Please try again, or tell your proctor directly.',
+        'Something went wrong while submitting your report. Please try again, or tell your proctor directly.',
       );
     }
   });

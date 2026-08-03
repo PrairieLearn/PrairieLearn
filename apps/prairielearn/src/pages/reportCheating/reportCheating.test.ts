@@ -127,7 +127,7 @@ describe('POST /pl/report-cheating', () => {
     assert.equal(failed.response.status, 502);
     assert.equal(
       failed.json.error,
-      'We could not confirm whether your report was submitted. Please try again, or tell your proctor directly.',
+      'Something went wrong while submitting your report. Please try again, or tell your proctor directly.',
     );
   });
 });

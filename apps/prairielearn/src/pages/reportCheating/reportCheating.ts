@@ -107,7 +107,7 @@ export function createReportCheatingRouter({
           logger.error('PrairieTest cheating-report call threw', { err, user_id, reservation_id });
           throw new HttpStatusError(
             502,
-            'We could not confirm whether your report was submitted. Please try again, or tell your proctor directly.',
+            'Something went wrong while submitting your report. Please try again, or tell your proctor directly.',
             { cause: err },
           );
         }
@@ -122,7 +122,7 @@ export function createReportCheatingRouter({
         case 'failed':
           throw new HttpStatusError(
             502,
-            'We could not confirm whether your report was submitted. Please try again, or tell your proctor directly.',
+            'Something went wrong while submitting your report. Please try again, or tell your proctor directly.',
           );
         default:
           assertNever(outcome);
