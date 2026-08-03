@@ -86,7 +86,8 @@ docs = [
 packages = []
 
 [tool.ruff]
-include = ["**/*.py"]
+# Also runs ruff on markdown files containing Python code blocks in docs.
+include = ["**/*.py", "docs/**/*.md"]
 
 extend-exclude = [
   # These files are intentionally not parseable as Python.
