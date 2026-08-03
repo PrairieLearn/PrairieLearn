@@ -89,22 +89,18 @@ export function setupReportCheatingModal() {
         redirect: 'error',
       });
       const result: unknown = await response.json();
-      if (
-        typeof result !== 'object' ||
-        result === null ||
-        !('type' in result) ||
-        !('message' in result) ||
-        typeof result.message !== 'string'
-      ) {
+      if (typeof result !== 'object' || result === null) {
         throw new Error('Invalid report response');
       }
-      if (response.ok && result.type === 'success') {
+      if (response.ok && 'message' in result && typeof result.message === 'string') {
         submitting = false;
         submissionSucceeded = true;
         showSuccess(result.message);
-      } else {
+      } else if (!response.ok && 'error' in result && typeof result.error === 'string') {
         submitting = false;
-        showError(result.message);
+        showError(result.error);
+      } else {
+        throw new Error('Invalid report response');
       }
     } catch {
       submitting = false;

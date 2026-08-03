@@ -14,7 +14,7 @@ function dispatchFormEvent(type: string) {
 
 function jsonResponse(type: 'error' | 'success', status: number) {
   return Response.json(
-    { type, message: `${type} message` },
+    type === 'success' ? { message: 'success message' } : { error: 'error message' },
     {
       status,
       headers: { 'Content-Type': 'application/json' },

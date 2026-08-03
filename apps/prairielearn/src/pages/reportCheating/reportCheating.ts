@@ -1,12 +1,12 @@
-import { type Request, type Response, Router } from 'express';
+import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import { Redis } from 'ioredis';
 import { z } from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
-import { flash } from '@prairielearn/flash';
 import { logger } from '@prairielearn/logger';
 import { run } from '@prairielearn/run';
+import { assertNever } from '@prairielearn/utils';
 
 import { signPrairieTestJwt } from '../../ee/auth/prairieTestJwt.js';
 import { config } from '../../lib/config.js';
@@ -29,29 +29,6 @@ const defaultRateLimiter = new RedisRateLimiter({
   intervalSeconds: 60 * 60,
 });
 
-function respondToReportSubmission({
-  req,
-  res,
-  redirectUrl,
-  type,
-  message,
-  status,
-}: {
-  req: Request;
-  res: Response;
-  redirectUrl: string;
-  type: 'error' | 'success';
-  message: string;
-  status: number;
-}) {
-  if (req.accepts(['html', 'json']) === 'json') {
-    res.status(status).json({ type, message });
-    return;
-  }
-  flash(type, message);
-  res.redirect(303, redirectUrl);
-}
-
 export function createReportCheatingRouter({
   ptFetch = fetch,
   rateLimiter = defaultRateLimiter,
@@ -68,74 +45,34 @@ export function createReportCheatingRouter({
         throw new HttpStatusError(403, 'Not authenticated');
       }
       const user_id = String(res.locals.authn_user.id);
-      // Ignore the referrer's origin to prevent open redirects.
-      const redirectUrl = run(() => {
-        const referrer = req.get('Referrer');
-        const parsed = referrer ? URL.parse(referrer) : null;
-        return parsed ? parsed.pathname + parsed.search : '/pl';
-      });
 
       const report = typeof req.body.report === 'string' ? req.body.report.trim() : '';
       if (report.length === 0) {
-        respondToReportSubmission({
-          req,
-          res,
-          redirectUrl,
-          type: 'error',
-          message: 'Your report was empty, so nothing was submitted.',
-          status: 400,
-        });
-        return;
+        throw new HttpStatusError(400, 'Your report was empty, so nothing was submitted.');
       }
       if (report.length > MAX_REPORT_LENGTH) {
-        respondToReportSubmission({
-          req,
-          res,
-          redirectUrl,
-          type: 'error',
-          message: `Reports are limited to ${MAX_REPORT_LENGTH} characters.`,
-          status: 400,
-        });
-        return;
+        throw new HttpStatusError(400, `Reports are limited to ${MAX_REPORT_LENGTH} characters.`);
       }
 
       const submissionIdResult = z.uuid().safeParse(req.body.submission_id);
       if (!submissionIdResult.success) {
-        respondToReportSubmission({
-          req,
-          res,
-          redirectUrl,
-          type: 'error',
-          message: 'Your report could not be submitted. Please reload the page and try again.',
-          status: 400,
-        });
-        return;
+        throw new HttpStatusError(
+          400,
+          'Your report could not be submitted. Please reload the page and try again.',
+        );
       }
 
       const reservation_id: string | null = res.locals.cheating_report_reservation_id;
       if (!reservation_id) {
-        respondToReportSubmission({
-          req,
-          res,
-          redirectUrl,
-          type: 'error',
-          message: 'Cheating reports are not available for you right now.',
-          status: 403,
-        });
-        return;
+        throw new HttpStatusError(403, 'Cheating reports are not available for you right now.');
       }
 
       const reportCount = await rateLimiter.addToIntervalUsage(`${user_id}:${reservation_id}`, 1);
       if (reportCount > MAX_REPORTS_PER_HOUR) {
-        respondToReportSubmission({
-          req,
-          res,
-          redirectUrl,
-          type: 'error',
-          message: 'You have submitted too many reports. Please tell your proctor directly.',
-          status: 429,
-        });
-        return;
+        throw new HttpStatusError(
+          429,
+          'You have submitted too many reports. Please tell your proctor directly.',
+        );
       }
 
       const jwt = await signPrairieTestJwt({
@@ -172,22 +109,20 @@ export function createReportCheatingRouter({
         }
       });
 
-      const response =
-        outcome === 'ok'
-          ? { type: 'success' as const, message: 'Your report has been submitted.', status: 200 }
-          : outcome === 'declined'
-            ? {
-                type: 'error' as const,
-                message: 'Cheating reports are not available for your exam.',
-                status: 403,
-              }
-            : {
-                type: 'error' as const,
-                message:
-                  'We could not confirm whether your report was submitted. Please try again, or tell your proctor directly.',
-                status: 502,
-              };
-      respondToReportSubmission({ req, res, redirectUrl, ...response });
+      switch (outcome) {
+        case 'ok':
+          res.json({ message: 'Your report has been submitted.' });
+          return;
+        case 'declined':
+          throw new HttpStatusError(403, 'Cheating reports are not available for your exam.');
+        case 'failed':
+          throw new HttpStatusError(
+            502,
+            'We could not confirm whether your report was submitted. Please try again, or tell your proctor directly.',
+          );
+        default:
+          assertNever(outcome);
+      }
     }),
   );
 

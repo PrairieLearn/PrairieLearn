@@ -1,9 +1,10 @@
 import * as crypto from 'node:crypto';
 
-import express, { type Express } from 'express';
+import express, { type ErrorRequestHandler, type Express } from 'express';
 import * as jose from 'jose';
 import { afterEach, assert, describe, it, vi } from 'vitest';
 
+import type { HttpStatusError } from '@prairielearn/error';
 import { withServer } from '@prairielearn/express-test-utils';
 
 import { config } from '../../lib/config.js';
@@ -30,13 +31,17 @@ function createApp({
       rateLimiter: { addToIntervalUsage: vi.fn(async () => reportCount) },
     }),
   );
+  app.use(((err, _req, res, _next) => {
+    const httpError = err as HttpStatusError;
+    res.status(httpError.status).json({ error: httpError.message });
+  }) satisfies ErrorRequestHandler);
   return app;
 }
 
 async function postReport(
   app: Express,
   body: Record<string, string>,
-): Promise<{ response: Response; json: { type: string; message: string } }> {
+): Promise<{ response: Response; json: { error?: string; message?: string } }> {
   let response!: Response;
   await withServer(app, async ({ url }) => {
     response = await fetch(url, {
@@ -64,7 +69,7 @@ describe('POST /pl/report-cheating', () => {
 
     const { response, json } = await postReport(createApp({ ptFetch }), validBody());
     assert.equal(response.status, 200);
-    assert.equal(json.type, 'success');
+    assert.equal(json.message, 'Your report has been submitted.');
 
     const [, init] = ptFetch.mock.calls[0];
     assert.equal(init?.redirect, 'error');
@@ -102,7 +107,10 @@ describe('POST /pl/report-cheating', () => {
     );
 
     assert.equal(response.status, 429);
-    assert.equal(json.type, 'error');
+    assert.equal(
+      json.error,
+      'You have submitted too many reports. Please tell your proctor directly.',
+    );
     assert.equal(ptFetch.mock.calls.length, 0);
   });
 
@@ -111,12 +119,15 @@ describe('POST /pl/report-cheating', () => {
     declinedFetch.mockResolvedValue(new Response(null, { status: 403 }));
     const declined = await postReport(createApp({ ptFetch: declinedFetch }), validBody());
     assert.equal(declined.response.status, 403);
-    assert.match(declined.json.message, /not available/);
+    assert.equal(declined.json.error, 'Cheating reports are not available for your exam.');
 
     const failedFetch = vi.fn<typeof fetch>();
     failedFetch.mockResolvedValue(new Response(null, { status: 302 }));
     const failed = await postReport(createApp({ ptFetch: failedFetch }), validBody());
     assert.equal(failed.response.status, 502);
-    assert.match(failed.json.message, /could not confirm/);
+    assert.equal(
+      failed.json.error,
+      'We could not confirm whether your report was submitted. Please try again, or tell your proctor directly.',
+    );
   });
 });
