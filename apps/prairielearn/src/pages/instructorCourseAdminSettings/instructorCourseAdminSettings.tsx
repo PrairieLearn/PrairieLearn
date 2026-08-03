@@ -6,9 +6,12 @@ import fs from 'fs-extra';
 import { compiledScriptTag } from '@prairielearn/compiled-assets';
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
+import { Hydrate } from '@prairielearn/react/server';
+import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
+import { getCourseTrpcUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
 import { CourseInfoCreateEditor, prepareJsonFileEditor } from '../../lib/editors.js';
 import { features } from '../../lib/features/index.js';
@@ -21,9 +24,25 @@ import {
   updateCourseQuestionsReceiveUserData,
   updateCourseShowGettingStarted,
 } from '../../models/course.js';
-import type { CourseJsonInput } from '../../schemas/infoCourse.js';
+import type { CourseJsonInput, SharedStateObjectJson } from '../../schemas/infoCourse.js';
 
+import { SharedDataCard, type SharedDataObjectField } from './components/SharedDataCard.js';
 import { InstructorCourseAdminSettings } from './instructorCourseAdminSettings.html.js';
+
+function buildSharedDataObjects(
+  sharedState: Record<string, SharedStateObjectJson> | undefined,
+): SharedDataObjectField[] {
+  return Object.entries(sharedState ?? {}).map(([name, obj]) => ({
+    name,
+    dataVersion: obj.dataVersion,
+    properties: Object.entries(obj.properties).map(([propName, prop]) => ({
+      name: propName,
+      type: prop.type,
+      default: String(prop.default),
+      enum: prop.enum?.map(String) ?? [],
+    })),
+  }));
+}
 
 const router = Router();
 
@@ -43,13 +62,18 @@ router.get(
 
     const courseGHLink = courseRepoContentUrl(res.locals.course);
 
-    const origHash = courseInfoExists
-      ? computeStableHash(
-          JSON.parse(
-            await fs.readFile(path.join(res.locals.course.path, 'infoCourse.json'), 'utf8'),
-          ),
-        )
-      : '';
+    const courseInfo: CourseJsonInput | null = courseInfoExists
+      ? JSON.parse(await fs.readFile(path.join(res.locals.course.path, 'infoCourse.json'), 'utf8'))
+      : null;
+
+    const origHash = courseInfo ? computeStableHash(courseInfo) : '';
+    const sharedDataOrigHash = computeStableHash(courseInfo?.sharedState ?? {});
+    const sharedDataObjects = buildSharedDataObjects(courseInfo?.sharedState);
+
+    const trpcCsrfToken = generatePrefixCsrfToken(
+      { url: getCourseTrpcUrl(res.locals.course.id), authn_user_id: res.locals.authn_user.id },
+      config.secretKey,
+    );
 
     const aiQuestionGenerationEnabled = await features.enabled('ai-question-generation', {
       course_id: res.locals.course.id,
@@ -75,20 +99,36 @@ router.get(
         },
         headContent: compiledScriptTag('instructorCourseAdminSettingsClient.ts'),
         content: (
-          <InstructorCourseAdminSettings
-            aiQuestionGenerationEnabled={aiQuestionGenerationEnabled}
-            aiQuestionGenerationCourseToggleEnabled={aiQuestionGenerationCourseToggleEnabled}
-            authzData={authz_data}
-            availableTimezones={availableTimezones}
-            course={res.locals.course}
-            courseGHLink={courseGHLink}
-            courseInfoExists={courseInfoExists}
-            coursePathExists={coursePathExists}
-            csrfToken={res.locals.__csrf_token}
-            institution={res.locals.institution}
-            origHash={origHash}
-            urlPrefix={res.locals.urlPrefix}
-          />
+          <>
+            <InstructorCourseAdminSettings
+              aiQuestionGenerationEnabled={aiQuestionGenerationEnabled}
+              aiQuestionGenerationCourseToggleEnabled={aiQuestionGenerationCourseToggleEnabled}
+              authzData={authz_data}
+              availableTimezones={availableTimezones}
+              course={res.locals.course}
+              courseGHLink={courseGHLink}
+              courseInfoExists={courseInfoExists}
+              coursePathExists={coursePathExists}
+              csrfToken={res.locals.__csrf_token}
+              institution={res.locals.institution}
+              origHash={origHash}
+              urlPrefix={res.locals.urlPrefix}
+            />
+            {courseInfoExists && (
+              <Hydrate>
+                <SharedDataCard
+                  objects={sharedDataObjects}
+                  canEdit={
+                    authz_data.has_course_permission_edit && !res.locals.course.example_course
+                  }
+                  origHash={sharedDataOrigHash}
+                  courseId={res.locals.course.id}
+                  trpcCsrfToken={trpcCsrfToken}
+                  isDevMode={config.devMode}
+                />
+              </Hydrate>
+            )}
+          </>
         ),
       }),
     );

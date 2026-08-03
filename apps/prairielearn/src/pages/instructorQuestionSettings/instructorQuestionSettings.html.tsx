@@ -181,6 +181,7 @@ export const InstructorQuestionSettingsForm = ({
   courseTopics,
   courseTags,
   questionTags,
+  courseSharedStateObjectNames,
   qids,
   origHash,
   csrfToken,
@@ -198,6 +199,7 @@ export const InstructorQuestionSettingsForm = ({
   courseTopics: StaffTopic[];
   courseTags: StaffTag[];
   questionTags: StaffTag[];
+  courseSharedStateObjectNames: string[];
   qids: string[];
   origHash: string;
   csrfToken: string;
@@ -272,6 +274,7 @@ export const InstructorQuestionSettingsForm = ({
     share_publicly: question.share_publicly,
     share_source_publicly: question.share_source_publicly,
     sharing_sets: sharing.sets.filter((s) => s.in_set).map((s) => s.name),
+    shared_state_access: question.shared_state_access,
   };
 
   const {
@@ -290,6 +293,7 @@ export const InstructorQuestionSettingsForm = ({
 
   const selectedTopic = watch('topic');
   const selectedTags = watch('tags');
+  const selectedSharedStateAccess = watch('shared_state_access');
   const selectedGradingMethod = watch('grading_method');
   const workspaceEnabled = watch('workspace_enabled');
   const externalGradingEnabled = watch('external_grading_enabled');
@@ -352,6 +356,11 @@ export const InstructorQuestionSettingsForm = ({
 
   const currentTopicData = courseTopics.find((t) => t.name === selectedTopic);
   const currentTagsData = courseTags.filter((t) => selectedTags.includes(t.name));
+
+  const sharedStateItems: ComboBoxItem[] = useMemo(
+    () => courseSharedStateObjectNames.map((name) => ({ id: name, label: name })),
+    [courseSharedStateObjectNames],
+  );
 
   const otherQids = new Set(qids.filter((q) => q !== defaultValues.qid));
 
@@ -1182,6 +1191,52 @@ export const InstructorQuestionSettingsForm = ({
             </div>
           </div>
         )}
+
+        <div className="card">
+          <div className="card-body">
+            <h2 className="h5 card-title mb-3">Shared data</h2>
+            <div>
+              <label
+                id="shared-state-access-label"
+                className="form-label"
+                htmlFor="shared_state_access"
+              >
+                Shared data objects
+              </label>
+              {courseSharedStateObjectNames.length === 0 ? (
+                <div className="small text-muted">
+                  No shared-data objects are defined in this course. Define them on the{' '}
+                  <a href="../../course_admin/settings">Course settings</a> page.
+                </div>
+              ) : (
+                <TagPicker
+                  id="shared_state_access"
+                  name="shared_state_access"
+                  items={sharedStateItems}
+                  value={selectedSharedStateAccess}
+                  placeholder="Select shared-data objects"
+                  aria-labelledby="shared-state-access-label"
+                  disabled={!canEdit}
+                  onChange={(value) =>
+                    setValue('shared_state_access', value, { shouldDirty: true })
+                  }
+                />
+              )}
+              <small className="form-text text-muted">
+                Shared-data objects that this question reads and writes via{' '}
+                <code>data["shared_state"]</code> in <code>server.py</code>. See the{' '}
+                <a
+                  href="https://docs.prairielearn.com/question/shared-state/"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  shared-state docs
+                </a>
+                .
+              </small>
+            </div>
+          </div>
+        </div>
       </form>
 
       {showTestsSection && (

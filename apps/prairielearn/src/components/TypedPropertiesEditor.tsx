@@ -22,7 +22,10 @@ import {
   type Control,
   type FieldArray,
   type FieldArrayPath,
+  type FieldError,
+  type FieldErrorsImpl,
   type FieldValues,
+  type Merge,
   type Path,
   type UseFormClearErrors,
   type UseFormRegister,
@@ -41,10 +44,24 @@ export interface TypedPropertyField {
   enum: string[];
 }
 
-export interface TypedPropertyFieldErrors {
-  name?: { message?: string };
-  default?: { message?: string };
-}
+/** A single row's field errors, in react-hook-form's own error shape. */
+export type TypedPropertyFieldError = Merge<FieldError, FieldErrorsImpl<TypedPropertyField>>;
+/** The whole array's field errors, as react-hook-form reports them for a `TypedPropertyField[]` field array. */
+export type TypedPropertiesErrors = Merge<FieldError, (TypedPropertyFieldError | undefined)[]>;
+
+// react-hook-form's `watch`/`setValue`/`clearErrors` are overloaded on the field-path type in a
+// way that only resolves correctly when the parent form's TFieldValues is concrete; inside a
+// generic component (TFieldValues is itself a type parameter here), TS can't pick the right
+// overload from a dynamically-built path and instead matches an unrelated overload. Re-typing
+// the incoming functions to a single, precise signature sidesteps that — the underlying function
+// still accepts a plain string path at runtime, only the static overload resolution was the issue.
+type WatchFn<TFieldValues extends FieldValues> = (path: Path<TFieldValues>) => unknown;
+type SetValueFn<TFieldValues extends FieldValues> = (
+  path: Path<TFieldValues>,
+  value: string | string[],
+  options?: { shouldDirty?: boolean; shouldValidate?: boolean },
+) => void;
+type ClearErrorsFn<TFieldValues extends FieldValues> = (path: Path<TFieldValues>) => void;
 
 /**
  * A drag-reorderable grid for editing an array of named/typed/defaulted values
@@ -80,7 +97,7 @@ export function TypedPropertiesEditor<
   watch: UseFormWatch<TFieldValues>;
   setValue: UseFormSetValue<TFieldValues>;
   clearErrors: UseFormClearErrors<TFieldValues>;
-  errors?: (TypedPropertyFieldErrors | undefined)[];
+  errors?: TypedPropertiesErrors;
   /** Rendered as an `h2` alongside the "Add" button. Omit to render just the button. */
   title?: ReactNode;
   description?: ReactNode;
@@ -90,7 +107,7 @@ export function TypedPropertiesEditor<
   const { fields, append, remove, move } = useFieldArray({ control, name });
 
   const dndId = useId();
-  const rowIdPrefix = useId();
+  const rowsId = useId();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const gridRef = useRef<HTMLDivElement>(null);
 
@@ -194,7 +211,7 @@ export function TypedPropertiesEditor<
                 {fields.map((field, index) => (
                   <PropertyRow
                     key={field.id}
-                    idPrefix={rowIdPrefix}
+                    idPrefix={rowsId}
                     field={field as unknown as TypedPropertyField & { id: string }}
                     index={index}
                     name={name}
@@ -245,7 +262,7 @@ function PropertyRow<TFieldValues extends FieldValues, TName extends FieldArrayP
   register: UseFormRegister<TFieldValues>;
   watch: UseFormWatch<TFieldValues>;
   setValue: UseFormSetValue<TFieldValues>;
-  errors?: TypedPropertyFieldErrors;
+  errors?: TypedPropertyFieldError;
   remove: (index: number) => void;
   clearErrors: UseFormClearErrors<TFieldValues>;
 }) {
@@ -254,12 +271,16 @@ function PropertyRow<TFieldValues extends FieldValues, TName extends FieldArrayP
     disabled: !canEdit,
   });
 
-  const propType = watch(fieldPath(name, index, 'type')) as unknown as TypedPropertyField['type'];
-  const propertyDefaultValue = watch(
+  const typedWatch = watch as unknown as WatchFn<TFieldValues>;
+  const typedSetValue = setValue as unknown as SetValueFn<TFieldValues>;
+  const typedClearErrors = clearErrors as unknown as ClearErrorsFn<TFieldValues>;
+
+  const propType = typedWatch(fieldPath(name, index, 'type')) as TypedPropertyField['type'];
+  const propertyDefaultValue = typedWatch(
     fieldPath(name, index, 'default'),
-  ) as unknown as TypedPropertyField['default'];
-  const enumValues = watch(fieldPath(name, index, 'enum')) as unknown as TypedPropertyField['enum'];
-  const allProperties = watch(name) as unknown as TypedPropertyField[];
+  ) as TypedPropertyField['default'];
+  const enumValues = typedWatch(fieldPath(name, index, 'enum')) as TypedPropertyField['enum'];
+  const allProperties = typedWatch(name as unknown as Path<TFieldValues>) as TypedPropertyField[];
 
   const nameColIndex = canEdit ? 2 : 1;
   const defaultColIndex = canEdit ? 4 : 3;
@@ -314,18 +335,18 @@ function PropertyRow<TFieldValues extends FieldValues, TName extends FieldArrayP
           defaultValue={field.type}
           {...register(fieldPath(name, index, 'type'), {
             onChange: (e) => {
-              setValue(fieldPath(name, index, 'enum'), [] as never, { shouldDirty: true });
+              typedSetValue(fieldPath(name, index, 'enum'), [], { shouldDirty: true });
               // Sync react-hook-form's value when switching to boolean: the <select>
               // shows "true" visually, but the internal value is still the old one.
               if (e.target.value === 'boolean') {
                 if (propertyDefaultValue !== 'true' && propertyDefaultValue !== 'false') {
-                  setValue(fieldPath(name, index, 'default'), 'true' as never);
+                  typedSetValue(fieldPath(name, index, 'default'), 'true');
                 }
-                clearErrors(fieldPath(name, index, 'default'));
+                typedClearErrors(fieldPath(name, index, 'default'));
                 return;
               }
 
-              setValue(fieldPath(name, index, 'default'), '' as never, { shouldValidate: false });
+              typedSetValue(fieldPath(name, index, 'default'), '', { shouldValidate: false });
             },
           })}
         >
@@ -385,9 +406,9 @@ function PropertyRow<TFieldValues extends FieldValues, TName extends FieldArrayP
               required: 'A default value is required',
               validate: {
                 matchesType: (value) => {
-                  const currentType = watch(
+                  const currentType = typedWatch(
                     fieldPath(name, index, 'type'),
-                  ) as unknown as TypedPropertyField['type'];
+                  ) as TypedPropertyField['type'];
                   if (currentType === 'number' && !Number.isFinite(Number(value))) {
                     return 'Must be a finite number';
                   }
@@ -466,22 +487,26 @@ function EnumInput<TFieldValues extends FieldValues, TName extends FieldArrayPat
   setValue: UseFormSetValue<TFieldValues>;
   clearErrors: UseFormClearErrors<TFieldValues>;
 }) {
+  const typedWatch = watch as unknown as WatchFn<TFieldValues>;
+  const typedSetValue = setValue as unknown as SetValueFn<TFieldValues>;
+  const typedClearErrors = clearErrors as unknown as ClearErrorsFn<TFieldValues>;
+
   const [inputValue, setInputValue] = useState('');
   const [adding, setAdding] = useState(false);
-  const enumValues = watch(fieldPath(name, index, 'enum')) as unknown as TypedPropertyField['enum'];
+  const enumValues = typedWatch(fieldPath(name, index, 'enum')) as TypedPropertyField['enum'];
 
-  const currentDefault = watch(
+  const currentDefault = typedWatch(
     fieldPath(name, index, 'default'),
-  ) as unknown as TypedPropertyField['default'];
+  ) as TypedPropertyField['default'];
 
   function addValue() {
     const trimmed = inputValue.trim();
     if (!trimmed || enumValues.includes(trimmed)) return;
     if (enumValues.length === 0) {
-      setValue(fieldPath(name, index, 'default'), trimmed as never, { shouldDirty: true });
-      clearErrors(fieldPath(name, index, 'default'));
+      typedSetValue(fieldPath(name, index, 'default'), trimmed, { shouldDirty: true });
+      typedClearErrors(fieldPath(name, index, 'default'));
     }
-    setValue(fieldPath(name, index, 'enum'), [...enumValues, trimmed] as never, {
+    typedSetValue(fieldPath(name, index, 'enum'), [...enumValues, trimmed], {
       shouldDirty: true,
     });
     setInputValue('');
@@ -489,11 +514,11 @@ function EnumInput<TFieldValues extends FieldValues, TName extends FieldArrayPat
 
   function removeValue(val: string) {
     const remaining = enumValues.filter((v) => v !== val);
-    setValue(fieldPath(name, index, 'enum'), remaining as never, { shouldDirty: true });
+    typedSetValue(fieldPath(name, index, 'enum'), remaining, { shouldDirty: true });
     if (remaining.length === 0) {
-      setValue(fieldPath(name, index, 'default'), '' as never, { shouldDirty: true });
+      typedSetValue(fieldPath(name, index, 'default'), '', { shouldDirty: true });
     } else if (String(currentDefault) === val) {
-      setValue(fieldPath(name, index, 'default'), remaining[0] as never, { shouldDirty: true });
+      typedSetValue(fieldPath(name, index, 'default'), remaining[0], { shouldDirty: true });
     }
   }
 
@@ -515,7 +540,11 @@ function EnumInput<TFieldValues extends FieldValues, TName extends FieldArrayPat
     <div>
       {/* Serialized for pages that submit this form as a native POST (e.g. question settings),
           which reconstructs nested arrays from flat `name.index.field` keys server-side. */}
-      <input type="hidden" name={fieldPath(name, index, 'enum')} value={JSON.stringify(enumValues)} />
+      <input
+        type="hidden"
+        name={fieldPath(name, index, 'enum')}
+        value={JSON.stringify(enumValues)}
+      />
       <div className="d-flex flex-wrap gap-1 align-items-center">
         {enumValues.map((val) => (
           <span

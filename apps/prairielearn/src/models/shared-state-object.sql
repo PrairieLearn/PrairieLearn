@@ -64,3 +64,13 @@ FROM
 WHERE
   o.course_id = $course_id
   AND o.name = $name;
+
+-- BLOCK select_names_by_course_id
+SELECT
+  name
+FROM
+  shared_state_objects
+WHERE
+  course_id = $course_id
+ORDER BY
+  name;
