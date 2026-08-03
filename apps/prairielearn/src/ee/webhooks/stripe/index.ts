@@ -6,6 +6,7 @@ import * as error from '@prairielearn/error';
 import { runInTransactionAsync } from '@prairielearn/postgres';
 
 import { config } from '../../../lib/config.js';
+import { tryWithKeyRing } from '../../../lib/key-ring.js';
 import { selectInstitutionForCourseInstance } from '../../../models/institution.js';
 import { clearStripeProductCache, getStripeClient } from '../../lib/billing/stripe.js';
 import {
@@ -28,13 +29,15 @@ function constructEvent(req: Request) {
 
   const stripe = getStripeClient();
   try {
-    return stripe.webhooks.constructEvent(
-      req.body,
-      req.headers['stripe-signature'] as string,
-      config.stripeWebhookSigningSecret,
+    return tryWithKeyRing(config.stripeWebhookSigningSecret, (secret) =>
+      stripe.webhooks.constructEvent(req.body, req.headers['stripe-signature'] as string, secret),
     );
-  } catch (err: any) {
-    throw new error.HttpStatusError(400, `Webhook error: ${err.message}`);
+  } catch (cause) {
+    throw new error.HttpStatusError(
+      400,
+      'Stripe webhook signature could not be verified with any configured secret',
+      { cause },
+    );
   }
 }
 
