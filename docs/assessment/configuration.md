@@ -118,6 +118,8 @@ The `shuffleQuestions` parameter controls whether questions on an assessment app
 | `Homework`      | `false`                    | Homeworks default to using the same question order as in `infoAssessment.json` for all students.                                                                                                                               |
 | `Exam`          | `true`                     | Exams default to randomizing the question order individually for each student. This randomization happens within each zone, but the zones themselves always appear in the same order and there is no cross-zone randomization. |
 
+Question selection is performed before question ordering. `shuffleQuestions` then randomizes the selected questions within each zone; it does not change the order of the zones. Questions that should be shuffled together must therefore belong to the same zone.
+
 If a `Homework` is set to shuffle the question order, it will use a unique-per-course number for each question, so that all students will still get the same question numbers (like #427), but they will not be in order. This makes it easy for students to discuss questions with course staff; they can say "I don't know how to do #427" and everyone will be seeing the same question #427. The main advantage of randomizing question order on Homeworks is to enable data collection on question difficulty and student behavior that is independent of the order in which questions are listed on the assessment.
 
 ## Question specification
