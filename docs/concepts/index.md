@@ -79,12 +79,17 @@ def generate(data):
             else:
                 data["correct_answers"]["y"] = 3 * data["params"]["x"]
 
+
         def parse(data):
             if "y" not in data["format_errors"] and data["submitted_answers"]["y"] < 0:
                 data["format_errors"]["y"] = "Negative numbers are not allowed"
 
+
         def grade(data):
-            if math.isclose(data["score"], 0.0) and data["submitted_answers"]["y"] > data["params"]["x"]:
+            if (
+                math.isclose(data["score"], 0.0)
+                and data["submitted_answers"]["y"] > data["params"]["x"]
+            ):
                 data["partial_scores"]["y"]["score"] = 0.5
                 data["score"] = 0.5
                 data["feedback"]["y"] = "Your value for $y$ is larger than $x$, but incorrect."

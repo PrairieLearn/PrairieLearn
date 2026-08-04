@@ -1911,7 +1911,7 @@ class Point(BaseElement):
             "originY": "center",
             "fill": color,
             "selectable": drawing_defaults["selectable"],
-            "evented": drawing_defaults["selectable"]
+            "evented": drawing_defaults["selectable"],
         }
 
     def is_gradable():
