@@ -39,6 +39,10 @@ function getTooltipShowDelay(trigger: HTMLElement): number {
  * users from moving the pointer over the tooltip itself. This controller keeps the
  * tooltip open while either the trigger or tooltip is hovered, or while the trigger
  * contains focus. It also leaves a short bridge delay for moving between the two.
+ *
+ * This is the vanilla Bootstrap counterpart to the React Aria-based `Tooltip` in
+ * `@prairielearn/ui`. Keep their user-facing behavior aligned: immediate display,
+ * hover retention, delayed closing, click dismissal, and Escape dismissal.
  */
 class HoverableTooltipController {
   private triggerHovered = false;
