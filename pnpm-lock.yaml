@@ -2723,6 +2723,9 @@ importers:
       react-dom:
         specifier: ^19.2.7
         version: 19.2.7(react@19.2.7)
+      selector-observer:
+        specifier: ^2.1.6
+        version: 2.1.6
       use-debounce:
         specifier: ^10.1.1
         version: 10.1.1(react@19.2.7)

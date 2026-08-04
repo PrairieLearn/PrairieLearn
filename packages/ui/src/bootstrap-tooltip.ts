@@ -1,10 +1,17 @@
-import { type Tooltip } from 'bootstrap';
-import { on } from 'delegated-events';
 import { observe } from 'selector-observer';
 
-import { onDocumentReady } from '@prairielearn/browser-utils';
-
 const TOOLTIP_CLOSE_DELAY_MS = 500;
+
+interface BootstrapTooltip {
+  show: () => void;
+  hide: () => void;
+  dispose: () => void;
+}
+
+type BootstrapTooltipConstructor = new (
+  element: HTMLElement,
+  options: { trigger: 'manual'; title: () => string },
+) => BootstrapTooltip;
 
 function getTooltipTitle(trigger: HTMLElement): string {
   return (
@@ -40,21 +47,24 @@ function getTooltipShowDelay(trigger: HTMLElement): number {
  * tooltip open while either the trigger or tooltip is hovered, or while the trigger
  * contains focus. It also leaves a short bridge delay for moving between the two.
  *
- * This is the vanilla Bootstrap counterpart to the React Aria-based `Tooltip` in
- * `@prairielearn/ui`. Keep their user-facing behavior aligned: immediate display,
- * hover retention, delayed closing, click dismissal, and Escape dismissal.
+ * This is the vanilla Bootstrap counterpart to the React Aria-based `Tooltip` in this
+ * package. Keep their user-facing behavior aligned: immediate display by default,
+ * hover retention, delayed closing, fade transitions, click dismissal, and Escape
+ * dismissal.
  */
 class HoverableTooltipController {
   private triggerHovered = false;
   private triggerFocused = false;
   private tooltipHovered = false;
   private open = false;
+  private hiding = false;
+  private reopenAfterHide = false;
   private timer: ReturnType<typeof setTimeout> | null = null;
   private tooltipElement: HTMLElement | null = null;
 
   constructor(
     private trigger: HTMLElement,
-    private tooltip: Tooltip,
+    private tooltip: BootstrapTooltip,
     private showDelay = getTooltipShowDelay(trigger),
   ) {
     trigger.addEventListener('mouseenter', this.handleTriggerMouseEnter);
@@ -68,6 +78,7 @@ class HoverableTooltipController {
 
   dismiss() {
     this.tooltipHovered = false;
+    this.reopenAfterHide = false;
     this.clearTimer();
     this.hideTooltip();
   }
@@ -128,15 +139,21 @@ class HoverableTooltipController {
   };
 
   private handleTooltipHidden = () => {
+    const shouldReopen =
+      this.reopenAfterHide && (this.triggerHovered || this.triggerFocused || this.tooltipHovered);
     this.open = false;
+    this.hiding = false;
+    this.reopenAfterHide = false;
     this.tooltipHovered = false;
     openTooltipControllers.delete(this);
     this.detachTooltipElement();
+    if (shouldReopen) this.showTooltip();
   };
 
   private handleTooltipMouseEnter = () => {
     this.tooltipHovered = true;
     this.clearTimer();
+    if (this.hiding) this.showTooltip();
   };
 
   private handleTooltipMouseLeave = () => {
@@ -169,7 +186,14 @@ class HoverableTooltipController {
   }
 
   private showTooltip() {
-    if (this.open || !getTooltipTitle(this.trigger)) return;
+    if (!getTooltipTitle(this.trigger)) return;
+    if (this.hiding) {
+      // Bootstrap's pending hide callback would dispose a tooltip shown during the
+      // fade transition, so wait for `hidden.bs.tooltip` before reopening it.
+      this.reopenAfterHide = true;
+      return;
+    }
+    if (this.open) return;
     closeOpenTooltips();
     this.open = true;
     openTooltipControllers.add(this);
@@ -178,8 +202,9 @@ class HoverableTooltipController {
 
   private hideTooltip() {
     openTooltipControllers.delete(this);
-    if (!this.open) return;
+    if (!this.open || this.hiding) return;
     this.open = false;
+    this.hiding = true;
     this.tooltip.hide();
   }
 
@@ -204,11 +229,24 @@ function closeOpenTooltips() {
   openTooltipControllers.forEach((controller) => controller.dismiss());
 }
 
-onDocumentReady(() => {
-  observe('[data-bs-toggle~="tooltip"], [data-bs-toggle-tooltip="true"]', {
+let activeUninstall: (() => void) | null = null;
+
+/**
+ * Installs accessible behavior for vanilla Bootstrap tooltips in the current document.
+ * This must be called after `document.body` is available.
+ */
+export function installBootstrapTooltipBehavior({
+  Tooltip,
+}: {
+  Tooltip: BootstrapTooltipConstructor;
+}): () => void {
+  if (activeUninstall) return activeUninstall;
+
+  const insertedListeners = new WeakMap<HTMLElement, () => void>();
+  const tooltipObserver = observe('[data-bs-toggle~="tooltip"], [data-bs-toggle-tooltip="true"]', {
     constructor: HTMLElement,
-    add(el) {
-      const tooltip = new window.bootstrap.Tooltip(el, {
+    add(el: HTMLElement) {
+      const tooltip = new Tooltip(el, {
         // Interaction is managed by HoverableTooltipController so that the tooltip
         // itself can be hovered and Escape can dismiss it without moving focus.
         // TODO: Remove this controller once Bootstrap supports hover retention upstream:
@@ -232,7 +270,7 @@ onDocumentReady(() => {
       if (attribute && attribute !== 'tooltip') {
         el.dataset[attributeName] = attribute
           .split(' ')
-          .filter((x) => x !== 'tooltip')
+          .filter((x: string) => x !== 'tooltip')
           .join(' ');
 
         // If we naively removed the `tooltip` piece, the element would no
@@ -258,14 +296,21 @@ onDocumentReady(() => {
         if (title && !el.textContent.trim()) {
           el.setAttribute('aria-label', title);
         }
-        el.addEventListener('inserted.bs.tooltip', () => {
+        const handleTooltipInserted = () => {
           el.removeAttribute('aria-describedby');
-        });
+        };
+        insertedListeners.set(el, handleTooltipInserted);
+        el.addEventListener('inserted.bs.tooltip', handleTooltipInserted);
       }
     },
-    remove(el) {
+    remove(el: HTMLElement) {
       tooltipControllers.get(el)?.dispose();
       tooltipControllers.delete(el);
+      const handleTooltipInserted = insertedListeners.get(el);
+      if (handleTooltipInserted) {
+        el.removeEventListener('inserted.bs.tooltip', handleTooltipInserted);
+        insertedListeners.delete(el);
+      }
     },
   });
 
@@ -274,9 +319,20 @@ onDocumentReady(() => {
   // so we hide any open tooltips when Escape is pressed (mirroring popovers).
   // This can be removed after upgrading to Bootstrap 6:
   // https://github.com/twbs/bootstrap/pull/42472
-  on('keydown', 'body', (event) => {
+  const handleKeyDown = (event: KeyboardEvent) => {
     if (event.key === 'Escape') {
       closeOpenTooltips();
     }
-  });
-});
+  };
+  const body = document.body;
+  body.addEventListener('keydown', handleKeyDown);
+
+  const uninstall = () => {
+    if (activeUninstall !== uninstall) return;
+    tooltipObserver.abort();
+    body.removeEventListener('keydown', handleKeyDown);
+    activeUninstall = null;
+  };
+  activeUninstall = uninstall;
+  return uninstall;
+}

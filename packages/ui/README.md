@@ -2,6 +2,18 @@
 
 UI components, utilities, and styles shared between PrairieLearn and PrairieTest.
 
+## Vanilla Bootstrap tooltips
+
+Applications using Bootstrap tooltips should install the shared accessible behavior after `document.body` is available. Pass the same Bootstrap `Tooltip` constructor used elsewhere in the application.
+
+```ts
+import { installBootstrapTooltipBehavior } from '@prairielearn/ui/bootstrap-tooltip';
+
+installBootstrapTooltipBehavior({
+  Tooltip: window.bootstrap.Tooltip,
+});
+```
+
 ## UI Component Examples
 
 ### TanstackTableCard

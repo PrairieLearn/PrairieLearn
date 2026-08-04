@@ -33,8 +33,9 @@ export function Tooltip({ children, content, id, placement = 'top' }: TooltipPro
       <Focusable>{children}</Focusable>
       <AriaTooltip
         {...tooltipIdProps}
-        className={({ placement: actualPlacement }) =>
-          clsx('tooltip show', {
+        className={({ placement: actualPlacement, isEntering, isExiting }) =>
+          clsx('tooltip fade', {
+            show: !isEntering && !isExiting,
             'bs-tooltip-top': actualPlacement === 'top',
             'bs-tooltip-end': actualPlacement === 'right',
             'bs-tooltip-bottom': actualPlacement === 'bottom',

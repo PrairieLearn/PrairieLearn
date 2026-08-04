@@ -2,4 +2,4 @@
 '@prairielearn/ui': minor
 ---
 
-Add an accessible React Aria-based tooltip component that remains open while hovered.
+Add accessible React Aria and vanilla Bootstrap tooltip abstractions that remain open while hovered.
