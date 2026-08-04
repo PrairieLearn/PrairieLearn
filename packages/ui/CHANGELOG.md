@@ -1,5 +1,11 @@
 # @prairielearn/ui
 
+## 3.7.2
+
+### Patch Changes
+
+- 81ad435: Update typescript-cp to remove its transitive tar dependency.
+
 ## 3.7.1
 
 ### Patch Changes
