@@ -53,6 +53,18 @@ import {
 
 const router = Router({ mergeParams: true });
 
+/**
+ * Returns the admission failure, if any, that should prevent a user from
+ * obtaining a required plan on this page. This is deliberately less strict
+ * than admission itself: joined users may need another plan, and an enrollment
+ * code is enforced when admission resumes rather than before the upgrade.
+ *
+ * The LTI relaunch flow also ignores ordinary self-enrollment restrictions.
+ * The query parameter that selects that flow is not enrollment authority, so
+ * this page only handles the upgrade and then sends the user back to the LMS.
+ * A fresh LTI launch must revalidate the exact invitation before admitting the
+ * user. A blocked enrollment is never allowed to proceed through this flow.
+ */
 function getAdmissionIneligibilityReason(
   decision: EnrollmentAccessDecision,
   lti13Relaunch: boolean,
@@ -65,14 +77,21 @@ function getAdmissionIneligibilityReason(
   return decision.reason;
 }
 
-function canUseLti13RelaunchMarker(
-  marker: unknown,
+/**
+ * Returns whether this request should use the LTI-specific upgrade flow.
+ * `lti13_relaunch=1` is a routing hint appended when an exact LTI invitation is
+ * interrupted by a required plan upgrade. It carries no LTI claims and grants
+ * no enrollment authority; those claims were consumed before the redirect.
+ * We honor the hint only for a directly authenticated student, then require the
+ * student to relaunch from the LMS so admission can validate a fresh link and
+ * subject after the upgrade.
+ */
+function shouldUseLti13RelaunchFlow(
+  queryValue: unknown,
   resLocals: ResLocalsForPage<'course-instance'>,
 ) {
-  // This marker only changes upgrade and payment routing. A fresh checked LTI
-  // admission is still required to enroll after the upgrade.
   return (
-    marker === '1' &&
+    queryValue === '1' &&
     idsEqual(resLocals.user.id, resLocals.authn_user.id) &&
     resLocals.authz_data.authn_course_role === 'None' &&
     resLocals.authz_data.authn_course_instance_role === 'None' &&
@@ -87,7 +106,7 @@ router.get(
     const courseInstance = CourseInstanceSchema.parse(res.locals.course_instance);
     const course = CourseSchema.parse(res.locals.course);
     const user = UserSchema.parse(res.locals.authn_user);
-    const lti13Relaunch = canUseLti13RelaunchMarker(req.query.lti13_relaunch, res.locals);
+    const lti13Relaunch = shouldUseLti13RelaunchFlow(req.query.lti13_relaunch, res.locals);
 
     const admissionDecision = await selectEnrollmentAccessDecision({
       course,
@@ -157,7 +176,7 @@ router.post(
       const course = CourseSchema.parse(res.locals.course);
       const courseInstance = CourseInstanceSchema.parse(res.locals.course_instance);
       const user = UserSchema.parse(res.locals.authn_user);
-      const lti13Relaunch = canUseLti13RelaunchMarker(req.query.lti13_relaunch, res.locals);
+      const lti13Relaunch = shouldUseLti13RelaunchFlow(req.query.lti13_relaunch, res.locals);
 
       const admissionDecision = await selectEnrollmentAccessDecision({
         course,
