@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/aws",
-  "version": "3.0.8",
+  "version": "3.1.0",
   "type": "module",
   "repository": {
     "type": "git",
@@ -16,6 +16,7 @@
     "dev": "tsgo --watch --preserveWatchOutput"
   },
   "dependencies": {
+    "@aws-sdk/client-auto-scaling": "^3.1079.0",
     "@smithy/property-provider": "^4.4.6",
     "@smithy/types": "^4.15.1"
   },

@@ -92,8 +92,10 @@ After compiling the student and instructor code, tests may be created using one 
 To compile a C or C++ file, you may use the method `self.compile_file()`. A typical call to this method, assuming students write a complete C file including the `main` function, will include two parameters: the name of the C or C++ file to be compiled (the file submitted by the student), and the name of an executable file to be created.
 
 ```python
-self.compile_file("square.c", "square")      # Compile the file, but do not create a unit test result
-self.test_compile_file("square.c", "square") # Compile the file and give one point to student if compilation is successful
+# Compile the file, but do not create a unit test result
+self.compile_file("square.c", "square")
+# Compile the file and give one point to student if compilation is successful
+self.test_compile_file("square.c", "square")
 ```
 
 By default, these methods use `gcc` and `g++` (for `CGrader` and `CPPGrader`, respectively) to compile the code. To use a different compiler (e.g., `clang`), set the `compiler` argument:
@@ -119,15 +121,17 @@ self.compile_file("square.c", "square", add_warning_result_msg=False)
 You may also include additional compilation flags accepted by `gcc` (or `g++`) with the `flags` argument, which can be invoked with a single string for flags, or with an array of strings:
 
 ```python
-self.compile_file("square.c", "square", flags="-Wall -O3") # single string
-self.compile_file("square.c", "square", flags=["-Wall", "-O3"]) # array
+self.compile_file("square.c", "square", flags="-Wall -O3")  # single string
+self.compile_file("square.c", "square", flags=["-Wall", "-O3"])  # array
 ```
 
 For flags based on `pkg-config`, use `pkg_config_flags` with the library or libraries that should be queried.
 
 ```python
-self.compile_file("square.c", "square", pkg_config_flags="check ncurses") # single string
-self.compile_file("square.c", "square", pkg_config_flags=["check", "ncurses"]) # array
+self.compile_file(
+    "square.c", "square", pkg_config_flags="check ncurses"
+)  # single string
+self.compile_file("square.c", "square", pkg_config_flags=["check", "ncurses"])  # array
 ```
 
 ### Working with multiple files
@@ -144,10 +148,15 @@ If the student implements any function that is also implemented by the instructo
 
 ```python
 self.compile_file(
-  "square.c",
-  "square",
-  add_c_file="/grade/tests/main.c",
-  objcopy_args=["--redefine-sym", "main=student_main", "--globalize-symbol", "my_static_fn"],
+    "square.c",
+    "square",
+    add_c_file="/grade/tests/main.c",
+    objcopy_args=[
+        "--redefine-sym",
+        "main=student_main",
+        "--globalize-symbol",
+        "my_static_fn",
+    ],
 )
 ```
 
@@ -167,15 +176,20 @@ If the compilation involves include (`.h`) files, the flags `-I/grade/tests` (fo
 If the executable name is not provided, then the files will be compiled only into equivalent object files (with `.o` extension). To link these files into an executable, the `link_object_files` can be used. This function receives three mandatory arguments: the student object files, the additional object files (which can be set to `None` if there are none), and the executable name. This separation allows for more fine-tuned compilation flags between different C files or between compilation and linking, as well as additional operations to be performed with the generated object files. For example, the following sequence compiles student files and instructor files with different flags.
 
 ```python
-self.compile_file(["student_file1.c", "student_file2.c"],
-                  flags=["-I/grade/tests", "-I/grade/student", "-Wall", "-g"])
-self.compile_file([], # No student files in this invocation
-                  add_c_file=["/grade/tests/question_file1.c",
-                              "/grade/tests/question_file2.c"],
-                  flags=["-I/grade/tests", "-I/grade/student"])
-self.link_object_files(["student_file1.o", "student_file2.o"],
-                       ["/grade/tests/question_file1.o", "/grade/tests/question_file2.o"],
-                       "executable")
+self.compile_file(
+    ["student_file1.c", "student_file2.c"],
+    flags=["-I/grade/tests", "-I/grade/student", "-Wall", "-g"],
+)
+self.compile_file(
+    [],  # No student files in this invocation
+    add_c_file=["/grade/tests/question_file1.c", "/grade/tests/question_file2.c"],
+    flags=["-I/grade/tests", "-I/grade/student"],
+)
+self.link_object_files(
+    ["student_file1.o", "student_file2.o"],
+    ["/grade/tests/question_file1.o", "/grade/tests/question_file2.o"],
+    "executable",
+)
 ```
 
 The `link_object_files` also accepts arguments like `flags`, `pkg_config_flags`, `add_warning_result_msg=False` and `ungradable_if_failed=False`, with the same functionality as `self.compile_file()` or `self.test_compile_file()`.
@@ -190,7 +204,14 @@ self.compile_file(
     "executable",
     add_c_file=["/grade/tests/question_file1.c", "/grade/tests/question_file2.c"],
     flags=["-I/grade/tests", "-I/grade/student", "-lrt"],
-    reject_symbols=["system", "vfork", "clone", "clone3", "posix_spawn", "posix_spawnp"],
+    reject_symbols=[
+        "system",
+        "vfork",
+        "clone",
+        "clone3",
+        "posix_spawn",
+        "posix_spawnp",
+    ],
 )
 ```
 
@@ -199,13 +220,16 @@ self.compile_file(
 To create a test result based on the compilation itself, use `self.test_compile_file()` instead of `self.compile_file()`. This method accepts the same arguments as `self.compile_file()`, but will create a test named "Compilation" worth one point by default.
 
 ```python
-self.test_compile_file("square.c", "square") # Compile the file and give one point to student if compilation is successful
+# Compile the file and give one point to student if compilation is successful
+self.test_compile_file("square.c", "square")
 ```
 
 To change the name and/or points, set the `name` or `points` argument as follows:
 
 ```python
-self.test_compile_file("square.c", "square", name="Compilation of the first file", points=3)
+self.test_compile_file(
+    "square.c", "square", name="Compilation of the first file", points=3
+)
 ```
 
 Note that you can set the `points` to zero if you want to create a test result for the compilation, but do not want to assign any points to it. This may be useful in combination with the `add_warning_result_msg=False` argument, which in this case will cause the warning to be shown in the test output instead of the main results message.
@@ -239,9 +263,14 @@ The `exp_output` argument can also be used to check for multiple output patterns
 - `must_match_all_outputs="partial"`: the points assigned to the test are based on the number of patterns that are found in the program output (for example, if three patterns out of four are found, then the test is assigned 0.75 points).
 
 ```python
-self.test_run("./square", exp_output=["SUCCESS", "CORRECT"]) # default, either SUCCESS or CORRECT are enough for full points
-self.test_run("./square", exp_output=["TEST 1 PASSED", "TEST 2 PASSED"],
-              must_match_all_outputs="partial") # Test passes with 0, 0.5 or 1, depending on if none, one or two patterns are found
+# default, either SUCCESS or CORRECT are enough for full points
+self.test_run("./square", exp_output=["SUCCESS", "CORRECT"])
+# Test passes with 0, 0.5 or 1, depending on if none, one or two patterns are found
+self.test_run(
+    "./square",
+    exp_output=["TEST 1 PASSED", "TEST 2 PASSED"],
+    must_match_all_outputs="partial",
+)
 ```
 
 Sometimes a test must ensure that some strings are _not_ found in the output of the program. This can be achieved with the `reject_output` argument, which again can be an array or a single string.
@@ -253,18 +282,23 @@ self.test_run("diff -q output.txt expected.txt", reject_output=["differ"])
 If you would like to highlight, in the test message or output, the expected and rejected outputs, you can use the `highlight_matches` argument. This option will highlight in green (for expected outputs) and red (for rejected outputs) all strings that matched in the program output.
 
 ```python
-self.test_run("./square",
-              exp_output=["TEST 1 PASSED", "TEST 2 PASSED"],
-              reject_output=["ERROR", "FAIL"],
-              must_match_all_outputs="all",
-              highlight_matches=True)
+self.test_run(
+    "./square",
+    exp_output=["TEST 1 PASSED", "TEST 2 PASSED"],
+    reject_output=["ERROR", "FAIL"],
+    must_match_all_outputs="all",
+    highlight_matches=True,
+)
 ```
 
 By default, any sequence of space-like characters (space, line break, carriage return, tab) in the program output, expected output and rejected output strings will be treated as a single space for comparison. This means difference in the number and type of spacing will be ignored. So, for example, if the output prints two numbers as `1 \n 2`, while the expected output is `1 2`, the test will pass. If, however, the intention is that spaces must match a pattern exactly, the `ignore_consec_spaces` option can be set to `False`:
 
 ```python
-self.test_run("./pattern", exp_output="  1  2  3\n  4  5  6\n  7  8  9",
-              ignore_consec_spaces=False)
+self.test_run(
+    "./pattern",
+    exp_output="  1  2  3\n  4  5  6\n  7  8  9",
+    ignore_consec_spaces=False,
+)
 ```
 
 By default, differences in cases are ignored. To make all comparisons case-sensitive, set the `ignore_case` argument to `False`:
@@ -276,7 +310,10 @@ self.test_run("./lowercase ABC", exp_output="abc", ignore_case=False)
 For both `exp_output` and `reject_output`, regular expressions may be used, by providing a compiled pattern object from [Python's `re` module](https://docs.python.org/3/library/re.html#re.compile). Note: if a pattern object is used, arguments `ignore_consec_spaces` and `ignore_case` do not take effect. If these patterns should ignore consecutive spaces, a pattern such as `\\s+` may be used instead of spaces, while case may be ignored by using the [`re.I` flag](https://docs.python.org/3/library/re.html#re.I);
 
 ```python
-self.test_run("./valid_date", exp_output=re.compile('([12]\d{3}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01]))'))
+self.test_run(
+    "./valid_date",
+    exp_output=re.compile("([12]\d{3}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01]))"),
+)
 ```
 
 ### Providing input to the executed program
@@ -290,11 +327,11 @@ self.test_run("./square", input="3\n", exp_output="9")
 To use command-line arguments for a command, the arguments can be included either in the `command` itself, or with the `args` argument, which can be a single argument set as a string, or multiple arguments in a list:
 
 ```python
-self.test_run("./square 3 5", exp_output=["9", "25"],
-              must_match_all_outputs="all")
+self.test_run("./square 3 5", exp_output=["9", "25"], must_match_all_outputs="all")
 self.test_run("./square", args="3", exp_output="9")
-self.test_run("./square", args=["3", "5"], exp_output=["9", "25"],
-              must_match_all_outputs="all")
+self.test_run(
+    "./square", args=["3", "5"], exp_output=["9", "25"], must_match_all_outputs="all"
+)
 ```
 
 ### Limiting the execution time and output size
@@ -316,9 +353,13 @@ self.test_run("./verboseprogram", exp_output="COMPLETED", size_limit=102400)
 The test will be created and shown to the user, worth 1 point by default. The default name for a test that includes an `input` argument is: `Test with input "<INPUT>"` (where `INPUT` is the provided input). For a test that uses `args`, the default name is `Test with arguments "<ARGS>"` (where `ARGS` is the set of arguments separated by spaces). A message will also be included with a summary of expected and rejected outputs. To change these settings, use the `max_points`, `msg` and/or `name` arguments:
 
 ```python
-self.test_run("diff -q output.txt expected.txt", reject_output=["differ"],
-              name="Comparing final output", max_points=3,
-              msg="Output file should match expected file.")
+self.test_run(
+    "diff -q output.txt expected.txt",
+    reject_output=["differ"],
+    name="Comparing final output",
+    max_points=3,
+    msg="Output file should match expected file.",
+)
 ```
 
 ## Running a Check framework test suite
@@ -366,12 +407,18 @@ A typical `test.py` file for a Check-based suite will look something like this, 
 ```python title="test.py"
 import cgrader
 
+
 class DemoGrader(cgrader.CGrader):
     def tests(self):
-        self.compile_file("student_code.c", "main", add_c_file="/grade/tests/main.c",
-                          # The following must be included if compiling a Check test
-                          pkg_config_flags="check")
+        self.compile_file(
+            "student_code.c",
+            "main",
+            add_c_file="/grade/tests/main.c",
+            # The following must be included if compiling a Check test
+            pkg_config_flags="check",
+        )
         self.run_check_suite("./main")
+
 
 g = DemoGrader()
 g.start()
@@ -425,7 +472,7 @@ self.compile_file(..., enable_asan=True)
 By default, the options above will compile the code with flags that will cause the application to abort immediately when an invalid memory access is identified, or before exiting in case of memory leaks. If you are using the autograder workflow that checks the program's standard output, this functionality should capture the majority of cases, though you may want to include some reject strings that capture memory leaks. For example:
 
 ```python
-self.test_run(..., reject_output=['AddressSanitizer'])
+self.test_run(..., reject_output=["AddressSanitizer"])
 ```
 
 If you are using the check-based workflow, note that while the setup above will cause the tests to fail in these scenarios, it may not provide a useful message to students. To provide a more detailed feedback to students in this case, you are strongly encouraged to add a call to `pl_setup_asan_hooks()` at the start of your main function, like this:
@@ -497,17 +544,18 @@ self.add_test_result("Bonus point for submitting something!")
 You may also optionally add a description, message and output to the test:
 
 ```python
-self.add_test_result("Bonus point for submitting something!",
-                     description="This is for all my students, thank you for submitting.",
-                     msg="Nothing to be expected.",
-                     output=submitted_answer)
+self.add_test_result(
+    "Bonus point for submitting something!",
+    description="This is for all my students, thank you for submitting.",
+    msg="Nothing to be expected.",
+    output=submitted_answer,
+)
 ```
 
 To set the number of points the test is worth, and/or its maximum number of points, use the `points` and `max_points` arguments. The `max_points` value must be a number (integer or float), and defaults to `1` if not provided. The `points` argument can be a number, in which case it is based on the maximum number of points; or you may set `points` to a boolean-like expression, in which case `points` will be set to 0 if the expression is `False`, and to `max_points` if the expression is `True`.
 
 ```python
-self.add_test_result("I am lazy, everyone gets 70%",
-                     points=70, max_points=100)
+self.add_test_result("I am lazy, everyone gets 70%", points=70, max_points=100)
 ```
 
 This method also allows you to add one or more images to the result. Images must follow the format described in the [external grading](../externalGrading.md) documentation.

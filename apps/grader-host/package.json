@@ -21,6 +21,7 @@
     "@aws-sdk/credential-providers": "^3.1079.0",
     "@aws-sdk/lib-storage": "^3.1079.0",
     "@prairielearn/aws": "workspace:^",
+    "@prairielearn/aws-imds": "workspace:^",
     "@prairielearn/config": "workspace:^",
     "@prairielearn/docker-utils": "workspace:^",
     "@prairielearn/path-utils": "workspace:^",

@@ -118,6 +118,7 @@ A question's [`server.py`](../question/server.md) generates random parameters pe
 ```python title="server.py"
 import random
 
+
 def generate(data):
     a = random.randint(2, 5)
     b = random.randint(11, 19)

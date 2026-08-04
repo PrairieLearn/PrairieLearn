@@ -2,6 +2,8 @@ import * as crypto from 'node:crypto';
 
 import { assert, describe, it } from 'vitest';
 
+import { withConfig } from '../tests/utils/config.js';
+
 import { decryptFromStorage, encryptForStorage } from './storage-crypt.js';
 import { decrypt, encrypt } from './symmetric-crypto.js';
 
@@ -39,5 +41,42 @@ describe('symmetric-crypto', () => {
   it('empty string round-trips', () => {
     const ciphertext = encryptForStorage('');
     assert.equal(decryptFromStorage(ciphertext), '');
+  });
+
+  it('encrypts with the first key', async () => {
+    const activeKey = crypto.randomBytes(32).toString('hex');
+    const oldKey = crypto.randomBytes(32).toString('hex');
+
+    await withConfig({ databaseEncryptionKey: [activeKey, oldKey] }, () => {
+      const ciphertext = encryptForStorage('secret');
+
+      assert.equal(decrypt(ciphertext, activeKey), 'secret');
+      assert.throws(() => decrypt(ciphertext, oldKey));
+    });
+  });
+
+  it('decrypts ciphertext with a fallback key', async () => {
+    const activeKey = crypto.randomBytes(32).toString('hex');
+    const oldKey = crypto.randomBytes(32).toString('hex');
+    const ciphertext = encrypt('secret', oldKey);
+
+    await withConfig({ databaseEncryptionKey: [activeKey, oldKey] }, () => {
+      assert.equal(decryptFromStorage(ciphertext), 'secret');
+    });
+  });
+
+  it('fails when no configured key can decrypt ciphertext', async () => {
+    const ciphertext = encrypt('secret', crypto.randomBytes(32).toString('hex'));
+    const keys: [string, ...string[]] = [
+      crypto.randomBytes(32).toString('hex'),
+      crypto.randomBytes(32).toString('hex'),
+    ];
+
+    await withConfig({ databaseEncryptionKey: keys }, () => {
+      assert.throws(
+        () => decryptFromStorage(ciphertext),
+        'Stored ciphertext could not be decrypted with any configured key',
+      );
+    });
   });
 });

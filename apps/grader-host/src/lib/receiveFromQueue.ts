@@ -75,7 +75,7 @@ async function startHeartbeat(sqs: SQSClient, queueUrl: string, receiptHandle: s
   return abortController;
 }
 
-async function receiveMessageFromQueue(sqs: SQSClient, queueUrl: string) {
+async function receiveMessageFromQueue(sqs: SQSClient, queueUrl: string, signal?: AbortSignal) {
   while (true) {
     const data = await sqs.send(
       new ReceiveMessageCommand({
@@ -83,6 +83,7 @@ async function receiveMessageFromQueue(sqs: SQSClient, queueUrl: string) {
         QueueUrl: queueUrl,
         WaitTimeSeconds: 20,
       }),
+      { abortSignal: signal },
     );
     const message = data.Messages?.[0];
     if (!message || !message.Body) continue;
@@ -97,12 +98,12 @@ export async function receiveFromQueue(
   sqs: SQSClient,
   queueUrl: string,
   receiveCallback: (message: GradingJobMessage) => Promise<void>,
+  signal?: AbortSignal,
 ) {
   globalLogger.info('Waiting for next job...');
-  const { parsedMessage, receiptHandle } = await receiveMessageFromQueue(sqs, queueUrl);
+  const { parsedMessage, receiptHandle } = await receiveMessageFromQueue(sqs, queueUrl, signal);
 
   const validatedMessage = GradingJobMessageSchema.parse(parsedMessage);
-
   const heartbeatAbortController = await startHeartbeat(sqs, queueUrl, receiptHandle);
 
   await receiveCallback(validatedMessage)
