@@ -1,8 +1,9 @@
 import { type Temporal } from '@js-temporal/polyfill';
 import { type FC, createContext, use } from 'react';
+import OverlayTrigger from 'react-bootstrap/OverlayTrigger';
+import Tooltip from 'react-bootstrap/Tooltip';
 
 import { formatDate, formatDateFriendly } from '@prairielearn/formatter';
-import { Tooltip } from '@prairielearn/ui';
 
 interface FriendlyDateProps {
   date: Date | Temporal.PlainDateTime;
@@ -26,9 +27,13 @@ export const FriendlyDate: FC<FriendlyDateProps> = ({
   const fullString = formatDate(date, timezone, fullOptions);
   if (!tooltip) return <span style={{ fontVariantNumeric: 'tabular-nums' }}>{friendlyString}</span>;
   return (
-    <Tooltip content={fullString} placement="top" delay={100} closeDelay={100}>
+    <OverlayTrigger
+      placement="top"
+      delay={{ show: 100, hide: 100 }}
+      overlay={<Tooltip>{fullString}</Tooltip>}
+    >
       <span style={{ fontVariantNumeric: 'tabular-nums' }}>{friendlyString}</span>
-    </Tooltip>
+    </OverlayTrigger>
   );
 };
 

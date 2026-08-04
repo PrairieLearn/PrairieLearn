@@ -21,16 +21,15 @@ function getTooltipShowDelay(trigger: HTMLElement): number {
 
   try {
     const delay: unknown = JSON.parse(rawDelay);
-    const showDelay = typeof delay === 'number' ? delay : getShowDelayFromObject(delay);
+    let showDelay = 0;
+    if (typeof delay === 'number') showDelay = delay;
+    if (typeof delay === 'object' && delay != null && 'show' in delay) {
+      if (typeof delay.show === 'number') showDelay = delay.show;
+    }
     return Number.isFinite(showDelay) && showDelay >= 0 ? showDelay : 0;
   } catch {
     return 0;
   }
-}
-
-function getShowDelayFromObject(delay: unknown): number {
-  if (typeof delay !== 'object' || delay == null || !('show' in delay)) return 0;
-  return typeof delay.show === 'number' ? delay.show : 0;
 }
 
 /**
@@ -45,10 +44,8 @@ class HoverableTooltipController {
   private triggerHovered = false;
   private triggerFocused = false;
   private tooltipHovered = false;
-  private dismissed = false;
   private open = false;
-  private showTimer: ReturnType<typeof setTimeout> | null = null;
-  private hideTimer: ReturnType<typeof setTimeout> | null = null;
+  private timer: ReturnType<typeof setTimeout> | null = null;
   private tooltipElement: HTMLElement | null = null;
 
   constructor(
@@ -66,14 +63,13 @@ class HoverableTooltipController {
   }
 
   dismiss() {
-    this.dismissed = true;
     this.tooltipHovered = false;
-    this.clearTimers();
+    this.clearTimer();
     this.hideTooltip();
   }
 
   dispose() {
-    this.clearTimers();
+    this.clearTimer();
     this.trigger.removeEventListener('mouseenter', this.handleTriggerMouseEnter);
     this.trigger.removeEventListener('mouseleave', this.handleTriggerMouseLeave);
     this.trigger.removeEventListener('focusin', this.handleTriggerFocusIn);
@@ -82,13 +78,12 @@ class HoverableTooltipController {
     this.trigger.removeEventListener('inserted.bs.tooltip', this.handleTooltipInserted);
     this.trigger.removeEventListener('hidden.bs.tooltip', this.handleTooltipHidden);
     this.detachTooltipElement();
+    openTooltipControllers.delete(this);
     this.tooltip.dispose();
   }
 
   private handleTriggerMouseEnter = () => {
     this.triggerHovered = true;
-    this.dismissed = false;
-    this.clearHideTimer();
     this.scheduleShow();
   };
 
@@ -98,9 +93,9 @@ class HoverableTooltipController {
   };
 
   private handleTriggerFocusIn = () => {
+    if (this.triggerFocused) return;
     this.triggerFocused = true;
-    this.dismissed = false;
-    this.clearTimers();
+    this.clearTimer();
     this.showTooltip();
   };
 
@@ -124,19 +119,20 @@ class HoverableTooltipController {
 
     this.detachTooltipElement();
     this.tooltipElement = tooltipElement;
-    tooltipElement.style.pointerEvents = 'auto';
     tooltipElement.addEventListener('mouseenter', this.handleTooltipMouseEnter);
     tooltipElement.addEventListener('mouseleave', this.handleTooltipMouseLeave);
   };
 
   private handleTooltipHidden = () => {
     this.open = false;
+    this.tooltipHovered = false;
+    openTooltipControllers.delete(this);
     this.detachTooltipElement();
   };
 
   private handleTooltipMouseEnter = () => {
     this.tooltipHovered = true;
-    this.clearHideTimer();
+    this.clearTimer();
   };
 
   private handleTooltipMouseLeave = () => {
@@ -145,39 +141,39 @@ class HoverableTooltipController {
   };
 
   private scheduleShow() {
-    this.clearShowTimer();
-    if (this.dismissed) return;
+    this.clearTimer();
 
     if (this.showDelay === 0) {
       this.showTooltip();
       return;
     }
 
-    this.showTimer = setTimeout(() => {
-      this.showTimer = null;
-      if (this.triggerHovered && !this.dismissed) this.showTooltip();
+    this.timer = setTimeout(() => {
+      this.timer = null;
+      if (this.triggerHovered) this.showTooltip();
     }, this.showDelay);
   }
 
   private scheduleHide() {
-    this.clearShowTimer();
+    this.clearTimer();
     if (this.triggerHovered || this.triggerFocused || this.tooltipHovered) return;
 
-    this.clearHideTimer();
-    this.hideTimer = setTimeout(() => {
-      this.hideTimer = null;
-      this.dismissed = false;
+    this.timer = setTimeout(() => {
+      this.timer = null;
       this.hideTooltip();
     }, TOOLTIP_CLOSE_DELAY_MS);
   }
 
   private showTooltip() {
     if (this.open || !getTooltipTitle(this.trigger)) return;
+    closeOpenTooltips();
     this.open = true;
+    openTooltipControllers.add(this);
     this.tooltip.show();
   }
 
   private hideTooltip() {
+    openTooltipControllers.delete(this);
     if (!this.open) return;
     this.open = false;
     this.tooltip.hide();
@@ -190,50 +186,24 @@ class HoverableTooltipController {
     this.tooltipElement = null;
   }
 
-  private clearTimers() {
-    this.clearShowTimer();
-    this.clearHideTimer();
-  }
-
-  private clearShowTimer() {
-    if (this.showTimer == null) return;
-    clearTimeout(this.showTimer);
-    this.showTimer = null;
-  }
-
-  private clearHideTimer() {
-    if (this.hideTimer == null) return;
-    clearTimeout(this.hideTimer);
-    this.hideTimer = null;
+  private clearTimer() {
+    if (this.timer == null) return;
+    clearTimeout(this.timer);
+    this.timer = null;
   }
 }
 
-const openTooltips = new Set<Tooltip>();
+const openTooltipControllers = new Set<HoverableTooltipController>();
 const tooltipControllers = new WeakMap<HTMLElement, HoverableTooltipController>();
-const tooltipControllersByInstance = new WeakMap<Tooltip, HoverableTooltipController>();
 
 function closeOpenTooltips() {
-  openTooltips.forEach((tooltip) => {
-    const controller = tooltipControllersByInstance.get(tooltip);
-    if (controller) controller.dismiss();
-    else tooltip.hide();
-  });
-  openTooltips.clear();
+  openTooltipControllers.forEach((controller) => controller.dismiss());
 }
 
 onDocumentReady(() => {
   observe('[data-bs-toggle~="tooltip"], [data-bs-toggle-tooltip="true"]', {
     constructor: HTMLElement,
     add(el) {
-      const title = getTooltipTitle(el);
-      const accessibleName = el.getAttribute('aria-label');
-      let tooltipDuplicatesAccessibleName = accessibleName === title;
-
-      if (!accessibleName && title && !el.textContent.trim()) {
-        el.setAttribute('aria-label', title);
-        tooltipDuplicatesAccessibleName = true;
-      }
-
       const tooltip = new window.bootstrap.Tooltip(el, {
         // Interaction is managed by HoverableTooltipController so that the tooltip
         // itself can be hovered and Escape can dismiss it without moving focus.
@@ -247,7 +217,6 @@ onDocumentReady(() => {
       });
       const controller = new HoverableTooltipController(el, tooltip);
       tooltipControllers.set(el, controller);
-      tooltipControllersByInstance.set(tooltip, controller);
 
       // Bootstrap doesn't support a single element triggering multiple things.
       // There are cases where we want this behavior, e.g. to have a tooltip
@@ -280,33 +249,20 @@ onDocumentReady(() => {
       // trigger doesn't have any text content or existing `aria-label`, we'll
       // use the `data-bs-title` as the `aria-label`. We'll also immediately
       // remove the `aria-describedby` attribute when the tooltip is shown.
-      if (tooltipDuplicatesAccessibleName) {
+      if (!el.hasAttribute('aria-label')) {
+        const title = el.dataset.bsTitle;
+        if (title && !el.textContent.trim()) {
+          el.setAttribute('aria-label', title);
+        }
         el.addEventListener('inserted.bs.tooltip', () => {
           el.removeAttribute('aria-describedby');
         });
       }
     },
     remove(el) {
-      const tooltip = window.bootstrap.Tooltip.getInstance(el);
       tooltipControllers.get(el)?.dispose();
       tooltipControllers.delete(el);
-      if (tooltip) openTooltips.delete(tooltip);
     },
-  });
-
-  // Hide other open tooltips when a new one is shown.
-  on('show.bs.tooltip', 'body', () => {
-    closeOpenTooltips();
-  });
-
-  on('shown.bs.tooltip', 'body', (event) => {
-    const tooltip = window.bootstrap.Tooltip.getInstance(event.target as HTMLElement);
-    if (tooltip) openTooltips.add(tooltip);
-  });
-
-  on('hide.bs.tooltip', 'body', (event) => {
-    const tooltip = window.bootstrap.Tooltip.getInstance(event.target as HTMLElement);
-    if (tooltip) openTooltips.delete(tooltip);
   });
 
   // WCAG 1.4.13: content shown on hover/focus must be dismissible without
