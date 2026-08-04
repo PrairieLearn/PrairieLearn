@@ -126,6 +126,8 @@ router.get(
     }
 
     const ltiClaim = new Lti13Claim(req);
+    // LTI claims are stored in the browser session. Verify that this launch
+    // belongs to the LTI instance in the route before using them.
     if (
       req.session.authn_lti13_instance_id === undefined ||
       !idsEqual(req.session.authn_lti13_instance_id, req.params.lti13_instance_id)
@@ -165,8 +167,6 @@ router.get(
           resource_link_id: ltiClaim.resource_link_id,
         });
 
-        // TODO: Set course/instance staff permissions for LMS course staff here?
-
         ltiClaim.remove();
         res.redirect(`/pl/course_instance/${courseInstanceId}/instructor/`);
         return;
@@ -182,8 +182,8 @@ router.get(
         sub,
       };
 
-      // Exact LTI authority is request-local. Consume the verified launch
-      // before selection, checked admission, or any resulting redirect/error.
+      // Remove the launch claims before admission. If admission redirects or
+      // fails, the student must relaunch from the LMS.
       ltiClaim.remove();
 
       const decision = await selectEnrollmentAdmissionDecision(
@@ -208,6 +208,8 @@ router.get(
           });
         } catch (error) {
           if (!(error instanceof EnrollmentAdmissionDeniedError)) throw error;
+          // The invitation may have changed after the read-only check. Continue
+          // to the course route, where entry is re-evaluated without LTI claims.
         }
       }
 
@@ -215,6 +217,7 @@ router.get(
       return;
     }
 
+    // No course instance is linked to this LMS context.
     // Students get a "come back later" message
     if (!role_instructor) {
       res.send(

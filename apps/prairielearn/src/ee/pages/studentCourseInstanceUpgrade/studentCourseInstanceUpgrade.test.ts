@@ -11,6 +11,7 @@ import {
   getOrCreateUser,
   withUser,
 } from '../../../tests/utils/auth.js';
+import { createEnrollment } from '../../../tests/utils/enrollment-identity.js';
 import {
   reconcilePlanGrantsForCourseInstance,
   reconcilePlanGrantsForCourseInstanceUser,
@@ -73,6 +74,25 @@ describe('studentCourseInstanceUpgrade', () => {
       const res = await fetch(assessmentsUrl);
       assert.isOk(res.ok);
       assert.equal(res.url, upgradeUrl);
+    });
+  });
+
+  it('does not let an LTI relaunch hint bypass a blocked enrollment', async () => {
+    await updateRequiredPlansForCourseInstance('1', ['basic'], '1');
+
+    await withUser(studentUser, async () => {
+      const user = await getConfiguredUser();
+      const courseInstance = await selectCourseInstanceById('1');
+      await createEnrollment({
+        courseInstance,
+        userId: user.id,
+        status: 'blocked',
+        firstJoinedAt: new Date('2024-01-01T00:00:00Z'),
+      });
+
+      const res = await fetch(`${upgradeUrl}?lti13_relaunch=1`);
+      assert.equal(res.status, 403);
+      assert.include(await res.text(), 'Enrollment blocked');
     });
   });
 

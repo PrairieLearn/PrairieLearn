@@ -55,12 +55,7 @@ export function StudentCourseInstanceUpgrade({
         : html`
             ${PriceTable({ planNames: missingPlans, planPrices })}
 
-            <form
-              method="POST"
-              action="/pl/course_instance/${courseInstance.id}/upgrade${lti13Relaunch
-                ? '?lti13_relaunch=1'
-                : ''}"
-            >
+            <form method="POST" action="/pl/course_instance/${courseInstance.id}/upgrade">
               <div class="form-check mb-3">
                 <input
                   type="checkbox"
@@ -77,6 +72,7 @@ export function StudentCourseInstanceUpgrade({
               </div>
 
               <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+              ${lti13Relaunch ? html`<input type="hidden" name="lti13_relaunch" value="1" />` : ''}
               ${missingPlans.map(
                 (plan) => html` <input type="hidden" name="unsafe_plan_names" value="${plan}" /> `,
               )}
@@ -139,7 +135,7 @@ export function CourseInstanceStudentUpdateSuccess({
   paid: boolean;
   resLocals: ResLocalsForPage<'course-instance'>;
 }) {
-  if (lti13Relaunch) {
+  if (paid && lti13Relaunch) {
     return Lti13CourseInstanceRelaunch({ course, courseInstance, resLocals });
   }
 
