@@ -805,11 +805,11 @@ function formattedLogData(data: any): HtmlSafeString {
         (typeof value === 'object' && Object.keys(value ?? {}).length > 0)
           ? html`<li>
               <details>
-                <summary><strong>${key}</strong></summary>
+                <summary><em>${key}</em></summary>
                 ${formattedLogData(value)}
               </details>
             </li>`
-          : html`<li><strong>${key}</strong>: ${formattedLogData(value)}</li>`,
+          : html`<li><em>${key}</em>: ${formattedLogData(value)}</li>`,
       )}
     </ul>`;
   }
