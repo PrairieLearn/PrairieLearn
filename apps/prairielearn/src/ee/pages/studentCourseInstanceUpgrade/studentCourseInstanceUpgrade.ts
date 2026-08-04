@@ -4,6 +4,7 @@ import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import { runInTransactionAsync } from '@prairielearn/postgres';
+import { assertNever } from '@prairielearn/utils';
 import { parseRequestBody } from '@prairielearn/zod';
 
 import { EnrollmentPage } from '../../../components/EnrollmentPage.js';
@@ -59,7 +60,7 @@ const router = Router({ mergeParams: true });
  * than admission itself: joined users may need another plan, and an enrollment
  * code is enforced when admission resumes rather than before the upgrade.
  *
- * The LTI relaunch flow also ignores ordinary self-enrollment restrictions.
+ * The LTI relaunch flow also ignores self-enrollment restrictions.
  * The query parameter that selects that flow is not enrollment authority, so
  * this page only handles the upgrade and then sends the user back to the LMS.
  * A fresh LTI launch must revalidate the exact invitation before admitting the
@@ -70,11 +71,19 @@ function getAdmissionIneligibilityReason(
   lti13Relaunch: boolean,
 ): EnrollmentIneligibilityReason | null {
   if (decision.allowed) return null;
-  if (decision.reason === 'already_joined' || decision.reason === 'enrollment_code_required') {
-    return null;
+  switch (decision.reason) {
+    case 'already_joined':
+    case 'enrollment_code_required':
+      return null;
+    case 'blocked':
+      return decision.reason;
+    case 'institution-restriction':
+    case 'self-enrollment-disabled':
+    case 'self-enrollment-expired':
+      return lti13Relaunch ? null : decision.reason;
+    default:
+      return assertNever(decision.reason);
   }
-  if (lti13Relaunch && decision.reason !== 'blocked') return null;
-  return decision.reason;
 }
 
 /**
@@ -115,13 +124,12 @@ router.get(
     });
     const ineligibilityReason = getAdmissionIneligibilityReason(admissionDecision, lti13Relaunch);
     if (ineligibilityReason !== null) {
-      res.status(403).send(EnrollmentPage({ resLocals: res.locals, type: ineligibilityReason }));
+      res.status(403).send(EnrollmentPage({ reason: ineligibilityReason, resLocals: res.locals }));
       return;
     }
 
-    // Check if the student is *actually* missing plan grants, or if they just
-    // came across this URL on accident. If they have all the necessary plan grants,
-    // redirect them back to the assessments page.
+    // If no upgrade is needed, return normal requests to the assessments page.
+    // An interrupted LTI admission instead requires a fresh launch from the LMS.
     const hasPlanGrants = await checkPlanGrantsForLocals(res.locals);
     if (hasPlanGrants) {
       if (lti13Relaunch) {
@@ -176,8 +184,9 @@ router.post(
       const course = CourseSchema.parse(res.locals.course);
       const courseInstance = CourseInstanceSchema.parse(res.locals.course_instance);
       const user = UserSchema.parse(res.locals.authn_user);
-      const lti13Relaunch = shouldUseLti13RelaunchFlow(req.query.lti13_relaunch, res.locals);
+      const lti13Relaunch = shouldUseLti13RelaunchFlow(req.body.lti13_relaunch, res.locals);
 
+      // Recheck admission eligibility before creating the Stripe checkout session.
       const admissionDecision = await selectEnrollmentAccessDecision({
         course,
         courseInstance,
@@ -378,7 +387,7 @@ router.get(
         CourseInstanceStudentUpdateSuccess({
           course,
           courseInstance,
-          lti13Relaunch: false,
+          lti13Relaunch,
           paid: false,
           resLocals: res.locals,
         }),

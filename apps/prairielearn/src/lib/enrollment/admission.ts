@@ -23,6 +23,7 @@ import {
   selectEnrollmentIdentityClassification,
 } from './identity.js';
 import {
+  EnrollmentAdmissionDeniedError,
   type SelectableEnrollmentAdmissionSource,
   admitUserToCourseInstance,
 } from './reconciliation.js';
@@ -227,8 +228,8 @@ function createAdmissionValidator({
 
     // Reconciliation has already matched an exact LTI link and subject against
     // the locked invitation. Do not reinterpret that request-local authority as
-    // an ordinary UIN, UID, or self-enrollment source. Other sources must still
-    // pass the ordinary admission policy using the locked classification.
+    // a UIN, UID, or self-enrollment source. Other sources must still pass the
+    // admission policy using the locked classification.
     if (!(source.type === 'invitation' && source.matchedBy === 'lti13')) {
       const decision = getEnrollmentAccessDecision({
         classification,
@@ -283,23 +284,32 @@ export async function admitUserForCourseInstanceAccess({
   reqDate: Date;
   userId: string;
 }) {
-  return await admitUserToCourseInstance({
-    actor: {
-      agentAuthnUserId: userId,
-      agentUserId: userId,
-    },
-    courseInstanceId,
-    selectSource: getEnrollmentAdmissionSource,
-    userId,
-    validateAdmission: createAdmissionValidator({
+  try {
+    return await admitUserToCourseInstance({
+      actor: {
+        agentAuthnUserId: userId,
+        agentUserId: userId,
+      },
       courseInstanceId,
-      enrollmentCode,
-      ip,
-      isAdministrator,
-      reqDate,
+      selectSource: getEnrollmentAdmissionSource,
       userId,
-    }),
-  });
+      validateAdmission: createAdmissionValidator({
+        courseInstanceId,
+        enrollmentCode,
+        ip,
+        isAdministrator,
+        reqDate,
+        userId,
+      }),
+    });
+  } catch (error) {
+    // The read-only preflight can become stale before admission locks and
+    // revalidates the enrollment candidates.
+    if (error instanceof EnrollmentAdmissionDeniedError && error.decision.reason === 'blocked') {
+      throw new HttpStatusError(403, getEligibilityErrorMessage('blocked'));
+    }
+    throw error;
+  }
 }
 
 /**

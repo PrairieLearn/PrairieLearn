@@ -50,7 +50,7 @@ export default typedAsyncHandler<'course-instance'>(async (req, res, next) => {
       );
       return;
     } else {
-      res.status(403).send(EnrollmentPage({ resLocals: res.locals, type: decision.reason }));
+      res.status(403).send(EnrollmentPage({ reason: decision.reason, resLocals: res.locals }));
       return;
     }
   }
