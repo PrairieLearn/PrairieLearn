@@ -1,4 +1,4 @@
-import { afterAll, assert, beforeAll, describe, it, test } from 'vitest';
+import { afterAll, assert, beforeAll, describe, expect, it, test } from 'vitest';
 
 import { execute, queryOptionalRow, queryRow } from '@prairielearn/postgres';
 
@@ -7,6 +7,7 @@ import { dangerousFullSystemAuthz } from '../lib/authz-data-lib.js';
 import { getSelfEnrollmentLinkUrl } from '../lib/client/url.js';
 import { config } from '../lib/config.js';
 import { type CourseInstance, EnrollmentSchema } from '../lib/db-types.js';
+import { admitUserForCourseInstanceAccess } from '../lib/enrollment/admission.js';
 import { EXAMPLE_COURSE_PATH } from '../lib/paths.js';
 import { selectCourseInstanceById } from '../models/course-instances.js';
 import {
@@ -23,7 +24,7 @@ import {
   updateCourseInstanceSettings,
   withUser,
 } from './utils/auth.js';
-import { createEnrollment } from './utils/enrollment-identity.js';
+import { createEnrollment, selectEnrollments } from './utils/enrollment-identity.js';
 import { enrollUser, unenrollUser } from './utils/enrollments.js';
 
 const siteUrl = 'http://localhost:' + config.serverPort;
@@ -316,44 +317,74 @@ describe('Self-enrollment settings transitions', () => {
     });
   });
 
-  it('admits an institution UIN invitation without self-enrollment or a code', async () => {
-    await deleteEnrollmentsInCourseInstance('1');
-    await updateCourseInstanceSettings('1', {
-      selfEnrollmentEnabled: false,
-      selfEnrollmentUseEnrollmentCode: true,
-      restrictToInstitution: false,
-    });
-
-    const uinUser = await getOrCreateUser({
-      uid: 'uin-invitation@example.com',
-      name: 'UIN Invitation Student',
-      uin: 'invitation-uin',
-      email: 'uin-invitation@example.com',
-      institutionId: '1',
-    });
-    const invitation = await createEnrollment({
-      courseInstance,
-      pendingUin: uinUser.uin,
-      status: 'invited',
-    });
-
-    await withUser(uinUser, async () => {
-      const response = await fetch(assessmentsUrl);
-      assert.equal(response.status, 200);
-
-      const enrollment = await selectOptionalEnrollmentByUserId({
-        userId: uinUser.id,
-        courseInstance,
-        requiredRole: ['System'],
-        authzData: dangerousFullSystemAuthz(),
+  it.each([
+    {
+      name: 'without a bound enrollment',
+      prefix: 'uin-invitation',
+      boundStatus: null,
+      expectedHttpStatus: 200,
+      expectedPersistedStatuses: ['joined'],
+    },
+    {
+      name: 'paired with a left enrollment',
+      prefix: 'left-with-invitation',
+      boundStatus: 'left' as const,
+      expectedHttpStatus: 200,
+      expectedPersistedStatuses: ['joined'],
+    },
+    {
+      name: 'paired with a removed enrollment',
+      prefix: 'removed-with-invitation',
+      boundStatus: 'removed' as const,
+      expectedHttpStatus: 403,
+      expectedPersistedStatuses: ['removed', 'invited'],
+    },
+  ])(
+    'handles an institution UIN invitation $name',
+    async ({ prefix, boundStatus, expectedHttpStatus, expectedPersistedStatuses }) => {
+      await deleteEnrollmentsInCourseInstance('1');
+      await updateCourseInstanceSettings('1', {
+        selfEnrollmentEnabled: false,
+        selfEnrollmentUseEnrollmentCode: true,
+        restrictToInstitution: false,
       });
-      assert.isNotNull(enrollment);
-      assert.equal(enrollment.id, invitation.id);
-      assert.equal(enrollment.status, 'joined');
-      assert.equal(enrollment.user_id, uinUser.id);
-      assert.isNull(enrollment.pending_uin);
-    });
-  });
+
+      const user = await getOrCreateUser({
+        uid: `${prefix}@example.com`,
+        name: prefix,
+        uin: prefix,
+        email: `${prefix}@example.com`,
+        institutionId: '1',
+      });
+      const enrollmentIds: string[] = [];
+      if (boundStatus !== null) {
+        const boundEnrollment = await createEnrollment({
+          courseInstance,
+          userId: user.id,
+          status: boundStatus,
+          firstJoinedAt: new Date('2024-01-01T00:00:00Z'),
+        });
+        enrollmentIds.push(boundEnrollment.id);
+      }
+      const invitation = await createEnrollment({
+        courseInstance,
+        pendingUin: user.uin,
+        status: 'invited',
+      });
+      enrollmentIds.push(invitation.id);
+
+      await withUser(user, async () => {
+        const response = await fetch(assessmentsUrl);
+        assert.equal(response.status, expectedHttpStatus);
+      });
+
+      const persistedEnrollments = await selectEnrollments(enrollmentIds);
+      assert.deepEqual(
+        persistedEnrollments.map((enrollment) => enrollment.status),
+        expectedPersistedStatuses,
+      );
+    },
+  );
 
   it('does not allow rejected user to self-enroll via the assessments endpoint when self-enrollment is disabled', async () => {
     await deleteEnrollmentsInCourseInstance('1');
@@ -494,6 +525,19 @@ describe('Self-enrollment settings transitions', () => {
       });
       assert.isNotNull(finalEnrollment);
       assert.equal(finalEnrollment.status, 'blocked');
+    });
+
+    await expect(
+      admitUserForCourseInstanceAccess({
+        courseInstanceId: courseInstance.id,
+        ip: null,
+        isAdministrator: false,
+        reqDate: new Date(),
+        userId: blockedUser.id,
+      }),
+    ).rejects.toMatchObject({
+      message: 'You are blocked from accessing this course',
+      status: 403,
     });
   });
 

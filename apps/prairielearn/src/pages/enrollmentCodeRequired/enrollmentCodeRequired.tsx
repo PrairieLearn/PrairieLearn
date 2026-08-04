@@ -75,7 +75,7 @@ router.get(
       return;
     }
     if (decision.reason !== 'enrollment_code_required') {
-      res.status(403).send(EnrollmentPage({ resLocals: res.locals, type: decision.reason }));
+      res.status(403).send(EnrollmentPage({ reason: decision.reason, resLocals: res.locals }));
       return;
     }
 
