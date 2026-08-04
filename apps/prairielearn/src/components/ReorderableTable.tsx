@@ -17,7 +17,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { type ReactNode, useMemo } from 'react';
 
-import { OverlayTrigger } from '@prairielearn/ui';
+import { Tooltip } from '@prairielearn/ui';
 
 /**
  * Drag-and-drop context for a table whose rows can be reordered. Rows are
@@ -84,7 +84,7 @@ type ReorderableRowHandle = ReturnType<typeof useReorderableRow>;
 /**
  * The drag/edit/delete actions cell of a reorderable row. When
  * `deleteDisabledReason` is set, the delete button is inert and explains why
- * in a click tooltip instead.
+ * in a tooltip instead.
  */
 export function ReorderableRowActionsCell({
   trackingId,
@@ -124,22 +124,16 @@ export function ReorderableRowActionsCell({
           <i className="fa fa-edit" aria-hidden="true" />
         </button>
         {deleteDisabledReason ? (
-          <OverlayTrigger
-            trigger="click"
-            popover={{
-              body: deleteDisabledReason,
-              props: { id: `delete-popover-${trackingId}` },
-            }}
-            rootClose
-          >
+          <Tooltip id={`delete-tooltip-${trackingId}`} content={deleteDisabledReason}>
             <button
               className="btn btn-sm btn-ghost"
               type="button"
-              aria-label={deleteDisabledReason}
+              aria-label={deleteLabel}
+              aria-disabled="true"
             >
               <i className="fa fa-trash text-muted" aria-hidden="true" />
             </button>
-          </OverlayTrigger>
+          </Tooltip>
         ) : (
           <button
             className="btn btn-sm btn-ghost"
