@@ -73,7 +73,7 @@ type AdmissionInput = {
     }
 );
 
-describe('checked enrollment admission', { concurrent: false }, () => {
+describe('admitUserToCourseInstance', { concurrent: false }, () => {
   let courseInstance: CourseInstance;
 
   beforeAll(async () => {
@@ -213,7 +213,7 @@ describe('checked enrollment admission', { concurrent: false }, () => {
     );
   });
 
-  it('inserts a self-enrollment admission', async () => {
+  it('validates, inserts, and audits a first-time self-enrollment', async () => {
     const insertedUser = await createUser({ prefix: 'self-enrollment-insert' });
     let insertValidationCalls = 0;
     const inserted = await admit(insertedUser, {
@@ -239,7 +239,11 @@ describe('checked enrollment admission', { concurrent: false }, () => {
     ]);
   });
 
-  it('uses locked policy selection and pins invitation authority to an enrollment', async () => {
+  // Some callers cannot choose between self-enrollment and invitation policy
+  // until admission classifies the user's current identity matches. If the
+  // caller previously selected a specific invitation, admission must not
+  // silently substitute a different matching enrollment.
+  it('selects an admission source and requires the expected invitation enrollment', async () => {
     const user = await createUser({ prefix: 'source-policy' });
     const invitation = await createEnrollment({ courseInstance, pendingUin: user.uin });
     let validatedSource: EnrollmentAdmissionSource | undefined;
@@ -277,7 +281,10 @@ describe('checked enrollment admission', { concurrent: false }, () => {
     expect(admitted.id).toBe(invitation.id);
   });
 
-  it('requires exact LTI authority and clears every pending field in the admitting update', async () => {
+  // UID and UIN deliberately also match this enrollment. A pending LTI
+  // invitation must still be admitted through its exact LTI link and subject,
+  // not through another identity attached to the same enrollment.
+  it('admits an LTI invitation only through its exact LTI source and clears pending identity fields', async () => {
     const user = await createUser({ prefix: 'lti-admission' });
     const link = await createLti13CourseInstance(courseInstance);
     const invitation = await createEnrollment({
@@ -321,7 +328,9 @@ describe('checked enrollment admission', { concurrent: false }, () => {
     });
   });
 
-  it('uses the bound survivor, union/max/union dependent rules, earliest join, and complete audits', async () => {
+  // Student labels and assessment access-control rules are unioned, while
+  // publishing extensions retain the one with the latest end date.
+  it('merges dependents and history into the bound survivor and audits every changed enrollment', async () => {
     const user = await createUser({ prefix: 'dependent-merge' });
     const earliest = new Date('2021-01-01T00:00:00Z');
     const pendingUid = await createEnrollment({
