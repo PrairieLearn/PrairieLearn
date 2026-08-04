@@ -34,15 +34,15 @@ export async function selectSharedStateObjectsForQuestion({
   question: Question;
 }): Promise<Record<string, ResolvedSharedStateObject>> {
   const resolved: Record<string, ResolvedSharedStateObject> = {};
-  for (const name of question.shared_state_access) {
+  for (const [localName, objectName] of Object.entries(question.shared_state_access)) {
     const objectWithRevision = await selectSharedStateObjectWithRevisionByName({
       course_id,
-      name,
+      name: objectName,
     });
     if (objectWithRevision?.revision == null) continue;
     if (objectWithRevision.revision.scope !== 'assessment_instance') continue;
 
-    resolved[name] = {
+    resolved[localName] = {
       id: objectWithRevision.id,
       revisionId: objectWithRevision.revision.id,
       properties: objectWithRevision.revision.properties,

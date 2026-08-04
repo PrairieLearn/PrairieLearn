@@ -6,5 +6,7 @@
   "type": "v3",
   "singleVariant": true,
   "showCorrectAnswer": false,
-  "sharedStateAccess": ["assessmentTheme"]
+  "sharedStateAccess": {
+    "assessmentTheme": "assessmentTheme"
+  }
 }

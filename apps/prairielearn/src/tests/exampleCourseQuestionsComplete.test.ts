@@ -330,10 +330,9 @@ describe('Internally graded question lifecycle tests', { timeout: 60_000 }, func
         string,
         Record<string, string | number | boolean>
       > = Object.fromEntries(
-        ((info.sharedStateAccess ?? []) as string[]).map((name) => [
-          name,
-          sharedStateDefaultsByObjectName[name],
-        ]),
+        Object.entries((info.sharedStateAccess ?? {}) as Record<string, string>).map(
+          ([localName, objectName]) => [localName, sharedStateDefaultsByObjectName[objectName]],
+        ),
       );
 
       // Prepare and generate

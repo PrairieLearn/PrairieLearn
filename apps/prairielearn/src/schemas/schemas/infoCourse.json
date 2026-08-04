@@ -223,6 +223,12 @@
               }
             ]
           },
+          "uuid": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})$",
+            "description": "Unique identifier (UUID) for this shared-state object. Keep this stable when copying the object to another course."
+          },
           "scope": {
             "type": "string",
             "enum": ["assessmentInstance", "courseInstance"],
@@ -280,7 +286,7 @@
             "description": "The named, typed properties that make up this object."
           }
         },
-        "required": ["scope", "dataVersion", "properties"],
+        "required": ["uuid", "scope", "dataVersion", "properties"],
         "additionalProperties": false,
         "description": "A single shared-state object definition."
       },

@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { CommentJsonSchema } from './comment.js';
+import { SHARED_STATE_OBJECT_NAME_REGEXP } from './infoCourse.js';
 
 // This schema is intentionally a subset of JSON Schema. The `type`, `default`,
 // and `enum` keys map directly to their JSON Schema equivalents, which allows
@@ -308,10 +309,27 @@ export const QuestionJsonSchema = z
       .default(false),
     preferences: QuestionPreferencesSchemaJsonSchema.optional(),
     sharedStateAccess: z
-      .array(z.string().describe('The name of a shared-state object declared in infoCourse.json.'))
-      .describe('The shared-state objects that this question reads and writes.')
+      .record(
+        z
+          .string()
+          .regex(
+            SHARED_STATE_OBJECT_NAME_REGEXP,
+            'Shared-state access names must start with a letter and contain only letters, numbers, underscores, and hyphens.',
+          )
+          .describe('The local name used to access this shared-state object in server.py.'),
+        z
+          .string()
+          .regex(
+            SHARED_STATE_OBJECT_NAME_REGEXP,
+            'Shared-state object names must start with a letter and contain only letters, numbers, underscores, and hyphens.',
+          )
+          .describe('The name of a shared-state object declared in infoCourse.json.'),
+      )
+      .describe(
+        'The shared-state objects that this question reads and writes, keyed by the local name used in server.py.',
+      )
       .optional()
-      .default([]),
+      .default({}),
   })
   .strict()
   .describe('Info files for questions.')

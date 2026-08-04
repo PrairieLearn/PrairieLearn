@@ -1477,7 +1477,7 @@ export const QuestionSchema = z.object({
   qid: z.string().nullable(),
   share_publicly: z.boolean(),
   share_source_publicly: z.boolean(),
-  shared_state_access: z.array(z.string()),
+  shared_state_access: z.record(z.string(), z.string()),
   show_correct_answer: z.boolean().nullable(),
   single_variant: z.boolean().nullable(),
   sync_errors: z.string().nullable(),
@@ -1582,6 +1582,7 @@ export const SharedStateObjectSchema = z.object({
   current_revision_id: IdSchema.nullable(),
   id: IdSchema,
   name: z.string(),
+  uuid: z.string(),
 });
 export type SharedStateObject = z.infer<typeof SharedStateObjectSchema>;
 

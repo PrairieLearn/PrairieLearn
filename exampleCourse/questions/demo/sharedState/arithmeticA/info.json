@@ -4,5 +4,7 @@
   "topic": "Demo",
   "tags": ["v3"],
   "type": "v3",
-  "sharedStateAccess": ["assessmentTheme"]
+  "sharedStateAccess": {
+    "assessmentTheme": "assessmentTheme"
+  }
 }

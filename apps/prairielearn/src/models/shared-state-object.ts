@@ -13,6 +13,7 @@ import type { SharedStateObjectPropertiesJson } from '../schemas/infoCourse.js';
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 export interface SharedStateObjectDefinition {
+  uuid: string;
   scope: 'assessmentInstance' | 'courseInstance';
   dataVersion: number;
   properties: SharedStateObjectPropertiesJson;
@@ -33,8 +34,8 @@ export type SharedStateObjectWithRevision = z.infer<typeof SharedStateObjectWith
 
 /**
  * Looks up a shared-state object and its currently active revision by name
- * within a course. Used at runtime to resolve which objects a question's
- * `sharedStateAccess` list refers to.
+ * within a course. Used at runtime to resolve which course objects a
+ * question's `sharedStateAccess` bindings refer to.
  */
 export async function selectSharedStateObjectWithRevisionByName({
   course_id,
@@ -79,11 +80,30 @@ export async function syncSharedStateObjectsForCourse(
 
     if (errors.length === 0) {
       await sqldb.runInTransactionAsync(async () => {
-        const object = await sqldb.queryRow(
-          sql.select_or_insert_object,
-          { course_id, name },
+        const matchingObjects = await sqldb.queryRows(
+          sql.select_objects_by_uuid_or_name,
+          { course_id, name, uuid: definition.uuid },
           SharedStateObjectSchema,
         );
+        if (matchingObjects.length > 1) {
+          errors.push(
+            `name "${name}" and UUID "${definition.uuid}" match different existing shared-state objects.`,
+          );
+          return;
+        }
+
+        const object =
+          matchingObjects.length === 0
+            ? await sqldb.queryRow(
+                sql.insert_object,
+                { course_id, name, uuid: definition.uuid },
+                SharedStateObjectSchema,
+              )
+            : await sqldb.queryRow(
+                sql.update_object_identity,
+                { object_id: matchingObjects[0].id, name, uuid: definition.uuid },
+                SharedStateObjectSchema,
+              );
         const state = await sqldb.queryOptionalRow(
           sql.select_object_state,
           { object_id: object.id },

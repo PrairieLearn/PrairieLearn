@@ -2,7 +2,7 @@
 
 Shared state lets questions in the same assessment instance read and write a small amount of common data, so that a later question can build on what a student did in an earlier one. For example, a "pick a theme" question can set a theme that later questions use to flavor their wording, or two questions can cooperate on a single multi-step design (see [issue #5501](https://github.com/PrairieLearn/PrairieLearn/issues/5501) for the motivating discussion).
 
-A course declares one or more **shared-state objects** in `infoCourse.json`. Each object is a small, flat, typed record — a name, a list of typed properties with defaults, and a data version. Questions declare which objects they need in their own `info.json`, and access the current value through `data["shared_state"]` in `server.py`.
+A course declares one or more **shared-state objects** in `infoCourse.json`. Each object is a small, flat, typed record — a name, a stable UUID, a list of typed properties with defaults, and a data version. Questions bind those course objects to local names in their own `info.json`, and access the current value through `data["shared_state"]` in `server.py`.
 
 ## Defining a shared-state object
 
@@ -12,6 +12,7 @@ Add a `sharedState` entry to `infoCourse.json`:
 {
   "sharedState": {
     "assessmentTheme": {
+      "uuid": "0a6fd77e-0a2d-43cd-a174-58279404e54e",
       "scope": "assessmentInstance",
       "dataVersion": 1,
       "properties": {
@@ -26,6 +27,7 @@ Add a `sharedState` entry to `infoCourse.json`:
 }
 ```
 
+- **`uuid`**: a stable identifier for this logical shared-state object. Keep it the same when copying the object definition to another course so PrairieLearn can recognize that copied questions are referring to the same object, even if the course-local name changes.
 - **`scope`**: the lifetime of the object's values. Only `"assessmentInstance"` is currently supported — values are shared across all questions within one student's (or one group's) attempt at an assessment, and are independent between different assessment instances. Course-instance-wide scope (sharing across assessments, or across a whole semester) is not yet implemented.
 - **`dataVersion`**: a positive integer you control. It's a compatibility boundary: bump it whenever you make a breaking change to `properties` (changing a property's type or default, removing or renaming a property, or narrowing an `enum`). Bumping it resets every assessment instance's stored value for that object back to the new schema's defaults. Adding a property or widening an `enum` doesn't require a bump. PrairieLearn will report a sync error if it detects a breaking change without a version bump, or if `dataVersion` decreases from a value that was already used.
 - **`properties`**: a flat map of property name to `{ type, default, enum? }`, using the same `string` / `number` / `boolean` types (and optional `enum`) as [question preferences](preferences.md).
@@ -36,23 +38,25 @@ A question that reads or writes a shared-state object must declare it in its own
 
 ```json title="info.json"
 {
-  "sharedStateAccess": ["assessmentTheme"]
+  "sharedStateAccess": {
+    "themeState": "assessmentTheme"
+  }
 }
 ```
 
-Sync reports an error if a question declares access to an object name that isn't defined in the course's `sharedState`.
+The key (`"themeState"`) is the local name that appears in `server.py`; the value (`"assessmentTheme"`) is the course-level object name declared in `infoCourse.json`. This indirection means a question can be copied to another course without rewriting Python code, even if the destination course uses a different JSON name for the same shared-state object. Sync reports an error if a question binds to an object name that isn't defined in the course's `sharedState`.
 
-A question that declares `sharedStateAccess` cannot also set `shareSourcePublicly`: copying a question's source into another course doesn't yet carry over its shared-state object definition, so this combination is rejected as a sync error. [Sharing the question itself](../contentSharing.md) (`sharePublicly`, or via a sharing set) is unaffected — the shared-state object continues to resolve against the question's owning course.
+When copying a source-shared question to another course, copy the corresponding `sharedState` object definition into the destination course's `infoCourse.json`, keeping the same `uuid`. The question's `sharedStateAccess` value can then be adjusted to point at the destination course's object name while leaving `server.py` unchanged. [Sharing the question itself](../contentSharing.md) (`sharePublicly`, or via a sharing set) is unaffected — the shared-state object continues to resolve against the question's owning course.
 
 ## Using shared state in `server.py`
 
-Declared objects are available under `data["shared_state"]`, keyed by object name, in `generate`, `prepare`, `parse`, and `grade`. For example, a "pick an assessment theme" question can write the student's choice when it's graded:
+Declared objects are available under `data["shared_state"]`, keyed by the local name from `sharedStateAccess`, in `generate`, `prepare`, `parse`, and `grade`. For example, a "pick an assessment theme" question can write the student's choice when it's graded:
 
 ```python title="server.py"
 def grade(data):
     theme = data["submitted_answers"].get("theme")
     if theme in ("sports", "cooking", "travel"):
-        data["shared_state"]["assessmentTheme"]["theme"] = theme
+        data["shared_state"]["themeState"]["theme"] = theme
     data["score"] = 1.0
 ```
 
@@ -66,7 +70,7 @@ THEME_PROMPTS = {
 }
 
 def generate(data):
-    theme = data["shared_state"]["assessmentTheme"]["theme"]
+    theme = data["shared_state"]["themeState"]["theme"]
     a, b = 6, 4
     data["params"]["prompt"] = THEME_PROMPTS[theme].format(a=a, b=b)
     data["correct_answers"]["c"] = a * b

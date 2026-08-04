@@ -43,6 +43,8 @@ import { enrollUser } from './utils/enrollments.js';
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const OBJECT_NAME = 'labProgress';
+const OBJECT_UUID = '78d2296e-7513-42f4-846e-c0b839921def';
+const LOCAL_OBJECT_NAME = 'progressState';
 
 const COURSE_A_SHARING_NAME = 'shared-state-course-a';
 const COURSE_C_SHARING_NAME = 'shared-state-course-c';
@@ -60,16 +62,16 @@ def generate(data):
     pass
 
 def grade(data):
-    current = data["shared_state"]["labProgress"]["count"]
+    current = data["shared_state"]["progressState"]["count"]
     # Coerced with int() because a real HTTP submission carries this as a
     # string; direct library-level test calls already pass a real int.
-    data["shared_state"]["labProgress"]["count"] = current + int(data["submitted_answers"]["increment"])
+    data["shared_state"]["progressState"]["count"] = current + int(data["submitted_answers"]["increment"])
     data["score"] = 1
 `;
 
 const READER_SERVER_PY = `
 def generate(data):
-    data["params"]["observed_count"] = data["shared_state"]["labProgress"]["count"]
+    data["params"]["observed_count"] = data["shared_state"]["progressState"]["count"]
 `;
 
 const QUESTION_HTML = '<pl-question-panel><p>Test question.</p></pl-question-panel>';
@@ -93,6 +95,7 @@ async function buildOriginCourseDir({
   courseData.course.name = courseName;
   courseData.course.sharedState = {
     [OBJECT_NAME]: {
+      uuid: OBJECT_UUID,
       scope: 'assessmentInstance',
       dataVersion: 1,
       properties: {
@@ -106,7 +109,7 @@ async function buildOriginCourseDir({
     topic: 'Test',
     tags: ['test'],
     type: 'v3',
-    sharedStateAccess: [OBJECT_NAME],
+    sharedStateAccess: { [LOCAL_OBJECT_NAME]: OBJECT_NAME },
     sharePublicly: true,
   };
   courseData.questions[readerQid] = {
@@ -115,7 +118,7 @@ async function buildOriginCourseDir({
     topic: 'Test',
     tags: ['test'],
     type: 'v3',
-    sharedStateAccess: [OBJECT_NAME],
+    sharedStateAccess: { [LOCAL_OBJECT_NAME]: OBJECT_NAME },
     sharePublicly: true,
   };
 

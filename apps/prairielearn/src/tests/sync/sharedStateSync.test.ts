@@ -11,6 +11,8 @@ import * as helperDb from '../helperDb.js';
 import * as util from './util.js';
 
 const SHARED_STATE_OBJECT_NAME = 'labProgress';
+const SHARED_STATE_OBJECT_UUID = '8c741d31-29ff-4ddf-a14b-0f84f36e8d61';
+const SHARED_STATE_LOCAL_NAME = 'progressState';
 
 function withSharedStateDefinition(
   courseData: util.CourseData,
@@ -22,6 +24,7 @@ function withSharedStateDefinition(
 ) {
   courseData.course.sharedState = {
     [SHARED_STATE_OBJECT_NAME]: {
+      uuid: SHARED_STATE_OBJECT_UUID,
       scope: overrides.scope ?? 'assessmentInstance',
       dataVersion: overrides.dataVersion ?? 1,
       properties: overrides.properties ?? {
@@ -62,7 +65,9 @@ describe('Shared-state object syncing', () => {
   it('syncs a valid shared-state object definition', async () => {
     const courseData = util.getCourseData();
     withSharedStateDefinition(courseData);
-    courseData.questions[util.QUESTION_ID].sharedStateAccess = [SHARED_STATE_OBJECT_NAME];
+    courseData.questions[util.QUESTION_ID].sharedStateAccess = {
+      [SHARED_STATE_LOCAL_NAME]: SHARED_STATE_OBJECT_NAME,
+    };
 
     const courseDir = await util.writeCourseToTempDirectory(courseData);
     await util.syncCourseData(courseDir);
@@ -75,15 +80,20 @@ describe('Shared-state object syncing', () => {
     assert.equal(result.revision?.data_version, 1);
     assert.equal(result.revision?.scope, 'assessment_instance');
     assert.deepEqual(Object.keys(result.revision?.properties ?? {}).sort(), ['stage', 'theme']);
+    assert.equal(result.object.uuid, SHARED_STATE_OBJECT_UUID);
 
     const question = await selectSyncedQuestion(util.QUESTION_ID);
     assert.isNotOk(question?.sync_errors);
-    assert.deepEqual(question?.shared_state_access, [SHARED_STATE_OBJECT_NAME]);
+    assert.deepEqual(question?.shared_state_access, {
+      [SHARED_STATE_LOCAL_NAME]: SHARED_STATE_OBJECT_NAME,
+    });
   });
 
   it('reports an error when a question accesses an undeclared shared-state object', async () => {
     const courseData = util.getCourseData();
-    courseData.questions[util.QUESTION_ID].sharedStateAccess = ['doesNotExist'];
+    courseData.questions[util.QUESTION_ID].sharedStateAccess = {
+      [SHARED_STATE_LOCAL_NAME]: 'doesNotExist',
+    };
 
     const courseDir = await util.writeCourseToTempDirectory(courseData);
     await util.syncCourseData(courseDir);
@@ -93,18 +103,39 @@ describe('Shared-state object syncing', () => {
     assert.match(question!.sync_errors, /"doesNotExist".*not declared/);
   });
 
-  it('reports an error when a question with shared-state access is also shareSourcePublicly', async () => {
+  it('reports an error when two shared-state objects use the same UUID', async () => {
+    const courseData: util.CourseData = util.getCourseData();
+    withSharedStateDefinition(courseData);
+    courseData.course.sharedState!.otherProgress = {
+      uuid: SHARED_STATE_OBJECT_UUID,
+      scope: 'assessmentInstance',
+      dataVersion: 1,
+      properties: {
+        count: { type: 'number', default: 0 },
+      },
+    };
+
+    const courseDir = await util.writeCourseToTempDirectory(courseData);
+    await util.syncCourseData(courseDir);
+
+    const syncedCourse = await selectSyncedCourse();
+    assert.isNotNull(syncedCourse.sync_errors);
+    assert.match(syncedCourse.sync_errors, /use the same UUID/);
+  });
+
+  it('allows a question with shared-state access to be source shared', async () => {
     const courseData = util.getCourseData();
     withSharedStateDefinition(courseData);
-    courseData.questions[util.QUESTION_ID].sharedStateAccess = [SHARED_STATE_OBJECT_NAME];
+    courseData.questions[util.QUESTION_ID].sharedStateAccess = {
+      [SHARED_STATE_LOCAL_NAME]: SHARED_STATE_OBJECT_NAME,
+    };
     courseData.questions[util.QUESTION_ID].shareSourcePublicly = true;
 
     const courseDir = await util.writeCourseToTempDirectory(courseData);
     await util.syncCourseData(courseDir);
 
     const question = await selectSyncedQuestion(util.QUESTION_ID);
-    assert.isNotNull(question?.sync_errors);
-    assert.match(question!.sync_errors, /"shareSourcePublicly" cannot be used.*shared-state/);
+    assert.isNotOk(question?.sync_errors);
   });
 
   it('rejects "courseInstance" scope as not yet supported', async () => {

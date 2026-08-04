@@ -133,6 +133,7 @@
   ],
   "sharedState": {
     "assessmentTheme": {
+      "uuid": "0a6fd77e-0a2d-43cd-a174-58279404e54e",
       "scope": "assessmentInstance",
       "dataVersion": 1,
       "properties": {

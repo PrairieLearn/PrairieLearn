@@ -422,13 +422,19 @@
       }
     },
     "sharedStateAccess": {
-      "default": [],
-      "type": "array",
-      "items": {
+      "default": {},
+      "type": "object",
+      "propertyNames": {
         "type": "string",
+        "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$",
+        "description": "The local name used to access this shared-state object in server.py."
+      },
+      "additionalProperties": {
+        "type": "string",
+        "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$",
         "description": "The name of a shared-state object declared in infoCourse.json."
       },
-      "description": "The shared-state objects that this question reads and writes."
+      "description": "The shared-state objects that this question reads and writes, keyed by the local name used in server.py."
     }
   },
   "required": ["uuid", "type", "title", "topic"],

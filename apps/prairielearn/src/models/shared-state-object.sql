@@ -1,11 +1,31 @@
--- BLOCK select_or_insert_object
+-- BLOCK select_objects_by_uuid_or_name
+SELECT
+  *
+FROM
+  shared_state_objects
+WHERE
+  course_id = $course_id
+  AND (
+    uuid = $uuid
+    OR name = $name
+  )
+FOR UPDATE;
+
+-- BLOCK insert_object
 INSERT INTO
-  shared_state_objects (course_id, name)
+  shared_state_objects (course_id, uuid, name)
 VALUES
-  ($course_id, $name)
-ON CONFLICT (course_id, name) DO UPDATE
+  ($course_id, $uuid, $name)
+RETURNING
+  *;
+
+-- BLOCK update_object_identity
+UPDATE shared_state_objects
 SET
-  name = EXCLUDED.name
+  uuid = $uuid,
+  name = $name
+WHERE
+  id = $object_id
 RETURNING
   *;
 

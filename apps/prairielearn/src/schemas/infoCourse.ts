@@ -86,6 +86,11 @@ export const SharedStateObjectPropertiesJsonSchema = z.record(
 export const SharedStateObjectJsonSchema = z
   .object({
     comment: CommentJsonSchema.optional(),
+    uuid: z
+      .guid()
+      .describe(
+        'Unique identifier (UUID) for this shared-state object. Keep this stable when copying the object to another course.',
+      ),
     scope: z
       .enum(['assessmentInstance', 'courseInstance'])
       .describe(

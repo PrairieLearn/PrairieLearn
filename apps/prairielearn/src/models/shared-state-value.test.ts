@@ -18,6 +18,7 @@ import {
 import { selectOrInsertUserByUid } from './user.js';
 
 const OBJECT_NAME = 'labProgress';
+const OBJECT_UUID = 'b74f8c17-39bc-42aa-8a29-805d92a5a8a3';
 
 async function setUpObjectAndTwoAssessmentInstances(): Promise<{
   object: ResolvedSharedStateObject;
@@ -27,6 +28,7 @@ async function setUpObjectAndTwoAssessmentInstances(): Promise<{
   const courseData: util.CourseData = util.getCourseData();
   courseData.course.sharedState = {
     [OBJECT_NAME]: {
+      uuid: OBJECT_UUID,
       scope: 'assessmentInstance',
       dataVersion: 1,
       properties: {
@@ -99,6 +101,7 @@ async function setUpObjectAndTwoUsers(): Promise<{
   const courseData: util.CourseData = util.getCourseData();
   courseData.course.sharedState = {
     [OBJECT_NAME]: {
+      uuid: OBJECT_UUID,
       scope: 'assessmentInstance',
       dataVersion: 1,
       properties: {
