@@ -40,6 +40,9 @@ export type EnrollmentAccessDecision =
 function getEnrollmentAdmissionSource(
   classification: EnrollmentIdentityClassification,
 ): SelectableEnrollmentAdmissionSource {
+  // Prefer the institution-scoped identity when both invitation forms match.
+  // UIN is authoritative only within the course's institution, while UID is
+  // the fallback for invitations without that institution-scoped identity.
   if (classification.actionableInstitutionUinInvitation !== null) {
     return { type: 'invitation', matchedBy: 'institution_uin' };
   }
@@ -70,14 +73,22 @@ function getEnrollmentAccessDecision({
   user: User;
 }): EnrollmentAccessDecision {
   const boundStatus = classification.boundCandidate?.enrollment.status;
+  // An enrollment already bound to the user is authoritative: a pending
+  // invitation cannot override either existing access or a block.
   if (boundStatus === 'joined') return { allowed: false, reason: 'already_joined' };
   if (boundStatus === 'blocked') return { allowed: false, reason: 'blocked' };
 
   const source = getEnrollmentAdmissionSource(classification);
   if (source.type !== 'self_enrollment') {
+    // An actionable invitation supplies its own admission authority and is not
+    // subject to self-enrollment settings, expiration, institution
+    // restrictions, or codes.
     return { allowed: true, source };
   }
 
+  // Other bound states, such as left or removed, do not grant admission. Treat
+  // them as a fresh self-enrollment instead of allowing an old enrollment to
+  // bypass current self-enrollment policy.
   const eligibility = checkEnrollmentEligibility({
     user,
     course,
@@ -96,6 +107,13 @@ function getEnrollmentAccessDecision({
   return { allowed: true, source };
 }
 
+/**
+ * Computes a read-only admission preflight for routing and rendering. The
+ * result can become stale immediately and must not authorize a mutation;
+ * admission functions reselect identity candidates and rerun policy validation
+ * under enrollment locks. Exact LTI authority is request-local and must use
+ * {@link admitUserFromLti13Launch} instead.
+ */
 export async function selectEnrollmentAccessDecision({
   course,
   courseInstance,
@@ -155,6 +173,13 @@ async function validateEnterpriseAdmission({
   }
 }
 
+/**
+ * Creates the policy callback that reconciliation invokes after reselecting
+ * identity candidates under their enrollment locks and before mutating them.
+ * It rebuilds the course context and checks student access, source-specific
+ * admission policy, and enterprise requirements against that locked identity
+ * classification.
+ */
 function createAdmissionValidator({
   courseInstanceId,
   enrollmentCode,
@@ -188,17 +213,22 @@ function createAdmissionValidator({
         user,
       });
 
+    // Admission is self-service. `Student` requires student access and excludes
+    // course-instance staff roles; the course-role check also excludes users
+    // entering through course-level staff access.
     if (
       authzData === null ||
       courseInstance === null ||
       !hasRole(authzData, ['Student']) ||
-      authzData.course_role !== 'None' ||
-      authzData.course_instance_role !== 'None' ||
-      !authzData.has_student_access
+      authzData.course_role !== 'None'
     ) {
       throw new HttpStatusError(403, 'Access denied');
     }
 
+    // Reconciliation has already matched an exact LTI link and subject against
+    // the locked invitation. Do not reinterpret that request-local authority as
+    // an ordinary UIN, UID, or self-enrollment source. Other sources must still
+    // pass the ordinary admission policy using the locked classification.
     if (!(source.type === 'invitation' && source.matchedBy === 'lti13')) {
       const decision = getEnrollmentAccessDecision({
         classification,
@@ -218,6 +248,7 @@ function createAdmissionValidator({
       }
     }
 
+    // Invitation authority never bypasses plan grants or enrollment limits.
     await validateEnterpriseAdmission({
       authzData: makePageAuthzData({
         authzData,
@@ -231,6 +262,12 @@ function createAdmissionValidator({
   };
 }
 
+/**
+ * Performs self-service course entry for the authenticated user. `userId` is
+ * both the enrollment subject and audit actor; this is not an on-behalf-of-user
+ * API. The source is selected and policy is validated from the locked identity
+ * classification inside reconciliation.
+ */
 export async function admitUserForCourseInstanceAccess({
   courseInstanceId,
   enrollmentCode,
@@ -265,6 +302,13 @@ export async function admitUserForCourseInstanceAccess({
   });
 }
 
+/**
+ * Performs self-service admission from a fresh, verified LTI launch. The link
+ * and subject are revalidated against locked candidates, while
+ * `expectedInvitationEnrollmentId` prevents admission from silently falling
+ * back to a different matching invitation. `userId` is both the enrollment
+ * subject and audit actor.
+ */
 export async function admitUserFromLti13Launch({
   courseInstanceId,
   expectedInvitationEnrollmentId,
@@ -284,12 +328,6 @@ export async function admitUserFromLti13Launch({
   sub: string;
   userId: string;
 }) {
-  const source: EnrollmentAdmissionSource = {
-    type: 'invitation',
-    matchedBy: 'lti13',
-    lti13CourseInstanceId,
-    sub,
-  };
   return await admitUserToCourseInstance({
     actor: {
       agentAuthnUserId: userId,
@@ -297,7 +335,12 @@ export async function admitUserFromLti13Launch({
     },
     courseInstanceId,
     expectedInvitationEnrollmentId,
-    source,
+    source: {
+      type: 'invitation',
+      matchedBy: 'lti13',
+      lti13CourseInstanceId,
+      sub,
+    },
     userId,
     validateAdmission: createAdmissionValidator({
       courseInstanceId,
