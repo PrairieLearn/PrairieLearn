@@ -1,7 +1,10 @@
-import { useRef, useState } from 'react';
-import { Modal, Overlay, Tooltip } from 'react-bootstrap';
+import clsx from 'clsx';
+import { useState } from 'react';
+import { Modal } from 'react-bootstrap';
 import { FormProvider, useForm } from 'react-hook-form';
 import z from 'zod';
+
+import { Tooltip } from '@prairielearn/ui';
 
 import {
   CourseInstancePermissionsForm,
@@ -51,7 +54,6 @@ export function CopyCourseInstanceModal({
   const [selectedCourseId, setSelectedCourseId] = useState(
     courseInstanceCopyTargets?.[0]?.id ?? '',
   );
-  const buttonRef = useRef<HTMLButtonElement>(null);
   // Calculate question stats
   const questionsToCopy = questionsForCopy.filter((q) => q.should_copy).length;
   const questionsToLink = questionsForCopy.filter((q) => !q.should_copy).length;
@@ -81,25 +83,33 @@ export function CopyCourseInstanceModal({
 
   const canCopy = courseInstanceCopyTargets.length > 0;
   const hasSharingName = course.sharing_name !== null;
+  const copyButton = (
+    <button
+      className={clsx('btn btn-sm btn-outline-light', !hasSharingName && 'opacity-50')}
+      type="button"
+      aria-label="Copy course instance"
+      aria-disabled={!hasSharingName || undefined}
+      onClick={() => {
+        if (hasSharingName) setShow(true);
+      }}
+    >
+      <i className="fa fa-clone" aria-hidden="true" />
+      <span className="d-none d-sm-inline">Copy course instance</span>
+    </button>
+  );
 
   return (
     <>
-      <Overlay placement="bottom" show={!hasSharingName && show} target={buttonRef}>
-        <Tooltip show={!hasSharingName && show}>
-          This course has not set a sharing name. You cannot copy this course instance to your
-          course.
+      {hasSharingName ? (
+        copyButton
+      ) : (
+        <Tooltip
+          placement="bottom"
+          content="This course has not set a sharing name. You cannot copy this course instance to your course."
+        >
+          {copyButton}
         </Tooltip>
-      </Overlay>
-      <button
-        ref={buttonRef}
-        className="btn btn-sm btn-outline-light"
-        type="button"
-        aria-label="Copy course instance"
-        onClick={() => setShow(!show)}
-      >
-        <i className="fa fa-clone" />
-        <span className="d-none d-sm-inline">Copy course instance</span>
-      </button>
+      )}
 
       <Modal show={show && hasSharingName} size="lg" onHide={() => setShow(false)}>
         <Modal.Header closeButton>

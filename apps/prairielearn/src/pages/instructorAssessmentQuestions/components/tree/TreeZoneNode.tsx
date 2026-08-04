@@ -1,10 +1,9 @@
 import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import clsx from 'clsx';
-import { useId } from 'react';
 
 import { run } from '@prairielearn/run';
-import { OverlayTrigger } from '@prairielearn/ui';
+import { Tooltip } from '@prairielearn/ui';
 
 import type { EnumAssessmentType } from '../../../../lib/db-types.js';
 import type { TreeActions, TreeState, ZoneAssessmentForm } from '../../types.js';
@@ -44,7 +43,6 @@ export function TreeZoneNode({
 }) {
   const { editMode, selectedItem, collapsedZones, changeTracking, assessmentType } = state;
   const { setSelectedItem, dispatch, onAddQuestion, onAddAltPool, onDeleteZone } = actions;
-  const badgeTooltipId = useId();
   const isCollapsed = collapsedZones.has(zone.trackingId);
   const zonePointsMismatch = getZonePointsMismatch(zone, assessmentType);
   // This warning triggers when questions are deleted from a zone, reducing
@@ -144,15 +142,10 @@ export function TreeZoneNode({
           </span>
           <span className="d-inline-flex align-items-center gap-1 flex-wrap ms-2">
             {zonePointsMismatch && (
-              <WarningIndicator
-                tooltipId={`points-mismatch-${zone.trackingId}`}
-                label={zonePointsMismatch.label}
-                body={zonePointsMismatch.body}
-              />
+              <WarningIndicator label={zonePointsMismatch.label} body={zonePointsMismatch.body} />
             )}
             {zoneChooseExceeds && (
               <WarningIndicator
-                tooltipId={`choose-exceeds-${zone.trackingId}`}
                 label="Choose exceeds count"
                 body="Number to choose or best questions exceeds the number of questions in this zone"
               />
@@ -162,76 +155,54 @@ export function TreeZoneNode({
               // ZonePointsBadge already shows "No questions" when the zone is empty.
               if (count === 0) return null;
               return (
-                <OverlayTrigger
-                  placement="top"
-                  tooltip={{
-                    props: { id: `${badgeTooltipId}-count` },
-                    body: 'Total questions in this zone',
-                  }}
-                >
+                <Tooltip placement="top" content="Total questions in this zone">
                   <button type="button" className="btn btn-badge color-blue3">
                     {count} question{count !== 1 ? 's' : ''}
                   </button>
-                </OverlayTrigger>
+                </Tooltip>
               );
             })}
             {zone.numberChoose != null && (
-              <OverlayTrigger
+              <Tooltip
                 placement="top"
-                tooltip={{
-                  props: { id: `${badgeTooltipId}-choose` },
-                  body: `${zone.numberChoose} question${zone.numberChoose !== 1 ? 's are' : ' is'} randomly selected from this zone, spread across pools as evenly as possible.`,
-                }}
+                content={`${zone.numberChoose} question${zone.numberChoose !== 1 ? 's are' : ' is'} randomly selected from this zone, spread across pools as evenly as possible.`}
               >
                 <button type="button" className="btn btn-badge color-blue3">
                   Choose {zone.numberChoose}
                 </button>
-              </OverlayTrigger>
+              </Tooltip>
             )}
-            <ZonePointsBadge
-              zone={zone}
-              assessmentType={assessmentType}
-              tooltipId={`${badgeTooltipId}-points`}
-            />
+            <ZonePointsBadge zone={zone} assessmentType={assessmentType} />
             {zone.maxPoints != null && (
-              <OverlayTrigger
+              <Tooltip
                 placement="top"
-                tooltip={{
-                  props: { id: `${badgeTooltipId}-max` },
-                  body: 'Maximum total points from this zone that count toward the assessment',
-                }}
+                content="Maximum total points from this zone that count toward the assessment"
               >
                 <button type="button" className="btn btn-badge color-blue3">
                   Max {zone.maxPoints} pts
                 </button>
-              </OverlayTrigger>
+              </Tooltip>
             )}
             {zone.bestQuestions != null && (
-              <OverlayTrigger
+              <Tooltip
                 placement="top"
-                tooltip={{
-                  props: { id: `${badgeTooltipId}-best` },
-                  body: 'Only the highest-scoring questions in this zone count toward the total',
-                }}
+                content="Only the highest-scoring questions in this zone count toward the total"
               >
                 <button type="button" className="btn btn-badge color-blue3">
                   Best {zone.bestQuestions}
                 </button>
-              </OverlayTrigger>
+              </Tooltip>
             )}
             {zone.lockpoint && (
-              <OverlayTrigger
+              <Tooltip
                 placement="top"
-                tooltip={{
-                  props: { id: `${badgeTooltipId}-lock` },
-                  body: 'Students must complete this zone before proceeding to the next',
-                }}
+                content="Students must complete this zone before proceeding to the next"
               >
                 <button type="button" className="btn btn-badge color-blue3">
                   <i className="bi bi-lock-fill me-1" aria-hidden="true" />
                   Lockpoint
                 </button>
-              </OverlayTrigger>
+              </Tooltip>
             )}
           </span>
           <span className="flex-grow-1" />
@@ -309,11 +280,9 @@ export function TreeZoneNode({
 function ZonePointsBadge({
   zone,
   assessmentType,
-  tooltipId,
 }: {
   zone: ZoneAssessmentForm;
   assessmentType: EnumAssessmentType;
-  tooltipId: string;
 }) {
   const { autoPoints, manualPoints } = computeZonePointTotals(zone.questions, {
     bestQuestions: zone.bestQuestions,
@@ -335,16 +304,10 @@ function ZonePointsBadge({
   });
 
   return (
-    <OverlayTrigger
-      placement="top"
-      tooltip={{
-        props: { id: tooltipId },
-        body: 'Total points a student can earn in this zone',
-      }}
-    >
+    <Tooltip placement="top" content="Total points a student can earn in this zone">
       <button type="button" className="btn btn-badge color-blue3">
         {label}
       </button>
-    </OverlayTrigger>
+    </Tooltip>
   );
 }

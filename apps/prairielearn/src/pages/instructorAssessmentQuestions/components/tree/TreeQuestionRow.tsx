@@ -1,9 +1,9 @@
 import type { DraggableAttributes, DraggableSyntheticListeners } from '@dnd-kit/core';
 import clsx from 'clsx';
-import { type ReactElement, useId } from 'react';
+import type { ReactElement } from 'react';
 
 import { run } from '@prairielearn/run';
-import { OverlayTrigger } from '@prairielearn/ui';
+import { Tooltip } from '@prairielearn/ui';
 
 import { AssessmentQuestionNumber } from '../../../../components/AssessmentQuestions.js';
 import { CopyButton } from '../../../../components/CopyButton.js';
@@ -38,7 +38,6 @@ export function PointsBadge({
   zoneQuestionBlock: ZoneQuestionBlockForm;
   assessmentType: EnumAssessmentType;
 }): ReactElement | null {
-  const tooltipId = useId();
   const forceMax = question.forceMaxPoints ?? zoneQuestionBlock.forceMaxPoints;
   const autoPoints = question.autoPoints ?? zoneQuestionBlock.autoPoints;
   const manualPoints = question.manualPoints ?? zoneQuestionBlock.manualPoints;
@@ -49,18 +48,19 @@ export function PointsBadge({
     if (forceMax) {
       const total = computeQuestionTotalPoints(question, assessmentType, zoneQuestionBlock);
       return (
-        <OverlayTrigger
+        <Tooltip
           placement="top"
-          tooltip={{
-            props: { id: tooltipId },
-            body: `Force max points: student receives ${total} pts on regrade`,
-          }}
+          content={`Force max points: student receives ${total} pts on regrade`}
         >
-          <span className="text-muted small text-nowrap ms-2">
+          <span
+            className="text-muted small text-nowrap ms-2"
+            role="img"
+            aria-label="Question points"
+          >
             <i className="bi bi-pin-angle-fill me-1" aria-hidden="true" />
             {total}
           </span>
-        </OverlayTrigger>
+        </Tooltip>
       );
     }
 
@@ -97,12 +97,11 @@ export function PointsBadge({
     }
 
     return (
-      <OverlayTrigger
-        placement="top"
-        tooltip={{ props: { id: tooltipId }, body: tooltipParts.join(' · ') }}
-      >
-        <span className="text-muted small text-nowrap ms-2">{compactParts}</span>
-      </OverlayTrigger>
+      <Tooltip placement="top" content={tooltipParts.join(' · ')}>
+        <span className="text-muted small text-nowrap ms-2" role="img" aria-label="Question points">
+          {compactParts}
+        </span>
+      </Tooltip>
     );
   }
 
@@ -116,18 +115,15 @@ export function PointsBadge({
   if (forceMax) {
     const total = computeQuestionTotalPoints(question, assessmentType, zoneQuestionBlock);
     return (
-      <OverlayTrigger
+      <Tooltip
         placement="top"
-        tooltip={{
-          props: { id: tooltipId },
-          body: `Force max points: student receives ${total} pts on regrade`,
-        }}
+        content={`Force max points: student receives ${total} pts on regrade`}
       >
-        <span className="text-muted small text-nowrap ms-2">
+        <span className="text-muted small text-nowrap ms-2" role="img" aria-label="Question points">
           <i className="bi bi-pin-angle-fill me-1" aria-hidden="true" />
           {total}
         </span>
-      </OverlayTrigger>
+      </Tooltip>
     );
   }
 
@@ -165,12 +161,11 @@ export function PointsBadge({
   }
 
   return (
-    <OverlayTrigger
-      placement="top"
-      tooltip={{ props: { id: tooltipId }, body: tooltipParts.join(' · ') }}
-    >
-      <span className="text-muted small text-nowrap ms-2">{compactParts}</span>
-    </OverlayTrigger>
+    <Tooltip placement="top" content={tooltipParts.join(' · ')}>
+      <span className="text-muted small text-nowrap ms-2" role="img" aria-label="Question points">
+        {compactParts}
+      </span>
+    </Tooltip>
   );
 }
 
@@ -301,7 +296,6 @@ export function TreeQuestionRow({
           )}
           {hasManualGradingAutoPointsWarning && (
             <WarningIndicator
-              tooltipId={`manual-auto-points-${question.trackingId}`}
               label="Auto points ignored"
               body="Auto points have no effect on manually-graded questions"
             />

@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 
-import { OverlayTrigger } from '@prairielearn/ui';
+import { OverlayTrigger, Tooltip } from '@prairielearn/ui';
 
 import { AssessmentBadge } from '../../../components/AssessmentBadge.js';
 import type { AssessmentForPicker } from '../types.js';
@@ -21,35 +21,26 @@ function MarkedBadge({
   marked,
   useSetColor,
   tooltipLabel,
-  tooltipIdPrefix,
 }: {
   assessment: AssessmentForPicker;
   courseInstanceId: string;
   marked: boolean;
   useSetColor: boolean;
   tooltipLabel: string;
-  tooltipIdPrefix: string;
 }) {
   const badge = (
     <AssessmentBadge
       courseInstanceId={courseInstanceId}
       assessment={toBadgeProps(assessment, useSetColor)}
       prefix={marked ? WARNING_PREFIX : undefined}
+      data-testid={marked ? 'zone-removal-marker' : undefined}
     />
   );
   if (!marked) return badge;
   return (
-    <OverlayTrigger
-      placement="top"
-      tooltip={{
-        body: tooltipLabel,
-        props: { id: `${tooltipIdPrefix}-${courseInstanceId}-${assessment.assessment_id}` },
-      }}
-    >
-      <span className="d-inline-block" data-testid="zone-removal-marker">
-        {badge}
-      </span>
-    </OverlayTrigger>
+    <Tooltip placement="top" content={tooltipLabel}>
+      {badge}
+    </Tooltip>
   );
 }
 
@@ -116,14 +107,13 @@ export function AssessmentBadges({
   }
 
   const isMarked = (id: string) => markedAssessmentIds?.has(id) ?? false;
-  const renderBadge = (assessment: AssessmentForPicker, useSetColor: boolean, idPrefix: string) => (
+  const renderBadge = (assessment: AssessmentForPicker, useSetColor: boolean) => (
     <MarkedBadge
       assessment={assessment}
       courseInstanceId={courseInstanceId}
       marked={isMarked(assessment.assessment_id)}
       useSetColor={useSetColor}
       tooltipLabel={markedSingleLabel}
-      tooltipIdPrefix={idPrefix}
     />
   );
 
@@ -134,7 +124,7 @@ export function AssessmentBadges({
       <>
         {assessments.slice(0, 3).map((assessment) => (
           <span key={assessment.assessment_id} className="d-inline-block me-1">
-            {renderBadge(assessment, false, 'zone-removal')}
+            {renderBadge(assessment, false)}
           </span>
         ))}
         {assessments.length > 3 && (
@@ -151,7 +141,7 @@ export function AssessmentBadges({
       for (const assessment of items) {
         elements.push(
           <span key={assessment.assessment_id} className="d-inline-block me-1">
-            {renderBadge(assessment, true, 'zone-removal')}
+            {renderBadge(assessment, true)}
           </span>,
         );
       }
@@ -173,7 +163,7 @@ export function AssessmentBadges({
               <div className="d-flex flex-wrap gap-1">
                 {items.map((assessment) => (
                   <span key={assessment.assessment_id} className="d-inline-block">
-                    {renderBadge(assessment, true, 'zone-removal-popover')}
+                    {renderBadge(assessment, true)}
                   </span>
                 ))}
               </div>

@@ -433,7 +433,6 @@ export function GroupSettingsCard({
                         Min assignees{' '}
                         <HelpTooltip
                           body="Minimum number of students that must be assigned to this role."
-                          id="role-min-assignees-tooltip"
                           ariaLabel="Min assignees help"
                         />
                       </th>
@@ -441,7 +440,6 @@ export function GroupSettingsCard({
                         Max assignees{' '}
                         <HelpTooltip
                           body="Maximum number of students that can be assigned to this role. Leave blank for unlimited."
-                          id="role-max-assignees-tooltip"
                           ariaLabel="Max assignees help"
                         />
                       </th>
@@ -449,7 +447,6 @@ export function GroupSettingsCard({
                         Can assign{' '}
                         <HelpTooltip
                           body="Students with this role can assign roles to other students in the group."
-                          id="role-can-assign-tooltip"
                           ariaLabel="Can assign roles help"
                         />
                       </th>
@@ -457,7 +454,6 @@ export function GroupSettingsCard({
                         Can view{' '}
                         <HelpTooltip
                           body="Students with this role can view assessment questions by default."
-                          id="role-can-view-tooltip"
                           ariaLabel="Can view help"
                         />
                       </th>
@@ -465,7 +461,6 @@ export function GroupSettingsCard({
                         Can submit{' '}
                         <HelpTooltip
                           body="Students with this role can submit answers to assessment questions by default."
-                          id="role-can-submit-tooltip"
                           ariaLabel="Can submit help"
                         />
                       </th>

@@ -10,7 +10,7 @@ import {
 } from '@tiptap/react';
 import { type ComponentType } from 'react';
 
-import { OverlayTrigger } from '@prairielearn/ui';
+import { Tooltip } from '@prairielearn/ui';
 
 export const panelMeta = {
   'pl-question-panel': {
@@ -72,16 +72,13 @@ export const PlPanel = Node.create({
               className="d-flex align-items-center justify-content-center"
               style={{ width: '2em' }}
             >
-              <OverlayTrigger
-                placement="top"
-                tooltip={{ body: style.label, props: { id: `pl-panel-${tag}-tooltip` } }}
-              >
+              <Tooltip placement="top" content={style.label}>
                 <i
                   className={`bi ${style.icon} text-${style.color}`}
                   aria-label={style.label}
                   role="img"
                 />
-              </OverlayTrigger>
+              </Tooltip>
             </div>
             <div className="flex-grow-1 ps-2 pe-2 py-2">
               <NodeViewContent />

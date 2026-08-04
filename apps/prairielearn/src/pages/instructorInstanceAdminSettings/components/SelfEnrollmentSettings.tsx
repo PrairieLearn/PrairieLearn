@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Button, Form, InputGroup, Modal } from 'react-bootstrap';
 import { type Control, type UseFormTrigger, useWatch } from 'react-hook-form';
 
-import { OverlayTrigger } from '@prairielearn/ui';
+import { Tooltip } from '@prairielearn/ui';
 
 import { CopyButton } from '../../../components/CopyButton.js';
 import { StudentLinkSharing } from '../../../components/LinkSharing.js';
@@ -65,12 +65,7 @@ function SelfEnrollmentLink({
             ariaLabel="Copy self-enrollment link"
             className="btn-sm btn-outline-secondary"
           />
-          <OverlayTrigger
-            tooltip={{
-              body: 'View QR Code',
-              props: { id: 'self-enrollment-link-qr-code-tooltip' },
-            }}
-          >
+          <Tooltip content="View QR Code">
             <Button
               size="sm"
               variant="outline-secondary"
@@ -79,14 +74,9 @@ function SelfEnrollmentLink({
             >
               <i className="bi bi-qr-code-scan" />
             </Button>
-          </OverlayTrigger>
+          </Tooltip>
           {canEdit && (
-            <OverlayTrigger
-              tooltip={{
-                body: 'Regenerate',
-                props: { id: 'self-enrollment-link-regenerate-tooltip' },
-              }}
-            >
+            <Tooltip content="Regenerate">
               <Button
                 size="sm"
                 variant="outline-secondary"
@@ -95,7 +85,7 @@ function SelfEnrollmentLink({
               >
                 <i className="bi bi-arrow-repeat" />
               </Button>
-            </OverlayTrigger>
+            </Tooltip>
           )}
         </InputGroup>
         <small className="form-text text-muted">

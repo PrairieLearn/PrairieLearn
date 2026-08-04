@@ -9,7 +9,7 @@ import {
 } from 'react-hook-form';
 
 import { run } from '@prairielearn/run';
-import { OverlayTrigger } from '@prairielearn/ui';
+import { Tooltip } from '@prairielearn/ui';
 
 import { CopyButton } from '../../../../components/CopyButton.js';
 import type { EditorQuestionMetadata } from '../../../../lib/assessment-question.shared.js';
@@ -652,12 +652,9 @@ export function QuestionDetailPanel({
         {!editMode &&
           hasCourseInstancePermissionEdit &&
           questionData?.assessment_question_id != null && (
-            <OverlayTrigger
+            <Tooltip
               placement="top"
-              tooltip={{
-                props: { id: 'reset-variants-tooltip' },
-                body: 'Resets all existing variants for this question on this assessment, so students will get new variants on their next visit.',
-              }}
+              content="Resets all existing variants for this question on this assessment, so students will get new variants on their next visit."
             >
               <button
                 type="button"
@@ -666,7 +663,7 @@ export function QuestionDetailPanel({
               >
                 Reset question variants
               </button>
-            </OverlayTrigger>
+            </Tooltip>
           )}
       </div>
     </div>

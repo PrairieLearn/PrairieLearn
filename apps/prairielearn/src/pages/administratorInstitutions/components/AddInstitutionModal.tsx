@@ -4,7 +4,7 @@ import { Modal } from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
 import ReactMarkdown from 'react-markdown';
 
-import { OverlayTrigger } from '@prairielearn/ui';
+import { Tooltip } from '@prairielearn/ui';
 
 import { AppErrorAlert, getAppError } from '../../../lib/client/errors.js';
 import type { StaffAuthnProvider } from '../../../lib/client/safe-db-types.js';
@@ -75,6 +75,8 @@ export function AddInstitutionModal({
     ...trpc.institutions.suggestTimezone.queryOptions({ institutionName, emailDomain }),
     enabled: false,
   });
+  const suggestTimezoneDisabled =
+    timezoneQuery.isFetching || !aiSecretsConfigured || !institutionName || !emailDomain;
 
   const validTimezoneNames = new Set(availableTimezones.map((tz) => tz.name));
 
@@ -161,34 +163,25 @@ export function AddInstitutionModal({
                   </option>
                 ))}
               </select>
-              <OverlayTrigger
-                trigger={['hover', 'focus']}
+              <Tooltip
                 placement="top"
-                tooltip={{
-                  body: aiSecretsConfigured
+                content={
+                  aiSecretsConfigured
                     ? 'Uses AI web search to suggest the correct timezone based on the institution name and domain. Fill in the short name and long name first.'
-                    : 'AI features require the corresponding OpenAI key to be configured.',
-                  props: { id: 'suggest-timezone-tooltip' },
-                }}
+                    : 'AI features require the corresponding OpenAI key to be configured.'
+                }
               >
-                <span className="d-inline-block">
-                  <button
-                    type="button"
-                    className="btn btn-secondary"
-                    aria-label="Suggest timezone"
-                    aria-busy={timezoneQuery.isFetching}
-                    disabled={
-                      timezoneQuery.isFetching ||
-                      !aiSecretsConfigured ||
-                      !institutionName ||
-                      !emailDomain
-                    }
-                    onClick={handleSuggestTimezone}
-                  >
-                    {timezoneQuery.isFetching ? 'Suggesting...' : 'Suggest'}
-                  </button>
-                </span>
-              </OverlayTrigger>
+                <button
+                  type="button"
+                  className={clsx('btn btn-secondary', suggestTimezoneDisabled && 'opacity-50')}
+                  aria-label="Suggest timezone"
+                  aria-busy={timezoneQuery.isFetching}
+                  aria-disabled={suggestTimezoneDisabled || undefined}
+                  onClick={suggestTimezoneDisabled ? undefined : handleSuggestTimezone}
+                >
+                  {timezoneQuery.isFetching ? 'Suggesting...' : 'Suggest'}
+                </button>
+              </Tooltip>
             </div>
             {errors.display_timezone && (
               <div id="display_timezone-error" className="invalid-feedback d-block">

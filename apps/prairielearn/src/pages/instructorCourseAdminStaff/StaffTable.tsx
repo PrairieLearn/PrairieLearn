@@ -25,6 +25,7 @@ import {
   NuqsAdapter,
   OverlayTrigger,
   TanstackTableCard,
+  Tooltip,
   applyMultiSelectFilter,
   parseAsColumnPinningState,
   parseAsMultiSelectFilter,
@@ -949,15 +950,16 @@ function StaffTableInner({
           return name ? (
             <span>{name}</span>
           ) : (
-            <OverlayTrigger
+            <Tooltip
               placement="top"
-              tooltip={{
-                body: 'Users with name "Unknown user" either have never logged in or have an incorrect UID.',
-                props: { id: `staff-unknown-user-tooltip-${info.row.original.user.id}` },
-              }}
+              content={
+                'Users with name "Unknown user" either have never logged in or have an incorrect UID.'
+              }
             >
-              <span className="text-danger">Unknown user</span>
-            </OverlayTrigger>
+              <span className="text-danger" role="img" aria-label="Unknown user">
+                Unknown user
+              </span>
+            </Tooltip>
           );
         },
       }),

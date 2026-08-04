@@ -87,7 +87,6 @@ type ReorderableRowHandle = ReturnType<typeof useReorderableRow>;
  * in a tooltip instead.
  */
 export function ReorderableRowActionsCell({
-  trackingId,
   dragHandleProps,
   editLabel,
   deleteLabel,
@@ -95,7 +94,6 @@ export function ReorderableRowActionsCell({
   onEdit,
   onDelete,
 }: {
-  trackingId: string;
   dragHandleProps: ReorderableRowHandle['dragHandleProps'];
   editLabel: string;
   deleteLabel: string;
@@ -124,7 +122,7 @@ export function ReorderableRowActionsCell({
           <i className="fa fa-edit" aria-hidden="true" />
         </button>
         {deleteDisabledReason ? (
-          <Tooltip id={`delete-tooltip-${trackingId}`} content={deleteDisabledReason}>
+          <Tooltip content={deleteDisabledReason}>
             <button
               className="btn btn-sm btn-ghost"
               type="button"

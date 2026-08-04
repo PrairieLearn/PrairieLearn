@@ -1,7 +1,6 @@
 import clsx from 'clsx';
-import { useId } from 'react';
 
-import { OverlayTrigger } from '@prairielearn/ui';
+import { Tooltip } from '@prairielearn/ui';
 
 import type { ZoneAssessmentJson } from '../../../schemas/infoAssessment.js';
 import type { ViewType } from '../types.js';
@@ -89,8 +88,6 @@ export function EditModeToolbar({
   onSubmit: () => void;
   onCancel: () => void;
 }) {
-  const saveTooltipId = useId();
-
   if (!editMode) {
     if (!canEdit) return null;
     return (
@@ -104,20 +101,15 @@ export function EditModeToolbar({
     );
   }
 
-  const saveButton = (
-    <button
-      className={clsx(
-        'btn btn-sm mx-1',
-        saveButtonDisabled ? 'btn-outline-secondary' : 'btn-primary',
-      )}
-      type="submit"
-      disabled={saveButtonDisabled}
-      aria-label="Save"
-      {...(saveButtonDisabledReason && { 'aria-describedby': saveTooltipId })}
-    >
+  const saveButtonClassName = clsx(
+    'btn btn-sm mx-1',
+    saveButtonDisabled ? 'btn-outline-secondary' : 'btn-primary',
+  );
+  const saveButtonContent = (
+    <>
       <i className="bi bi-floppy" aria-hidden="true" />{' '}
       <span className="toolbar-btn-label">Save</span>
-    </button>
+    </>
   );
 
   return (
@@ -127,17 +119,20 @@ export function EditModeToolbar({
       <input type="hidden" name="orig_hash" value={origHash} />
       <input type="hidden" name="zones" value={JSON.stringify(zones)} />
       {saveButtonDisabledReason ? (
-        <OverlayTrigger
-          placement="bottom"
-          tooltip={{
-            props: { id: saveTooltipId },
-            body: saveButtonDisabledReason,
-          }}
-        >
-          <span style={{ cursor: 'not-allowed' }}>{saveButton}</span>
-        </OverlayTrigger>
+        <Tooltip placement="bottom" content={saveButtonDisabledReason}>
+          <span className={saveButtonClassName} role="button" tabIndex={0} aria-disabled="true">
+            {saveButtonContent}
+          </span>
+        </Tooltip>
       ) : (
-        saveButton
+        <button
+          className={saveButtonClassName}
+          type="submit"
+          disabled={saveButtonDisabled}
+          aria-label="Save"
+        >
+          {saveButtonContent}
+        </button>
       )}
       <button className="btn btn-sm btn-outline-secondary" type="button" onClick={onCancel}>
         Cancel

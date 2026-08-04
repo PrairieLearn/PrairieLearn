@@ -17,8 +17,8 @@ import { run } from '@prairielearn/run';
 import {
   type MultiSelectFilterValue,
   type NumericColumnFilterValue,
-  OverlayTrigger,
   TanstackTableCard,
+  Tooltip,
   parseAsColumnPinningState,
   parseAsColumnVisibilityStateWithColumns,
   parseAsMultiSelectFilter,
@@ -757,24 +757,17 @@ export function AssessmentQuestionTable({
                 </Dropdown>
                 {aiSubmissionGroupingEnabled &&
                   (!availableAiGradingProviders.includes('openai') ? (
-                    <OverlayTrigger
-                      tooltip={{
-                        body: 'No OpenAI API key is configured. Add a key in AI grading settings to use submission grouping.',
-                        props: { id: 'ai-grouping-no-openai-tooltip' },
-                      }}
-                    >
-                      <span style={{ display: 'inline-block' }}>
-                        <Button
-                          variant="light"
-                          size="sm"
-                          style={{ pointerEvents: 'none' }}
-                          disabled
-                        >
-                          <i className="bi bi-stars" aria-hidden="true" />
-                          <span className="d-none d-sm-inline">AI submission grouping</span>
-                        </Button>
+                    <Tooltip content="No OpenAI API key is configured. Add a key in AI grading settings to use submission grouping.">
+                      <span
+                        className="btn btn-light btn-sm"
+                        role="button"
+                        aria-label="AI submission grouping unavailable"
+                        aria-disabled="true"
+                      >
+                        <i className="bi bi-stars" aria-hidden="true" />
+                        <span className="d-none d-sm-inline">AI submission grouping</span>
                       </span>
-                    </OverlayTrigger>
+                    </Tooltip>
                   ) : (
                     <Dropdown>
                       <Dropdown.Toggle variant="light" size="sm">
@@ -828,21 +821,15 @@ export function AssessmentQuestionTable({
                 <Dropdown.Menu align="end">
                   <Dropdown.Header className="d-flex align-items-center gap-1">
                     Assign for grading
-                    <OverlayTrigger
-                      tooltip={{
-                        body: (
-                          <>
-                            Only staff with student data editor permissions can be assigned as
-                            graders
-                          </>
-                        ),
-                        props: { id: 'assign-for-grading-tooltip' },
-                      }}
-                    >
-                      <span>
-                        <i className="fas fa-question-circle text-secondary" />
-                      </span>
-                    </OverlayTrigger>
+                    <Tooltip content="Only staff with student data editor permissions can be assigned as graders">
+                      <button
+                        type="button"
+                        className="btn btn-xs btn-ghost p-0 border-0 lh-1"
+                        aria-label="More information about assigning graders"
+                      >
+                        <i className="fas fa-question-circle text-secondary" aria-hidden="true" />
+                      </button>
+                    </Tooltip>
                   </Dropdown.Header>
                   {courseStaff.map((grader) => (
                     <Dropdown.Item

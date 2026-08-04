@@ -90,7 +90,7 @@ export function StickySaveBar({
             Cancel
           </button>
           {saveDisabledReason ? (
-            <Tooltip id="pl-ui-sticky-save-bar-tooltip" content={saveDisabledReason}>
+            <Tooltip content={saveDisabledReason}>
               <span className={saveButtonClassName} role="button" tabIndex={0} aria-disabled="true">
                 {saveButtonContent}
               </span>

@@ -4,7 +4,7 @@ import { useCallback, useState } from 'react';
 import { Alert, Button, Form, Modal, Spinner } from 'react-bootstrap';
 
 import { run } from '@prairielearn/run';
-import { OverlayTrigger } from '@prairielearn/ui';
+import { Tooltip } from '@prairielearn/ui';
 import { assertNever } from '@prairielearn/utils';
 
 import {
@@ -85,6 +85,10 @@ function ModelOption({
         'opacity-75 border-transparent': !isInteractive,
       })}
       style={{ cursor: isInteractive ? 'pointer' : 'default' }}
+      role={isAvailable ? undefined : 'radio'}
+      aria-checked={isAvailable ? undefined : isSelected}
+      aria-disabled={isAvailable ? undefined : true}
+      aria-label={isAvailable ? undefined : model.name}
     >
       <div className="d-flex align-items-center justify-content-between">
         <Form.Check
@@ -113,16 +117,9 @@ function ModelOption({
   return isAvailable ? (
     option
   ) : (
-    <OverlayTrigger
-      key={model.modelId}
-      placement="top"
-      tooltip={{
-        props: { id: `model-tooltip-${model.modelId}` },
-        body: 'No API key configured for this provider',
-      }}
-    >
+    <Tooltip key={model.modelId} placement="top" content="No API key configured for this provider">
       {option}
-    </OverlayTrigger>
+    </Tooltip>
   );
 }
 
@@ -151,15 +148,18 @@ function ModelList({
           <span className="fw-semibold">Recommended</span>
           <span className="text-muted small text-end">
             Relative cost{' '}
-            <OverlayTrigger
+            <Tooltip
               placement="top"
-              tooltip={{
-                props: { id: 'cost-tooltip' },
-                body: 'Relative cost compared to the default model, based on standard token usage.',
-              }}
+              content="Relative cost compared to the default model, based on standard token usage."
             >
-              <i className="bi bi-question-circle" aria-hidden="true" />
-            </OverlayTrigger>
+              <button
+                type="button"
+                className="btn btn-link p-0 border-0 lh-1"
+                aria-label="More information about relative cost"
+              >
+                <i className="bi bi-question-circle" aria-hidden="true" />
+              </button>
+            </Tooltip>
           </span>
         </div>
         <div className="d-flex flex-column gap-1">

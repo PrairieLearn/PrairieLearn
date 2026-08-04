@@ -1,6 +1,4 @@
-import { useId } from 'react';
-
-import { OverlayTrigger } from '@prairielearn/ui';
+import { Tooltip } from '@prairielearn/ui';
 
 import { isRenderableComment } from '../../../../lib/comments.js';
 import type { ChangeTrackingResult } from '../../types.js';
@@ -24,38 +22,33 @@ export function ChangeIndicatorBadges({
   editMode: boolean;
   changeTracking: ChangeTrackingResult;
 }) {
-  const changeTooltipId = useId();
-  const commentTooltipId = useId();
-
   return (
     <>
       {editMode && changeTracking.newIds.has(trackingId) && (
-        <OverlayTrigger placement="top" tooltip={{ props: { id: changeTooltipId }, body: 'New' }}>
+        <Tooltip placement="top" content="New">
           <span className="text-primary ms-1" role="img" aria-label="New">
             ●
           </span>
-        </OverlayTrigger>
+        </Tooltip>
       )}
       {editMode && changeTracking.modifiedIds.has(trackingId) && (
-        <OverlayTrigger
-          placement="top"
-          tooltip={{ props: { id: changeTooltipId }, body: 'Modified' }}
-        >
+        <Tooltip placement="top" content="Modified">
           <span className="text-primary ms-1" role="img" aria-label="Modified">
             ●
           </span>
-        </OverlayTrigger>
+        </Tooltip>
       )}
       {isRenderableComment(comment) && (
-        <OverlayTrigger
+        <Tooltip
           placement="top"
-          tooltip={{
-            props: { id: commentTooltipId },
-            body: truncateWithEllipsis(commentToString(comment) ?? '', COMMENT_TOOLTIP_MAX_LENGTH),
-          }}
+          content={truncateWithEllipsis(commentToString(comment) ?? '', COMMENT_TOOLTIP_MAX_LENGTH)}
         >
-          <i className="bi bi-chat-left-text text-muted ms-1" aria-hidden="true" />
-        </OverlayTrigger>
+          <i
+            className="bi bi-chat-left-text text-muted ms-1"
+            aria-label="Assessment question comment"
+            role="img"
+          />
+        </Tooltip>
       )}
     </>
   );

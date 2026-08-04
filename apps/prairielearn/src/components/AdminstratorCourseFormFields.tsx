@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import { useFormContext } from 'react-hook-form';
 import ReactMarkdown from 'react-markdown';
 
-import { OverlayTrigger } from '@prairielearn/ui';
+import { Tooltip } from '@prairielearn/ui';
 
 import type { AdminInstitution } from '../lib/client/safe-db-types.js';
 import { type Timezone, formatTimezone } from '../lib/timezone.shared.js';
@@ -131,6 +131,8 @@ export function AdministratorCourseFormFields({
     }),
     enabled: false,
   });
+  const suggestPrefixDisabled =
+    suggestPrefixQuery.isFetching || !shortName.trim() || !institutionLongName;
 
   const effectivePrefix = suggestPrefixQuery.data?.prefix ?? institutionPrefix;
 
@@ -324,23 +326,22 @@ export function AdministratorCourseFormFields({
             })}
           />
           {prefixState.status === 'resolved' && !prefixState.prefix && aiSecretsConfigured && (
-            <OverlayTrigger
-              trigger={['hover', 'focus']}
+            <Tooltip
               placement="top"
-              tooltip={{
-                body: 'Use AI to suggest a repository name prefix based on the institution',
-                props: { id: 'suggest-prefix-tooltip' },
-              }}
+              content="Use AI to suggest a repository name prefix based on the institution"
             >
               <button
                 type="button"
-                className="btn btn-outline-primary flex-shrink-0"
+                className={clsx(
+                  'btn btn-outline-primary flex-shrink-0',
+                  suggestPrefixDisabled && 'opacity-50',
+                )}
                 aria-label="Suggest repository name prefix"
-                disabled={
-                  suggestPrefixQuery.isFetching || !shortName.trim() || !institutionLongName
-                }
+                aria-disabled={suggestPrefixDisabled || undefined}
                 aria-busy={suggestPrefixQuery.isFetching}
-                onClick={() => suggestPrefixQuery.refetch()}
+                onClick={() => {
+                  if (!suggestPrefixDisabled) void suggestPrefixQuery.refetch();
+                }}
               >
                 {suggestPrefixQuery.isFetching ? (
                   <i className="fa fa-spinner fa-spin" aria-hidden="true" />
@@ -348,7 +349,7 @@ export function AdministratorCourseFormFields({
                   <i className="bi bi-stars" aria-hidden="true" />
                 )}
               </button>
-            </OverlayTrigger>
+            </Tooltip>
           )}
         </div>
         {errors.repository_short_name && (

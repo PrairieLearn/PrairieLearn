@@ -1,7 +1,7 @@
 import clsx from 'clsx';
-import { useCallback, useEffect, useId, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { OverlayTrigger } from '@prairielearn/ui';
+import { Tooltip } from '@prairielearn/ui';
 
 export function CopyButton({
   text,
@@ -16,7 +16,6 @@ export function CopyButton({
 }) {
   const [copied, setCopied] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const tooltipId = useId();
 
   useEffect(() => {
     return () => {
@@ -32,12 +31,7 @@ export function CopyButton({
   }, [text]);
 
   return (
-    <OverlayTrigger
-      tooltip={{
-        body: copied ? 'Copied!' : 'Copy',
-        props: { id: tooltipId },
-      }}
-    >
+    <Tooltip content={copied ? 'Copied!' : 'Copy'}>
       <button
         type="button"
         className={clsx('btn', className)}
@@ -49,6 +43,6 @@ export function CopyButton({
       >
         <i className={copied ? 'bi bi-check' : 'bi bi-clipboard'} /> {label}
       </button>
-    </OverlayTrigger>
+    </Tooltip>
   );
 }

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Button, Form, InputGroup } from 'react-bootstrap';
 
-import { OverlayTrigger } from '@prairielearn/ui';
+import { Tooltip } from '@prairielearn/ui';
 
 import { CopyButton } from './CopyButton.js';
 import { QRCodeModal } from './QRCodeModal.js';
@@ -85,12 +85,7 @@ export function StudentLinkSharing({
           ariaLabel="Copy student link"
           className="btn-sm btn-outline-secondary"
         />
-        <OverlayTrigger
-          tooltip={{
-            body: 'View QR Code',
-            props: { id: 'student-link-qr-code-tooltip' },
-          }}
-        >
+        <Tooltip content="View QR Code">
           <Button
             size="sm"
             variant="outline-secondary"
@@ -99,7 +94,7 @@ export function StudentLinkSharing({
           >
             <i className="bi bi-qr-code-scan" />
           </Button>
-        </OverlayTrigger>
+        </Tooltip>
       </InputGroup>
       <small className="form-text text-muted">{studentLinkMessage}</small>
       <QRCodeModal

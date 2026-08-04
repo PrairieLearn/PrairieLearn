@@ -1,5 +1,5 @@
 import clsx from 'clsx';
-import { type ComponentProps, type ReactNode } from 'react';
+import { type ComponentProps, type ReactNode, useState } from 'react';
 import {
   Tooltip as AriaTooltip,
   type TooltipProps as AriaTooltipProps,
@@ -13,8 +13,8 @@ export interface TooltipProps {
   children: ComponentProps<typeof Focusable>['children'];
   /** The tooltip content. Tooltips must not contain interactive content. */
   content: ReactNode;
-  /** Optional stable ID for the tooltip. React Aria generates one when omitted. */
-  id?: string;
+  /** Controls whether the tooltip is open. Leave undefined for hover/focus behavior. */
+  isOpen?: ComponentProps<typeof AriaTooltipTrigger>['isOpen'];
   placement?: AriaTooltipProps['placement'];
 }
 
@@ -25,14 +25,13 @@ export interface TooltipProps {
  * Escape dismissal, and hover retention required by WCAG 2.1 success
  * criterion 1.4.13.
  */
-export function Tooltip({ children, content, id, placement = 'top' }: TooltipProps) {
-  const tooltipIdProps = id ? { id } : {};
+export function Tooltip({ children, content, isOpen, placement = 'top' }: TooltipProps) {
+  const [triggerIsOpen, setTriggerIsOpen] = useState(false);
 
   return (
-    <AriaTooltipTrigger delay={0}>
+    <AriaTooltipTrigger delay={0} isOpen={isOpen ?? triggerIsOpen} onOpenChange={setTriggerIsOpen}>
       <Focusable>{children}</Focusable>
       <AriaTooltip
-        {...tooltipIdProps}
         className={({ placement: actualPlacement, isEntering, isExiting }) =>
           clsx('tooltip fade', {
             show: !isEntering && !isExiting,
