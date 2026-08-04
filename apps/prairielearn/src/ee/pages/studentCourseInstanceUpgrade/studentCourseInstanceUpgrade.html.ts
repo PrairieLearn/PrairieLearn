@@ -17,6 +17,12 @@ export function StudentCourseInstanceUpgrade({
 }: {
   course: Course;
   courseInstance: CourseInstance;
+  /**
+   * Whether this request is following the LTI-specific upgrade flow. When
+   * true, the query hint is preserved through payment and the student is
+   * directed back to the LMS for a fresh launch instead of continuing into the
+   * course.
+   */
   lti13Relaunch: boolean;
   missingPlans: PlanName[];
   /**
@@ -125,6 +131,10 @@ export function CourseInstanceStudentUpdateSuccess({
 }: {
   course: Course;
   courseInstance: CourseInstance;
+  /**
+   * Whether the completed upgrade should direct the student back to the LMS
+   * for a fresh LTI launch instead of continuing into the course.
+   */
   lti13Relaunch: boolean;
   paid: boolean;
   resLocals: ResLocalsForPage<'course-instance'>;
