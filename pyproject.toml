@@ -199,9 +199,7 @@ convention = "google"
   "boolean-default-value-positional-argument",
   "boolean-positional-value-in-call",
   # ignore unused parameters in functions
-  "unused-static-method-argument",
   "unused-function-argument",
-  "unused-lambda-argument",
   "undocumented-public-module",
   "undocumented-public-function",
 ]
