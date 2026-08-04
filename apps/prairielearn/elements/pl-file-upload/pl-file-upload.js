@@ -424,11 +424,6 @@
             `<button type="button" class="btn btn-outline-secondary btn-sm me-1" id="file-delete-${uuid}-${index}">Delete</button>`,
           );
 
-          const $previewNotAvailable = $(
-            '<div class="alert alert-info mt-2 d-none" role="alert">Content preview is not available for this type of file.</div>',
-          );
-          $preview.append($previewNotAvailable);
-
           const $imgPreview = $('<img class="mw-100 mt-2 d-none"/>');
           $preview.append($imgPreview);
 
@@ -457,27 +452,33 @@
               $preview.append($objectPreview);
               this.expandPreviewForFile(fileName);
             } else {
-              if (!this.isBinary(fileData)) {
-                $preview.find('code').text(this.b64DecodeUnicode(fileData));
-              } else {
-                $preview.find('code').text('Binary file not previewed.');
-              }
-              $codePreview.removeClass('d-none');
-              this.expandPreviewForFile(fileName);
+              // First try to display the file as an image. If that fails,
+              // try to display it as text.
+              const url = this.b64ToBlobUrl(fileData);
+              $imgPreview
+                .on('load', () => {
+                  $imgPreview.removeClass('d-none');
+                  this.expandPreviewForFile(fileName);
+                  URL.revokeObjectURL(url);
+                })
+                .on('error', () => {
+                  URL.revokeObjectURL(url);
+                  if (!this.isBinary(fileData)) {
+                    $codePreview.find('code').text(this.b64DecodeUnicode(fileData));
+                  } else {
+                    $codePreview.find('code').text('Binary file not previewed.');
+                  }
+                  $codePreview.removeClass('d-none');
+                  this.expandPreviewForFile(fileName);
+                })
+                .attr('src', url);
             }
           } catch {
-            const url = this.b64ToBlobUrl(fileData);
-            $imgPreview
-              .on('load', () => {
-                $imgPreview.removeClass('d-none');
-                this.expandPreviewForFile(fileName);
-                URL.revokeObjectURL(url);
-              })
-              .on('error', () => {
-                $previewNotAvailable.removeClass('d-none');
-                URL.revokeObjectURL(url);
-              })
-              .attr('src', url);
+            $preview.append(
+              $(
+                '<div class="alert alert-info mt-2" role="alert">Content preview is not available for this type of file.</div>',
+              ),
+            );
           }
           $file.append($preview);
           const $fileButtons = $('<div class="align-self-center"></div>');
