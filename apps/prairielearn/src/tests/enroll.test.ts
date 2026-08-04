@@ -23,6 +23,7 @@ import {
   updateCourseInstanceSettings,
   withUser,
 } from './utils/auth.js';
+import { createEnrollment } from './utils/enrollment-identity.js';
 import { enrollUser, unenrollUser } from './utils/enrollments.js';
 
 const siteUrl = 'http://localhost:' + config.serverPort;
@@ -330,23 +331,24 @@ describe('Self-enrollment settings transitions', () => {
       email: 'uin-invitation@example.com',
       institutionId: '1',
     });
-    const invitation = await queryRow(
-      `INSERT INTO enrollments (course_instance_id, status, pending_uin)
-       VALUES ('1', 'invited', $pending_uin)
-       RETURNING *`,
-      { pending_uin: uinUser.uin },
-      EnrollmentSchema,
-    );
+    const invitation = await createEnrollment({
+      courseInstance,
+      pendingUin: uinUser.uin,
+      status: 'invited',
+    });
 
     await withUser(uinUser, async () => {
       const response = await fetch(assessmentsUrl);
       assert.equal(response.status, 200);
 
-      const enrollment = await queryRow(
-        'SELECT * FROM enrollments WHERE id = $enrollment_id',
-        { enrollment_id: invitation.id },
-        EnrollmentSchema,
-      );
+      const enrollment = await selectOptionalEnrollmentByUserId({
+        userId: uinUser.id,
+        courseInstance,
+        requiredRole: ['System'],
+        authzData: dangerousFullSystemAuthz(),
+      });
+      assert.isNotNull(enrollment);
+      assert.equal(enrollment.id, invitation.id);
       assert.equal(enrollment.status, 'joined');
       assert.equal(enrollment.user_id, uinUser.id);
       assert.isNull(enrollment.pending_uin);
