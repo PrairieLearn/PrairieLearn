@@ -1,9 +1,8 @@
 import crypto from 'node:crypto';
 
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { z } from 'zod';
 
-import { execute, loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, queryRow, queryScalars } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
 import { selectAssessmentByTid } from '../../models/assessment.js';
@@ -39,10 +38,6 @@ import {
 
 const sql = loadSqlEquiv(import.meta.url);
 let assessmentAccessControlRuleNumber = 90_000;
-
-async function selectIds(query: string, params: Record<string, unknown>): Promise<string[]> {
-  return (await queryRows(query, params, z.object({ id: IdSchema }))).map((row) => row.id);
-}
 
 async function selectReconciliationAuditEvents(enrollmentId: string) {
   const events = await selectAuditEventsByEnrollmentId({
@@ -446,19 +441,22 @@ describe('checked enrollment admission', { concurrent: false }, () => {
     expect(await selectEnrollments([pendingUid.id, survivor.id, pendingUin.id])).toEqual([
       admitted,
     ]);
-    expect(await selectIds(sql.select_student_label_ids, { enrollment_id: survivor.id })).toEqual([
-      labelOne.id,
-      labelTwo.id,
-    ]);
     expect(
-      await selectIds(sql.select_publishing_extension_ids, {
-        enrollment_id: survivor.id,
-      }),
+      await queryScalars(sql.select_student_label_ids, { enrollment_id: survivor.id }, IdSchema),
+    ).toEqual([labelOne.id, labelTwo.id]);
+    expect(
+      await queryScalars(
+        sql.select_publishing_extension_ids,
+        { enrollment_id: survivor.id },
+        IdSchema,
+      ),
     ).toEqual([newerExtension.id]);
     expect(
-      await selectIds(sql.select_assessment_access_control_rule_ids, {
-        enrollment_id: survivor.id,
-      }),
+      await queryScalars(
+        sql.select_assessment_access_control_rule_ids,
+        { enrollment_id: survivor.id },
+        IdSchema,
+      ),
     ).toEqual([ruleOne.id, ruleTwo.id]);
 
     const auditEvents = await selectReconciliationAuditEvents(survivor.id);
