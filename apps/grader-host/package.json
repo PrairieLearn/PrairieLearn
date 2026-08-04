@@ -52,7 +52,7 @@
     "@typescript/native-preview": "beta",
     "@vitest/coverage-v8": "^4.1.9",
     "tsx": "^4.23.0",
-    "typescript-cp": "^0.1.9",
+    "typescript-cp": "^0.1.10",
     "vitest": "^4.1.9"
   }
 }
