@@ -3,7 +3,7 @@ import * as crypto from 'node:crypto';
 import express, { type ErrorRequestHandler, type Express, type RequestHandler } from 'express';
 import { Redis } from 'ioredis';
 import * as jose from 'jose';
-import { assert, describe, it } from 'vitest';
+import { assert, describe, it, vi } from 'vitest';
 
 import type { HttpStatusError } from '@prairielearn/error';
 import { withServer } from '@prairielearn/express-test-utils';
@@ -138,6 +138,10 @@ describe('POST /pl/report-cheating', () => {
       prairieTestRequestCount++;
       res.sendStatus(200);
     });
+    // Usage is bucketed by absolute wall-clock interval, so a run that straddles
+    // an hour boundary would spread these requests across two buckets.
+    const now = Date.now();
+    const dateNow = vi.spyOn(Date, 'now').mockReturnValue(now);
     try {
       await withTestServers({ prairieTestApp, rateLimiter }, async (prairieLearnUrl) => {
         for (let i = 0; i < 5; i++) {
@@ -153,6 +157,7 @@ describe('POST /pl/report-cheating', () => {
         assert.equal(prairieTestRequestCount, 5);
       });
     } finally {
+      dateNow.mockRestore();
       const keys = await redis.keys(`${keyPrefix}*`);
       if (keys.length > 0) await redis.del(keys[0], ...keys.slice(1));
       await rateLimiter.close();
