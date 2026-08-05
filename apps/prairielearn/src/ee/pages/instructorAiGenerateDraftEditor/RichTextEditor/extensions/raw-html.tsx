@@ -4,7 +4,7 @@ import clsx from 'clsx';
 import { type ComponentType, useState } from 'react';
 import { Card } from 'react-bootstrap';
 
-import { Tooltip } from '@prairielearn/ui';
+import { Popover } from '@prairielearn/ui';
 
 interface RawHtmlAttrs {
   html: string;
@@ -29,7 +29,7 @@ const RawHtmlComponent = (
           <div className="d-flex gap-2">
             Raw HTML
             {nodes !== null && nodes.length !== 1 ? (
-              <Tooltip
+              <Popover
                 placement="right"
                 content={
                   <>
@@ -39,15 +39,17 @@ const RawHtmlComponent = (
                   </>
                 }
               >
-                <i
-                  className="bi bi-exclamation-triangle text-danger"
+                <button
+                  type="button"
+                  className="btn btn-xs btn-ghost p-0 border-0"
                   aria-label="Raw HTML warning"
-                  role="img"
-                />
-              </Tooltip>
+                >
+                  <i className="bi bi-exclamation-triangle text-danger" aria-hidden="true" />
+                </button>
+              </Popover>
             ) : null}
           </div>
-          <Tooltip
+          <Popover
             placement="left"
             content={
               <>
@@ -56,8 +58,14 @@ const RawHtmlComponent = (
               </>
             }
           >
-            <i className="bi bi-question-circle" aria-label="Raw HTML help" role="img" />
-          </Tooltip>
+            <button
+              type="button"
+              className="btn btn-xs btn-ghost p-0 border-0"
+              aria-label="Raw HTML help"
+            >
+              <i className="bi bi-question-circle" aria-hidden="true" />
+            </button>
+          </Popover>
         </Card.Header>
         <Card.Body>
           <textarea
