@@ -239,7 +239,7 @@ function StudentsCard({
     }),
     [],
   );
-  const { columnFilters, onColumnFiltersChange, onResetColumnFilters } =
+  const { columnFilters, activeColumnFilterIds, onColumnFiltersChange, onResetColumnFilters } =
     useColumnFilters(filterRegistry);
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
 
@@ -875,6 +875,7 @@ function StudentsCard({
             </TanstackTableEmptyState>
           ),
         }}
+        activeColumnFilterIds={activeColumnFilterIds}
         onResetColumnFilters={onResetColumnFilters}
       />
       <InviteStudentsModal

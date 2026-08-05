@@ -160,7 +160,7 @@ function AssessmentLogsTableInner({
     };
     return registry;
   }, []);
-  const { columnFilters, onColumnFiltersChange, onResetColumnFilters } =
+  const { columnFilters, activeColumnFilterIds, onColumnFiltersChange, onResetColumnFilters } =
     useColumnFilters(filterRegistry);
 
   const columns = useMemo(
@@ -341,6 +341,7 @@ function AssessmentLogsTableInner({
           { name: 'Status', value: row.job_sequence.status },
         ],
       }}
+      activeColumnFilterIds={activeColumnFilterIds}
       onResetColumnFilters={onResetColumnFilters}
     />
   );
