@@ -281,10 +281,9 @@ describe('admitUserToCourseInstance', { concurrent: false }, () => {
     expect(admitted.id).toBe(invitation.id);
   });
 
-  // UID and UIN deliberately also match this enrollment. A pending LTI
-  // invitation must still be admitted through its exact LTI link and subject,
-  // not through another identity attached to the same enrollment.
-  it('admits an LTI invitation only through its exact LTI source and clears pending identity fields', async () => {
+  // The pending UID and UIN also match this user. Admission must still require
+  // the requested LTI link and `sub`, then clear every pending field on the row.
+  it('requires the requested LTI link and sub and clears pending fields on admission', async () => {
     const user = await createUser({ prefix: 'lti-admission' });
     const link = await createLti13CourseInstance(courseInstance);
     const invitation = await createEnrollment({
@@ -294,7 +293,7 @@ describe('admitUserToCourseInstance', { concurrent: false }, () => {
       pendingName: 'Pending LTI name',
       pendingEmail: 'pending-lti@example.com',
       pendingLti13CourseInstanceId: link.id,
-      pendingLti13Sub: 'exact-sub',
+      pendingLti13Sub: 'matching-sub',
     });
 
     await expect(
@@ -310,7 +309,7 @@ describe('admitUserToCourseInstance', { concurrent: false }, () => {
         type: 'invitation',
         matchedBy: 'lti13',
         lti13CourseInstanceId: link.id,
-        sub: 'exact-sub',
+        sub: 'matching-sub',
       },
       expectedInvitationEnrollmentId: invitation.id,
       validateAdmission: async () => {},

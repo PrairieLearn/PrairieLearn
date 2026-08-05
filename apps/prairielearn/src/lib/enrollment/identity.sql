@@ -1,8 +1,8 @@
--- Candidate selection is intentionally read-only. In particular, it never locks
--- users, lti13_users, or lti13_course_instances. A caller that supplies an LTI
--- identity only gets LTI provenance when that exact link belongs to the requested
--- PrairieLearn course instance. Passing enrollment_ids restricts revalidation to
--- enrollment parents already locked by the caller.
+-- This query is read-only and never locks users, lti13_users, or
+-- lti13_course_instances. Mark an enrollment as an LTI match only when the
+-- requested link belongs to this PrairieLearn course instance and the pending
+-- `sub` also matches. Passing enrollment_ids restricts the second read to
+-- enrollment rows already locked by the caller.
 -- BLOCK select_enrollment_identity_candidates
 WITH
   user_identity AS MATERIALIZED (
