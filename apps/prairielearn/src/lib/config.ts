@@ -542,8 +542,6 @@ export const ConfigSchema = z.object({
   azureRedirectUrl: z.string().default('<your_redirect_url>'),
   /** Required if the redirect URL uses the HTTP protocol. */
   azureAllowHttpForRedirectUrl: z.boolean().default(false),
-  /** Required. If the app key contains `\`, replace it with `\\`. */
-  azureClientSecret: z.string().default('<your_client_secret>'),
   /**
    * Required to encrypt cookies. Multiple key/iv pairs can be provided for key
    * rotation. The first key/iv pair will be used to encrypt cookies, but all

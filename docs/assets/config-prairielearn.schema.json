@@ -1363,10 +1363,6 @@
       "default": false,
       "type": "boolean"
     },
-    "azureClientSecret": {
-      "default": "<your_client_secret>",
-      "type": "string"
-    },
     "azureCookieEncryptionKeys": {
       "default": [],
       "type": "array",
