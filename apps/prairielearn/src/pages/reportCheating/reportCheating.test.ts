@@ -158,9 +158,12 @@ describe('POST /pl/report-cheating', () => {
       });
     } finally {
       dateNow.mockRestore();
-      const keys = await redis.keys(`${keyPrefix}*`);
-      if (keys.length > 0) await redis.del(keys[0], ...keys.slice(1));
-      await rateLimiter.close();
+      try {
+        const keys = await redis.keys(`${keyPrefix}*`);
+        if (keys.length > 0) await redis.del(keys[0], ...keys.slice(1));
+      } finally {
+        await rateLimiter.close();
+      }
     }
   });
 
