@@ -145,12 +145,14 @@ async function validateEnterpriseAdmission({
   courseInstance,
   institution,
   lti13Relaunch,
+  onPlanGrantsRequired,
 }: {
   authzData: Parameters<typeof checkPotentialEnterpriseEnrollment>[0]['authzData'];
   course: Course;
   courseInstance: CourseInstance;
   institution: Parameters<typeof checkPotentialEnterpriseEnrollment>[0]['institution'];
   lti13Relaunch: boolean;
+  onPlanGrantsRequired?: () => void;
 }) {
   if (!isEnterprise()) return;
 
@@ -162,6 +164,7 @@ async function validateEnterpriseAdmission({
   });
   switch (status) {
     case PotentialEnrollmentStatus.PLAN_GRANTS_REQUIRED:
+      onPlanGrantsRequired?.();
       throw new HttpRedirect(
         `/pl/course_instance/${courseInstance.id}/upgrade${lti13Relaunch ? '?lti13_relaunch=1' : ''}`,
       );
@@ -175,17 +178,16 @@ async function validateEnterpriseAdmission({
 }
 
 /**
- * Creates the policy callback that reconciliation invokes after reselecting
- * identity candidates under their enrollment locks and before mutating them.
- * It rebuilds the course context and checks student access, source-specific
- * admission policy, and enterprise requirements against that locked identity
- * classification.
+ * Reconciliation calls this after locking and re-reading the matching
+ * enrollments. It checks student access, enrollment policy, and plan
+ * requirements before any enrollment is changed.
  */
 function createAdmissionValidator({
   courseInstanceId,
   enrollmentCode,
   ip,
   isAdministrator,
+  onPlanGrantsRequired,
   reqDate,
   userId,
 }: {
@@ -193,6 +195,7 @@ function createAdmissionValidator({
   enrollmentCode?: string;
   ip: string | null;
   isAdministrator: boolean;
+  onPlanGrantsRequired?: () => void;
   reqDate: Date;
   userId: string;
 }) {
@@ -226,10 +229,9 @@ function createAdmissionValidator({
       throw new HttpStatusError(403, 'Access denied');
     }
 
-    // Reconciliation has already matched an exact LTI link and subject against
-    // the locked invitation. Do not reinterpret that request-local authority as
-    // a UIN, UID, or self-enrollment source. Other sources must still pass the
-    // admission policy using the locked classification.
+    // The LTI path has already checked the invitation's link and `sub` while
+    // holding the enrollment locks. Other paths still need the usual UID, UIN,
+    // or self-enrollment checks below.
     if (!(source.type === 'invitation' && source.matchedBy === 'lti13')) {
       const decision = getEnrollmentAccessDecision({
         classification,
@@ -249,7 +251,11 @@ function createAdmissionValidator({
       }
     }
 
-    // Invitation authority never bypasses plan grants or enrollment limits.
+    // We don't lock course settings or plan configuration. If either changes
+    // during this transaction, this admission may finish using the old values.
+    // Avoiding that would require coordinating every settings writer with this
+    // code. Enrollment identity and status are still protected by the locks.
+    // Invitations must still pass plan and enrollment-limit checks.
     await validateEnterpriseAdmission({
       authzData: makePageAuthzData({
         authzData,
@@ -259,6 +265,7 @@ function createAdmissionValidator({
       courseInstance,
       institution,
       lti13Relaunch: source.type === 'invitation' && source.matchedBy === 'lti13',
+      onPlanGrantsRequired,
     });
   };
 }
@@ -313,11 +320,48 @@ export async function admitUserForCourseInstanceAccess({
 }
 
 /**
- * Performs self-service admission from a fresh, verified LTI launch. The link
- * and subject are revalidated against locked candidates, while
- * `expectedInvitationEnrollmentId` prevents admission from silently falling
- * back to a different matching invitation. `userId` is both the enrollment
- * subject and audit actor.
+ * Accepts the selected pending UID invitation. The invitation ID is checked
+ * again after locking so a different invitation cannot take its place.
+ */
+export async function admitUserFromUidInvitation({
+  courseInstanceId,
+  expectedInvitationEnrollmentId,
+  ip,
+  isAdministrator,
+  reqDate,
+  userId,
+}: {
+  courseInstanceId: string;
+  expectedInvitationEnrollmentId: string;
+  ip: string | null;
+  isAdministrator: boolean;
+  reqDate: Date;
+  userId: string;
+}) {
+  return await admitUserToCourseInstance({
+    actor: {
+      agentAuthnUserId: userId,
+      agentUserId: userId,
+    },
+    courseInstanceId,
+    expectedInvitationEnrollmentId,
+    source: { type: 'invitation', matchedBy: 'uid' },
+    userId,
+    validateAdmission: createAdmissionValidator({
+      courseInstanceId,
+      ip,
+      isAdministrator,
+      reqDate,
+      userId,
+    }),
+  });
+}
+
+/**
+ * Enrolls the current user from the pending invitation that matches the LTI
+ * launch. The invitation ID, linked course, and LMS user ID (`sub`) are checked
+ * again after locking. If any no longer match, admission fails instead of using
+ * another invitation.
  */
 export async function admitUserFromLti13Launch({
   courseInstanceId,
@@ -325,6 +369,7 @@ export async function admitUserFromLti13Launch({
   ip,
   isAdministrator,
   lti13CourseInstanceId,
+  onPlanGrantsRequired,
   reqDate,
   sub,
   userId,
@@ -334,6 +379,7 @@ export async function admitUserFromLti13Launch({
   ip: string | null;
   isAdministrator: boolean;
   lti13CourseInstanceId: string;
+  onPlanGrantsRequired?: () => void;
   reqDate: Date;
   sub: string;
   userId: string;
@@ -356,6 +402,7 @@ export async function admitUserFromLti13Launch({
       courseInstanceId,
       ip,
       isAdministrator,
+      onPlanGrantsRequired,
       reqDate,
       userId,
     }),

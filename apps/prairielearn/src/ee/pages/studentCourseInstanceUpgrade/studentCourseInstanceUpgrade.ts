@@ -23,6 +23,7 @@ import {
   type EnrollmentIneligibilityReason,
   getEligibilityErrorMessage,
 } from '../../../lib/enrollment/eligibility.js';
+import { selectEnrollmentAdmissionDecision } from '../../../lib/enrollment/identity.js';
 import { idsEqual } from '../../../lib/id.js';
 import { type ResLocalsForPage, typedAsyncHandler } from '../../../lib/res-locals.js';
 import { getCanonicalHost } from '../../../lib/url.js';
@@ -38,6 +39,10 @@ import {
   getPricesForPlans,
   getStripeClient,
 } from '../../lib/billing/stripe.js';
+import {
+  clearLti13CourseInstanceUpgradeAuthorization,
+  getLti13CourseInstanceUpgradeAuthorization,
+} from '../../lib/lti13-course-instance-upgrade.js';
 import { ensurePlanGrant } from '../../models/plan-grants.js';
 import {
   getStripeCheckoutSessionByStripeObjectId,
@@ -55,16 +60,13 @@ import {
 const router = Router({ mergeParams: true });
 
 /**
- * Returns the admission failure, if any, that should prevent a user from
- * obtaining a required plan on this page. This is deliberately less strict
- * than admission itself: joined users may need another plan, and an enrollment
- * code is enforced when admission resumes rather than before the upgrade.
+ * Determines whether the student may buy a plan required by this course.
+ * Joined students may need another plan, and an enrollment code is checked
+ * when enrollment resumes rather than before payment.
  *
- * The LTI relaunch flow also ignores self-enrollment restrictions.
- * The query parameter that selects that flow is not enrollment authority, so
- * this page only handles the upgrade and then sends the user back to the LMS.
- * A fresh LTI launch must revalidate the exact invitation before admitting the
- * user. A blocked enrollment is never allowed to proceed through this flow.
+ * A student sent here from an LTI launch may also bypass self-enrollment
+ * restrictions. The session and pending invitation are checked before this
+ * function is called, and a blocked enrollment still takes precedence.
  */
 function getAdmissionIneligibilityReason(
   decision: EnrollmentAccessDecision,
@@ -87,26 +89,54 @@ function getAdmissionIneligibilityReason(
 }
 
 /**
- * Returns whether this request should use the LTI-specific upgrade flow.
- * `lti13_relaunch=1` is a routing hint appended when an exact LTI invitation is
- * interrupted by a required plan upgrade. It carries no LTI claims and grants
- * no enrollment authority; those claims were consumed before the redirect.
- * We honor the hint only for a directly authenticated student, then require the
- * student to relaunch from the LMS so admission can validate a fresh link and
- * subject after the upgrade.
+ * `lti13_relaunch=1` only says which flow the browser is trying to continue.
+ * The session must show that an LTI launch for this user and course was sent to
+ * the upgrade page, and that invitation must still be pending for the same LTI
+ * link and `sub`.
  */
-function shouldUseLti13RelaunchFlow(
+async function shouldUseLti13RelaunchFlow(
   queryValue: unknown,
+  session: Record<string, unknown>,
   resLocals: ResLocalsForPage<'course-instance'>,
 ) {
-  return (
-    queryValue === '1' &&
-    idsEqual(resLocals.user.id, resLocals.authn_user.id) &&
-    resLocals.authz_data.authn_course_role === 'None' &&
-    resLocals.authz_data.authn_course_instance_role === 'None' &&
-    resLocals.authz_data.authn_has_student_access &&
-    !resLocals.is_administrator
-  );
+  if (
+    queryValue !== '1' ||
+    !idsEqual(resLocals.user.id, resLocals.authn_user.id) ||
+    resLocals.authz_data.authn_course_role !== 'None' ||
+    resLocals.authz_data.authn_course_instance_role !== 'None' ||
+    !resLocals.authz_data.authn_has_student_access ||
+    resLocals.is_administrator
+  ) {
+    return false;
+  }
+
+  const authorization = getLti13CourseInstanceUpgradeAuthorization({
+    courseInstanceId: resLocals.course_instance.id,
+    now: resLocals.req_date,
+    session,
+    userId: resLocals.authn_user.id,
+  });
+  if (authorization === null) return false;
+
+  const decision = await selectEnrollmentAdmissionDecision({
+    courseInstanceId: resLocals.course_instance.id,
+    source: {
+      type: 'invitation',
+      matchedBy: 'lti13',
+      lti13CourseInstanceId: authorization.lti13_course_instance_id,
+      sub: authorization.sub,
+    },
+    userId: resLocals.authn_user.id,
+  });
+  if (
+    !decision.allowed ||
+    decision.invitationCandidate === null ||
+    !idsEqual(decision.invitationCandidate.enrollment.id, authorization.enrollment_id)
+  ) {
+    clearLti13CourseInstanceUpgradeAuthorization(session);
+    return false;
+  }
+  return true;
 }
 
 router.get(
@@ -115,7 +145,11 @@ router.get(
     const courseInstance = CourseInstanceSchema.parse(res.locals.course_instance);
     const course = CourseSchema.parse(res.locals.course);
     const user = UserSchema.parse(res.locals.authn_user);
-    const lti13Relaunch = shouldUseLti13RelaunchFlow(req.query.lti13_relaunch, res.locals);
+    const lti13Relaunch = await shouldUseLti13RelaunchFlow(
+      req.query.lti13_relaunch,
+      req.session,
+      res.locals,
+    );
 
     const admissionDecision = await selectEnrollmentAccessDecision({
       course,
@@ -184,7 +218,11 @@ router.post(
       const course = CourseSchema.parse(res.locals.course);
       const courseInstance = CourseInstanceSchema.parse(res.locals.course_instance);
       const user = UserSchema.parse(res.locals.authn_user);
-      const lti13Relaunch = shouldUseLti13RelaunchFlow(req.body.lti13_relaunch, res.locals);
+      const lti13Relaunch = await shouldUseLti13RelaunchFlow(
+        req.body.lti13_relaunch,
+        req.session,
+        res.locals,
+      );
 
       // Recheck admission eligibility before creating the Stripe checkout session.
       const admissionDecision = await selectEnrollmentAccessDecision({
