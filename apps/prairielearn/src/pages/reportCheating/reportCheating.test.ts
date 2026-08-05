@@ -159,8 +159,8 @@ describe('POST /pl/report-cheating', () => {
     }
   });
 
-  it('handles declined, failed, and redirecting PrairieTest responses', async () => {
-    let behavior: 'declined' | 'failed' | 'redirect' = 'declined';
+  it('rejects non-200 PrairieTest responses', async () => {
+    let behavior: 'declined' | 'failed' | 'redirect' | 'created' = 'declined';
     let redirectTargetCount = 0;
     const prairieTestApp = createPrairieTestApp((_req, res) => {
       switch (behavior) {
@@ -169,6 +169,9 @@ describe('POST /pl/report-cheating', () => {
           return;
         case 'failed':
           res.sendStatus(500);
+          return;
+        case 'created':
+          res.sendStatus(201);
           return;
         case 'redirect':
           res.redirect('/pt/redirect-target');
@@ -192,6 +195,14 @@ describe('POST /pl/report-cheating', () => {
       assert.equal(failed.response.status, 502);
       assert.equal(
         failed.json.error,
+        'Something went wrong while submitting your report. Please try again, or tell your proctor directly.',
+      );
+
+      behavior = 'created';
+      const created = await postReport(prairieLearnUrl, validBody());
+      assert.equal(created.response.status, 502);
+      assert.equal(
+        created.json.error,
         'Something went wrong while submitting your report. Please try again, or tell your proctor directly.',
       );
 
