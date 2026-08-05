@@ -130,8 +130,8 @@ export async function calculateModernCourseInstanceStudentAccess(
     };
   }
 
-  // Joined students and actionable invitations can have an extension on any
-  // enrollment candidate that would participate in admission reconciliation.
+  // A publishing extension may be assigned to the joined enrollment or to any
+  // row that will be merged when a pending UID or UIN invitation is accepted.
   const hasActionableInvitation =
     classification.actionableUidInvitation !== null ||
     classification.actionableInstitutionUinInvitation !== null;
