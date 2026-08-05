@@ -23,6 +23,7 @@ export function setupReportCheatingModal() {
     submitButton?.classList.remove('d-none');
     submitButton?.removeAttribute('disabled');
     cancelButton?.removeAttribute('disabled');
+    report?.setAttribute('aria-invalid', 'false');
     if (cancelButton) cancelButton.textContent = 'Cancel';
     if (submitLabel) submitLabel.textContent = 'Submit report';
   }
@@ -36,7 +37,11 @@ export function setupReportCheatingModal() {
     cancelButton?.setAttribute('disabled', 'true');
   }
 
-  function showError(message: string) {
+  /**
+   * `reportIsInvalid` distinguishes a report the server rejected from a failure
+   * of the submission itself; only the former marks the textarea invalid.
+   */
+  function showError(message: string, reportIsInvalid = false) {
     fields?.classList.remove('d-none');
     loading?.classList.add('d-none');
     success?.classList.add('d-none');
@@ -44,6 +49,7 @@ export function setupReportCheatingModal() {
       error.textContent = message;
       error.classList.remove('d-none');
     }
+    report?.setAttribute('aria-invalid', String(reportIsInvalid));
     submitButton?.removeAttribute('disabled');
     cancelButton?.removeAttribute('disabled');
     if (submitLabel) submitLabel.textContent = 'Try again';
@@ -89,7 +95,7 @@ export function setupReportCheatingModal() {
         showSuccess(result.message);
       } else if (!response.ok && 'error' in result && typeof result.error === 'string') {
         submitting = false;
-        showError(result.error);
+        showError(result.error, response.status === 400);
       } else {
         throw new Error('Invalid report response');
       }

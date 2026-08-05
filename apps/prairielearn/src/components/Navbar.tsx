@@ -276,11 +276,14 @@ function ReportCheatingModal({ csrfToken }: { csrfToken: string }) {
             rows="4"
             maxlength="10000"
             required
+            aria-invalid="false"
+            aria-errormessage="report-cheating-error"
           ></textarea>
         </div>
       </div>
       <div class="alert alert-success d-none js-report-cheating-success" role="status"></div>
       <div
+        id="report-cheating-error"
         class="alert alert-danger d-none js-report-cheating-error"
         role="alert"
         aria-live="assertive"
