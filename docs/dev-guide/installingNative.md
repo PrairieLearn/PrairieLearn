@@ -61,7 +61,7 @@ Most of these prerequisites can be installed using the package manager of your O
     Install pnpm:
 
     ```sh
-    npm install -g pnpm
+    npm install -g pnpm@11
     ```
 
     d2 can be installed through the install script:
@@ -103,7 +103,7 @@ Most of these prerequisites can be installed using the package manager of your O
     Install pnpm:
 
     ```sh
-    npm install -g pnpm
+    npm install -g pnpm@11
     ```
 
 - Clone the latest code:

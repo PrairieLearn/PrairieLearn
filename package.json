@@ -7,7 +7,7 @@
   ],
   "engines": {
     "node": ">=24.0.0",
-    "pnpm": "^11.19.0"
+    "pnpm": "^11"
   },
   "devEngines": {
     "packageManager": {
