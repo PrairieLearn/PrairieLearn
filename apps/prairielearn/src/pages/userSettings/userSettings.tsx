@@ -2,6 +2,7 @@ import * as crypto from 'crypto';
 
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
+import z from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
@@ -136,7 +137,7 @@ router.post(
       try {
         await updateUserSettings({
           user_id: authn_user.id,
-          enable_keyboard_shortcut: req.body.enable_keyboard_shortcut,
+          enable_keyboard_shortcut: z.boolean().parse(req.body.enable_keyboard_shortcut),
         });
         res.send();
       } catch (err) {
