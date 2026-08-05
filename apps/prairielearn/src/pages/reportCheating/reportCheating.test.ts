@@ -84,7 +84,7 @@ describe('POST /pl/report-cheating', () => {
   it('signs and forwards a report', async () => {
     let jwt: string | undefined;
     const prairieTestApp = createPrairieTestApp((req, res) => {
-      if (typeof req.body.jwt === 'string') jwt = req.body.jwt;
+      jwt = req.body.jwt;
       res.sendStatus(200);
     });
 
