@@ -8,16 +8,17 @@ import { getActiveKey } from '../../lib/key-ring.js';
 // Limit replay if a token is exposed.
 const PRAIRIE_TEST_JWT_LIFETIME = '5m';
 
-type PrairieTestJwtPayload = jose.JWTPayload & {
-  user_id: string;
-  reservation_id: string;
-} & (
+type PrairieTestJwtPayload = jose.JWTPayload &
+  (
     | {
         purpose: 'end_exam';
-        report?: never;
+        user_id: string;
+        reservation_id: string;
       }
     | {
         purpose: 'cheating_report';
+        user_id: string;
+        reservation_id: string;
         report: string;
       }
   );
