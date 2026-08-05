@@ -62,7 +62,7 @@ export default asyncHandler(async (req, res, next) => {
 
   res.locals.prairietest_reservation_info = info;
 
-  // API requests can lack sessions.
+  // API requests skip session middleware, so `req.session` can be absent at runtime.
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
   const session_is_lockdown_browser = req.session?.lockdown_browser ?? false;
   if (info.requires_lockdown_browser && !session_is_lockdown_browser) {
