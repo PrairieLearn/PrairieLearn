@@ -307,6 +307,44 @@ describe('Homepage student courses', () => {
     }
   });
 
+  it.each(['left', 'removed', 'rejected'] as const)(
+    'does not treat a %s enrollment as a UID invitation',
+    async (status) => {
+      const user = await getOrCreateUser({
+        uid: `non-actionable-${status}@example.com`,
+        name: `Non-actionable ${status} user`,
+        uin: `non-actionable-${status}`,
+        email: `non-actionable-${status}@example.com`,
+        institutionId: '1',
+      });
+      const enrollment = await createEnrollment({
+        userId: status === 'rejected' ? null : user.id,
+        pendingUid: status === 'rejected' ? user.uid : null,
+        status,
+      });
+
+      try {
+        await withUser(user, async () => {
+          const response = await postHome(
+            new URLSearchParams({
+              __action: 'accept_invitation',
+              __csrf_token: await getCsrfToken(homeUrl),
+              course_instance_id: '1',
+              enrollment_id: enrollment.id,
+            }),
+          );
+          assertAlert(response.$, 'Failed to accept invitation');
+        });
+
+        const [persistedEnrollment] = await selectEnrollments([enrollment.id]);
+        assert.equal(persistedEnrollment.status, status);
+        assert.equal(persistedEnrollment.user_id, status === 'rejected' ? null : user.id);
+      } finally {
+        await execute(sql.delete_enrollment_by_id, { enrollment_id: enrollment.id });
+      }
+    },
+  );
+
   it('accepts and rejects UID invitations for legacy course instances', async () => {
     const acceptingUser = await getOrCreateUser({
       uid: 'legacy-accept@example.com',
