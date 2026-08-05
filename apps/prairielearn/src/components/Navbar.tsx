@@ -233,7 +233,7 @@ function ReportCheatingControl({
   if (
     navPage !== 'assessment_instance' ||
     resLocals.authz_result?.mode !== 'Exam' ||
-    resLocals.cheating_report_reservation_id == null
+    resLocals.prairietest_reservation_info?.cheating_report_reservation_id == null
   ) {
     return '';
   }

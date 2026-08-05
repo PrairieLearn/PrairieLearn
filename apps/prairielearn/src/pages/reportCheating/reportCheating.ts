@@ -51,7 +51,8 @@ export function createReportCheatingRouter({
         throw new HttpStatusError(400, `Reports are limited to ${MAX_REPORT_LENGTH} characters.`);
       }
 
-      const reservation_id: string | null = res.locals.cheating_report_reservation_id;
+      const reservation_id: string | null =
+        res.locals.prairietest_reservation_info?.cheating_report_reservation_id ?? null;
       if (!reservation_id) {
         throw new HttpStatusError(
           403,

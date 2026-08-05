@@ -24,7 +24,7 @@ function createApp(
   app.use(express.json());
   app.use((_req, res, next) => {
     res.locals.authn_user = { id: '1' };
-    res.locals.cheating_report_reservation_id = '2';
+    res.locals.prairietest_reservation_info = { cheating_report_reservation_id: '2' };
     next();
   });
   app.use(createReportCheatingRouter({ rateLimiter }));

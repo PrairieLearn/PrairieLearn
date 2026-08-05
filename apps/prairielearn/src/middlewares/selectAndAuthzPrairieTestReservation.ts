@@ -61,7 +61,6 @@ export default asyncHandler(async (req, res, next) => {
   });
 
   res.locals.prairietest_reservation_info = info;
-  res.locals.cheating_report_reservation_id = info.cheating_report_reservation_id;
 
   // API requests can lack sessions.
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
