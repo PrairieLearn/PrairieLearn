@@ -10,6 +10,11 @@ import { idsEqual } from '../lib/id.js';
 import { ensureEnrollment, selectOptionalEnrollmentByUid } from '../models/enrollment.js';
 
 export default asyncHandler(async (req, res, next) => {
+  if (res.locals.viewType === 'instructor') {
+    next();
+    return;
+  }
+
   // If the user does not currently have access to the course, but could if
   // they were enrolled, automatically enroll them. However, we will not
   // attempt to enroll them if they are an instructor (that is, if they have
