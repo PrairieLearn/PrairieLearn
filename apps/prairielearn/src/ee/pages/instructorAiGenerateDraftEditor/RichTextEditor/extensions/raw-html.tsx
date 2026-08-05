@@ -4,7 +4,7 @@ import clsx from 'clsx';
 import { type ComponentType, useState } from 'react';
 import { Card } from 'react-bootstrap';
 
-import { OverlayTrigger } from '@prairielearn/ui';
+import { Popover } from '@prairielearn/ui';
 
 interface RawHtmlAttrs {
   html: string;
@@ -29,41 +29,43 @@ const RawHtmlComponent = (
           <div className="d-flex gap-2">
             Raw HTML
             {nodes !== null && nodes.length !== 1 ? (
-              <OverlayTrigger
+              <Popover
                 placement="right"
-                tooltip={{
-                  body: (
-                    <>
-                      You must have exactly one parent element, but you have {nodes.length} (
-                      {nodes.join(', ')}). Either remove the extra elements, or combine them into a
-                      single element by wrapping both of them in a single div.
-                    </>
-                  ),
-                  props: { id: 'raw-html-warning-tooltip' },
-                }}
+                content={
+                  <>
+                    You must have exactly one parent element, but you have {nodes.length} (
+                    {nodes.join(', ')}). Either remove the extra elements, or combine them into a
+                    single element by wrapping both of them in a single div.
+                  </>
+                }
               >
-                <i
-                  className="bi bi-exclamation-triangle text-danger"
+                <button
+                  type="button"
+                  className="btn btn-xs btn-ghost p-0 border-0"
                   aria-label="Raw HTML warning"
-                  role="img"
-                />
-              </OverlayTrigger>
+                >
+                  <i className="bi bi-exclamation-triangle text-danger" aria-hidden="true" />
+                </button>
+              </Popover>
             ) : null}
           </div>
-          <OverlayTrigger
+          <Popover
             placement="left"
-            tooltip={{
-              body: (
-                <>
-                  This node type isn't supported by the rich text editor yet. You can edit the
-                  underlying HTML here.
-                </>
-              ),
-              props: { id: 'raw-html-help-tooltip' },
-            }}
+            content={
+              <>
+                This node type isn't supported by the rich text editor yet. You can edit the
+                underlying HTML here.
+              </>
+            }
           >
-            <i className="bi bi-question-circle" aria-label="Raw HTML help" role="img" />
-          </OverlayTrigger>
+            <button
+              type="button"
+              className="btn btn-xs btn-ghost p-0 border-0"
+              aria-label="Raw HTML help"
+            >
+              <i className="bi bi-question-circle" aria-hidden="true" />
+            </button>
+          </Popover>
         </Card.Header>
         <Card.Body>
           <textarea
