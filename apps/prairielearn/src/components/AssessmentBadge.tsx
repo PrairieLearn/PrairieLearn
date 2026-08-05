@@ -1,5 +1,4 @@
-import clsx from 'clsx';
-import type { ComponentPropsWithRef, ReactNode } from 'react';
+import type { ReactNode } from 'react';
 
 import { renderHtml } from '@prairielearn/react';
 
@@ -12,19 +11,15 @@ export function AssessmentBadge({
   courseInstanceId,
   publicURL = false,
   prefix,
-  className,
-  ref,
-  ...anchorProps
 }: {
   assessment: { assessment_id: string; color: string; label: string };
   hideLink?: boolean;
   publicURL?: boolean;
   prefix?: ReactNode;
-} & AssessmentUrlParts &
-  Omit<ComponentPropsWithRef<'a'>, 'children' | 'href' | 'prefix'>) {
+} & AssessmentUrlParts) {
   if (hideLink) {
     return (
-      <span className={clsx(`badge color-${assessment.color}`, className)}>
+      <span className={`badge color-${assessment.color}`}>
         {prefix}
         {assessment.label}
       </span>
@@ -47,12 +42,7 @@ export function AssessmentBadge({
   );
 
   return (
-    <a
-      {...anchorProps}
-      ref={ref}
-      href={link}
-      className={clsx(`btn btn-badge color-${assessment.color}`, className)}
-    >
+    <a href={link} className={`btn btn-badge color-${assessment.color}`}>
       {prefix}
       {assessment.label}
     </a>

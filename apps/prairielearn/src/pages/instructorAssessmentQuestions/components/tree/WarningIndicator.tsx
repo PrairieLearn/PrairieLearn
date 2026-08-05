@@ -1,4 +1,4 @@
-import { Tooltip } from '@prairielearn/ui';
+import { Popover } from '@prairielearn/ui';
 
 export function WarningIndicator({
   label,
@@ -10,7 +10,7 @@ export function WarningIndicator({
   variant?: 'warning' | 'error';
 }) {
   return (
-    <Tooltip placement="top" content={body}>
+    <Popover content={body} placement="top">
       <button
         type="button"
         className={`btn btn-badge ${variant === 'error' ? 'color-red2' : 'color-yellow2'}`}
@@ -23,6 +23,6 @@ export function WarningIndicator({
         <i className="bi bi-exclamation-triangle-fill me-1" aria-hidden="true" />
         {label}
       </button>
-    </Tooltip>
+    </Popover>
   );
 }

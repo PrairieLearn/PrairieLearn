@@ -17,7 +17,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { type ReactNode, useMemo } from 'react';
 
-import { Tooltip } from '@prairielearn/ui';
+import { Popover } from '@prairielearn/ui';
 
 /**
  * Drag-and-drop context for a table whose rows can be reordered. Rows are
@@ -83,8 +83,8 @@ type ReorderableRowHandle = ReturnType<typeof useReorderableRow>;
 
 /**
  * The drag/edit/delete actions cell of a reorderable row. When
- * `deleteDisabledReason` is set, the delete button is inert and explains why
- * in a tooltip instead.
+ * `deleteDisabledReason` is set, the delete action is unavailable and its
+ * button explains why in a popover instead.
  */
 export function ReorderableRowActionsCell({
   dragHandleProps,
@@ -122,16 +122,15 @@ export function ReorderableRowActionsCell({
           <i className="fa fa-edit" aria-hidden="true" />
         </button>
         {deleteDisabledReason ? (
-          <Tooltip content={deleteDisabledReason}>
+          <Popover content={deleteDisabledReason}>
             <button
               className="btn btn-sm btn-ghost"
               type="button"
-              aria-label={deleteLabel}
-              aria-disabled="true"
+              aria-label={`${deleteLabel}: ${deleteDisabledReason}`}
             >
               <i className="fa fa-trash text-muted" aria-hidden="true" />
             </button>
-          </Tooltip>
+          </Popover>
         ) : (
           <button
             className="btn btn-sm btn-ghost"

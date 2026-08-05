@@ -1,9 +1,9 @@
 import type { DraggableAttributes, DraggableSyntheticListeners } from '@dnd-kit/core';
 import clsx from 'clsx';
-import type { ReactElement } from 'react';
+import { type ReactElement } from 'react';
 
 import { run } from '@prairielearn/run';
-import { Tooltip } from '@prairielearn/ui';
+import { Popover } from '@prairielearn/ui';
 
 import { AssessmentQuestionNumber } from '../../../../components/AssessmentQuestions.js';
 import { CopyButton } from '../../../../components/CopyButton.js';
@@ -48,19 +48,19 @@ export function PointsBadge({
     if (forceMax) {
       const total = computeQuestionTotalPoints(question, assessmentType, zoneQuestionBlock);
       return (
-        <Tooltip
-          placement="top"
+        <Popover
           content={`Force max points: student receives ${total} pts on regrade`}
+          placement="top"
         >
-          <span
-            className="text-muted small text-nowrap ms-2"
-            role="img"
-            aria-label="Question points"
+          <button
+            type="button"
+            className="btn btn-link text-muted text-decoration-none p-0 border-0 small text-nowrap ms-2"
+            onClick={(event) => event.stopPropagation()}
           >
             <i className="bi bi-pin-angle-fill me-1" aria-hidden="true" />
             {total}
-          </span>
-        </Tooltip>
+          </button>
+        </Popover>
       );
     }
 
@@ -97,11 +97,15 @@ export function PointsBadge({
     }
 
     return (
-      <Tooltip placement="top" content={tooltipParts.join(' · ')}>
-        <span className="text-muted small text-nowrap ms-2" role="img" aria-label="Question points">
+      <Popover content={tooltipParts.join(' · ')} placement="top">
+        <button
+          type="button"
+          className="btn btn-link text-muted text-decoration-none p-0 border-0 small text-nowrap ms-2"
+          onClick={(event) => event.stopPropagation()}
+        >
           {compactParts}
-        </span>
-      </Tooltip>
+        </button>
+      </Popover>
     );
   }
 
@@ -115,15 +119,19 @@ export function PointsBadge({
   if (forceMax) {
     const total = computeQuestionTotalPoints(question, assessmentType, zoneQuestionBlock);
     return (
-      <Tooltip
-        placement="top"
+      <Popover
         content={`Force max points: student receives ${total} pts on regrade`}
+        placement="top"
       >
-        <span className="text-muted small text-nowrap ms-2" role="img" aria-label="Question points">
+        <button
+          type="button"
+          className="btn btn-link text-muted text-decoration-none p-0 border-0 small text-nowrap ms-2"
+          onClick={(event) => event.stopPropagation()}
+        >
           <i className="bi bi-pin-angle-fill me-1" aria-hidden="true" />
           {total}
-        </span>
-      </Tooltip>
+        </button>
+      </Popover>
     );
   }
 
@@ -161,11 +169,15 @@ export function PointsBadge({
   }
 
   return (
-    <Tooltip placement="top" content={tooltipParts.join(' · ')}>
-      <span className="text-muted small text-nowrap ms-2" role="img" aria-label="Question points">
+    <Popover content={tooltipParts.join(' · ')} placement="top">
+      <button
+        type="button"
+        className="btn btn-link text-muted text-decoration-none p-0 border-0 small text-nowrap ms-2"
+        onClick={(event) => event.stopPropagation()}
+      >
         {compactParts}
-      </span>
-    </Tooltip>
+      </button>
+    </Popover>
   );
 }
 

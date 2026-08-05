@@ -1,4 +1,4 @@
-import { Tooltip } from '@prairielearn/ui';
+import { Popover } from '@prairielearn/ui';
 
 import { formatMilliDollars } from '../../../lib/ai-grading-credits.js';
 
@@ -45,7 +45,7 @@ export function BalanceCards({
           <div className="border rounded p-3 text-center" style={dimStyle}>
             <div className="text-muted small">
               Transferable{' '}
-              <Tooltip placement="top" content={tooltips.transferable}>
+              <Popover content={tooltips.transferable} placement="top">
                 <button
                   type="button"
                   className="btn btn-link p-0 border-0 align-baseline"
@@ -53,7 +53,7 @@ export function BalanceCards({
                 >
                   <i className="bi bi-info-circle" aria-hidden="true" />
                 </button>
-              </Tooltip>
+              </Popover>
             </div>
             <div className="h5 mb-0">
               {formatMilliDollars(pool.credit_transferable_milli_dollars)}
@@ -64,7 +64,7 @@ export function BalanceCards({
           <div className="border rounded p-3 text-center" style={dimStyle}>
             <div className="text-muted small">
               Non-transferable{' '}
-              <Tooltip placement="top" content={tooltips.nonTransferable}>
+              <Popover content={tooltips.nonTransferable} placement="top">
                 <button
                   type="button"
                   className="btn btn-link p-0 border-0 align-baseline"
@@ -72,7 +72,7 @@ export function BalanceCards({
                 >
                   <i className="bi bi-info-circle" aria-hidden="true" />
                 </button>
-              </Tooltip>
+              </Popover>
             </div>
             <div className="h5 mb-0">
               {formatMilliDollars(pool.credit_non_transferable_milli_dollars)}

@@ -161,6 +161,24 @@ const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
 The `color` property maps to PrairieLearn's badge color classes (e.g., `color-blue1`). Custom rendering can be provided via `renderItem`.
 
+### Popover
+
+Use `Popover` for contextual help, disabled reasons, warnings, and other information that must be available on touch devices. Its trigger must be an interactive element that forwards its ref to the underlying DOM element.
+
+```tsx
+import { Popover } from '@prairielearn/ui';
+
+<Popover content="This action is unavailable until the course has been synced.">
+  <button
+    type="button"
+    className="btn btn-outline-secondary"
+    aria-label="Publish unavailable until the course has been synced"
+  >
+    Publish
+  </button>
+</Popover>;
+```
+
 ## nuqs Utilities
 
 This package provides utilities for integrating [nuqs](https://nuqs.47ng.com/) (type-safe URL query state management) with server-side rendering and TanStack Table.

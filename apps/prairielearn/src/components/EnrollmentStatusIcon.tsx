@@ -1,6 +1,6 @@
 import clsx from 'clsx';
 
-import { Tooltip } from '@prairielearn/ui';
+import { Popover } from '@prairielearn/ui';
 import { assertNever } from '@prairielearn/utils';
 
 import type { EnumEnrollmentStatus } from '../lib/db-types.js';
@@ -90,22 +90,15 @@ export function EnrollmentStatusIcon({
       <i className={clsx('bi', iconClass)} aria-hidden="true" />
       <span className="text-nowrap">{capitalize(getFriendlyStatus(status))}</span>
       {status === 'rejected' && (
-        <Tooltip
-          content={
-            <div>
-              This student has rejected the invitation to join the course. They can still join while
-              self-enrollment is enabled.
-            </div>
-          }
-        >
+        <Popover content="This student has rejected the invitation to join the course. They can still join while self-enrollment is enabled.">
           <button
             type="button"
-            className="btn btn-link p-0 border-0 lh-1"
-            aria-label="More information about rejected enrollment status"
+            className="btn btn-xs btn-ghost p-0 border-0"
+            aria-label="More information about rejected enrollment"
           >
             <i className="bi bi-info-circle" aria-hidden="true" />
           </button>
-        </Tooltip>
+        </Popover>
       )}
     </span>
   );

@@ -31,6 +31,7 @@ export {
 export { useShiftClickCheckbox } from './components/useShiftClickCheckbox.js';
 export { useAutoSizeColumns } from './components/useAutoSizeColumns.js';
 export { OverlayTrigger, type OverlayTriggerProps } from './components/OverlayTrigger.js';
+export { Popover, type PopoverProps } from './components/Popover.js';
 export { Tooltip, type TooltipProps } from './components/Tooltip.js';
 export { PresetFilterDropdown } from './components/PresetFilterDropdown.js';
 export {

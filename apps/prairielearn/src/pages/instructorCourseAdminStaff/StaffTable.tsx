@@ -24,8 +24,8 @@ import {
   type MultiSelectFilterValue,
   NuqsAdapter,
   OverlayTrigger,
+  Popover,
   TanstackTableCard,
-  Tooltip,
   applyMultiSelectFilter,
   parseAsColumnPinningState,
   parseAsMultiSelectFilter,
@@ -950,16 +950,19 @@ function StaffTableInner({
           return name ? (
             <span>{name}</span>
           ) : (
-            <Tooltip
-              placement="top"
+            <Popover
               content={
                 'Users with name "Unknown user" either have never logged in or have an incorrect UID.'
               }
+              placement="top"
             >
-              <span className="text-danger" role="img" aria-label="Unknown user">
+              <button
+                type="button"
+                className="btn btn-link text-danger text-decoration-none p-0 border-0"
+              >
                 Unknown user
-              </span>
-            </Tooltip>
+              </button>
+            </Popover>
           );
         },
       }),

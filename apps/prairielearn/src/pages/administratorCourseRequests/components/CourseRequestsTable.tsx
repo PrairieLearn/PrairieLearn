@@ -5,7 +5,7 @@ import { Alert, Dropdown, Modal } from 'react-bootstrap';
 import { FormProvider, useForm } from 'react-hook-form';
 import ReactMarkdown from 'react-markdown';
 
-import { OverlayTrigger, Tooltip, useModalState } from '@prairielearn/ui';
+import { OverlayTrigger, Popover, useModalState } from '@prairielearn/ui';
 
 import {
   AdministratorCourseFormFields,
@@ -442,7 +442,6 @@ function CourseRequestApproveModalContent({
     }),
     enabled: false,
   });
-  const legitimacyCheckDisabled = legitimacyQuery.isFetching || !aiSecretsConfigured;
 
   return (
     <FormProvider {...methods}>
@@ -457,25 +456,13 @@ function CourseRequestApproveModalContent({
           <div className="card mb-3">
             <div className="card-header d-flex align-items-center justify-content-between py-2">
               <strong>Requesting instructor</strong>
-              <Tooltip
-                placement="bottom"
-                content={
-                  aiSecretsConfigured
-                    ? 'Uses AI web search to verify whether the instructor appears in faculty directories or professional profiles at their stated institution.'
-                    : 'AI features require the corresponding OpenAI key to be configured.'
-                }
-              >
+              {aiSecretsConfigured ? (
                 <button
                   type="button"
-                  className={clsx(
-                    'btn btn-sm btn-outline-secondary',
-                    legitimacyCheckDisabled && 'opacity-50',
-                  )}
-                  aria-disabled={legitimacyCheckDisabled || undefined}
+                  className="btn btn-sm btn-outline-secondary"
+                  disabled={legitimacyQuery.isFetching}
                   aria-busy={legitimacyQuery.isFetching}
-                  onClick={() => {
-                    if (!legitimacyCheckDisabled) void legitimacyQuery.refetch();
-                  }}
+                  onClick={() => legitimacyQuery.refetch()}
                 >
                   {legitimacyQuery.isFetching ? (
                     <>
@@ -487,7 +474,20 @@ function CourseRequestApproveModalContent({
                     </>
                   )}
                 </button>
-              </Tooltip>
+              ) : (
+                <Popover
+                  content="AI features require the corresponding OpenAI key to be configured."
+                  placement="bottom"
+                >
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-outline-secondary"
+                    aria-label="Check legitimacy unavailable: OpenAI API key is not configured"
+                  >
+                    <i className="fa fa-search" aria-hidden="true" /> Check legitimacy
+                  </button>
+                </Popover>
+              )}
             </div>
             <div className="card-body py-2">
               <div className="row g-2 small">

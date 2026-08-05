@@ -147,8 +147,6 @@ function AiQuestionGenerationEditorInner({
               <button
                 type="button"
                 className="btn btn-sm btn-primary"
-                data-bs-toggle="tooltip"
-                data-bs-title="Finalize a question to use it on assessments and make manual edits"
                 disabled={isGenerating}
                 onClick={() => setShowFinalizeModal(true)}
               >

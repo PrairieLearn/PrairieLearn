@@ -339,11 +339,13 @@ function addInstanceQuestionGroupSelectionDropdownListeners() {
     );
     groupSelectionDropdownSpan.innerHTML = selectedGroupName;
 
-    const groupDescriptionTooltip = document.querySelector(
-      '#instance-question-group-description-tooltip',
+    const groupDescriptionPopover = document.querySelector(
+      '#instance-question-group-description-popover',
     );
 
-    groupDescriptionTooltip.setAttribute('data-bs-title', selectedGroupDescription);
-    groupDescriptionTooltip.setAttribute('aria-label', selectedGroupDescription);
+    groupDescriptionPopover.setAttribute('data-bs-content', selectedGroupDescription);
+    window.bootstrap.Popover.getOrCreateInstance(groupDescriptionPopover).setContent({
+      '.popover-body': selectedGroupDescription,
+    });
   });
 }

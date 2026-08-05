@@ -17,8 +17,8 @@ import { run } from '@prairielearn/run';
 import {
   type MultiSelectFilterValue,
   type NumericColumnFilterValue,
+  Popover,
   TanstackTableCard,
-  Tooltip,
   parseAsColumnPinningState,
   parseAsColumnVisibilityStateWithColumns,
   parseAsMultiSelectFilter,
@@ -757,17 +757,16 @@ export function AssessmentQuestionTable({
                 </Dropdown>
                 {aiSubmissionGroupingEnabled &&
                   (!availableAiGradingProviders.includes('openai') ? (
-                    <Tooltip content="No OpenAI API key is configured. Add a key in AI grading settings to use submission grouping.">
-                      <span
-                        className="btn btn-light btn-sm"
-                        role="button"
-                        aria-label="AI submission grouping unavailable"
-                        aria-disabled="true"
+                    <Popover content="No OpenAI API key is configured. Add a key in AI grading settings to use submission grouping.">
+                      <Button
+                        variant="light"
+                        size="sm"
+                        aria-label="AI submission grouping unavailable: No OpenAI API key is configured"
                       >
                         <i className="bi bi-stars" aria-hidden="true" />
                         <span className="d-none d-sm-inline">AI submission grouping</span>
-                      </span>
-                    </Tooltip>
+                      </Button>
+                    </Popover>
                   ) : (
                     <Dropdown>
                       <Dropdown.Toggle variant="light" size="sm">
@@ -821,15 +820,15 @@ export function AssessmentQuestionTable({
                 <Dropdown.Menu align="end">
                   <Dropdown.Header className="d-flex align-items-center gap-1">
                     Assign for grading
-                    <Tooltip content="Only staff with student data editor permissions can be assigned as graders">
+                    <Popover content="Only staff with student data editor permissions can be assigned as graders">
                       <button
                         type="button"
-                        className="btn btn-xs btn-ghost p-0 border-0 lh-1"
+                        className="btn btn-xs btn-ghost p-0 border-0"
                         aria-label="More information about assigning graders"
                       >
                         <i className="fas fa-question-circle text-secondary" aria-hidden="true" />
                       </button>
-                    </Tooltip>
+                    </Popover>
                   </Dropdown.Header>
                   {courseStaff.map((grader) => (
                     <Dropdown.Item

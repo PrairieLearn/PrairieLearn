@@ -31,18 +31,23 @@ export function CopyButton({
   }, [text]);
 
   return (
-    <Tooltip content={copied ? 'Copied!' : 'Copy'}>
-      <button
-        type="button"
-        className={clsx('btn', className)}
-        aria-label={ariaLabel}
-        onClick={(e) => {
-          e.stopPropagation();
-          void handleCopy();
-        }}
-      >
-        <i className={copied ? 'bi bi-check' : 'bi bi-clipboard'} /> {label}
-      </button>
-    </Tooltip>
+    <>
+      <Tooltip content={copied ? 'Copied!' : 'Copy'}>
+        <button
+          type="button"
+          className={clsx('btn', className)}
+          aria-label={ariaLabel}
+          onClick={(e) => {
+            e.stopPropagation();
+            void handleCopy();
+          }}
+        >
+          <i className={copied ? 'bi bi-check' : 'bi bi-clipboard'} aria-hidden="true" /> {label}
+        </button>
+      </Tooltip>
+      <span className="visually-hidden" role="status">
+        {copied ? 'Copied.' : ''}
+      </span>
+    </>
   );
 }

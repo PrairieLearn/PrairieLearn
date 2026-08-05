@@ -3,7 +3,7 @@ import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-
 import clsx from 'clsx';
 
 import { run } from '@prairielearn/run';
-import { Tooltip } from '@prairielearn/ui';
+import { Popover } from '@prairielearn/ui';
 
 import type { EnumAssessmentType } from '../../../../lib/db-types.js';
 import type { TreeActions, TreeState, ZoneAssessmentForm } from '../../types.js';
@@ -155,54 +155,74 @@ export function TreeZoneNode({
               // ZonePointsBadge already shows "No questions" when the zone is empty.
               if (count === 0) return null;
               return (
-                <Tooltip placement="top" content="Total questions in this zone">
-                  <button type="button" className="btn btn-badge color-blue3">
+                <Popover content="Total questions in this zone" placement="top">
+                  <button
+                    type="button"
+                    className="btn btn-badge color-blue3"
+                    onClick={(event) => event.stopPropagation()}
+                  >
                     {count} question{count !== 1 ? 's' : ''}
                   </button>
-                </Tooltip>
+                </Popover>
               );
             })}
             {zone.numberChoose != null && (
-              <Tooltip
-                placement="top"
+              <Popover
                 content={`${zone.numberChoose} question${zone.numberChoose !== 1 ? 's are' : ' is'} randomly selected from this zone, spread across pools as evenly as possible.`}
+                placement="top"
               >
-                <button type="button" className="btn btn-badge color-blue3">
+                <button
+                  type="button"
+                  className="btn btn-badge color-blue3"
+                  onClick={(event) => event.stopPropagation()}
+                >
                   Choose {zone.numberChoose}
                 </button>
-              </Tooltip>
+              </Popover>
             )}
             <ZonePointsBadge zone={zone} assessmentType={assessmentType} />
             {zone.maxPoints != null && (
-              <Tooltip
-                placement="top"
+              <Popover
                 content="Maximum total points from this zone that count toward the assessment"
+                placement="top"
               >
-                <button type="button" className="btn btn-badge color-blue3">
+                <button
+                  type="button"
+                  className="btn btn-badge color-blue3"
+                  onClick={(event) => event.stopPropagation()}
+                >
                   Max {zone.maxPoints} pts
                 </button>
-              </Tooltip>
+              </Popover>
             )}
             {zone.bestQuestions != null && (
-              <Tooltip
-                placement="top"
+              <Popover
                 content="Only the highest-scoring questions in this zone count toward the total"
+                placement="top"
               >
-                <button type="button" className="btn btn-badge color-blue3">
+                <button
+                  type="button"
+                  className="btn btn-badge color-blue3"
+                  onClick={(event) => event.stopPropagation()}
+                >
                   Best {zone.bestQuestions}
                 </button>
-              </Tooltip>
+              </Popover>
             )}
             {zone.lockpoint && (
-              <Tooltip
-                placement="top"
+              <Popover
                 content="Students must complete this zone before proceeding to the next"
+                placement="top"
               >
-                <button type="button" className="btn btn-badge color-blue3">
+                <button
+                  type="button"
+                  className="btn btn-badge color-blue3"
+                  onClick={(event) => event.stopPropagation()}
+                >
                   <i className="bi bi-lock-fill me-1" aria-hidden="true" />
                   Lockpoint
                 </button>
-              </Tooltip>
+              </Popover>
             )}
           </span>
           <span className="flex-grow-1" />
@@ -304,10 +324,14 @@ function ZonePointsBadge({
   });
 
   return (
-    <Tooltip placement="top" content="Total points a student can earn in this zone">
-      <button type="button" className="btn btn-badge color-blue3">
+    <Popover content="Total points a student can earn in this zone" placement="top">
+      <button
+        type="button"
+        className="btn btn-badge color-blue3"
+        onClick={(event) => event.stopPropagation()}
+      >
         {label}
       </button>
-    </Tooltip>
+    </Popover>
   );
 }

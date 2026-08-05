@@ -1,4 +1,4 @@
-import { Tooltip } from '@prairielearn/ui';
+import { Popover } from '@prairielearn/ui';
 
 import { isRenderableComment } from '../../../../lib/comments.js';
 import type { ChangeTrackingResult } from '../../types.js';
@@ -25,30 +25,28 @@ export function ChangeIndicatorBadges({
   return (
     <>
       {editMode && changeTracking.newIds.has(trackingId) && (
-        <Tooltip placement="top" content="New">
-          <span className="text-primary ms-1" role="img" aria-label="New">
-            ●
-          </span>
-        </Tooltip>
+        <span className="text-primary ms-1" role="img" aria-label="New">
+          ●
+        </span>
       )}
       {editMode && changeTracking.modifiedIds.has(trackingId) && (
-        <Tooltip placement="top" content="Modified">
-          <span className="text-primary ms-1" role="img" aria-label="Modified">
-            ●
-          </span>
-        </Tooltip>
+        <span className="text-primary ms-1" role="img" aria-label="Modified">
+          ●
+        </span>
       )}
       {isRenderableComment(comment) && (
-        <Tooltip
-          placement="top"
+        <Popover
           content={truncateWithEllipsis(commentToString(comment) ?? '', COMMENT_TOOLTIP_MAX_LENGTH)}
+          placement="top"
         >
-          <i
-            className="bi bi-chat-left-text text-muted ms-1"
-            aria-label="Assessment question comment"
-            role="img"
-          />
-        </Tooltip>
+          <button
+            type="button"
+            className="btn btn-xs btn-ghost p-0 border-0 ms-1"
+            aria-label="View comment"
+          >
+            <i className="bi bi-chat-left-text text-muted" aria-hidden="true" />
+          </button>
+        </Popover>
       )}
     </>
   );

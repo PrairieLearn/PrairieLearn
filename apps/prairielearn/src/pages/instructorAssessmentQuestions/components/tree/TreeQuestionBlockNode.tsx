@@ -4,7 +4,7 @@ import clsx from 'clsx';
 import { useCallback, useMemo } from 'react';
 
 import { run } from '@prairielearn/run';
-import { Tooltip } from '@prairielearn/ui';
+import { Popover } from '@prairielearn/ui';
 
 import type {
   TreeActions,
@@ -269,7 +269,7 @@ export function TreeQuestionBlockNode({
                     {tag.name}
                   </span>
                 ))}
-                <Tooltip placement="top" content="Tags shared across all alternatives">
+                <Popover content="Tags shared across all alternatives" placement="top">
                   <button
                     type="button"
                     className="btn btn-xs btn-ghost p-0"
@@ -277,7 +277,7 @@ export function TreeQuestionBlockNode({
                   >
                     <i className="bi bi-question-circle text-muted" aria-hidden="true" />
                   </button>
-                </Tooltip>
+                </Popover>
               </div>
             );
           })}

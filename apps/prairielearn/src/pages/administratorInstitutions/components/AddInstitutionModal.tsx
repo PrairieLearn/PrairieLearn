@@ -4,7 +4,7 @@ import { Modal } from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
 import ReactMarkdown from 'react-markdown';
 
-import { Tooltip } from '@prairielearn/ui';
+import { Popover } from '@prairielearn/ui';
 
 import { AppErrorAlert, getAppError } from '../../../lib/client/errors.js';
 import type { StaffAuthnProvider } from '../../../lib/client/safe-db-types.js';
@@ -75,10 +75,13 @@ export function AddInstitutionModal({
     ...trpc.institutions.suggestTimezone.queryOptions({ institutionName, emailDomain }),
     enabled: false,
   });
-  const suggestTimezoneDisabled =
-    timezoneQuery.isFetching || !aiSecretsConfigured || !institutionName || !emailDomain;
 
   const validTimezoneNames = new Set(availableTimezones.map((tz) => tz.name));
+  const suggestTimezoneDisabledReason = !aiSecretsConfigured
+    ? 'AI features require the corresponding OpenAI key to be configured.'
+    : !institutionName || !emailDomain
+      ? 'Fill in the short name and long name first.'
+      : null;
 
   async function handleSuggestTimezone() {
     const { data } = await timezoneQuery.refetch();
@@ -163,25 +166,28 @@ export function AddInstitutionModal({
                   </option>
                 ))}
               </select>
-              <Tooltip
-                placement="top"
-                content={
-                  aiSecretsConfigured
-                    ? 'Uses AI web search to suggest the correct timezone based on the institution name and domain. Fill in the short name and long name first.'
-                    : 'AI features require the corresponding OpenAI key to be configured.'
-                }
-              >
+              {suggestTimezoneDisabledReason ? (
+                <Popover content={suggestTimezoneDisabledReason} placement="top">
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    aria-label={`Suggest timezone unavailable: ${suggestTimezoneDisabledReason}`}
+                  >
+                    Suggest
+                  </button>
+                </Popover>
+              ) : (
                 <button
                   type="button"
-                  className={clsx('btn btn-secondary', suggestTimezoneDisabled && 'opacity-50')}
+                  className="btn btn-secondary"
                   aria-label="Suggest timezone"
                   aria-busy={timezoneQuery.isFetching}
-                  aria-disabled={suggestTimezoneDisabled || undefined}
-                  onClick={suggestTimezoneDisabled ? undefined : handleSuggestTimezone}
+                  disabled={timezoneQuery.isFetching}
+                  onClick={handleSuggestTimezone}
                 >
                   {timezoneQuery.isFetching ? 'Suggesting...' : 'Suggest'}
                 </button>
-              </Tooltip>
+              )}
             </div>
             {errors.display_timezone && (
               <div id="display_timezone-error" className="invalid-feedback d-block">

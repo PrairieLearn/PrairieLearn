@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 
-import { OverlayTrigger, Tooltip } from '@prairielearn/ui';
+import { OverlayTrigger, Popover } from '@prairielearn/ui';
 
 import { AssessmentBadge } from '../../../components/AssessmentBadge.js';
 import type { AssessmentForPicker } from '../types.js';
@@ -32,15 +32,22 @@ function MarkedBadge({
     <AssessmentBadge
       courseInstanceId={courseInstanceId}
       assessment={toBadgeProps(assessment, useSetColor)}
-      prefix={marked ? WARNING_PREFIX : undefined}
-      data-testid={marked ? 'zone-removal-marker' : undefined}
     />
   );
   if (!marked) return badge;
   return (
-    <Tooltip placement="top" content={tooltipLabel}>
+    <span className="d-inline-flex align-items-center gap-1" data-testid="zone-removal-marker">
       {badge}
-    </Tooltip>
+      <Popover content={tooltipLabel} placement="top">
+        <button
+          type="button"
+          className="btn btn-xs btn-ghost text-warning p-0 border-0"
+          aria-label={tooltipLabel}
+        >
+          <i className="bi bi-exclamation-triangle-fill" aria-hidden="true" />
+        </button>
+      </Popover>
+    </span>
   );
 }
 

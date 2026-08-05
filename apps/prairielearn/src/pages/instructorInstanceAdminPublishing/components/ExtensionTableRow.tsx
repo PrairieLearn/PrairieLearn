@@ -1,5 +1,5 @@
 import { formatDateFriendly } from '@prairielearn/formatter';
-import { Tooltip } from '@prairielearn/ui';
+import { Popover } from '@prairielearn/ui';
 
 import { ExpandableUserList } from '../../../components/ExpandableUserList.js';
 import type { StaffCourseInstance } from '../../../lib/client/safe-db-types.js';
@@ -39,7 +39,7 @@ export function ExtensionTableRow({
             courseInstance.display_timezone,
           )}
           {isBeforeInstanceEndDate && (
-            <Tooltip content="This date is before the course instance end date and will be ignored">
+            <Popover content="This date is before the course instance end date and will be ignored">
               <button
                 type="button"
                 className="btn btn-xs btn-ghost"
@@ -47,7 +47,7 @@ export function ExtensionTableRow({
               >
                 <i className="fas fa-exclamation-triangle text-warning" aria-hidden="true" />
               </button>
-            </Tooltip>
+            </Popover>
           )}
         </div>
       </td>

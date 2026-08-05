@@ -37,9 +37,10 @@ function AiGradingStatusCell({ aiGradingStatus }: { aiGradingStatus: JobItemStat
     case JobItemStatus.in_progress:
       return (
         <span className="d-flex align-items-center gap-2">
-          <div className="spinner-grow spinner-grow-sm text-secondary bg-secondary" role="status">
-            <span className="visually-hidden">Loading...</span>
-          </div>
+          <span
+            className="spinner-grow spinner-grow-sm text-secondary bg-secondary"
+            aria-hidden="true"
+          />
           <span>AI grading...</span>
         </span>
       );

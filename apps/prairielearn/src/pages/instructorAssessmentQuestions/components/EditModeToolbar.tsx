@@ -1,6 +1,6 @@
 import clsx from 'clsx';
 
-import { Tooltip } from '@prairielearn/ui';
+import { Popover } from '@prairielearn/ui';
 
 import type { ZoneAssessmentJson } from '../../../schemas/infoAssessment.js';
 import type { ViewType } from '../types.js';
@@ -101,15 +101,21 @@ export function EditModeToolbar({
     );
   }
 
-  const saveButtonClassName = clsx(
-    'btn btn-sm mx-1',
-    saveButtonDisabled ? 'btn-outline-secondary' : 'btn-primary',
-  );
-  const saveButtonContent = (
-    <>
+  const saveButton = (
+    <button
+      className={clsx(
+        'btn btn-sm mx-1',
+        saveButtonDisabled ? 'btn-outline-secondary' : 'btn-primary',
+      )}
+      type={saveButtonDisabledReason ? 'button' : 'submit'}
+      disabled={saveButtonDisabled && !saveButtonDisabledReason}
+      aria-label={
+        saveButtonDisabledReason ? `Save unavailable: ${saveButtonDisabledReason}` : 'Save'
+      }
+    >
       <i className="bi bi-floppy" aria-hidden="true" />{' '}
       <span className="toolbar-btn-label">Save</span>
-    </>
+    </button>
   );
 
   return (
@@ -119,20 +125,11 @@ export function EditModeToolbar({
       <input type="hidden" name="orig_hash" value={origHash} />
       <input type="hidden" name="zones" value={JSON.stringify(zones)} />
       {saveButtonDisabledReason ? (
-        <Tooltip placement="bottom" content={saveButtonDisabledReason}>
-          <span className={saveButtonClassName} role="button" tabIndex={0} aria-disabled="true">
-            {saveButtonContent}
-          </span>
-        </Tooltip>
+        <Popover content={saveButtonDisabledReason} placement="bottom">
+          {saveButton}
+        </Popover>
       ) : (
-        <button
-          className={saveButtonClassName}
-          type="submit"
-          disabled={saveButtonDisabled}
-          aria-label="Save"
-        >
-          {saveButtonContent}
-        </button>
+        saveButton
       )}
       <button className="btn btn-sm btn-outline-secondary" type="button" onClick={onCancel}>
         Cancel

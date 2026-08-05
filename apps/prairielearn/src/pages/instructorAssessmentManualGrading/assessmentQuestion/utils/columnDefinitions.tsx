@@ -4,7 +4,7 @@ import { useEffect, useRef } from 'react';
 import { run } from '@prairielearn/run';
 import {
   type MultiSelectFilterValue,
-  Tooltip,
+  Popover,
   applyMultiSelectFilter,
   numericColumnFilterFn,
 } from '@prairielearn/ui';
@@ -123,7 +123,7 @@ export function createColumns({
               Instance {info.getValue() + 1}
             </a>
             {row.open_issue_count ? (
-              <Tooltip
+              <Popover
                 content={
                   <>
                     Instance question has {row.open_issue_count} open{' '}
@@ -134,12 +134,12 @@ export function createColumns({
                 <button type="button" className="btn btn-danger badge rounded-pill">
                   {row.open_issue_count}
                 </button>
-              </Tooltip>
+              </Popover>
             ) : null}
             {row.assessment_open ? (
-              <Tooltip content="Assessment instance is still open">
-                <span
-                  role="img"
+              <Popover content="Assessment instance is still open">
+                <button
+                  type="button"
                   className="btn btn-xs btn-ghost"
                   aria-label="Assessment instance is still open"
                 >
@@ -147,8 +147,8 @@ export function createColumns({
                     className="fas fa-exclamation-triangle fa-width-auto text-warning"
                     aria-hidden="true"
                   />
-                </span>
-              </Tooltip>
+                </button>
+              </Popover>
             ) : null}
           </div>
         );
@@ -169,7 +169,7 @@ export function createColumns({
           <span className="d-flex align-items-center gap-2">
             {value}
             {group && (
-              <Tooltip content={group.instance_question_group_description}>
+              <Popover content={group.instance_question_group_description}>
                 <button
                   type="button"
                   className="btn btn-xs btn-ghost"
@@ -180,7 +180,7 @@ export function createColumns({
                     aria-hidden="true"
                   />
                 </button>
-              </Tooltip>
+              </Popover>
             )}
           </span>
         );
@@ -407,13 +407,15 @@ export function createColumns({
 
         if (row.instance_question.rubric_difference.length === 0) {
           return (
-            <Tooltip content="AI and human grading are in agreement">
-              <i
-                className="bi bi-check-square-fill text-success"
-                aria-label="AI grading agreement status"
-                role="img"
-              />
-            </Tooltip>
+            <Popover content="AI and human grading are in agreement">
+              <button
+                type="button"
+                className="btn btn-xs btn-ghost p-0 border-0"
+                aria-label="AI and human grading are in agreement"
+              >
+                <i className="bi bi-check-square-fill text-success" aria-hidden="true" />
+              </button>
+            </Popover>
           );
         }
 
@@ -422,21 +424,25 @@ export function createColumns({
             {row.instance_question.rubric_difference.map((item) => (
               <div key={item.description}>
                 {item.false_positive ? (
-                  <Tooltip content="Selected by AI but not by human">
-                    <i
-                      className="bi bi-plus-square-fill text-danger"
-                      aria-label="AI grading difference"
-                      role="img"
-                    />
-                  </Tooltip>
+                  <Popover content="Selected by AI but not by human">
+                    <button
+                      type="button"
+                      className="btn btn-xs btn-ghost p-0 border-0"
+                      aria-label="Selected by AI but not by human"
+                    >
+                      <i className="bi bi-plus-square-fill text-danger" aria-hidden="true" />
+                    </button>
+                  </Popover>
                 ) : (
-                  <Tooltip content="Selected by human but not by AI">
-                    <i
-                      className="bi bi-dash-square-fill text-danger"
-                      aria-label="AI grading difference"
-                      role="img"
-                    />
-                  </Tooltip>
+                  <Popover content="Selected by human but not by AI">
+                    <button
+                      type="button"
+                      className="btn btn-xs btn-ghost p-0 border-0"
+                      aria-label="Selected by human but not by AI"
+                    >
+                      <i className="bi bi-dash-square-fill text-danger" aria-hidden="true" />
+                    </button>
+                  </Popover>
                 )}{' '}
                 <span>{item.description}</span>
               </div>

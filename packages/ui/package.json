@@ -43,7 +43,7 @@
     "@prairielearn/tsconfig": "workspace:^",
     "@types/node": "^24.13.2",
     "@typescript/native-preview": "beta",
-    "typescript-cp": "^0.1.9",
+    "typescript-cp": "^0.1.10",
     "vitest": "^4.1.9"
   }
 }
