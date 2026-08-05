@@ -294,7 +294,7 @@ export function coursePathForChunk(coursePath: string, chunkMetadata: ChunkMetad
  * @param newHash The new (current) hash for the diff
  * @returns List of changed files
  */
-async function identifyChangedFiles(
+export async function identifyChangedFiles(
   coursePath: string,
   oldHash: string,
   newHash: string,
@@ -735,7 +735,7 @@ async function diffChunks({
   return { updatedChunks, deletedChunks };
 }
 
-async function createAndUploadChunks(
+export async function createAndUploadChunks(
   coursePath: string,
   courseId: string,
   chunksToGenerate: ChunkMetadata[],
