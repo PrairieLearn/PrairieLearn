@@ -103,6 +103,8 @@ describe('POST /pl/report-cheating', () => {
       reservation_id: '2',
       report: 'Student nearby is using a phone.',
     });
+    assert(payload.iat && payload.exp);
+    assert.equal(payload.exp - payload.iat, 5 * 60);
   });
 
   it('rejects invalid input before calling PrairieTest', async () => {
