@@ -9,9 +9,9 @@ import {
   type AuthUser,
   getConfiguredUser,
   getOrCreateUser,
+  updateCourseInstanceSettings,
   withUser,
 } from '../../../tests/utils/auth.js';
-import { createEnrollment } from '../../../tests/utils/enrollment-identity.js';
 import {
   reconcilePlanGrantsForCourseInstance,
   reconcilePlanGrantsForCourseInstanceUser,
@@ -77,22 +77,18 @@ describe('studentCourseInstanceUpgrade', () => {
     });
   });
 
-  it('does not let an LTI relaunch hint bypass a blocked enrollment', async () => {
+  it('does not let an LTI relaunch hint bypass self-enrollment policy', async () => {
     await updateRequiredPlansForCourseInstance('1', ['basic'], '1');
+    await updateCourseInstanceSettings('1', {
+      selfEnrollmentEnabled: false,
+      selfEnrollmentUseEnrollmentCode: false,
+      restrictToInstitution: false,
+    });
 
     await withUser(studentUser, async () => {
-      const user = await getConfiguredUser();
-      const courseInstance = await selectCourseInstanceById('1');
-      await createEnrollment({
-        courseInstance,
-        userId: user.id,
-        status: 'blocked',
-        firstJoinedAt: new Date('2024-01-01T00:00:00Z'),
-      });
-
       const res = await fetch(`${upgradeUrl}?lti13_relaunch=1`);
       assert.equal(res.status, 403);
-      assert.include(await res.text(), 'Enrollment blocked');
+      assert.include(await res.text(), 'Self-enrollment not available');
     });
   });
 

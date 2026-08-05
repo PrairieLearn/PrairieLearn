@@ -18,10 +18,9 @@ export function StudentCourseInstanceUpgrade({
   course: Course;
   courseInstance: CourseInstance;
   /**
-   * Whether this request is following the LTI-specific upgrade flow. When
-   * true, the query hint is preserved through payment and the student is
-   * directed back to the LMS for a fresh launch instead of continuing into the
-   * course.
+   * Whether the student reached this page from an LTI launch that matched a
+   * pending invitation. If so, send them back to their LMS after payment
+   * instead of directly into the course.
    */
   lti13Relaunch: boolean;
   missingPlans: PlanName[];

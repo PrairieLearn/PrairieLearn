@@ -43,7 +43,9 @@ async function createEnrollmentWithStatus({
       course_instance_id: courseInstanceId,
       status,
       pending_uid: pendingUid,
-      first_joined_at: status === 'joined' ? new Date() : null,
+      first_joined_at: ['joined', 'left', 'removed', 'blocked'].includes(status)
+        ? new Date()
+        : null,
     },
     EnrollmentSchema,
   );
@@ -279,78 +281,71 @@ describe('Homepage enrollment actions', () => {
     });
   });
 
-  it('allows accepting invitation after rejecting it', async () => {
-    const user = await getOrCreateUser({
-      uid: 'invited4@example.com',
-      name: 'Invited User 4',
-      uin: 'invited4',
-      email: 'invited4@example.com',
-      institutionId: '1',
-    });
-
-    // Create an invited enrollment
-    await createEnrollmentWithStatus({
-      userId: null,
-      courseInstanceId: '1',
-      status: 'invited',
-      pendingUid: user.uid,
-    });
-
-    await withUser(user, async () => {
-      const csrfToken = await getCsrfToken(homeUrl);
-
-      // First reject the invitation
-      const rejectResponse = await fetchCheerio(homeUrl, {
-        method: 'POST',
-        body: new URLSearchParams({
-          __action: 'reject_invitation',
-          course_instance_id: '1',
-          __csrf_token: csrfToken,
-        }),
+  it.each(['left', 'removed', 'rejected'] as const)(
+    'does not treat a %s enrollment as an invitation',
+    async (status) => {
+      const user = await getOrCreateUser({
+        uid: `non-actionable-${status}@example.com`,
+        name: `Non-actionable ${status} user`,
+        uin: `non-actionable-${status}`,
+        email: `non-actionable-${status}@example.com`,
+        institutionId: '1',
       });
-      assert.equal(rejectResponse.status, 200);
-      assert.equal(rejectResponse.url, homeUrl);
-
-      // Verify enrollment is rejected
-      const courseInstance = await selectCourseInstanceById('1');
-      const rejectedEnrollment = await selectOptionalEnrollmentByPendingUid({
-        pendingUid: user.uid,
-        courseInstance,
-        requiredRole: ['System'],
-        authzData: dangerousFullSystemAuthz(),
+      const isPending = status === 'rejected';
+      await createEnrollmentWithStatus({
+        userId: isPending ? null : user.id,
+        courseInstanceId: '1',
+        status,
+        pendingUid: isPending ? user.uid : null,
       });
-      assert.isNotNull(rejectedEnrollment);
-      assert.equal(rejectedEnrollment.status, 'rejected');
 
-      // Now accept the invitation (should succeed)
-      const csrfToken2 = await getCsrfToken(homeUrl);
-      const acceptResponse = await fetchCheerio(homeUrl, {
-        method: 'POST',
-        body: new URLSearchParams({
-          __action: 'accept_invitation',
-          course_instance_id: '1',
-          __csrf_token: csrfToken2,
-        }),
-      });
-      assert.equal(acceptResponse.status, 200);
-      assert.equal(acceptResponse.url, homeUrl);
+      try {
+        await withUser(user, async () => {
+          const fetchWithCookies = fetchCookie(fetch);
+          const response = await fetchWithCookies(homeUrl, {
+            method: 'POST',
+            body: new URLSearchParams({
+              __action: 'accept_invitation',
+              course_instance_id: '1',
+              __csrf_token: await getCsrfToken(homeUrl),
+            }),
+          });
+          assert.equal(response.status, 200);
+          const $ = (await import('cheerio')).load(await response.text());
+          assertAlert($, 'Failed to accept invitation');
 
-      // Verify enrollment is now joined
-      const finalEnrollment = await selectOptionalEnrollmentByUserId({
-        userId: user.id,
-        courseInstance,
-        requiredRole: ['System'],
-        authzData: dangerousFullSystemAuthz(),
-      });
-      assert.isNotNull(finalEnrollment);
-      assert.equal(finalEnrollment.status, 'joined');
-    });
-
-    await execute(sql.delete_enrollment_by_course_instance_and_user, {
-      course_instance_id: '1',
-      user_id: user.id,
-    });
-  });
+          const courseInstance = await selectCourseInstanceById('1');
+          const enrollment = isPending
+            ? await selectOptionalEnrollmentByPendingUid({
+                pendingUid: user.uid,
+                courseInstance,
+                requiredRole: ['System'],
+                authzData: dangerousFullSystemAuthz(),
+              })
+            : await selectOptionalEnrollmentByUserId({
+                userId: user.id,
+                courseInstance,
+                requiredRole: ['System'],
+                authzData: dangerousFullSystemAuthz(),
+              });
+          assert.isNotNull(enrollment);
+          assert.equal(enrollment.status, status);
+        });
+      } finally {
+        if (isPending) {
+          await execute(sql.delete_enrollment_by_course_instance_and_pending_uid, {
+            course_instance_id: '1',
+            pending_uid: user.uid,
+          });
+        } else {
+          await execute(sql.delete_enrollment_by_course_instance_and_user, {
+            course_instance_id: '1',
+            user_id: user.id,
+          });
+        }
+      }
+    },
+  );
 
   it('does not show invited course that is not published', async () => {
     const user = await getOrCreateUser({

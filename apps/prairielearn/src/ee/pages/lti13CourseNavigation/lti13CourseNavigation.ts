@@ -12,15 +12,13 @@ import {
   Lti13CourseInstanceSchema,
 } from '../../../lib/db-types.js';
 import { admitUserFromLti13Launch } from '../../../lib/enrollment/admission.js';
-import {
-  type EnrollmentAdmissionSource,
-  selectEnrollmentAdmissionDecision,
-} from '../../../lib/enrollment/identity.js';
+import { selectEnrollmentAdmissionDecision } from '../../../lib/enrollment/identity.js';
 import { EnrollmentAdmissionDeniedError } from '../../../lib/enrollment/reconciliation.js';
 import { idsEqual } from '../../../lib/id.js';
 import { typedAsyncHandler } from '../../../lib/res-locals.js';
 import { selectCourseInstancesWithStaffAccess } from '../../../models/course-instances.js';
 import { selectCoursesWithEditAccess } from '../../../models/course.js';
+import { setLti13CourseInstanceUpgradeAuthorization } from '../../lib/lti13-course-instance-upgrade.js';
 import { Lti13Claim } from '../../lib/lti13.js';
 
 import {
@@ -175,41 +173,52 @@ router.get(
       const lti13CourseInstanceId = lti13_course_instance.id;
       const sub = ltiClaim.sub;
       const userId = res.locals.authn_user.id;
-      const source: EnrollmentAdmissionSource = {
-        type: 'invitation',
-        matchedBy: 'lti13',
-        lti13CourseInstanceId,
-        sub,
-      };
-
       // Remove the launch claims before admission. If admission redirects or
       // fails, the student must relaunch from the LMS.
       ltiClaim.remove();
 
-      const decision = await selectEnrollmentAdmissionDecision(
-        {
-          courseInstanceId,
-          lti13Identity: { lti13CourseInstanceId, sub },
-          userId,
+      const decision = await selectEnrollmentAdmissionDecision({
+        courseInstanceId,
+        source: {
+          type: 'invitation',
+          matchedBy: 'lti13',
+          lti13CourseInstanceId,
+          sub,
         },
-        source,
-      );
+        userId,
+      });
       if (decision.allowed && decision.invitationCandidate !== null) {
+        const invitationEnrollmentId = decision.invitationCandidate.enrollment.id;
         try {
           await admitUserFromLti13Launch({
             courseInstanceId,
-            expectedInvitationEnrollmentId: decision.invitationCandidate.enrollment.id,
+            expectedInvitationEnrollmentId: invitationEnrollmentId,
             ip: req.ip ?? null,
             isAdministrator: res.locals.is_administrator,
             lti13CourseInstanceId,
+            onPlanGrantsRequired: () => {
+              // Remember why this student was sent to the upgrade page. That
+              // page checks the invitation again, and enrollment still requires
+              // another launch from the LMS after payment.
+              setLti13CourseInstanceUpgradeAuthorization({
+                courseInstanceId,
+                enrollmentId: invitationEnrollmentId,
+                lti13CourseInstanceId,
+                now: res.locals.req_date,
+                session: req.session,
+                sub,
+                userId,
+              });
+            },
             reqDate: res.locals.req_date,
             sub,
             userId,
           });
         } catch (error) {
           if (!(error instanceof EnrollmentAdmissionDeniedError)) throw error;
-          // The invitation may have changed after the read-only check. Continue
-          // to the course route, where entry is re-evaluated without LTI claims.
+          // The invitation changed after the first lookup. Continue to the
+          // course route, which will decide whether the student can enter
+          // without the LTI invitation.
         }
       }
 

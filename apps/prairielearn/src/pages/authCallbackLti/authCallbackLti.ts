@@ -131,8 +131,7 @@ router.post(
 
     // Persist the user's authentication data in the session. We do this before
     // checking authorization so that user information is available for any
-    // subsequent requests or redirects (e.g. if `ensureCheckedEnrollment`
-    // redirects to a payment page).
+    // subsequent requests or enrollment-related payment redirects.
     const { user } = await authnLib.loadUser(req, res, {
       user_id: userId,
       provider: 'LTI',
