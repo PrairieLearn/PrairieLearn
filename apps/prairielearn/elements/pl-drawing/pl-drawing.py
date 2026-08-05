@@ -77,6 +77,18 @@ def check_attributes_rec(element: lxml.html.HtmlElement) -> None:
         check_attributes_rec(child)
 
 
+def get_grid_size_and_tol(element: lxml.html.HtmlElement) -> tuple[int, float]:
+    grid_size = pl.get_integer_attrib(
+        element, "grid-size", defaults.element_defaults["grid-size"]
+    )
+    tol = pl.get_float_attrib(
+        element,
+        "tol",
+        grid_size / 2 if grid_size != 0 else defaults.element_defaults["grid-size"] / 2,
+    )
+    return grid_size, tol
+
+
 def prepare(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     check_attributes_rec(element)
@@ -147,11 +159,13 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
                 'You do not have any "pl-drawing-answer" inside pl-drawing where gradable=True. You should either specify the "pl-drawing-answer" if you want to grade objects, or make gradable=False'
             )
 
+        _, tol = get_grid_size_and_tol(element)
+
         # Generate these in order so that answer elements are displayed on top of initial elements
         init = None
         if initial_child is not None:
-            init, n_id = render_drawing_items(initial_child, n_id)
-        ans, n_id = render_drawing_items(answer_child, n_id)
+            init, n_id = render_drawing_items(initial_child, n_id, tol=tol)
+        ans, n_id = render_drawing_items(answer_child, n_id, tol=tol)
 
         # Makes sure that all objects in pl-drawing-answer are graded
         # and all the objects in pl-drawing-initial are not graded
@@ -231,7 +245,7 @@ def render_controls(template: str, elem: lxml.html.HtmlElement) -> str:
         return "unknown tag " + elem.tag
 
 
-def render_drawing_items(elem, curid=0, defaults=None):
+def render_drawing_items(elem, curid=0, defaults=None, tol=None):
     # Convert a set of drawing items defined as html elements into an array of
     # objects that can be sent to mechanicsObjects.js
     # Some helpers to get attributes from elements.  If there is no default argument passed in,
@@ -245,12 +259,18 @@ def render_drawing_items(elem, curid=0, defaults=None):
         if el.tag == "pl-drawing-group":
             if pl.get_boolean_attrib(el, "visible", True):
                 curid += 1
-                raw, _ = render_drawing_items(el, curid, {"groupid": curid})
+                raw, _ = render_drawing_items(el, curid, {"groupid": curid}, tol)
                 objs = raw
                 curid += len(objs)
                 objects.extend(objs)
         else:
-            obj = elements.generate(el, el.tag, defaults)
+            if tol is not None:
+                generated_el = copy.copy(el)
+                if "tol" not in generated_el.attrib:
+                    generated_el.attrib["tol"] = str(tol)
+            else:
+                generated_el = el
+            obj = elements.generate(generated_el, generated_el.tag, defaults)
             if obj is not None:
                 obj["id"] = curid
                 objects.append(obj)
@@ -281,13 +301,15 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
     load_extensions(data)
 
+    grid_size, tol = get_grid_size_and_tol(element)
+
     for el in element:
         if el.tag is lxml.etree.Comment:
             continue
         if el.tag == "pl-controls" and not preview_mode:
             btn_markup = render_controls(template, el)
         elif el.tag == "pl-drawing-initial":
-            init, _ = render_drawing_items(el)
+            init, _ = render_drawing_items(el, tol=tol)
             draw_error_box = pl.get_boolean_attrib(
                 el, "draw-error-box", defaults.element_defaults["draw-error-box"]
             )
@@ -298,14 +320,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         if "objectDrawErrorBox" in obj and obj["objectDrawErrorBox"] is not None:
             obj["drawErrorBox"] = obj["objectDrawErrorBox"]
 
-    grid_size = pl.get_integer_attrib(
-        element, "grid-size", defaults.element_defaults["grid-size"]
-    )
-    tol = pl.get_float_attrib(
-        element,
-        "tol",
-        grid_size / 2 if grid_size != 0 else defaults.element_defaults["grid-size"] / 2,
-    )
     angle_tol = pl.get_float_attrib(
         element, "angle-tol", defaults.element_defaults["angle-tol"]
     )
@@ -462,14 +476,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
 
     allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
     weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)
-    grid_size = pl.get_integer_attrib(
-        element, "grid-size", defaults.element_defaults["grid-size"]
-    )
-    tol = pl.get_float_attrib(
-        element,
-        "tol",
-        grid_size / 2 if grid_size != 0 else defaults.element_defaults["grid-size"] / 2,
-    )
+    _, tol = get_grid_size_and_tol(element)
     angtol = pl.get_float_attrib(
         element, "angle-tol", defaults.element_defaults["angle-tol"]
     )
@@ -630,16 +637,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
         }
 
     elif result == "incorrect":
-        grid_size = pl.get_integer_attrib(
-            element, "grid-size", defaults.element_defaults["grid-size"]
-        )
-        tol = pl.get_float_attrib(
-            element,
-            "tol",
-            grid_size / 2
-            if grid_size != 0
-            else defaults.element_defaults["grid-size"] / 2,
-        )
+        _, tol = get_grid_size_and_tol(element)
         angtol = pl.get_float_attrib(
             element, "angle-tol", defaults.element_defaults["angle-tol"]
         )
