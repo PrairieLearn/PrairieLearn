@@ -39,6 +39,17 @@
   border-top-right-radius: var(--bs-card-border-radius, var(--bs-border-radius));
 }
 
+.pl-overlay-location .pl-drawing-main {
+  position: relative;
+}
+
+.pl-overlay-location .pl-drawing-header {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1;
+}
+
 .pl-drawing-sidebar {
   margin-left: 20px;
   flex-grow: 1;
