@@ -110,9 +110,9 @@
     "brotli": 587
   },
   "scripts/navbarClient.ts": {
-    "raw": 71065,
-    "gzip": 20572,
-    "brotli": 18382
+    "raw": 73791,
+    "gzip": 21099,
+    "brotli": 18822
   },
   "scripts/pageLayoutClient.ts": {
     "raw": 3060,
