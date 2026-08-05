@@ -71,7 +71,7 @@ async function countAuditEvents(ids: string[]) {
   return await queryScalar(sql.count_enrollment_audit_events, { enrollment_ids: ids }, z.number());
 }
 
-describe('Homepage enrollment candidates', () => {
+describe('Homepage student courses', () => {
   beforeAll(async () => {
     await helperServer.before()();
     await helperCourse.syncCourse(EXAMPLE_COURSE_PATH);
@@ -117,7 +117,7 @@ describe('Homepage enrollment candidates', () => {
     }
   });
 
-  it('groups bound-left and pending UIN candidates once using their maximum extension', async () => {
+  it('shows a left enrollment and matching UIN invitation once with their latest extension', async () => {
     const user = await getOrCreateUser({
       uid: 'grouped-uin-invitation@example.com',
       name: 'Grouped UIN invitation user',
@@ -146,7 +146,7 @@ describe('Homepage enrollment candidates', () => {
       sql.create_publishing_extension,
       {
         course_instance_id: '1',
-        name: 'Homepage expired candidate extension',
+        name: 'Homepage bound enrollment extension',
         end_date: new Date(now.getTime() - 12 * 60 * 60 * 1000),
       },
       CourseInstancePublishingExtensionSchema,
@@ -155,7 +155,7 @@ describe('Homepage enrollment candidates', () => {
       sql.create_publishing_extension,
       {
         course_instance_id: '1',
-        name: 'Homepage active candidate extension',
+        name: 'Homepage UIN invitation extension',
         end_date: new Date(now.getTime() + 24 * 60 * 60 * 1000),
       },
       CourseInstancePublishingExtensionSchema,

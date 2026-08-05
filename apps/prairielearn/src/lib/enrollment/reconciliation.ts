@@ -402,8 +402,8 @@ async function rejectInvitation({
 }
 
 /**
- * Rejects only the exact actionable UID-matched invitation selected by the
- * caller. UIN and LTI identity matches cannot authorize this mutation.
+ * Rejects the pending UID invitation with the ID selected by the caller. A UIN
+ * or LTI match on the same row is not enough to reject it through this method.
  */
 export async function rejectUidInvitation(
   options: EnrollmentAuditActor & {
@@ -419,9 +419,9 @@ export async function rejectUidInvitation(
 }
 
 /**
- * Hides institution-provided course access without binding the user or changing
- * a paired left enrollment. A later roster sync may make the course available
- * again by reinviting the exact same identity.
+ * Hides a pending UIN invitation without binding the user or changing a paired
+ * `left` enrollment. A later import may set the invitation back to `invited`,
+ * making the course appear on the homepage again.
  */
 export async function rejectInstitutionUinInvitation(
   options: EnrollmentAuditActor & {
