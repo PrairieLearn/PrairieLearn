@@ -44,9 +44,9 @@ A question that reads or writes a shared-state object must declare it in its own
 }
 ```
 
-The key (`"themeState"`) is the local name that appears in `server.py`; the value (`"assessmentTheme"`) is the course-level object name declared in `infoCourse.json`. This indirection means a question can be copied to another course without rewriting Python code, even if the destination course uses a different JSON name for the same shared-state object. Sync reports an error if a question binds to an object name that isn't defined in the course's `sharedState`.
+The key (`"themeState"`) is the local name that appears in `server.py`; the value (`"assessmentTheme"`) is the course-level object name declared in `infoCourse.json`. This indirection keeps Python code independent from the course-level object name. Sync reports an error if a question binds to an object name that isn't defined in the course's `sharedState`.
 
-When copying a source-shared question to another course, copy the corresponding `sharedState` object definition into the destination course's `infoCourse.json`, keeping the same `uuid`. The question's `sharedStateAccess` value can then be adjusted to point at the destination course's object name while leaving `server.py` unchanged. [Sharing the question itself](../contentSharing.md) (`sharePublicly`, or via a sharing set) is unaffected — the shared-state object continues to resolve against the question's owning course.
+A question that declares `sharedStateAccess` cannot also set `shareSourcePublicly`: copying a question's source into another course doesn't yet carry over its shared-state object definition, so this combination is rejected as a sync error. [Sharing the question itself](../contentSharing.md) (`sharePublicly`, or via a sharing set) is unaffected — the shared-state object continues to resolve against the question's owning course.
 
 ## Using shared state in `server.py`
 

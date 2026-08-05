@@ -1007,7 +1007,7 @@ export class CourseInstanceCopyEditor extends Editor {
         // lock on both the source and target courses, then perform the copy.
         // To avoid deadlocks we'll need to take these locks in a universal order,
         // such as ordering the two courses by `id` and locking in that order.
-        const { questionPath, qid, extraPathsToAdd } = await copyQuestion({
+        const { questionPath, qid } = await copyQuestion({
           course: this.course,
           from_course: this.from_course,
           from_path,
@@ -1018,7 +1018,7 @@ export class CourseInstanceCopyEditor extends Editor {
         });
 
         newQids[question.qid] = qid;
-        pathsToAdd.push(questionPath, ...extraPathsToAdd);
+        pathsToAdd.push(questionPath);
       }
 
       // Update the infoAssessment.json files to include the course sharing name for each question
@@ -2012,7 +2012,7 @@ export class QuestionCopyEditor extends Editor {
   async write() {
     debug('QuestionCopyEditor: write()');
 
-    const { questionPath, qid, extraPathsToAdd } = await copyQuestion({
+    const { questionPath, qid } = await copyQuestion({
       course: this.course,
       from_course: this.from_course,
       from_path: this.from_path,
@@ -2023,7 +2023,7 @@ export class QuestionCopyEditor extends Editor {
     });
 
     return {
-      pathsToAdd: [questionPath, ...extraPathsToAdd],
+      pathsToAdd: [questionPath],
       commitMessage: `copy question ${this.from_qid}${this.is_transfer ? ` (from ${this.from_course_label})` : ''} to ${qid}`,
     };
   }
@@ -2077,101 +2077,6 @@ async function copyQuestionFiles({
   });
 }
 
-function sharedStateAccessBindings(raw: unknown): Record<string, string> {
-  if (Array.isArray(raw)) {
-    return Object.fromEntries(
-      raw.filter((value): value is string => typeof value === 'string').map((name) => [name, name]),
-    );
-  }
-  if (raw == null || typeof raw !== 'object') return {};
-
-  return Object.fromEntries(
-    Object.entries(raw).filter(
-      (entry): entry is [string, string] =>
-        typeof entry[0] === 'string' && typeof entry[1] === 'string',
-    ),
-  );
-}
-
-function uniqueSharedStateObjectName(sourceName: string, existingNames: Set<string>): string {
-  if (!existingNames.has(sourceName)) return sourceName;
-
-  for (let i = 1; ; i++) {
-    const candidate = `${sourceName}_copy${i}`;
-    if (!existingNames.has(candidate)) return candidate;
-  }
-}
-
-async function copySharedStateObjectsForQuestion({
-  course,
-  from_course,
-  infoJson,
-}: {
-  course: Course | StaffCourse;
-  from_course: Course | StaffCourse;
-  infoJson: Record<string, unknown>;
-}): Promise<string | null> {
-  if (idsEqual(course.id, from_course.id)) return null;
-
-  const bindings = sharedStateAccessBindings(infoJson.sharedStateAccess);
-  if (Object.keys(bindings).length === 0) return null;
-
-  const sourceInfoJson = await fs.readJson(path.join(from_course.path, 'infoCourse.json'));
-  const targetInfoPath = path.join(course.path, 'infoCourse.json');
-  const targetInfoJson = await fs.readJson(targetInfoPath);
-
-  const sourceSharedState = sourceInfoJson.sharedState ?? {};
-  const targetSharedState = targetInfoJson.sharedState ?? {};
-  const existingNames = new Set(Object.keys(targetSharedState));
-  const namesByUuid = new Map<string, string>(
-    Object.entries(targetSharedState)
-      .filter(
-        (entry): entry is [string, { uuid: string }] =>
-          typeof entry[1] === 'object' &&
-          entry[1] != null &&
-          'uuid' in entry[1] &&
-          typeof entry[1].uuid === 'string',
-      )
-      .map(([name, definition]) => [definition.uuid, name]),
-  );
-
-  let copiedAny = false;
-  const updatedBindings: Record<string, string> = {};
-  for (const [localName, sourceName] of Object.entries(bindings)) {
-    const sourceDefinition = sourceSharedState[sourceName];
-    if (
-      sourceDefinition == null ||
-      typeof sourceDefinition !== 'object' ||
-      typeof sourceDefinition.uuid !== 'string'
-    ) {
-      updatedBindings[localName] = sourceName;
-      continue;
-    }
-
-    const existingName = namesByUuid.get(sourceDefinition.uuid);
-    if (existingName != null) {
-      updatedBindings[localName] = existingName;
-      continue;
-    }
-
-    const targetName = uniqueSharedStateObjectName(sourceName, existingNames);
-    targetSharedState[targetName] = sourceDefinition;
-    existingNames.add(targetName);
-    namesByUuid.set(sourceDefinition.uuid, targetName);
-    updatedBindings[localName] = targetName;
-    copiedAny = true;
-  }
-
-  infoJson.sharedStateAccess = updatedBindings;
-
-  if (!copiedAny) return null;
-
-  targetInfoJson.sharedState = targetSharedState;
-  const formattedJson = await formatJsonWithPrettier(JSON.stringify(targetInfoJson));
-  await fs.writeFile(targetInfoPath, formattedJson);
-  return targetInfoPath;
-}
-
 async function copyQuestion({
   course,
   from_course,
@@ -2188,7 +2093,7 @@ async function copyQuestion({
   uuid: string;
   existingTitles: string[];
   existingQids: string[];
-}): Promise<{ questionPath: string; qid: string; extraPathsToAdd: string[] }> {
+}): Promise<{ questionPath: string; qid: string }> {
   const questionsPath = path.join(course.path, 'questions');
 
   debug('Get title of question that is being copied');
@@ -2238,19 +2143,9 @@ async function copyQuestion({
   delete infoJson.sharePublicly;
   delete infoJson.shareSourcePublicly;
 
-  const sharedStateInfoPath = await copySharedStateObjectsForQuestion({
-    course,
-    from_course,
-    infoJson,
-  });
-
   const formattedJson = await formatJsonWithPrettier(JSON.stringify(infoJson));
   await fs.writeFile(path.join(questionPath, 'info.json'), formattedJson);
-  return {
-    questionPath,
-    qid,
-    extraPathsToAdd: sharedStateInfoPath == null ? [] : [sharedStateInfoPath],
-  };
+  return { questionPath, qid };
 }
 
 export class FileDeleteEditor extends Editor {

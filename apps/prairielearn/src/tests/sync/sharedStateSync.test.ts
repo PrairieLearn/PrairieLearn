@@ -123,7 +123,7 @@ describe('Shared-state object syncing', () => {
     assert.match(syncedCourse.sync_errors, /use the same UUID/);
   });
 
-  it('allows a question with shared-state access to be source shared', async () => {
+  it('reports an error when a question with shared-state access is also shareSourcePublicly', async () => {
     const courseData = util.getCourseData();
     withSharedStateDefinition(courseData);
     courseData.questions[util.QUESTION_ID].sharedStateAccess = {
@@ -135,7 +135,8 @@ describe('Shared-state object syncing', () => {
     await util.syncCourseData(courseDir);
 
     const question = await selectSyncedQuestion(util.QUESTION_ID);
-    assert.isNotOk(question?.sync_errors);
+    assert.isNotNull(question?.sync_errors);
+    assert.match(question!.sync_errors, /"shareSourcePublicly" cannot be used.*shared-state/);
   });
 
   it('rejects "courseInstance" scope as not yet supported', async () => {
