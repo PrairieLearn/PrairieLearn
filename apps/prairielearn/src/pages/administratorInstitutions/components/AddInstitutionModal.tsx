@@ -4,7 +4,7 @@ import { Modal } from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
 import ReactMarkdown from 'react-markdown';
 
-import { Popover } from '@prairielearn/ui';
+import { Popover, Tooltip } from '@prairielearn/ui';
 
 import { AppErrorAlert, getAppError } from '../../../lib/client/errors.js';
 import type { StaffAuthnProvider } from '../../../lib/client/safe-db-types.js';
@@ -177,16 +177,18 @@ export function AddInstitutionModal({
                   </button>
                 </Popover>
               ) : (
-                <button
-                  type="button"
-                  className="btn btn-secondary"
-                  aria-label="Suggest timezone"
-                  aria-busy={timezoneQuery.isFetching}
-                  disabled={timezoneQuery.isFetching}
-                  onClick={handleSuggestTimezone}
-                >
-                  {timezoneQuery.isFetching ? 'Suggesting...' : 'Suggest'}
-                </button>
+                <Tooltip content="Uses AI web search to suggest the correct timezone based on the institution name and domain.">
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    aria-label="Suggest timezone"
+                    aria-busy={timezoneQuery.isFetching}
+                    disabled={timezoneQuery.isFetching}
+                    onClick={handleSuggestTimezone}
+                  >
+                    {timezoneQuery.isFetching ? 'Suggesting...' : 'Suggest'}
+                  </button>
+                </Tooltip>
               )}
             </div>
             {errors.display_timezone && (

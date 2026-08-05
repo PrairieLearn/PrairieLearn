@@ -65,25 +65,25 @@ function SelfEnrollmentLink({
             ariaLabel="Copy self-enrollment link"
             className="btn-sm btn-outline-secondary"
           />
-          <Tooltip content="View QR Code">
+          <Tooltip content="View QR code">
             <Button
               size="sm"
               variant="outline-secondary"
-              aria-label="Self-enrollment Link QR Code"
+              aria-label="Self-enrollment link QR code"
               onClick={() => setShowQR(true)}
             >
-              <i className="bi bi-qr-code-scan" />
+              <i className="bi bi-qr-code-scan" aria-hidden="true" />
             </Button>
           </Tooltip>
           {canEdit && (
-            <Tooltip content="Regenerate">
+            <Tooltip content="Generate new self-enrollment link">
               <Button
                 size="sm"
                 variant="outline-secondary"
                 aria-label="Generate new self-enrollment link"
                 onClick={() => setShowConfirm(true)}
               >
-                <i className="bi bi-arrow-repeat" />
+                <i className="bi bi-arrow-repeat" aria-hidden="true" />
               </Button>
             </Tooltip>
           )}
@@ -96,7 +96,7 @@ function SelfEnrollmentLink({
 
       <QRCodeModal
         id="selfEnrollmentLinkModal"
-        title="Self-enrollment Link QR Code"
+        title="Self-enrollment link QR code"
         content={selfEnrollLink}
         show={showQR}
         onHide={() => setShowQR(false)}

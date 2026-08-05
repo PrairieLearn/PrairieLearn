@@ -37,20 +37,22 @@ export function PublicLinkSharing({
             ariaLabel="Copy public link"
             className="btn-sm btn-outline-secondary"
           />
-          <Button
-            size="sm"
-            variant="outline-secondary"
-            aria-label="Public Link QR Code"
-            onClick={() => setShowQR(true)}
-          >
-            <i className="fas fa-qrcode" />
-          </Button>
+          <Tooltip content="View QR code">
+            <Button
+              size="sm"
+              variant="outline-secondary"
+              aria-label="Public link QR code"
+              onClick={() => setShowQR(true)}
+            >
+              <i className="fas fa-qrcode" aria-hidden="true" />
+            </Button>
+          </Tooltip>
         </InputGroup>
         <small className="form-text text-muted">{publicLinkMessage}</small>
       </div>
       <QRCodeModal
         id="publicLinkModal"
-        title="Public Link QR Code"
+        title="Public link QR code"
         content={publicLink}
         show={showQR}
         onHide={() => setShowQR(false)}
@@ -85,14 +87,14 @@ export function StudentLinkSharing({
           ariaLabel="Copy student link"
           className="btn-sm btn-outline-secondary"
         />
-        <Tooltip content="View QR Code">
+        <Tooltip content="View QR code">
           <Button
             size="sm"
             variant="outline-secondary"
             aria-label="Student link QR code"
             onClick={() => setShowQR(true)}
           >
-            <i className="bi bi-qr-code-scan" />
+            <i className="bi bi-qr-code-scan" aria-hidden="true" />
           </Button>
         </Tooltip>
       </InputGroup>

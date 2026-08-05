@@ -49,8 +49,8 @@ function getTooltipShowDelay(trigger: HTMLElement): number {
  *
  * This is the vanilla Bootstrap counterpart to the React Aria-based `Tooltip` in this
  * package. Keep their user-facing behavior aligned: immediate display by default,
- * hover retention, delayed closing, fade transitions, click dismissal, and Escape
- * dismissal.
+ * hover retention, delayed closing, fade transitions, click dismissal, Escape
+ * dismissal, and no touch-triggered display.
  */
 class HoverableTooltipController {
   private triggerHovered = false;
@@ -67,8 +67,8 @@ class HoverableTooltipController {
     private tooltip: BootstrapTooltip,
     private showDelay = getTooltipShowDelay(trigger),
   ) {
-    trigger.addEventListener('mouseenter', this.handleTriggerMouseEnter);
-    trigger.addEventListener('mouseleave', this.handleTriggerMouseLeave);
+    trigger.addEventListener('pointerenter', this.handleTriggerPointerEnter);
+    trigger.addEventListener('pointerleave', this.handleTriggerPointerLeave);
     trigger.addEventListener('focusin', this.handleTriggerFocusIn);
     trigger.addEventListener('focusout', this.handleTriggerFocusOut);
     trigger.addEventListener('click', this.handleTriggerClick);
@@ -85,8 +85,8 @@ class HoverableTooltipController {
 
   dispose() {
     this.clearTimer();
-    this.trigger.removeEventListener('mouseenter', this.handleTriggerMouseEnter);
-    this.trigger.removeEventListener('mouseleave', this.handleTriggerMouseLeave);
+    this.trigger.removeEventListener('pointerenter', this.handleTriggerPointerEnter);
+    this.trigger.removeEventListener('pointerleave', this.handleTriggerPointerLeave);
     this.trigger.removeEventListener('focusin', this.handleTriggerFocusIn);
     this.trigger.removeEventListener('focusout', this.handleTriggerFocusOut);
     this.trigger.removeEventListener('click', this.handleTriggerClick);
@@ -97,17 +97,28 @@ class HoverableTooltipController {
     this.tooltip.dispose();
   }
 
-  private handleTriggerMouseEnter = () => {
+  private handleTriggerPointerEnter = (event: PointerEvent) => {
+    if (event.pointerType === 'touch') return;
     this.triggerHovered = true;
     this.scheduleShow();
   };
 
-  private handleTriggerMouseLeave = () => {
+  private handleTriggerPointerLeave = (event: PointerEvent) => {
+    if (event.pointerType === 'touch') return;
     this.triggerHovered = false;
     this.scheduleHide();
   };
 
   private handleTriggerFocusIn = () => {
+    // Touch activation can synthesize focus and mouse events. `:focus-visible`
+    // limits focus-triggered tooltips to keyboard-style navigation, matching
+    // React Aria's intentional omission of tooltips on touch devices.
+    if (
+      !this.trigger.matches(':focus-visible') &&
+      !this.trigger.querySelector<HTMLElement>(':focus-visible')
+    ) {
+      return;
+    }
     if (this.triggerFocused) return;
     this.triggerFocused = true;
     this.clearTimer();
@@ -134,8 +145,8 @@ class HoverableTooltipController {
 
     this.detachTooltipElement();
     this.tooltipElement = tooltipElement;
-    tooltipElement.addEventListener('mouseenter', this.handleTooltipMouseEnter);
-    tooltipElement.addEventListener('mouseleave', this.handleTooltipMouseLeave);
+    tooltipElement.addEventListener('pointerenter', this.handleTooltipPointerEnter);
+    tooltipElement.addEventListener('pointerleave', this.handleTooltipPointerLeave);
   };
 
   private handleTooltipHidden = () => {
@@ -150,13 +161,15 @@ class HoverableTooltipController {
     if (shouldReopen) this.showTooltip();
   };
 
-  private handleTooltipMouseEnter = () => {
+  private handleTooltipPointerEnter = (event: PointerEvent) => {
+    if (event.pointerType === 'touch') return;
     this.tooltipHovered = true;
     this.clearTimer();
     if (this.hiding) this.showTooltip();
   };
 
-  private handleTooltipMouseLeave = () => {
+  private handleTooltipPointerLeave = (event: PointerEvent) => {
+    if (event.pointerType === 'touch') return;
     this.tooltipHovered = false;
     this.scheduleHide();
   };
@@ -210,8 +223,8 @@ class HoverableTooltipController {
 
   private detachTooltipElement() {
     if (!this.tooltipElement) return;
-    this.tooltipElement.removeEventListener('mouseenter', this.handleTooltipMouseEnter);
-    this.tooltipElement.removeEventListener('mouseleave', this.handleTooltipMouseLeave);
+    this.tooltipElement.removeEventListener('pointerenter', this.handleTooltipPointerEnter);
+    this.tooltipElement.removeEventListener('pointerleave', this.handleTooltipPointerLeave);
     this.tooltipElement = null;
   }
 
@@ -320,17 +333,17 @@ export function installBootstrapTooltipBehavior({
   // This can be removed after upgrading to Bootstrap 6:
   // https://github.com/twbs/bootstrap/pull/42472
   const handleKeyDown = (event: KeyboardEvent) => {
-    if (event.key === 'Escape') {
-      closeOpenTooltips();
-    }
+    if (event.key !== 'Escape' || openTooltipControllers.size === 0) return;
+    event.preventDefault();
+    event.stopPropagation();
+    closeOpenTooltips();
   };
-  const body = document.body;
-  body.addEventListener('keydown', handleKeyDown);
+  document.addEventListener('keydown', handleKeyDown, true);
 
   const uninstall = () => {
     if (activeUninstall !== uninstall) return;
     tooltipObserver.abort();
-    body.removeEventListener('keydown', handleKeyDown);
+    document.removeEventListener('keydown', handleKeyDown, true);
     activeUninstall = null;
   };
   activeUninstall = uninstall;

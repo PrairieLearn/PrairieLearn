@@ -15,6 +15,8 @@ export interface TooltipProps {
   content: ReactNode;
   /** Controls whether the tooltip is open. Leave undefined for hover/focus behavior. */
   isOpen?: ComponentProps<typeof AriaTooltipTrigger>['isOpen'];
+  /** Called when the tooltip opens or closes. */
+  onOpenChange?: ComponentProps<typeof AriaTooltipTrigger>['onOpenChange'];
   placement?: AriaTooltipProps['placement'];
 }
 
@@ -25,11 +27,22 @@ export interface TooltipProps {
  * Escape dismissal, and hover retention required by WCAG 2.1 success
  * criterion 1.4.13.
  */
-export function Tooltip({ children, content, isOpen, placement = 'top' }: TooltipProps) {
+export function Tooltip({
+  children,
+  content,
+  isOpen,
+  onOpenChange,
+  placement = 'top',
+}: TooltipProps) {
   const [triggerIsOpen, setTriggerIsOpen] = useState(false);
 
+  const handleOpenChange = (open: boolean) => {
+    setTriggerIsOpen(open);
+    onOpenChange?.(open);
+  };
+
   return (
-    <AriaTooltipTrigger delay={0} isOpen={isOpen ?? triggerIsOpen} onOpenChange={setTriggerIsOpen}>
+    <AriaTooltipTrigger delay={0} isOpen={isOpen ?? triggerIsOpen} onOpenChange={handleOpenChange}>
       <Focusable>{children}</Focusable>
       <AriaTooltip
         className={({ placement: actualPlacement, isEntering, isExiting }) =>

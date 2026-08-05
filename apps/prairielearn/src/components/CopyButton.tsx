@@ -15,6 +15,7 @@ export function CopyButton({
   className?: string;
 }) {
   const [copied, setCopied] = useState(false);
+  const [showCopiedTooltip, setShowCopiedTooltip] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -26,13 +27,23 @@ export function CopyButton({
   const handleCopy = useCallback(async () => {
     await navigator.clipboard.writeText(text);
     setCopied(true);
+    setShowCopiedTooltip(true);
     if (timerRef.current != null) clearTimeout(timerRef.current);
-    timerRef.current = setTimeout(() => setCopied(false), 1000);
+    timerRef.current = setTimeout(() => {
+      setCopied(false);
+      setShowCopiedTooltip(false);
+    }, 1000);
   }, [text]);
 
   return (
     <>
-      <Tooltip content={copied ? 'Copied!' : 'Copy'}>
+      <Tooltip
+        content={copied ? 'Copied!' : 'Copy'}
+        isOpen={showCopiedTooltip ? true : undefined}
+        onOpenChange={(open) => {
+          if (!open) setShowCopiedTooltip(false);
+        }}
+      >
         <button
           type="button"
           className={clsx('btn', className)}
