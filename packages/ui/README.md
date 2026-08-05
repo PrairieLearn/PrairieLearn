@@ -151,7 +151,9 @@ The `color` property maps to PrairieLearn's badge color classes (e.g., `color-bl
 
 ### Popover
 
-Use `Popover` for contextual help, disabled reasons, warnings, and other information that must be available on touch devices. Its trigger must be an interactive element that forwards its ref to the underlying DOM element.
+Use `Popover` for contextual help, unavailable-action reasons, warnings, and other information that must be available on touch devices. Its trigger must be an interactive element that forwards its ref to the underlying DOM element.
+
+An unavailable action that opens an explanation is still interactive, so do not set `disabled` or `aria-disabled` on its trigger. Give it a visually inactive treatment and a concise accessible name that describes the explanation it opens.
 
 ```tsx
 import { Popover } from '@prairielearn/ui';
@@ -159,8 +161,8 @@ import { Popover } from '@prairielearn/ui';
 <Popover content="This action is unavailable until the course has been synced.">
   <button
     type="button"
-    className="btn btn-outline-secondary"
-    aria-label="Publish unavailable until the course has been synced"
+    className="btn btn-outline-secondary opacity-50"
+    aria-label="Why publishing is unavailable"
   >
     Publish
   </button>

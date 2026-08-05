@@ -53,8 +53,8 @@ export function StickySaveBar({
       <Popover content={saveDisabledReason} placement="top">
         <button
           type="button"
-          className="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1"
-          aria-label={`Save unavailable: ${saveDisabledReason}`}
+          className="btn btn-sm btn-outline-secondary opacity-50 d-inline-flex align-items-center gap-1"
+          aria-label="Why saving is unavailable"
         >
           <i className="bi bi-floppy" aria-hidden="true" />
           Save

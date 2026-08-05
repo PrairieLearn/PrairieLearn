@@ -106,12 +106,11 @@ export function EditModeToolbar({
       className={clsx(
         'btn btn-sm mx-1',
         saveButtonDisabled ? 'btn-outline-secondary' : 'btn-primary',
+        saveButtonDisabledReason && 'opacity-50',
       )}
       type={saveButtonDisabledReason ? 'button' : 'submit'}
       disabled={saveButtonDisabled && !saveButtonDisabledReason}
-      aria-label={
-        saveButtonDisabledReason ? `Save unavailable: ${saveButtonDisabledReason}` : 'Save'
-      }
+      aria-label={saveButtonDisabledReason ? 'Why saving is unavailable' : 'Save'}
     >
       <i className="bi bi-floppy" aria-hidden="true" />{' '}
       <span className="toolbar-btn-label">Save</span>

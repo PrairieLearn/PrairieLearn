@@ -18,7 +18,7 @@ export function HelpPopover({
     <Popover content={children} placement={placement}>
       <button
         type="button"
-        className={clsx('btn btn-xs btn-ghost p-0 border-0 lh-1 align-middle', className)}
+        className={clsx('btn btn-xs btn-ghost btn-icon border-0 align-middle', className)}
         aria-label={ariaLabel}
       >
         <i className="bi bi-question-circle text-muted" aria-hidden="true" />

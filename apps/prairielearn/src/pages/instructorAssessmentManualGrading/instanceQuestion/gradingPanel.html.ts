@@ -175,7 +175,7 @@ export function GradingPanel({
                     ? html`
                         <button
                           type="button"
-                          class="btn btn-xs btn-ghost p-0 border-0"
+                          class="btn btn-xs btn-ghost btn-icon border-0"
                           id="instance-question-group-description-popover"
                           data-bs-toggle="popover"
                           data-bs-html="true"

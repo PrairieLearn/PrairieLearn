@@ -14,7 +14,7 @@ export function WarningIndicator({
       <button
         type="button"
         className={`btn btn-badge ${variant === 'error' ? 'color-red2' : 'color-yellow2'}`}
-        aria-label={body}
+        aria-label={`View details for ${label}`}
         onClick={(e) => e.stopPropagation()}
         onKeyDown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') e.stopPropagation();

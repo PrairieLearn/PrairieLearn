@@ -41,7 +41,7 @@ export function ChangeIndicatorBadges({
         >
           <button
             type="button"
-            className="btn btn-xs btn-ghost p-0 border-0 ms-1"
+            className="btn btn-xs btn-ghost btn-icon border-0 ms-1"
             aria-label="View comment"
           >
             <i className="bi bi-chat-left-text text-muted" aria-hidden="true" />

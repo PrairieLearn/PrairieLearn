@@ -182,8 +182,8 @@ function StudentInformationUnavailable() {
     <Popover content="Student information is not yet available.">
       <button
         type="button"
-        className="btn btn-xs btn-ghost p-0 border-0"
-        aria-label="Student information is not yet available"
+        className="btn btn-xs btn-ghost btn-icon border-0"
+        aria-label="Why student information is unavailable"
       >
         <i className="bi bi-question-circle" aria-hidden="true" />
       </button>
@@ -694,8 +694,8 @@ function StudentsCard({
                     <Popover content={`Select at most ${MAX_LABEL_UIDS} students to apply labels.`}>
                       <button
                         type="button"
-                        className="btn btn-light btn-sm"
-                        aria-label={`Labels unavailable: Select at most ${MAX_LABEL_UIDS} students`}
+                        className="btn btn-light btn-sm opacity-50"
+                        aria-label="Why labeling is unavailable"
                       >
                         Labels
                       </button>

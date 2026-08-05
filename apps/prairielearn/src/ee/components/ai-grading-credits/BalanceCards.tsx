@@ -48,7 +48,7 @@ export function BalanceCards({
               <Popover content={tooltips.transferable} placement="top">
                 <button
                   type="button"
-                  className="btn btn-link p-0 border-0 align-baseline"
+                  className="btn btn-link btn-icon border-0 align-baseline"
                   aria-label="More information about transferable credits"
                 >
                   <i className="bi bi-info-circle" aria-hidden="true" />
@@ -67,7 +67,7 @@ export function BalanceCards({
               <Popover content={tooltips.nonTransferable} placement="top">
                 <button
                   type="button"
-                  className="btn btn-link p-0 border-0 align-baseline"
+                  className="btn btn-link btn-icon border-0 align-baseline"
                   aria-label="More information about non-transferable credits"
                 >
                   <i className="bi bi-info-circle" aria-hidden="true" />

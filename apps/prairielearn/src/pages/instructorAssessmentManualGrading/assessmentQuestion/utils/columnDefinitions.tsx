@@ -141,7 +141,7 @@ export function createColumns({
                 <button
                   type="button"
                   className="btn btn-xs btn-ghost"
-                  aria-label="Assessment instance is still open"
+                  aria-label="View assessment instance status"
                 >
                   <i
                     className="fas fa-exclamation-triangle fa-width-auto text-warning"
@@ -410,8 +410,8 @@ export function createColumns({
             <Popover content="AI and human grading are in agreement">
               <button
                 type="button"
-                className="btn btn-xs btn-ghost p-0 border-0"
-                aria-label="AI and human grading are in agreement"
+                className="btn btn-xs btn-ghost btn-icon border-0"
+                aria-label="View AI grading comparison"
               >
                 <i className="bi bi-check-square-fill text-success" aria-hidden="true" />
               </button>
@@ -427,8 +427,8 @@ export function createColumns({
                   <Popover content="Selected by AI but not by human">
                     <button
                       type="button"
-                      className="btn btn-xs btn-ghost p-0 border-0"
-                      aria-label="Selected by AI but not by human"
+                      className="btn btn-xs btn-ghost btn-icon border-0"
+                      aria-label="View AI grading difference"
                     >
                       <i className="bi bi-plus-square-fill text-danger" aria-hidden="true" />
                     </button>
@@ -437,8 +437,8 @@ export function createColumns({
                   <Popover content="Selected by human but not by AI">
                     <button
                       type="button"
-                      className="btn btn-xs btn-ghost p-0 border-0"
-                      aria-label="Selected by human but not by AI"
+                      className="btn btn-xs btn-ghost btn-icon border-0"
+                      aria-label="View AI grading difference"
                     >
                       <i className="bi bi-dash-square-fill text-danger" aria-hidden="true" />
                     </button>

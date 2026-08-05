@@ -26,6 +26,9 @@ observe('.js-copy-button[data-clipboard-text], .js-copy-button[data-clipboard-ta
           return;
         }
 
+        // This transient copy confirmation is a status message, not a contextual
+        // dialog managed by the shared popover behavior.
+        button.dataset.plPopoverMode = 'status';
         const popover = window.bootstrap.Popover.getOrCreateInstance(button, {
           title: '',
           content: 'Copied!',
