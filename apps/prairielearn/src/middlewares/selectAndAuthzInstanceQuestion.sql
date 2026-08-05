@@ -91,8 +91,7 @@ FROM
     ai.id,
     $authz_data,
     $req_date,
-    ci.display_timezone,
-    a.team_work
+    ci.display_timezone
   ) AS aai ON TRUE
   CROSS JOIN file_list AS fl
 WHERE
