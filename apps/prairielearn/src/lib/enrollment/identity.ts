@@ -28,9 +28,9 @@ export interface EnrollmentIdentityContext {
 }
 
 /**
- * An enrollment appears at most once in the candidate list, but can match more
- * than one identity key. Preserve that provenance: finding a row is not enough
- * to decide whether a particular admission source is allowed to use it.
+ * An enrollment appears at most once in the candidate list, but it may be found
+ * by more than one lookup. Keep each match result so admission can require the
+ * particular UID, UIN, or LTI match that its caller relies on.
  */
 export interface EnrollmentIdentityCandidate {
   readonly enrollment: Enrollment;
@@ -44,22 +44,23 @@ export interface EnrollmentIdentityCandidate {
 
 export interface EnrollmentIdentityClassification {
   /**
-   * An unbound, non-guest enrollment in `invited` status, matched by
-   * institution-scoped UIN and permitted by the candidates' bound and guest
-   * state.
+   * An unbound, non-guest invitation whose pending UIN matches the user's UIN
+   * in the course's institution. This is `null` when another matching
+   * enrollment is bound to the user or marked as a guest.
    */
   readonly actionableInstitutionUinInvitation: EnrollmentIdentityCandidate | null;
   /**
-   * An unbound enrollment in `invited` status, matched by UID, provided no
-   * enrollment is already bound to the user and the invitation does not carry
-   * LTI provenance.
+   * An unbound invitation whose pending UID matches the user's UID. This is
+   * `null` when the user already has a bound enrollment or the invitation also
+   * records an LTI link and `sub`.
    */
   readonly actionableUidInvitation: EnrollmentIdentityCandidate | null;
   /** The candidate already bound to the user, if one exists. */
   readonly boundCandidate: EnrollmentIdentityCandidate | null;
   /**
-   * Every distinct enrollment matched by the user binding or supplied identity
-   * keys, including candidates that cannot authorize admission.
+   * Every distinct enrollment found by the bound user ID, pending UID,
+   * institution-scoped UIN, or optional LTI link and `sub`, including rows that
+   * cannot be used for admission.
    */
   readonly candidates: readonly EnrollmentIdentityCandidate[];
 }
@@ -103,12 +104,12 @@ function isPendingInvitation(candidate: EnrollmentIdentityCandidate): boolean {
 }
 
 /**
- * A UIN or exact LTI identity match can authorize a pending invitation when no
- * enrollment is bound to the user. It can also rejoin a user with a non-guest
- * `left` enrollment: reconciliation preserves the bound row, consumes the
- * pending invitation, and transitions the bound row to `joined`. Any other
- * bound status or any guest candidate disables this path, since guest status is
- * sticky when candidates are reconciled.
+ * A pending UIN invitation or an LTI invitation with the requested link and
+ * `sub` can be admitted when no enrollment is bound to the user. It can also be
+ * paired with a non-guest `left` enrollment: reconciliation keeps the bound
+ * row, deletes the pending invitation, and changes the bound row to `joined`.
+ * Other bound statuses and guest enrollments cannot use this path because guest
+ * status is preserved when rows are merged.
  */
 function allowsUinOrLtiInvitation(
   candidates: readonly EnrollmentIdentityCandidate[],
@@ -129,9 +130,9 @@ function classifyEnrollmentIdentityCandidates(
   );
   const boundCandidate = boundCandidates.at(0) ?? null;
 
-  // A UID match is intentionally narrower than a UIN or exact LTI match. It
-  // requires no bound enrollment and cannot consume an invitation carrying LTI
-  // identity; exact LTI authority is checked separately.
+  // A UID invitation cannot be paired with an existing bound enrollment. If
+  // the invitation records an LTI link, the caller must match that link and
+  // `sub` instead of relying on the UID alone.
   const actionableUidInvitation =
     boundCandidate === null
       ? (candidates.find(
@@ -234,15 +235,15 @@ export function getEnrollmentAdmissionDecision(
 }
 
 /**
- * Omitting `enrollmentIds` selects every identity candidate. Reconciliation
- * first discovers those IDs, locks the enrollment parents in numeric order, and
- * then restricts its second selection to the locked IDs. This prevents a newly
- * matching enrollment from expanding the lock set out of order.
+ * Omitting `enrollmentIds` returns every matching enrollment. Reconciliation
+ * uses that first result to decide which rows to lock, then passes their IDs to
+ * re-read only those locked rows. An enrollment that starts matching in between
+ * cannot add another row to the lock set after locking has begun.
  *
- * User and external-identity rows are deliberately not locked. If identity
- * data changes during the narrow selection-to-lock window, this attempt uses
- * only the locked candidates; a conflicting bind fails atomically on the
- * enrollment uniqueness constraints and a later request can retry.
+ * User and LTI user rows are not locked. If a UID, UIN, or LTI association
+ * changes between the two queries, this attempt continues with only the rows it
+ * locked. The enrollment uniqueness constraints reject a duplicate user
+ * binding, and the request can be retried.
  */
 export async function selectEnrollmentIdentityClassification(
   context: EnrollmentIdentityContext,
@@ -250,9 +251,10 @@ export async function selectEnrollmentIdentityClassification(
 ): Promise<EnrollmentIdentityClassification> {
   if (enrollmentIds?.length === 0) return classifyEnrollmentIdentityCandidates([]);
 
-  // The SQL performs one indexed lookup per identity key and unions the IDs
-  // before fetching complete enrollment rows. This avoids scanning every
-  // enrollment in a large course instance and deduplicates multi-key matches.
+  // The SQL performs one indexed lookup for each supplied value, unions the
+  // enrollment IDs, and only then fetches the complete rows. This avoids a scan
+  // of every enrollment in the course and returns a row only once when several
+  // lookups find it.
   const rows = await queryRows(
     sql.select_enrollment_identity_candidates,
     {
@@ -277,12 +279,24 @@ export async function selectEnrollmentIdentityClassification(
   );
 }
 
-export async function selectEnrollmentAdmissionDecision(
-  context: EnrollmentIdentityContext,
-  source: EnrollmentAdmissionSource,
-): Promise<EnrollmentAdmissionDecision> {
+export async function selectEnrollmentAdmissionDecision({
+  courseInstanceId,
+  source,
+  userId,
+}: {
+  courseInstanceId: string;
+  source: EnrollmentAdmissionSource;
+  userId: string;
+}): Promise<EnrollmentAdmissionDecision> {
+  const lti13Identity =
+    source.type === 'invitation' && source.matchedBy === 'lti13'
+      ? {
+          lti13CourseInstanceId: source.lti13CourseInstanceId,
+          sub: source.sub,
+        }
+      : undefined;
   return getEnrollmentAdmissionDecision(
-    await selectEnrollmentIdentityClassification(context),
+    await selectEnrollmentIdentityClassification({ courseInstanceId, lti13Identity, userId }),
     source,
   );
 }

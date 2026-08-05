@@ -59,32 +59,23 @@ describe('enrollment identity selection and admission decisions', { concurrent: 
     source: EnrollmentAdmissionSource;
     userId: string;
   }) {
-    return await selectEnrollmentAdmissionDecision(
-      {
-        courseInstanceId: courseInstance.id,
-        userId,
-        lti13Identity:
-          source.type === 'invitation' && source.matchedBy === 'lti13'
-            ? {
-                lti13CourseInstanceId: source.lti13CourseInstanceId,
-                sub: source.sub,
-              }
-            : undefined,
-      },
+    return await selectEnrollmentAdmissionDecision({
+      courseInstanceId: courseInstance.id,
       source,
-    );
+      userId,
+    });
   }
 
-  it('keeps candidate selection read-only and scopes UIN and LTI provenance', async () => {
+  it('matches UIN only within the institution and LTI only by link and sub, without changing enrollments', async () => {
     const user = await createUser({ prefix: 'overlap' });
-    const exactLink = await createLti13CourseInstance(courseInstance);
+    const matchingLink = await createLti13CourseInstance(courseInstance);
     const foreignLink = await createLti13CourseInstance(otherCourseInstance);
     const enrollment = await createEnrollment({
       courseInstance,
       pendingUid: user.uid,
       pendingUin: user.uin,
-      pendingLti13CourseInstanceId: exactLink.id,
-      pendingLti13Sub: 'exact-sub',
+      pendingLti13CourseInstanceId: matchingLink.id,
+      pendingLti13Sub: 'matching-sub',
     });
     const before = await selectEnrollments([enrollment.id]);
 
@@ -92,8 +83,8 @@ describe('enrollment identity selection and admission decisions', { concurrent: 
       courseInstanceId: courseInstance.id,
       userId: user.id,
       lti13Identity: {
-        lti13CourseInstanceId: exactLink.id,
-        sub: 'exact-sub',
+        lti13CourseInstanceId: matchingLink.id,
+        sub: 'matching-sub',
       },
     });
 
@@ -130,8 +121,8 @@ describe('enrollment identity selection and admission decisions', { concurrent: 
         source: {
           type: 'invitation',
           matchedBy: 'lti13',
-          lti13CourseInstanceId: exactLink.id,
-          sub: 'exact-sub',
+          lti13CourseInstanceId: matchingLink.id,
+          sub: 'matching-sub',
         },
       }),
     ).resolves.toMatchObject({
@@ -145,7 +136,7 @@ describe('enrollment identity selection and admission decisions', { concurrent: 
         source: {
           type: 'invitation',
           matchedBy: 'lti13',
-          lti13CourseInstanceId: exactLink.id,
+          lti13CourseInstanceId: matchingLink.id,
           sub: 'wrong-sub',
         },
       }),
@@ -244,20 +235,20 @@ describe('enrollment identity selection and admission decisions', { concurrent: 
       },
     },
     {
-      name: 'allows an exact LTI invitation',
+      name: 'allows an LTI invitation with the requested link and sub',
       expectedAllowed: true,
       setup: async (user) => {
-        const exactLink = await createLti13CourseInstance(courseInstance);
+        const matchingLink = await createLti13CourseInstance(courseInstance);
         const source: EnrollmentAdmissionSource = {
           type: 'invitation',
           matchedBy: 'lti13',
-          lti13CourseInstanceId: exactLink.id,
+          lti13CourseInstanceId: matchingLink.id,
           sub: 'matrix-sub',
         };
         await createEnrollment({
           courseInstance,
           pendingUin: user.uin,
-          pendingLti13CourseInstanceId: exactLink.id,
+          pendingLti13CourseInstanceId: matchingLink.id,
           pendingLti13Sub: source.sub,
         });
         return source;
