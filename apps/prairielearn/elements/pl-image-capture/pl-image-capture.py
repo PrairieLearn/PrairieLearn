@@ -96,6 +96,10 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         # To avoid this node being stripped, we just include the filename as text.
         return f'<div data-image-capture-uuid="{uuid}" data-file-name="{name}">{name}</div>'
 
+    parse_error = None
+    if data["panel"] == "submission":
+        parse_error = data["format_errors"].get(answer_name, [])
+
     html_params = {
         "uuid": pl.get_uuid(),
         "file_name": file_name,
@@ -104,6 +108,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         "mobile_capture_enabled": mobile_capture_enabled,
         "manual_upload_enabled": manual_upload_enabled,
         "retake_menu_enabled": mobile_capture_enabled or manual_upload_enabled,
+        "parse_error": "<br>".join(parse_error) if parse_error else None,
     }
 
     image_capture_options = {
@@ -122,6 +127,18 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
     with open("pl-image-capture.mustache", encoding="utf-8") as f:
         return chevron.render(f, html_params).strip()
+
+
+def add_format_error(
+    answer_name: str, data: pl.QuestionData, error_string: str
+) -> None:
+    # Adding format errors to both answer_name and "_files" keys for display next to this
+    # element and in submissions
+    pl.add_files_format_error(data, error_string)
+
+    if answer_name not in data["format_errors"]:
+        data["format_errors"][answer_name] = []
+    data["format_errors"][answer_name].append(error_string)
 
 
 def parse(element_html: str, data: pl.QuestionData) -> None:
@@ -148,12 +165,14 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
 
     if not submitted_file_content:
         if not allow_blank:
-            pl.add_files_format_error(data, f"No image was submitted for {file_name}.")
+            add_format_error(
+                answer_name, data, f"No image was submitted for {file_name}."
+            )
         return
 
     if not submitted_file_content.startswith("data:"):
-        pl.add_files_format_error(
-            data, f"Image submission for {file_name} is not a data URI."
+        add_format_error(
+            answer_name, data, f"Image submission for {file_name} is not a data URI."
         )
         return
 
@@ -163,7 +182,8 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         img = Image.open(BytesIO(base64.b64decode(b64_payload)))
         img.load()
     except Exception:
-        pl.add_files_format_error(
+        add_format_error(
+            answer_name,
             data,
             f"Failed to load submission for {file_name}. It may not be a valid image.",
         )
@@ -180,7 +200,8 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
             jpeg_bytes = jpeg_buffer.getvalue()
             b64_payload = base64.b64encode(jpeg_bytes).decode("utf-8")
         except Exception:
-            pl.add_files_format_error(
+            add_format_error(
+                answer_name,
                 data,
                 f"Image submission for {file_name} is not a JPEG image and could not be converted to one.",
             )
@@ -216,9 +237,8 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
         data["raw_submitted_answers"][answer_name] = ""
 
         if not allow_blank:
-            if "_files" not in data["format_errors"]:
-                data["format_errors"]["_files"] = []
-
-            data["format_errors"]["_files"].append(
-                f"No image was submitted for {file_name}."
+            add_format_error(
+                answer_name,
+                data,
+                f"No image was submitted for {file_name}.",
             )
