@@ -17,6 +17,7 @@ import {
 } from '../../../lib/db-types.js';
 import {
   type EnrollmentAccessDecision,
+  admitUserFromLti13Launch,
   selectEnrollmentAccessDecision,
 } from '../../../lib/enrollment/admission.js';
 import {
@@ -24,6 +25,7 @@ import {
   getEligibilityErrorMessage,
 } from '../../../lib/enrollment/eligibility.js';
 import { selectEnrollmentAdmissionDecision } from '../../../lib/enrollment/identity.js';
+import { EnrollmentAdmissionDeniedError } from '../../../lib/enrollment/reconciliation.js';
 import { idsEqual } from '../../../lib/id.js';
 import { type ResLocalsForPage, typedAsyncHandler } from '../../../lib/res-locals.js';
 import { getCanonicalHost } from '../../../lib/url.js';
@@ -40,6 +42,7 @@ import {
   getStripeClient,
 } from '../../lib/billing/stripe.js';
 import {
+  type Lti13CourseInstanceUpgradeAuthorization,
   clearLti13CourseInstanceUpgradeAuthorization,
   getLti13CourseInstanceUpgradeAuthorization,
 } from '../../lib/lti13-course-instance-upgrade.js';
@@ -70,7 +73,7 @@ const router = Router({ mergeParams: true });
  */
 function getAdmissionIneligibilityReason(
   decision: EnrollmentAccessDecision,
-  lti13Relaunch: boolean,
+  hasLti13Invitation: boolean,
 ): EnrollmentIneligibilityReason | null {
   if (decision.allowed) return null;
   switch (decision.reason) {
@@ -82,23 +85,22 @@ function getAdmissionIneligibilityReason(
     case 'institution-restriction':
     case 'self-enrollment-disabled':
     case 'self-enrollment-expired':
-      return lti13Relaunch ? null : decision.reason;
+      return hasLti13Invitation ? null : decision.reason;
     default:
       return assertNever(decision.reason);
   }
 }
 
 /**
- * `lti13_relaunch=1` only says which flow the browser is trying to continue.
- * The session must show that an LTI launch for this user and course was sent to
- * the upgrade page, and that invitation must still be pending for the same LTI
- * link and `sub`.
+ * `lti13_relaunch=1` tells us to look for an LTI invitation saved before the
+ * upgrade redirect. The session must contain an invitation for this user and
+ * course, and it must still be pending for the same LTI link and `sub`.
  */
-async function shouldUseLti13RelaunchFlow(
+async function selectLti13UpgradeAuthorization(
   queryValue: unknown,
   session: Record<string, unknown>,
   resLocals: ResLocalsForPage<'course-instance'>,
-) {
+): Promise<Lti13CourseInstanceUpgradeAuthorization | null> {
   if (
     queryValue !== '1' ||
     !idsEqual(resLocals.user.id, resLocals.authn_user.id) ||
@@ -107,7 +109,7 @@ async function shouldUseLti13RelaunchFlow(
     !resLocals.authz_data.authn_has_student_access ||
     resLocals.is_administrator
   ) {
-    return false;
+    return null;
   }
 
   const authorization = getLti13CourseInstanceUpgradeAuthorization({
@@ -116,7 +118,7 @@ async function shouldUseLti13RelaunchFlow(
     session,
     userId: resLocals.authn_user.id,
   });
-  if (authorization === null) return false;
+  if (authorization === null) return null;
 
   const decision = await selectEnrollmentAdmissionDecision({
     courseInstanceId: resLocals.course_instance.id,
@@ -134,8 +136,46 @@ async function shouldUseLti13RelaunchFlow(
     !idsEqual(decision.invitationCandidate.enrollment.id, authorization.enrollment_id)
   ) {
     clearLti13CourseInstanceUpgradeAuthorization(session);
+    return null;
+  }
+  return authorization;
+}
+
+async function finishLti13UpgradeAdmission({
+  authorization,
+  ip,
+  isAdministrator,
+  reqDate,
+  session,
+}: {
+  authorization: Lti13CourseInstanceUpgradeAuthorization;
+  ip: string | null;
+  isAdministrator: boolean;
+  reqDate: Date;
+  session: Record<string, unknown>;
+}): Promise<boolean> {
+  try {
+    await admitUserFromLti13Launch({
+      courseInstanceId: authorization.course_instance_id,
+      expectedInvitationEnrollmentId: authorization.enrollment_id,
+      ip,
+      isAdministrator,
+      lti13CourseInstanceId: authorization.lti13_course_instance_id,
+      reqDate,
+      sub: authorization.sub,
+      userId: authorization.user_id,
+    });
+  } catch (error) {
+    if (!(error instanceof EnrollmentAdmissionDeniedError)) throw error;
+
+    // The invitation can change while the student is at Stripe. A new LMS
+    // launch supplies current LTI data and either admits the student or shows
+    // the appropriate course access error.
+    clearLti13CourseInstanceUpgradeAuthorization(session);
     return false;
   }
+
+  clearLti13CourseInstanceUpgradeAuthorization(session);
   return true;
 }
 
@@ -145,7 +185,7 @@ router.get(
     const courseInstance = CourseInstanceSchema.parse(res.locals.course_instance);
     const course = CourseSchema.parse(res.locals.course);
     const user = UserSchema.parse(res.locals.authn_user);
-    const lti13Relaunch = await shouldUseLti13RelaunchFlow(
+    const lti13UpgradeAuthorization = await selectLti13UpgradeAuthorization(
       req.query.lti13_relaunch,
       req.session,
       res.locals,
@@ -156,21 +196,37 @@ router.get(
       courseInstance,
       user,
     });
-    const ineligibilityReason = getAdmissionIneligibilityReason(admissionDecision, lti13Relaunch);
+    const ineligibilityReason = getAdmissionIneligibilityReason(
+      admissionDecision,
+      lti13UpgradeAuthorization !== null,
+    );
     if (ineligibilityReason !== null) {
       res.status(403).send(EnrollmentPage({ reason: ineligibilityReason, resLocals: res.locals }));
       return;
     }
 
-    // If no upgrade is needed, return normal requests to the assessments page.
-    // An interrupted LTI admission instead requires a fresh launch from the LMS.
+    // If the required plan was granted while this page was open, finish the
+    // admission without sending the student through the LMS again.
     const hasPlanGrants = await checkPlanGrantsForLocals(res.locals);
     if (hasPlanGrants) {
-      if (lti13Relaunch) {
+      if (lti13UpgradeAuthorization !== null) {
+        const admitted = await finishLti13UpgradeAdmission({
+          authorization: lti13UpgradeAuthorization,
+          ip: req.ip ?? null,
+          isAdministrator: res.locals.is_administrator,
+          reqDate: res.locals.req_date,
+          session: req.session,
+        });
+        if (admitted) {
+          res.redirect(`/pl/course_instance/${courseInstance.id}/`);
+          return;
+        }
+
         res.send(Lti13CourseInstanceRelaunch({ course, courseInstance, resLocals: res.locals }));
-      } else {
-        res.redirect(`/pl/course_instance/${res.locals.course_instance.id}/assessments`);
+        return;
       }
+
+      res.redirect(`/pl/course_instance/${res.locals.course_instance.id}/assessments`);
       return;
     }
 
@@ -191,7 +247,7 @@ router.get(
       StudentCourseInstanceUpgrade({
         course,
         courseInstance,
-        lti13Relaunch,
+        lti13AdmissionPending: lti13UpgradeAuthorization !== null,
         missingPlans,
         planPrices,
         resLocals: res.locals,
@@ -218,7 +274,7 @@ router.post(
       const course = CourseSchema.parse(res.locals.course);
       const courseInstance = CourseInstanceSchema.parse(res.locals.course_instance);
       const user = UserSchema.parse(res.locals.authn_user);
-      const lti13Relaunch = await shouldUseLti13RelaunchFlow(
+      const lti13UpgradeAuthorization = await selectLti13UpgradeAuthorization(
         req.body.lti13_relaunch,
         req.session,
         res.locals,
@@ -230,7 +286,10 @@ router.post(
         courseInstance,
         user,
       });
-      const ineligibilityReason = getAdmissionIneligibilityReason(admissionDecision, lti13Relaunch);
+      const ineligibilityReason = getAdmissionIneligibilityReason(
+        admissionDecision,
+        lti13UpgradeAuthorization !== null,
+      );
       if (ineligibilityReason !== null) {
         throw new error.HttpStatusError(403, getEligibilityErrorMessage(ineligibilityReason));
       }
@@ -280,7 +339,7 @@ router.post(
 
       const host = getCanonicalHost(req);
       const urlBase = `${host}/pl/course_instance/${courseInstance.id}/upgrade`;
-      const lti13RelaunchQuery = lti13Relaunch ? '&lti13_relaunch=1' : '';
+      const lti13RelaunchQuery = lti13UpgradeAuthorization !== null ? '&lti13_relaunch=1' : '';
 
       const stripe = getStripeClient();
       const customerId = await getOrCreateStripeCustomerId(user.id, {
@@ -304,7 +363,7 @@ router.post(
         line_items: lineItems,
         mode: 'payment',
         success_url: `${urlBase}/success?session_id={CHECKOUT_SESSION_ID}${lti13RelaunchQuery}`,
-        cancel_url: `${urlBase}${lti13Relaunch ? '?lti13_relaunch=1' : ''}`,
+        cancel_url: `${urlBase}${lti13UpgradeAuthorization !== null ? '?lti13_relaunch=1' : ''}`,
         metadata,
         payment_intent_data: {
           metadata,
@@ -336,7 +395,7 @@ router.get(
     const course = CourseSchema.parse(res.locals.course);
     const courseInstance = CourseInstanceSchema.parse(res.locals.course_instance);
     const authn_user = UserSchema.parse(res.locals.authn_user);
-    const lti13Relaunch = req.query.lti13_relaunch === '1';
+    const lti13UpgradeRequested = req.query.lti13_relaunch === '1';
 
     if (!req.query.session_id) throw new error.HttpStatusError(400, 'Missing session_id');
 
@@ -346,23 +405,6 @@ router.get(
     if (!localSession) {
       throw new Error(`Unknown Stripe session: ${stripeSessionId}`);
     }
-    if (localSession.completed_at) {
-      // We already processed this session; just show them the success page.
-      res.send(
-        CourseInstanceStudentUpdateSuccess({
-          course,
-          courseInstance,
-          lti13Relaunch,
-          paid: true,
-          resLocals: res.locals,
-        }),
-      );
-      return;
-    }
-
-    const stripe = getStripeClient();
-    const session = await stripe.checkout.sessions.retrieve(stripeSessionId);
-
     // Verify that the session is associated with the current course instance
     // and user. We shouldn't hit this during normal operations, but an attacker
     // could try to replay a session ID from a different course instance or user.
@@ -372,6 +414,45 @@ router.get(
     ) {
       throw new error.HttpStatusError(400, 'Invalid session');
     }
+
+    const finishLti13Admission = async () => {
+      const authorization = await selectLti13UpgradeAuthorization(
+        req.query.lti13_relaunch,
+        req.session,
+        res.locals,
+      );
+      if (authorization === null) return false;
+
+      return await finishLti13UpgradeAdmission({
+        authorization,
+        ip: req.ip ?? null,
+        isAdministrator: res.locals.is_administrator,
+        reqDate: res.locals.req_date,
+        session: req.session,
+      });
+    };
+
+    if (localSession.completed_at) {
+      if (await finishLti13Admission()) {
+        res.redirect(`/pl/course_instance/${courseInstance.id}/`);
+        return;
+      }
+
+      // We already processed this session; just show them the success page.
+      res.send(
+        CourseInstanceStudentUpdateSuccess({
+          course,
+          courseInstance,
+          requireLti13Relaunch: lti13UpgradeRequested,
+          paid: true,
+          resLocals: res.locals,
+        }),
+      );
+      return;
+    }
+
+    const stripe = getStripeClient();
+    const session = await stripe.checkout.sessions.retrieve(stripeSessionId);
 
     if (session.payment_status === 'paid') {
       if (!localSession.plan_grants_created) {
@@ -403,11 +484,16 @@ router.get(
         });
       }
 
+      if (await finishLti13Admission()) {
+        res.redirect(`/pl/course_instance/${courseInstance.id}/`);
+        return;
+      }
+
       res.send(
         CourseInstanceStudentUpdateSuccess({
           course,
           courseInstance,
-          lti13Relaunch,
+          requireLti13Relaunch: lti13UpgradeRequested,
           paid: true,
           resLocals: res.locals,
         }),
@@ -425,7 +511,7 @@ router.get(
         CourseInstanceStudentUpdateSuccess({
           course,
           courseInstance,
-          lti13Relaunch,
+          requireLti13Relaunch: false,
           paid: false,
           resLocals: res.locals,
         }),
