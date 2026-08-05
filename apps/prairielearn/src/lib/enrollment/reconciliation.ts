@@ -25,9 +25,9 @@ interface EnrollmentAuditActor {
 }
 
 /**
- * Sources that can be selected after the initial candidate query. Exact LTI
- * identity must participate in that query, so an LTI source must instead be
- * supplied explicitly with its link and subject.
+ * UID, UIN, and self-enrollment sources can be chosen after the matching rows
+ * are loaded. An LTI source must be supplied before that query so its link and
+ * `sub` are included in the lookup.
  */
 export type SelectableEnrollmentAdmissionSource = Exclude<
   EnrollmentAdmissionSource,
@@ -170,11 +170,10 @@ async function auditAdmission({
 /**
  * Performs checked admission and identity reconciliation in one transaction.
  *
- * The transaction takes the shared course-instance barrier, discovers identity
- * candidates without locking user or external-identity rows, locks the selected
- * enrollment parents in numeric order, and reselects only those locked rows.
- * Admission policy and caller validation therefore run against a stable
- * enrollment set before any mutation occurs.
+ * The transaction takes the shared course-instance barrier, finds the matching
+ * enrollments without locking user or LTI user rows, locks those enrollments in
+ * numeric order, and re-reads only the rows it locked. Admission checks use that
+ * second result before any enrollment is changed.
  *
  * Reconciliation moves dependents to a deterministic survivor, deletes losers
  * before binding the survivor so pending unique keys are released, and records
@@ -214,18 +213,18 @@ export async function admitUserToCourseInstance(
   };
 
   return await runWithSharedEnrollmentBarrier(courseInstanceId, async () => {
-    // This first query only determines which enrollment parents must be locked.
-    // It must not authorize admission: a matching invitation can be changed or
-    // deleted while this transaction waits to acquire those locks.
+    // This first query only determines which enrollment rows to lock. It cannot
+    // admit the user because an invitation may change or be deleted while this
+    // transaction waits for those locks.
     const initialClassification = await selectEnrollmentIdentityClassification(context);
     const enrollmentIds = initialClassification.candidates.map(
       (candidate) => candidate.enrollment.id,
     );
     await lockEnrollments(enrollmentIds);
-    // Re-read the candidates after acquiring their parent locks. Do not reuse
-    // initialClassification here: that could admit a user from an invitation
-    // whose pending identity changed while lock acquisition was waiting. The
-    // restricted query cannot add an enrollment parent that was not locked.
+    // Re-read after acquiring the locks. Reusing initialClassification could
+    // admit the user from an invitation whose UID, UIN, link, or `sub` changed
+    // while this transaction was waiting. Passing enrollmentIds prevents this
+    // query from adding a row that was not locked.
     const classification = await selectEnrollmentIdentityClassification(context, enrollmentIds);
     const selectedSource =
       'selectSource' in options ? options.selectSource(classification) : options.source;
@@ -248,8 +247,8 @@ export async function admitUserToCourseInstance(
       });
     }
 
-    // Eligibility, limits, and source-specific policy are checked only after
-    // identity authority has been revalidated under the enrollment locks.
+    // Check eligibility and enrollment limits only after re-reading the
+    // matching invitation and bound enrollment while their locks are held.
     await validateAdmission({ source: decision.source });
 
     const survivorCandidate = selectSurvivor(
