@@ -88,11 +88,20 @@ describe('POST /pl/report-cheating', () => {
       res.sendStatus(200);
     });
 
-    await withTestServers({ prairieTestApp }, async (prairieLearnUrl) => {
-      const { response, json } = await postReport(prairieLearnUrl, validBody());
-      assert.equal(response.status, 200);
-      assert.equal(json.message, 'Your report has been submitted.');
-    });
+    // `jose` reads the clock once for `iat` and again for `exp`, flooring each to
+    // whole seconds, so both must come from one instant for the lifetime
+    // assertion below to be exact. Only `Date` is faked; the servers below need
+    // real timers.
+    vi.useFakeTimers({ toFake: ['Date'] });
+    try {
+      await withTestServers({ prairieTestApp }, async (prairieLearnUrl) => {
+        const { response, json } = await postReport(prairieLearnUrl, validBody());
+        assert.equal(response.status, 200);
+        assert.equal(json.message, 'Your report has been submitted.');
+      });
+    } finally {
+      vi.useRealTimers();
+    }
 
     assert(jwt);
     const key = crypto.createSecretKey(getActiveKey(config.prairieTestSharedAuthSecret), 'utf-8');
