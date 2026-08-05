@@ -923,19 +923,6 @@ async function checkAuthorOriginCourses(questionInfos: Record<string, InfoFile<Q
   }
 }
 
-function checkInvalidSharedStateSourceSharing(courseData: CourseData): void {
-  for (const qid in courseData.questions) {
-    const question = courseData.questions[qid];
-    if (!question.data?.shareSourcePublicly) continue;
-    if (Object.keys(question.data.sharedStateAccess).length === 0) continue;
-
-    infofile.addError(
-      question,
-      '"shareSourcePublicly" cannot be used because this question accesses shared-state objects, which are not yet supported when a question is copied into another course.',
-    );
-  }
-}
-
 /**
  * Checks that roles are not present.
  * @returns A list of warnings, if any
@@ -1956,6 +1943,19 @@ function checkInvalidDraftQuestionSharing(courseData: CourseData): void {
     if (question.data?.sharePublicly || question.data?.shareSourcePublicly) {
       infofile.addError(question, 'Draft questions cannot be publicly shared.');
     }
+  }
+}
+
+function checkInvalidSharedStateSourceSharing(courseData: CourseData): void {
+  for (const qid in courseData.questions) {
+    const question = courseData.questions[qid];
+    if (!question.data?.shareSourcePublicly) continue;
+    if (Object.keys(question.data.sharedStateAccess).length === 0) continue;
+
+    infofile.addError(
+      question,
+      '"shareSourcePublicly" cannot be used because this question accesses shared-state objects, which are not yet supported when a question is copied into another course.',
+    );
   }
 }
 
