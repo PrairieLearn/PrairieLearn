@@ -275,12 +275,7 @@ export function CalculatorDrawer({ storageKey }: { storageKey: string }): HtmlSa
             </div>
 
             <div class="d-flex align-items-center gap-3">
-              <div
-                class="form-check form-switch d-flex align-items-center text-nowrap small ps-0"
-                data-bs-toggle="tooltip"
-                data-bs-placement="bottom"
-                title="decimal or fractional"
-              >
+              <div class="form-check form-switch d-flex align-items-center text-nowrap small ps-0">
                 <span class="toggle-label">dec</span>
                 <input
                   class="form-check-input mx-1"
@@ -291,12 +286,7 @@ export function CalculatorDrawer({ storageKey }: { storageKey: string }): HtmlSa
                 <span class="toggle-label">frac</span>
               </div>
 
-              <div
-                class="form-check form-switch d-flex align-items-center text-nowrap small ps-0"
-                data-bs-toggle="tooltip"
-                data-bs-placement="bottom"
-                title="radian or degree"
-              >
+              <div class="form-check form-switch d-flex align-items-center text-nowrap small ps-0">
                 <span class="toggle-label">rad</span>
                 <input
                   class="form-check-input mx-1"

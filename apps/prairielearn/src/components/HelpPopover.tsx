@@ -1,24 +1,21 @@
 import clsx from 'clsx';
 import type { ReactNode } from 'react';
-import type { Placement } from 'react-bootstrap/types';
 
-import { OverlayTrigger } from '@prairielearn/ui';
+import { Popover, type PopoverProps } from '@prairielearn/ui';
 
-export function HelpTooltip({
-  body,
-  id,
+export function HelpPopover({
+  children,
   ariaLabel,
   placement = 'top',
   className,
 }: {
-  body: ReactNode;
-  id: string;
+  children: ReactNode;
   ariaLabel: string;
-  placement?: Placement;
+  placement?: PopoverProps['placement'];
   className?: string;
 }) {
   return (
-    <OverlayTrigger placement={placement} tooltip={{ body, props: { id } }}>
+    <Popover content={children} placement={placement}>
       <button
         type="button"
         className={clsx('btn btn-xs btn-ghost p-0 border-0 lh-1 align-middle', className)}
@@ -26,6 +23,6 @@ export function HelpTooltip({
       >
         <i className="bi bi-question-circle text-muted" aria-hidden="true" />
       </button>
-    </OverlayTrigger>
+    </Popover>
   );
 }

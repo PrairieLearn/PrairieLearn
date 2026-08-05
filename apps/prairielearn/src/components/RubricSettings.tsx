@@ -637,9 +637,9 @@ export function RubricSettings({
                         <button
                           type="button"
                           className="btn btn-sm btn-ghost"
-                          data-bs-toggle="tooltip"
+                          data-bs-toggle="popover"
                           data-bs-placement="bottom"
-                          data-bs-title="If the rubric is applied to manual points only, then a student's auto points are kept, and the rubric items will be added to (or subtracted from) the autograder results."
+                          data-bs-content="If the rubric is applied to manual points only, then a student's auto points are kept, and the rubric items will be added to (or subtracted from) the autograder results."
                           aria-label="More information about applying rubric to manual points"
                         >
                           <i className="fas fa-circle-info" aria-hidden="true" />
@@ -667,9 +667,9 @@ export function RubricSettings({
                         <button
                           type="button"
                           className="btn btn-sm btn-ghost"
-                          data-bs-toggle="tooltip"
+                          data-bs-toggle="popover"
                           data-bs-placement="bottom"
-                          data-bs-title={`If the rubric is applied to total points, then a student's auto points will be ignored, and the rubric items will be based on the total points of the question (${assessmentQuestion.max_points} points).`}
+                          data-bs-content={`If the rubric is applied to total points, then a student's auto points will be ignored, and the rubric items will be based on the total points of the question (${assessmentQuestion.max_points} points).`}
                           aria-label="More information about applying rubric to total points"
                         >
                           <i className="fas fa-circle-info" aria-hidden="true" />
@@ -719,9 +719,9 @@ export function RubricSettings({
                   <button
                     type="button"
                     className="btn btn-sm btn-ghost"
-                    data-bs-toggle="tooltip"
+                    data-bs-toggle="popover"
                     data-bs-placement="bottom"
-                    data-bs-title="This setting only affects starting points. Rubric items may always be added with positive or negative points."
+                    data-bs-content="This setting only affects starting points. Rubric items may always be added with positive or negative points."
                     aria-label="More information about grading mode"
                   >
                     <i className="fas fa-circle-info" aria-hidden="true" />
@@ -737,9 +737,9 @@ export function RubricSettings({
                       <button
                         type="button"
                         className="btn btn-sm btn-ghost"
-                        data-bs-toggle="tooltip"
+                        data-bs-toggle="popover"
                         data-bs-placement="bottom"
-                        data-bs-title="By default, penalties applied by rubric items cannot cause the rubric to have negative points. This value overrides this limit, e.g., for penalties that affect auto points or the assessment as a whole."
+                        data-bs-content="By default, penalties applied by rubric items cannot cause the rubric to have negative points. This value overrides this limit, e.g., for penalties that affect auto points or the assessment as a whole."
                         aria-label="More information about minimum rubric score"
                       >
                         <i className="fas fa-circle-info" aria-hidden="true" />
@@ -764,9 +764,9 @@ export function RubricSettings({
                       <button
                         type="button"
                         className="btn btn-sm btn-ghost"
-                        data-bs-toggle="tooltip"
+                        data-bs-toggle="popover"
                         data-bs-placement="bottom"
-                        data-bs-title="By default, points are limited to the maximum points assigned to the question, and credit assigned by rubric items do not violate this limit. This value allows rubric points to extend beyond this limit, e.g., for bonus credit."
+                        data-bs-content="By default, points are limited to the maximum points assigned to the question, and credit assigned by rubric items do not violate this limit. This value allows rubric points to extend beyond this limit, e.g., for bonus credit."
                         aria-label="More information about maximum extra credit"
                       >
                         <i className="fas fa-circle-info" aria-hidden="true" />
@@ -984,9 +984,9 @@ export function RubricSettings({
               <button
                 type="button"
                 className="btn btn-sm btn-ghost"
-                data-bs-toggle="tooltip"
+                data-bs-toggle="popover"
                 data-bs-placement="bottom"
-                data-bs-title="Imported rubric point values will be scaled to match the maximum points for this question."
+                data-bs-content="Imported rubric point values will be scaled to match the maximum points for this question."
                 aria-label="More information about importing rubrics"
               >
                 <i className="fas fa-circle-info" aria-hidden="true" />
@@ -1047,9 +1047,9 @@ export function RubricSettings({
             <button
               type="button"
               className="btn btn-sm btn-ghost"
-              data-bs-toggle="tooltip"
+              data-bs-toggle="popover"
               data-bs-placement="bottom"
-              data-bs-title="Changes in rubric item values update the points for all previously graded submissions. If this option is selected, these submissions will also be tagged for manual grading, requiring a review by a grader."
+              data-bs-content="Changes in rubric item values update the points for all previously graded submissions. If this option is selected, these submissions will also be tagged for manual grading, requiring a review by a grader."
               aria-label="More information about requiring manual grading"
             >
               <i className="fas fa-circle-info" aria-hidden="true" />

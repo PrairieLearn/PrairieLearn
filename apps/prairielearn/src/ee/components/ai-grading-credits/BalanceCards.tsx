@@ -1,6 +1,4 @@
-import { useId } from 'react';
-
-import { OverlayTrigger } from '@prairielearn/ui';
+import { Popover } from '@prairielearn/ui';
 
 import { formatMilliDollars } from '../../../lib/ai-grading-credits.js';
 
@@ -30,8 +28,6 @@ export function BalanceCards({
   context: 'instructor' | 'admin';
   dimmed?: boolean;
 }) {
-  const transferableTooltipId = useId();
-  const nonTransferableTooltipId = useId();
   const tooltips = TOOLTIP_TEXT[context];
 
   const dimStyle = dimmed ? { opacity: 0.4 } : undefined;
@@ -49,13 +45,7 @@ export function BalanceCards({
           <div className="border rounded p-3 text-center" style={dimStyle}>
             <div className="text-muted small">
               Transferable{' '}
-              <OverlayTrigger
-                placement="top"
-                tooltip={{
-                  body: tooltips.transferable,
-                  props: { id: transferableTooltipId },
-                }}
-              >
+              <Popover content={tooltips.transferable} placement="top">
                 <button
                   type="button"
                   className="btn btn-link p-0 border-0 align-baseline"
@@ -63,7 +53,7 @@ export function BalanceCards({
                 >
                   <i className="bi bi-info-circle" aria-hidden="true" />
                 </button>
-              </OverlayTrigger>
+              </Popover>
             </div>
             <div className="h5 mb-0">
               {formatMilliDollars(pool.credit_transferable_milli_dollars)}
@@ -74,13 +64,7 @@ export function BalanceCards({
           <div className="border rounded p-3 text-center" style={dimStyle}>
             <div className="text-muted small">
               Non-transferable{' '}
-              <OverlayTrigger
-                placement="top"
-                tooltip={{
-                  body: tooltips.nonTransferable,
-                  props: { id: nonTransferableTooltipId },
-                }}
-              >
+              <Popover content={tooltips.nonTransferable} placement="top">
                 <button
                   type="button"
                   className="btn btn-link p-0 border-0 align-baseline"
@@ -88,7 +72,7 @@ export function BalanceCards({
                 >
                   <i className="bi bi-info-circle" aria-hidden="true" />
                 </button>
-              </OverlayTrigger>
+              </Popover>
             </div>
             <div className="h5 mb-0">
               {formatMilliDollars(pool.credit_non_transferable_milli_dollars)}

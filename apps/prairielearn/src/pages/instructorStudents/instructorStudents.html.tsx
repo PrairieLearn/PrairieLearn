@@ -24,7 +24,7 @@ import {
   MultiSelectColumnFilter,
   type MultiSelectFilterValue,
   NuqsAdapter,
-  OverlayTrigger,
+  Popover,
   TanstackTableCard,
   TanstackTableEmptyState,
   applyMultiSelectFilter,
@@ -139,54 +139,55 @@ function ManageEnrollmentsDropdown({
   const canEdit = authzData.has_course_instance_permission_edit;
 
   return (
-    <DropdownButton as={ButtonGroup} title="Manage enrollments" size="sm" variant="light">
-      <Dropdown.Item as="button" type="button" disabled={!canEdit} onClick={onInvite}>
-        <i className="bi bi-person-plus me-2" aria-hidden="true" />
-        Invite students
-      </Dropdown.Item>
-      <Dropdown.Item as="button" type="button" disabled={!canEdit} onClick={onSync}>
-        <i className="bi bi-arrow-left-right me-2" aria-hidden="true" />
-        Synchronize student list
-      </Dropdown.Item>
+    <>
+      <DropdownButton as={ButtonGroup} title="Manage enrollments" size="sm" variant="light">
+        <Dropdown.Item as="button" type="button" disabled={!canEdit} onClick={onInvite}>
+          <i className="bi bi-person-plus me-2" aria-hidden="true" />
+          Invite students
+        </Dropdown.Item>
+        <Dropdown.Item as="button" type="button" disabled={!canEdit} onClick={onSync}>
+          <i className="bi bi-arrow-left-right me-2" aria-hidden="true" />
+          Synchronize student list
+        </Dropdown.Item>
 
-      <Dropdown.Divider />
-      {courseInstance.self_enrollment_enabled &&
-        courseInstance.self_enrollment_use_enrollment_code && (
-          <OverlayTrigger
-            placement="right"
-            tooltip={{
-              body: copiedCode ? 'Copied!' : 'Copy',
-              props: { id: 'students-copy-code-tooltip' },
-            }}
-            show={copiedCode ? true : undefined}
-          >
+        <Dropdown.Divider />
+        {courseInstance.self_enrollment_enabled &&
+          courseInstance.self_enrollment_use_enrollment_code && (
             <Dropdown.Item as="button" type="button" onClick={handleCopyCode}>
               <i className="bi bi-key me-2" aria-hidden="true" />
               Copy enrollment code
             </Dropdown.Item>
-          </OverlayTrigger>
-        )}
+          )}
 
-      {courseInstance.self_enrollment_enabled && (
-        <OverlayTrigger
-          placement="right"
-          tooltip={{
-            body: copiedLink ? 'Copied!' : 'Copy',
-            props: { id: 'students-copy-link-tooltip' },
-          }}
-          show={copiedLink ? true : undefined}
-        >
+        {courseInstance.self_enrollment_enabled && (
           <Dropdown.Item as="button" type="button" onClick={handleCopyLink}>
             <i className="bi bi-link-45deg me-2" aria-hidden="true" />
             Copy enrollment link
           </Dropdown.Item>
-        </OverlayTrigger>
-      )}
-      <Dropdown.Item as="a" href={getSelfEnrollmentSettingsUrl(courseInstance.id)}>
-        <i className="bi bi-gear me-2" aria-hidden="true" />
-        Manage settings
-      </Dropdown.Item>
-    </DropdownButton>
+        )}
+        <Dropdown.Item as="a" href={getSelfEnrollmentSettingsUrl(courseInstance.id)}>
+          <i className="bi bi-gear me-2" aria-hidden="true" />
+          Manage settings
+        </Dropdown.Item>
+      </DropdownButton>
+      <span className="visually-hidden" role="status">
+        {copiedCode ? 'Enrollment code copied.' : copiedLink ? 'Enrollment link copied.' : ''}
+      </span>
+    </>
+  );
+}
+
+function StudentInformationUnavailable() {
+  return (
+    <Popover content="Student information is not yet available.">
+      <button
+        type="button"
+        className="btn btn-xs btn-ghost p-0 border-0"
+        aria-label="Student information is not yet available"
+      >
+        <i className="bi bi-question-circle" aria-hidden="true" />
+      </button>
+    </Popover>
   );
 }
 
@@ -444,16 +445,7 @@ function StudentsCard({
           if (info.row.original.user) {
             return info.getValue() || '—';
           }
-          return (
-            <OverlayTrigger
-              tooltip={{
-                body: 'Student information is not yet available.',
-                props: { id: 'students-name-tooltip' },
-              }}
-            >
-              <i className="bi bi-question-circle" />
-            </OverlayTrigger>
-          );
+          return <StudentInformationUnavailable />;
         },
       }),
       columnHelper.accessor((row) => row.enrollment.status, {
@@ -472,16 +464,7 @@ function StudentsCard({
           if (info.row.original.user) {
             return info.getValue() || '—';
           }
-          return (
-            <OverlayTrigger
-              tooltip={{
-                body: 'Student information is not yet available.',
-                props: { id: 'students-uin-tooltip' },
-              }}
-            >
-              <i className="bi bi-question-circle" />
-            </OverlayTrigger>
-          );
+          return <StudentInformationUnavailable />;
         },
       }),
       columnHelper.accessor((row) => row.user?.email, {
@@ -491,16 +474,7 @@ function StudentsCard({
           if (info.row.original.user) {
             return info.getValue() || '—';
           }
-          return (
-            <OverlayTrigger
-              tooltip={{
-                body: 'Student information is not yet available.',
-                props: { id: 'students-email-tooltip' },
-              }}
-            >
-              <i className="bi bi-question-circle" />
-            </OverlayTrigger>
-          );
+          return <StudentInformationUnavailable />;
         },
       }),
 
@@ -539,7 +513,12 @@ function StudentsCard({
           const date = info.getValue();
           if (date == null) return '—';
           return (
-            <FriendlyDate date={date} timezone={timezone} options={{ includeTz: false }} tooltip />
+            <FriendlyDate
+              date={date}
+              timezone={timezone}
+              options={{ includeTz: false }}
+              withPopover
+            />
           );
         },
       }),
@@ -712,16 +691,15 @@ function StudentsCard({
               selectedEnrollmentIds.length > 0 && (
                 <Dropdown autoClose="outside">
                   {tooManySelectedForLabels ? (
-                    <OverlayTrigger
-                      tooltip={{
-                        body: `Select at most ${MAX_LABEL_UIDS} students to apply labels.`,
-                        props: { id: 'students-label-limit-tooltip' },
-                      }}
-                    >
-                      <Dropdown.Toggle variant="light" size="sm" disabled>
+                    <Popover content={`Select at most ${MAX_LABEL_UIDS} students to apply labels.`}>
+                      <button
+                        type="button"
+                        className="btn btn-light btn-sm"
+                        aria-label={`Labels unavailable: Select at most ${MAX_LABEL_UIDS} students`}
+                      >
                         Labels
-                      </Dropdown.Toggle>
-                    </OverlayTrigger>
+                      </button>
+                    </Popover>
                   ) : (
                     <Dropdown.Toggle variant="light" size="sm">
                       Labels

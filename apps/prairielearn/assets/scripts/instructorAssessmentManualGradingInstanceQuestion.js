@@ -339,20 +339,13 @@ function addInstanceQuestionGroupSelectionDropdownListeners() {
     );
     groupSelectionDropdownSpan.innerHTML = selectedGroupName;
 
-    const groupDescriptionTooltip = document.querySelector(
-      '#instance-question-group-description-tooltip',
+    const groupDescriptionPopover = document.querySelector(
+      '#instance-question-group-description-popover',
     );
 
-    groupDescriptionTooltip.setAttribute('data-bs-title', selectedGroupDescription);
-    groupDescriptionTooltip.setAttribute('aria-label', selectedGroupDescription);
-
-    // Update the tooltip title
-    const tooltip = window.bootstrap.Tooltip.getInstance(groupDescriptionTooltip);
-    if (tooltip) {
-      // Dispose the current tooltip instance
-      tooltip.dispose();
-      // Re-initialize the tooltip
-      new window.bootstrap.Tooltip(groupDescriptionTooltip);
-    }
+    groupDescriptionPopover.setAttribute('data-bs-content', selectedGroupDescription);
+    window.bootstrap.Popover.getOrCreateInstance(groupDescriptionPopover).setContent({
+      '.popover-body': selectedGroupDescription,
+    });
   });
 }

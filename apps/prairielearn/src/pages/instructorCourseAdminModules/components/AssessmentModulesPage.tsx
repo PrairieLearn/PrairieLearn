@@ -78,7 +78,6 @@ function AssessmentModuleRow({
     <tr ref={ref} style={style}>
       {editMode && allowEdit && (
         <ReorderableRowActionsCell
-          trackingId={module.trackingId}
           dragHandleProps={dragHandleProps}
           editLabel={`Edit module ${module.name}`}
           deleteLabel={`Delete module ${module.name}`}

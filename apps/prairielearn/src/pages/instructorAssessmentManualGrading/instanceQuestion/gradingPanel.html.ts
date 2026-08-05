@@ -173,14 +173,17 @@ export function GradingPanel({
                   Submission Group:
                   ${instanceQuestionGroups && instanceQuestionGroups.length > 0
                     ? html`
-                        <div
-                          id="instance-question-group-description-tooltip"
-                          data-bs-toggle="tooltip"
+                        <button
+                          type="button"
+                          class="btn btn-xs btn-ghost p-0 border-0"
+                          id="instance-question-group-description-popover"
+                          data-bs-toggle="popover"
                           data-bs-html="true"
-                          data-bs-title="${displayedSelectedGroup.instance_question_group_description}"
+                          data-bs-content="${displayedSelectedGroup.instance_question_group_description}"
+                          aria-label="Submission group description"
                         >
-                          <i class="fas fa-circle-info text-secondary"></i>
-                        </div>
+                          <i class="fas fa-circle-info text-secondary" aria-hidden="true"></i>
+                        </button>
                       `
                     : ''}
                 </label>

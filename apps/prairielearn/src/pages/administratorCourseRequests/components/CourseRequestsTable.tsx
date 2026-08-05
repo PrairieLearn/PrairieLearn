@@ -5,7 +5,7 @@ import { Alert, Dropdown, Modal } from 'react-bootstrap';
 import { FormProvider, useForm } from 'react-hook-form';
 import ReactMarkdown from 'react-markdown';
 
-import { OverlayTrigger, useModalState } from '@prairielearn/ui';
+import { OverlayTrigger, Popover, useModalState } from '@prairielearn/ui';
 
 import {
   AdministratorCourseFormFields,
@@ -456,36 +456,38 @@ function CourseRequestApproveModalContent({
           <div className="card mb-3">
             <div className="card-header d-flex align-items-center justify-content-between py-2">
               <strong>Requesting instructor</strong>
-              <OverlayTrigger
-                trigger={['hover', 'focus']}
-                placement="bottom"
-                tooltip={{
-                  body: aiSecretsConfigured
-                    ? 'Uses AI web search to verify whether the instructor appears in faculty directories or professional profiles at their stated institution.'
-                    : 'AI features require the corresponding OpenAI key to be configured.',
-                  props: { id: 'check-instructor-legitimacy-tooltip' },
-                }}
-              >
-                <span className="d-inline-block">
+              {aiSecretsConfigured ? (
+                <button
+                  type="button"
+                  className="btn btn-sm btn-outline-secondary"
+                  disabled={legitimacyQuery.isFetching}
+                  aria-busy={legitimacyQuery.isFetching}
+                  onClick={() => legitimacyQuery.refetch()}
+                >
+                  {legitimacyQuery.isFetching ? (
+                    <>
+                      <i className="fa fa-spinner fa-spin" aria-hidden="true" /> Checking...
+                    </>
+                  ) : (
+                    <>
+                      <i className="fa fa-search" aria-hidden="true" /> Check legitimacy
+                    </>
+                  )}
+                </button>
+              ) : (
+                <Popover
+                  content="AI features require the corresponding OpenAI key to be configured."
+                  placement="bottom"
+                >
                   <button
                     type="button"
                     className="btn btn-sm btn-outline-secondary"
-                    disabled={legitimacyQuery.isFetching || !aiSecretsConfigured}
-                    aria-busy={legitimacyQuery.isFetching}
-                    onClick={() => legitimacyQuery.refetch()}
+                    aria-label="Check legitimacy unavailable: OpenAI API key is not configured"
                   >
-                    {legitimacyQuery.isFetching ? (
-                      <>
-                        <i className="fa fa-spinner fa-spin" aria-hidden="true" /> Checking...
-                      </>
-                    ) : (
-                      <>
-                        <i className="fa fa-search" aria-hidden="true" /> Check legitimacy
-                      </>
-                    )}
+                    <i className="fa fa-search" aria-hidden="true" /> Check legitimacy
                   </button>
-                </span>
-              </OverlayTrigger>
+                </Popover>
+              )}
             </div>
             <div className="card-body py-2">
               <div className="row g-2 small">

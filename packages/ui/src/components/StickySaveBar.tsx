@@ -2,7 +2,7 @@ import clsx from 'clsx';
 import type { ReactNode } from 'react';
 import Alert from 'react-bootstrap/Alert';
 
-import { OverlayTrigger } from './OverlayTrigger.js';
+import { Popover } from './Popover.js';
 
 export interface StickySaveBarAlert {
   variant: 'success' | 'danger';
@@ -21,7 +21,7 @@ export interface StickySaveBarProps {
   formId?: string;
   /**
    * Optional reason the save button is disabled. When set, the save button is
-   * disabled and a tooltip with this message is shown on hover/focus.
+   * unavailable and a popover with this message is shown when it is pressed.
    */
   saveDisabledReason?: string | null;
   /**
@@ -48,22 +48,32 @@ export function StickySaveBar({
   alert,
   fullWidth,
 }: StickySaveBarProps) {
-  const isSaveDisabled = isSaving || Boolean(saveDisabledReason);
-
-  const saveButton = (
-    <button
-      type="submit"
-      form={formId}
-      className={clsx(
-        'btn btn-sm d-inline-flex align-items-center gap-1',
-        isSaveDisabled ? 'btn-outline-secondary' : 'btn-primary',
-      )}
-      disabled={isSaveDisabled}
-    >
-      <i className="bi bi-floppy" aria-hidden="true" />
-      {isSaving ? 'Saving...' : 'Save'}
-    </button>
-  );
+  const saveButton =
+    saveDisabledReason && !isSaving ? (
+      <Popover content={saveDisabledReason} placement="top">
+        <button
+          type="button"
+          className="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1"
+          aria-label={`Save unavailable: ${saveDisabledReason}`}
+        >
+          <i className="bi bi-floppy" aria-hidden="true" />
+          Save
+        </button>
+      </Popover>
+    ) : (
+      <button
+        type="submit"
+        form={formId}
+        className={clsx(
+          'btn btn-sm d-inline-flex align-items-center gap-1',
+          isSaving ? 'btn-outline-secondary' : 'btn-primary',
+        )}
+        disabled={isSaving}
+      >
+        <i className="bi bi-floppy" aria-hidden="true" />
+        {isSaving ? 'Saving...' : 'Save'}
+      </button>
+    );
 
   return (
     <div className="pl-ui-sticky-save-bar">
@@ -94,18 +104,7 @@ export function StickySaveBar({
           >
             Cancel
           </button>
-          {saveDisabledReason ? (
-            <OverlayTrigger
-              tooltip={{
-                props: { id: 'pl-ui-sticky-save-bar-tooltip' },
-                body: saveDisabledReason,
-              }}
-            >
-              <span className="d-inline-block">{saveButton}</span>
-            </OverlayTrigger>
-          ) : (
-            saveButton
-          )}
+          {saveButton}
         </div>
       </div>
     </div>
