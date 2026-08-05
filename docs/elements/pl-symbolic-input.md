@@ -14,6 +14,7 @@ Fill in the blank field that allows for mathematical symbol input.
 import prairielearn as pl
 import sympy
 
+
 def generate(data):
 
     # Declare math symbols

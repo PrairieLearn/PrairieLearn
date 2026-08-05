@@ -53,6 +53,7 @@ The host element could then call this by running the following:
 ```python
 import prairielearn as pl
 
+
 def render(element_html, data):
     extension = pl.load_extension(data, "extension_name")
     contents = extension.my_cool_function()
@@ -71,6 +72,7 @@ import prairielearn as pl
 
 STATIC_VARIABLE = "hello"
 
+
 def render(element_html, data):
     extension = pl.load_extension(data, "extension_name")
     contents = extension.my_cool_function()
@@ -83,6 +85,7 @@ The extension could then access `STATIC_VARIABLE` by importing the host script:
 import prairielearn as pl
 
 host_element = pl.load_host_script("pl-host-element.py")
+
 
 def my_cool_function():
     return host_element.STATIC_VARIABLE

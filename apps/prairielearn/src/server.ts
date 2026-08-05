@@ -500,10 +500,11 @@ export async function initExpress(): Promise<Express> {
   app.use((await import('./middlewares/authn.js')).default); // authentication, set res.locals.authn_user
   app.use('/pl/api/v1', (await import('./middlewares/authnToken.js')).default); // authn for the API, set res.locals.authn_user
 
-  // Deny all access to a user with an active LockDown-Browser-required
-  // reservation whose session was not established inside LockDown Browser. Must
-  // come after authentication so it can read `res.locals.authn_user`.
-  app.use((await import('./middlewares/enforceLockdownBrowser.js')).default);
+  // Load active PrairieTest reservation information and deny access to a user
+  // whose LockDown-Browser-required reservation was not established inside
+  // LockDown Browser. Must come after authentication so it can read
+  // `res.locals.authn_user`.
+  app.use((await import('./middlewares/selectAndAuthzPrairieTestReservation.js')).default);
 
   // Must come after the authentication middleware, as we need to read the
   // `authn_is_administrator` property from the response locals.
@@ -556,6 +557,10 @@ export async function initExpress(): Promise<Express> {
   app.use('/pl/enroll', (await import('./pages/enroll/enroll.js')).default);
   app.use('/pl/password', (await import('./pages/authPassword/authPassword.js')).default);
   app.use('/pl/end-exam', (await import('./pages/endExam/endExam.js')).default);
+  app.use(
+    '/pl/report-cheating',
+    (await import('./pages/reportCheating/reportCheating.js')).default,
+  );
   app.use('/pl/request_course', [
     // Users can post data to this page and then view it, so we'll block access to prevent
     // students from using to infiltrate or exfiltrate exam information.

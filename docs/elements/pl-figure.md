@@ -44,7 +44,7 @@ If `type="dynamic"`, then the contents of the image file must be returned by a f
 ```python title="server.py"
 def file(data):
     if data["filename"] == "figure.png":
-        plt.plot([1,2,3], [3,4,-2])
+        plt.plot([1, 2, 3], [3, 4, -2])
         buf = io.BytesIO()
         plt.savefig(buf, format="png")
         return buf

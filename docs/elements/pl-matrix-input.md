@@ -16,6 +16,7 @@ format (either MATLAB or Python's numpy).
 import prairielearn as pl
 import numpy as np
 
+
 def generate(data):
     # Randomly generate a 2x2 matrix
     matrixB = np.random.random((2, 2))

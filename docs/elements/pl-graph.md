@@ -22,6 +22,7 @@ Using the [PyGraphviz](https://pygraphviz.github.io/) library, create Graphviz D
 import prairielearn as pl
 import numpy as np
 
+
 def generate(data):
     mat = np.random.random((3, 3))
     mat = mat / np.linalg.norm(mat, 1, axis=0)
@@ -41,6 +42,7 @@ import string
 
 import prairielearn as pl
 import networkx as nx
+
 
 def generate(data):
     random_graph = nx.gnm_random_graph(5, 6)
@@ -105,6 +107,7 @@ For a **randomly generated** graph, a fixed string like "a random graph" tells a
 ```python title="server.py"
 import prairielearn as pl
 import networkx as nx
+
 
 def generate(data):
     graph = nx.gnm_random_graph(5, 6)
@@ -175,9 +178,7 @@ def custom_type(element, data):
 In order to register these custom types, your extension should define the global `backends` dictionary. This will map a value of `params-type` to your function above:
 
 ```python
-backends = {
-    'my-custom-type': custom_type
-}
+backends = {"my-custom-type": custom_type}
 ```
 
 This will automatically get picked up when the extension gets imported. If your extension needs extra attributes to be defined, you may optionally define the global `optional_attribs` array that contains a list of attributes that the element may use.
