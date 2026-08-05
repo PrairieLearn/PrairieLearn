@@ -761,7 +761,8 @@ export function AssessmentQuestionTable({
                       <Button
                         variant="light"
                         size="sm"
-                        aria-label="AI submission grouping unavailable: No OpenAI API key is configured"
+                        className="opacity-50"
+                        aria-label="Why AI submission grouping is unavailable"
                       >
                         <i className="bi bi-stars" aria-hidden="true" />
                         <span className="d-none d-sm-inline">AI submission grouping</span>
@@ -823,7 +824,7 @@ export function AssessmentQuestionTable({
                     <Popover content="Only staff with student data editor permissions can be assigned as graders">
                       <button
                         type="button"
-                        className="btn btn-xs btn-ghost p-0 border-0"
+                        className="btn btn-xs btn-ghost btn-icon border-0"
                         aria-label="More information about assigning graders"
                       >
                         <i className="fas fa-question-circle text-secondary" aria-hidden="true" />

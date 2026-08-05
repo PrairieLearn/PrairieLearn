@@ -8,6 +8,29 @@ import { getPopoverContainerForTrigger, getPopoverTriggerForContainer } from '..
 
 const openPopovers = new Set<Popover>();
 
+function usesDialogSemantics(trigger: HTMLElement) {
+  return !isFocusTrigger(trigger) && trigger.dataset.plPopoverMode !== 'status';
+}
+
+function configureDialogSemantics(trigger: HTMLElement, container: HTMLElement) {
+  trigger.setAttribute('aria-haspopup', 'dialog');
+  trigger.setAttribute('aria-expanded', 'true');
+  trigger.setAttribute('aria-controls', container.id);
+  trigger.removeAttribute('aria-describedby');
+
+  container.setAttribute('role', 'dialog');
+  container.tabIndex = -1;
+
+  const heading = container.querySelector<HTMLElement>('.popover-header');
+  if (heading) {
+    heading.id ||= `${container.id}-title`;
+    container.setAttribute('aria-labelledby', heading.id);
+  } else {
+    trigger.id ||= `${container.id}-trigger`;
+    container.setAttribute('aria-labelledby', trigger.id);
+  }
+}
+
 function closeOpenPopovers() {
   openPopovers.forEach((popover) => popover.hide());
   openPopovers.clear();
@@ -46,6 +69,11 @@ onDocumentReady(() => {
     add(el) {
       new window.bootstrap.Popover(el, { sanitize: false });
 
+      if (usesDialogSemantics(el)) {
+        el.setAttribute('aria-haspopup', 'dialog');
+        el.setAttribute('aria-expanded', 'false');
+      }
+
       // Bootstrap will by default copy the `title` attribute to `aria-label`,
       // but it won't do that for `data-bs-title`. We do that here in the interest
       // of making things maximally accessible by default. If an `aria-label`
@@ -75,15 +103,19 @@ onDocumentReady(() => {
     window.bootstrap.Popover.getInstance(trigger)?.hide();
   });
 
-  // Close open popovers if the user hits the escape key.
-  //
-  // Note that this does not gracefully handle popovers inside of modals, as
-  // Bootstrap has its own escape key handling for modals.
-  on('keydown', 'body', (event) => {
-    if (event.key === 'Escape') {
+  // Bootstrap 6 handles Escape in the capture phase so the first press closes a
+  // popover inside a dialog without also closing the dialog. Remove this listener
+  // after upgrading: https://github.com/twbs/bootstrap/pull/42472
+  document.addEventListener(
+    'keydown',
+    (event) => {
+      if (event.key !== 'Escape' || openPopovers.size === 0) return;
+      event.preventDefault();
+      event.stopPropagation();
       closeOpenPopovers();
-    }
-  });
+    },
+    true,
+  );
 
   on('click', 'body', (e) => {
     if (openPopovers.size === 0) return;
@@ -105,6 +137,15 @@ onDocumentReady(() => {
     const target = event.target as HTMLElement;
     const container = getPopoverContainerForTrigger(target);
 
+    // Bootstrap 5 intentionally exposes popovers as tooltip-like descriptions:
+    // https://github.com/twbs/bootstrap/pull/38978
+    // Our press-triggered popovers behave as contextual dialogs instead, matching
+    // the React Aria implementation. Bootstrap considered these semantics but
+    // closed them as not planned: https://github.com/twbs/bootstrap/issues/28446
+    if (container && usesDialogSemantics(target)) {
+      configureDialogSemantics(target, container);
+    }
+
     // If MathJax is loaded on this page, attempt to typeset any math
     // that may be in the popover.
     if (container && window.MathJax !== undefined) {
@@ -123,7 +164,7 @@ onDocumentReady(() => {
     // If the popover is focus-triggered, we'll skip the focus trap and
     // autofocus logic. If we move the focus off the trigger, the popover
     // will immediately close, which we don't want.
-    if (container && !isFocusTrigger(target)) {
+    if (container && usesDialogSemantics(target)) {
       // Trap focus inside this new popover.
       const trap = trapFocus(container);
 
@@ -135,13 +176,19 @@ onDocumentReady(() => {
       target.addEventListener('hide.bs.popover', removeFocusTrap);
 
       // Attempt to place focus on the correct item inside the popover.
-      const popoverBody = container.querySelector<HTMLElement>('.popover-body')!;
-      focusFirstFocusableChild(popoverBody);
+      focusFirstFocusableChild(container);
     }
   });
 
   on('hide.bs.popover', 'body', (event) => {
-    const popover = window.bootstrap.Popover.getInstance(event.target as HTMLElement);
+    const target = event.target as HTMLElement;
+    const popover = window.bootstrap.Popover.getInstance(target);
     if (popover) openPopovers.delete(popover);
+    if (usesDialogSemantics(target)) target.setAttribute('aria-expanded', 'false');
+  });
+
+  on('hidden.bs.popover', 'body', (event) => {
+    const target = event.target as HTMLElement;
+    if (usesDialogSemantics(target)) target.removeAttribute('aria-controls');
   });
 });

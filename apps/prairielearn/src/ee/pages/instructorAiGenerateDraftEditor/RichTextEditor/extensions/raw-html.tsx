@@ -41,7 +41,7 @@ const RawHtmlComponent = (
               >
                 <button
                   type="button"
-                  className="btn btn-xs btn-ghost p-0 border-0"
+                  className="btn btn-xs btn-ghost btn-icon border-0"
                   aria-label="Raw HTML warning"
                 >
                   <i className="bi bi-exclamation-triangle text-danger" aria-hidden="true" />
@@ -60,7 +60,7 @@ const RawHtmlComponent = (
           >
             <button
               type="button"
-              className="btn btn-xs btn-ghost p-0 border-0"
+              className="btn btn-xs btn-ghost btn-icon border-0"
               aria-label="Raw HTML help"
             >
               <i className="bi bi-question-circle" aria-hidden="true" />

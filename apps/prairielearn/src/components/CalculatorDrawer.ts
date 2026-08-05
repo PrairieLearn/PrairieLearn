@@ -46,7 +46,7 @@ export function CalculatorDrawerToggle({
           ? html`
               <button
                 type="button"
-                class="btn btn-link btn-sm ms-auto text-white border-0 p-0"
+                class="btn btn-link btn-sm btn-icon ms-auto text-white border-0"
                 data-bs-toggle="popover"
                 data-bs-container="body"
                 data-bs-html="true"

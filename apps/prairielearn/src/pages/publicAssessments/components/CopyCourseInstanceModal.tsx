@@ -101,9 +101,9 @@ export function CopyCourseInstanceModal({
           placement="bottom"
         >
           <button
-            className="btn btn-sm btn-outline-light"
+            className="btn btn-sm btn-outline-light opacity-50"
             type="button"
-            aria-label="Copy course instance unavailable: This course has not set a sharing name"
+            aria-label="Why copying this course instance is unavailable"
           >
             <i className="fa fa-clone" aria-hidden="true" />
             <span className="d-none d-sm-inline">Copy course instance</span>

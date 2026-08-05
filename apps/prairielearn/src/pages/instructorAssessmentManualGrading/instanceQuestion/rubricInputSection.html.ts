@@ -141,19 +141,19 @@ function RubricItems({
           ? html`
               <button
                 type="button"
-                class="btn btn-xs btn-ghost p-0 border-0 text-secondary"
+                class="btn btn-xs btn-ghost btn-icon border-0 text-secondary"
                 data-bs-toggle="popover"
                 data-bs-content="AI grading"
-                aria-label="AI grading"
+                aria-label="View AI grading source"
               >
                 <i class="bi bi-stars" aria-hidden="true"></i>
               </button>
               <button
                 type="button"
-                class="btn btn-xs btn-ghost p-0 border-0 text-secondary"
+                class="btn btn-xs btn-ghost btn-icon border-0 text-secondary"
                 data-bs-toggle="popover"
                 data-bs-content="Human grading"
-                aria-label="Human grading"
+                aria-label="View human grading source"
               >
                 <i class="bi bi-person-fill" aria-hidden="true"></i>
               </button>

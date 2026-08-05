@@ -124,9 +124,9 @@ export function ReorderableRowActionsCell({
         {deleteDisabledReason ? (
           <Popover content={deleteDisabledReason}>
             <button
-              className="btn btn-sm btn-ghost"
+              className="btn btn-sm btn-ghost opacity-50"
               type="button"
-              aria-label={`${deleteLabel}: ${deleteDisabledReason}`}
+              aria-label={`Why ${deleteLabel} is unavailable`}
             >
               <i className="fa fa-trash text-muted" aria-hidden="true" />
             </button>

@@ -481,8 +481,8 @@ function CourseRequestApproveModalContent({
                 >
                   <button
                     type="button"
-                    className="btn btn-sm btn-outline-secondary"
-                    aria-label="Check legitimacy unavailable: OpenAI API key is not configured"
+                    className="btn btn-sm btn-outline-secondary opacity-50"
+                    aria-label="Why checking legitimacy is unavailable"
                   >
                     <i className="fa fa-search" aria-hidden="true" /> Check legitimacy
                   </button>

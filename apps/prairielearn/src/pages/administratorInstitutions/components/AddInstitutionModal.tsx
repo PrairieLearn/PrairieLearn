@@ -170,8 +170,8 @@ export function AddInstitutionModal({
                 <Popover content={suggestTimezoneDisabledReason} placement="top">
                   <button
                     type="button"
-                    className="btn btn-secondary"
-                    aria-label={`Suggest timezone unavailable: ${suggestTimezoneDisabledReason}`}
+                    className="btn btn-secondary opacity-50"
+                    aria-label="Why suggesting a timezone is unavailable"
                   >
                     Suggest
                   </button>

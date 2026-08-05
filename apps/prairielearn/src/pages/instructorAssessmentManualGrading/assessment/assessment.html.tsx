@@ -189,10 +189,10 @@ function AssessmentQuestionRow({
         {question.manual_rubric_id != null && (
           <button
             type="button"
-            className="btn btn-xs btn-ghost p-0 border-0 ms-2 text-info"
+            className="btn btn-xs btn-ghost btn-icon border-0 ms-2 text-info"
             data-bs-toggle="popover"
             data-bs-content="This question uses a rubric"
-            aria-label="This question uses a rubric"
+            aria-label="View rubric status"
           >
             <i className="fas fa-list-check" aria-hidden="true" />
           </button>

@@ -430,36 +430,46 @@ export function GroupSettingsCard({
                     <tr>
                       <th scope="col">Name</th>
                       <th scope="col">
-                        Min assignees{' '}
-                        <HelpPopover ariaLabel="Min assignees help">
-                          Minimum number of students that must be assigned to this role.
-                        </HelpPopover>
+                        <span className="d-inline-flex align-items-center gap-1 text-nowrap">
+                          Min assignees
+                          <HelpPopover ariaLabel="Min assignees help">
+                            Minimum number of students that must be assigned to this role.
+                          </HelpPopover>
+                        </span>
                       </th>
                       <th scope="col">
-                        Max assignees{' '}
-                        <HelpPopover ariaLabel="Max assignees help">
-                          Maximum number of students that can be assigned to this role. Leave blank
-                          for unlimited.
-                        </HelpPopover>
+                        <span className="d-inline-flex align-items-center gap-1 text-nowrap">
+                          Max assignees
+                          <HelpPopover ariaLabel="Max assignees help">
+                            Maximum number of students that can be assigned to this role. Leave
+                            blank for unlimited.
+                          </HelpPopover>
+                        </span>
                       </th>
                       <th scope="col" className="text-center">
-                        Can assign{' '}
-                        <HelpPopover ariaLabel="Can assign roles help">
-                          Students with this role can assign roles to other students in the group.
-                        </HelpPopover>
+                        <span className="d-inline-flex align-items-center gap-1 text-nowrap">
+                          Can assign
+                          <HelpPopover ariaLabel="Can assign roles help">
+                            Students with this role can assign roles to other students in the group.
+                          </HelpPopover>
+                        </span>
                       </th>
                       <th scope="col" className="text-center">
-                        Can view{' '}
-                        <HelpPopover ariaLabel="Can view help">
-                          Students with this role can view assessment questions by default.
-                        </HelpPopover>
+                        <span className="d-inline-flex align-items-center gap-1 text-nowrap">
+                          Can view
+                          <HelpPopover ariaLabel="Can view help">
+                            Students with this role can view assessment questions by default.
+                          </HelpPopover>
+                        </span>
                       </th>
                       <th scope="col" className="text-center">
-                        Can submit{' '}
-                        <HelpPopover ariaLabel="Can submit help">
-                          Students with this role can submit answers to assessment questions by
-                          default.
-                        </HelpPopover>
+                        <span className="d-inline-flex align-items-center gap-1 text-nowrap">
+                          Can submit
+                          <HelpPopover ariaLabel="Can submit help">
+                            Students with this role can submit answers to assessment questions by
+                            default.
+                          </HelpPopover>
+                        </span>
                       </th>
                       <th scope="col" />
                     </tr>
