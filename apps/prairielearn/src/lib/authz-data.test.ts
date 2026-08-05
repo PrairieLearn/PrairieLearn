@@ -387,7 +387,7 @@ describe('calculateModernCourseInstanceStudentAccess', () => {
   });
 
   describe('with publishing extensions', () => {
-    it('uses every matching candidate for institution UIN invitation access', async () => {
+    it('uses publishing extensions from both the left enrollment and its UIN invitation', async () => {
       const courseInstance = createMockCourseInstance();
       const boundCandidate = createCandidate(
         createMockEnrollment({ id: 'bound', status: 'left' }),

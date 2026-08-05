@@ -73,8 +73,8 @@ export async function selectLatestPublishingExtensionByEnrollment({
 }
 
 /**
- * Finds the latest publishing extension across enrollment identity candidates
- * for a course instance.
+ * Finds the latest publishing extension assigned to any of the supplied
+ * enrollments in this course instance.
  */
 export async function selectLatestPublishingExtensionByEnrollmentIds({
   courseInstance,
