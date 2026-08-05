@@ -10,7 +10,7 @@ import { formatStripePrice } from '../../lib/billing/stripe.shared.js';
 export function StudentCourseInstanceUpgrade({
   course,
   courseInstance,
-  lti13Relaunch,
+  lti13AdmissionPending,
   missingPlans,
   planPrices,
   resLocals,
@@ -18,11 +18,11 @@ export function StudentCourseInstanceUpgrade({
   course: Course;
   courseInstance: CourseInstance;
   /**
-   * Whether the student reached this page from an LTI launch that matched a
-   * pending invitation. If so, send them back to their LMS after payment
-   * instead of directly into the course.
+   * Whether this upgrade started with an LTI invitation that is still pending.
+   * The hidden field lets the server look up the saved invitation again after
+   * the form submission and Stripe checkout.
    */
-  lti13Relaunch: boolean;
+  lti13AdmissionPending: boolean;
   missingPlans: PlanName[];
   /**
    * `null` here will indicate that we aren't configured with Stripe credentials
@@ -71,7 +71,9 @@ export function StudentCourseInstanceUpgrade({
               </div>
 
               <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
-              ${lti13Relaunch ? html`<input type="hidden" name="lti13_relaunch" value="1" />` : ''}
+              ${lti13AdmissionPending
+                ? html`<input type="hidden" name="lti13_relaunch" value="1" />`
+                : ''}
               ${missingPlans.map(
                 (plan) => html` <input type="hidden" name="unsafe_plan_names" value="${plan}" /> `,
               )}
@@ -120,21 +122,21 @@ export function Lti13CourseInstanceRelaunch({
 export function CourseInstanceStudentUpdateSuccess({
   course,
   courseInstance,
-  lti13Relaunch,
+  requireLti13Relaunch,
   paid,
   resLocals,
 }: {
   course: Course;
   courseInstance: CourseInstance;
   /**
-   * Whether the completed upgrade should direct the student back to the LMS
-   * for a fresh LTI launch instead of continuing into the course.
+   * Whether the saved LTI invitation could not be used after payment and the
+   * student must launch the course from the LMS again.
    */
-  lti13Relaunch: boolean;
+  requireLti13Relaunch: boolean;
   paid: boolean;
   resLocals: ResLocalsForPage<'course-instance'>;
 }) {
-  if (paid && lti13Relaunch) {
+  if (paid && requireLti13Relaunch) {
     return Lti13CourseInstanceRelaunch({ course, courseInstance, resLocals });
   }
 

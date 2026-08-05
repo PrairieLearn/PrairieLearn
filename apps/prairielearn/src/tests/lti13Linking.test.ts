@@ -492,7 +492,7 @@ describe('LTI 1.3 course instance linking', { concurrent: false }, () => {
       await assertLtiLaunchConsumed(user.id);
     });
 
-    test('requires a fresh launch after an exact admission plan upgrade', async () => {
+    test('finishes LTI invitation admission after the required plan is granted', async () => {
       await updateRequiredPlansForCourseInstance('1', ['basic'], '1');
       await updateCourseInstanceSettings('1', {
         selfEnrollmentEnabled: false,
@@ -543,11 +543,14 @@ describe('LTI 1.3 course instance linking', { concurrent: false }, () => {
         [{ plan: 'basic', grantType: 'stripe' }],
         '1',
       );
-      const relaunchResponse = await fetchWithCookies(
+      const admissionResponse = await fetchWithCookies(
         `${siteUrl}/pl/course_instance/1/upgrade?lti13_relaunch=1`,
       );
-      assert.equal(relaunchResponse.status, 200);
-      assert.include(await relaunchResponse.text(), 'Return to your LMS');
+      assert.include(admissionResponse.url, '/pl/course_instance/1/assessments');
+
+      const [admittedEnrollment] = await selectEnrollments([invitation.id]);
+      assert.equal(admittedEnrollment.status, 'joined');
+      assert.equal(admittedEnrollment.user_id, user.id);
     });
   });
 
