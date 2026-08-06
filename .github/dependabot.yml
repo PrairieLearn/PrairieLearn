@@ -96,10 +96,6 @@ updates:
       - dependency-name: '@types/jquery'
         versions: ['>=4']
 
-      # We're not ready to upgrade to Zod 4 yet.
-      - dependency-name: 'zod'
-        versions: ['>=4']
-
       # quill 2.0.3 regressed getSemanticHTML() by converting spaces to &nbsp;,
       # which breaks wrapping and stored HTML from pl-rich-text-editor:
       # https://github.com/PrairieLearn/PrairieLearn/pull/11281
