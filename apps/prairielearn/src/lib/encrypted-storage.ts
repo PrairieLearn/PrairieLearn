@@ -1,7 +1,7 @@
 import {
   type StorageCipher,
   createStorageCipher,
-  legacyPrairieLearnFormat,
+  prairieLearnCiphertextFormat,
 } from '@prairielearn/encrypted-storage';
 
 import { config } from './config.js';
@@ -9,8 +9,7 @@ import { config } from './config.js';
 export function getStorageCipher(): StorageCipher {
   return createStorageCipher({
     keyRing: config.databaseEncryptionKey,
-    legacyFormat: legacyPrairieLearnFormat,
-    writeFormat: config.databaseEncryptionWriteFormat,
+    format: prairieLearnCiphertextFormat,
   });
 }
 

@@ -770,11 +770,6 @@
         }
       ]
     },
-    "databaseEncryptionWriteFormat": {
-      "default": "legacy",
-      "type": "string",
-      "enum": ["legacy", "v1"]
-    },
     "secretSlackOpsBotEndpoint": {
       "default": null,
       "anyOf": [

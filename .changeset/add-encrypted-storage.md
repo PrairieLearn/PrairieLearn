@@ -2,4 +2,4 @@
 '@prairielearn/encrypted-storage': minor
 ---
 
-Add versioned application-level encryption with legacy PrairieLearn and PrairieTest ciphertext support and reusable rotation helpers.
+Add shared application-level encryption and Postgres key-rotation tooling for the existing PrairieLearn and PrairieTest ciphertext formats.

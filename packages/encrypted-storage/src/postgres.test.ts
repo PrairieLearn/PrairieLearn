@@ -1,8 +1,12 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import * as crypto from 'node:crypto';
+
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type * as PostgresModule from '@prairielearn/postgres';
 
-import { createPostgresEncryptedValueTarget } from './postgres.js';
+import { createStorageCipher } from './cipher.js';
+import { prairieLearnCiphertextFormat } from './formats.js';
+import { runPostgresEncryptedColumnOperation } from './postgres.js';
 
 const postgresMocks = vi.hoisted(() => ({
   execute: vi.fn(),
@@ -20,114 +24,152 @@ vi.mock('@prairielearn/postgres', async (importOriginal) => {
   };
 });
 
-describe('Postgres encrypted value target', () => {
+function makeKey() {
+  return crypto.randomBytes(32).toString('hex');
+}
+
+function mockDatabase(rows: Map<string, string>, conflictOnce = false) {
+  postgresMocks.queryRows.mockImplementation(
+    (_query: string, params: { after_cursor: string | null; batch_size: number }) => {
+      const result = [...rows.entries()]
+        .filter(([cursor]) => params.after_cursor === null || cursor > params.after_cursor)
+        .sort(([a], [b]) => a.localeCompare(b))
+        .slice(0, params.batch_size)
+        .map(([cursor, ciphertext]) => ({ cursor, ciphertext }));
+      return Promise.resolve(result);
+    },
+  );
+  postgresMocks.execute.mockImplementation(
+    (
+      _query: string,
+      params: {
+        cursor: string;
+        expected_ciphertext: string;
+        replacement_ciphertext: string;
+      },
+    ) => {
+      if (conflictOnce) {
+        conflictOnce = false;
+        return Promise.resolve(0);
+      }
+      if (rows.get(params.cursor) !== params.expected_ciphertext) return Promise.resolve(0);
+      rows.set(params.cursor, params.replacement_ciphertext);
+      return Promise.resolve(1);
+    },
+  );
+}
+
+function operationOptions(cipher: ReturnType<typeof createStorageCipher>) {
+  return {
+    cipher,
+    tableName: 'example"table',
+    primaryKeyColumnName: 'example"id',
+    ciphertextColumnName: 'example"ciphertext',
+  };
+}
+
+describe('Postgres encrypted column operations', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     postgresMocks.queryScalar.mockResolvedValue(true);
   });
 
-  it('selects bounded batches in cursor order', async () => {
-    postgresMocks.queryRows.mockResolvedValue([{ cursor: '1', ciphertext: 'ciphertext' }]);
-    const target = createPostgresEncryptedValueTarget({
-      tableName: 'example_table',
-      primaryKeyColumnName: 'id',
-      ciphertextColumnName: 'encrypted_value',
+  it('checks values in bounded keyset batches with escaped identifiers', async () => {
+    const primaryKey = makeKey();
+    const fallbackKey = makeKey();
+    const cipher = createStorageCipher({
+      keyRing: [primaryKey, fallbackKey],
+      format: prairieLearnCiphertextFormat,
     });
-
-    await expect(target.selectBatch({ after: null, limit: 20 })).resolves.toEqual([
-      { cursor: '1', ciphertext: 'ciphertext' },
+    const rows = new Map([
+      ['1', cipher.encrypt('current')],
+      ['2', prairieLearnCiphertextFormat.encrypt('old', fallbackKey)],
     ]);
-    expect(postgresMocks.queryScalar.mock.calls[0][1]).toEqual({
-      table_name: '"example_table"',
-      primary_key_column_name: 'id',
-    });
-    expect(postgresMocks.queryRows.mock.calls[0][0]).toContain(
-      'SELECT\n  "id"::text AS cursor,\n  "encrypted_value" AS ciphertext',
-    );
-    expect(postgresMocks.queryRows.mock.calls[0][0]).not.toContain('WHERE');
-    expect(postgresMocks.queryRows.mock.calls[0][1]).toEqual({ batch_size: 20 });
+    mockDatabase(rows);
 
-    await target.selectBatch({ after: '1', limit: 10 });
-    expect(postgresMocks.queryRows.mock.calls[1][0]).toContain('WHERE\n  "id" > $after_cursor');
-    expect(postgresMocks.queryRows.mock.calls[1][1]).toEqual({
-      after_cursor: '1',
-      batch_size: 10,
+    const result = await runPostgresEncryptedColumnOperation({
+      mode: 'check',
+      ...operationOptions(cipher),
+      batchSize: 1,
     });
-    expect(postgresMocks.queryScalar).toHaveBeenCalledTimes(1);
+
+    assert.deepEqual(result, {
+      target: 'example"table.example"ciphertext',
+      total: 2,
+      needsRotation: 1,
+    });
+    assert.deepEqual(postgresMocks.queryScalar.mock.calls[0][1], {
+      table_name: '"example""table"',
+      primary_key_column_name: 'example"id',
+    });
+    assert.include(postgresMocks.queryRows.mock.calls[0][0], '"example""id"::text AS cursor');
+    assert.include(postgresMocks.queryRows.mock.calls[0][0], '"example""ciphertext" AS ciphertext');
+    assert.equal(postgresMocks.queryRows.mock.calls[0][1].batch_size, 1);
   });
 
-  it('escapes identifiers and compares the old ciphertext when updating', async () => {
-    postgresMocks.execute.mockResolvedValue(1);
-    const target = createPostgresEncryptedValueTarget({
-      tableName: 'example"table',
-      primaryKeyColumnName: 'example"id',
-      ciphertextColumnName: 'example"ciphertext',
+  it('rotates with compare-and-swap updates, retries conflicts, and verifies the result', async () => {
+    const primaryKey = makeKey();
+    const fallbackKey = makeKey();
+    const cipher = createStorageCipher({
+      keyRing: [primaryKey, fallbackKey],
+      format: prairieLearnCiphertextFormat,
+    });
+    const rows = new Map([['1', prairieLearnCiphertextFormat.encrypt('old', fallbackKey)]]);
+    mockDatabase(rows, true);
+
+    const result = await runPostgresEncryptedColumnOperation({
+      mode: 'rotate',
+      ...operationOptions(cipher),
     });
 
-    await expect(
-      target.replaceIfUnchanged({
-        cursor: '12',
-        expectedCiphertext: 'old',
-        replacementCiphertext: 'new',
-      }),
-    ).resolves.toBe(true);
-    expect(postgresMocks.execute.mock.calls[0][0]).toContain('UPDATE "example""table"');
-    expect(postgresMocks.execute.mock.calls[0][0]).toContain('"example""id" = $cursor');
-    expect(postgresMocks.execute.mock.calls[0][0]).toContain(
+    assert.deepEqual(result, {
+      target: 'example"table.example"ciphertext',
+      total: 1,
+      needsRotation: 0,
+      passes: 2,
+      rotated: 1,
+      conflicts: 1,
+    });
+    assert.equal(cipher.decrypt(rows.get('1')!), 'old');
+    assert.include(postgresMocks.execute.mock.calls[0][0], 'UPDATE "example""table"');
+    assert.include(
+      postgresMocks.execute.mock.calls[0][0],
       '"example""ciphertext" = $expected_ciphertext',
     );
-    expect(postgresMocks.execute.mock.calls[0][1]).toEqual({
-      cursor: '12',
-      expected_ciphertext: 'old',
-      replacement_ciphertext: 'new',
-    });
   });
 
-  it('reports compare-and-swap conflicts', async () => {
+  it('fails when final verification still finds values requiring rotation', async () => {
+    const primaryKey = makeKey();
+    const fallbackKey = makeKey();
+    const cipher = createStorageCipher({
+      keyRing: [primaryKey, fallbackKey],
+      format: prairieLearnCiphertextFormat,
+    });
+    const rows = new Map([['1', prairieLearnCiphertextFormat.encrypt('old', fallbackKey)]]);
+    mockDatabase(rows);
     postgresMocks.execute.mockResolvedValue(0);
-    const target = createPostgresEncryptedValueTarget({
-      tableName: 'example_table',
-      primaryKeyColumnName: 'id',
-      ciphertextColumnName: 'encrypted_value',
-    });
 
     await expect(
-      target.replaceIfUnchanged({
-        cursor: '12',
-        expectedCiphertext: 'old',
-        replacementCiphertext: 'new',
+      runPostgresEncryptedColumnOperation({
+        mode: 'rotate',
+        ...operationOptions(cipher),
+        maxPasses: 2,
       }),
-    ).resolves.toBe(false);
-  });
-
-  it('rejects updates that affect multiple primary-key rows', async () => {
-    postgresMocks.execute.mockResolvedValue(2);
-    const target = createPostgresEncryptedValueTarget({
-      tableName: 'example_table',
-      primaryKeyColumnName: 'id',
-      ciphertextColumnName: 'encrypted_value',
-    });
-
-    await expect(
-      target.replaceIfUnchanged({
-        cursor: '12',
-        expectedCiphertext: 'old',
-        replacementCiphertext: 'new',
-      }),
-    ).rejects.toThrow('primary key update affected multiple rows');
+    ).rejects.toThrow(
+      /left 1 values requiring rotation after 2 passes \(2 concurrent update conflicts\)/,
+    );
   });
 
   it('rejects a cursor that is not the table single-column primary key', async () => {
     postgresMocks.queryScalar.mockResolvedValue(false);
-    const target = createPostgresEncryptedValueTarget({
-      tableName: 'example_table',
-      primaryKeyColumnName: 'not_the_primary_key',
-      ciphertextColumnName: 'encrypted_value',
+    const cipher = createStorageCipher({
+      keyRing: makeKey(),
+      format: prairieLearnCiphertextFormat,
     });
 
-    await expect(target.selectBatch({ after: null, limit: 20 })).rejects.toThrow(
-      'must use a single-column primary key as its cursor',
-    );
+    await expect(
+      runPostgresEncryptedColumnOperation({ mode: 'check', ...operationOptions(cipher) }),
+    ).rejects.toThrow('must use a single-column primary key');
     expect(postgresMocks.queryRows).not.toHaveBeenCalled();
   });
 });

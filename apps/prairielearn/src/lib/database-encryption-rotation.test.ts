@@ -3,8 +3,9 @@ import * as crypto from 'node:crypto';
 import { afterAll, assert, beforeAll, describe, expect, it } from 'vitest';
 
 import {
-  createPostgresEncryptedValueTarget,
-  encryptLegacyPrairieLearn,
+  createStorageCipher,
+  prairieLearnCiphertextFormat,
+  runPostgresEncryptedColumnOperation,
 } from '@prairielearn/encrypted-storage';
 
 import { selectCredentials, upsertCredential } from '../models/ai-grading-credentials.js';
@@ -25,15 +26,20 @@ describe('database encryption rotation', () => {
   afterAll(helperDb.after);
 
   it('rejects a Postgres target that does not use a single-column primary key', async () => {
-    const target = createPostgresEncryptedValueTarget({
-      tableName: 'course_instance_ai_grading_credentials',
-      primaryKeyColumnName: 'provider',
-      ciphertextColumnName: 'encrypted_secret_key',
+    const cipher = createStorageCipher({
+      keyRing: crypto.randomBytes(32).toString('hex'),
+      format: prairieLearnCiphertextFormat,
     });
 
-    await expect(target.selectBatch({ after: null, limit: 1 })).rejects.toThrow(
-      'must use a single-column primary key as its cursor',
-    );
+    await expect(
+      runPostgresEncryptedColumnOperation({
+        mode: 'check',
+        cipher,
+        tableName: 'course_instance_ai_grading_credentials',
+        primaryKeyColumnName: 'provider',
+        ciphertextColumnName: 'encrypted_secret_key',
+      }),
+    ).rejects.toThrow('must use a single-column primary key');
   });
 
   it('rotates production legacy data and verifies it with only the primary key', async () => {
@@ -48,55 +54,38 @@ describe('database encryption rotation', () => {
     await upsertCredential({
       course_instance_id: '1',
       provider: 'openai',
-      encrypted_secret_key: encryptLegacyPrairieLearn('secret', fallbackKey),
+      encrypted_secret_key: prairieLearnCiphertextFormat.encrypt('secret', fallbackKey),
       created_by: user.id,
     });
 
-    await withConfig(
-      {
-        databaseEncryptionKey: [primaryKey, fallbackKey],
-        databaseEncryptionWriteFormat: 'legacy',
-      },
-      async () => {
-        const inspection = await runDatabaseEncryptionOperation({ mode: 'check', batchSize: 1 });
-        assert('needsRotation' in inspection);
-        assert.deepEqual(inspection, {
-          target: 'course_instance_ai_grading_credentials.encrypted_secret_key',
-          total: 1,
-          current: 0,
-          needsRotation: 1,
-        });
-        await expect(
-          runDatabaseEncryptionOperation({ mode: 'rotate', batchSize: 1 }),
-        ).rejects.toThrow(/operators must ensure every writer/);
-      },
+    await withConfig({ databaseEncryptionKey: [primaryKey, fallbackKey] }, async () => {
+      const inspection = await runDatabaseEncryptionOperation({ mode: 'check', batchSize: 1 });
+      assert.deepEqual(inspection, {
+        target: 'course_instance_ai_grading_credentials.encrypted_secret_key',
+        total: 1,
+        needsRotation: 1,
+      });
+
+      const result = await runDatabaseEncryptionOperation({ mode: 'rotate', batchSize: 1 });
+      assert('rotated' in result);
+      assert.equal(result.rotated, 1);
+      assert.equal(result.needsRotation, 0);
+    });
+
+    const credentials = await selectCredentials('1');
+    assert.lengthOf(credentials, 1);
+    assert.equal(
+      prairieLearnCiphertextFormat.decrypt(credentials[0].encrypted_secret_key, primaryKey),
+      'secret',
+    );
+    assert.throws(() =>
+      prairieLearnCiphertextFormat.decrypt(credentials[0].encrypted_secret_key, fallbackKey),
     );
 
-    await withConfig(
-      {
-        databaseEncryptionKey: [primaryKey, fallbackKey],
-        databaseEncryptionWriteFormat: 'v1',
-      },
-      async () => {
-        const result = await runDatabaseEncryptionOperation({ mode: 'rotate', batchSize: 1 });
-        assert('verification' in result);
-        assert.equal(result.rotated, 1);
-        assert.equal(result.verification.needsRotation, 0);
-      },
-    );
-
-    await withConfig(
-      { databaseEncryptionKey: [primaryKey], databaseEncryptionWriteFormat: 'v1' },
-      async () => {
-        const credentials = await selectCredentials('1');
-        assert.lengthOf(credentials, 1);
-        assert.match(credentials[0].encrypted_secret_key, /^plenc:v1:/);
-        assert.equal(decryptFromStorage(credentials[0].encrypted_secret_key), 'secret');
-
-        const inspection = await runDatabaseEncryptionOperation({ mode: 'check', batchSize: 1 });
-        assert('needsRotation' in inspection);
-        assert.equal(inspection.needsRotation, 0);
-      },
-    );
+    await withConfig({ databaseEncryptionKey: [primaryKey] }, async () => {
+      assert.equal(decryptFromStorage(credentials[0].encrypted_secret_key), 'secret');
+      const inspection = await runDatabaseEncryptionOperation({ mode: 'check', batchSize: 1 });
+      assert.equal(inspection.needsRotation, 0);
+    });
   });
 });
