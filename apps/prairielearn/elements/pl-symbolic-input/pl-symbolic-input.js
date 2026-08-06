@@ -370,7 +370,7 @@
     const signKey = {
       class: 'small',
       latex: '\\mathrm{sign}',
-      insert: '\\operatorname{sign}\\left({#@}\\right)',
+      insert: '\\operatorname{sign}\\left({#0}\\right)',
     };
 
     /** A key that is only present if `allowSets` */
@@ -391,7 +391,7 @@
       {
         id: 'sqrt',
         label: '√',
-        onMenuSelect: () => mf.insert('\\sqrt{#@}'),
+        onMenuSelect: () => mf.insert('\\sqrt{#0}'),
       },
       {
         id: 'pi',
@@ -443,17 +443,17 @@
         ],
         [
           ...onlyIfSets('[separator]'),
-          { class: 'small', latex: '\\sqrt', insert: '\\sqrt{#@}' },
+          { class: 'small', latex: '\\sqrt', insert: '\\sqrt{#0}' },
           logAsLn
             ? {
                 class: 'small',
                 latex: '\\ln',
-                insert: '\\operatorname{ln}\\left({#@}\\right)',
+                insert: '\\operatorname{ln}\\left({#0}\\right)',
               }
             : {
                 class: 'small',
                 latex: '\\log',
-                insert: '\\operatorname{log}\\left({#@}\\right)',
+                insert: '\\operatorname{log}\\left({#0}\\right)',
               },
           { class: 'small', latex: '!' },
           '[separator]',
@@ -469,9 +469,9 @@
         ],
         [
           ...onlyIfSets('[separator]'),
-          { class: 'small', latex: '|#@|', insert: '|{#@}|' },
-          { class: 'small', latex: '\\min', insert: '\\operatorname{min}\\left({#@}\\right)' },
-          { class: 'small', latex: '\\max', insert: '\\operatorname{max}\\left({#@}\\right)' },
+          { class: 'small', latex: '|#0|', insert: '|{#0}|' },
+          { class: 'small', latex: '\\min', insert: '\\operatorname{min}\\left({#0}\\right)' },
+          { class: 'small', latex: '\\max', insert: '\\operatorname{max}\\left({#0}\\right)' },
           '[separator]',
           '1',
           '2',
@@ -496,27 +496,27 @@
                 class: 'small',
                 latex: '\\sin',
 
-                insert: '\\operatorname{sin}\\left({#@}\\right)',
+                insert: '\\operatorname{sin}\\left({#0}\\right)',
                 variants: [
                   {
                     class: 'small',
                     latex: '\\csc',
-                    insert: '\\operatorname{csc}\\left({#@}\\right)',
+                    insert: '\\operatorname{csc}\\left({#0}\\right)',
                   },
                   {
                     class: 'small',
                     latex: '\\arcsin',
-                    insert: '\\operatorname{arcsin}\\left({#@}\\right)',
+                    insert: '\\operatorname{arcsin}\\left({#0}\\right)',
                   },
                   {
                     class: 'small',
                     latex: '\\mathrm{sinh}',
-                    insert: '\\operatorname{sinh}\\left({#@}\\right)',
+                    insert: '\\operatorname{sinh}\\left({#0}\\right)',
                   },
                   {
                     class: 'small',
                     latex: '\\mathrm{asinh}',
-                    insert: '\\operatorname{asinh}\\left({#@}\\right)',
+                    insert: '\\operatorname{asinh}\\left({#0}\\right)',
                   },
                 ],
               }
@@ -525,27 +525,27 @@
             ? {
                 class: 'small',
                 latex: '\\cos',
-                insert: '\\operatorname{cos}\\left({#@}\\right)',
+                insert: '\\operatorname{cos}\\left({#0}\\right)',
                 variants: [
                   {
                     class: 'small',
                     latex: '\\sec',
-                    insert: '\\operatorname{sec}\\left({#@}\\right)',
+                    insert: '\\operatorname{sec}\\left({#0}\\right)',
                   },
                   {
                     class: 'small',
                     latex: '\\arccos',
-                    insert: '\\operatorname{arccos}\\left({#@}\\right)',
+                    insert: '\\operatorname{arccos}\\left({#0}\\right)',
                   },
                   {
                     class: 'small',
                     latex: '\\mathrm{cosh}',
-                    insert: '\\operatorname{cosh}\\left({#@}\\right)',
+                    insert: '\\operatorname{cosh}\\left({#0}\\right)',
                   },
                   {
                     class: 'small',
                     latex: '\\mathrm{acosh}',
-                    insert: '\\operatorname{acosh}\\left({#@}\\right)',
+                    insert: '\\operatorname{acosh}\\left({#0}\\right)',
                   },
                 ],
               }
@@ -554,32 +554,32 @@
             ? {
                 class: 'small',
                 latex: '\\tan',
-                insert: '\\operatorname{tan}\\left({#@}\\right)',
+                insert: '\\operatorname{tan}\\left({#0}\\right)',
                 variants: [
                   {
                     class: 'small',
                     latex: '\\cot',
-                    insert: '\\operatorname{cot}\\left({#@}\\right)',
+                    insert: '\\operatorname{cot}\\left({#0}\\right)',
                   },
                   {
                     class: 'small',
                     latex: '\\arctan',
-                    insert: '\\operatorname{arctan}\\left({#@}\\right)',
+                    insert: '\\operatorname{arctan}\\left({#0}\\right)',
                   },
                   {
                     class: 'small',
                     latex: '\\mathrm{tanh}',
-                    insert: '\\operatorname{tanh}\\left({#@}\\right)',
+                    insert: '\\operatorname{tanh}\\left({#0}\\right)',
                   },
                   {
                     class: 'small',
                     latex: '\\mathrm{atanh}',
-                    insert: '\\operatorname{atanh}\\left({#@}\\right)',
+                    insert: '\\operatorname{atanh}\\left({#0}\\right)',
                   },
                   {
                     class: 'small',
                     latex: '\\mathrm{arctan2}',
-                    insert: '\\operatorname{arctan2}\\left({#@}\\right)',
+                    insert: '\\operatorname{arctan2}\\left({#0}\\right)',
                   },
                 ],
               }
@@ -717,10 +717,10 @@
         value: '{#@}\\cdot',
       },
       '|': {
-        value: '|{#@}|',
+        value: '|{#0}|',
       },
       sqrt: {
-        value: '\\sqrt{#@}',
+        value: '\\sqrt{#0}',
       },
       pi: {
         value: '\\pi',
