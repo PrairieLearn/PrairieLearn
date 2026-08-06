@@ -189,9 +189,11 @@ router.get(
       // There are three situations in which the issue need not be anonymized:
       //
       //  1) The issue is not associated with a course instance. The only way
-      //     for a user to generate an issue that is not associated with a course
-      //     instance is if they are an instructor, so there are no student data
-      //     to be protected in this case.
+      //     for a user to generate an issue that is not associated with a
+      //     course instance is if they are an instructor. In this case, the
+      //     user data is other instructors, so we only need to check that the
+      //     effective user has course preview access, which is required to view
+      //     the question preview in the first place.
       //
       //  2) We are accessing this page through a course instance, the issue is
       //     associated with the same course instance, and the user has student
@@ -206,13 +208,15 @@ router.get(
       //
       // Otherwise, all issues must be anonymized.
       showUser:
-        !row.course_instance_id ||
-        (res.locals.course_instance &&
+        (row.course_instance_id == null && res.locals.authz_data.has_course_permission_preview) ||
+        (row.course_instance_id != null &&
+          res.locals.course_instance &&
           idsEqual(res.locals.course_instance.id, row.course_instance_id) &&
           (res.locals.authz_data as ResLocalsCourseInstanceAuthz)
             .has_course_instance_permission_view) ||
-        ((!res.locals.course_instance ||
-          !idsEqual(res.locals.course_instance.id, row.course_instance_id)) &&
+        (row.course_instance_id != null &&
+          (!res.locals.course_instance ||
+            !idsEqual(res.locals.course_instance.id, row.course_instance_id)) &&
           course_instances.some(
             (ci) => ci.id === row.course_instance_id && ci.has_course_instance_permission_view,
           )),
@@ -244,6 +248,7 @@ router.get(
             urlPrefix={urlPrefix}
             csrfToken={__csrf_token}
             hasCoursePermissionEdit={authzData.has_course_permission_edit}
+            hasCoursePermissionPreview={authzData.has_course_permission_preview}
           />
         ),
       }),
