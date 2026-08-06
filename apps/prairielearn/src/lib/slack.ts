@@ -1,5 +1,4 @@
 import * as error from '@prairielearn/error';
-import { logger } from '@prairielearn/logger';
 
 import { config } from './config.js';
 
@@ -37,10 +36,7 @@ export async function sendOpsMessage(msg: string): Promise<void> {
  */
 export async function sendCourseRequestMessage(msg: string): Promise<void> {
   const webhookUrl = config.slackCourseRequestWebhookUrl;
-  if (!webhookUrl) {
-    logger.info(`Slack message:\n${msg}`);
-    return;
-  }
+  if (!webhookUrl) return;
 
   await sendSlackWebhookMessage(msg, webhookUrl);
 }
