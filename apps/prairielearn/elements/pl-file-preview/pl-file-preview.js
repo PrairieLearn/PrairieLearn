@@ -99,11 +99,13 @@ export default class PLFilePreview {
       expandButton.addEventListener('click', () => toggleExpanded());
 
       let wasOpened = false;
+      let isLoading = false;
 
       preview.addEventListener('show.bs.collapse', () => {
         toggleShowPreviewText.textContent = 'Hide preview';
 
-        if (wasOpened) return;
+        if (wasOpened || isLoading) return;
+        isLoading = true;
 
         const code = preview.querySelector('code');
         const img = preview.querySelector('img');
@@ -118,10 +120,6 @@ export default class PLFilePreview {
           })
           .then(async (blob) => {
             hideErrorMessage();
-            // Even though the content is still being rendered, we mark the
-            // preview as opened so that we don't try to load it again if the
-            // user closes and reopens the preview.
-            wasOpened = true;
 
             const type = blob.type;
             if (type === 'text/plain') {
@@ -162,7 +160,9 @@ export default class PLFilePreview {
                       shadowRootStyles.push(style);
                     }
 
-                    const shadowRoot = notebookPreview.attachShadow({ mode: 'open' });
+                    const shadowRoot =
+                      notebookPreview.shadowRoot || notebookPreview.attachShadow({ mode: 'open' });
+                    shadowRoot.innerHTML = '';
                     shadowRoot.adoptedStyleSheets = shadowRootStyles;
                     shadowRoot.append(rendered);
                     notebookPreview.classList.remove('d-none');
@@ -211,10 +211,14 @@ export default class PLFilePreview {
               // We can't preview this file.
               showInfoMessage('Content preview is not available for this type of file.');
             }
+            wasOpened = true;
           })
           .catch((err) => {
             console.error(err);
             showErrorMessage('An error occurred while downloading the file.');
+          })
+          .finally(() => {
+            isLoading = false;
           });
       });
 
