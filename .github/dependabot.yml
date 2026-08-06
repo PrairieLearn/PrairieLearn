@@ -126,8 +126,6 @@ updates:
       # together, so we'll include a special group for them. Dependabot evaluates
       # groups in the order that they're listed, so this will take precedence over
       # the catch-all patch/minor group below.
-      #
-      # These upgrades are currently ignored, see the note above.
       opentelemetry:
         patterns:
           - '@opentelemetry/*'
