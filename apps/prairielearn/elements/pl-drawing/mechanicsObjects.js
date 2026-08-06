@@ -3163,13 +3163,8 @@ mechanicsObjects.byType['pl-vector'] = class extends PLDrawingBaseElement {
         const dy = obj.width * Math.sin(base_angle_rad);
 
         // Position relative to head or tail as appropriate
-        if (options.label_anchor_is_tail) {
-          textObj.left = obj.left;
-          textObj.top = obj.top;
-        } else {
-          textObj.left = obj.left + dx;
-          textObj.top = obj.top + dy;
-        }
+        textObj.left = obj.left + dx * options.label_anchor_pos_frac;
+        textObj.top = obj.top + dy * options.label_anchor_pos_frac;
 
         if (!options.relpos_active) {
           // In absolute positioning, the position of the text is independent of the vector's angle
@@ -3445,13 +3440,8 @@ mechanicsObjects.byType['pl-double-headed-vector'] = class extends PLDrawingBase
         const dy = obj.width * Math.sin(base_angle_rad);
 
         // Position relative to head or tail as appropriate
-        if (options.label_anchor_is_tail) {
-          textObj.left = obj.left;
-          textObj.top = obj.top;
-        } else {
-          textObj.left = obj.left + dx;
-          textObj.top = obj.top + dy;
-        }
+        textObj.left = obj.left + dx * options.label_anchor_pos_frac;
+        textObj.top = obj.top + dy * options.label_anchor_pos_frac;
 
         if (!options.relpos_active) {
           // In absolute positioning, the position of the text is independent of the vector's angle

@@ -851,10 +851,10 @@ class Vector(BaseElement):
             "label": pl.get_string_attrib(el, "label", ""),
             "label_latex": pl.get_boolean_attrib(el, "label-latex", True),
             "relpos_active": relpos_active,
-            "label_anchor_is_tail": pl.get_boolean_attrib(
+            "label_anchor_pos_frac": pl.get_float_attrib(
                 el,
-                "label-anchor-is-tail",
-                "behind" in pl.get_string_attrib(el, "label-relpos", ""),
+                "label-anchor-pos-frac",
+                0 if ("behind" in pl.get_string_attrib(el, "label-relpos", "")) else 1,
             ),
             "offsetx": pl.get_float_attrib(el, "offsetx", 2),
             "offsety": pl.get_float_attrib(el, "offsety", 2),
@@ -945,7 +945,7 @@ class Vector(BaseElement):
             "label",
             "label-relpos",
             "label-sep",
-            "label-anchor-is-tail",
+            "label-anchor-pos-frac",
             "label-latex",
             "offsetx",
             "offsety",
