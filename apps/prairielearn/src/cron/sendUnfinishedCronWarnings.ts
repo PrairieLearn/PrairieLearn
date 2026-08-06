@@ -1,6 +1,7 @@
 import { formatDateISO } from '@prairielearn/formatter';
 import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
+import * as Sentry from '@prairielearn/sentry';
 
 import { CronJobSchema } from '../lib/db-types.js';
 import * as slack from '../lib/slack.js';
@@ -22,7 +23,8 @@ export async function run() {
     logger.error('cron:sendUnfinishedCronJobs job not finished', row);
   }
 
-  await slack
-    .sendOpsMessage(msg)
-    .catch((err) => logger.error('Error posting unfinished cron jobs to slack', err.data));
+  await slack.sendOpsMessage(msg).catch((err) => {
+    logger.error('Error posting unfinished cron jobs to slack', err.data);
+    Sentry.captureException(err);
+  });
 }
