@@ -23,7 +23,6 @@ FROM
   LEFT JOIN course_instances AS ci ON (ci.id = cip.course_instance_id)
 WHERE
   i.short_name = $institution_shortname
-  AND u.deleted_at IS NULL
   AND plc.deleted_at IS NULL
   AND ci.deleted_at IS NULL
   AND cp.course_role = ANY ($course_roles::enum_course_role[])

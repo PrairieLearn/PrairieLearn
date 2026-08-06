@@ -24,6 +24,10 @@ import {
   getAdministratorJobSequenceUrl,
 } from '../../../lib/client/url.js';
 import type { CourseRequestRow } from '../../../lib/course-request.js';
+import {
+  GITHUB_USERNAME_VALIDATION_MESSAGE,
+  isValidGithubUsername,
+} from '../../../lib/github-utils.js';
 import { type Timezone } from '../../../lib/timezone.shared.js';
 import { useTRPC } from '../../../trpc/administrator/context.js';
 import type { AdminCourseRequestError } from '../../../trpc/administrator/course-requests.js';
@@ -74,8 +78,8 @@ export function CourseRequestsTable({
               <th>Created At</th>
               <th>Short Name / Title</th>
               <th>Institution</th>
-              <th>Requested By</th>
-              <th>PrairieLearn User</th>
+              <th>Requester / contact email</th>
+              <th>PrairieLearn account (UID)</th>
               <th>GitHub Username</th>
               <th>Referral Source</th>
               <th>Status</th>
@@ -116,6 +120,36 @@ export function CourseRequestsTable({
 
 CourseRequestsTable.displayName = 'CourseRequestsTable';
 
+function RequesterContact({ request }: { request: CourseRequestRow }) {
+  const requesterName = [request.first_name, request.last_name].filter(Boolean).join(' ');
+
+  return (
+    <>
+      {requesterName && <div>{requesterName}</div>}
+      {request.contact_email ? (
+        request.contact_email === request.user_uid ? (
+          <span className="text-muted">Contact email is the account UID</span>
+        ) : (
+          <span>{request.contact_email}</span>
+        )
+      ) : (
+        <span className="text-muted fst-italic">Contact email unavailable</span>
+      )}
+    </>
+  );
+}
+
+function AccountIdentity({ request }: { request: CourseRequestRow }) {
+  const requesterName = [request.first_name, request.last_name].filter(Boolean).join(' ');
+
+  return (
+    <>
+      {request.user_name && request.user_name !== requesterName && <div>{request.user_name}</div>}
+      <span>{request.user_uid}</span>
+    </>
+  );
+}
+
 const CourseRequestTableRow = memo(
   ({
     row,
@@ -141,16 +175,10 @@ const CourseRequestTableRow = memo(
             <EmptyState value={row.institution} label="No institution" />
           </td>
           <td className="align-middle">
-            {row.first_name || row.last_name ? (
-              <>
-                {row.first_name} {row.last_name} {row.work_email ? `(${row.work_email})` : ''}
-              </>
-            ) : (
-              <span className="text-muted fst-italic">No contact info</span>
-            )}
+            <RequesterContact request={row} />
           </td>
           <td className="align-middle">
-            {row.user_name} ({row.user_uid})
+            <AccountIdentity request={row} />
           </td>
           <td className="align-middle">
             <EmptyState value={row.github_user} label="No GitHub user" />
@@ -398,7 +426,7 @@ function CourseRequestApproveModalContent({
         path: data.path,
         repoShortName: data.repository_short_name,
         githubCourseOwner: data.github_course_owner.trim(),
-        githubUser: data.github_user,
+        githubUser: data.github_user.trim(),
       },
       {
         onSuccess: ({ jobSequenceId }) => {
@@ -462,27 +490,10 @@ function CourseRequestApproveModalContent({
             <div className="card-body py-2">
               <div className="row g-2 small">
                 <div className="col-12">
-                  <strong>Requested by:</strong>{' '}
-                  {request.first_name || request.last_name ? (
-                    <span>
-                      {request.first_name} {request.last_name}
-                      {request.work_email && ` (${request.work_email})`}
-                    </span>
-                  ) : request.work_email ? (
-                    <span>{request.work_email}</span>
-                  ) : (
-                    <span className="fst-italic text-muted">Not provided</span>
-                  )}
+                  <strong>Requester / contact email:</strong> <RequesterContact request={request} />
                 </div>
                 <div className="col-12">
-                  <strong>PrairieLearn user:</strong>{' '}
-                  {request.user_name ? (
-                    <span>
-                      {request.user_name} ({request.user_uid})
-                    </span>
-                  ) : (
-                    <span>{request.user_uid}</span>
-                  )}
+                  <strong>PrairieLearn account (UID):</strong> <AccountIdentity request={request} />
                 </div>
                 <div className="col-12">
                   <strong>Institution:</strong>{' '}
@@ -568,7 +579,8 @@ function CourseRequestApproveModalContent({
             availableTimezones={availableTimezones}
             coursesRoot={coursesRoot}
             prefixState={prefixState}
-            emailDomain={request.work_email?.split('@')[1] ?? ''}
+            contactEmailDomain={request.contact_email?.split('@')[1] ?? ''}
+            accountUidDomain={request.user_uid.split('@')[1] ?? ''}
             aiSecretsConfigured={aiSecretsConfigured}
             autoFilledInstitutionId={autoFilledInstitutionId}
             repositoryRequired={true}
@@ -611,10 +623,25 @@ function CourseRequestApproveModalContent({
             </label>
             <input
               type="text"
-              className="form-control"
+              className={clsx('form-control', errors.github_user && 'is-invalid')}
               id="courseRequestAddInputGithubUser"
-              {...register('github_user')}
+              defaultValue={request.github_user ?? ''}
+              aria-invalid={errors.github_user ? true : undefined}
+              aria-errormessage={
+                errors.github_user ? 'courseRequestAddInputGithubUser-error' : undefined
+              }
+              {...register('github_user', {
+                validate: (value) =>
+                  value.trim().length === 0 ||
+                  isValidGithubUsername(value.trim()) ||
+                  GITHUB_USERNAME_VALIDATION_MESSAGE,
+              })}
             />
+            {errors.github_user && (
+              <div id="courseRequestAddInputGithubUser-error" className="invalid-feedback">
+                {errors.github_user.message}
+              </div>
+            )}
           </div>
           <MutationError appError={appError} onDismiss={() => mutation.reset()} />
         </Modal.Body>

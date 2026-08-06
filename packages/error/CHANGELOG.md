@@ -1,5 +1,11 @@
 # @prairielearn/error
 
+## 3.0.10
+
+### Patch Changes
+
+- 4a0ee46: Bump dependencies
+
 ## 3.0.9
 
 ### Patch Changes

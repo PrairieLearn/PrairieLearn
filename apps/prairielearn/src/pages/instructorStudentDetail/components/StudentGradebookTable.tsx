@@ -1,5 +1,3 @@
-import { Fragment } from 'react';
-
 import { AssessmentBadge } from '../../../components/AssessmentBadge.js';
 import { Scorebar } from '../../../components/Scorebar.js';
 import { getAssessmentInstanceUrl } from '../../../lib/client/url.js';
@@ -45,57 +43,57 @@ export function StudentGradebookTable({ rows, urlPrefix }: StudentGradebookTable
           <th className="text-center">Points</th>
         </tr>
       </thead>
-      <tbody>
-        {Array.from(rowsBySet.entries()).map(([setHeading, setAssessments]) => (
-          <Fragment key={setHeading}>
-            <tr>
-              <th colSpan={4}>{setHeading}</th>
+      {Array.from(rowsBySet.entries()).map(([setHeading, setAssessments]) => (
+        <tbody key={setHeading}>
+          <tr>
+            <th colSpan={4} scope="rowgroup">
+              {setHeading}
+            </th>
+          </tr>
+          {setAssessments.map((row) => (
+            <tr key={row.assessment.id}>
+              <td className="align-middle" style={{ width: '1%' }}>
+                <AssessmentBadge
+                  urlPrefix={urlPrefix}
+                  assessment={{
+                    color: row.assessment_set.color,
+                    label: computeLabel(row),
+                    assessment_id: row.assessment.id,
+                  }}
+                  hideLink
+                />
+              </td>
+              <td className="align-middle">
+                <a
+                  href={getAssessmentInstanceUrl({
+                    courseInstanceId: row.assessment.course_instance_id,
+                    assessmentInstanceId: row.assessment_instance.id,
+                  })}
+                >
+                  {computeTitle(row)}
+                </a>
+                {row.assessment.team_work && (
+                  <i className="fas fa-users ms-1" aria-hidden="true" title="Group work" />
+                )}
+              </td>
+              <td className="text-center align-middle">
+                {row.show_closed_assessment_score ? (
+                  <Scorebar score={row.assessment_instance.score_perc} className="mx-auto" />
+                ) : (
+                  'In progress'
+                )}
+              </td>
+              <td className="text-center align-middle">
+                {row.show_closed_assessment_score ? (
+                  `${row.assessment_instance.points?.toFixed(1) || '0.0'} / ${row.assessment_instance.max_points?.toFixed(1) || '0.0'}`
+                ) : (
+                  <span className="text-muted">—</span>
+                )}
+              </td>
             </tr>
-            {setAssessments.map((row) => (
-              <tr key={row.assessment.id}>
-                <td className="align-middle" style={{ width: '1%' }}>
-                  <AssessmentBadge
-                    urlPrefix={urlPrefix}
-                    assessment={{
-                      color: row.assessment_set.color,
-                      label: computeLabel(row),
-                      assessment_id: row.assessment.id,
-                    }}
-                    hideLink
-                  />
-                </td>
-                <td className="align-middle">
-                  <a
-                    href={getAssessmentInstanceUrl({
-                      courseInstanceId: row.assessment.course_instance_id,
-                      assessmentInstanceId: row.assessment_instance.id,
-                    })}
-                  >
-                    {computeTitle(row)}
-                  </a>
-                  {row.assessment.team_work && (
-                    <i className="fas fa-users ms-1" aria-hidden="true" title="Group work" />
-                  )}
-                </td>
-                <td className="text-center align-middle">
-                  {row.show_closed_assessment_score ? (
-                    <Scorebar score={row.assessment_instance.score_perc} className="mx-auto" />
-                  ) : (
-                    'In progress'
-                  )}
-                </td>
-                <td className="text-center align-middle">
-                  {row.show_closed_assessment_score ? (
-                    `${row.assessment_instance.points?.toFixed(1) || '0.0'} / ${row.assessment_instance.max_points?.toFixed(1) || '0.0'}`
-                  ) : (
-                    <span className="text-muted">—</span>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </Fragment>
-        ))}
-      </tbody>
+          ))}
+        </tbody>
+      ))}
     </table>
   );
 }

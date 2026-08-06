@@ -1,5 +1,11 @@
 # @prairielearn/sentry
 
+## 5.0.8
+
+### Patch Changes
+
+- 4a0ee46: Bump dependencies
+
 ## 5.0.7
 
 ### Patch Changes

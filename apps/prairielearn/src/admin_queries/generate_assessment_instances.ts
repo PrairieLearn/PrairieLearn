@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { loadSqlEquiv, queryRows, runInTransactionAsync } from '@prairielearn/postgres';
 
 import { makeAssessmentInstance } from '../lib/assessment.js';
+import { config } from '../lib/config.js';
 import {
   type AssessmentInstance,
   CourseInstanceSchema,
@@ -17,6 +18,7 @@ import { type AdministratorQueryResult, type AdministratorQuerySpecs } from './l
 export const specs: AdministratorQuerySpecs = {
   description:
     'Simulates all students enrolled in a course starting an assessment. For group assessments, groups must have been created.',
+  enabled: config.devMode,
   params: [
     {
       name: 'assessment_id',

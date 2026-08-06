@@ -1,5 +1,11 @@
 # @prairielearn/csv
 
+## 3.0.7
+
+### Patch Changes
+
+- 4a0ee46: Bump dependencies
+
 ## 3.0.6
 
 ### Patch Changes

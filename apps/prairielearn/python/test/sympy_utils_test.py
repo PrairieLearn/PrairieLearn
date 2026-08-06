@@ -190,7 +190,7 @@ class TestSympy:
             "[m, 2] U (m + 2, 4]",
             sympy.Union(sympy.Interval(M, 2), sympy.Interval.Lopen(M + 2, 4)),
         ),
-        ("{1} ∪ {2}", sympy.FiniteSet(1, 2)),  # noqa: RUF001
+        ("{1} ∪ {2}", sympy.FiniteSet(1, 2)),  # ruff:ignore[ambiguous-unicode-character-string]
         ("{1, 2} ∩ {2, 3}", sympy.FiniteSet(2)),
         ("{1, 2} - {2, 3}", sympy.FiniteSet(1)),
         ("{1, 2} + {2, 3}", sympy.FiniteSet(1, 2, 3)),
@@ -384,7 +384,7 @@ class TestSympy:
         self,
         a_sub: str,
         variables: list[str],
-        allow_complex: bool,  # noqa: FBT001
+        allow_complex: bool,  # ruff:ignore[boolean-type-hint-positional-argument]
         expected: sympy.Expr | None,
         expected_error: type[psu.BaseSympyError] | None,
     ) -> None:
@@ -523,7 +523,7 @@ class TestSympy:
         self,
         a_pair: tuple[str, sympy.Expr],
         custom_functions: list[str] | None,
-        remove_assumptions: bool,  # noqa: FBT001
+        remove_assumptions: bool,  # ruff:ignore[boolean-type-hint-positional-argument]
     ) -> None:
         a_sub, _ = a_pair
         sympy_expr = psu.convert_string_to_sympy(
@@ -621,7 +621,7 @@ class TestAllowExtraSymbols:
             # Builtin constants are resolved, not treated as free symbols.
             ("2*e + n", None, {"n"}),
             # Greek letters are normalized to their spelled-out names.
-            ("α + n", None, {"alpha", "n"}),  # noqa: RUF001
+            ("α + n", None, {"alpha", "n"}),  # ruff:ignore[ambiguous-unicode-character-string]
             # Unknown names followed by parentheses are implicit multiplication,
             # not function calls.
             ("f(n)", None, {"f", "n"}),
@@ -682,12 +682,12 @@ class TestExceptions:
     @pytest.mark.parametrize(
         "text",
         [
-            "∪",  # noqa: RUF001
+            "∪",  # ruff:ignore[ambiguous-unicode-character-string]
             "∩",
             "&",
             "|",
             "{}",
-            "1 ∪ 2",  # noqa: RUF001
+            "1 ∪ 2",  # ruff:ignore[ambiguous-unicode-character-string]
             "1 ∩ 2",
             "1 & 2",
             "1 | 2",
@@ -925,7 +925,7 @@ class TestExceptions:
         "1 !U 2",
         "1 !| 2",
         "1 !cup 2",
-        "1 !∪ 2",  # noqa: RUF001
+        "1 !∪ 2",  # ruff:ignore[ambiguous-unicode-character-string]
         "1 !& 2",
         "1 !cap 2",
         "1 !∩ 2",
@@ -1094,7 +1094,7 @@ class TestValidateNamesForConflicts:
         with pytest.raises(ValueError, match=conflicting_name):
             psu.validate_names_for_conflicts("test", [], [conflicting_name])
 
-    _SET_OPERATORS = "U", "cup", "cap", "∪", "∩"  # noqa: RUF001
+    _SET_OPERATORS = "U", "cup", "cap", "∪", "∩"  # ruff:ignore[ambiguous-unicode-character-string]
 
     @pytest.mark.parametrize("conflicting_name", _SET_OPERATORS)
     def test_sets_notation_alias_conflicts_with_variables(

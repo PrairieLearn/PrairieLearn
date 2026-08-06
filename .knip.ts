@@ -70,7 +70,6 @@ const EXTERNAL_ELEMENT_DEPS = [
   'lodash',
   'mersenne',
   'numeric',
-  'popper.js',
   'showdown',
 ];
 
@@ -87,6 +86,7 @@ const CLI_ONLY_DEPS = [
   's3rver',
   '@postgres-language-server/cli',
   '@typescript/native-preview',
+  '@prairielearn/pin-github-actions',
 ];
 
 // Collect packages referenced by element / question `info.json` files.

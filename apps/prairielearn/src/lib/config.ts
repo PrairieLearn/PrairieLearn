@@ -2,8 +2,7 @@ import { z } from 'zod';
 
 import {
   ConfigLoader,
-  type ConfigSource,
-  makeEnvConfigSource,
+  makeConductorConfigSource,
   makeFileConfigSource,
   makeImdsConfigSource,
   makeKmsConfigSource,
@@ -11,6 +10,7 @@ import {
 } from '@prairielearn/config';
 import { logger } from '@prairielearn/logger';
 
+import { getActiveKey } from './key-ring.js';
 import { EXAMPLE_COURSE_PATH, TEST_COURSE_PATH } from './paths.js';
 
 const DEV_MODE = process.env.NODE_ENV !== 'production';
@@ -36,6 +36,19 @@ const CreditPoolLimitRangeSchema = z
   .refine(({ minMilliDollars, maxMilliDollars }) => minMilliDollars <= maxMilliDollars, {
     message: 'minMilliDollars must be less than or equal to maxMilliDollars',
   });
+
+function makeKeyRingSchema(keySchema: z.ZodString) {
+  const nonemptyArraySchema = z
+    .array(keySchema)
+    .min(1)
+    .refine((keys): keys is [string, ...string[]] => keys.length > 0);
+  return z
+    .union([keySchema, nonemptyArraySchema])
+    .transform((keys): [string, ...string[]] => (typeof keys === 'string' ? [keys] : keys));
+}
+
+const KeyRingSchema = makeKeyRingSchema(z.string());
+const DatabaseEncryptionKeyRingSchema = makeKeyRingSchema(z.string().regex(/^[0-9a-f]{64}$/i));
 
 export const STANDARD_COURSE_DIRS = [
   '/course',
@@ -222,11 +235,16 @@ export const ConfigSchema = z.object({
   autoFinishAgeMins: z.number().default(6 * 60),
   // TODO: tweak this value once we see the data from #2267
   questionTimeoutMilliseconds: z.number().default(10000),
-  secretKey: z.string().default('THIS_IS_THE_SECRET_KEY'),
-  databaseEncryptionKey: z
-    .string()
-    .regex(/^[0-9a-f]{64}$/i)
-    .default('0'.repeat(64)),
+  /**
+   * Ordered signing key ring. The first key signs new artifacts and all keys
+   * are accepted for verification.
+   */
+  secretKey: KeyRingSchema.prefault('THIS_IS_THE_SECRET_KEY'),
+  /**
+   * Ordered storage encryption key ring. The first key encrypts new data and
+   * all keys are available to decrypt existing data.
+   */
+  databaseEncryptionKey: DatabaseEncryptionKeyRingSchema.prefault('0'.repeat(64)),
   secretSlackOpsBotEndpoint: z.string().nullable().default(null),
   secretSlackToken: z.string().nullable().default(null),
   secretSlackCourseRequestChannel: z.string().nullable().default(null),
@@ -426,7 +444,7 @@ export const ConfigSchema = z.object({
   workspaceMaxGradedFilesCount: z.number().default(100),
   /** Controls the maximum size of all graded files in bytes. */
   workspaceMaxGradedFilesSize: z.number().default(100 * 1024 * 1024),
-  workspaceAutoscalingEnabled: z.boolean().default(true),
+  workspaceAutoscalingEnabled: z.boolean().default(false),
 
   chunksS3Bucket: z.string().default('chunks'),
   /** Enables chunk generation. */
@@ -466,11 +484,12 @@ export const ConfigSchema = z.object({
    */
   isEnterprise: z.boolean().default(false),
   /**
-   * Shared secret used to sign and verify auth JWTs exchanged between
-   * PrairieLearn and PrairieTest in both directions. PrairieTest must be
-   * configured with the same value under the same key.
+   * Ordered shared secret ring used to sign and verify auth JWTs exchanged
+   * between PrairieLearn and PrairieTest in both directions. The first secret
+   * signs new JWTs and all secrets are accepted for verification. PrairieTest
+   * must be configured with the same values in the same order.
    */
-  prairieTestSharedAuthSecret: z.string().default('CHANGE_ME_PRAIRIE_TEST_SHARED_AUTH_SECRET'),
+  prairieTestSharedAuthSecret: KeyRingSchema.prefault('CHANGE_ME_PRAIRIE_TEST_SHARED_AUTH_SECRET'),
   openTelemetryEnabled: z.boolean().default(false),
   /**
    * Note that the `console` exporter should almost definitely NEVER be used in
@@ -583,10 +602,11 @@ export const ConfigSchema = z.object({
    */
   stripeSecretKey: z.string().nullable().default(null),
   /**
-   * A secret key used to sign Stripe webhook events. Only useful for enterprise
-   * installations. See https://stripe.com/docs/webhooks.
+   * A secret key or ordered list of secret keys accepted when verifying Stripe
+   * webhook events. Only useful for enterprise installations. See
+   * https://stripe.com/docs/webhooks.
    */
-  stripeWebhookSigningSecret: z.string().nullable().default(null),
+  stripeWebhookSigningSecret: KeyRingSchema.nullable().prefault(null),
   /**
    * Maps a plan name ("basic", "compute", etc.) to a Stripe product ID.
    */
@@ -720,41 +740,9 @@ const loader = new ConfigLoader(ConfigSchema);
 
 export const config = loader.config;
 
-/**
- * Creates a config source that derives database and Redis settings from
- * CONDUCTOR_WORKSPACE_NAME and CONDUCTOR_PORT.
- * This enables isolated databases per Conductor workspace.
- */
-function makeConductorConfigSource(): ConfigSource<Config> {
-  return {
-    load: async (existingConfig) => {
-      const workspaceName = process.env.CONDUCTOR_WORKSPACE_NAME;
-      if (!workspaceName) return {};
-
-      const dbSuffix = workspaceName
-        .toLowerCase()
-        .replaceAll(/[^a-z0-9_]/g, '_')
-        .slice(0, 50);
-      const port = Number.parseInt(existingConfig.serverPort);
-      // Redis supports DBs 0-15 by default. With CONDUCTOR_PORT allocated in
-      // increments of 10, collisions occur after ~8 workspaces. This is acceptable
-      // since Redis stores transient data while Postgres databases remain fully isolated.
-      const redisDb = (port - 3000) % 16;
-
-      return {
-        postgresqlDatabase: `prairielearn_${dbSuffix}`,
-        redisUrl: `redis://localhost:6379/${redisDb}`,
-      };
-    },
-  };
-}
-
 export async function loadConfig(paths: string[]) {
   await loader.loadAndValidate([
-    makeEnvConfigSource<typeof ConfigSchema>({
-      serverPort: 'CONDUCTOR_PORT',
-    }),
-    makeConductorConfigSource(),
+    makeConductorConfigSource({ portConfigKey: 'serverPort' }),
     ...paths.map((path) => makeFileConfigSource(path)),
     makeImdsConfigSource(),
     makeSecretsManagerConfigSource('ConfSecret'),
@@ -781,7 +769,7 @@ export async function loadConfig(paths: string[]) {
     }
 
     const defaultKey = ConfigSchema.parse({}).databaseEncryptionKey;
-    if (config.databaseEncryptionKey === defaultKey) {
+    if (config.databaseEncryptionKey.includes(getActiveKey(defaultKey))) {
       throw new Error(
         'databaseEncryptionKey must be set to a secure value in production environments',
       );

@@ -382,9 +382,6 @@ def categorize_options(
 
     for child in element:
         if child.tag in ["pl-answer", "pl_answer"]:
-            pl.check_attribs(
-                child, required_attribs=[], optional_attribs=["correct", "feedback"]
-            )
             correct = pl.get_boolean_attrib(child, "correct", False)
             child_html = pl.inner_html(child)
             child_feedback = pl.get_string_attrib(child, "feedback", FEEDBACK_DEFAULT)
@@ -403,31 +400,6 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         element, SCHEMA_MANIFEST_PATH, allow_legacy_underscore_tags=True
     )
 
-    required_attribs = ["answers-name"]
-    optional_attribs = [
-        "weight",
-        "number-answers",
-        "min-correct",
-        "max-correct",
-        "display",
-        "hide-answer-panel",
-        "hide-help-text",
-        "detailed-help-text",
-        "partial-credit",
-        "partial-credit-method",
-        "hide-letter-keys",
-        "hide-score-badge",
-        "min-select",
-        "max-select",
-        "show-number-correct",
-        "order",
-        # Deprecated
-        "fixed-order",
-        "inline",
-        "allow-blank",
-    ]
-
-    pl.check_attribs(element, required_attribs, optional_attribs)
     name = pl.get_string_attrib(element, "answers-name")
     pl.check_answers_names(data, name)
 

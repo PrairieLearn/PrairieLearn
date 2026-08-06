@@ -49,15 +49,50 @@ interface GradingResults {
   message?: string;
 }
 
-// catch SIGTERM and exit after waiting for all current jobs to finish
-let processTerminating = false;
+const workerAbortController = new AbortController();
+const terminationLifecycleActionAbortController = new AbortController();
+let workersFinished: Promise<void> = Promise.resolve();
+
+function startGracefulShutdown({
+  source,
+  waitForLifecycleAction,
+}: {
+  source: string;
+  waitForLifecycleAction: boolean;
+}) {
+  if (workerAbortController.signal.aborted) {
+    globalLogger.info(`Ignoring shutdown trigger from ${source}; shutdown is already in progress`);
+    return;
+  }
+
+  workerAbortController.abort();
+  globalLogger.info(`Starting graceful shutdown (source: ${source}); draining jobs`);
+  lifecycle.terminating();
+  void drainJobsAndExit(waitForLifecycleAction);
+}
+
+async function drainJobsAndExit(waitForLifecycleAction: boolean) {
+  await workersFinished.catch((error) => {
+    globalLogger.error('Error while draining grader workers', error);
+  });
+
+  if (waitForLifecycleAction) {
+    try {
+      await lifecycle.completeTermination(terminationLifecycleActionAbortController.signal);
+    } catch (error) {
+      globalLogger.error('Error completing termination lifecycle action', error);
+    }
+  }
+
+  process.exit(0);
+}
+
 process.on('SIGTERM', () => {
-  globalLogger.info('caught SIGTERM, draining jobs to exit...');
-  processTerminating = true;
-  (function tryToExit() {
-    if (load.getCurrentJobs() === 0) process.exit(0);
-    setTimeout(tryToExit, 1000);
-  })();
+  terminationLifecycleActionAbortController.abort();
+  startGracefulShutdown({
+    source: 'external SIGTERM',
+    waitForLifecycleAction: false,
+  });
 });
 
 async.series(
@@ -83,6 +118,7 @@ async.series(
         password: config.postgresqlPassword ?? undefined,
         max: config.postgresqlPoolSize,
         idleTimeoutMillis: config.postgresqlIdleTimeoutMillis,
+        ssl: config.postgresqlSsl,
       };
 
       function idleErrorHandler(err: Error & { data?: { lastQuery?: string } }) {
@@ -121,20 +157,28 @@ async.series(
     },
     async () => {
       await lifecycle.inService();
+      lifecycle.startTerminationWatcher((state) => {
+        startGracefulShutdown({
+          source: `IMDS Auto Scaling target lifecycle state ${state}`,
+          waitForLifecycleAction: true,
+        });
+      });
     },
     async () => {
       globalLogger.info('Initialization complete; beginning to process jobs');
       const sqs = new SQSClient(makeAwsClientConfig());
+      const jobsQueueUrl = config.jobsQueueUrl;
+      if (!jobsQueueUrl) {
+        throw new Error('jobsQueueUrl is not defined');
+      }
+      const receiveNextJob = (callback: (job: GradingJobMessage) => Promise<void>) =>
+        receiveFromQueue(sqs, jobsQueueUrl, callback, workerAbortController.signal);
 
       async function worker() {
         while (true) {
-          if (!healthCheck.isHealthy() || processTerminating) return;
+          if (!healthCheck.isHealthy() || workerAbortController.signal.aborted) return;
 
-          if (!config.jobsQueueUrl) {
-            throw new Error('jobsQueueUrl is not defined');
-          }
-
-          await receiveFromQueue(sqs, config.jobsQueueUrl, async (job) => {
+          await receiveNextJob(async (job) => {
             globalLogger.info(`received ${job.jobId} from queue`);
 
             // Ensure that this job wasn't canceled in the time since job submission.
@@ -156,6 +200,14 @@ async.series(
               },
             );
           }).catch((err) => {
+            if (
+              workerAbortController.signal.aborted &&
+              err instanceof Error &&
+              err.name === 'AbortError'
+            ) {
+              return;
+            }
+
             globalLogger.error('receiveFromQueue error', err);
             Sentry.captureException(err);
           });
@@ -163,10 +215,15 @@ async.series(
       }
 
       // Start an appropriate number of workers
-      await Promise.all(Array.from({ length: config.maxConcurrentJobs }).map(() => worker()));
+      workersFinished = Promise.all(
+        Array.from({ length: config.maxConcurrentJobs }).map(() => worker()),
+      ).then(() => {});
+      await workersFinished;
     },
   ],
   (err) => {
+    if (workerAbortController.signal.aborted) return;
+
     Sentry.captureException(err, {
       level: 'fatal',
     });

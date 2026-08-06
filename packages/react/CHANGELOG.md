@@ -1,5 +1,11 @@
 # @prairielearn/react
 
+## 2.1.3
+
+### Patch Changes
+
+- 4a0ee46: Bump dependencies
+
 ## 2.1.2
 
 ### Patch Changes

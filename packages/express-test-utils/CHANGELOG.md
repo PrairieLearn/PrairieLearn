@@ -1,5 +1,11 @@
 # @prairielearn/express-test-utils
 
+## 2.0.12
+
+### Patch Changes
+
+- 4a0ee46: Bump dependencies
+
 ## 2.0.11
 
 ### Patch Changes

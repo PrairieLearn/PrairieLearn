@@ -11,7 +11,12 @@ import {
   UserSchema,
 } from '../lib/db-types.js';
 import { saveSubmission } from '../lib/grading.js';
-import { TEST_TYPES, type TestType, createTestSubmissionData } from '../lib/question-testing.js';
+import {
+  TEST_TYPES,
+  type TestType,
+  createTestSubmissionData,
+  questionSupportsTesting,
+} from '../lib/question-testing.js';
 import { ensureVariant } from '../lib/question-variant.js';
 import { selectOptionalAssessmentById } from '../models/assessment.js';
 import { selectOptionalCourseInstanceById } from '../models/course-instances.js';
@@ -78,14 +83,16 @@ export default async function ({
     InstanceQuestionQuerySchema,
   );
 
-  const rows = await mapSeries(
+  const submissionRows = await mapSeries(
     instanceQuestions,
     async ({
       question,
       instance_question,
       user,
       question_course,
-    }: InstanceQuestionQuery): Promise<ResultRow> => {
+    }: InstanceQuestionQuery): Promise<ResultRow | null> => {
+      if (!questionSupportsTesting(question)) return null;
+
       // Select an existing open variant, or create a new one if none exists.
       const variant = await ensureVariant({
         question_id: question.id,
@@ -142,6 +149,7 @@ export default async function ({
       };
     },
   );
+  const rows = submissionRows.filter((row) => row != null);
 
   return { rows, columns };
 }

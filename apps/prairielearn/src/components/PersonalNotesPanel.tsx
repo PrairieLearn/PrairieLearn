@@ -81,7 +81,13 @@ export function PersonalNotesPanel({
                     `
                   : html`
                       ${lockdownBrowser ? '' : AttachFileForm({ variantId, csrfToken })}
-                      ${UploadTextForm({ variantId, csrfToken })}
+                      ${UploadTextForm({
+                        variantId,
+                        csrfToken,
+                        defaultFilename: getAvailableFilename(
+                          fileList.map((file) => file.display_filename),
+                        ),
+                      })}
                     `}
             </div>
           `
@@ -146,7 +152,15 @@ function AttachFileForm({ variantId, csrfToken }: { variantId?: string; csrfToke
   `;
 }
 
-function UploadTextForm({ variantId, csrfToken }: { variantId?: string; csrfToken: string }) {
+function UploadTextForm({
+  variantId,
+  csrfToken,
+  defaultFilename,
+}: {
+  variantId?: string;
+  csrfToken: string;
+  defaultFilename: string;
+}) {
   return html`
     <div>
       <button
@@ -170,9 +184,9 @@ function UploadTextForm({ variantId, csrfToken }: { variantId?: string; csrfToke
             class="form-control"
             aria-label="Text filename"
             name="filename"
-            value="notes.txt"
+            value="${defaultFilename}"
           />
-          <div class="mb-3">
+          <div class="mt-1 mb-3">
             <textarea
               class="form-control"
               rows="5"
@@ -234,4 +248,17 @@ function DeletePersonalNoteButton({
       <i class="far fa-trash-alt"></i>
     </button>
   `;
+}
+
+/**
+ * Returns a display filename for notes file that does not collide with any existing name
+ */
+function getAvailableFilename(existingNames: Iterable<string>): string {
+  const taken = new Set(existingNames);
+  if (!taken.has('notes.txt')) return 'notes.txt';
+
+  for (let n = 2; ; n++) {
+    const candidate = `notes${n}.txt`;
+    if (!taken.has(candidate)) return candidate;
+  }
 }

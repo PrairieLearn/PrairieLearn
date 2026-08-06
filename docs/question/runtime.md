@@ -22,7 +22,7 @@ The quickest way to add custom libraries is to install them directly to your cou
 4. Install the package to your course's `serverFilesCourse` directory with the following command. Make sure to replace `<path-to-course>` and `<library>` with the absolute path to the course on your local computer and the library you wish to install, respectively.
 
    ```sh
-   docker run -it --rm -v <path-to-course>:/course prairielearn/prairielearn pip3 install --target /course/serverFilesCourse <library>
+   docker run -it --rm -v <path-to-course>:/course prairielearn/prairielearn uv pip install --target /course/serverFilesCourse <library>
    ```
 
 5. Using Git, commit and push the new files that are now in your `serverFilesCourse` directory.

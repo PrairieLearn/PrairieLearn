@@ -390,59 +390,69 @@ function IssuePanel({
 
       ${config.devMode || authz_data.has_course_permission_view
         ? html`
-            <div class="card-body border border-bottom-0 border-start-0 border-end-0">
+            <ul
+              class="list-group list-group-flush border-top"
+              style="--bs-list-group-item-padding-x: 1.25rem; --bs-list-group-item-padding-y: 0.25rem;"
+            >
               ${issue.system_data?.courseErrData
                 ? html`
-                    <p><strong>Console log:</strong></p>
-                    <pre class="bg-dark text-white rounded p-3">
+                    <li class="list-group-item">
+                      <p class="mb-2"><strong>Console log:</strong></p>
+                      <pre class="bg-dark text-white rounded p-3 mb-0" style="max-height: 60vh;">
 ${unsafeHtml(ansiToHtml(issue.system_data.courseErrData.outputBoth))}</pre
-                    >
+                      >
+                    </li>
                   `
                 : ''}
-              <p>
-                <strong>Associated data:</strong>
-                <button
-                  type="button"
-                  class="btn btn-xs btn-secondary"
-                  data-bs-toggle="collapse"
-                  href="#issue-course-data-${issue.id}"
-                  aria-expanded="false"
-                  aria-controls="#issue-course-data-${issue.id}"
-                >
-                  Show/hide
-                </button>
-              </p>
-              <div class="collapse" id="issue-course-data-${issue.id}">
-                <pre class="bg-dark text-white rounded p-3">
-${JSON.stringify(issue.course_data, null, '    ')}</pre
-                >
-              </div>
+              ${IssueDataCollapse({
+                label: 'Associated data',
+                collapseId: `issue-course-data-${issue.id}`,
+                data: issue.course_data,
+              })}
               ${is_administrator
-                ? html`
-                    <p>
-                      <strong>System data:</strong>
-                      <button
-                        type="button"
-                        class="btn btn-xs btn-secondary"
-                        data-bs-toggle="collapse"
-                        href="#issue-system-data-${issue.id}"
-                        aria-expanded="false"
-                        aria-controls="#issue-system-data-${issue.id}"
-                      >
-                        Show/hide
-                      </button>
-                    </p>
-                    <div class="collapse" id="issue-system-data-${issue.id}">
-                      <pre class="bg-dark text-white rounded p-3">
-${JSON.stringify(issue.system_data, null, '    ')}</pre
-                      >
-                    </div>
-                  `
+                ? IssueDataCollapse({
+                    label: 'System data',
+                    collapseId: `issue-system-data-${issue.id}`,
+                    data: issue.system_data,
+                  })
                 : ''}
-            </div>
+            </ul>
           `
         : ''}
     </div>
+  `;
+}
+
+function IssueDataCollapse({
+  label,
+  collapseId,
+  data,
+}: {
+  label: string;
+  collapseId: string;
+  data: unknown;
+}) {
+  return html`
+    <li class="list-group-item">
+      <p class="mb-0">
+        <strong>${label}:</strong>
+        <button
+          type="button"
+          class="btn btn-xs btn-secondary"
+          data-bs-toggle="collapse"
+          href="#${collapseId}"
+          aria-expanded="false"
+          aria-controls="${collapseId}"
+        >
+          Show/hide
+        </button>
+      </p>
+      <div class="collapse" id="${collapseId}">
+        <pre class="bg-dark text-white rounded p-3 mt-2 mb-0" style="max-height: 60vh;">
+${JSON.stringify(data, null, '    ')}</pre
+        >
+      </div>
+    </li>
   `;
 }
 

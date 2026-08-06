@@ -434,12 +434,35 @@
     },
     "secretKey": {
       "default": "THIS_IS_THE_SECRET_KEY",
-      "type": "string"
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      ]
     },
     "databaseEncryptionKey": {
       "default": "0000000000000000000000000000000000000000000000000000000000000000",
-      "type": "string",
-      "pattern": "^[0-9a-f]{64}$"
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        {
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          }
+        }
+      ]
     },
     "secretSlackOpsBotEndpoint": {
       "default": null,
@@ -1088,7 +1111,7 @@
       "type": "number"
     },
     "workspaceAutoscalingEnabled": {
-      "default": true,
+      "default": false,
       "type": "boolean"
     },
     "chunksS3Bucket": {
@@ -1170,7 +1193,18 @@
     },
     "prairieTestSharedAuthSecret": {
       "default": "CHANGE_ME_PRAIRIE_TEST_SHARED_AUTH_SECRET",
-      "type": "string"
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      ]
     },
     "openTelemetryEnabled": {
       "default": false,
@@ -1414,7 +1448,18 @@
       "default": null,
       "anyOf": [
         {
-          "type": "string"
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "minItems": 1,
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          ]
         },
         {
           "type": "null"

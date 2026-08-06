@@ -299,8 +299,8 @@ function RegradeInstancesModal({
         <p>
           Regrading recomputes the score for{' '}
           <strong>{describeTargetInstances(assessmentInstanceIds)}</strong> and awards full credit
-          for questions configured with <code>forceMaxPoints</code>. Student submissions are not
-          re-graded.
+          for questions configured with <code>forceMaxPoints</code>. This updates stored scores
+          without re-evaluating student submissions.
         </p>
         {previewQuery.isPending ? (
           <div className="d-flex align-items-center gap-2 text-muted">

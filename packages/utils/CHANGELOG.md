@@ -1,5 +1,11 @@
 # @prairielearn/utils
 
+## 3.2.2
+
+### Patch Changes
+
+- 4a0ee46: Bump dependencies
+
 ## 3.2.1
 
 ### Patch Changes

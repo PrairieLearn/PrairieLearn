@@ -3,10 +3,11 @@ import random
 
 import matplotlib.pyplot as plt
 import numpy as np
+import sympy as sp
 
 
 def file(data):
-    if data["filename"] == "figure.png":
+    if data["filename"] == "figure.png" or data["filename"] == "submission.png":
         # Create the figure
         x = np.linspace(-5, 5)
         f = data["params"]["m"] * x + data["params"]["b"]
@@ -27,6 +28,26 @@ def file(data):
         plt.ylabel("$f(x)$", fontsize=18)
         plt.autoscale(enable=True, tight=True)
         fig.set_layout_engine("tight")
+
+        if (
+            data["filename"] == "submission.png"
+            and data["submitted_answers"].get("f") is not None
+        ):
+            marker_style = (
+                "ko"  # Not scored (save-only submission): black circle
+                if data["partial_scores"].get("f") is None
+                else "gs"  # Correct: green square
+                if data["partial_scores"]["f"].get("score") == 1
+                else "rx"  # Incorrect: red X
+            )
+            plt.plot(data["params"]["x"], data["submitted_answers"]["f"], marker_style)
+            plt.annotate(
+                f"({data['params']['x']}, {data['submitted_answers']['f']})",
+                (data["params"]["x"], data["submitted_answers"]["f"]),
+                textcoords="offset points",
+                xytext=(0, 10),
+                ha="center",
+            )
 
         # Save the figure and return it as a buffer
         buf = io.BytesIO()
@@ -50,7 +71,11 @@ def generate(data):
     # Find f(x)
     f = m * x + b
 
+    # Extract formula for representation
+    formula = m * sp.symbols("x") + b
+
     data["params"]["m"] = m
     data["params"]["b"] = b
     data["params"]["x"] = x
+    data["params"]["formula_latex"] = sp.latex(formula)
     data["correct_answers"]["f"] = f

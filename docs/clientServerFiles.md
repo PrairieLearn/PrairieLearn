@@ -102,8 +102,11 @@ So, for example, if your question generation code requires a data file named `da
 ```python
 import os
 
+
 def generate(data):
-    data_file_path = os.path.join(data["options"]["server_files_course_path"], "data.csv")
+    data_file_path = os.path.join(
+        data["options"]["server_files_course_path"], "data.csv"
+    )
     # Now you can read from data_file_path to access the contents of data.csv
 ```
 

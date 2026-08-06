@@ -1,5 +1,11 @@
 # @prairielearn/logger
 
+## 3.1.6
+
+### Patch Changes
+
+- 4a0ee46: Bump dependencies
+
 ## 3.1.5
 
 ### Patch Changes

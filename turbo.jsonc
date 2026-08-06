@@ -1,8 +1,5 @@
 {
   "$schema": "https://turbo.build/schema.json",
-  // Remove this once Turborepo supports semver ranges in devEngines.packageManager:
-  // https://github.com/vercel/turborepo/issues/13163
-  "dangerouslyDisablePackageManagerCheck": true,
   "tasks": {
     "build": {
       "dependsOn": ["^build"],

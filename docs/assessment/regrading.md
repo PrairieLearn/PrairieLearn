@@ -61,18 +61,20 @@ After updating the `infoAssessment.json` file, go to the instructor page for the
 
 For questions that all students get on their assessment the above system is straightforward. For questions with alternatives, instructors are encouraged to consider how to handle the regrading in a fair manner. For example, consider the case when `SecondAltQ` is broken in the assessment above. In the above example, we only awarded maximum points to those students who received `SecondAltQ`, while students with `FirstAltQ` did not receive automatic maximum points. However, it may be fairer to give maximum points to all students irrespective of which alternative they received, as follows:
 
-```json title="infoAssessment.json" hl_lines="7"
+```json title="infoAssessment.json" hl_lines="8"
 {
-  "zones": {
-    "questions": [
-      {
-        "numberChoose": 1,
-        "points": 10,
-        "forceMaxPoints": true,
-        "alternatives": [{ "id": "FirstAltQ" }, { "id": "SecondAltQ" }]
-      }
-    ]
-  }
+  "zones": [
+    {
+      "questions": [
+        {
+          "numberChoose": 1,
+          "points": 10,
+          "forceMaxPoints": true,
+          "alternatives": [{ "id": "FirstAltQ" }, { "id": "SecondAltQ" }]
+        }
+      ]
+    }
+  ]
 }
 ```
 
