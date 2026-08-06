@@ -118,6 +118,10 @@ export default class PLFilePreview {
           })
           .then(async (blob) => {
             hideErrorMessage();
+            // Even though the content is still being rendered, we mark the
+            // preview as opened so that we don't try to load it again if the
+            // user closes and reopens the preview.
+            wasOpened = true;
 
             const type = blob.type;
             if (type === 'text/plain') {
@@ -132,39 +136,47 @@ export default class PLFilePreview {
                   import('notebookjs'),
                   // MathJax needs to have been loaded before the extension can be used.
                   window.MathJax.startup.promise,
-                ]).then(async ([Marked, markedMathjax]) => {
-                  markedMathjax.addMathjaxExtension(Marked.marked, window.MathJax);
-                  window.nb.markdown = Marked.marked.parse;
+                ])
+                  .then(async ([Marked, markedMathjax]) => {
+                    markedMathjax.addMathjaxExtension(Marked.marked, window.MathJax);
+                    window.nb.markdown = Marked.marked.parse;
 
-                  window.nb.sanitizer = (code) => window.DOMPurify.sanitize(code);
-                  const notebook = window.nb.parse(JSON.parse(text));
-                  const rendered = notebook.render();
+                    window.nb.sanitizer = (code) => window.DOMPurify.sanitize(code);
+                    const notebook = window.nb.parse(JSON.parse(text));
+                    const rendered = notebook.render();
 
-                  const nbStyle = new CSSStyleSheet();
-                  await nbStyle.replace(
-                    await fetch(import.meta.resolve('pl-file-preview/notebook.css')).then(
-                      // If the fetch fails, return an empty string to avoid breaking the preview.
-                      (res) => res.text(),
-                      () => '',
-                    ),
-                  );
-                  const shadowRootStyles = [nbStyle];
+                    const nbStyle = new CSSStyleSheet();
+                    await nbStyle.replace(
+                      await fetch(import.meta.resolve('pl-file-preview/notebook.css')).then(
+                        // If the fetch fails, return an empty string to avoid breaking the preview.
+                        (res) => res.text(),
+                        () => '',
+                      ),
+                    );
+                    const shadowRootStyles = [nbStyle];
 
-                  const mjxStyles = window.MathJax.svgStylesheet();
-                  if (mjxStyles) {
-                    const style = new CSSStyleSheet();
-                    await style.replace(mjxStyles.textContent);
-                    shadowRootStyles.push(style);
-                  }
+                    const mjxStyles = window.MathJax.svgStylesheet();
+                    if (mjxStyles) {
+                      const style = new CSSStyleSheet();
+                      await style.replace(mjxStyles.textContent);
+                      shadowRootStyles.push(style);
+                    }
 
-                  const shadowRoot = notebookPreview.attachShadow({ mode: 'open' });
-                  shadowRoot.adoptedStyleSheets = shadowRootStyles;
-                  shadowRoot.append(rendered);
-                  notebookPreview.classList.remove('d-none');
+                    const shadowRoot = notebookPreview.attachShadow({ mode: 'open' });
+                    shadowRoot.adoptedStyleSheets = shadowRootStyles;
+                    shadowRoot.append(rendered);
+                    notebookPreview.classList.remove('d-none');
 
-                  // Typeset any math that might be in the notebook.
-                  await window.MathJax.typesetPromise(shadowRoot.children);
-                });
+                    // Typeset any math that might be in the notebook.
+                    await window.MathJax.typesetPromise(shadowRoot.children);
+                  })
+                  .catch((err) => {
+                    console.error('An error occurred while rendering the notebook preview.', err);
+                    // If an error occurs while rendering the notebook, we fall
+                    // back to showing the raw text.
+                    code.textContent = text;
+                    pre.classList.remove('d-none');
+                  });
               } else {
                 code.textContent = text;
                 pre.classList.remove('d-none');
@@ -199,7 +211,6 @@ export default class PLFilePreview {
               // We can't preview this file.
               showInfoMessage('Content preview is not available for this type of file.');
             }
-            wasOpened = true;
           })
           .catch((err) => {
             console.error(err);
