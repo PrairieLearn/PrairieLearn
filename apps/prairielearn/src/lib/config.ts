@@ -245,6 +245,11 @@ export const ConfigSchema = z.object({
    * all keys are available to decrypt existing data.
    */
   databaseEncryptionKey: DatabaseEncryptionKeyRingSchema.prefault('0'.repeat(64)),
+  /**
+   * Keep legacy writes during the first deployment of versioned ciphertext support.
+   * Switch to `v1` only after all application instances can read that format.
+   */
+  databaseEncryptionWriteFormat: z.enum(['legacy', 'v1']).default('legacy'),
   secretSlackOpsBotEndpoint: z.string().nullable().default(null),
   secretSlackToken: z.string().nullable().default(null),
   secretSlackCourseRequestChannel: z.string().nullable().default(null),

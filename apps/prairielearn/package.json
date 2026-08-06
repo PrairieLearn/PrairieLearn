@@ -53,6 +53,7 @@
     "@prairielearn/config": "workspace:^",
     "@prairielearn/csv": "workspace:^",
     "@prairielearn/docker-utils": "workspace:^",
+    "@prairielearn/encrypted-storage": "workspace:^",
     "@prairielearn/error": "workspace:^",
     "@prairielearn/excalidraw-builds": "^1.0.0",
     "@prairielearn/express-test-utils": "workspace:^",
