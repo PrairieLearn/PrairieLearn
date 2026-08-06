@@ -558,21 +558,6 @@ export const ConfigSchema = z.object({
     )
     .default([]),
   azureLoggingLevel: z.enum(['error', 'warn', 'info']).default('warn'),
-  /**
-   * If you want to get access_token for a specific resource, you can provide the
-   * resource here; otherwise, set the value to null.
-   * Note that in order to get access_token, the responseType must be 'code', 'code id_token' or 'id_token code'.
-   */
-  azureResourceURL: z.string().nullable().default('https://graph.windows.net'),
-  /**
-   * The URL to which the user will be redirected to destroy the session.
-   */
-  azureDestroySessionUrl: z
-    .string()
-    .nullable()
-    .default(
-      'https://login.microsoftonline.com/common/oauth2/logout?post_logout_redirect_uri=http://localhost:3000',
-    ),
   features: z.record(z.string(), z.boolean()).default({}),
   /**
    * Determines if sharing validation should be performed. In essence checks
