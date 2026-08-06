@@ -167,8 +167,10 @@ export default class PLFilePreview {
                     shadowRoot.append(rendered);
                     notebookPreview.classList.remove('d-none');
 
-                    // Typeset any math that might be in the notebook.
-                    await window.MathJax.typesetPromise(shadowRoot.children);
+                    // Typeset any math that might be in the notebook. Don't
+                    // await as the page is still usable while MathJax is
+                    // typesetting.
+                    window.MathJax.typesetPromise(shadowRoot.children);
                   })
                   .catch((err) => {
                     console.error('An error occurred while rendering the notebook preview.', err);
