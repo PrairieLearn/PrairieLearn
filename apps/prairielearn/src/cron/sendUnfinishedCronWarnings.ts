@@ -3,12 +3,12 @@ import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
 
 import { CronJobSchema } from '../lib/db-types.js';
-import * as opsbot from '../lib/opsbot.js';
+import * as slack from '../lib/slack.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 export async function run() {
-  if (!opsbot.canSendMessages()) return;
+  if (!slack.canSendOpsMessages()) return;
 
   const result = await sqldb.queryRows(
     sql.select_unfinished_cron_jobs,
@@ -22,7 +22,7 @@ export async function run() {
     logger.error('cron:sendUnfinishedCronJobs job not finished', row);
   }
 
-  await opsbot
-    .sendMessage(msg)
+  await slack
+    .sendOpsMessage(msg)
     .catch((err) => logger.error('Error posting unfinished cron jobs to slack', err.data));
 }

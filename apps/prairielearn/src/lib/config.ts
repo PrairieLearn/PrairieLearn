@@ -245,9 +245,9 @@ export const ConfigSchema = z.object({
    * all keys are available to decrypt existing data.
    */
   databaseEncryptionKey: DatabaseEncryptionKeyRingSchema.prefault('0'.repeat(64)),
-  secretSlackOpsBotEndpoint: z.string().nullable().default(null),
-  secretSlackToken: z.string().nullable().default(null),
-  secretSlackCourseRequestChannel: z.string().nullable().default(null),
+  // Slack webhook URLs contain credentials and must be handled as secrets.
+  slackOpsWebhookUrl: z.string().nullable().default(null),
+  slackCourseRequestWebhookUrl: z.string().nullable().default(null),
   githubClientToken: z.string().nullable().default(null),
   githubCourseOwner: z.string().default('PrairieLearn'),
   githubCourseTemplate: z.string().default('pl-template'),
