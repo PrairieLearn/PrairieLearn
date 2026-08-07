@@ -28,11 +28,15 @@ function makeKey() {
   return crypto.randomBytes(32).toString('hex');
 }
 
-function mockDatabase(rows: Map<string, string>, conflictOnce = false) {
+function mockDatabase(rows: Map<string, string | null>, conflictOnce = false) {
   postgresMocks.queryRows.mockImplementation(
-    (_query: string, params: { after_cursor: string | null; batch_size: number }) => {
+    (
+      _query: string,
+      params: { nullable: boolean; after_cursor: string | null; batch_size: number },
+    ) => {
       const result = [...rows.entries()]
         .filter(([cursor]) => params.after_cursor === null || cursor > params.after_cursor)
+        .filter(([, ciphertext]) => !params.nullable || ciphertext !== null)
         .sort(([a], [b]) => a.localeCompare(b))
         .slice(0, params.batch_size)
         .map(([cursor, ciphertext]) => ({ cursor, ciphertext }));
@@ -65,6 +69,7 @@ function operationOptions(cipher: ReturnType<typeof createStorageCipher>) {
     tableName: 'example"table',
     primaryKeyColumnName: 'example"id',
     ciphertextColumnName: 'example"ciphertext',
+    nullable: false,
   };
 }
 
@@ -74,7 +79,7 @@ describe('Postgres encrypted column operations', () => {
     postgresMocks.queryScalar.mockResolvedValue(true);
   });
 
-  it('checks values in bounded keyset batches with escaped identifiers', async () => {
+  it('checks non-null values in bounded keyset batches with escaped identifiers', async () => {
     const primaryKey = makeKey();
     const fallbackKey = makeKey();
     const cipher = createStorageCipher({
@@ -83,13 +88,15 @@ describe('Postgres encrypted column operations', () => {
     });
     const rows = new Map([
       ['1', cipher.encrypt('current')],
-      ['2', prairieLearnCiphertextFormat.encrypt('old', fallbackKey)],
+      ['2', null],
+      ['3', prairieLearnCiphertextFormat.encrypt('old', fallbackKey)],
     ]);
     mockDatabase(rows);
 
     const result = await runPostgresEncryptedColumnOperation({
       mode: 'check',
       ...operationOptions(cipher),
+      nullable: true,
       batchSize: 1,
     });
 
@@ -104,6 +111,11 @@ describe('Postgres encrypted column operations', () => {
     });
     assert.include(postgresMocks.queryRows.mock.calls[0][0], '"example""id"::text AS cursor');
     assert.include(postgresMocks.queryRows.mock.calls[0][0], '"example""ciphertext" AS ciphertext');
+    assert.include(
+      postgresMocks.queryRows.mock.calls[0][0],
+      'OR "example""ciphertext" IS NOT NULL',
+    );
+    assert.isTrue(postgresMocks.queryRows.mock.calls[0][1].nullable);
     assert.equal(postgresMocks.queryRows.mock.calls[0][1].batch_size, 1);
   });
 

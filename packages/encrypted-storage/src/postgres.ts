@@ -43,6 +43,7 @@ export async function runPostgresEncryptedColumnOperation({
   tableName,
   primaryKeyColumnName,
   ciphertextColumnName,
+  nullable,
   batchSize = 100,
   maxPasses = 3,
 }: {
@@ -51,6 +52,7 @@ export async function runPostgresEncryptedColumnOperation({
   tableName: string;
   primaryKeyColumnName: string;
   ciphertextColumnName: string;
+  nullable: boolean;
   batchSize?: number;
   maxPasses?: number;
 }): Promise<EncryptionInspection | EncryptionRotation> {
@@ -81,8 +83,14 @@ SELECT
 FROM
   ${table}
 WHERE
-  $first_batch
-  OR ${primaryKeyColumn} > $after_cursor
+  (
+    NOT $nullable
+    OR ${ciphertextColumn} IS NOT NULL
+  )
+  AND (
+    $first_batch
+    OR ${primaryKeyColumn} > $after_cursor
+  )
 ORDER BY
   ${primaryKeyColumn}
 LIMIT
@@ -105,7 +113,12 @@ WHERE
     while (true) {
       const rows: z.infer<typeof EncryptedValueRowSchema>[] = await queryRows(
         selectBatchSql,
-        { first_batch: after === null, after_cursor: after, batch_size: batchSize },
+        {
+          nullable,
+          first_batch: after === null,
+          after_cursor: after,
+          batch_size: batchSize,
+        },
         EncryptedValueRowSchema,
       );
       if (rows.length === 0) return total;

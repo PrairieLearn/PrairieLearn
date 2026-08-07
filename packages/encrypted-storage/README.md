@@ -32,9 +32,10 @@ const result = await runPostgresEncryptedColumnOperation({
   tableName: 'example_credentials',
   primaryKeyColumnName: 'id',
   ciphertextColumnName: 'encrypted_secret',
+  nullable: false,
 });
 ```
 
-The operation validates the primary key, escapes every identifier, parameterizes every value, reads bounded batches in primary-key order, and uses compare-and-swap updates so concurrent writes are not overwritten. Rotation retries conflicts and refuses to report success unless a final scan authenticates every value with the primary key.
+The operation validates the primary key, escapes every identifier, parameterizes every value, reads bounded batches in primary-key order, and uses compare-and-swap updates so concurrent writes are not overwritten. Set `nullable: true` to exclude nulls from the encrypted-value count and rotation; when it is false, an unexpected null fails validation. Rotation retries conflicts and refuses to report success unless a final scan authenticates every value with the primary key.
 
 Applications should use a database-backed lock to serialize rotation commands. The shared operation cannot inspect the configuration of other deployed writers or prevent ordinary writes, so operators must ensure every writer uses the new primary key before rotation. Keep the fallback key configured until rotation and verification are complete.

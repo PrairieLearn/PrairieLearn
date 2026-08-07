@@ -38,6 +38,7 @@ describe('database encryption rotation', () => {
         tableName: 'course_instance_ai_grading_credentials',
         primaryKeyColumnName: 'provider',
         ciphertextColumnName: 'encrypted_secret_key',
+        nullable: false,
       }),
     ).rejects.toThrow('must use a single-column primary key');
   });
@@ -60,13 +61,15 @@ describe('database encryption rotation', () => {
 
     await withConfig({ databaseEncryptionKey: [primaryKey, fallbackKey] }, async () => {
       const inspection = await runDatabaseEncryptionOperation({ mode: 'check', batchSize: 1 });
-      assert.deepEqual(inspection, {
-        target: 'course_instance_ai_grading_credentials.encrypted_secret_key',
-        total: 1,
-        needsRotation: 1,
-      });
+      assert.deepEqual(inspection, [
+        {
+          target: 'course_instance_ai_grading_credentials.encrypted_secret_key',
+          total: 1,
+          needsRotation: 1,
+        },
+      ]);
 
-      const result = await runDatabaseEncryptionOperation({ mode: 'rotate', batchSize: 1 });
+      const result = (await runDatabaseEncryptionOperation({ mode: 'rotate', batchSize: 1 }))[0];
       assert('rotated' in result);
       assert.equal(result.rotated, 1);
       assert.equal(result.needsRotation, 0);
@@ -84,7 +87,7 @@ describe('database encryption rotation', () => {
 
     await withConfig({ databaseEncryptionKey: [primaryKey] }, async () => {
       assert.equal(decryptFromStorage(credentials[0].encrypted_secret_key), 'secret');
-      const inspection = await runDatabaseEncryptionOperation({ mode: 'check', batchSize: 1 });
+      const inspection = (await runDatabaseEncryptionOperation({ mode: 'check', batchSize: 1 }))[0];
       assert.equal(inspection.needsRotation, 0);
     });
   });
