@@ -1,4 +1,4 @@
-FROM amazonlinux:2023
+FROM amazonlinux:2023.12.20260724.0
 ARG CACHEBUST=2026-07-15-14-34-04
 
 # Needed to properly handle UTF-8

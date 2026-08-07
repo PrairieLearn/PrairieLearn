@@ -44,8 +44,6 @@ function getFriendlyStatus(status: EnumEnrollmentStatus): string {
       return 'Rejected';
     case 'blocked':
       return 'Blocked';
-    case 'lti13_pending':
-      return 'Invited via LTI';
     default:
       assertNever(status);
   }
@@ -63,8 +61,6 @@ function getBadgeClass(status: EnumEnrollmentStatus): string {
       return 'badge bg-danger';
     case 'blocked':
       return 'badge bg-danger';
-    case 'lti13_pending':
-      return 'badge bg-secondary';
     case 'invited':
       return 'badge bg-secondary';
     default:

@@ -176,7 +176,7 @@ class _Constants:
     set_operators: Final[_FrozenSympyFunctionMapT] = FrozenDict({
         "U": operator.or_,
         "cup": operator.or_,
-        "∪": operator.or_,  # noqa: RUF001
+        "∪": operator.or_,  # ruff:ignore[ambiguous-unicode-character-string]
         "cap": operator.and_,
         "∩": operator.and_,
     })
@@ -184,7 +184,7 @@ class _Constants:
     set_operator_desugars: Final[FrozenDict[str, str]] = FrozenDict({
         "U": "|",
         "cup": "|",
-        "∪": "|",  # noqa: RUF001
+        "∪": "|",  # ruff:ignore[ambiguous-unicode-character-string]
         "cap": "&",
         "∩": "&",
     })
@@ -196,10 +196,10 @@ class _SympyJsonStrPrinter(StrPrinter):
     Callers must deserialize with `allow_sets=True` or the literal forms will be rejected.
     """
 
-    def _print_EmptySet(self, expr: sympy.Set) -> str:  # pyright: ignore[reportIncompatibleMethodOverride] # noqa: ARG002, N802
+    def _print_EmptySet(self, expr: sympy.Set) -> str:  # pyright: ignore[reportIncompatibleMethodOverride] # ruff:ignore[unused-method-argument, invalid-function-name]
         return "{}"
 
-    def _print_Interval(self, i: sympy.Interval) -> str:  # noqa: N802
+    def _print_Interval(self, i: sympy.Interval) -> str:  # ruff:ignore[invalid-function-name]
         start, end = self._print(i.start), self._print(i.end)
         left = "(" if i.left_open else "["
         right = ")" if i.right_open else "]"
@@ -814,7 +814,7 @@ def evaluate_with_source(
     # the only thing this can't catch is open intervals `(-, -)`, checked later
     if not allow_sets and any(
         token in normalized_expr
-        for token in ("[", "]", "{", "}", "∪", "∩", "&", "|")  # noqa: RUF001
+        for token in ("[", "]", "{", "}", "∪", "∩", "&", "|")  # ruff:ignore[ambiguous-unicode-character-string]
     ):
         raise HasSetNotationError
 

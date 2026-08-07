@@ -212,6 +212,17 @@
         }
       ]
     },
+    "autoScalingTerminatingLifecycleHookName": {
+      "default": null,
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
     "instanceId": {
       "default": "server",
       "type": "string"
@@ -729,12 +740,35 @@
     },
     "secretKey": {
       "default": "THIS_IS_THE_SECRET_KEY",
-      "type": "string"
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      ]
     },
     "databaseEncryptionKey": {
       "default": "0000000000000000000000000000000000000000000000000000000000000000",
-      "type": "string",
-      "pattern": "^[0-9a-f]{64}$"
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        {
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          }
+        }
+      ]
     },
     "secretSlackOpsBotEndpoint": {
       "default": null,
@@ -1398,7 +1432,18 @@
     },
     "prairieTestSharedAuthSecret": {
       "default": "CHANGE_ME_PRAIRIE_TEST_SHARED_AUTH_SECRET",
-      "type": "string"
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      ]
     },
     "openTelemetryEnabled": {
       "default": false,
@@ -1496,17 +1541,6 @@
         }
       ]
     },
-    "autoScalingTerminatingLifecycleHookName": {
-      "default": null,
-      "anyOf": [
-        {
-          "type": "string"
-        },
-        {
-          "type": "null"
-        }
-      ]
-    },
     "serverJobHeartbeatIntervalSec": {
       "default": 10,
       "type": "number"
@@ -1530,10 +1564,6 @@
     "azureAllowHttpForRedirectUrl": {
       "default": false,
       "type": "boolean"
-    },
-    "azureClientSecret": {
-      "default": "<your_client_secret>",
-      "type": "string"
     },
     "azureCookieEncryptionKeys": {
       "default": [],
@@ -1560,28 +1590,6 @@
       "default": "warn",
       "type": "string",
       "enum": ["error", "warn", "info"]
-    },
-    "azureResourceURL": {
-      "default": "https://graph.windows.net",
-      "anyOf": [
-        {
-          "type": "string"
-        },
-        {
-          "type": "null"
-        }
-      ]
-    },
-    "azureDestroySessionUrl": {
-      "default": "https://login.microsoftonline.com/common/oauth2/logout?post_logout_redirect_uri=http://localhost:3000",
-      "anyOf": [
-        {
-          "type": "string"
-        },
-        {
-          "type": "null"
-        }
-      ]
     },
     "features": {
       "default": {},
@@ -1616,7 +1624,18 @@
       "default": null,
       "anyOf": [
         {
-          "type": "string"
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "minItems": 1,
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          ]
         },
         {
           "type": "null"

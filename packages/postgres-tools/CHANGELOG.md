@@ -1,5 +1,17 @@
 # @prairielearn/postgres-tools
 
+## 3.0.11
+
+### Patch Changes
+
+- 81ad435: Update typescript-cp to remove its transitive tar dependency.
+
+## 3.0.10
+
+### Patch Changes
+
+- 3a77965: Simplify query for enum description update
+
 ## 3.0.9
 
 ### Patch Changes

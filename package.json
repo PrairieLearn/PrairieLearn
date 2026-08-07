@@ -5,10 +5,14 @@
     "apps/*",
     "packages/*"
   ],
+  "engines": {
+    "node": ">=24.0.0",
+    "pnpm": "^11.19.0"
+  },
   "devEngines": {
     "packageManager": {
       "name": "pnpm",
-      "version": "^11.15.0",
+      "version": "11.19.0",
       "onFail": "warn"
     },
     "runtime": {
@@ -45,6 +49,7 @@
     "@playwright/test": "^1.61.1",
     "@postgres-language-server/cli": "^0.25.5",
     "@prairielearn/eslint-config": "workspace:^",
+    "@prairielearn/pin-github-actions": "workspace:^",
     "@prairielearn/signed-token": "workspace:^",
     "@prairielearn/tree-sitter-htmlmustache": "^1.4.3",
     "@prairielearn/tsconfig": "workspace:^",

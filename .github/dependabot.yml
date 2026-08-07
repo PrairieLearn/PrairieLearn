@@ -126,8 +126,6 @@ updates:
       # together, so we'll include a special group for them. Dependabot evaluates
       # groups in the order that they're listed, so this will take precedence over
       # the catch-all patch/minor group below.
-      #
-      # These upgrades are currently ignored, see the note above.
       opentelemetry:
         patterns:
           - '@opentelemetry/*'
@@ -162,6 +160,16 @@ updates:
         versions: ['>=3.0']
       - dependency-name: 'pandas-stubs'
         versions: ['>=3.0']
+      # pygraphviz 2.0 ships binary wheels that bundle their own Graphviz and
+      # font stack, which changes graph rendering and emits Fontconfig warnings
+      # that surface as question issues. Upgrade deliberately in a dedicated PR.
+      # https://github.com/PrairieLearn/PrairieLearn/pull/15373
+      - dependency-name: 'pygraphviz'
+        versions: ['>=2']
+      # numpy 2.5 removes some deprecated functionality that may be in use by
+      # instructors. Retaining for now out of an abundance of caution.
+      - dependency-name: 'numpy'
+        versions: ['>=2.5']
 
   - package-ecosystem: uv
     multi-ecosystem-group: python
@@ -174,3 +182,10 @@ updates:
         versions: ['>=3.0']
       - dependency-name: 'pandas-stubs'
         versions: ['>=3.0']
+      # See the note on the pip entry above.
+      - dependency-name: 'pygraphviz'
+        versions: ['>=2']
+      # numpy 2.5 removes some deprecated functionality that may be in use by
+      # instructors. Retaining for now out of an abundance of caution.
+      - dependency-name: 'numpy'
+        versions: ['>=2.5']

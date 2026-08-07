@@ -596,7 +596,7 @@ def string_from_numpy(
 
 
 # Deprecated version, keeping for backwards compatibility
-def string_from_2darray(  # noqa: D103
+def string_from_2darray(  # ruff:ignore[undocumented-public-function]
     A: npt.NDArray[Any],
     language: _FormatLanguage = "python",
     presentation_type: str = "f",
@@ -787,8 +787,8 @@ class _PartialDataSubmittedAnswers(TypedDict):
 
 def string_fraction_to_number(
     a_sub: str | None,
-    allow_fractions: bool = True,  # noqa: FBT001, FBT002
-    allow_complex: bool = True,  # noqa: FBT001, FBT002
+    allow_fractions: bool = True,  # ruff:ignore[boolean-type-hint-positional-argument, boolean-default-value-positional-argument]
+    allow_complex: bool = True,  # ruff:ignore[boolean-type-hint-positional-argument, boolean-default-value-positional-argument]
 ) -> (
     tuple[None, _PartialDataFormatErrors]
     | tuple[np.float64 | np.complex128, _PartialDataSubmittedAnswers]
@@ -810,7 +810,7 @@ def string_fraction_to_number(
         (None, {"format_errors": "Fractional answers are not allowed in this input."})
         >>> string_fraction_to_number("1/2", allow_fractions=True, allow_complex=False)
         (0.5, {"submitted_answers": 0.5})
-    """  # noqa: DOC501 (false positive)
+    """  # ruff:ignore[docstring-missing-exception] (false positive)
     data: _PartialDataSubmittedAnswers = {}  # type: ignore
     value: np.float64 | np.complex128 = None  # type: ignore
 

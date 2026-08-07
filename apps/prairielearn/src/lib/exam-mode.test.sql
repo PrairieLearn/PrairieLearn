@@ -8,11 +8,21 @@ WITH
     RETURNING
       *
   ),
+  new_centers AS (
+    INSERT INTO
+      pt_centers
+    DEFAULT VALUES
+    RETURNING
+      *
+  ),
   new_locations AS (
     INSERT INTO
-      pt_locations (filter_networks)
-    VALUES
-      (TRUE)
+      pt_locations (center_id, filter_networks)
+    SELECT
+      id,
+      TRUE
+    FROM
+      new_centers
     RETURNING
       *
   ),
@@ -56,10 +66,20 @@ WITH
     RETURNING
       *
   ),
+  new_courses AS (
+    INSERT INTO
+      pt_courses
+    DEFAULT VALUES
+    RETURNING
+      *
+  ),
   new_exams AS (
     INSERT INTO
-      pt_exams
-    DEFAULT VALUES
+      pt_exams (course_id)
+    SELECT
+      id
+    FROM
+      new_courses
     RETURNING
       *
   )
@@ -162,6 +182,16 @@ SET
 WHERE
   location_id IS NULL;
 
+-- BLOCK enable_cheating_reports_on_center
+UPDATE pt_centers
+SET
+  cheating_reports_enabled = TRUE;
+
+-- BLOCK enable_cheating_reports_on_course
+UPDATE pt_courses
+SET
+  cheating_reports_enabled = TRUE;
+
 -- BLOCK check_in_reservations
 UPDATE pt_reservations
 SET
@@ -174,3 +204,14 @@ SET
   -- Start 5 minutes in the past to avoid races between PT and JS time.
   access_start = NOW() - interval '5 minutes',
   access_end = NOW() + interval '20 minutes';
+
+-- BLOCK set_reservation_access_end
+UPDATE pt_reservations
+SET
+  access_end = $access_end;
+
+-- BLOCK select_reservation_id
+SELECT
+  id
+FROM
+  pt_reservations;
