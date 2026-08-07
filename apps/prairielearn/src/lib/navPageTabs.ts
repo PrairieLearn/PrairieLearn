@@ -204,7 +204,6 @@ export function getNavPageTabs() {
         urlSuffix: ({ question }) => `/question/${question.id}/statistics`,
         iconClasses: 'fas fa-chart-bar',
         tabLabel: 'Statistics',
-        renderCondition: ({ course, question }) => question.course_id === course.id,
       },
       {
         activeSubPage: 'issues',

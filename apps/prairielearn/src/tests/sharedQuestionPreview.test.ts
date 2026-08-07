@@ -1,3 +1,4 @@
+import * as cheerio from 'cheerio';
 import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 import { z } from 'zod';
 
@@ -45,6 +46,37 @@ const customElement = {
   title: 'Demo: Custom element',
 };
 const testQuestions = [addNumbers, addVectors, downloadFile, customElement];
+
+function testSharedQuestionStatistics(
+  previewPageInfo: { siteUrl: string; questionBaseUrl: string },
+  question: { id: string; qid: string },
+) {
+  describe(`Question statistics for ${question.qid}`, () => {
+    it('shows the Statistics tab', async () => {
+      const statsUrl = `${previewPageInfo.questionBaseUrl}/${question.id}/statistics`;
+      const res = await fetch(`${previewPageInfo.questionBaseUrl}/${question.id}/preview`);
+      assert.equal(res.status, 200);
+      const page = await res.text();
+      assert.include(page, `${new URL(statsUrl).pathname}`);
+    });
+
+    it('loads the statistics page and CSV download', async () => {
+      const statsUrl = `${previewPageInfo.questionBaseUrl}/${question.id}/statistics`;
+      const res = await fetch(statsUrl);
+      assert.equal(res.status, 200);
+      const page = await res.text();
+      assert.include(page, `Detailed assessment statistics for question ${question.qid}`);
+
+      const $ = cheerio.load(page);
+      const downloadHref = $('a[href$="stats.csv"]').attr('href');
+      assert.isString(downloadHref);
+
+      const csvRes = await fetch(`${previewPageInfo.siteUrl}${downloadHref}`);
+      assert.equal(csvRes.status, 200);
+      assert.include(await csvRes.text(), 'Course,Instance,Assessment');
+    });
+  });
+}
 
 describe('Shared Question Preview', { timeout: 60_000 }, function () {
   beforeAll(helperServer.before());
@@ -202,6 +234,8 @@ describe('Shared Question Preview', { timeout: 60_000 }, function () {
     testFileDownloads(previewPageInfo, downloadFile, false);
 
     testElementClientFiles(previewPageInfo, customElement);
+
+    testSharedQuestionStatistics(previewPageInfo, addNumbers);
   });
 
   describe('Shared Question Previews Within a Course Instance', () => {
@@ -218,5 +252,7 @@ describe('Shared Question Preview', { timeout: 60_000 }, function () {
     testFileDownloads(previewPageInfo, downloadFile, false);
 
     testElementClientFiles(previewPageInfo, customElement);
+
+    testSharedQuestionStatistics(previewPageInfo, addNumbers);
   });
 });
