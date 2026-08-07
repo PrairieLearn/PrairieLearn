@@ -2983,12 +2983,9 @@ packages:
     resolution: {integrity: sha512-Ui4QpE1EII3CfTKxGHN4egx2GpowSb+r8o4g9cqcubc7j9fN3FOCKmQNCVMwQMxr33mXcM9yn8ZHrOiD2/ajeg==}
     engines: {node: '>=20.0.0'}
 
-  '@aws-sdk/core@3.977.4':
-    resolution: {integrity: sha512-CEkcQlMOQJCvul60U7wdAOACjtdgFWDsfJI+6wUOGdhGNV2lGbuJpi/R50QLpFG3Tp+sQxa/RmzC3X7KHbhuTA==}
+  '@aws-sdk/core@3.977.6':
+    resolution: {integrity: sha512-QiaJV4/zDrB4ZY2mfeSXSzSTc36W16sZXcGz+SPFk0CJ26gziO0cS+4LjJUMAbdeeBOvS0k0Aq1cZpfGdUXxSw==}
     engines: {node: '>=20.0.0'}
-    deprecated: |-
-      Deprecated due to Document number parsing bug in JSON, see
-        https://github.com/aws/aws-sdk-js-v3/issues/8246. Newer version available.
 
   '@aws-sdk/credential-provider-cognito-identity@3.972.64':
     resolution: {integrity: sha512-bilBheDT6GKnFkPnovgt1HL5spmnTCntm8w+hO3bmjnlZ8qMhqfQ1RJYPRTNsPlXaCcBXWUtg+zn/NM6WQUXoA==}
@@ -10865,7 +10862,7 @@ snapshots:
 
   '@aws-sdk/checksums@3.1000.24':
     dependencies:
-      '@aws-sdk/core': 3.977.4
+      '@aws-sdk/core': 3.977.6
       '@aws-sdk/types': 3.974.2
       '@smithy/core': 3.31.1
       '@smithy/types': 4.16.1
@@ -10873,7 +10870,7 @@ snapshots:
 
   '@aws-sdk/client-auto-scaling@3.1101.0':
     dependencies:
-      '@aws-sdk/core': 3.977.4
+      '@aws-sdk/core': 3.977.6
       '@aws-sdk/credential-provider-node': 3.972.76
       '@aws-sdk/types': 3.974.2
       '@smithy/core': 3.31.1
@@ -10884,7 +10881,7 @@ snapshots:
 
   '@aws-sdk/client-cloudwatch@3.1101.0':
     dependencies:
-      '@aws-sdk/core': 3.977.4
+      '@aws-sdk/core': 3.977.6
       '@aws-sdk/credential-provider-node': 3.972.76
       '@aws-sdk/types': 3.974.2
       '@smithy/core': 3.31.1
@@ -10896,7 +10893,7 @@ snapshots:
 
   '@aws-sdk/client-ec2@3.1101.0':
     dependencies:
-      '@aws-sdk/core': 3.977.4
+      '@aws-sdk/core': 3.977.6
       '@aws-sdk/credential-provider-node': 3.972.76
       '@aws-sdk/middleware-sdk-ec2': 3.972.53
       '@aws-sdk/types': 3.974.2
@@ -10908,7 +10905,7 @@ snapshots:
 
   '@aws-sdk/client-ecr@3.1101.0':
     dependencies:
-      '@aws-sdk/core': 3.977.4
+      '@aws-sdk/core': 3.977.6
       '@aws-sdk/credential-provider-node': 3.972.76
       '@aws-sdk/types': 3.974.2
       '@smithy/core': 3.31.1
@@ -10919,7 +10916,7 @@ snapshots:
 
   '@aws-sdk/client-kms@3.1101.0':
     dependencies:
-      '@aws-sdk/core': 3.977.4
+      '@aws-sdk/core': 3.977.6
       '@aws-sdk/credential-provider-node': 3.972.76
       '@aws-sdk/types': 3.974.2
       '@smithy/core': 3.31.1
@@ -10931,7 +10928,7 @@ snapshots:
   '@aws-sdk/client-s3@3.1101.0':
     dependencies:
       '@aws-sdk/checksums': 3.1000.24
-      '@aws-sdk/core': 3.977.4
+      '@aws-sdk/core': 3.977.6
       '@aws-sdk/credential-provider-node': 3.972.76
       '@aws-sdk/middleware-sdk-s3': 3.972.70
       '@aws-sdk/signature-v4-multi-region': 3.996.43
@@ -10944,7 +10941,7 @@ snapshots:
 
   '@aws-sdk/client-secrets-manager@3.1101.0':
     dependencies:
-      '@aws-sdk/core': 3.977.4
+      '@aws-sdk/core': 3.977.6
       '@aws-sdk/credential-provider-node': 3.972.76
       '@aws-sdk/types': 3.974.2
       '@smithy/core': 3.31.1
@@ -10955,7 +10952,7 @@ snapshots:
 
   '@aws-sdk/client-sqs@3.1101.0':
     dependencies:
-      '@aws-sdk/core': 3.977.4
+      '@aws-sdk/core': 3.977.6
       '@aws-sdk/credential-provider-node': 3.972.76
       '@aws-sdk/middleware-sdk-sqs': 3.972.39
       '@aws-sdk/types': 3.974.2
@@ -10965,7 +10962,7 @@ snapshots:
       '@smithy/types': 4.16.1
       tslib: 2.8.1
 
-  '@aws-sdk/core@3.977.4':
+  '@aws-sdk/core@3.977.6':
     dependencies:
       '@aws-sdk/types': 3.974.2
       '@aws-sdk/xml-builder': 3.972.37
@@ -10986,7 +10983,7 @@ snapshots:
 
   '@aws-sdk/credential-provider-env@3.972.65':
     dependencies:
-      '@aws-sdk/core': 3.977.4
+      '@aws-sdk/core': 3.977.6
       '@aws-sdk/types': 3.974.2
       '@smithy/core': 3.31.1
       '@smithy/types': 4.16.1
@@ -10994,7 +10991,7 @@ snapshots:
 
   '@aws-sdk/credential-provider-http@3.972.67':
     dependencies:
-      '@aws-sdk/core': 3.977.4
+      '@aws-sdk/core': 3.977.6
       '@aws-sdk/types': 3.974.2
       '@smithy/core': 3.31.1
       '@smithy/fetch-http-handler': 5.6.13
@@ -11004,7 +11001,7 @@ snapshots:
 
   '@aws-sdk/credential-provider-ini@3.973.10':
     dependencies:
-      '@aws-sdk/core': 3.977.4
+      '@aws-sdk/core': 3.977.6
       '@aws-sdk/credential-provider-env': 3.972.65
       '@aws-sdk/credential-provider-http': 3.972.67
       '@aws-sdk/credential-provider-login': 3.972.72
@@ -11020,7 +11017,7 @@ snapshots:
 
   '@aws-sdk/credential-provider-login@3.972.72':
     dependencies:
-      '@aws-sdk/core': 3.977.4
+      '@aws-sdk/core': 3.977.6
       '@aws-sdk/nested-clients': 3.997.39
       '@aws-sdk/types': 3.974.2
       '@smithy/core': 3.31.1
@@ -11043,7 +11040,7 @@ snapshots:
 
   '@aws-sdk/credential-provider-process@3.972.65':
     dependencies:
-      '@aws-sdk/core': 3.977.4
+      '@aws-sdk/core': 3.977.6
       '@aws-sdk/types': 3.974.2
       '@smithy/core': 3.31.1
       '@smithy/types': 4.16.1
@@ -11051,7 +11048,7 @@ snapshots:
 
   '@aws-sdk/credential-provider-sso@3.973.9':
     dependencies:
-      '@aws-sdk/core': 3.977.4
+      '@aws-sdk/core': 3.977.6
       '@aws-sdk/nested-clients': 3.997.39
       '@aws-sdk/token-providers': 3.1100.0
       '@aws-sdk/types': 3.974.2
@@ -11061,7 +11058,7 @@ snapshots:
 
   '@aws-sdk/credential-provider-web-identity@3.972.71':
     dependencies:
-      '@aws-sdk/core': 3.977.4
+      '@aws-sdk/core': 3.977.6
       '@aws-sdk/nested-clients': 3.997.39
       '@aws-sdk/types': 3.974.2
       '@smithy/core': 3.31.1
@@ -11070,7 +11067,7 @@ snapshots:
 
   '@aws-sdk/credential-providers@3.1101.0':
     dependencies:
-      '@aws-sdk/core': 3.977.4
+      '@aws-sdk/core': 3.977.6
       '@aws-sdk/credential-provider-cognito-identity': 3.972.64
       '@aws-sdk/credential-provider-env': 3.972.65
       '@aws-sdk/credential-provider-http': 3.972.67
@@ -11099,7 +11096,7 @@ snapshots:
 
   '@aws-sdk/middleware-sdk-ec2@3.972.53':
     dependencies:
-      '@aws-sdk/core': 3.977.4
+      '@aws-sdk/core': 3.977.6
       '@aws-sdk/types': 3.974.2
       '@smithy/core': 3.31.1
       '@smithy/signature-v4': 5.6.12
@@ -11108,7 +11105,7 @@ snapshots:
 
   '@aws-sdk/middleware-sdk-s3@3.972.70':
     dependencies:
-      '@aws-sdk/core': 3.977.4
+      '@aws-sdk/core': 3.977.6
       '@aws-sdk/signature-v4-multi-region': 3.996.43
       '@aws-sdk/types': 3.974.2
       '@smithy/core': 3.31.1
@@ -11124,7 +11121,7 @@ snapshots:
 
   '@aws-sdk/nested-clients@3.997.39':
     dependencies:
-      '@aws-sdk/core': 3.977.4
+      '@aws-sdk/core': 3.977.6
       '@aws-sdk/signature-v4-multi-region': 3.996.43
       '@aws-sdk/types': 3.974.2
       '@smithy/core': 3.31.1
@@ -11142,7 +11139,7 @@ snapshots:
 
   '@aws-sdk/token-providers@3.1100.0':
     dependencies:
-      '@aws-sdk/core': 3.977.4
+      '@aws-sdk/core': 3.977.6
       '@aws-sdk/nested-clients': 3.997.39
       '@aws-sdk/types': 3.974.2
       '@smithy/core': 3.31.1

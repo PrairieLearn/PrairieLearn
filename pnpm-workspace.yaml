@@ -42,4 +42,4 @@ supportedArchitectures:
     - gnu
 
 minimumReleaseAgeExclude:
-  - '@prairielearn/tree-sitter-htmlmustache@1.4.3'
+  - '@aws-sdk/core@3.977.6'
