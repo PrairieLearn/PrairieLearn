@@ -44,4 +44,5 @@ FROM
   CROSS JOIN file_list AS fl
 WHERE
   ai.id = $assessment_instance_id
-  AND ci.id = $course_instance_id;
+  AND ci.id = $course_instance_id
+  AND a.deleted_at IS NULL;

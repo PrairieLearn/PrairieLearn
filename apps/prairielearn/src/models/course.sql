@@ -170,6 +170,7 @@ WITH
       courses AS c
     WHERE
       path = $path
+      AND deleted_at IS NULL
     ORDER BY
       c.id DESC
     LIMIT
@@ -372,6 +373,7 @@ SELECT
         OR q.share_source_publicly
       )
       AND course_id = $course_id
+      AND q.deleted_at IS NULL
     UNION
     SELECT
       1
@@ -381,4 +383,5 @@ SELECT
       JOIN questions AS q ON q.id = ssq.question_id
     WHERE
       ss.course_id = $course_id
+      AND q.deleted_at IS NULL
   );
