@@ -14,6 +14,7 @@ overrides:
   'linkinator>marked': ^18
   'markdownlint-cli2>smol-toml': ^1
   'notebookjs>jsdom': '*'
+  'typescript-cp>rimraf': ^6.1.3
 
 # Delay newly published npm packages for 3 days.
 minimumReleaseAge: 4320
