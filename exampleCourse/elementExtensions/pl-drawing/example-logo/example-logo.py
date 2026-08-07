@@ -1,3 +1,4 @@
+# pyright: reportSelfClsParameterName=false, reportMissingParameterType=false, reportUnknownParameterType=false
 from os import path
 
 import prairielearn as pl
@@ -9,6 +10,7 @@ elements = pl.load_host_script("elements.py")
 
 # Elements
 class PrairieLearnLogo(elements.BaseElement):
+    @staticmethod
     def generate(el, data):
         return {
             "left": pl.get_float_attrib(el, "x", 20),
@@ -17,6 +19,7 @@ class PrairieLearnLogo(elements.BaseElement):
             "image_url": path.join(data["clientFilesUrl"], "logo.png"),
         }
 
+    @staticmethod
     def get_attributes():
         return ["x", "y", "angle"]
 

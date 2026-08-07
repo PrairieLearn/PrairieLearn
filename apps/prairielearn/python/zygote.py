@@ -1,3 +1,6 @@
+# The zygote specifically uses imports in strange places to facilitate the
+# preloading of commonly-used modules.
+# ruff:file-ignore[unused-import,undocumented-public-module,undocumented-public-function,module-import-not-at-top-of-file]
 # pyright: reportUnusedImport=false
 
 # This program is the glue between python-runner JavaScript code and Python code
