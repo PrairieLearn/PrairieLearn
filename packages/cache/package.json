@@ -16,11 +16,11 @@
     "@prairielearn/logger": "workspace:^",
     "@prairielearn/sentry": "workspace:^",
     "ioredis": "^5.11.1",
-    "lru-cache": "^11.5.1"
+    "lru-cache": "^11.5.2"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/node": "^24.13.2",
+    "@types/node": "^24.13.3",
     "@typescript/native-preview": "beta"
   }
 }
