@@ -42,6 +42,35 @@ function computeBackoffDelay(job: { opts: JobOptions; attemptsMade: number }): n
   return Math.round(backoff.delay * 2 ** (job.attemptsMade - 1));
 }
 
+function validateIntegerOption(name: string, value: number, minimum: number) {
+  if (!Number.isSafeInteger(value) || value < minimum) {
+    const requirement = minimum === 0 ? 'a non-negative integer' : 'a positive integer';
+    throw new Error(`${name} must be ${requirement}`);
+  }
+}
+
+function waitForRedisReady(client: Redis): Promise<void> {
+  if (client.status === 'ready') return Promise.resolve();
+  if (client.status === 'end') return Promise.reject(new Error('Redis connection has closed'));
+
+  return new Promise((resolve, reject) => {
+    const cleanup = () => {
+      client.off('ready', onReady);
+      client.off('end', onEnd);
+    };
+    const onReady = () => {
+      cleanup();
+      resolve();
+    };
+    const onEnd = () => {
+      cleanup();
+      reject(new Error('Redis connection closed before becoming ready'));
+    };
+    client.on('ready', onReady);
+    client.on('end', onEnd);
+  });
+}
+
 export class Worker<Data = unknown, Result = unknown> extends EventEmitter<
   WorkerEvents<Data, Result>
 > {
@@ -66,6 +95,12 @@ export class Worker<Data = unknown, Result = unknown> extends EventEmitter<
   private markerWait: Promise<void> | null = null;
   private lockTimer: ReturnType<typeof setInterval> | null = null;
   private stalledTimer: ReturnType<typeof setInterval> | null = null;
+  private ready = false;
+  private resolveReadySignal!: () => void;
+  private readonly readySignal = new Promise<void>((resolve) => {
+    this.resolveReadySignal = resolve;
+  });
+
   private resolveCloseSignal!: () => void;
   private readonly closeSignal = new Promise<void>((resolve) => {
     this.resolveCloseSignal = resolve;
@@ -83,9 +118,12 @@ export class Worker<Data = unknown, Result = unknown> extends EventEmitter<
     this.stalledInterval = options.stalledInterval ?? 30_000;
     this.maxStalledCount = options.maxStalledCount ?? 1;
     this.blockTimeout = options.blockTimeout ?? 1000;
-    if (!Number.isInteger(this.concurrency) || this.concurrency < 1) {
-      throw new Error('concurrency must be a positive integer');
-    }
+    validateIntegerOption('concurrency', this.concurrency, 1);
+    validateIntegerOption('groupConcurrency', this.groupConcurrency, 0);
+    validateIntegerOption('lockDuration', this.lockDuration, 1);
+    validateIntegerOption('stalledInterval', this.stalledInterval, 1);
+    validateIntegerOption('maxStalledCount', this.maxStalledCount, 0);
+    validateIntegerOption('blockTimeout', this.blockTimeout, 1);
     if (this.lockDuration < 100) {
       throw new Error('lockDuration must be at least 100ms');
     }
@@ -107,6 +145,18 @@ export class Worker<Data = unknown, Result = unknown> extends EventEmitter<
     this.runPromise = this.runLoop();
   }
 
+  /** Waits until both Redis connections are ready and the worker has successfully polled once. */
+  async waitUntilReady(): Promise<void> {
+    if (this.ready) return;
+    if (!this.runPromise) {
+      throw new Error('Worker has not been started; call run() before waitUntilReady()');
+    }
+    await Promise.race([this.readySignal, this.closeSignal]);
+    if (!this.ready) {
+      throw new Error('Worker closed before becoming ready');
+    }
+  }
+
   /**
    * Stops fetching new jobs and waits for in-flight jobs to finish. With
    * `force`, in-flight jobs are abandoned instead (they will eventually be
@@ -120,27 +170,35 @@ export class Worker<Data = unknown, Result = unknown> extends EventEmitter<
   private async doClose(force: boolean): Promise<void> {
     this.closing = true;
     this.resolveCloseSignal();
-    if (this.lockTimer) clearInterval(this.lockTimer);
     if (this.stalledTimer) clearInterval(this.stalledTimer);
     this.blockingClient.disconnect();
+    if (force) {
+      if (this.lockTimer) clearInterval(this.lockTimer);
+      this.client.disconnect();
+    }
     await this.runPromise;
     if (!force) {
-      await Promise.allSettled(this.processing);
+      await Promise.all(this.processing);
+      if (this.lockTimer) clearInterval(this.lockTimer);
     }
-    this.closed = true;
-    if (force) {
-      this.client.disconnect();
-    } else {
-      await this.client.quit().catch(() => {});
+    try {
+      if (!force) await this.client.quit();
+    } finally {
+      this.closed = true;
     }
   }
 
   private async runLoop(): Promise<void> {
     while (!this.closing) {
       try {
+        await Promise.all([waitForRedisReady(this.client), waitForRedisReady(this.blockingClient)]);
         let nextDelayedUntil: number | null = null;
         while (!this.closing && this.processing.size < this.concurrency) {
           const next = await this.fetchNextJob();
+          if (!this.ready) {
+            this.ready = true;
+            this.resolveReadySignal();
+          }
           if (next.job == null) {
             nextDelayedUntil = next.nextDelayedUntil;
             break;
@@ -253,7 +311,9 @@ export class Worker<Data = unknown, Result = unknown> extends EventEmitter<
     this.markerWait ??= this.blockingClient
       .blpop(this.keys.marker, Math.max(timeoutMs, 50) / 1000)
       .then(() => undefined)
-      .catch(() => undefined)
+      .catch((err) => {
+        if (!this.closing) this.emitError(toError(err));
+      })
       .finally(() => {
         this.markerWait = null;
       });
@@ -265,7 +325,7 @@ export class Worker<Data = unknown, Result = unknown> extends EventEmitter<
       try {
         await this.client.pmqExtendLock(this.keys.base, jobId, token, this.lockDuration);
       } catch (err) {
-        if (!this.closing) this.emitError(toError(err));
+        this.emitError(toError(err));
       }
     }
   }

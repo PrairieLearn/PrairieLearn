@@ -9,7 +9,11 @@ Create a `Queue` to add jobs and a `Worker` to process them. Both connect to Red
 ```ts
 import { Queue, Worker } from '@prairielearn/prairiemq';
 
-const queue = new Queue('emails', { redisUrl: 'redis://localhost:6379/' });
+const queue = new Queue('emails', {
+  redisUrl: 'redis://localhost:6379/',
+  // Bound storage while leaving enough history for a status page.
+  defaultJobOptions: { removeOnComplete: 10_000, removeOnFail: 10_000 },
+});
 
 await queue.add('send-welcome', { to: 'student@example.com' });
 
@@ -24,6 +28,8 @@ const worker = new Worker(
 
 worker.on('completed', (job, result) => console.log(`job ${job.id} finished: ${result}`));
 worker.on('failed', (job, err) => console.error(`job ${job.id} failed: ${err.message}`));
+
+await worker.waitUntilReady();
 ```
 
 ### Groups
@@ -60,7 +66,7 @@ await queue.add('name', data, {
   attempts: 3, // Retry up to 2 times after the first failure.
   backoff: { type: 'exponential', delay: 1000 }, // 1s, then 2s between retries.
   group: { id: 'course-1' },
-  jobId: 'regrade-assessment-42', // Adding the same id twice is a no-op.
+  jobId: 'regrade-assessment-42', // Adding the same id twice is a no-op; numeric ids are reserved.
   removeOnComplete: 1000, // Keep only the 1000 most recent completed jobs.
   removeOnFail: false, // Keep all failed jobs (the default).
 });
@@ -73,6 +79,7 @@ Options can also be set for all jobs of a queue with `defaultJobOptions` in the 
 ```ts
 await queue.getJob(jobId); // Job | null
 await queue.getJobState(jobId); // 'waiting' | 'active' | 'delayed' | 'completed' | 'failed' | 'unknown'
+await queue.getJobStatus(jobId); // { state, job }, read atomically for efficient polling
 await queue.getJobCounts(); // { waiting, active, delayed, completed, failed }
 await queue.getGroups(); // [{ id, waiting, active }, ...]
 
@@ -84,6 +91,8 @@ await queue.close();
 ```
 
 ### Worker events
+
+Worker events are local to the process that executes the job. A web process that needs to observe work performed by any worker should poll `getJobStatus()`; PrairieMQ does not currently provide a cross-process `QueueEvents` or `waitUntilFinished()` primitive.
 
 - `completed (job, result)`: a job finished successfully.
 - `failed (job, error)`: a job failed with no attempts remaining.

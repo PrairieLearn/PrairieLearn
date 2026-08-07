@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { once } from 'node:events';
 import { setTimeout as sleep } from 'node:timers/promises';
 
-import { afterEach, assert, beforeEach, describe, it } from 'vitest';
+import { afterEach, assert, beforeEach, describe, expect, it } from 'vitest';
 
 import type { Job } from './job.js';
 import { Queue } from './queue.js';
@@ -71,6 +71,23 @@ describe('Worker', () => {
     assert.equal(stored.returnvalue, 'hello world');
     assert.isNotNull(stored.processedOn);
     assert.isNotNull(stored.finishedOn);
+    assert.deepEqual(await queue.getJobStatus(job.id), { state: 'completed', job: stored });
+  });
+
+  it('can wait until an explicitly started worker is ready', async () => {
+    const worker = makeWorker(queue.name, async () => 'done', {
+      redisUrl,
+      autorun: false,
+      blockTimeout: 50,
+    });
+
+    await expect(worker.waitUntilReady()).rejects.toThrow('call run()');
+    worker.run();
+    await worker.waitUntilReady();
+
+    const completed = once(worker, 'completed');
+    await queue.add('job', {});
+    await completed;
   });
 
   it('processes jobs concurrently up to the concurrency limit', async () => {
@@ -213,6 +230,84 @@ describe('Worker', () => {
     assert.isAtLeast(maxTotal, 2);
   });
 
+  it('enforces groupConcurrency across multiple workers', async () => {
+    await queue.addBulk(
+      Array.from({ length: 8 }, (_, index) => ({
+        name: 'job',
+        data: index,
+        options: { group: { id: 'shared' } },
+      })),
+    );
+
+    let active = 0;
+    let maxActive = 0;
+    const processJob = async () => {
+      active += 1;
+      maxActive = Math.max(maxActive, active);
+      await sleep(100);
+      active -= 1;
+    };
+    const firstWorker = makeWorker(queue.name, processJob, {
+      redisUrl,
+      concurrency: 4,
+      groupConcurrency: 2,
+      blockTimeout: 50,
+    });
+    const secondWorker = makeWorker(queue.name, processJob, {
+      redisUrl,
+      concurrency: 4,
+      groupConcurrency: 2,
+      blockTimeout: 50,
+    });
+
+    await Promise.all([firstWorker.waitUntilReady(), secondWorker.waitUntilReady()]);
+    await waitUntil(async () => (await queue.getJobCounts()).completed === 8);
+    assert.equal(maxActive, 2);
+  });
+
+  it('continues renewing locks while closing gracefully', async () => {
+    const job = await queue.add('slow', {});
+    let releaseProcessor!: () => void;
+    const processorReleased = new Promise<void>((resolve) => {
+      releaseProcessor = resolve;
+    });
+    let markStarted!: () => void;
+    const processorStarted = new Promise<void>((resolve) => {
+      markStarted = resolve;
+    });
+    const worker = makeWorker(
+      queue.name,
+      async () => {
+        markStarted();
+        await processorReleased;
+        return 'done';
+      },
+      { redisUrl, lockDuration: 150, blockTimeout: 50 },
+    );
+    await processorStarted;
+
+    const closePromise = worker.close();
+    let processedBySecondWorker = false;
+    const secondWorker = makeWorker(
+      queue.name,
+      async () => {
+        processedBySecondWorker = true;
+        return 'duplicate';
+      },
+      { redisUrl, stalledInterval: 50, blockTimeout: 50 },
+    );
+    await secondWorker.waitUntilReady();
+
+    await sleep(500);
+    assert.isFalse(processedBySecondWorker);
+    assert.equal(await queue.getJobState(job.id), 'active');
+
+    releaseProcessor();
+    await closePromise;
+    await waitUntil(async () => (await queue.getJobState(job.id)) === 'completed');
+    assert.isFalse(processedBySecondWorker);
+  });
+
   it('recovers stalled jobs', async () => {
     const job = await queue.add('stall', {});
 
@@ -238,6 +333,28 @@ describe('Worker', () => {
     assert.equal(completedJob.attemptsMade, 2);
   });
 
+  it('applies failed-job retention when a stalled job exceeds its limit', async () => {
+    const job = await queue.add('stall', {}, { removeOnFail: true });
+    const stuckWorker = makeWorker(queue.name, () => new Promise(() => {}), {
+      redisUrl,
+      lockDuration: 150,
+      blockTimeout: 50,
+    });
+    await waitUntil(async () => (await queue.getJobState(job.id)) === 'active');
+    await stuckWorker.close(true);
+
+    const worker = makeWorker(queue.name, async () => 'unexpected', {
+      redisUrl,
+      maxStalledCount: 0,
+      stalledInterval: 50,
+      blockTimeout: 50,
+    });
+    await once(worker, 'stalled');
+
+    assert.isNull(await queue.getJob(job.id));
+    assert.equal((await queue.getJobCounts()).failed, 0);
+  });
+
   it('removes job data when removeOnComplete is set', async () => {
     const job = await queue.add('ephemeral', {}, { removeOnComplete: true });
     const worker = makeWorker(queue.name, async () => 'done', { redisUrl, blockTimeout: 50 });
@@ -246,6 +363,37 @@ describe('Worker', () => {
     assert.isNull(await queue.getJob(job.id));
     const counts = await queue.getJobCounts();
     assert.equal(counts.completed, 0);
+  });
+
+  it('retains only the configured number of completed jobs', async () => {
+    const jobs = await queue.addBulk(
+      [1, 2, 3].map((data) => ({ name: 'retained', data, options: { removeOnComplete: 2 } })),
+    );
+    const worker = makeWorker(queue.name, async () => 'done', { redisUrl, blockTimeout: 50 });
+
+    await completions(worker, 3);
+    const retained = await Promise.all(jobs.map(async (job) => await queue.getJob(job.id)));
+    assert.lengthOf(
+      retained.filter((job) => job != null),
+      2,
+    );
+    assert.equal((await queue.getJobCounts()).completed, 2);
+  });
+
+  it('rejects invalid worker options', () => {
+    const invalidOptions = [
+      { groupConcurrency: -1 },
+      { maxStalledCount: -1 },
+      { stalledInterval: 0 },
+      { blockTimeout: 0 },
+    ];
+
+    for (const options of invalidOptions) {
+      const [name] = Object.keys(options);
+      expect(() => new Worker(queue.name, async () => undefined, { redisUrl, ...options })).toThrow(
+        name,
+      );
+    }
   });
 
   it('does not process jobs while the queue is paused', async () => {
