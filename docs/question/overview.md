@@ -224,6 +224,7 @@ The `server.py` file for each question creates randomized question variants by g
 ```python title="server.py"
 import random
 
+
 def generate(data):
     # Generate random parameters
     data["params"]["m"] = random.randint(1, 10)

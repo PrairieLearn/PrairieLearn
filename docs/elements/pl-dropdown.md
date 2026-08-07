@@ -39,7 +39,7 @@ def generate(data):
     data["params"][QUESTION1] = [
         {"tag": "true", "ans": "whole"},
         {"tag": "false", "ans": "part"},
-        {"tag": "false", "ans": "inverse"}
+        {"tag": "false", "ans": "inverse"},
     ]
 ```
 

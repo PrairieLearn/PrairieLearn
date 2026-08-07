@@ -1,4 +1,5 @@
 columns
+    cheating_reports_enabled: boolean not null default false
     id: bigint not null default nextval('pt_courses_id_seq'::regclass)
     name: text
 

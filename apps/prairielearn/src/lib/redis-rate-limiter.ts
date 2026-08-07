@@ -42,24 +42,37 @@ export class RedisRateLimiter {
     }
   }
 
+  private getTtl(): number {
+    // We accept the possibility of a small amount of clock skew here.
+    return Math.ceil(
+      this.options.intervalSeconds - ((Date.now() / 1000) % this.options.intervalSeconds),
+    );
+  }
+
   async getIntervalUsage(key: string): Promise<number> {
     const redis = await this.getRedis();
     return this.parseNumber(await redis.get(this.getKey(key)));
   }
 
-  async addToIntervalUsage(key: string, amount: number) {
+  async addToIntervalUsage(key: string, amount: number): Promise<number> {
     const redis = await this.getRedis();
     const prefixedKey = this.getKey(key);
 
-    // We accept the possibility of a small amount of clock skew here.
     // We use `NX` to avoid overwriting an existing TTL if one is already set.
-    const ttl = this.options.intervalSeconds - ((Date.now() / 1000) % this.options.intervalSeconds);
-
-    await redis
+    const result = await redis
       .multi()
       .incrbyfloat(prefixedKey, amount)
-      .expire(prefixedKey, Math.ceil(ttl), 'NX')
+      .expire(prefixedKey, this.getTtl(), 'NX')
       .exec();
+    const incrementResult = result?.[0];
+    if (!incrementResult) throw new Error('Redis rate-limit increment returned no result');
+    const [err, usage] = incrementResult;
+    if (err) throw err;
+
+    const [expireErr] = result[1];
+    if (expireErr) throw expireErr;
+
+    return z.coerce.number().parse(usage);
   }
 
   async close() {

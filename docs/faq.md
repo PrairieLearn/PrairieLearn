@@ -361,6 +361,7 @@ When loading some assessment download files, such as `*_all_submissions.csv`, in
 
 ```python
 import pandas as pd
+
 df = pd.read_csv("PREFIX_all_submissions.csv")
 
 # Strip the JSON Params data and save to a new CSV
