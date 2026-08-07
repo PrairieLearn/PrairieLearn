@@ -2,6 +2,8 @@
   "$schema": "https://json.schemastore.org/htmlhint.json",
   // Question files don't need to have a doctype declaration
   "doctype-first": false,
+  // d2 generates svg files with a d2Version attribute, so add it to the
+  // whitelist for the attr-lowercase rule
   "attr-lowercase": ["d2Version"],
   "attr-no-duplication": true,
   "attr-no-unnecessary-whitespace": true,
