@@ -424,11 +424,6 @@
             `<button type="button" class="btn btn-outline-secondary btn-sm me-1" id="file-delete-${uuid}-${index}">Delete</button>`,
           );
 
-          const $previewNotAvailable = $(
-            '<div class="alert alert-info mt-2 d-none" role="alert">Content preview is not available for this type of file.</div>',
-          );
-          $preview.append($previewNotAvailable);
-
           const $imgPreview = $('<img class="mw-100 mt-2 d-none"/>');
           $preview.append($imgPreview);
 
@@ -457,28 +452,33 @@
               $preview.append($objectPreview);
               this.expandPreviewForFile(fileName);
             } else {
-              const fileContents = this.b64DecodeUnicode(fileData);
-              if (!this.isBinary(fileContents)) {
-                $preview.find('code').text(fileContents);
-              } else {
-                $preview.find('code').text('Binary file not previewed.');
-              }
-              $codePreview.removeClass('d-none');
-              this.expandPreviewForFile(fileName);
+              // First try to display the file as an image. If that fails,
+              // try to display it as text.
+              const url = this.b64ToBlobUrl(fileData);
+              $imgPreview
+                .on('load', () => {
+                  $imgPreview.removeClass('d-none');
+                  this.expandPreviewForFile(fileName);
+                  URL.revokeObjectURL(url);
+                })
+                .on('error', () => {
+                  URL.revokeObjectURL(url);
+                  if (!this.isBinary(fileData)) {
+                    $codePreview.find('code').text(this.b64DecodeUnicode(fileData));
+                  } else {
+                    $codePreview.find('code').text('Binary file not previewed.');
+                  }
+                  $codePreview.removeClass('d-none');
+                  this.expandPreviewForFile(fileName);
+                })
+                .attr('src', url);
             }
           } catch {
-            const url = this.b64ToBlobUrl(fileData);
-            $imgPreview
-              .on('load', () => {
-                $imgPreview.removeClass('d-none');
-                this.expandPreviewForFile(fileName);
-                URL.revokeObjectURL(url);
-              })
-              .on('error', () => {
-                $previewNotAvailable.removeClass('d-none');
-                URL.revokeObjectURL(url);
-              })
-              .attr('src', url);
+            $preview.append(
+              $(
+                '<div class="alert alert-info mt-2" role="alert">Content preview is not available for this type of file.</div>',
+              ),
+            );
           }
           $file.append($preview);
           const $fileButtons = $('<div class="align-self-center"></div>');
@@ -554,13 +554,15 @@
      * text. Uses the same method as git: if the first 8000 bytes contain a
      * NUL character ('\0'), we consider the file to be binary.
      * http://stackoverflow.com/questions/6119956/how-to-determine-if-git-handles-a-file-as-binary-or-as-text
-     * @param {string} decodedFileContents File contents to check
+     * We use 8001 bytes because it's a multiple of 3, which is simpler to handle for base64 input.
+     * @param {string} base64FileData Base64-encoded file data to check
      * @returns {boolean} If the file is recognized as binary
      */
-    isBinary(decodedFileContents) {
-      const nulIdx = decodedFileContents.indexOf('\0');
-      const fileLength = decodedFileContents.length;
-      return nulIdx !== -1 && nulIdx <= Math.min(fileLength, 8000);
+    isBinary(base64FileData) {
+      // Retrieve 8001 bytes, represented in base64 as (8001 * 4) / 3 = 10668
+      // characters, and only decode that segment for performance reasons
+      const decodedSegment = atob(base64FileData.slice(0, 10668));
+      return decodedSegment.includes('\0');
     }
 
     /**
@@ -579,36 +581,16 @@
     }
 
     /**
-     * To support unicode strings, we use a method from Mozilla to decode:
-     * first we get the bytestream, then we percent-encode it, then we
-     * decode that to the original string.
-     * https://developer.mozilla.org/en-US/docs/Web/API/WindowBase64/Base64_encoding_and_decoding#The_Unicode_Problem
+     * To support unicode strings, we use a TextDecoder.
      * @param {string} str the base64 string to decode
      * @returns {string} the decoded string
      */
     b64DecodeUnicode(str) {
-      // Going backwards: from bytestream, to percent-encoding, to original string.
-      return decodeURIComponent(
-        atob(str)
-          .split('')
-          .map(function (c) {
-            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-          })
-          .join(''),
-      );
+      return new TextDecoder().decode(Uint8Array.from(atob(str), (c) => c.charCodeAt(0)));
     }
 
     b64ToBlobUrl(str, options = undefined) {
-      const blob = new Blob(
-        [
-          new Uint8Array(
-            atob(str)
-              .split('')
-              .map((c) => c.charCodeAt(0)),
-          ),
-        ],
-        options,
-      );
+      const blob = new Blob([Uint8Array.from(atob(str), (c) => c.charCodeAt(0))], options);
       return URL.createObjectURL(blob);
     }
   }
