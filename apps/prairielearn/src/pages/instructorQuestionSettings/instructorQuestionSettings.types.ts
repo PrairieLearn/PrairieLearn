@@ -67,4 +67,5 @@ export interface QuestionSettingsFormValues {
   share_publicly: boolean;
   share_source_publicly: boolean;
   sharing_sets: string[];
+  shared_state_access: string[];
 }

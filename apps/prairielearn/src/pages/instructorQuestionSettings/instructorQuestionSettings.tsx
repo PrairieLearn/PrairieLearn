@@ -52,6 +52,7 @@ import { getCanonicalHost } from '../../lib/url.js';
 import { generateCsrfToken } from '../../middlewares/csrfToken.js';
 import { selectCoursesWithEditAccess } from '../../models/course.js';
 import { selectQuestionByUuid } from '../../models/question.js';
+import { selectSharedStateObjectNamesByCourseId } from '../../models/shared-state-object.js';
 import {
   type QuestionSharingSetRow,
   selectQuestionSharingConstraints,
@@ -247,6 +248,7 @@ router.post(
           share_publicly: BooleanFromCheckboxSchema,
           share_source_publicly: BooleanFromCheckboxSchema,
           sharing_sets: ArrayFromStringOrArraySchema.optional(),
+          shared_state_access: ArrayFromStringOrArraySchema.optional(),
         })
         .parse(req.body);
 
@@ -303,6 +305,15 @@ router.post(
         resolvedSharingSets = [...requestedSetNames];
       }
 
+      const validSharedStateObjectNames = new Set(
+        await selectSharedStateObjectNamesByCourseId(res.locals.course.id),
+      );
+      for (const name of body.shared_state_access ?? []) {
+        if (!validSharedStateObjectNames.has(name)) {
+          throw new error.HttpStatusError(400, `Unknown shared-data object: "${name}"`);
+        }
+      }
+
       const paths = getPaths(undefined, res.locals);
 
       const questionInfo = JSON.parse(await fs.readFile(infoPath, 'utf8'));
@@ -313,6 +324,12 @@ router.post(
       questionInfo.tags = propertyValueWithDefault(
         questionInfo.tags,
         body.tags,
+        (val: any) => !val || val.length === 0,
+      );
+
+      questionInfo.sharedStateAccess = propertyValueWithDefault(
+        questionInfo.sharedStateAccess,
+        body.shared_state_access,
         (val: any) => !val || val.length === 0,
       );
 
@@ -664,6 +681,7 @@ router.get(
     const courseTopics = await selectTopicsByCourseId(course.id);
     const courseTags = await selectTagsByCourseId(course.id);
     const questionTags = await selectTagsByQuestionId(question.id);
+    const courseSharedStateObjectNames = await selectSharedStateObjectNamesByCourseId(course.id);
 
     const sharingEnabled = await features.enabledFromLocals('question-sharing', res.locals);
 
@@ -737,6 +755,7 @@ router.get(
               hasCoursePermissionView={hasCoursePermissionView}
               courseTopics={parsedCourseTopics}
               courseTags={parsedCourseTags}
+              courseSharedStateObjectNames={courseSharedStateObjectNames}
             />
           </Hydrate>
         ),

@@ -33,6 +33,15 @@ const SharedStateObjectWithRevisionSchema = SharedStateObjectSchema.extend({
 export type SharedStateObjectWithRevision = z.infer<typeof SharedStateObjectWithRevisionSchema>;
 
 /**
+ * Lists the names of all shared-state objects declared for a course, ordered
+ * alphabetically. Used to populate the `sharedStateAccess` picker on the
+ * question settings page.
+ */
+export async function selectSharedStateObjectNamesByCourseId(course_id: string): Promise<string[]> {
+  return await sqldb.queryScalars(sql.select_names_by_course_id, { course_id }, z.string());
+}
+
+/**
  * Looks up a shared-state object and its currently active revision by name
  * within a course. Used at runtime to resolve which course objects a
  * question's `sharedStateAccess` bindings refer to.

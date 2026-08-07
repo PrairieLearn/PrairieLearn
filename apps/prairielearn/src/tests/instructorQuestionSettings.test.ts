@@ -11,6 +11,7 @@ import { selectQuestionById } from '../models/question.js';
 import { assertEditError, fetchCheerio } from './helperClient.js';
 import {
   type CourseRepoFixture,
+  commitOriginAndSync,
   createCourseRepoFixture,
   updateCourseRepository,
 } from './helperCourse.js';
@@ -546,5 +547,76 @@ describe('Editing question settings', { concurrent: false }, () => {
     });
 
     await assertEditError(response, 'would be a parent directory of the existing question');
+  });
+
+  test('add a shared-data object to the course and sync', async () => {
+    const infoCoursePath = path.join(courseRepo.courseOriginDir, 'infoCourse.json');
+    const courseInfo = JSON.parse(await fs.readFile(infoCoursePath, 'utf8'));
+    courseInfo.sharedState = {
+      testObject: {
+        scope: 'assessmentInstance',
+        dataVersion: 1,
+        properties: {
+          value: { type: 'string', default: 'a' },
+        },
+      },
+    };
+    await fs.writeFile(infoCoursePath, JSON.stringify(courseInfo, null, 2));
+    await commitOriginAndSync(courseRepo, 'add shared state object');
+  });
+
+  test('should not be able to select an unknown shared-data object', async () => {
+    const settingsPageResponse = await fetchCheerio(
+      `${siteUrl}/pl/course_instance/1/instructor/question/1/settings`,
+    );
+    assert.equal(settingsPageResponse.status, 200);
+
+    const response = await fetch(`${siteUrl}/pl/course_instance/1/instructor/question/1/settings`, {
+      method: 'POST',
+      body: new URLSearchParams({
+        __action: 'update_question',
+        __csrf_token: settingsPageResponse.$('input[name=__csrf_token]').val() as string,
+        orig_hash: settingsPageResponse.$('input[name=orig_hash]').val() as string,
+        title: settingsPageResponse.$('input#title').val() as string,
+        qid: settingsPageResponse.$('input#qid').val() as string,
+        topic: settingsPageResponse.$('input[name=topic]').val() as string,
+        grading_method: 'Internal',
+        shared_state_access: 'doesNotExist',
+      }),
+    });
+
+    assert.equal(response.status, 400);
+  });
+
+  test('save shared-data object access for a question', async () => {
+    const settingsPageResponse = await fetchCheerio(
+      `${siteUrl}/pl/course_instance/1/instructor/question/1/settings`,
+    );
+    assert.equal(settingsPageResponse.status, 200);
+    const qid = settingsPageResponse.$('input#qid').val() as string;
+
+    const response = await fetch(`${siteUrl}/pl/course_instance/1/instructor/question/1/settings`, {
+      method: 'POST',
+      body: new URLSearchParams({
+        __action: 'update_question',
+        __csrf_token: settingsPageResponse.$('input[name=__csrf_token]').val() as string,
+        orig_hash: settingsPageResponse.$('input[name=orig_hash]').val() as string,
+        title: settingsPageResponse.$('input#title').val() as string,
+        qid,
+        topic: settingsPageResponse.$('input[name=topic]').val() as string,
+        grading_method: 'Internal',
+        shared_state_access: 'testObject',
+      }),
+    });
+
+    assert.equal(response.status, 200);
+    assert.equal(response.url, `${siteUrl}/pl/course_instance/1/instructor/question/1/settings`);
+
+    const questionInfoPath = path.join(courseRepo.courseLiveDir, 'questions', qid, 'info.json');
+    const questionInfo = JSON.parse(await fs.readFile(questionInfoPath, 'utf8'));
+    assert.deepEqual(questionInfo.sharedStateAccess, ['testObject']);
+
+    const question = await selectQuestionById('1');
+    assert.deepEqual(question.shared_state_access, ['testObject']);
   });
 });

@@ -55,6 +55,22 @@ describe('validateSharedStateObjectProperties', () => {
     assert.lengthOf(errors, 1);
     assert.match(errors[0], /enum values must be of type "string"/);
   });
+
+  it('rejects a non-finite number default', () => {
+    const errors = validateSharedStateObjectProperties({
+      stage: { type: 'number', default: Number.NaN },
+    });
+    assert.lengthOf(errors, 1);
+    assert.match(errors[0], /default value must be a finite number/);
+  });
+
+  it('rejects a non-finite number in an enum', () => {
+    const errors = validateSharedStateObjectProperties({
+      stage: { type: 'number', default: 1, enum: [1, Number.NaN] },
+    });
+    assert.lengthOf(errors, 1);
+    assert.match(errors[0], /enum values must be finite numbers/);
+  });
 });
 
 describe('extractSharedStateObjectDefaults', () => {

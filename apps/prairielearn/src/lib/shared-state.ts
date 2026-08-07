@@ -26,6 +26,8 @@ export function validateSharedStateObjectProperties(
       errors.push(
         `properties.${key}: default value must be of type "${field.type}", got ${typeof field.default}`,
       );
+    } else if (field.type === 'number' && !Number.isFinite(field.default)) {
+      errors.push(`properties.${key}: default value must be a finite number`);
     }
     if (field.enum) {
       if (field.type === 'boolean') {
@@ -36,6 +38,8 @@ export function validateSharedStateObjectProperties(
             errors.push(
               `properties.${key}.enum[${i}]: enum values must be of type "${field.type}", got ${typeof val}`,
             );
+          } else if (field.type === 'number' && !Number.isFinite(val)) {
+            errors.push(`properties.${key}.enum[${i}]: enum values must be finite numbers`);
           }
         }
         if (!field.enum.includes(field.default as string | number)) {
