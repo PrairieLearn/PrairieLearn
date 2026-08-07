@@ -5,7 +5,7 @@ import { Alert, Dropdown, Modal } from 'react-bootstrap';
 import { FormProvider, useForm } from 'react-hook-form';
 import ReactMarkdown from 'react-markdown';
 
-import { OverlayTrigger, Popover, useModalState } from '@prairielearn/ui';
+import { OverlayTrigger, Popover, Tooltip, useModalState } from '@prairielearn/ui';
 
 import {
   AdministratorCourseFormFields,
@@ -457,23 +457,25 @@ function CourseRequestApproveModalContent({
             <div className="card-header d-flex align-items-center justify-content-between py-2">
               <strong>Requesting instructor</strong>
               {aiSecretsConfigured ? (
-                <button
-                  type="button"
-                  className="btn btn-sm btn-outline-secondary"
-                  disabled={legitimacyQuery.isFetching}
-                  aria-busy={legitimacyQuery.isFetching}
-                  onClick={() => legitimacyQuery.refetch()}
-                >
-                  {legitimacyQuery.isFetching ? (
-                    <>
-                      <i className="fa fa-spinner fa-spin" aria-hidden="true" /> Checking...
-                    </>
-                  ) : (
-                    <>
-                      <i className="fa fa-search" aria-hidden="true" /> Check legitimacy
-                    </>
-                  )}
-                </button>
+                <Tooltip content="Uses AI web search to verify whether the instructor appears in faculty directories or professional profiles at their stated institution.">
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-outline-secondary"
+                    disabled={legitimacyQuery.isFetching}
+                    aria-busy={legitimacyQuery.isFetching}
+                    onClick={() => legitimacyQuery.refetch()}
+                  >
+                    {legitimacyQuery.isFetching ? (
+                      <>
+                        <i className="fa fa-spinner fa-spin" aria-hidden="true" /> Checking...
+                      </>
+                    ) : (
+                      <>
+                        <i className="fa fa-search" aria-hidden="true" /> Check legitimacy
+                      </>
+                    )}
+                  </button>
+                </Tooltip>
               ) : (
                 <Popover
                   content="AI features require the corresponding OpenAI key to be configured."

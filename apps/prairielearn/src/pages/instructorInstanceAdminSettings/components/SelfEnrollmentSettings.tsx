@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Button, Form, InputGroup, Modal } from 'react-bootstrap';
 import { type Control, type UseFormTrigger, useWatch } from 'react-hook-form';
 
-import { OverlayTrigger } from '@prairielearn/ui';
+import { Tooltip } from '@prairielearn/ui';
 
 import { CopyButton } from '../../../components/CopyButton.js';
 import { StudentLinkSharing } from '../../../components/LinkSharing.js';
@@ -65,37 +65,27 @@ function SelfEnrollmentLink({
             ariaLabel="Copy self-enrollment link"
             className="btn-sm btn-outline-secondary"
           />
-          <OverlayTrigger
-            tooltip={{
-              body: 'View QR Code',
-              props: { id: 'self-enrollment-link-qr-code-tooltip' },
-            }}
-          >
+          <Tooltip content="View QR code">
             <Button
               size="sm"
               variant="outline-secondary"
-              aria-label="Self-enrollment Link QR Code"
+              aria-label="Self-enrollment link QR code"
               onClick={() => setShowQR(true)}
             >
-              <i className="bi bi-qr-code-scan" />
+              <i className="bi bi-qr-code-scan" aria-hidden="true" />
             </Button>
-          </OverlayTrigger>
+          </Tooltip>
           {canEdit && (
-            <OverlayTrigger
-              tooltip={{
-                body: 'Regenerate',
-                props: { id: 'self-enrollment-link-regenerate-tooltip' },
-              }}
-            >
+            <Tooltip content="Generate new self-enrollment link">
               <Button
                 size="sm"
                 variant="outline-secondary"
                 aria-label="Generate new self-enrollment link"
                 onClick={() => setShowConfirm(true)}
               >
-                <i className="bi bi-arrow-repeat" />
+                <i className="bi bi-arrow-repeat" aria-hidden="true" />
               </Button>
-            </OverlayTrigger>
+            </Tooltip>
           )}
         </InputGroup>
         <small className="form-text text-muted">
@@ -106,7 +96,7 @@ function SelfEnrollmentLink({
 
       <QRCodeModal
         id="selfEnrollmentLinkModal"
-        title="Self-enrollment Link QR Code"
+        title="Self-enrollment link QR code"
         content={selfEnrollLink}
         show={showQR}
         onHide={() => setShowQR(false)}

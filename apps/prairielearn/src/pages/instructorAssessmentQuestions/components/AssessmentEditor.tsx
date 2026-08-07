@@ -13,10 +13,10 @@ import {
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { QueryClient, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs';
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { run } from '@prairielearn/run';
-import { NuqsAdapter, OverlayTrigger, SplitPane, useModalState } from '@prairielearn/ui';
+import { NuqsAdapter, SplitPane, Tooltip, useModalState } from '@prairielearn/ui';
 
 import type { StaffAssessmentQuestionRow } from '../../../lib/assessment-question.shared.js';
 import { getAppError } from '../../../lib/client/errors.js';
@@ -994,16 +994,13 @@ function AssessmentEditorInner({
     return zones[index].title || `Zone ${index + 1}`;
   };
 
-  const docsTooltipId = useId();
   const rightTitle = run(() => {
     if (!selectedItem) return undefined;
 
     const docsLink = (label: string, docsLabel: string, anchor: string) => (
       <>
         {label}{' '}
-        <OverlayTrigger
-          tooltip={{ body: `View ${docsLabel} documentation`, props: { id: docsTooltipId } }}
-        >
+        <Tooltip content={`View ${docsLabel} documentation`}>
           <a
             href={`https://docs.prairielearn.com/assessment/configuration/${anchor}`}
             target="_blank"
@@ -1013,7 +1010,7 @@ function AssessmentEditorInner({
           >
             <i className="bi bi-question-circle" aria-hidden="true" />
           </a>
-        </OverlayTrigger>
+        </Tooltip>
       </>
     );
 
