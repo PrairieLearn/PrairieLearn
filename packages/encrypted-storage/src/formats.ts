@@ -5,7 +5,7 @@ import type { StorageCiphertextFormat } from './cipher.js';
 const ALGORITHM = 'aes-256-gcm';
 const AUTH_TAG_LENGTH = 16;
 
-function decodeKey(key: string): Buffer {
+function decodeKey(key: string) {
   if (!/^[0-9a-f]{64}$/i.test(key)) {
     throw new Error('Storage encryption keys must be 32-byte hex strings');
   }
@@ -22,7 +22,7 @@ function decryptAesGcm({
   iv: Buffer;
   authTag: Buffer;
   key: string;
-}): string {
+}) {
   if (authTag.length !== AUTH_TAG_LENGTH) throw new Error('Invalid authentication tag');
   const decipher = crypto.createDecipheriv(ALGORITHM, decodeKey(key), iv, {
     authTagLength: AUTH_TAG_LENGTH,
@@ -41,7 +41,7 @@ function encryptAesGcm(plaintext: string, key: string, ivLength: number) {
 }
 
 /** PrairieLearn format: base64(12-byte IV + ciphertext + 16-byte authentication tag). */
-export const prairieLearnCiphertextFormat: StorageCiphertextFormat = {
+export const prairieLearnCiphertextFormat = {
   encrypt(plaintext, key) {
     const { encrypted, iv, authTag } = encryptAesGcm(plaintext, key, 12);
     return Buffer.concat([iv, encrypted, authTag]).toString('base64');
@@ -59,10 +59,10 @@ export const prairieLearnCiphertextFormat: StorageCiphertextFormat = {
       key,
     });
   },
-};
+} satisfies StorageCiphertextFormat;
 
 /** PrairieTest format: hex(ciphertext):hex(16-byte IV):hex(16-byte authentication tag). */
-export const prairieTestCiphertextFormat: StorageCiphertextFormat = {
+export const prairieTestCiphertextFormat = {
   encrypt(plaintext, key) {
     const { encrypted, iv, authTag } = encryptAesGcm(plaintext, key, 16);
     return `${encrypted.toString('hex')}:${iv.toString('hex')}:${authTag.toString('hex')}`;
@@ -87,4 +87,4 @@ export const prairieTestCiphertextFormat: StorageCiphertextFormat = {
     }
     return decryptAesGcm({ encrypted, iv, authTag, key });
   },
-};
+} satisfies StorageCiphertextFormat;

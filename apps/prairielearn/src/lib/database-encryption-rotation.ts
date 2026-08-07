@@ -1,8 +1,4 @@
-import {
-  type EncryptionInspection,
-  type EncryptionRotation,
-  runPostgresEncryptedColumnOperation,
-} from '@prairielearn/encrypted-storage';
+import { runPostgresEncryptedColumnOperation } from '@prairielearn/encrypted-storage';
 import { doWithLock } from '@prairielearn/named-locks';
 
 import { getStorageCipher } from './encrypted-storage.js';
@@ -22,10 +18,10 @@ export async function runDatabaseEncryptionOperation({
 }: {
   mode: 'check' | 'rotate';
   batchSize?: number;
-}): Promise<(EncryptionInspection | EncryptionRotation)[]> {
+}) {
   return await doWithLock('database-encryption', { autoRenew: true }, async () => {
     const cipher = getStorageCipher();
-    const results: (EncryptionInspection | EncryptionRotation)[] = [];
+    const results = [];
     for (const column of encryptedColumns) {
       results.push(
         await runPostgresEncryptedColumnOperation({

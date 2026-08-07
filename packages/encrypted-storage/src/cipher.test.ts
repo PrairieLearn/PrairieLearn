@@ -2,19 +2,14 @@ import * as crypto from 'node:crypto';
 
 import { assert, describe, it } from 'vitest';
 
-import { type StorageCiphertextFormat, createStorageCipher } from './cipher.js';
+import { createStorageCipher } from './cipher.js';
 import { prairieLearnCiphertextFormat, prairieTestCiphertextFormat } from './formats.js';
 
 function makeKey() {
   return crypto.randomBytes(32).toString('hex');
 }
 
-const formats: {
-  name: string;
-  format: StorageCiphertextFormat;
-  productionKey: string;
-  productionCiphertext: string;
-}[] = [
+const formats = [
   {
     name: 'PrairieLearn',
     format: prairieLearnCiphertextFormat,

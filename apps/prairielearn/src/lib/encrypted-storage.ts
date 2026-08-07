@@ -1,12 +1,8 @@
-import {
-  type StorageCipher,
-  createStorageCipher,
-  prairieLearnCiphertextFormat,
-} from '@prairielearn/encrypted-storage';
+import { createStorageCipher, prairieLearnCiphertextFormat } from '@prairielearn/encrypted-storage';
 
 import { config } from './config.js';
 
-export function getStorageCipher(): StorageCipher {
+export function getStorageCipher() {
   return createStorageCipher({
     keyRing: config.databaseEncryptionKey,
     format: prairieLearnCiphertextFormat,
@@ -19,7 +15,7 @@ export function getStorageCipher(): StorageCipher {
  * @param plaintext The plaintext to encrypt (utf8).
  * @returns The ciphertext (utf8).
  */
-export function encryptForStorage(plaintext: string): string {
+export function encryptForStorage(plaintext: string) {
   return getStorageCipher().encrypt(plaintext);
 }
 
@@ -29,6 +25,6 @@ export function encryptForStorage(plaintext: string): string {
  * @param ciphertext The ciphertext to decrypt (utf8).
  * @returns The plaintext (utf8).
  */
-export function decryptFromStorage(ciphertext: string): string {
+export function decryptFromStorage(ciphertext: string) {
   return getStorageCipher().decrypt(ciphertext);
 }

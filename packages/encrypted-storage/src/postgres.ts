@@ -17,20 +17,6 @@ const EncryptedValueRowSchema = z.object({
   ciphertext: z.string(),
 });
 
-export interface EncryptionInspection {
-  target: string;
-  total: number;
-  needsRotation: number;
-}
-
-export interface EncryptionRotation extends EncryptionInspection {
-  passes: number;
-  rotated: number;
-  conflicts: number;
-}
-
-export type EncryptionOperationMode = 'check' | 'rotate';
-
 function validatePositiveInteger(value: number, name: string) {
   if (!Number.isSafeInteger(value) || value <= 0) {
     throw new Error(`${name} must be a positive integer`);
@@ -47,7 +33,7 @@ export async function runPostgresEncryptedColumnOperation({
   batchSize = 100,
   maxPasses = 3,
 }: {
-  mode: EncryptionOperationMode;
+  mode: 'check' | 'rotate';
   cipher: StorageCipher;
   tableName: string;
   primaryKeyColumnName: string;
@@ -55,7 +41,7 @@ export async function runPostgresEncryptedColumnOperation({
   nullable: boolean;
   batchSize?: number;
   maxPasses?: number;
-}): Promise<EncryptionInspection | EncryptionRotation> {
+}) {
   validatePositiveInteger(batchSize, 'batchSize');
   if (mode === 'rotate') validatePositiveInteger(maxPasses, 'maxPasses');
 
@@ -105,22 +91,26 @@ WHERE
   AND ${ciphertextColumn} = $expected_ciphertext;
 `;
 
+  async function selectBatch(after: string | null) {
+    return await queryRows(
+      selectBatchSql,
+      {
+        nullable,
+        first_batch: after === null,
+        after_cursor: after,
+        batch_size: batchSize,
+      },
+      EncryptedValueRowSchema,
+    );
+  }
+
   async function forEachValue(
     fn: (row: z.infer<typeof EncryptedValueRowSchema>) => Promise<void> | void,
   ) {
     let after: string | null = null;
     let total = 0;
     while (true) {
-      const rows: z.infer<typeof EncryptedValueRowSchema>[] = await queryRows(
-        selectBatchSql,
-        {
-          nullable,
-          first_batch: after === null,
-          after_cursor: after,
-          batch_size: batchSize,
-        },
-        EncryptedValueRowSchema,
-      );
+      const rows = await selectBatch(after);
       if (rows.length === 0) return total;
       for (const row of rows) await fn(row);
       total += rows.length;
@@ -128,7 +118,7 @@ WHERE
     }
   }
 
-  async function inspect(): Promise<EncryptionInspection> {
+  async function inspect() {
     let needsRotation = 0;
     const total = await forEachValue(({ ciphertext }) => {
       if (cipher.needsRotation(ciphertext)) needsRotation += 1;

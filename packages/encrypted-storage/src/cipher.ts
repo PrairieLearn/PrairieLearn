@@ -12,7 +12,7 @@ export interface StorageCipher {
   rotate(ciphertext: string): string | null;
 }
 
-function normalizeKeys(keyRing: StorageKeyRing): [string, ...string[]] {
+function normalizeKeys(keyRing: StorageKeyRing) {
   const encodedKeys = typeof keyRing === 'string' ? [keyRing] : keyRing;
   if (encodedKeys.length === 0) {
     throw new Error('Storage encryption key ring must contain at least one key');
@@ -35,7 +35,7 @@ export function createStorageCipher({
 }: {
   keyRing: StorageKeyRing;
   format: StorageCiphertextFormat;
-}): StorageCipher {
+}) {
   const keys = normalizeKeys(keyRing);
   const primaryKey = keys[0];
 
@@ -73,5 +73,5 @@ export function createStorageCipher({
       }
       return replacement;
     },
-  };
+  } satisfies StorageCipher;
 }
