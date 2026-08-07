@@ -26,6 +26,7 @@ import {
   StaffTagSchema,
   StaffTopicSchema,
 } from '../../lib/client/safe-db-types.js';
+import { getQuestionPreviewUrl } from '../../lib/client/url.js';
 import { copyQuestionBetweenCourses } from '../../lib/copy-content.js';
 import { EnumGradingMethodSchema } from '../../lib/db-types.js';
 import { getOriginalHash } from '../../lib/editorUtil.js';
@@ -653,6 +654,11 @@ router.get(
 
     const questionGHLink = courseRepoContentUrl(course, `questions/${question.qid}`);
 
+    const publicLink = new URL(
+      getQuestionPreviewUrl({ courseId: course.id, questionId: question.id, isPublic: true }),
+      host,
+    ).href;
+
     const qids = await sqldb.queryScalars(sql.qids, { course_id: course.id }, z.string());
 
     const assessmentsWithQuestion = await sqldb.queryRows(
@@ -718,6 +724,7 @@ router.get(
               courseInstance={courseInstance}
               csrfToken={__csrf_token}
               questionGHLink={questionGHLink}
+              publicLink={publicLink}
               questionTest={{ path: questionTestPath, csrfToken: questionTestCsrfToken }}
               questionTags={parsedQuestionTags}
               qids={qids}
