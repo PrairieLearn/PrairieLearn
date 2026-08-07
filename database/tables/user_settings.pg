@@ -1,0 +1,10 @@
+columns
+    enable_keyboard_shortcut: boolean not null default true
+    user_id: bigint not null
+
+indexes
+    user_settings_pkey: PRIMARY KEY (user_id) USING btree (user_id)
+    user_settings_user_id_idx: UNIQUE USING btree (user_id)
+
+foreign-key constraints
+    user_settings_user_id_fkey: FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
