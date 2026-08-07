@@ -5,7 +5,7 @@ import { IdSchema } from '@prairielearn/zod';
 
 const sql = loadSqlEquiv(import.meta.url);
 
-function normalizeEnrollmentIds(enrollmentIds: Iterable<string>): string[] {
+export function normalizeEnrollmentIds(enrollmentIds: Iterable<string>): string[] {
   return [...new Set(enrollmentIds)].sort((a, b) => {
     const aId = BigInt(a);
     const bId = BigInt(b);
