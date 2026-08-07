@@ -99,12 +99,15 @@ import { courseInstanceTrpcRouter } from './trpc/courseInstance/trpc.js';
 process.on('warning', (e) => console.warn(e));
 
 const argv = minimist(process.argv.slice(2));
+const migrationDirectories = [path.join(import.meta.dirname, 'migrations'), SCHEMA_MIGRATIONS_PATH];
+const migrationsProject = 'prairielearn';
 
 if ('h' in argv || 'help' in argv) {
   const msg = `PrairieLearn command line options:
     -h, --help                          Display this help and exit
     --config <filename>                 Use the specified configuration file
     --database-encryption <check|rotate>  Check or rotate encrypted database values and exit
+    --list-pending-migrations           List pending migrations as JSON and exit
     --migrate-and-exit                  Run the DB initialization parts and exit
     --refresh-workspace-hosts-and-exit  Refresh the workspace hosts and exit
     --sync-course <course_id>           Synchronize a course and exit
@@ -2200,6 +2203,19 @@ function idleErrorHandler(err: Error) {
   void Sentry.close().finally(() => process.exit(1));
 }
 
+function getPostgresConfig() {
+  return {
+    user: config.postgresqlUser,
+    database: config.postgresqlDatabase,
+    host: config.postgresqlHost,
+    password: config.postgresqlPassword ?? undefined,
+    max: config.postgresqlPoolSize,
+    idleTimeoutMillis: config.postgresqlIdleTimeoutMillis,
+    ssl: config.postgresqlSsl,
+    errorOnUnusedParameters: config.devMode,
+  };
+}
+
 const isHMR = DEV_EXECUTION_MODE === 'hmr';
 
 if (isHMR && isServerPending()) {
@@ -2250,6 +2266,27 @@ if (shouldStartServer) {
 
     // Load config immediately so we can use it configure everything else.
     await loadConfig(configPaths);
+
+    if (argv['list-pending-migrations']) {
+      await sqldb.initAsync(getPostgresConfig(), idleErrorHandler);
+      const pendingMigrations = await migrations.getPendingMigrations({
+        directories: migrationDirectories,
+        project: migrationsProject,
+      });
+
+      // On Linux, writes to piped stdout can be asynchronous. Wait for this write to finish
+      // before process.exit() closes the process.
+      await new Promise<void>((resolve, reject) => {
+        process.stdout.write(`${JSON.stringify({ pendingMigrations })}\n`, (err) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve();
+          }
+        });
+      });
+      process.exit(0);
+    }
 
     // This should be done as soon as we load our config so that we can
     // start exporting spans.
@@ -2362,16 +2399,7 @@ if (shouldStartServer) {
       passport.use(strategy);
     }
 
-    const pgConfig = {
-      user: config.postgresqlUser,
-      database: config.postgresqlDatabase,
-      host: config.postgresqlHost,
-      password: config.postgresqlPassword ?? undefined,
-      max: config.postgresqlPoolSize,
-      idleTimeoutMillis: config.postgresqlIdleTimeoutMillis,
-      ssl: config.postgresqlSsl,
-      errorOnUnusedParameters: config.devMode,
-    };
+    const pgConfig = getPostgresConfig();
 
     logger.verbose(`Connecting to ${pgConfig.user}@${pgConfig.host}:${pgConfig.database}`);
 
@@ -2414,8 +2442,8 @@ if (shouldStartServer) {
     // running migrations as we do when we start the server.
     if (config.runMigrations || argv['migrate-and-exit']) {
       await migrations.init({
-        directories: [path.join(import.meta.dirname, 'migrations'), SCHEMA_MIGRATIONS_PATH],
-        project: 'prairielearn',
+        directories: migrationDirectories,
+        project: migrationsProject,
       });
     }
 
