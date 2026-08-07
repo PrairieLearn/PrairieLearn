@@ -32,23 +32,28 @@ export function CopyButton({
   }, [text]);
 
   return (
-    <OverlayTrigger
-      tooltip={{
-        body: copied ? 'Copied!' : 'Copy',
-        props: { id: tooltipId },
-      }}
-    >
-      <button
-        type="button"
-        className={clsx('btn', className)}
-        aria-label={ariaLabel}
-        onClick={(e) => {
-          e.stopPropagation();
-          void handleCopy();
+    <>
+      <OverlayTrigger
+        tooltip={{
+          body: copied ? 'Copied!' : 'Copy',
+          props: { id: tooltipId },
         }}
       >
-        <i className={copied ? 'bi bi-check' : 'bi bi-clipboard'} /> {label}
-      </button>
-    </OverlayTrigger>
+        <button
+          type="button"
+          className={clsx('btn', className)}
+          aria-label={ariaLabel}
+          onClick={(e) => {
+            e.stopPropagation();
+            void handleCopy();
+          }}
+        >
+          <i className={copied ? 'bi bi-check' : 'bi bi-clipboard'} aria-hidden="true" /> {label}
+        </button>
+      </OverlayTrigger>
+      <span className="visually-hidden" role="status">
+        {copied ? 'Copied.' : ''}
+      </span>
+    </>
   );
 }

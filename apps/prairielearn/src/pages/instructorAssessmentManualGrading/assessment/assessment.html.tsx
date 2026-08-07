@@ -114,11 +114,9 @@ export function ManualGradingAssessment({
                       <button
                         type="submit"
                         class="btn btn-sm btn-light grading-tag-button"
-                        aria-label="Delete all AI grading data"
-                        data-bs-toggle="tooltip"
-                        data-bs-title="Delete all AI grading results for this assessment's questions"
+                        aria-label="Delete all AI grading results for this assessment's questions"
                       >
-                        Delete AI grading data
+                        Delete all AI grading results
                       </button>
                     </form>
                   `.toString(),
@@ -189,16 +187,15 @@ function AssessmentQuestionRow({
           {question.title}
         </a>
         {question.manual_rubric_id != null && (
-          // TODO: Fix this
-          // eslint-disable-next-line jsx-a11y-x/anchor-is-valid
-          <a
-            href="#"
-            className="ms-2 text-info"
-            data-bs-toggle="tooltip"
-            data-bs-title="This question uses a rubric"
+          <button
+            type="button"
+            className="btn btn-xs btn-ghost btn-icon border-0 ms-2 text-info"
+            data-bs-toggle="popover"
+            data-bs-content="This question uses a rubric"
+            aria-label="View rubric status"
           >
-            <i className="fas fa-list-check" />
-          </a>
+            <i className="fas fa-list-check" aria-hidden="true" />
+          </button>
         )}
       </td>
       <td className="align-middle">{question.qid}</td>

@@ -4,7 +4,7 @@ import clsx from 'clsx';
 import { useCallback, useMemo } from 'react';
 
 import { run } from '@prairielearn/run';
-import { OverlayTrigger } from '@prairielearn/ui';
+import { Popover } from '@prairielearn/ui';
 
 import type {
   TreeActions,
@@ -231,14 +231,12 @@ export function TreeQuestionBlockNode({
             <span className="d-inline-flex align-items-center gap-1 flex-wrap ms-2">
               {pointsMismatch && (
                 <WarningIndicator
-                  tooltipId={`points-mismatch-${zoneQuestionBlock.trackingId}`}
                   label="Inconsistent points"
                   body="Students will receive different total points because this pool has alternatives with different point values"
                 />
               )}
               {chooseExceeds && (
                 <WarningIndicator
-                  tooltipId={`choose-exceeds-${zoneQuestionBlock.trackingId}`}
                   label="Choose exceeds count"
                   body="Number to choose exceeds the number of alternatives in this pool"
                 />
@@ -271,21 +269,15 @@ export function TreeQuestionBlockNode({
                     {tag.name}
                   </span>
                 ))}
-                <OverlayTrigger
-                  placement="top"
-                  tooltip={{
-                    props: { id: `shared-tags-${zoneQuestionBlock.trackingId}` },
-                    body: 'Tags shared across all alternatives',
-                  }}
-                >
+                <Popover content="Tags shared across all alternatives" placement="top">
                   <button
                     type="button"
-                    className="btn btn-xs btn-ghost p-0"
+                    className="btn btn-xs btn-ghost btn-icon"
                     aria-label="Tags shared across all alternatives"
                   >
                     <i className="bi bi-question-circle text-muted" aria-hidden="true" />
                   </button>
-                </OverlayTrigger>
+                </Popover>
               </div>
             );
           })}
