@@ -1,5 +1,18 @@
 import { config } from './config.js';
+import { type KeyRing, getActiveKey, tryWithKeyRing } from './key-ring.js';
 import { decrypt, encrypt } from './symmetric-crypto.js';
+
+function encryptForStorageWithKeyRing(plaintext: string, keyRing: KeyRing): string {
+  return encrypt(plaintext, getActiveKey(keyRing));
+}
+
+function decryptFromStorageWithKeyRing(ciphertext: string, keyRing: KeyRing): string {
+  try {
+    return tryWithKeyRing(keyRing, (key) => decrypt(ciphertext, key));
+  } catch (cause) {
+    throw new Error('Stored ciphertext could not be decrypted with any configured key', { cause });
+  }
+}
 
 /**
  * Encrypt plaintext for storage (in the database or elsewhere).
@@ -8,7 +21,7 @@ import { decrypt, encrypt } from './symmetric-crypto.js';
  * @returns The ciphertext (utf8).
  */
 export function encryptForStorage(plaintext: string): string {
-  return encrypt(plaintext, config.databaseEncryptionKey);
+  return encryptForStorageWithKeyRing(plaintext, config.databaseEncryptionKey);
 }
 
 /**
@@ -18,5 +31,5 @@ export function encryptForStorage(plaintext: string): string {
  * @returns The plaintext (utf8).
  */
 export function decryptFromStorage(ciphertext: string): string {
-  return decrypt(ciphertext, config.databaseEncryptionKey);
+  return decryptFromStorageWithKeyRing(ciphertext, config.databaseEncryptionKey);
 }

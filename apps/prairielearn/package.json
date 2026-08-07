@@ -45,6 +45,7 @@
     "@octokit/rest": "^22.0.1",
     "@panzoom/panzoom": "^4.6.2",
     "@prairielearn/aws": "workspace:^",
+    "@prairielearn/aws-imds": "workspace:^",
     "@prairielearn/bind-mount": "workspace:^",
     "@prairielearn/browser-utils": "workspace:^",
     "@prairielearn/cache": "workspace:^",
@@ -322,7 +323,7 @@
     "get-port": "^7.2.0",
     "jsdom": "^29.1.1",
     "tsx": "^4.23.0",
-    "typescript-cp": "^0.1.9",
+    "typescript-cp": "^0.1.10",
     "vitest": "^4.1.9"
   }
 }

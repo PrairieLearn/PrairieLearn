@@ -1,5 +1,12 @@
 import { HttpStatusError } from '@prairielearn/error';
-import { execute, loadSqlEquiv } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, runInTransactionAsync } from '@prairielearn/postgres';
+
+import { hasSamlAsSoleInstitutionalAuthenticationProvider } from '../lib/authn-provider-classification.js';
+import {
+  lockInstitutionForIdentityConfiguration,
+  selectAuthenticationProviderNames,
+  selectInstitutionIdentityConfigurationStatus,
+} from '../lib/institution-identity.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -30,10 +37,31 @@ export async function updateInstitutionAuthnProviders({
     );
   }
 
-  await execute(sql.update_institution_sso_config, {
-    institution_id,
-    enabled_authn_provider_ids,
-    default_authn_provider_id,
-    authn_user_id,
+  await runInTransactionAsync(async () => {
+    await lockInstitutionForIdentityConfiguration(institution_id);
+
+    const identityStatus = await selectInstitutionIdentityConfigurationStatus(institution_id);
+
+    if (identityStatus.has_lti13_instance_with_roster_sync_allowed) {
+      const enabledProviderNames = await selectAuthenticationProviderNames(
+        enabled_authn_provider_ids,
+      );
+      if (
+        !identityStatus.saml_uin_attribute ||
+        !hasSamlAsSoleInstitutionalAuthenticationProvider(enabledProviderNames)
+      ) {
+        throw new HttpStatusError(
+          400,
+          'Institutions that allow roster syncing must keep SAML as their sole enabled institutional authentication provider with a configured UIN attribute',
+        );
+      }
+    }
+
+    await execute(sql.update_institution_sso_config, {
+      institution_id,
+      enabled_authn_provider_ids,
+      default_authn_provider_id,
+      authn_user_id,
+    });
   });
 }

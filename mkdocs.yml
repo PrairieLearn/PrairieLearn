@@ -319,6 +319,7 @@ nav:
       - dev-guide/guide.md
       - 'Migrations': 'dev-guide/migrations/'
       - 'Server configuration': 'dev-guide/configJson.md'
+      - 'Key rotation': 'dev-guide/keyRotation.md'
       - 'Building question elements': 'devElements.md'
       - 'Building element extensions': 'elementExtensions.md'
       - 'Code execution': 'codeExecution.md'

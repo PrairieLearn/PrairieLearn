@@ -1,5 +1,11 @@
 # @prairielearn/migrations
 
+## 5.1.2
+
+### Patch Changes
+
+- 81ad435: Update typescript-cp to remove its transitive tar dependency.
+
 ## 5.1.1
 
 ### Patch Changes

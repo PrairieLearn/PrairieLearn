@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/postgres-tools",
-  "version": "3.0.9",
+  "version": "3.0.11",
   "type": "module",
   "repository": {
     "type": "git",
@@ -35,6 +35,6 @@
     "@types/fs-extra": "^11.0.4",
     "@types/node": "^24.13.2",
     "@typescript/native-preview": "beta",
-    "typescript-cp": "^0.1.9"
+    "typescript-cp": "^0.1.10"
   }
 }
