@@ -40,6 +40,27 @@ describe('load-migrations', () => {
         },
       );
     });
+
+    it('ignores non-migration artifacts', async () => {
+      await withMigrationFiles(
+        ['20220101010101_testing.sql', '20220101010101_testing.sql.map', 'README.md', 'notes.txt'],
+        async (tmpDir) => {
+          const migrations = await readAndValidateMigrationsFromDirectory(tmpDir, [
+            '.sql',
+            '.js',
+            '.ts',
+            '.mjs',
+          ]);
+          assert.deepEqual(migrations, [
+            {
+              directory: tmpDir,
+              filename: '20220101010101_testing.sql',
+              timestamp: '20220101010101',
+            },
+          ]);
+        },
+      );
+    });
   });
 
   describe('sortMigrationFiles', () => {
