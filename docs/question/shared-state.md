@@ -69,6 +69,7 @@ THEME_PROMPTS = {
     "travel": "A tour guide leads {a} tours, each visiting {b} stops.",
 }
 
+
 def generate(data):
     theme = data["shared_state"]["themeState"]["theme"]
     a, b = 6, 4
