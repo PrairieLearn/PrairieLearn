@@ -17,6 +17,7 @@ import {
   type Enrollment,
   EnrollmentSchema,
 } from '../lib/db-types.js';
+import { lockEnrollments } from '../lib/enrollment/lock.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -130,14 +131,18 @@ export async function addEnrollmentToPublishingExtension({
     courseInstancePublishingExtension,
   );
 
-  return await queryRow(
-    sql.add_enrollment_to_publishing_extension,
-    {
-      course_instance_publishing_extension_id: courseInstancePublishingExtension.id,
-      enrollment_id: enrollment.id,
-    },
-    CourseInstancePublishingExtensionEnrollmentSchema,
-  );
+  return await runInTransactionAsync(async () => {
+    await lockEnrollments([enrollment.id]);
+
+    return await queryRow(
+      sql.add_enrollment_to_publishing_extension,
+      {
+        course_instance_publishing_extension_id: courseInstancePublishingExtension.id,
+        enrollment_id: enrollment.id,
+      },
+      CourseInstancePublishingExtensionEnrollmentSchema,
+    );
+  });
 }
 
 /**
@@ -155,9 +160,49 @@ export async function removeStudentFromPublishingExtension({
     courseInstancePublishingExtension,
   );
 
-  await execute(sql.remove_enrollment_from_publishing_extension, {
-    extension_id: courseInstancePublishingExtension.id,
-    enrollment_id: enrollment.id,
+  await runInTransactionAsync(async () => {
+    await lockEnrollments([enrollment.id]);
+
+    await execute(sql.remove_enrollment_from_publishing_extension, {
+      extension_id: courseInstancePublishingExtension.id,
+      enrollment_id: enrollment.id,
+    });
+  });
+}
+
+export async function updatePublishingExtensionEnrollments({
+  courseInstancePublishingExtension,
+  enrollmentsToAdd,
+  enrollmentsToRemove,
+}: {
+  courseInstancePublishingExtension: CourseInstancePublishingExtension;
+  enrollmentsToAdd: Enrollment[];
+  enrollmentsToRemove: Enrollment[];
+}): Promise<void> {
+  const affectedEnrollments = [...enrollmentsToAdd, ...enrollmentsToRemove];
+  for (const enrollment of affectedEnrollments) {
+    assertEnrollmentBelongsToPublishingExtensionCourseInstance(
+      enrollment,
+      courseInstancePublishingExtension,
+    );
+  }
+
+  await runInTransactionAsync(async () => {
+    await lockEnrollments(affectedEnrollments.map((enrollment) => enrollment.id));
+
+    for (const enrollment of enrollmentsToRemove) {
+      await removeStudentFromPublishingExtension({
+        courseInstancePublishingExtension,
+        enrollment,
+      });
+    }
+
+    for (const enrollment of enrollmentsToAdd) {
+      await addEnrollmentToPublishingExtension({
+        courseInstancePublishingExtension,
+        enrollment,
+      });
+    }
   });
 }
 
@@ -172,7 +217,18 @@ export async function createPublishingExtensionWithEnrollments({
   endDate: Date | null;
   enrollments: Enrollment[];
 }): Promise<CourseInstancePublishingExtension> {
+  for (const enrollment of enrollments) {
+    if (enrollment.course_instance_id !== courseInstance.id) {
+      throw new error.HttpStatusError(
+        403,
+        'Enrollment does not belong to the same course instance as the publishing extension',
+      );
+    }
+  }
+
   return await runInTransactionAsync(async () => {
+    await lockEnrollments(enrollments.map((enrollment) => enrollment.id));
+
     const extension = await insertPublishingExtension({
       courseInstance,
       name,
