@@ -191,6 +191,10 @@
       "default": 0,
       "type": "number"
     },
+    "workspaceJobsDirectoryChangeOwner": {
+      "default": true,
+      "type": "boolean"
+    },
     "workspaceDockerMemory": {
       "default": 1073741824,
       "type": "number"
