@@ -20,7 +20,7 @@ In practice, this means:
 Use these two concepts carefully:
 
 - `dependencies` are for assets that are part of the element's baseline runtime and should be loaded up front. These assets typically create global variables or otherwise register themselves with the browser runtime so that the element's code can use them immediately. They are loaded using `<script src="...">` or `<link rel="stylesheet" href="...">` tags in the page header. Element code can assume that these assets are available immediately after the page loads, and may reference its resources using global variables.
-- `dynamicDependencies` are for optional or on-demand loading. They are useful when a feature, data payload, or interaction path is only needed after some user action or condition is met. They may also be used as ESM modules that are imported by the element's code at runtime, though still browser-loadable as standalone assets. They are loaded using import maps, and may be imported with `import` or `await import()` in the element's code. The element's code should not assume that it is available until it has been explicitly loaded.
+- `dynamicDependencies` are for optional or on-demand loading. They are useful when a feature, data payload, or interaction path is only needed after some user action or condition is met. They may also be used as ESM modules that are imported by the element's code at runtime, though still browser-loadable as standalone assets. Their import-map entries map module specifiers to asset URLs. The browser fetches a dynamic dependency when the element executes `import()`. Use static `import` only when the element script is loaded as an ES module. The element's code should not assume that it is available until it has been explicitly loaded.
 
 ## Workflow
 
