@@ -55,7 +55,8 @@ function trimFinishedLua(setKeyExpr: string): string {
 
 // ARGV: jobId ('' = auto-generate), name, data, opts, timestamp, delay,
 // priority, attempts, groupId.
-// Returns {jobId, 1} if the job was created, {jobId, 0} if the id already existed.
+// Returns {jobId, 1} if the job was created. If the id already existed, returns
+// {jobId, 0, field1, value1, ...} with an atomic snapshot of the existing job.
 const addJobLua = `
 local prefix = KEYS[1]
 local jobId = ARGV[1]
@@ -64,7 +65,12 @@ if jobId == '' then
 end
 local jobKey = prefix .. ':job:' .. jobId
 if redis.call('EXISTS', jobKey) == 1 then
-  return {jobId, 0}
+  local reply = {jobId, 0}
+  local fields = redis.call('HGETALL', jobKey)
+  for i = 1, #fields do
+    reply[#reply + 1] = fields[i]
+  end
+  return reply
 end
 redis.call(
   'HSET', jobKey,
@@ -88,6 +94,39 @@ else
   ${addMarkerLua}
 end
 return {jobId, 1}
+`;
+
+// ARGV: jobId, include job ('1'/'0'). Returns {state, field1, value1, ...};
+// fields are omitted when the job is unknown or the caller only requested the
+// state. Reading the state and job together gives polling callers a consistent
+// snapshot of completion results and failures.
+const getJobStatusLua = `
+local prefix = KEYS[1]
+local jobId = ARGV[1]
+local jobKey = prefix .. ':job:' .. jobId
+local state
+if redis.call('LPOS', prefix .. ':active', jobId) then
+  state = 'active'
+elseif redis.call('ZSCORE', prefix .. ':delayed', jobId) then
+  state = 'delayed'
+elseif redis.call('ZSCORE', prefix .. ':completed', jobId) then
+  state = 'completed'
+elseif redis.call('ZSCORE', prefix .. ':failed', jobId) then
+  state = 'failed'
+elseif redis.call('EXISTS', jobKey) == 1 then
+  state = 'waiting'
+else
+  return {'unknown'}
+end
+if ARGV[2] == '0' then
+  return {state}
+end
+local reply = {state}
+local fields = redis.call('HGETALL', jobKey)
+for i = 1, #fields do
+  reply[#reply + 1] = fields[i]
+end
+return reply
 `;
 
 // ARGV: now, lock token, lock duration, group concurrency (0 = unlimited).
@@ -257,8 +296,21 @@ for i = 1, #activeJobs do
       redis.call('HINCRBY', prefix .. ':group-active', groupId, -1)
       local stalledCount = redis.call('HINCRBY', jobKey, 'stalledCount', 1)
       if stalledCount > maxStalledCount then
-        redis.call('HSET', jobKey, 'failedReason', 'job stalled more than allowable limit', 'finishedOn', ARGV[2])
-        redis.call('ZADD', prefix .. ':failed', tonumber(ARGV[2]), jobId)
+        local opts = cjson.decode(redis.call('HGET', jobKey, 'opts') or '{}')
+        local removeOnFail = opts['removeOnFail']
+        local removeMode = 0
+        if removeOnFail == true then
+          removeMode = -1
+        elseif type(removeOnFail) == 'number' and removeOnFail > 0 then
+          removeMode = math.floor(removeOnFail)
+        end
+        if removeMode == -1 then
+          redis.call('DEL', jobKey)
+        else
+          redis.call('HSET', jobKey, 'failedReason', 'job stalled more than allowable limit', 'finishedOn', ARGV[2])
+          redis.call('ZADD', prefix .. ':failed', tonumber(ARGV[2]), jobId)
+          ${trimFinishedLua("prefix .. ':failed'")}
+        end
         failed[#failed + 1] = jobId
       else
         local priority = tonumber(redis.call('HGET', jobKey, 'priority') or '0')
@@ -349,7 +401,8 @@ interface PrairieMQCommands {
     priority: number,
     attempts: number,
     groupId: string,
-  ): Promise<[string, number]>;
+  ): Promise<[string, number, ...string[]]>;
+  pmqGetJobStatus(prefix: string, jobId: string, includeJob: number): Promise<string[]>;
   pmqMoveToActive(
     prefix: string,
     now: number,
@@ -390,6 +443,7 @@ export type PrairieMQRedis = Redis & PrairieMQCommands;
 
 const scripts: Record<keyof PrairieMQCommands, string> = {
   pmqAddJob: addJobLua,
+  pmqGetJobStatus: getJobStatusLua,
   pmqMoveToActive: moveToActiveLua,
   pmqMoveToCompleted: moveToCompletedLua,
   pmqMoveToFailed: moveToFailedLua,

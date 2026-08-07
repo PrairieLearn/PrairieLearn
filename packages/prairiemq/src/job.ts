@@ -1,5 +1,26 @@
 import type { JobOptions } from './types.js';
 
+function requiredField(record: Record<string, string>, field: string): string {
+  const value = record[field];
+  if (value == null) {
+    throw new Error(`Job record is missing required field "${field}"`);
+  }
+  return value;
+}
+
+function numericField(record: Record<string, string>, field: string): number {
+  const rawValue = requiredField(record, field);
+  const value = Number(rawValue);
+  if (!Number.isFinite(value)) {
+    throw new Error(`Job record has invalid numeric field "${field}": ${rawValue}`);
+  }
+  return value;
+}
+
+function optionalNumericField(record: Record<string, string>, field: string): number | null {
+  return record[field] == null ? null : numericField(record, field);
+}
+
 interface JobFields<Data, Result> {
   id: string;
   name: string;
@@ -53,16 +74,16 @@ export class Job<Data = unknown, Result = unknown> {
 
   static fromRecord<Data, Result>(record: Record<string, string>): Job<Data, Result> {
     return new Job<Data, Result>({
-      id: record.id ?? '',
-      name: record.name ?? '',
-      data: JSON.parse(record.data ?? 'null') as Data,
-      opts: JSON.parse(record.opts ?? '{}') as JobOptions,
-      timestamp: Number(record.timestamp ?? '0'),
-      groupId: record.groupId || null,
-      attemptsMade: Number(record.attemptsMade ?? '0'),
-      stalledCount: Number(record.stalledCount ?? '0'),
-      processedOn: record.processedOn != null ? Number(record.processedOn) : null,
-      finishedOn: record.finishedOn != null ? Number(record.finishedOn) : null,
+      id: requiredField(record, 'id'),
+      name: requiredField(record, 'name'),
+      data: JSON.parse(requiredField(record, 'data')) as Data,
+      opts: JSON.parse(requiredField(record, 'opts')) as JobOptions,
+      timestamp: numericField(record, 'timestamp'),
+      groupId: requiredField(record, 'groupId') || null,
+      attemptsMade: numericField(record, 'attemptsMade'),
+      stalledCount: numericField(record, 'stalledCount'),
+      processedOn: optionalNumericField(record, 'processedOn'),
+      finishedOn: optionalNumericField(record, 'finishedOn'),
       returnvalue: record.returnvalue != null ? (JSON.parse(record.returnvalue) as Result) : null,
       failedReason: record.failedReason ?? null,
     });

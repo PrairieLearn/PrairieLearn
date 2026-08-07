@@ -30,6 +30,7 @@ describe('Queue', () => {
     assert.isNull(fetched.groupId);
 
     assert.equal(await queue.getJobState(job.id), 'waiting');
+    assert.deepEqual(await queue.getJobStatus(job.id), { state: 'waiting', job: fetched });
     assert.deepEqual(await queue.getJobCounts(), {
       waiting: 1,
       active: 0,
@@ -118,13 +119,31 @@ describe('Queue', () => {
 
   it('returns unknown state for missing jobs', async () => {
     assert.equal(await queue.getJobState('does-not-exist'), 'unknown');
+    assert.deepEqual(await queue.getJobStatus('does-not-exist'), {
+      state: 'unknown',
+      job: null,
+    });
     assert.isNull(await queue.getJob('does-not-exist'));
   });
 
   it('rejects invalid job options', async () => {
+    await expect(queue.add('', {})).rejects.toThrow('name');
+    await expect(queue.add('bad', {}, { jobId: '123' })).rejects.toThrow('purely numeric');
     await expect(queue.add('bad', {}, { delay: -1 })).rejects.toThrow('delay');
     await expect(queue.add('bad', {}, { attempts: 0 })).rejects.toThrow('attempts');
     await expect(queue.add('bad', {}, { priority: -5 })).rejects.toThrow('priority');
     await expect(queue.add('bad', {}, { group: { id: '' } })).rejects.toThrow('group.id');
+    await expect(queue.add('bad', {}, { backoff: -1 })).rejects.toThrow('backoff');
+    await expect(queue.add('bad', {}, { removeOnComplete: 0 })).rejects.toThrow('removeOnComplete');
+  });
+
+  it('validates default job options when the queue is created', () => {
+    expect(
+      () =>
+        new Queue(`invalid-${randomUUID()}`, {
+          redisUrl,
+          defaultJobOptions: { removeOnFail: -1 },
+        }),
+    ).toThrow('removeOnFail');
   });
 });
