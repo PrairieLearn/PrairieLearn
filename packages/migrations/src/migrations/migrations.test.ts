@@ -3,7 +3,7 @@ import path from 'node:path';
 import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 import { z } from 'zod';
 
-import { loadSqlEquiv, makePostgresTestUtils, queryRow } from '@prairielearn/postgres';
+import { loadSqlEquiv, makePostgresTestUtils, queryRow, queryScalar } from '@prairielearn/postgres';
 
 import { getMigrationsToExecute, getPendingMigrations, initWithLock } from './migrations.js';
 
@@ -167,11 +167,8 @@ describe('migrations', () => {
         },
       ]);
 
-      const migrationsTable = await queryRow(
-        sql.get_migrations_table,
-        z.object({ name: z.string().nullable() }),
-      );
-      assert.isNull(migrationsTable.name);
+      const migrationsTable = await queryScalar(sql.get_migrations_table, z.string().nullable());
+      assert.isNull(migrationsTable);
     });
 
     it('runs both SQL and JavaScript migrations', async () => {
