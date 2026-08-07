@@ -1,3 +1,12 @@
+-- BLOCK select_example_course_instance_id
+SELECT
+  ci.id
+FROM
+  course_instances AS ci
+  JOIN courses AS c ON (c.id = ci.course_id)
+WHERE
+  c.example_course IS TRUE;
+
 -- BLOCK enroll_user_in_example_course
 INSERT INTO
   enrollments (
@@ -17,6 +26,7 @@ INSERT INTO
       JOIN courses AS c ON (c.id = ci.course_id)
     WHERE
       u.id = $user_id
+      AND ci.id = $course_instance_id
       AND c.example_course IS TRUE
   )
 ON CONFLICT DO NOTHING
