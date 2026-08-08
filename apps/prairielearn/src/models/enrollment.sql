@@ -146,6 +146,92 @@ WHERE
 RETURNING
   *;
 
+-- BLOCK recompute_enrollment_for_staff_status
+-- For a single user, ensures that any enrollment in a course instance where
+-- they are currently staff is not in an active student state:
+--   joined / blocked   -> 'removed'
+--   invited / rejected -> hard-deleted
+--   left / removed / lti13_pending / no row -> no-op
+--
+-- Pass a course_instance_id to scope to a single course instance; pass NULL
+-- to consider every course instance in the course.
+--
+-- Returns one row per modified enrollment. new_enrollment is null for deletes.
+WITH
+  user_info AS (
+    SELECT
+      u.id,
+      u.uid
+    FROM
+      users AS u
+    WHERE
+      u.id = $user_id
+  ),
+  scoped_course_instances AS (
+    SELECT
+      ci.id
+    FROM
+      course_instances AS ci
+    WHERE
+      ci.course_id = $course_id
+      AND (
+        $course_instance_id::bigint IS NULL
+        OR ci.id = $course_instance_id::bigint
+      )
+  ),
+  staff_course_instances AS (
+    SELECT
+      sci.id
+    FROM
+      scoped_course_instances AS sci,
+      user_info AS ui
+    WHERE
+      users_is_instructor_in_course_instance (ui.id, sci.id)
+  ),
+  candidate_enrollments AS (
+    SELECT
+      e.*
+    FROM
+      enrollments AS e
+      JOIN staff_course_instances AS sci ON (sci.id = e.course_instance_id),
+      user_info AS ui
+    WHERE
+      e.user_id = ui.id
+      OR e.pending_uid = ui.uid
+    FOR NO KEY UPDATE OF
+      e
+  ),
+  updated_enrollments AS (
+    UPDATE enrollments AS e
+    SET
+      status = 'removed'
+    FROM
+      candidate_enrollments AS ce
+    WHERE
+      e.id = ce.id
+      AND ce.status IN ('joined', 'blocked')
+    RETURNING
+      e.*
+  ),
+  deleted_enrollments AS (
+    DELETE FROM enrollments AS e USING candidate_enrollments AS ce
+    WHERE
+      e.id = ce.id
+      AND ce.status IN ('invited', 'rejected')
+    RETURNING
+      e.*
+  )
+SELECT
+  to_jsonb(ce.*) AS old_enrollment,
+  to_jsonb(ue.*) AS new_enrollment
+FROM
+  candidate_enrollments AS ce
+  LEFT JOIN updated_enrollments AS ue ON (ce.id = ue.id)
+  LEFT JOIN deleted_enrollments AS de ON (ce.id = de.id)
+WHERE
+  ue.id IS NOT NULL
+  OR de.id IS NOT NULL;
+
 -- BLOCK select_users_and_enrollments_for_course_instance
 WITH
   student_label_agg AS (
@@ -167,7 +253,11 @@ WITH
 SELECT
   to_jsonb(u) AS user,
   to_jsonb(e) AS enrollment,
-  COALESCE(sla.student_label_ids, '[]'::jsonb) AS student_label_ids
+  COALESCE(sla.student_label_ids, '[]'::jsonb) AS student_label_ids,
+  CASE
+    WHEN u.id IS NOT NULL THEN users_get_displayed_role (u.id, e.course_instance_id)
+    ELSE 'None'
+  END AS role
 FROM
   enrollments AS e
   LEFT JOIN users AS u ON (u.id = e.user_id)

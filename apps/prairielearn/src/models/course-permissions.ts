@@ -23,6 +23,7 @@ import {
   UserSchema,
 } from '../lib/db-types.js';
 
+import { recomputeEnrollmentForStaffStatus } from './enrollment.js';
 import { selectOrInsertUserByUid } from './user.js';
 
 const sql = loadSqlEquiv(import.meta.url);
@@ -71,11 +72,20 @@ async function insertCoursePermissionsByUserId({
   course_role: NonNullable<CoursePermission['course_role']>;
   authn_user_id: string;
 }): Promise<void> {
-  await execute(sql.insert_course_permissions, {
-    course_id,
-    user_id,
-    course_role,
-    authn_user_id,
+  await runInTransactionAsync(async () => {
+    await execute(sql.insert_course_permissions, {
+      course_id,
+      user_id,
+      course_role,
+      authn_user_id,
+    });
+
+    await recomputeEnrollmentForStaffStatus({
+      courseId: course_id,
+      userId: user_id,
+      agentUserId: authn_user_id,
+      agentAuthnUserId: authn_user_id,
+    });
   });
 }
 
@@ -94,20 +104,28 @@ export async function updateCoursePermissionsRole({
   course_role: NonNullable<CoursePermission['course_role']>;
   authn_user_id: string;
 }): Promise<void> {
-  const result = await queryOptionalRow(
-    sql.update_course_permissions_role,
-    { course_id, user_id, course_role, authn_user_id },
-    CoursePermissionSchema,
-  );
-  if (!result) {
-    throw new error.HttpStatusError(404, 'No course permissions to update');
-  }
+  await runInTransactionAsync(async () => {
+    const result = await queryOptionalRow(
+      sql.update_course_permissions_role,
+      { course_id, user_id, course_role, authn_user_id },
+      CoursePermissionSchema,
+    );
+    if (!result) {
+      throw new error.HttpStatusError(404, 'No course permissions to update');
+    }
+
+    await recomputeEnrollmentForStaffStatus({
+      courseId: course_id,
+      userId: user_id,
+      agentUserId: authn_user_id,
+      agentAuthnUserId: authn_user_id,
+    });
+  });
 }
 
 /**
- * Deletes course permissions for one or more users. Also deletes all
- * enrollments for these users in instances of this course. Does not throw
- * an error if no course permissions exist.
+ * Deletes course permissions for one or more users. Does not throw an error if
+ * no course permissions exist.
  */
 export async function deleteCoursePermissions({
   course_id,
@@ -118,10 +136,23 @@ export async function deleteCoursePermissions({
   user_id: string | string[];
   authn_user_id: string;
 }): Promise<void> {
-  await execute(sql.delete_course_permissions, {
-    course_id,
-    user_ids: Array.isArray(user_id) ? user_id : [user_id],
-    authn_user_id,
+  const user_ids = Array.isArray(user_id) ? user_id : [user_id];
+
+  await runInTransactionAsync(async () => {
+    await execute(sql.delete_course_permissions, {
+      course_id,
+      user_ids,
+      authn_user_id,
+    });
+
+    for (const id of user_ids) {
+      await recomputeEnrollmentForStaffStatus({
+        courseId: course_id,
+        userId: id,
+        agentUserId: authn_user_id,
+        agentAuthnUserId: authn_user_id,
+      });
+    }
   });
 }
 
@@ -151,20 +182,27 @@ export async function insertCourseInstancePermissions({
   await runInTransactionAsync(async () => {
     // Ensure the user has a course_permissions record (with at least 'None' role).
     // This is necessary for administrators who may not have explicit course permissions.
-    await insertCoursePermissionsByUserId({
+    await execute(sql.insert_course_permissions, {
       course_id,
       user_id,
       course_role: 'None',
       authn_user_id,
     });
 
-    // Now insert the course instance permissions
     await execute(sql.insert_course_instance_permissions, {
       course_id,
       course_instance_id,
       user_id,
       course_instance_role,
       authn_user_id,
+    });
+
+    await recomputeEnrollmentForStaffStatus({
+      courseId: course_id,
+      courseInstanceId: course_instance_id,
+      userId: user_id,
+      agentUserId: authn_user_id,
+      agentAuthnUserId: authn_user_id,
     });
   });
 }
@@ -187,12 +225,22 @@ export async function upsertCourseInstancePermissionsRole({
   course_instance_role: EnumCourseInstanceRole;
   authn_user_id: string;
 }): Promise<void> {
-  await execute(sql.upsert_course_instance_permissions_role, {
-    course_id,
-    course_instance_id,
-    user_id,
-    course_instance_role,
-    authn_user_id,
+  await runInTransactionAsync(async () => {
+    await execute(sql.upsert_course_instance_permissions_role, {
+      course_id,
+      course_instance_id,
+      user_id,
+      course_instance_role,
+      authn_user_id,
+    });
+
+    await recomputeEnrollmentForStaffStatus({
+      courseId: course_id,
+      courseInstanceId: course_instance_id,
+      userId: user_id,
+      agentUserId: authn_user_id,
+      agentAuthnUserId: authn_user_id,
+    });
   });
 }
 
@@ -213,14 +261,24 @@ export async function updateCourseInstancePermissionsRole({
   course_instance_role: NonNullable<CourseInstancePermission['course_instance_role']>;
   authn_user_id: string;
 }): Promise<void> {
-  const result = await queryOptionalRow(
-    sql.update_course_instance_permissions_role,
-    { course_id, course_instance_id, user_id, course_instance_role, authn_user_id },
-    CourseInstancePermissionSchema,
-  );
-  if (!result) {
-    throw new error.HttpStatusError(404, 'No course instance permissions to update');
-  }
+  await runInTransactionAsync(async () => {
+    const result = await queryOptionalRow(
+      sql.update_course_instance_permissions_role,
+      { course_id, course_instance_id, user_id, course_instance_role, authn_user_id },
+      CourseInstancePermissionSchema,
+    );
+    if (!result) {
+      throw new error.HttpStatusError(404, 'No course instance permissions to update');
+    }
+
+    await recomputeEnrollmentForStaffStatus({
+      courseId: course_id,
+      courseInstanceId: course_instance_id,
+      userId: user_id,
+      agentUserId: authn_user_id,
+      agentAuthnUserId: authn_user_id,
+    });
+  });
 }
 
 /**
@@ -238,11 +296,21 @@ export async function deleteCourseInstancePermissions({
   user_id: string;
   authn_user_id: string;
 }): Promise<void> {
-  await execute(sql.delete_course_instance_permissions, {
-    course_id,
-    course_instance_id,
-    user_id,
-    authn_user_id,
+  await runInTransactionAsync(async () => {
+    await execute(sql.delete_course_instance_permissions, {
+      course_id,
+      course_instance_id,
+      user_id,
+      authn_user_id,
+    });
+
+    await recomputeEnrollmentForStaffStatus({
+      courseId: course_id,
+      courseInstanceId: course_instance_id,
+      userId: user_id,
+      agentUserId: authn_user_id,
+      agentAuthnUserId: authn_user_id,
+    });
   });
 }
 

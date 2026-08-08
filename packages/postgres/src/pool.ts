@@ -462,6 +462,17 @@ export class PostgresPool {
   }
 
   /**
+   * Throws an error if not currently inside a transaction. Useful for
+   * low-level functions that mutate state and rely on the caller to provide
+   * a transaction for atomicity.
+   */
+  assertIsInTransaction(): void {
+    if (this.alsClient.getStore() === undefined) {
+      throw new Error('Expected to be inside a transaction, but was not.');
+    }
+  }
+
+  /**
    * Executes a query with the specified parameters.
    *
    * @deprecated Use {@link execute} instead.
