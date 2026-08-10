@@ -1,7 +1,3 @@
-# check=skip=CopyIgnoredFile
-# TODO: remove once the following issue is fixed:
-# https://github.com/moby/buildkit/issues/6512
-
 FROM amazonlinux:2023
 ARG CACHEBUST=2026-07-15-14-34-04
 
