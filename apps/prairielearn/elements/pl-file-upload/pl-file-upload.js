@@ -437,8 +437,18 @@
           }
 
           try {
-            if (this.isPdf(fileData)) {
-              const url = this.b64ToBlobUrl(fileData, { type: 'application/pdf' });
+            // We don't use Uint8Array.fromBase64 because it is not supported in
+            // all browsers (e.g. Safari). atob returns a string where every
+            // char code represents a byte, so we need to convert it to a
+            // Uint8Array to properly interpret it. We only convert it to
+            // unicode text if needed.
+            const binaryData = Uint8Array.from(atob(fileData), (c) => c.charCodeAt(0));
+            const isPdf = this.isPdf(fileData);
+            const url = URL.createObjectURL(
+              new Blob([binaryData], isPdf ? { type: 'application/pdf' } : undefined),
+            );
+
+            if (isPdf) {
               const $objectPreview = $(
                 `<div class="mt-2 ratio ratio-4x3">
                    <iframe src="${url}">
@@ -454,7 +464,6 @@
             } else {
               // First try to display the file as an image. If that fails,
               // try to display it as text.
-              const url = this.b64ToBlobUrl(fileData);
               $imgPreview
                 .on('load', () => {
                   $imgPreview.removeClass('d-none');
@@ -463,8 +472,9 @@
                 })
                 .on('error', () => {
                   URL.revokeObjectURL(url);
-                  if (!this.isBinary(fileData)) {
-                    $codePreview.find('code').text(this.b64DecodeUnicode(fileData));
+                  if (!this.isBinary(binaryData)) {
+                    // To support unicode strings, we use a TextDecoder.
+                    $codePreview.find('code').text(new TextDecoder().decode(binaryData));
                   } else {
                     $codePreview.find('code').text('Binary file not previewed.');
                   }
@@ -473,7 +483,11 @@
                 })
                 .attr('src', url);
             }
-          } catch {
+          } catch (err) {
+            // This is a defensive catch in case the file is not a valid base64
+            // string. This should never happen, but if it does, we don't want
+            // to break the entire file upload element.
+            console.error(err);
             $preview.append(
               $(
                 '<div class="alert alert-info mt-2" role="alert">Content preview is not available for this type of file.</div>',
@@ -554,15 +568,11 @@
      * text. Uses the same method as git: if the first 8000 bytes contain a
      * NUL character ('\0'), we consider the file to be binary.
      * http://stackoverflow.com/questions/6119956/how-to-determine-if-git-handles-a-file-as-binary-or-as-text
-     * We use 8001 bytes because it's a multiple of 3, which is simpler to handle for base64 input.
-     * @param {string} base64FileData Base64-encoded file data to check
+     * @param {Uint8Array} binaryData The binary data to check
      * @returns {boolean} If the file is recognized as binary
      */
-    isBinary(base64FileData) {
-      // Retrieve 8001 bytes, represented in base64 as (8001 * 4) / 3 = 10668
-      // characters, and only decode that segment for performance reasons
-      const decodedSegment = atob(base64FileData.slice(0, 10668));
-      return decodedSegment.includes('\0');
+    isBinary(binaryData) {
+      return binaryData.subarray(0, 8000).includes(0);
     }
 
     /**
@@ -578,20 +588,6 @@
         base64FileData.match(/^CiVQREYt/) || // "\x0a%PDF-"
         base64FileData.match(/^77u\/JVBERi[0-3]/) // "\xef\xbb\xbf%PDF-"
       );
-    }
-
-    /**
-     * To support unicode strings, we use a TextDecoder.
-     * @param {string} str the base64 string to decode
-     * @returns {string} the decoded string
-     */
-    b64DecodeUnicode(str) {
-      return new TextDecoder().decode(Uint8Array.from(atob(str), (c) => c.charCodeAt(0)));
-    }
-
-    b64ToBlobUrl(str, options = undefined) {
-      const blob = new Blob([Uint8Array.from(atob(str), (c) => c.charCodeAt(0))], options);
-      return URL.createObjectURL(blob);
     }
   }
 
