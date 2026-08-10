@@ -6,6 +6,7 @@ import { HttpStatusError } from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import { Hydrate } from '@prairielearn/react/server';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
+import { parseRequestBody } from '@prairielearn/zod';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { selectAssessmentQuestions } from '../../lib/assessment-question.js';
@@ -208,7 +209,7 @@ router.post(
         throw new HttpStatusError(403, 'Access denied (must be course editor)');
       }
 
-      const body = SaveQuestionsSchema.parse(req.body);
+      const body = parseRequestBody(req, SaveQuestionsSchema);
 
       const assessmentPath = getAssessmentInfoJsonPath(res.locals);
 

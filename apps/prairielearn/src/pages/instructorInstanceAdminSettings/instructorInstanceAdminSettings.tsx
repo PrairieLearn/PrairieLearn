@@ -10,6 +10,7 @@ import { flash } from '@prairielearn/flash';
 import * as sqldb from '@prairielearn/postgres';
 import { Hydrate } from '@prairielearn/react/server';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
+import { parseRequestBody } from '@prairielearn/zod';
 
 import { DeleteCourseInstanceModal } from '../../components/DeleteCourseInstanceModal.js';
 import { PageLayout } from '../../components/PageLayout.js';
@@ -207,8 +208,9 @@ router.post(
         course_instance_permission,
         access_control_strategy,
         clear_incompatible,
-      } = z
-        .object({
+      } = parseRequestBody(
+        req,
+        z.object({
           short_name: z.string().trim(),
           long_name: z.string().trim(),
           start_date: z.string(),
@@ -218,8 +220,8 @@ router.post(
           course_instance_permission: EnumCourseInstanceRoleSchema.optional().default('None'),
           access_control_strategy: z.enum(['migrate', 'keep', 'clear']).optional().default('clear'),
           clear_incompatible: z.boolean().optional().default(false),
-        })
-        .parse(req.body);
+        }),
+      );
 
       if (!short_name) {
         throw new error.HttpStatusError(400, 'Short name is required');
@@ -363,7 +365,7 @@ router.post(
         await fs.readFile(infoCourseInstancePath, 'utf8'),
       );
 
-      const parsedBody = SettingsFormBodySchema.parse(req.body);
+      const parsedBody = parseRequestBody(req, SettingsFormBodySchema);
 
       courseInstanceInfo.longName = parsedBody.long_name;
       courseInstanceInfo.timezone = propertyValueWithDefault(

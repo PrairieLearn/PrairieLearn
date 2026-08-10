@@ -9,6 +9,7 @@ import { flash } from '@prairielearn/flash';
 import * as sqldb from '@prairielearn/postgres';
 import { Hydrate } from '@prairielearn/react/server';
 import { run } from '@prairielearn/run';
+import { parseRequestBody } from '@prairielearn/zod';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
@@ -92,15 +93,16 @@ router.post(
         await fs.readFile(path.join(res.locals.course.path, 'infoCourse.json'), 'utf8'),
       );
 
-      const body = z
-        .object({
+      const body = parseRequestBody(
+        req,
+        z.object({
           __action: z.literal('save_assessment_sets'),
           orig_hash: z.string(),
           assessment_sets: z
             .string()
             .transform((s) => z.array(InstructorCourseAdminSetFormRowSchema).parse(JSON.parse(s))),
-        })
-        .parse(req.body);
+        }),
+      );
 
       const origHash = body.orig_hash;
       const resolveAssessmentSets = body.assessment_sets

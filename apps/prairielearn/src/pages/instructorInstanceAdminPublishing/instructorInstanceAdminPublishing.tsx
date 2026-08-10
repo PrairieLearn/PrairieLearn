@@ -8,7 +8,7 @@ import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import { loadSqlEquiv, queryRows, runInTransactionAsync } from '@prairielearn/postgres';
 import { Hydrate } from '@prairielearn/react/server';
-import { DatetimeLocalStringSchema } from '@prairielearn/zod';
+import { DatetimeLocalStringSchema, parseRequestBody } from '@prairielearn/zod';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { type AuthzData, assertHasRole } from '../../lib/authz-data-lib.js';
@@ -267,12 +267,13 @@ router.post(
         await fs.readFile(infoCourseInstancePath, 'utf8'),
       );
 
-      const parsedBody = z
-        .object({
+      const parsedBody = parseRequestBody(
+        req,
+        z.object({
           start_date: z.union([z.literal(''), DatetimeLocalStringSchema]),
           end_date: z.union([z.literal(''), DatetimeLocalStringSchema]),
-        })
-        .parse(req.body);
+        }),
+      );
 
       // Update the publishing settings
       const resolvedPublishing = {
