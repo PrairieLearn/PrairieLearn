@@ -74,6 +74,29 @@ describe('Worker', () => {
     assert.deepEqual(await queue.getJobStatus(job.id), { state: 'completed', job: stored });
   });
 
+  it('fails without rerunning a processor whose result cannot be stored as JSON', async () => {
+    const queuedJob = await queue.add('invalid-result', {}, { attempts: 3 });
+    let processorRuns = 0;
+    const worker = makeWorker(
+      queue.name,
+      async () => {
+        processorRuns += 1;
+        return 1n;
+      },
+      { redisUrl, lockDuration: 100, stalledInterval: 50, blockTimeout: 50 },
+    );
+
+    const [failedJob, error] = (await once(worker, 'failed')) as [Job, Error];
+    assert.equal(failedJob.id, queuedJob.id);
+    assert.equal(
+      error.message,
+      'Job result contains an invalid JSON value at $: bigint values are not allowed',
+    );
+    assert.equal(processorRuns, 1);
+    assert.equal(await queue.getJobState(queuedJob.id), 'failed');
+    assert.equal((await queue.getJob(queuedJob.id))?.attemptsMade, 1);
+  });
+
   it('can wait until an explicitly started worker is ready', async () => {
     const worker = makeWorker(queue.name, async () => 'done', {
       redisUrl,

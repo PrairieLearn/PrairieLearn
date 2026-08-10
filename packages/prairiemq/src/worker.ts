@@ -5,6 +5,7 @@ import { setTimeout as sleep } from 'node:timers/promises';
 import { Redis } from 'ioredis';
 
 import { Job } from './job.js';
+import { serializeJson } from './json.js';
 import { DEFAULT_PREFIX, QueueKeys } from './keys.js';
 import { validateQueueName } from './queue.js';
 import { type PrairieMQRedis, createScriptedClient } from './scripts.js';
@@ -268,11 +269,19 @@ export class Worker<Data = unknown, Result = unknown> extends EventEmitter<
       return;
     }
 
+    let serializedResult: string;
+    try {
+      serializedResult = serializeJson(result, 'Job result');
+    } catch (err) {
+      await this.handleFailedJob(job, token, toError(err), false);
+      return;
+    }
+
     const code = await this.client.pmqMoveToCompleted(
       this.keys.base,
       job.id,
       token,
-      JSON.stringify(result ?? null),
+      serializedResult,
       Date.now(),
       encodeRemoveMode(job.opts.removeOnComplete),
     );
@@ -283,8 +292,8 @@ export class Worker<Data = unknown, Result = unknown> extends EventEmitter<
     this.emit('completed', job, result);
   }
 
-  private async handleFailedJob(job: Job<Data, Result>, token: string, error: Error) {
-    const willRetry = job.attemptsMade < job.attempts;
+  private async handleFailedJob(job: Job<Data, Result>, token: string, error: Error, retry = true) {
+    const willRetry = retry && job.attemptsMade < job.attempts;
     const retryDelay = willRetry ? computeBackoffDelay(job) : 0;
     const code = await this.client.pmqMoveToFailed(
       this.keys.base,

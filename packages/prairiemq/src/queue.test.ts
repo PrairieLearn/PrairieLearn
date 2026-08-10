@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { afterEach, assert, beforeEach, describe, expect, it } from 'vitest';
 
 import { Queue } from './queue.js';
+import type { JobOptions } from './types.js';
 
 const redisUrl = process.env.REDIS_URL ?? 'redis://localhost:6379/';
 
@@ -128,6 +129,7 @@ describe('Queue', () => {
 
   it('rejects invalid job options', async () => {
     await expect(queue.add('', {})).rejects.toThrow('name');
+    await expect(queue.add(42 as unknown as string, {})).rejects.toThrow('name');
     await expect(queue.add('bad', {}, { jobId: '123' })).rejects.toThrow('purely numeric');
     await expect(queue.add('bad', {}, { delay: -1 })).rejects.toThrow('delay');
     await expect(queue.add('bad', {}, { attempts: 0 })).rejects.toThrow('attempts');
@@ -135,6 +137,33 @@ describe('Queue', () => {
     await expect(queue.add('bad', {}, { group: { id: '' } })).rejects.toThrow('group.id');
     await expect(queue.add('bad', {}, { backoff: -1 })).rejects.toThrow('backoff');
     await expect(queue.add('bad', {}, { removeOnComplete: 0 })).rejects.toThrow('removeOnComplete');
+    await expect(
+      queue.add('bad', {}, { removeOnComplete: 'all' } as unknown as JobOptions),
+    ).rejects.toThrow('removeOnComplete');
+    await expect(
+      queue.add('bad', {}, { removeOnFail: null } as unknown as JobOptions),
+    ).rejects.toThrow('removeOnFail');
+    await expect(
+      queue.add('bad', {}, { unexpected: true } as unknown as JobOptions),
+    ).rejects.toThrow('Unknown job option');
+  });
+
+  it('rejects job data that cannot be stored as JSON', async () => {
+    await expect(queue.add('bad', { value: 1n })).rejects.toThrow('bigint values');
+    await expect(queue.add('bad', { value: undefined })).rejects.toThrow('undefined values');
+    await expect(queue.add('bad', new Date())).rejects.toThrow('plain objects');
+
+    const circular: Record<string, unknown> = {};
+    circular.self = circular;
+    await expect(queue.add('bad', circular)).rejects.toThrow('circular references');
+
+    assert.deepEqual(await queue.getJobCounts(), {
+      waiting: 0,
+      active: 0,
+      delayed: 0,
+      completed: 0,
+      failed: 0,
+    });
   });
 
   it('validates default job options when the queue is created', () => {

@@ -7,6 +7,8 @@ export type {
   JobCounts,
   JobOptions,
   JobState,
+  JsonObject,
+  JsonValue,
   QueueOptions,
   WorkerOptions,
 } from './types.js';

@@ -4,11 +4,17 @@ export interface BackoffOptions {
   delay: number;
 }
 
+export type JsonValue = null | boolean | number | string | JsonValue[] | JsonObject;
+
+export interface JsonObject {
+  [key: string]: JsonValue;
+}
+
 export interface JobOptions {
   /**
    * A custom job id. If a job with this id already exists, the add is ignored
    * and the existing job is returned. Custom ids share a namespace with the
-   * auto-generated numeric ids, so avoid purely numeric custom ids.
+   * auto-generated numeric ids, so purely numeric custom ids are not allowed.
    */
   jobId?: string;
   /** Milliseconds to wait before the job can be processed. */
@@ -18,7 +24,11 @@ export interface JobOptions {
    * with equal priority are processed in FIFO order. Defaults to 0.
    */
   priority?: number;
-  /** Total number of attempts (including the first one). Defaults to 1. */
+  /**
+   * Number of processor executions allowed after reported processor failures.
+   * Stalled recovery is governed by `maxStalledCount` and may cause additional
+   * executions. Defaults to 1.
+   */
   attempts?: number;
   /**
    * Delay between retries. A number is treated as a fixed delay in

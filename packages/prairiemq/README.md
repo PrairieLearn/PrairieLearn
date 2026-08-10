@@ -74,6 +74,8 @@ await queue.add('name', data, {
 
 Options can also be set for all jobs of a queue with `defaultJobOptions` in the `Queue` constructor.
 
+Job data and processor return values must contain only JSON values. Plain objects, arrays, strings, finite numbers, booleans, and `null` are supported; values such as `bigint`, `Date`, `Map`, functions, and circular references are rejected.
+
 ### Queue introspection and management
 
 ```ts
@@ -102,7 +104,7 @@ Worker events are local to the process that executes the job. A web process that
 
 ### Delivery semantics
 
-PrairieMQ provides at-least-once delivery. A worker holds a renewing lock (`lockDuration`, default 30s) while processing a job; if the worker dies, another worker's stalled-job check (`stalledInterval`, default 30s) requeues the job. A processor may therefore run more than once for the same job in rare cases, so processors should be idempotent.
+PrairieMQ provides at-least-once delivery. A worker holds a renewing lock (`lockDuration`, default 30s) while processing a job; if the worker dies, another worker's stalled-job check (`stalledInterval`, default 30s) requeues the job. Stalled recovery is limited separately by `maxStalledCount`, so it can cause more processor executions than the job's `attempts` setting. Processors should therefore be idempotent.
 
 Workers wake up immediately when jobs are added (via a Redis wake-up marker) and otherwise poll at `blockTimeout` intervals (default 1s), which bounds the latency of delayed-job promotion and of picking up work freed by other workers' group-concurrency limits.
 

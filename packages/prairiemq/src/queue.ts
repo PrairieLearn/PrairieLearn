@@ -1,4 +1,5 @@
 import { Job } from './job.js';
+import { serializeJson } from './json.js';
 import { DEFAULT_PREFIX, QueueKeys } from './keys.js';
 import { type PrairieMQRedis, createScriptedClient } from './scripts.js';
 import type { GroupStatus, JobCounts, JobOptions, JobState, QueueOptions } from './types.js';
@@ -11,34 +12,79 @@ export interface JobStatus<Data = unknown, Result = unknown> {
 }
 
 export function validateQueueName(name: string) {
-  if (!/^[\w.-]+$/.test(name)) {
+  if (typeof name !== 'string' || !/^[\w.-]+$/.test(name)) {
     throw new Error(`Invalid queue name "${name}": only [A-Za-z0-9_.-] characters are allowed`);
   }
 }
 
+const JOB_OPTION_NAMES = new Set<keyof JobOptions>([
+  'jobId',
+  'delay',
+  'priority',
+  'attempts',
+  'backoff',
+  'group',
+  'removeOnComplete',
+  'removeOnFail',
+]);
+
 function validateJobOptions(opts: JobOptions) {
-  if (opts.jobId != null && opts.jobId === '') {
+  if (
+    typeof opts !== 'object' ||
+    opts === null ||
+    Array.isArray(opts) ||
+    Object.getPrototypeOf(opts) !== Object.prototype
+  ) {
+    throw new Error('Job options must be a plain object');
+  }
+  for (const name of Object.keys(opts)) {
+    if (!JOB_OPTION_NAMES.has(name as keyof JobOptions)) {
+      throw new Error(`Unknown job option "${name}"`);
+    }
+  }
+  if (opts.jobId !== undefined && (typeof opts.jobId !== 'string' || opts.jobId === '')) {
     throw new Error('jobId must be a non-empty string');
   }
-  if (opts.jobId != null && /^\d+$/.test(opts.jobId)) {
+  if (opts.jobId !== undefined && /^\d+$/.test(opts.jobId)) {
     throw new Error('jobId must not be purely numeric because numeric ids are auto-generated');
   }
-  if (opts.delay != null && (!Number.isSafeInteger(opts.delay) || opts.delay < 0)) {
+  if (opts.delay !== undefined && (!Number.isSafeInteger(opts.delay) || opts.delay < 0)) {
     throw new Error('delay must be a non-negative integer');
   }
   if (
-    opts.priority != null &&
+    opts.priority !== undefined &&
     (!Number.isSafeInteger(opts.priority) || opts.priority < 0 || opts.priority > MAX_PRIORITY)
   ) {
     throw new Error(`priority must be an integer between 0 and ${MAX_PRIORITY}`);
   }
-  if (opts.attempts != null && (!Number.isSafeInteger(opts.attempts) || opts.attempts < 1)) {
+  if (opts.attempts !== undefined && (!Number.isSafeInteger(opts.attempts) || opts.attempts < 1)) {
     throw new Error('attempts must be a positive integer');
   }
-  if (opts.group != null && opts.group.id === '') {
+  if (
+    opts.group !== undefined &&
+    (typeof opts.group !== 'object' ||
+      opts.group === null ||
+      Object.getPrototypeOf(opts.group) !== Object.prototype ||
+      Object.keys(opts.group).some((name) => name !== 'id') ||
+      typeof opts.group.id !== 'string' ||
+      opts.group.id === '')
+  ) {
     throw new Error('group.id must be a non-empty string');
   }
-  if (opts.backoff != null) {
+  if (opts.backoff !== undefined) {
+    if (
+      typeof opts.backoff !== 'number' &&
+      (typeof opts.backoff !== 'object' || opts.backoff === null)
+    ) {
+      throw new Error('backoff must be a non-negative integer or backoff options');
+    }
+    if (
+      typeof opts.backoff === 'object' &&
+      (Object.getPrototypeOf(opts.backoff) !== Object.prototype ||
+        Object.keys(opts.backoff).some((name) => name !== 'type' && name !== 'delay'))
+    ) {
+      throw new Error('backoff must contain only type and delay');
+    }
     const delay = typeof opts.backoff === 'number' ? opts.backoff : opts.backoff.delay;
     if (!Number.isSafeInteger(delay) || delay < 0) {
       throw new Error('backoff delay must be a non-negative integer');
@@ -55,10 +101,21 @@ function validateJobOptions(opts: JobOptions) {
     ['removeOnComplete', opts.removeOnComplete],
     ['removeOnFail', opts.removeOnFail],
   ] as const) {
-    if (typeof value === 'number' && (!Number.isSafeInteger(value) || value < 1)) {
+    if (
+      value !== undefined &&
+      typeof value !== 'boolean' &&
+      (typeof value !== 'number' || !Number.isSafeInteger(value) || value < 1)
+    ) {
       throw new Error(`${name} must be a boolean or a positive integer`);
     }
   }
+}
+
+function mergeJobOptions(defaults: JobOptions, overrides: JobOptions): JobOptions {
+  return {
+    ...defaults,
+    ...Object.fromEntries(Object.entries(overrides).filter(([, value]) => value !== undefined)),
+  } as JobOptions;
 }
 
 function parseJobState(value: string | undefined): JobState {
@@ -83,28 +140,33 @@ export class Queue<Data = unknown, Result = unknown> {
 
   constructor(name: string, options: QueueOptions) {
     validateQueueName(name);
+    if (options.defaultJobOptions !== undefined) {
+      validateJobOptions(options.defaultJobOptions);
+    }
     this.name = name;
     this.keys = new QueueKeys(options.prefix ?? DEFAULT_PREFIX, name);
-    this.defaultJobOptions = { ...options.defaultJobOptions };
-    validateJobOptions(this.defaultJobOptions);
+    this.defaultJobOptions = mergeJobOptions({}, options.defaultJobOptions ?? {});
     this.client = createScriptedClient(options.redisUrl);
   }
 
   async add(name: string, data: Data, options: JobOptions = {}): Promise<Job<Data, Result>> {
-    if (name === '') {
+    if (typeof name !== 'string' || name === '') {
       throw new Error('Job name must be a non-empty string');
     }
-    const opts = { ...this.defaultJobOptions, ...options };
+    validateJobOptions(options);
+    const opts = mergeJobOptions(this.defaultJobOptions, options);
     validateJobOptions(opts);
 
     const timestamp = Date.now();
     const groupId = opts.group?.id ?? '';
+    const serializedData = serializeJson(data, 'Job data');
+    const serializedOptions = serializeJson(opts, 'Job options');
     const reply = await this.client.pmqAddJob(
       this.keys.base,
       opts.jobId ?? '',
       name,
-      JSON.stringify(data ?? null),
-      JSON.stringify(opts),
+      serializedData,
+      serializedOptions,
       timestamp,
       opts.delay ?? 0,
       opts.priority ?? 0,

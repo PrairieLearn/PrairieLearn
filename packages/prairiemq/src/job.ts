@@ -67,7 +67,7 @@ export class Job<Data = unknown, Result = unknown> {
     this.failedReason = fields.failedReason;
   }
 
-  /** The total number of attempts this job is allowed. */
+  /** The number of processor executions allowed after reported processor failures. */
   get attempts(): number {
     return this.opts.attempts ?? 1;
   }
