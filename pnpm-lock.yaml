@@ -5567,9 +5567,6 @@ packages:
   '@types/pg@8.15.6':
     resolution: {integrity: sha512-NoaMtzhxOrubeL/7UZuNTrejB4MPAJ0RpxZqXQf2qXuVlTPuG6Y8p4u9dKRaue4yjmC7ZhzVO2/Yyyn25znrPQ==}
 
-  '@types/pg@8.20.3':
-    resolution: {integrity: sha512-4Tvg+HO6+oQaAkpT8GTYoSExzpGGZz532GXgbbCElWJQeQdMozBWxEKNBhJJpHFjWXsMxqPbyypvj/89FWNoSQ==}
-
   '@types/pg@8.21.0':
     resolution: {integrity: sha512-AYdtudzabjLZgVgRZmAnU8bAnVUXzuJX2IYHeSIiIHm68olD+LgQYCGWdtcNYnP0uq9c4S4NibVG3Ni7VbKW7Q==}
 
@@ -6138,10 +6135,6 @@ packages:
 
   async@3.2.6:
     resolution: {integrity: sha512-htCUDlxyyCLMgaM3xXg0C0LW2xqfuQ6p05pCEIsXuyQ+a1koYKTuBMzRNwmybfLgvJDMd0r1LTn4+E0Ti6C2AA==}
-
-  axe-core@4.12.1:
-    resolution: {integrity: sha512-s7iGf5GaVMxEG0ENN9x+xTr7GFZCb1ZP/1uATUpCEK2X78nDB3RwbtFCo9pGAf9ru+VwoQ464DkaLEeRM08wJA==}
-    engines: {node: '>=4'}
 
   axe-core@4.13.0:
     resolution: {integrity: sha512-UzGt8zg7Ny8djbYMhxl2zuEevVa7r2gJjYY5Lwr1xM7+XU2nd6CkIWFTVcCIbAP63vSz71NaVyyuSk9lHKcy0A==}
@@ -7631,9 +7624,6 @@ packages:
     resolution: {integrity: sha512-kVCxPF3vQM/N0B1PmoqVUqgHP+EeVjmZSQn+1oCRPxd2P21P2F19lIgbR3HBosbB1PUhOAoctJnfEn2GbN2eZA==}
     engines: {node: '>=18'}
 
-  get-tsconfig@4.14.0:
-    resolution: {integrity: sha512-yTb+8DXzDREzgvYmh6s9vHsSVCHeC0G3PI5bEXNBHtmshPnO+S5O7qgLEOn0I5QvMy6kpZN8K1NKGyilLb93wA==}
-
   get-tsconfig@4.14.1:
     resolution: {integrity: sha512-Dz/6HxkrxgNehhxLVeyv8sad9UzF2xBVeaKBQNDfJ5XiSXmp2gTR0eO0RWiT2NCKS5aGP9jjkOMggTN90qU50A==}
 
@@ -8484,11 +8474,6 @@ packages:
   marked@11.2.0:
     resolution: {integrity: sha512-HR0m3bvu0jAPYiIvLUUQtdg1g6D247//lvcekpHO1WMvbwDlwSkZAX9Lw4F4YHE1T0HaaNve0tuAWuV1UJ6vtw==}
     engines: {node: '>= 18'}
-    hasBin: true
-
-  marked@18.0.7:
-    resolution: {integrity: sha512-iDVQ5ldaiKXn6b2JroX5kgRfmwgqolW7NpaEzTl1k/2Zh1njIEN9yniyLV/mOvWwtsE8OGgkjsCYvijuPk1dtA==}
-    engines: {node: '>= 20'}
     hasBin: true
 
   marked@18.0.9:
@@ -13658,15 +13643,9 @@ snapshots:
 
   '@types/pg-pool@2.0.7':
     dependencies:
-      '@types/pg': 8.20.3
+      '@types/pg': 8.21.0
 
   '@types/pg@8.15.6':
-    dependencies:
-      '@types/node': 24.13.3
-      pg-protocol: 1.15.0
-      pg-types: 2.2.0
-
-  '@types/pg@8.20.3':
     dependencies:
       '@types/node': 24.13.3
       pg-protocol: 1.15.0
@@ -14219,8 +14198,6 @@ snapshots:
   async@3.2.3: {}
 
   async@3.2.6: {}
-
-  axe-core@4.12.1: {}
 
   axe-core@4.13.0: {}
 
@@ -15246,7 +15223,7 @@ snapshots:
 
   eslint-import-context@0.1.9(unrs-resolver@1.12.2):
     dependencies:
-      get-tsconfig: 4.14.0
+      get-tsconfig: 4.14.1
       stable-hash-x: 0.2.0
     optionalDependencies:
       unrs-resolver: 1.12.2
@@ -15256,7 +15233,7 @@ snapshots:
       debug: 4.4.3(supports-color@7.2.0)
       eslint: 10.8.0(jiti@2.7.0)(supports-color@7.2.0)
       eslint-import-context: 0.1.9(unrs-resolver@1.12.2)
-      get-tsconfig: 4.14.0
+      get-tsconfig: 4.14.1
       is-bun-module: 2.0.0
       stable-hash-x: 0.2.0
       tinyglobby: 0.2.17
@@ -15306,7 +15283,7 @@ snapshots:
   eslint-plugin-jsx-a11y-x@0.2.0(eslint@10.8.0(jiti@2.7.0)(supports-color@7.2.0)):
     dependencies:
       aria-query: 5.3.2
-      axe-core: 4.12.1
+      axe-core: 4.13.0
       axobject-query: 4.1.0
       damerau-levenshtein: 1.0.8
       eslint: 10.8.0(jiti@2.7.0)(supports-color@7.2.0)
@@ -15891,10 +15868,6 @@ snapshots:
     dependencies:
       '@sec-ant/readable-stream': 0.4.1
       is-stream: 4.0.1
-
-  get-tsconfig@4.14.0:
-    dependencies:
-      resolve-pkg-maps: 1.0.0
 
   get-tsconfig@4.14.1:
     dependencies:
@@ -16651,8 +16624,8 @@ snapshots:
       escape-html: 1.0.3
       glob: 13.0.6
       htmlparser2: 10.1.0
-      marked: 18.0.7
-      marked-gfm-heading-id: 4.1.4(marked@18.0.7)
+      marked: 18.0.9
+      marked-gfm-heading-id: 4.1.4(marked@18.0.9)
       meow: 14.1.0
       mime: 4.1.0
       srcset: 5.0.3
@@ -16768,14 +16741,12 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  marked-gfm-heading-id@4.1.4(marked@18.0.7):
+  marked-gfm-heading-id@4.1.4(marked@18.0.9):
     dependencies:
       github-slugger: 2.0.0
-      marked: 18.0.7
+      marked: 18.0.9
 
   marked@11.2.0: {}
-
-  marked@18.0.7: {}
 
   marked@18.0.9: {}
 
