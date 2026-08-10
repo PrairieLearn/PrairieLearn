@@ -1,3 +1,4 @@
+import { compareItems, rankItem } from '@tanstack/match-sorter-utils';
 import type { Column } from '@tanstack/react-table';
 import clsx from 'clsx';
 import { type ReactNode, useState } from 'react';
@@ -61,9 +62,11 @@ export function MultiSelectColumnFilter<TData, TValue extends string = string>({
   const selected = new Set(values);
   const hasActiveFilter = values.length > 0;
   const visibleColumnValues = search
-    ? allColumnValues.filter((value) =>
-        value.toLocaleLowerCase().includes(search.toLocaleLowerCase()),
-      )
+    ? allColumnValues
+        .map((value) => ({ value, rank: rankItem(value, search) }))
+        .filter(({ rank }) => rank.passed)
+        .sort((a, b) => compareItems(a.rank, b.rank))
+        .map(({ value }) => value)
     : allColumnValues;
 
   const apply = (newMode: MultiSelectFilterMode, newSelected: Set<TValue>) => {
