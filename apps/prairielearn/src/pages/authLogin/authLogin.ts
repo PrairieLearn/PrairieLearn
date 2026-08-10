@@ -4,6 +4,7 @@ import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
 import * as authLib from '../../lib/authn.js';
 import { config } from '../../lib/config.js';
@@ -29,7 +30,7 @@ const InstitutionSupportedProvidersSchema = z.object({
   is_default: z.boolean(),
 });
 const ServiceSchema = z.string().nullable();
-const InstitutionIdSchema = z.string().nullable();
+const InstitutionIdSchema = IdSchema.nullable();
 
 router.get(
   '/',
@@ -38,7 +39,11 @@ router.get(
 
     // If an `institution_id` query parameter is provided, we'll only show the
     // login options for that institution.
-    const institutionId = InstitutionIdSchema.parse(req.query.institution_id ?? null);
+    const institutionIdResult = InstitutionIdSchema.safeParse(req.query.institution_id ?? null);
+    if (!institutionIdResult.success) {
+      throw new error.HttpStatusError(400, 'Invalid institution_id');
+    }
+    const institutionId = institutionIdResult.data;
     if (institutionId) {
       // Look up the supported providers for this institution.
       const supportedProviders = await queryRows(
