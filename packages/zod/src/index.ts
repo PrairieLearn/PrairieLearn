@@ -54,7 +54,11 @@ export const BooleanFromCheckboxSchema = required(
  * supported by PostgreSQL's `BIGINT` type.
  */
 export const IdSchema = z
-  .union([z.string(), z.number(), z.bigint()])
+  .unknown()
+  .refine(
+    (value) => typeof value === 'string' || typeof value === 'number' || typeof value === 'bigint',
+    { message: 'ID is not a valid PostgreSQL ID' },
+  )
   .transform(String)
   .refine(
     (value) => {
