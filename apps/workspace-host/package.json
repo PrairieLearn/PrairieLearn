@@ -36,7 +36,7 @@
     "dockerode": "^5.0.1",
     "express": "^4.22.2 <5",
     "express-async-handler": "^1.2.0",
-    "ioredis": "^5.11.1",
+    "ioredis": "^6.0.0",
     "minimist": "^1.2.8",
     "shlex": "^3.0.0",
     "zod": "^4.4.3"
