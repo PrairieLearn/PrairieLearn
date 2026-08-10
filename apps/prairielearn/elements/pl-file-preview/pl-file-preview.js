@@ -128,6 +128,7 @@ export default class PLFilePreview {
                 await Promise.all([
                   import('marked'),
                   import('@prairielearn/marked-mathjax'),
+                  import('ansi_up'),
                   // importing DOMPurify sets the global variable `DOMPurify`.
                   import('dompurify'),
                   // importing the notebookjs library sets the global variable `nb`.
@@ -135,11 +136,13 @@ export default class PLFilePreview {
                   // MathJax needs to have been loaded before the extension can be used.
                   window.MathJax.startup.promise,
                 ])
-                  .then(async ([Marked, markedMathjax]) => {
+                  .then(async ([Marked, markedMathjax, { AnsiUp }]) => {
+                    const ansiUp = new AnsiUp();
                     markedMathjax.addMathjaxExtension(Marked.marked, window.MathJax);
                     window.nb.markdown = Marked.marked.parse;
-
+                    window.nb.ansi = (code) => ansiUp.ansi_to_html(code);
                     window.nb.sanitizer = (code) => window.DOMPurify.sanitize(code);
+
                     const notebook = window.nb.parse(JSON.parse(text));
                     const rendered = notebook.render();
 
