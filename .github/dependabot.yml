@@ -39,6 +39,7 @@ updates:
     schedule:
       interval: monthly
     rebase-strategy: disabled
+    open-pull-requests-limit: 10
     ignore:
       # We're putting off this upgrade for now:
       # https://github.com/PrairieLearn/PrairieLearn/pull/6835
