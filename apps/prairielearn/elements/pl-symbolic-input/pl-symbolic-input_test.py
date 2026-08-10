@@ -6,6 +6,7 @@ from typing import Any
 import prairielearn.sympy_utils as psu
 import pytest
 import sympy
+from lxml import html
 
 symbolic_input = importlib.import_module("pl-symbolic-input")
 
@@ -309,6 +310,39 @@ def test_formula_editor_initial_value_respects_display_log_as_ln(
 
     assert "\\ln{\\left(x \\right)}" in rendered
     assert "\\log{\\left(x \\right)}" not in rendered
+
+
+# Resolves issue where submitting "{}" returns populated with "{}{}"
+@pytest.mark.parametrize(
+    ("raw_submitted_answers", "attributes", "expected_latex"),
+    [
+        ({"test-latex": "\\emptyset"}, [], "\\emptyset"),
+        ({"test-latex": "x+1"}, [], "x+1"),
+        ({}, ['initial-value="x + 1"'], "x + 1"),
+    ],
+)
+def test_formula_editor_initial_latex_is_stored_outside_math_field(
+    monkeypatch: pytest.MonkeyPatch,
+    raw_submitted_answers: dict[str, Any],
+    attributes: list[str],
+    expected_latex: str,
+) -> None:
+    monkeypatch.chdir(Path(__file__).parent)
+    element_html = build_element_html(
+        'variables="x"',
+        'formula-editor="true"',
+        *attributes,
+    )
+    data = make_question_data(raw_submitted_answers=raw_submitted_answers)
+
+    symbolic_input.prepare(element_html, data)
+    rendered = symbolic_input.render(element_html, data)
+    fragment = html.fragment_fromstring(rendered)
+
+    math_field = fragment.get_element_by_id("symbolic-input-test")
+    latex_input = fragment.get_element_by_id("symbolic-input-latex-test")
+    assert (math_field.text or "").strip() == ""
+    assert latex_input.get("value") == expected_latex
 
 
 @pytest.mark.parametrize(
