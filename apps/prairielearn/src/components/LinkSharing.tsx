@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Button, Form, InputGroup } from 'react-bootstrap';
 
-import { OverlayTrigger } from '@prairielearn/ui';
+import { Tooltip } from '@prairielearn/ui';
 
 import { CopyButton } from './CopyButton.js';
 import { QRCodeModal } from './QRCodeModal.js';
@@ -37,20 +37,22 @@ export function PublicLinkSharing({
             ariaLabel="Copy public link"
             className="btn-sm btn-outline-secondary"
           />
-          <Button
-            size="sm"
-            variant="outline-secondary"
-            aria-label="Public Link QR Code"
-            onClick={() => setShowQR(true)}
-          >
-            <i className="fas fa-qrcode" />
-          </Button>
+          <Tooltip content="View QR code">
+            <Button
+              size="sm"
+              variant="outline-secondary"
+              aria-label="Public link QR code"
+              onClick={() => setShowQR(true)}
+            >
+              <i className="fas fa-qrcode" aria-hidden="true" />
+            </Button>
+          </Tooltip>
         </InputGroup>
         <small className="form-text text-muted">{publicLinkMessage}</small>
       </div>
       <QRCodeModal
         id="publicLinkModal"
-        title="Public Link QR Code"
+        title="Public link QR code"
         content={publicLink}
         show={showQR}
         onHide={() => setShowQR(false)}
@@ -85,21 +87,16 @@ export function StudentLinkSharing({
           ariaLabel="Copy student link"
           className="btn-sm btn-outline-secondary"
         />
-        <OverlayTrigger
-          tooltip={{
-            body: 'View QR Code',
-            props: { id: 'student-link-qr-code-tooltip' },
-          }}
-        >
+        <Tooltip content="View QR code">
           <Button
             size="sm"
             variant="outline-secondary"
             aria-label="Student link QR code"
             onClick={() => setShowQR(true)}
           >
-            <i className="bi bi-qr-code-scan" />
+            <i className="bi bi-qr-code-scan" aria-hidden="true" />
           </Button>
-        </OverlayTrigger>
+        </Tooltip>
       </InputGroup>
       <small className="form-text text-muted">{studentLinkMessage}</small>
       <QRCodeModal

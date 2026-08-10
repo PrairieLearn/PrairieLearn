@@ -26,6 +26,7 @@ export interface OverlayTriggerProps extends Omit<BootstrapOverlayTriggerProps, 
      */
     header?: React.ReactNode;
   };
+  /** @deprecated Use the React Aria-based `Tooltip` component directly. */
   tooltip?: {
     /**
      * Additional props to pass to the Tooltip component. `id` is required for accessibility.
@@ -57,20 +58,8 @@ export interface OverlayTriggerProps extends Omit<BootstrapOverlayTriggerProps, 
  * - Automatically constructs a Popover with proper ref management
  *
  * This component provides a simpler API than react-bootstrap's OverlayTrigger by
- * handling the Popover construction and ref management internally.
- *
- * @example
- * ```tsx
- * <OverlayTrigger
- *   tooltip={{
- *     body: 'Tooltip content',
- *     props: { id: 'tooltip-id' },
- *   }}
- *   placement="right"
- * >
- *   <button>Hover me</button>
- * </OverlayTrigger>
- * ```
+ * handling the Popover construction and ref management internally. New tooltip
+ * call sites should use the React Aria-based Tooltip component directly.
  *
  * @example
  * ```tsx

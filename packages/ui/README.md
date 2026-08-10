@@ -2,6 +2,20 @@
 
 UI components, utilities, and styles shared between PrairieLearn and PrairieTest.
 
+## Vanilla Bootstrap tooltips
+
+Applications using Bootstrap tooltips should install the shared accessible behavior after `document.body` is available. Pass the same Bootstrap `Tooltip` constructor used elsewhere in the application.
+
+The shared behavior shows tooltips for hover-capable pointers and keyboard focus, keeps them open while hovered, and lets users dismiss them with Escape. It intentionally does not show tooltips in response to touch input, so tooltip content must never be required to understand or operate the trigger.
+
+```ts
+import { installBootstrapTooltipBehavior } from '@prairielearn/ui/bootstrap-tooltip';
+
+installBootstrapTooltipBehavior({
+  Tooltip: window.bootstrap.Tooltip,
+});
+```
+
 ## UI Component Examples
 
 ### TanstackTableCard
@@ -167,6 +181,22 @@ import { Popover } from '@prairielearn/ui';
     Publish
   </button>
 </Popover>;
+```
+
+### Tooltip
+
+Use `Tooltip` for a brief, nonessential, noninteractive description of an enabled control. Tooltips appear on hover-capable pointers and keyboard focus, remain open while hovered, and can be dismissed with Escape. They intentionally do not appear on touch devices; use `Popover` when the information must be available on touch or after pressing the trigger.
+
+The trigger must be a focusable element that forwards its ref to the underlying DOM element. Give the trigger its own accessible name because the tooltip supplements that name rather than replacing it.
+
+```tsx
+import { Tooltip } from '@prairielearn/ui';
+
+<Tooltip content="Download responses as a CSV file">
+  <button type="button" className="btn btn-outline-secondary" aria-label="Download responses">
+    <i className="bi bi-download" aria-hidden="true" />
+  </button>
+</Tooltip>;
 ```
 
 ## nuqs Utilities

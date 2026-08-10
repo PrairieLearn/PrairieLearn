@@ -71,15 +71,6 @@ onDocumentReady(() => {
       sideNavTogglerButton.setAttribute('aria-label', 'Collapse side nav');
     }
 
-    // Update the tooltip title
-    const tooltip = window.bootstrap.Tooltip.getInstance(sideNavTogglerButton);
-    if (tooltip) {
-      // Dispose the current tooltip instance
-      tooltip.dispose();
-      // Re-initialize the tooltip
-      new window.bootstrap.Tooltip(sideNavTogglerButton);
-    }
-
     appContainerDiv.addEventListener(
       'transitionend',
       // Pages can listen for this event to re-render when the side nav is toggled.
