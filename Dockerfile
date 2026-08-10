@@ -51,5 +51,5 @@ RUN chmod +x /PrairieLearn/scripts/init.sh \
     && git config --global user.name "Dev User" \
     && git config --global safe.directory '*'
 
-HEALTHCHECK CMD curl --fail http://localhost:3000/pl/webhooks/ping || exit 1
+HEALTHCHECK CMD ["curl", "--fail", "http://localhost:3000/pl/webhooks/ping"]
 CMD [ "/PrairieLearn/scripts/init.sh" ]
