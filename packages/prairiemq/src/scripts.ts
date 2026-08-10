@@ -129,7 +129,20 @@ end
 return reply
 `;
 
-// ARGV: now, lock token, lock duration, group concurrency (0 = unlimited).
+// ARGV: group concurrency (0 = unlimited). Returns the queue's configured
+// value, setting it atomically when the first worker starts.
+const configureGroupConcurrencyLua = `
+local prefix = KEYS[1]
+local key = prefix .. ':group-concurrency'
+local configured = redis.call('GET', key)
+if configured then
+  return tonumber(configured)
+end
+redis.call('SET', key, ARGV[1])
+return tonumber(ARGV[1])
+`;
+
+// ARGV: now, lock token, lock duration.
 // Promotes due delayed jobs, then hands out the next job round-robin across
 // groups. Returns nil if there is nothing to do, {'delayed', score} if the
 // only remaining work is delayed, or {'job', field1, value1, ...} with the
@@ -155,7 +168,7 @@ for i = 1, #due do
   end
 end
 
-local limit = tonumber(ARGV[4])
+local limit = tonumber(redis.call('GET', prefix .. ':group-concurrency') or '0')
 local groupCount = redis.call('LLEN', groupsKey)
 for i = 1, groupCount do
   local groupId = redis.call('LMOVE', groupsKey, groupsKey, 'LEFT', 'RIGHT')
@@ -403,12 +416,12 @@ interface PrairieMQCommands {
     groupId: string,
   ): Promise<[string, number, ...string[]]>;
   pmqGetJobStatus(prefix: string, jobId: string, includeJob: number): Promise<string[]>;
+  pmqConfigureGroupConcurrency(prefix: string, groupConcurrency: number): Promise<number>;
   pmqMoveToActive(
     prefix: string,
     now: number,
     token: string,
     lockDuration: number,
-    groupConcurrency: number,
   ): Promise<string[] | null>;
   pmqMoveToCompleted(
     prefix: string,
@@ -444,6 +457,7 @@ export type PrairieMQRedis = Redis & PrairieMQCommands;
 const scripts: Record<keyof PrairieMQCommands, string> = {
   pmqAddJob: addJobLua,
   pmqGetJobStatus: getJobStatusLua,
+  pmqConfigureGroupConcurrency: configureGroupConcurrencyLua,
   pmqMoveToActive: moveToActiveLua,
   pmqMoveToCompleted: moveToCompletedLua,
   pmqMoveToFailed: moveToFailedLua,

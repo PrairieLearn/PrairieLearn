@@ -118,6 +118,26 @@ describe('Queue', () => {
     assert.equal(counts.delayed, 0);
   });
 
+  it('does not let glob characters in a prefix affect another queue', async () => {
+    const prefix = `test-${randomUUID()}`;
+    const wildcardQueue = new Queue('shared-name', { redisUrl, prefix: `${prefix}-*` });
+    const otherQueue = new Queue('shared-name', { redisUrl, prefix: `${prefix}-other` });
+    try {
+      await wildcardQueue.add('wildcard', {});
+      const otherJob = await otherQueue.add('other', {});
+
+      await wildcardQueue.obliterate();
+
+      assert.isNull(await wildcardQueue.getJob('1'));
+      assert.isNotNull(await otherQueue.getJob(otherJob.id));
+    } finally {
+      await wildcardQueue.obliterate();
+      await otherQueue.obliterate();
+      await wildcardQueue.close();
+      await otherQueue.close();
+    }
+  });
+
   it('returns unknown state for missing jobs', async () => {
     assert.equal(await queue.getJobState('does-not-exist'), 'unknown');
     assert.deepEqual(await queue.getJobStatus('does-not-exist'), {

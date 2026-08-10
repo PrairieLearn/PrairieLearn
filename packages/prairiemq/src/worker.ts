@@ -97,6 +97,8 @@ export class Worker<Data = unknown, Result = unknown> extends EventEmitter<
   private lockTimer: ReturnType<typeof setInterval> | null = null;
   private stalledTimer: ReturnType<typeof setInterval> | null = null;
   private ready = false;
+  private startupError: Error | null = null;
+  private groupConcurrencyConfigured = false;
   private resolveReadySignal!: () => void;
   private readonly readySignal = new Promise<void>((resolve) => {
     this.resolveReadySignal = resolve;
@@ -153,6 +155,7 @@ export class Worker<Data = unknown, Result = unknown> extends EventEmitter<
       throw new Error('Worker has not been started; call run() before waitUntilReady()');
     }
     await Promise.race([this.readySignal, this.closeSignal]);
+    if (this.startupError) throw this.startupError;
     if (!this.ready) {
       throw new Error('Worker closed before becoming ready');
     }
@@ -193,6 +196,22 @@ export class Worker<Data = unknown, Result = unknown> extends EventEmitter<
     while (!this.closing) {
       try {
         await Promise.all([waitForRedisReady(this.client), waitForRedisReady(this.blockingClient)]);
+        if (!this.groupConcurrencyConfigured) {
+          const configured = await this.client.pmqConfigureGroupConcurrency(
+            this.keys.base,
+            this.groupConcurrency,
+          );
+          if (configured !== this.groupConcurrency) {
+            const error = new Error(
+              `groupConcurrency is ${configured} for queue "${this.name}", not ${this.groupConcurrency}`,
+            );
+            this.startupError = error;
+            this.resolveReadySignal();
+            this.emitError(error);
+            return;
+          }
+          this.groupConcurrencyConfigured = true;
+        }
         let nextDelayedUntil: number | null = null;
         while (!this.closing && this.processing.size < this.concurrency) {
           const next = await this.fetchNextJob();
@@ -236,7 +255,6 @@ export class Worker<Data = unknown, Result = unknown> extends EventEmitter<
       Date.now(),
       token,
       this.lockDuration,
-      this.groupConcurrency,
     );
     if (reply == null) return { job: null, token, nextDelayedUntil: null };
     if (reply[0] === 'delayed') {

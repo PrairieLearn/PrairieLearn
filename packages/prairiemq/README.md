@@ -55,7 +55,7 @@ const worker = new Worker('regrades', processRegrade, {
 });
 ```
 
-All workers of a queue should use the same `groupConcurrency` value.
+The first worker persists the queue's `groupConcurrency` value in Redis. Later workers must use the same value or `waitUntilReady()` will reject. The setting lasts for the lifetime of the queue and is removed by `obliterate()`.
 
 ### Job options
 

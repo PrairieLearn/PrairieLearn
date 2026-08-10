@@ -6,6 +6,10 @@ import type { GroupStatus, JobCounts, JobOptions, JobState, QueueOptions } from 
 
 const MAX_PRIORITY = 2 ** 20;
 
+function escapeRedisGlob(value: string): string {
+  return value.replaceAll(/[\\*?[\]]/g, '\\$&');
+}
+
 export interface JobStatus<Data = unknown, Result = unknown> {
   state: JobState;
   job: Job<Data, Result> | null;
@@ -294,7 +298,10 @@ export class Queue<Data = unknown, Result = unknown> {
    * workers first.
    */
   async obliterate(): Promise<void> {
-    const stream = this.client.scanStream({ match: `${this.keys.base}:*`, count: 250 });
+    const stream = this.client.scanStream({
+      match: `${escapeRedisGlob(this.keys.base)}:*`,
+      count: 250,
+    });
     for await (const keys of stream) {
       if ((keys as string[]).length > 0) {
         await this.client.unlink(...(keys as string[]));

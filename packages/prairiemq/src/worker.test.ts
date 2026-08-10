@@ -288,6 +288,25 @@ describe('Worker', () => {
     assert.equal(maxActive, 2);
   });
 
+  it('rejects workers with a different groupConcurrency', async () => {
+    const firstWorker = makeWorker(queue.name, async () => undefined, {
+      redisUrl,
+      groupConcurrency: 2,
+      blockTimeout: 50,
+    });
+    await firstWorker.waitUntilReady();
+
+    const secondWorker = makeWorker(queue.name, async () => undefined, {
+      redisUrl,
+      groupConcurrency: 1,
+      blockTimeout: 50,
+    });
+
+    await expect(secondWorker.waitUntilReady()).rejects.toThrow(
+      `groupConcurrency is 2 for queue "${queue.name}", not 1`,
+    );
+  });
+
   it('continues renewing locks while closing gracefully', async () => {
     const job = await queue.add('slow', {});
     let releaseProcessor!: () => void;
