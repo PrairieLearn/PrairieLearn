@@ -76,7 +76,7 @@ export interface WorkerOptions {
   redisUrl: string;
   /** Must match the prefix used by the corresponding {@link QueueOptions.prefix}. */
   prefix?: string;
-  /** Maximum number of jobs this worker processes concurrently. Defaults to 1. */
+  /** Maximum number of jobs this worker processes concurrently. Defaults to 1; maximum 1000. */
   concurrency?: number;
   /**
    * Maximum number of jobs of a single group that may be active at once

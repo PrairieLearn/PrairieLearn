@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { once } from 'node:events';
 import { setTimeout as sleep } from 'node:timers/promises';
 
+import { Redis } from 'ioredis';
 import { afterEach, assert, beforeEach, describe, expect, it } from 'vitest';
 
 import type { Job } from './job.js';
@@ -300,11 +301,16 @@ describe('Worker', () => {
       redisUrl,
       groupConcurrency: 1,
       blockTimeout: 50,
+      autorun: false,
     });
+    const errors: Error[] = [];
+    secondWorker.on('error', (error) => errors.push(error));
+    secondWorker.run();
 
     await expect(secondWorker.waitUntilReady()).rejects.toThrow(
       `groupConcurrency is 2 for queue "${queue.name}", not 1`,
     );
+    assert.lengthOf(errors, 1);
   });
 
   it('continues renewing locks while closing gracefully', async () => {
@@ -348,6 +354,75 @@ describe('Worker', () => {
     await closePromise;
     await waitUntil(async () => (await queue.getJobState(job.id)) === 'completed');
     assert.isFalse(processedBySecondWorker);
+  });
+
+  it('can force a graceful close that is waiting on a processor', async () => {
+    await queue.add('slow', {});
+    let releaseProcessor!: () => void;
+    const processorReleased = new Promise<void>((resolve) => {
+      releaseProcessor = resolve;
+    });
+    let markStarted!: () => void;
+    const processorStarted = new Promise<void>((resolve) => {
+      markStarted = resolve;
+    });
+    const worker = makeWorker(
+      queue.name,
+      async () => {
+        markStarted();
+        await processorReleased;
+      },
+      { redisUrl, blockTimeout: 50 },
+    );
+    await processorStarted;
+
+    const gracefulClose = worker.close();
+    const forcedClose = worker.close(true);
+    const closedBeforeProcessor = await Promise.race([
+      forcedClose.then(() => true),
+      sleep(500).then(() => false),
+    ]);
+
+    releaseProcessor();
+    await gracefulClose;
+    assert.isTrue(closedBeforeProcessor);
+  });
+
+  it('reports a lost lock only once', async () => {
+    const job = await queue.add('slow', {});
+    let releaseProcessor!: () => void;
+    const processorReleased = new Promise<void>((resolve) => {
+      releaseProcessor = resolve;
+    });
+    let markStarted!: () => void;
+    const processorStarted = new Promise<void>((resolve) => {
+      markStarted = resolve;
+    });
+    const worker = makeWorker(
+      queue.name,
+      async () => {
+        markStarted();
+        await processorReleased;
+      },
+      { redisUrl, lockDuration: 100, stalledInterval: 10_000, blockTimeout: 50 },
+    );
+    const errors: Error[] = [];
+    worker.on('error', (error) => errors.push(error));
+    await processorStarted;
+
+    const redis = new Redis(redisUrl);
+    try {
+      await redis.del(`${queue.keys.base}:lock:${job.id}`);
+      await waitUntil(async () => errors.length > 0);
+      releaseProcessor();
+      await sleep(100);
+    } finally {
+      releaseProcessor();
+      await redis.quit();
+    }
+
+    assert.lengthOf(errors, 1);
+    assert.equal(errors[0].message, `Lost lock while processing job ${job.id}`);
   });
 
   it('recovers stalled jobs', async () => {
@@ -424,6 +499,7 @@ describe('Worker', () => {
 
   it('rejects invalid worker options', () => {
     const invalidOptions = [
+      { concurrency: 1001 },
       { groupConcurrency: -1 },
       { maxStalledCount: -1 },
       { stalledInterval: 0 },

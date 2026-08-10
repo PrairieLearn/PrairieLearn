@@ -28,6 +28,7 @@ const worker = new Worker(
 
 worker.on('completed', (job, result) => console.log(`job ${job.id} finished: ${result}`));
 worker.on('failed', (job, err) => console.error(`job ${job.id} failed: ${err.message}`));
+worker.on('error', (err) => reportError(err));
 
 await worker.waitUntilReady();
 ```
@@ -100,13 +101,15 @@ Worker events are local to the process that executes the job. A web process that
 - `failed (job, error)`: a job failed with no attempts remaining.
 - `retrying (job, error)`: a job failed and was requeued for another attempt.
 - `stalled (jobId)`: a job's lock expired (e.g. its worker crashed); it was requeued, or moved to failed once it stalled more than `maxStalledCount` times.
-- `error (error)`: an operational error (e.g. a Redis hiccup). Unlike a plain `EventEmitter`, a missing `error` listener will not crash the process.
+- `error (error)`: an operational or correctness error, such as a Redis failure or lost lock. As with any Node.js `EventEmitter`, workers must have an `error` listener.
 
 ### Delivery semantics
 
 PrairieMQ provides at-least-once delivery. A worker holds a renewing lock (`lockDuration`, default 30s) while processing a job; if the worker dies, another worker's stalled-job check (`stalledInterval`, default 30s) requeues the job. Stalled recovery is limited separately by `maxStalledCount`, so it can cause more processor executions than the job's `attempts` setting. Processors should therefore be idempotent.
 
 Workers wake up immediately when jobs are added (via a Redis wake-up marker) and otherwise poll at `blockTimeout` intervals (default 1s), which bounds the latency of delayed-job promotion and of picking up work freed by other workers' group-concurrency limits.
+
+Queue commands fail after one Redis retry so request-time callers can handle an outage. Worker connections retry indefinitely so processing resumes when Redis recovers.
 
 Redis Cluster is not supported; keys are derived from a single prefix (`<prefix>:<queueName>:...`, prefix defaults to `prairiemq`).
 

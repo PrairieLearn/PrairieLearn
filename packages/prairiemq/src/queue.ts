@@ -150,7 +150,7 @@ export class Queue<Data = unknown, Result = unknown> {
     this.name = name;
     this.keys = new QueueKeys(options.prefix ?? DEFAULT_PREFIX, name);
     this.defaultJobOptions = mergeJobOptions({}, options.defaultJobOptions ?? {});
-    this.client = createScriptedClient(options.redisUrl);
+    this.client = createScriptedClient(options.redisUrl, 'queue');
   }
 
   async add(name: string, data: Data, options: JobOptions = {}): Promise<Job<Data, Result>> {

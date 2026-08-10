@@ -278,15 +278,21 @@ ${cleanupGroupLua('groupId')}
 return requeued
 `;
 
-// ARGV: jobId, lock token, lock duration.
-// Returns 1 if the lock was extended, 0 if it was lost.
-const extendLockLua = `
+// ARGV: lock duration, followed by job id and lock token pairs. Returns the ids
+// of jobs whose locks were already lost.
+const extendLocksLua = `
 local prefix = KEYS[1]
-local lockKey = prefix .. ':lock:' .. ARGV[1]
-if redis.call('GET', lockKey) == ARGV[2] then
-  return redis.call('PEXPIRE', lockKey, ARGV[3])
+local lost = {}
+for i = 2, #ARGV, 2 do
+  local jobId = ARGV[i]
+  local lockKey = prefix .. ':lock:' .. jobId
+  if redis.call('GET', lockKey) == ARGV[i + 1] then
+    redis.call('PEXPIRE', lockKey, ARGV[1])
+  else
+    lost[#lost + 1] = jobId
+  end
 end
-return 0
+return lost
 `;
 
 // ARGV: maxStalledCount, now.
@@ -441,7 +447,7 @@ interface PrairieMQCommands {
     retryDelay: number,
     removeMode: number,
   ): Promise<number>;
-  pmqExtendLock(prefix: string, jobId: string, token: string, duration: number): Promise<number>;
+  pmqExtendLocks(prefix: string, duration: number, ...locks: string[]): Promise<string[]>;
   pmqCheckStalled(
     prefix: string,
     maxStalledCount: number,
@@ -461,15 +467,17 @@ const scripts: Record<keyof PrairieMQCommands, string> = {
   pmqMoveToActive: moveToActiveLua,
   pmqMoveToCompleted: moveToCompletedLua,
   pmqMoveToFailed: moveToFailedLua,
-  pmqExtendLock: extendLockLua,
+  pmqExtendLocks: extendLocksLua,
   pmqCheckStalled: checkStalledLua,
   pmqGetCounts: getCountsLua,
   pmqGetGroups: getGroupsLua,
   pmqDrain: drainLua,
 };
 
-export function createScriptedClient(redisUrl: string): PrairieMQRedis {
-  const client = new Redis(redisUrl, { maxRetriesPerRequest: null });
+export function createScriptedClient(redisUrl: string, role: 'queue' | 'worker'): PrairieMQRedis {
+  const client = new Redis(redisUrl, {
+    maxRetriesPerRequest: role === 'worker' ? null : 1,
+  });
   for (const [name, lua] of Object.entries(scripts)) {
     client.defineCommand(name, { numberOfKeys: 1, lua });
   }

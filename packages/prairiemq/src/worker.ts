@@ -11,6 +11,8 @@ import { validateQueueName } from './queue.js';
 import { type PrairieMQRedis, createScriptedClient } from './scripts.js';
 import type { JobOptions, WorkerOptions } from './types.js';
 
+const MAX_CONCURRENCY = 1000;
+
 export type Processor<Data, Result> = (job: Job<Data, Result>) => Promise<Result>;
 
 interface WorkerEvents<Data, Result> {
@@ -89,12 +91,15 @@ export class Worker<Data = unknown, Result = unknown> extends EventEmitter<
 
   private readonly processing = new Set<Promise<void>>();
   private readonly activeTokens = new Map<string, string>();
+  private readonly lostLockTokens = new Set<string>();
   private closing = false;
+  private forceClosing = false;
   private closed = false;
   private runPromise: Promise<void> | null = null;
   private closePromise: Promise<void> | null = null;
   private markerWait: Promise<void> | null = null;
   private lockTimer: ReturnType<typeof setInterval> | null = null;
+  private lockRenewalPromise: Promise<void> | null = null;
   private stalledTimer: ReturnType<typeof setInterval> | null = null;
   private ready = false;
   private startupError: Error | null = null;
@@ -107,6 +112,11 @@ export class Worker<Data = unknown, Result = unknown> extends EventEmitter<
   private resolveCloseSignal!: () => void;
   private readonly closeSignal = new Promise<void>((resolve) => {
     this.resolveCloseSignal = resolve;
+  });
+
+  private resolveForceCloseSignal!: () => void;
+  private readonly forceCloseSignal = new Promise<void>((resolve) => {
+    this.resolveForceCloseSignal = resolve;
   });
 
   constructor(name: string, processor: Processor<Data, Result>, options: WorkerOptions) {
@@ -127,11 +137,14 @@ export class Worker<Data = unknown, Result = unknown> extends EventEmitter<
     validateIntegerOption('stalledInterval', this.stalledInterval, 1);
     validateIntegerOption('maxStalledCount', this.maxStalledCount, 0);
     validateIntegerOption('blockTimeout', this.blockTimeout, 1);
+    if (this.concurrency > MAX_CONCURRENCY) {
+      throw new Error(`concurrency must not exceed ${MAX_CONCURRENCY}`);
+    }
     if (this.lockDuration < 100) {
       throw new Error('lockDuration must be at least 100ms');
     }
 
-    this.client = createScriptedClient(options.redisUrl);
+    this.client = createScriptedClient(options.redisUrl, 'worker');
     this.blockingClient = new Redis(options.redisUrl, { maxRetriesPerRequest: null });
 
     if (options.autorun !== false) this.run();
@@ -141,7 +154,7 @@ export class Worker<Data = unknown, Result = unknown> extends EventEmitter<
   run(): void {
     if (this.runPromise || this.closing) return;
     this.lockTimer = setInterval(
-      () => void this.extendLocks(),
+      () => this.startLockRenewal(),
       Math.max(Math.floor(this.lockDuration / 2), 50),
     );
     this.stalledTimer = setInterval(() => void this.checkStalledJobs(), this.stalledInterval);
@@ -167,26 +180,41 @@ export class Worker<Data = unknown, Result = unknown> extends EventEmitter<
    * picked up as stalled by another worker).
    */
   async close(force = false): Promise<void> {
-    this.closePromise ??= this.doClose(force);
+    if (force && !this.closed) this.forceClose();
+    this.closePromise ??= this.doClose();
     await this.closePromise;
   }
 
-  private async doClose(force: boolean): Promise<void> {
+  private forceClose() {
+    if (this.forceClosing) return;
+    this.forceClosing = true;
+    this.resolveForceCloseSignal();
+    if (this.lockTimer) clearInterval(this.lockTimer);
+    this.blockingClient.disconnect();
+    this.client.disconnect();
+  }
+
+  private async doClose(): Promise<void> {
     this.closing = true;
     this.resolveCloseSignal();
     if (this.stalledTimer) clearInterval(this.stalledTimer);
     this.blockingClient.disconnect();
-    if (force) {
-      if (this.lockTimer) clearInterval(this.lockTimer);
-      this.client.disconnect();
-    }
     await this.runPromise;
-    if (!force) {
-      await Promise.all(this.processing);
-      if (this.lockTimer) clearInterval(this.lockTimer);
+    if (!this.forceClosing) {
+      await Promise.race([Promise.all(this.processing), this.forceCloseSignal]);
+    }
+    if (this.lockTimer) clearInterval(this.lockTimer);
+    if (!this.forceClosing && this.lockRenewalPromise) {
+      await Promise.race([this.lockRenewalPromise, this.forceCloseSignal]);
     }
     try {
-      if (!force) await this.client.quit();
+      if (!this.forceClosing) {
+        try {
+          await this.client.quit();
+        } catch (err) {
+          if (!this.forceClosing) throw err;
+        }
+      }
     } finally {
       this.closed = true;
     }
@@ -273,7 +301,10 @@ export class Worker<Data = unknown, Result = unknown> extends EventEmitter<
       .catch((err) => this.emitError(toError(err)))
       .finally(() => {
         this.processing.delete(promise);
-        this.activeTokens.delete(job.id);
+        if (this.activeTokens.get(job.id) === token) {
+          this.activeTokens.delete(job.id);
+        }
+        this.lostLockTokens.delete(token);
       });
     this.processing.add(promise);
   }
@@ -304,7 +335,7 @@ export class Worker<Data = unknown, Result = unknown> extends EventEmitter<
       encodeRemoveMode(job.opts.removeOnComplete),
     );
     if (code === -1) {
-      this.emitError(new Error(`Lost lock for job ${job.id} before completion could be recorded`));
+      this.reportLostLock(token, `Lost lock for job ${job.id} before completion could be recorded`);
       return;
     }
     this.emit('completed', job, result);
@@ -324,7 +355,7 @@ export class Worker<Data = unknown, Result = unknown> extends EventEmitter<
       encodeRemoveMode(job.opts.removeOnFail),
     );
     if (code === -1) {
-      this.emitError(new Error(`Lost lock for job ${job.id} before failure could be recorded`));
+      this.reportLostLock(token, `Lost lock for job ${job.id} before failure could be recorded`);
       return;
     }
     if (code === 1) {
@@ -347,14 +378,37 @@ export class Worker<Data = unknown, Result = unknown> extends EventEmitter<
     return this.markerWait;
   }
 
+  private startLockRenewal() {
+    if (this.lockRenewalPromise || this.activeTokens.size === 0) return;
+    const renewal = this.extendLocks()
+      .catch((err) => this.emitError(toError(err)))
+      .finally(() => {
+        if (this.lockRenewalPromise === renewal) this.lockRenewalPromise = null;
+      });
+    this.lockRenewalPromise = renewal;
+  }
+
   private async extendLocks() {
-    for (const [jobId, token] of this.activeTokens) {
-      try {
-        await this.client.pmqExtendLock(this.keys.base, jobId, token, this.lockDuration);
-      } catch (err) {
-        this.emitError(toError(err));
+    const locks = [...this.activeTokens];
+    if (locks.length === 0) return;
+    const lostJobIds = await this.client.pmqExtendLocks(
+      this.keys.base,
+      this.lockDuration,
+      ...locks.flatMap(([jobId, token]) => [jobId, token]),
+    );
+    const renewedTokens = new Map(locks);
+    for (const jobId of lostJobIds) {
+      const token = renewedTokens.get(jobId);
+      if (token != null && this.activeTokens.get(jobId) === token) {
+        this.reportLostLock(token, `Lost lock while processing job ${jobId}`);
       }
     }
+  }
+
+  private reportLostLock(token: string, message: string) {
+    if (this.lostLockTokens.has(token)) return;
+    this.lostLockTokens.add(token);
+    this.emitError(new Error(message));
   }
 
   private async checkStalledJobs() {
@@ -372,13 +426,8 @@ export class Worker<Data = unknown, Result = unknown> extends EventEmitter<
     }
   }
 
-  // An 'error' event with no listener would crash the process, and worker
-  // errors (e.g. a Redis blip) are recoverable, so only emit when someone is
-  // listening.
   private emitError(error: Error) {
     if (this.closed) return;
-    if (this.listenerCount('error') > 0) {
-      this.emit('error', error);
-    }
+    this.emit('error', error);
   }
 }
