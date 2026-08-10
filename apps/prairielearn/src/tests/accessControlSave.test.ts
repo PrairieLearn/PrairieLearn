@@ -379,7 +379,7 @@ describe('Access control save via tRPC', { concurrent: false }, () => {
     const [existingEnrollmentRule] = await selectAccessControlRules(assessment, ['enrollment']);
     assert.isOk(existingEnrollmentRule);
     const enrollmentId = existingEnrollmentRule.enrollments?.[0]?.enrollmentId;
-    assert.isDefined(enrollmentId);
+    assert(typeof enrollmentId === 'string');
 
     await expect(
       client.accessControl.saveAllRules.mutate({
