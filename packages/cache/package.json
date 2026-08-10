@@ -15,7 +15,7 @@
   "dependencies": {
     "@prairielearn/logger": "workspace:^",
     "@prairielearn/sentry": "workspace:^",
-    "ioredis": "^5.11.1",
+    "ioredis": "^6.0.0",
     "lru-cache": "^11.5.2"
   },
   "devDependencies": {
