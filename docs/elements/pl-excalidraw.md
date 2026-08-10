@@ -2,7 +2,7 @@
 
 Draw a vector diagram using [excalidraw](https://github.com/excalidraw/excalidraw).
 
-Note that only manual grading is supported. For auto-gradable drawings, consider using using [`pl-drawing`](../pl-drawing/index.md) or [`pl-sketch`](pl-sketch.md).
+Note that only manual grading is supported. For auto-gradable drawings, consider using [`pl-drawing`](../pl-drawing/index.md) or [`pl-sketch`](pl-sketch.md).
 
 ![Screenshot of the pl-excalidraw element](pl-excalidraw.png)
 

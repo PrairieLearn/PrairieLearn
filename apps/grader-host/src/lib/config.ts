@@ -5,6 +5,7 @@ import { z } from 'zod';
 import {
   ConfigLoader,
   type ConfigSource,
+  makeConductorConfigSource,
   makeImdsConfigSource,
   makeKmsConfigSource,
   makeSecretsManagerConfigSource,
@@ -72,6 +73,7 @@ export const ConfigSchema = z.object({
     ])
     .default(false),
   autoScalingGroupName: z.string().nullable().default(null),
+  autoScalingTerminatingLifecycleHookName: z.string().nullable().default(null),
   // Will be automatically detected when running in EC2.
   instanceId: z.string().default('server'),
   sentryDsn: z.string().nullable().default(null),
@@ -175,6 +177,7 @@ export const config = loader.config;
 
 export async function loadConfig() {
   await loader.loadAndValidate([
+    makeConductorConfigSource(),
     makeProductionConfigSource(),
     makeImdsConfigSource(),
     makeSecretsManagerConfigSource('ConfSecret'),

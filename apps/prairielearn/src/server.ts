@@ -98,11 +98,14 @@ import { courseInstanceTrpcRouter } from './trpc/courseInstance/trpc.js';
 process.on('warning', (e) => console.warn(e));
 
 const argv = minimist(process.argv.slice(2));
+const migrationDirectories = [path.join(import.meta.dirname, 'migrations'), SCHEMA_MIGRATIONS_PATH];
+const migrationsProject = 'prairielearn';
 
 if ('h' in argv || 'help' in argv) {
   const msg = `PrairieLearn command line options:
     -h, --help                          Display this help and exit
     --config <filename>                 Use the specified configuration file
+    --list-pending-migrations           List pending migrations as JSON and exit
     --migrate-and-exit                  Run the DB initialization parts and exit
     --refresh-workspace-hosts-and-exit  Refresh the workspace hosts and exit
     --sync-course <course_id>           Synchronize a course and exit
@@ -500,10 +503,11 @@ export async function initExpress(): Promise<Express> {
   app.use((await import('./middlewares/authn.js')).default); // authentication, set res.locals.authn_user
   app.use('/pl/api/v1', (await import('./middlewares/authnToken.js')).default); // authn for the API, set res.locals.authn_user
 
-  // Deny all access to a user with an active LockDown-Browser-required
-  // reservation whose session was not established inside LockDown Browser. Must
-  // come after authentication so it can read `res.locals.authn_user`.
-  app.use((await import('./middlewares/enforceLockdownBrowser.js')).default);
+  // Load active PrairieTest reservation information and deny access to a user
+  // whose LockDown-Browser-required reservation was not established inside
+  // LockDown Browser. Must come after authentication so it can read
+  // `res.locals.authn_user`.
+  app.use((await import('./middlewares/selectAndAuthzPrairieTestReservation.js')).default);
 
   // Must come after the authentication middleware, as we need to read the
   // `authn_is_administrator` property from the response locals.
@@ -516,8 +520,7 @@ export async function initExpress(): Promise<Express> {
     app.use('/pl/prairietest/auth', (await import('./ee/auth/prairietest.js')).default);
   }
 
-  // Must come before CSRF middleware; we do our own signature verification here.
-  app.use('/pl/webhooks/terminate', (await import('./webhooks/terminate.js')).default);
+  // Must come before CSRF middleware; Stripe webhooks use their own signature verification.
   app.use(
     '/pl/webhooks/stripe',
     await enterpriseOnly(async () => (await import('./ee/webhooks/stripe/index.js')).default),
@@ -557,6 +560,10 @@ export async function initExpress(): Promise<Express> {
   app.use('/pl/enroll', (await import('./pages/enroll/enroll.js')).default);
   app.use('/pl/password', (await import('./pages/authPassword/authPassword.js')).default);
   app.use('/pl/end-exam', (await import('./pages/endExam/endExam.js')).default);
+  app.use(
+    '/pl/report-cheating',
+    (await import('./pages/reportCheating/reportCheating.js')).default,
+  );
   app.use('/pl/request_course', [
     // Users can post data to this page and then view it, so we'll block access to prevent
     // students from using to infiltrate or exfiltrate exam information.
@@ -2194,6 +2201,19 @@ function idleErrorHandler(err: Error) {
   void Sentry.close().finally(() => process.exit(1));
 }
 
+function getPostgresConfig() {
+  return {
+    user: config.postgresqlUser,
+    database: config.postgresqlDatabase,
+    host: config.postgresqlHost,
+    password: config.postgresqlPassword ?? undefined,
+    max: config.postgresqlPoolSize,
+    idleTimeoutMillis: config.postgresqlIdleTimeoutMillis,
+    ssl: config.postgresqlSsl,
+    errorOnUnusedParameters: config.devMode,
+  };
+}
+
 const isHMR = DEV_EXECUTION_MODE === 'hmr';
 
 if (isHMR && isServerPending()) {
@@ -2244,6 +2264,27 @@ if (shouldStartServer) {
 
     // Load config immediately so we can use it configure everything else.
     await loadConfig(configPaths);
+
+    if (argv['list-pending-migrations']) {
+      await sqldb.initAsync(getPostgresConfig(), idleErrorHandler);
+      const pendingMigrations = await migrations.getPendingMigrations({
+        directories: migrationDirectories,
+        project: migrationsProject,
+      });
+
+      // On Linux, writes to piped stdout can be asynchronous. Wait for this write to finish
+      // before process.exit() closes the process.
+      await new Promise<void>((resolve, reject) => {
+        process.stdout.write(`${JSON.stringify({ pendingMigrations })}\n`, (err) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve();
+          }
+        });
+      });
+      process.exit(0);
+    }
 
     // This should be done as soon as we load our config so that we can
     // start exporting spans.
@@ -2356,16 +2397,7 @@ if (shouldStartServer) {
       passport.use(strategy);
     }
 
-    const pgConfig = {
-      user: config.postgresqlUser,
-      database: config.postgresqlDatabase,
-      host: config.postgresqlHost,
-      password: config.postgresqlPassword ?? undefined,
-      max: config.postgresqlPoolSize,
-      idleTimeoutMillis: config.postgresqlIdleTimeoutMillis,
-      ssl: config.postgresqlSsl,
-      errorOnUnusedParameters: config.devMode,
-    };
+    const pgConfig = getPostgresConfig();
 
     logger.verbose(`Connecting to ${pgConfig.user}@${pgConfig.host}:${pgConfig.database}`);
 
@@ -2408,8 +2440,8 @@ if (shouldStartServer) {
     // running migrations as we do when we start the server.
     if (config.runMigrations || argv['migrate-and-exit']) {
       await migrations.init({
-        directories: [path.join(import.meta.dirname, 'migrations'), SCHEMA_MIGRATIONS_PATH],
-        project: 'prairielearn',
+        directories: migrationDirectories,
+        project: migrationsProject,
       });
     }
 
@@ -2622,11 +2654,15 @@ if (shouldStartServer) {
     throw err;
   }
 
-  // SIGTERM can be used to gracefully shut down the process. This signal
-  // may come from another process, but we also send it to ourselves if
-  // we want to gracefully shut down. This is used below in the ASG
-  // lifecycle handler, and also within the "terminate" webhook.
-  process.once('SIGTERM', async () => {
+  let gracefulShutdownStarted = false;
+
+  // SIGTERM can be used to gracefully shut down the process. This signal may
+  // come from another process, but we also send it to ourselves when IMDS
+  // reports that Auto Scaling is terminating the instance.
+  process.on('SIGTERM', async () => {
+    if (gracefulShutdownStarted) return;
+    gracefulShutdownStarted = true;
+
     // In test environments, the entire process group receives SIGTERM, which
     // can cause in-flight outgoing HTTP requests to fail with ECONNRESET.
     // These unhandled 'error' events on ClientRequest objects would crash the
@@ -2698,6 +2734,10 @@ if (shouldStartServer) {
     } finally {
       process.exit(0);
     }
+  });
+
+  lifecycleHooks.startInstanceTerminationWatcher(() => {
+    process.kill(process.pid, 'SIGTERM');
   });
 
   setServerState('initialized');

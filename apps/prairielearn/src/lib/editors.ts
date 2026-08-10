@@ -1104,7 +1104,8 @@ async function updateInfoAssessmentFilesForTargetCourse(
 
     // We do not want to preserve certain settings when copying an assessment to another course
     delete infoJson.shareSourcePublicly;
-    infoJson.allowAccess = [];
+    delete infoJson.allowAccess;
+    infoJson.accessControl = [];
 
     function shouldAddSharingPrefix(qid: string) {
       return qid && !qid.startsWith('@') && questionsToImport.has(qid);

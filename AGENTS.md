@@ -98,6 +98,8 @@ If a migration was created on the current feature branch (i.e., it has not been 
 
 If you make a change to the database, make sure to update the database schema description in `database/` and the Zod types/table list in `apps/prairielearn/src/lib/db-types.ts`.
 
+After any migration or `database/` schema-description change, run `apps/prairielearn/src/tests/database.test.ts` after the final edit. Re-run it after renaming a constraint or index: entry ordering in `database/tables/*.pg` is significant and must match the generated database description.
+
 Dropping a sproc (stored procedure) only requires removing the file from `apps/prairielearn/src/sprocs` and updating `apps/prairielearn/src/sprocs/index.ts`. Do not author a migration that uses `DROP FUNCTION`.
 
 When inserting audit events (`insertAuditEvent`), always do so inside the same transaction as the action being audited. Use `runInTransactionAsync` to wrap the original database mutation and its corresponding audit log insertion together. This ensures that if either the action or the audit event fails, both are rolled back.
@@ -201,6 +203,8 @@ When changing element properties or options, you MUST update the corresponding d
 When modifying or reviewing element controllers — especially adding fields to `data["params"]` or `data["correct_answers"]` — see the [`element-backwards-compat` skill](./.agents/skills/element-backwards-compat/SKILL.md) for the rules that protect existing variants from breaking.
 
 When changing or reviewing an element's accepted/generated HTML attribute contract, see the [`element-validation` skill](./.agents/skills/element-validation/SKILL.md) to keep schema modules, legacy AI validation, Python render-time checks, and element docs aligned.
+
+When creating a new element or changing an element's runtime dependencies, scripts, styles, or bundled assets, see the [`element-runtime-assets` skill](./.agents/skills/element-runtime-assets/SKILL.md) for the requirement that those assets be browser-loadable as standalone bundles.
 
 ### Testing
 

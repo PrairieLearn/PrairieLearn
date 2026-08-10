@@ -2,7 +2,7 @@ import { formatDistance } from 'date-fns';
 import { z } from 'zod';
 
 import { formatDate } from '@prairielearn/formatter';
-import { IdSchema } from '@prairielearn/zod';
+import { DateFromISOString, IdSchema } from '@prairielearn/zod';
 
 import { AssessmentBadge } from '../../components/AssessmentBadge.js';
 import { Pager } from '../../components/Pager.js';
@@ -24,7 +24,12 @@ export const IssueRowSchema = IssueSchema.extend({
   display_timezone: CourseInstanceSchema.shape.display_timezone,
   assessment_id: IdSchema.nullable(),
   assessment: z
-    .object({ label: z.string(), assessment_id: IdSchema, color: AssessmentSetSchema.shape.color })
+    .object({
+      label: z.string(),
+      assessment_id: IdSchema,
+      color: AssessmentSetSchema.shape.color,
+      deleted_at: DateFromISOString.nullable(),
+    })
     .nullable(),
   assessment_instance_id: IdSchema.nullable(),
   question_qid: QuestionSchema.shape.qid.nullable(),
@@ -149,6 +154,7 @@ export function InstructorIssues({
                 type="submit"
                 data-bs-toggle="tooltip"
                 data-bs-title="Search"
+                aria-label="Search issues"
               >
                 <i className="fa fa-search" aria-hidden="true" />
               </button>
@@ -157,6 +163,7 @@ export function InstructorIssues({
                 href={`${urlPrefix}/course_admin/issues?q=`}
                 data-bs-toggle="tooltip"
                 data-bs-title="Clear filters"
+                aria-label="Clear filters"
               >
                 <i className="fa fa-times" aria-hidden="true" />
               </a>
@@ -257,11 +264,15 @@ function IssueRow({
           ) : issue.showUser ? (
             <>
               {' '}
-              (<a href={`${questionPreviewUrl}?variant_id=${issue.variant_id}`}>
-                instructor view
-              </a>, <a href={studentViewUrl}>student view</a>,{' '}
-              <a href={manualGradingUrl}>manual grading</a>,{' '}
-              <a href={assessmentInstanceUrl}> assessment details</a>)
+              (<a href={`${questionPreviewUrl}?variant_id=${issue.variant_id}`}>instructor view</a>
+              {!issue.assessment?.deleted_at && (
+                <>
+                  , <a href={studentViewUrl}>student view</a>,{' '}
+                  <a href={manualGradingUrl}>manual grading</a>,{' '}
+                  <a href={assessmentInstanceUrl}> assessment details</a>
+                </>
+              )}
+              )
             </>
           ) : (
             <>
@@ -300,21 +311,28 @@ function IssueRow({
             </>
           )}
         </small>
-        {issue.manually_reported ? (
-          <span className="badge text-bg-info">Manually reported</span>
-        ) : (
-          <span className="badge text-bg-warning">Automatically reported</span>
-        )}
-        {issue.assessment && issue.course_instance_id && (
-          <AssessmentBadge
-            courseInstanceId={issue.course_instance_id}
-            hideLink={issue.hideAssessmentLink}
-            assessment={issue.assessment}
-          />
-        )}
-        {issue.course_instance_short_name && (
-          <span className="badge text-bg-dark">{issue.course_instance_short_name}</span>
-        )}
+        <span className="d-inline-flex flex-wrap align-items-center gap-1">
+          {issue.manually_reported ? (
+            <span className="badge text-bg-info">Manually reported</span>
+          ) : (
+            <span className="badge text-bg-warning">Automatically reported</span>
+          )}
+          {issue.assessment &&
+            (issue.assessment.deleted_at ? (
+              <span className="badge color-red3">{issue.assessment.label} (deleted)</span>
+            ) : (
+              issue.course_instance_id && (
+                <AssessmentBadge
+                  courseInstanceId={issue.course_instance_id}
+                  hideLink={issue.hideAssessmentLink}
+                  assessment={issue.assessment}
+                />
+              )
+            ))}
+          {issue.course_instance_short_name && (
+            <span className="badge text-bg-dark">{issue.course_instance_short_name}</span>
+          )}
+        </span>
       </div>
       {hasCoursePermissionEdit && (
         <div className="ms-auto ps-4">

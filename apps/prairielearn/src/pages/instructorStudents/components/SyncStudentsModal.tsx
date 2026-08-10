@@ -38,8 +38,6 @@ function getCurrentStatusLabel(status: EnumEnrollmentStatus): string {
       return 'Currently rejected';
     case 'left':
       return 'Currently left';
-    case 'lti13_pending':
-      return 'Currently invited via LTI';
     default:
       assertNever(status);
   }

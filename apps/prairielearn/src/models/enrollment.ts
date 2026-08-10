@@ -749,8 +749,6 @@ export async function setEnrollmentStatus({
  * Unlike `setEnrollmentStatus`, this function uses a sync-specific action detail.
  * Student list sync treats the provided student list as the source of truth and removes
  * anyone not on it who is currently joined.
- *
- * LTI-managed enrollments (lti13_pending) cannot be removed via student list sync.
  */
 export async function removeEnrollmentFromSync({
   enrollment,
@@ -770,11 +768,6 @@ export async function removeEnrollmentFromSync({
     // Already removed - nothing to do.
     if (lockedEnrollment.status === 'removed') {
       return lockedEnrollment;
-    }
-
-    // LTI-managed enrollments cannot be removed via student list sync.
-    if (lockedEnrollment.status === 'lti13_pending') {
-      throw new error.HttpStatusError(400, 'Cannot remove LTI-managed enrollment');
     }
 
     // Can only remove joined enrollments via student list sync.
@@ -832,11 +825,6 @@ export async function reenrollEnrollmentFromSync({
     // Already joined - nothing to do.
     if (lockedEnrollment.status === 'joined') {
       return lockedEnrollment;
-    }
-
-    // LTI-managed enrollments cannot be modified via student list sync.
-    if (lockedEnrollment.status === 'lti13_pending') {
-      throw new error.HttpStatusError(400, 'Cannot re-enroll LTI-managed enrollment');
     }
 
     if (!['blocked', 'removed'].includes(lockedEnrollment.status)) {

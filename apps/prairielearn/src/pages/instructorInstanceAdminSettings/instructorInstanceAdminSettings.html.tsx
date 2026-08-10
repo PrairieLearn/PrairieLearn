@@ -29,7 +29,7 @@ interface InstructorInstanceAdminSettingsProps {
   course: PageContext<'courseInstance', 'instructor'>['course'];
   courseInstance: PageContext<'courseInstance', 'instructor'>['course_instance'];
   institution: PageContext<'courseInstance', 'instructor'>['institution'];
-  names: { short_name: string; long_name: string | null }[];
+  names: { short_name: string }[];
   availableTimezones: Timezone[];
   origHash: string;
   instanceGHLink: string | undefined | null;
@@ -88,7 +88,7 @@ function InstructorInstanceAdminSettingsInner({
 }: Omit<InstructorInstanceAdminSettingsProps, 'trpcCsrfToken' | 'isDevMode'>) {
   const [showCopyModal, setShowCopyModal] = useState(false);
 
-  const shortNames = new Set(names.map((name) => name.short_name));
+  const shortNames = new Set(names.map((name) => name.short_name.toLowerCase()));
 
   const defaultValues: SettingsFormValues = {
     ciid: courseInstance.short_name,
@@ -131,6 +131,7 @@ function InstructorInstanceAdminSettingsInner({
         courseInstance={courseInstance}
         isAdministrator={isAdministrator}
         accessControlMigrationNeeded={accessControlMigrationNeeded}
+        names={names}
         onHide={() => setShowCopyModal(false)}
       />
       <form
@@ -173,7 +174,10 @@ function InstructorInstanceAdminSettingsInner({
                         return result.valid || result.message;
                       },
                       duplicate: (value) => {
-                        if (shortNames.has(value) && value !== defaultValues.ciid) {
+                        if (
+                          shortNames.has(value.toLowerCase()) &&
+                          value.toLowerCase() !== defaultValues.ciid.toLowerCase()
+                        ) {
                           return 'This ID is already in use';
                         }
                         return true;

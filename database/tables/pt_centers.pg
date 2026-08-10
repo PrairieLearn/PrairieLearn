@@ -1,0 +1,9 @@
+columns
+    cheating_reports_enabled: boolean not null default false
+    id: bigint not null default nextval('pt_centers_id_seq'::regclass)
+
+indexes
+    pt_centers_pkey: PRIMARY KEY (id) USING btree (id)
+
+referenced by
+    pt_locations: FOREIGN KEY (center_id) REFERENCES pt_centers(id) ON UPDATE CASCADE ON DELETE CASCADE
