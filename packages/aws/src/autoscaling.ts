@@ -6,7 +6,7 @@ import {
   DescribeAutoScalingInstancesCommand,
 } from '@aws-sdk/client-auto-scaling';
 
-const DEFAULT_POLL_INTERVAL_MS = 5_000;
+const POLL_INTERVAL_MS = 5_000;
 
 export async function getAutoScalingInstanceLifecycleState({
   client,
@@ -56,7 +56,7 @@ export async function waitForAutoScalingTerminationLifecycleAction({
       errorReported = true;
     }
 
-    await sleep(DEFAULT_POLL_INTERVAL_MS, undefined, { ref: false, signal });
+    await sleep(POLL_INTERVAL_MS, undefined, { ref: false, signal });
   }
 }
 
@@ -116,6 +116,6 @@ export async function completeAutoScalingTerminationLifecycleAction({
     }
 
     // The pending lifecycle action must keep the process alive until the next attempt.
-    await sleep(DEFAULT_POLL_INTERVAL_MS, undefined, { signal });
+    await sleep(POLL_INTERVAL_MS, undefined, { signal });
   }
 }
