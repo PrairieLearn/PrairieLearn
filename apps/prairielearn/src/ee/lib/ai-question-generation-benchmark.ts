@@ -388,13 +388,14 @@ async function evaluateGeneratedQuestion({
 
   const response = await generateText({
     model,
-    system: systemPrompt,
+    instructions: systemPrompt,
     prompt: generatedQuestion.join('\n'),
     output: Output.object({ schema: QuestionGenerationEvaluationSchema }),
     providerOptions: {
       openai: {
         strictJsonSchema: true,
         reasoningEffort: 'low',
+        reasoningSummary: null,
       } satisfies OpenAIResponsesProviderOptions,
     },
   });
