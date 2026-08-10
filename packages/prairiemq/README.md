@@ -77,6 +77,8 @@ Options can also be set for all jobs of a queue with `defaultJobOptions` in the 
 
 Job data and processor return values must contain only JSON values. Plain objects, arrays, strings, finite numbers, booleans, and `null` are supported; values such as `bigint`, `Date`, `Map`, functions, and circular references are rejected.
 
+`addBulk()` validates the entire batch before atomically adding up to 1000 jobs in one Redis operation.
+
 ### Queue introspection and management
 
 ```ts

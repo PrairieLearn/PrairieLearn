@@ -5,6 +5,7 @@ import { type PrairieMQRedis, createScriptedClient } from './scripts.js';
 import type { GroupStatus, JobCounts, JobOptions, JobState, QueueOptions } from './types.js';
 
 const MAX_PRIORITY = 2 ** 20;
+const MAX_BULK_JOBS = 1000;
 
 function escapeRedisGlob(value: string): string {
   return value.replaceAll(/[\\*?[\]]/g, '\\$&');
@@ -14,6 +15,18 @@ export interface JobStatus<Data = unknown, Result = unknown> {
   state: JobState;
   job: Job<Data, Result> | null;
 }
+
+interface PreparedJob<Data> {
+  name: string;
+  data: Data;
+  opts: JobOptions;
+  timestamp: number;
+  groupId: string;
+  serializedData: string;
+  serializedOptions: string;
+}
+
+type AddJobReply = [string, number, ...string[]];
 
 export function validateQueueName(name: string) {
   if (typeof name !== 'string' || !/^[\w.-]+$/.test(name)) {
@@ -153,7 +166,7 @@ export class Queue<Data = unknown, Result = unknown> {
     this.client = createScriptedClient(options.redisUrl, 'queue');
   }
 
-  async add(name: string, data: Data, options: JobOptions = {}): Promise<Job<Data, Result>> {
+  private prepareJob(name: string, data: Data, options: JobOptions): PreparedJob<Data> {
     if (typeof name !== 'string' || name === '') {
       throw new Error('Job name must be a non-empty string');
     }
@@ -163,20 +176,22 @@ export class Queue<Data = unknown, Result = unknown> {
 
     const timestamp = Date.now();
     const groupId = opts.group?.id ?? '';
-    const serializedData = serializeJson(data, 'Job data');
-    const serializedOptions = serializeJson(opts, 'Job options');
-    const reply = await this.client.pmqAddJob(
-      this.keys.base,
-      opts.jobId ?? '',
+    return {
       name,
-      serializedData,
-      serializedOptions,
+      data,
+      opts,
       timestamp,
-      opts.delay ?? 0,
-      opts.priority ?? 0,
-      opts.attempts ?? 1,
       groupId,
-    );
+      serializedData: serializeJson(data, 'Job data'),
+      serializedOptions: serializeJson(opts, 'Job options'),
+    };
+  }
+
+  private jobFromAddReply(prepared: PreparedJob<Data>, reply: AddJobReply): Job<Data, Result> {
+    const { name, data, opts, timestamp, groupId } = prepared;
+    if (typeof reply[0] !== 'string') {
+      throw new Error('Redis returned a malformed job id');
+    }
     const jobId = reply[0];
     const created = Number(reply[1]);
     if (created !== 0 && created !== 1) {
@@ -212,14 +227,63 @@ export class Queue<Data = unknown, Result = unknown> {
     });
   }
 
+  async add(name: string, data: Data, options: JobOptions = {}): Promise<Job<Data, Result>> {
+    const prepared = this.prepareJob(name, data, options);
+    const reply = await this.client.pmqAddJob(
+      this.keys.base,
+      prepared.opts.jobId ?? '',
+      prepared.name,
+      prepared.serializedData,
+      prepared.serializedOptions,
+      prepared.timestamp,
+      prepared.opts.delay ?? 0,
+      prepared.opts.priority ?? 0,
+      prepared.opts.attempts ?? 1,
+      prepared.groupId,
+    );
+    return this.jobFromAddReply(prepared, reply);
+  }
+
   async addBulk(
-    jobs: { name: string; data: Data; options?: JobOptions }[],
+    jobs: readonly { name: string; data: Data; options?: JobOptions }[],
   ): Promise<Job<Data, Result>[]> {
-    const added: Job<Data, Result>[] = [];
-    for (const job of jobs) {
-      added.push(await this.add(job.name, job.data, job.options));
+    if (!Array.isArray(jobs)) throw new Error('jobs must be an array');
+    if (jobs.length > MAX_BULK_JOBS) {
+      throw new Error(`addBulk accepts at most ${MAX_BULK_JOBS} jobs`);
     }
-    return added;
+    const prepared = jobs.map((job, index) => {
+      if (
+        typeof job !== 'object' ||
+        job === null ||
+        Array.isArray(job) ||
+        Object.getPrototypeOf(job) !== Object.prototype ||
+        Object.keys(job).some((name) => name !== 'name' && name !== 'data' && name !== 'options')
+      ) {
+        throw new Error(`Bulk job ${index} must contain only name, data, and options`);
+      }
+      return this.prepareJob(job.name, job.data, job.options === undefined ? {} : job.options);
+    });
+    if (prepared.length === 0) return [];
+
+    const replies = await this.client.pmqAddBulk(
+      this.keys.base,
+      prepared.length,
+      ...prepared.flatMap((job) => [
+        job.opts.jobId ?? '',
+        job.name,
+        job.serializedData,
+        job.serializedOptions,
+        job.timestamp,
+        job.opts.delay ?? 0,
+        job.opts.priority ?? 0,
+        job.opts.attempts ?? 1,
+        job.groupId,
+      ]),
+    );
+    if (replies.length !== prepared.length) {
+      throw new Error('Redis returned an invalid number of bulk job results');
+    }
+    return replies.map((reply, index) => this.jobFromAddReply(prepared[index], reply));
   }
 
   async getJob(jobId: string): Promise<Job<Data, Result> | null> {

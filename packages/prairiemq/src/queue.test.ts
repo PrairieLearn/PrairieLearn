@@ -78,6 +78,31 @@ describe('Queue', () => {
     assert.equal(counts.waiting, 3);
   });
 
+  it('deduplicates custom ids within addBulk', async () => {
+    const jobs = await queue.addBulk([
+      { name: 'first', data: { value: 1 }, options: { jobId: 'shared-id' } },
+      { name: 'second', data: { value: 2 }, options: { jobId: 'shared-id' } },
+    ]);
+
+    assert.equal(jobs[0].id, 'shared-id');
+    assert.deepEqual(jobs[1], jobs[0]);
+    assert.equal((await queue.getJobCounts()).waiting, 1);
+  });
+
+  it('validates every bulk job before adding any of them', async () => {
+    await expect(
+      queue.addBulk([
+        { name: 'valid', data: { value: 1 } },
+        { name: 'invalid', data: { value: 1n } },
+      ]),
+    ).rejects.toThrow('bigint values');
+    await expect(
+      queue.addBulk(Array.from({ length: 1001 }, (_, data) => ({ name: 'job', data }))),
+    ).rejects.toThrow('at most 1000 jobs');
+
+    assert.equal((await queue.getJobCounts()).waiting, 0);
+  });
+
   it('reports group statuses', async () => {
     await queue.add('one', {}, { group: { id: 'alpha' } });
     await queue.add('two', {}, { group: { id: 'alpha' } });

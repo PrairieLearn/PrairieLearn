@@ -53,13 +53,8 @@ function trimFinishedLua(setKeyExpr: string): string {
     end`;
 }
 
-// ARGV: jobId ('' = auto-generate), name, data, opts, timestamp, delay,
-// priority, attempts, groupId.
-// Returns {jobId, 1} if the job was created. If the id already existed, returns
-// {jobId, 0, field1, value1, ...} with an atomic snapshot of the existing job.
-const addJobLua = `
-local prefix = KEYS[1]
-local jobId = ARGV[1]
+const addJobFunctionLua = `
+local function addJob(prefix, jobId, name, data, opts, timestamp, delay, priority, attempts, groupId)
 if jobId == '' then
   jobId = tostring(redis.call('INCR', prefix .. ':id'))
 end
@@ -75,25 +70,60 @@ end
 redis.call(
   'HSET', jobKey,
   'id', jobId,
-  'name', ARGV[2],
-  'data', ARGV[3],
-  'opts', ARGV[4],
-  'timestamp', ARGV[5],
-  'delay', ARGV[6],
-  'priority', ARGV[7],
-  'attempts', ARGV[8],
-  'groupId', ARGV[9],
+  'name', name,
+  'data', data,
+  'opts', opts,
+  'timestamp', timestamp,
+  'delay', delay,
+  'priority', priority,
+  'attempts', attempts,
+  'groupId', groupId,
   'attemptsMade', '0',
   'stalledCount', '0'
 )
-if tonumber(ARGV[6]) > 0 then
-  redis.call('ZADD', prefix .. ':delayed', tonumber(ARGV[5]) + tonumber(ARGV[6]), jobId)
+if tonumber(delay) > 0 then
+  redis.call('ZADD', prefix .. ':delayed', tonumber(timestamp) + tonumber(delay), jobId)
 else
-  local groupId = ARGV[9]
-  ${pushToGroupLua('groupId', 'jobId', 'tonumber(ARGV[7])')}
+  ${pushToGroupLua('groupId', 'jobId', 'tonumber(priority)')}
   ${addMarkerLua}
 end
 return {jobId, 1}
+end
+`;
+
+// ARGV: jobId ('' = auto-generate), name, data, opts, timestamp, delay,
+// priority, attempts, groupId.
+// Returns {jobId, 1} if the job was created. If the id already existed, returns
+// {jobId, 0, field1, value1, ...} with an atomic snapshot of the existing job.
+const addJobLua = `
+local prefix = KEYS[1]
+${addJobFunctionLua}
+return addJob(prefix, ARGV[1], ARGV[2], ARGV[3], ARGV[4], ARGV[5], ARGV[6], ARGV[7], ARGV[8], ARGV[9])
+`;
+
+// ARGV: job count, followed by the nine arguments accepted by addJob for each
+// job. Returns one addJob reply per job.
+const addBulkLua = `
+local prefix = KEYS[1]
+${addJobFunctionLua}
+local replies = {}
+local offset = 2
+for i = 1, tonumber(ARGV[1]) do
+  replies[i] = addJob(
+    prefix,
+    ARGV[offset],
+    ARGV[offset + 1],
+    ARGV[offset + 2],
+    ARGV[offset + 3],
+    ARGV[offset + 4],
+    ARGV[offset + 5],
+    ARGV[offset + 6],
+    ARGV[offset + 7],
+    ARGV[offset + 8]
+  )
+  offset = offset + 9
+end
+return replies
 `;
 
 // ARGV: jobId, include job ('1'/'0'). Returns {state, field1, value1, ...};
@@ -421,6 +451,11 @@ interface PrairieMQCommands {
     attempts: number,
     groupId: string,
   ): Promise<[string, number, ...string[]]>;
+  pmqAddBulk(
+    prefix: string,
+    jobCount: number,
+    ...jobs: (string | number)[]
+  ): Promise<[string, number, ...string[]][]>;
   pmqGetJobStatus(prefix: string, jobId: string, includeJob: number): Promise<string[]>;
   pmqConfigureGroupConcurrency(prefix: string, groupConcurrency: number): Promise<number>;
   pmqMoveToActive(
@@ -462,6 +497,7 @@ export type PrairieMQRedis = Redis & PrairieMQCommands;
 
 const scripts: Record<keyof PrairieMQCommands, string> = {
   pmqAddJob: addJobLua,
+  pmqAddBulk: addBulkLua,
   pmqGetJobStatus: getJobStatusLua,
   pmqConfigureGroupConcurrency: configureGroupConcurrencyLua,
   pmqMoveToActive: moveToActiveLua,
