@@ -17,6 +17,7 @@
     "test": "vitest run --coverage"
   },
   "dependencies": {
+    "@prairielearn/error": "workspace:^",
     "postgres-interval": "^4.1.0",
     "zod": "^4.4.3"
   },
