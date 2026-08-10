@@ -365,17 +365,17 @@ router.post(
         await fs.readFile(infoCourseInstancePath, 'utf8'),
       );
 
-      const parsedBody = parseRequestBody(req, SettingsFormBodySchema);
+      const body = parseRequestBody(req, SettingsFormBodySchema);
 
-      courseInstanceInfo.longName = parsedBody.long_name;
+      courseInstanceInfo.longName = body.long_name;
       courseInstanceInfo.timezone = propertyValueWithDefault(
         courseInstanceInfo.timezone,
-        parsedBody.display_timezone,
+        body.display_timezone,
         course.display_timezone,
       );
       courseInstanceInfo.groupAssessmentsBy = propertyValueWithDefault(
         courseInstanceInfo.groupAssessmentsBy,
-        parsedBody.group_assessments_by,
+        body.group_assessments_by,
         'Set',
       );
       // dates from 'datetime-local' inputs are in the format 'YYYY-MM-DDTHH:MM', and we need them to include seconds.
@@ -386,27 +386,27 @@ router.post(
 
       const selfEnrollmentEnabled = propertyValueWithDefault(
         courseInstanceInfo.selfEnrollment?.enabled,
-        parsedBody.self_enrollment_enabled,
+        body.self_enrollment_enabled,
         true,
       );
       const selfEnrollmentUseEnrollmentCode = propertyValueWithDefault(
         courseInstanceInfo.selfEnrollment?.useEnrollmentCode,
-        parsedBody.self_enrollment_use_enrollment_code,
+        body.self_enrollment_use_enrollment_code,
         false,
       );
       const selfEnrollmentRestrictToInstitution = propertyValueWithDefault(
         courseInstanceInfo.selfEnrollment?.restrictToInstitution,
-        parsedBody.self_enrollment_restrict_to_institution,
+        body.self_enrollment_restrict_to_institution,
         true,
       );
 
       const selfEnrollmentBeforeDate = propertyValueWithDefault(
         parseDateTime(courseInstanceInfo.selfEnrollment?.beforeDate ?? ''),
         // We'll only serialize the value if self-enrollment is enabled.
-        parsedBody.self_enrollment_enabled &&
-          parsedBody.self_enrollment_enabled_before_date_enabled &&
-          parsedBody.self_enrollment_enabled_before_date
-          ? parseDateTime(parsedBody.self_enrollment_enabled_before_date)
+        body.self_enrollment_enabled &&
+          body.self_enrollment_enabled_before_date_enabled &&
+          body.self_enrollment_enabled_before_date
+          ? parseDateTime(body.self_enrollment_enabled_before_date)
           : undefined,
         undefined,
       );
@@ -436,7 +436,7 @@ router.post(
         courseInstanceInfo.selfEnrollment = undefined;
       }
       if (res.locals.question_sharing_enabled) {
-        if (parsedBody.share_source_publicly && !courseInstance.share_source_publicly) {
+        if (body.share_source_publicly && !courseInstance.share_source_publicly) {
           await assertCourseInstanceCanBeSharedPublicly({
             course_instance_id: courseInstance.id,
           });
@@ -447,7 +447,7 @@ router.post(
         // field may be a disabled checkbox whose current value must be preserved.
         courseInstanceInfo.shareSourcePublicly = propertyValueWithDefault(
           courseInstanceInfo.shareSourcePublicly,
-          parsedBody.share_source_publicly ?? false,
+          body.share_source_publicly ?? false,
           false,
         );
       }

@@ -164,8 +164,8 @@ router.post(
     if (req.body.__action === 'add_feature_grant') {
       const feature = validateFeature(req.params.feature);
 
-      const params = parseRequestBody(req, AddFeatureGrantModalParamsSchema);
-      const { institution, course, course_instance, user } = await getEntitiesFromParams(params);
+      const body = parseRequestBody(req, AddFeatureGrantModalParamsSchema);
+      const { institution, course, course_instance, user } = await getEntitiesFromParams(body);
 
       const context = features.validateContext({
         institution_id: institution?.id ?? null,
@@ -174,7 +174,7 @@ router.post(
         user_id: user?.id ?? null,
       });
 
-      if (params.enabled) {
+      if (body.enabled) {
         await features.enable(feature, context);
       } else {
         await features.disable(feature, context);
