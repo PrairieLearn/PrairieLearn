@@ -2332,9 +2332,6 @@ importers:
       es-toolkit:
         specifier: ^1.49.0
         version: 1.49.0
-      multipipe:
-        specifier: ^4.0.0
-        version: 4.0.0
       pg:
         specifier: ^8.22.0
         version: 8.22.0
@@ -2351,9 +2348,6 @@ importers:
       '@types/debug':
         specifier: ^4.1.13
         version: 4.1.13
-      '@types/multipipe':
-        specifier: ^3.0.5
-        version: 3.0.5
       '@types/node':
         specifier: ^24.13.2
         version: 24.13.2
