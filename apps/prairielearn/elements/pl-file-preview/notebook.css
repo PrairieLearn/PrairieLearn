@@ -23,8 +23,9 @@
 }
 
 /* Error state streams */
-.nb-output pre.stderr,
-.nb-output pre.error {
+.nb-output pre.nb-stderr,
+.nb-output pre.nb-error,
+.nb-output pre.nb-pyerr {
   background-color: #ffebee;
   color: #c62828;
   border-left: 3px solid #ef5350;
