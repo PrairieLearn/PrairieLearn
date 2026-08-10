@@ -573,7 +573,8 @@ describe('@prairielearn/postgres', function () {
           await new Promise((resolve) => setImmediate(resolve));
           expect(read).toHaveBeenCalledOnce();
         } finally {
-          await streamIterator.return?.();
+          assert.isFunction(streamIterator.return);
+          await streamIterator.return!();
         }
       });
 
