@@ -2,7 +2,8 @@
  * Given a popover trigger element, returns the container. Only works if the popover is open.
  */
 export function getPopoverContainerForTrigger(trigger: HTMLElement): HTMLElement | null {
-  const popoverId = trigger.getAttribute('aria-describedby');
+  const popoverId =
+    trigger.getAttribute('aria-controls') ?? trigger.getAttribute('aria-describedby');
   if (!popoverId) return null;
 
   const popoverContainer = document.querySelector<HTMLElement>(`#${popoverId}`);
@@ -16,6 +17,9 @@ export function getPopoverTriggerForContainer(container: HTMLElement): HTMLEleme
   const popoverId = container.getAttribute('id');
   if (!popoverId) return null;
 
-  const popoverTrigger = document.querySelector<HTMLElement>(`[aria-describedby="${popoverId}"]`);
+  const escapedId = CSS.escape(popoverId);
+  const popoverTrigger = document.querySelector<HTMLElement>(
+    `[aria-controls="${escapedId}"], [aria-describedby="${escapedId}"]`,
+  );
   return popoverTrigger;
 }

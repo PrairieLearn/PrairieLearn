@@ -52,7 +52,6 @@ function AssessmentSetRow({
     <tr ref={ref} style={style}>
       {editMode && allowEdit && (
         <ReorderableRowActionsCell
-          trackingId={assessmentSet.trackingId}
           dragHandleProps={dragHandleProps}
           editLabel={`Edit assessment set ${assessmentSet.name}`}
           deleteLabel={`Delete assessment set ${assessmentSet.name}`}

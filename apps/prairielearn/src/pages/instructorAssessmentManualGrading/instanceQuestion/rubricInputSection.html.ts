@@ -139,12 +139,24 @@ function RubricItems({
       <div class="d-flex align-items-center gap-2 text-secondary" style="padding-left: 3px;">
         ${aiGradingInfo?.submissionManuallyGraded
           ? html`
-              <div data-bs-toggle="tooltip" data-bs-title="AI grading">
-                <i class="bi bi-stars"></i>
-              </div>
-              <div data-bs-toggle="tooltip" data-bs-title="Human grading">
-                <i class="bi bi-person-fill"></i>
-              </div>
+              <button
+                type="button"
+                class="btn btn-xs btn-ghost btn-icon border-0 text-secondary"
+                data-bs-toggle="popover"
+                data-bs-content="AI grading"
+                aria-label="View AI grading source"
+              >
+                <i class="bi bi-stars" aria-hidden="true"></i>
+              </button>
+              <button
+                type="button"
+                class="btn btn-xs btn-ghost btn-icon border-0 text-secondary"
+                data-bs-toggle="popover"
+                data-bs-content="Human grading"
+                aria-label="View human grading source"
+              >
+                <i class="bi bi-person-fill" aria-hidden="true"></i>
+              </button>
             `
           : ''}
       </div>
@@ -203,9 +215,7 @@ function RubricItem({
                 value="${item.rubric_item.id}"
                 ${ai_checked ? 'checked' : ''}
                 disabled
-                data-bs-toggle="tooltip"
-                data-bs-placement="top"
-                title="${ai_checked ? 'Selected by AI' : 'Not selected by AI'}"
+                aria-label="${ai_checked ? 'Selected by AI' : 'Not selected by AI'}"
               />
             `
           : ''}

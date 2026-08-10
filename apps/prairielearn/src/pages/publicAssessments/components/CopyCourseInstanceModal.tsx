@@ -1,7 +1,9 @@
-import { useRef, useState } from 'react';
-import { Modal, Overlay, Tooltip } from 'react-bootstrap';
+import { useState } from 'react';
+import { Modal } from 'react-bootstrap';
 import { FormProvider, useForm } from 'react-hook-form';
 import z from 'zod';
+
+import { Popover } from '@prairielearn/ui';
 
 import {
   CourseInstancePermissionsForm,
@@ -51,7 +53,6 @@ export function CopyCourseInstanceModal({
   const [selectedCourseId, setSelectedCourseId] = useState(
     courseInstanceCopyTargets?.[0]?.id ?? '',
   );
-  const buttonRef = useRef<HTMLButtonElement>(null);
   // Calculate question stats
   const questionsToCopy = questionsForCopy.filter((q) => q.should_copy).length;
   const questionsToLink = questionsForCopy.filter((q) => !q.should_copy).length;
@@ -84,22 +85,31 @@ export function CopyCourseInstanceModal({
 
   return (
     <>
-      <Overlay placement="bottom" show={!hasSharingName && show} target={buttonRef}>
-        <Tooltip show={!hasSharingName && show}>
-          This course has not set a sharing name. You cannot copy this course instance to your
-          course.
-        </Tooltip>
-      </Overlay>
-      <button
-        ref={buttonRef}
-        className="btn btn-sm btn-outline-light"
-        type="button"
-        aria-label="Copy course instance"
-        onClick={() => setShow(!show)}
-      >
-        <i className="fa fa-clone" />
-        <span className="d-none d-sm-inline">Copy course instance</span>
-      </button>
+      {hasSharingName ? (
+        <button
+          className="btn btn-sm btn-outline-light"
+          type="button"
+          aria-label="Copy course instance"
+          onClick={() => setShow(true)}
+        >
+          <i className="fa fa-clone" aria-hidden="true" />
+          <span className="d-none d-sm-inline">Copy course instance</span>
+        </button>
+      ) : (
+        <Popover
+          content="This course has not set a sharing name. You cannot copy this course instance to your course."
+          placement="bottom"
+        >
+          <button
+            className="btn btn-sm btn-outline-light opacity-50"
+            type="button"
+            aria-label="Why copying this course instance is unavailable"
+          >
+            <i className="fa fa-clone" aria-hidden="true" />
+            <span className="d-none d-sm-inline">Copy course instance</span>
+          </button>
+        </Popover>
+      )}
 
       <Modal show={show && hasSharingName} size="lg" onHide={() => setShow(false)}>
         <Modal.Header closeButton>

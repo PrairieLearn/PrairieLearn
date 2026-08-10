@@ -4,7 +4,7 @@ import { useEffect, useRef } from 'react';
 import { run } from '@prairielearn/run';
 import {
   type MultiSelectFilterValue,
-  OverlayTrigger,
+  Popover,
   applyMultiSelectFilter,
   numericColumnFilterFn,
 } from '@prairielearn/ui';
@@ -115,7 +115,6 @@ export function createColumns({
       header: 'Instance',
       cell: (info) => {
         const row = info.row.original;
-        const rowId = row.instance_question.id;
         return (
           <div className="d-flex align-items-center gap-2">
             <a
@@ -124,45 +123,32 @@ export function createColumns({
               Instance {info.getValue() + 1}
             </a>
             {row.open_issue_count ? (
-              <OverlayTrigger
-                tooltip={{
-                  props: { id: `instance-${rowId}-issue-tooltip` },
-                  body: (
-                    <>
-                      Instance question has {row.open_issue_count} open{' '}
-                      {row.open_issue_count > 1 ? 'issues' : 'issue'}
-                    </>
-                  ),
-                }}
+              <Popover
+                content={
+                  <>
+                    Instance question has {row.open_issue_count} open{' '}
+                    {row.open_issue_count > 1 ? 'issues' : 'issue'}
+                  </>
+                }
               >
-                <button className="btn btn-danger badge rounded-pill">
+                <button type="button" className="btn btn-danger badge rounded-pill">
                   {row.open_issue_count}
                 </button>
-              </OverlayTrigger>
+              </Popover>
             ) : null}
             {row.assessment_open ? (
-              <OverlayTrigger
-                tooltip={{
-                  body: 'Assessment instance is still open',
-                  props: { id: `assessment-instance-${rowId}-open-tooltip` },
-                }}
-              >
+              <Popover content="Assessment instance is still open">
                 <button
-                  // This is a tricky case: we need an interactive element to trigger the tooltip
-                  // for keyboard users, but we don't want it to be announced as a button by screen
-                  // readers. So we give it role="status" to indicate that it's just a status indicator.
-                  // It's possible there are better ways to handle this?
-                  // eslint-disable-next-line jsx-a11y-x/no-interactive-element-to-noninteractive-role
-                  role="status"
+                  type="button"
                   className="btn btn-xs btn-ghost"
-                  aria-label="Assessment instance is still open"
+                  aria-label="View assessment instance status"
                 >
                   <i
                     className="fas fa-exclamation-triangle fa-width-auto text-warning"
                     aria-hidden="true"
                   />
                 </button>
-              </OverlayTrigger>
+              </Popover>
             ) : null}
           </div>
         );
@@ -179,24 +165,22 @@ export function createColumns({
           return <span className="text-secondary">No Group</span>;
         }
         const group = instanceQuestionGroups.find((g) => g.instance_question_group_name === value);
-        const rowId = info.row.original.instance_question.id;
         return (
           <span className="d-flex align-items-center gap-2">
             {value}
             {group && (
-              <OverlayTrigger
-                tooltip={{
-                  body: group.instance_question_group_description,
-                  props: { id: `submission-group-${rowId}-description-tooltip` },
-                }}
-              >
-                <button className="btn btn-xs btn-ghost" aria-label="Group description">
+              <Popover content={group.instance_question_group_description}>
+                <button
+                  type="button"
+                  className="btn btn-xs btn-ghost"
+                  aria-label="Group description"
+                >
                   <i
                     className="fas fa-circle-info fa-width-auto text-secondary"
                     aria-hidden="true"
                   />
                 </button>
-              </OverlayTrigger>
+              </Popover>
             )}
           </span>
         );
@@ -403,7 +387,6 @@ export function createColumns({
       },
       cell: (info) => {
         const row = info.row.original;
-        const rowId = row.instance_question.id;
         if (row.instance_question.point_difference === null) {
           return '—';
         }
@@ -424,14 +407,15 @@ export function createColumns({
 
         if (row.instance_question.rubric_difference.length === 0) {
           return (
-            <OverlayTrigger
-              tooltip={{
-                body: 'AI and human grading are in agreement',
-                props: { id: `ai-agreement-${rowId}-agreement-tooltip` },
-              }}
-            >
-              <i className="bi bi-check-square-fill text-success" />
-            </OverlayTrigger>
+            <Popover content="AI and human grading are in agreement">
+              <button
+                type="button"
+                className="btn btn-xs btn-ghost btn-icon border-0"
+                aria-label="View AI grading comparison"
+              >
+                <i className="bi bi-check-square-fill text-success" aria-hidden="true" />
+              </button>
+            </Popover>
           );
         }
 
@@ -440,23 +424,25 @@ export function createColumns({
             {row.instance_question.rubric_difference.map((item) => (
               <div key={item.description}>
                 {item.false_positive ? (
-                  <OverlayTrigger
-                    tooltip={{
-                      body: 'Selected by AI but not by human',
-                      props: { id: `ai-agreement-${rowId}-false-positive-tooltip` },
-                    }}
-                  >
-                    <i className="bi bi-plus-square-fill text-danger" />
-                  </OverlayTrigger>
+                  <Popover content="Selected by AI but not by human">
+                    <button
+                      type="button"
+                      className="btn btn-xs btn-ghost btn-icon border-0"
+                      aria-label="View AI grading difference"
+                    >
+                      <i className="bi bi-plus-square-fill text-danger" aria-hidden="true" />
+                    </button>
+                  </Popover>
                 ) : (
-                  <OverlayTrigger
-                    tooltip={{
-                      body: 'Selected by human but not by AI',
-                      props: { id: `ai-agreement-${rowId}-false-negative-tooltip` },
-                    }}
-                  >
-                    <i className="bi bi-dash-square-fill text-danger" />
-                  </OverlayTrigger>
+                  <Popover content="Selected by human but not by AI">
+                    <button
+                      type="button"
+                      className="btn btn-xs btn-ghost btn-icon border-0"
+                      aria-label="View AI grading difference"
+                    >
+                      <i className="bi bi-dash-square-fill text-danger" aria-hidden="true" />
+                    </button>
+                  </Popover>
                 )}{' '}
                 <span>{item.description}</span>
               </div>
