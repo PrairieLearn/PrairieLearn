@@ -823,11 +823,13 @@ function StudentsCard({
                 <MultiSelectColumnFilter
                   column={header.column}
                   allColumnValues={labelIds}
+                  getSearchText={(value) => studentLabelsById.get(value)?.name ?? value}
                   renderValueLabel={({ value }) => {
-                    const label = studentLabels.find((l) => l.id === String(value));
-                    if (!label) return <span>{String(value)}</span>;
+                    const label = studentLabelsById.get(value);
+                    if (!label) return <span>{value}</span>;
                     return <span>{label.name}</span>;
                   }}
+                  showSearch
                 />
               );
             },

@@ -36,18 +36,14 @@ updates:
   - package-ecosystem: npm
     directories:
       - '/'
-      - '/workspaces/xtermjs/src'
     schedule:
       interval: monthly
     rebase-strategy: disabled
+    open-pull-requests-limit: 10
     ignore:
       # We're putting off this upgrade for now:
       # https://github.com/PrairieLearn/PrairieLearn/pull/6835
       - dependency-name: 'fabric'
-
-      # novnc 1.5.0+ no longer publishes ESM files:
-      # https://github.com/novnc/noVNC/issues/1792
-      - dependency-name: '@novnc/novnc'
 
       # ua-parser-js 2.x changes its license to a less permissive license:
       # https://github.com/faisalman/ua-parser-js/issues/680
@@ -96,10 +92,6 @@ updates:
       - dependency-name: '@types/jquery'
         versions: ['>=4']
 
-      # We're not ready to upgrade to Zod 4 yet.
-      - dependency-name: 'zod'
-        versions: ['>=4']
-
       # quill 2.0.3 regressed getSemanticHTML() by converting spaces to &nbsp;,
       # which breaks wrapping and stored HTML from pl-rich-text-editor:
       # https://github.com/PrairieLearn/PrairieLearn/pull/11281
@@ -129,6 +121,28 @@ updates:
       opentelemetry:
         patterns:
           - '@opentelemetry/*'
+      all-patch-minor:
+        update-types:
+          - 'patch'
+          - 'minor'
+
+  # This is a separate npm entry for the xtermjs subdirectory, which has its own
+  # package.json and package-lock.json. We want to keep this separate from the
+  # root npm entry so that we can have separate PRs and rules.
+  - package-ecosystem: npm
+    directories:
+      - '/workspaces/xtermjs/src'
+    schedule:
+      interval: monthly
+    rebase-strategy: disabled
+    ignore:
+      - dependency-name: 'express'
+        versions: ['>=5']
+
+    cooldown:
+      default-days: 3
+
+    groups:
       all-patch-minor:
         update-types:
           - 'patch'
