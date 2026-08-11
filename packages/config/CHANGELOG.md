@@ -1,5 +1,11 @@
 # @prairielearn/config
 
+## 5.1.1
+
+### Patch Changes
+
+- df28e68: Bump dependencies
+
 ## 5.1.0
 
 ### Minor Changes

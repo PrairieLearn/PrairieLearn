@@ -1,5 +1,11 @@
 # @prairielearn/session
 
+## 4.0.10
+
+### Patch Changes
+
+- df28e68: Bump dependencies
+
 ## 4.0.9
 
 ### Patch Changes
