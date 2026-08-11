@@ -36,6 +36,7 @@ export function createColumnFilters({
       <MultiSelectColumnFilter
         column={header.column}
         allColumnValues={[...allGraders, 'Unassigned']}
+        showSearch
       />
     ),
     last_grader_name: ({
@@ -46,6 +47,7 @@ export function createColumnFilters({
       <MultiSelectColumnFilter
         column={header.column}
         allColumnValues={[...allGraders, 'Unassigned']}
+        showSearch
       />
     ),
     instance_question_group_name: ({
@@ -59,6 +61,7 @@ export function createColumnFilters({
       <MultiSelectColumnFilter
         column={header.column}
         allColumnValues={[...allSubmissionGroups, 'No group']}
+        showSearch
       />
     ),
     manual_points: ({
