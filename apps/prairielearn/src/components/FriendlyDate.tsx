@@ -1,14 +1,13 @@
 import { type Temporal } from '@js-temporal/polyfill';
 import { type FC, createContext, use } from 'react';
-import OverlayTrigger from 'react-bootstrap/OverlayTrigger';
-import Tooltip from 'react-bootstrap/Tooltip';
 
 import { formatDate, formatDateFriendly } from '@prairielearn/formatter';
+import { Popover } from '@prairielearn/ui';
 
 interface FriendlyDateProps {
   date: Date | Temporal.PlainDateTime;
   timezone?: string;
-  tooltip?: boolean;
+  withPopover?: boolean;
   options?: Parameters<typeof formatDateFriendly>[2];
   fullOptions?: Parameters<typeof formatDate>[2];
 }
@@ -16,7 +15,7 @@ interface FriendlyDateProps {
 export const FriendlyDate: FC<FriendlyDateProps> = ({
   date,
   timezone = null,
-  tooltip = false,
+  withPopover = false,
   options,
   fullOptions,
 }) => {
@@ -25,15 +24,19 @@ export const FriendlyDate: FC<FriendlyDateProps> = ({
 
   const friendlyString = formatDateFriendly(date, timezone, options);
   const fullString = formatDate(date, timezone, fullOptions);
-  if (!tooltip) return <span style={{ fontVariantNumeric: 'tabular-nums' }}>{friendlyString}</span>;
+  if (!withPopover) {
+    return <span style={{ fontVariantNumeric: 'tabular-nums' }}>{friendlyString}</span>;
+  }
   return (
-    <OverlayTrigger
-      placement="top"
-      delay={{ show: 100, hide: 100 }}
-      overlay={<Tooltip>{fullString}</Tooltip>}
-    >
-      <span style={{ fontVariantNumeric: 'tabular-nums' }}>{friendlyString}</span>
-    </OverlayTrigger>
+    <Popover content={fullString} placement="top">
+      <button
+        type="button"
+        className="btn btn-link link-body-emphasis border-0 p-0 align-baseline text-decoration-none"
+        style={{ fontVariantNumeric: 'tabular-nums' }}
+      >
+        {friendlyString}
+      </button>
+    </Popover>
   );
 };
 

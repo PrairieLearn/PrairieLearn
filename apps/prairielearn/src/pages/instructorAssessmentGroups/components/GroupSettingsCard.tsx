@@ -6,7 +6,7 @@ import { useFieldArray, useForm } from 'react-hook-form';
 
 import { run } from '@prairielearn/run';
 
-import { HelpTooltip } from '../../../components/HelpTooltip.js';
+import { HelpPopover } from '../../../components/HelpPopover.js';
 import { getAppError } from '../../../lib/client/errors.js';
 import { type StaffGroupConfig } from '../../../lib/client/safe-db-types.js';
 import { type GroupSettingsFormValues, makeRole } from '../../../lib/group-config.js';
@@ -430,44 +430,46 @@ export function GroupSettingsCard({
                     <tr>
                       <th scope="col">Name</th>
                       <th scope="col">
-                        Min assignees{' '}
-                        <HelpTooltip
-                          body="Minimum number of students that must be assigned to this role."
-                          id="role-min-assignees-tooltip"
-                          ariaLabel="Min assignees help"
-                        />
+                        <span className="d-inline-flex align-items-center gap-1 text-nowrap">
+                          Min assignees
+                          <HelpPopover ariaLabel="Min assignees help">
+                            Minimum number of students that must be assigned to this role.
+                          </HelpPopover>
+                        </span>
                       </th>
                       <th scope="col">
-                        Max assignees{' '}
-                        <HelpTooltip
-                          body="Maximum number of students that can be assigned to this role. Leave blank for unlimited."
-                          id="role-max-assignees-tooltip"
-                          ariaLabel="Max assignees help"
-                        />
+                        <span className="d-inline-flex align-items-center gap-1 text-nowrap">
+                          Max assignees
+                          <HelpPopover ariaLabel="Max assignees help">
+                            Maximum number of students that can be assigned to this role. Leave
+                            blank for unlimited.
+                          </HelpPopover>
+                        </span>
                       </th>
                       <th scope="col" className="text-center">
-                        Can assign{' '}
-                        <HelpTooltip
-                          body="Students with this role can assign roles to other students in the group."
-                          id="role-can-assign-tooltip"
-                          ariaLabel="Can assign roles help"
-                        />
+                        <span className="d-inline-flex align-items-center gap-1 text-nowrap">
+                          Can assign
+                          <HelpPopover ariaLabel="Can assign roles help">
+                            Students with this role can assign roles to other students in the group.
+                          </HelpPopover>
+                        </span>
                       </th>
                       <th scope="col" className="text-center">
-                        Can view{' '}
-                        <HelpTooltip
-                          body="Students with this role can view assessment questions by default."
-                          id="role-can-view-tooltip"
-                          ariaLabel="Can view help"
-                        />
+                        <span className="d-inline-flex align-items-center gap-1 text-nowrap">
+                          Can view
+                          <HelpPopover ariaLabel="Can view help">
+                            Students with this role can view assessment questions by default.
+                          </HelpPopover>
+                        </span>
                       </th>
                       <th scope="col" className="text-center">
-                        Can submit{' '}
-                        <HelpTooltip
-                          body="Students with this role can submit answers to assessment questions by default."
-                          id="role-can-submit-tooltip"
-                          ariaLabel="Can submit help"
-                        />
+                        <span className="d-inline-flex align-items-center gap-1 text-nowrap">
+                          Can submit
+                          <HelpPopover ariaLabel="Can submit help">
+                            Students with this role can submit answers to assessment questions by
+                            default.
+                          </HelpPopover>
+                        </span>
                       </th>
                       <th scope="col" />
                     </tr>

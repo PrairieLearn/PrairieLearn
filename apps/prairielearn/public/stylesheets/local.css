@@ -284,6 +284,31 @@ mjx-container {
   font-size: 0.7rem;
 }
 
+/* Bootstrap 6 includes `.btn-icon`; remove this backport after upgrading to v6.
+ * https://github.com/twbs/bootstrap/pull/41928 */
+.btn-icon {
+  --bs-btn-min-height: 2.25rem;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--bs-btn-min-height);
+  aspect-ratio: 1;
+  padding: 0;
+}
+
+.btn-icon.btn-xs {
+  --bs-btn-min-height: 1.5rem;
+}
+
+.btn-icon.btn-sm {
+  --bs-btn-min-height: 2rem;
+}
+
+.btn-icon.btn-lg {
+  --bs-btn-min-height: 2.75rem;
+}
+
 a.badge {
   text-decoration: none;
 }
