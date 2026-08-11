@@ -10,13 +10,13 @@ dependencies = [
   "automata-lib==9.2.0",
   "chevron==0.14.0",
   "coloraide==8.10",
-  "faker==40.35.0",
+  "faker==40.36.0",
   "jinja2==3.1.6",
   "jsonschema==4.26.0",
   "lxml==6.1.1",
   "matplotlib==3.11.1",
   "networkx==3.6.1",
-  "nltk==3.10.0",
+  "nltk==3.10.1",
   "numpy==2.4.6",
   "openpyxl==3.1.5",
   "pandas==2.3.3",
@@ -52,13 +52,13 @@ dev = [
   "pytest-cov==7.1.0",
   "pytest-github-actions-annotate-failures==0.4.2",
   "pytest-repeat==0.9.4",
-  "ruff==0.15.22",
+  "ruff==0.16.1",
   "sqlfluff==4.2.2",
-  "squawk-cli==2.60.0",
+  "squawk-cli==2.61.0",
   "tomlkit==0.15.1",
   "types-chevron==0.14.2.20260408",
   "types-lxml==2026.2.16",
-  "types-pygments==2.20.0.20260518",
+  "types-pygments==2.20.0.20260728",
 ]
 
 docs = [
@@ -77,7 +77,7 @@ docs = [
   "pygments==2.20.0",
   # mkdocstrings-python will format the docstrings using ruff
   # https://mkdocstrings.github.io/python/usage/configuration/signatures/#line_length
-  "ruff==0.15.22",
+  "ruff==0.16.1",
 ]
 
 # We only use pyproject.toml for the Python dependencies, so we don't need to
@@ -86,7 +86,8 @@ docs = [
 packages = []
 
 [tool.ruff]
-include = ["**/*.py"]
+# Also runs ruff on markdown files containing Python code blocks.
+include = ["**/*.py", "**/*.md"]
 
 extend-exclude = [
   # These files are intentionally not parseable as Python.

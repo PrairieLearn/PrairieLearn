@@ -245,9 +245,9 @@ export const ConfigSchema = z.object({
    * all keys are available to decrypt existing data.
    */
   databaseEncryptionKey: DatabaseEncryptionKeyRingSchema.prefault('0'.repeat(64)),
-  secretSlackOpsBotEndpoint: z.string().nullable().default(null),
-  secretSlackToken: z.string().nullable().default(null),
-  secretSlackCourseRequestChannel: z.string().nullable().default(null),
+  // Slack webhook URLs contain credentials and must be handled as secrets.
+  slackOpsWebhookUrl: z.string().nullable().default(null),
+  slackCourseRequestWebhookUrl: z.string().nullable().default(null),
   githubClientToken: z.string().nullable().default(null),
   githubCourseOwner: z.string().default('PrairieLearn'),
   githubCourseTemplate: z.string().default('pl-template'),
@@ -542,8 +542,6 @@ export const ConfigSchema = z.object({
   azureRedirectUrl: z.string().default('<your_redirect_url>'),
   /** Required if the redirect URL uses the HTTP protocol. */
   azureAllowHttpForRedirectUrl: z.boolean().default(false),
-  /** Required. If the app key contains `\`, replace it with `\\`. */
-  azureClientSecret: z.string().default('<your_client_secret>'),
   /**
    * Required to encrypt cookies. Multiple key/iv pairs can be provided for key
    * rotation. The first key/iv pair will be used to encrypt cookies, but all
@@ -560,21 +558,6 @@ export const ConfigSchema = z.object({
     )
     .default([]),
   azureLoggingLevel: z.enum(['error', 'warn', 'info']).default('warn'),
-  /**
-   * If you want to get access_token for a specific resource, you can provide the
-   * resource here; otherwise, set the value to null.
-   * Note that in order to get access_token, the responseType must be 'code', 'code id_token' or 'id_token code'.
-   */
-  azureResourceURL: z.string().nullable().default('https://graph.windows.net'),
-  /**
-   * The URL to which the user will be redirected to destroy the session.
-   */
-  azureDestroySessionUrl: z
-    .string()
-    .nullable()
-    .default(
-      'https://login.microsoftonline.com/common/oauth2/logout?post_logout_redirect_uri=http://localhost:3000',
-    ),
   features: z.record(z.string(), z.boolean()).default({}),
   /**
    * Determines if sharing validation should be performed. In essence checks

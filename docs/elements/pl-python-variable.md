@@ -13,8 +13,9 @@ Displays the value of a Python variable. It uses options similar to the [pprint]
 ```python title="server.py"
 import prairielearn as pl
 
+
 def generate(data):
-    data_dictionary = { "a": 1, "b": 2, "c": 3 }
+    data_dictionary = {"a": 1, "b": 2, "c": 3}
     data["params"]["variable"] = pl.to_json(data_dictionary)
 ```
 

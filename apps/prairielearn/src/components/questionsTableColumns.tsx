@@ -464,6 +464,7 @@ export function createQuestionsTableFilters({
             <span className="text-nowrap">{value}</span>
           );
         }}
+        showSearch
       />
     ),
     tag: ({ header }) => (
@@ -474,6 +475,7 @@ export function createQuestionsTableFilters({
           const tag = tagsByName.get(value);
           return tag ? <TagBadge tag={tag} /> : <span className="text-nowrap">{value}</span>;
         }}
+        showSearch
       />
     ),
     display_type: ({ header }) => (
@@ -483,15 +485,23 @@ export function createQuestionsTableFilters({
       <MultiSelectColumnFilter column={header.column} allColumnValues={allGradingMethods} />
     ),
     external_grading_image: ({ header }) => (
-      <MultiSelectColumnFilter column={header.column} allColumnValues={allExternalGradingImages} />
+      <MultiSelectColumnFilter
+        column={header.column}
+        allColumnValues={allExternalGradingImages}
+        showSearch
+      />
     ),
     workspace_image: ({ header }) => (
-      <MultiSelectColumnFilter column={header.column} allColumnValues={allWorkspaceImages} />
+      <MultiSelectColumnFilter
+        column={header.column}
+        allColumnValues={allWorkspaceImages}
+        showSearch
+      />
     ),
     single_variant: ({ header }) => <BooleanColumnFilter column={header.column} />,
     has_preferences: ({ header }) => <BooleanColumnFilter column={header.column} />,
     sharing_sets: ({ header }) => (
-      <MultiSelectColumnFilter column={header.column} allColumnValues={allSharingSets} />
+      <MultiSelectColumnFilter column={header.column} allColumnValues={allSharingSets} showSearch />
     ),
   };
 
@@ -517,6 +527,7 @@ export function createQuestionsTableFilters({
             <span className="text-nowrap">{value}</span>
           );
         }}
+        showSearch
       />
     );
   });

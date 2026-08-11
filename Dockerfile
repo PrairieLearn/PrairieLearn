@@ -1,8 +1,4 @@
-# check=skip=CopyIgnoredFile
-# TODO: remove once the following issue is fixed:
-# https://github.com/moby/buildkit/issues/6512
-
-FROM amazonlinux:2023
+FROM amazonlinux:2023.12.20260724.0
 ARG CACHEBUST=2026-07-15-14-34-04
 
 WORKDIR /PrairieLearn
@@ -55,5 +51,5 @@ RUN chmod +x /PrairieLearn/scripts/init.sh \
     && git config --global user.name "Dev User" \
     && git config --global safe.directory '*'
 
-HEALTHCHECK CMD curl --fail http://localhost:3000/pl/webhooks/ping || exit 1
+HEALTHCHECK CMD ["curl", "--fail", "http://localhost:3000/pl/webhooks/ping"]
 CMD [ "/PrairieLearn/scripts/init.sh" ]
