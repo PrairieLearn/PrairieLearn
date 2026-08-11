@@ -11,6 +11,7 @@ import {
   queryScalar,
   queryScalars,
 } from '@prairielearn/postgres';
+import { run } from '@prairielearn/run';
 import { IdSchema } from '@prairielearn/zod';
 
 import { PageLayout } from '../../components/PageLayout.js';
@@ -207,19 +208,26 @@ router.get(
       //     effective user roles are taken into account.
       //
       // Otherwise, all issues must be anonymized.
-      showUser:
-        (row.course_instance_id == null && res.locals.authz_data.has_course_permission_preview) ||
-        (row.course_instance_id != null &&
+      showUser: run(() => {
+        if (row.course_instance_id == null) {
+          return authzData.has_course_permission_preview;
+        }
+
+        // Use request-scoped authorization for the current course instance so
+        // that effective-user role overrides are respected. The model results
+        // below reflect stored roles instead.
+        if (
           res.locals.course_instance &&
-          idsEqual(res.locals.course_instance.id, row.course_instance_id) &&
-          (res.locals.authz_data as ResLocalsCourseInstanceAuthz)
-            .has_course_instance_permission_view) ||
-        (row.course_instance_id != null &&
-          (!res.locals.course_instance ||
-            !idsEqual(res.locals.course_instance.id, row.course_instance_id)) &&
-          course_instances.some(
-            (ci) => ci.id === row.course_instance_id && ci.has_course_instance_permission_view,
-          )),
+          'course_instance_role' in res.locals.authz_data &&
+          idsEqual(res.locals.course_instance.id, row.course_instance_id)
+        ) {
+          return res.locals.authz_data.has_course_instance_permission_view;
+        }
+
+        return course_instances.some(
+          (ci) => ci.id === row.course_instance_id && ci.has_course_instance_permission_view,
+        );
+      }),
     }));
 
     const openFilteredIssuesCount = issueRows.reduce((acc, row) => (row.open ? acc + 1 : acc), 0);
