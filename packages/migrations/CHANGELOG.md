@@ -1,5 +1,17 @@
 # @prairielearn/migrations
 
+## 5.2.0
+
+### Minor Changes
+
+- 5ca8b69: Add a read-only API for inspecting pending migrations.
+
+## 5.1.2
+
+### Patch Changes
+
+- 81ad435: Update typescript-cp to remove its transitive tar dependency.
+
 ## 5.1.1
 
 ### Patch Changes

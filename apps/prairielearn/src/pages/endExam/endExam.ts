@@ -7,7 +7,7 @@ import { html } from '@prairielearn/html';
 import { logger } from '@prairielearn/logger';
 import { loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
 
-import { generateEndExamJwt } from '../../ee/auth/endExamJwt.js';
+import { signPrairieTestJwt } from '../../ee/auth/prairieTestJwt.js';
 import { getEndExamCloseUrl, getEndExamExitUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
 
@@ -120,7 +120,11 @@ router.post(
       return;
     }
 
-    const jwt = await generateEndExamJwt({ user_id, reservation_id: reservation.id });
+    const jwt = await signPrairieTestJwt({
+      purpose: 'end_exam',
+      user_id,
+      reservation_id: reservation.id,
+    });
 
     // Only exit LDB once PT confirms the reservation ended — releasing the
     // student while it's still active would let them browse and return. On
