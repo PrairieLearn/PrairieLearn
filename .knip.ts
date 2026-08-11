@@ -86,6 +86,7 @@ const CLI_ONLY_DEPS = [
   's3rver',
   '@postgres-language-server/cli',
   '@typescript/native-preview',
+  '@prairielearn/pin-github-actions',
 ];
 
 // Collect packages referenced by element / question `info.json` files.
@@ -176,8 +177,6 @@ const config: KnipConfig = {
         'src/lib/client/safe-db-types.ts',
         // We have team -> group aliases in this file
         'src/lib/db-types.ts',
-        // Ambient module declaration for echarts types
-        'src/typings/echarts.d.ts',
       ],
       project: ['**/*.{ts,cts,mts,tsx}'],
       // Tell knip not to flag these as unused.
