@@ -1,4 +1,4 @@
-# pyright: reportSelfClsParameterName=false, reportMissingParameterType=false, reportUnknownParameterType=false
+# pyright: reportMissingParameterType=false, reportUnknownParameterType=false
 from os import path
 
 import prairielearn as pl
