@@ -99,6 +99,8 @@ filters: {
 }
 ```
 
+For larger value sets, pass `showSearch` to add fuzzy search with a placeholder derived from the column label. Use `searchPlaceholder` to override that placeholder, or `getSearchText` when the stored value differs from the text rendered to the user.
+
 ### ComboBox and TagPicker
 
 Accessible combobox components built on [React Aria](https://react-spectrum.adobe.com/react-aria/).

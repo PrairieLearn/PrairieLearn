@@ -2,4 +2,4 @@
 '@prairielearn/ui': minor
 ---
 
-Add optional search support to multi-select column filters.
+Add opt-in fuzzy search support to multi-select column filters.
