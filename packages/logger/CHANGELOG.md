@@ -1,5 +1,11 @@
 # @prairielearn/logger
 
+## 3.1.7
+
+### Patch Changes
+
+- df28e68: Bump dependencies
+
 ## 3.1.6
 
 ### Patch Changes
