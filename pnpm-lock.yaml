@@ -488,8 +488,8 @@ importers:
         specifier: ^3.1101.0
         version: 3.1101.0(@aws-sdk/client-s3@3.1101.0)
       '@cortex-js/compute-engine':
-        specifier: ^0.55.6
-        version: 0.55.6
+        specifier: ^0.102.0
+        version: 0.102.0
       '@dnd-kit/core':
         specifier: ^6.3.1
         version: 6.3.1(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
@@ -2933,6 +2933,9 @@ packages:
   '@arnog/colors@0.3.0':
     resolution: {integrity: sha512-CDZFMVWeE3HqcrzvacY2Y8257RS9c0f8+D+MWjbjmb5IWpOZPPeJSqWyxkVcFleCjA+x5aq6foc57cVaP+AMQg==}
 
+  '@arnog/colors@0.5.0':
+    resolution: {integrity: sha512-NB7yqrO7qvInsqJdqz6C6mDU+2oiKmbBbk3czMS0E7KkGxLRy538tEHCsB5TKqmaxxXpi6/U120TnGl8NsDePg==}
+
   '@asamuzakjp/css-color@5.1.11':
     resolution: {integrity: sha512-KVw6qIiCTUQhByfTd78h2yD1/00waTmm9uy/R7Ck/ctUyAPj+AEDLkQIdJW0T8+qGgj3j5bpNKK7Q3G+LedJWg==}
     engines: {node: ^20.19.0 || ^22.12.0 || >=24.0.0}
@@ -3219,6 +3222,11 @@ packages:
   '@colors/colors@1.6.0':
     resolution: {integrity: sha512-Ir+AOibqzrIsL6ajt3Rz3LskB7OiMVHqltZmspbW/TJuTVuyOMirVqAkjfY6JISiLHgyNqicAC8AyHHGzNd/dA==}
     engines: {node: '>=0.1.90'}
+
+  '@cortex-js/compute-engine@0.102.0':
+    resolution: {integrity: sha512-TSTxCjiLjFcEqCgcJN5e2pUulH91aYNllnPy3d/TPJ+cHcBm8eFG2eg2mDuFwkENjXhUUbjSLsGbWMZD4b5cAQ==}
+    engines: {node: '>=21.7.3', npm: '>=10.5.0'}
+    hasBin: true
 
   '@cortex-js/compute-engine@0.55.6':
     resolution: {integrity: sha512-lWnZ34gtFpUDpFmEMdsL+5HJuh7hyj0DoaZhVTFnVtGX2Rf7qFyD+zgTs1vY9h2qhcpKymiakE6evvWzI6kwtA==}
@@ -10789,6 +10797,8 @@ snapshots:
 
   '@arnog/colors@0.3.0': {}
 
+  '@arnog/colors@0.5.0': {}
+
   '@asamuzakjp/css-color@5.1.11':
     dependencies:
       '@asamuzakjp/generational-cache': 1.0.1
@@ -11375,6 +11385,11 @@ snapshots:
       prettier: 2.8.8
 
   '@colors/colors@1.6.0': {}
+
+  '@cortex-js/compute-engine@0.102.0':
+    dependencies:
+      '@arnog/colors': 0.5.0
+      complex-esm: 2.1.1-esm1
 
   '@cortex-js/compute-engine@0.55.6':
     dependencies:

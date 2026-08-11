@@ -93,7 +93,6 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
   initColumnNavigation(drawer);
   initDrawerUI(drawer, fab, fabClose, storageKey);
   const ce = new ComputeEngine();
-  ce.timeLimit = 500;
   ce.pushScope();
   const calculatorInputElement = ensureElement(
     drawer.querySelector<MathfieldElement>('#calculator-input'),
@@ -301,11 +300,13 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
     }
 
     try {
-      const evaluated = parsed.evaluate();
-      const numericValue = displayMode === 'symbolic' ? evaluated : evaluated.N();
-      const displayed = numericValue.toLatex(latexOptions);
+      return ce.withTimeLimit({ ms: 500, label: 'prairielearn:calculator' }, () => {
+        const evaluated = parsed.evaluate();
+        const numericValue = displayMode === 'symbolic' ? evaluated : evaluated.N();
+        const displayed = numericValue.toLatex(latexOptions);
 
-      return { displayed, evaluated };
+        return { displayed, evaluated };
+      });
     } catch (e) {
       console.error('Evaluation failed:', e);
       return null;
