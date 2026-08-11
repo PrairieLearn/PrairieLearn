@@ -156,6 +156,7 @@ ENV USER=rstudio
 # Judging from some discussion online, the PASSWORD variable may be necessary
 # due to a bug in RStudio Server's DISABLE_AUTH mode.
 ENV DISABLE_AUTH=true
+# hadolint ignore=DL3064
 ENV PASSWORD=placeholder
 # This tells s6 to use alternative, writable locations if the paths it
 # expects to write to are read-only.

@@ -464,7 +464,7 @@
         }
       ]
     },
-    "secretSlackOpsBotEndpoint": {
+    "slackOpsWebhookUrl": {
       "default": null,
       "anyOf": [
         {
@@ -475,18 +475,7 @@
         }
       ]
     },
-    "secretSlackToken": {
-      "default": null,
-      "anyOf": [
-        {
-          "type": "string"
-        },
-        {
-          "type": "null"
-        }
-      ]
-    },
-    "secretSlackCourseRequestChannel": {
+    "slackCourseRequestWebhookUrl": {
       "default": null,
       "anyOf": [
         {

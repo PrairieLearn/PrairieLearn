@@ -204,6 +204,8 @@ When modifying or reviewing element controllers — especially adding fields to 
 
 When changing or reviewing an element's accepted/generated HTML attribute contract, see the [`element-validation` skill](./.agents/skills/element-validation/SKILL.md) to keep schema modules, legacy AI validation, Python render-time checks, and element docs aligned.
 
+When creating a new element or changing an element's runtime dependencies, scripts, styles, or bundled assets, see the [`element-runtime-assets` skill](./.agents/skills/element-runtime-assets/SKILL.md) for the requirement that those assets be browser-loadable as standalone bundles.
+
 ### Testing
 
 - For Python tests, use `uv run pytest path/to/testfile.py` from the root directory.

@@ -19,7 +19,7 @@
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/node": "^24.13.2",
+    "@types/node": "^24.13.3",
     "@typescript/native-preview": "beta"
   }
 }
