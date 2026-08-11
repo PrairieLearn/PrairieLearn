@@ -700,8 +700,8 @@
     const allowSets = mf.getAttribute('allow-sets');
 
     const macros = {};
-    [...customFunctions].map((fun) => (macros[fun] = `\\operatorname{${fun}}`));
-    [...greekLettersToUnicode].map(
+    customFunctions.forEach((fun) => (macros[fun] = `\\operatorname{${fun}}`));
+    greekLettersToUnicode.forEach(
       ([letter, unicode]) => (macros[letter] = String.fromCodePoint(Number.parseInt(unicode, 16))),
     );
 

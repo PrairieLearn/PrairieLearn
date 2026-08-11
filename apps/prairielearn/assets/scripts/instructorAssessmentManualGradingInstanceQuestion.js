@@ -23,13 +23,13 @@ onDocumentReady(() => {
       const mainGradingPanel = document.querySelector('.js-main-grading-panel');
       if (!mainGradingPanel) return;
 
-      mainGradingPanel.querySelectorAll('[data-key-binding]').forEach((item) => {
+      for (const item of mainGradingPanel.querySelectorAll('[data-key-binding]')) {
         if (
           item.dataset.keyBinding?.toLowerCase() !== event.key.toLowerCase() ||
           item.matches(':disabled, [readonly]') ||
           !isVisible(item)
         ) {
-          return;
+          continue;
         }
 
         if (item.classList.contains('js-submission-feedback')) {
@@ -39,7 +39,7 @@ onDocumentReady(() => {
         } else {
           item.dispatchEvent(new MouseEvent('click'));
         }
-      });
+      }
     }
   });
   const modal = document.querySelector('#conflictGradingJobModal');

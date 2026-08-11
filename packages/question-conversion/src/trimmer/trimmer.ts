@@ -553,6 +553,8 @@ function computeKeptPaths(
         if (!resource) continue;
         for (const depId of dependencies(resource)) {
           if (!keepIds.has(depId)) {
+            // Growing the set is intentional: Set iteration visits newly added dependencies.
+            // eslint-disable-next-line unicorn/no-loop-iterable-mutation
             keepIds.add(depId);
             changed = true;
           }
@@ -598,13 +600,13 @@ async function buildTextRewrites(analysis: QtiArchiveAnalysis): Promise<Map<stri
 
     for (const [oldRef, newRef] of analysis.localAssets.rewrites) {
       if (text.includes(oldRef)) {
-        text = text.split(oldRef).join(newRef);
+        text = text.replaceAll(oldRef, newRef);
         changed = true;
       }
     }
 
     if (text.includes('$IMS-CC-FILEBASE$/@X@')) {
-      text = text.split('$IMS-CC-FILEBASE$/@X@').join('@X@');
+      text = text.replaceAll('$IMS-CC-FILEBASE$/@X@', '@X@');
       changed = true;
     }
 
