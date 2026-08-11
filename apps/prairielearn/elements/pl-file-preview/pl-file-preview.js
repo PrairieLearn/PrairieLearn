@@ -137,10 +137,25 @@ export default class PLFilePreview {
                   window.MathJax.startup.promise,
                 ])
                   .then(async ([Marked, markedMathjax, { AnsiUp }]) => {
-                    const ansiUp = new AnsiUp();
                     markedMathjax.addMathjaxExtension(Marked.marked, window.MathJax);
                     window.nb.markdown = Marked.marked.parse;
-                    window.nb.ansi = (code) => ansiUp.ansi_to_html(code);
+                    // The notebookjs double-escapes ANSI output
+                    // (https://github.com/jsvine/notebookjs/issues/59). We can
+                    // work around this by "unescaping" the text. This has the
+                    // side-effect of also unescaping any `&gt;` and `&lt;` HTML
+                    // entities that were originally in the text (since
+                    // notebookjs doesn't escape ampersand and we can't
+                    // distinguish between the original and the escaped
+                    // versions), but these are less common than < and >
+                    // characters in typical notebook output, so we'll accept
+                    // that tradeoff for now.
+                    window.nb.ansi = (code) => {
+                      // Use a new instance of AnsiUp each time to avoid state from previous calls affecting the current call.
+                      const ansiUp = new AnsiUp();
+                      return ansiUp.ansi_to_html(
+                        code.replaceAll('&gt;', '>').replaceAll('&lt;', '<'),
+                      );
+                    };
                     window.nb.sanitizer = (code) => window.DOMPurify.sanitize(code);
 
                     const notebook = window.nb.parse(JSON.parse(text));
