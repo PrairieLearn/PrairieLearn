@@ -544,6 +544,9 @@ importers:
       '@prairielearn/docker-utils':
         specifier: workspace:^
         version: link:../../packages/docker-utils
+      '@prairielearn/encrypted-storage':
+        specifier: workspace:^
+        version: link:../../packages/encrypted-storage
       '@prairielearn/error':
         specifier: workspace:^
         version: link:../../packages/error
@@ -1787,6 +1790,34 @@ importers:
       '@vitest/coverage-v8':
         specifier: ^4.1.10
         version: 4.1.10(vitest@4.1.10)
+      vitest:
+        specifier: ^4.1.10
+        version: 4.1.10(@opentelemetry/api@1.9.1)(@types/node@24.13.3)(@vitest/coverage-v8@4.1.10)(jsdom@29.1.1)(vite@8.2.0(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(sass@1.102.0)(tsx@4.23.5)(yaml@2.9.0))
+
+  packages/encrypted-storage:
+    dependencies:
+      '@prairielearn/postgres':
+        specifier: workspace:^
+        version: link:../postgres
+      zod:
+        specifier: ^4.4.3
+        version: 4.4.3
+    devDependencies:
+      '@prairielearn/tsconfig':
+        specifier: workspace:^
+        version: link:../tsconfig
+      '@types/node':
+        specifier: ^24.13.3
+        version: 24.13.3
+      '@typescript/native-preview':
+        specifier: beta
+        version: 7.0.0-dev.20260421.2
+      '@vitest/coverage-v8':
+        specifier: ^4.1.10
+        version: 4.1.10(vitest@4.1.10)
+      typescript-cp:
+        specifier: ^0.1.10
+        version: 0.1.10(typescript@6.0.3)
       vitest:
         specifier: ^4.1.10
         version: 4.1.10(@opentelemetry/api@1.9.1)(@types/node@24.13.3)(@vitest/coverage-v8@4.1.10)(jsdom@29.1.1)(vite@8.2.0(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(sass@1.102.0)(tsx@4.23.5)(yaml@2.9.0))
