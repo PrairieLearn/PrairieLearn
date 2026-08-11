@@ -104,6 +104,17 @@ WHERE
     );
   }
 
+  function runCipherOperation<T>(cursor: string, operation: () => T) {
+    try {
+      return operation();
+    } catch (error) {
+      throw new Error(
+        `Failed to process encrypted value ${target} at ${primaryKeyColumnName}=${cursor}`,
+        { cause: error },
+      );
+    }
+  }
+
   async function forEachValue(
     fn: (row: z.infer<typeof EncryptedValueRowSchema>) => Promise<void> | void,
   ) {
@@ -120,8 +131,8 @@ WHERE
 
   async function inspect() {
     let needsRotation = 0;
-    const total = await forEachValue(({ ciphertext }) => {
-      if (cipher.needsRotation(ciphertext)) needsRotation += 1;
+    const total = await forEachValue(({ cursor, ciphertext }) => {
+      if (runCipherOperation(cursor, () => cipher.needsRotation(ciphertext))) needsRotation += 1;
     });
     return { target, total, needsRotation };
   }
@@ -133,7 +144,7 @@ WHERE
   let remaining = 0;
   for (let pass = 1; pass <= maxPasses; pass += 1) {
     await forEachValue(async ({ cursor, ciphertext }) => {
-      const replacementCiphertext = cipher.rotate(ciphertext);
+      const replacementCiphertext = runCipherOperation(cursor, () => cipher.rotate(ciphertext));
       if (replacementCiphertext === null) return;
 
       const updated = await execute(replaceIfUnchangedSql, {
