@@ -3,6 +3,7 @@ import type { Column } from '@tanstack/react-table';
 import clsx from 'clsx';
 import { type ReactNode, useId, useState } from 'react';
 import { Button, DialogTrigger, Popover } from 'react-aria-components';
+import Form from 'react-bootstrap/Form';
 
 export type MultiSelectFilterMode = 'include' | 'exclude';
 
@@ -125,9 +126,10 @@ export function MultiSelectColumnFilter<TData, TValue extends string = string>({
           </div>
 
           {showSearch && (
-            <input
+            <Form.Control
               type="search"
-              className="form-control form-control-sm mb-2"
+              size="sm"
+              className="mb-2"
               value={search}
               placeholder={searchPlaceholder ?? searchLabel}
               aria-label={searchLabel}
@@ -202,22 +204,17 @@ export function MultiSelectColumnFilter<TData, TValue extends string = string>({
               const isSelected = selected.has(value);
               return (
                 <div key={id} className="list-group-item d-flex align-items-center gap-3">
-                  <div className="form-check">
-                    <input
-                      id={id}
-                      className="form-check-input"
-                      type="checkbox"
-                      value={value}
-                      checked={isSelected}
-                      onChange={() => toggleValue(value)}
-                    />
-                    <label className="form-check-label fw-normal" htmlFor={id}>
-                      {renderValueLabel({
-                        value,
-                        isSelected,
-                      })}
-                    </label>
-                  </div>
+                  <Form.Check
+                    id={id}
+                    type="checkbox"
+                    value={value}
+                    checked={isSelected}
+                    label={renderValueLabel({
+                      value,
+                      isSelected,
+                    })}
+                    onChange={() => toggleValue(value)}
+                  />
                 </div>
               );
             })
