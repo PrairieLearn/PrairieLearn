@@ -15,7 +15,7 @@ import { DateFromISOString, IdSchema } from '@prairielearn/zod';
 
 import { JobSequenceSchema, type User } from '../lib/db-types.js';
 import { createCourseRepoJob } from '../lib/github.js';
-import { sendCourseRequestMessage } from '../lib/opsbot.js';
+import { sendCourseRequestMessage } from '../lib/slack.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 

@@ -3,9 +3,11 @@ import path from 'node:path';
 import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 import { z } from 'zod';
 
-import { makePostgresTestUtils, queryRow } from '@prairielearn/postgres';
+import { loadSqlEquiv, makePostgresTestUtils, queryRow, queryScalar } from '@prairielearn/postgres';
 
-import { getMigrationsToExecute, initWithLock } from './migrations.js';
+import { getMigrationsToExecute, getPendingMigrations, initWithLock } from './migrations.js';
+
+const sql = loadSqlEquiv(import.meta.filename);
 
 describe('migrations', () => {
   describe('getMigrationsToExecute', () => {
@@ -147,6 +149,28 @@ describe('migrations', () => {
       await postgresTestUtils.dropDatabase();
     });
 
+    it('reports all migrations without modifying a fresh database', async () => {
+      const migrationDir = path.join(import.meta.dirname, 'fixtures');
+      const pendingMigrations = await getPendingMigrations({
+        directories: [migrationDir],
+        project: 'prairielearn_migrations',
+      });
+
+      assert.deepEqual(pendingMigrations, [
+        {
+          filename: '20230407210409_create_users.sql',
+          timestamp: '20230407210409',
+        },
+        {
+          filename: '20230407210430_insert_user.ts',
+          timestamp: '20230407210430',
+        },
+      ]);
+
+      const migrationsTable = await queryScalar(sql.get_migrations_table, z.string().nullable());
+      assert.isNull(migrationsTable);
+    });
+
     it('runs both SQL and JavaScript migrations', async () => {
       const migrationDir = path.join(import.meta.dirname, 'fixtures');
       await initWithLock({ directories: [migrationDir], project: 'prairielearn_migrations' });
@@ -155,6 +179,21 @@ describe('migrations', () => {
       // in the database.
       const users = await queryRow('SELECT * FROM users', {}, z.object({ name: z.string() }));
       assert.equal(users.name, 'Test User');
+
+      assert.deepEqual(
+        await getPendingMigrations({
+          directories: [migrationDir],
+          project: 'prairielearn_migrations',
+        }),
+        [],
+      );
+      assert.lengthOf(
+        await getPendingMigrations({
+          directories: [migrationDir],
+          project: 'prairietest',
+        }),
+        2,
+      );
     });
   });
 });
