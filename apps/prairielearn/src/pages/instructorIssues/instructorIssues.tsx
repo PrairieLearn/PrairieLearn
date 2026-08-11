@@ -20,7 +20,6 @@ import { extractPageContext } from '../../lib/client/page-context.js';
 import { idsEqual } from '../../lib/id.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { getUrl } from '../../lib/url.js';
-import type { ResLocalsCourseInstanceAuthz } from '../../middlewares/authzCourseOrInstance.js';
 import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances.js';
 
 import { InstructorIssues, IssueRowSchema, PAGE_SIZE } from './instructorIssues.html.js';
