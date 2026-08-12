@@ -5,6 +5,7 @@ on:
     branches:
       - 'master'
 
+# Avoid concurrent version-PR updates or package publish attempts.
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
 
