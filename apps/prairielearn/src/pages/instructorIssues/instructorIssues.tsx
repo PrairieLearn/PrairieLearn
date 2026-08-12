@@ -85,6 +85,14 @@ function parseRawQuery(str: string) {
         }
         break;
       case 'user':
+        // The filter by user applies even if the current user does not have
+        // permission to view the user data. Ideally we would not allow
+        // filtering by user in this case, but we still want to allow
+        // instructors to filter by user within the context of their own course
+        // instance, even if they do not have permission to view the user data
+        // in other course instances. While this is not ideal, it is a
+        // reasonable compromise. Future implementations may refine this
+        // further.
         if (!option.negated) {
           filters.filter_users = filters.filter_users || [];
           filters.filter_users.push(formatForLikeClause(option.value));
