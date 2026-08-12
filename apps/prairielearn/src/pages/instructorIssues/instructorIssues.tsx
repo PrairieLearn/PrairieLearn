@@ -181,7 +181,7 @@ router.get(
     });
     const linkableCourseInstanceIds = new Set(course_instances.map((ci) => ci.id));
 
-    const issues = issueRows.map((row) => ({
+    let issues = issueRows.map((row) => ({
       ...row,
 
       // Each issue is associated with a question variant. If an issue is also
@@ -237,7 +237,12 @@ router.get(
       }),
     }));
 
-    const openFilteredIssuesCount = issueRows.reduce((acc, row) => (row.open ? acc + 1 : acc), 0);
+    if (filters.filter_users?.length || filters.filter_not_users?.length) {
+      // If the issues are filtered by user, we do not list any issues where user information is hidden.
+      issues = issues.filter((row) => row.showUser);
+    }
+
+    const openFilteredIssuesCount = issues.reduce((acc, row) => (row.open ? acc + 1 : acc), 0);
 
     res.send(
       PageLayout({
