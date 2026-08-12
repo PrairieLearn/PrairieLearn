@@ -62,6 +62,7 @@ import { canonicalLoggerMiddleware } from './lib/canonical-logger.js';
 import * as codeCaller from './lib/code-caller/index.js';
 import { DEV_EXECUTION_MODE, config, loadConfig, setLocalsFromConfig } from './lib/config.js';
 import { pullAndUpdateCourse } from './lib/course.js';
+import { runDatabaseEncryptionOperation } from './lib/database-encryption-rotation.js';
 import { UserSchema } from './lib/db-types.js';
 import * as externalGrader from './lib/externalGrader.js';
 import * as externalGraderDeadLetters from './lib/externalGraderDeadLetters.js';
@@ -105,6 +106,7 @@ if ('h' in argv || 'help' in argv) {
   const msg = `PrairieLearn command line options:
     -h, --help                          Display this help and exit
     --config <filename>                 Use the specified configuration file
+    --database-encryption <check|rotate>  Check or rotate encrypted database values and exit
     --list-pending-migrations           List pending migrations as JSON and exit
     --migrate-and-exit                  Run the DB initialization parts and exit
     --refresh-workspace-hosts-and-exit  Refresh the workspace hosts and exit
@@ -883,8 +885,22 @@ export async function initExpress(): Promise<Express> {
   );
   app.use(
     /^(\/pl\/course_instance\/[0-9]+\/instructor\/assessment\/[0-9]+)\/?$/,
-    (req, res, _next) => {
-      res.redirect(`${req.params[0]}/questions`);
+    (req, res, next) => {
+      if (res.locals.authz_data.has_course_permission_preview) {
+        // If the user has course permission, redirect them to the questions
+        // page, as they can view the assessment questions.
+        res.redirect(`${req.params[0]}/questions`);
+      } else if (res.locals.authz_data.has_course_instance_permission_view) {
+        // If the user does not have course permission, but has course instance
+        // permission, redirect them to the students page, as they can view the
+        // assessment students.
+        res.redirect(`${req.params[0]}/instances`);
+      } else {
+        // This should never happen, as an error would have been thrown in the
+        // `selectAndAuthzAssessment` middleware if the user did not have either
+        // permission.
+        next();
+      }
     },
   );
   app.use(
@@ -2476,6 +2492,16 @@ if (shouldStartServer) {
 
     await sqldb.setRandomSearchSchemaAsync(schemaPrefix);
     await sprocs.init();
+
+    if ('database-encryption' in argv) {
+      const mode = argv['database-encryption'];
+      if (mode !== 'check' && mode !== 'rotate') {
+        throw new Error('--database-encryption must be either "check" or "rotate"');
+      }
+      const result = await runDatabaseEncryptionOperation({ mode });
+      logger.info(`Database encryption ${mode} complete`, result);
+      process.exit(0);
+    }
 
     if (argv['migrate-and-exit']) {
       logger.info('option --migrate-and-exit passed, running DB setup and exiting');

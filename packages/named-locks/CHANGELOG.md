@@ -1,5 +1,11 @@
 # @prairielearn/named-locks
 
+## 4.0.8
+
+### Patch Changes
+
+- df28e68: Bump dependencies
+
 ## 4.0.7
 
 ### Patch Changes

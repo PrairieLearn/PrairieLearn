@@ -1,5 +1,11 @@
 # @prairielearn/express-test-utils
 
+## 2.0.13
+
+### Patch Changes
+
+- df28e68: Bump dependencies
+
 ## 2.0.12
 
 ### Patch Changes

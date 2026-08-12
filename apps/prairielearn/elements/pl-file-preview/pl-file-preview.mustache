@@ -55,6 +55,7 @@
   </div>
 </div>
 
-<script>
-$(() => new PLFilePreview("{{uuid}}"));
+<script type="module">
+  import PLFilePreview from 'pl-file-preview/pl-file-preview.js';
+  new PLFilePreview("{{uuid}}");
 </script>
