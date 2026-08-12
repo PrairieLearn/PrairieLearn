@@ -532,6 +532,7 @@ const minimalStaffQuestion: z.input<typeof StaffQuestionSchema> = {
   qid: null,
   share_publicly: false,
   share_source_publicly: false,
+  shared_state_access: {},
   show_correct_answer: null,
   single_variant: null,
   sync_errors: null,

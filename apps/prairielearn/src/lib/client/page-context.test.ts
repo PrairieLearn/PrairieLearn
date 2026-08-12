@@ -345,6 +345,7 @@ const STAFF_QUESTION = {
   qid: 'question1',
   share_publicly: false,
   share_source_publicly: false,
+  shared_state_access: {},
   show_correct_answer: true,
   single_variant: false,
   sync_errors: null,

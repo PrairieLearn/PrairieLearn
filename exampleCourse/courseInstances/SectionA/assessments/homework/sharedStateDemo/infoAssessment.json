@@ -1,0 +1,23 @@
+{
+  "uuid": "a8a813e8-586d-4013-a3d5-1680f30e448c",
+  "type": "Homework",
+  "title": "Demo: Shared state across questions",
+  "set": "Homework",
+  "module": "AnotherModule",
+  "number": "4",
+  "allowIssueReporting": true,
+  "zones": [
+    {
+      "title": "Pick a theme",
+      "questions": [{ "id": "demo/sharedState/pickTheme", "autoPoints": 1 }]
+    },
+    {
+      "title": "Themed arithmetic",
+      "questions": [
+        { "id": "demo/sharedState/arithmeticA", "autoPoints": 5 },
+        { "id": "demo/sharedState/arithmeticB", "autoPoints": 5 }
+      ]
+    }
+  ],
+  "text": "<p>This assessment demonstrates <strong>shared state</strong>: the first question lets you pick a theme, and the two arithmetic questions afterward use it to flavor their wording. The order questions are shown in isn't guaranteed (especially on exams), so the arithmetic questions fall back to a sensible default theme if visited before the theme is picked.</p>"
+}

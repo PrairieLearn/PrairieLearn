@@ -464,6 +464,7 @@ function checkData(data: Record<string, any>, origData: Record<string, any>, pha
              || checkProp('variant_seed',          'integer', allPhases,                                    [])
              || checkProp('options',               'object',  allPhases,                                    [])
              || checkProp('preferences',           'object',  allPhases,                                    [])
+             || checkProp('shared_state',          'object',  ['generate', 'prepare', 'parse', 'grade'],    ['generate', 'prepare', 'parse', 'grade'])
              || checkProp('submitted_answers',     'object',  ['render', 'parse', 'grade', 'file'],         ['parse', 'grade'])
              || checkProp('format_errors',         'object',  ['render', 'parse', 'grade', 'test', 'file'], ['parse', 'grade', 'test'])
              || checkProp('raw_submitted_answers', 'object',  ['render', 'parse', 'grade', 'test', 'file'], ['test'])
@@ -823,6 +824,7 @@ export async function generate(
   course: Course,
   variant_seed: string,
   preferences: Record<string, string | number | boolean>,
+  sharedState: Record<string, Record<string, string | number | boolean>>,
   caller: QuestionCaller,
 ): QuestionServerReturnValue<GenerateResultData> {
   return instrumented('freeform.generate', async () => {
@@ -843,6 +845,7 @@ export async function generate(
         group: userContext.group,
       },
       preferences,
+      shared_state: sharedState,
     } satisfies ExecutionData;
 
     return await withCodeCaller(course, async (codeCaller) => {
@@ -858,6 +861,7 @@ export async function generate(
         data: {
           params: resultData.params,
           true_answer: resultData.correct_answers,
+          shared_state: resultData.shared_state,
         },
       };
     });
@@ -892,6 +896,7 @@ export async function prepare(
         group: userContext.group,
       },
       preferences: variant.preferences,
+      shared_state: variant.shared_state,
       answers_names: {},
     } satisfies ExecutionData;
 
@@ -908,6 +913,7 @@ export async function prepare(
         data: {
           params: resultData.params,
           true_answer: resultData.correct_answers,
+          shared_state: resultData.shared_state,
         },
       };
     });
@@ -1625,6 +1631,7 @@ export async function parse(
   variant: Variant,
   question: Question,
   course: Course,
+  sharedState: Record<string, Record<string, string | number | boolean>>,
   caller: QuestionCaller,
 ): QuestionServerReturnValue<ParseResultData> {
   return instrumented('freeform.parse', async () => {
@@ -1653,6 +1660,7 @@ export async function parse(
         group: userContext.group,
       },
       preferences: variant.preferences,
+      shared_state: sharedState,
       raw_submitted_answers: submission.raw_submitted_answer ?? {},
       gradable: submission.gradable ?? true,
     } satisfies ExecutionData;
@@ -1677,6 +1685,7 @@ export async function parse(
           raw_submitted_answer: resultData.raw_submitted_answers,
           format_errors: resultData.format_errors,
           gradable: resultData.gradable,
+          shared_state: resultData.shared_state,
         },
       };
     });
@@ -1688,6 +1697,7 @@ export async function grade(
   variant: Variant,
   question: Question,
   question_course: Course,
+  sharedState: Record<string, Record<string, string | number | boolean>>,
   caller: QuestionCaller,
 ): QuestionServerReturnValue<GradeResultData> {
   return instrumented('freeform.grade', async () => {
@@ -1721,6 +1731,7 @@ export async function grade(
         group: userContext.group,
       },
       preferences: variant.preferences,
+      shared_state: sharedState,
       raw_submitted_answers: submission.raw_submitted_answer ?? {},
       gradable: submission.gradable ?? true,
     } satisfies ExecutionData;
@@ -1747,6 +1758,7 @@ export async function grade(
           score: resultData.score,
           feedback: resultData.feedback,
           gradable: resultData.gradable,
+          shared_state: resultData.shared_state,
         },
       };
     });
