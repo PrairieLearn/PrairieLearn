@@ -545,21 +545,20 @@ function computeKeptPaths(
       }
     }
 
-    let changed = true;
-    while (changed) {
-      changed = false;
-      for (const id of keepIds) {
+    let resourceIdsToVisit = [...keepIds];
+    while (resourceIdsToVisit.length > 0) {
+      const nextResourceIds: string[] = [];
+      for (const id of resourceIdsToVisit) {
         const resource = manifest.byId.get(id);
         if (!resource) continue;
         for (const depId of dependencies(resource)) {
           if (!keepIds.has(depId)) {
-            // Growing the set is intentional: Set iteration visits newly added dependencies.
-            // eslint-disable-next-line unicorn/no-loop-iterable-mutation
             keepIds.add(depId);
-            changed = true;
+            nextResourceIds.push(depId);
           }
         }
       }
+      resourceIdsToVisit = nextResourceIds;
     }
 
     manifest.keepIds = keepIds;
