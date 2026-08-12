@@ -518,7 +518,9 @@ export function RubricSettings({
             });
           rubricFormData.forEach(([item_name, item_value]) => {
             newRubricForm
-              .querySelectorAll<HTMLInputElement | HTMLTextAreaElement>(`[name="${item_name}"]`)
+              .querySelectorAll<
+                HTMLInputElement | HTMLTextAreaElement
+              >(`[name="${CSS.escape(item_name)}"]`)
               .forEach((input) => {
                 if (input.name === 'modified_at') {
                   // Do not reset modified_at, as the rubric settings may have changed it

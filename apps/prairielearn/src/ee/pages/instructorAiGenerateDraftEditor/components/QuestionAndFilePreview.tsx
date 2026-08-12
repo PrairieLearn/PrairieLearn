@@ -72,6 +72,8 @@ async function syncQuestionAssets(extraHeadersHtml: string): Promise<void> {
       if (!href || node.getAttribute('rel') !== 'stylesheet') return;
 
       const existing = document.head.querySelector<HTMLLinkElement>(
+        // getVariantAssetKey() escapes selector values and provides a fallback when CSS.escape() is unavailable.
+        // eslint-disable-next-line unicorn/require-css-escape
         `link[rel="stylesheet"][href="${getVariantAssetKey(href)}"]`,
       );
 
@@ -119,6 +121,8 @@ async function syncQuestionAssets(extraHeadersHtml: string): Promise<void> {
       if (!src) return;
 
       const existing = document.head.querySelector<HTMLScriptElement>(
+        // getVariantAssetKey() escapes selector values and provides a fallback when CSS.escape() is unavailable.
+        // eslint-disable-next-line unicorn/require-css-escape
         `script[src="${getVariantAssetKey(src)}"]`,
       );
       if (existing) {

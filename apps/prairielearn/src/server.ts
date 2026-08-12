@@ -62,6 +62,7 @@ import { canonicalLoggerMiddleware } from './lib/canonical-logger.js';
 import * as codeCaller from './lib/code-caller/index.js';
 import { DEV_EXECUTION_MODE, config, loadConfig, setLocalsFromConfig } from './lib/config.js';
 import { pullAndUpdateCourse } from './lib/course.js';
+import { runDatabaseEncryptionOperation } from './lib/database-encryption-rotation.js';
 import { UserSchema } from './lib/db-types.js';
 import * as externalGrader from './lib/externalGrader.js';
 import * as externalGraderDeadLetters from './lib/externalGraderDeadLetters.js';
@@ -98,11 +99,15 @@ import { courseInstanceTrpcRouter } from './trpc/courseInstance/trpc.js';
 process.on('warning', (e) => console.warn(e));
 
 const argv = minimist(process.argv.slice(2));
+const migrationDirectories = [path.join(import.meta.dirname, 'migrations'), SCHEMA_MIGRATIONS_PATH];
+const migrationsProject = 'prairielearn';
 
 if ('h' in argv || 'help' in argv) {
   const msg = `PrairieLearn command line options:
     -h, --help                          Display this help and exit
     --config <filename>                 Use the specified configuration file
+    --database-encryption <check|rotate>  Check or rotate encrypted database values and exit
+    --list-pending-migrations           List pending migrations as JSON and exit
     --migrate-and-exit                  Run the DB initialization parts and exit
     --refresh-workspace-hosts-and-exit  Refresh the workspace hosts and exit
     --sync-course <course_id>           Synchronize a course and exit
@@ -500,10 +505,11 @@ export async function initExpress(): Promise<Express> {
   app.use((await import('./middlewares/authn.js')).default); // authentication, set res.locals.authn_user
   app.use('/pl/api/v1', (await import('./middlewares/authnToken.js')).default); // authn for the API, set res.locals.authn_user
 
-  // Deny all access to a user with an active LockDown-Browser-required
-  // reservation whose session was not established inside LockDown Browser. Must
-  // come after authentication so it can read `res.locals.authn_user`.
-  app.use((await import('./middlewares/enforceLockdownBrowser.js')).default);
+  // Load active PrairieTest reservation information and deny access to a user
+  // whose LockDown-Browser-required reservation was not established inside
+  // LockDown Browser. Must come after authentication so it can read
+  // `res.locals.authn_user`.
+  app.use((await import('./middlewares/selectAndAuthzPrairieTestReservation.js')).default);
 
   // Must come after the authentication middleware, as we need to read the
   // `authn_is_administrator` property from the response locals.
@@ -556,6 +562,10 @@ export async function initExpress(): Promise<Express> {
   app.use('/pl/enroll', (await import('./pages/enroll/enroll.js')).default);
   app.use('/pl/password', (await import('./pages/authPassword/authPassword.js')).default);
   app.use('/pl/end-exam', (await import('./pages/endExam/endExam.js')).default);
+  app.use(
+    '/pl/report-cheating',
+    (await import('./pages/reportCheating/reportCheating.js')).default,
+  );
   app.use('/pl/request_course', [
     // Users can post data to this page and then view it, so we'll block access to prevent
     // students from using to infiltrate or exfiltrate exam information.
@@ -875,8 +885,22 @@ export async function initExpress(): Promise<Express> {
   );
   app.use(
     /^(\/pl\/course_instance\/[0-9]+\/instructor\/assessment\/[0-9]+)\/?$/,
-    (req, res, _next) => {
-      res.redirect(`${req.params[0]}/questions`);
+    (req, res, next) => {
+      if (res.locals.authz_data.has_course_permission_preview) {
+        // If the user has course permission, redirect them to the questions
+        // page, as they can view the assessment questions.
+        res.redirect(`${req.params[0]}/questions`);
+      } else if (res.locals.authz_data.has_course_instance_permission_view) {
+        // If the user does not have course permission, but has course instance
+        // permission, redirect them to the students page, as they can view the
+        // assessment students.
+        res.redirect(`${req.params[0]}/instances`);
+      } else {
+        // This should never happen, as an error would have been thrown in the
+        // `selectAndAuthzAssessment` middleware if the user did not have either
+        // permission.
+        next();
+      }
     },
   );
   app.use(
@@ -2193,6 +2217,19 @@ function idleErrorHandler(err: Error) {
   void Sentry.close().finally(() => process.exit(1));
 }
 
+function getPostgresConfig() {
+  return {
+    user: config.postgresqlUser,
+    database: config.postgresqlDatabase,
+    host: config.postgresqlHost,
+    password: config.postgresqlPassword ?? undefined,
+    max: config.postgresqlPoolSize,
+    idleTimeoutMillis: config.postgresqlIdleTimeoutMillis,
+    ssl: config.postgresqlSsl,
+    errorOnUnusedParameters: config.devMode,
+  };
+}
+
 const isHMR = DEV_EXECUTION_MODE === 'hmr';
 
 if (isHMR && isServerPending()) {
@@ -2243,6 +2280,27 @@ if (shouldStartServer) {
 
     // Load config immediately so we can use it configure everything else.
     await loadConfig(configPaths);
+
+    if (argv['list-pending-migrations']) {
+      await sqldb.initAsync(getPostgresConfig(), idleErrorHandler);
+      const pendingMigrations = await migrations.getPendingMigrations({
+        directories: migrationDirectories,
+        project: migrationsProject,
+      });
+
+      // On Linux, writes to piped stdout can be asynchronous. Wait for this write to finish
+      // before process.exit() closes the process.
+      await new Promise<void>((resolve, reject) => {
+        process.stdout.write(`${JSON.stringify({ pendingMigrations })}\n`, (err) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve();
+          }
+        });
+      });
+      process.exit(0);
+    }
 
     // This should be done as soon as we load our config so that we can
     // start exporting spans.
@@ -2355,16 +2413,7 @@ if (shouldStartServer) {
       passport.use(strategy);
     }
 
-    const pgConfig = {
-      user: config.postgresqlUser,
-      database: config.postgresqlDatabase,
-      host: config.postgresqlHost,
-      password: config.postgresqlPassword ?? undefined,
-      max: config.postgresqlPoolSize,
-      idleTimeoutMillis: config.postgresqlIdleTimeoutMillis,
-      ssl: config.postgresqlSsl,
-      errorOnUnusedParameters: config.devMode,
-    };
+    const pgConfig = getPostgresConfig();
 
     logger.verbose(`Connecting to ${pgConfig.user}@${pgConfig.host}:${pgConfig.database}`);
 
@@ -2407,8 +2456,8 @@ if (shouldStartServer) {
     // running migrations as we do when we start the server.
     if (config.runMigrations || argv['migrate-and-exit']) {
       await migrations.init({
-        directories: [path.join(import.meta.dirname, 'migrations'), SCHEMA_MIGRATIONS_PATH],
-        project: 'prairielearn',
+        directories: migrationDirectories,
+        project: migrationsProject,
       });
     }
 
@@ -2443,6 +2492,16 @@ if (shouldStartServer) {
 
     await sqldb.setRandomSearchSchemaAsync(schemaPrefix);
     await sprocs.init();
+
+    if ('database-encryption' in argv) {
+      const mode = argv['database-encryption'];
+      if (mode !== 'check' && mode !== 'rotate') {
+        throw new Error('--database-encryption must be either "check" or "rotate"');
+      }
+      const result = await runDatabaseEncryptionOperation({ mode });
+      logger.info(`Database encryption ${mode} complete`, result);
+      process.exit(0);
+    }
 
     if (argv['migrate-and-exit']) {
       logger.info('option --migrate-and-exit passed, running DB setup and exiting');

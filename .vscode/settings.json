@@ -23,9 +23,20 @@
       "source.fixAll.eslint": "explicit"
     }
   },
-  "[html][css][scss][json][jsonc][yaml][github-actions-workflow][sql][markdown][toml][shellscript]": {
+  "[html][css][scss][json][jsonc][yaml][github-actions-workflow][sql][toml][shellscript]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode",
     "editor.formatOnSave": true
+  },
+  "[markdown]": {
+    // Ruff must be specified as default to format Python blocks in Markdown files, but prettier will still run on save because of the codeActionsOnSave config below.
+    "editor.defaultFormatter": "charliermarsh.ruff",
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+      // We want to run both Prettier and Ruff on Markdown files, so we need to explicitly specify both.
+      "source.fixAll.prettier": "explicit",
+      "source.fixAll.ruff": "explicit",
+      "source.organizeImports.ruff": "explicit"
+    }
   },
   "[json]": {
     "files.insertFinalNewline": true

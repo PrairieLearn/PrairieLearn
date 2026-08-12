@@ -1,5 +1,21 @@
 # @prairielearn/ui
 
+## 3.8.0
+
+### Minor Changes
+
+- bb5a7ec: Add opt-in fuzzy search support to multi-select column filters.
+
+### Patch Changes
+
+- df28e68: Bump dependencies
+
+## 3.7.2
+
+### Patch Changes
+
+- 81ad435: Update typescript-cp to remove its transitive tar dependency.
+
 ## 3.7.1
 
 ### Patch Changes

@@ -284,7 +284,7 @@ export function AuthLoginInstitution({
   const supportsAzure = loginOptions.some((p) => p.name === 'Azure');
 
   const defaultProvider = loginOptions.find((p) => p.is_default === true);
-  const hasNonDefaultProviders = loginOptions.find((p) => p.is_default === false);
+  const hasNonDefaultProviders = loginOptions.some((p) => p.is_default === false);
 
   // If a default provider is set, we'll always show it first. These variables
   // determine whether to separately show other non-default providers.
