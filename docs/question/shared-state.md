@@ -6,6 +6,16 @@ A course declares one or more **shared-state objects** in `infoCourse.json`. Eac
 
 ## Defining a shared-state object
 
+Shared-state objects can be managed through the **Course Settings** page or by editing `infoCourse.json` directly.
+
+### Using the course settings page
+
+On the course settings page, the **Shared data** section lists the course's shared-state objects. Each object has a name, a data version, and a properties grid (the same Name/Type/Default/Values grid used by [question preferences](preferences.md)) where you can add, edit, reorder, and remove properties. Only the `assessmentInstance` scope is currently supported, so it's shown as a fixed label rather than a choice.
+
+If a change to a property's type, default, or `enum` would break existing assessment instances, a warning is shown suggesting you bump the data version; saving without doing so may be rejected at sync time.
+
+### Using JSON
+
 Add a `sharedState` entry to `infoCourse.json`:
 
 ```json title="infoCourse.json"
@@ -34,7 +44,7 @@ Add a `sharedState` entry to `infoCourse.json`:
 
 ## Declaring access from a question
 
-A question that reads or writes a shared-state object must declare it in its own `info.json`:
+A question that reads or writes a shared-state object must declare it. On the question settings page, the **Shared data** section lists the objects defined in the course; select the ones this question uses. This can also be done by editing the question's own `info.json` directly:
 
 ```json title="info.json"
 {
