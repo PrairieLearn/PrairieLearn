@@ -1,5 +1,11 @@
 # @prairielearn/eslint-config
 
+## 3.1.2
+
+### Patch Changes
+
+- df28e68: Bump dependencies
+
 ## 3.1.1
 
 ### Patch Changes

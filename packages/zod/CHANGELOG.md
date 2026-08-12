@@ -1,5 +1,11 @@
 # @prairielearn/zod
 
+## 3.0.2
+
+### Patch Changes
+
+- df28e68: Bump dependencies
+
 ## 3.0.1
 
 ### Patch Changes

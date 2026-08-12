@@ -1,5 +1,12 @@
 # @prairielearn/postgres
 
+## 7.1.2
+
+### Patch Changes
+
+- 38ef3b6: Honor downstream backpressure when streaming rows from a PostgreSQL cursor.
+- df28e68: Bump dependencies
+
 ## 7.1.1
 
 ### Patch Changes

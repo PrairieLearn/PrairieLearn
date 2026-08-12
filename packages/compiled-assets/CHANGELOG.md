@@ -1,5 +1,11 @@
 # @prairielearn/compiled-assets
 
+## 4.1.10
+
+### Patch Changes
+
+- df28e68: Bump dependencies
+
 ## 4.1.9
 
 ### Patch Changes

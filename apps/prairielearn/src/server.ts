@@ -62,6 +62,7 @@ import { canonicalLoggerMiddleware } from './lib/canonical-logger.js';
 import * as codeCaller from './lib/code-caller/index.js';
 import { DEV_EXECUTION_MODE, config, loadConfig, setLocalsFromConfig } from './lib/config.js';
 import { pullAndUpdateCourse } from './lib/course.js';
+import { runDatabaseEncryptionOperation } from './lib/database-encryption-rotation.js';
 import { UserSchema } from './lib/db-types.js';
 import * as externalGrader from './lib/externalGrader.js';
 import * as externalGraderDeadLetters from './lib/externalGraderDeadLetters.js';
@@ -105,6 +106,7 @@ if ('h' in argv || 'help' in argv) {
   const msg = `PrairieLearn command line options:
     -h, --help                          Display this help and exit
     --config <filename>                 Use the specified configuration file
+    --database-encryption <check|rotate>  Check or rotate encrypted database values and exit
     --list-pending-migrations           List pending migrations as JSON and exit
     --migrate-and-exit                  Run the DB initialization parts and exit
     --refresh-workspace-hosts-and-exit  Refresh the workspace hosts and exit
@@ -2490,6 +2492,16 @@ if (shouldStartServer) {
 
     await sqldb.setRandomSearchSchemaAsync(schemaPrefix);
     await sprocs.init();
+
+    if ('database-encryption' in argv) {
+      const mode = argv['database-encryption'];
+      if (mode !== 'check' && mode !== 'rotate') {
+        throw new Error('--database-encryption must be either "check" or "rotate"');
+      }
+      const result = await runDatabaseEncryptionOperation({ mode });
+      logger.info(`Database encryption ${mode} complete`, result);
+      process.exit(0);
+    }
 
     if (argv['migrate-and-exit']) {
       logger.info('option --migrate-and-exit passed, running DB setup and exiting');

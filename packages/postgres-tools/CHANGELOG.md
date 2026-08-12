@@ -1,5 +1,11 @@
 # @prairielearn/postgres-tools
 
+## 3.0.12
+
+### Patch Changes
+
+- df28e68: Bump dependencies
+
 ## 3.0.11
 
 ### Patch Changes
