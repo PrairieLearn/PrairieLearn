@@ -78,6 +78,14 @@ WITH
         OR a.tid NOT ILIKE ANY ($filter_not_assessments::text[])
       )
       AND (
+        $filter_course_instance_ids::bigint[] IS NULL
+        -- We don't use = ANY because we may have nulls in the array, and = ANY does not match nulls.
+        OR array_position(
+          $filter_course_instance_ids::bigint[],
+          i.course_instance_id::bigint
+        ) IS NOT NULL
+      )
+      AND (
         $filter_query_text::text IS NULL
         OR to_tsvector(concat_ws(' ', q.qid, u.uid, i.student_message)) @@ plainto_tsquery($filter_query_text::text)
       )
