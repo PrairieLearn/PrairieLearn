@@ -496,7 +496,7 @@ mechanicsObjects.TShapeRod = fabric.util.createClass(fabric.Object, {
   get_distance(angle, d) {
     if (Math.abs(angle) < 1e-4) {
       return 0;
-    } else if (Math.abs(angle) - Math.pi / 2 < 1e-4 || Math.abs(angle) - (3 * Math.pi) / 2 < 1e-4) {
+    } else if (Math.abs(angle) - Math.PI / 2 < 1e-4 || Math.abs(angle) - (3 * Math.PI) / 2 < 1e-4) {
       return d;
     } else {
       return d / Math.sin(angle) - d / Math.tan(angle);

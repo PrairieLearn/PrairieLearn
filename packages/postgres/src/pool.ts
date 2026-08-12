@@ -91,7 +91,7 @@ function paramsToArray(
   let remainingSql = sql;
   let nParams = 0;
   const map: Record<string, string> = {};
-  let paramsArray: any[] = [];
+  const paramsArray: any[] = [];
   while ((result = re.exec(remainingSql)) !== null) {
     const v = result[1];
     if (!(v in map)) {
@@ -99,7 +99,7 @@ function paramsToArray(
       if (Array.isArray(params[v])) {
         map[v] = 'ARRAY[' + params[v].map((_, n) => '$' + (n + nParams + 1)).join(',') + ']';
         nParams += params[v].length;
-        paramsArray = paramsArray.concat(params[v]);
+        paramsArray.push(...params[v]);
       } else {
         nParams++;
         map[v] = '$' + nParams;
