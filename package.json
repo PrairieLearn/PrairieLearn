@@ -33,17 +33,17 @@
     "migrate-dev": "pnpm --filter @prairielearn/prairielearn dev:no-watch --migrate-and-exit",
     "refresh-workspace-hosts": "pnpm --filter @prairielearn/prairielearn start --refresh-workspace-hosts-and-exit",
     "refresh-workspace-hosts-dev": "pnpm --filter @prairielearn/prairielearn dev:no-watch --refresh-workspace-hosts-and-exit",
-    "release": "turbo run build && pnpm publish -r --no-git-checks",
+    "release": "turbo run build && changeset publish",
     "start": "pnpm --filter @prairielearn/prairielearn start",
     "start-workspace-host": "pnpm --filter @prairielearn/workspace-host start",
     "test": "vitest run --coverage",
-    "version": "changeset version && pnpm install --no-frozen-lockfile"
+    "version": "changeset version && pnpm install --no-frozen-lockfile --lockfile-only"
   },
   "dependencies": {
     "async": "^3.2.6"
   },
   "devDependencies": {
-    "@changesets/cli": "^2.31.1",
+    "@changesets/cli": "^3.0.0",
     "@html-eslint/eslint-plugin": "^0.61.0",
     "@html-eslint/parser": "^0.61.0",
     "@playwright/test": "^1.62.1",
