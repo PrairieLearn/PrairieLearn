@@ -59,6 +59,10 @@ const pinoLogger = pino<'verbose'>(
     },
     level: 'debug',
     messageKey: 'message',
+    serializers: {
+      // Retain each error in a `cause` chain, including custom enumerable properties.
+      err: pino.stdSerializers.errWithCause,
+    },
     // Pino requires a pre-serialized fragment here; retain the old ISO `timestamp` field.
     timestamp: () => `,"timestamp":${JSON.stringify(new Date().toISOString())}`,
   },
