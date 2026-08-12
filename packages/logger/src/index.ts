@@ -1,3 +1,5 @@
+import assert from 'node:assert';
+
 import pino, { type Logger as PinoLogger } from 'pino';
 
 type LogLevel = 'debug' | 'verbose' | 'info' | 'warn' | 'error';
@@ -13,12 +15,27 @@ interface AddFileLoggingOptions {
 
 type FileLoggingDestination = ReturnType<typeof pino.destination>;
 
+// Preserve Winston's distinction between `debug` and `verbose`.
 const VERBOSE_LEVEL = 25;
+assert(
+  pino.levels.values.debug < VERBOSE_LEVEL && VERBOSE_LEVEL < pino.levels.values.info,
+  "`verbose` must be between Pino's `debug` and `info` levels",
+);
 
 const output = pino.multistream<LogLevel>([{ level: 'info', stream: process.stdout }], {
   levels: { verbose: VERBOSE_LEVEL },
 });
 
+/**
+ * Convert PrairieLearn's existing Winston-style `(message, metadata)` calls to
+ * Pino's `(metadata, message)` form.
+ *
+ * For example, `logger.info('request', { method: 'GET' })` becomes
+ * `logger.info({ method: 'GET' }, 'request')`. Without this conversion, Pino treats
+ * the metadata as formatting arguments instead of adding its fields to the JSON
+ * record. Errors are wrapped in `{ err }` to activate Pino's standard Error
+ * serializer.
+ */
 function normalizeLogArguments(args: unknown[]): unknown[] {
   const [message, metadata, ...remainingMetadata] = args;
   if (typeof message !== 'string' || metadata === null || typeof metadata !== 'object') {
@@ -42,6 +59,7 @@ const pinoLogger = pino<'verbose'>(
     },
     level: 'debug',
     messageKey: 'message',
+    // Pino requires a pre-serialized fragment here; retain the old ISO `timestamp` field.
     timestamp: () => `,"timestamp":${JSON.stringify(new Date().toISOString())}`,
   },
   output,
