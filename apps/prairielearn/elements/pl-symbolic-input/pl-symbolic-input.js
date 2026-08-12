@@ -604,7 +604,13 @@
     mf.addEventListener('focus', updateKeyboardLayout);
     mf.addEventListener('selection-change', updateKeyboardLayout);
 
+    const initialLatex = $('#symbolic-input-latex-' + name).val();
+
     setUpSymbolicInputMacros(mf);
+
+    if (typeof initialLatex === 'string') {
+      mf.value = initialLatex;
+    }
 
     // Disable auto-complete suggestions for macros
     mf.popoverPolicy = 'off';
