@@ -35,7 +35,7 @@ function formatForLikeClause(str: string) {
     .replaceAll('*', '%');
 }
 
-function parseRawQuery(str: string) {
+function parseRawQuery(str: string, courseInstancesShowUserInfo: (string | null)[]) {
   const parsedQuery = SearchString.parse(str);
   const filters = {
     filter_is_open: null as boolean | null,
@@ -49,8 +49,6 @@ function parseRawQuery(str: string) {
     filter_not_users: null as string[] | null,
     filter_assessments: null as string[] | null,
     filter_not_assessments: null as string[] | null,
-    // Used to filter course instances where the student has student data
-    // permission if user filter is in use.
     filter_course_instance_ids: null as (string | null)[] | null,
   };
 
@@ -87,6 +85,9 @@ function parseRawQuery(str: string) {
         }
         break;
       case 'user':
+        // If the issues are filtered by user, we need to filter out any issues
+        // where the user information is hidden due to insufficient permissions.
+        filters.filter_course_instance_ids = courseInstancesShowUserInfo;
         if (!option.negated) {
           filters.filter_users = filters.filter_users || [];
           filters.filter_users.push(formatForLikeClause(option.value));
@@ -194,14 +195,8 @@ router.get(
       courseInstancesShowUserInfo.push(null);
     }
 
-    const filters = parseRawQuery(filterQuery);
-    if (filters.filter_users?.length || filters.filter_not_users?.length) {
-      // If the issues are filtered by user, we need to filter out any issues
-      // where the user information is hidden due to insufficient permissions.
-      filters.filter_course_instance_ids = courseInstancesShowUserInfo;
-    }
-
     const queryPageNumber = Number(req.query.page);
+    const filters = parseRawQuery(filterQuery, courseInstancesShowUserInfo);
     const offset = Number.isInteger(queryPageNumber) ? (queryPageNumber - 1) * PAGE_SIZE : 0;
     const issueRows = await queryRows(
       sql.select_issues,
@@ -233,7 +228,7 @@ router.get(
       showUser: courseInstancesShowUserInfo.includes(row.course_instance_id),
     }));
 
-    const openFilteredIssuesCount = issues.reduce((acc, row) => (row.open ? acc + 1 : acc), 0);
+    const openFilteredIssuesCount = issueRows.reduce((acc, row) => (row.open ? acc + 1 : acc), 0);
 
     res.send(
       PageLayout({
