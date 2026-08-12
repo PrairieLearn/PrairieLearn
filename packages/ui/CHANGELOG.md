@@ -1,5 +1,11 @@
 # @prairielearn/ui
 
+## 3.8.1
+
+### Patch Changes
+
+- b98ca1c: Update Unicorn overrides for v73 and address selected correctness-focused lint findings.
+
 ## 3.8.0
 
 ### Minor Changes
