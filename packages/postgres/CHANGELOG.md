@@ -1,5 +1,11 @@
 # @prairielearn/postgres
 
+## 7.1.3
+
+### Patch Changes
+
+- b98ca1c: Update Unicorn overrides for v73 and address selected correctness-focused lint findings.
+
 ## 7.1.2
 
 ### Patch Changes
