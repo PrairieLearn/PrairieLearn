@@ -88,6 +88,13 @@ const INVERSE_TRIG_FUNCTIONS = new Set([
   'Acsch',
 ]);
 
+export function withCalculatorTimeLimit<T>(
+  ce: InstanceType<typeof ComputeEngine>,
+  callback: () => T extends Promise<unknown> ? never : T,
+): T {
+  return ce.withTimeLimit({ ms: 500, label: 'prairielearn:calculator' }, callback);
+}
+
 export function initCalculator(storageKey: string, { drawer, fab, fabClose }: DrawerElements) {
   showPanel('main', drawer);
   initColumnNavigation(drawer);
@@ -227,7 +234,7 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
     const input = item.dataset.input!;
     const angleMode = item.dataset.angleMode! as AngleMode;
 
-    const savedAns = ce.expr('ans').evaluate();
+    const savedAns = withCalculatorTimeLimit(ce, () => ce.expr('ans').evaluate());
 
     // checking `{ans}` here because it could be \mathrm{ans} or \operatorname{ans}
     if (input.includes('{ans}') && domIndex + 1 < items.length) {
@@ -300,7 +307,7 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
     }
 
     try {
-      return ce.withTimeLimit({ ms: 500, label: 'prairielearn:calculator' }, () => {
+      return withCalculatorTimeLimit(ce, () => {
         const evaluated = parsed.evaluate();
         const numericValue = displayMode === 'symbolic' ? evaluated : evaluated.N();
         const displayed = numericValue.toLatex(latexOptions);
@@ -367,7 +374,7 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
       // FIXME: could be multiple assignments in one expression
       if (Array.isArray(parsedJson) && parsedJson[0] === 'Assign') {
         const varName = parsedJson[1] as string;
-        const varVal = ce.expr(parsedJson[2]).evaluate();
+        const varVal = withCalculatorTimeLimit(ce, () => ce.expr(parsedJson[2]).evaluate());
         data.variable.push({
           name: varName,
           value: varVal.toLatex({ notation: 'auto' }),
