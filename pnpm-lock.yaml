@@ -2872,6 +2872,9 @@ importers:
 
   packages/zod:
     dependencies:
+      '@prairielearn/error':
+        specifier: workspace:^
+        version: link:../error
       postgres-interval:
         specifier: ^4.1.0
         version: 4.1.0

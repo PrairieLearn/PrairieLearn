@@ -1,6 +1,8 @@
 import parsePostgresInterval from 'postgres-interval';
 import { type ZodType, z } from 'zod';
 
+export { parseRequestBody, parseRequestQuery } from './request-validation.js';
+
 const INTERVAL_MS_PER_SECOND = 1000;
 const INTERVAL_MS_PER_MINUTE = 60 * INTERVAL_MS_PER_SECOND;
 const INTERVAL_MS_PER_HOUR = 60 * INTERVAL_MS_PER_MINUTE;
@@ -48,12 +50,21 @@ export const BooleanFromCheckboxSchema = required(
  * `to_jsonb()`). This schema coerces the ID to a string to ensure consistent
  * handling.
  *
- * The `refine` step is important to ensure that the thing we've coerced to a
- * string is actually a number. If it's not, we want to fail quickly.
+ * The `refine` step ensures that the value is a positive integer in the range
+ * supported by PostgreSQL's `BIGINT` type.
  */
-export const IdSchema = z.coerce
-  .string()
-  .refine((val) => /^\d+$/.test(val), { message: 'ID is not a non-negative integer' });
+export const IdSchema = z
+  .union([z.string(), z.number(), z.bigint()])
+  .transform(String)
+  .refine(
+    (value) => {
+      if (!/^\d+$/.test(value)) return false;
+
+      const id = BigInt(value);
+      return id > 0n && id <= 2n ** 63n - 1n;
+    },
+    { message: 'ID is not a valid PostgreSQL ID' },
+  );
 
 /**
  * A Zod schema for the objects produced by the `postgres-interval` library.
