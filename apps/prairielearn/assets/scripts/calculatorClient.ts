@@ -95,6 +95,17 @@ export function withCalculatorTimeLimit<T>(
   return ce.withTimeLimit({ ms: 500, label: 'prairielearn:calculator' }, callback);
 }
 
+export function evaluateCalculatorAssignment(
+  ce: InstanceType<typeof ComputeEngine>,
+  name: string,
+  value: MathJsonExpression,
+) {
+  return withCalculatorTimeLimit(ce, () => {
+    const evaluated = ce.expr(value).evaluate();
+    return { name, value: evaluated.toLatex({ notation: 'auto' }) };
+  });
+}
+
 export function initCalculator(storageKey: string, { drawer, fab, fabClose }: DrawerElements) {
   showPanel('main', drawer);
   initColumnNavigation(drawer);
@@ -369,23 +380,19 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
 
     // Add to history
     if (addToHistory) {
-      const parsed = ce.parse(input, { parseNumbers: 'rational' });
-      const parsedJson = parsed.json;
-      // FIXME: could be multiple assignments in one expression
-      if (Array.isArray(parsedJson) && parsedJson[0] === 'Assign') {
-        const varName = parsedJson[1] as string;
-        const varVal = withCalculatorTimeLimit(ce, () => ce.expr(parsedJson[2]).evaluate());
-        data.variable.push({
-          name: varName,
-          value: varVal.toLatex({ notation: 'auto' }),
-        });
-      }
-
       try {
+        const parsed = ce.parse(input, { parseNumbers: 'rational' });
+        const parsedJson = parsed.json;
+        // FIXME: could be multiple assignments in one expression
+        if (Array.isArray(parsedJson) && parsedJson[0] === 'Assign') {
+          const variable = evaluateCalculatorAssignment(ce, parsedJson[1] as string, parsedJson[2]);
+          data.variable.push(variable);
+        }
+
         ce.assign('ans', evaluated);
         shouldAutoInsertAns = true;
       } catch (e) {
-        console.error('Failed to assign ans:', e);
+        console.error('Failed to update calculator state:', e);
       }
 
       const historyItem: HistoryItem = {
