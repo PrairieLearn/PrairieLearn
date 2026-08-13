@@ -95,17 +95,6 @@ export function withCalculatorTimeLimit<T>(
   return ce.withTimeLimit({ ms: 500, label: 'prairielearn:calculator' }, callback);
 }
 
-export function evaluateCalculatorAssignment(
-  ce: InstanceType<typeof ComputeEngine>,
-  name: string,
-  value: MathJsonExpression,
-) {
-  return withCalculatorTimeLimit(ce, () => {
-    const evaluated = ce.expr(value).evaluate();
-    return { name, value: evaluated.toLatex({ notation: 'auto' }) };
-  });
-}
-
 export function initCalculator(storageKey: string, { drawer, fab, fabClose }: DrawerElements) {
   showPanel('main', drawer);
   initColumnNavigation(drawer);
@@ -385,7 +374,13 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
         const parsedJson = parsed.json;
         // FIXME: could be multiple assignments in one expression
         if (Array.isArray(parsedJson) && parsedJson[0] === 'Assign') {
-          const variable = evaluateCalculatorAssignment(ce, parsedJson[1] as string, parsedJson[2]);
+          const variable = withCalculatorTimeLimit(ce, () => {
+            const value = ce.expr(parsedJson[2]).evaluate();
+            return {
+              name: parsedJson[1] as string,
+              value: value.toLatex({ notation: 'auto' }),
+            };
+          });
           data.variable.push(variable);
         }
 
