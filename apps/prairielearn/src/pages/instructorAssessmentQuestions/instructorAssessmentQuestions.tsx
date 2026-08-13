@@ -6,7 +6,7 @@ import { HttpStatusError } from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import { Hydrate } from '@prairielearn/react/server';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
-import { parseRequestBody } from '@prairielearn/zod';
+import { JsonFromStringSchema, parseRequestBody } from '@prairielearn/zod';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { selectAssessmentQuestions } from '../../lib/assessment-question.js';
@@ -37,16 +37,7 @@ import { buildHierarchicalAssessment } from './utils/questions.js';
 
 const router = Router();
 
-const SaveQuestionsZonesSchema = z
-  .string()
-  .transform((str) => {
-    try {
-      return JSON.parse(str);
-    } catch {
-      throw new Error('Invalid JSON in zones field');
-    }
-  })
-  .pipe(z.array(ZoneAssessmentJsonSchema));
+const SaveQuestionsZonesSchema = JsonFromStringSchema.pipe(z.array(ZoneAssessmentJsonSchema));
 
 const SaveQuestionsSchema = z.object({
   __action: z.literal('save_questions'),

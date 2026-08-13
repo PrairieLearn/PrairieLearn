@@ -9,7 +9,7 @@ import { flash } from '@prairielearn/flash';
 import * as sqldb from '@prairielearn/postgres';
 import { Hydrate } from '@prairielearn/react/server';
 import { run } from '@prairielearn/run';
-import { parseRequestBody } from '@prairielearn/zod';
+import { JsonFromStringSchema, parseRequestBody } from '@prairielearn/zod';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
@@ -98,9 +98,9 @@ router.post(
         z.object({
           __action: z.literal('save_assessment_sets'),
           orig_hash: z.string(),
-          assessment_sets: z
-            .string()
-            .transform((s) => z.array(InstructorCourseAdminSetFormRowSchema).parse(JSON.parse(s))),
+          assessment_sets: JsonFromStringSchema.pipe(
+            z.array(InstructorCourseAdminSetFormRowSchema),
+          ),
         }),
       );
 
