@@ -9,6 +9,7 @@ import {
   IdSchema,
   IntegerFromStringOrEmptySchema,
   IntervalSchema,
+  JsonFromStringSchema,
   UniqueUidsFromStringSchema,
 } from './index.js';
 
@@ -180,6 +181,18 @@ describe('IntegerFromStringOrEmptySchema', () => {
 
   it('rejects a decimal string', () => {
     const result = IntegerFromStringOrEmptySchema.safeParse('123.45');
+    assert.isFalse(result.success);
+  });
+});
+
+describe('JsonFromStringSchema', () => {
+  it('parses JSON strings', () => {
+    const result = JsonFromStringSchema.parse('{"name":"Alice"}');
+    assert.deepEqual(result, { name: 'Alice' });
+  });
+
+  it('rejects malformed JSON', () => {
+    const result = JsonFromStringSchema.safeParse('{');
     assert.isFalse(result.success);
   });
 });

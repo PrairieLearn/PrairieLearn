@@ -178,6 +178,19 @@ export const IntegerFromStringOrEmptySchema = z.preprocess(
 );
 
 /**
+ * A Zod schema that parses a JSON string. Use `.pipe()` to validate the parsed
+ * value with another schema.
+ */
+export const JsonFromStringSchema = z.string().transform((value, ctx): unknown => {
+  try {
+    return JSON.parse(value) as unknown;
+  } catch {
+    ctx.addIssue({ code: 'custom', message: 'Invalid JSON' });
+    return z.NEVER;
+  }
+});
+
+/**
  * A Zod schema for an array of string values from either a string or an array of
  * strings.
  */

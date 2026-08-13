@@ -6,6 +6,7 @@ import { HttpStatusError } from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import { Hydrate } from '@prairielearn/react/server';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
+import { JsonFromStringSchema, parseRequestBody } from '@prairielearn/zod';
 
 import { InsufficientCoursePermissionsCardPage } from '../../components/InsufficientCoursePermissionsCard.js';
 import { PageLayout } from '../../components/PageLayout.js';
@@ -38,16 +39,7 @@ import { buildHierarchicalAssessment } from './utils/questions.js';
 
 const router = Router();
 
-const SaveQuestionsZonesSchema = z
-  .string()
-  .transform((str) => {
-    try {
-      return JSON.parse(str);
-    } catch {
-      throw new Error('Invalid JSON in zones field');
-    }
-  })
-  .pipe(z.array(ZoneAssessmentJsonSchema));
+const SaveQuestionsZonesSchema = JsonFromStringSchema.pipe(z.array(ZoneAssessmentJsonSchema));
 
 const SaveQuestionsSchema = z.object({
   __action: z.literal('save_questions'),
@@ -226,7 +218,7 @@ router.post(
         throw new HttpStatusError(403, 'Access denied (must be course editor)');
       }
 
-      const body = SaveQuestionsSchema.parse(req.body);
+      const body = parseRequestBody(req, SaveQuestionsSchema);
 
       const assessmentPath = getAssessmentInfoJsonPath(res.locals);
 

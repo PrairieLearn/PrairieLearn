@@ -14,6 +14,7 @@ import {
   ArrayFromStringOrArraySchema,
   BooleanFromCheckboxSchema,
   IntegerFromStringOrEmptySchema,
+  parseRequestBody,
 } from '@prairielearn/zod';
 
 import { PageLayout } from '../../components/PageLayout.js';
@@ -178,8 +179,9 @@ router.post(
       }
       req.body.preferences = preferencesArray.filter(Boolean);
 
-      const body = z
-        .object({
+      const body = parseRequestBody(
+        req,
+        z.object({
           orig_hash: z.string(),
           qid: z.string(),
           title: z.string(),
@@ -247,8 +249,8 @@ router.post(
           share_publicly: BooleanFromCheckboxSchema,
           share_source_publicly: BooleanFromCheckboxSchema,
           sharing_sets: ArrayFromStringOrArraySchema.optional(),
-        })
-        .parse(req.body);
+        }),
+      );
 
       const shortNameValidation = validateShortName(body.qid, res.locals.question.qid ?? undefined);
       if (!shortNameValidation.valid) {

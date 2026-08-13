@@ -219,7 +219,7 @@ describe('LTI 1.3 authentication', { concurrent: false }, () => {
     assert.ok(redirectUri);
     assert.ok(nonce);
 
-    // Missing state parameter should error
+    // Missing state parameter should return a bad request
     await withoutLogging(async () => {
       const finishBadLoginResponse = await fetchWithCookies(redirectUri, {
         method: 'POST',
@@ -229,7 +229,7 @@ describe('LTI 1.3 authentication', { concurrent: false }, () => {
         }),
         redirect: 'manual',
       });
-      assert.equal(finishBadLoginResponse.status, 500);
+      assert.equal(finishBadLoginResponse.status, 400);
     });
   });
 
