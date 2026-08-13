@@ -194,14 +194,16 @@ export function useAutoSizeColumns<TData>(
         let measuredWidth = 0;
 
         const headerElement = container.querySelector(
-          `th[data-column-id="${col.id}"]`,
+          `th[data-column-id="${CSS.escape(col.id)}"]`,
         ) as HTMLElement;
         if (headerElement) {
           measuredWidth = headerElement.scrollWidth;
         }
 
         // Also measure sample cells if present
-        const cellElements = container.querySelectorAll(`td[data-measure-cell="${col.id}"]`);
+        const cellElements = container.querySelectorAll(
+          `td[data-measure-cell="${CSS.escape(col.id)}"]`,
+        );
         for (const cellEl of cellElements) {
           measuredWidth = Math.max(measuredWidth, (cellEl as HTMLElement).scrollWidth);
         }

@@ -604,7 +604,13 @@
     mf.addEventListener('focus', updateKeyboardLayout);
     mf.addEventListener('selection-change', updateKeyboardLayout);
 
+    const initialLatex = $('#symbolic-input-latex-' + name).val();
+
     setUpSymbolicInputMacros(mf);
+
+    if (typeof initialLatex === 'string') {
+      mf.value = initialLatex;
+    }
 
     // Disable auto-complete suggestions for macros
     mf.popoverPolicy = 'off';
@@ -700,8 +706,8 @@
     const allowSets = mf.getAttribute('allow-sets');
 
     const macros = {};
-    [...customFunctions].map((fun) => (macros[fun] = `\\operatorname{${fun}}`));
-    [...greekLettersToUnicode].map(
+    customFunctions.forEach((fun) => (macros[fun] = `\\operatorname{${fun}}`));
+    greekLettersToUnicode.forEach(
       ([letter, unicode]) => (macros[letter] = String.fromCodePoint(Number.parseInt(unicode, 16))),
     );
 

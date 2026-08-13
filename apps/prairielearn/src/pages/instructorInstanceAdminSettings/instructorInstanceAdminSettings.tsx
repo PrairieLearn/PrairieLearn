@@ -10,6 +10,7 @@ import { flash } from '@prairielearn/flash';
 import * as sqldb from '@prairielearn/postgres';
 import { Hydrate } from '@prairielearn/react/server';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
+import { parseRequestBody } from '@prairielearn/zod';
 
 import { DeleteCourseInstanceModal } from '../../components/DeleteCourseInstanceModal.js';
 import { PageLayout } from '../../components/PageLayout.js';
@@ -207,8 +208,9 @@ router.post(
         course_instance_permission,
         access_control_strategy,
         clear_incompatible,
-      } = z
-        .object({
+      } = parseRequestBody(
+        req,
+        z.object({
           short_name: z.string().trim(),
           long_name: z.string().trim(),
           start_date: z.string(),
@@ -218,8 +220,8 @@ router.post(
           course_instance_permission: EnumCourseInstanceRoleSchema.optional().default('None'),
           access_control_strategy: z.enum(['migrate', 'keep', 'clear']).optional().default('clear'),
           clear_incompatible: z.boolean().optional().default(false),
-        })
-        .parse(req.body);
+        }),
+      );
 
       if (!short_name) {
         throw new error.HttpStatusError(400, 'Short name is required');
@@ -363,17 +365,17 @@ router.post(
         await fs.readFile(infoCourseInstancePath, 'utf8'),
       );
 
-      const parsedBody = SettingsFormBodySchema.parse(req.body);
+      const body = parseRequestBody(req, SettingsFormBodySchema);
 
-      courseInstanceInfo.longName = parsedBody.long_name;
+      courseInstanceInfo.longName = body.long_name;
       courseInstanceInfo.timezone = propertyValueWithDefault(
         courseInstanceInfo.timezone,
-        parsedBody.display_timezone,
+        body.display_timezone,
         course.display_timezone,
       );
       courseInstanceInfo.groupAssessmentsBy = propertyValueWithDefault(
         courseInstanceInfo.groupAssessmentsBy,
-        parsedBody.group_assessments_by,
+        body.group_assessments_by,
         'Set',
       );
       // dates from 'datetime-local' inputs are in the format 'YYYY-MM-DDTHH:MM', and we need them to include seconds.
@@ -384,27 +386,27 @@ router.post(
 
       const selfEnrollmentEnabled = propertyValueWithDefault(
         courseInstanceInfo.selfEnrollment?.enabled,
-        parsedBody.self_enrollment_enabled,
+        body.self_enrollment_enabled,
         true,
       );
       const selfEnrollmentUseEnrollmentCode = propertyValueWithDefault(
         courseInstanceInfo.selfEnrollment?.useEnrollmentCode,
-        parsedBody.self_enrollment_use_enrollment_code,
+        body.self_enrollment_use_enrollment_code,
         false,
       );
       const selfEnrollmentRestrictToInstitution = propertyValueWithDefault(
         courseInstanceInfo.selfEnrollment?.restrictToInstitution,
-        parsedBody.self_enrollment_restrict_to_institution,
+        body.self_enrollment_restrict_to_institution,
         true,
       );
 
       const selfEnrollmentBeforeDate = propertyValueWithDefault(
         parseDateTime(courseInstanceInfo.selfEnrollment?.beforeDate ?? ''),
         // We'll only serialize the value if self-enrollment is enabled.
-        parsedBody.self_enrollment_enabled &&
-          parsedBody.self_enrollment_enabled_before_date_enabled &&
-          parsedBody.self_enrollment_enabled_before_date
-          ? parseDateTime(parsedBody.self_enrollment_enabled_before_date)
+        body.self_enrollment_enabled &&
+          body.self_enrollment_enabled_before_date_enabled &&
+          body.self_enrollment_enabled_before_date
+          ? parseDateTime(body.self_enrollment_enabled_before_date)
           : undefined,
         undefined,
       );
@@ -434,7 +436,7 @@ router.post(
         courseInstanceInfo.selfEnrollment = undefined;
       }
       if (res.locals.question_sharing_enabled) {
-        if (parsedBody.share_source_publicly && !courseInstance.share_source_publicly) {
+        if (body.share_source_publicly && !courseInstance.share_source_publicly) {
           await assertCourseInstanceCanBeSharedPublicly({
             course_instance_id: courseInstance.id,
           });
@@ -445,7 +447,7 @@ router.post(
         // field may be a disabled checkbox whose current value must be preserved.
         courseInstanceInfo.shareSourcePublicly = propertyValueWithDefault(
           courseInstanceInfo.shareSourcePublicly,
-          parsedBody.share_source_publicly ?? false,
+          body.share_source_publicly ?? false,
           false,
         );
       }

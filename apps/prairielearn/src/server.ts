@@ -885,8 +885,22 @@ export async function initExpress(): Promise<Express> {
   );
   app.use(
     /^(\/pl\/course_instance\/[0-9]+\/instructor\/assessment\/[0-9]+)\/?$/,
-    (req, res, _next) => {
-      res.redirect(`${req.params[0]}/questions`);
+    (req, res, next) => {
+      if (res.locals.authz_data.has_course_permission_preview) {
+        // If the user has course permission, redirect them to the questions
+        // page, as they can view the assessment questions.
+        res.redirect(`${req.params[0]}/questions`);
+      } else if (res.locals.authz_data.has_course_instance_permission_view) {
+        // If the user does not have course permission, but has course instance
+        // permission, redirect them to the students page, as they can view the
+        // assessment students.
+        res.redirect(`${req.params[0]}/instances`);
+      } else {
+        // This should never happen, as an error would have been thrown in the
+        // `selectAndAuthzAssessment` middleware if the user did not have either
+        // permission.
+        next();
+      }
     },
   );
   app.use(
@@ -2449,6 +2463,16 @@ if (shouldStartServer) {
       });
     }
 
+    if ('database-encryption' in argv) {
+      const mode = argv['database-encryption'];
+      if (mode !== 'check' && mode !== 'rotate') {
+        throw new Error('--database-encryption must be either "check" or "rotate"');
+      }
+      const result = await runDatabaseEncryptionOperation({ mode });
+      logger.info(`Database encryption ${mode} complete`, result);
+      process.exit(0);
+    }
+
     // We create and activate a random DB schema name
     // (https://www.postgresql.org/docs/current/ddl-schemas.html)
     // after we have run the migrations but before we create
@@ -2480,16 +2504,6 @@ if (shouldStartServer) {
 
     await sqldb.setRandomSearchSchemaAsync(schemaPrefix);
     await sprocs.init();
-
-    if ('database-encryption' in argv) {
-      const mode = argv['database-encryption'];
-      if (mode !== 'check' && mode !== 'rotate') {
-        throw new Error('--database-encryption must be either "check" or "rotate"');
-      }
-      const result = await runDatabaseEncryptionOperation({ mode });
-      logger.info(`Database encryption ${mode} complete`, result);
-      process.exit(0);
-    }
 
     if (argv['migrate-and-exit']) {
       logger.info('option --migrate-and-exit passed, running DB setup and exiting');
