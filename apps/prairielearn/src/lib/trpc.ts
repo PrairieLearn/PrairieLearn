@@ -40,7 +40,7 @@ export function handleTrpcError(opts: {
     Sentry.captureException(opts.error, { tags: { error_id } });
   }
 
-  logger.log(code >= 500 ? 'error' : 'verbose', 'tRPC error', {
+  logger[code >= 500 ? 'error' : 'verbose']('tRPC error', {
     msg: opts.error.message,
     id: error_id,
     status: code,
