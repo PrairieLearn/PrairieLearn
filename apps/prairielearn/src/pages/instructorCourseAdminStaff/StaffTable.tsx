@@ -31,6 +31,7 @@ import {
   parseAsSortingState,
   useColumnFilters,
   useColumnVisibilityQueryState,
+  usePruneRowSelection,
   useShiftClickCheckbox,
 } from '@prairielearn/ui';
 
@@ -1058,6 +1059,8 @@ function StaffTableInner({
       enableHiding: false,
     },
   });
+
+  usePruneRowSelection(table);
 
   const selectedUsers = table.getFilteredSelectedRowModel().rows.map((row) => row.original);
   const displayedCount = table.getRowModel().rows.length;
