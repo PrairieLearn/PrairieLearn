@@ -1,6 +1,6 @@
 # `@prairielearn/logger`
 
-Provides a shared [Pino](https://getpino.io/) logger with JSON output.
+Provides a shared [Pino](https://getpino.io/) logger with human-readable console output and JSON file output.
 
 ## Usage
 
