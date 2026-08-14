@@ -2,4 +2,4 @@
 '@prairielearn/ui': major
 ---
 
-Upgrade TanStack Table to v9. Consumers must configure tables with the exported `tanstackTableFeatures`, use TanStack's v9 feature-aware types and APIs, and rely on the built-in row selection handler for Shift-range selection instead of `useShiftClickCheckbox`.
+Upgrade TanStack Table to v9. Consumers must create tables and column definitions with the exported `useTanstackTable` and `createTanstackTableColumnHelper`, use v9 pinning state (`{ start, end }` instead of `{ left, right }`), and rely on the built-in row selection handler for Shift-range selection instead of `useShiftClickCheckbox`.

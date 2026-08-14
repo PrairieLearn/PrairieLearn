@@ -4,7 +4,6 @@ import {
   type ColumnSizingState,
   type ColumnVisibilityState,
   type SortingState,
-  useTable,
 } from '@tanstack/react-table';
 import { parseAsArrayOf, parseAsString, useQueryState } from 'nuqs';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -21,9 +20,9 @@ import {
   parseAsMultiSelectFilter,
   parseAsNumericFilter,
   parseAsSortingState,
-  tanstackTableFeatures,
   useColumnFilters,
   useModalState,
+  useTanstackTable,
 } from '@prairielearn/ui';
 
 import { RubricSettings } from '../../../../components/RubricSettings.js';
@@ -450,8 +449,7 @@ export function AssessmentQuestionTable({
     }));
   }, [aiGradingMode, instanceQuestionGroups, setColumnVisibility]);
 
-  const table = useTable({
-    features: tanstackTableFeatures,
+  const table = useTanstackTable({
     data: instanceQuestionsInfo,
     columns,
     columnResizeMode: 'onChange',

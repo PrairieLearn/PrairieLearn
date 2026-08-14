@@ -1,4 +1,8 @@
-import type { ColumnPinningState, ColumnVisibilityState, SortingState } from '@tanstack/table-core';
+import type {
+  ColumnPinningState,
+  ColumnVisibilityState,
+  SortingState,
+} from '@tanstack/react-table';
 import { createParser, parseAsArrayOf, parseAsString } from 'nuqs';
 import {
   type unstable_AdapterInterface,
@@ -142,7 +146,7 @@ export function parseAsColumnVisibilityStateWithColumns(
  * Used for reflecting pinned columns in the URL.
  *
  * End pins aren't supported; an empty array is always returned to allow
- * this hook's value to be used directly in `state.columnPinning` in `useTable`.
+ * this hook's value to be used directly in `state.columnPinning` in `useTanstackTable`.
  *
  * Example: `a,b` <-> `{ start: ['a', 'b'], end: [] }`
  */

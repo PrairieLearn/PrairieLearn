@@ -1,4 +1,4 @@
-import type { RowData } from '@tanstack/table-core';
+import type { RowData } from '@tanstack/react-table';
 import clsx from 'clsx';
 import Dropdown from 'react-bootstrap/Dropdown';
 

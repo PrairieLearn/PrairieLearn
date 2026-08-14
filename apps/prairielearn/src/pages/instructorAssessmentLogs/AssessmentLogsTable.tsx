@@ -2,8 +2,6 @@ import {
   type ColumnSizingState,
   type ColumnVisibilityState,
   type SortingState,
-  createColumnHelper,
-  useTable,
 } from '@tanstack/react-table';
 import { useMemo, useState } from 'react';
 import { z } from 'zod';
@@ -16,12 +14,12 @@ import {
   NuqsAdapter,
   TanstackTableCard,
   TanstackTableEmptyState,
-  type TanstackTableFeatures,
   type TanstackTableHeader,
   applyMultiSelectFilter,
+  createTanstackTableColumnHelper,
   parseAsMultiSelectFilter,
-  tanstackTableFeatures,
   useColumnFilters,
+  useTanstackTable,
 } from '@prairielearn/ui';
 
 import { JobStatus } from '../../components/JobStatus.js';
@@ -102,7 +100,7 @@ function sampleWidest(rows: AssessmentLogRow[], measure: (row: AssessmentLogRow)
     .map(({ index }) => index);
 }
 
-const columnHelper = createColumnHelper<TanstackTableFeatures, AssessmentLogRow>();
+const columnHelper = createTanstackTableColumnHelper<AssessmentLogRow>();
 
 export function AssessmentLogsTable({
   logs,
@@ -281,8 +279,7 @@ function AssessmentLogsTableInner({
     [],
   );
 
-  const table = useTable({
-    features: tanstackTableFeatures,
+  const table = useTanstackTable({
     data: logs,
     columns,
     columnResizeMode: 'onChange',

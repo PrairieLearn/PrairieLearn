@@ -1,13 +1,11 @@
-import { createColumnHelper } from '@tanstack/react-table';
-
 import { run } from '@prairielearn/run';
 import {
   IndeterminateCheckbox,
   type MultiSelectFilterValue,
   OverlayTrigger,
   type TanstackTableCoreInstance,
-  type TanstackTableFeatures,
   applyMultiSelectFilter,
+  createTanstackTableColumnHelper,
   numericColumnFilterFn,
 } from '@prairielearn/ui';
 
@@ -21,7 +19,7 @@ import { GradingStatusCell } from '../components/GradingStatusCell.js';
 
 import { PointsWithEditButton, ScoreWithEditButton, generateAiGraderName } from './columnUtils.js';
 
-const columnHelper = createColumnHelper<TanstackTableFeatures, InstanceQuestionRow>();
+const columnHelper = createTanstackTableColumnHelper<InstanceQuestionRow>();
 
 function SelectAllCheckbox({ table }: { table: TanstackTableCoreInstance<InstanceQuestionRow> }) {
   const allSelected = table.getIsAllRowsSelected();

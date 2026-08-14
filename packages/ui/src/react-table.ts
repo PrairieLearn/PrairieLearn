@@ -1,4 +1,3 @@
-import type { RankingInfo } from '@tanstack/match-sorter-utils';
 import type { CellData, RowData, TableFeatures } from '@tanstack/react-table';
 
 /* eslint-disable @typescript-eslint/no-unused-vars -- Declaration merging requires TanStack's exact type parameters. */
@@ -23,11 +22,6 @@ declare module '@tanstack/react-table' {
      * If omitted, only the header is measured (current behavior).
      */
     autoSizeSample?: (data: TData[]) => number[];
-  }
-
-  /** Extends the default FilterMeta to include ranking information from `@tanstack/match-sorter-utils` for fuzzy filtering. */
-  interface FilterMeta {
-    itemRank?: RankingInfo;
   }
 }
 /* eslint-enable @typescript-eslint/no-unused-vars */

@@ -7,16 +7,12 @@ export {
   TanstackTableEmptyState,
 } from './components/TanstackTable.js';
 export {
-  tanstackTableFeatures,
-  type TanstackTableCell,
-  type TanstackTableColumn,
+  createTanstackTableColumnHelper,
+  useTanstackTable,
   type TanstackTableColumnDef,
   type TanstackTableCoreInstance,
-  type TanstackTableFeatures,
   type TanstackTableFilterFn,
   type TanstackTableHeader,
-  type TanstackTableInstance,
-  type TanstackTableRow,
 } from './tanstack-table.js';
 export { ColumnManager } from './components/ColumnManager.js';
 export {

@@ -3,17 +3,20 @@ import {
   type CellData,
   type Column,
   type ColumnDef,
+  type ColumnHelper,
   type FilterFn,
   type Header,
   type ReactTable,
   type Row,
   type RowData,
   type Table,
+  type TableOptions,
   columnFilteringFeature,
   columnPinningFeature,
   columnResizingFeature,
   columnSizingFeature,
   columnVisibilityFeature,
+  createColumnHelper,
   createFilteredRowModel,
   createSortedRowModel,
   filterFn_arrIncludes,
@@ -30,9 +33,10 @@ import {
   sortFn_datetime,
   sortFn_text,
   tableFeatures,
+  useTable,
 } from '@tanstack/react-table';
 
-export const tanstackTableFeatures = tableFeatures({
+const tanstackTableFeatures = tableFeatures({
   columnFilteringFeature,
   globalFilteringFeature,
   filteredRowModel: createFilteredRowModel(),
@@ -59,12 +63,26 @@ export const tanstackTableFeatures = tableFeatures({
   columnResizingFeature,
 });
 
-export type TanstackTableFeatures = typeof tanstackTableFeatures;
-/** A table returned by the React adapter's `useTable` hook. */
+type TanstackTableFeatures = typeof tanstackTableFeatures;
+
+export function createTanstackTableColumnHelper<TData extends RowData>(): ColumnHelper<
+  TanstackTableFeatures,
+  TData
+> {
+  return createColumnHelper<TanstackTableFeatures, TData>();
+}
+
+export function useTanstackTable<TData extends RowData>(
+  options: Omit<TableOptions<TanstackTableFeatures, TData>, 'features'>,
+): ReactTable<TanstackTableFeatures, TData> {
+  return useTable({ ...options, features: tanstackTableFeatures });
+}
+
+/** A table returned by `useTanstackTable`. */
 export type TanstackTableInstance<TData extends RowData> = ReactTable<TanstackTableFeatures, TData>;
 /** The core table instance exposed in column header and cell render contexts. */
 export type TanstackTableCoreInstance<TData extends RowData> = Table<TanstackTableFeatures, TData>;
-export type TanstackTableColumn<TData extends RowData, TValue = any> = Column<
+export type TanstackTableColumn<TData extends RowData, TValue extends CellData = any> = Column<
   TanstackTableFeatures,
   TData,
   TValue

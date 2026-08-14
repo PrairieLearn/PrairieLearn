@@ -3,8 +3,6 @@ import {
   type ColumnPinningState,
   type RowSelectionState,
   type SortingState,
-  createColumnHelper,
-  useTable,
 } from '@tanstack/react-table';
 import clsx from 'clsx';
 import { parseAsString, useQueryState } from 'nuqs';
@@ -21,15 +19,15 @@ import {
   OverlayTrigger,
   TanstackTableCard,
   type TanstackTableCoreInstance,
-  type TanstackTableFeatures,
   type TanstackTableHeader,
   applyMultiSelectFilter,
+  createTanstackTableColumnHelper,
   parseAsColumnPinningState,
   parseAsMultiSelectFilter,
   parseAsSortingState,
-  tanstackTableFeatures,
   useColumnFilters,
   useColumnVisibilityQueryState,
+  useTanstackTable,
 } from '@prairielearn/ui';
 
 import { getAppError } from '../../lib/client/errors.js';
@@ -93,12 +91,12 @@ function SelectAllCheckbox({ table }: { table: TanstackTableCoreInstance<CourseU
       checked={allSelected}
       indeterminate={table.getIsSomePageRowsSelected() && !allSelected}
       aria-label="Select all staff"
-      onChange={() => table.toggleAllPageRowsSelected()}
+      onChange={table.getToggleAllPageRowsSelectedHandler()}
     />
   );
 }
 
-const columnHelper = createColumnHelper<TanstackTableFeatures, CourseUsersRow>();
+const columnHelper = createTanstackTableColumnHelper<CourseUsersRow>();
 
 const DEFAULT_SORT: SortingState = [
   { id: 'course_role', desc: true },
@@ -1024,8 +1022,7 @@ function StaffTableInner({
     [authnUserId, userId, isAdministrator, courseInstances],
   );
 
-  const table = useTable({
-    features: tanstackTableFeatures,
+  const table = useTanstackTable({
     data: liveUsers,
     columns,
     columnResizeMode: 'onChange',

@@ -3,8 +3,6 @@ import {
   type ColumnPinningState,
   type ColumnSizingState,
   type SortingState,
-  createColumnHelper,
-  useTable,
 } from '@tanstack/react-table';
 import clsx from 'clsx';
 import { parseAsString, useQueryState } from 'nuqs';
@@ -21,9 +19,9 @@ import {
   PresetFilterDropdown,
   TanstackTableCard,
   type TanstackTableCsvCell,
-  type TanstackTableFeatures,
   type TanstackTableHeader,
   applyMultiSelectFilter,
+  createTanstackTableColumnHelper,
   extractLeafColumnIds,
   numericColumnFilterFn,
   parseAsColumnPinningState,
@@ -31,8 +29,8 @@ import {
   parseAsMultiSelectFilter,
   parseAsNumericFilter,
   parseAsSortingState,
-  tanstackTableFeatures,
   useColumnFilters,
+  useTanstackTable,
 } from '@prairielearn/ui';
 
 import { EnrollmentStatusIcon } from '../../../components/EnrollmentStatusIcon.js';
@@ -72,7 +70,7 @@ const DEFAULT_STATUS_FILTER: MultiSelectFilterValue<EnumEnrollmentStatus> = {
 };
 const EMPTY_NUMERIC_FILTER: NumericColumnFilterValue = { filterValue: '', emptyOnly: false };
 
-const columnHelper = createColumnHelper<TanstackTableFeatures, GradebookRow>();
+const columnHelper = createTanstackTableColumnHelper<GradebookRow>();
 
 interface GradebookTableProps {
   csrfToken: string;
@@ -438,8 +436,7 @@ function GradebookTable({
     };
   }, [courseAssessments, studentLabels, studentLabelsById]);
 
-  const table = useTable({
-    features: tanstackTableFeatures,
+  const table = useTanstackTable({
     data: gradebookRows,
     columns,
     columnResizeMode: 'onChange',

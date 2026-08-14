@@ -8,25 +8,18 @@ UI components, utilities, and styles shared between PrairieLearn and PrairieTest
 
 You can refer to [`instructorStudents.html.tsx`](../../apps/prairielearn/src/pages/instructorStudents/instructorStudents.html.tsx) for an example of how to use this component.
 
-TanStack Table v9 requires an explicit feature set. Use the feature set and corresponding types exported by this package, and wrap heterogeneous column arrays with `columnHelper.columns()`:
+Use the feature-aware helper and hook exported by this package, and wrap heterogeneous column arrays with `columnHelper.columns()`:
 
 ```tsx
-import { createColumnHelper, useTable } from '@tanstack/react-table';
+import { createTanstackTableColumnHelper, useTanstackTable } from '@prairielearn/ui';
 
-import {
-  type TanstackTableFeatures,
-  TanstackTableCard,
-  tanstackTableFeatures,
-} from '@prairielearn/ui';
-
-const columnHelper = createColumnHelper<TanstackTableFeatures, Student>();
+const columnHelper = createTanstackTableColumnHelper<Student>();
 const columns = columnHelper.columns([
   columnHelper.accessor('uid', { header: 'UID' }),
   columnHelper.accessor('name', { header: 'Name' }),
 ]);
 
-const table = useTable({
-  features: tanstackTableFeatures,
+const table = useTanstackTable({
   columns,
   data: students,
 });

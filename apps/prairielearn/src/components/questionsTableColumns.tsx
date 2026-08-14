@@ -1,15 +1,13 @@
-import { createColumnHelper } from '@tanstack/react-table';
-
 import { run } from '@prairielearn/run';
 import {
   BooleanColumnFilter,
   type BooleanFilterOption,
   MultiSelectColumnFilter,
   type MultiSelectFilterValue,
-  type TanstackTableFeatures,
   type TanstackTableHeader,
   applyBooleanFilter,
   applyMultiSelectFilter,
+  createTanstackTableColumnHelper,
 } from '@prairielearn/ui';
 
 import { assessmentLabel } from '../lib/assessment.shared.js';
@@ -23,7 +21,7 @@ import { SyncProblemButton } from './SyncProblemButton.js';
 import { TagBadge, TagBadgeList } from './TagBadge.js';
 import { TopicBadge } from './TopicBadge.js';
 
-const columnHelper = createColumnHelper<TanstackTableFeatures, SafeQuestionsPageData>();
+const columnHelper = createTanstackTableColumnHelper<SafeQuestionsPageData>();
 const NONE_FILTER_VALUE = '(None)';
 const AUTO_SIZE_SAMPLE_COUNT = 5;
 

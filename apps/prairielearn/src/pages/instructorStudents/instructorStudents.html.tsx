@@ -4,8 +4,6 @@ import {
   type ColumnSizingState,
   type RowSelectionState,
   type SortingState,
-  createColumnHelper,
-  useTable,
 } from '@tanstack/react-table';
 import { parseAsString, useQueryState } from 'nuqs';
 import { useMemo, useState } from 'react';
@@ -23,15 +21,15 @@ import {
   TanstackTableCard,
   type TanstackTableCoreInstance,
   TanstackTableEmptyState,
-  type TanstackTableFeatures,
   type TanstackTableHeader,
   applyMultiSelectFilter,
+  createTanstackTableColumnHelper,
   parseAsColumnPinningState,
   parseAsColumnVisibilityStateWithColumns,
   parseAsMultiSelectFilter,
   parseAsSortingState,
-  tanstackTableFeatures,
   useColumnFilters,
+  useTanstackTable,
 } from '@prairielearn/ui';
 
 import { CopyButton } from '../../components/CopyButton.js';
@@ -65,7 +63,7 @@ function SelectAllCheckbox({ table }: { table: TanstackTableCoreInstance<Student
       checked={allSelected}
       indeterminate={table.getIsSomePageRowsSelected() && !allSelected}
       aria-label="Select all students"
-      onChange={() => table.toggleAllPageRowsSelected()}
+      onChange={table.getToggleAllPageRowsSelectedHandler()}
     />
   );
 }
@@ -84,7 +82,7 @@ const DEFAULT_STUDENT_LABELS_FILTER: MultiSelectFilterValue = { values: [], mode
 
 const HIDDEN_BY_DEFAULT = new Set(['user_uin', 'user_email']);
 
-const columnHelper = createColumnHelper<TanstackTableFeatures, StudentRow>();
+const columnHelper = createTanstackTableColumnHelper<StudentRow>();
 
 async function copyToClipboard(text: string) {
   await navigator.clipboard.writeText(text);
@@ -568,8 +566,7 @@ function StudentsCard({
     parseAsColumnVisibilityStateWithColumns(allColumnIds).withDefault(defaultColumnVisibility),
   );
 
-  const table = useTable({
-    features: tanstackTableFeatures,
+  const table = useTanstackTable({
     data: students,
     columns,
     columnResizeMode: 'onChange',

@@ -4,8 +4,6 @@ import {
   type ColumnSizingState,
   type RowSelectionState,
   type SortingState,
-  createColumnHelper,
-  useTable,
 } from '@tanstack/react-table';
 import { parseAsString, useQueryState } from 'nuqs';
 import { type ReactNode, useMemo, useState } from 'react';
@@ -24,10 +22,10 @@ import {
   type TanstackTableCoreInstance,
   type TanstackTableCsvCell,
   TanstackTableEmptyState,
-  type TanstackTableFeatures,
   type TanstackTableFilterFn,
   type TanstackTableHeader,
   applyMultiSelectFilter,
+  createTanstackTableColumnHelper,
   extractLeafColumnIds,
   numericColumnFilterFn,
   parseAsColumnPinningState,
@@ -36,8 +34,8 @@ import {
   parseAsNumericFilter,
   parseAsSortingState,
   parseNumericFilter,
-  tanstackTableFeatures,
   useColumnFilters,
+  useTanstackTable,
 } from '@prairielearn/ui';
 
 import { FriendlyDate } from '../../../components/FriendlyDate.js';
@@ -55,7 +53,7 @@ import { type HelpModalId, HelpModals } from './HelpModals.js';
 import { InstanceSelectionToolbar } from './InstanceSelectionToolbar.js';
 import { TimeLimitEditForm } from './TimeLimitEditForm.js';
 
-const columnHelper = createColumnHelper<TanstackTableFeatures, AssessmentInstanceRow>();
+const columnHelper = createTanstackTableColumnHelper<AssessmentInstanceRow>();
 const DEFAULT_SORT: SortingState = [];
 
 const ROLE_VALUES = ['Staff', 'Student', 'None'] as const;
@@ -182,7 +180,7 @@ function SelectAllCheckbox({ table }: { table: TanstackTableCoreInstance<Assessm
       checked={allSelected}
       indeterminate={table.getIsSomePageRowsSelected() && !allSelected}
       aria-label="Select all instances"
-      onChange={() => table.toggleAllPageRowsSelected()}
+      onChange={table.getToggleAllPageRowsSelectedHandler()}
     />
   );
 }
@@ -569,8 +567,7 @@ export function AssessmentInstancesTable({
     return map;
   }, [roleColumnId]);
 
-  const table = useTable({
-    features: tanstackTableFeatures,
+  const table = useTanstackTable({
     data,
     columns,
     columnResizeMode: 'onChange',

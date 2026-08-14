@@ -1,4 +1,4 @@
-import type { SortingState } from '@tanstack/table-core';
+import type { SortingState } from '@tanstack/react-table';
 import { describe, expect, it } from 'vitest';
 
 import {

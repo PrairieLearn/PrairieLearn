@@ -4,8 +4,6 @@ import {
   type ColumnSizingState,
   type RowSelectionState,
   type SortingState,
-  createColumnHelper,
-  useTable,
 } from '@tanstack/react-table';
 import { parseAsString, useQueryState } from 'nuqs';
 import { type ReactNode, useMemo, useState } from 'react';
@@ -20,15 +18,15 @@ import {
   type TanstackTableCoreInstance,
   type TanstackTableCsvCell,
   TanstackTableEmptyState,
-  type TanstackTableFeatures,
   type TanstackTableFilterFn,
+  createTanstackTableColumnHelper,
   extractLeafColumnIds,
   parseAsColumnPinningState,
   parseAsColumnVisibilityStateWithColumns,
   parseAsMultiSelectFilter,
   parseAsSortingState,
-  tanstackTableFeatures,
   useColumnFilters,
+  useTanstackTable,
 } from '@prairielearn/ui';
 
 import { AppErrorAlert, getAppError } from '../lib/client/errors.js';
@@ -47,15 +45,8 @@ import {
   createQuestionsTableFilters,
 } from './questionsTableColumns.js';
 
-const fuzzyFilter: TanstackTableFilterFn<SafeQuestionsPageData> = (
-  row,
-  columnId,
-  value,
-  addMeta,
-) => {
-  const itemRank = rankSearchText(row.getValue(columnId), value);
-  addMeta?.({ itemRank });
-  return itemRank.passed;
+const fuzzyFilter: TanstackTableFilterFn<SafeQuestionsPageData> = (row, columnId, value) => {
+  return rankSearchText(row.getValue(columnId), value).passed;
 };
 
 const DEFAULT_SORT: SortingState = [];
@@ -70,7 +61,7 @@ const HIDDEN_BY_DEFAULT = new Set([
 ]);
 
 const EMPTY_FILTER: MultiSelectFilterValue = { values: [], mode: 'include' };
-const columnHelper = createColumnHelper<TanstackTableFeatures, SafeQuestionsPageData>();
+const columnHelper = createTanstackTableColumnHelper<SafeQuestionsPageData>();
 
 function SelectAllCheckbox({ table }: { table: TanstackTableCoreInstance<SafeQuestionsPageData> }) {
   const allSelected = table.getIsAllPageRowsSelected();
@@ -79,7 +70,7 @@ function SelectAllCheckbox({ table }: { table: TanstackTableCoreInstance<SafeQue
       checked={allSelected}
       indeterminate={table.getIsSomePageRowsSelected() && !allSelected}
       aria-label="Select all questions"
-      onChange={() => table.toggleAllPageRowsSelected()}
+      onChange={table.getToggleAllPageRowsSelectedHandler()}
     />
   );
 }
@@ -252,8 +243,7 @@ export function QuestionsTable<TQueryKey extends readonly unknown[]>({
     [questions, courseInstances],
   );
 
-  const table = useTable({
-    features: tanstackTableFeatures,
+  const table = useTanstackTable({
     data: questions,
     columns,
     columnResizeMode: 'onChange',
