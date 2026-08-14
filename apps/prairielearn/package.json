@@ -186,6 +186,7 @@
     "jquery-ui-dist": "^1.13.3",
     "jquery-ui-touch-punch": "^0.2.3",
     "js-cookie": "^3.0.8",
+    "jsdom": "^29.1.1",
     "json-stringify-safe": "^5.0.1",
     "klaw": "^4.1.0",
     "lodash": "^4.18.1",
@@ -323,7 +324,6 @@
     "@vitest/coverage-v8": "^4.1.10",
     "axe-core": "^4.12.1",
     "get-port": "^7.2.0",
-    "jsdom": "^29.1.1",
     "tsx": "^4.23.5",
     "typescript-cp": "^0.1.10",
     "vitest": "^4.1.10"

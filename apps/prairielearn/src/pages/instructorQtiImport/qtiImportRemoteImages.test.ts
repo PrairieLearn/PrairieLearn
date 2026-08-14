@@ -13,6 +13,9 @@ const ONE_PIXEL_PNG = Buffer.from(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
   'base64',
 );
+const SIMPLE_SVG = Buffer.from(
+  '<svg xmlns="http://www.w3.org/2000/svg"><path onload="alert(1)" d="M0 0" /></svg>',
+);
 
 async function withHttpServer(
   handler: http.RequestListener,
@@ -53,6 +56,7 @@ describe('QtiImportRemoteImageLocalizer', () => {
     expect(result.html).not.toContain('verifier');
     expect(result.html.match(/<pl-figure/g)).toHaveLength(2);
     expect(result.html).toContain('directory="clientFilesQuestion"');
+    expect(result.html).toContain('display="inline"');
     expect(result.html).toContain('alt="Graph"');
     expect(result.html).toContain('width="200"');
   });
@@ -229,6 +233,7 @@ describe('fetchRemoteImage', () => {
         expect(requests[0].headers.host).toBe(`public.example:${port}`);
         expect(requests[0].headers.authorization).toBeUndefined();
         expect(requests[0].headers.cookie).toBeUndefined();
+        expect(requests[0].headers['user-agent']).toBe('PrairieLearn-QTI-Importer/1.0');
       },
     );
   });
@@ -272,6 +277,25 @@ describe('fetchRemoteImage', () => {
       },
     );
     expect(downloadedBytes).toBe(ONE_PIXEL_PNG.byteLength);
+  });
+
+  it('accepts and sanitizes SVG images', async () => {
+    await withHttpServer(
+      (_request, response) => {
+        response.writeHead(200, { 'Content-Type': 'image/svg+xml; charset=utf-8' });
+        response.end(SIMPLE_SVG);
+      },
+      async (port) => {
+        const result = await fetchRemoteImage(
+          new URL(`http://public.example:${port}/equation.svg`),
+          { resolveAddress: async () => '127.0.0.1' },
+        );
+
+        expect(result.extension).toBe('svg');
+        expect(result.content.toString()).toContain('<path');
+        expect(result.content.toString()).not.toContain('onload');
+      },
+    );
   });
 
   it('rejects responses over the per-image size limit before reading the body', async () => {

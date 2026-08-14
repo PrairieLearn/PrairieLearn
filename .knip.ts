@@ -37,6 +37,7 @@ import type { KnipConfig } from 'knip';
  */
 const AUTO_DETECTED_BUT_ALSO_IMPORTED = [
   'd3',
+  'dompurify',
   'he',
   'marked',
   'qrcode-svg',

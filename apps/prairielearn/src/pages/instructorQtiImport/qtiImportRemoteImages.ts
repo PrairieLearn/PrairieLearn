@@ -9,18 +9,22 @@ import type { Element } from 'domhandler';
 import { fileTypeFromBuffer } from 'file-type';
 import ipaddr from 'ipaddr.js';
 
+import { sanitizeQtiImportSvg } from './qtiImportSvg.js';
+
 const MAX_REMOTE_IMAGE_COUNT = 100;
 const MAX_REMOTE_IMAGE_BYTES = 10 * 1024 * 1024;
 const MAX_TOTAL_REMOTE_IMAGE_BYTES = 50 * 1024 * 1024;
 const MAX_REDIRECTS = 3;
 const REQUEST_TIMEOUT_MS = 10_000;
 const MAX_CONCURRENT_REQUESTS = 5;
+const USER_AGENT = 'PrairieLearn-QTI-Importer/1.0';
 
 const SUPPORTED_IMAGE_TYPES = new Map([
   ['image/avif', 'avif'],
   ['image/gif', 'gif'],
   ['image/jpeg', 'jpg'],
   ['image/png', 'png'],
+  ['image/svg+xml', 'svg'],
   ['image/webp', 'webp'],
 ]);
 const ACCEPTED_IMAGE_CONTENT_TYPES = [...SUPPORTED_IMAGE_TYPES.keys()].join(', ');
@@ -159,6 +163,7 @@ export class QtiImportRemoteImageLocalizer {
             const $figure = $('<pl-figure></pl-figure>');
             $figure.attr('file-name', filename);
             $figure.attr('directory', 'clientFilesQuestion');
+            $figure.attr('display', 'inline');
 
             const alt = $image.attr('alt');
             const width = $image.attr('width');
@@ -278,6 +283,14 @@ export async function fetchRemoteImage(
     }
 
     const content = Buffer.concat(chunks, byteLength);
+    if (declaredContentType === 'image/svg+xml') {
+      const sanitizedContent = sanitizeQtiImportSvg(content);
+      if (sanitizedContent.byteLength > MAX_REMOTE_IMAGE_BYTES) {
+        throw new Error('Remote image is too large');
+      }
+      return { content: sanitizedContent, extension: 'svg' };
+    }
+
     const detectedType = await fileTypeFromBuffer(content);
     if (detectedType?.mime !== declaredContentType) {
       throw new Error('Remote image content does not match its content type');
@@ -331,6 +344,7 @@ function requestUrl(url: URL, address: string, deadline: number): Promise<http.I
           Accept: ACCEPTED_IMAGE_CONTENT_TYPES,
           Connection: 'close',
           Host: url.host,
+          'User-Agent': USER_AGENT,
         },
         agent: false,
         ...(url.protocol === 'https:' &&
