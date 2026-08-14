@@ -1,13 +1,14 @@
 import { z } from 'zod';
 
 import { flash } from '@prairielearn/flash';
+import { logger } from '@prairielearn/logger';
 
 import {
   type QtiImportAssessmentData,
   QtiImportEditor,
   type QtiImportQuestionData,
 } from '../../lib/editors.js';
-import { readQtiImportDraft } from '../../lib/qti-import-drafts.js';
+import { deleteOwnedQtiImportDraft, readQtiImportDraft } from '../../lib/qti-import-drafts.js';
 import { SHORT_NAME_REGEX } from '../../lib/short-name.js';
 import { AssessmentJsonSchema } from '../../schemas/infoAssessment.js';
 import { QuestionJsonSchema } from '../../schemas/infoQuestion.js';
@@ -80,6 +81,7 @@ const StoredSerializedQuestionOutputSchema = z.object({
   serverPy: z.string().optional(),
   clientFiles: z.record(z.string(), z.string()),
   skippedVideos: z.array(z.string()),
+  localizedImageCount: z.number().default(0),
 });
 
 const StoredSerializedConversionResultForHydrationSchema = z.object({
@@ -93,13 +95,17 @@ export interface QtiImportError {
   Create:
     | { code: 'QTI_IMPORT_DRAFT_UNAVAILABLE'; message: string }
     | { code: 'SYNC_JOB_FAILED'; message: string; jobSequenceId: string };
+  Destroy: never;
 }
+
+const DraftIdsSchema = z.array(z.uuid()).max(100);
 
 const create = t.procedure
   .use(requireCoursePermissionEdit)
   .input(
     z
       .object({
+        draftIds: DraftIdsSchema.default([]),
         assessments: z.array(AssessmentDataSchema).default([]),
         questions: z.array(QuestionDataSchema).default([]),
       })
@@ -206,8 +212,55 @@ const create = t.procedure
       // message is intended for the page it redirects to.
       flash('success', `${parts.join(' and ')} imported successfully.`);
     }
+
+    await deleteDrafts({
+      draftIds: [...input.draftIds, ...draftCache.keys()],
+      courseId: ctx.course.id,
+      courseInstanceId: ctx.course_instance.id,
+      userId: ctx.locals.authn_user.id,
+    });
   });
+
+const destroy = t.procedure
+  .use(requireCoursePermissionEdit)
+  .input(z.object({ draftIds: DraftIdsSchema }))
+  .mutation(async ({ input, ctx }) => {
+    await deleteDrafts({
+      draftIds: input.draftIds,
+      courseId: ctx.course.id,
+      courseInstanceId: ctx.course_instance.id,
+      userId: ctx.locals.authn_user.id,
+    });
+  });
+
+async function deleteDrafts({
+  draftIds,
+  courseId,
+  courseInstanceId,
+  userId,
+}: {
+  draftIds: string[];
+  courseId: string;
+  courseInstanceId: string;
+  userId: string;
+}): Promise<void> {
+  // Cleanup must not turn a completed import or reset into a user-visible failure. The bucket's
+  // 24-hour lifecycle expiration remains the fallback for transient deletion failures.
+  let firstError: unknown;
+  const uniqueDraftIds = new Set(draftIds);
+  for (const draftId of uniqueDraftIds) {
+    try {
+      await deleteOwnedQtiImportDraft({ draftId, courseId, courseInstanceId, userId });
+    } catch (error) {
+      firstError ??= error;
+    }
+  }
+  if (firstError) {
+    logger.warn('Failed to remove one or more QTI import drafts', firstError);
+  }
+}
 
 export const qtiImportRouter = t.router({
   create,
+  destroy,
 });

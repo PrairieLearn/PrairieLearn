@@ -178,6 +178,7 @@
     "http-proxy-middleware": "^4.2.0",
     "http-status": "^2.1.0",
     "ioredis": "^6.0.0",
+    "ipaddr.js": "^2.5.0",
     "isbinaryfile": "^6.0.0",
     "jju": "^1.4.0",
     "jose": "^6.2.8",

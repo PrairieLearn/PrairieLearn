@@ -56,6 +56,7 @@ import {
   type UploadResponse,
   deduplicateAssessmentZoneQuestions,
 } from './instructorQtiImport.types.js';
+import { QtiImportRemoteImageLocalizer } from './qtiImportRemoteImages.js';
 
 const router = Router();
 
@@ -251,10 +252,11 @@ router.post(
       // Convert each QTI entry, assigning unique slugs so same-titled entries
       // (e.g. two "Quiz 1") don't collide on question prefixes.
       const usedSlugs = new Set<string>();
+      const remoteImageLocalizer = new QtiImportRemoteImageLocalizer();
       const convertedEntries: SerializedEntryResult[] = [];
       const parseWarnings: ParseWarning[] = [];
       for (const entry of entries) {
-        const result = await convertEntry(entry, rubricsXml, usedSlugs);
+        const result = await convertEntry(entry, rubricsXml, usedSlugs, remoteImageLocalizer);
         if (result.ok) {
           convertedEntries.push(result.value);
         } else {
@@ -313,6 +315,7 @@ router.post(
       const clientResults = results.map((result) => prepareDraftResultForClient(result, draftId));
 
       const response: UploadResponse = {
+        draftId,
         results: clientResults,
         parseWarnings,
         existingQuestionDirs,
@@ -356,6 +359,7 @@ async function convertEntry(
   entry: QtiFileEntry,
   rubricsXml: string | undefined,
   usedSlugs: Set<string>,
+  remoteImageLocalizer: QtiImportRemoteImageLocalizer,
 ): Promise<ConvertEntryResult> {
   const xmlContent = await readFile(entry.qtiPath, 'utf-8');
 
@@ -414,7 +418,12 @@ async function convertEntry(
 
   return {
     ok: true,
-    value: await serializeConversionResult(result, assessmentSlug, webResourcesDir),
+    value: await serializeConversionResult(
+      result,
+      assessmentSlug,
+      webResourcesDir,
+      remoteImageLocalizer,
+    ),
   };
 }
 
@@ -435,6 +444,7 @@ export async function serializeConversionResult(
   result: ConversionResult,
   assessmentSlug: string,
   webResourcesDir: string,
+  remoteImageLocalizer = new QtiImportRemoteImageLocalizer(),
 ): Promise<SerializedEntryResult> {
   const extraWarnings: ConversionWarning[] = [];
   const questionPrefix = `imported/${assessmentSlug}`;
@@ -446,6 +456,13 @@ export async function serializeConversionResult(
       // This must match the IDs used in the assessment zones.
       const questionId = `${questionPrefix}/${q.directoryName}`;
       const { files, missingFiles } = await serializeClientFiles(q.clientFiles, webResourcesDir);
+      const localizedImages = await remoteImageLocalizer.localizeQuestionHtml(
+        q.questionHtml,
+        new Set(Object.keys(files)),
+      );
+      for (const [filename, content] of localizedImages.files) {
+        files[filename] = content.toString('base64');
+      }
       if (missingFiles.length > 0) {
         extraWarnings.push({
           questionId,
@@ -453,8 +470,18 @@ export async function serializeConversionResult(
           level: 'warn',
         });
       }
+      if (localizedImages.failedImageCount > 0) {
+        extraWarnings.push({
+          questionId,
+          message: `${localizedImages.failedImageCount} remote image${localizedImages.failedImageCount === 1 ? '' : 's'} could not be safely imported because of its URL, availability, size, or format. The original image reference${localizedImages.failedImageCount === 1 ? ' was' : 's were'} left unchanged.`,
+          level: 'warn',
+        });
+      }
       const seenMessages = new Set<string>();
-      for (const d of await lintQuestionHtml(q.questionHtml)) {
+      for (const d of await lintQuestionHtml(localizedImages.html)) {
+        if (localizedImages.failedImageCount > 0 && d.ruleName === 'pl-remote-image-url') {
+          continue;
+        }
         if (seenMessages.has(d.message)) continue;
         seenMessages.add(d.message);
         extraWarnings.push({ questionId, message: d.message, level: 'warn' });
@@ -463,10 +490,11 @@ export async function serializeConversionResult(
         directoryName: `${questionPrefix}/${q.directoryName}`,
         sourceId: q.sourceId,
         infoJson: q.infoJson,
-        questionHtml: q.questionHtml,
+        questionHtml: localizedImages.html,
         serverPy: q.serverPy,
         clientFiles: files,
         skippedVideos: q.skippedFiles,
+        localizedImageCount: localizedImages.localizedImageCount,
       };
     }),
   );

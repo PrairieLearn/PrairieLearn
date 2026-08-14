@@ -21,10 +21,6 @@ function isRubricWarning(message: string): boolean {
   return message.includes('rubric') || message.includes('Rubric');
 }
 
-export const REMOTE_IMAGE_URL_WARNING = 'Question contains an image reference to a remote URL.';
-const REMOTE_IMAGE_URL_SUMMARY =
-  'One or more questions contain an image reference to a remote URL.';
-
 function uniqueCanvasCourseIds(refs: IRSourceBankRef[]): string[] {
   return [...new Set(refs.flatMap((ref) => (ref.externalCourseId ? [ref.externalCourseId] : [])))];
 }
@@ -129,10 +125,7 @@ export function NonRubricWarnings({
   const duplicateQuestionTitles = findDuplicateQuestionTitles(questions, questionOverrides);
   if (filtered.length === 0 && duplicateQuestionTitles.length === 0) return null;
 
-  const hasRemoteImageUrlWarning = filtered.some((w) => w.message === REMOTE_IMAGE_URL_WARNING);
-  const individualWarnings = uniqueWarnings(
-    filtered.filter((w) => w.message !== REMOTE_IMAGE_URL_WARNING),
-  );
+  const individualWarnings = uniqueWarnings(filtered);
 
   const questionById = new Map<string, { title: string; number: number }>();
   for (const [index, question] of questions.entries()) {
@@ -146,9 +139,6 @@ export function NonRubricWarnings({
     <Alert variant="warning" className="mb-3">
       <strong>Warnings:</strong>
       <ul className="mb-0 mt-1">
-        {hasRemoteImageUrlWarning && (
-          <li key="remote-image-url-warning">{REMOTE_IMAGE_URL_SUMMARY}</li>
-        )}
         <DuplicateQuestionTitleWarningListItem duplicateTitles={duplicateQuestionTitles} />
         {individualWarnings.map((w) => {
           const q = questionById.get(w.questionId);
@@ -230,10 +220,14 @@ export function ImportSummary({
     ),
   );
   const totalQuestions = uniqueQuestions.size;
-  const totalAssets = [...uniqueQuestions.values()].reduce(
-    (sum, question) => sum + Object.keys(question.clientFiles).length,
-    0,
-  );
+  let totalAssets = 0;
+  let totalLocalizedImages = 0;
+  let totalSkippedVideos = 0;
+  for (const question of uniqueQuestions.values()) {
+    totalAssets += Object.keys(question.clientFiles).length;
+    totalLocalizedImages += question.localizedImageCount;
+    totalSkippedVideos += question.skippedVideos.length;
+  }
 
   const allWarnings = results.flatMap((r) => r.warnings);
   const rubricWarnings = allWarnings.filter((w) => isRubricWarning(w.message));
@@ -243,11 +237,6 @@ export function ImportSummary({
     .filter((w) => !isRubricWarning(w.message) && w.message.includes('Unsupported'))
     .map((w) => w.message);
   const uniqueUnsupported = [...new Set(unsupportedTypes)];
-
-  const totalSkippedVideos = [...uniqueQuestions.values()].reduce(
-    (sum, question) => sum + question.skippedVideos.length,
-    0,
-  );
 
   const notImportedItems: string[] = [];
   if (hasRubricIssues) notImportedItems.push('Rubrics (not supported in QTI quiz exports)');
@@ -295,6 +284,12 @@ export function ImportSummary({
                 <li>
                   <strong>{totalAssets}</strong> image{totalAssets !== 1 ? 's' : ''} and other asset
                   {totalAssets !== 1 ? 's' : ''}
+                </li>
+              )}
+              {totalLocalizedImages > 0 && (
+                <li>
+                  <strong>{totalLocalizedImages}</strong> remote image
+                  {totalLocalizedImages !== 1 ? 's' : ''} fetched and stored locally
                 </li>
               )}
             </ul>

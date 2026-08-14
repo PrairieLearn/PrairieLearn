@@ -20,6 +20,8 @@ export interface SerializedQuestionOutput {
   clientFiles: Record<string, { size: number }>;
   /** Video files that were excluded from this question's assets. */
   skippedVideos: string[];
+  /** Remote image URLs that were fetched and stored in this question. */
+  localizedImageCount: number;
 }
 
 interface StoredSerializedQuestionOutput extends Omit<
@@ -192,6 +194,10 @@ export interface CourseInstanceOption {
 
 /** Response shape of the upload endpoint. */
 export interface UploadResponse {
+  /**
+   * Server-side draft containing the full question files for this upload.
+   */
+  draftId: string;
   results: SerializedConversionResult[];
   /** QTI entries that failed to parse, surfaced as warnings. */
   parseWarnings: ParseWarning[];

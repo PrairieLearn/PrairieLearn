@@ -66,3 +66,18 @@ export async function readQtiImportDraft({
 export async function deleteQtiImportDraft(draftId: string): Promise<void> {
   await deleteFromS3(getFileStoreS3Bucket(), draftKey(draftId));
 }
+
+export async function deleteOwnedQtiImportDraft({
+  draftId,
+  courseId,
+  courseInstanceId,
+  userId,
+}: {
+  draftId: string;
+  courseId: string;
+  courseInstanceId: string;
+  userId: string;
+}): Promise<void> {
+  await readQtiImportDraft({ draftId, courseId, courseInstanceId, userId });
+  await deleteQtiImportDraft(draftId);
+}

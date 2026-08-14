@@ -17,6 +17,7 @@ import {
   type StoredSerializedConversionResult,
   deduplicateAssessmentZoneQuestions,
 } from './instructorQtiImport.types.js';
+import { QtiImportRemoteImageLocalizer } from './qtiImportRemoteImages.js';
 
 function makeQuestions(directoryPrefix: string, questionSourceId: string, questionHtml: string) {
   const questionDirectoryName = `imported/${directoryPrefix}/q1`;
@@ -40,6 +41,7 @@ function makeQuestions(directoryPrefix: string, questionSourceId: string, questi
           'image.png': 'aW1hZ2U=',
         },
         skippedVideos: [] as string[],
+        localizedImageCount: 0,
       },
     ],
     warnings: [
@@ -240,6 +242,86 @@ describe('serializeConversionResult', () => {
 
     assert(result.sourceType === 'question-bank');
     expect(result.directoryName).toBe('unfiled-questions-2');
+  });
+
+  it('includes localized remote images in the stored question output without an external-image warning', async () => {
+    const conversionResult = makeConversionResult({
+      sourceType: 'assessment',
+      directoryName: 'quiz',
+    });
+    conversionResult.questions.push({
+      directoryName: 'q1',
+      sourceId: 'source-q1',
+      infoJson: {
+        uuid: 'question-uuid',
+        title: 'Question',
+        topic: 'Imported',
+        tags: ['imported'],
+        type: 'v3',
+      },
+      questionHtml: '<img src="https://canvas.example/image?verifier=secret">',
+      clientFiles: new Map(),
+      skippedFiles: [],
+    });
+    const localizer = new QtiImportRemoteImageLocalizer(async () => ({
+      content: Buffer.from('image contents'),
+      extension: 'png',
+    }));
+
+    const { result } = await serializeConversionResult(
+      conversionResult,
+      'quiz',
+      '/nonexistent',
+      localizer,
+    );
+
+    expect(result.questions[0].localizedImageCount).toBe(1);
+    expect(Object.keys(result.questions[0].clientFiles)).toHaveLength(1);
+    expect(result.questions[0].questionHtml).toContain('<pl-figure');
+    expect(result.questions[0].questionHtml).not.toContain('canvas.example');
+    expect(result.warnings).toEqual([]);
+  });
+
+  it('keeps a focused warning when a remote image cannot be localized', async () => {
+    const conversionResult = makeConversionResult({
+      sourceType: 'assessment',
+      directoryName: 'quiz',
+    });
+    conversionResult.questions.push({
+      directoryName: 'q1',
+      sourceId: 'source-q1',
+      infoJson: {
+        uuid: 'question-uuid',
+        title: 'Question',
+        topic: 'Imported',
+        tags: ['imported'],
+        type: 'v3',
+      },
+      questionHtml: '<img src="https://canvas.example/image?verifier=secret">',
+      clientFiles: new Map(),
+      skippedFiles: [],
+    });
+    const localizer = new QtiImportRemoteImageLocalizer(async () => {
+      throw new Error('unavailable');
+    });
+
+    const { result } = await serializeConversionResult(
+      conversionResult,
+      'quiz',
+      '/nonexistent',
+      localizer,
+    );
+
+    expect(result.questions[0].questionHtml).toContain('canvas.example');
+    expect(result.questions[0].localizedImageCount).toBe(0);
+    expect(result.warnings).toEqual([
+      {
+        questionId: 'imported/quiz/q1',
+        message:
+          '1 remote image could not be safely imported because of its URL, availability, size, or format. The original image reference was left unchanged.',
+        level: 'warn',
+      },
+    ]);
   });
 });
 
