@@ -3,7 +3,11 @@ import asyncHandler from 'express-async-handler';
 import z from 'zod';
 
 import * as error from '@prairielearn/error';
-import { BooleanFromCheckboxSchema, DatetimeLocalStringSchema } from '@prairielearn/zod';
+import {
+  BooleanFromCheckboxSchema,
+  DatetimeLocalStringSchema,
+  parseRequestBody,
+} from '@prairielearn/zod';
 
 import { extractPageContext } from '../../lib/client/page-context.js';
 import { copyCourseInstanceBetweenCourses } from '../../lib/copy-content.js';
@@ -28,15 +32,16 @@ router.post(
       course_instance_id,
       self_enrollment_enabled,
       self_enrollment_use_enrollment_code,
-    } = z
-      .object({
+    } = parseRequestBody(
+      req,
+      z.object({
         start_date: z.union([z.literal(''), DatetimeLocalStringSchema]),
         end_date: z.union([z.literal(''), DatetimeLocalStringSchema]),
         course_instance_id: z.string(),
         self_enrollment_enabled: BooleanFromCheckboxSchema,
         self_enrollment_use_enrollment_code: BooleanFromCheckboxSchema,
-      })
-      .parse(req.body);
+      }),
+    );
 
     // The ID of the course instance we are copying
     const fromCourseInstance = await selectOptionalCourseInstanceById(course_instance_id);
