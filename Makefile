@@ -48,6 +48,12 @@ refresh-workspace-hosts:
 refresh-workspace-hosts-dev:
 	@pnpm refresh-workspace-hosts-dev
 
+PL_USER ?= 1000
+devuser: start-support python-deps
+	@id devuser >/dev/null 2>&1 || groupadd -g $(PL_USER) devuser
+	@id devuser >/dev/null 2>&1 || useradd -u $(PL_USER) -g $(PL_USER) -M devuser
+	@su -s /bin/bash devuser -c 'pnpm dev'
+
 dev: start-support python-deps
 	@pnpm dev
 dev-vite: start-support python-deps
