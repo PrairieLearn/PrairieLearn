@@ -1,4 +1,4 @@
-import { type Header, createColumnHelper } from '@tanstack/react-table';
+import { createColumnHelper } from '@tanstack/react-table';
 
 import { run } from '@prairielearn/run';
 import {
@@ -6,6 +6,8 @@ import {
   type BooleanFilterOption,
   MultiSelectColumnFilter,
   type MultiSelectFilterValue,
+  type TanstackTableFeatures,
+  type TanstackTableHeader,
   applyBooleanFilter,
   applyMultiSelectFilter,
 } from '@prairielearn/ui';
@@ -21,7 +23,7 @@ import { SyncProblemButton } from './SyncProblemButton.js';
 import { TagBadge, TagBadgeList } from './TagBadge.js';
 import { TopicBadge } from './TopicBadge.js';
 
-const columnHelper = createColumnHelper<SafeQuestionsPageData>();
+const columnHelper = createColumnHelper<TanstackTableFeatures, SafeQuestionsPageData>();
 const NONE_FILTER_VALUE = '(None)';
 const AUTO_SIZE_SAMPLE_COUNT = 5;
 
@@ -55,7 +57,7 @@ export function createQuestionsTableColumns({
   courseInstanceId?: string;
   isPublic?: boolean;
 }) {
-  return [
+  return columnHelper.columns([
     columnHelper.accessor('qid', {
       id: 'qid',
       header: 'QID',
@@ -130,7 +132,7 @@ export function createQuestionsTableColumns({
       id: 'topic',
       header: 'Topic',
       cell: (info) => <TopicBadge topic={info.getValue()} />,
-      sortingFn: (rowA, rowB, columnId) => {
+      sortFn: (rowA, rowB, columnId) => {
         const topicA = rowA.getValue<SafeQuestionsPageData['topic']>(columnId);
         const topicB = rowB.getValue<SafeQuestionsPageData['topic']>(columnId);
         return topicA.name.localeCompare(topicB.name);
@@ -301,90 +303,92 @@ export function createQuestionsTableColumns({
           columnHelper.group({
             id: 'referenced_assessments',
             header: 'Referenced assessments',
-            columns: courseInstances.map((ci) =>
-              columnHelper.accessor(
-                (row) =>
-                  row.assessments
-                    ?.filter((a) => a.assessment.course_instance_id === ci.id)
-                    .map((a) => assessmentLabel(a.assessment, a.assessment_set)) ?? [],
-                {
-                  id: `ci_${ci.id}`,
-                  // TODO: Make non-nullable once we update the database schema
-                  header: () => <code>{ci.short_name}</code>,
-                  meta: {
-                    label: ci.short_name,
-                    autoSize: true,
-                    autoSizeSample: (questions) =>
-                      autoSizeSampleByMeasure(
-                        questions,
-                        (q) =>
-                          q.assessments
-                            ?.filter((a) => a.assessment.course_instance_id === ci.id)
-                            .reduce(
-                              (sum, a) =>
-                                sum + assessmentLabel(a.assessment, a.assessment_set).length,
-                              0,
-                            ) ?? 0,
-                      ),
-                  },
-                  cell: (info) => {
-                    const assessments =
-                      info.row.original.assessments
-                        ?.filter((a) => a.assessment.course_instance_id === ci.id)
-                        .sort((a, b) => {
-                          return assessmentLabel(a.assessment, a.assessment_set).localeCompare(
-                            assessmentLabel(b.assessment, b.assessment_set),
-                            undefined,
-                            {
-                              numeric: true,
-                            },
-                          );
-                        }) ?? [];
-                    if (assessments.length === 0) return null;
-                    return (
-                      <div className="d-flex flex-wrap gap-1">
-                        {assessments.map((a) => (
-                          <a
-                            key={a.assessment.id}
-                            href={getAssessmentQuestionEditorUrl({
-                              courseInstanceId: ci.id,
-                              assessmentId: a.assessment.id,
-                              qid: info.row.original.qid,
-                            })}
-                            className={`btn btn-badge color-${a.assessment_set.color}`}
-                          >
-                            {assessmentLabel(a.assessment, a.assessment_set)}
-                          </a>
-                        ))}
-                      </div>
-                    );
-                  },
-                  enableSorting: false,
-                  filterFn: (row, _columnId, filter: MultiSelectFilterValue) => {
-                    const assessments =
-                      row.original.assessments?.filter(
-                        (a) => a.assessment.course_instance_id === ci.id,
-                      ) ?? [];
-                    return applyMultiSelectFilter(filter, (values) => {
-                      if (assessments.length === 0) {
-                        return values.includes('(None)');
-                      }
-                      return values.some((v) =>
-                        assessments.some(
-                          (a) => assessmentLabel(a.assessment, a.assessment_set) === v,
+            columns: columnHelper.columns(
+              courseInstances.map((ci) =>
+                columnHelper.accessor(
+                  (row) =>
+                    row.assessments
+                      ?.filter((a) => a.assessment.course_instance_id === ci.id)
+                      .map((a) => assessmentLabel(a.assessment, a.assessment_set)) ?? [],
+                  {
+                    id: `ci_${ci.id}`,
+                    // TODO: Make non-nullable once we update the database schema
+                    header: () => <code>{ci.short_name}</code>,
+                    meta: {
+                      label: ci.short_name,
+                      autoSize: true,
+                      autoSizeSample: (questions) =>
+                        autoSizeSampleByMeasure(
+                          questions,
+                          (q) =>
+                            q.assessments
+                              ?.filter((a) => a.assessment.course_instance_id === ci.id)
+                              .reduce(
+                                (sum, a) =>
+                                  sum + assessmentLabel(a.assessment, a.assessment_set).length,
+                                0,
+                              ) ?? 0,
                         ),
+                    },
+                    cell: (info) => {
+                      const assessments =
+                        info.row.original.assessments
+                          ?.filter((a) => a.assessment.course_instance_id === ci.id)
+                          .sort((a, b) => {
+                            return assessmentLabel(a.assessment, a.assessment_set).localeCompare(
+                              assessmentLabel(b.assessment, b.assessment_set),
+                              undefined,
+                              {
+                                numeric: true,
+                              },
+                            );
+                          }) ?? [];
+                      if (assessments.length === 0) return null;
+                      return (
+                        <div className="d-flex flex-wrap gap-1">
+                          {assessments.map((a) => (
+                            <a
+                              key={a.assessment.id}
+                              href={getAssessmentQuestionEditorUrl({
+                                courseInstanceId: ci.id,
+                                assessmentId: a.assessment.id,
+                                qid: info.row.original.qid,
+                              })}
+                              className={`btn btn-badge color-${a.assessment_set.color}`}
+                            >
+                              {assessmentLabel(a.assessment, a.assessment_set)}
+                            </a>
+                          ))}
+                        </div>
                       );
-                    });
+                    },
+                    enableSorting: false,
+                    filterFn: (row, _columnId, filter: MultiSelectFilterValue) => {
+                      const assessments =
+                        row.original.assessments?.filter(
+                          (a) => a.assessment.course_instance_id === ci.id,
+                        ) ?? [];
+                      return applyMultiSelectFilter(filter, (values) => {
+                        if (assessments.length === 0) {
+                          return values.includes('(None)');
+                        }
+                        return values.some((v) =>
+                          assessments.some(
+                            (a) => assessmentLabel(a.assessment, a.assessment_set) === v,
+                          ),
+                        );
+                      });
+                    },
+                    size: 300,
+                    maxSize: 500,
                   },
-                  size: 300,
-                  maxSize: 500,
-                },
+                ),
               ),
             ),
           }),
         ]
       : []),
-  ];
+  ]);
 }
 
 export function createQuestionsTableFilters({
@@ -450,7 +454,7 @@ export function createQuestionsTableFilters({
 
   const filterMap: Record<
     string,
-    (props: { header: Header<SafeQuestionsPageData, unknown> }) => React.ReactNode
+    (props: { header: TanstackTableHeader<SafeQuestionsPageData, unknown> }) => React.ReactNode
   > = {
     topic: ({ header }) => (
       <MultiSelectColumnFilter

@@ -1,6 +1,8 @@
-import type { Column } from '@tanstack/table-core';
+import type { RowData } from '@tanstack/table-core';
 import clsx from 'clsx';
 import Dropdown from 'react-bootstrap/Dropdown';
+
+import type { TanstackTableColumn } from '../tanstack-table.js';
 
 export type NumericColumnFilterValue =
   | {
@@ -22,11 +24,11 @@ export type NumericColumnFilterValue =
  * clarify what the entered numbers represent. The column's `filterFn` is
  * responsible for interpreting values in this unit.
  */
-export function NumericInputColumnFilter<TData, TValue>({
+export function NumericInputColumnFilter<TData extends RowData, TValue>({
   column,
   unit,
 }: {
-  column: Column<TData, TValue>;
+  column: TanstackTableColumn<TData, TValue>;
   unit?: string;
 }) {
   const columnId = column.id;
@@ -178,7 +180,7 @@ export function parseNumericFilter(filterValue: string): {
  * }
  */
 export function numericColumnFilterFn(
-  row: any,
+  row: { getValue: (columnId: string) => unknown },
   columnId: string,
   { filterValue, emptyOnly }: NumericColumnFilterValue,
 ): boolean {

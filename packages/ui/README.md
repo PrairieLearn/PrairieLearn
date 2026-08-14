@@ -8,6 +8,30 @@ UI components, utilities, and styles shared between PrairieLearn and PrairieTest
 
 You can refer to [`instructorStudents.html.tsx`](../../apps/prairielearn/src/pages/instructorStudents/instructorStudents.html.tsx) for an example of how to use this component.
 
+TanStack Table v9 requires an explicit feature set. Use the feature set and corresponding types exported by this package, and wrap heterogeneous column arrays with `columnHelper.columns()`:
+
+```tsx
+import { createColumnHelper, useTable } from '@tanstack/react-table';
+
+import {
+  type TanstackTableFeatures,
+  TanstackTableCard,
+  tanstackTableFeatures,
+} from '@prairielearn/ui';
+
+const columnHelper = createColumnHelper<TanstackTableFeatures, Student>();
+const columns = columnHelper.columns([
+  columnHelper.accessor('uid', { header: 'UID' }),
+  columnHelper.accessor('name', { header: 'Name' }),
+]);
+
+const table = useTable({
+  features: tanstackTableFeatures,
+  columns,
+  data: students,
+});
+```
+
 ```tsx
 import { TanstackTableCard } from '@prairielearn/ui';
 
@@ -174,7 +198,7 @@ The package provides custom parsers for syncing TanStack Table state with URL qu
 
 - **`parseAsSortingState`**: Syncs table sorting state with the URL. Format: `col:asc` or `col1:asc,col2:desc` for multi-column sorting.
 - **`parseAsColumnVisibilityStateWithColumns(allColumns, defaultValueRef?)`**: Syncs column visibility. Parses comma-separated visible column IDs.
-- **`parseAsColumnPinningState`**: Syncs left-pinned columns. Format: `col1,col2,col3`.
+- **`parseAsColumnPinningState`**: Syncs start-pinned columns. Format: `col1,col2,col3`.
 - **`parseAsNumericFilter`**: Syncs numeric filter values. URL format: `gte_5`, `lte_10`, `gt_3`, `lt_7`, `eq_5`, `empty`.
 
 ```tsx
@@ -199,7 +223,7 @@ const [columnVisibility, setColumnVisibility] = useQueryState(
 // Column pinning synced to URL
 const [columnPinning, setColumnPinning] = useQueryState(
   'pin',
-  parseAsColumnPinningState.withDefault({ left: [], right: [] }),
+  parseAsColumnPinningState.withDefault({ start: [], end: [] }),
 );
 
 // Numeric filter synced to URL

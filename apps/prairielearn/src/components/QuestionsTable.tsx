@@ -2,15 +2,10 @@ import { type QueryFunction, useQuery } from '@tanstack/react-query';
 import {
   type ColumnPinningState,
   type ColumnSizingState,
-  type FilterFn,
   type RowSelectionState,
   type SortingState,
-  type Table,
   createColumnHelper,
-  getCoreRowModel,
-  getFilteredRowModel,
-  getSortedRowModel,
-  useReactTable,
+  useTable,
 } from '@tanstack/react-table';
 import { parseAsString, useQueryState } from 'nuqs';
 import { type ReactNode, useMemo, useState } from 'react';
@@ -22,15 +17,18 @@ import {
   IndeterminateCheckbox,
   type MultiSelectFilterValue,
   TanstackTableCard,
+  type TanstackTableCoreInstance,
   type TanstackTableCsvCell,
   TanstackTableEmptyState,
+  type TanstackTableFeatures,
+  type TanstackTableFilterFn,
   extractLeafColumnIds,
   parseAsColumnPinningState,
   parseAsColumnVisibilityStateWithColumns,
   parseAsMultiSelectFilter,
   parseAsSortingState,
+  tanstackTableFeatures,
   useColumnFilters,
-  useShiftClickCheckbox,
 } from '@prairielearn/ui';
 
 import { AppErrorAlert, getAppError } from '../lib/client/errors.js';
@@ -49,14 +47,19 @@ import {
   createQuestionsTableFilters,
 } from './questionsTableColumns.js';
 
-const fuzzyFilter: FilterFn<SafeQuestionsPageData> = (row, columnId, value, addMeta) => {
+const fuzzyFilter: TanstackTableFilterFn<SafeQuestionsPageData> = (
+  row,
+  columnId,
+  value,
+  addMeta,
+) => {
   const itemRank = rankSearchText(row.getValue(columnId), value);
-  addMeta({ itemRank });
+  addMeta?.({ itemRank });
   return itemRank.passed;
 };
 
 const DEFAULT_SORT: SortingState = [];
-const DEFAULT_PINNING: ColumnPinningState = { left: ['qid'], right: [] };
+const DEFAULT_PINNING: ColumnPinningState = { start: ['qid'], end: [] };
 const HIDDEN_BY_DEFAULT = new Set([
   'display_type',
   'grading_method',
@@ -67,13 +70,14 @@ const HIDDEN_BY_DEFAULT = new Set([
 ]);
 
 const EMPTY_FILTER: MultiSelectFilterValue = { values: [], mode: 'include' };
-const columnHelper = createColumnHelper<SafeQuestionsPageData>();
+const columnHelper = createColumnHelper<TanstackTableFeatures, SafeQuestionsPageData>();
 
-function SelectAllCheckbox({ table }: { table: Table<SafeQuestionsPageData> }) {
+function SelectAllCheckbox({ table }: { table: TanstackTableCoreInstance<SafeQuestionsPageData> }) {
+  const allSelected = table.getIsAllPageRowsSelected();
   return (
     <IndeterminateCheckbox
-      checked={table.getIsAllPageRowsSelected()}
-      indeterminate={table.getIsSomePageRowsSelected()}
+      checked={allSelected}
+      indeterminate={table.getIsSomePageRowsSelected() && !allSelected}
       aria-label="Select all questions"
       onChange={() => table.toggleAllPageRowsSelected()}
     />
@@ -127,8 +131,8 @@ export function QuestionsTable<TQueryKey extends readonly unknown[]>({
     parseAsSortingState.withDefault(DEFAULT_SORT),
   );
   const defaultPinning: ColumnPinningState = {
-    left: rowSelectionEnabled ? ['select', 'qid'] : DEFAULT_PINNING.left,
-    right: DEFAULT_PINNING.right,
+    start: rowSelectionEnabled ? ['select', 'qid'] : DEFAULT_PINNING.start,
+    end: DEFAULT_PINNING.end,
   };
   const [columnPinning, setColumnPinning] = useQueryState(
     'frozen',
@@ -159,7 +163,6 @@ export function QuestionsTable<TQueryKey extends readonly unknown[]>({
 
   const [columnSizing, setColumnSizing] = useState<ColumnSizingState>({});
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
-  const { createCheckboxProps } = useShiftClickCheckbox<SafeQuestionsPageData>();
 
   const { data: questions = initialQuestions, error: questionsError } = useQuery({
     ...questionsQueryOptions,
@@ -185,11 +188,13 @@ export function QuestionsTable<TQueryKey extends readonly unknown[]>({
     const selectionColumn = columnHelper.display({
       id: 'select',
       header: ({ table }) => <SelectAllCheckbox table={table} />,
-      cell: ({ row, table }) => (
+      cell: ({ row }) => (
         <input
           type="checkbox"
           aria-label={`Select ${displayQid(row.original, qidPrefix)}`}
-          {...createCheckboxProps(row, table)}
+          checked={row.getIsSelected()}
+          disabled={!row.getCanSelect()}
+          onChange={row.getToggleSelectedHandler()}
         />
       ),
       size: 40,
@@ -199,7 +204,7 @@ export function QuestionsTable<TQueryKey extends readonly unknown[]>({
       enableHiding: false,
       enablePinning: true,
     });
-    return [selectionColumn, ...questionColumns];
+    return columnHelper.columns([selectionColumn, ...questionColumns]);
   }, [
     courseInstances,
     qidPrefix,
@@ -208,7 +213,6 @@ export function QuestionsTable<TQueryKey extends readonly unknown[]>({
     currentCourseInstanceId,
     isPublic,
     rowSelectionEnabled,
-    createCheckboxProps,
   ]);
 
   const allColumnIds = useMemo(() => extractLeafColumnIds(columns), [columns]);
@@ -248,7 +252,8 @@ export function QuestionsTable<TQueryKey extends readonly unknown[]>({
     [questions, courseInstances],
   );
 
-  const table = useReactTable({
+  const table = useTable({
+    features: tanstackTableFeatures,
     data: questions,
     columns,
     columnResizeMode: 'onChange',
@@ -275,9 +280,6 @@ export function QuestionsTable<TQueryKey extends readonly unknown[]>({
     onColumnVisibilityChange: setColumnVisibility,
     onColumnPinningChange: setColumnPinning,
     onRowSelectionChange: setRowSelection,
-    getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
     defaultColumn: {
       minSize: 80,
       size: 150,

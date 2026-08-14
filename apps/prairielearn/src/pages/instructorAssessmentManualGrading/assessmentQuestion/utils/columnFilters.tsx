@@ -1,6 +1,8 @@
-import type { Header } from '@tanstack/react-table';
-
-import { MultiSelectColumnFilter, NumericInputColumnFilter } from '@prairielearn/ui';
+import {
+  MultiSelectColumnFilter,
+  NumericInputColumnFilter,
+  type TanstackTableHeader,
+} from '@prairielearn/ui';
 
 import {
   GRADING_STATUS_VALUES,
@@ -21,7 +23,7 @@ export function createColumnFilters({
     requires_manual_grading: ({
       header,
     }: {
-      header: Header<InstanceQuestionRow, GradingStatusValue>;
+      header: TanstackTableHeader<InstanceQuestionRow, GradingStatusValue>;
     }) => (
       <MultiSelectColumnFilter
         column={header.column}
@@ -31,7 +33,7 @@ export function createColumnFilters({
     assigned_grader_name: ({
       header,
     }: {
-      header: Header<InstanceQuestionRow, InstanceQuestionRow['assigned_grader_name']>;
+      header: TanstackTableHeader<InstanceQuestionRow, InstanceQuestionRow['assigned_grader_name']>;
     }) => (
       <MultiSelectColumnFilter
         column={header.column}
@@ -42,7 +44,7 @@ export function createColumnFilters({
     last_grader_name: ({
       header,
     }: {
-      header: Header<InstanceQuestionRow, InstanceQuestionRow['last_grader_name']>;
+      header: TanstackTableHeader<InstanceQuestionRow, InstanceQuestionRow['last_grader_name']>;
     }) => (
       <MultiSelectColumnFilter
         column={header.column}
@@ -53,7 +55,7 @@ export function createColumnFilters({
     instance_question_group_name: ({
       header,
     }: {
-      header: Header<
+      header: TanstackTableHeader<
         InstanceQuestionRow,
         InstanceQuestionRow['instance_question']['instance_question_group_name']
       >;
@@ -67,7 +69,7 @@ export function createColumnFilters({
     manual_points: ({
       header,
     }: {
-      header: Header<
+      header: TanstackTableHeader<
         InstanceQuestionRow,
         InstanceQuestionRow['instance_question']['manual_points']
       >;
@@ -75,19 +77,32 @@ export function createColumnFilters({
     auto_points: ({
       header,
     }: {
-      header: Header<InstanceQuestionRow, InstanceQuestionRow['instance_question']['auto_points']>;
+      header: TanstackTableHeader<
+        InstanceQuestionRow,
+        InstanceQuestionRow['instance_question']['auto_points']
+      >;
     }) => <NumericInputColumnFilter column={header.column} />,
     points: ({
       header,
     }: {
-      header: Header<InstanceQuestionRow, InstanceQuestionRow['instance_question']['points']>;
+      header: TanstackTableHeader<
+        InstanceQuestionRow,
+        InstanceQuestionRow['instance_question']['points']
+      >;
     }) => <NumericInputColumnFilter column={header.column} />,
     score_perc: ({
       header,
     }: {
-      header: Header<InstanceQuestionRow, InstanceQuestionRow['instance_question']['score_perc']>;
+      header: TanstackTableHeader<
+        InstanceQuestionRow,
+        InstanceQuestionRow['instance_question']['score_perc']
+      >;
     }) => <NumericInputColumnFilter column={header.column} />,
-    rubric_difference: ({ header }: { header: Header<InstanceQuestionRow, string> }) => (
+    rubric_difference: ({
+      header,
+    }: {
+      header: TanstackTableHeader<InstanceQuestionRow, string>;
+    }) => (
       <MultiSelectColumnFilter
         column={header.column}
         allColumnValues={allAiAgreementItems.map((item) => item.description)}

@@ -1,15 +1,10 @@
 import { QueryClient, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   type ColumnPinningState,
-  type Header,
   type RowSelectionState,
   type SortingState,
-  type Table,
   createColumnHelper,
-  getCoreRowModel,
-  getFilteredRowModel,
-  getSortedRowModel,
-  useReactTable,
+  useTable,
 } from '@tanstack/react-table';
 import clsx from 'clsx';
 import { parseAsString, useQueryState } from 'nuqs';
@@ -25,13 +20,16 @@ import {
   NuqsAdapter,
   OverlayTrigger,
   TanstackTableCard,
+  type TanstackTableCoreInstance,
+  type TanstackTableFeatures,
+  type TanstackTableHeader,
   applyMultiSelectFilter,
   parseAsColumnPinningState,
   parseAsMultiSelectFilter,
   parseAsSortingState,
+  tanstackTableFeatures,
   useColumnFilters,
   useColumnVisibilityQueryState,
-  useShiftClickCheckbox,
 } from '@prairielearn/ui';
 
 import { getAppError } from '../../lib/client/errors.js';
@@ -88,24 +86,25 @@ const INSTANCE_ROLE_DESCRIPTIONS: Record<InstanceRole, string> = {
     'Can see all assessments, questions, and issues. Can view and edit student data, including grading.',
 };
 
-function SelectAllCheckbox({ table }: { table: Table<CourseUsersRow> }) {
+function SelectAllCheckbox({ table }: { table: TanstackTableCoreInstance<CourseUsersRow> }) {
+  const allSelected = table.getIsAllPageRowsSelected();
   return (
     <IndeterminateCheckbox
-      checked={table.getIsAllPageRowsSelected()}
-      indeterminate={table.getIsSomePageRowsSelected()}
+      checked={allSelected}
+      indeterminate={table.getIsSomePageRowsSelected() && !allSelected}
       aria-label="Select all staff"
       onChange={() => table.toggleAllPageRowsSelected()}
     />
   );
 }
 
-const columnHelper = createColumnHelper<CourseUsersRow>();
+const columnHelper = createColumnHelper<TanstackTableFeatures, CourseUsersRow>();
 
 const DEFAULT_SORT: SortingState = [
   { id: 'course_role', desc: true },
   { id: 'uid', desc: false },
 ];
-const DEFAULT_PINNING: ColumnPinningState = { left: ['select', 'uid'], right: [] };
+const DEFAULT_PINNING: ColumnPinningState = { start: ['select', 'uid'], end: [] };
 
 const EMPTY_COURSE_ROLE_FILTER: MultiSelectFilterValue<CourseRole> = {
   values: [],
@@ -908,122 +907,125 @@ function StaffTableInner({
     useColumnVisibilityQueryState(allColumnIds);
 
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
-  const { createCheckboxProps } = useShiftClickCheckbox<CourseUsersRow>();
 
   const columns = useMemo(
-    () => [
-      columnHelper.display({
-        id: 'select',
-        header: ({ table }) => <SelectAllCheckbox table={table} />,
-        cell: ({ row, table }) => {
-          const uid = row.original.user.uid;
-          return (
-            <input
-              type="checkbox"
-              aria-label={`Select ${uid}`}
-              {...createCheckboxProps(row, table)}
-            />
-          );
-        },
-        size: 40,
-        minSize: 40,
-        maxSize: 40,
-        enableSorting: false,
-        enableHiding: false,
-      }),
-      columnHelper.accessor((row) => row.user.uid, {
-        id: 'uid',
-        header: 'UID',
-        size: 220,
-        enableHiding: true,
-        enableGlobalFilter: true,
-      }),
-      columnHelper.accessor((row) => row.user.name ?? '', {
-        id: 'user_name',
-        header: 'Name',
-        size: 180,
-        enableHiding: true,
-        enableGlobalFilter: true,
-        cell: (info) => {
-          const name = info.row.original.user.name;
-          return name ? (
-            <span>{name}</span>
-          ) : (
-            <OverlayTrigger
-              placement="top"
-              tooltip={{
-                body: 'Users with name "Unknown user" either have never logged in or have an incorrect UID.',
-                props: { id: `staff-unknown-user-tooltip-${info.row.original.user.id}` },
-              }}
-            >
-              <span className="text-danger">Unknown user</span>
-            </OverlayTrigger>
-          );
-        },
-      }),
-      columnHelper.accessor((row) => row.course_permission.course_role, {
-        id: 'course_role',
-        header: 'Course content',
-        size: 190,
-        enableHiding: true,
-        enableGlobalFilter: false,
-        meta: { label: 'Course content access' },
-        filterFn: (row, _columnId, filter: MultiSelectFilterValue<CourseRole>) => {
-          const role = row.original.course_permission.course_role ?? 'None';
-          return applyMultiSelectFilter(filter, (values) => values.includes(role));
-        },
-        sortingFn: (rowA, rowB) => {
-          const indexA = COURSE_ROLE_VALUES.indexOf(
-            rowA.original.course_permission.course_role ?? 'None',
-          );
-          const indexB = COURSE_ROLE_VALUES.indexOf(
-            rowB.original.course_permission.course_role ?? 'None',
-          );
-          return indexA - indexB;
-        },
-        cell: (info) => (
-          <div className="text-center">
-            <CoursePermissionCell
-              courseUser={info.row.original}
-              canChangeCourseRole={
-                (info.row.original.user.id !== authnUserId &&
-                  info.row.original.user.id !== userId) ||
-                isAdministrator
-              }
-            />
-          </div>
-        ),
-      }),
-      ...courseInstances.map((ci) =>
-        columnHelper.accessor(
-          (row): InstanceRole =>
-            row.course_instance_roles?.find((cir) => cir.id === ci.id)?.course_instance_role ??
-            'None',
-          {
-            id: `ci_${ci.id}`,
-            header: () => <code>{ci.short_name}</code>,
-            meta: { label: ci.short_name },
-            size: 120,
-            enableGlobalFilter: false,
-            enableSorting: false,
-            enableHiding: true,
-            filterFn: (row, columnId, filter: MultiSelectFilterValue<InstanceRole>) => {
-              const role = row.getValue<InstanceRole>(columnId);
-              return applyMultiSelectFilter(filter, (values) => values.includes(role));
-            },
-            cell: (info) => (
-              <div className="text-center">
-                <CourseInstanceAccessCell courseUser={info.row.original} courseInstance={ci} />
-              </div>
-            ),
+    () =>
+      columnHelper.columns([
+        columnHelper.display({
+          id: 'select',
+          header: ({ table }) => <SelectAllCheckbox table={table} />,
+          cell: ({ row }) => {
+            const uid = row.original.user.uid;
+            return (
+              <input
+                type="checkbox"
+                aria-label={`Select ${uid}`}
+                checked={row.getIsSelected()}
+                disabled={!row.getCanSelect()}
+                onChange={row.getToggleSelectedHandler()}
+              />
+            );
           },
+          size: 40,
+          minSize: 40,
+          maxSize: 40,
+          enableSorting: false,
+          enableHiding: false,
+        }),
+        columnHelper.accessor((row) => row.user.uid, {
+          id: 'uid',
+          header: 'UID',
+          size: 220,
+          enableHiding: true,
+          enableGlobalFilter: true,
+        }),
+        columnHelper.accessor((row) => row.user.name ?? '', {
+          id: 'user_name',
+          header: 'Name',
+          size: 180,
+          enableHiding: true,
+          enableGlobalFilter: true,
+          cell: (info) => {
+            const name = info.row.original.user.name;
+            return name ? (
+              <span>{name}</span>
+            ) : (
+              <OverlayTrigger
+                placement="top"
+                tooltip={{
+                  body: 'Users with name "Unknown user" either have never logged in or have an incorrect UID.',
+                  props: { id: `staff-unknown-user-tooltip-${info.row.original.user.id}` },
+                }}
+              >
+                <span className="text-danger">Unknown user</span>
+              </OverlayTrigger>
+            );
+          },
+        }),
+        columnHelper.accessor((row) => row.course_permission.course_role, {
+          id: 'course_role',
+          header: 'Course content',
+          size: 190,
+          enableHiding: true,
+          enableGlobalFilter: false,
+          meta: { label: 'Course content access' },
+          filterFn: (row, _columnId, filter: MultiSelectFilterValue<CourseRole>) => {
+            const role = row.original.course_permission.course_role ?? 'None';
+            return applyMultiSelectFilter(filter, (values) => values.includes(role));
+          },
+          sortFn: (rowA, rowB) => {
+            const indexA = COURSE_ROLE_VALUES.indexOf(
+              rowA.original.course_permission.course_role ?? 'None',
+            );
+            const indexB = COURSE_ROLE_VALUES.indexOf(
+              rowB.original.course_permission.course_role ?? 'None',
+            );
+            return indexA - indexB;
+          },
+          cell: (info) => (
+            <div className="text-center">
+              <CoursePermissionCell
+                courseUser={info.row.original}
+                canChangeCourseRole={
+                  (info.row.original.user.id !== authnUserId &&
+                    info.row.original.user.id !== userId) ||
+                  isAdministrator
+                }
+              />
+            </div>
+          ),
+        }),
+        ...courseInstances.map((ci) =>
+          columnHelper.accessor(
+            (row): InstanceRole =>
+              row.course_instance_roles?.find((cir) => cir.id === ci.id)?.course_instance_role ??
+              'None',
+            {
+              id: `ci_${ci.id}`,
+              header: () => <code>{ci.short_name}</code>,
+              meta: { label: ci.short_name },
+              size: 120,
+              enableGlobalFilter: false,
+              enableSorting: false,
+              enableHiding: true,
+              filterFn: (row, columnId, filter: MultiSelectFilterValue<InstanceRole>) => {
+                const role = row.getValue<InstanceRole>(columnId);
+                return applyMultiSelectFilter(filter, (values) => values.includes(role));
+              },
+              cell: (info) => (
+                <div className="text-center">
+                  <CourseInstanceAccessCell courseUser={info.row.original} courseInstance={ci} />
+                </div>
+              ),
+            },
+          ),
         ),
-      ),
-    ],
-    [authnUserId, userId, isAdministrator, courseInstances, createCheckboxProps],
+      ]),
+    [authnUserId, userId, isAdministrator, courseInstances],
   );
 
-  const table = useReactTable({
+  const table = useTable({
+    features: tanstackTableFeatures,
     data: liveUsers,
     columns,
     columnResizeMode: 'onChange',
@@ -1047,9 +1049,6 @@ function StaffTableInner({
     onColumnPinningChange: setColumnPinning,
     onColumnVisibilityChange: setColumnVisibility,
     onRowSelectionChange: setRowSelection,
-    getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
     defaultColumn: {
       minSize: 100,
       size: 150,
@@ -1083,7 +1082,7 @@ function StaffTableInner({
 
   const filters = useMemo(
     () => ({
-      course_role: ({ header }: { header: Header<CourseUsersRow, unknown> }) => (
+      course_role: ({ header }: { header: TanstackTableHeader<CourseUsersRow, unknown> }) => (
         <MultiSelectColumnFilter
           column={header.column}
           allColumnValues={[...COURSE_ROLE_VALUES]}
@@ -1093,7 +1092,7 @@ function StaffTableInner({
       ...Object.fromEntries(
         courseInstances.map((ci) => [
           `ci_${ci.id}`,
-          ({ header }: { header: Header<CourseUsersRow, unknown> }) => (
+          ({ header }: { header: TanstackTableHeader<CourseUsersRow, unknown> }) => (
             <MultiSelectColumnFilter
               column={header.column}
               allColumnValues={[...INSTANCE_ROLE_VALUES]}

@@ -1,4 +1,4 @@
-import type { VisibilityState } from '@tanstack/table-core';
+import type { ColumnVisibilityState } from '@tanstack/table-core';
 import { useQueryState } from 'nuqs';
 import { useMemo } from 'react';
 
@@ -6,7 +6,7 @@ import { parseAsColumnVisibilityStateWithColumns } from '../components/nuqs.js';
 
 /**
  * Hook that provides column visibility state persisted to the URL query string.
- * Returns values ready to spread into `useReactTable`'s `state`, `initialState`,
+ * Returns values ready to spread into `useTable`'s `state`, `initialState`,
  * and `onColumnVisibilityChange`.
  *
  * @param allColumnIds - Array of all hideable column IDs
@@ -19,7 +19,7 @@ export function useColumnVisibilityQueryState(
   options?: { defaultHidden?: string[]; paramName?: string },
 ) {
   const hiddenSet = useMemo(() => new Set(options?.defaultHidden), [options?.defaultHidden]);
-  const defaultColumnVisibility = useMemo<VisibilityState>(
+  const defaultColumnVisibility = useMemo<ColumnVisibilityState>(
     () => Object.fromEntries(allColumnIds.map((id) => [id, !hiddenSet.has(id)])),
     [allColumnIds, hiddenSet],
   );
