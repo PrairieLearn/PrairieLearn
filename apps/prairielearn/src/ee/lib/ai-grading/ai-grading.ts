@@ -60,6 +60,7 @@ import {
   insertAiGradingJob,
   insertAiGradingJobWithRotationCorrection,
   parseAiRubricItems,
+  retryNoObjectGeneratedResponse,
   selectInstanceQuestionsForAssessmentQuestion,
   selectLastVariantAndSubmission,
 } from './ai-grading-util.js';
@@ -752,33 +753,47 @@ export async function aiGrade({
             provider !== 'google'
           ) {
             return {
-              finalGradingResponse: await generateText({
-                model,
-                output: Output.object({ schema: RubricGradingResultSchema }),
-                messages: input,
-                // The AI grading prompts in `generatePrompt` (ai-grading-util.ts)
-                // intentionally interleave `role: 'system'` and `role: 'user'`
-                // messages. All system-role content is hard-coded authored strings;
-                // no user-supplied text is ever placed in a system message, so the
-                // SDK's prompt-injection warning does not apply here.
-                allowSystemInMessages: true,
-                providerOptions: {
-                  openai: openaiProviderOptions,
-                },
+              finalGradingResponse: await retryNoObjectGeneratedResponse({
+                operation: () =>
+                  generateText({
+                    model,
+                    output: Output.object({ schema: RubricGradingResultSchema }),
+                    messages: input,
+                    // The AI grading prompts in `generatePrompt` (ai-grading-util.ts)
+                    // intentionally interleave `role: 'system'` and `role: 'user'`
+                    // messages. All system-role content is hard-coded authored strings;
+                    // no user-supplied text is ever placed in a system message, so the
+                    // SDK's prompt-injection warning does not apply here.
+                    allowSystemInMessages: true,
+                    providerOptions: {
+                      openai: openaiProviderOptions,
+                    },
+                  }),
+                onRetry: (attempt, err) =>
+                  logger.info(
+                    `Retrying AI grading structured output after empty provider response (attempt ${attempt}): ${err.message}`,
+                  ),
               }),
               rotationCorrectionApplied: false,
             };
           }
 
-          const initialResponse = await generateText({
-            model,
-            output: Output.object({ schema: RubricImageGradingResultSchema }),
-            messages: input,
-            // System messages in `messages` are hard-coded authored strings; safe to allow.
-            allowSystemInMessages: true,
-            providerOptions: {
-              openai: openaiProviderOptions,
-            },
+          const initialResponse = await retryNoObjectGeneratedResponse({
+            operation: () =>
+              generateText({
+                model,
+                output: Output.object({ schema: RubricImageGradingResultSchema }),
+                messages: input,
+                // System messages in `messages` are hard-coded authored strings; safe to allow.
+                allowSystemInMessages: true,
+                providerOptions: {
+                  openai: openaiProviderOptions,
+                },
+              }),
+            onRetry: (attempt, err) =>
+              logger.info(
+                `Retrying AI grading structured output after empty provider response (attempt ${attempt}): ${err.message}`,
+              ),
           });
 
           if (
@@ -821,15 +836,22 @@ export async function aiGrade({
           });
 
           // Perform grading with the rotation-corrected images.
-          const finalResponse = await generateText({
-            model,
-            output: Output.object({ schema: RubricImageGradingResultSchema }),
-            messages: input,
-            // System messages in `messages` are hard-coded authored strings; safe to allow.
-            allowSystemInMessages: true,
-            providerOptions: {
-              openai: openaiProviderOptions,
-            },
+          const finalResponse = await retryNoObjectGeneratedResponse({
+            operation: () =>
+              generateText({
+                model,
+                output: Output.object({ schema: RubricImageGradingResultSchema }),
+                messages: input,
+                // System messages in `messages` are hard-coded authored strings; safe to allow.
+                allowSystemInMessages: true,
+                providerOptions: {
+                  openai: openaiProviderOptions,
+                },
+              }),
+            onRetry: (attempt, err) =>
+              logger.info(
+                `Retrying AI grading structured output after empty provider response (attempt ${attempt}): ${err.message}`,
+              ),
           });
 
           return {
@@ -1002,9 +1024,32 @@ export async function aiGrade({
             provider !== 'google'
           ) {
             return {
-              finalGradingResponse: await generateText({
+              finalGradingResponse: await retryNoObjectGeneratedResponse({
+                operation: () =>
+                  generateText({
+                    model,
+                    output: Output.object({ schema: GradingResultSchema }),
+                    messages: input,
+                    // System messages in `messages` are hard-coded authored strings; safe to allow.
+                    allowSystemInMessages: true,
+                    providerOptions: {
+                      openai: openaiProviderOptions,
+                    },
+                  }),
+                onRetry: (attempt, err) =>
+                  logger.info(
+                    `Retrying AI grading structured output after empty provider response (attempt ${attempt}): ${err.message}`,
+                  ),
+              }),
+              rotationCorrectionApplied: false,
+            };
+          }
+
+          const initialResponse = await retryNoObjectGeneratedResponse({
+            operation: () =>
+              generateText({
                 model,
-                output: Output.object({ schema: GradingResultSchema }),
+                output: Output.object({ schema: ImageGradingResultSchema }),
                 messages: input,
                 // System messages in `messages` are hard-coded authored strings; safe to allow.
                 allowSystemInMessages: true,
@@ -1012,19 +1057,10 @@ export async function aiGrade({
                   openai: openaiProviderOptions,
                 },
               }),
-              rotationCorrectionApplied: false,
-            };
-          }
-
-          const initialResponse = await generateText({
-            model,
-            output: Output.object({ schema: ImageGradingResultSchema }),
-            messages: input,
-            // System messages in `messages` are hard-coded authored strings; safe to allow.
-            allowSystemInMessages: true,
-            providerOptions: {
-              openai: openaiProviderOptions,
-            },
+            onRetry: (attempt, err) =>
+              logger.info(
+                `Retrying AI grading structured output after empty provider response (attempt ${attempt}): ${err.message}`,
+              ),
           });
 
           if (
@@ -1056,15 +1092,22 @@ export async function aiGrade({
           });
 
           // Perform grading with the rotation-corrected images.
-          const finalResponse = await generateText({
-            model,
-            output: Output.object({ schema: ImageGradingResultSchema }),
-            messages: input,
-            // System messages in `messages` are hard-coded authored strings; safe to allow.
-            allowSystemInMessages: true,
-            providerOptions: {
-              openai: openaiProviderOptions,
-            },
+          const finalResponse = await retryNoObjectGeneratedResponse({
+            operation: () =>
+              generateText({
+                model,
+                output: Output.object({ schema: ImageGradingResultSchema }),
+                messages: input,
+                // System messages in `messages` are hard-coded authored strings; safe to allow.
+                allowSystemInMessages: true,
+                providerOptions: {
+                  openai: openaiProviderOptions,
+                },
+              }),
+            onRetry: (attempt, err) =>
+              logger.info(
+                `Retrying AI grading structured output after empty provider response (attempt ${attempt}): ${err.message}`,
+              ),
           });
 
           return {
