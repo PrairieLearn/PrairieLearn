@@ -341,6 +341,22 @@ describe('parseContextMemberships', () => {
     expect(parseContextMemberships(pages, 'expected-context')).toHaveLength(2);
   });
 
+  test.each([
+    ['ACTIVE', 'Active'],
+    ['inACTive', 'Inactive'],
+    ['DeLeTeD', 'Deleted'],
+  ])('normalizes a case-insensitive %s status', (status, expectedStatus) => {
+    const pages = [
+      {
+        id: 'roster',
+        context: { id: 'expected-context' },
+        members: [{ user_id: 'sub', roles: [STUDENT_ROLE], status }],
+      },
+    ];
+
+    expect(parseContextMemberships(pages, 'expected-context')[0].status).toBe(expectedStatus);
+  });
+
   test('rejects a page for a different context', () => {
     const pages = [
       {
