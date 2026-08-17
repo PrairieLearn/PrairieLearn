@@ -95,17 +95,13 @@ export interface QtiImportError {
   Create:
     | { code: 'QTI_IMPORT_DRAFT_UNAVAILABLE'; message: string }
     | { code: 'SYNC_JOB_FAILED'; message: string; jobSequenceId: string };
-  Destroy: never;
 }
-
-const DraftIdsSchema = z.array(z.uuid()).max(100);
 
 const create = t.procedure
   .use(requireCoursePermissionEdit)
   .input(
     z
       .object({
-        draftIds: DraftIdsSchema.default([]),
         assessments: z.array(AssessmentDataSchema).default([]),
         questions: z.array(QuestionDataSchema).default([]),
       })
@@ -214,19 +210,7 @@ const create = t.procedure
     }
 
     await deleteDrafts({
-      draftIds: [...input.draftIds, ...draftCache.keys()],
-      courseId: ctx.course.id,
-      courseInstanceId: ctx.course_instance.id,
-      userId: ctx.locals.authn_user.id,
-    });
-  });
-
-const destroy = t.procedure
-  .use(requireCoursePermissionEdit)
-  .input(z.object({ draftIds: DraftIdsSchema }))
-  .mutation(async ({ input, ctx }) => {
-    await deleteDrafts({
-      draftIds: input.draftIds,
+      draftIds: [...draftCache.keys()],
       courseId: ctx.course.id,
       courseInstanceId: ctx.course_instance.id,
       userId: ctx.locals.authn_user.id,
@@ -263,5 +247,4 @@ async function deleteDrafts({
 
 export const qtiImportRouter = t.router({
   create,
-  destroy,
 });

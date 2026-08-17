@@ -289,7 +289,6 @@ export function QtiImportForm({
     }),
   );
   const [step, setStep] = useState<ImportStep>('upload');
-  const draftIds = useRef(new Set<string>()).current;
   const [results, setResults] = useState<SerializedConversionResult[]>([]);
   const [overrides, setOverrides] = useState<AssessmentOverrides[]>([]);
   const [existingDirs, setExistingDirs] = useState<Set<string>>(new Set());
@@ -374,7 +373,6 @@ export function QtiImportForm({
 
     try {
       const data = await uploadExport(form);
-      draftIds.add(data.draftId);
       onSuccess(data);
     } catch (err) {
       setError({ message: err instanceof Error ? err.message : 'Upload failed' });
@@ -527,7 +525,6 @@ export function QtiImportForm({
       );
 
       const payload = {
-        draftIds: Array.from(draftIds),
         questions: [...questionPayloadsByDirectoryName.values()],
         assessments: includedAssessments.map(({ result, override }) => {
           const includedQuestionDirs = new Set<string>();
@@ -675,13 +672,6 @@ export function QtiImportForm({
   );
 
   const resetAll = () => {
-    const draftIdsToDelete = Array.from(draftIds);
-    draftIds.clear();
-    if (draftIdsToDelete.length > 0) {
-      void trpcClient.qtiImport.destroy.mutate({ draftIds: draftIdsToDelete }).catch(() => {
-        // Drafts also have a 24-hour lifecycle expiration as a fallback.
-      });
-    }
     setStep('upload');
     setResults([]);
     setOverrides([]);
