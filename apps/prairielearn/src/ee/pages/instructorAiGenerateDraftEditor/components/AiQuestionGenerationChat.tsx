@@ -602,7 +602,7 @@ export function AiQuestionGenerationChat({
     }),
     // Limit the frequency of updates to avoid overwhelming React. This approach
     // was recommended on https://github.com/vercel/ai/issues/6166.
-    experimental_throttle: 100,
+    throttle: 100,
     onFinish({ messages, message }) {
       // We receive this event on page load, even when there's no active streaming in progress.
       // In that case, we want to avoid immediately loading a new variant.

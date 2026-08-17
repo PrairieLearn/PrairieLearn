@@ -691,7 +691,7 @@ export async function editQuestionWithAgent({
             };
           }
         },
-        onFinish: async ({ responseMessage }) => {
+        onEnd: async ({ responseMessage }) => {
           finalMessage = responseMessage;
         },
         // Note: the return value of `onError` MUST be a string. If it is not,
