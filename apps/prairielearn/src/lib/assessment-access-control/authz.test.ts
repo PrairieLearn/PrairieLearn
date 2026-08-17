@@ -142,26 +142,24 @@ describe('applyInstanceAccess', () => {
 });
 
 describe('resolverResultToAuthzAssessmentForInstance', () => {
-  const prairieTestReviewResult: AccessControlResolverResult = {
-    ...baseResolverResult,
-    authorized: false,
-    credit: 0,
-    creditDateString: 'None',
-    submittable: false,
-    visibility: {
-      showQuestions: false,
-      showScore: false,
-    },
-    afterCompleteVisibility: {
-      showQuestions: true,
-      showScore: true,
-    },
-    canReviewCompletedInstance: true,
-  };
-
   it('authorizes PrairieTest review for a closed assessment instance', () => {
     const result = resolverResultToAuthzAssessmentForInstance({
-      result: prairieTestReviewResult,
+      result: {
+        ...baseResolverResult,
+        authorized: false,
+        credit: 0,
+        creditDateString: 'None',
+        submittable: false,
+        visibility: {
+          showQuestions: false,
+          showScore: false,
+        },
+        afterCompleteVisibility: {
+          showQuestions: true,
+          showScore: true,
+        },
+        canReviewCompletedInstance: true,
+      },
       authzMode: 'Public',
       displayTimezone: 'America/Chicago',
       assessmentInstance: { open: false, date_limit: null },
