@@ -50,7 +50,7 @@ export default (function (err, req, res, _next) {
   logger[err.status >= 500 ? 'error' : 'verbose']('Error page', {
     err,
     id: errorId,
-    url: req.url,
+    url: req.originalUrl,
     referrer,
     response_id: res.locals.response_id,
   });
