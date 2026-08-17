@@ -3,11 +3,7 @@ import type { AddressInfo } from 'node:net';
 
 import { describe, expect, it } from 'vitest';
 
-import {
-  QtiImportRemoteImageLocalizer,
-  fetchRemoteImage,
-  isPublicIpAddress,
-} from './qtiImportRemoteImages.js';
+import { QtiImportRemoteImageLocalizer, fetchRemoteImage } from './qtiImportRemoteImages.js';
 
 const ONE_PIXEL_PNG = Buffer.from(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
@@ -170,48 +166,12 @@ describe('QtiImportRemoteImageLocalizer', () => {
   });
 });
 
-describe('isPublicIpAddress', () => {
-  it.each([
-    '0.0.0.0',
-    '10.0.0.1',
-    '100.100.100.200',
-    '127.0.0.1',
-    '169.254.169.254',
-    '172.16.0.1',
-    '192.0.2.1',
-    '192.168.0.1',
-    '224.0.0.1',
-    '::',
-    '::1',
-    '::ffff:127.0.0.1',
-    '64:ff9b::7f00:1',
-    '2001:db8::1',
-    '2002:7f00:1::',
-    'fc00::1',
-    'fe80::1',
-  ])('rejects non-public address %s', (address) => {
-    expect(isPublicIpAddress(address)).toBe(false);
-  });
-
-  it.each(['8.8.8.8', '1.1.1.1', '2606:4700:4700::1111'])(
-    'accepts public address %s',
-    (address) => {
-      expect(isPublicIpAddress(address)).toBe(true);
-    },
-  );
-});
-
 describe('fetchRemoteImage', () => {
-  it('pins each request and redirect to a validated address without forwarding credentials', async () => {
-    const requests: { url: string; headers: http.IncomingHttpHeaders }[] = [];
+  it('downloads supported image content with QTI request headers', async () => {
+    const requestHeaders: http.IncomingHttpHeaders[] = [];
     await withHttpServer(
       (request, response) => {
-        requests.push({ url: request.url ?? '', headers: request.headers });
-        if (request.url === '/redirect') {
-          response.writeHead(302, { Location: '/image.png' });
-          response.end();
-          return;
-        }
+        requestHeaders.push(request.headers);
         response.writeHead(200, {
           'Content-Type': 'image/png',
           'Content-Length': ONE_PIXEL_PNG.byteLength,
@@ -219,44 +179,18 @@ describe('fetchRemoteImage', () => {
         response.end(ONE_PIXEL_PNG);
       },
       async (port) => {
-        const resolvedHostnames: string[] = [];
-        const result = await fetchRemoteImage(new URL(`http://public.example:${port}/redirect`), {
-          resolveAddress: async (hostname) => {
-            resolvedHostnames.push(hostname);
-            return '127.0.0.1';
-          },
+        const result = await fetchRemoteImage(new URL(`http://public.example:${port}/image.png`), {
+          resolveAddress: async () => '127.0.0.1',
         });
 
         expect(result).toEqual({ content: ONE_PIXEL_PNG, extension: 'png' });
-        expect(resolvedHostnames).toEqual(['public.example', 'public.example']);
-        expect(requests.map((request) => request.url)).toEqual(['/redirect', '/image.png']);
-        expect(requests[0].headers.host).toBe(`public.example:${port}`);
-        expect(requests[0].headers.authorization).toBeUndefined();
-        expect(requests[0].headers.cookie).toBeUndefined();
-        expect(requests[0].headers['user-agent']).toBe('PrairieLearn-QTI-Importer/1.0');
+        expect(requestHeaders[0].accept).toBe(
+          'image/avif, image/gif, image/jpeg, image/png, image/svg+xml, image/webp',
+        );
+        expect(requestHeaders[0]['user-agent']).toBe('PrairieLearn-QTI-Importer/1.0');
       },
     );
   });
-
-  it.each(['127.0.0.1', '2130706433', '0x7f000001', '[::ffff:127.0.0.1]'])(
-    'rejects loopback destination %s before making a request',
-    async (hostname) => {
-      let requestCount = 0;
-      await withHttpServer(
-        (_request, response) => {
-          requestCount += 1;
-          response.writeHead(200, { 'Content-Type': 'image/png' });
-          response.end(ONE_PIXEL_PNG);
-        },
-        async (port) => {
-          await expect(
-            fetchRemoteImage(new URL(`http://${hostname}:${port}/image.png`)),
-          ).rejects.toThrow('public address');
-        },
-      );
-      expect(requestCount).toBe(0);
-    },
-  );
 
   it('rejects content whose detected type does not match the response header', async () => {
     let downloadedBytes = 0;
@@ -332,38 +266,5 @@ describe('fetchRemoteImage', () => {
         ).rejects.toThrow('too large');
       },
     );
-  });
-
-  it('rejects URLs containing credentials before resolving the host', async () => {
-    let didResolve = false;
-
-    await expect(
-      fetchRemoteImage(new URL('https://user:password@public.example/image.png'), {
-        resolveAddress: async () => {
-          didResolve = true;
-          return '127.0.0.1';
-        },
-      }),
-    ).rejects.toThrow('credentials');
-    expect(didResolve).toBe(false);
-  });
-
-  it('limits redirects', async () => {
-    let requestCount = 0;
-    await withHttpServer(
-      (_request, response) => {
-        requestCount += 1;
-        response.writeHead(302, { Location: '/redirect' });
-        response.end();
-      },
-      async (port) => {
-        await expect(
-          fetchRemoteImage(new URL(`http://public.example:${port}/redirect`), {
-            resolveAddress: async () => '127.0.0.1',
-          }),
-        ).rejects.toThrow('redirect limit');
-      },
-    );
-    expect(requestCount).toBe(4);
   });
 });

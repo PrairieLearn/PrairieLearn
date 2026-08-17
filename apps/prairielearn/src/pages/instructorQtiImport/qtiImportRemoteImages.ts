@@ -1,13 +1,14 @@
 import crypto from 'node:crypto';
-import { lookup as dnsLookup } from 'node:dns/promises';
-import * as http from 'node:http';
-import * as https from 'node:https';
-import { isIP } from 'node:net';
 
 import * as cheerio from 'cheerio';
 import type { Element } from 'domhandler';
 import { fileTypeFromBuffer } from 'file-type';
-import ipaddr from 'ipaddr.js';
+
+import {
+  type ResolveAddress,
+  requestFromPublicUrl,
+  validatePublicHttpUrl,
+} from '@prairielearn/ssrf-protection';
 
 import { sanitizeQtiImportSvg } from './qtiImportSvg.js';
 
@@ -192,7 +193,7 @@ function parseRemoteImageUrl(source: string): URL | null {
     const url = trimmedSource.startsWith('//')
       ? new URL(`https:${trimmedSource}`)
       : new URL(trimmedSource);
-    if (url.protocol !== 'http:' && url.protocol !== 'https:') return null;
+    validatePublicHttpUrl(url);
     url.hash = '';
     return url;
   } catch {
@@ -211,175 +212,79 @@ function allocateFilename(preferredFilename: string, existingFilenames: Set<stri
   return `${stem}-${suffix}${extension}`;
 }
 
-export function isPublicIpAddress(address: string): boolean {
-  try {
-    return ipaddr.process(address).range() === 'unicast';
-  } catch {
-    return false;
-  }
-}
-
 export async function fetchRemoteImage(
   initialUrl: URL,
   {
-    resolveAddress = resolvePublicAddress,
+    resolveAddress,
     consumeBytes,
   }: {
-    resolveAddress?: (hostname: string, deadline: number) => Promise<string>;
+    resolveAddress?: ResolveAddress;
     consumeBytes?: ConsumeBytes;
   } = {},
 ): Promise<FetchedRemoteImage> {
-  const deadline = Date.now() + REQUEST_TIMEOUT_MS;
-  let url = initialUrl;
+  const response = await requestFromPublicUrl(initialUrl, {
+    headers: {
+      Accept: ACCEPTED_IMAGE_CONTENT_TYPES,
+      'User-Agent': USER_AGENT,
+    },
+    maxRedirects: MAX_REDIRECTS,
+    timeoutMs: REQUEST_TIMEOUT_MS,
+    ...(resolveAddress && { resolveAddress }),
+  });
 
-  for (let redirectCount = 0; ; redirectCount += 1) {
-    validateRemoteImageUrl(url);
-    const address = await resolveAddress(url.hostname, deadline);
-    const response = await requestUrl(url, address, deadline);
+  if (response.statusCode !== 200) {
+    response.destroy();
+    throw new Error('Remote image returned an unsuccessful response');
+  }
 
-    if (response.statusCode && response.statusCode >= 300 && response.statusCode < 400) {
-      const location = response.headers.location;
+  const declaredContentType = normalizeContentType(response.headers['content-type']);
+  if (!declaredContentType || !SUPPORTED_IMAGE_TYPES.has(declaredContentType)) {
+    response.destroy();
+    throw new Error('Remote image has an unsupported content type');
+  }
+
+  const contentLength = Number(response.headers['content-length']);
+  if (Number.isFinite(contentLength) && contentLength > MAX_REMOTE_IMAGE_BYTES) {
+    response.destroy();
+    throw new Error('Remote image is too large');
+  }
+
+  const chunks: Buffer[] = [];
+  let byteLength = 0;
+  for await (const chunk of response) {
+    const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+    byteLength += buffer.byteLength;
+    try {
+      consumeBytes?.(buffer.byteLength);
+    } catch (error) {
       response.destroy();
-      if (!location || redirectCount >= MAX_REDIRECTS) {
-        throw new Error('Remote image exceeded the redirect limit');
-      }
-      url = new URL(location, url);
-      continue;
+      throw error;
     }
-
-    if (response.statusCode !== 200) {
-      response.destroy();
-      throw new Error('Remote image returned an unsuccessful response');
-    }
-
-    const declaredContentType = normalizeContentType(response.headers['content-type']);
-    if (!declaredContentType || !SUPPORTED_IMAGE_TYPES.has(declaredContentType)) {
-      response.destroy();
-      throw new Error('Remote image has an unsupported content type');
-    }
-
-    const contentLength = Number(response.headers['content-length']);
-    if (Number.isFinite(contentLength) && contentLength > MAX_REMOTE_IMAGE_BYTES) {
+    if (byteLength > MAX_REMOTE_IMAGE_BYTES) {
       response.destroy();
       throw new Error('Remote image is too large');
     }
-
-    const chunks: Buffer[] = [];
-    let byteLength = 0;
-    for await (const chunk of response) {
-      const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
-      byteLength += buffer.byteLength;
-      try {
-        consumeBytes?.(buffer.byteLength);
-      } catch (error) {
-        response.destroy();
-        throw error;
-      }
-      if (byteLength > MAX_REMOTE_IMAGE_BYTES) {
-        response.destroy();
-        throw new Error('Remote image is too large');
-      }
-      chunks.push(buffer);
-    }
-
-    const content = Buffer.concat(chunks, byteLength);
-    if (declaredContentType === 'image/svg+xml') {
-      const sanitizedContent = sanitizeQtiImportSvg(content);
-      if (sanitizedContent.byteLength > MAX_REMOTE_IMAGE_BYTES) {
-        throw new Error('Remote image is too large');
-      }
-      return { content: sanitizedContent, extension: 'svg' };
-    }
-
-    const detectedType = await fileTypeFromBuffer(content);
-    if (detectedType?.mime !== declaredContentType) {
-      throw new Error('Remote image content does not match its content type');
-    }
-    const extension = SUPPORTED_IMAGE_TYPES.get(detectedType.mime);
-    if (!extension) {
-      throw new Error('Remote image has an unsupported format');
-    }
-    return { content, extension };
+    chunks.push(buffer);
   }
-}
 
-function validateRemoteImageUrl(url: URL): void {
-  if (url.protocol !== 'http:' && url.protocol !== 'https:') {
-    throw new Error('Remote image URL must use HTTP or HTTPS');
-  }
-  if (url.username || url.password) {
-    throw new Error('Remote image URL must not contain credentials');
-  }
-}
-
-async function resolvePublicAddress(hostname: string, deadline: number): Promise<string> {
-  const unwrappedHostname = hostname.startsWith('[') ? hostname.slice(1, -1) : hostname;
-  const addresses = isIP(unwrappedHostname)
-    ? [{ address: unwrappedHostname }]
-    : await withDeadline(dnsLookup(unwrappedHostname, { all: true, verbatim: true }), deadline);
-
-  if (addresses.length === 0 || addresses.some(({ address }) => !isPublicIpAddress(address))) {
-    throw new Error('Remote image host did not resolve to a public address');
-  }
-  return addresses[0].address;
-}
-
-function requestUrl(url: URL, address: string, deadline: number): Promise<http.IncomingMessage> {
-  const transport = url.protocol === 'https:' ? https : http;
-  const originalHostname = url.hostname.startsWith('[') ? url.hostname.slice(1, -1) : url.hostname;
-  const timeout = Math.max(1, deadline - Date.now());
-
-  return new Promise((resolve, reject) => {
-    function clearRequestTimeout() {
-      clearTimeout(timeoutId);
+  const content = Buffer.concat(chunks, byteLength);
+  if (declaredContentType === 'image/svg+xml') {
+    const sanitizedContent = sanitizeQtiImportSvg(content);
+    if (sanitizedContent.byteLength > MAX_REMOTE_IMAGE_BYTES) {
+      throw new Error('Remote image is too large');
     }
-    const request = transport.request(
-      {
-        protocol: url.protocol,
-        hostname: address,
-        port: url.port || undefined,
-        method: 'GET',
-        path: `${url.pathname}${url.search}`,
-        headers: {
-          Accept: ACCEPTED_IMAGE_CONTENT_TYPES,
-          Connection: 'close',
-          Host: url.host,
-          'User-Agent': USER_AGENT,
-        },
-        agent: false,
-        ...(url.protocol === 'https:' &&
-          !isIP(originalHostname) && { servername: originalHostname }),
-      },
-      (response) => {
-        response.once('end', clearRequestTimeout);
-        response.once('close', clearRequestTimeout);
-        resolve(response);
-      },
-    );
-    const timeoutId = setTimeout(() => {
-      request.destroy(new Error('Remote image request timed out'));
-    }, timeout);
-    request.once('error', (error) => {
-      clearRequestTimeout();
-      reject(error);
-    });
-    request.end();
-  });
-}
-
-async function withDeadline<T>(promise: Promise<T>, deadline: number): Promise<T> {
-  const timeout = Math.max(1, deadline - Date.now());
-  let timeoutId: NodeJS.Timeout | undefined;
-  try {
-    return await Promise.race([
-      promise,
-      new Promise<never>((_, reject) => {
-        timeoutId = setTimeout(() => reject(new Error('Remote image request timed out')), timeout);
-      }),
-    ]);
-  } finally {
-    clearTimeout(timeoutId);
+    return { content: sanitizedContent, extension: 'svg' };
   }
+
+  const detectedType = await fileTypeFromBuffer(content);
+  if (detectedType?.mime !== declaredContentType) {
+    throw new Error('Remote image content does not match its content type');
+  }
+  const extension = SUPPORTED_IMAGE_TYPES.get(detectedType.mime);
+  if (!extension) {
+    throw new Error('Remote image has an unsupported format');
+  }
+  return { content, extension };
 }
 
 function normalizeContentType(value: string | undefined): string | null {
