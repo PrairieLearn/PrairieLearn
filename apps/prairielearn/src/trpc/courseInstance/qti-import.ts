@@ -8,7 +8,7 @@ import {
   QtiImportEditor,
   type QtiImportQuestionData,
 } from '../../lib/editors.js';
-import { deleteOwnedQtiImportDraft, readQtiImportDraft } from '../../lib/qti-import-drafts.js';
+import { deleteQtiImportDraft, readQtiImportDraft } from '../../lib/qti-import-drafts.js';
 import { SHORT_NAME_REGEX } from '../../lib/short-name.js';
 import { AssessmentJsonSchema } from '../../schemas/infoAssessment.js';
 import { QuestionJsonSchema } from '../../schemas/infoQuestion.js';
@@ -250,7 +250,8 @@ async function deleteDrafts({
   const uniqueDraftIds = new Set(draftIds);
   for (const draftId of uniqueDraftIds) {
     try {
-      await deleteOwnedQtiImportDraft({ draftId, courseId, courseInstanceId, userId });
+      const draft = await readQtiImportDraft({ draftId, courseId, courseInstanceId, userId });
+      await deleteQtiImportDraft(draft);
     } catch (error) {
       firstError ??= error;
     }
