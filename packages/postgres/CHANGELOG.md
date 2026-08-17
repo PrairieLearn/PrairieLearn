@@ -1,5 +1,18 @@
 # @prairielearn/postgres
 
+## 7.1.3
+
+### Patch Changes
+
+- b98ca1c: Update Unicorn overrides for v73 and address selected correctness-focused lint findings.
+
+## 7.1.2
+
+### Patch Changes
+
+- 38ef3b6: Honor downstream backpressure when streaming rows from a PostgreSQL cursor.
+- df28e68: Bump dependencies
+
 ## 7.1.1
 
 ### Patch Changes

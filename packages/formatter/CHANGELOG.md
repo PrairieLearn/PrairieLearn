@@ -1,5 +1,11 @@
 # @prairielearn/formatter
 
+## 2.4.5
+
+### Patch Changes
+
+- df28e68: Bump dependencies
+
 ## 2.4.4
 
 ### Patch Changes

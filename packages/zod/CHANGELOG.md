@@ -1,5 +1,18 @@
 # @prairielearn/zod
 
+## 3.0.3
+
+### Patch Changes
+
+- c84e41c: Add a composable schema for parsing JSON strings.
+- 53f4716: Validate that PostgreSQL IDs are positive scalar values within the `BIGINT` range, and add helpers for parsing request query parameters and bodies with consistent HTTP 400 errors.
+
+## 3.0.2
+
+### Patch Changes
+
+- df28e68: Bump dependencies
+
 ## 3.0.1
 
 ### Patch Changes

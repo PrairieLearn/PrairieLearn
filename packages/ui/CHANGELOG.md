@@ -1,5 +1,21 @@
 # @prairielearn/ui
 
+## 3.8.1
+
+### Patch Changes
+
+- b98ca1c: Update Unicorn overrides for v73 and address selected correctness-focused lint findings.
+
+## 3.8.0
+
+### Minor Changes
+
+- bb5a7ec: Add opt-in fuzzy search support to multi-select column filters.
+
+### Patch Changes
+
+- df28e68: Bump dependencies
+
 ## 3.7.2
 
 ### Patch Changes

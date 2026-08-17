@@ -6,6 +6,7 @@ import { z } from 'zod';
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 import { Hydrate } from '@prairielearn/react/server';
+import { parseRequestBody } from '@prairielearn/zod';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
@@ -122,8 +123,9 @@ router.post(
         self_enrollment_enabled,
         self_enrollment_use_enrollment_code,
         course_instance_permission,
-      } = z
-        .object({
+      } = parseRequestBody(
+        req,
+        z.object({
           short_name: z.string().trim(),
           long_name: z.string().trim(),
           start_date: z.string(),
@@ -131,8 +133,8 @@ router.post(
           self_enrollment_enabled: z.boolean().optional(),
           self_enrollment_use_enrollment_code: z.boolean().optional(),
           course_instance_permission: EnumCourseInstanceRoleSchema.optional().default('None'),
-        })
-        .parse(req.body);
+        }),
+      );
 
       if (!short_name) {
         throw new error.HttpStatusError(400, 'Short name is required');
