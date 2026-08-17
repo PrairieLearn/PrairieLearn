@@ -61,11 +61,9 @@ export function InstructorCourseAdminSettings({
               name="short_name"
               defaultValue={course.short_name ?? ''}
               disabled={
-                !(
-                  courseInfoExists &&
-                  authzData.has_course_permission_edit &&
-                  !course.example_course
-                )
+                !courseInfoExists ||
+                !authzData.has_course_permission_edit ||
+                !!course.example_course
               }
               required
             />
@@ -85,11 +83,9 @@ export function InstructorCourseAdminSettings({
               name="title"
               defaultValue={course.title ?? ''}
               disabled={
-                !(
-                  courseInfoExists &&
-                  authzData.has_course_permission_edit &&
-                  !course.example_course
-                )
+                !courseInfoExists ||
+                !authzData.has_course_permission_edit ||
+                !!course.example_course
               }
               required
             />
@@ -107,11 +103,9 @@ export function InstructorCourseAdminSettings({
               name="display_timezone"
               defaultValue={course.display_timezone}
               disabled={
-                !(
-                  courseInfoExists &&
-                  authzData.has_course_permission_edit &&
-                  !course.example_course
-                )
+                !courseInfoExists ||
+                !authzData.has_course_permission_edit ||
+                !!course.example_course
               }
             >
               {availableTimezones.map((tz) => (

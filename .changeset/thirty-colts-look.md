@@ -5,4 +5,4 @@
 '@prairielearn/formatter': patch
 ---
 
-Apply additional estlint unicorn rules
+Apply additional eslint unicorn rules

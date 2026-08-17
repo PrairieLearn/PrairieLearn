@@ -105,7 +105,6 @@ export function unicornConfig(): TSESLint.FlatConfig.ConfigArray {
         'unicorn/prefer-direct-iteration': 'off', // 15 violations
         'unicorn/prefer-includes-over-repeated-comparisons': 'off', // 10 violations
         'unicorn/prefer-object-iterable-methods': 'off', // 19 violations
-        'unicorn/prefer-simplified-conditions': 'off', // 3 violations
         'unicorn/prefer-string-repeat': 'off', // 16 violations
 
         // These rules require confirming browser and runtime support before enabling them.
