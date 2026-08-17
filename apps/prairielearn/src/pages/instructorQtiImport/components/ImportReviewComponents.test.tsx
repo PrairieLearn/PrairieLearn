@@ -34,7 +34,7 @@ function makeQuestion({
     questionHtml: '<pl-question-panel></pl-question-panel>',
     clientFiles: {},
     skippedVideos: [],
-    localizedImageCount: 0,
+    remoteImagesCopied: 0,
   };
 }
 

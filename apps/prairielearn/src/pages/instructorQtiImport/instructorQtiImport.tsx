@@ -56,7 +56,7 @@ import {
   type UploadResponse,
   deduplicateAssessmentZoneQuestions,
 } from './instructorQtiImport.types.js';
-import { QtiImportRemoteImageLocalizer } from './qtiImportRemoteImages.js';
+import { QtiImportRemoteImageCopier } from './qtiImportRemoteImages.js';
 
 const router = Router();
 
@@ -252,11 +252,11 @@ router.post(
       // Convert each QTI entry, assigning unique slugs so same-titled entries
       // (e.g. two "Quiz 1") don't collide on question prefixes.
       const usedSlugs = new Set<string>();
-      const remoteImageLocalizer = new QtiImportRemoteImageLocalizer();
+      const remoteImageCopier = new QtiImportRemoteImageCopier();
       const convertedEntries: SerializedEntryResult[] = [];
       const parseWarnings: ParseWarning[] = [];
       for (const entry of entries) {
-        const result = await convertEntry(entry, rubricsXml, usedSlugs, remoteImageLocalizer);
+        const result = await convertEntry(entry, rubricsXml, usedSlugs, remoteImageCopier);
         if (result.ok) {
           convertedEntries.push(result.value);
         } else {
@@ -359,7 +359,7 @@ async function convertEntry(
   entry: QtiFileEntry,
   rubricsXml: string | undefined,
   usedSlugs: Set<string>,
-  remoteImageLocalizer: QtiImportRemoteImageLocalizer,
+  remoteImageCopier: QtiImportRemoteImageCopier,
 ): Promise<ConvertEntryResult> {
   const xmlContent = await readFile(entry.qtiPath, 'utf-8');
 
@@ -422,7 +422,7 @@ async function convertEntry(
       result,
       assessmentSlug,
       webResourcesDir,
-      remoteImageLocalizer,
+      remoteImageCopier,
     ),
   };
 }
@@ -444,7 +444,7 @@ export async function serializeConversionResult(
   result: ConversionResult,
   assessmentSlug: string,
   webResourcesDir: string,
-  remoteImageLocalizer = new QtiImportRemoteImageLocalizer(),
+  remoteImageCopier = new QtiImportRemoteImageCopier(),
 ): Promise<SerializedEntryResult> {
   const extraWarnings: ConversionWarning[] = [];
   const questionPrefix = `imported/${assessmentSlug}`;
@@ -456,11 +456,11 @@ export async function serializeConversionResult(
       // This must match the IDs used in the assessment zones.
       const questionId = `${questionPrefix}/${q.directoryName}`;
       const { files, missingFiles } = await serializeClientFiles(q.clientFiles, webResourcesDir);
-      const localizedImages = await remoteImageLocalizer.localizeQuestionHtml(
+      const remoteImageCopy = await remoteImageCopier.copyRemoteImages(
         q.questionHtml,
         new Set(Object.keys(files)),
       );
-      for (const [filename, content] of localizedImages.files) {
+      for (const [filename, content] of remoteImageCopy.files) {
         files[filename] = content.toString('base64');
       }
       if (missingFiles.length > 0) {
@@ -470,16 +470,16 @@ export async function serializeConversionResult(
           level: 'warn',
         });
       }
-      if (localizedImages.failedImageCount > 0) {
+      if (remoteImageCopy.failedImageCount > 0) {
         extraWarnings.push({
           questionId,
-          message: `${localizedImages.failedImageCount} remote image${localizedImages.failedImageCount === 1 ? '' : 's'} could not be safely imported because of its URL, availability, size, or format. The original image reference${localizedImages.failedImageCount === 1 ? ' was' : 's were'} left unchanged.`,
+          message: `${remoteImageCopy.failedImageCount} remote image${remoteImageCopy.failedImageCount === 1 ? '' : 's'} could not be copied into this course because of its URL, availability, size, or format. The original image reference${remoteImageCopy.failedImageCount === 1 ? ' was' : 's were'} left unchanged.`,
           level: 'warn',
         });
       }
       const seenMessages = new Set<string>();
-      for (const d of await lintQuestionHtml(localizedImages.html)) {
-        if (localizedImages.failedImageCount > 0 && d.ruleName === 'pl-remote-image-url') {
+      for (const d of await lintQuestionHtml(remoteImageCopy.html)) {
+        if (remoteImageCopy.failedImageCount > 0 && d.ruleName === 'pl-remote-image-url') {
           continue;
         }
         if (seenMessages.has(d.message)) continue;
@@ -490,11 +490,11 @@ export async function serializeConversionResult(
         directoryName: `${questionPrefix}/${q.directoryName}`,
         sourceId: q.sourceId,
         infoJson: q.infoJson,
-        questionHtml: localizedImages.html,
+        questionHtml: remoteImageCopy.html,
         serverPy: q.serverPy,
         clientFiles: files,
         skippedVideos: q.skippedFiles,
-        localizedImageCount: localizedImages.localizedImageCount,
+        remoteImagesCopied: remoteImageCopy.remoteImagesCopied,
       };
     }),
   );

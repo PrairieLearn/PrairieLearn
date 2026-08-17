@@ -3,7 +3,7 @@ import type { AddressInfo } from 'node:net';
 
 import { describe, expect, it } from 'vitest';
 
-import { QtiImportRemoteImageLocalizer, fetchRemoteImage } from './qtiImportRemoteImages.js';
+import { QtiImportRemoteImageCopier, fetchRemoteImage } from './qtiImportRemoteImages.js';
 
 const ONE_PIXEL_PNG = Buffer.from(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
@@ -28,15 +28,15 @@ async function withHttpServer(
   }
 }
 
-describe('QtiImportRemoteImageLocalizer', () => {
-  it('stores remote images and rewrites all references to local pl-figure elements', async () => {
+describe('QtiImportRemoteImageCopier', () => {
+  it('copies remote images and rewrites all references to local pl-figure elements', async () => {
     const requestedUrls: string[] = [];
-    const localizer = new QtiImportRemoteImageLocalizer(async (url) => {
+    const copier = new QtiImportRemoteImageCopier(async (url) => {
       requestedUrls.push(url.href);
       return { content: Buffer.from('image contents'), extension: 'png' };
     });
 
-    const result = await localizer.localizeQuestionHtml(
+    const result = await copier.copyRemoteImages(
       [
         '<p><img src="https://canvas.example/files/1/preview?verifier=secret" alt="Graph" width="200"></p>',
         '<img src="https://canvas.example/files/1/preview?verifier=secret">',
@@ -45,7 +45,7 @@ describe('QtiImportRemoteImageLocalizer', () => {
     );
 
     expect(requestedUrls).toEqual(['https://canvas.example/files/1/preview?verifier=secret']);
-    expect(result.localizedImageCount).toBe(1);
+    expect(result.remoteImagesCopied).toBe(1);
     expect(result.failedImageCount).toBe(0);
     expect(result.files).toHaveLength(1);
     expect(result.html).not.toContain('canvas.example');
@@ -59,12 +59,12 @@ describe('QtiImportRemoteImageLocalizer', () => {
 
   it('normalizes protocol-relative image URLs and ignores fragments when deduplicating', async () => {
     const requestedUrls: string[] = [];
-    const localizer = new QtiImportRemoteImageLocalizer(async (url) => {
+    const copier = new QtiImportRemoteImageCopier(async (url) => {
       requestedUrls.push(url.href);
       return { content: Buffer.from('image contents'), extension: 'jpg' };
     });
 
-    const result = await localizer.localizeQuestionHtml(
+    const result = await copier.copyRemoteImages(
       [
         '<img src=" //canvas.example/files/1/preview#first">',
         '<img src="//canvas.example/files/1/preview#second">',
@@ -73,33 +73,33 @@ describe('QtiImportRemoteImageLocalizer', () => {
     );
 
     expect(requestedUrls).toEqual(['https://canvas.example/files/1/preview']);
-    expect(result.localizedImageCount).toBe(1);
+    expect(result.remoteImagesCopied).toBe(1);
     expect(result.html.match(/<pl-figure/g)).toHaveLength(2);
   });
 
   it('leaves a remote reference unchanged when it cannot be fetched', async () => {
-    const localizer = new QtiImportRemoteImageLocalizer(async () => {
+    const copier = new QtiImportRemoteImageCopier(async () => {
       throw new Error('unavailable');
     });
     const html = '<img src="https://canvas.example/files/1/preview?verifier=secret">';
 
-    const result = await localizer.localizeQuestionHtml(html, new Set());
+    const result = await copier.copyRemoteImages(html, new Set());
 
     expect(result.html).toBe(html);
     expect(result.files).toHaveLength(0);
-    expect(result.localizedImageCount).toBe(0);
+    expect(result.remoteImagesCopied).toBe(0);
     expect(result.failedImageCount).toBe(1);
   });
 
   it('does not overwrite an existing client file with the generated filename', async () => {
     const content = Buffer.from('image contents');
     const digest = '9665359084eaabf7';
-    const localizer = new QtiImportRemoteImageLocalizer(async () => ({
+    const copier = new QtiImportRemoteImageCopier(async () => ({
       content,
       extension: 'png',
     }));
 
-    const result = await localizer.localizeQuestionHtml(
+    const result = await copier.copyRemoteImages(
       '<img src="https://canvas.example/image.png">',
       new Set([`remote-${digest}.png`]),
     );
@@ -108,8 +108,8 @@ describe('QtiImportRemoteImageLocalizer', () => {
     expect(result.html).toContain(`file-name="remote-${digest}-2.png"`);
   });
 
-  it('limits the number of remote images processed across an import', async () => {
-    const localizer = new QtiImportRemoteImageLocalizer(async (url) => ({
+  it('limits the number of remote images copied across an import', async () => {
+    const copier = new QtiImportRemoteImageCopier(async (url) => ({
       content: Buffer.from(url.pathname),
       extension: 'png',
     }));
@@ -118,9 +118,9 @@ describe('QtiImportRemoteImageLocalizer', () => {
       (_, index) => `<img src="https://canvas.example/image-${index}.png">`,
     ).join('');
 
-    const result = await localizer.localizeQuestionHtml(html, new Set());
+    const result = await copier.copyRemoteImages(html, new Set());
 
-    expect(result.localizedImageCount).toBe(100);
+    expect(result.remoteImagesCopied).toBe(100);
     expect(result.failedImageCount).toBe(1);
     expect(result.html).toContain('https://canvas.example/image-100.png');
   });
@@ -128,7 +128,7 @@ describe('QtiImportRemoteImageLocalizer', () => {
   it('bounds concurrent remote image requests', async () => {
     let activeRequestCount = 0;
     let maximumActiveRequestCount = 0;
-    const localizer = new QtiImportRemoteImageLocalizer(async () => {
+    const copier = new QtiImportRemoteImageCopier(async () => {
       activeRequestCount += 1;
       maximumActiveRequestCount = Math.max(maximumActiveRequestCount, activeRequestCount);
       await new Promise<void>((resolve) => setImmediate(resolve));
@@ -140,7 +140,7 @@ describe('QtiImportRemoteImageLocalizer', () => {
       (_, index) => `<img src="https://canvas.example/image-${index}.png">`,
     ).join('');
 
-    await localizer.localizeQuestionHtml(html, new Set());
+    await copier.copyRemoteImages(html, new Set());
 
     expect(maximumActiveRequestCount).toBe(5);
   });
@@ -148,7 +148,7 @@ describe('QtiImportRemoteImageLocalizer', () => {
   it('stops starting downloads after reaching the aggregate byte limit', async () => {
     const content = Buffer.alloc(10 * 1024 * 1024);
     let fetchCount = 0;
-    const localizer = new QtiImportRemoteImageLocalizer(async (_url, consumeBytes) => {
+    const copier = new QtiImportRemoteImageCopier(async (_url, consumeBytes) => {
       fetchCount += 1;
       consumeBytes(content.byteLength);
       return { content, extension: 'png' };
@@ -158,10 +158,10 @@ describe('QtiImportRemoteImageLocalizer', () => {
       (_, index) => `<img src="https://canvas.example/image-${index}.png">`,
     ).join('');
 
-    const result = await localizer.localizeQuestionHtml(html, new Set());
+    const result = await copier.copyRemoteImages(html, new Set());
 
     expect(fetchCount).toBeLessThan(20);
-    expect(result.localizedImageCount).toBe(5);
+    expect(result.remoteImagesCopied).toBe(5);
     expect(result.failedImageCount).toBe(15);
   });
 });

@@ -81,7 +81,7 @@ const StoredSerializedQuestionOutputSchema = z.object({
   serverPy: z.string().optional(),
   clientFiles: z.record(z.string(), z.string()),
   skippedVideos: z.array(z.string()),
-  localizedImageCount: z.number().default(0),
+  remoteImagesCopied: z.number().default(0),
 });
 
 const StoredSerializedConversionResultForHydrationSchema = z.object({

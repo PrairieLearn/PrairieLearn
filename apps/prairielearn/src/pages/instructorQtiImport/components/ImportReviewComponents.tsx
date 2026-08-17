@@ -221,11 +221,11 @@ export function ImportSummary({
   );
   const totalQuestions = uniqueQuestions.size;
   let totalAssets = 0;
-  let totalLocalizedImages = 0;
+  let totalRemoteImagesCopied = 0;
   let totalSkippedVideos = 0;
   for (const question of uniqueQuestions.values()) {
     totalAssets += Object.keys(question.clientFiles).length;
-    totalLocalizedImages += question.localizedImageCount;
+    totalRemoteImagesCopied += question.remoteImagesCopied;
     totalSkippedVideos += question.skippedVideos.length;
   }
 
@@ -286,10 +286,10 @@ export function ImportSummary({
                   {totalAssets !== 1 ? 's' : ''}
                 </li>
               )}
-              {totalLocalizedImages > 0 && (
+              {totalRemoteImagesCopied > 0 && (
                 <li>
-                  <strong>{totalLocalizedImages}</strong> remote image
-                  {totalLocalizedImages !== 1 ? 's' : ''} fetched and stored locally
+                  <strong>{totalRemoteImagesCopied}</strong> remote image
+                  {totalRemoteImagesCopied !== 1 ? 's' : ''} will be copied into this course
                 </li>
               )}
             </ul>

@@ -35,10 +35,10 @@ export interface FetchedRemoteImage {
   extension: string;
 }
 
-interface RemoteImageLocalizationResult {
+interface RemoteImageCopyResult {
   html: string;
   files: Map<string, Buffer>;
-  localizedImageCount: number;
+  remoteImagesCopied: number;
   failedImageCount: number;
 }
 
@@ -46,10 +46,10 @@ type ConsumeBytes = (byteLength: number) => void;
 type FetchRemoteImage = (url: URL, consumeBytes: ConsumeBytes) => Promise<FetchedRemoteImage>;
 
 /**
- * Localizes remote images across one complete QTI upload while enforcing import-wide limits.
+ * Copies remote images across one complete QTI upload while enforcing import-wide limits.
  * A single instance must be shared by every converted entry in the upload.
  */
-export class QtiImportRemoteImageLocalizer {
+export class QtiImportRemoteImageCopier {
   private attemptedImageCount = 0;
   private downloadedImageBytes = 0;
   private storedImageBytes = 0;
@@ -66,20 +66,20 @@ export class QtiImportRemoteImageLocalizer {
     let promise = this.fetchCache.get(url.href);
     if (!promise) {
       if (this.attemptedImageCount >= MAX_REMOTE_IMAGE_COUNT) {
-        throw new Error('QTI import contains too many remote images');
+        throw new Error('QTI import contains too many remote images to copy');
       }
       this.attemptedImageCount += 1;
 
       promise = this.scheduleRequest(async () => {
         if (this.downloadedImageBytes >= MAX_TOTAL_REMOTE_IMAGE_BYTES) {
-          throw new Error('QTI import remote images exceed the total size limit');
+          throw new Error('Remote images to copy exceed the total size limit');
         }
         // Count bytes while streaming so invalid image payloads consume the same import-wide
         // budget as valid ones.
         return this.fetchImage(url, (byteLength) => {
           this.downloadedImageBytes += byteLength;
           if (this.downloadedImageBytes > MAX_TOTAL_REMOTE_IMAGE_BYTES) {
-            throw new Error('QTI import remote images exceed the total size limit');
+            throw new Error('Remote images to copy exceed the total size limit');
           }
         });
       });
@@ -103,10 +103,10 @@ export class QtiImportRemoteImageLocalizer {
     }
   }
 
-  async localizeQuestionHtml(
+  async copyRemoteImages(
     html: string,
     existingFilenames: Set<string>,
-  ): Promise<RemoteImageLocalizationResult> {
+  ): Promise<RemoteImageCopyResult> {
     const $ = cheerio.load(html, null, false);
     const imagesByUrl = new Map<string, { url: URL; elements: cheerio.Cheerio<Element>[] }>();
 
@@ -126,12 +126,12 @@ export class QtiImportRemoteImageLocalizer {
 
     const files = new Map<string, Buffer>();
     const filenameByDigest = new Map<string, string>();
-    let localizedImageCount = 0;
+    let remoteImagesCopied = 0;
     let failedImageCount = 0;
 
-    const localizationPromises: Promise<void>[] = [];
+    const copyPromises: Promise<void>[] = [];
     for (const { url, elements } of imagesByUrl.values()) {
-      localizationPromises.push(
+      copyPromises.push(
         (async () => {
           let image: FetchedRemoteImage;
           try {
@@ -172,16 +172,16 @@ export class QtiImportRemoteImageLocalizer {
             if (width) $figure.attr('width', width);
             $image.replaceWith($figure);
           }
-          localizedImageCount += 1;
+          remoteImagesCopied += 1;
         })(),
       );
     }
-    await Promise.all(localizationPromises);
+    await Promise.all(copyPromises);
 
     return {
-      html: localizedImageCount > 0 ? $.html() : html,
+      html: remoteImagesCopied > 0 ? $.html() : html,
       files,
-      localizedImageCount,
+      remoteImagesCopied,
       failedImageCount,
     };
   }
