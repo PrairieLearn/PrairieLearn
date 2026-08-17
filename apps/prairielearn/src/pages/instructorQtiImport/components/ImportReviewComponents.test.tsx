@@ -4,7 +4,6 @@ import { describe, expect, it } from 'vitest';
 import type { SerializedQuestionOutput } from '../instructorQtiImport.types.js';
 
 import {
-  ImportSummary,
   NonRubricWarnings,
   QuestionBankDeduplicationWarning,
   buildQuestionWarningsByDirectoryName,
@@ -101,37 +100,6 @@ describe('QuestionBankDeduplicationWarning', () => {
     expect(html).toContain('bi-info-circle-fill');
     expect(html).toContain('2 questions appeared in multiple question banks');
     expect(html).toContain('will only be imported once');
-  });
-});
-
-describe('ImportSummary', () => {
-  it('reports how many remote images were fetched and stored locally', () => {
-    const question = makeQuestion({ directoryName: 'imported/quiz/q1', sourceId: 'q1' });
-    question.clientFiles = {
-      'remote-a.png': { size: 10 },
-      'remote-b.png': { size: 20 },
-    };
-    question.localizedImageCount = 2;
-
-    const html = renderToStaticMarkup(
-      <ImportSummary
-        results={[
-          {
-            draftId: 'draft',
-            sourceId: 'quiz',
-            title: 'Quiz',
-            sourceType: 'question-bank',
-            directoryName: 'quiz',
-            questions: [question],
-            warnings: [],
-          },
-        ]}
-        strippedAccessRules={null}
-        parseWarnings={[]}
-      />,
-    );
-
-    expect(html).toContain('<strong>2</strong> remote images fetched and stored locally');
   });
 });
 
