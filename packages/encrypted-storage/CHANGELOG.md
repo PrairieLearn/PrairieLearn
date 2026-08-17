@@ -1,5 +1,11 @@
 # @prairielearn/encrypted-storage
 
+## 1.1.1
+
+### Patch Changes
+
+- 057d37b: Update dependency on typescript-cp
+
 ## 1.1.0
 
 ### Minor Changes

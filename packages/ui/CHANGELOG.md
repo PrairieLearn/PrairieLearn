@@ -1,5 +1,11 @@
 # @prairielearn/ui
 
+## 3.8.2
+
+### Patch Changes
+
+- 057d37b: Update dependency on typescript-cp
+
 ## 3.8.1
 
 ### Patch Changes
