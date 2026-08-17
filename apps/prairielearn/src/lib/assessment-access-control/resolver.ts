@@ -114,6 +114,12 @@ export interface AccessControlResolverResult {
    */
   afterCompleteVisibility: Visibility;
   /**
+   * Whether a completed assessment instance may be opened for review even
+   * when assessment-level access is otherwise denied. This is used for
+   * PrairieTest-gated assessments without a date-control access path.
+   */
+  canReviewCompletedInstance: boolean;
+  /**
    * Explains which policy produced the effective `visibility`.
    */
   visibilitySource: 'default' | 'afterComplete' | 'prairieTest';
@@ -178,6 +184,7 @@ const UNAUTHORIZED_RESULT = Object.freeze({
   submittable: false,
   visibility: VISIBLE,
   afterCompleteVisibility: VISIBLE,
+  canReviewCompletedInstance: false,
   visibilitySource: 'default',
   complete: false,
   examAccessEnd: null,
@@ -195,6 +202,7 @@ const STAFF_OVERRIDE_RESULT = Object.freeze({
   submittable: true,
   visibility: VISIBLE,
   afterCompleteVisibility: VISIBLE,
+  canReviewCompletedInstance: false,
   visibilitySource: 'default',
   complete: false,
   examAccessEnd: null,
@@ -486,6 +494,7 @@ export function resolveAccessControl(
       submittable,
       visibility: examVisibility,
       afterCompleteVisibility,
+      canReviewCompletedInstance: false,
       visibilitySource: 'prairieTest',
       complete: matched.readOnly,
       examAccessEnd: reservation.accessEnd,
@@ -500,20 +509,19 @@ export function resolveAccessControl(
   const hasRelease = !!rule.dateControl?.release;
   const shouldShowBeforeRelease = rule.beforeRelease?.listed ?? false;
 
-  // No DC release configured: either PT-gated (review-only once visibility
-  // unlocks; `beforeRelease.listed` is ignored) or a date-less rule (deny).
+  // A PT-gated assessment without date control has no assessment-level access
+  // path outside a reservation. Carry the after-complete policy forward so a
+  // completed instance can be authorized separately, but do not treat an
+  // unstarted assessment as complete merely because no reservation is active.
   if (!hasRelease) {
     if (rule.prairieTestExams.length > 0) {
-      const reviewMode = afterCompleteVisibility.showQuestions;
       return {
         ...UNAUTHORIZED_RESULT,
-        authorized: reviewMode,
-        visibility: afterCompleteVisibility,
         afterCompleteVisibility,
-        visibilitySource: 'afterComplete',
-        complete: true,
+        canReviewCompletedInstance: afterCompleteVisibility.showQuestions,
+        visibility: HIDDEN,
         accessTimeline,
-        showBeforeRelease: reviewMode ? false : shouldShowBeforeRelease,
+        showBeforeRelease: shouldShowBeforeRelease,
       };
     }
     return {
@@ -569,6 +577,7 @@ export function resolveAccessControl(
     submittable: current.submittable,
     visibility,
     afterCompleteVisibility,
+    canReviewCompletedInstance: false,
     visibilitySource,
     complete,
     examAccessEnd: null,

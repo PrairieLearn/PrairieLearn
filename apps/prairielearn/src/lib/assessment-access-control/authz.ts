@@ -243,8 +243,10 @@ export function resolverResultToAuthzAssessmentForInstance({
       return result;
     }
 
+    const authorized = result.authorized || result.canReviewCompletedInstance;
     return {
       ...result,
+      authorized,
       creditDateString: 'None',
       timeLimitMin: null,
       password: null,
@@ -252,6 +254,7 @@ export function resolverResultToAuthzAssessmentForInstance({
       visibilitySource: 'afterComplete',
       complete: true,
       submittable: false,
+      showBeforeRelease: authorized ? false : result.showBeforeRelease,
     };
   });
 

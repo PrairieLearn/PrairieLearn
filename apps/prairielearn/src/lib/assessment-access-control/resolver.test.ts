@@ -932,7 +932,27 @@ describe('resolveAccessControl', () => {
           authorized: false,
           submittable: false,
           credit: 0,
-          visibility: { showQuestions: false, showScore: true },
+          visibility: { showQuestions: false, showScore: false },
+          afterCompleteVisibility: { showQuestions: false, showScore: true },
+        },
+      },
+      {
+        name: 'immediate after-complete review does not authorize an unstarted PT assessment',
+        rules: [
+          makeDefaultRule(
+            { afterComplete: { questions: { hidden: false } } },
+            { prairieTestExams: [ptExam('exam-uuid-1')] },
+          ),
+        ],
+        authzMode: 'Public',
+        reservations: [],
+        expect: {
+          authorized: false,
+          submittable: false,
+          showBeforeRelease: false,
+          visibility: { showQuestions: false, showScore: false },
+          afterCompleteVisibility: { showQuestions: true, showScore: true },
+          canReviewCompletedInstance: true,
         },
       },
       {
@@ -1290,16 +1310,15 @@ describe('resolveAccessControl', () => {
             },
           },
           {
-            // Top-level afterComplete visibility has unlocked, so the resolver
-            // grants a review-only path: authorized=true lets the middleware
-            // serve the page, active=false prevents submissions.
-            name: 'at home after visible date: review-only',
+            // The after-complete policy is eligible to authorize a completed
+            // instance, but must not authorize an assessment with no instance.
+            name: 'at home after visible date: completed instance can be reviewed',
             rules: [ruleWithDeferredRelease],
             authzMode: 'Public',
             date: new Date('2025-04-02T00:00:00Z'),
             reservations: [],
             expect: {
-              authorized: true,
+              authorized: false,
               submittable: false,
               credit: 0,
               creditDateString: 'None',
@@ -1308,7 +1327,9 @@ describe('resolveAccessControl', () => {
               examAccessEnd: null,
               showBeforeRelease: false,
               nextActiveDate: null,
-              visibility: { showQuestions: true, showScore: true },
+              visibility: { showQuestions: false, showScore: false },
+              afterCompleteVisibility: { showQuestions: true, showScore: true },
+              canReviewCompletedInstance: true,
             },
           },
           {
@@ -1584,10 +1605,9 @@ describe('resolveAccessControl', () => {
           },
         },
         {
-          // Review-only access wins over `beforeRelease.listed`: a student
-          // who finished the exam should be able to review their work even
-          // if the listing flag was left set on the rule.
-          name: 'PT review-only wins over beforeRelease.listed when visibility is unlocked',
+          // Without an assessment instance, after-complete visibility cannot
+          // distinguish a future reservation from a completed exam.
+          name: 'PT after-complete visibility does not override before-release listing',
           rules: [
             makeDefaultRule(
               {
@@ -1600,18 +1620,18 @@ describe('resolveAccessControl', () => {
           authzMode: 'Public',
           reservations: [],
           expect: {
-            authorized: true,
+            authorized: false,
             submittable: false,
-            showBeforeRelease: false,
-            visibility: { showQuestions: true, showScore: true },
+            showBeforeRelease: true,
+            visibility: { showQuestions: false, showScore: false },
+            afterCompleteVisibility: { showQuestions: true, showScore: true },
+            canReviewCompletedInstance: true,
           },
         },
         {
-          // Same priority via the deferred-release pattern: instructor uses
-          // `visibleFromDate` to schedule at-home review and leaves
-          // `beforeRelease.listed` set. After the visible date, students
-          // get review-only access, not the coming-soon listing.
-          name: 'visibleFromDate unlock + beforeRelease.listed: review-only wins after date',
+          // A scheduled visibility change likewise requires a completed
+          // assessment instance before it grants review access.
+          name: 'visibleFromDate unlock still requires a completed instance',
           rules: [
             makeDefaultRule(
               {
@@ -1628,10 +1648,12 @@ describe('resolveAccessControl', () => {
           date: new Date('2025-04-02T00:00:00Z'),
           reservations: [],
           expect: {
-            authorized: true,
+            authorized: false,
             submittable: false,
-            showBeforeRelease: false,
-            visibility: { showQuestions: true, showScore: true },
+            showBeforeRelease: true,
+            visibility: { showQuestions: false, showScore: false },
+            afterCompleteVisibility: { showQuestions: true, showScore: true },
+            canReviewCompletedInstance: true,
           },
         },
       ])('$name', (c) => {
