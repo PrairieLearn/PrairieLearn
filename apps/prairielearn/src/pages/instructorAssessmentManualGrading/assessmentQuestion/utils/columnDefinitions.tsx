@@ -239,8 +239,8 @@ export function createColumns({
           />
         );
       },
-      filterFn: ({ getValue }, columnId, filter: MultiSelectFilterValue) => {
-        const requiresGrading = getValue(columnId);
+      filterFn: (row, columnId, filter: MultiSelectFilterValue) => {
+        const requiresGrading = row.getValue<boolean>(columnId);
         const status = requiresGrading ? 'Requires grading' : 'Graded';
         return applyMultiSelectFilter(filter, (values) => values.includes(status));
       },
