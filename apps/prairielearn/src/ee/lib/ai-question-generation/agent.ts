@@ -490,6 +490,8 @@ async function createQuestionGenerationAgent({
           // When editing, leave them as warnings so the agent doesn't "fix"
           // intentional instructor choices.
           if (!isExistingQuestion) {
+            // https://github.com/sindresorhus/eslint-plugin-unicorn/issues/3610
+            // eslint-disable-next-line unicorn/no-unnecessary-splice
             errors.push(...warnings.splice(0));
           }
 

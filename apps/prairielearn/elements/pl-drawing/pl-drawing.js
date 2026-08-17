@@ -68,7 +68,7 @@ window.PLDrawingApi = {
     // Add the clientFilesElement directory.
     url.pathname += '/clientFilesElement/';
 
-    return url.toString();
+    return url.href;
   })(),
 
   /**
