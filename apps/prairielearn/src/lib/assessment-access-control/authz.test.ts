@@ -50,6 +50,22 @@ const baseResolverResult: AccessControlResolverResult = {
   nextActiveDate: null,
 };
 
+const prairieTestReviewResult: AccessControlResolverResult = {
+  ...baseResolverResult,
+  authorization: 'requires-completed-instance',
+  credit: 0,
+  creditDateString: 'None',
+  submittable: false,
+  visibility: {
+    showQuestions: false,
+    showScore: false,
+  },
+  afterCompleteVisibility: {
+    showQuestions: true,
+    showScore: true,
+  },
+};
+
 describe('applyInstanceAccess', () => {
   describe('owner access', () => {
     it('grants full access when user owns the instance', () => {
@@ -141,23 +157,21 @@ describe('applyInstanceAccess', () => {
 });
 
 describe('resolverResultToAuthzAssessmentForInstance', () => {
+  it('does not authorize PrairieTest review without an assessment instance', () => {
+    const result = resolverResultToAuthzAssessmentForInstance({
+      result: prairieTestReviewResult,
+      authzMode: 'Public',
+      displayTimezone: 'America/Chicago',
+      assessmentInstance: null,
+      reqDate: new Date('2025-03-15T00:00:00Z'),
+    });
+
+    expect(result.authorized).toBe(false);
+  });
+
   it('authorizes PrairieTest review for a closed assessment instance', () => {
     const result = resolverResultToAuthzAssessmentForInstance({
-      result: {
-        ...baseResolverResult,
-        authorization: 'requires-completed-instance',
-        credit: 0,
-        creditDateString: 'None',
-        submittable: false,
-        visibility: {
-          showQuestions: false,
-          showScore: false,
-        },
-        afterCompleteVisibility: {
-          showQuestions: true,
-          showScore: true,
-        },
-      },
+      result: prairieTestReviewResult,
       authzMode: 'Public',
       displayTimezone: 'America/Chicago',
       assessmentInstance: { open: false, date_limit: null },
