@@ -25,7 +25,6 @@ assert(
 
 const consoleOutput = pretty({
   messageKey: 'message',
-  singleLine: true,
   timestampKey: 'timestamp',
   translateTime: 'SYS:HH:MM:ss.l',
 });
