@@ -215,7 +215,6 @@ overrides:
   linkinator>marked: ^18
   markdownlint-cli2>smol-toml: ^1
   notebookjs>jsdom: '*'
-  typescript-cp>rimraf: ^6.1.3
 
 importers:
 
@@ -440,8 +439,8 @@ importers:
         specifier: ^4.23.5
         version: 4.23.5
       typescript-cp:
-        specifier: ^0.1.10
-        version: 0.1.10(typescript@6.0.3)
+        specifier: ^0.1.11
+        version: 0.1.11(typescript@6.0.3)
       vitest:
         specifier: ^4.1.10
         version: 4.1.10(@opentelemetry/api@1.9.1)(@types/node@24.13.3)(@vitest/coverage-v8@4.1.10)(jsdom@29.1.1)(vite@8.2.0(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(sass@1.102.0)(tsx@4.23.5)(yaml@2.9.0))
@@ -1350,8 +1349,8 @@ importers:
         specifier: ^4.23.5
         version: 4.23.5
       typescript-cp:
-        specifier: ^0.1.10
-        version: 0.1.10(typescript@6.0.3)
+        specifier: ^0.1.11
+        version: 0.1.11(typescript@6.0.3)
       vitest:
         specifier: ^4.1.10
         version: 4.1.10(@opentelemetry/api@1.9.1)(@types/node@24.13.3)(@vitest/coverage-v8@4.1.10)(jsdom@29.1.1)(vite@8.2.0(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(sass@1.102.0)(tsx@4.23.5)(yaml@2.9.0))
@@ -1477,8 +1476,8 @@ importers:
         specifier: ^4.23.5
         version: 4.23.5
       typescript-cp:
-        specifier: ^0.1.10
-        version: 0.1.10(typescript@6.0.3)
+        specifier: ^0.1.11
+        version: 0.1.11(typescript@6.0.3)
       vitest:
         specifier: ^4.1.10
         version: 4.1.10(@opentelemetry/api@1.9.1)(@types/node@24.13.3)(@vitest/coverage-v8@4.1.10)(jsdom@29.1.1)(vite@8.2.0(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(sass@1.102.0)(tsx@4.23.5)(yaml@2.9.0))
@@ -1816,8 +1815,8 @@ importers:
         specifier: ^4.1.10
         version: 4.1.10(vitest@4.1.10)
       typescript-cp:
-        specifier: ^0.1.10
-        version: 0.1.10(typescript@6.0.3)
+        specifier: ^0.1.11
+        version: 0.1.11(typescript@6.0.3)
       vitest:
         specifier: ^4.1.10
         version: 4.1.10(@opentelemetry/api@1.9.1)(@types/node@24.13.3)(@vitest/coverage-v8@4.1.10)(jsdom@29.1.1)(vite@8.2.0(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(sass@1.102.0)(tsx@4.23.5)(yaml@2.9.0))
@@ -2191,8 +2190,8 @@ importers:
         specifier: ^3.0.3
         version: 3.0.3
       typescript-cp:
-        specifier: ^0.1.10
-        version: 0.1.10(typescript@6.0.3)
+        specifier: ^0.1.11
+        version: 0.1.11(typescript@6.0.3)
       vitest:
         specifier: ^4.1.10
         version: 4.1.10(@opentelemetry/api@1.9.1)(@types/node@24.13.3)(@vitest/coverage-v8@4.1.10)(jsdom@29.1.1)(vite@8.2.0(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(sass@1.102.0)(tsx@4.23.5)(yaml@2.9.0))
@@ -2442,8 +2441,8 @@ importers:
         specifier: beta
         version: 7.0.0-dev.20260421.2
       typescript-cp:
-        specifier: ^0.1.10
-        version: 0.1.10(typescript@6.0.3)
+        specifier: ^0.1.11
+        version: 0.1.11(typescript@6.0.3)
 
   packages/question-conversion:
     dependencies:
@@ -2762,8 +2761,8 @@ importers:
         specifier: beta
         version: 7.0.0-dev.20260421.2
       typescript-cp:
-        specifier: ^0.1.10
-        version: 0.1.10(typescript@6.0.3)
+        specifier: ^0.1.11
+        version: 0.1.11(typescript@6.0.3)
       vitest:
         specifier: ^4.1.10
         version: 4.1.10(@opentelemetry/api@1.9.1)(@types/node@24.13.3)(@vitest/coverage-v8@4.1.10)(jsdom@29.1.1)(vite@8.2.0(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(sass@1.102.0)(tsx@4.23.5)(yaml@2.9.0))
@@ -2867,8 +2866,8 @@ importers:
         specifier: beta
         version: 7.0.0-dev.20260421.2
       typescript-cp:
-        specifier: ^0.1.10
-        version: 0.1.10(typescript@6.0.3)
+        specifier: ^0.1.11
+        version: 0.1.11(typescript@6.0.3)
 
   packages/zod:
     dependencies:
@@ -10257,8 +10256,9 @@ packages:
   typedarray@0.0.6:
     resolution: {integrity: sha512-/aCDEGatGvZ2BIk+HmLf4ifCJFwvKFNb9/JeZPMulfgFracn9QFcAf5GO8B/mweUjSoblS5In0cWhqpfs/5PQA==}
 
-  typescript-cp@0.1.10:
-    resolution: {integrity: sha512-5hAVy1WlFzYHAqhfFkB1zpDe1us4NWgjggXGglH79v2SRCiUj22c05HAi3L3SbjwcktOr1EM49Fus69pVelEFg==}
+  typescript-cp@0.1.11:
+    resolution: {integrity: sha512-LF7Mp0qMuYweByCBdxuDSB/HfPPJfWBRA5GHYjwnMFjiMz/kSrBn6vN/bu1WcInJKczs9eOINGeIcEYagVmKsg==}
+    engines: {node: '>= 20', pnpm: '11'}
     hasBin: true
     peerDependencies:
       typescript: '>=4.2.3'
@@ -18910,7 +18910,7 @@ snapshots:
 
   typedarray@0.0.6: {}
 
-  typescript-cp@0.1.10(typescript@6.0.3):
+  typescript-cp@0.1.11(typescript@6.0.3):
     dependencies:
       chokidar: 3.6.0
       commander: 10.0.1
