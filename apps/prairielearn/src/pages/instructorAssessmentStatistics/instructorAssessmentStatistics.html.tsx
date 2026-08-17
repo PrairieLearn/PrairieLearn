@@ -75,6 +75,7 @@ export function InstructorAssessmentStatistics({
   assessment,
   courseInstance,
   assessmentSet,
+  hasCoursePermissionPreview,
   hasCoursePermissionEdit,
   hasCourseInstancePermissionEdit,
   csrfToken,
@@ -86,6 +87,7 @@ export function InstructorAssessmentStatistics({
   assessment: Assessment;
   courseInstance: CourseInstance;
   assessmentSet: AssessmentSet;
+  hasCoursePermissionPreview: boolean;
   hasCoursePermissionEdit: boolean;
   hasCourseInstancePermissionEdit: boolean;
   csrfToken: string;
@@ -392,14 +394,20 @@ export function InstructorAssessmentStatistics({
                 {rows.map((row) => (
                   <tr key={row.id}>
                     <td>
-                      <a
-                        href={getQuestionUrl({
-                          courseInstanceId: courseInstance.id,
-                          questionId: row.question_id,
-                        })}
-                      >
-                        {row.assessment_question_number}. {row.question_title}
-                      </a>
+                      {hasCoursePermissionPreview ? (
+                        <a
+                          href={getQuestionUrl({
+                            courseInstanceId: courseInstance.id,
+                            questionId: row.question_id,
+                          })}
+                        >
+                          {row.assessment_question_number}. {row.question_title}
+                        </a>
+                      ) : (
+                        <>
+                          {row.assessment_question_number}. {row.question_title}
+                        </>
+                      )}
                     </td>
                     <td className="text-center align-middle">
                       <Scorebar
@@ -577,14 +585,20 @@ export function InstructorAssessmentStatistics({
                 {rows.map((row) => (
                   <tr key={row.id}>
                     <td className="text-nowrap">
-                      <a
-                        href={getQuestionUrl({
-                          courseInstanceId: courseInstance.id,
-                          questionId: row.question_id,
-                        })}
-                      >
-                        {row.assessment_question_number}. {row.qid}
-                      </a>
+                      {hasCoursePermissionPreview ? (
+                        <a
+                          href={getQuestionUrl({
+                            courseInstanceId: courseInstance.id,
+                            questionId: row.question_id,
+                          })}
+                        >
+                          {row.assessment_question_number}. {row.qid}
+                        </a>
+                      ) : (
+                        <>
+                          {row.assessment_question_number}. {row.qid}
+                        </>
+                      )}
                     </td>
                     <td className="text-center">{formatFloat(row.mean_question_score, 1)}</td>
                     <td className="text-center">{formatFloat(row.median_question_score, 1)}</td>

@@ -48,7 +48,7 @@ export default (function (err, req, res, _next) {
 
   const referrer = req.get('Referrer') || null;
 
-  logger.log(err.status >= 500 ? 'error' : 'verbose', 'Error page', {
+  logger[err.status >= 500 ? 'error' : 'verbose']('Error page', {
     msg: err.message,
     id: errorId,
     status: err.status,

@@ -1,5 +1,11 @@
 # @prairielearn/cache
 
+## 2.1.15
+
+### Patch Changes
+
+- df28e68: Bump dependencies
+
 ## 2.1.14
 
 ### Patch Changes

@@ -413,11 +413,13 @@ function GradebookTable({
         <MultiSelectColumnFilter
           column={header.column}
           allColumnValues={labelIds}
+          getSearchText={(value) => studentLabelsById.get(value)?.name ?? value}
           renderValueLabel={({ value }) => {
             const label = studentLabelsById.get(value);
             if (!label) return <span>{value}</span>;
             return <span>{label.name}</span>;
           }}
+          showSearch
         />
       ),
       ...assessmentFilters,
