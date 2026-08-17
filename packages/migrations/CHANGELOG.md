@@ -1,5 +1,14 @@
 # @prairielearn/migrations
 
+## 5.2.2
+
+### Patch Changes
+
+- 057d37b: Update dependency on typescript-cp
+- Updated dependencies [00945c2]
+- Updated dependencies [9757f58]
+  - @prairielearn/logger@4.0.0
+
 ## 5.2.1
 
 ### Patch Changes
