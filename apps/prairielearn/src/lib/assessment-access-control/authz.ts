@@ -18,6 +18,7 @@ import {
   selectUserAccessContext,
 } from './data.js';
 import {
+  type AccessControlAuthorization,
   type AccessControlResolverResult,
   formatDateShort,
   resolveAccessControl,
@@ -39,13 +40,28 @@ interface ModernAssessmentAccessInput {
   reqDate: Date;
 }
 
+function resolveAuthorization(
+  authorization: AccessControlAuthorization,
+  hasCompletedInstance: boolean,
+): boolean {
+  switch (authorization) {
+    case 'granted':
+      return true;
+    case 'denied':
+      return false;
+    case 'requires-completed-instance':
+      return hasCompletedInstance;
+  }
+}
+
 function resolverResultToAuthzAssessment(
   result: AccessControlResolverResult,
   authzMode: EnumMode,
   displayTimezone: string,
+  hasCompletedInstance: boolean,
 ): SprocAuthzAssessment {
   return {
-    authorized: result.authorized,
+    authorized: resolveAuthorization(result.authorization, hasCompletedInstance),
     credit: result.credit,
     credit_date_string: result.creditDateString,
     time_limit_min: result.timeLimitMin,
@@ -100,6 +116,7 @@ export async function resolveModernAssessmentAccess(
     result,
     input.authzData.mode,
     input.courseInstance.display_timezone,
+    false,
   );
 }
 
@@ -233,20 +250,18 @@ export function resolverResultToAuthzAssessmentForInstance({
   assessmentInstance: { open: boolean | null; date_limit: Date | null } | null;
   reqDate: Date;
 }): SprocAuthzAssessment {
+  const timeLimitExpired =
+    assessmentInstance?.date_limit != null && assessmentInstance.date_limit <= reqDate;
+  const hasCompletedInstance =
+    assessmentInstance != null && (assessmentInstance.open === false || timeLimitExpired);
+
   const resultForInstance = run((): AccessControlResolverResult => {
-    if (assessmentInstance == null) return result;
     if (result.visibilitySource === 'prairieTest') return result;
+    if (!hasCompletedInstance) return result;
 
-    const timeLimitExpired =
-      assessmentInstance.date_limit != null && assessmentInstance.date_limit <= reqDate;
-    if (assessmentInstance.open !== false && !timeLimitExpired) {
-      return result;
-    }
-
-    const authorized = result.authorized || result.canReviewCompletedInstance;
+    const authorized = resolveAuthorization(result.authorization, hasCompletedInstance);
     return {
       ...result,
-      authorized,
       creditDateString: 'None',
       timeLimitMin: null,
       password: null,
@@ -258,5 +273,10 @@ export function resolverResultToAuthzAssessmentForInstance({
     };
   });
 
-  return resolverResultToAuthzAssessment(resultForInstance, authzMode, displayTimezone);
+  return resolverResultToAuthzAssessment(
+    resultForInstance,
+    authzMode,
+    displayTimezone,
+    hasCompletedInstance,
+  );
 }

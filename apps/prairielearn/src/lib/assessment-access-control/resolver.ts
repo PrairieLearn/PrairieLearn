@@ -90,16 +90,21 @@ export interface AccessControlResolverInput {
   prairieTestReservations: PrairieTestReservation[];
 }
 
+export type AccessControlAuthorization = 'granted' | 'denied' | 'requires-completed-instance';
+
 export interface AccessControlResolverResult {
-  /** Whether the student is authorized to access the assessment. */
-  authorized: boolean;
+  /**
+   * Whether access is granted, denied, or conditional on the student having a
+   * completed assessment instance.
+   */
+  authorization: AccessControlAuthorization;
   credit: number | null;
   creditDateString: string | null;
   timeLimitMin: number | null;
   password: string | null;
   /**
    * Whether the student can currently submit work.
-   * `authorized: true, submittable: false` is the review-only state.
+   * `authorization: 'granted', submittable: false` is the review-only state.
    * Translates to the legacy `authz_result.active` field.
    */
   submittable: boolean;
@@ -113,12 +118,6 @@ export interface AccessControlResolverResult {
    * date. This is applied only once the assessment is complete.
    */
   afterCompleteVisibility: Visibility;
-  /**
-   * Whether a completed assessment instance may be opened for review even
-   * when assessment-level access is otherwise denied. This is used for
-   * PrairieTest-gated assessments without a date-control access path.
-   */
-  canReviewCompletedInstance: boolean;
   /**
    * Explains which policy produced the effective `visibility`.
    */
@@ -176,7 +175,7 @@ const HIDDEN = Object.freeze({
 const EMPTY_ACCESS_TIMELINE: readonly Readonly<AccessTimelineEntry>[] = Object.freeze([]);
 
 const UNAUTHORIZED_RESULT = Object.freeze({
-  authorized: false,
+  authorization: 'denied',
   credit: 0,
   creditDateString: 'None',
   timeLimitMin: null,
@@ -184,7 +183,6 @@ const UNAUTHORIZED_RESULT = Object.freeze({
   submittable: false,
   visibility: VISIBLE,
   afterCompleteVisibility: VISIBLE,
-  canReviewCompletedInstance: false,
   visibilitySource: 'default',
   complete: false,
   examAccessEnd: null,
@@ -194,7 +192,7 @@ const UNAUTHORIZED_RESULT = Object.freeze({
 } satisfies Readonly<AccessControlResolverResult>);
 
 const STAFF_OVERRIDE_RESULT = Object.freeze({
-  authorized: true,
+  authorization: 'granted',
   credit: 100,
   creditDateString: '100% (Staff override)',
   timeLimitMin: null,
@@ -202,7 +200,6 @@ const STAFF_OVERRIDE_RESULT = Object.freeze({
   submittable: true,
   visibility: VISIBLE,
   afterCompleteVisibility: VISIBLE,
-  canReviewCompletedInstance: false,
   visibilitySource: 'default',
   complete: false,
   examAccessEnd: null,
@@ -486,7 +483,7 @@ export function resolveAccessControl(
     const examVisibility = computePrairieTestVisibility(matched);
     const submittable = !matched.readOnly;
     return {
-      authorized: true,
+      authorization: 'granted',
       credit: 100,
       creditDateString: formatCreditDateString(100, submittable, null, displayTimezone),
       timeLimitMin: null,
@@ -494,7 +491,6 @@ export function resolveAccessControl(
       submittable,
       visibility: examVisibility,
       afterCompleteVisibility,
-      canReviewCompletedInstance: false,
       visibilitySource: 'prairieTest',
       complete: matched.readOnly,
       examAccessEnd: reservation.accessEnd,
@@ -517,8 +513,10 @@ export function resolveAccessControl(
     if (rule.prairieTestExams.length > 0) {
       return {
         ...UNAUTHORIZED_RESULT,
+        authorization: afterCompleteVisibility.showQuestions
+          ? 'requires-completed-instance'
+          : 'denied',
         afterCompleteVisibility,
-        canReviewCompletedInstance: afterCompleteVisibility.showQuestions,
         visibility: HIDDEN,
         accessTimeline,
         showBeforeRelease: shouldShowBeforeRelease,
@@ -555,7 +553,7 @@ export function resolveAccessControl(
   const visibilitySource = complete ? 'afterComplete' : 'default';
 
   return {
-    authorized: true,
+    authorization: 'granted',
     credit: current.credit,
     creditDateString: formatCreditDateString(
       current.credit,
@@ -577,7 +575,6 @@ export function resolveAccessControl(
     submittable: current.submittable,
     visibility,
     afterCompleteVisibility,
-    canReviewCompletedInstance: false,
     visibilitySource,
     complete,
     examAccessEnd: null,

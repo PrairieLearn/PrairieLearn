@@ -28,7 +28,7 @@ const unauthorizedResult: SprocAuthzAssessment = {
 };
 
 const baseResolverResult: AccessControlResolverResult = {
-  authorized: true,
+  authorization: 'granted',
   credit: 100,
   creditDateString: '100%',
   timeLimitMin: null,
@@ -42,7 +42,6 @@ const baseResolverResult: AccessControlResolverResult = {
     showQuestions: false,
     showScore: false,
   },
-  canReviewCompletedInstance: false,
   visibilitySource: 'default',
   complete: false,
   examAccessEnd: null,
@@ -146,7 +145,7 @@ describe('resolverResultToAuthzAssessmentForInstance', () => {
     const result = resolverResultToAuthzAssessmentForInstance({
       result: {
         ...baseResolverResult,
-        authorized: false,
+        authorization: 'requires-completed-instance',
         credit: 0,
         creditDateString: 'None',
         submittable: false,
@@ -158,7 +157,6 @@ describe('resolverResultToAuthzAssessmentForInstance', () => {
           showQuestions: true,
           showScore: true,
         },
-        canReviewCompletedInstance: true,
       },
       authzMode: 'Public',
       displayTimezone: 'America/Chicago',
@@ -212,7 +210,7 @@ describe('resolverResultToAuthzAssessmentForInstance', () => {
     const result = resolverResultToAuthzAssessmentForInstance({
       result: {
         ...baseResolverResult,
-        authorized: false,
+        authorization: 'denied',
         submittable: false,
         credit: 0,
         creditDateString: 'None',

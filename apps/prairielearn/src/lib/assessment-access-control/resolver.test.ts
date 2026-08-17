@@ -157,7 +157,7 @@ interface ResolveCase {
   enrollment?: EnrollmentContext | null;
   reservations?: PrairieTestReservation[];
   expect: Partial<AccessControlResolverResult> &
-    Pick<AccessControlResolverResult, 'authorized' | 'submittable'>;
+    Pick<AccessControlResolverResult, 'authorization' | 'submittable'>;
 }
 
 function runCase(c: ResolveCase): AccessControlResolverResult {
@@ -180,7 +180,7 @@ describe('resolveAccessControl', () => {
         name: 'Previewer course role',
         courseRole: 'Previewer',
         expect: {
-          authorized: true,
+          authorization: 'granted',
           credit: 100,
           submittable: true,
           creditDateString: '100% (Staff override)',
@@ -192,7 +192,7 @@ describe('resolveAccessControl', () => {
         name: 'Viewer course role',
         courseRole: 'Viewer',
         expect: {
-          authorized: true,
+          authorization: 'granted',
           credit: 100,
           submittable: true,
           creditDateString: '100% (Staff override)',
@@ -201,22 +201,38 @@ describe('resolveAccessControl', () => {
       {
         name: 'Editor course role',
         courseRole: 'Editor',
-        expect: { authorized: true, submittable: true, creditDateString: '100% (Staff override)' },
+        expect: {
+          authorization: 'granted',
+          submittable: true,
+          creditDateString: '100% (Staff override)',
+        },
       },
       {
         name: 'Owner course role',
         courseRole: 'Owner',
-        expect: { authorized: true, submittable: true, creditDateString: '100% (Staff override)' },
+        expect: {
+          authorization: 'granted',
+          submittable: true,
+          creditDateString: '100% (Staff override)',
+        },
       },
       {
         name: 'Student Data Viewer instance role',
         courseInstanceRole: 'Student Data Viewer',
-        expect: { authorized: true, submittable: true, creditDateString: '100% (Staff override)' },
+        expect: {
+          authorization: 'granted',
+          submittable: true,
+          creditDateString: '100% (Staff override)',
+        },
       },
       {
         name: 'Student Data Editor instance role',
         courseInstanceRole: 'Student Data Editor',
-        expect: { authorized: true, submittable: true, creditDateString: '100% (Staff override)' },
+        expect: {
+          authorization: 'granted',
+          submittable: true,
+          creditDateString: '100% (Staff override)',
+        },
       },
     ])('$name', (c) => {
       expect(runCase(c)).toMatchObject(c.expect);
@@ -224,7 +240,7 @@ describe('resolveAccessControl', () => {
 
     it('does not grant staff override for None/None roles', () => {
       const result = resolveAccessControl(baseInput);
-      expect(result.authorized).toBe(false);
+      expect(result.authorization).toBe('denied');
       expect(result.creditDateString).not.toBe('100% (Staff override)');
     });
   });
@@ -233,12 +249,17 @@ describe('resolveAccessControl', () => {
     it.each<ResolveCase>([
       {
         name: 'no dateControl: unauthorized',
-        expect: { authorized: false, credit: 0, submittable: false, nextActiveDate: null },
+        expect: { authorization: 'denied', credit: 0, submittable: false, nextActiveDate: null },
       },
       {
         name: 'no rules at all: unauthorized with creditDateString=None',
         rules: [],
-        expect: { authorized: false, submittable: false, credit: 0, creditDateString: 'None' },
+        expect: {
+          authorization: 'denied',
+          submittable: false,
+          credit: 0,
+          creditDateString: 'None',
+        },
       },
       {
         name: 'before release date: unauthorized, nextActiveDate is release date',
@@ -252,7 +273,7 @@ describe('resolveAccessControl', () => {
         ],
         date: new Date('2025-03-15T12:00:00Z'),
         expect: {
-          authorized: false,
+          authorization: 'denied',
           credit: 0,
           submittable: false,
           nextActiveDate: new Date('2025-04-01T00:00:00Z'),
@@ -269,7 +290,7 @@ describe('resolveAccessControl', () => {
           }),
         ],
         date: new Date('2025-03-15T12:00:00Z'),
-        expect: { authorized: true, credit: 100, submittable: true },
+        expect: { authorization: 'granted', credit: 100, submittable: true },
       },
       {
         name: 'after due date with no afterLastDeadline: complete review-only',
@@ -283,7 +304,7 @@ describe('resolveAccessControl', () => {
         ],
         date: new Date('2025-03-15T00:00:00Z'),
         expect: {
-          authorized: true,
+          authorization: 'granted',
           credit: 0,
           submittable: false,
           complete: true,
@@ -303,7 +324,7 @@ describe('resolveAccessControl', () => {
         ],
         date: new Date('2025-03-15T00:00:00Z'),
         expect: {
-          authorized: true,
+          authorization: 'granted',
           credit: 0,
           submittable: false,
           complete: true,
@@ -321,7 +342,7 @@ describe('resolveAccessControl', () => {
           }),
         ],
         date: new Date('2025-03-15T00:00:00Z'),
-        expect: { authorized: true, credit: 100, submittable: true },
+        expect: { authorization: 'granted', credit: 100, submittable: true },
       },
       {
         name: 'propagates password and time limit when no deadlines',
@@ -336,7 +357,12 @@ describe('resolveAccessControl', () => {
           }),
         ],
         date: new Date('2025-03-15T00:00:00Z'),
-        expect: { authorized: true, submittable: true, password: 'secret', timeLimitMin: 60 },
+        expect: {
+          authorization: 'granted',
+          submittable: true,
+          password: 'secret',
+          timeLimitMin: 60,
+        },
       },
     ])('$name', (c) => {
       expect(runCase(c)).toMatchObject(c.expect);
@@ -360,13 +386,13 @@ describe('resolveAccessControl', () => {
         name: '80% credit in first late period',
         rules: [lateDeadlinesRule],
         date: new Date('2025-03-12T00:00:00Z'),
-        expect: { authorized: true, credit: 80, submittable: true },
+        expect: { authorization: 'granted', credit: 80, submittable: true },
       },
       {
         name: '50% credit in second late period',
         rules: [lateDeadlinesRule],
         date: new Date('2025-03-17T00:00:00Z'),
-        expect: { authorized: true, credit: 50, submittable: true },
+        expect: { authorization: 'granted', credit: 50, submittable: true },
       },
     ])('$name', (c) => {
       expect(runCase(c)).toMatchObject(c.expect);
@@ -387,14 +413,14 @@ describe('resolveAccessControl', () => {
         name: '0% credit late deadline: active during the late window',
         rules: [zeroCreditLateRule],
         date: new Date('2025-03-12T00:00:00Z'),
-        expect: { authorized: true, credit: 0, submittable: true },
+        expect: { authorization: 'granted', credit: 0, submittable: true },
       },
       {
         name: '0% credit late deadline: complete review-only after the late window',
         rules: [zeroCreditLateRule],
         date: new Date('2025-03-16T00:00:00Z'),
         expect: {
-          authorized: true,
+          authorization: 'granted',
           credit: 0,
           submittable: false,
           complete: true,
@@ -420,7 +446,7 @@ describe('resolveAccessControl', () => {
           }),
         ],
         date: new Date('2025-03-15T00:00:00Z'),
-        expect: { authorized: true, credit: 25, submittable: true },
+        expect: { authorization: 'granted', credit: 25, submittable: true },
       },
       {
         name: 'allowSubmissions=false: inactive with 0 credit',
@@ -434,7 +460,7 @@ describe('resolveAccessControl', () => {
           }),
         ],
         date: new Date('2025-03-15T00:00:00Z'),
-        expect: { authorized: true, credit: 0, submittable: false },
+        expect: { authorization: 'granted', credit: 0, submittable: false },
       },
       {
         name: 'override disabling submissions clears inherited credit',
@@ -453,7 +479,7 @@ describe('resolveAccessControl', () => {
           ),
         ],
         date: new Date('2025-03-15T00:00:00Z'),
-        expect: { authorized: true, credit: 0, submittable: false },
+        expect: { authorization: 'granted', credit: 0, submittable: false },
       },
     ])('$name', (c) => {
       expect(runCase(c)).toMatchObject(c.expect);
@@ -474,7 +500,7 @@ describe('resolveAccessControl', () => {
           }),
         ],
         date: new Date('2025-03-15T00:00:00Z'),
-        expect: { authorized: true, submittable: true, password: 'secret' },
+        expect: { authorization: 'granted', submittable: true, password: 'secret' },
       },
       {
         // Once submissions are disallowed, the password would gate review of
@@ -491,7 +517,7 @@ describe('resolveAccessControl', () => {
           }),
         ],
         date: new Date('2025-03-15T00:00:00Z'),
-        expect: { authorized: true, submittable: false, password: null },
+        expect: { authorization: 'granted', submittable: false, password: null },
       },
       {
         name: 'propagated when afterLastDeadline still allows submissions',
@@ -506,7 +532,7 @@ describe('resolveAccessControl', () => {
           }),
         ],
         date: new Date('2025-03-15T00:00:00Z'),
-        expect: { authorized: true, submittable: true, password: 'secret' },
+        expect: { authorization: 'granted', submittable: true, password: 'secret' },
       },
     ])('$name', (c) => {
       expect(runCase(c)).toMatchObject(c.expect);
@@ -530,7 +556,7 @@ describe('resolveAccessControl', () => {
         ],
         date: new Date('2025-03-15T12:00:00Z'),
         expect: {
-          authorized: false,
+          authorization: 'denied',
           showBeforeRelease: true,
           submittable: false,
           nextActiveDate: new Date('2025-04-01T00:00:00Z'),
@@ -548,7 +574,7 @@ describe('resolveAccessControl', () => {
           }),
         ],
         date: new Date('2025-03-15T12:00:00Z'),
-        expect: { authorized: true, submittable: true, showBeforeRelease: false },
+        expect: { authorization: 'granted', submittable: true, showBeforeRelease: false },
       },
       {
         // Supported use case: instructor lists every assessment a student will
@@ -556,7 +582,7 @@ describe('resolveAccessControl', () => {
         name: 'beforeRelease.listed alone (no dateControl)',
         rules: [makeDefaultRule({ beforeRelease: { listed: true } })],
         expect: {
-          authorized: false,
+          authorization: 'denied',
           showBeforeRelease: true,
           submittable: false,
           visibility: { showQuestions: true, showScore: true },
@@ -565,7 +591,7 @@ describe('resolveAccessControl', () => {
       {
         name: 'no beforeRelease and no dateControl',
         rules: [makeDefaultRule({})],
-        expect: { authorized: false, submittable: false, showBeforeRelease: false },
+        expect: { authorization: 'denied', submittable: false, showBeforeRelease: false },
       },
     ])('$name', (c) => {
       expect(runCase(c)).toMatchObject(c.expect);
@@ -578,19 +604,19 @@ describe('resolveAccessControl', () => {
         name: 'before early deadline: 110%',
         date: new Date('2025-03-05T00:00:00Z'),
         earlyDate: '2025-03-10T00:00:00Z',
-        expect: { authorized: true, submittable: true, credit: 110 },
+        expect: { authorization: 'granted', submittable: true, credit: 110 },
       },
       {
         name: 'after early deadline but before due date: 100%',
         date: new Date('2025-03-12T00:00:00Z'),
         earlyDate: '2025-03-10T00:00:00Z',
-        expect: { authorized: true, submittable: true, credit: 100 },
+        expect: { authorization: 'granted', submittable: true, credit: 100 },
       },
       {
         name: 'before early deadline equal to due date: 110%',
         date: new Date('2025-03-12T00:00:00Z'),
         earlyDate: '2025-03-20T00:00:00Z',
-        expect: { authorized: true, submittable: true, credit: 110 },
+        expect: { authorization: 'granted', submittable: true, credit: 110 },
       },
     ])('$name', ({ earlyDate, ...c }) => {
       expect(
@@ -630,7 +656,7 @@ describe('resolveAccessControl', () => {
           ),
         ],
         enrollment: { enrollmentId: 'enroll-1', studentLabelIds: [] },
-        expect: { authorized: true, credit: 100, submittable: true },
+        expect: { authorization: 'granted', credit: 100, submittable: true },
       },
       {
         name: 'enrollment override does not match → default rule applies (past due)',
@@ -649,7 +675,7 @@ describe('resolveAccessControl', () => {
         ],
         enrollment: { enrollmentId: 'enroll-1', studentLabelIds: [] },
         date: new Date('2025-03-15T00:00:00Z'),
-        expect: { authorized: true, credit: 0, submittable: false, complete: true },
+        expect: { authorization: 'granted', credit: 0, submittable: false, complete: true },
       },
       {
         name: 'no enrollment context → enrollment override skipped',
@@ -668,7 +694,7 @@ describe('resolveAccessControl', () => {
         ],
         enrollment: null,
         date: new Date('2025-03-15T00:00:00Z'),
-        expect: { authorized: true, submittable: false, credit: 0, complete: true },
+        expect: { authorization: 'granted', submittable: false, credit: 0, complete: true },
       },
       {
         name: 'student_label override matches via label intersection',
@@ -681,7 +707,7 @@ describe('resolveAccessControl', () => {
           ),
         ],
         enrollment: { enrollmentId: 'enroll-1', studentLabelIds: ['label-1'] },
-        expect: { authorized: true, submittable: true, credit: 100 },
+        expect: { authorization: 'granted', submittable: true, credit: 100 },
       },
       {
         name: 'student_label override does not match (no intersection)',
@@ -700,7 +726,7 @@ describe('resolveAccessControl', () => {
         ],
         enrollment: { enrollmentId: 'enroll-1', studentLabelIds: ['label-1'] },
         date: new Date('2025-03-15T00:00:00Z'),
-        expect: { authorized: true, submittable: false, credit: 0, complete: true },
+        expect: { authorization: 'granted', submittable: false, credit: 0, complete: true },
       },
       {
         name: 'override with afterLastDeadline.allowSubmissions false disables inherited submissions after due',
@@ -720,7 +746,7 @@ describe('resolveAccessControl', () => {
         ],
         enrollment: { enrollmentId: 'enroll-1', studentLabelIds: [] },
         date: new Date('2025-03-15T00:00:00Z'),
-        expect: { authorized: true, submittable: false, credit: 0, complete: true },
+        expect: { authorization: 'granted', submittable: false, credit: 0, complete: true },
       },
     ])('$name', (c) => {
       expect(runCase(c)).toMatchObject(c.expect);
@@ -753,7 +779,7 @@ describe('resolveAccessControl', () => {
           ),
         ],
         expect: {
-          authorized: true,
+          authorization: 'granted',
           submittable: true,
           creditDateString: expect.stringContaining('May 31'),
         },
@@ -774,7 +800,7 @@ describe('resolveAccessControl', () => {
           ),
         ],
         expect: {
-          authorized: true,
+          authorization: 'granted',
           submittable: true,
           creditDateString: expect.stringContaining('May 31'),
         },
@@ -796,7 +822,7 @@ describe('resolveAccessControl', () => {
           ),
         ],
         expect: {
-          authorized: true,
+          authorization: 'granted',
           submittable: true,
           creditDateString: expect.stringContaining('Jun 30'),
         },
@@ -819,7 +845,7 @@ describe('resolveAccessControl', () => {
         ],
         enrollment: { enrollmentId: 'enroll-1', studentLabelIds: [] },
         expect: {
-          authorized: true,
+          authorization: 'granted',
           submittable: true,
           creditDateString: expect.stringContaining('Jul 31'),
         },
@@ -852,7 +878,7 @@ describe('resolveAccessControl', () => {
           ),
         ],
         expect: {
-          authorized: true,
+          authorization: 'granted',
           submittable: true,
           password: 'override-pw',
           // Due Jun 1 UTC = May 31 CDT
@@ -876,7 +902,7 @@ describe('resolveAccessControl', () => {
           ),
         ],
         enrollment: { enrollmentId: 'enroll-1', studentLabelIds: [] },
-        expect: { authorized: true, submittable: true, password: 'secret123', credit: 100 },
+        expect: { authorization: 'granted', submittable: true, password: 'secret123', credit: 100 },
       },
       {
         name: 'override can override password',
@@ -895,7 +921,7 @@ describe('resolveAccessControl', () => {
           ),
         ],
         enrollment: { enrollmentId: 'enroll-1', studentLabelIds: [] },
-        expect: { authorized: true, submittable: true, password: 'override-pass' },
+        expect: { authorization: 'granted', submittable: true, password: 'override-pass' },
       },
     ])('$name', (c) => {
       expect(runCase(c)).toMatchObject(c.expect);
@@ -916,7 +942,7 @@ describe('resolveAccessControl', () => {
         authzMode: 'Exam',
         reservations: [validReservation],
         expect: {
-          authorized: true,
+          authorization: 'granted',
           credit: 100,
           submittable: true,
           examAccessEnd: validReservation.accessEnd,
@@ -929,7 +955,7 @@ describe('resolveAccessControl', () => {
         authzMode: 'Public',
         reservations: [validReservation],
         expect: {
-          authorized: false,
+          authorization: 'denied',
           submittable: false,
           credit: 0,
           visibility: { showQuestions: false, showScore: false },
@@ -947,12 +973,11 @@ describe('resolveAccessControl', () => {
         authzMode: 'Public',
         reservations: [],
         expect: {
-          authorized: false,
+          authorization: 'requires-completed-instance',
           submittable: false,
           showBeforeRelease: false,
           visibility: { showQuestions: false, showScore: false },
           afterCompleteVisibility: { showQuestions: true, showScore: true },
-          canReviewCompletedInstance: true,
         },
       },
       {
@@ -961,7 +986,7 @@ describe('resolveAccessControl', () => {
         authzMode: 'Exam',
         reservations: [{ examUuid: 'wrong-uuid', accessEnd: new Date('2025-03-15T14:00:00Z') }],
         expect: {
-          authorized: false,
+          authorization: 'denied',
           submittable: false,
           visibility: { showQuestions: false, showScore: false },
           afterCompleteVisibility: { showQuestions: false, showScore: false },
@@ -973,7 +998,7 @@ describe('resolveAccessControl', () => {
         authzMode: 'Exam',
         reservations: [],
         expect: {
-          authorized: false,
+          authorization: 'denied',
           submittable: false,
           visibility: { showQuestions: false, showScore: false },
           afterCompleteVisibility: { showQuestions: false, showScore: false },
@@ -987,7 +1012,11 @@ describe('resolveAccessControl', () => {
           { examUuid: 'other-exam-uuid', accessEnd: new Date('2025-03-15T16:00:00Z') },
           validReservation,
         ],
-        expect: { authorized: true, submittable: true, examAccessEnd: validReservation.accessEnd },
+        expect: {
+          authorization: 'granted',
+          submittable: true,
+          examAccessEnd: validReservation.accessEnd,
+        },
       },
       {
         name: 'readOnly exam: authorized but inactive',
@@ -996,14 +1025,14 @@ describe('resolveAccessControl', () => {
         ],
         authzMode: 'Exam',
         reservations: [validReservation],
-        expect: { authorized: true, credit: 100, submittable: false },
+        expect: { authorization: 'granted', credit: 100, submittable: false },
       },
       {
         name: 'non-PT rule in Exam mode: denied',
         rules: [makeDefaultRule()],
         authzMode: 'Exam',
         expect: {
-          authorized: false,
+          authorization: 'denied',
           submittable: false,
           visibility: { showQuestions: false, showScore: false },
           afterCompleteVisibility: { showQuestions: false, showScore: false },
@@ -1021,7 +1050,7 @@ describe('resolveAccessControl', () => {
         ],
         authzMode: 'Exam',
         reservations: [{ examUuid: 'exam-uuid-3', accessEnd: new Date('2025-03-15T16:00:00Z') }],
-        expect: { authorized: true, credit: 100, submittable: false },
+        expect: { authorization: 'granted', credit: 100, submittable: false },
       },
       {
         name: 'PT reservation overrides date-control credit with 100%',
@@ -1039,7 +1068,7 @@ describe('resolveAccessControl', () => {
         ],
         authzMode: 'Exam',
         reservations: [validReservation],
-        expect: { authorized: true, credit: 100, submittable: true },
+        expect: { authorization: 'granted', credit: 100, submittable: true },
       },
       {
         name: 'Exam-mode grant ignores dateControl password and durationMinutes',
@@ -1058,7 +1087,7 @@ describe('resolveAccessControl', () => {
         ],
         authzMode: 'Exam',
         reservations: [validReservation],
-        expect: { authorized: true, submittable: true, password: null, timeLimitMin: null },
+        expect: { authorization: 'granted', submittable: true, password: null, timeLimitMin: null },
       },
       {
         name: 'readOnly exam: creditDateString is None',
@@ -1067,7 +1096,12 @@ describe('resolveAccessControl', () => {
         ],
         authzMode: 'Exam',
         reservations: [validReservation],
-        expect: { authorized: true, credit: 100, submittable: false, creditDateString: 'None' },
+        expect: {
+          authorization: 'granted',
+          credit: 100,
+          submittable: false,
+          creditDateString: 'None',
+        },
       },
       {
         // The date-control timeline is irrelevant under a PT grant: the PT
@@ -1088,7 +1122,7 @@ describe('resolveAccessControl', () => {
         ],
         authzMode: 'Exam',
         reservations: [validReservation],
-        expect: { authorized: true, submittable: true, accessTimeline: [] },
+        expect: { authorization: 'granted', submittable: true, accessTimeline: [] },
       },
     ])('$name', (c) => {
       expect(runCase(c)).toMatchObject(c.expect);
@@ -1121,14 +1155,14 @@ describe('resolveAccessControl', () => {
           rules: [cheatSheetRule],
           authzMode: 'Public',
           date: new Date('2025-01-15T00:00:00Z'),
-          expect: { authorized: false, submittable: false, showBeforeRelease: false },
+          expect: { authorization: 'denied', submittable: false, showBeforeRelease: false },
         },
         {
           name: 'release→due window at home: 100% active',
           rules: [cheatSheetRule],
           authzMode: 'Public',
           date: new Date('2025-02-15T00:00:00Z'),
-          expect: { authorized: true, submittable: true, credit: 100 },
+          expect: { authorization: 'granted', submittable: true, credit: 100 },
         },
         {
           name: 'after due at home: review-only',
@@ -1136,7 +1170,7 @@ describe('resolveAccessControl', () => {
           authzMode: 'Public',
           date: new Date('2025-03-15T00:00:00Z'),
           expect: {
-            authorized: true,
+            authorization: 'granted',
             submittable: false,
             visibility: { showQuestions: true, showScore: true },
           },
@@ -1148,7 +1182,7 @@ describe('resolveAccessControl', () => {
           date: new Date('2025-03-15T00:00:00Z'),
           reservations: [{ examUuid: 'exam-uuid-1', accessEnd: new Date('2025-04-01T00:00:00Z') }],
           expect: {
-            authorized: true,
+            authorization: 'granted',
             submittable: false,
             visibility: { showQuestions: true, showScore: true },
           },
@@ -1171,7 +1205,7 @@ describe('resolveAccessControl', () => {
           authzMode: 'Exam',
           reservations: [ptRes],
           expect: {
-            authorized: true,
+            authorization: 'granted',
             submittable: true,
             visibility: { showQuestions: true, showScore: true },
           },
@@ -1187,7 +1221,7 @@ describe('resolveAccessControl', () => {
           authzMode: 'Exam',
           reservations: [ptRes],
           expect: {
-            authorized: true,
+            authorization: 'granted',
             submittable: true,
             visibility: { showQuestions: false, showScore: true },
           },
@@ -1207,7 +1241,7 @@ describe('resolveAccessControl', () => {
           authzMode: 'Exam',
           reservations: [ptRes],
           expect: {
-            authorized: true,
+            authorization: 'granted',
             submittable: true,
             visibility: { showQuestions: false, showScore: false },
           },
@@ -1220,7 +1254,7 @@ describe('resolveAccessControl', () => {
           authzMode: 'Exam',
           reservations: [ptRes],
           expect: {
-            authorized: true,
+            authorization: 'granted',
             submittable: false,
             visibility: { showQuestions: true, showScore: true },
           },
@@ -1239,7 +1273,7 @@ describe('resolveAccessControl', () => {
           authzMode: 'Exam',
           reservations: [ptRes],
           expect: {
-            authorized: true,
+            authorization: 'granted',
             submittable: true,
             visibility: { showQuestions: true, showScore: true },
           },
@@ -1255,7 +1289,7 @@ describe('resolveAccessControl', () => {
           authzMode: 'Exam',
           reservations: [ptRes],
           expect: {
-            authorized: true,
+            authorization: 'granted',
             submittable: false,
             visibility: { showQuestions: true, showScore: true },
           },
@@ -1290,7 +1324,7 @@ describe('resolveAccessControl', () => {
             authzMode: 'Exam',
             reservations: [ptRes],
             expect: {
-              authorized: true,
+              authorization: 'granted',
               submittable: true,
               visibility: { showQuestions: false, showScore: false },
             },
@@ -1304,7 +1338,7 @@ describe('resolveAccessControl', () => {
             date: new Date('2025-03-20T00:00:00Z'),
             reservations: [],
             expect: {
-              authorized: false,
+              authorization: 'denied',
               submittable: false,
               visibility: { showQuestions: false, showScore: false },
             },
@@ -1318,7 +1352,7 @@ describe('resolveAccessControl', () => {
             date: new Date('2025-04-02T00:00:00Z'),
             reservations: [],
             expect: {
-              authorized: false,
+              authorization: 'requires-completed-instance',
               submittable: false,
               credit: 0,
               creditDateString: 'None',
@@ -1329,7 +1363,6 @@ describe('resolveAccessControl', () => {
               nextActiveDate: null,
               visibility: { showQuestions: false, showScore: false },
               afterCompleteVisibility: { showQuestions: true, showScore: true },
-              canReviewCompletedInstance: true,
             },
           },
           {
@@ -1349,7 +1382,7 @@ describe('resolveAccessControl', () => {
             date: new Date('2025-03-15T14:15:00Z'),
             reservations: [],
             expect: {
-              authorized: false,
+              authorization: 'denied',
               submittable: false,
               visibility: { showQuestions: false, showScore: false },
               afterCompleteVisibility: { showQuestions: false, showScore: false },
@@ -1377,7 +1410,7 @@ describe('resolveAccessControl', () => {
             authzMode: 'Exam',
             reservations: [ptRes],
             expect: {
-              authorized: true,
+              authorization: 'granted',
               submittable: true,
               visibility: { showQuestions: true, showScore: true },
             },
@@ -1390,7 +1423,7 @@ describe('resolveAccessControl', () => {
             authzMode: 'Public',
             reservations: [],
             expect: {
-              authorized: false,
+              authorization: 'denied',
               submittable: false,
               visibility: { showQuestions: false, showScore: false },
             },
@@ -1410,7 +1443,7 @@ describe('resolveAccessControl', () => {
             authzMode: 'Exam',
             reservations: [ptRes],
             expect: {
-              authorized: true,
+              authorization: 'granted',
               submittable: false,
               visibility: { showQuestions: true, showScore: true },
             },
@@ -1428,7 +1461,7 @@ describe('resolveAccessControl', () => {
             authzMode: 'Public',
             reservations: [],
             expect: {
-              authorized: false,
+              authorization: 'denied',
               submittable: false,
               visibility: { showQuestions: false, showScore: false },
               showBeforeRelease: false,
@@ -1451,7 +1484,7 @@ describe('resolveAccessControl', () => {
             makeDefaultRule({ beforeRelease: { listed: true } }, { prairieTestExams: [ptExam1] }),
           ],
           expect: {
-            authorized: false,
+            authorization: 'denied',
             showBeforeRelease: true,
             submittable: false,
             credit: 0,
@@ -1464,7 +1497,7 @@ describe('resolveAccessControl', () => {
           ],
           authzMode: 'Exam',
           reservations: [{ examUuid: 'other-exam', accessEnd: new Date('2025-04-01T00:00:00Z') }],
-          expect: { authorized: false, showBeforeRelease: false, submittable: false },
+          expect: { authorization: 'denied', showBeforeRelease: false, submittable: false },
         },
         {
           // Public mode: DC path applies, past-due is shown as closed not "before
@@ -1484,7 +1517,7 @@ describe('resolveAccessControl', () => {
           ],
           authzMode: 'Public',
           expect: {
-            authorized: true,
+            authorization: 'granted',
             submittable: false,
             credit: 0,
             complete: true,
@@ -1507,7 +1540,7 @@ describe('resolveAccessControl', () => {
           ],
           authzMode: 'Exam',
           reservations: [{ examUuid: 'wrong-exam', accessEnd: new Date('2025-04-01T00:00:00Z') }],
-          expect: { authorized: false, submittable: false, showBeforeRelease: false },
+          expect: { authorization: 'denied', submittable: false, showBeforeRelease: false },
         },
         {
           name: 'PT reservation grants access even when past due',
@@ -1524,7 +1557,12 @@ describe('resolveAccessControl', () => {
           ],
           authzMode: 'Exam',
           reservations: [{ examUuid: ptExam1.uuid, accessEnd: new Date('2025-04-01T00:00:00Z') }],
-          expect: { authorized: true, credit: 100, submittable: true, showBeforeRelease: false },
+          expect: {
+            authorization: 'granted',
+            credit: 100,
+            submittable: true,
+            showBeforeRelease: false,
+          },
         },
         {
           name: 'PT reservation grants access even before release',
@@ -1541,7 +1579,12 @@ describe('resolveAccessControl', () => {
           ],
           authzMode: 'Exam',
           reservations: [{ examUuid: ptExam1.uuid, accessEnd: new Date('2025-04-01T00:00:00Z') }],
-          expect: { authorized: true, credit: 100, submittable: true, showBeforeRelease: false },
+          expect: {
+            authorization: 'granted',
+            credit: 100,
+            submittable: true,
+            showBeforeRelease: false,
+          },
         },
         {
           // Public mode with a future release and beforeRelease.listed: PT
@@ -1560,7 +1603,12 @@ describe('resolveAccessControl', () => {
             ),
           ],
           authzMode: 'Public',
-          expect: { authorized: false, showBeforeRelease: true, submittable: false, credit: 0 },
+          expect: {
+            authorization: 'denied',
+            showBeforeRelease: true,
+            submittable: false,
+            credit: 0,
+          },
         },
         {
           // A granted student has real access and shouldn't also be shown the
@@ -1574,7 +1622,7 @@ describe('resolveAccessControl', () => {
           authzMode: 'Exam',
           reservations: [{ examUuid: ptExam1.uuid, accessEnd: new Date('2025-04-01T00:00:00Z') }],
           expect: {
-            authorized: true,
+            authorization: 'granted',
             submittable: true,
             credit: 100,
             showBeforeRelease: false,
@@ -1598,7 +1646,7 @@ describe('resolveAccessControl', () => {
           ],
           authzMode: 'Exam',
           expect: {
-            authorized: false,
+            authorization: 'denied',
             showBeforeRelease: false,
             submittable: false,
             visibility: { showQuestions: false, showScore: false },
@@ -1620,12 +1668,11 @@ describe('resolveAccessControl', () => {
           authzMode: 'Public',
           reservations: [],
           expect: {
-            authorized: false,
+            authorization: 'requires-completed-instance',
             submittable: false,
             showBeforeRelease: true,
             visibility: { showQuestions: false, showScore: false },
             afterCompleteVisibility: { showQuestions: true, showScore: true },
-            canReviewCompletedInstance: true,
           },
         },
         {
@@ -1648,12 +1695,11 @@ describe('resolveAccessControl', () => {
           date: new Date('2025-04-02T00:00:00Z'),
           reservations: [],
           expect: {
-            authorized: false,
+            authorization: 'requires-completed-instance',
             submittable: false,
             showBeforeRelease: true,
             visibility: { showQuestions: false, showScore: false },
             afterCompleteVisibility: { showQuestions: true, showScore: true },
-            canReviewCompletedInstance: true,
           },
         },
       ])('$name', (c) => {
@@ -1675,7 +1721,7 @@ describe('resolveAccessControl', () => {
             },
           }),
         ],
-        expect: { authorized: true, submittable: true, timeLimitMin: 60 },
+        expect: { authorization: 'granted', submittable: true, timeLimitMin: 60 },
       },
       {
         // 10 minutes until the only deadline, minus 31 seconds = 569s / 60 = 9.48 → 9
@@ -1690,7 +1736,7 @@ describe('resolveAccessControl', () => {
           }),
         ],
         date: new Date('2025-03-15T11:50:00Z'),
-        expect: { authorized: true, submittable: true, timeLimitMin: 9 },
+        expect: { authorization: 'granted', submittable: true, timeLimitMin: 9 },
       },
       {
         name: 'returns null in Exam mode',
@@ -1708,7 +1754,7 @@ describe('resolveAccessControl', () => {
         ],
         authzMode: 'Exam',
         reservations: [{ examUuid: 'exam-uuid-1', accessEnd: new Date('2025-03-15T14:00:00Z') }],
-        expect: { authorized: true, submittable: true, timeLimitMin: null },
+        expect: { authorization: 'granted', submittable: true, timeLimitMin: null },
       },
       {
         // 30m30s until deadline minus 31 seconds = 1799s / 60 = 29.983 → rounds to 30
@@ -1723,7 +1769,7 @@ describe('resolveAccessControl', () => {
           }),
         ],
         date: new Date('2025-03-15T11:29:30Z'),
-        expect: { authorized: true, submittable: true, timeLimitMin: 30 },
+        expect: { authorization: 'granted', submittable: true, timeLimitMin: 30 },
       },
       {
         // 20 seconds until deadline minus 31 seconds → clamp to 0
@@ -1738,7 +1784,7 @@ describe('resolveAccessControl', () => {
           }),
         ],
         date: new Date('2025-03-15T12:00:00Z'),
-        expect: { authorized: true, submittable: true, timeLimitMin: 0 },
+        expect: { authorization: 'granted', submittable: true, timeLimitMin: 0 },
       },
       {
         name: 'returns null when no durationMinutes',
@@ -1750,7 +1796,7 @@ describe('resolveAccessControl', () => {
             },
           }),
         ],
-        expect: { authorized: true, submittable: true, timeLimitMin: null },
+        expect: { authorization: 'granted', submittable: true, timeLimitMin: null },
       },
       {
         // Time limit spans submittable access windows: a student starting 10
@@ -1769,7 +1815,7 @@ describe('resolveAccessControl', () => {
           }),
         ],
         date: new Date('2025-03-15T11:50:00Z'),
-        expect: { authorized: true, submittable: true, credit: 100, timeLimitMin: 60 },
+        expect: { authorization: 'granted', submittable: true, credit: 100, timeLimitMin: 60 },
       },
       {
         // Once inside the late window, the cap is the late deadline. With 6+
@@ -1786,7 +1832,7 @@ describe('resolveAccessControl', () => {
           }),
         ],
         date: new Date('2025-03-16T12:00:00Z'),
-        expect: { authorized: true, submittable: true, credit: 80, timeLimitMin: 60 },
+        expect: { authorization: 'granted', submittable: true, credit: 80, timeLimitMin: 60 },
       },
       {
         // Approaching the final late deadline, the cap shrinks to the time
@@ -1803,7 +1849,7 @@ describe('resolveAccessControl', () => {
           }),
         ],
         date: new Date('2025-03-22T11:30:00Z'),
-        expect: { authorized: true, submittable: true, credit: 80, timeLimitMin: 29 },
+        expect: { authorization: 'granted', submittable: true, credit: 80, timeLimitMin: 29 },
       },
       {
         // afterLastDeadline allowing submissions has no end, so the duration
@@ -1821,7 +1867,7 @@ describe('resolveAccessControl', () => {
           }),
         ],
         date: new Date('2025-03-15T11:50:00Z'),
-        expect: { authorized: true, submittable: true, credit: 100, timeLimitMin: 60 },
+        expect: { authorization: 'granted', submittable: true, credit: 100, timeLimitMin: 60 },
       },
       {
         // Same rule, started after the due date: full duration available at
@@ -1838,7 +1884,7 @@ describe('resolveAccessControl', () => {
           }),
         ],
         date: new Date('2025-03-16T00:00:00Z'),
-        expect: { authorized: true, submittable: true, credit: 25, timeLimitMin: 60 },
+        expect: { authorization: 'granted', submittable: true, credit: 25, timeLimitMin: 60 },
       },
     ])('$name', (c) => {
       expect(runCase(c)).toMatchObject(c.expect);
@@ -1863,7 +1909,7 @@ describe('resolveAccessControl', () => {
         name: 'no afterComplete: defaults to questions hidden and score visible',
         rules: [completedRule()],
         expect: {
-          authorized: true,
+          authorization: 'granted',
           submittable: false,
           visibility: { showQuestions: false, showScore: true },
         },
@@ -1880,7 +1926,7 @@ describe('resolveAccessControl', () => {
           }),
         ],
         expect: {
-          authorized: true,
+          authorization: 'granted',
           submittable: false,
           complete: true,
           visibility: { showQuestions: true, showScore: true },
@@ -1890,7 +1936,7 @@ describe('resolveAccessControl', () => {
         name: 'questions.hidden=false: questions visible',
         rules: [completedRule({ afterComplete: { questions: { hidden: false } } })],
         expect: {
-          authorized: true,
+          authorization: 'granted',
           submittable: false,
           visibility: { showQuestions: true, showScore: true },
         },
@@ -1899,7 +1945,7 @@ describe('resolveAccessControl', () => {
         name: 'questions.hidden=true: questions hidden',
         rules: [completedRule({ afterComplete: { questions: { hidden: true } } })],
         expect: {
-          authorized: true,
+          authorization: 'granted',
           submittable: false,
           visibility: { showQuestions: false, showScore: true },
         },
@@ -1915,7 +1961,7 @@ describe('resolveAccessControl', () => {
         ],
         date: new Date('2025-03-15T12:00:00Z'),
         expect: {
-          authorized: true,
+          authorization: 'granted',
           submittable: false,
           visibility: { showQuestions: true, showScore: true },
         },
@@ -1935,7 +1981,7 @@ describe('resolveAccessControl', () => {
         ],
         date: new Date('2025-03-15T12:00:00Z'),
         expect: {
-          authorized: true,
+          authorization: 'granted',
           submittable: false,
           visibility: { showQuestions: false, showScore: true },
         },
@@ -1944,7 +1990,7 @@ describe('resolveAccessControl', () => {
         name: 'score.hidden=true: score hidden',
         rules: [completedRule({ afterComplete: { score: { hidden: true } } })],
         expect: {
-          authorized: true,
+          authorization: 'granted',
           submittable: false,
           visibility: { showQuestions: false, showScore: false },
         },
@@ -1960,7 +2006,7 @@ describe('resolveAccessControl', () => {
         ],
         date: new Date('2025-03-15T12:00:00Z'),
         expect: {
-          authorized: true,
+          authorization: 'granted',
           submittable: false,
           visibility: { showQuestions: false, showScore: true },
         },
@@ -1982,7 +2028,7 @@ describe('resolveAccessControl', () => {
           ),
         ],
         expect: {
-          authorized: true,
+          authorization: 'granted',
           submittable: false,
           visibility: { showQuestions: false, showScore: false },
         },
@@ -2005,7 +2051,7 @@ describe('resolveAccessControl', () => {
         ],
         date: new Date('2025-03-15T12:00:00Z'),
         expect: {
-          authorized: true,
+          authorization: 'granted',
           submittable: true,
           complete: false,
           visibility: { showQuestions: true, showScore: true },
@@ -2026,7 +2072,7 @@ describe('resolveAccessControl', () => {
         ],
         date: new Date('2025-03-15T12:00:00Z'),
         expect: {
-          authorized: true,
+          authorization: 'granted',
           submittable: true,
           complete: false,
           visibility: { showQuestions: true, showScore: true },
@@ -2047,7 +2093,7 @@ describe('resolveAccessControl', () => {
         ],
         date: new Date('2025-03-21T12:00:00Z'),
         expect: {
-          authorized: true,
+          authorization: 'granted',
           submittable: false,
           complete: true,
           visibility: { showQuestions: false, showScore: false },
@@ -2067,7 +2113,7 @@ describe('resolveAccessControl', () => {
         ],
         date: new Date('2025-03-21T12:00:00Z'),
         expect: {
-          authorized: true,
+          authorization: 'granted',
           submittable: true,
           complete: false,
           visibility: { showQuestions: true, showScore: true },
@@ -2092,14 +2138,14 @@ describe('resolveAccessControl', () => {
         ],
         date: new Date('2025-03-15T12:00:00Z'),
         expect: {
-          authorized: true,
+          authorization: 'granted',
           submittable: true,
           creditDateString: expect.stringMatching(/^100% until /),
         },
       },
       {
         name: 'shows None when no dateControl configured',
-        expect: { authorized: false, submittable: false, creditDateString: 'None' },
+        expect: { authorization: 'denied', submittable: false, creditDateString: 'None' },
       },
     ])('$name', (c) => {
       expect(runCase(c)).toMatchObject(c.expect);
@@ -2124,7 +2170,7 @@ describe('resolveAccessControl', () => {
           ),
         ],
         date: new Date('2025-03-20T00:00:00Z'),
-        expect: { authorized: false, credit: 0, submittable: false },
+        expect: { authorization: 'denied', credit: 0, submittable: false },
       },
       {
         name: 'early deadline before release is ignored',
@@ -2141,7 +2187,7 @@ describe('resolveAccessControl', () => {
           }),
         ],
         date: new Date('2025-03-05T00:00:00Z'),
-        expect: { authorized: true, submittable: true, credit: 110 },
+        expect: { authorization: 'granted', submittable: true, credit: 110 },
       },
       {
         name: 'late deadline before release is ignored',
@@ -2158,7 +2204,7 @@ describe('resolveAccessControl', () => {
           }),
         ],
         date: new Date('2025-03-22T00:00:00Z'),
-        expect: { authorized: true, submittable: true, credit: 50 },
+        expect: { authorization: 'granted', submittable: true, credit: 50 },
       },
       {
         // Early deadlines are after due date (Feb 15), so ignored
@@ -2181,7 +2227,7 @@ describe('resolveAccessControl', () => {
           ),
         ],
         date: new Date('2025-01-15T00:00:00Z'),
-        expect: { authorized: true, submittable: true, credit: 100 },
+        expect: { authorization: 'granted', submittable: true, credit: 100 },
       },
       {
         // Late deadline March 25 < due date March 30, so ignored → past due → complete review-only.
@@ -2201,7 +2247,7 @@ describe('resolveAccessControl', () => {
           ),
         ],
         date: new Date('2025-04-01T00:00:00Z'),
-        expect: { authorized: true, submittable: false, credit: 0, complete: true },
+        expect: { authorization: 'granted', submittable: false, credit: 0, complete: true },
       },
       {
         name: 'afterLastDeadline ignored when there are no deadlines',
@@ -2215,7 +2261,7 @@ describe('resolveAccessControl', () => {
           }),
         ],
         date: new Date('2025-03-15T00:00:00Z'),
-        expect: { authorized: true, credit: 100, submittable: true },
+        expect: { authorization: 'granted', credit: 100, submittable: true },
       },
     ])('$name', (c) => {
       expect(runCase(c)).toMatchObject(c.expect);
@@ -2235,7 +2281,7 @@ describe('resolveAccessControl', () => {
           }),
         ],
         date: new Date('2025-03-15T12:00:00Z'),
-        expect: { authorized: true, credit: 80, submittable: true },
+        expect: { authorization: 'granted', credit: 80, submittable: true },
       },
       {
         // Raw late credits [90, 70] with due credit 80 clamp to effective [80, 70]
@@ -2253,7 +2299,7 @@ describe('resolveAccessControl', () => {
           }),
         ],
         date: new Date('2025-04-10T00:00:00Z'),
-        expect: { authorized: true, submittable: true, credit: 80 },
+        expect: { authorization: 'granted', submittable: true, credit: 80 },
       },
       {
         name: 'applies second late deadline below custom due credit unchanged',
@@ -2270,7 +2316,7 @@ describe('resolveAccessControl', () => {
           }),
         ],
         date: new Date('2025-04-20T00:00:00Z'),
-        expect: { authorized: true, submittable: true, credit: 70 },
+        expect: { authorization: 'granted', submittable: true, credit: 70 },
       },
       {
         // Raw early credits [130, 110] with due credit 120 clamp to [130, 120]
@@ -2288,7 +2334,7 @@ describe('resolveAccessControl', () => {
           }),
         ],
         date: new Date('2025-02-15T00:00:00Z'),
-        expect: { authorized: true, submittable: true, credit: 120 },
+        expect: { authorization: 'granted', submittable: true, credit: 120 },
       },
       {
         // No afterLastDeadline configured → no submissions after the final deadline.
@@ -2302,7 +2348,7 @@ describe('resolveAccessControl', () => {
           }),
         ],
         date: new Date('2025-04-05T00:00:00Z'),
-        expect: { authorized: true, credit: 0, submittable: false, complete: true },
+        expect: { authorization: 'granted', credit: 0, submittable: false, complete: true },
       },
       {
         name: 'defaults due credit to 100 when credit field is omitted',
@@ -2315,7 +2361,7 @@ describe('resolveAccessControl', () => {
           }),
         ],
         date: new Date('2025-03-15T00:00:00Z'),
-        expect: { authorized: true, submittable: true, credit: 100 },
+        expect: { authorization: 'granted', submittable: true, credit: 100 },
       },
       {
         name: 'applies custom due credit indefinitely when due date is null',
@@ -2328,7 +2374,12 @@ describe('resolveAccessControl', () => {
           }),
         ],
         date: new Date('2030-01-01T00:00:00Z'),
-        expect: { authorized: true, credit: 50, submittable: true, creditDateString: '50%' },
+        expect: {
+          authorization: 'granted',
+          credit: 50,
+          submittable: true,
+          creditDateString: '50%',
+        },
       },
       {
         // E.g., Practice assessment: 0% credit submissions allowed indefinitely
@@ -2342,7 +2393,12 @@ describe('resolveAccessControl', () => {
           }),
         ],
         date: new Date('2030-01-01T00:00:00Z'),
-        expect: { authorized: true, credit: 0, submittable: true, creditDateString: 'None' },
+        expect: {
+          authorization: 'granted',
+          credit: 0,
+          submittable: true,
+          creditDateString: 'None',
+        },
       },
       {
         name: 'null due date shadows afterLastDeadline (with early deadlines)',
@@ -2357,7 +2413,7 @@ describe('resolveAccessControl', () => {
           }),
         ],
         date: new Date('2030-01-01T00:00:00Z'),
-        expect: { authorized: true, credit: 100, submittable: true },
+        expect: { authorization: 'granted', credit: 100, submittable: true },
       },
     ])('$name', (c) => {
       expect(runCase(c)).toMatchObject(c.expect);
@@ -2409,9 +2465,9 @@ describe('resolveAccessControl', () => {
         name: 'pre-release deny',
         rules: [dcRule],
         date: new Date('2025-03-15T12:00:00Z'),
-        expect: { authorized: false, submittable: false },
+        expect: { authorization: 'denied', submittable: false },
       });
-      expect(result.authorized).toBe(false);
+      expect(result.authorization).toBe('denied');
       expect(result.accessTimeline.length).toBeGreaterThan(0);
       expect(result.accessTimeline.find((e) => e.current)).toMatchObject({
         startDate: null,
@@ -2432,9 +2488,9 @@ describe('resolveAccessControl', () => {
           }),
         ],
         date: new Date('2025-03-15T12:00:00Z'),
-        expect: { authorized: false, submittable: false },
+        expect: { authorization: 'denied', submittable: false },
       });
-      expect(result.authorized).toBe(false);
+      expect(result.authorization).toBe('denied');
       expect(result.showBeforeRelease).toBe(true);
       expect(result.accessTimeline.length).toBeGreaterThan(0);
       expect(result.accessTimeline.find((e) => e.current)).toMatchObject({
@@ -2460,9 +2516,9 @@ describe('resolveAccessControl', () => {
         date: new Date('2025-03-15T12:00:00Z'),
         authzMode: 'Exam',
         reservations: [],
-        expect: { authorized: false, submittable: false },
+        expect: { authorization: 'denied', submittable: false },
       });
-      expect(result.authorized).toBe(false);
+      expect(result.authorization).toBe('denied');
       expect(result.accessTimeline).toEqual([]);
     });
   });
@@ -2505,7 +2561,7 @@ describe('resolveAccessControl', () => {
         ],
         enrollment: { enrollmentId: 'enroll-1', studentLabelIds: ['label-1', 'label-2'] },
         date: new Date('2025-04-10T00:00:00Z'),
-        expect: { authorized: true, submittable: true },
+        expect: { authorization: 'granted', submittable: true },
       });
       expect(result.accessTimeline).toEqual([
         {
@@ -2572,7 +2628,7 @@ describe('resolveAccessControl', () => {
         ],
         enrollment: { enrollmentId: 'enroll-1', studentLabelIds: ['label-1', 'label-2'] },
         date: new Date('2025-04-05T00:00:00Z'),
-        expect: { authorized: true, submittable: true },
+        expect: { authorization: 'granted', submittable: true },
       });
       expect(result.accessTimeline).toEqual([
         {
