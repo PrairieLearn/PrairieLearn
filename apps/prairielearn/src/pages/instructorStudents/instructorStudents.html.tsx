@@ -458,8 +458,8 @@ function StudentsCard({
           id: 'enrollment_status',
           header: 'Status',
           cell: (info) => <EnrollmentStatusIcon type="text" status={info.getValue()} />,
-          filterFn: (row, columnId, filter: MultiSelectFilterValue<EnumEnrollmentStatus>) => {
-            const current = row.getValue<StudentRow['enrollment']['status']>(columnId);
+          filterFn: (row, _columnId, filter: MultiSelectFilterValue<EnumEnrollmentStatus>) => {
+            const current = row.original.enrollment.status;
             return applyMultiSelectFilter(filter, (values) => values.includes(current));
           },
         }),
@@ -523,8 +523,8 @@ function StudentsCard({
               </div>
             );
           },
-          filterFn: (row, columnId, filter: MultiSelectFilterValue) => {
-            const labelIdSet = new Set(row.getValue<StudentRow['student_label_ids']>(columnId));
+          filterFn: (row, _columnId, filter: MultiSelectFilterValue) => {
+            const labelIdSet = new Set(row.original.student_label_ids);
             return applyMultiSelectFilter(filter, (values) =>
               values.some((id) => labelIdSet.has(id)),
             );

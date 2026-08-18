@@ -399,10 +399,8 @@ export function AssessmentInstancesTable({
           header: () => <HelpHeader label="Role" modalId="roles" onShowHelp={setHelpModal} />,
           cell: (info) => info.getValue(),
           meta: { label: 'Role' },
-          filterFn: (row, columnId, filter: MultiSelectFilterValue<RoleValue>) =>
-            applyMultiSelectFilter(filter, (values) =>
-              values.includes(row.getValue<RoleValue>(columnId)),
-            ),
+          filterFn: (row, _columnId, filter: MultiSelectFilterValue<RoleValue>) =>
+            applyMultiSelectFilter(filter, (values) => values.includes(row.original.role)),
           size: 120,
         }),
       );

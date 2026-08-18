@@ -130,13 +130,13 @@ export function createQuestionsTableColumns({
       id: 'topic',
       header: 'Topic',
       cell: (info) => <TopicBadge topic={info.getValue()} />,
-      sortFn: (rowA, rowB, columnId) => {
-        const topicA = rowA.getValue<SafeQuestionsPageData['topic']>(columnId);
-        const topicB = rowB.getValue<SafeQuestionsPageData['topic']>(columnId);
+      sortFn: (rowA, rowB) => {
+        const topicA = rowA.original.topic;
+        const topicB = rowB.original.topic;
         return topicA.name.localeCompare(topicB.name);
       },
-      filterFn: (row, columnId, filter: MultiSelectFilterValue) => {
-        const topic = row.getValue<SafeQuestionsPageData['topic']>(columnId);
+      filterFn: (row, _columnId, filter: MultiSelectFilterValue) => {
+        const topic = row.original.topic;
         return applyMultiSelectFilter(filter, (values) => values.includes(topic.name));
       },
       size: 150,
@@ -151,8 +151,8 @@ export function createQuestionsTableColumns({
         </div>
       ),
       enableSorting: false,
-      filterFn: (row, columnId, filter: MultiSelectFilterValue) => {
-        const tags = row.getValue<SafeQuestionsPageData['tags']>(columnId) ?? [];
+      filterFn: (row, _columnId, filter: MultiSelectFilterValue) => {
+        const tags = row.original.tags ?? [];
         return applyMultiSelectFilter(filter, (values) =>
           values.some((v) => tags.some((t) => t.name === v)),
         );
@@ -229,8 +229,8 @@ export function createQuestionsTableColumns({
         const value = info.getValue();
         return <span className={`badge color-${value === 'v3' ? 'green1' : 'red1'}`}>{value}</span>;
       },
-      filterFn: (row, columnId, filter: MultiSelectFilterValue) => {
-        const value = row.getValue<SafeQuestionsPageData['display_type']>(columnId);
+      filterFn: (row, _columnId, filter: MultiSelectFilterValue) => {
+        const value = row.original.display_type;
         return applyMultiSelectFilter(filter, (values) => values.includes(value));
       },
       size: 200,
@@ -240,8 +240,8 @@ export function createQuestionsTableColumns({
       id: 'grading_method',
       header: 'Grading Method',
       cell: (info) => info.getValue(),
-      filterFn: (row, columnId, filter: MultiSelectFilterValue) => {
-        const value = row.getValue<SafeQuestionsPageData['grading_method']>(columnId);
+      filterFn: (row, _columnId, filter: MultiSelectFilterValue) => {
+        const value = row.original.grading_method;
         return applyMultiSelectFilter(filter, (values) => values.includes(value));
       },
       size: 150,
@@ -254,8 +254,8 @@ export function createQuestionsTableColumns({
         const value = info.getValue();
         return value ? <code>{value}</code> : '—';
       },
-      filterFn: (row, columnId, filter: MultiSelectFilterValue) => {
-        const value = row.getValue<SafeQuestionsPageData['external_grading_image']>(columnId);
+      filterFn: (row, _columnId, filter: MultiSelectFilterValue) => {
+        const value = row.original.external_grading_image;
         return applyMultiSelectFilter(filter, (values) => values.includes(imageFilterValue(value)));
       },
       size: 200,
@@ -268,8 +268,8 @@ export function createQuestionsTableColumns({
         const value = info.getValue();
         return value ? <code>{value}</code> : '—';
       },
-      filterFn: (row, columnId, filter: MultiSelectFilterValue) => {
-        const value = row.getValue<SafeQuestionsPageData['workspace_image']>(columnId);
+      filterFn: (row, _columnId, filter: MultiSelectFilterValue) => {
+        const value = row.original.workspace_image;
         return applyMultiSelectFilter(filter, (values) => values.includes(imageFilterValue(value)));
       },
       size: 200,
@@ -279,8 +279,8 @@ export function createQuestionsTableColumns({
       id: 'single_variant',
       header: 'Single variant',
       cell: (info) => (info.getValue() ? 'Yes' : 'No'),
-      filterFn: (row, columnId, filter: MultiSelectFilterValue<BooleanFilterOption>) => {
-        return applyBooleanFilter(filter, row.getValue<boolean>(columnId));
+      filterFn: (row, _columnId, filter: MultiSelectFilterValue<BooleanFilterOption>) => {
+        return applyBooleanFilter(filter, row.original.single_variant);
       },
       size: 190,
     }),
@@ -289,8 +289,8 @@ export function createQuestionsTableColumns({
       id: 'has_preferences',
       header: 'Has preferences',
       cell: (info) => (info.getValue() ? 'Yes' : 'No'),
-      filterFn: (row, columnId, filter: MultiSelectFilterValue<BooleanFilterOption>) => {
-        return applyBooleanFilter(filter, row.getValue<boolean>(columnId));
+      filterFn: (row, _columnId, filter: MultiSelectFilterValue<BooleanFilterOption>) => {
+        return applyBooleanFilter(filter, row.original.has_preferences);
       },
       size: 170,
     }),

@@ -193,13 +193,8 @@ export function createColumns({
           </span>
         );
       },
-      filterFn: (row, columnId, filter: MultiSelectFilterValue) => {
-        // We have to do this cast because columnId is a string.
-        // See https://github.com/TanStack/table/issues/4142#issuecomment-3518670925.
-        const current =
-          row.getValue<InstanceQuestionRow['instance_question']['instance_question_group_name']>(
-            columnId,
-          );
+      filterFn: (row, _columnId, filter: MultiSelectFilterValue) => {
+        const current = row.original.instance_question.instance_question_group_name;
         const groupName = current ?? 'No Group';
         return applyMultiSelectFilter(filter, (values) => values.includes(groupName));
       },
@@ -239,8 +234,8 @@ export function createColumns({
           />
         );
       },
-      filterFn: (row, columnId, filter: MultiSelectFilterValue) => {
-        const requiresGrading = row.getValue<boolean>(columnId);
+      filterFn: (row, _columnId, filter: MultiSelectFilterValue) => {
+        const requiresGrading = row.original.instance_question.requires_manual_grading;
         const status = requiresGrading ? 'Requires grading' : 'Graded';
         return applyMultiSelectFilter(filter, (values) => values.includes(status));
       },
@@ -253,8 +248,8 @@ export function createColumns({
       id: 'assigned_grader_name',
       header: 'Assigned grader',
       cell: (info) => info.getValue() || 'Unassigned',
-      filterFn: (row, columnId, filter: MultiSelectFilterValue) => {
-        const current = row.getValue<InstanceQuestionRow['assigned_grader_name']>(columnId);
+      filterFn: (row, _columnId, filter: MultiSelectFilterValue) => {
+        const current = row.original.assigned_grader_name;
         const grader = current ?? 'Unassigned';
         return applyMultiSelectFilter(filter, (values) => values.includes(grader));
       },
@@ -348,8 +343,8 @@ export function createColumns({
           return info.getValue();
         }
       },
-      filterFn: (row, columnId, filter: MultiSelectFilterValue) => {
-        const current = row.getValue<InstanceQuestionRow['last_grader_name']>(columnId);
+      filterFn: (row, _columnId, filter: MultiSelectFilterValue) => {
+        const current = row.original.last_grader_name;
         const rowData = row.original;
         const aiGraderName =
           rowData.instance_question.ai_grading_status !== 'None'

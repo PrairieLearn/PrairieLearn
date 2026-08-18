@@ -222,8 +222,8 @@ function GradebookTable({
             </span>
           ),
           cell: (info) => info.getValue(),
-          filterFn: (row, columnId, filter: MultiSelectFilterValue<RoleValue>) => {
-            const current = row.getValue<GradebookRow['role']>(columnId);
+          filterFn: (row, _columnId, filter: MultiSelectFilterValue<RoleValue>) => {
+            const current = row.original.role;
             return applyMultiSelectFilter(filter, (values) => values.includes(current));
           },
         }),
@@ -235,8 +235,8 @@ function GradebookTable({
             const status = info.getValue();
             return status ? <EnrollmentStatusIcon type="text" status={status} /> : '—';
           },
-          filterFn: (row, columnId, filter: MultiSelectFilterValue<EnumEnrollmentStatus>) => {
-            const current = row.getValue<EnumEnrollmentStatus | undefined>(columnId);
+          filterFn: (row, _columnId, filter: MultiSelectFilterValue<EnumEnrollmentStatus>) => {
+            const current = row.original.enrollment?.status;
             // Rows without an enrollment status can't satisfy any include filter,
             // and shouldn't be hidden by an exclude filter that doesn't reference them.
             if (!current) return filter.values.length === 0 || filter.mode === 'exclude';
@@ -269,8 +269,8 @@ function GradebookTable({
               </div>
             );
           },
-          filterFn: (row, columnId, filter: MultiSelectFilterValue) => {
-            const labelIds = new Set(row.getValue<GradebookRow['student_label_ids']>(columnId));
+          filterFn: (row, _columnId, filter: MultiSelectFilterValue) => {
+            const labelIds = new Set(row.original.student_label_ids);
             return applyMultiSelectFilter(filter, (values) =>
               values.some((id) => labelIds.has(id)),
             );
