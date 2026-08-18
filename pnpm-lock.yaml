@@ -595,6 +595,9 @@ importers:
       '@prairielearn/postgres-tools':
         specifier: workspace:^
         version: link:../../packages/postgres-tools
+      '@prairielearn/public-fetch':
+        specifier: workspace:^
+        version: link:../../packages/public-fetch
       '@prairielearn/question-conversion':
         specifier: workspace:^
         version: link:../../packages/question-conversion
@@ -619,9 +622,6 @@ importers:
       '@prairielearn/sketchresponse':
         specifier: ^0.1.4
         version: 0.1.4(stylelint@16.26.1(supports-color@7.2.0)(typescript@6.0.3))
-      '@prairielearn/ssrf-protection':
-        specifier: workspace:^
-        version: link:../../packages/ssrf-protection
       '@prairielearn/tree-sitter-htmlmustache':
         specifier: ^1.4.3
         version: 1.4.3(node-gyp-build@4.8.4)(prettier@3.8.5)
@@ -2445,6 +2445,31 @@ importers:
         specifier: ^0.1.10
         version: 0.1.10(typescript@6.0.3)
 
+  packages/public-fetch:
+    dependencies:
+      ipaddr.js:
+        specifier: ^2.5.0
+        version: 2.5.0
+      undici:
+        specifier: ^8.10.0
+        version: 8.10.0
+    devDependencies:
+      '@prairielearn/tsconfig':
+        specifier: workspace:^
+        version: link:../tsconfig
+      '@types/node':
+        specifier: ^24.13.3
+        version: 24.13.3
+      '@typescript/native-preview':
+        specifier: beta
+        version: 7.0.0-dev.20260421.2
+      '@vitest/coverage-v8':
+        specifier: ^4.1.10
+        version: 4.1.10(vitest@4.1.10)
+      vitest:
+        specifier: ^4.1.10
+        version: 4.1.10(@opentelemetry/api@1.9.1)(@types/node@24.13.3)(@vitest/coverage-v8@4.1.10)(jsdom@29.1.1)(vite@8.2.0(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(sass@1.102.0)(tsx@4.23.5)(yaml@2.9.0))
+
   packages/question-conversion:
     dependencies:
       '@prairielearn/logger':
@@ -2686,28 +2711,6 @@ importers:
       '@types/debug':
         specifier: ^4.1.13
         version: 4.1.13
-      '@types/node':
-        specifier: ^24.13.3
-        version: 24.13.3
-      '@typescript/native-preview':
-        specifier: beta
-        version: 7.0.0-dev.20260421.2
-      '@vitest/coverage-v8':
-        specifier: ^4.1.10
-        version: 4.1.10(vitest@4.1.10)
-      vitest:
-        specifier: ^4.1.10
-        version: 4.1.10(@opentelemetry/api@1.9.1)(@types/node@24.13.3)(@vitest/coverage-v8@4.1.10)(jsdom@29.1.1)(vite@8.2.0(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(sass@1.102.0)(tsx@4.23.5)(yaml@2.9.0))
-
-  packages/ssrf-protection:
-    dependencies:
-      ipaddr.js:
-        specifier: ^2.5.0
-        version: 2.5.0
-    devDependencies:
-      '@prairielearn/tsconfig':
-        specifier: workspace:^
-        version: link:../tsconfig
       '@types/node':
         specifier: ^24.13.3
         version: 24.13.3
@@ -10326,6 +10329,10 @@ packages:
   undici@7.29.0:
     resolution: {integrity: sha512-IDxfleLmmbSskfWSUATiN1nfn2rDuvnMOqb5CWR92iIfojA0Ud+ulOAAEQ57LPr9rWmsreUyf5lwyao+7GNNVw==}
     engines: {node: '>=20.18.1'}
+
+  undici@8.10.0:
+    resolution: {integrity: sha512-HvltHd7avK13QIw/oLe4qoOLyoVSoafqJ2jYOrtMRBkbYT31eiBQ8O0ehRKZiEZCMEyLFQNIADpgCWC5fALvYQ==}
+    engines: {node: '>=22.19.0'}
 
   unicorn-magic@0.3.0:
     resolution: {integrity: sha512-+QBBXBCvifc56fsbuxZQ6Sic3wqqc3WWaqxs58gvJrcOuN83HGTCwz3oS5phzU9LthRNE9VrJCFCLUgHeeFnfA==}
@@ -18939,6 +18946,8 @@ snapshots:
   undici@6.28.0: {}
 
   undici@7.29.0: {}
+
+  undici@8.10.0: {}
 
   unicorn-magic@0.3.0: {}
 

@@ -6,16 +6,16 @@ import { fileTypeFromBuffer } from 'file-type';
 
 import {
   type ResolveAddress,
-  requestFromPublicUrl,
+  createPublicFetch,
+  publicFetch,
   validatePublicHttpUrl,
-} from '@prairielearn/ssrf-protection';
+} from '@prairielearn/public-fetch';
 
 import { sanitizeQtiImportSvg } from './qtiImportSvg.js';
 
 const MAX_REMOTE_IMAGE_COUNT = 100;
 const MAX_REMOTE_IMAGE_BYTES = 10 * 1024 * 1024;
 const MAX_TOTAL_REMOTE_IMAGE_BYTES = 50 * 1024 * 1024;
-const MAX_REDIRECTS = 3;
 const REQUEST_TIMEOUT_MS = 10_000;
 const MAX_CONCURRENT_REQUESTS = 5;
 const USER_AGENT = 'PrairieLearn-QTI-Importer/1.0';
@@ -222,46 +222,39 @@ export async function fetchRemoteImage(
     consumeBytes?: ConsumeBytes;
   } = {},
 ): Promise<FetchedRemoteImage> {
-  const response = await requestFromPublicUrl(initialUrl, {
+  const fetch = resolveAddress ? createPublicFetch({ resolveAddress }) : publicFetch;
+  const response = await fetch(initialUrl, {
     headers: {
       Accept: ACCEPTED_IMAGE_CONTENT_TYPES,
       'User-Agent': USER_AGENT,
     },
-    maxRedirects: MAX_REDIRECTS,
-    timeoutMs: REQUEST_TIMEOUT_MS,
-    ...(resolveAddress && { resolveAddress }),
+    signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
   });
 
-  if (response.statusCode !== 200) {
-    response.destroy();
+  if (response.status !== 200) {
+    await response.body?.cancel();
     throw new Error('Remote image returned an unsuccessful response');
   }
 
-  const declaredContentType = normalizeContentType(response.headers['content-type']);
+  const declaredContentType = normalizeContentType(response.headers.get('content-type'));
   if (!declaredContentType || !SUPPORTED_IMAGE_TYPES.has(declaredContentType)) {
-    response.destroy();
+    await response.body?.cancel();
     throw new Error('Remote image has an unsupported content type');
   }
 
-  const contentLength = Number(response.headers['content-length']);
+  const contentLength = Number(response.headers.get('content-length'));
   if (Number.isFinite(contentLength) && contentLength > MAX_REMOTE_IMAGE_BYTES) {
-    response.destroy();
+    await response.body?.cancel();
     throw new Error('Remote image is too large');
   }
 
   const chunks: Buffer[] = [];
   let byteLength = 0;
-  for await (const chunk of response) {
+  for await (const chunk of response.body ?? []) {
     const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
     byteLength += buffer.byteLength;
-    try {
-      consumeBytes?.(buffer.byteLength);
-    } catch (error) {
-      response.destroy();
-      throw error;
-    }
+    consumeBytes?.(buffer.byteLength);
     if (byteLength > MAX_REMOTE_IMAGE_BYTES) {
-      response.destroy();
       throw new Error('Remote image is too large');
     }
     chunks.push(buffer);
@@ -287,7 +280,7 @@ export async function fetchRemoteImage(
   return { content, extension };
 }
 
-function normalizeContentType(value: string | undefined): string | null {
+function normalizeContentType(value: string | null): string | null {
   if (!value) return null;
   const contentType = value.split(';', 1)[0].trim().toLowerCase();
   return contentType === 'image/jpg' ? 'image/jpeg' : contentType;

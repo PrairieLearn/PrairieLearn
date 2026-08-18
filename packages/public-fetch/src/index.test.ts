@@ -3,7 +3,12 @@ import type { AddressInfo } from 'node:net';
 
 import { describe, expect, it } from 'vitest';
 
-import { isPublicIpAddress, requestFromPublicUrl, resolvePublicAddress } from './index.js';
+import {
+  createPublicFetch,
+  isPublicIpAddress,
+  publicFetch,
+  resolvePublicAddress,
+} from './index.js';
 
 async function withHttpServer(
   handler: http.RequestListener,
@@ -20,9 +25,9 @@ async function withHttpServer(
   }
 }
 
-async function readResponse(response: http.IncomingMessage): Promise<string> {
+async function readRequest(request: http.IncomingMessage): Promise<string> {
   const chunks: Buffer[] = [];
-  for await (const chunk of response) {
+  for await (const chunk of request) {
     chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
   }
   return Buffer.concat(chunks).toString();
@@ -77,8 +82,8 @@ describe('resolvePublicAddress', () => {
   });
 });
 
-describe('requestFromPublicUrl', () => {
-  it('pins each request and redirect to the resolved address', async () => {
+describe('publicFetch', () => {
+  it('pins connections to the resolved address and follows redirects', async () => {
     const requests: { url: string; headers: http.IncomingHttpHeaders }[] = [];
     await withHttpServer(
       (request, response) => {
@@ -92,23 +97,46 @@ describe('requestFromPublicUrl', () => {
       },
       async (port) => {
         const resolvedHostnames: string[] = [];
-        const response = await requestFromPublicUrl(
-          new URL(`http://public.example:${port}/redirect`),
-          {
-            headers: { Host: 'internal.example', 'User-Agent': 'PrairieLearn-Test/1.0' },
-            maxRedirects: 1,
-            resolveAddress: async (hostname) => {
-              resolvedHostnames.push(hostname);
-              return '127.0.0.1';
-            },
+        const fetch = createPublicFetch({
+          resolveAddress: async (hostname) => {
+            resolvedHostnames.push(hostname);
+            return '127.0.0.1';
           },
-        );
+        });
+        const response = await fetch(`http://public.example:${port}/redirect`, {
+          headers: { Host: 'internal.example', 'User-Agent': 'PrairieLearn-Test/1.0' },
+        });
 
-        await expect(readResponse(response)).resolves.toBe('contents');
+        await expect(response.text()).resolves.toBe('contents');
         expect(resolvedHostnames).toEqual(['public.example', 'public.example']);
         expect(requests.map((request) => request.url)).toEqual(['/redirect', '/resource']);
         expect(requests[0].headers.host).toBe(`public.example:${port}`);
         expect(requests[0].headers['user-agent']).toBe('PrairieLearn-Test/1.0');
+      },
+    );
+  });
+
+  it('supports Fetch request methods, bodies, and responses', async () => {
+    await withHttpServer(
+      async (request, response) => {
+        const body = await readRequest(request);
+        response.writeHead(201, { 'Content-Type': 'application/json' });
+        response.end(JSON.stringify({ method: request.method, body }));
+      },
+      async (port) => {
+        const fetch = createPublicFetch({ resolveAddress: async () => '127.0.0.1' });
+        const response = await fetch(`http://public.example:${port}/webhook`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ event: 'grade' }),
+        });
+
+        expect(response.status).toBe(201);
+        expect(response.headers.get('content-type')).toBe('application/json');
+        await expect(response.json()).resolves.toEqual({
+          method: 'POST',
+          body: '{"event":"grade"}',
+        });
       },
     );
   });
@@ -123,9 +151,7 @@ describe('requestFromPublicUrl', () => {
           response.end('contents');
         },
         async (port) => {
-          await expect(
-            requestFromPublicUrl(new URL(`http://${hostname}:${port}/resource`)),
-          ).rejects.toThrow('public address');
+          await expect(publicFetch(`http://${hostname}:${port}/resource`)).rejects.toThrow();
         },
       );
       expect(requestCount).toBe(0);
@@ -134,33 +160,64 @@ describe('requestFromPublicUrl', () => {
 
   it('rejects credentials before resolving the host', async () => {
     let didResolve = false;
+    const fetch = createPublicFetch({
+      resolveAddress: async () => {
+        didResolve = true;
+        return '127.0.0.1';
+      },
+    });
 
-    await expect(
-      requestFromPublicUrl(new URL('https://user:password@public.example/resource'), {
-        resolveAddress: async () => {
-          didResolve = true;
-          return '127.0.0.1';
-        },
-      }),
-    ).rejects.toThrow('credentials');
+    await expect(fetch('https://user:password@public.example/resource')).rejects.toThrow(
+      'credentials',
+    );
     expect(didResolve).toBe(false);
   });
 
   it('rejects non-HTTP protocols before resolving the host', async () => {
     let didResolve = false;
+    const fetch = createPublicFetch({
+      resolveAddress: async () => {
+        didResolve = true;
+        return '127.0.0.1';
+      },
+    });
 
-    await expect(
-      requestFromPublicUrl(new URL('file:///etc/passwd'), {
-        resolveAddress: async () => {
-          didResolve = true;
-          return '127.0.0.1';
-        },
-      }),
-    ).rejects.toThrow('HTTP or HTTPS');
+    await expect(fetch('data:text/plain,contents')).rejects.toThrow('HTTP or HTTPS');
     expect(didResolve).toBe(false);
   });
 
-  it('limits redirects', async () => {
+  it('rejects a redirect to a non-public address before connecting', async () => {
+    let internalRequestCount = 0;
+    await withHttpServer(
+      (_request, response) => {
+        internalRequestCount += 1;
+        response.end('internal');
+      },
+      async (internalPort) => {
+        await withHttpServer(
+          (_request, response) => {
+            response.writeHead(302, {
+              Location: `http://127.0.0.1:${internalPort}/internal`,
+            });
+            response.end();
+          },
+          async (redirectPort) => {
+            const fetch = createPublicFetch({
+              resolveAddress: async (hostname) => {
+                if (hostname === 'public.example') return '127.0.0.1';
+                return resolvePublicAddress(hostname);
+              },
+            });
+
+            await expect(fetch(`http://public.example:${redirectPort}/redirect`)).rejects.toThrow();
+          },
+        );
+      },
+    );
+    expect(internalRequestCount).toBe(0);
+  });
+
+  it('uses the Fetch redirect limit', async () => {
     let requestCount = 0;
     await withHttpServer(
       (_request, response) => {
@@ -169,42 +226,34 @@ describe('requestFromPublicUrl', () => {
         response.end();
       },
       async (port) => {
-        await expect(
-          requestFromPublicUrl(new URL(`http://public.example:${port}/redirect`), {
-            maxRedirects: 3,
-            resolveAddress: async () => '127.0.0.1',
-          }),
-        ).rejects.toThrow('redirect limit');
+        const fetch = createPublicFetch({ resolveAddress: async () => '127.0.0.1' });
+        await expect(fetch(`http://public.example:${port}/redirect`)).rejects.toThrow();
       },
     );
-    expect(requestCount).toBe(4);
+    expect(requestCount).toBe(21);
   });
 
-  it('times out while resolving the host', async () => {
+  it('can be aborted while resolving the host', async () => {
+    const fetch = createPublicFetch({ resolveAddress: async () => new Promise(() => {}) });
+
     await expect(
-      requestFromPublicUrl(new URL('https://public.example/resource'), {
-        timeoutMs: 10,
-        resolveAddress: async () => new Promise(() => {}),
-      }),
-    ).rejects.toThrow('timed out');
+      fetch('https://public.example/resource', { signal: AbortSignal.timeout(10) }),
+    ).rejects.toThrow();
   });
 
-  it('applies the timeout while streaming the response body', async () => {
+  it('applies an abort signal while streaming the response body', async () => {
     await withHttpServer(
       (_request, response) => {
         response.writeHead(200);
         response.write('partial');
       },
       async (port) => {
-        const response = await requestFromPublicUrl(
-          new URL(`http://public.example:${port}/resource`),
-          {
-            timeoutMs: 10,
-            resolveAddress: async () => '127.0.0.1',
-          },
-        );
+        const fetch = createPublicFetch({ resolveAddress: async () => '127.0.0.1' });
+        const response = await fetch(`http://public.example:${port}/resource`, {
+          signal: AbortSignal.timeout(10),
+        });
 
-        await expect(readResponse(response)).rejects.toThrow();
+        await expect(response.text()).rejects.toThrow();
       },
     );
   });
@@ -226,19 +275,15 @@ describe('requestFromPublicUrl', () => {
             redirectResponse.end();
           },
           async (redirectPort) => {
-            const response = await requestFromPublicUrl(
-              new URL(`http://public.example:${redirectPort}/redirect`),
-              {
-                headers: {
-                  Authorization: 'Bearer token',
-                  Cookie: 'session=secret',
-                  'X-Request-Id': 'request-id',
-                },
-                maxRedirects: 1,
-                resolveAddress: async () => '127.0.0.1',
+            const fetch = createPublicFetch({ resolveAddress: async () => '127.0.0.1' });
+            const response = await fetch(`http://public.example:${redirectPort}/redirect`, {
+              headers: {
+                Authorization: 'Bearer token',
+                Cookie: 'session=secret',
+                'X-Request-Id': 'request-id',
               },
-            );
-            await readResponse(response);
+            });
+            await response.text();
           },
         );
       },
