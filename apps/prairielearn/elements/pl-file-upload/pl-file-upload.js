@@ -455,7 +455,6 @@
                 URL.revokeObjectURL(url);
               });
               $preview.append($objectPreview);
-              this.expandPreviewForFile(fileName);
             } else {
               const fileContents = this.b64DecodeUnicode(fileData);
               if (!this.isBinary(fileContents)) {
@@ -464,8 +463,8 @@
                 $preview.find('code').text('Binary file not previewed.');
               }
               $codePreview.removeClass('d-none');
-              this.expandPreviewForFile(fileName);
             }
+            this.expandPreviewForFile(fileName);
           } catch {
             const url = this.b64ToBlobUrl(fileData);
             $imgPreview

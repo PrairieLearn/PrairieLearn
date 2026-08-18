@@ -1,6 +1,7 @@
 import assert from 'node:assert';
 
 import pino, { type Logger as PinoLogger } from 'pino';
+import pretty from 'pino-pretty';
 
 type LogLevel = 'debug' | 'verbose' | 'info' | 'warn' | 'error';
 
@@ -22,7 +23,14 @@ assert(
   "`verbose` must be between Pino's `debug` and `info` levels",
 );
 
-const output = pino.multistream<LogLevel>([{ level: 'info', stream: process.stdout }], {
+const consoleOutput = pretty({
+  messageKey: 'message',
+  timestampKey: 'timestamp',
+  translateTime: 'SYS:HH:MM:ss.l',
+});
+
+// Keep stdout readable; file destinations added below still receive Pino's JSON records.
+const output = pino.multistream<LogLevel>([{ level: 'info', stream: consoleOutput }], {
   levels: { verbose: VERBOSE_LEVEL },
 });
 

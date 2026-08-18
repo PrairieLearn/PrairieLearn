@@ -20,10 +20,31 @@ export const RosterMemberSchema = z
   .loose();
 type RosterMember = z.infer<typeof RosterMemberSchema>;
 
+// NRPS specifies title-case statuses, but Coursera returns them in uppercase. Normalize casing
+// before validating the known values so that Coursera rosters remain interoperable.
+// https://www.imsglobal.org/spec/lti-nrps/v2p0/#membership-status
+const ContextMembershipStatusSchema = z.preprocess(
+  (status) => {
+    if (typeof status !== 'string') return status;
+
+    switch (status.toLowerCase()) {
+      case 'active':
+        return 'Active';
+      case 'inactive':
+        return 'Inactive';
+      case 'deleted':
+        return 'Deleted';
+      default:
+        return status;
+    }
+  },
+  z.enum(['Active', 'Inactive', 'Deleted']),
+);
+
 // https://www.imsglobal.org/spec/lti-nrps/v2p0/#sharing-of-personal-data
 const ContextMembershipSchema = RosterMemberSchema.extend({
   roles: z.string().array(), // https://www.imsglobal.org/spec/lti/v1p3#role-vocabularies
-  status: z.enum(['Active', 'Inactive', 'Deleted']).optional(),
+  status: ContextMembershipStatusSchema.optional(),
   email: z.string().optional(),
 });
 export type ContextMembership = z.infer<typeof ContextMembershipSchema>;
@@ -75,7 +96,7 @@ export function appendRlidToMembershipsUrl(
   if (!rlid) return context_memberships_url;
   const url = new URL(context_memberships_url);
   url.searchParams.set('rlid', rlid);
-  return url.toString();
+  return url.href;
 }
 
 function getUsableUin(value: unknown): string | null {

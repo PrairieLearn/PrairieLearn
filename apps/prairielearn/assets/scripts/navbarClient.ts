@@ -35,11 +35,10 @@ onDocumentReady(() => {
   document.querySelector('#navbar-administrator-toggle')?.addEventListener('click', () => {
     if (accessAsAdministrator) {
       setCookieClient(['pl_access_as_administrator', 'pl2_access_as_administrator'], 'inactive');
-      setCookieClient(['pl_requested_data_changed', 'pl2_requested_data_changed'], 'true');
     } else {
       setCookieClient(['pl_access_as_administrator', 'pl2_access_as_administrator'], 'active');
-      setCookieClient(['pl_requested_data_changed', 'pl2_requested_data_changed'], 'true');
     }
+    setCookieClient(['pl_requested_data_changed', 'pl2_requested_data_changed'], 'true');
     location.reload();
   });
 

@@ -1,5 +1,15 @@
 # @prairielearn/logger
 
+## 4.0.0
+
+### Major Changes
+
+- 9757f58: Replace Winston with Pino and support reopening file destinations without restarting the process.
+
+### Patch Changes
+
+- 00945c2: Format console logs for readability while preserving JSON file logs.
+
 ## 3.1.7
 
 ### Patch Changes

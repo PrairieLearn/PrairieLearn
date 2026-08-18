@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/migrations",
-  "version": "5.2.1",
+  "version": "5.2.2",
   "type": "module",
   "repository": {
     "type": "git",
@@ -32,7 +32,7 @@
     "@typescript/native-preview": "beta",
     "@vitest/coverage-v8": "^4.1.10",
     "tmp-promise": "^3.0.3",
-    "typescript-cp": "^0.1.10",
+    "typescript-cp": "^0.1.11",
     "vitest": "^4.1.10"
   }
 }
