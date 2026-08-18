@@ -12,6 +12,7 @@ import {
   type Lti13Instance,
 } from '../../../lib/db-types.js';
 import type { ResLocalsForPage } from '../../../lib/res-locals.js';
+import { getLti13CourseDisplayName } from '../../lib/lti13-course-instance.js';
 import { type Lineitems, type Lti13CombinedInstance } from '../../lib/lti13.js';
 
 export const AssessmentRowSchema = AssessmentSchema.extend({
@@ -102,7 +103,7 @@ export function InstructorInstanceAdminLti13({
   assessments: AssessmentRow[];
   lineitems: Lti13Assessment[];
 }): string {
-  const lms_name = `${instance.lti13_instance.name}: ${instance.lti13_course_instance.context_label}`;
+  const lms_name = `${instance.lti13_instance.name}: ${getLti13CourseDisplayName(instance.lti13_course_instance)}`;
 
   return PageLayout({
     resLocals,
@@ -133,7 +134,8 @@ export function InstructorInstanceAdminLti13({
                   data-bs-boundary="window"
                 >
                   <span class="d-inline-block text-wrap w-100">
-                    ${instance.lti13_instance.name}: ${instance.lti13_course_instance.context_label}
+                    ${instance.lti13_instance.name}:
+                    ${getLti13CourseDisplayName(instance.lti13_course_instance)}
                   </span>
                 </button>
                 <div class="dropdown-menu">
@@ -152,7 +154,8 @@ export function InstructorInstanceAdminLti13({
                           ? 'true'
                           : ''}"
                       >
-                        ${i.lti13_instance.name}: ${i.lti13_course_instance.context_label}
+                        ${i.lti13_instance.name}:
+                        ${getLti13CourseDisplayName(i.lti13_course_instance)}
                       </a>
                     `;
                   })}
@@ -200,7 +203,7 @@ export function InstructorInstanceAdminLti13({
                   onclick="return confirm('Are you sure you want to remove this connection?');"
                 >
                   Remove LTI 1.3 connection with ${instance.lti13_instance.name}:
-                  ${instance.lti13_course_instance.context_label}
+                  ${getLti13CourseDisplayName(instance.lti13_course_instance)}
                 </button>
               </form>
             </div>

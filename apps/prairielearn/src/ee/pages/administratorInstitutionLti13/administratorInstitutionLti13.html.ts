@@ -12,6 +12,7 @@ import {
 } from '../../../lib/db-types.js';
 import { LTI13_ROSTER_SYNC_CONFIRMATION_FIELDS } from '../../../lib/institution-identity.js';
 import type { ResLocalsForPage } from '../../../lib/res-locals.js';
+import { getLti13CourseDisplayName } from '../../lib/lti13-course-instance.js';
 
 import { type LTI13InstancePlatforms } from './administratorInstitutionLti13.types.js';
 
@@ -636,7 +637,7 @@ function RosterInspectorForm({
           >
             ${courseLabel}
           </a>
-          <span class="text-muted fw-normal">(${lci.context_label ?? 'no context label'})</span>
+          <span class="text-muted fw-normal">(${getLti13CourseDisplayName(lci)})</span>
         </h6>
         ${lci.context_memberships_url === null
           ? html`
