@@ -2,125 +2,165 @@
 
 UI components, utilities, and styles shared between PrairieLearn and PrairieTest.
 
-## UI Component Examples
+## TanStack tables
 
-### TanstackTableCard
+`TanstackTable` and `TanstackTableCard` render table instances created by TanStack Table v9. This package configures the TanStack features used by these components, so create columns with `createTanstackTableColumnHelper` and tables with `useTanstackTable` instead of using the upstream constructors directly.
 
-You can refer to [`instructorStudents.html.tsx`](../../apps/prairielearn/src/pages/instructorStudents/instructorStudents.html.tsx) for an example of how to use this component.
+### Creating a table
 
-Use the feature-aware helper and hook exported by this package, and wrap heterogeneous column arrays with `columnHelper.columns()`:
+Define columns with a helper specialized for your row type, create the table inside your component, and pass the resulting instance to `TanstackTableCard`:
 
 ```tsx
-import { createTanstackTableColumnHelper, useTanstackTable } from '@prairielearn/ui';
+import {
+  TanstackTableCard,
+  createTanstackTableColumnHelper,
+  useTanstackTable,
+} from '@prairielearn/ui';
 
-const columnHelper = createTanstackTableColumnHelper<Student>();
+type StudentRow = {
+  uid: string;
+  name: string;
+  status: 'joined' | 'invited' | 'removed';
+};
+
+const columnHelper = createTanstackTableColumnHelper<StudentRow>();
 const columns = columnHelper.columns([
   columnHelper.accessor('uid', { header: 'UID' }),
   columnHelper.accessor('name', { header: 'Name' }),
+  columnHelper.accessor('status', { header: 'Status' }),
 ]);
 
-const table = useTanstackTable({
-  columns,
-  data: students,
-});
+export function StudentsTable({ students }: { students: StudentRow[] }) {
+  const table = useTanstackTable({
+    columns,
+    data: students,
+  });
+
+  return (
+    <TanstackTableCard
+      table={table}
+      title="Students"
+      singularLabel="student"
+      pluralLabel="students"
+      globalFilter={{ placeholder: 'Search students...' }}
+      tableOptions={{}}
+      style={{ height: 500 }}
+    />
+  );
+}
 ```
 
-```tsx
-import { TanstackTableCard } from '@prairielearn/ui';
+`columnHelper.columns()` preserves the individual value types when an array contains columns for different fields. Keep the resulting array referentially stable: define static columns outside the component as shown above, or memoize columns that depend on props or state.
 
-<TanstackTableCard
-  table={table}
-  title="Students"
-  className="h-100"
-  singularLabel="student"
-  pluralLabel="students"
-  downloadButtonOptions={{
-    filenameBase: `${courseInstanceFilenamePrefix(courseInstance, course)}students`,
-    mapRowToData: (row) => {
-      return {
-        uid: row.user?.uid ?? row.enrollment.pending_uid,
-        name: row.user?.name ?? null,
-        email: row.user?.email ?? null,
-        status: row.enrollment.status,
-        first_joined_at: row.enrollment.first_joined_at
-          ? formatDate(row.enrollment.first_joined_at, course.display_timezone, {
-              includeTz: false,
-            })
-          : null,
-      };
-    },
-    hasSelection: false,
-  }}
-  headerButtons={
-    <>
-      {enrollmentManagementEnabled && (
-        <Button
-          variant="light"
-          disabled={!authzData.has_course_instance_permission_edit}
-          onClick={() => setShowInvite(true)}
-        >
-          <i class="bi bi-person-plus me-2" aria-hidden="true" />
-          Invite student
-        </Button>
-      )}
-    </>
-  }
-  globalFilter={{
-    placeholder: 'Search by UID, name, email...',
-  }}
-  tableOptions={tableOptions}
-/>;
-```
+`TanstackTable` virtualizes its rows, so its container needs a bounded height. The example uses an explicit height; in a fill-height layout, use `className="h-100"` inside an already sized parent.
 
-You should also include the CSS file in your page:
+Include the table styles once in the stylesheet for the page or application:
 
 ```css
 @import url('@prairielearn/ui/components/styles.css');
 ```
 
-### MultiSelectColumnFilter
+Use `TanstackTable` instead of `TanstackTableCard` when you only need the table itself, without the card header, global search, column manager, or row-count status. See [`instructorStudents.html.tsx`](../../apps/prairielearn/src/pages/instructorStudents/instructorStudents.html.tsx) for a full example with controlled state, selection, custom cells, URL persistence, filters, and CSV download.
 
-A column filter that lets the user pick a set of values to include or exclude. See [`instructorStudents.html.tsx`](../../apps/prairielearn/src/pages/instructorStudents/instructorStudents.html.tsx) for a full example.
+### Adding a multi-select column filter
+
+Column filters have two parts: a `filterFn` on the column defines which rows match, and `tableOptions.filters` tells the table which control to render in that column's header. To make the basic table's `status` column filterable, replace its column definition with:
 
 ```tsx
 import {
   MultiSelectColumnFilter,
   type MultiSelectFilterValue,
   applyMultiSelectFilter,
-  parseAsMultiSelectFilter,
 } from '@prairielearn/ui';
-import { useQueryState } from 'nuqs';
 
 const STATUS_VALUES = ['joined', 'invited', 'removed'] as const;
-const DEFAULT_STATUS_FILTER: MultiSelectFilterValue<(typeof STATUS_VALUES)[number]> = {
-  values: [],
-  mode: 'include',
-};
 
-const [statusFilter, setStatusFilter] = useQueryState(
-  'status',
-  parseAsMultiSelectFilter(STATUS_VALUES).withDefault(DEFAULT_STATUS_FILTER),
-);
-
-// In the column definition's `filterFn`:
-filterFn: (row, columnId, filter: MultiSelectFilterValue) => {
-  const current = row.getValue<string>(columnId);
-  return applyMultiSelectFilter(filter, (values) => values.includes(current));
-};
-
-// In the table's filters config:
-filters: {
-  enrollment_status: ({ header }) => (
-    <MultiSelectColumnFilter column={header.column} allColumnValues={STATUS_VALUES} />
-  ),
-}
+columnHelper.accessor('status', {
+  header: 'Status',
+  filterFn: (row, _columnId, filter: MultiSelectFilterValue<StudentRow['status']>) => {
+    return applyMultiSelectFilter(filter, (values) => values.includes(row.original.status));
+  },
+});
 ```
 
-For larger value sets, pass `showSearch` to add fuzzy search with a placeholder derived from the column label. Use `searchPlaceholder` to override that placeholder, or `getSearchText` when the stored value differs from the text rendered to the user.
+Then update the `TanstackTableCard` inside `StudentsTable` to render the matching header control:
+
+```tsx
+<TanstackTableCard
+  table={table}
+  title="Students"
+  singularLabel="student"
+  pluralLabel="students"
+  globalFilter={{ placeholder: 'Search students...' }}
+  tableOptions={{
+    filters: {
+      status: ({ header }) => (
+        <MultiSelectColumnFilter column={header.column} allColumnValues={STATUS_VALUES} />
+      ),
+    },
+  }}
+  style={{ height: 500 }}
+/>
+```
+
+The filter supports both include and exclude modes. For larger value sets, pass `showSearch` to add fuzzy search with a placeholder derived from the column label. Use `searchPlaceholder` to override that placeholder, or `getSearchText` when the stored value differs from the text rendered to the user.
+
+## URL state with `nuqs`
+
+This package provides an adapter for using [`nuqs`](https://nuqs.47ng.com/) during server rendering and parsers for common TanStack Table state.
+
+### Adapter
+
+Wrap any component that uses `nuqs` hooks in `NuqsAdapter`. On the server, pass the current URL's search string; after hydration, the adapter reads from `location.search` automatically.
+
+```tsx
+import { NuqsAdapter } from '@prairielearn/ui';
+
+<NuqsAdapter search={search}>
+  <StudentsTable students={students} />
+</NuqsAdapter>;
+```
+
+### Table state parsers
+
+Import the parsers and `useQueryState` at module scope:
+
+```tsx
+import { parseAsColumnPinningState, parseAsSortingState } from '@prairielearn/ui';
+import { useQueryState } from 'nuqs';
+```
+
+Then, inside `StudentsTable`, replace the original `useTanstackTable` call with URL-backed state and the corresponding change callbacks:
+
+```tsx
+const [sorting, setSorting] = useQueryState('sort', parseAsSortingState.withDefault([]));
+const [columnPinning, setColumnPinning] = useQueryState(
+  'pin',
+  parseAsColumnPinningState.withDefault({ start: [], end: [] }),
+);
+
+const table = useTanstackTable({
+  columns,
+  data: students,
+  state: { sorting, columnPinning },
+  onSortingChange: setSorting,
+  onColumnPinningChange: setColumnPinning,
+});
+```
+
+The available parsers are:
+
+- `parseAsSortingState`: sorting state, encoded as `column:asc` or `column:desc`.
+- `parseAsColumnVisibilityStateWithColumns(allColumns, defaultValueRef?)`: visible column IDs, encoded as a comma-separated list.
+- `parseAsColumnPinningState`: start-pinned column IDs, encoded as a comma-separated list. End pinning is not persisted by this parser.
+- `parseAsNumericFilter`: a numeric comparison or empty-value filter, encoded as values such as `gte_5`, `lt_7`, or `empty`.
+- `parseAsMultiSelectFilter(allowedValues?)`: include or exclude values for `MultiSelectColumnFilter`.
+
+## Other components
 
 ### ComboBox and TagPicker
 
-Accessible combobox components built on [React Aria](https://react-spectrum.adobe.com/react-aria/).
+`ComboBox` and `TagPicker` are accessible single- and multi-selection inputs built on [React Aria](https://react-spectrum.adobe.com/react-aria/).
 
 ```tsx
 import { ComboBox, TagPicker, type ComboBoxItem } from '@prairielearn/ui';
@@ -131,20 +171,29 @@ const items: ComboBoxItem[] = [
   { id: '2', label: 'Banana' },
 ];
 
-// Single selection
-const [selected, setSelected] = useState<string | null>(null);
-<ComboBox items={items} value={selected} onChange={setSelected} label="Fruit" />;
+function FruitInputs() {
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
-// Multi-selection with tags
-const [selectedIds, setSelectedIds] = useState<string[]>([]);
-<TagPicker items={items} value={selectedIds} onChange={setSelectedIds} label="Fruits" />;
+  return (
+    <>
+      <ComboBox items={items} value={selectedId} onChange={setSelectedId} label="Favorite fruit" />
+      <TagPicker
+        items={items}
+        value={selectedIds}
+        onChange={setSelectedIds}
+        label="Available fruits"
+      />
+    </>
+  );
+}
 ```
 
 Items can include `searchableText` for filtering on text different from the label, and `data` for custom data passed to `renderItem`.
 
 ### FilterDropdown
 
-A multi-select filter dropdown built on [React Aria](https://react-spectrum.adobe.com/react-aria/).
+`FilterDropdown` is an accessible multi-select dropdown for a set of filter values.
 
 ```tsx
 import { FilterDropdown, type FilterItem } from '@prairielearn/ui';
@@ -156,72 +205,18 @@ const items: FilterItem[] = [
   { id: '3', name: 'Python', color: 'green1' },
 ];
 
-const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+function LanguageFilter() {
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
-<FilterDropdown
-  label="Language"
-  items={items}
-  selectedIds={selectedIds}
-  onChange={setSelectedIds}
-/>;
+  return (
+    <FilterDropdown
+      label="Language"
+      items={items}
+      selectedIds={selectedIds}
+      onChange={setSelectedIds}
+    />
+  );
+}
 ```
 
-The `color` property maps to PrairieLearn's badge color classes (e.g., `color-blue1`). Custom rendering can be provided via `renderItem`.
-
-## nuqs Utilities
-
-This package provides utilities for integrating [nuqs](https://nuqs.47ng.com/) (type-safe URL query state management) with server-side rendering and TanStack Table.
-
-### NuqsAdapter
-
-`nuqs` needs to be aware of the current state of the URL search parameters during both server-side and client-side rendering. The `NuqsAdapter` component handles this by using a custom adapter on the server that reads from a provided `search` prop, while on the client it uses nuqs's built-in React adapter that reads directly from `location.search`.
-
-```tsx
-import { NuqsAdapter } from '@prairielearn/ui';
-
-// Wrap your component that uses nuqs hooks
-<NuqsAdapter search={new URL(req.url).search}>
-  <MyTableComponent />
-</NuqsAdapter>;
-```
-
-### TanStack Table State Parsers
-
-The package provides custom parsers for syncing TanStack Table state with URL query parameters:
-
-- **`parseAsSortingState`**: Syncs table sorting state with the URL. Format: `col:asc` or `col1:asc,col2:desc` for multi-column sorting.
-- **`parseAsColumnVisibilityStateWithColumns(allColumns, defaultValueRef?)`**: Syncs column visibility. Parses comma-separated visible column IDs.
-- **`parseAsColumnPinningState`**: Syncs start-pinned columns. Format: `col1,col2,col3`.
-- **`parseAsNumericFilter`**: Syncs numeric filter values. URL format: `gte_5`, `lte_10`, `gt_3`, `lt_7`, `eq_5`, `empty`.
-
-```tsx
-import {
-  parseAsSortingState,
-  parseAsColumnVisibilityStateWithColumns,
-  parseAsColumnPinningState,
-  parseAsNumericFilter,
-} from '@prairielearn/ui';
-import { useQueryState } from 'nuqs';
-
-// Sorting state synced to URL
-const [sorting, setSorting] = useQueryState('sort', parseAsSortingState.withDefault([]));
-
-// Column visibility synced to URL
-const allColumns = ['name', 'email', 'status'];
-const [columnVisibility, setColumnVisibility] = useQueryState(
-  'cols',
-  parseAsColumnVisibilityStateWithColumns(allColumns).withDefault({}),
-);
-
-// Column pinning synced to URL
-const [columnPinning, setColumnPinning] = useQueryState(
-  'pin',
-  parseAsColumnPinningState.withDefault({ start: [], end: [] }),
-);
-
-// Numeric filter synced to URL
-const [scoreFilter, setScoreFilter] = useQueryState(
-  'score',
-  parseAsNumericFilter.withDefault({ filterValue: '', emptyOnly: false }),
-);
-```
+The `color` property maps to PrairieLearn's badge color classes, such as `color-blue1`. Use `renderItem` for custom rendering.
