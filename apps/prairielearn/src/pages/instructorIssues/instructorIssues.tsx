@@ -189,7 +189,9 @@ router.get(
 
     const queryPageNumber = Number(req.query.page);
     const filters = parseRawQuery(filterQuery);
-    const offset = Number.isInteger(queryPageNumber) ? (queryPageNumber - 1) * PAGE_SIZE : 0;
+    const offset = Number.isInteger(queryPageNumber)
+      ? Math.max(0, (queryPageNumber - 1) * PAGE_SIZE)
+      : 0;
     const issueRows = await queryRows(
       sql.select_issues,
       {
