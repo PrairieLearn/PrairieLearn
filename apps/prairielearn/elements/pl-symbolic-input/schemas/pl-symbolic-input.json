@@ -18,11 +18,6 @@
       "type": "string",
       "format": "boolean"
     },
-    "allowed-values": {
-      "type": "string",
-      "pattern": "^\\s*(all|set|interval|expression)(\\s*,\\s*(all|set|interval|expression))*\\s*$",
-      "default": "all"
-    },
     "allow-trig-functions": {
       "type": "string",
       "format": "boolean"
