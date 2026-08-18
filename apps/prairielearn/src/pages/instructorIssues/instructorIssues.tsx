@@ -35,7 +35,7 @@ function formatForLikeClause(str: string) {
     .replaceAll('*', '%');
 }
 
-function parseRawQuery(str: string, courseInstancesShowUserInfo: (string | null)[]) {
+function parseRawQuery(str: string) {
   const parsedQuery = SearchString.parse(str);
   const filters = {
     filter_is_open: null as boolean | null,
@@ -49,7 +49,6 @@ function parseRawQuery(str: string, courseInstancesShowUserInfo: (string | null)
     filter_not_users: null as string[] | null,
     filter_assessments: null as string[] | null,
     filter_not_assessments: null as string[] | null,
-    filter_course_instance_ids: null as (string | null)[] | null,
   };
 
   const queryText = parsedQuery.getAllText();
@@ -85,9 +84,6 @@ function parseRawQuery(str: string, courseInstancesShowUserInfo: (string | null)
         }
         break;
       case 'user':
-        // If the issues are filtered by user, we need to filter out any issues
-        // where the user information is hidden due to insufficient permissions.
-        filters.filter_course_instance_ids = courseInstancesShowUserInfo;
         if (!option.negated) {
           filters.filter_users = filters.filter_users || [];
           filters.filter_users.push(formatForLikeClause(option.value));
@@ -192,11 +188,17 @@ router.get(
     }
 
     const queryPageNumber = Number(req.query.page);
-    const filters = parseRawQuery(filterQuery, courseInstancesShowUserInfo);
+    const filters = parseRawQuery(filterQuery);
     const offset = Number.isInteger(queryPageNumber) ? (queryPageNumber - 1) * PAGE_SIZE : 0;
     const issueRows = await queryRows(
       sql.select_issues,
-      { course_id: course.id, offset, limit: PAGE_SIZE, ...filters },
+      {
+        course_id: course.id,
+        offset,
+        limit: PAGE_SIZE,
+        course_instances_show_user_info: courseInstancesShowUserInfo,
+        ...filters,
+      },
       IssueRowSchema,
     );
     // If the offset is not zero and there are no returned issues, this
