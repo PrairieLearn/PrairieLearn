@@ -3,7 +3,7 @@ import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
 
 import { Hydrate } from '@prairielearn/react/server';
-import { ArrayFromCheckboxSchema } from '@prairielearn/zod';
+import { ArrayFromCheckboxSchema, parseRequestBody } from '@prairielearn/zod';
 
 import { PageLayout } from '../../../components/PageLayout.js';
 import { getSupportedAuthenticationProviders } from '../../../lib/authn-providers.js';
@@ -32,12 +32,13 @@ router.post(
       supportedAuthenticationProviders.map((p) => p.id),
     );
 
-    const body = z
-      .object({
+    const body = parseRequestBody(
+      req,
+      z.object({
         default_authn_provider_id: z.string().transform((s) => (s === '' ? null : s)),
         enabled_authn_provider_ids: ArrayFromCheckboxSchema,
-      })
-      .parse(req.body);
+      }),
+    );
 
     const enabledProviders = body.enabled_authn_provider_ids.filter((id) =>
       supportedAuthenticationProviderIds.has(id),

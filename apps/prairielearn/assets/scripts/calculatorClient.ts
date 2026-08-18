@@ -642,27 +642,29 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
 
   function setupButtonEvents(actions: Record<string, string>) {
     for (const [buttonName, action] of Object.entries(actions)) {
-      drawer.querySelectorAll<HTMLElement>(`[name="${buttonName}"]`).forEach((button) => {
-        prepareButton(button);
-        button.addEventListener('click', () => {
-          if (
-            shouldAutoInsertAns &&
-            calculatorInputElement.value.length === 0 &&
-            autoAnsButtons.has(buttonName)
-          ) {
-            if (action.includes('#0')) {
-              calculatorInputElement.insert(action.replaceAll('#0', '\\operatorname{ans}'));
+      drawer
+        .querySelectorAll<HTMLElement>(`[name="${CSS.escape(buttonName)}"]`)
+        .forEach((button) => {
+          prepareButton(button);
+          button.addEventListener('click', () => {
+            if (
+              shouldAutoInsertAns &&
+              calculatorInputElement.value.length === 0 &&
+              autoAnsButtons.has(buttonName)
+            ) {
+              if (action.includes('#0')) {
+                calculatorInputElement.insert(action.replaceAll('#0', '\\operatorname{ans}'));
+              } else {
+                calculatorInputElement.insert('\\operatorname{ans}');
+                calculatorInputElement.insert(action);
+              }
             } else {
-              calculatorInputElement.insert('\\operatorname{ans}');
               calculatorInputElement.insert(action);
             }
-          } else {
-            calculatorInputElement.insert(action);
-          }
-          shouldAutoInsertAns = false;
-          calculatorInputElement.focus();
+            shouldAutoInsertAns = false;
+            calculatorInputElement.focus();
+          });
         });
-      });
     }
   }
 

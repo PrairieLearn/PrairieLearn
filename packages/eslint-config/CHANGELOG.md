@@ -1,5 +1,17 @@
 # @prairielearn/eslint-config
 
+## 3.1.3
+
+### Patch Changes
+
+- b98ca1c: Update Unicorn overrides for v73 and address selected correctness-focused lint findings.
+
+## 3.1.2
+
+### Patch Changes
+
+- df28e68: Bump dependencies
+
 ## 3.1.1
 
 ### Patch Changes

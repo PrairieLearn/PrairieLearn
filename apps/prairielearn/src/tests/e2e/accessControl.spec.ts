@@ -183,6 +183,29 @@ test.describe('Access control UI', () => {
     await expect(panel.getByText('Exam UUID is required')).toBeVisible();
   });
 
+  test('clears a release date error when the release mode resolves it', async ({
+    page,
+    courseInstance,
+  }) => {
+    const assessment = await selectAssessmentByTid({
+      course_instance_id: courseInstance.id,
+      tid: ASSESSMENT_TID,
+    });
+    await navigateToAccessPage(page, courseInstance.id, assessment.id);
+
+    await page.getByRole('button', { name: 'Edit' }).first().click();
+
+    const panel = getDetailPanel(page);
+    await panel.getByLabel('Scheduled for release').check();
+    await panel.getByLabel('Release date').fill('2000-01-01T00:00');
+
+    const errorMessage = 'Release date must be in the future when scheduled for release.';
+    await expect(panel.getByText(errorMessage)).toBeVisible();
+
+    await panel.getByLabel('Released').check();
+    await expect(panel.getByText(errorMessage)).toBeHidden();
+  });
+
   test('can switch after-due-date submissions from partial credit to practice', async ({
     page,
     courseInstance,

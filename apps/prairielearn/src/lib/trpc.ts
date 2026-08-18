@@ -3,7 +3,6 @@ import { getHTTPStatusCodeFromError } from '@trpc/server/http';
 import { sampleSize } from 'es-toolkit';
 import type { Request } from 'express';
 
-import { formatErrorStackSafe } from '@prairielearn/error';
 import { logger } from '@prairielearn/logger';
 import * as Sentry from '@prairielearn/sentry';
 
@@ -40,14 +39,11 @@ export function handleTrpcError(opts: {
     Sentry.captureException(opts.error, { tags: { error_id } });
   }
 
-  logger.log(code >= 500 ? 'error' : 'verbose', 'tRPC error', {
-    msg: opts.error.message,
+  logger[code >= 500 ? 'error' : 'verbose']('tRPC error', {
+    err: opts.error,
     id: error_id,
     status: code,
-    code: opts.error.code,
-    stack: formatErrorStackSafe(opts.error),
     url: opts.req.originalUrl,
-    referrer: opts.req.get('Referrer') ?? null,
     response_id: opts.req.res?.locals.response_id ?? null,
   });
 }

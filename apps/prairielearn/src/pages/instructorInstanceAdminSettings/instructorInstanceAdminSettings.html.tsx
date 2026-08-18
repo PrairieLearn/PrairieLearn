@@ -139,8 +139,8 @@ function InstructorInstanceAdminSettingsInner({
         name="edit-course-instance-settings-form"
         onSubmit={async (e) => {
           if (!isValid) {
-            await trigger();
             e.preventDefault();
+            await trigger();
             return;
           }
         }}

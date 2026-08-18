@@ -1,5 +1,11 @@
 # @prairielearn/react
 
+## 2.1.4
+
+### Patch Changes
+
+- df28e68: Bump dependencies
+
 ## 2.1.3
 
 ### Patch Changes

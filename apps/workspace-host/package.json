@@ -55,7 +55,7 @@
     "@vitest/coverage-v8": "^4.1.10",
     "fast-glob": "^3.3.3",
     "tsx": "^4.23.11",
-    "typescript-cp": "^0.1.10",
+    "typescript-cp": "^0.1.11",
     "vitest": "^4.1.10"
   }
 }

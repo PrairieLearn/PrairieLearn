@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/eslint-config",
-  "version": "3.1.1",
+  "version": "3.1.3",
   "type": "module",
   "repository": {
     "type": "git",
@@ -39,7 +39,7 @@
     "eslint-plugin-perfectionist": "^5.10.1",
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-you-might-not-need-an-effect": "^0.11.1",
-    "eslint-plugin-unicorn": "^64.0.0",
+    "eslint-plugin-unicorn": "^73.0.0",
     "eslint-plugin-you-dont-need-lodash-underscore": "^6.14.0",
     "globals": "^17.9.0",
     "typescript-eslint": "^8.66.0"
