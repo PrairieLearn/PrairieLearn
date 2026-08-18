@@ -75,6 +75,25 @@ class SympyParseFailure:
 
 
 type SympyParseResult = SympyParseSuccess | SympyParseFailure
+type AllowedSympyType = Literal["all", "expression", "interval", "set"]
+
+
+def _used_sympy_types(expr: sympy.Basic) -> set[AllowedSympyType | Literal["set-base"]]:
+    if expr is sympy.EmptySet:
+        return set()
+    if isinstance(expr, sympy.Interval):
+        return {"interval"}
+    if isinstance(expr, sympy.FiniteSet):
+        return {"set"}
+    if isinstance(expr, (sympy.Union, sympy.Intersection)):
+        required_types: set[AllowedSympyType | Literal["set-base"]] = set()
+        for arg in expr.args:
+            arg_types = _used_sympy_types(arg)
+            required_types.update(arg_types)
+        return required_types
+    if isinstance(expr, sympy.Set):
+        return {"set-base"}
+    return {"expression"}
 
 
 def is_sympy_json(json: Any) -> TypeGuard[SympyJson]:
@@ -1270,6 +1289,7 @@ def try_parse_string_as_sympy(
     imaginary_unit: str | None = None,
     simplify_expression: bool = True,
     assumptions: AssumptionsDictT | None = None,
+    allowed_types: set[AllowedSympyType] | None = None,
 ) -> SympyParseResult:
     """Try to parse expr as a SymPy expression.
 
@@ -1284,6 +1304,9 @@ def try_parse_string_as_sympy(
         else:
             print(result.expr)
     """
+    if allowed_types is None:
+        allowed_types = {"all"}
+
     try:
         expr_parsed = convert_string_to_sympy(
             expr,
@@ -1419,6 +1442,35 @@ def try_parse_string_as_sympy(
         return SympyParseFailure(
             "Your answer was simplified to this, which contains a complex number "
             f"(denoted ${imaginary_unit}$): $${sympy.latex(expr_parsed)}$$"
+        )
+
+    used_types = _used_sympy_types(expr_parsed)
+    matches_allowed_type = "all" in allowed_types or (
+        used_types <= allowed_types
+        if used_types
+        else bool({"interval", "set"} & allowed_types)
+    )
+    if not matches_allowed_type:
+        missing_types = (used_types or set()) - allowed_types
+        if (
+            isinstance(expr_parsed, (sympy.Union, sympy.Intersection))
+            and len(used_types or set()) > 1
+            and len(missing_types) == 1
+        ):
+            value_type = missing_types.pop()
+        elif isinstance(expr_parsed, sympy.FiniteSet) or (
+            expr_parsed is sympy.EmptySet and "interval" not in allowed_types
+        ):
+            value_type = "set"
+        elif isinstance(expr_parsed, sympy.Interval) or (expr_parsed is sympy.EmptySet):
+            value_type = "interval"
+        elif isinstance(expr_parsed, sympy.Set):
+            value_type = "non-finite set"
+        else:
+            value_type = "expression"
+        return SympyParseFailure(
+            f"Your answer has type '{value_type}', but this input only accepts: "
+            f"{', '.join(sorted(allowed_types))}."
         )
 
     return SympyParseSuccess(expr_parsed)
