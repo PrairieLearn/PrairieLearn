@@ -18,7 +18,8 @@ import {
   type UIDataTypes,
   type UIMessage,
   convertToModelMessages,
-  stepCountIs,
+  isStepCount,
+  toUIMessageStream,
   tool,
 } from 'ai';
 import klaw from 'klaw';
@@ -85,26 +86,26 @@ interface QuestionGenerationUIMessageMetadata {
 const SUPPORTED_ELEMENT_NAMES = Array.from(SUPPORTED_ELEMENTS) as [string, ...string[]];
 
 const QUESTION_GENERATION_TOOLS = {
-  readFile: tool({
+  readFile: {
     inputSchema: z.object({
       path: z.enum(['question.html', 'server.py']),
     }),
     outputSchema: z.string().nullable(),
-  }),
-  writeFile: tool({
+  },
+  writeFile: {
     inputSchema: z.object({
       path: z.enum(['question.html', 'server.py']),
       content: z.string(),
     }),
     outputSchema: z.null(),
-  }),
-  getElementDocumentation: tool({
+  },
+  getElementDocumentation: {
     inputSchema: z.object({
       elementName: z.enum(SUPPORTED_ELEMENT_NAMES),
     }),
     outputSchema: z.string(),
-  }),
-  listElementExamples: tool({
+  },
+  listElementExamples: {
     inputSchema: z.object({
       elementName: z.enum(SUPPORTED_ELEMENT_NAMES),
     }),
@@ -114,8 +115,8 @@ const QUESTION_GENERATION_TOOLS = {
         description: z.string(),
       }),
     ),
-  }),
-  getExampleQuestions: tool({
+  },
+  getExampleQuestions: {
     inputSchema: z.object({
       qids: z.array(z.string()),
     }),
@@ -128,18 +129,18 @@ const QUESTION_GENERATION_TOOLS = {
         }),
       }),
     ),
-  }),
-  getPythonLibraries: tool({
+  },
+  getPythonLibraries: {
     inputSchema: z.object({}),
     outputSchema: z.array(z.string()),
-  }),
-  saveAndValidateQuestion: tool({
+  },
+  saveAndValidateQuestion: {
     inputSchema: z.object({}),
     outputSchema: z.object({
       errors: z.array(z.string()),
       warnings: z.array(z.string()),
     }),
-  }),
+  },
 } satisfies ToolSet;
 
 type QuestionGenerationUIMessageTools = InferUITools<typeof QUESTION_GENERATION_TOOLS>;
@@ -380,7 +381,7 @@ async function createQuestionGenerationAgent({
     instructions: systemPrompt,
     stopWhen: [
       // Cap to 20 steps to avoid runaways.
-      stepCountIs(20),
+      isStepCount(20),
       // Check for user-initiated cancellation before each step.
       checkCancellation,
     ],
@@ -670,43 +671,46 @@ export async function editQuestionWithAgent({
 
     let finalMessage = null as QuestionGenerationUIMessage | null;
     const errorState: { hasError: boolean } = { hasError: false };
-    const stream = res.toUIMessageStream<QuestionGenerationUIMessage>({
-      generateMessageId: () => messageRow.id,
-      messageMetadata: ({ part }) => {
-        if (part.type === 'start') {
-          return {
-            job_sequence_id: serverJob.jobSequenceId,
-            status: 'streaming',
-          };
-        }
-        if (part.type === 'finish') {
-          return {
-            job_sequence_id: serverJob.jobSequenceId,
-            status: cancellationState.wasCanceled
-              ? 'canceled'
-              : errorState.hasError
-                ? 'errored'
-                : 'completed',
-          };
-        }
-      },
-      onFinish: async ({ responseMessage }) => {
-        finalMessage = responseMessage;
-      },
-      // Note: the return value of `onError` MUST be a string. If it is not,
-      // things downstream will break.
-      onError(error): string {
-        errorState.hasError = true;
+    const stream = toUIMessageStream<typeof QUESTION_GENERATION_TOOLS, QuestionGenerationUIMessage>(
+      {
+        stream: res.stream,
+        generateMessageId: () => messageRow.id,
+        messageMetadata: ({ part }) => {
+          if (part.type === 'start') {
+            return {
+              job_sequence_id: serverJob.jobSequenceId,
+              status: 'streaming',
+            };
+          }
+          if (part.type === 'finish') {
+            return {
+              job_sequence_id: serverJob.jobSequenceId,
+              status: cancellationState.wasCanceled
+                ? 'canceled'
+                : errorState.hasError
+                  ? 'errored'
+                  : 'completed',
+            };
+          }
+        },
+        onEnd: async ({ responseMessage }) => {
+          finalMessage = responseMessage;
+        },
+        // Note: the return value of `onError` MUST be a string. If it is not,
+        // things downstream will break.
+        onError(error): string {
+          errorState.hasError = true;
 
-        // `onError` is sometimes called with non-Error values, e.g. strings.
-        // We don't care about logging those.
-        if (error instanceof Error) {
-          job.error(error.message);
-        }
+          // `onError` is sometimes called with non-Error values, e.g. strings.
+          // We don't care about logging those.
+          if (error instanceof Error) {
+            job.error(error.message);
+          }
 
-        return getErrorMessage(error);
+          return getErrorMessage(error);
+        },
       },
-    });
+    );
 
     await stream.pipeTo(sseStream.writable);
 
@@ -723,7 +727,7 @@ export async function editQuestionWithAgent({
         return [];
       },
     );
-    const totalUsage = await res.totalUsage.then(
+    const totalUsage = await res.usage.then(
       (usage) => usage,
       (err) => {
         job.error('Failed to get usage');
