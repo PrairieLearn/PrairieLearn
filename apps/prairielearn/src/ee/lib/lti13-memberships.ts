@@ -96,7 +96,7 @@ export function appendRlidToMembershipsUrl(
   if (!rlid) return context_memberships_url;
   const url = new URL(context_memberships_url);
   url.searchParams.set('rlid', rlid);
-  return url.toString();
+  return url.href;
 }
 
 function getUsableUin(value: unknown): string | null {

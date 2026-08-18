@@ -77,7 +77,7 @@ export function createReportCheatingRouter({
 
       const outcome = await run(async (): Promise<'ok' | 'declined' | 'failed'> => {
         try {
-          const ptResponse = await fetch(new URL('/pt/cheating-report', config.ptHost).toString(), {
+          const ptResponse = await fetch(new URL('/pt/cheating-report', config.ptHost).href, {
             method: 'POST',
             body: new URLSearchParams({ jwt }),
             redirect: 'error',
