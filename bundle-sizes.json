@@ -400,9 +400,9 @@
     "brotli": 323657
   },
   "scripts/esm-bundles/hydrated-components/AiQuestionGenerationEditor.ts": {
-    "raw": 2710608,
-    "gzip": 781087,
-    "brotli": 665372
+    "raw": 2660306,
+    "gzip": 769788,
+    "brotli": 656045
   },
   "scripts/esm-bundles/hydrated-components/AssessmentAccessControl.ts": {
     "raw": 1550513,
