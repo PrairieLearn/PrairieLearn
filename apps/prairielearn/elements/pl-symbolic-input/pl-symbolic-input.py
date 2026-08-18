@@ -3,7 +3,7 @@ import random
 import re
 from enum import Enum
 from sys import get_int_max_str_digits
-from typing import assert_never
+from typing import assert_never, cast
 
 import chevron
 import lxml.html
@@ -26,6 +26,7 @@ SUFFIX_DEFAULT = None
 DISPLAY_DEFAULT = DisplayType.INLINE
 ALLOW_COMPLEX_DEFAULT = False
 ALLOW_SETS_DEFAULT = False
+ALLOWED_VALUES_DEFAULT = "all"
 DISPLAY_LOG_AS_LN_DEFAULT = False
 DISPLAY_SIMPLIFIED_EXPRESSION_DEFAULT = True
 IMAGINARY_UNIT_FOR_DISPLAY_DEFAULT = "i"
@@ -530,6 +531,16 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         custom_functions=custom_functions,
         simplify_expression=simplify_expression,
         assumptions=assumptions_dict,
+        allowed_types=cast(
+            set[psu.AllowedSympyType],
+            set(
+                psu.get_items_list(
+                    pl.get_string_attrib(
+                        element, "allowed-values", ALLOWED_VALUES_DEFAULT
+                    )
+                )
+            ),
+        ),
     )
 
     if isinstance(result, psu.SympyParseFailure):
