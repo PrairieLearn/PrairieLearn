@@ -1,5 +1,11 @@
 # @prairielearn/error
 
+## 3.0.12
+
+### Patch Changes
+
+- 00945c2: Deprecate `formatErrorStackSafe` in favor of structured error logging.
+
 ## 3.0.11
 
 ### Patch Changes

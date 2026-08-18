@@ -27,6 +27,7 @@ import {
   parseAsSortingState,
   useColumnFilters,
   useColumnVisibilityQueryState,
+  usePruneRowSelection,
   useTanstackTable,
 } from '@prairielearn/ui';
 
@@ -878,17 +879,27 @@ function StaffTableInner({
   const { columnFilters, onColumnFiltersChange, onResetColumnFilters } =
     useColumnFilters(filterRegistry);
 
-  const activeCourseInstanceIds = useMemo(() => {
+  const { activeCourseInstanceIds, upcomingCourseInstanceIds } = useMemo(() => {
     const now = new Date();
-    return new Set(
-      courseInstances
-        .filter((ci) => {
-          const hasStarted = !ci.start_date || ci.start_date <= now;
-          const hasNotEnded = !ci.end_date || ci.end_date >= now;
-          return hasStarted && hasNotEnded;
-        })
-        .map((ci) => ci.id),
-    );
+    const activeIds = new Set<string>();
+    const upcomingIds = new Set<string>();
+
+    for (const courseInstance of courseInstances) {
+      const hasStarted = !courseInstance.start_date || courseInstance.start_date <= now;
+      const hasNotEnded = !courseInstance.end_date || courseInstance.end_date >= now;
+      const isUndated = !courseInstance.start_date && !courseInstance.end_date;
+
+      if (!isUndated && hasStarted && hasNotEnded) {
+        activeIds.add(courseInstance.id);
+      } else if (hasNotEnded && (!hasStarted || isUndated)) {
+        upcomingIds.add(courseInstance.id);
+      }
+    }
+
+    return {
+      activeCourseInstanceIds: activeIds,
+      upcomingCourseInstanceIds: upcomingIds,
+    };
   }, [courseInstances]);
 
   const allColumnIds = useMemo(
@@ -1055,6 +1066,8 @@ function StaffTableInner({
     },
   });
 
+  usePruneRowSelection(table);
+
   const selectedUsers = table.getFilteredSelectedRowModel().rows.map((row) => row.original);
   const displayedCount = table.getRowModel().rows.length;
   const totalCount = table.getCoreRowModel().rows.length;
@@ -1122,12 +1135,15 @@ function StaffTableInner({
       'Active instances': Object.fromEntries(
         courseInstances.map((ci) => [`ci_${ci.id}`, activeCourseInstanceIds.has(ci.id)]),
       ),
+      'Upcoming instances': Object.fromEntries(
+        courseInstances.map((ci) => [`ci_${ci.id}`, upcomingCourseInstanceIds.has(ci.id)]),
+      ),
       'All instances': Object.fromEntries(courseInstances.map((ci) => [`ci_${ci.id}`, true])),
     }),
-    [courseInstances, activeCourseInstanceIds],
+    [courseInstances, activeCourseInstanceIds, upcomingCourseInstanceIds],
   );
 
-  const selectedViewPreset = useMemo(() => {
+  const selectedInstancePreset = useMemo(() => {
     for (const [name, preset] of Object.entries(instanceVisibilityPresets)) {
       const matches = Object.entries(preset).every(
         ([colId, visible]) => (columnVisibility[colId] ?? true) === visible,
@@ -1137,30 +1153,30 @@ function StaffTableInner({
     return null;
   }, [instanceVisibilityPresets, columnVisibility]);
 
-  const handleViewPresetSelect = (presetName: string) => {
+  const handleInstancePresetSelect = (presetName: string) => {
     const preset = instanceVisibilityPresets[presetName as keyof typeof instanceVisibilityPresets];
     void setColumnVisibility((prev) => ({ ...prev, ...preset }));
   };
 
   const allInstancesAreActive = activeCourseInstanceIds.size === courseInstances.length;
 
-  const viewPresetDropdown =
+  const instancePresetDropdown =
     courseInstances.length > 0 && !allInstancesAreActive ? (
       <Dropdown as={ButtonGroup}>
         <Dropdown.Toggle variant="tanstack-table">
           <i className="bi bi-funnel me-2" aria-hidden="true" />
-          View: {selectedViewPreset ?? 'Custom'}
+          {selectedInstancePreset ?? 'Custom'}
         </Dropdown.Toggle>
         <Dropdown.Menu>
           {Object.keys(instanceVisibilityPresets).map((name) => {
-            const isSelected = selectedViewPreset === name;
+            const isSelected = selectedInstancePreset === name;
             return (
               <Dropdown.Item
                 key={name}
                 as="button"
                 type="button"
                 active={isSelected}
-                onClick={() => handleViewPresetSelect(name)}
+                onClick={() => handleInstancePresetSelect(name)}
               >
                 <i
                   className={`bi ${isSelected ? 'bi-check-circle-fill' : 'bi-circle'} me-2`}
@@ -1170,7 +1186,7 @@ function StaffTableInner({
               </Dropdown.Item>
             );
           })}
-          {selectedViewPreset === null && (
+          {selectedInstancePreset === null && (
             <Dropdown.Item as="button" type="button" active disabled>
               <i className="bi bi-check-circle-fill me-2" aria-hidden="true" />
               Custom
@@ -1192,7 +1208,7 @@ function StaffTableInner({
           globalFilter={{ placeholder: 'Search by UID or name...' }}
           tableOptions={{ filters, rowHeight: 72 }}
           headerButtons={headerButtons}
-          columnManager={{ buttons: viewPresetDropdown }}
+          columnManager={{ buttons: instancePresetDropdown }}
           statusContent={statusContent}
           onResetColumnFilters={onResetColumnFilters}
         />

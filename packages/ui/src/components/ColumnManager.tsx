@@ -1,6 +1,6 @@
 import type { RowData } from '@tanstack/react-table';
 import clsx from 'clsx';
-import { type ReactNode, useEffect, useRef, useState } from 'react';
+import { type ReactNode, useEffect, useState } from 'react';
 import Button from 'react-bootstrap/Button';
 import Dropdown from 'react-bootstrap/Dropdown';
 
@@ -181,7 +181,6 @@ export function ColumnManager<RowDataModel extends RowData>({
 }: ColumnManagerProps<RowDataModel>) {
   const [activeElementId, setActiveElementId] = useState<string | null>(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
   const handleTogglePin = (columnId: string) => {
     const currentStart = table.state.columnPinning.start;
     const isPinned = currentStart.includes(columnId);
@@ -281,17 +280,9 @@ export function ColumnManager<RowDataModel extends RowData>({
 
   return (
     <Dropdown
-      ref={menuRef}
       autoClose="outside"
       show={dropdownOpen}
       onToggle={(isOpen, _meta) => setDropdownOpen(isOpen)}
-      onBlur={(e: React.FocusEvent) => {
-        // Since we aren't using role="menu", we need to manually close the dropdown when focus leaves.
-        // `relatedTarget` is the element gaining focus.
-        if (menuRef.current && !menuRef.current.contains(e.relatedTarget)) {
-          setDropdownOpen(false);
-        }
-      }}
     >
       <Dropdown.Toggle
         // We assume that this component will only appear once per page. If that changes,
@@ -301,16 +292,7 @@ export function ColumnManager<RowDataModel extends RowData>({
       >
         <i className="bi bi-view-list me-2" aria-hidden="true" /> View{' '}
       </Dropdown.Toggle>
-      <Dropdown.Menu
-        style={{ maxHeight: '60vh', overflowY: 'auto' }}
-        onMouseDown={(e: React.MouseEvent) => {
-          // Prevent mousedown from moving focus away from the toggle button.
-          // Without this, clicking non-focusable elements like label text causes
-          // a blur with relatedTarget=null, which closes the dropdown before the
-          // click event can fire and toggle the checkbox.
-          e.preventDefault();
-        }}
-      >
+      <Dropdown.Menu style={{ maxHeight: '60vh', overflowY: 'auto' }}>
         {topContent && (
           <>
             {topContent}
