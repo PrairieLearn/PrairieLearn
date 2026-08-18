@@ -353,6 +353,84 @@ class TestSympy:
         )
 
     @pytest.mark.parametrize(
+        ("text", "allowed_types", "expected"),
+        [
+            ("m + 1", {"expression", "set"}, sympy.Symbol("m") + 1),
+            ("{}", {"set"}, sympy.EmptySet),
+            ("{}", {"interval"}, sympy.EmptySet),
+            ("{}", {"all"}, sympy.EmptySet),
+            ("{1, 2}", {"interval", "set"}, sympy.FiniteSet(1, 2)),
+            ("{1, 2} U {3, 4}", {"set"}, sympy.FiniteSet(1, 2, 3, 4)),
+            ("[1, 2]", {"expression", "interval"}, sympy.Interval(1, 2)),
+            (
+                "[1, 2] U [3, 4]",
+                {"interval"},
+                sympy.Union(sympy.Interval(1, 2), sympy.Interval(3, 4)),
+            ),
+            ("[0, 2] U {1}", {"interval"}, sympy.Interval(0, 2)),
+            ("[0, 2] & [1, 4]", {"interval"}, sympy.Interval(1, 2)),
+            ("{0, 2} & {2, 4}", {"set"}, sympy.FiniteSet(2)),
+            ("{0, 2} U {2, 4}", {"set"}, sympy.FiniteSet(0, 2, 4)),
+            ("{0, 2} U {2, 4} U {1, 3}", {"set"}, sympy.FiniteSet(0, 1, 2, 3, 4)),
+            ("{0, 2} & [2, 4]", {"set"}, sympy.FiniteSet(2)),
+            (
+                "[1, 2] U {3, 4}",
+                {"interval", "set"},
+                sympy.Union(sympy.Interval(1, 2), sympy.FiniteSet(3, 4)),
+            ),
+        ],
+    )
+    def test_try_parse_string_as_sympy_accepts_non_singleton_allowed_types(
+        self,
+        text: str,
+        allowed_types: set[psu.AllowedSympyType],
+        expected: sympy.Expr,
+    ) -> None:
+        result = psu.try_parse_string_as_sympy(
+            text,
+            self.SYMBOL_NAMES,
+            allow_sets=True,
+            allowed_types=allowed_types,
+        )
+
+        assert result == psu.SympyParseSuccess(expected)
+
+    @pytest.mark.parametrize(
+        ("text", "allowed_types", "expected_type"),
+        [
+            ("m + 1", {"set"}, "expression"),
+            ("{}", {"expression"}, "set"),
+            ("{1, 2}", {"expression"}, "set"),
+            ("[1, 2]", {"set"}, "interval"),
+            ("[1, 2] U [3, 4]", {"set"}, "non-finite set"),
+            ("m + 1", {"interval", "set"}, "expression"),
+            ("{1, 2}", {"expression", "interval"}, "set"),
+            ("[1, 2]", {"expression", "set"}, "interval"),
+            ("[1, 2] U {2, 3}", {"interval"}, "set"),
+            ("[1, 4] & {2, 3}", {"interval"}, "set"),
+            ("[0, 1] U [1, 4] & {2, 3}", {"interval"}, "set"),
+            ("[1, 2] U {3, 4}", {"set"}, "interval"),
+        ],
+    )
+    def test_try_parse_string_as_sympy_rejects_disallowed_types(
+        self,
+        text: str,
+        allowed_types: set[psu.AllowedSympyType],
+        expected_type: str,
+    ) -> None:
+        result = psu.try_parse_string_as_sympy(
+            text,
+            self.SYMBOL_NAMES,
+            allow_sets=True,
+            allowed_types=allowed_types,
+        )
+
+        assert result == psu.SympyParseFailure(
+            f"Your answer has type '{expected_type}', but this input only accepts: "
+            f"{', '.join(sorted(allowed_types))}."
+        )
+
+    @pytest.mark.parametrize(
         ("a_sub", "sympy_ref"),
         [("i", sympy.I), ("j", sympy.I), ("i*i", -1), ("j*j", -1)],
     )
