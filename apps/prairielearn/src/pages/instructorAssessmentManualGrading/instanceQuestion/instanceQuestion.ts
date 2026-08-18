@@ -7,7 +7,7 @@ import { flash } from '@prairielearn/flash';
 import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
-import { DateFromISOString, IdSchema } from '@prairielearn/zod';
+import { DateFromISOString, IdSchema, parseRequestBody } from '@prairielearn/zod';
 
 import { AIGradingExplanation, AIGradingPrompt } from '../../../components/QuestionContainer.js';
 import { getAvailableAiGradingProviders } from '../../../ee/lib/ai-grading/ai-grading-credentials.js';
@@ -476,7 +476,7 @@ const PostBodySchema = z.union([
 router.post(
   '/',
   asyncHandler(async (req, res) => {
-    const body = PostBodySchema.parse(req.body);
+    const body = parseRequestBody(req, PostBodySchema);
     if (body.__action === 'next_instance_question') {
       if (!res.locals.authz_data.has_course_instance_permission_view) {
         throw new error.HttpStatusError(403, 'Access denied (must be a student data viewer)');

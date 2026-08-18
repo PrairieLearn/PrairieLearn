@@ -6,6 +6,7 @@ import { flash } from '@prairielearn/flash';
 import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 import { assertNever } from '@prairielearn/utils';
+import { parseRequestBody } from '@prairielearn/zod';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { redirectToTermsPageIfNeeded } from '../../ee/lib/terms.js';
@@ -190,7 +191,7 @@ router.post(
         course_instance_id: z.string().min(1),
       }),
     ]);
-    const body = BodySchema.parse(req.body);
+    const body = parseRequestBody(req, BodySchema);
 
     if (body.__action === 'dismiss_news_alert') {
       await markNewsItemsAsReadForUser(res.locals.authn_user);

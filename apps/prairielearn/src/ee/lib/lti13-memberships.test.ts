@@ -341,6 +341,18 @@ describe('parseContextMemberships', () => {
     expect(parseContextMemberships(pages, 'expected-context')).toHaveLength(2);
   });
 
+  test('normalizes an uppercase status', () => {
+    const pages = [
+      {
+        id: 'roster',
+        context: { id: 'expected-context' },
+        members: [{ user_id: 'sub', roles: [STUDENT_ROLE], status: 'ACTIVE' }],
+      },
+    ];
+
+    expect(parseContextMemberships(pages, 'expected-context')[0].status).toBe('Active');
+  });
+
   test('rejects a page for a different context', () => {
     const pages = [
       {

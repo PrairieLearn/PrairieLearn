@@ -5,6 +5,7 @@ import { z } from 'zod';
 import * as error from '@prairielearn/error';
 import { runInTransactionAsync } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
+import { parseRequestBody } from '@prairielearn/zod';
 
 import { EnrollmentPage } from '../../../components/EnrollmentPage.js';
 import { hasRole } from '../../../lib/authz-data-lib.js';
@@ -160,7 +161,7 @@ router.post(
         throw new error.HttpStatusError(403, getEligibilityErrorMessage(enrollmentInfo.reason));
       }
 
-      const body = UpgradeBodySchema.parse(req.body);
+      const body = parseRequestBody(req, UpgradeBodySchema);
 
       if (!body.terms_agreement) {
         throw new error.HttpStatusError(400, 'You must agree to the terms and conditions.');

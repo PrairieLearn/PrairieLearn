@@ -39,7 +39,7 @@ import favicon from 'serve-favicon';
 
 import { cache } from '@prairielearn/cache';
 import { flashMiddleware } from '@prairielearn/flash';
-import { addFileLogging, logger } from '@prairielearn/logger';
+import { addFileLogging, logger, reopenFileLogging } from '@prairielearn/logger';
 import * as migrations from '@prairielearn/migrations';
 import {
   SCHEMA_MIGRATIONS_PATH,
@@ -2383,6 +2383,8 @@ if (shouldStartServer) {
       addFileLogging({ filename: config.logErrorFilename, level: 'error' });
     }
 
+    process.on('SIGHUP', reopenFileLogging);
+
     if (config.blockedAtWarnEnable) {
       blockedAt(
         (time, stack) => {
@@ -2461,6 +2463,16 @@ if (shouldStartServer) {
       });
     }
 
+    if ('database-encryption' in argv) {
+      const mode = argv['database-encryption'];
+      if (mode !== 'check' && mode !== 'rotate') {
+        throw new Error('--database-encryption must be either "check" or "rotate"');
+      }
+      const result = await runDatabaseEncryptionOperation({ mode });
+      logger.info(`Database encryption ${mode} complete`, result);
+      process.exit(0);
+    }
+
     // We create and activate a random DB schema name
     // (https://www.postgresql.org/docs/current/ddl-schemas.html)
     // after we have run the migrations but before we create
@@ -2492,16 +2504,6 @@ if (shouldStartServer) {
 
     await sqldb.setRandomSearchSchemaAsync(schemaPrefix);
     await sprocs.init();
-
-    if ('database-encryption' in argv) {
-      const mode = argv['database-encryption'];
-      if (mode !== 'check' && mode !== 'rotate') {
-        throw new Error('--database-encryption must be either "check" or "rotate"');
-      }
-      const result = await runDatabaseEncryptionOperation({ mode });
-      logger.info(`Database encryption ${mode} complete`, result);
-      process.exit(0);
-    }
 
     if (argv['migrate-and-exit']) {
       logger.info('option --migrate-and-exit passed, running DB setup and exiting');
