@@ -1428,7 +1428,9 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
   describe('36. assessment instance score_perc uploads', function () {
     describe('prepare the CSV upload data', function () {
       it('should succeed', function () {
-        locals.csvData = 'uid,instance,score_perc\ndev@example.com,1,43.7\n';
+        // Concat is done for easier read of separate lines.
+        // eslint-disable-next-line unicorn/no-useless-concat
+        locals.csvData = 'uid,instance,score_perc\n' + 'dev@example.com,1,43.7\n';
       });
     });
     helperQuestion.uploadAssessmentInstanceScores(locals);
@@ -1484,7 +1486,9 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
   describe('37. assessment instance points uploads', function () {
     describe('prepare the CSV upload data', function () {
       it('should succeed', function () {
-        locals.csvData = 'uid,instance,points\ndev@example.com,1,29.6\n';
+        // Concat is done for easier read of separate lines.
+        // eslint-disable-next-line unicorn/no-useless-concat
+        locals.csvData = 'uid,instance,points\n' + 'dev@example.com,1,29.6\n';
       });
     });
     helperQuestion.uploadAssessmentInstanceScores(locals);
