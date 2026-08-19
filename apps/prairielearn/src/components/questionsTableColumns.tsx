@@ -1,3 +1,5 @@
+import type { ReactNode } from 'react';
+
 import { run } from '@prairielearn/run';
 import {
   BooleanColumnFilter,
@@ -20,6 +22,8 @@ import type { SafeQuestionsPageData } from './QuestionsTable.shared.js';
 import { SyncProblemButton } from './SyncProblemButton.js';
 import { TagBadge, TagBadgeList } from './TagBadge.js';
 import { TopicBadge } from './TopicBadge.js';
+
+type ColumnFilter = (props: { header: TanstackTableHeader<SafeQuestionsPageData> }) => ReactNode;
 
 const columnHelper = createTanstackTableColumnHelper<SafeQuestionsPageData>();
 const NONE_FILTER_VALUE = '(None)';
@@ -450,10 +454,7 @@ export function createQuestionsTableFilters({
     return map;
   });
 
-  const filterMap: Record<
-    string,
-    (props: { header: TanstackTableHeader<SafeQuestionsPageData, unknown> }) => React.ReactNode
-  > = {
+  const filterMap: Record<string, ColumnFilter> = {
     topic: ({ header }) => (
       <MultiSelectColumnFilter
         column={header.column}

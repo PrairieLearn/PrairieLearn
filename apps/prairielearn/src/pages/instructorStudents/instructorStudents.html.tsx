@@ -21,7 +21,6 @@ import {
   TanstackTableCard,
   type TanstackTableCoreInstance,
   TanstackTableEmptyState,
-  type TanstackTableHeader,
   applyMultiSelectFilter,
   createTanstackTableColumnHelper,
   parseAsColumnPinningState,
@@ -800,11 +799,7 @@ function StudentsCard({
         }}
         tableOptions={{
           filters: {
-            enrollment_status: ({
-              header,
-            }: {
-              header: TanstackTableHeader<StudentRow, StudentRow['enrollment']['status']>;
-            }) => (
+            enrollment_status: ({ header }) => (
               <MultiSelectColumnFilter
                 column={header.column}
                 allColumnValues={STATUS_VALUES}
@@ -813,11 +808,7 @@ function StudentsCard({
                 )}
               />
             ),
-            student_labels: ({
-              header,
-            }: {
-              header: TanstackTableHeader<StudentRow, StudentRow['student_label_ids']>;
-            }) => {
+            student_labels: ({ header }) => {
               const labelIds = studentLabels.map((l) => l.id);
               return (
                 <MultiSelectColumnFilter

@@ -6,7 +6,7 @@ import {
 } from '@tanstack/react-table';
 import clsx from 'clsx';
 import { parseAsString, useQueryState } from 'nuqs';
-import { useMemo, useRef, useState } from 'react';
+import { type ReactNode, useMemo, useRef, useState } from 'react';
 import { z } from 'zod';
 
 import {
@@ -47,6 +47,8 @@ import {
 
 import { CanvasCsvModal } from './CanvasCsvModal.js';
 import { EditScoreButton } from './EditScoreModal.js';
+
+type ColumnFilter = (props: { header: TanstackTableHeader<GradebookRow> }) => ReactNode;
 
 const DEFAULT_SORT: SortingState = [{ id: 'uid', desc: false }];
 const DEFAULT_PINNING: ColumnPinningState = { start: ['uid'], end: [] };
@@ -378,18 +380,11 @@ function GradebookTable({
   };
 
   const filters = useMemo(() => {
-    const assessmentFilters: Record<
-      string,
-      (props: { header: TanstackTableHeader<GradebookRow, unknown> }) => React.ReactNode
-    > = {};
+    const assessmentFilters: Record<string, ColumnFilter> = {};
 
     courseAssessments.forEach((assessment) => {
       const columnId = `a${assessment.assessment_id}`;
-      assessmentFilters[columnId] = ({
-        header,
-      }: {
-        header: TanstackTableHeader<GradebookRow, unknown>;
-      }) => {
+      assessmentFilters[columnId] = ({ header }) => {
         return <NumericInputColumnFilter column={header.column} />;
       };
     });
@@ -397,29 +392,21 @@ function GradebookTable({
     const labelIds = studentLabels.map((l) => l.id);
 
     return {
-      role: ({ header }: { header: TanstackTableHeader<GradebookRow, GradebookRow['role']> }) => (
+      role: ({ header }) => (
         <MultiSelectColumnFilter
           column={header.column}
           allColumnValues={ROLE_VALUES}
           renderValueLabel={({ value }) => <span>{value}</span>}
         />
       ),
-      enrollment_status: ({
-        header,
-      }: {
-        header: TanstackTableHeader<GradebookRow, EnumEnrollmentStatus>;
-      }) => (
+      enrollment_status: ({ header }) => (
         <MultiSelectColumnFilter
           column={header.column}
           allColumnValues={STATUS_VALUES}
           renderValueLabel={({ value }) => <EnrollmentStatusIcon type="text" status={value} />}
         />
       ),
-      student_labels: ({
-        header,
-      }: {
-        header: TanstackTableHeader<GradebookRow, GradebookRow['student_label_ids']>;
-      }) => (
+      student_labels: ({ header }) => (
         <MultiSelectColumnFilter
           column={header.column}
           allColumnValues={labelIds}
@@ -433,7 +420,7 @@ function GradebookTable({
         />
       ),
       ...assessmentFilters,
-    };
+    } satisfies Record<string, ColumnFilter>;
   }, [courseAssessments, studentLabels, studentLabelsById]);
 
   const table = useTanstackTable({

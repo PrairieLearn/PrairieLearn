@@ -6,7 +6,7 @@ import {
 } from '@tanstack/react-table';
 import clsx from 'clsx';
 import { parseAsString, useQueryState } from 'nuqs';
-import { useMemo, useState } from 'react';
+import { type ReactNode, useMemo, useState } from 'react';
 import { Button, ButtonGroup, Dropdown, Modal } from 'react-bootstrap';
 
 import { run } from '@prairielearn/run';
@@ -38,6 +38,8 @@ import type { CourseUsersRow } from '../../models/course-permissions.js';
 import { createCourseTrpcClient } from '../../trpc/course/client.js';
 import { TRPCProvider, useTRPC } from '../../trpc/course/context.js';
 import type { CourseStaffError } from '../../trpc/course/course-staff.js';
+
+type ColumnFilter = (props: { header: TanstackTableHeader<CourseUsersRow> }) => ReactNode;
 
 function useInvalidateStaffList() {
   const queryClient = useQueryClient();
@@ -1090,30 +1092,26 @@ function StaffTableInner({
     );
   });
 
-  const filters = useMemo(
-    () => ({
-      course_role: ({ header }: { header: TanstackTableHeader<CourseUsersRow, unknown> }) => (
+  const filters = useMemo(() => {
+    const instanceRoleFilter: ColumnFilter = ({ header }) => (
+      <MultiSelectColumnFilter
+        column={header.column}
+        allColumnValues={[...INSTANCE_ROLE_VALUES]}
+        renderValueLabel={({ value }) => <span>{INSTANCE_ROLE_LABELS[value]}</span>}
+      />
+    );
+
+    return {
+      course_role: ({ header }) => (
         <MultiSelectColumnFilter
           column={header.column}
           allColumnValues={[...COURSE_ROLE_VALUES]}
           renderValueLabel={({ value }) => <span>{value}</span>}
         />
       ),
-      ...Object.fromEntries(
-        courseInstances.map((ci) => [
-          `ci_${ci.id}`,
-          ({ header }: { header: TanstackTableHeader<CourseUsersRow, unknown> }) => (
-            <MultiSelectColumnFilter
-              column={header.column}
-              allColumnValues={[...INSTANCE_ROLE_VALUES]}
-              renderValueLabel={({ value }) => <span>{INSTANCE_ROLE_LABELS[value]}</span>}
-            />
-          ),
-        ]),
-      ),
-    }),
-    [courseInstances],
-  );
+      ...Object.fromEntries(courseInstances.map((ci) => [`ci_${ci.id}`, instanceRoleFilter])),
+    } satisfies Record<string, ColumnFilter>;
+  }, [courseInstances]);
 
   const headerButtons = (
     <>

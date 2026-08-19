@@ -53,6 +53,8 @@ import { type HelpModalId, HelpModals } from './HelpModals.js';
 import { InstanceSelectionToolbar } from './InstanceSelectionToolbar.js';
 import { TimeLimitEditForm } from './TimeLimitEditForm.js';
 
+type ColumnFilter = (props: { header: TanstackTableHeader<AssessmentInstanceRow> }) => ReactNode;
+
 const columnHelper = createTanstackTableColumnHelper<AssessmentInstanceRow>();
 const DEFAULT_SORT: SortingState = [];
 
@@ -550,10 +552,7 @@ export function AssessmentInstancesTable({
   );
 
   const filters = useMemo(() => {
-    const map: Record<
-      string,
-      (props: { header: TanstackTableHeader<AssessmentInstanceRow, unknown> }) => ReactNode
-    > = {
+    const map: Record<string, ColumnFilter> = {
       [roleColumnId]: ({ header }) => (
         <MultiSelectColumnFilter column={header.column} allColumnValues={ROLE_VALUES} />
       ),

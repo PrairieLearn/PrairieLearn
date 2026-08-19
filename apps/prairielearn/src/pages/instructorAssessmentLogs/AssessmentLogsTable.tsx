@@ -3,7 +3,7 @@ import {
   type ColumnVisibilityState,
   type SortingState,
 } from '@tanstack/react-table';
-import { useMemo, useState } from 'react';
+import { type ReactNode, useMemo, useState } from 'react';
 import { z } from 'zod';
 
 import { formatDate } from '@prairielearn/formatter';
@@ -64,6 +64,7 @@ type AssessmentLogQueryRow = z.infer<typeof AssessmentLogQueryRowSchema>;
 /** A log row enriched with its category, which is derived in TS from the job sequence type. */
 export type AssessmentLogRow = AssessmentLogQueryRow & { category: CategoryValue };
 
+type ColumnFilter = (props: { header: TanstackTableHeader<AssessmentLogRow> }) => ReactNode;
 type StatusValue = NonNullable<AssessmentLogRow['job_sequence']['status']>;
 
 const CATEGORY_LABELS: Record<CategoryValue, string> = {
@@ -260,22 +261,23 @@ function AssessmentLogsTableInner({
   );
 
   const filters = useMemo(
-    () => ({
-      category: ({ header }: { header: TanstackTableHeader<AssessmentLogRow, unknown> }) => (
-        <MultiSelectColumnFilter
-          column={header.column}
-          allColumnValues={CATEGORY_VALUES}
-          renderValueLabel={({ value }) => <span>{CATEGORY_LABELS[value]}</span>}
-        />
-      ),
-      status: ({ header }: { header: TanstackTableHeader<AssessmentLogRow, unknown> }) => (
-        <MultiSelectColumnFilter
-          column={header.column}
-          allColumnValues={STATUS_VALUES}
-          renderValueLabel={({ value }) => <JobStatus status={value} />}
-        />
-      ),
-    }),
+    () =>
+      ({
+        category: ({ header }) => (
+          <MultiSelectColumnFilter
+            column={header.column}
+            allColumnValues={CATEGORY_VALUES}
+            renderValueLabel={({ value }) => <span>{CATEGORY_LABELS[value]}</span>}
+          />
+        ),
+        status: ({ header }) => (
+          <MultiSelectColumnFilter
+            column={header.column}
+            allColumnValues={STATUS_VALUES}
+            renderValueLabel={({ value }) => <JobStatus status={value} />}
+          />
+        ),
+      }) satisfies Record<string, ColumnFilter>,
     [],
   );
 
