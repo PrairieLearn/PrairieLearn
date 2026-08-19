@@ -25,6 +25,10 @@ import * as helperCourse from './helperCourse.js';
 import * as helperServer from './helperServer.js';
 import { createInstitution, getOrCreateUser, withUser } from './utils/auth.js';
 import { getCsrfToken } from './utils/csrf.js';
+import {
+  createEnrollment as createIdentityEnrollment,
+  createLti13CourseInstance,
+} from './utils/enrollment-identity.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -114,6 +118,52 @@ describe('Homepage student courses', () => {
       assert.equal(await countAuditEvents([invitation.id]), beforeAuditCount);
     } finally {
       await execute(sql.delete_enrollment_by_id, { enrollment_id: invitation.id });
+    }
+  });
+
+  it('does not show or reject an LTI invitation that only matches by UID', async () => {
+    const user = await getOrCreateUser({
+      uid: 'lti-uid-only@example.com',
+      name: 'UID-only LTI user',
+      uin: 'different-uin',
+      email: 'lti-uid-only@example.com',
+      institutionId: '1',
+    });
+    const courseInstance = await selectCourseInstanceById('1');
+    const lti13CourseInstance = await createLti13CourseInstance(courseInstance);
+    const invitation = await createIdentityEnrollment({
+      courseInstance,
+      pendingLti13CourseInstanceId: lti13CourseInstance.id,
+      pendingLti13Sub: 'rightful-student-sub',
+      pendingUid: user.uid,
+      pendingUin: 'rightful-student-uin',
+    });
+
+    try {
+      await withUser(user, async () => {
+        const page = await fetchCheerio(homeUrl);
+        assert.lengthOf(
+          page.$(`form:has(input[name="course_instance_id"][value="${courseInstance.id}"])`),
+          0,
+        );
+
+        const response = await postHome(
+          new URLSearchParams({
+            __action: 'reject_invitation',
+            __csrf_token: await getCsrfToken(homeUrl),
+            course_instance_id: courseInstance.id,
+            enrollment_id: invitation.id,
+          }),
+        );
+        assertAlert(response.$, 'Failed to reject invitation');
+      });
+
+      const [persistedInvitation] = await selectEnrollments([invitation.id]);
+      assert.equal(persistedInvitation.status, 'invited');
+    } finally {
+      await execute(sql.delete_lti13_course_instance, {
+        lti13_course_instance_id: lti13CourseInstance.id,
+      });
     }
   });
 
