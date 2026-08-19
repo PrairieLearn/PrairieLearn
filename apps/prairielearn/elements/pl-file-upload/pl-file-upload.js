@@ -175,9 +175,19 @@
         const acceptedFileName = this.findAcceptedFileName(fileNameLowerCase);
 
         if (acceptedFileName === null) {
-          this.addWarningMessage(
-            `<strong>${escapeFileName(file.name)}</strong> did not match any accepted file for this question.`,
+          // If the file matches a required regex, we show a different message, as the user may be attempting to replace an existing file with a different name.
+          const regexMatch = this.requiredFilesRegex.find((f) =>
+            new RegExp(f[0], 'i').test(fileNameLowerCase),
           );
+          if (regexMatch) {
+            this.addWarningMessage(
+              `A file with pattern <strong>${escapeFileName(regexMatch[1])}</strong> is already provided with a different file name. To replace it with <strong>${escapeFileName(file.name)}</strong>, delete the existing file first and then upload the new file.`,
+            );
+          } else {
+            this.addWarningMessage(
+              `<strong>${escapeFileName(file.name)}</strong> did not match any accepted file for this question.`,
+            );
+          }
           continue;
         }
 
