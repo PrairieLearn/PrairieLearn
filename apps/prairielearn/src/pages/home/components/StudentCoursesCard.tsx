@@ -1,5 +1,6 @@
-import { useState } from 'react';
 import { Modal } from 'react-bootstrap';
+
+import { useModalState } from '@prairielearn/ui';
 
 import type { StudentHomePageCourse } from '../home.types.js';
 
@@ -21,14 +22,14 @@ export function StudentCoursesCard({
   setShowJoinModal: (value: boolean) => void;
 }) {
   const heading = hasInstructorCourses ? 'Courses with student access' : 'Courses';
-  const [rejectingInvitation, setRejectingInvitation] = useState<{
+  const rejectInvitationModal = useModalState<{
     courseInstanceId: string;
     enrollmentId: string;
-  } | null>(null);
-  const [removingCourse, setRemovingCourse] = useState<{
+  }>();
+  const removeCourseModal = useModalState<{
     courseInstanceId: string;
     invitationEnrollmentId?: string;
-  } | null>(null);
+  }>();
 
   const uidInvitations = studentCourses.filter(
     (course): course is StudentHomePageCourse & { access_type: 'uid_invitation' } =>
@@ -109,7 +110,7 @@ export function StudentCoursesCard({
                           type="button"
                           className="btn btn-danger btn-sm"
                           onClick={() =>
-                            setRejectingInvitation({
+                            rejectInvitationModal.showWithData({
                               courseInstanceId: entry.course_instance.id,
                               enrollmentId: entry.invitation_enrollment_id,
                             })
@@ -134,7 +135,7 @@ export function StudentCoursesCard({
                         type="button"
                         className="btn btn-danger btn-sm"
                         onClick={() =>
-                          setRemovingCourse({
+                          removeCourseModal.showWithData({
                             courseInstanceId: entry.course_instance.id,
                             ...(entry.access_type === 'institution_access'
                               ? { invitationEnrollmentId: entry.invitation_enrollment_id }
@@ -154,9 +155,10 @@ export function StudentCoursesCard({
       )}
 
       <Modal
-        show={rejectingInvitation !== null}
+        show={rejectInvitationModal.show}
         backdrop="static"
-        onHide={() => setRejectingInvitation(null)}
+        onHide={rejectInvitationModal.onHide}
+        onExited={rejectInvitationModal.onExited}
       >
         <Modal.Header closeButton>
           <Modal.Title>Reject invitation</Modal.Title>
@@ -168,11 +170,7 @@ export function StudentCoursesCard({
           </p>
         </Modal.Body>
         <Modal.Footer>
-          <button
-            type="button"
-            className="btn btn-secondary"
-            onClick={() => setRejectingInvitation(null)}
-          >
+          <button type="button" className="btn btn-secondary" onClick={rejectInvitationModal.hide}>
             Cancel
           </button>
           <form method="POST">
@@ -181,12 +179,12 @@ export function StudentCoursesCard({
             <input
               type="hidden"
               name="course_instance_id"
-              value={rejectingInvitation?.courseInstanceId ?? ''}
+              value={rejectInvitationModal.data?.courseInstanceId ?? ''}
             />
             <input
               type="hidden"
               name="enrollment_id"
-              value={rejectingInvitation?.enrollmentId ?? ''}
+              value={rejectInvitationModal.data?.enrollmentId ?? ''}
             />
             <button type="submit" className="btn btn-danger">
               Reject invitation
@@ -196,9 +194,10 @@ export function StudentCoursesCard({
       </Modal>
 
       <Modal
-        show={removingCourse !== null}
+        show={removeCourseModal.show}
         backdrop="static"
-        onHide={() => setRemovingCourse(null)}
+        onHide={removeCourseModal.onHide}
+        onExited={removeCourseModal.onExited}
       >
         <Modal.Header closeButton>
           <Modal.Title>Remove course</Modal.Title>
@@ -209,16 +208,12 @@ export function StudentCoursesCard({
             Removing courses here only affects what is visible to you on PrairieLearn. This does not
             change your university course registration.
           </p>
-          {removingCourse?.invitationEnrollmentId !== undefined && (
+          {removeCourseModal.data?.invitationEnrollmentId !== undefined && (
             <p>The course may appear again after your institution's enrollment data is updated.</p>
           )}
         </Modal.Body>
         <Modal.Footer>
-          <button
-            type="button"
-            className="btn btn-secondary"
-            onClick={() => setRemovingCourse(null)}
-          >
+          <button type="button" className="btn btn-secondary" onClick={removeCourseModal.hide}>
             Cancel
           </button>
           <form method="POST">
@@ -227,7 +222,7 @@ export function StudentCoursesCard({
               type="hidden"
               name="__action"
               value={
-                removingCourse?.invitationEnrollmentId === undefined
+                removeCourseModal.data?.invitationEnrollmentId === undefined
                   ? 'unenroll'
                   : 'remove_institution_access'
               }
@@ -235,13 +230,13 @@ export function StudentCoursesCard({
             <input
               type="hidden"
               name="course_instance_id"
-              value={removingCourse?.courseInstanceId ?? ''}
+              value={removeCourseModal.data?.courseInstanceId ?? ''}
             />
-            {removingCourse?.invitationEnrollmentId !== undefined && (
+            {removeCourseModal.data?.invitationEnrollmentId !== undefined && (
               <input
                 type="hidden"
                 name="enrollment_id"
-                value={removingCourse.invitationEnrollmentId}
+                value={removeCourseModal.data.invitationEnrollmentId}
               />
             )}
             <button type="submit" className="btn btn-danger">
