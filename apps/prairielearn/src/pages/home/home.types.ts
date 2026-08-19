@@ -24,10 +24,8 @@ export const InstructorHomePageCourseSchema = z.object({
 export type InstructorHomePageCourse = z.infer<typeof InstructorHomePageCourseSchema>;
 
 const StudentHomePageCourseDataSchema = z.object({
-  course_id: RawStudentCourseSchema.shape.id,
+  course: RawStudentCourseSchema,
   course_instance: RawStudentCourseInstanceSchema,
-  course_short_name: RawStudentCourseSchema.shape.short_name,
-  course_title: RawStudentCourseSchema.shape.title,
   start_date: DateFromISOString.nullable(),
   end_date: DateFromISOString.nullable(),
   latest_publishing_extension: CourseInstancePublishingExtensionSchema.nullable(),
@@ -45,7 +43,7 @@ export type StudentHomePageCourseCandidateRow = z.infer<
   typeof StudentHomePageCourseCandidateRowSchema
 >;
 
-export type StudentHomePageCourse = StudentHomePageCourseData &
+export type StudentHomePageCourse = Pick<StudentHomePageCourseData, 'course' | 'course_instance'> &
   (
     | { access_type: 'joined' }
     | { access_type: 'uid_invitation'; invitation_enrollment_id: string }

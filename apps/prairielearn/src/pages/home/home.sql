@@ -178,9 +178,7 @@ WITH
       id = $user_id
   )
 SELECT
-  c.id AS course_id,
-  c.short_name AS course_short_name,
-  c.title AS course_title,
+  to_jsonb(c.*) AS course,
   to_jsonb(ci.*) AS course_instance,
   to_jsonb(e.*) AS enrollment,
   CASE
