@@ -391,6 +391,10 @@ router.post(
           break;
         }
 
+        // A student may also have a pending UIN invitation for this course. We intentionally do
+        // not reject it here: doing so safely requires locking both enrollment rows in the same
+        // order as reconciliation. The course may therefore reappear using the invitation, which
+        // the student can remove separately.
         await setEnrollmentStatus({
           enrollment,
           status: 'left',
