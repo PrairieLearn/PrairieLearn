@@ -5,15 +5,13 @@ import {
   PotentialEnrollmentStatus,
   checkPotentialEnterpriseEnrollment,
 } from '../../ee/models/enrollment.js';
-import { setEnrollmentStatus } from '../../models/enrollment.js';
 import { selectUserById } from '../../models/user.js';
-import { type AuthzData, hasRole, makePageAuthzData } from '../authz-data-lib.js';
+import { hasRole, makePageAuthzData } from '../authz-data-lib.js';
 import { constructCourseOrInstanceContext } from '../authz-data.js';
 import type { Course, CourseInstance, User } from '../db-types.js';
 import { isEnterprise } from '../license.js';
 import { HttpRedirect } from '../redirect.js';
 
-import { runWithSharedEnrollmentBarrier } from './barrier.js';
 import {
   type EnrollmentIneligibilityReason,
   checkEnrollmentEligibility,
@@ -21,11 +19,9 @@ import {
 } from './eligibility.js';
 import {
   type EnrollmentAdmissionSource,
-  type EnrollmentIdentityCandidate,
   type EnrollmentIdentityClassification,
   selectEnrollmentIdentityClassification,
 } from './identity.js';
-import { lockEnrollments } from './lock.js';
 import {
   EnrollmentAdmissionDeniedError,
   type SelectableEnrollmentAdmissionSource,
@@ -358,62 +354,6 @@ export async function admitUserFromUidInvitation({
       reqDate,
       userId,
     }),
-  });
-}
-
-function selectUidInvitationForRejection(
-  classification: EnrollmentIdentityClassification,
-): EnrollmentIdentityCandidate | null {
-  if (classification.boundCandidate !== null) return null;
-  return (
-    classification.candidates.find(
-      (candidate) =>
-        candidate.enrollment.user_id === null &&
-        (candidate.enrollment.status === 'invited' || candidate.enrollment.status === 'rejected') &&
-        candidate.matches.pendingUid &&
-        candidate.enrollment.pending_lti13_course_instance_id === null,
-    ) ?? null
-  );
-}
-
-/**
- * Rejects a pending UID invitation. This uses the same UID rules as admission,
- * but also treats an already rejected invitation as a successful no-op. The
- * invitation is rechecked after locking so a changed or replacement invitation
- * is left untouched.
- */
-export async function rejectUserFromUidInvitation({
-  authzData,
-  courseInstanceId,
-  userId,
-}: {
-  authzData: AuthzData;
-  courseInstanceId: string;
-  userId: string;
-}): Promise<boolean> {
-  const context = { courseInstanceId, userId };
-
-  return await runWithSharedEnrollmentBarrier(courseInstanceId, async () => {
-    const initialClassification = await selectEnrollmentIdentityClassification(context);
-    const initialInvitation = selectUidInvitationForRejection(initialClassification);
-    if (initialInvitation === null) return false;
-
-    const enrollmentIds = initialClassification.candidates.map(
-      (candidate) => candidate.enrollment.id,
-    );
-    await lockEnrollments(enrollmentIds);
-    const classification = await selectEnrollmentIdentityClassification(context, enrollmentIds);
-    const invitation = selectUidInvitationForRejection(classification);
-    if (invitation?.enrollment.id !== initialInvitation.enrollment.id) return false;
-    if (invitation.enrollment.status === 'rejected') return true;
-
-    await setEnrollmentStatus({
-      enrollment: invitation.enrollment,
-      status: 'rejected',
-      authzData,
-      requiredRole: ['Student'],
-    });
-    return true;
   });
 }
 
