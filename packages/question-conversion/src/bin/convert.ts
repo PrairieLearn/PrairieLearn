@@ -249,21 +249,13 @@ async function emitWithSlug(
   options: { topic?: string; tags: string[] },
   remoteImageCopier: QtiImportRemoteImageCopier,
 ): Promise<ParsedAssessment> {
-  const result = EMITTER.emit(parsed.ir, {
+  const result = await EMITTER.emitProcessed(parsed.ir, {
     ...parsed.parseOptions,
     topic: options.topic,
     tags: options.tags,
     questionIdPrefix: `imported/${assessmentSlug}`,
+    postProcessors: [remoteImageCopier],
   });
-  const copyResults = await remoteImageCopier.copyInto(result);
-  for (const [index, copyResult] of copyResults.entries()) {
-    const uncopiedCount = copyResult.failedImageCount + copyResult.unattemptedRemoteImageCount;
-    if (uncopiedCount === 0) continue;
-    result.warnings.push({
-      questionId: result.questions[index].sourceId,
-      message: `${uncopiedCount} remote image${uncopiedCount === 1 ? '' : 's'} could not be copied because of its URL, availability, size, or format.`,
-    });
-  }
   return { result, assessmentSlug, webResourcesDir: parsed.webResourcesDir };
 }
 

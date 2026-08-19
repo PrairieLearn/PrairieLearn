@@ -31,10 +31,12 @@ export type {
 // Emitters
 export { PLEmitter } from './emitters/pl-emitter.js';
 export type {
+  ConversionPostProcessor,
   OutputEmitter,
   ConversionResult,
   ConversionWarning,
   EmitOptions,
+  EmitProcessedOptions,
 } from './emitters/emitter.js';
 export type { BodyEmitHandler } from './emitters/body-emit-handler.js';
 export { BodyEmitRegistry } from './emitters/body-emit-handler.js';

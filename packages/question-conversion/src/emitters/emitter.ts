@@ -19,6 +19,16 @@ export interface EmitOptions {
   questionIdPrefix?: string;
 }
 
+/** Post-processes emitted PrairieLearn output in place. */
+export interface ConversionPostProcessor {
+  process(result: ConversionResult): void | Promise<void>;
+}
+
+/** Options for emitting and then post-processing PrairieLearn output. */
+export interface EmitProcessedOptions extends EmitOptions {
+  postProcessors: readonly ConversionPostProcessor[];
+}
+
 interface ConversionResultBase {
   sourceId: string;
   assessmentTitle: string;
@@ -46,5 +56,11 @@ export type ConversionResult = AssessmentConversionResult | QuestionBankConversi
 
 /** Interface for format-specific output emitters. */
 export interface OutputEmitter {
+  /** Emits PrairieLearn output synchronously. */
   emit(itemContainer: IRItemContainer, options?: EmitOptions): ConversionResult;
+  /** Emits output and then awaits each post-processor in order. */
+  emitProcessed(
+    itemContainer: IRItemContainer,
+    options: EmitProcessedOptions,
+  ): Promise<ConversionResult>;
 }

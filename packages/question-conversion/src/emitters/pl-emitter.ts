@@ -21,7 +21,13 @@ import { slugify } from '../utils/slugify.js';
 import { stableUuid } from '../utils/uuid.js';
 
 import type { BodyEmitRegistry } from './body-emit-handler.js';
-import type { ConversionResult, ConversionWarning, EmitOptions, OutputEmitter } from './emitter.js';
+import type {
+  ConversionResult,
+  ConversionWarning,
+  EmitOptions,
+  EmitProcessedOptions,
+  OutputEmitter,
+} from './emitter.js';
 import { createPLBodyRegistry } from './handlers/index.js';
 
 /** Emits PrairieLearn question directories and assessment config from IR. */
@@ -79,6 +85,17 @@ export class PLEmitter implements OutputEmitter {
       questions,
       warnings,
     };
+  }
+
+  async emitProcessed(
+    itemContainer: IRItemContainer,
+    { postProcessors, ...options }: EmitProcessedOptions,
+  ): Promise<ConversionResult> {
+    const result = this.emit(itemContainer, options);
+    for (const postProcessor of postProcessors) {
+      await postProcessor.process(result);
+    }
+    return result;
   }
 
   private emitAssessment(

@@ -6,6 +6,7 @@ import { describe, expect, it } from 'vitest';
 
 import type { PublicFetch } from '@prairielearn/public-fetch';
 
+import type { ConversionResult } from './emitters/emitter.js';
 import { QtiImportRemoteImageCopier, fetchRemoteImage } from './remote-image-copier.js';
 
 const ONE_PIXEL_PNG = Buffer.from(
@@ -39,6 +40,57 @@ function createLocalFetch(port: number): PublicFetch {
 }
 
 describe('QtiImportRemoteImageCopier', () => {
+  it('post-processes conversion results and records uncopied-image warnings', async () => {
+    const result = {
+      sourceId: 'assessment',
+      assessmentTitle: 'Assessment',
+      sourceType: 'assessment',
+      assessment: {
+        directoryName: 'assessment',
+        infoJson: {
+          uuid: 'assessment-uuid',
+          type: 'Homework',
+          title: 'Assessment',
+          set: 'Homework',
+          number: '1',
+          allowAccess: [],
+          zones: [],
+        },
+      },
+      questions: [
+        {
+          directoryName: 'q1',
+          sourceId: 'source-q1',
+          infoJson: {
+            uuid: 'question-uuid',
+            title: 'Question',
+            topic: 'Imported',
+            tags: ['imported'],
+            type: 'v3',
+          },
+          questionHtml:
+            '<img src="https://canvas.example/unavailable.png"><img src="://invalid.example/image.png">',
+          clientFiles: new Map(),
+          skippedFiles: [],
+        },
+      ],
+      warnings: [],
+    } satisfies ConversionResult;
+    const copier = new QtiImportRemoteImageCopier(async () => {
+      throw new Error('unavailable');
+    });
+
+    await copier.process(result);
+
+    expect(result.warnings).toEqual([
+      {
+        questionId: 'source-q1',
+        message:
+          '2 remote images could not be copied because of their URLs, availability, size, or format.',
+      },
+    ]);
+  });
+
   it('copies remote images and rewrites all references to local pl-figure elements', async () => {
     const requestedUrls: string[] = [];
     const copier = new QtiImportRemoteImageCopier(async (url) => {

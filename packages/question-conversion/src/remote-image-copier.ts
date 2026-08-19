@@ -12,7 +12,7 @@ import {
   validatePublicHttpsUrl,
 } from '@prairielearn/public-fetch';
 
-import type { ConversionResult } from './emitters/emitter.js';
+import type { ConversionPostProcessor, ConversionResult } from './emitters/emitter.js';
 import type { PLQuestionOutput } from './types/pl-output.js';
 
 // These limits cap both remote work and the amount of binary data retained by a conversion. The
@@ -56,7 +56,7 @@ type FetchRemoteImage = (url: URL, consumeBytes: ConsumeBytes) => Promise<Fetche
  * Copies remote images across one complete QTI conversion while enforcing import-wide limits.
  * A single instance must be shared by every converted entry in the conversion.
  */
-export class QtiImportRemoteImageCopier {
+export class QtiImportRemoteImageCopier implements ConversionPostProcessor {
   private attemptedImageCount = 0;
   private downloadedImageBytes = 0;
   private storedImageBytes = 0;
@@ -216,6 +216,18 @@ export class QtiImportRemoteImageCopier {
 
   async copyInto(result: ConversionResult): Promise<RemoteImageCopyResult[]> {
     return Promise.all(result.questions.map((question) => this.copyIntoQuestion(question)));
+  }
+
+  async process(result: ConversionResult): Promise<void> {
+    const copyResults = await this.copyInto(result);
+    for (const [index, copyResult] of copyResults.entries()) {
+      const uncopiedCount = copyResult.failedImageCount + copyResult.unattemptedRemoteImageCount;
+      if (uncopiedCount === 0) continue;
+      result.warnings.push({
+        questionId: result.questions[index].sourceId,
+        message: `${uncopiedCount} remote image${uncopiedCount === 1 ? '' : 's'} could not be copied because of ${uncopiedCount === 1 ? 'its URL' : 'their URLs'}, availability, size, or format.`,
+      });
+    }
   }
 }
 

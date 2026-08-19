@@ -27,6 +27,37 @@ describe('convert (integration)', () => {
       );
     });
 
+    it('preserves parsed Canvas equations through emission', async () => {
+      const xml = readFileSync(path.join(QTI12_FIXTURES, 'canvas-checkbox.xml'), 'utf-8').replace(
+        '        </resprocessing>',
+        `        </resprocessing>
+        <itemfeedback ident="a1_fb">
+          <flow_mat><material><mattext texttype="text/html">&lt;img data-equation-content="x^2" src="equation.svg"&gt;</mattext></material></flow_mat>
+        </itemfeedback>`,
+      );
+
+      const result = await convert(xml);
+
+      expect(result.questions[0].serverPy).toContain('$x^2$');
+      expect(result.questions[0].serverPy).not.toContain('data-equation-content');
+    });
+
+    it('runs post-processors after emission', async () => {
+      const xml = readFileSync(path.join(QTI12_FIXTURES, 'canvas-mc.xml'), 'utf-8');
+
+      const result = await convert(xml, {
+        postProcessors: [
+          {
+            process(result) {
+              result.warnings.push({ questionId: 'q1', message: 'Processed' });
+            },
+          },
+        ],
+      });
+
+      expect(result.warnings).toContainEqual({ questionId: 'q1', message: 'Processed' });
+    });
+
     it('converts a true/false quiz end-to-end', async () => {
       const xml = readFileSync(path.join(QTI12_FIXTURES, 'canvas-tf.xml'), 'utf-8');
       const result = await convert(xml);
