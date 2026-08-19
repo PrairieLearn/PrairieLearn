@@ -1,5 +1,11 @@
 # @prairielearn/zod
 
+## 3.1.0
+
+### Minor Changes
+
+- 4edf496: Add helpers for parsing and validating Express path parameters or multiple request data sources with Zod, and report unrecognized `__action` discriminators with an action-specific error
+
 ## 3.0.3
 
 ### Patch Changes
