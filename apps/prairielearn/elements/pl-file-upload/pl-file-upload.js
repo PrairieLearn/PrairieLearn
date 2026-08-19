@@ -436,6 +436,15 @@
             $preview.addClass('show');
           }
 
+          const $fileButtons = $('<div class="align-self-center"></div>');
+          $fileButtons.append($download);
+          $deleteUpload.on('click', () => this.deleteUploadedFile(fileName));
+          $fileButtons.append($deleteUpload);
+          $fileButtons.append(
+            `<button type="button" class="btn btn-outline-secondary btn-sm file-preview-button ${!isExpanded ? 'collapsed' : ''}" data-bs-toggle="collapse" data-bs-target="#file-preview-${uuid}-${index}" aria-expanded="${isExpanded ? 'true' : 'false'}" aria-controls="file-preview-${uuid}-${index}"><span class="file-preview-icon fas fa-angle-down"></span></button>`,
+          );
+          $fileStatusContainer.append($fileButtons);
+
           try {
             // We don't use Uint8Array.fromBase64 because it is not supported in
             // all browsers (e.g. Safari). atob returns a string where every
@@ -460,14 +469,14 @@
                 URL.revokeObjectURL(url);
               });
               $preview.append($objectPreview);
-              this.expandPreviewForFile(fileName);
+              this.expandPreviewForFile($file, $preview);
             } else {
               // First try to display the file as an image. If that fails,
               // try to display it as text.
               $imgPreview
                 .on('load', () => {
                   $imgPreview.removeClass('d-none');
-                  this.expandPreviewForFile(fileName);
+                  this.expandPreviewForFile($file, $preview);
                   URL.revokeObjectURL(url);
                 })
                 .on('error', () => {
@@ -479,7 +488,7 @@
                     $codePreview.find('code').text('Binary file not previewed.');
                   }
                   $codePreview.removeClass('d-none');
-                  this.expandPreviewForFile(fileName);
+                  this.expandPreviewForFile($file, $preview);
                 })
                 .attr('src', url);
             }
@@ -495,14 +504,6 @@
             );
           }
           $file.append($preview);
-          const $fileButtons = $('<div class="align-self-center"></div>');
-          $fileButtons.append($download);
-          $deleteUpload.on('click', () => this.deleteUploadedFile(fileName));
-          $fileButtons.append($deleteUpload);
-          $fileButtons.append(
-            `<button type="button" class="btn btn-outline-secondary btn-sm file-preview-button ${!isExpanded ? 'collapsed' : ''}" data-bs-toggle="collapse" data-bs-target="#file-preview-${uuid}-${index}" aria-expanded="${isExpanded ? 'true' : 'false'}" aria-controls="file-preview-${uuid}-${index}"><span class="file-preview-icon fas fa-angle-down"></span></button>`,
-          );
-          $fileStatusContainer.append($fileButtons);
         }
 
         $fileList.append($file);
@@ -557,9 +558,8 @@
       this.element.find('.messages').append($alert);
     }
 
-    expandPreviewForFile(name) {
-      const container = this.element.find(`li[data-file="${escapeFileName(name)}"]`);
-      container.find('.file-preview').addClass('show');
+    expandPreviewForFile(container, preview) {
+      preview.addClass('show');
       container.find('.file-preview-button').removeClass('collapsed');
     }
 
