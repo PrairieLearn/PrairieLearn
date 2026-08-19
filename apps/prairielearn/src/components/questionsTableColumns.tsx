@@ -1,3 +1,4 @@
+import clsx from 'clsx';
 import type { ReactNode } from 'react';
 
 import { run } from '@prairielearn/run';
@@ -356,7 +357,11 @@ export function createQuestionsTableColumns({
                                 assessmentId: a.assessment.id,
                                 qid: info.row.original.qid,
                               })}
-                              className={`btn btn-badge color-${a.assessment_set.color}`}
+                              className={clsx(
+                                'btn',
+                                'btn-badge',
+                                `color-${a.assessment_set.color}`,
+                              )}
                             >
                               {assessmentLabel(a.assessment, a.assessment_set)}
                             </a>

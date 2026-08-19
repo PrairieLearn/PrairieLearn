@@ -124,7 +124,7 @@ export function TanstackTable<RowDataModel extends RowData>({
   const tableRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = scrollRef ?? parentRef;
 
-  const rows = [...table.getTopRows(), ...table.getCenterRows()];
+  const rows = [...table.getTopRows(), ...table.getCenterRows(), ...table.getBottomRows()];
   const rowVirtualizer = useVirtualizer({
     count: rows.length,
     getScrollElement: () => scrollContainerRef.current,
