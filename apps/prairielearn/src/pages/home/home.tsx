@@ -17,8 +17,12 @@ import {
 import { extractPageContext } from '../../lib/client/page-context.js';
 import { StaffInstitutionSchema } from '../../lib/client/safe-db-types.js';
 import { config } from '../../lib/config.js';
-import { admitUserFromUidInvitation } from '../../lib/enrollment/admission.js';
+import {
+  admitUserFromUidInvitation,
+  rejectUserFromUidInvitation,
+} from '../../lib/enrollment/admission.js';
 import { selectEnrollmentAdmissionDecision } from '../../lib/enrollment/identity.js';
+import { EnrollmentAdmissionDeniedError } from '../../lib/enrollment/reconciliation.js';
 import { idsEqual } from '../../lib/id.js';
 import { isEnterprise } from '../../lib/license.js';
 import { computeStatus } from '../../lib/publishing.js';
@@ -246,35 +250,28 @@ router.post(
           break;
         }
 
-        await admitUserFromUidInvitation({
-          courseInstanceId: courseInstance.id,
-          expectedInvitationEnrollmentId: decision.invitationCandidate.enrollment.id,
-          ip: req.ip ?? null,
-          isAdministrator: res.locals.is_administrator,
-          reqDate: res.locals.req_date,
-          userId: res.locals.authn_user.id,
-        });
+        try {
+          await admitUserFromUidInvitation({
+            courseInstanceId: courseInstance.id,
+            expectedInvitationEnrollmentId: decision.invitationCandidate.enrollment.id,
+            ip: req.ip ?? null,
+            isAdministrator: res.locals.is_administrator,
+            reqDate: res.locals.req_date,
+            userId: res.locals.authn_user.id,
+          });
+        } catch (error) {
+          if (!(error instanceof EnrollmentAdmissionDeniedError)) throw error;
+          flash('error', 'Failed to accept invitation');
+        }
         break;
       }
       case 'reject_invitation': {
-        const enrollment = await selectOptionalEnrollmentByUid({
-          courseInstance,
-          uid,
-          requiredRole: ['Student'],
+        const rejected = await rejectUserFromUidInvitation({
           authzData,
+          courseInstanceId: courseInstance.id,
+          userId: res.locals.authn_user.id,
         });
-
-        if (!enrollment || !['invited', 'rejected'].includes(enrollment.status)) {
-          flash('error', 'Failed to reject invitation');
-          break;
-        }
-
-        await setEnrollmentStatus({
-          enrollment,
-          status: 'rejected',
-          authzData,
-          requiredRole: ['Student'],
-        });
+        if (!rejected) flash('error', 'Failed to reject invitation');
         break;
       }
       case 'unenroll': {
