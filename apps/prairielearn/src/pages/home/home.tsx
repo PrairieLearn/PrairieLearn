@@ -38,6 +38,14 @@ import { InstructorHomePageCourseSchema, StudentHomePageCourseSchema } from './h
 const sql = loadSqlEquiv(import.meta.url);
 const router = Router();
 
+const PostBodySchema = z.discriminatedUnion('__action', [
+  z.object({ __action: z.literal('dismiss_news_alert') }),
+  z.object({
+    __action: z.enum(['accept_invitation', 'reject_invitation', 'unenroll']),
+    course_instance_id: z.string().min(1),
+  }),
+]);
+
 router.get(
   '/',
   typedAsyncHandler<'plain', { navPage: 'home' }>(async (req, res) => {
@@ -184,14 +192,7 @@ router.post(
       withAuthzData: false,
     });
 
-    const BodySchema = z.discriminatedUnion('__action', [
-      z.object({ __action: z.literal('dismiss_news_alert') }),
-      z.object({
-        __action: z.enum(['accept_invitation', 'reject_invitation', 'unenroll']),
-        course_instance_id: z.string().min(1),
-      }),
-    ]);
-    const body = parseRequestBody(req, BodySchema);
+    const body = parseRequestBody(req, PostBodySchema);
 
     if (body.__action === 'dismiss_news_alert') {
       await markNewsItemsAsReadForUser(res.locals.authn_user);

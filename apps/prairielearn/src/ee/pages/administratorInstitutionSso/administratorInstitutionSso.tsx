@@ -3,7 +3,7 @@ import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
 
 import { Hydrate } from '@prairielearn/react/server';
-import { ArrayFromCheckboxSchema, parseRequestBody } from '@prairielearn/zod';
+import { ArrayFromCheckboxSchema, IdSchema, parseRequest } from '@prairielearn/zod';
 
 import { PageLayout } from '../../../components/PageLayout.js';
 import { getSupportedAuthenticationProviders } from '../../../lib/authn-providers.js';
@@ -24,6 +24,14 @@ import { AdministratorInstitutionSsoForm } from './components/AdministratorInsti
 
 const router = Router({ mergeParams: true });
 
+const UpdateInstitutionSsoRequestSchemas = {
+  params: z.object({ institution_id: IdSchema }),
+  body: z.object({
+    default_authn_provider_id: z.string().transform((s) => (s === '' ? null : s)),
+    enabled_authn_provider_ids: ArrayFromCheckboxSchema,
+  }),
+};
+
 router.post(
   '/',
   asyncHandler(async (req, res) => {
@@ -32,20 +40,14 @@ router.post(
       supportedAuthenticationProviders.map((p) => p.id),
     );
 
-    const body = parseRequestBody(
-      req,
-      z.object({
-        default_authn_provider_id: z.string().transform((s) => (s === '' ? null : s)),
-        enabled_authn_provider_ids: ArrayFromCheckboxSchema,
-      }),
-    );
+    const { params, body } = parseRequest(req, UpdateInstitutionSsoRequestSchemas);
 
     const enabledProviders = body.enabled_authn_provider_ids.filter((id) =>
       supportedAuthenticationProviderIds.has(id),
     );
 
     await updateInstitutionAuthnProviders({
-      institution_id: req.params.institution_id,
+      institution_id: params.institution_id,
       enabled_authn_provider_ids: enabledProviders,
       default_authn_provider_id: body.default_authn_provider_id,
       authn_user_id: res.locals.authn_user.id.toString(),
