@@ -1,4 +1,5 @@
 import {
+  CancellationError,
   ComputeEngine,
   type Expression,
   type MathJsonExpression,
@@ -234,19 +235,24 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
     const input = item.dataset.input!;
     const angleMode = item.dataset.angleMode! as AngleMode;
 
-    const savedAns = withCalculatorTimeLimit(ce, () => ce.expr('ans').evaluate());
+    let savedAns: Expression | undefined;
+    try {
+      savedAns = withCalculatorTimeLimit(ce, () => ce.expr('ans').evaluate());
 
-    // checking `{ans}` here because it could be \mathrm{ans} or \operatorname{ans}
-    if (input.includes('{ans}') && domIndex + 1 < items.length) {
-      const prevResult = resolveAnsAndEvaluate(items, domIndex + 1, displayMode);
-      if (prevResult) {
+      // checking `{ans}` here because it could be \mathrm{ans} or \operatorname{ans}
+      if (input.includes('{ans}') && domIndex + 1 < items.length) {
+        const prevResult = resolveAnsAndEvaluate(items, domIndex + 1, displayMode);
+        if (!prevResult) return null;
         ce.assign('ans', prevResult.evaluated);
       }
-    }
 
-    const result = evaluateExpression(input, angleMode, displayMode);
-    ce.assign('ans', savedAns);
-    return result;
+      return evaluateExpression(input, angleMode, displayMode);
+    } catch (e) {
+      if (e instanceof CancellationError) return null;
+      throw e;
+    } finally {
+      if (savedAns) ce.assign('ans', savedAns);
+    }
   }
 
   /**
