@@ -3,17 +3,16 @@ import fetchCookie from 'fetch-cookie';
 import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 import { z } from 'zod';
 
-import { execute, loadSqlEquiv, queryRow, queryRows, queryScalar } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, queryRow, queryScalar } from '@prairielearn/postgres';
 
 import { dangerousFullSystemAuthz } from '../lib/authz-data-lib.js';
 import { config } from '../lib/config.js';
-import {
-  CourseInstancePublishingExtensionSchema,
-  type Enrollment,
-  EnrollmentSchema,
-  type EnumEnrollmentStatus,
-} from '../lib/db-types.js';
+import { type Enrollment } from '../lib/db-types.js';
 import { EXAMPLE_COURSE_PATH } from '../lib/paths.js';
+import {
+  createPublishingExtensionWithEnrollments,
+  deletePublishingExtension,
+} from '../models/course-instance-publishing-extensions.js';
 import { selectCourseInstanceById } from '../models/course-instances.js';
 import {
   selectOptionalEnrollmentByPendingUid,
@@ -26,8 +25,9 @@ import * as helperServer from './helperServer.js';
 import { createInstitution, getOrCreateUser, withUser } from './utils/auth.js';
 import { getCsrfToken } from './utils/csrf.js';
 import {
-  createEnrollment as createIdentityEnrollment,
+  createEnrollment,
   createLti13CourseInstance,
+  selectEnrollments,
 } from './utils/enrollment-identity.js';
 
 const sql = loadSqlEquiv(import.meta.url);
@@ -38,37 +38,6 @@ const homeUrl = siteUrl + '/';
 async function postHome(body: URLSearchParams) {
   const response = await fetchCookie(fetch)(homeUrl, { method: 'POST', body });
   return { $: cheerio.load(await response.text()), response };
-}
-
-async function createEnrollment({
-  userId,
-  pendingUid,
-  pendingUin,
-  status,
-}: {
-  userId: string | null;
-  pendingUid?: string | null;
-  pendingUin?: string | null;
-  status: EnumEnrollmentStatus;
-}): Promise<Enrollment> {
-  return await queryRow(
-    sql.create_enrollment,
-    {
-      user_id: userId,
-      course_instance_id: '1',
-      pending_uid: pendingUid,
-      pending_uin: pendingUin,
-      status,
-      first_joined_at: ['joined', 'left', 'removed', 'blocked'].includes(status)
-        ? new Date()
-        : null,
-    },
-    EnrollmentSchema,
-  );
-}
-
-async function selectEnrollments(ids: string[]) {
-  return await queryRows(sql.select_enrollments_by_ids, { enrollment_ids: ids }, EnrollmentSchema);
 }
 
 async function countAuditEvents(ids: string[]) {
@@ -86,6 +55,7 @@ describe('Homepage student courses', () => {
   afterAll(helperServer.after);
 
   it('does not discover or mutate a same-UIN invitation from another institution', async () => {
+    const courseInstance = await selectCourseInstanceById('1');
     const user = await getOrCreateUser({
       uid: 'foreign-uin-invitation@other.example.com',
       name: 'Foreign UIN invitation user',
@@ -94,9 +64,8 @@ describe('Homepage student courses', () => {
       institutionId: '900002',
     });
     const invitation = await createEnrollment({
-      userId: null,
+      courseInstance,
       pendingUin: user.uin,
-      status: 'invited',
     });
 
     try {
@@ -131,7 +100,7 @@ describe('Homepage student courses', () => {
     });
     const courseInstance = await selectCourseInstanceById('1');
     const lti13CourseInstance = await createLti13CourseInstance(courseInstance);
-    const invitation = await createIdentityEnrollment({
+    const invitation = await createEnrollment({
       courseInstance,
       pendingLti13CourseInstanceId: lti13CourseInstance.id,
       pendingLti13Sub: 'rightful-student-sub',
@@ -168,6 +137,7 @@ describe('Homepage student courses', () => {
   });
 
   it('shows a left enrollment and matching UIN invitation once with their latest extension', async () => {
+    const courseInstance = await selectCourseInstanceById('1');
     const user = await getOrCreateUser({
       uid: 'grouped-uin-invitation@example.com',
       name: 'Grouped UIN invitation user',
@@ -176,47 +146,32 @@ describe('Homepage student courses', () => {
       institutionId: '1',
     });
     const boundEnrollment = await createEnrollment({
+      courseInstance,
+      firstJoinedAt: new Date(),
       userId: user.id,
       status: 'left',
     });
     const uinInvitation = await createEnrollment({
-      userId: null,
+      courseInstance,
       pendingUin: user.uin,
-      status: 'invited',
     });
     const uidInvitation = await createEnrollment({
-      userId: null,
+      courseInstance,
       pendingUid: user.uid,
-      status: 'invited',
     });
     const enrollmentIds = [boundEnrollment.id, uinInvitation.id, uidInvitation.id];
-    const courseInstance = await selectCourseInstanceById('1');
     const now = new Date();
-    const expiredExtension = await queryRow(
-      sql.create_publishing_extension,
-      {
-        course_instance_id: '1',
-        name: 'Homepage bound enrollment extension',
-        end_date: new Date(now.getTime() - 12 * 60 * 60 * 1000),
-      },
-      CourseInstancePublishingExtensionSchema,
-    );
-    const activeExtension = await queryRow(
-      sql.create_publishing_extension,
-      {
-        course_instance_id: '1',
-        name: 'Homepage UIN invitation extension',
-        end_date: new Date(now.getTime() + 24 * 60 * 60 * 1000),
-      },
-      CourseInstancePublishingExtensionSchema,
-    );
-    await execute(sql.add_publishing_extension_enrollment, {
-      publishing_extension_id: expiredExtension.id,
-      enrollment_id: boundEnrollment.id,
+    const expiredExtension = await createPublishingExtensionWithEnrollments({
+      courseInstance,
+      name: 'Homepage bound enrollment extension',
+      endDate: new Date(now.getTime() - 12 * 60 * 60 * 1000),
+      enrollments: [boundEnrollment],
     });
-    await execute(sql.add_publishing_extension_enrollment, {
-      publishing_extension_id: activeExtension.id,
-      enrollment_id: uinInvitation.id,
+    const activeExtension = await createPublishingExtensionWithEnrollments({
+      courseInstance,
+      name: 'Homepage UIN invitation extension',
+      endDate: new Date(now.getTime() + 24 * 60 * 60 * 1000),
+      enrollments: [uinInvitation],
     });
     await execute(sql.update_course_instance_publishing, {
       course_instance_id: '1',
@@ -272,11 +227,13 @@ describe('Homepage student courses', () => {
         publishing_start_date: courseInstance.publishing_start_date,
         publishing_end_date: courseInstance.publishing_end_date,
       });
-      await execute(sql.delete_publishing_extension, {
-        publishing_extension_id: activeExtension.id,
+      await deletePublishingExtension({
+        extension: activeExtension,
+        courseInstance,
       });
-      await execute(sql.delete_publishing_extension, {
-        publishing_extension_id: expiredExtension.id,
+      await deletePublishingExtension({
+        extension: expiredExtension,
+        courseInstance,
       });
       for (const enrollmentId of enrollmentIds) {
         await execute(sql.delete_enrollment_by_id, { enrollment_id: enrollmentId });
@@ -285,6 +242,7 @@ describe('Homepage student courses', () => {
   });
 
   it('does not substitute a new UID invitation for stale accept or reject targets', async () => {
+    const courseInstance = await selectCourseInstanceById('1');
     const user = await getOrCreateUser({
       uid: 'stale-home-invitation@example.com',
       name: 'Stale homepage invitation user',
@@ -293,9 +251,8 @@ describe('Homepage student courses', () => {
       institutionId: '1',
     });
     const originalInvitation = await createEnrollment({
-      userId: null,
+      courseInstance,
       pendingUid: user.uid,
-      status: 'invited',
     });
     let replacementInvitation: Enrollment | null = null;
 
@@ -314,9 +271,8 @@ describe('Homepage student courses', () => {
 
       await execute(sql.delete_enrollment_by_id, { enrollment_id: originalInvitation.id });
       replacementInvitation = await createEnrollment({
-        userId: null,
+        courseInstance,
         pendingUid: user.uid,
-        status: 'invited',
       });
 
       await withUser(user, async () => {
@@ -343,7 +299,7 @@ describe('Homepage student courses', () => {
 
       const remainingInvitation = await selectOptionalEnrollmentByPendingUid({
         pendingUid: user.uid,
-        courseInstance: await selectCourseInstanceById('1'),
+        courseInstance,
         requiredRole: ['System'],
         authzData: dangerousFullSystemAuthz(),
       });
@@ -360,6 +316,7 @@ describe('Homepage student courses', () => {
   it.each(['left', 'removed', 'rejected'] as const)(
     'does not treat a %s enrollment as a UID invitation',
     async (status) => {
+      const courseInstance = await selectCourseInstanceById('1');
       const user = await getOrCreateUser({
         uid: `non-actionable-${status}@example.com`,
         name: `Non-actionable ${status} user`,
@@ -368,6 +325,8 @@ describe('Homepage student courses', () => {
         institutionId: '1',
       });
       const enrollment = await createEnrollment({
+        courseInstance,
+        firstJoinedAt: status === 'rejected' ? null : new Date(),
         userId: status === 'rejected' ? null : user.id,
         pendingUid: status === 'rejected' ? user.uid : null,
         status,
@@ -396,6 +355,7 @@ describe('Homepage student courses', () => {
   );
 
   it('accepts and rejects UID invitations for legacy course instances', async () => {
+    const courseInstance = await selectCourseInstanceById('1');
     const acceptingUser = await getOrCreateUser({
       uid: 'legacy-accept@example.com',
       name: 'Legacy accept user',
@@ -411,16 +371,13 @@ describe('Homepage student courses', () => {
       institutionId: '1',
     });
     const acceptingInvitation = await createEnrollment({
-      userId: null,
+      courseInstance,
       pendingUid: acceptingUser.uid,
-      status: 'invited',
     });
     const rejectingInvitation = await createEnrollment({
-      userId: null,
+      courseInstance,
       pendingUid: rejectingUser.uid,
-      status: 'invited',
     });
-    const courseInstance = await selectCourseInstanceById('1');
     const accessRule = await queryRow(
       sql.create_unrestricted_access_rule,
       { course_instance_id: '1' },
