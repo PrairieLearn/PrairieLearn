@@ -7,6 +7,7 @@ description: Conventions for validating PrairieLearn Express request parameters,
 
 - Define request schemas at module scope unless they genuinely depend on request-time values. Prefer a static structural schema followed by a semantic check over constructing a schema per request.
 - Parse every request source a handler consumes before database queries or other work. After parsing, use only the parsed values; do not read the corresponding `req.params`, `req.query`, or `req.body` values again.
+- Treat parsed request objects as boundary data, not as parameter bags. Pass explicit fields to database queries, model functions, and other downstream APIs instead of passing `params`, `query`, or `body` wholesale; this keeps each callsite's contract visible and avoids unused-parameter failures when request schemas grow.
 - Use `parseRequest` when validating multiple sources together. Use `parseRequestParams`, `parseRequestQuery`, or `parseRequestBody` when validating only one source.
 - Express cannot verify that a params schema matches the router path. Check the parent mount path as well as the local route and ensure every `ParamsSchema` key matches an actual `:parameter`.
 

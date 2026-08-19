@@ -42,7 +42,14 @@ router.get(
     const params = parseRequestParams(req, ParamsSchema);
 
     const institution = await getInstitution(params.institution_id);
-    const course = await queryRow(sql.select_course, params, CourseSchema);
+    const course = await queryRow(
+      sql.select_course,
+      {
+        institution_id: params.institution_id,
+        course_id: params.course_id,
+      },
+      CourseSchema,
+    );
     const rows = await queryRows(
       sql.select_course_instances,
       { course_id: course.id },
@@ -63,7 +70,14 @@ router.post(
   '/',
   typedAsyncHandler<'plain'>(async (req, res) => {
     const { params, body } = parseRequest(req, PostRequestSchemas);
-    const course = await queryRow(sql.select_course, params, CourseSchema);
+    const course = await queryRow(
+      sql.select_course,
+      {
+        institution_id: params.institution_id,
+        course_id: params.course_id,
+      },
+      CourseSchema,
+    );
 
     await runInTransactionAsync(async () => {
       const updatedCourse = await queryRow(
