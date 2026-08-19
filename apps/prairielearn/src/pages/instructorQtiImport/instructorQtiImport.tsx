@@ -478,7 +478,11 @@ export async function serializeConversionResult(
       }
       const seenMessages = new Set<string>();
       for (const d of await lintQuestionHtml(remoteImageCopy.html)) {
-        if (remoteImageCopy.failedImageCount > 0 && d.ruleName === 'pl-remote-image-url') {
+        if (
+          remoteImageCopy.failedImageCount > 0 &&
+          remoteImageCopy.unattemptedRemoteImageCount === 0 &&
+          d.ruleName === 'pl-remote-image-url'
+        ) {
           continue;
         }
         if (seenMessages.has(d.message)) continue;

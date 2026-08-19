@@ -323,6 +323,52 @@ describe('serializeConversionResult', () => {
       },
     ]);
   });
+
+  it('keeps the generic warning for an unattempted URL when another image fails', async () => {
+    const conversionResult = makeConversionResult({
+      sourceType: 'assessment',
+      directoryName: 'quiz',
+    });
+    conversionResult.questions.push({
+      directoryName: 'q1',
+      sourceId: 'source-q1',
+      infoJson: {
+        uuid: 'question-uuid',
+        title: 'Question',
+        topic: 'Imported',
+        tags: ['imported'],
+        type: 'v3',
+      },
+      questionHtml:
+        '<img src="https://canvas.example/unavailable.png"><img src="://invalid.example/image.png">',
+      clientFiles: new Map(),
+      skippedFiles: [],
+    });
+    const copier = new QtiImportRemoteImageCopier(async () => {
+      throw new Error('unavailable');
+    });
+
+    const { result } = await serializeConversionResult(
+      conversionResult,
+      'quiz',
+      '/nonexistent',
+      copier,
+    );
+
+    expect(result.warnings).toEqual([
+      {
+        questionId: 'imported/quiz/q1',
+        message:
+          '1 remote image could not be copied into this course because of its URL, availability, size, or format. The original image reference was left unchanged.',
+        level: 'warn',
+      },
+      {
+        questionId: 'imported/quiz/q1',
+        message: 'Question contains an image reference to a remote URL.',
+        level: 'warn',
+      },
+    ]);
+  });
 });
 
 describe('deduplicateIdenticalQuestions', () => {

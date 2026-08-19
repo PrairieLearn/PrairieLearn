@@ -42,6 +42,7 @@ interface RemoteImageCopyResult {
   files: Map<string, Buffer>;
   remoteImagesCopied: number;
   failedImageCount: number;
+  unattemptedRemoteImageCount: number;
 }
 
 type ConsumeBytes = (byteLength: number) => void;
@@ -111,12 +112,18 @@ export class QtiImportRemoteImageCopier {
   ): Promise<RemoteImageCopyResult> {
     const $ = cheerio.load(html, null, false);
     const imagesByUrl = new Map<string, { url: URL; elements: cheerio.Cheerio<Element>[] }>();
+    let unattemptedRemoteImageCount = 0;
 
     $('img[src]').each((_, element) => {
       const source = $(element).attr('src');
       if (!source) return;
       const url = parseRemoteImageUrl(source);
-      if (!url) return;
+      if (!url) {
+        if (/^(?:https?:\/\/|:\/\/)/i.test(source.trim())) {
+          unattemptedRemoteImageCount += 1;
+        }
+        return;
+      }
 
       const existing = imagesByUrl.get(url.href);
       if (existing) {
@@ -187,6 +194,7 @@ export class QtiImportRemoteImageCopier {
       files,
       remoteImagesCopied,
       failedImageCount,
+      unattemptedRemoteImageCount,
     };
   }
 }
