@@ -1,39 +1,7 @@
--- BLOCK create_enrollment
-INSERT INTO
-  enrollments (
-    user_id,
-    course_instance_id,
-    status,
-    pending_uid,
-    pending_uin,
-    first_joined_at
-  )
-VALUES
-  (
-    $user_id,
-    $course_instance_id,
-    $status,
-    $pending_uid,
-    $pending_uin,
-    $first_joined_at
-  )
-RETURNING
-  *;
-
 -- BLOCK delete_enrollment_by_id
 DELETE FROM enrollments
 WHERE
   id = $enrollment_id;
-
--- BLOCK select_enrollments_by_ids
-SELECT
-  *
-FROM
-  enrollments
-WHERE
-  id = ANY ($enrollment_ids::bigint[])
-ORDER BY
-  id;
 
 -- BLOCK count_enrollment_audit_events
 SELECT
@@ -42,28 +10,6 @@ FROM
   audit_events
 WHERE
   enrollment_id = ANY ($enrollment_ids::bigint[]);
-
--- BLOCK create_publishing_extension
-INSERT INTO
-  course_instance_publishing_extensions (course_instance_id, name, end_date)
-VALUES
-  ($course_instance_id, $name, $end_date)
-RETURNING
-  *;
-
--- BLOCK add_publishing_extension_enrollment
-INSERT INTO
-  course_instance_publishing_extension_enrollments (
-    course_instance_publishing_extension_id,
-    enrollment_id
-  )
-VALUES
-  ($publishing_extension_id, $enrollment_id);
-
--- BLOCK delete_publishing_extension
-DELETE FROM course_instance_publishing_extensions
-WHERE
-  id = $publishing_extension_id;
 
 -- BLOCK delete_lti13_course_instance
 DELETE FROM lti13_course_instances
