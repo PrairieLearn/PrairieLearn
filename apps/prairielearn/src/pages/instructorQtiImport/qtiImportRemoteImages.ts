@@ -151,6 +151,8 @@ export class QtiImportRemoteImageCopier {
             .update(image.content)
             .digest('hex')
             .slice(0, 16);
+          // Content-addressed names deduplicate identical downloads and avoid trusting a remote
+          // URL's path as a course filename.
           let filename = filenameByDigest.get(digest);
           if (!filename) {
             if (this.storedImageBytes + image.content.byteLength > MAX_TOTAL_REMOTE_IMAGE_BYTES) {
