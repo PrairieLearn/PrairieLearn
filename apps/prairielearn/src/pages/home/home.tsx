@@ -184,6 +184,8 @@ router.get(
 router.post(
   '/',
   typedAsyncHandler<'plain'>(async (req, res) => {
+    const body = parseRequestBody(req, PostBodySchema);
+
     const {
       authn_user: { uid },
     } = extractPageContext(res.locals, {
@@ -191,8 +193,6 @@ router.post(
       accessType: 'student',
       withAuthzData: false,
     });
-
-    const body = parseRequestBody(req, PostBodySchema);
 
     if (body.__action === 'dismiss_news_alert') {
       await markNewsItemsAsReadForUser(res.locals.authn_user);
