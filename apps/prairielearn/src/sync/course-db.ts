@@ -1135,9 +1135,7 @@ function validateQuestion({
  * @returns A comma-separated list of double-quoted values.
  */
 function formatValues(qids: Set<string> | string[]) {
-  return Array.from(qids)
-    .map((qid) => `"${qid}"`)
-    .join(', ');
+  return Array.from(qids, (qid) => `"${qid}"`).join(', ');
 }
 
 function validateAssessment({

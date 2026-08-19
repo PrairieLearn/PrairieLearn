@@ -298,7 +298,8 @@ function updateDynamicPanels({
     }
 
     const currentLinks = new Set(
-      Array.from(document.head.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]')).map(
+      Array.from(
+        document.head.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]'),
         (link) => link.href,
       ),
     );
@@ -311,7 +312,8 @@ function updateDynamicPanels({
     const currentScripts = new Set(
       Array.from(
         document.head.querySelectorAll<HTMLScriptElement>('script[type="text/javascript"]'),
-      ).map((script) => script.src),
+        (script) => script.src,
+      ),
     );
     headers
       .querySelectorAll<HTMLScriptElement>('script[type="text/javascript"]')

@@ -216,7 +216,7 @@ async.series(
 
       // Start an appropriate number of workers
       workersFinished = Promise.all(
-        Array.from({ length: config.maxConcurrentJobs }).map(() => worker()),
+        Array.from({ length: config.maxConcurrentJobs }, () => worker()),
       ).then(() => {});
       await workersFinished;
     },
