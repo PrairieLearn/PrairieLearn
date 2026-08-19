@@ -1,14 +1,13 @@
 import { z } from 'zod';
 
 import { flash } from '@prairielearn/flash';
-import { logger } from '@prairielearn/logger';
 
 import {
   type QtiImportAssessmentData,
   QtiImportEditor,
   type QtiImportQuestionData,
 } from '../../lib/editors.js';
-import { deleteQtiImportDraft, readQtiImportDraft } from '../../lib/qti-import-drafts.js';
+import { readQtiImportDraft } from '../../lib/qti-import-drafts.js';
 import { SHORT_NAME_REGEX } from '../../lib/short-name.js';
 import { AssessmentJsonSchema } from '../../schemas/infoAssessment.js';
 import { QuestionJsonSchema } from '../../schemas/infoQuestion.js';
@@ -208,42 +207,7 @@ const create = t.procedure
       // message is intended for the page it redirects to.
       flash('success', `${parts.join(' and ')} imported successfully.`);
     }
-
-    await deleteDrafts({
-      draftIds: [...draftCache.keys()],
-      courseId: ctx.course.id,
-      courseInstanceId: ctx.course_instance.id,
-      userId: ctx.locals.authn_user.id,
-    });
   });
-
-async function deleteDrafts({
-  draftIds,
-  courseId,
-  courseInstanceId,
-  userId,
-}: {
-  draftIds: string[];
-  courseId: string;
-  courseInstanceId: string;
-  userId: string;
-}): Promise<void> {
-  // Cleanup must not turn a completed import or reset into a user-visible failure. The bucket's
-  // 24-hour lifecycle expiration remains the fallback for transient deletion failures.
-  let firstError: unknown;
-  const uniqueDraftIds = new Set(draftIds);
-  for (const draftId of uniqueDraftIds) {
-    try {
-      const draft = await readQtiImportDraft({ draftId, courseId, courseInstanceId, userId });
-      await deleteQtiImportDraft(draft);
-    } catch (error) {
-      firstError ??= error;
-    }
-  }
-  if (firstError) {
-    logger.warn('Failed to remove one or more QTI import drafts', firstError);
-  }
-}
 
 export const qtiImportRouter = t.router({
   create,
