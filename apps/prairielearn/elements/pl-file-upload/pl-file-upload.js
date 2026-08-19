@@ -584,10 +584,8 @@
      * @returns {boolean} If the file is recognized as a PDF
      */
     isPdf(binaryData) {
-      const decoder = new TextDecoder();
-      return ['%PDF', '\x0a%PDF', '\xef\xbb\xbf%PDF'].some(
-        (prefix) => decoder.decode(binaryData.subarray(0, prefix.length)) === prefix,
-      );
+      // Consider the first 8 bytes, to contain both the prefix and a potential BOM.
+      return new TextDecoder().decode(binaryData.subarray(0, 8)).match(/^\n?%PDF/);
     }
   }
 
