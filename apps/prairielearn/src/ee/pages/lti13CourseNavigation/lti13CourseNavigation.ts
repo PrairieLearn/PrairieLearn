@@ -134,7 +134,6 @@ router.get(
       throw new HttpStatusError(403, 'Access denied');
     }
     const courseName = prettyCourseName(ltiClaim);
-    const role_instructor = ltiClaim.isRoleInstructor();
 
     // Get lti13_course_instance info, if present
     const lti13_course_instance = await queryOptionalRow(
@@ -152,7 +151,7 @@ router.get(
 
       // Update lti13_course_instance on instructor login
       // helpful as LMS updates or we add features
-      if (role_instructor) {
+      if (ltiClaim.isRoleInstructor()) {
         await execute(sql.update_lti13_course_instance, {
           lti13_instance_id: req.params.lti13_instance_id,
           course_instance_id: lti13_course_instance.course_instance_id,
@@ -227,8 +226,21 @@ router.get(
     }
 
     // No course instance is linked to this LMS context.
-    // Students get a "come back later" message
-    if (!role_instructor) {
+    if (ltiClaim.isRoleInstructor()) {
+      // Instructors get a prompt for linking
+      res.send(
+        Lti13CourseNavigationInstructor({
+          resLocals: res.locals,
+          courseName,
+          courses: await selectCoursesWithEditAccess({
+            user_id: res.locals.authn_user.id,
+            is_administrator: res.locals.is_administrator,
+          }),
+          lti13_instance_id: req.params.lti13_instance_id,
+        }),
+      );
+    } else {
+      // Students get a "come back later" message
       res.send(
         Lti13CourseNavigationNotReady({
           resLocals: res.locals,
@@ -236,21 +248,7 @@ router.get(
           ltiRoles: ltiClaim.roles,
         }),
       );
-      return;
     }
-
-    // Instructors get a prompt for linking
-    res.send(
-      Lti13CourseNavigationInstructor({
-        resLocals: res.locals,
-        courseName,
-        courses: await selectCoursesWithEditAccess({
-          user_id: res.locals.authn_user.id,
-          is_administrator: res.locals.is_administrator,
-        }),
-        lti13_instance_id: req.params.lti13_instance_id,
-      }),
-    );
   }),
 );
 
