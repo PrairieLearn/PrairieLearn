@@ -194,10 +194,6 @@ export interface CourseInstanceOption {
 
 /** Response shape of the upload endpoint. */
 export interface UploadResponse {
-  /**
-   * Server-side draft containing the full question files for this upload.
-   */
-  draftId: string;
   results: SerializedConversionResult[];
   /** QTI entries that failed to parse, surfaced as warnings. */
   parseWarnings: ParseWarning[];

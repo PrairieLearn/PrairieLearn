@@ -315,7 +315,6 @@ router.post(
       const clientResults = results.map((result) => prepareDraftResultForClient(result, draftId));
 
       const response: UploadResponse = {
-        draftId,
         results: clientResults,
         parseWarnings,
         existingQuestionDirs,
