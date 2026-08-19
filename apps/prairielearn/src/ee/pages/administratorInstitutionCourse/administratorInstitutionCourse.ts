@@ -2,7 +2,12 @@ import { Router } from 'express';
 import { z } from 'zod';
 
 import { loadSqlEquiv, queryRow, queryRows, runInTransactionAsync } from '@prairielearn/postgres';
-import { IdSchema, parseRequest, parseRequestParams } from '@prairielearn/zod';
+import {
+  IdSchema,
+  IntegerFromStringOrEmptySchema,
+  parseRequest,
+  parseRequestParams,
+} from '@prairielearn/zod';
 
 import { CourseSchema } from '../../../lib/db-types.js';
 import { typedAsyncHandler } from '../../../lib/res-locals.js';
@@ -25,14 +30,8 @@ const ParamsSchema = z.object({
 const PostRequestSchemas = {
   params: ParamsSchema,
   body: z.object({
-    yearly_enrollment_limit: z.union([
-      z.literal('').transform(() => null),
-      z.coerce.number().int(),
-    ]),
-    course_instance_enrollment_limit: z.union([
-      z.literal('').transform(() => null),
-      z.coerce.number().int(),
-    ]),
+    yearly_enrollment_limit: IntegerFromStringOrEmptySchema,
+    course_instance_enrollment_limit: IntegerFromStringOrEmptySchema,
   }),
 };
 

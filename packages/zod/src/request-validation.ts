@@ -28,8 +28,7 @@ function getRequestValidationErrorMessage(
       if (
         issue.code === 'invalid_union' &&
         issue.discriminator === '__action' &&
-        issue.path.length === 1 &&
-        issue.path[0] === issue.discriminator
+        issue.path.length === 1
       ) {
         const value =
           typeof data === 'object' && data !== null

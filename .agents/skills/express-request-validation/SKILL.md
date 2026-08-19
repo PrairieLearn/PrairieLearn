@@ -36,7 +36,7 @@ const PostRequestSchemas = {
 
 router.post(
   '/',
-  typedAsyncHandler(async (req, res) => {
+  typedAsyncHandler<'plain'>(async (req, res) => {
     const { params, body } = parseRequest(req, PostRequestSchemas);
     await updateCourse(params.course_id, body.name);
     res.redirect(req.originalUrl);
