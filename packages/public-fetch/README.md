@@ -1,11 +1,12 @@
 # `@prairielearn/public-fetch`
 
-A Fetch-compatible client for requesting untrusted public HTTP(S) URLs without allowing access to
-private or otherwise non-public network destinations.
+A Fetch-compatible client for requesting untrusted public HTTPS URLs without allowing access to
+private or otherwise non-public network destinations or sending data over an insecure connection.
 
 `publicFetch()` validates the initial URL, verifies that every DNS result is a public unicast
-address, and pins each connection to a validated address to prevent DNS rebinding. Redirects,
-methods, request bodies, abort signals, and streamed `Response` bodies follow the Fetch API.
+address, and pins each connection to a validated address to prevent DNS rebinding. HTTPS is
+required for both initial requests and redirects. Redirects, methods, request bodies, abort signals,
+and streamed `Response` bodies follow the Fetch API.
 
 ```ts
 import { publicFetch } from '@prairielearn/public-fetch';

@@ -1,5 +1,6 @@
 import { lookup as dnsLookup } from 'node:dns/promises';
 import { isIP } from 'node:net';
+import type { SecureContextOptions } from 'node:tls';
 
 import ipaddr from 'ipaddr.js';
 import {
@@ -19,7 +20,7 @@ type LookupAddresses = (hostname: string) => Promise<readonly { address: string 
 export type PublicFetchInit = Omit<RequestInit, 'dispatcher'>;
 export type PublicFetch = (input: RequestInfo, init?: PublicFetchInit) => Promise<Response>;
 
-const connector = buildConnector({});
+const defaultConnector = buildConnector({});
 
 export function isPublicIpAddress(address: string): boolean {
   try {
@@ -29,9 +30,9 @@ export function isPublicIpAddress(address: string): boolean {
   }
 }
 
-export function validatePublicHttpUrl(url: URL): void {
-  if (url.protocol !== 'http:' && url.protocol !== 'https:') {
-    throw new Error('URL must use HTTP or HTTPS');
+export function validatePublicHttpsUrl(url: URL): void {
+  if (url.protocol !== 'https:') {
+    throw new Error('URL must use HTTPS');
   }
   if (url.username || url.password) {
     throw new Error('URL must not contain credentials');
@@ -56,23 +57,30 @@ export async function resolvePublicAddress(
 }
 
 /**
- * Creates a Fetch-compatible function that only connects to public HTTP(S) destinations.
+ * Creates a Fetch-compatible function that only connects to public HTTPS destinations.
  *
  * The resolver is injectable so callers can use controlled DNS behavior in tests. Production
  * callers should generally use {@link publicFetch} instead.
  */
 export function createPublicFetch({
   resolveAddress = resolvePublicAddress,
-}: { resolveAddress?: ResolveAddress } = {}): PublicFetch {
+  ca,
+}: { resolveAddress?: ResolveAddress; ca?: SecureContextOptions['ca'] } = {}): PublicFetch {
+  const connector = ca == null ? defaultConnector : buildConnector({ ca });
   return async (input, init) => {
     const request = new Request(input, init);
-    validatePublicHttpUrl(new URL(request.url));
+    validatePublicHttpsUrl(new URL(request.url));
 
     // Undici allows overriding Host, unlike browsers. Always derive it from the validated URL.
     request.headers.delete('host');
 
     const dispatcher = new Agent({
       connect(options, callback) {
+        if (options.protocol !== 'https:') {
+          callback(new Error('URL must use HTTPS'), null);
+          return;
+        }
+
         const originalHostname = unwrapHostname(options.hostname);
         void resolveAddress(originalHostname).then(
           (address) => {
