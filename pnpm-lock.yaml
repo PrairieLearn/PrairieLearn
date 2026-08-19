@@ -487,8 +487,8 @@ importers:
         specifier: ^3.1106.0
         version: 3.1111.0(@aws-sdk/client-s3@3.1111.0)
       '@cortex-js/compute-engine':
-        specifier: ^0.55.6
-        version: 0.55.6
+        specifier: ^0.102.0
+        version: 0.102.0
       '@dnd-kit/core':
         specifier: ^6.3.1
         version: 6.3.1(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
@@ -3269,6 +3269,11 @@ packages:
   '@colors/colors@1.6.0':
     resolution: {integrity: sha512-Ir+AOibqzrIsL6ajt3Rz3LskB7OiMVHqltZmspbW/TJuTVuyOMirVqAkjfY6JISiLHgyNqicAC8AyHHGzNd/dA==}
     engines: {node: '>=0.1.90'}
+
+  '@cortex-js/compute-engine@0.102.0':
+    resolution: {integrity: sha512-TSTxCjiLjFcEqCgcJN5e2pUulH91aYNllnPy3d/TPJ+cHcBm8eFG2eg2mDuFwkENjXhUUbjSLsGbWMZD4b5cAQ==}
+    engines: {node: '>=21.7.3', npm: '>=10.5.0'}
+    hasBin: true
 
   '@cortex-js/compute-engine@0.55.6':
     resolution: {integrity: sha512-lWnZ34gtFpUDpFmEMdsL+5HJuh7hyj0DoaZhVTFnVtGX2Rf7qFyD+zgTs1vY9h2qhcpKymiakE6evvWzI6kwtA==}
@@ -11486,6 +11491,11 @@ snapshots:
       sisteransi: 1.0.5
 
   '@colors/colors@1.6.0': {}
+
+  '@cortex-js/compute-engine@0.102.0':
+    dependencies:
+      '@arnog/colors': 0.5.0
+      complex-esm: 2.1.1-esm1
 
   '@cortex-js/compute-engine@0.55.6':
     dependencies:
