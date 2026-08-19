@@ -97,10 +97,8 @@ function groupStudentCourseCandidates(
     if (group === undefined) {
       group = {
         course: {
-          course_id: row.course_id,
+          course: row.course,
           course_instance: row.course_instance,
-          course_short_name: row.course_short_name,
-          course_title: row.course_title,
           start_date: row.start_date,
           end_date: row.end_date,
           latest_publishing_extension: null,
@@ -187,7 +185,7 @@ router.get(
 
     const visibleStudentCourses = allStudentCourses.filter((entry) => {
       // Filter out courses where user also has instructor access.
-      if (instructorCourses.some((course) => idsEqual(course.id, entry.course_id))) return false;
+      if (instructorCourses.some((course) => idsEqual(course.id, entry.course.id))) return false;
 
       // Legacy courses must be filtered using access rules
       if (!entry.course_instance.modern_publishing) {
@@ -220,13 +218,15 @@ router.get(
     });
 
     const studentCourses = visibleStudentCourses
-      .map(({ classification, ...course }): StudentHomePageCourse | null => {
+      .map(({ classification, course, course_instance }) => {
+        const clientCourse = { course, course_instance };
+
         if (classification.boundCandidate?.enrollment.status === 'joined') {
-          return { ...course, access_type: 'joined' };
+          return { ...clientCourse, access_type: 'joined' };
         }
         if (classification.actionableInstitutionUinInvitation !== null) {
           return {
-            ...course,
+            ...clientCourse,
             access_type: 'institution_access',
             invitation_enrollment_id:
               classification.actionableInstitutionUinInvitation.enrollment.id,
@@ -234,7 +234,7 @@ router.get(
         }
         if (classification.actionableUidInvitation !== null) {
           return {
-            ...course,
+            ...clientCourse,
             access_type: 'uid_invitation',
             invitation_enrollment_id: classification.actionableUidInvitation.enrollment.id,
           };
@@ -322,14 +322,13 @@ router.post(
       is_administrator: res.locals.is_administrator,
     });
 
-    if (authzData === null || courseInstance === null || !hasRole(authzData, ['Student'])) {
+    if (
+      authzData === null ||
+      courseInstance === null ||
+      !hasRole(authzData, ['Student']) ||
+      authzData.course_role !== 'None'
+    ) {
       throw new HttpStatusError(403, 'Access denied');
-    }
-
-    if (!authzData.has_student_access) {
-      flash('error', 'This course instance is not accessible to students');
-      res.redirect(req.originalUrl);
-      return;
     }
 
     switch (body.__action) {
