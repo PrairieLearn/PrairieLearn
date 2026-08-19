@@ -13,6 +13,11 @@ import {
 
 import { sanitizeQtiImportSvg } from './qtiImportSvg.js';
 
+// These limits cap both remote work and the amount of binary data retained by a conversion. The
+// 10 MiB per-image limit matches PrairieLearn's image-upload limit; 100 URLs and 50 MiB total allow
+// image-heavy assessments without letting one import monopolize memory. Five concurrent requests
+// keep fan-out bounded, and the 10-second timeout prevents an unresponsive host from stalling the
+// conversion for long.
 const MAX_REMOTE_IMAGE_COUNT = 100;
 const MAX_REMOTE_IMAGE_BYTES = 10 * 1024 * 1024;
 const MAX_TOTAL_REMOTE_IMAGE_BYTES = 50 * 1024 * 1024;
