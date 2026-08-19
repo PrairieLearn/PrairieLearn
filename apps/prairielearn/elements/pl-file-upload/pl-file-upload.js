@@ -35,6 +35,8 @@
       // Checks whether a file name is acceptable
       // If yes, it returns the canonical name of the file, if not, it returns null
       // Note the priority order: first, fill required file names, then required patterns, then optional names, then optional patterns
+      // We finish by checking if an existing file already matches the name.
+      // This allows a file pattern already covered to be replaced with another file with the same name, presuming the file is acceptable if already submitted.
       this.findAcceptedFileName = (fileName) => {
         if (this.requiredFilesLowerCase.includes(fileName)) {
           return this.requiredFiles[this.requiredFilesLowerCase.indexOf(fileName)];
@@ -48,6 +50,8 @@
         if (this.optionalFilesRegex.some((f) => new RegExp(f[0], 'i').test(fileName))) {
           return fileName;
         }
+        const existingFile = this.files.find((f) => f.name.toLowerCase() === fileName);
+        if (existingFile) return existingFile.name;
         return null;
       };
 
