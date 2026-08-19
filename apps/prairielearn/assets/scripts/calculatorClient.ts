@@ -311,8 +311,20 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
         const evaluated = parsed.evaluate();
         const numericValue = displayMode === 'symbolic' ? evaluated : evaluated.N();
         const displayed = numericValue.toLatex(latexOptions);
+        const variables = [...ce.context.lexicalScope.bindings.keys()].flatMap((name) => {
+          if (name === 'ans') return [];
+          const value = ce.symbol(name, { autoDeclare: false }).valueDefinition?.value;
+          return value
+            ? [
+                {
+                  name,
+                  value: value.toLatex({ notation: 'auto' }),
+                },
+              ]
+            : [];
+        });
 
-        return { displayed, evaluated };
+        return { displayed, evaluated, variables };
       });
     } catch (e) {
       console.error('Evaluation failed:', e);
@@ -355,7 +367,7 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
       return;
     }
 
-    const { displayed, evaluated } = result;
+    const { displayed, evaluated, variables } = result;
 
     if (hasError(evaluated.json)) {
       showCalculationError();
@@ -370,20 +382,7 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
     // Add to history
     if (addToHistory) {
       try {
-        const parsed = ce.parse(input, { parseNumbers: 'rational' });
-        const parsedJson = parsed.json;
-        // FIXME: could be multiple assignments in one expression
-        if (Array.isArray(parsedJson) && parsedJson[0] === 'Assign') {
-          const variable = withCalculatorTimeLimit(ce, () => {
-            const value = ce.expr(parsedJson[2]).evaluate();
-            return {
-              name: parsedJson[1] as string,
-              value: value.toLatex({ notation: 'auto' }),
-            };
-          });
-          data.variable.push(variable);
-        }
-
+        data.variable = variables;
         ce.assign('ans', evaluated);
         shouldAutoInsertAns = true;
       } catch (e) {
