@@ -67,47 +67,39 @@ export function createPublicFetch({
   ca,
 }: { resolveAddress?: ResolveAddress; ca?: SecureContextOptions['ca'] } = {}): PublicFetch {
   const connector = ca == null ? defaultConnector : buildConnector({ ca });
+  const dispatcher = new Agent({
+    connect(options, callback) {
+      if (options.protocol !== 'https:') {
+        callback(new Error('URL must use HTTPS'), null);
+        return;
+      }
+
+      const originalHostname = unwrapHostname(options.hostname);
+      void resolveAddress(originalHostname).then(
+        (address) => {
+          connector(
+            {
+              ...options,
+              hostname: address,
+              ...(!isIP(originalHostname) && { servername: originalHostname }),
+            },
+            callback,
+          );
+        },
+        (error: unknown) => {
+          callback(error instanceof Error ? error : new Error(String(error)), null);
+        },
+      );
+    },
+  });
+
   return async (input, init) => {
     const request = new Request(input, init);
     validatePublicHttpsUrl(new URL(request.url));
 
     // Undici allows overriding Host, unlike browsers. Always derive it from the validated URL.
     request.headers.delete('host');
-
-    const dispatcher = new Agent({
-      connect(options, callback) {
-        if (options.protocol !== 'https:') {
-          callback(new Error('URL must use HTTPS'), null);
-          return;
-        }
-
-        const originalHostname = unwrapHostname(options.hostname);
-        void resolveAddress(originalHostname).then(
-          (address) => {
-            connector(
-              {
-                ...options,
-                hostname: address,
-                ...(!isIP(originalHostname) && { servername: originalHostname }),
-              },
-              callback,
-            );
-          },
-          (error: unknown) => {
-            callback(error instanceof Error ? error : new Error(String(error)), null);
-          },
-        );
-      },
-    });
-
-    try {
-      const response = await undiciFetch(request, { dispatcher });
-      void dispatcher.close();
-      return response;
-    } catch (error) {
-      void dispatcher.destroy();
-      throw error;
-    }
+    return undiciFetch(request, { dispatcher });
   };
 }
 

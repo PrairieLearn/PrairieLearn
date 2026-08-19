@@ -381,4 +381,23 @@ describe('publicFetch', () => {
     );
     expect(insecureRequestCount).toBe(0);
   });
+
+  it('reuses a connection across requests from the same fetch function', async () => {
+    const clientPorts = new Set<number>();
+    await withHttpsServer(
+      (request, response) => {
+        clientPorts.add(request.socket.remotePort ?? 0);
+        response.end('contents');
+      },
+      async (port) => {
+        const fetch = createTestPublicFetch({ resolveAddress: async () => '127.0.0.1' });
+        const first = await fetch(`https://public.example:${port}/first`);
+        await first.text();
+        await new Promise<void>((resolve) => setImmediate(resolve));
+        const second = await fetch(`https://public.example:${port}/second`);
+        await second.text();
+      },
+    );
+    expect(clientPorts.size).toBe(1);
+  });
 });
