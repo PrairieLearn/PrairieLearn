@@ -33,7 +33,7 @@ For programmatic use, `@prairielearn/question-conversion` exports a small surfac
 - IR and PL output types: `IRAssessment`, `IRQuestion`, `IRQuestionBody`, `PLQuestionInfoJson`, `PLAssessmentInfoJson`, etc.
 - `detectCourseExport`, `findQtiFilesFromManifest`, `slugify` — Canvas course-export helpers.
 
-The pipeline is `parse` (XML → IR) → `transform` (per-question normalization) → `emit` (IR → PrairieLearn files), with `bin/convert.ts` orchestrating the file-system side.
+The pipeline is `parse` (XML → IR) → `transform` (per-question normalization) → `emit` (IR → PrairieLearn files), with `bin/convert.ts` orchestrating the file-system side. Canvas equation images are converted back to their LaTeX source during parsing so PrairieLearn renders them with MathJax instead of retaining pre-rendered SVGs.
 
 ## Supported question types
 

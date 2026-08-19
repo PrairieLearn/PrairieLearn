@@ -3,7 +3,7 @@ import { createRequire } from 'node:module';
 
 import type { ModelOperations as ModelOperationsType } from '@vscode/vscode-languagedetection';
 import * as cheerio from 'cheerio';
-import { type AnyNode, type Element, isTag, isText } from 'domhandler';
+import { type AnyNode, type Element, Text, isTag, isText } from 'domhandler';
 
 import { normalizeImsFilePath } from './ims-file-path.js';
 
@@ -33,6 +33,22 @@ function isElementNamed(node: AnyNode, name: string): node is Element {
 
 export function isWhitespaceText(node: AnyNode): boolean {
   return isText(node) && node.data.trim() === '';
+}
+
+/** Replace Canvas equation images with the LaTeX source that Canvas stores on the image. */
+export function convertCanvasEquationImages(html: string): string {
+  const $ = loadHtmlFragment(html);
+  let changed = false;
+
+  $('img[data-equation-content]').each((_, image) => {
+    const equation = $(image).attr('data-equation-content');
+    if (equation == null) return;
+
+    $(image).replaceWith(new Text(`$${equation.replaceAll('$', String.raw`\$`)}$`));
+    changed = true;
+  });
+
+  return changed ? $.html() : html;
 }
 
 /**

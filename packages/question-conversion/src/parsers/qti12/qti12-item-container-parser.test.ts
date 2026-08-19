@@ -466,6 +466,17 @@ describe('QTI12ItemContainerParser', async () => {
       );
     });
 
+    it('converts Canvas equation images to MathJax source', async () => {
+      const xml = readFixture('canvas-mc.xml').replace(
+        'Which collision resolution method tries different sequences?',
+        '&lt;img class="equation_image" data-equation-content="\\alpha" src="https://canvas.example/equation.svg"&gt;',
+      );
+
+      const result = await parser.parse(xml);
+
+      assert.equal(result.questions[0].promptHtml, '<p>$\\alpha$</p>');
+    });
+
     it('removes Canvas answer blocks from prompt HTML', async () => {
       const xml = `<?xml version="1.0"?>
 <questestinterop xmlns="http://www.imsglobal.org/xsd/ims_qtiasiv1p2">

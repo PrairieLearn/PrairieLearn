@@ -28,6 +28,7 @@ import type {
 } from '../../types/qti12.js';
 import {
   cleanQuestionHtml,
+  convertCanvasEquationImages,
   convertLatexItemizeToMarkdown,
   extractInlineImages,
   resolveImsFileRefs,
@@ -261,7 +262,7 @@ export class QTI12ItemContainerParser implements InputParser {
 
     const description = textContent(quiz['description']);
     if (description) {
-      meta.descriptionHtml = he.decode(description);
+      meta.descriptionHtml = convertCanvasEquationImages(he.decode(description));
     }
 
     // quiz_type: "assignment" → Homework, "practice_quiz" → Homework, "graded_survey" → Exam
@@ -692,7 +693,9 @@ export class QTI12ItemContainerParser implements InputParser {
     // Parse prompt HTML
     const presentation = itemEl['presentation'] as Record<string, unknown> | undefined;
     const rawPrompt = textContent(getNestedValue(presentation, 'material', 'mattext'));
-    const promptHtml = convertLatexItemizeToMarkdown(cleanQuestionHtml(he.decode(rawPrompt)));
+    const promptHtml = convertLatexItemizeToMarkdown(
+      cleanQuestionHtml(convertCanvasEquationImages(he.decode(rawPrompt))),
+    );
 
     // Parse response_lid elements
     const responseLidEls = ensureArray(presentation?.['response_lid'] as unknown);
@@ -735,8 +738,9 @@ export class QTI12ItemContainerParser implements InputParser {
     const rawMaterialText = textContent(mattext);
     const materialTextType = attr(mattext as Record<string, unknown>, 'texttype') || 'text/plain';
     const materialText =
-      (materialTextType === 'text/html' ? he.decode(rawMaterialText) : rawMaterialText) ||
-      undefined;
+      (materialTextType === 'text/html'
+        ? convertCanvasEquationImages(he.decode(rawMaterialText))
+        : rawMaterialText) || undefined;
 
     // Parse response labels from render_choice
     const renderChoice = el['render_choice'] as Record<string, unknown> | undefined;
@@ -749,7 +753,8 @@ export class QTI12ItemContainerParser implements InputParser {
         const textType = attr(mattext as Record<string, unknown>, 'texttype') || 'text/plain';
         // HTML-typed labels use XML-escaped HTML content (e.g. &lt;sup&gt;).
         // Decode entities so IRChoice.html holds real HTML for downstream rendering.
-        const text = textType === 'text/html' ? he.decode(rawText) : rawText;
+        const text =
+          textType === 'text/html' ? convertCanvasEquationImages(he.decode(rawText)) : rawText;
         return { ident: attr(l, 'ident'), text, textType };
       });
 
@@ -832,7 +837,7 @@ export class QTI12ItemContainerParser implements InputParser {
         textContent(getNestedValue(fbRec, 'flow_mat', 'material', 'mattext')) ||
         textContent(getNestedValue(fbRec, 'material', 'mattext'));
 
-      feedbacks.set(ident, he.decode(text));
+      feedbacks.set(ident, convertCanvasEquationImages(he.decode(text)));
     }
     return feedbacks;
   }

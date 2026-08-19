@@ -11,8 +11,6 @@ import {
   validatePublicHttpUrl,
 } from '@prairielearn/public-fetch';
 
-import { sanitizeQtiImportSvg } from './qtiImportSvg.js';
-
 // These limits cap both remote work and the amount of binary data retained by a conversion. The
 // 10 MiB per-image limit matches PrairieLearn's image-upload limit; 100 URLs and 50 MiB total allow
 // image-heavy assessments without letting one import monopolize memory. Five concurrent requests
@@ -30,7 +28,6 @@ const SUPPORTED_IMAGE_TYPES = new Map([
   ['image/gif', 'gif'],
   ['image/jpeg', 'jpg'],
   ['image/png', 'png'],
-  ['image/svg+xml', 'svg'],
   ['image/webp', 'webp'],
 ]);
 const ACCEPTED_IMAGE_CONTENT_TYPES = [...SUPPORTED_IMAGE_TYPES.keys()].join(', ');
@@ -268,14 +265,6 @@ export async function fetchRemoteImage(
   }
 
   const content = Buffer.concat(chunks, byteLength);
-  if (declaredContentType === 'image/svg+xml') {
-    const sanitizedContent = sanitizeQtiImportSvg(content);
-    if (sanitizedContent.byteLength > MAX_REMOTE_IMAGE_BYTES) {
-      throw new Error('Remote image is too large');
-    }
-    return { content: sanitizedContent, extension: 'svg' };
-  }
-
   const detectedType = await fileTypeFromBuffer(content);
   if (detectedType?.mime !== declaredContentType) {
     throw new Error('Remote image content does not match its content type');

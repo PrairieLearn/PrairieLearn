@@ -45,7 +45,7 @@ The import tool supports individual quiz exports (`.zip` files) and full course 
 | Ordering                      | [`pl-order-blocks`](elements/pl-order-blocks.md)                                        |
 | Text-only (no response)       | Prompt-only question panel                                                              |
 
-Referenced images and other non-video media files are imported into each question's `clientFilesQuestion` directory. If a question references a remote image URL instead of an exported file, PrairieLearn attempts to copy the remote image into this course. A remote image that cannot be copied is left unchanged in the generated HTML and produces a warning.
+Referenced images and other non-video media files are imported into each question's `clientFilesQuestion` directory. Canvas equation images are converted back to their LaTeX source so PrairieLearn can render them with MathJax. If a question references a remote image URL instead of an exported file, PrairieLearn attempts to copy the remote image into this course. A remote image that cannot be copied is left unchanged in the generated HTML and produces a warning.
 
 ## What isn't imported
 

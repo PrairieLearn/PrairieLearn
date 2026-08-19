@@ -942,9 +942,6 @@ importers:
       js-cookie:
         specifier: ^3.0.8
         version: 3.0.8
-      jsdom:
-        specifier: ^29.1.1
-        version: 29.1.1
       json-stringify-safe:
         specifier: ^5.0.1
         version: 5.0.1
@@ -1348,6 +1345,9 @@ importers:
       get-port:
         specifier: ^7.2.0
         version: 7.2.0
+      jsdom:
+        specifier: ^29.1.1
+        version: 29.1.1
       tsx:
         specifier: ^4.23.5
         version: 4.23.5
