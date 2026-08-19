@@ -30,6 +30,11 @@ WHERE
   course_instance_id = $course_instance_id
   AND pending_uid = $pending_uid;
 
+-- BLOCK delete_lti13_course_instance
+DELETE FROM lti13_course_instances
+WHERE
+  id = $lti13_course_instance_id;
+
 -- BLOCK update_course_instance_publishing
 UPDATE course_instances
 SET
