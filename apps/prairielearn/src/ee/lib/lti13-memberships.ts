@@ -58,23 +58,11 @@ const ContextMembershipContainerSchema = z.object({
 });
 
 /**
- * Parses paginated NRPS responses and verifies that every page belongs to the
- * course context that supplied the memberships URL.
+ * Parses paginated NRPS responses from the URL supplied by the LTI launch.
+ * The NRPS specification does not require its context ID to match the launch context claim.
  */
-export function parseContextMemberships(
-  pages: unknown[],
-  expectedContextId: string,
-): ContextMembership[] {
+export function parseContextMemberships(pages: unknown[]): ContextMembership[] {
   const containers = ContextMembershipContainerSchema.array().parse(pages);
-
-  for (const container of containers) {
-    if (container.context.id !== expectedContextId) {
-      throw new Error(
-        `LTI roster context ${container.context.id} does not match expected context ${expectedContextId}`,
-      );
-    }
-  }
-
   return containers.flatMap((container) => container.members);
 }
 

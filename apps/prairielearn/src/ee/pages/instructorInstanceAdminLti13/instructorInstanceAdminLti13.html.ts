@@ -12,6 +12,7 @@ import {
   type Lti13Instance,
 } from '../../../lib/db-types.js';
 import type { ResLocalsForPage } from '../../../lib/res-locals.js';
+import { getLti13CourseDisplayName } from '../../lib/lti13-course-instance.js';
 import { type Lineitems, type Lti13CombinedInstance } from '../../lib/lti13.js';
 
 export const AssessmentRowSchema = AssessmentSchema.extend({
@@ -23,6 +24,10 @@ export const AssessmentRowSchema = AssessmentSchema.extend({
   label: z.string(),
 });
 type AssessmentRow = z.infer<typeof AssessmentRowSchema>;
+
+function getLti13ConnectionDisplayName(instance: Lti13CombinedInstance): string {
+  return `${instance.lti13_instance.name}: ${getLti13CourseDisplayName(instance.lti13_course_instance)}`;
+}
 
 export function InstructorInstanceAdminLti13NoInstances({
   resLocals,
@@ -102,7 +107,7 @@ export function InstructorInstanceAdminLti13({
   assessments: AssessmentRow[];
   lineitems: Lti13Assessment[];
 }): string {
-  const lms_name = `${instance.lti13_instance.name}: ${instance.lti13_course_instance.context_label}`;
+  const lmsConnectionName = getLti13ConnectionDisplayName(instance);
 
   return PageLayout({
     resLocals,
@@ -132,9 +137,7 @@ export function InstructorInstanceAdminLti13({
                   aria-expanded="false"
                   data-bs-boundary="window"
                 >
-                  <span class="d-inline-block text-wrap w-100">
-                    ${instance.lti13_instance.name}: ${instance.lti13_course_instance.context_label}
-                  </span>
+                  <span class="d-inline-block text-wrap w-100">${lmsConnectionName}</span>
                 </button>
                 <div class="dropdown-menu">
                   ${instances.map((i) => {
@@ -152,7 +155,7 @@ export function InstructorInstanceAdminLti13({
                           ? 'true'
                           : ''}"
                       >
-                        ${i.lti13_instance.name}: ${i.lti13_course_instance.context_label}
+                        ${getLti13ConnectionDisplayName(i)}
                       </a>
                     `;
                   })}
@@ -175,7 +178,7 @@ export function InstructorInstanceAdminLti13({
               instance.lti13_course_instance.lineitems_url
                 ? LinkedAssessments({
                     resLocals,
-                    lms_name,
+                    lmsConnectionName,
                     assessments,
                     lineitems,
                     hasMultipleLmsCourses: instances.length > 1,
@@ -200,7 +203,7 @@ export function InstructorInstanceAdminLti13({
                   onclick="return confirm('Are you sure you want to remove this connection?');"
                 >
                   Remove LTI 1.3 connection with ${instance.lti13_instance.name}:
-                  ${instance.lti13_course_instance.context_label}
+                  ${getLti13CourseDisplayName(instance.lti13_course_instance)}
                 </button>
               </form>
             </div>
@@ -213,13 +216,13 @@ export function InstructorInstanceAdminLti13({
 
 function LinkedAssessments({
   resLocals,
-  lms_name,
+  lmsConnectionName,
   assessments,
   lineitems,
   hasMultipleLmsCourses,
 }: {
   resLocals: ResLocalsForPage<'course-instance'>;
-  lms_name: string;
+  lmsConnectionName: string;
   assessments: AssessmentRow[];
   lineitems: Lti13Assessment[];
   hasMultipleLmsCourses: boolean;
@@ -246,7 +249,7 @@ function LinkedAssessments({
               <form method="POST">
                 <input type="hidden" name="__action" value="poll_lti13_assessments" />
                 <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
-                ${lms_name} Assignment
+                ${lmsConnectionName} Assignment
                 <button class="btn btn-success btn-xs">Sync metadata</button>
               </form>
             </th>
@@ -290,7 +293,7 @@ function LinkedAssessments({
                           value="bulk_create_assessments"
                           onclick="return confirm('Are you sure?');"
                         >
-                          Create and link assignments in ${lms_name}
+                          Create and link assignments in ${lmsConnectionName}
                         </button>
                         that aren't already linked.
                         <br />
@@ -343,7 +346,7 @@ function LinkedAssessments({
                     <td>
                       ${Modal({
                         body: html`
-                          <p>Which ${lms_name} assignment should we link?</p>
+                          <p>Which ${lmsConnectionName} assignment should we link?</p>
                           <form method="POST">
                             <input
                               type="hidden"
@@ -372,7 +375,7 @@ function LinkedAssessments({
                               hx-target="next .line-items-inputs"
                               onclick="this.querySelector('.refresh-button').classList.remove('d-none');"
                             >
-                              Pick from existing ${lms_name} assignments
+                              Pick from existing ${lmsConnectionName} assignments
                               <span class="refresh-button d-none"
                                 ><i class="fa fa-refresh"></i
                               ></span>
@@ -388,7 +391,7 @@ function LinkedAssessments({
                           Close
                         </button>`,
                         id: `assignment-${row.id}`,
-                        title: `Configure ${row.title} in ${lms_name}`,
+                        title: `Configure ${row.title} in ${lmsConnectionName}`,
                       })}
 
                       <form method="POST">
