@@ -188,7 +188,7 @@ function StudentGroupControls({
       csrfToken: __csrf_token,
     })}
     ${StartAssessmentForm({ assessment, user, __csrf_token, startAllowed: groupInfo.start })}
-    ${groupConfig.minimum != null && groupConfig.minimum - groupInfo.groupSize > 0
+    ${groupConfig.minimum != null && groupConfig.minimum > groupInfo.groupSize
       ? html`
           <p class="text-center">
             * Minimum group size is ${groupConfig.minimum}. You need at least

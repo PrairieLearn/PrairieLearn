@@ -185,13 +185,10 @@ describe('Lti13MembershipIndex', () => {
 
   test('rejects a duplicate UIN across roster pages', () => {
     const user = makeUser('duplicate-uin', { uin: 'matching-uin' });
-    const memberships = parseContextMemberships(
-      [
-        makePage([makeMember({ sub: 'first-sub', uin: user.uin ?? undefined })]),
-        makePage([makeMember({ sub: 'second-sub', uin: user.uin ?? undefined })]),
-      ],
-      'expected-context',
-    );
+    const memberships = parseContextMemberships([
+      makePage([makeMember({ sub: 'first-sub', uin: user.uin ?? undefined })]),
+      makePage([makeMember({ sub: 'second-sub', uin: user.uin ?? undefined })]),
+    ]);
 
     expect(makeIndex(memberships).lookup(user)).toBeNull();
   });
@@ -216,19 +213,16 @@ describe('Lti13MembershipIndex', () => {
   test('rejects a duplicate sub across roster pages', () => {
     const uinUser = makeUser('duplicate-sub-uin', { uin: 'first-uin' });
     const emailUser = makeUser('duplicate-sub-email');
-    const memberships = parseContextMemberships(
-      [
-        makePage([
-          makeMember({
-            sub: 'duplicate-sub',
-            uin: uinUser.uin ?? undefined,
-            email: emailUser.email ?? undefined,
-          }),
-        ]),
-        makePage([makeMember({ sub: 'duplicate-sub', uin: 'second-uin' })]),
-      ],
-      'expected-context',
-    );
+    const memberships = parseContextMemberships([
+      makePage([
+        makeMember({
+          sub: 'duplicate-sub',
+          uin: uinUser.uin ?? undefined,
+          email: emailUser.email ?? undefined,
+        }),
+      ]),
+      makePage([makeMember({ sub: 'duplicate-sub', uin: 'second-uin' })]),
+    ]);
 
     expect(makeIndex(memberships).lookup(uinUser)).toBeNull();
     expect(makeIndex(memberships, null).lookup(emailUser)).toBeNull();
@@ -330,7 +324,7 @@ describe('analyzeRosterMemberUin', () => {
 });
 
 describe('parseContextMemberships', () => {
-  test('returns members from pages for the expected context', () => {
+  test('returns members from pages', () => {
     const members = [makeMember({ sub: 'first' }), makeMember({ sub: 'second' })];
     const pages = members.map((member) => ({
       id: 'roster',
@@ -338,24 +332,22 @@ describe('parseContextMemberships', () => {
       members: [member],
     }));
 
-    expect(parseContextMemberships(pages, 'expected-context')).toHaveLength(2);
+    expect(parseContextMemberships(pages)).toHaveLength(2);
   });
 
-  test('rejects a page for a different context', () => {
+  test('normalizes an uppercase status', () => {
     const pages = [
       {
         id: 'roster',
-        context: { id: 'different-context' },
-        members: [makeMember({ sub: 'sub' })],
+        context: { id: 'expected-context' },
+        members: [{ user_id: 'sub', roles: [STUDENT_ROLE], status: 'ACTIVE' }],
       },
     ];
 
-    expect(() => parseContextMemberships(pages, 'expected-context')).toThrow(
-      'does not match expected context',
-    );
+    expect(parseContextMemberships(pages)[0].status).toBe('Active');
   });
 
   test('treats an omitted members field as empty', () => {
-    expect(parseContextMemberships([makePage()], 'expected-context')).toEqual([]);
+    expect(parseContextMemberships([makePage()])).toEqual([]);
   });
 });

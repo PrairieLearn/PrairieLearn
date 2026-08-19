@@ -452,7 +452,7 @@ export abstract class Editor {
     debug('Checking folders', reverseFolders);
 
     let seenNonemptyFolder = false;
-    for (const [index] of reverseFolders.entries()) {
+    for (const index of reverseFolders.keys()) {
       if (!seenNonemptyFolder) {
         const delPath = path.join(rootDirectory, ...idSplit.slice(0, idSplit.length - 1 - index));
         debug('Checking', delPath);

@@ -3,6 +3,7 @@ import asyncHandler from 'express-async-handler';
 import z from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
+import { parseRequestQuery } from '@prairielearn/zod';
 
 import { hasRole } from '../../../lib/authz-data-lib.js';
 import { constructCourseOrInstanceContext } from '../../../lib/authz-data.js';
@@ -27,7 +28,10 @@ router.get(
     }
 
     // Parse and validate the code parameter
-    const { code, course_instance_id: courseInstanceIdToCheck } = LookupCodeSchema.parse(req.query);
+    const { code, course_instance_id: courseInstanceIdToCheck } = parseRequestQuery(
+      req,
+      LookupCodeSchema,
+    );
 
     // Look up the course instance by enrollment code
     const courseInstanceId = await selectOptionalCourseInstanceIdByEnrollmentCode({

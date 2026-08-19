@@ -3,6 +3,7 @@ import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import { loadSqlEquiv, queryRow, queryRows, runInTransactionAsync } from '@prairielearn/postgres';
+import { parseRequestBody } from '@prairielearn/zod';
 
 import { CourseSchema } from '../../../lib/db-types.js';
 import { typedAsyncHandler } from '../../../lib/res-locals.js';
@@ -58,8 +59,9 @@ router.post(
     );
 
     if (req.body.__action === 'update_enrollment_limits') {
-      const body = z
-        .object({
+      const body = parseRequestBody(
+        req,
+        z.object({
           __action: z.literal('update_enrollment_limits'),
           yearly_enrollment_limit: z.union([
             z.literal('').transform(() => null),
@@ -69,8 +71,8 @@ router.post(
             z.literal('').transform(() => null),
             z.coerce.number().int(),
           ]),
-        })
-        .parse(req.body);
+        }),
+      );
       await runInTransactionAsync(async () => {
         const updatedCourse = await queryRow(
           sql.update_enrollment_limits,

@@ -26,5 +26,4 @@ declare module '@tanstack/react-table' {
   }
 }
 
-// eslint-disable-next-line unicorn/require-module-specifiers
 export {};
