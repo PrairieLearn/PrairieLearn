@@ -24,8 +24,12 @@ interface HistoryItem {
   angleMode: AngleMode;
 }
 
+type CalculatorDefinition =
+  | { name: string; value: string }
+  | { name: string; function: MathJsonExpression };
+
 interface CalculatorLocalData {
-  variable: { name: string; value: string }[];
+  variable: CalculatorDefinition[];
   history: HistoryItem[];
   temp_input: string | null;
   isOpen: boolean;
@@ -198,7 +202,11 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
       addHistoryItem(historyItem);
     }
     for (const variable of data.variable) {
-      ce.assign(variable.name, ce.parse(variable.value));
+      if ('value' in variable) {
+        ce.assign(variable.name, ce.parse(variable.value));
+      } else if ('function' in variable) {
+        ce.assign(variable.name, ce.expr(variable.function));
+      }
     }
 
     // Set ans to the last history item's result, or \bot if no history
@@ -317,17 +325,35 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
         const evaluated = parsed.evaluate();
         const numericValue = displayMode === 'symbolic' ? evaluated : evaluated.N();
         const displayed = numericValue.toLatex(latexOptions);
-        const variables = [...ce.context.lexicalScope.bindings.keys()].flatMap((name) => {
+        const variables = [
+          ...ce.context.lexicalScope.bindings.keys(),
+        ].flatMap<CalculatorDefinition>((name) => {
           if (name === 'ans') return [];
-          const value = ce.symbol(name, { autoDeclare: false }).valueDefinition?.value;
-          return value
-            ? [
-                {
-                  name,
-                  value: value.toLatex({ notation: 'auto' }),
-                },
-              ]
-            : [];
+          const symbol = ce.symbol(name, { autoDeclare: false });
+          const value = symbol.valueDefinition?.value;
+          if (value) {
+            return [
+              {
+                name,
+                value: value.toLatex({ notation: 'auto' }),
+              },
+            ];
+          }
+
+          const lambda = symbol.operatorDefinition?.lambda;
+          if (lambda) {
+            return [
+              {
+                name,
+                function: [
+                  'Function',
+                  lambda.body.json,
+                  ...lambda.parameters.map((parameter) => parameter.name),
+                ] as MathJsonExpression,
+              },
+            ];
+          }
+          return [];
         });
 
         return { displayed, evaluated, variables };
