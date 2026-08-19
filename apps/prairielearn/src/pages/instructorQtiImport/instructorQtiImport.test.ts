@@ -4,7 +4,10 @@ import fs from 'fs-extra';
 import * as tmp from 'tmp-promise';
 import { assert, describe, expect, it } from 'vitest';
 
-import type { ConversionResult } from '@prairielearn/question-conversion';
+import {
+  type ConversionResult,
+  QtiImportRemoteImageCopier,
+} from '@prairielearn/question-conversion';
 
 import {
   countDeduplicatedQuestionBankQuestions,
@@ -17,7 +20,6 @@ import {
   type StoredSerializedConversionResult,
   deduplicateAssessmentZoneQuestions,
 } from './instructorQtiImport.types.js';
-import { QtiImportRemoteImageCopier } from './qtiImportRemoteImages.js';
 
 function makeQuestions(directoryPrefix: string, questionSourceId: string, questionHtml: string) {
   const questionDirectoryName = `imported/${directoryPrefix}/q1`;

@@ -20,6 +20,7 @@ import {
   PLEmitter,
   QTI12ItemContainerParser,
   type QtiFileEntry,
+  QtiImportRemoteImageCopier,
   findQtiFilesFromManifest,
   findQtiXmlFiles,
   normalizeImsFilePath,
@@ -56,7 +57,6 @@ import {
   type UploadResponse,
   deduplicateAssessmentZoneQuestions,
 } from './instructorQtiImport.types.js';
-import { QtiImportRemoteImageCopier } from './qtiImportRemoteImages.js';
 
 const router = Router();
 
@@ -454,14 +454,8 @@ export async function serializeConversionResult(
       // questions live under the prefix path (e.g. "imported/quiz-slug/q1").
       // This must match the IDs used in the assessment zones.
       const questionId = `${questionPrefix}/${q.directoryName}`;
+      const remoteImageCopy = await remoteImageCopier.copyIntoQuestion(q);
       const { files, missingFiles } = await serializeClientFiles(q.clientFiles, webResourcesDir);
-      const remoteImageCopy = await remoteImageCopier.copyRemoteImages(
-        q.questionHtml,
-        new Set(Object.keys(files)),
-      );
-      for (const [filename, content] of remoteImageCopy.files) {
-        files[filename] = content.toString('base64');
-      }
       if (missingFiles.length > 0) {
         extraWarnings.push({
           questionId,

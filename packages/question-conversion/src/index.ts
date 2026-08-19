@@ -83,3 +83,7 @@ export {
 export type { CourseExportInfo, QtiFileEntry } from './utils/course-export.js';
 export { slugify } from './utils/slugify.js';
 export { normalizeImsFilePath, safeDecodeURIComponent } from './utils/ims-file-path.js';
+
+// Post-processors
+export { QtiImportRemoteImageCopier, fetchRemoteImage } from './remote-image-copier.js';
+export type { FetchedRemoteImage, RemoteImageCopyResult } from './remote-image-copier.js';

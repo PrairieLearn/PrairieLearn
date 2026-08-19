@@ -1,9 +1,12 @@
 import * as http from 'node:http';
 import type { AddressInfo } from 'node:net';
 
+import { fetch as undiciFetch } from 'undici';
 import { describe, expect, it } from 'vitest';
 
-import { QtiImportRemoteImageCopier, fetchRemoteImage } from './qtiImportRemoteImages.js';
+import type { PublicFetch } from '@prairielearn/public-fetch';
+
+import { QtiImportRemoteImageCopier, fetchRemoteImage } from './remote-image-copier.js';
 
 const ONE_PIXEL_PNG = Buffer.from(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
@@ -25,6 +28,16 @@ async function withHttpServer(
   }
 }
 
+function createLocalFetch(port: number): PublicFetch {
+  return async (input, init) => {
+    const url = new URL(typeof input === 'string' || input instanceof URL ? input : input.url);
+    url.protocol = 'http:';
+    url.hostname = '127.0.0.1';
+    url.port = String(port);
+    return undiciFetch(url, init);
+  };
+}
+
 describe('QtiImportRemoteImageCopier', () => {
   it('copies remote images and rewrites all references to local pl-figure elements', async () => {
     const requestedUrls: string[] = [];
@@ -44,7 +57,8 @@ describe('QtiImportRemoteImageCopier', () => {
     expect(requestedUrls).toEqual(['https://canvas.example/files/1/preview?verifier=secret']);
     expect(result.remoteImagesCopied).toBe(1);
     expect(result.failedImageCount).toBe(0);
-    expect(result.files).toHaveLength(1);
+    expect(result.unattemptedRemoteImageCount).toBe(0);
+    expect(result.files.size).toBe(1);
     expect(result.html).not.toContain('canvas.example');
     expect(result.html).not.toContain('verifier');
     expect(result.html.match(/<pl-figure/g)).toHaveLength(2);
@@ -83,9 +97,27 @@ describe('QtiImportRemoteImageCopier', () => {
     const result = await copier.copyRemoteImages(html, new Set());
 
     expect(result.html).toBe(html);
-    expect(result.files).toHaveLength(0);
+    expect(result.files.size).toBe(0);
     expect(result.remoteImagesCopied).toBe(0);
     expect(result.failedImageCount).toBe(1);
+    expect(result.unattemptedRemoteImageCount).toBe(0);
+  });
+
+  it('counts insecure or malformed remote references that were not attempted', async () => {
+    let fetchCount = 0;
+    const copier = new QtiImportRemoteImageCopier(async () => {
+      fetchCount += 1;
+      return { content: Buffer.from('image contents'), extension: 'png' };
+    });
+
+    const result = await copier.copyRemoteImages(
+      '<img src="http://canvas.example/insecure.png"><img src="://invalid.example/image.png">',
+      new Set(),
+    );
+
+    expect(fetchCount).toBe(0);
+    expect(result.failedImageCount).toBe(0);
+    expect(result.unattemptedRemoteImageCount).toBe(2);
   });
 
   it('does not overwrite an existing client file with the generated filename', async () => {
@@ -176,8 +208,8 @@ describe('fetchRemoteImage', () => {
         response.end(ONE_PIXEL_PNG);
       },
       async (port) => {
-        const result = await fetchRemoteImage(new URL(`http://public.example:${port}/image.png`), {
-          resolveAddress: async () => '127.0.0.1',
+        const result = await fetchRemoteImage(new URL('https://public.example/image.png'), {
+          fetch: createLocalFetch(port),
         });
 
         expect(result).toEqual({ content: ONE_PIXEL_PNG, extension: 'png' });
@@ -198,8 +230,8 @@ describe('fetchRemoteImage', () => {
       },
       async (port) => {
         await expect(
-          fetchRemoteImage(new URL(`http://public.example:${port}/image`), {
-            resolveAddress: async () => '127.0.0.1',
+          fetchRemoteImage(new URL('https://public.example/image'), {
+            fetch: createLocalFetch(port),
             consumeBytes: (byteLength) => {
               downloadedBytes += byteLength;
             },
@@ -221,8 +253,8 @@ describe('fetchRemoteImage', () => {
       },
       async (port) => {
         await expect(
-          fetchRemoteImage(new URL(`http://public.example:${port}/image`), {
-            resolveAddress: async () => '127.0.0.1',
+          fetchRemoteImage(new URL('https://public.example/image'), {
+            fetch: createLocalFetch(port),
           }),
         ).rejects.toThrow('too large');
       },
@@ -238,8 +270,8 @@ describe('fetchRemoteImage', () => {
       },
       async (port) => {
         await expect(
-          fetchRemoteImage(new URL(`http://public.example:${port}/image`), {
-            resolveAddress: async () => '127.0.0.1',
+          fetchRemoteImage(new URL('https://public.example/image'), {
+            fetch: createLocalFetch(port),
           }),
         ).rejects.toThrow('too large');
       },

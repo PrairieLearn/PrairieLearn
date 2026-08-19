@@ -5,11 +5,15 @@ import type { Element } from 'domhandler';
 import { fileTypeFromBuffer } from 'file-type';
 
 import {
+  type PublicFetch,
   type ResolveAddress,
   createPublicFetch,
   publicFetch,
-  validatePublicHttpUrl,
+  validatePublicHttpsUrl,
 } from '@prairielearn/public-fetch';
+
+import type { ConversionResult } from './emitters/emitter.js';
+import type { PLQuestionOutput } from './types/pl-output.js';
 
 // These limits cap both remote work and the amount of binary data retained by a conversion. The
 // 10 MiB per-image limit matches PrairieLearn's image-upload limit; 100 URLs and 50 MiB total allow
@@ -37,7 +41,7 @@ export interface FetchedRemoteImage {
   extension: string;
 }
 
-interface RemoteImageCopyResult {
+export interface RemoteImageCopyResult {
   html: string;
   files: Map<string, Buffer>;
   remoteImagesCopied: number;
@@ -49,8 +53,8 @@ type ConsumeBytes = (byteLength: number) => void;
 type FetchRemoteImage = (url: URL, consumeBytes: ConsumeBytes) => Promise<FetchedRemoteImage>;
 
 /**
- * Copies remote images across one complete QTI upload while enforcing import-wide limits.
- * A single instance must be shared by every converted entry in the upload.
+ * Copies remote images across one complete QTI conversion while enforcing import-wide limits.
+ * A single instance must be shared by every converted entry in the conversion.
  */
 export class QtiImportRemoteImageCopier {
   private attemptedImageCount = 0;
@@ -197,6 +201,22 @@ export class QtiImportRemoteImageCopier {
       unattemptedRemoteImageCount,
     };
   }
+
+  async copyIntoQuestion(question: PLQuestionOutput): Promise<RemoteImageCopyResult> {
+    const result = await this.copyRemoteImages(
+      question.questionHtml,
+      new Set(question.clientFiles.keys()),
+    );
+    question.questionHtml = result.html;
+    for (const [filename, content] of result.files) {
+      question.clientFiles.set(filename, content);
+    }
+    return result;
+  }
+
+  async copyInto(result: ConversionResult): Promise<RemoteImageCopyResult[]> {
+    return Promise.all(result.questions.map((question) => this.copyIntoQuestion(question)));
+  }
 }
 
 function parseRemoteImageUrl(source: string): URL | null {
@@ -205,7 +225,7 @@ function parseRemoteImageUrl(source: string): URL | null {
     const url = trimmedSource.startsWith('//')
       ? new URL(`https:${trimmedSource}`)
       : new URL(trimmedSource);
-    validatePublicHttpUrl(url);
+    validatePublicHttpsUrl(url);
     url.hash = '';
     return url;
   } catch {
@@ -228,13 +248,14 @@ export async function fetchRemoteImage(
   initialUrl: URL,
   {
     resolveAddress,
+    fetch = resolveAddress ? createPublicFetch({ resolveAddress }) : publicFetch,
     consumeBytes,
   }: {
+    fetch?: PublicFetch;
     resolveAddress?: ResolveAddress;
     consumeBytes?: ConsumeBytes;
   } = {},
 ): Promise<FetchedRemoteImage> {
-  const fetch = resolveAddress ? createPublicFetch({ resolveAddress }) : publicFetch;
   const response = await fetch(initialUrl, {
     headers: {
       Accept: ACCEPTED_IMAGE_CONTENT_TYPES,

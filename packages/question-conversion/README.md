@@ -30,10 +30,11 @@ For programmatic use, `@prairielearn/question-conversion` exports a small surfac
 - `QTI12ItemContainerParser`, `InputParser`, `ParseOptions` — parser layer.
 - `PLEmitter`, `BodyEmitRegistry`, `BodyEmitHandler`, `createPLBodyRegistry` — emitter layer.
 - `TransformRegistry`, `TransformHandler`, `TransformResult`, `createQTI12Registry` — IR transform layer.
+- `QtiImportRemoteImageCopier` — async post-processor that safely copies public HTTPS images into emitted question files.
 - IR and PL output types: `IRAssessment`, `IRQuestion`, `IRQuestionBody`, `PLQuestionInfoJson`, `PLAssessmentInfoJson`, etc.
 - `detectCourseExport`, `findQtiFilesFromManifest`, `slugify` — Canvas course-export helpers.
 
-The pipeline is `parse` (XML → IR) → `transform` (per-question normalization) → `emit` (IR → PrairieLearn files), with `bin/convert.ts` orchestrating the file-system side. Canvas equation images are converted back to their LaTeX source during parsing so PrairieLearn renders them with MathJax instead of retaining pre-rendered SVGs.
+The pipeline is `parse` (XML → IR) → `transform` (per-question normalization) → `emit` (IR → PrairieLearn files), followed by optional post-processing such as remote-image copying. `bin/convert.ts` runs these stages and orchestrates the file-system side. Canvas equation images are converted back to their LaTeX source during parsing so PrairieLearn renders them with MathJax instead of retaining pre-rendered SVGs.
 
 ## Supported question types
 
