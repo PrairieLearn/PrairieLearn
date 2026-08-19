@@ -181,7 +181,7 @@
           );
           if (regexMatch) {
             this.addWarningMessage(
-              `A file with pattern <strong>${escapeFileName(regexMatch[1])}</strong> is already provided with a different file name. To replace it with <strong>${escapeFileName(file.name)}</strong>, delete the existing file first and then upload the new file.`,
+              `A file with pattern <strong>${escapeFileName(regexMatch[1])}</strong> is already provided. To replace it with <strong>${escapeFileName(file.name)}</strong>, delete the existing file first and then upload the new file.`,
             );
           } else {
             this.addWarningMessage(
