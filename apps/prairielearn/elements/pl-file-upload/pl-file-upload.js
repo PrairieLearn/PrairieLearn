@@ -443,7 +443,7 @@
             // Uint8Array to properly interpret it. We only convert it to
             // unicode text if needed.
             const binaryData = Uint8Array.from(atob(fileData), (c) => c.charCodeAt(0));
-            const isPdf = this.isPdf(fileData);
+            const isPdf = this.isPdf(binaryData);
             const url = URL.createObjectURL(
               new Blob([binaryData], isPdf ? { type: 'application/pdf' } : undefined),
             );
@@ -579,14 +579,14 @@
      * Checks if the given file contents should be interpreted as a PDF file.
      * Using the magic numbers from the `file` utility command:
      * https://github.com/file/file/blob/master/magic/Magdir/pdf
-     * The signatures are converted to base64 for comparison, to avoid issues
-     * with converting from base64 to binary.
+     *
+     * @param {Uint8Array} binaryData The binary data to check
+     * @returns {boolean} If the file is recognized as a PDF
      */
-    isPdf(base64FileData) {
-      return (
-        base64FileData.match(/^JVBERi[0-3]/) || // "%PDF-"
-        base64FileData.match(/^CiVQREYt/) || // "\x0a%PDF-"
-        base64FileData.match(/^77u\/JVBERi[0-3]/) // "\xef\xbb\xbf%PDF-"
+    isPdf(binaryData) {
+      const decoder = new TextDecoder();
+      return ['%PDF', '\x0a%PDF', '\xef\xbb\xbf%PDF'].some(
+        (prefix) => decoder.decode(binaryData.subarray(0, prefix.length)) === prefix,
       );
     }
   }
