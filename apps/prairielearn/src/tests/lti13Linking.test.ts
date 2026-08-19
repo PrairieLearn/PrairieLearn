@@ -6,7 +6,7 @@ import express from 'express';
 import fetchCookie from 'fetch-cookie';
 import getPort from 'get-port';
 import nodeJose from 'node-jose';
-import { afterAll, afterEach, assert, beforeAll, describe, test } from 'vitest';
+import { afterAll, afterEach, assert, beforeAll, describe, expect, test } from 'vitest';
 import { z } from 'zod';
 
 import {
