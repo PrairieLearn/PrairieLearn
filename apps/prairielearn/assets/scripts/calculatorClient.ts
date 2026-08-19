@@ -201,13 +201,7 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
     for (const historyItem of data.history) {
       addHistoryItem(historyItem);
     }
-    for (const variable of data.variable) {
-      if ('value' in variable) {
-        ce.assign(variable.name, ce.parse(variable.value));
-      } else if ('function' in variable) {
-        ce.assign(variable.name, ce.expr(variable.function));
-      }
-    }
+    restoreCalculatorDefinitions(data.variable);
 
     // Set ans to the last history item's result, or \bot if no history
     const items = Array.from(historyPanel.querySelectorAll<HTMLElement>('.history-item'));
@@ -309,58 +303,90 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
   ) {
     if (!input || input.length === 0) return null;
 
-    let parsed = ce.parse(input, { parseNumbers: 'rational' });
-
-    if (angleMode === 'deg') {
-      parsed = ce.expr(radianToDegree(parsed.json));
-    }
-
-    const json = parsed.json;
-    if (Array.isArray(json) && json[0] === 'Assign' && json[1] === 'InvisibleOperator') {
-      return null;
-    }
-
     try {
       return withCalculatorTimeLimit(ce, () => {
-        const evaluated = parsed.evaluate();
-        const numericValue = displayMode === 'symbolic' ? evaluated : evaluated.N();
-        const displayed = numericValue.toLatex(latexOptions);
-        const variables = [
-          ...ce.context.lexicalScope.bindings.keys(),
-        ].flatMap<CalculatorDefinition>((name) => {
-          if (name === 'ans') return [];
-          const symbol = ce.symbol(name, { autoDeclare: false });
-          const value = symbol.valueDefinition?.value;
-          if (value) {
-            return [
-              {
-                name,
-                value: value.toLatex({ notation: 'auto' }),
-              },
-            ];
+        const savedVariables = getCalculatorDefinitions();
+        const savedAns = ce.symbol('ans', { autoDeclare: false }).valueDefinition?.value;
+
+        ce.pushScope();
+        try {
+          declareCalculatorDefinitions(savedVariables);
+          restoreCalculatorDefinitions(savedVariables);
+          if (savedAns) {
+            ce.declare('ans', 'unknown');
+            ce.assign('ans', savedAns);
           }
 
-          const lambda = symbol.operatorDefinition?.lambda;
-          if (lambda) {
-            return [
-              {
-                name,
-                function: [
-                  'Function',
-                  lambda.body.json,
-                  ...lambda.parameters.map((parameter) => parameter.name),
-                ] as MathJsonExpression,
-              },
-            ];
-          }
-          return [];
-        });
+          let parsed = ce.parse(input, { parseNumbers: 'rational' });
 
-        return { displayed, evaluated, variables };
+          if (angleMode === 'deg') {
+            parsed = ce.expr(radianToDegree(parsed.json));
+          }
+
+          const json = parsed.json;
+          if (Array.isArray(json) && json[0] === 'Assign' && json[1] === 'InvisibleOperator') {
+            return null;
+          }
+
+          const evaluated = parsed.evaluate();
+          const numericValue = displayMode === 'symbolic' ? evaluated : evaluated.N();
+          const displayed = numericValue.toLatex(latexOptions);
+
+          return { displayed, evaluated, variables: getCalculatorDefinitions() };
+        } finally {
+          ce.popScope();
+        }
       });
     } catch (e) {
       console.error('Evaluation failed:', e);
       return null;
+    }
+  }
+
+  function getCalculatorDefinitions() {
+    return [...ce.context.lexicalScope.bindings.keys()].flatMap<CalculatorDefinition>((name) => {
+      if (name === 'ans') return [];
+      const symbol = ce.symbol(name, { autoDeclare: false });
+      const value = symbol.valueDefinition?.value;
+      if (value) {
+        return [
+          {
+            name,
+            value: value.toLatex({ notation: 'auto' }),
+          },
+        ];
+      }
+
+      const lambda = symbol.operatorDefinition?.lambda;
+      if (lambda) {
+        return [
+          {
+            name,
+            function: [
+              'Function',
+              lambda.body.json,
+              ...lambda.parameters.map((parameter) => parameter.name),
+            ] as MathJsonExpression,
+          },
+        ];
+      }
+      return [];
+    });
+  }
+
+  function declareCalculatorDefinitions(definitions: CalculatorDefinition[]) {
+    for (const definition of definitions) {
+      ce.declare(definition.name, 'value' in definition ? 'unknown' : 'function');
+    }
+  }
+
+  function restoreCalculatorDefinitions(definitions: CalculatorDefinition[]) {
+    for (const definition of definitions) {
+      if ('value' in definition) {
+        ce.assign(definition.name, ce.parse(definition.value));
+      } else {
+        ce.assign(definition.name, ce.expr(definition.function));
+      }
     }
   }
 
@@ -415,6 +441,7 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
     if (addToHistory) {
       try {
         data.variable = variables;
+        restoreCalculatorDefinitions(variables);
         ce.assign('ans', evaluated);
         shouldAutoInsertAns = true;
       } catch (e) {
