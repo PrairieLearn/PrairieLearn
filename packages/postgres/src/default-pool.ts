@@ -70,6 +70,12 @@ export const endTransactionAsync = defaultPool.endTransactionAsync.bind(defaultP
  */
 export const runInTransactionAsync = defaultPool.runInTransactionAsync.bind(defaultPool);
 /**
+ * Throws an error if not currently inside a transaction. Useful for
+ * low-level functions that mutate state and rely on the caller to provide
+ * a transaction for atomicity.
+ */
+export const assertIsInTransaction = defaultPool.assertIsInTransaction.bind(defaultPool);
+/**
  * Calls a sproc with the specified parameters using a specific client.
  */
 export const callWithClientAsync = defaultPool.callWithClientAsync.bind(defaultPool);
