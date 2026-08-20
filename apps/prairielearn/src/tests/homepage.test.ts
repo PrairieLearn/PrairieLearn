@@ -1,3 +1,4 @@
+import * as cheerio from 'cheerio';
 import fetchCookie from 'fetch-cookie';
 import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
@@ -248,7 +249,6 @@ describe('Homepage enrollment actions', () => {
           }),
         });
         assert.equal(response.status, 200);
-        const cheerio = await import('cheerio');
         assertAlert(cheerio.load(await response.text()), 'Failed to reject invitation');
       });
 
@@ -311,7 +311,6 @@ describe('Homepage enrollment actions', () => {
 
       // Get the HTML to check for flash message
       const rejectResponseText = await rejectResponse.text();
-      const cheerio = await import('cheerio');
       const $ = cheerio.load(rejectResponseText);
 
       // Verify error message is shown
@@ -365,7 +364,7 @@ describe('Homepage enrollment actions', () => {
             }),
           });
           assert.equal(response.status, 200);
-          const $ = (await import('cheerio')).load(await response.text());
+          const $ = cheerio.load(await response.text());
           assertAlert($, 'Failed to accept invitation');
 
           const courseInstance = await selectCourseInstanceById('1');
