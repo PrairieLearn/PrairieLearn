@@ -226,6 +226,7 @@ nav:
           - '<code>question.html</code>': 'question/template.md'
           - '<code>server.py</code>': 'question/server.md'
           - 'Preferences': 'question/preferences.md'
+          - 'Shared state': 'question/shared-state.md'
           - 'Runtime environment': 'question/runtime.md'
           - 'Accessibility': 'question/accessibility.md'
       - 'Elements':

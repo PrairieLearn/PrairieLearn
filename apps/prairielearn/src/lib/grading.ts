@@ -10,6 +10,12 @@ import { IdSchema, IntervalSchema } from '@prairielearn/zod';
 import { updateCourseInstanceUsagesForSubmission } from '../models/course-instance-usages.js';
 import { insertGradingJob, updateGradingJobAfterGrading } from '../models/grading-job.js';
 import { computeNextAllowedGradingTimeMs } from '../models/instance-question.js';
+import {
+  resolveSharedStateForPhase,
+  validateSharedStatePatch,
+  writeSharedStateValuesForAssessmentInstance,
+  writeSharedStateValuesForUser,
+} from '../models/shared-state-value.js';
 import { lockVariant } from '../models/variant.js';
 import * as questionServers from '../question-servers/index.js';
 
@@ -242,17 +248,33 @@ export async function saveSubmission(
 
   const questionModule = questionServers.getModule(question.type);
   const question_course = await getQuestionCourse(question, variant_course);
+  const sharedState = await resolveSharedStateForPhase({
+    question,
+    question_course,
+    instance_question_id: variant.instance_question_id,
+    user_id: variant.user_id,
+  });
   const { courseIssues, data } = await questionModule.parse(
     submission,
     variant,
     question,
     question_course,
+    sharedState.before,
     {
       userId: variant.user_id,
       groupId: variant.team_id,
       variantCourse: variant_course,
     },
   );
+
+  const sharedStateIssues = validateSharedStatePatch({
+    objects: sharedState.objects,
+    before: sharedState.before,
+    after: data.shared_state ?? {},
+  });
+  for (const issue of sharedStateIssues) {
+    courseIssues.push(Object.assign(new Error(issue), { fatal: true }));
+  }
 
   const studentMessage = 'Error parsing submission';
   const courseData = { variant, question, submission, course: variant_course };
@@ -267,12 +289,32 @@ export async function saveSubmission(
 
   const hasFatalIssue = courseIssues.some((issue) => issue.fatal);
 
-  return await insertSubmission({
+  const { submission_id, variant: updatedVariant } = await insertSubmission({
     ...submission,
     ...data,
     gradable: !!data.gradable && !hasFatalIssue,
     broken: hasFatalIssue,
   });
+
+  if (sharedStateIssues.length === 0 && Object.keys(sharedState.objects).length > 0) {
+    if (sharedState.assessment_instance_id != null) {
+      await writeSharedStateValuesForAssessmentInstance({
+        assessment_instance_id: sharedState.assessment_instance_id,
+        objects: sharedState.objects,
+        before: sharedState.before,
+        after: data.shared_state ?? {},
+      });
+    } else if (sharedState.user_id != null) {
+      await writeSharedStateValuesForUser({
+        user_id: sharedState.user_id,
+        objects: sharedState.objects,
+        before: sharedState.before,
+        after: data.shared_state ?? {},
+      });
+    }
+  }
+
+  return { submission_id, variant: updatedVariant };
 }
 
 async function selectSubmissionForGrading(
@@ -418,17 +460,34 @@ export async function gradeVariant({
     // For Internal grading we call the grading code. For Manual grading, if the question
     // reached this point, it has auto points, so it should be treated like Internal.
     const questionModule = questionServers.getModule(question.type);
+    const sharedState = await resolveSharedStateForPhase({
+      question,
+      question_course,
+      instance_question_id: variant.instance_question_id,
+      user_id: variant.user_id,
+    });
     const { courseIssues, data } = await questionModule.grade(
       submission,
       variant,
       question,
       question_course,
+      sharedState.before,
       {
         userId: variant.user_id,
         groupId: variant.team_id,
         variantCourse: variant_course,
       },
     );
+
+    const sharedStateIssues = validateSharedStatePatch({
+      objects: sharedState.objects,
+      before: sharedState.before,
+      after: data.shared_state ?? {},
+    });
+    for (const issue of sharedStateIssues) {
+      courseIssues.push(Object.assign(new Error(issue), { fatal: true }));
+    }
+
     const hasFatalIssue = courseIssues.some((issue) => issue.fatal);
 
     const studentMessage = 'Error grading submission';
@@ -463,6 +522,24 @@ export async function gradeVariant({
     // job will be marked ungradable and we should bail here to prevent
     // LTI updates.
     if (!grading_job_post_update.gradable) return;
+
+    if (sharedStateIssues.length === 0 && Object.keys(sharedState.objects).length > 0) {
+      if (sharedState.assessment_instance_id != null) {
+        await writeSharedStateValuesForAssessmentInstance({
+          assessment_instance_id: sharedState.assessment_instance_id,
+          objects: sharedState.objects,
+          before: sharedState.before,
+          after: data.shared_state ?? {},
+        });
+      } else if (sharedState.user_id != null) {
+        await writeSharedStateValuesForUser({
+          user_id: sharedState.user_id,
+          objects: sharedState.objects,
+          before: sharedState.before,
+          after: data.shared_state ?? {},
+        });
+      }
+    }
 
     const assessment_instance_id = await sqldb.queryOptionalScalar(
       sql.select_assessment_for_submission,

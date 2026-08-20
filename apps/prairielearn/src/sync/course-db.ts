@@ -310,6 +310,8 @@ export async function loadFullCourse(
   checkInvalidSharedAssessments(courseData);
   checkInvalidSharedCourseInstances(courseData);
   checkInvalidDraftQuestionSharing(courseData);
+  checkInvalidSharedStateAccess(courseData);
+  checkInvalidSharedStateSourceSharing(courseData);
 
   return courseData;
 }
@@ -692,6 +694,7 @@ async function loadCourseInfo({
     tags,
     topics,
     sharingSets,
+    sharedState: info.sharedState,
     options: {
       devModeFeatures,
       questionsReceiveUserData,
@@ -1943,6 +1946,19 @@ function checkInvalidDraftQuestionSharing(courseData: CourseData): void {
   }
 }
 
+function checkInvalidSharedStateSourceSharing(courseData: CourseData): void {
+  for (const qid in courseData.questions) {
+    const question = courseData.questions[qid];
+    if (!question.data?.shareSourcePublicly) continue;
+    if (Object.keys(question.data.sharedStateAccess).length === 0) continue;
+
+    infofile.addError(
+      question,
+      '"shareSourcePublicly" cannot be used because this question accesses shared-state objects, which are not yet supported when a question is copied into another course.',
+    );
+  }
+}
+
 function checkInvalidSharedCourseInstances(courseData: CourseData): void {
   for (const courseInstance of Object.values(courseData.courseInstances)) {
     if (!courseInstance.courseInstance.data?.shareSourcePublicly) continue;
@@ -2009,6 +2025,31 @@ function checkInvalidSharingSetAdditions(courseData: CourseData): void {
       infofile.addError(
         question,
         `Sharing sets ${invalidSharingSets.join(', ')} do not exist in this course`,
+      );
+    }
+  }
+}
+
+function checkInvalidSharedStateAccess(courseData: CourseData): void {
+  // If infoCourse.json has errors, we may be missing the shared-state object
+  // definitions or they may be malformed, so skip this check to avoid
+  // confusing errors about objects not existing.
+  if (infofile.hasErrors(courseData.course)) return;
+  const sharedStateObjectNames = new Set(Object.keys(courseData.course.data?.sharedState ?? {}));
+
+  for (const qid in courseData.questions) {
+    const question = courseData.questions[qid];
+    const accessedObjects = Object.values(question.data?.sharedStateAccess || {});
+    const invalidObjects = accessedObjects.filter((name) => !sharedStateObjectNames.has(name));
+    if (invalidObjects.length === 1) {
+      infofile.addError(
+        question,
+        `Shared-state object "${invalidObjects[0]}" is not declared in this course's "sharedState".`,
+      );
+    } else if (invalidObjects.length > 1) {
+      infofile.addError(
+        question,
+        `Shared-state objects ${invalidObjects.map((name) => `"${name}"`).join(', ')} are not declared in this course's "sharedState".`,
       );
     }
   }
