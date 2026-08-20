@@ -49,10 +49,17 @@ refresh-workspace-hosts-dev:
 	@pnpm refresh-workspace-hosts-dev
 
 PL_USER ?= 1000
-devuser: start-support python-deps
+setup-devuser:
+	@echo "Setting up devuser ($(PL_USER))"
 	@id devuser >/dev/null 2>&1 || groupadd -g $(PL_USER) devuser
 	@id devuser >/dev/null 2>&1 || useradd -u $(PL_USER) -g $(PL_USER) -M devuser
+	@dockergroup=$$(stat -c '%g' /var/run/docker.sock)
+	@id -G devuser | tr ' ' '\n' | grep -qx "$$dockergroup" || usermod -aG "$$dockergroup" devuser
+
+devuser: setup-devuser start-support python-deps
 	@su -s /bin/bash devuser -c 'pnpm dev'
+devuser-all:
+	@$(MAKE) -s -j2 devuser dev-workspace-host
 
 dev: start-support python-deps
 	@pnpm dev
