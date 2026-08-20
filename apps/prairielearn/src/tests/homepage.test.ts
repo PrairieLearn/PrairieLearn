@@ -239,7 +239,7 @@ describe('Homepage enrollment actions', () => {
           0,
         );
 
-        const response = await fetchCheerio(homeUrl, {
+        const response = await fetchCookie(fetch)(homeUrl, {
           method: 'POST',
           body: new URLSearchParams({
             __action: 'reject_invitation',
@@ -248,7 +248,8 @@ describe('Homepage enrollment actions', () => {
           }),
         });
         assert.equal(response.status, 200);
-        assertAlert(response.$, 'Failed to reject invitation');
+        const cheerio = await import('cheerio');
+        assertAlert(cheerio.load(await response.text()), 'Failed to reject invitation');
       });
 
       const enrollments = await selectEnrollments([invitation.id]);
