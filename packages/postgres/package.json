@@ -27,7 +27,7 @@
     "@prairielearn/tsconfig": "workspace:^",
     "@types/debug": "^4.1.13",
     "@types/node": "^24.13.3",
-    "@types/pg": "^8.20.3",
+    "@types/pg": "^8.21.0",
     "@types/pg-cursor": "^2.7.2",
     "@typescript/native-preview": "beta",
     "@vitest/coverage-v8": "^4.1.10",
