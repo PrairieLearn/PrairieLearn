@@ -191,11 +191,7 @@ SELECT
   END AS end_date,
   to_jsonb(extension.*) AS latest_publishing_extension,
   coalesce(e.user_id = identity.id, FALSE) AS matches_bound_user,
-  coalesce(
-    e.pending_uid = identity.uid
-    AND e.pending_lti13_course_instance_id IS NULL,
-    FALSE
-  ) AS matches_pending_uid,
+  coalesce(e.pending_uid = identity.uid, FALSE) AS matches_pending_uid,
   coalesce(
     identity.institution_id = c.institution_id
     AND identity.uin IS NOT NULL
@@ -247,10 +243,7 @@ FROM
 WHERE
   (
     e.user_id = identity.id
-    OR (
-      e.pending_uid = identity.uid
-      AND e.pending_lti13_course_instance_id IS NULL
-    )
+    OR e.pending_uid = identity.uid
     OR (
       identity.institution_id = c.institution_id
       AND identity.uin IS NOT NULL

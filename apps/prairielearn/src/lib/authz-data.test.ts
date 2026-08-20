@@ -426,23 +426,39 @@ describe('calculateModernCourseInstanceStudentAccess', () => {
       ]);
     });
 
-    it('allows access when the request date is before the latest extension end date', async () => {
+    it("does not use a pending invitation's extension after the user has joined", async () => {
       const courseInstance = createMockCourseInstance({
         publishing_start_date: new Date('2025-01-01T00:00:00Z'),
         publishing_end_date: new Date('2025-12-31T23:59:59Z'),
       });
       const reqDate = new Date('2026-02-15T12:00:00Z');
-      const enrollment = createMockEnrollment();
-      const extension = createMockPublishingExtension({
+      const boundCandidate = createCandidate(createMockEnrollment({ id: 'bound' }), {
+        boundUser: true,
+      });
+      const pendingCandidate = createCandidate(
+        createMockEnrollment({
+          id: 'pending',
+          pending_uin: 'uin',
+          status: 'invited',
+          user_id: null,
+        }),
+        { institutionUin: true },
+      );
+      const pendingExtension = createMockPublishingExtension({
         id: 'extension',
         end_date: new Date('2026-02-28T23:59:59Z'),
       });
 
-      mockBoundEnrollment(enrollment);
+      mockClassification({
+        boundCandidate,
+        candidates: [boundCandidate, pendingCandidate],
+      });
       vi.spyOn(
         publishingExtensionsModel,
         'selectLatestPublishingExtensionByEnrollmentIds',
-      ).mockResolvedValue(extension);
+      ).mockImplementation(({ enrollmentIds }) =>
+        Promise.resolve(enrollmentIds.includes('pending') ? pendingExtension : null),
+      );
 
       const result = await calculateModernCourseInstanceStudentAccess(
         courseInstance,
@@ -450,9 +466,8 @@ describe('calculateModernCourseInstanceStudentAccess', () => {
         reqDate,
       );
 
-      // Request date is 2026-02-15 12:00:00, latest extension is 2026-02-28 23:59:59
-      assert.isTrue(result.has_student_access);
-      assert.isTrue(result.has_student_access_with_enrollment);
+      assert.isFalse(result.has_student_access);
+      assert.isFalse(result.has_student_access_with_enrollment);
     });
 
     it('forbids access when request date is after all extensions', async () => {
