@@ -73,7 +73,8 @@ PrairieLearn login and authorization model. It should provide:
 - a course-scoped, versioned tool API;
 - approval and policy evaluation before every consequential action;
 - audit events in the same database transaction as each mutation; and
-- asynchronous job adapters for sync, question tests, imports, and regrades.
+- a single-variant question preview adapter plus asynchronous job adapters for
+  sync, imports, and regrades.
 
 The service issues a signed, audience-bound capability for one run. It contains
 the run ID, instructor ID, course ID, allowed tool families, expiry, and a nonce.
@@ -122,13 +123,14 @@ course/resource scope, and an expected Git revision when it reads or writes
 course content. Each response includes an immutable event ID and, when
 applicable, a job ID, commit SHA, artifact IDs, and a proposed/committed state.
 
-The initial production tools should map the POC into three classes:
+The initial production tools should map the POC into four classes:
 
-| Class | Examples                                                                 | Behavior                                                                                        |
-| ----- | ------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------- |
-| Read  | list entities, read course files, query approved course data, job output | Scoped, row/size/time limited, redacts data not needed by the task.                             |
-| Draft | write file, create course/instance/assessment/question, generate rubric  | Writes only to the agent branch or records a proposal; no student-visible effect.               |
-| Apply | sync course, publish, enroll, regrade, grade, change access control      | Requires a policy decision and often instructor approval; runs as an auditable, idempotent job. |
+| Class   | Examples                                                                 | Behavior                                                                                        |
+| ------- | ------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------- |
+| Read    | list entities, read course files, query approved course data, job output | Scoped, row/size/time limited, redacts data not needed by the task.                             |
+| Draft   | write file, create course/instance/assessment/question, generate rubric  | Writes only to the agent branch or records a proposal; no student-visible effect.               |
+| Preview | render question                                                          | Materializes one draft revision and renders one variant through PrairieLearn's preview path.    |
+| Apply   | sync course, publish, enroll, regrade, grade, change access control      | Requires a policy decision and often instructor approval; runs as an auditable, idempotent job. |
 
 `query_course_data` remains useful, but is not a general database credential.
 It must run in a read-only transaction through a dedicated database role, with
@@ -140,6 +142,33 @@ the resulting commit SHA. The sandbox can edit its checkout for the harness,
 but the server validates the expected base ref and records the new commit before
 calling `sync_course`. An agent may prepare a pull request; the instructor or a
 policy-approved automation applies the content to the live course.
+
+### Single-variant question preview
+
+Use `render_question`, not the proof-of-concept `test_question`, in the MVP
+authoring loop. The existing AI question-generation agent already follows this
+pattern: it validates and saves the draft, invokes `getAndRenderVariant()` once
+to collect render issues, and displays that same variant with the normal
+question-preview components.
+
+`render_question` takes a QID, the expected conversation revision, and an
+optional variant seed. It must:
+
+1. verify that the revision is the conversation's current checkpoint;
+2. materialize that question's files as a conversation-scoped draft without
+   changing the published question;
+3. run the AI HTML validation used by question generation;
+4. generate and render exactly one variant through the instructor-preview path,
+   loading detailed issue output; and
+5. return the variant ID and seed, a signed preview URL, and structured
+   validation/render issues. The conversation UI embeds the resulting preview;
+   a screenshot artifact for a vision-capable harness can be added later.
+
+With no seed, each invocation creates one fresh preview. Supplying the returned
+seed reproduces a failure. The tool does not fan out across variants, manufacture
+correct/incorrect/invalid submissions, grade them, or claim statistical
+coverage. Those behaviors belong in opt-in validation or CI if they are ever
+needed, not in the normal agent conversation.
 
 ## Durability and Git
 
@@ -155,7 +184,7 @@ consistency guarantees.
 
 Use this recovery protocol instead:
 
-1. After each meaningful edit or test checkpoint, commit the working tree and
+1. After each meaningful edit or render checkpoint, commit the working tree and
    create a self-contained Git bundle for the conversation head. Upload it to
    an immutable R2 key, verify its checksum, and only then atomically advance
    `{conversation, branch, head_sha, bundle_key}` in Postgres.
@@ -220,15 +249,16 @@ browser tab, Worker, or sandbox has disappeared.
 The normal authoring loop is:
 
 ```text
-request -> plan -> draft branch edits -> static validation -> sync/test job
-        -> summarize evidence -> approval (when needed) -> apply or open PR
+request -> plan -> draft branch edits -> checkpoint -> render one preview
+        -> revise if needed -> summarize -> approval -> publish through GitHub
 ```
 
-Tests and other expensive work should be asynchronous jobs, not hundreds of
-per-request tool round trips. Return a job ID immediately, stream its logs, and
-let the harness poll `get_job_output` or receive a completion event. Add a
-separate, capacity-controlled agent rendering pool only after measuring that it
-protects student render latency; student work remains the higher-priority queue.
+Imports, regrades, and other expensive work should be asynchronous jobs. Return
+a job ID immediately, stream its logs, and let the harness poll `get_job_output`
+or receive a completion event. `render_question` is deliberately bounded to one
+variant per call. Add a separate, capacity-controlled agent rendering pool only
+after measuring that it protects student render latency; student work remains
+the higher-priority queue.
 
 Use specialized subagents only behind the same run/operation protocol. A parent
 run delegates immutable tasks with scoped capabilities and merges their Git
@@ -240,8 +270,8 @@ broader course or student-data scope merely because it is a subagent.
 1. **Foundation:** schema, audit/event model, course-scoped read tools, remote
    MCP adapter, and a minimal SSE conversation UI. No automated writes.
 2. **Draft authoring:** GitHub App integration, disposable sandbox checkout,
-   R2 Git-bundle checkpointing, draft-only course-file edits, sync/test jobs,
-   and PR creation.
+   R2 Git-bundle checkpointing, draft-only course-file edits, single-variant
+   question previews, and PR creation.
 3. **Guarded apply:** instructor approval cards and idempotent implementations
    for selected content operations. Keep grades, enrollment, and access control
    read-only initially.
