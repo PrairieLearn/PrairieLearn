@@ -308,11 +308,14 @@ describe('publicFetch', () => {
       },
       async (port) => {
         const fetch = createTestPublicFetch({ resolveAddress: async () => '127.0.0.1' });
+        const abortController = new AbortController();
         const response = await fetch(`https://public.example:${port}/resource`, {
-          signal: AbortSignal.timeout(10),
+          signal: abortController.signal,
         });
 
-        await expect(response.text()).rejects.toThrow();
+        const bodyPromise = response.text();
+        abortController.abort();
+        await expect(bodyPromise).rejects.toThrow();
       },
     );
   });
