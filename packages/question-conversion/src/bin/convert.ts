@@ -254,7 +254,7 @@ async function emitWithSlug(
     topic: options.topic,
     tags: options.tags,
     questionIdPrefix: `imported/${assessmentSlug}`,
-    postProcessors: [remoteImageCopier],
+    processors: [remoteImageCopier],
   });
   return { result, assessmentSlug, webResourcesDir: parsed.webResourcesDir };
 }

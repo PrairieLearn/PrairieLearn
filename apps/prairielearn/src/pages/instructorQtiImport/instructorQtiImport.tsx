@@ -409,10 +409,11 @@ async function convertEntry(
   usedSlugs.add(assessmentSlug);
 
   const emitter = new PLEmitter();
-  const result = emitter.emit(ir, {
+  const result = await emitter.emitProcessed(ir, {
     ...baseOptions,
     tags: ['imported'],
     questionIdPrefix: `imported/${assessmentSlug}`,
+    processors: [remoteImageCopier],
   });
 
   return {
@@ -443,7 +444,7 @@ export async function serializeConversionResult(
   result: ConversionResult,
   assessmentSlug: string,
   webResourcesDir: string,
-  remoteImageCopier = new QtiImportRemoteImageCopier(),
+  remoteImageCopier: QtiImportRemoteImageCopier,
 ): Promise<SerializedEntryResult> {
   const extraWarnings: ConversionWarning[] = [];
   const questionPrefix = `imported/${assessmentSlug}`;
@@ -454,7 +455,7 @@ export async function serializeConversionResult(
       // questions live under the prefix path (e.g. "imported/quiz-slug/q1").
       // This must match the IDs used in the assessment zones.
       const questionId = `${questionPrefix}/${q.directoryName}`;
-      const remoteImageCopy = await remoteImageCopier.copyIntoQuestion(q);
+      const remoteImageCopy = remoteImageCopier.getCopyResult(q);
       const { files, missingFiles } = await serializeClientFiles(q.clientFiles, webResourcesDir);
       if (missingFiles.length > 0) {
         extraWarnings.push({
@@ -463,15 +464,8 @@ export async function serializeConversionResult(
           level: 'warn',
         });
       }
-      if (remoteImageCopy.failedImageCount > 0) {
-        extraWarnings.push({
-          questionId,
-          message: `${remoteImageCopy.failedImageCount} remote image${remoteImageCopy.failedImageCount === 1 ? '' : 's'} could not be copied into this course because of its URL, availability, size, or format. The original image reference${remoteImageCopy.failedImageCount === 1 ? ' was' : 's were'} left unchanged.`,
-          level: 'warn',
-        });
-      }
       const seenMessages = new Set<string>();
-      for (const d of await lintQuestionHtml(remoteImageCopy.html)) {
+      for (const d of await lintQuestionHtml(q.questionHtml)) {
         if (
           remoteImageCopy.failedImageCount > 0 &&
           remoteImageCopy.unattemptedRemoteImageCount === 0 &&
@@ -487,7 +481,7 @@ export async function serializeConversionResult(
         directoryName: `${questionPrefix}/${q.directoryName}`,
         sourceId: q.sourceId,
         infoJson: q.infoJson,
-        questionHtml: remoteImageCopy.html,
+        questionHtml: q.questionHtml,
         serverPy: q.serverPy,
         clientFiles: files,
         skippedVideos: q.skippedFiles,

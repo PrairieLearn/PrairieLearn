@@ -16,7 +16,7 @@ import type {
   PLQuestionInfoJson,
   PLQuestionOutput,
 } from '../types/pl-output.js';
-import { isWhitespaceText, loadHtmlFragment } from '../utils/html.js';
+import { CLIENT_FILES_QUESTION_URL, isWhitespaceText, loadHtmlFragment } from '../utils/html.js';
 import { slugify } from '../utils/slugify.js';
 import { stableUuid } from '../utils/uuid.js';
 
@@ -89,11 +89,14 @@ export class PLEmitter implements OutputEmitter {
 
   async emitProcessed(
     itemContainer: IRItemContainer,
-    { postProcessors, ...options }: EmitProcessedOptions,
+    { processors, ...options }: EmitProcessedOptions,
   ): Promise<ConversionResult> {
+    for (const processor of processors) {
+      await processor.beforeEmit?.(itemContainer);
+    }
     const result = this.emit(itemContainer, options);
-    for (const postProcessor of postProcessors) {
-      await postProcessor.process(result);
+    for (const processor of processors) {
+      await processor.afterEmit?.(result, itemContainer);
     }
     return result;
   }
@@ -358,6 +361,17 @@ export class PLEmitter implements OutputEmitter {
       ? handler.renderGradePy(question.body, question.feedback)
       : renderDefaultGradeFn(question.feedback);
     if (grade) parts.push(grade);
+
+    // Feedback is inserted after question.html's initial Mustache render. Resolve client-file
+    // references once the feedback has been inserted into the rendered HTML.
+    if (grade.includes(CLIENT_FILES_QUESTION_URL)) {
+      parts.push(`def render(data, html):
+    return html.replace(
+        ${JSON.stringify(CLIENT_FILES_QUESTION_URL)},
+        data["options"]["client_files_question_url"],
+    )
+`);
+    }
 
     return parts.join('\n');
   }

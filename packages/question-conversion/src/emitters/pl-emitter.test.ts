@@ -36,27 +36,41 @@ function makeQuestion(overrides: Partial<IRQuestion> = {}): IRQuestion {
 const emitter = new PLEmitter();
 
 describe('PLEmitter', () => {
-  it('runs asynchronous post-processors sequentially', async () => {
+  it('runs asynchronous processors sequentially around emission', async () => {
     const calls: string[] = [];
     const result = await emitter.emitProcessed(makeAssessment([makeQuestion()]), {
-      postProcessors: [
+      processors: [
         {
-          async process(result) {
-            calls.push('first:start');
+          async beforeEmit(itemContainer) {
+            calls.push('first:before:start');
             await Promise.resolve();
-            calls.push('first:end');
+            calls.push('first:before:end');
+            itemContainer.questions[0].title = 'Processed Question';
+          },
+          afterEmit(result) {
+            calls.push('first:after');
             result.warnings.push({ questionId: 'q1', message: 'Processed' });
           },
         },
         {
-          process(result) {
-            calls.push(`second:${result.warnings.length}`);
+          beforeEmit() {
+            calls.push('second:before');
+          },
+          afterEmit(result) {
+            calls.push(`second:after:${result.warnings.length}`);
           },
         },
       ],
     });
 
-    assert.deepEqual(calls, ['first:start', 'first:end', 'second:1']);
+    assert.deepEqual(calls, [
+      'first:before:start',
+      'first:before:end',
+      'second:before',
+      'first:after',
+      'second:after:1',
+    ]);
+    assert.equal(result.questions[0].infoJson.title, 'Processed Question');
     assert.equal(result.warnings[0].message, 'Processed');
   });
 

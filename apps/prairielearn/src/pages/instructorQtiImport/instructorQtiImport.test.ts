@@ -6,6 +6,7 @@ import { assert, describe, expect, it } from 'vitest';
 
 import {
   type ConversionResult,
+  type IRAssessment,
   QtiImportRemoteImageCopier,
 } from '@prairielearn/question-conversion';
 
@@ -109,6 +110,19 @@ function makeResult({
     questions,
     warnings,
   };
+}
+
+async function processRemoteImages(
+  result: ConversionResult,
+  copier: QtiImportRemoteImageCopier,
+): Promise<void> {
+  const itemContainer: IRAssessment = {
+    sourceId: result.sourceId,
+    title: result.assessmentTitle,
+    sourceType: 'assessment',
+    questions: [],
+  };
+  await copier.afterEmit(result, itemContainer);
 }
 
 function makeConversionResult({
@@ -226,6 +240,7 @@ describe('serializeConversionResult', () => {
       }),
       'defaultwebctcategory-2',
       '/nonexistent',
+      new QtiImportRemoteImageCopier(),
     );
 
     assert(result.sourceType === 'assessment');
@@ -240,6 +255,7 @@ describe('serializeConversionResult', () => {
       }),
       'unfiled-questions-2',
       '/nonexistent',
+      new QtiImportRemoteImageCopier(),
     );
 
     assert(result.sourceType === 'question-bank');
@@ -269,6 +285,7 @@ describe('serializeConversionResult', () => {
       content: Buffer.from('image contents'),
       extension: 'png',
     }));
+    await processRemoteImages(conversionResult, copier);
 
     const { result } = await serializeConversionResult(
       conversionResult,
@@ -306,6 +323,7 @@ describe('serializeConversionResult', () => {
     const copier = new QtiImportRemoteImageCopier(async () => {
       throw new Error('unavailable');
     });
+    await processRemoteImages(conversionResult, copier);
 
     const { result } = await serializeConversionResult(
       conversionResult,
@@ -318,10 +336,9 @@ describe('serializeConversionResult', () => {
     expect(result.questions[0].remoteImagesCopied).toBe(0);
     expect(result.warnings).toEqual([
       {
-        questionId: 'imported/quiz/q1',
+        questionId: 'source-q1',
         message:
-          '1 remote image could not be copied into this course because of its URL, availability, size, or format. The original image reference was left unchanged.',
-        level: 'warn',
+          '1 remote image could not be copied because of its URL, availability, size, or format.',
       },
     ]);
   });
@@ -349,6 +366,7 @@ describe('serializeConversionResult', () => {
     const copier = new QtiImportRemoteImageCopier(async () => {
       throw new Error('unavailable');
     });
+    await processRemoteImages(conversionResult, copier);
 
     const { result } = await serializeConversionResult(
       conversionResult,
@@ -359,10 +377,9 @@ describe('serializeConversionResult', () => {
 
     expect(result.warnings).toEqual([
       {
-        questionId: 'imported/quiz/q1',
+        questionId: 'source-q1',
         message:
-          '1 remote image could not be copied into this course because of its URL, availability, size, or format. The original image reference was left unchanged.',
-        level: 'warn',
+          '2 remote images could not be copied because of their URLs, availability, size, or format.',
       },
       {
         questionId: 'imported/quiz/q1',

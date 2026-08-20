@@ -6,8 +6,9 @@ import { describe, expect, it } from 'vitest';
 
 import type { PublicFetch } from '@prairielearn/public-fetch';
 
-import type { ConversionResult } from './emitters/emitter.js';
+import { PLEmitter } from './emitters/pl-emitter.js';
 import { QtiImportRemoteImageCopier, fetchRemoteImage } from './remote-image-copier.js';
+import type { IRAssessment, IRQuestion } from './types/ir.js';
 
 const ONE_PIXEL_PNG = Buffer.from(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
@@ -39,54 +40,114 @@ function createLocalFetch(port: number): PublicFetch {
   };
 }
 
-describe('QtiImportRemoteImageCopier', () => {
-  it('post-processes conversion results and records uncopied-image warnings', async () => {
-    const result = {
-      sourceId: 'assessment',
-      assessmentTitle: 'Assessment',
-      sourceType: 'assessment',
-      assessment: {
-        directoryName: 'assessment',
-        infoJson: {
-          uuid: 'assessment-uuid',
-          type: 'Homework',
-          title: 'Assessment',
-          set: 'Homework',
-          number: '1',
-          allowAccess: [],
-          zones: [],
-        },
-      },
-      questions: [
-        {
-          directoryName: 'q1',
-          sourceId: 'source-q1',
-          infoJson: {
-            uuid: 'question-uuid',
-            title: 'Question',
-            topic: 'Imported',
-            tags: ['imported'],
-            type: 'v3',
-          },
-          questionHtml:
-            '<img src="https://canvas.example/unavailable.png"><img src="://invalid.example/image.png">',
-          clientFiles: new Map(),
-          skippedFiles: [],
-        },
+function makeQuestion(overrides: Partial<IRQuestion> = {}): IRQuestion {
+  return {
+    sourceId: 'source-q1',
+    title: 'Question',
+    promptHtml: '<p>Question</p>',
+    body: {
+      type: 'multiple-choice',
+      choices: [
+        { id: 'a', html: 'Yes', correct: true },
+        { id: 'b', html: 'No', correct: false },
       ],
-      warnings: [],
-    } satisfies ConversionResult;
+    },
+    assets: new Map(),
+    gradingMethod: 'Internal',
+    ...overrides,
+  };
+}
+
+function makeAssessment(question: IRQuestion): IRAssessment {
+  return {
+    sourceId: 'assessment',
+    title: 'Assessment',
+    sourceType: 'assessment',
+    questions: [question],
+  };
+}
+
+describe('QtiImportRemoteImageCopier', () => {
+  it('processes conversion results and records uncopied-image warnings', async () => {
     const copier = new QtiImportRemoteImageCopier(async () => {
       throw new Error('unavailable');
     });
 
-    await copier.process(result);
+    const result = await new PLEmitter().emitProcessed(
+      makeAssessment(
+        makeQuestion({
+          promptHtml:
+            '<img src="https://canvas.example/unavailable.png"><img src="://invalid.example/image.png">',
+        }),
+      ),
+      { processors: [copier] },
+    );
 
     expect(result.warnings).toEqual([
       {
         questionId: 'source-q1',
         message:
           '2 remote images could not be copied because of their URLs, availability, size, or format.',
+      },
+    ]);
+  });
+
+  it('copies remote feedback images before emission and resolves their client-file URLs', async () => {
+    const requestedUrls: string[] = [];
+    const copier = new QtiImportRemoteImageCopier(async (url) => {
+      requestedUrls.push(url.href);
+      return { content: Buffer.from('feedback image'), extension: 'png' };
+    });
+    const imageUrl = 'https://canvas.example/feedback.png?verifier=secret';
+
+    const result = await new PLEmitter().emitProcessed(
+      makeAssessment(
+        makeQuestion({
+          promptHtml: `<p>Question <img src="${imageUrl}"></p>`,
+          feedback: {
+            correct: `<p>Correct <img src="${imageUrl}" alt="Explanation"></p>`,
+            perAnswer: { Yes: `<img src="${imageUrl}" class="answer-feedback">` },
+          },
+        }),
+      ),
+      { processors: [copier] },
+    );
+
+    const question = result.questions[0];
+    expect(requestedUrls).toEqual([imageUrl]);
+    expect(question.clientFiles.size).toBe(1);
+    expect(question.serverPy).not.toContain('canvas.example');
+    expect(question.serverPy).toContain('<img src=');
+    expect(question.serverPy).not.toContain('<pl-figure');
+    expect(question.serverPy).toContain('{{ options.client_files_question_url }}/remote-');
+    expect(question.serverPy).toContain('def render(data, html):');
+    expect(question.serverPy).toContain('data["options"]["client_files_question_url"]');
+    expect(question.questionHtml).toContain(
+      'feedback="<img src=&quot;{{ options.client_files_question_url }}/remote-',
+    );
+    expect(question.questionHtml).not.toContain('canvas.example');
+    expect(question.questionHtml).toContain('<pl-figure');
+    expect(copier.getCopyResult(question).remoteImagesCopied).toBe(2);
+    expect(result.warnings).toEqual([]);
+  });
+
+  it('warns when a feedback image cannot be copied and preserves its remote URL', async () => {
+    const copier = new QtiImportRemoteImageCopier(async () => {
+      throw new Error('unavailable');
+    });
+    const imageUrl = 'https://canvas.example/feedback.png';
+
+    const result = await new PLEmitter().emitProcessed(
+      makeAssessment(makeQuestion({ feedback: { incorrect: `<img src="${imageUrl}">` } })),
+      { processors: [copier] },
+    );
+
+    expect(result.questions[0].serverPy).toContain(imageUrl);
+    expect(result.warnings).toEqual([
+      {
+        questionId: 'source-q1',
+        message:
+          '1 remote image could not be copied because of its URL, availability, size, or format.',
       },
     ]);
   });

@@ -19,14 +19,15 @@ export interface EmitOptions {
   questionIdPrefix?: string;
 }
 
-/** Post-processes emitted PrairieLearn output in place. */
-export interface ConversionPostProcessor {
-  process(result: ConversionResult): void | Promise<void>;
+/** Processes a conversion in place before and/or after PrairieLearn output is emitted. */
+export interface ConversionProcessor {
+  beforeEmit?(itemContainer: IRItemContainer): void | Promise<void>;
+  afterEmit?(result: ConversionResult, itemContainer: IRItemContainer): void | Promise<void>;
 }
 
-/** Options for emitting and then post-processing PrairieLearn output. */
+/** Options for processing and emitting PrairieLearn output. */
 export interface EmitProcessedOptions extends EmitOptions {
-  postProcessors: readonly ConversionPostProcessor[];
+  processors: readonly ConversionProcessor[];
 }
 
 interface ConversionResultBase {
@@ -58,7 +59,7 @@ export type ConversionResult = AssessmentConversionResult | QuestionBankConversi
 export interface OutputEmitter {
   /** Emits PrairieLearn output synchronously. */
   emit(itemContainer: IRItemContainer, options?: EmitOptions): ConversionResult;
-  /** Emits output and then awaits each post-processor in order. */
+  /** Runs processors around emission, awaiting each hook in order. */
   emitProcessed(
     itemContainer: IRItemContainer,
     options: EmitProcessedOptions,

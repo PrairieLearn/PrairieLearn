@@ -31,7 +31,7 @@ export type {
 // Emitters
 export { PLEmitter } from './emitters/pl-emitter.js';
 export type {
-  ConversionPostProcessor,
+  ConversionProcessor,
   OutputEmitter,
   ConversionResult,
   ConversionWarning,
@@ -86,6 +86,6 @@ export type { CourseExportInfo, QtiFileEntry } from './utils/course-export.js';
 export { slugify } from './utils/slugify.js';
 export { normalizeImsFilePath, safeDecodeURIComponent } from './utils/ims-file-path.js';
 
-// Post-processors
+// Processors
 export { QtiImportRemoteImageCopier, fetchRemoteImage } from './remote-image-copier.js';
 export type { FetchedRemoteImage, RemoteImageCopyResult } from './remote-image-copier.js';

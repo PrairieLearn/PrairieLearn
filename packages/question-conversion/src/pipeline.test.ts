@@ -42,13 +42,16 @@ describe('convert (integration)', () => {
       expect(result.questions[0].serverPy).not.toContain('data-equation-content');
     });
 
-    it('runs post-processors after emission', async () => {
+    it('runs processors around emission', async () => {
       const xml = readFileSync(path.join(QTI12_FIXTURES, 'canvas-mc.xml'), 'utf-8');
 
       const result = await convert(xml, {
-        postProcessors: [
+        processors: [
           {
-            process(result) {
+            beforeEmit(itemContainer) {
+              itemContainer.questions[0].title = 'Processed Hashing';
+            },
+            afterEmit(result) {
               result.warnings.push({ questionId: 'q1', message: 'Processed' });
             },
           },
@@ -56,6 +59,7 @@ describe('convert (integration)', () => {
       });
 
       expect(result.warnings).toContainEqual({ questionId: 'q1', message: 'Processed' });
+      expect(result.questions[0].infoJson.title).toBe('Processed Hashing');
     });
 
     it('converts a true/false quiz end-to-end', async () => {

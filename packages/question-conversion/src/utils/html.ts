@@ -17,7 +17,7 @@ const { ModelOperations } = _require('@vscode/vscode-languagedetection') as {
  * Mustache URL prefix recommended by PrairieLearn for referencing files in `clientFilesQuestion/`.
  * See https://docs.prairielearn.com/clientServerFiles/.
  */
-const CLIENT_FILES_QUESTION_URL = '{{ options.client_files_question_url }}';
+export const CLIENT_FILES_QUESTION_URL = '{{ options.client_files_question_url }}';
 
 const DATA_URI_SRC_RE = /^data:(image\/[a-zA-Z0-9.+-]+);base64,([^"']+)$/;
 

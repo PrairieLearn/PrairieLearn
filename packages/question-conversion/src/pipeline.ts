@@ -1,5 +1,5 @@
 import type {
-  ConversionPostProcessor,
+  ConversionProcessor,
   ConversionResult,
   EmitOptions,
   OutputEmitter,
@@ -11,7 +11,7 @@ import type { IRItemContainer } from './types/ir.js';
 
 /** Options for the conversion pipeline. */
 export interface ConvertOptions extends ParseOptions, EmitOptions {
-  postProcessors?: readonly ConversionPostProcessor[];
+  processors?: readonly ConversionProcessor[];
 }
 
 const DEFAULT_PARSERS: InputParser[] = [new QTI12ItemContainerParser()];
@@ -57,6 +57,6 @@ export async function convertWith(
   options?: ConvertOptions,
 ): Promise<ConversionResult> {
   const ir = await parseAssessment(xmlContent, parsers, options);
-  const { postProcessors = [], ...emitOptions } = options ?? {};
-  return emitter.emitProcessed(ir, { ...emitOptions, postProcessors });
+  const { processors = [], ...emitOptions } = options ?? {};
+  return emitter.emitProcessed(ir, { ...emitOptions, processors });
 }
