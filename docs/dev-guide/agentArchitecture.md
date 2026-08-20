@@ -18,9 +18,10 @@ but it has no production authorization or durability model.
   checked-out course repository and a remote, authenticated PrairieLearn tool
   service. It has no database connection and no durable provider, GitHub, or
   PrairieLearn credential.
-- Keep **GitHub Git refs and commits—not R2—as the durable workspace**. A
-  sandbox can be re-created by checking out the agent branch at its recorded
-  commit. R2 sandbox backups are only a disposable cache/checkpoint.
+- Keep **GitHub as the publication authority for the MVP**. Publishing requires
+  a successful GitHub push before PrairieLearn syncs the course. Store immutable
+  Git bundles in R2 as recoverable conversation checkpoints, retained until the
+  conversation is explicitly deleted; never use R2 as a mounted Git remote.
 - Start with a **small conversation page and an append-only run timeline**.
   Every proposed side effect is visible, attributable, reviewable, and linked
   to the corresponding Git commit, PrairieLearn job, or approval.
@@ -81,9 +82,11 @@ PrairieLearn session cookie or a reusable database credential.
 
 ### Cloudflare Worker and Durable Object
 
-Use one Durable Object per conversation (or per active run) for short-lived
-coordination: one active turn lease, cancellation, token streaming, sandbox ID,
-and recovery orchestration. Do not make Durable Object storage the only durable
+Use one Durable Object per conversation (or per active run) for coordination:
+one active turn lease, cancellation, token streaming, sandbox ID, and recovery
+orchestration. Its durable state and the corresponding R2 checkpoints may live
+for the conversation's lifetime even though the object hibernates and sandbox
+containers are disposable. Do not make Durable Object storage the only durable
 history; write the canonical run/event/operation records to PrairieLearn
 Postgres before acknowledging externally visible progress.
 
@@ -146,25 +149,35 @@ backup API writes a point-in-time compressed image to R2 and can restore it, but
 the mount itself is also lost after a restart.
 
 Therefore **never mount R2 as `.git` and never treat an R2 backup as the Git
-remote**. Git requires coherent, atomic ref and object semantics; object-store
-consistency and a FUSE mount are the wrong durability primitive for it.
+remote**. Git requires filesystem operations such as atomic ref updates and
+locking that an object-store mount does not provide, regardless of R2's strong
+consistency guarantees.
 
 Use this recovery protocol instead:
 
-1. The authoritative checkpoint is `{run, branch, head_sha, operation log}` in
-   Postgres plus the pushed GitHub branch.
-2. After each meaningful edit/test checkpoint, the runner commits and pushes
-   the agent branch. Push with an expected remote head; on divergence, stop and
-   ask the agent to rebase/resolve as a new explicit operation.
-3. On a sandbox restart, create a fresh checkout at the recorded `head_sha`,
-   reconstruct the harness context from the event log, and poll incomplete
-   PrairieLearn operations by their idempotency key.
-4. Optionally retain a Cloudflare `createBackup()` snapshot between adjacent
-   turns to avoid re-installing dependencies. Persist only its handle and TTL;
-   validate the Git head after restore and fall back to clone if it fails.
+1. After each meaningful edit or test checkpoint, commit the working tree and
+   create a self-contained Git bundle for the conversation head. Upload it to
+   an immutable R2 key, verify its checksum, and only then atomically advance
+   `{conversation, branch, head_sha, bundle_key}` in Postgres.
+2. Retain the conversation's checkpoint bundles without a TTL until the user
+   explicitly deletes the conversation. R2 is immutable checkpoint transport,
+   not a filesystem on which Git executes.
+3. On a sandbox restart, download the latest bundle, verify it, and clone or
+   fetch it into the sandbox's normal local filesystem. Reconstruct harness
+   context from the event log and poll incomplete PrairieLearn operations by
+   their idempotency key.
+4. Publishing remains a distinct operation. Push the proposed commit to the
+   configured GitHub repository with an expected remote head, then use
+   PrairieLearn's existing course application/sync path. If GitHub is down, the
+   conversation remains safely checkpointed and may continue drafting, but the
+   publish operation is blocked or retryable and must not report success.
+5. Optionally retain a Cloudflare `createBackup()` snapshot between adjacent
+   turns to avoid re-installing dependencies. Treat it only as a cache: validate
+   the Git head after restore and fall back to the R2 bundle if it fails.
 
-This gives the desirable fast resume path without relying on R2 for source
-control correctness.
+This gives a fast resume path without running Git on R2. It also keeps the MVP's
+publication semantics aligned with PrairieLearn today: GitHub availability is
+an explicit dependency, while sandbox recovery is not.
 
 ## Credentials and network policy
 
@@ -227,7 +240,8 @@ broader course or student-data scope merely because it is a subagent.
 1. **Foundation:** schema, audit/event model, course-scoped read tools, remote
    MCP adapter, and a minimal SSE conversation UI. No automated writes.
 2. **Draft authoring:** GitHub App integration, disposable sandbox checkout,
-   draft-only course-file edits, sync/test jobs, and PR creation.
+   R2 Git-bundle checkpointing, draft-only course-file edits, sync/test jobs,
+   and PR creation.
 3. **Guarded apply:** instructor approval cards and idempotent implementations
    for selected content operations. Keep grades, enrollment, and access control
    read-only initially.
@@ -245,6 +259,11 @@ broader course or student-data scope merely because it is a subagent.
   student data outside the current deployment boundary.
 - Who owns the GitHub App installation: PrairieLearn centrally, each
   institution, or each course repository owner?
+- How should agents continue publishing if GitHub is unavailable? The MVP does
+  not solve this: GitHub remains required for publication. Cloudflare Artifacts,
+  a second managed Git remote, or a PrairieLearn-owned content store would each
+  change source-of-truth, conflict, deletion, and recovery semantics and need a
+  separate design decision.
 - Which apply-class operations can be fully automated after policy evaluation,
   and which always require an instructor click?
 - Does Claude Code authenticate against an Anthropic service account through
