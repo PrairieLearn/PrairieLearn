@@ -12,6 +12,10 @@
     "dev:bun": "bun --watch src/server.ts",
     "dev:no-watch": "tsx --tsconfig src/tsconfig.json src/server.ts",
     "dev:vite": "vite --port 3000 --host",
+    "mcp": "tsx --tsconfig src/tsconfig.json src/mcp-server.ts",
+    "mcp:create-scratch-course": "tsx --tsconfig src/tsconfig.json src/mcp/scripts/create-scratch-course.ts",
+    "mcp:loop-test": "tsx --tsconfig src/tsconfig.json src/mcp/scripts/loop-test.ts",
+    "mcp:smoke-test": "tsx --tsconfig src/tsconfig.json src/mcp/scripts/smoke-test.ts",
     "start": "node dist/server.js",
     "start-executor": "node dist/executor.js",
     "test": "vitest run --coverage",
@@ -265,6 +269,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@modelcontextprotocol/sdk": "1.30.0",
     "@playwright/test": "^1.62.1",
     "@prairielearn/express-list-endpoints": "workspace:^",
     "@prairielearn/tsconfig": "workspace:^",
