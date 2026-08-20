@@ -138,6 +138,7 @@ describe('Homepage student courses', () => {
 
   it('shows a left enrollment and matching UIN invitation once with their latest extension', async () => {
     const courseInstance = await selectCourseInstanceById('1');
+    const lti13CourseInstance = await createLti13CourseInstance(courseInstance);
     const user = await getOrCreateUser({
       uid: 'grouped-uin-invitation@example.com',
       name: 'Grouped UIN invitation user',
@@ -155,11 +156,14 @@ describe('Homepage student courses', () => {
       courseInstance,
       pendingUin: user.uin,
     });
-    const uidInvitation = await createEnrollment({
+    const ltiLinkedUidCandidate = await createEnrollment({
       courseInstance,
+      pendingLti13CourseInstanceId: lti13CourseInstance.id,
+      pendingLti13Sub: 'grouped-lti-sub',
       pendingUid: user.uid,
+      pendingUin: 'grouped-lti-uin',
     });
-    const enrollmentIds = [boundEnrollment.id, uinInvitation.id, uidInvitation.id];
+    const enrollmentIds = [boundEnrollment.id, uinInvitation.id, ltiLinkedUidCandidate.id];
     const now = new Date();
     const expiredExtension = await createPublishingExtensionWithEnrollments({
       courseInstance,
@@ -169,9 +173,9 @@ describe('Homepage student courses', () => {
     });
     const activeExtension = await createPublishingExtensionWithEnrollments({
       courseInstance,
-      name: 'Homepage UIN invitation extension',
+      name: 'Homepage LTI-linked UID candidate extension',
       endDate: new Date(now.getTime() + 24 * 60 * 60 * 1000),
-      enrollments: [uinInvitation],
+      enrollments: [ltiLinkedUidCandidate],
     });
     await execute(sql.update_course_instance_publishing, {
       course_instance_id: '1',
@@ -215,11 +219,11 @@ describe('Homepage student courses', () => {
         assert.notInclude(response.$('body').text(), 'Failed to remove course');
       });
 
-      const [updatedBoundEnrollment, updatedUinInvitation, updatedUidInvitation] =
+      const [updatedBoundEnrollment, updatedUinInvitation, updatedLtiLinkedUidCandidate] =
         await selectEnrollments(enrollmentIds);
       assert.equal(updatedBoundEnrollment.status, 'left');
       assert.equal(updatedUinInvitation.status, 'rejected');
-      assert.equal(updatedUidInvitation.status, 'invited');
+      assert.equal(updatedLtiLinkedUidCandidate.status, 'invited');
       assert.equal(await countAuditEvents(enrollmentIds), beforeAuditCount + 1);
     } finally {
       await execute(sql.update_course_instance_publishing, {
@@ -238,6 +242,61 @@ describe('Homepage student courses', () => {
       for (const enrollmentId of enrollmentIds) {
         await execute(sql.delete_enrollment_by_id, { enrollment_id: enrollmentId });
       }
+      await execute(sql.delete_lti13_course_instance, {
+        lti13_course_instance_id: lti13CourseInstance.id,
+      });
+    }
+  });
+
+  it("does not use a pending invitation's extension after the user has joined", async () => {
+    const courseInstance = await selectCourseInstanceById('1');
+    const now = new Date();
+    const user = await getOrCreateUser({
+      uid: 'joined-with-pending-invitation@example.com',
+      name: 'Joined with pending invitation user',
+      uin: 'joined-with-pending-invitation-uin',
+      email: 'joined-with-pending-invitation@example.com',
+      institutionId: '1',
+    });
+    const joinedEnrollment = await createEnrollment({
+      courseInstance,
+      firstJoinedAt: new Date(),
+      userId: user.id,
+      status: 'joined',
+    });
+    const pendingInvitation = await createEnrollment({
+      courseInstance,
+      pendingUin: user.uin,
+    });
+    const extension = await createPublishingExtensionWithEnrollments({
+      courseInstance,
+      name: 'Homepage stale pending invitation extension',
+      endDate: new Date(now.getTime() + 24 * 60 * 60 * 1000),
+      enrollments: [pendingInvitation],
+    });
+    await execute(sql.update_course_instance_publishing, {
+      course_instance_id: courseInstance.id,
+      publishing_start_date: new Date(now.getTime() - 48 * 60 * 60 * 1000),
+      publishing_end_date: new Date(now.getTime() - 24 * 60 * 60 * 1000),
+    });
+
+    try {
+      await withUser(user, async () => {
+        const response = await fetchCheerio(homeUrl);
+        const rows = response.$(
+          'table[aria-label="Courses with student access"] tr, table[aria-label="Courses"] tr',
+        );
+        assert.lengthOf(rows, 0);
+      });
+    } finally {
+      await execute(sql.update_course_instance_publishing, {
+        course_instance_id: courseInstance.id,
+        publishing_start_date: courseInstance.publishing_start_date,
+        publishing_end_date: courseInstance.publishing_end_date,
+      });
+      await deletePublishingExtension({ extension, courseInstance });
+      await execute(sql.delete_enrollment_by_id, { enrollment_id: joinedEnrollment.id });
+      await execute(sql.delete_enrollment_by_id, { enrollment_id: pendingInvitation.id });
     }
   });
 

@@ -87,6 +87,7 @@ function groupStudentCourseCandidates(
   const groups = new Map<
     string,
     {
+      boundJoinedPublishingExtension: CourseInstancePublishingExtension | null;
       course: StudentHomePageCourseData;
       candidates: EnrollmentIdentityCandidate[];
     }
@@ -96,6 +97,7 @@ function groupStudentCourseCandidates(
     let group = groups.get(row.course_instance.id);
     if (group === undefined) {
       group = {
+        boundJoinedPublishingExtension: null,
         course: {
           course: row.course,
           course_instance: row.course_instance,
@@ -119,6 +121,9 @@ function groupStudentCourseCandidates(
     });
 
     const extension = row.latest_publishing_extension;
+    if (row.matches_bound_user && row.enrollment.status === 'joined') {
+      group.boundJoinedPublishingExtension = extension;
+    }
     if (
       extension !== null &&
       (group.course.latest_publishing_extension === null ||
@@ -128,10 +133,18 @@ function groupStudentCourseCandidates(
     }
   }
 
-  return [...groups.values()].map((group) => ({
-    ...group.course,
-    classification: classifyEnrollmentIdentityCandidates(group.candidates),
-  }));
+  return [...groups.values()].map((group) => {
+    const classification = classifyEnrollmentIdentityCandidates(group.candidates);
+    return {
+      ...group.course,
+      // Pending rows are merged during admission, but not after the user has joined.
+      latest_publishing_extension:
+        classification.boundCandidate?.enrollment.status === 'joined'
+          ? group.boundJoinedPublishingExtension
+          : group.course.latest_publishing_extension,
+      classification,
+    };
+  });
 }
 
 router.get(
