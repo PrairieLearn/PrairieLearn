@@ -17,9 +17,9 @@
     "test": "vitest run --coverage"
   },
   "dependencies": {
-    "@aws-sdk/client-ec2": "^3.1101.0",
-    "@aws-sdk/client-kms": "^3.1101.0",
-    "@aws-sdk/client-secrets-manager": "^3.1101.0",
+    "@aws-sdk/client-ec2": "^3.1106.0",
+    "@aws-sdk/client-kms": "^3.1106.0",
+    "@aws-sdk/client-secrets-manager": "^3.1106.0",
     "@prairielearn/aws-imds": "workspace:^",
     "es-toolkit": "^1.50.0",
     "fs-extra": "^11.4.0",

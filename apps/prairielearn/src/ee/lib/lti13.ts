@@ -33,6 +33,7 @@ import { selectOptionalUserByUin } from '../../models/user.js';
 import { selectOptionalUserByLti13Sub } from '../models/lti13-user.js';
 import { selectLti13Instance } from '../models/lti13Instance.js';
 
+import { getLti13CourseDisplayName } from './lti13-course-instance.js';
 import {
   Lti13MembershipIndex,
   RosterMemberSchema,
@@ -477,7 +478,7 @@ async function getLineitem(instance: Lti13CombinedInstance, lineitem_id_url: str
 
 export async function syncLineitems(instance: Lti13CombinedInstance, job: ServerJob) {
   job.info(
-    `Polling for external assignments from ${instance.lti13_instance.name} ${instance.lti13_course_instance.context_label}`,
+    `Polling for external assignments from ${instance.lti13_instance.name} ${getLti13CourseDisplayName(instance.lti13_course_instance)}`,
   );
   const lineitems = await getLineitems(instance);
   job.info(`Found ${lineitems.length} assignments.`);
@@ -534,7 +535,7 @@ export async function createAndLinkLineitem(
   };
 
   job.info(
-    `Creating assignment for ${assessment.label} in ${instance.lti13_instance.name} ${instance.lti13_course_instance.context_label}`,
+    `Creating assignment for ${assessment.label} in ${instance.lti13_instance.name} ${getLti13CourseDisplayName(instance.lti13_course_instance)}`,
   );
 
   const token = await getAccessToken(instance.lti13_instance.id);
@@ -823,7 +824,7 @@ async function loadLti13MembershipIndex(
   const url = getLti13RosterUrl(instance, lti13_course_instance.resource_link_id);
   const rawRosterPages = await fetchLti13RosterPages(instance, url);
 
-  const memberships = parseContextMemberships(rawRosterPages, lti13_course_instance.context_id);
+  const memberships = parseContextMemberships(rawRosterPages);
 
   return new Lti13MembershipIndex(memberships, {
     institution_id: lti13_instance.institution_id,
@@ -845,6 +846,8 @@ export async function updateLti13Scores({
   instance: Lti13CombinedInstance;
   job: ServerJob;
 }) {
+  const lti13CourseName = getLti13CourseDisplayName(instance.lti13_course_instance);
+
   // Get the assessment metadata
   const assessment = await queryRow(
     sql.select_assessment_for_lti13_scores,
@@ -861,7 +864,7 @@ export async function updateLti13Scores({
 
   job.info(
     `Working on assessment ${assessment.title} (${assessment.tid}) in ` +
-      `${instance.lti13_instance.name} course ${instance.lti13_course_instance.context_label}`,
+      `${instance.lti13_instance.name} course ${lti13CourseName}`,
   );
 
   const assessment_instances = await queryRows(
@@ -902,7 +905,7 @@ export async function updateLti13Scores({
       job.info(
         `Not sending grade ${assessment_instance.score_perc.toFixed(2)}% for ${user.uid}.` +
           ` Course staff ${user.uid} is excluded from grade passback` +
-          ` in ${instance.lti13_instance.name} course ${instance.lti13_course_instance.context_label}`,
+          ` in ${instance.lti13_instance.name} course ${lti13CourseName}`,
       );
       counts.not_sent++;
       continue;
@@ -915,7 +918,7 @@ export async function updateLti13Scores({
       job.info(
         `Not sending grade ${assessment_instance.score_perc.toFixed(2)}% for ${user.uid}.` +
           ` Could not find student ${user.uid}` +
-          ` in ${instance.lti13_instance.name} course ${instance.lti13_course_instance.context_label}`,
+          ` in ${instance.lti13_instance.name} course ${lti13CourseName}`,
       );
       counts.not_sent++;
       continue;
@@ -966,9 +969,7 @@ export async function updateLti13Scores({
   job.info(`${counts.error} score${counts.error === 1 ? '' : 's'} not sent due to errors.`);
   if (counts.error > 0 && counts.success === 0) {
     job.warn('\tNo scores successfully sent and errors are present.');
-    job.warn(
-      `\tIs the ${instance.lti13_instance.name} ${instance.lti13_course_instance.context_label} course published?`,
-    );
+    job.warn(`\tIs the ${instance.lti13_instance.name} ${lti13CourseName} course published?`);
   }
   job.info(`${counts.not_sent} score${counts.not_sent === 1 ? '' : 's'} skipped (not sent).`);
 }
@@ -992,7 +993,7 @@ export async function inspectRoster({
   const url = getLti13RosterUrl(instance, rlid);
 
   job.info(
-    `Fetching roster for ${lti13_instance.name}: ${lti13_course_instance.context_label ?? '(no context label)'}`,
+    `Fetching roster for ${lti13_instance.name}: ${getLti13CourseDisplayName(lti13_course_instance)}`,
   );
   job.info(`NRPS URL: ${url}`);
   if (rlid) {

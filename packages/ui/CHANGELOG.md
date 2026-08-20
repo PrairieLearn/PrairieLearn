@@ -1,5 +1,15 @@
 # @prairielearn/ui
 
+## 3.9.0
+
+### Minor Changes
+
+- 5d5bec7: Add a hook for pruning row selections when table data changes
+
+### Patch Changes
+
+- c36d9f5: Avoid closing the column manager before an adjacent dropdown is activated.
+
 ## 3.8.2
 
 ### Patch Changes

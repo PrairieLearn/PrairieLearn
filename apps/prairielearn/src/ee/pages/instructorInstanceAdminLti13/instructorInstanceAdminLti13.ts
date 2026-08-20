@@ -26,6 +26,7 @@ import { createServerJob } from '../../../lib/server-jobs.js';
 import { getCanonicalHost } from '../../../lib/url.js';
 import { createAuthzMiddleware } from '../../../middlewares/authzHelper.js';
 import { insertAuditLog } from '../../../models/audit-log.js';
+import { getLti13CourseDisplayName } from '../../lib/lti13-course-instance.js';
 import {
   Lti13CombinedInstanceSchema,
   createAndLinkLineitem,
@@ -351,7 +352,7 @@ router.post(
             errorCount++;
             job.error(
               `Error sending grades to ${targetInstance.lti13_instance.name} course ` +
-                `${targetInstance.lti13_course_instance.context_label}:\n` +
+                `${getLti13CourseDisplayName(targetInstance.lti13_course_instance)}:\n` +
                 error.formatErrorStack(err),
             );
           }

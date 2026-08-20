@@ -1,5 +1,11 @@
 # @prairielearn/error
 
+## 3.0.13
+
+### Patch Changes
+
+- e2ed7cd: Apply additional eslint unicorn rules
+
 ## 3.0.12
 
 ### Patch Changes

@@ -42,6 +42,7 @@ export {
 } from './components/nuqs.js';
 export { useColumnVisibilityQueryState } from './hooks/use-column-visibility-query-state.js';
 export { useColumnFilters, type ColumnFilterEntry } from './hooks/use-column-filters.js';
+export { usePruneRowSelection } from './hooks/use-prune-row-selection.js';
 
 export { SplitPane, type SplitPaneProps } from './components/SplitPane.js';
 export {

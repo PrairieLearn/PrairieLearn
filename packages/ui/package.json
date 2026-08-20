@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/ui",
-  "version": "3.8.2",
+  "version": "3.9.0",
   "type": "module",
   "repository": {
     "type": "git",
@@ -29,7 +29,7 @@
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.4",
     "clsx": "^2.1.1",
-    "nuqs": "^2.9.4",
+    "nuqs": "^2.9.5",
     "react": "^19.2.8",
     "react-aria": "^3.51.0",
     "react-aria-components": "^1.20.0",
