@@ -1,10 +1,14 @@
-import type { RankingInfo } from '@tanstack/match-sorter-utils';
-import type { RowData } from '@tanstack/react-table';
+import type { CellData, RowData, TableFeatures } from '@tanstack/react-table';
 
+/* eslint-disable @typescript-eslint/no-unused-vars -- Declaration merging requires TanStack's exact type parameters. */
 declare module '@tanstack/react-table' {
   // https://tanstack.com/table/latest/docs/api/core/column-def#meta
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  interface ColumnMeta<TData extends RowData, TValue> {
+
+  interface ColumnMeta<
+    TFeatures extends TableFeatures,
+    TData extends RowData,
+    TValue extends CellData = CellData,
+  > {
     /** If true, the column will wrap text instead of being truncated. */
     wrapText?: boolean;
     /** If set, this will be used as the label for the column in the column manager. */
@@ -19,11 +23,7 @@ declare module '@tanstack/react-table' {
      */
     autoSizeSample?: (data: TData[]) => number[];
   }
-
-  /** Extends the default FilterMeta to include ranking information from `@tanstack/match-sorter-utils` for fuzzy filtering. */
-  interface FilterMeta {
-    itemRank?: RankingInfo;
-  }
 }
+/* eslint-enable @typescript-eslint/no-unused-vars */
 
 export {};

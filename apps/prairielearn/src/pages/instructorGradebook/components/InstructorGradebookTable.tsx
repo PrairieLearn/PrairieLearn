@@ -2,17 +2,11 @@ import { QueryClient, useQuery } from '@tanstack/react-query';
 import {
   type ColumnPinningState,
   type ColumnSizingState,
-  type Header,
   type SortingState,
-  createColumnHelper,
-  getCoreRowModel,
-  getFilteredRowModel,
-  getSortedRowModel,
-  useReactTable,
 } from '@tanstack/react-table';
 import clsx from 'clsx';
 import { parseAsString, useQueryState } from 'nuqs';
-import { useMemo, useRef, useState } from 'react';
+import { type ReactNode, useMemo, useRef, useState } from 'react';
 import { z } from 'zod';
 
 import {
@@ -25,7 +19,9 @@ import {
   PresetFilterDropdown,
   TanstackTableCard,
   type TanstackTableCsvCell,
+  type TanstackTableHeader,
   applyMultiSelectFilter,
+  createTanstackTableColumnHelper,
   extractLeafColumnIds,
   numericColumnFilterFn,
   parseAsColumnPinningState,
@@ -34,6 +30,7 @@ import {
   parseAsNumericFilter,
   parseAsSortingState,
   useColumnFilters,
+  useTanstackTable,
 } from '@prairielearn/ui';
 
 import { EnrollmentStatusIcon } from '../../../components/EnrollmentStatusIcon.js';
@@ -51,8 +48,10 @@ import {
 import { CanvasCsvModal } from './CanvasCsvModal.js';
 import { EditScoreButton } from './EditScoreModal.js';
 
+type ColumnFilter = (props: { header: TanstackTableHeader<GradebookRow> }) => ReactNode;
+
 const DEFAULT_SORT: SortingState = [{ id: 'uid', desc: false }];
-const DEFAULT_PINNING: ColumnPinningState = { left: ['uid'], right: [] };
+const DEFAULT_PINNING: ColumnPinningState = { start: ['uid'], end: [] };
 
 const ROLE_VALUES = ['Staff', 'Student', 'None'] as const;
 type RoleValue = (typeof ROLE_VALUES)[number];
@@ -73,7 +72,7 @@ const DEFAULT_STATUS_FILTER: MultiSelectFilterValue<EnumEnrollmentStatus> = {
 };
 const EMPTY_NUMERIC_FILTER: NumericColumnFilterValue = { filterValue: '', emptyOnly: false };
 
-const columnHelper = createColumnHelper<GradebookRow>();
+const columnHelper = createTanstackTableColumnHelper<GradebookRow>();
 
 interface GradebookTableProps {
   csrfToken: string;
@@ -174,170 +173,175 @@ function GradebookTable({
   );
 
   const columns = useMemo(
-    () => [
-      columnHelper.accessor('uid', {
-        id: 'uid',
-        header: 'UID',
-        cell: (info) => {
-          const uid = info.getValue();
-          // Staff may not have an enrollment
-          const enrollmentId = info.row.original.enrollment?.id;
-          if (!uid) return '—';
-          if (!enrollmentId) return uid;
-          return <a href={getStudentEnrollmentUrl(courseInstanceId, enrollmentId)}>{uid}</a>;
-        },
-        size: 200,
-      }),
-
-      columnHelper.accessor('user_name', {
-        id: 'user_name',
-        header: 'Name',
-        cell: (info) => {
-          return info.getValue() ?? '—';
-        },
-      }),
-
-      columnHelper.accessor('uin', {
-        id: 'uin',
-        header: 'UIN',
-        cell: (info) => info.getValue() ?? '—',
-      }),
-
-      columnHelper.accessor('role', {
-        id: 'role',
-        meta: {
-          label: 'Role',
-        },
-        header: () => (
-          <span>
-            Role{' '}
-            <button
-              className="btn btn-xs btn-ghost"
-              type="button"
-              aria-label="Roles help"
-              data-bs-toggle="modal"
-              data-bs-target="#role-help"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <i className="bi-question-circle-fill" aria-hidden="true" />
-            </button>
-          </span>
-        ),
-        cell: (info) => info.getValue(),
-        filterFn: (row, columnId, filter: MultiSelectFilterValue<RoleValue>) => {
-          const current = row.getValue<GradebookRow['role']>(columnId);
-          return applyMultiSelectFilter(filter, (values) => values.includes(current));
-        },
-      }),
-
-      columnHelper.accessor((row) => row.enrollment?.status, {
-        id: 'enrollment_status',
-        header: 'Enrollment',
-        cell: (info) => {
-          const status = info.getValue();
-          return status ? <EnrollmentStatusIcon type="text" status={status} /> : '—';
-        },
-        filterFn: (row, columnId, filter: MultiSelectFilterValue<EnumEnrollmentStatus>) => {
-          const current = row.getValue<EnumEnrollmentStatus | undefined>(columnId);
-          // Rows without an enrollment status can't satisfy any include filter,
-          // and shouldn't be hidden by an exclude filter that doesn't reference them.
-          if (!current) return filter.values.length === 0 || filter.mode === 'exclude';
-          return applyMultiSelectFilter(filter, (values) => values.includes(current));
-        },
-      }),
-
-      columnHelper.accessor('student_label_ids', {
-        id: 'student_labels',
-        meta: {
-          label: 'Labels',
-        },
-        header: () => (
-          <span className="d-inline-flex align-items-center gap-1">
-            <span>Labels</span>
-            <i className="bi bi-people" aria-hidden="true" />
-          </span>
-        ),
-        cell: (info) => {
-          const labelIds = info.getValue();
-          if (labelIds.length === 0) return '—';
-          const labels = labelIds
-            .map((id) => studentLabelsById.get(id))
-            .filter((l): l is StaffStudentLabel => l != null);
-          return (
-            <div className="d-flex flex-wrap gap-1">
-              {labels.map((label) => (
-                <StudentLabelBadge key={label.id} label={label} />
-              ))}
-            </div>
-          );
-        },
-        filterFn: (row, columnId, filter: MultiSelectFilterValue) => {
-          const labelIds = new Set(row.getValue<GradebookRow['student_label_ids']>(columnId));
-          return applyMultiSelectFilter(filter, (values) => values.some((id) => labelIds.has(id)));
-        },
-      }),
-
-      ...Array.from(assessmentsBySet.groups.entries()).map(([setId, assessments]) =>
-        columnHelper.group({
-          id: `group_${setId}`,
-          header: assessmentsBySet.headingById.get(setId) ?? 'Unknown',
-          columns: assessments.map((assessment) =>
-            columnHelper.accessor(
-              (row) => {
-                const data = row.scores[assessment.assessment_id];
-                return data ? data.score_perc : null;
-              },
-              {
-                id: `a${assessment.assessment_id}`,
-                minSize: 80,
-                maxSize: 500,
-                meta: {
-                  label: assessment.label,
-                  autoSize: true,
-                },
-                header: () => (
-                  <a href={`${urlPrefix}/assessment/${assessment.assessment_id}`}>
-                    <span
-                      className={clsx('badge', `color-${assessment.color}`)}
-                      title={assessment.label}
-                    >
-                      {assessment.label}
-                    </span>
-                  </a>
-                ),
-                cell: (info) => {
-                  const score = info.getValue();
-                  const row = info.row.original;
-                  const assessmentData = row.scores[assessment.assessment_id];
-
-                  if (score == null || !assessmentData?.assessment_instance_id) {
-                    return '—';
-                  }
-
-                  return (
-                    <span className="text-nowrap">
-                      <a
-                        href={`${urlPrefix}/assessment_instance/${assessmentData.assessment_instance_id}`}
-                      >
-                        {Math.floor(score)}%
-                      </a>
-                      <EditScoreButton
-                        assessmentInstanceId={assessmentData.assessment_instance_id}
-                        courseInstanceId={courseInstanceId}
-                        currentScore={score}
-                        otherUsers={assessmentData.uid_other_users_group}
-                        csrfToken={csrfToken}
-                      />
-                    </span>
-                  );
-                },
-                filterFn: numericColumnFilterFn,
-              },
-            ),
-          ),
+    () =>
+      columnHelper.columns([
+        columnHelper.accessor('uid', {
+          id: 'uid',
+          header: 'UID',
+          cell: (info) => {
+            const uid = info.getValue();
+            // Staff may not have an enrollment
+            const enrollmentId = info.row.original.enrollment?.id;
+            if (!uid) return '—';
+            if (!enrollmentId) return uid;
+            return <a href={getStudentEnrollmentUrl(courseInstanceId, enrollmentId)}>{uid}</a>;
+          },
+          size: 200,
         }),
-      ),
-    ],
+
+        columnHelper.accessor('user_name', {
+          id: 'user_name',
+          header: 'Name',
+          cell: (info) => {
+            return info.getValue() ?? '—';
+          },
+        }),
+
+        columnHelper.accessor('uin', {
+          id: 'uin',
+          header: 'UIN',
+          cell: (info) => info.getValue() ?? '—',
+        }),
+
+        columnHelper.accessor('role', {
+          id: 'role',
+          meta: {
+            label: 'Role',
+          },
+          header: () => (
+            <span>
+              Role{' '}
+              <button
+                className="btn btn-xs btn-ghost"
+                type="button"
+                aria-label="Roles help"
+                data-bs-toggle="modal"
+                data-bs-target="#role-help"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <i className="bi-question-circle-fill" aria-hidden="true" />
+              </button>
+            </span>
+          ),
+          cell: (info) => info.getValue(),
+          filterFn: (row, _columnId, filter: MultiSelectFilterValue<RoleValue>) => {
+            const current = row.original.role;
+            return applyMultiSelectFilter(filter, (values) => values.includes(current));
+          },
+        }),
+
+        columnHelper.accessor((row) => row.enrollment?.status, {
+          id: 'enrollment_status',
+          header: 'Enrollment',
+          cell: (info) => {
+            const status = info.getValue();
+            return status ? <EnrollmentStatusIcon type="text" status={status} /> : '—';
+          },
+          filterFn: (row, _columnId, filter: MultiSelectFilterValue<EnumEnrollmentStatus>) => {
+            const current = row.original.enrollment?.status;
+            // Rows without an enrollment status can't satisfy any include filter,
+            // and shouldn't be hidden by an exclude filter that doesn't reference them.
+            if (!current) return filter.values.length === 0 || filter.mode === 'exclude';
+            return applyMultiSelectFilter(filter, (values) => values.includes(current));
+          },
+        }),
+
+        columnHelper.accessor('student_label_ids', {
+          id: 'student_labels',
+          meta: {
+            label: 'Labels',
+          },
+          header: () => (
+            <span className="d-inline-flex align-items-center gap-1">
+              <span>Labels</span>
+              <i className="bi bi-people" aria-hidden="true" />
+            </span>
+          ),
+          cell: (info) => {
+            const labelIds = info.getValue();
+            if (labelIds.length === 0) return '—';
+            const labels = labelIds
+              .map((id) => studentLabelsById.get(id))
+              .filter((l): l is StaffStudentLabel => l != null);
+            return (
+              <div className="d-flex flex-wrap gap-1">
+                {labels.map((label) => (
+                  <StudentLabelBadge key={label.id} label={label} />
+                ))}
+              </div>
+            );
+          },
+          filterFn: (row, _columnId, filter: MultiSelectFilterValue) => {
+            const labelIds = new Set(row.original.student_label_ids);
+            return applyMultiSelectFilter(filter, (values) =>
+              values.some((id) => labelIds.has(id)),
+            );
+          },
+        }),
+
+        ...Array.from(assessmentsBySet.groups.entries()).map(([setId, assessments]) =>
+          columnHelper.group({
+            id: `group_${setId}`,
+            header: assessmentsBySet.headingById.get(setId) ?? 'Unknown',
+            columns: columnHelper.columns(
+              assessments.map((assessment) =>
+                columnHelper.accessor(
+                  (row) => {
+                    const data = row.scores[assessment.assessment_id];
+                    return data ? data.score_perc : null;
+                  },
+                  {
+                    id: `a${assessment.assessment_id}`,
+                    minSize: 80,
+                    maxSize: 500,
+                    meta: {
+                      label: assessment.label,
+                      autoSize: true,
+                    },
+                    header: () => (
+                      <a href={`${urlPrefix}/assessment/${assessment.assessment_id}`}>
+                        <span
+                          className={clsx('badge', `color-${assessment.color}`)}
+                          title={assessment.label}
+                        >
+                          {assessment.label}
+                        </span>
+                      </a>
+                    ),
+                    cell: (info) => {
+                      const score = info.getValue();
+                      const row = info.row.original;
+                      const assessmentData = row.scores[assessment.assessment_id];
+
+                      if (score == null || !assessmentData?.assessment_instance_id) {
+                        return '—';
+                      }
+
+                      return (
+                        <span className="text-nowrap">
+                          <a
+                            href={`${urlPrefix}/assessment_instance/${assessmentData.assessment_instance_id}`}
+                          >
+                            {Math.floor(score)}%
+                          </a>
+                          <EditScoreButton
+                            assessmentInstanceId={assessmentData.assessment_instance_id}
+                            courseInstanceId={courseInstanceId}
+                            currentScore={score}
+                            otherUsers={assessmentData.uid_other_users_group}
+                            csrfToken={csrfToken}
+                          />
+                        </span>
+                      );
+                    },
+                    filterFn: numericColumnFilterFn,
+                  },
+                ),
+              ),
+            ),
+          }),
+        ),
+      ]),
     [
       assessmentsBySet.groups,
       assessmentsBySet.headingById,
@@ -376,14 +380,11 @@ function GradebookTable({
   };
 
   const filters = useMemo(() => {
-    const assessmentFilters: Record<
-      string,
-      (props: { header: Header<GradebookRow, unknown> }) => React.ReactNode
-    > = {};
+    const assessmentFilters: Record<string, ColumnFilter> = {};
 
     courseAssessments.forEach((assessment) => {
       const columnId = `a${assessment.assessment_id}`;
-      assessmentFilters[columnId] = ({ header }: { header: Header<GradebookRow, unknown> }) => {
+      assessmentFilters[columnId] = ({ header }) => {
         return <NumericInputColumnFilter column={header.column} />;
       };
     });
@@ -391,25 +392,21 @@ function GradebookTable({
     const labelIds = studentLabels.map((l) => l.id);
 
     return {
-      role: ({ header }: { header: Header<GradebookRow, GradebookRow['role']> }) => (
+      role: ({ header }) => (
         <MultiSelectColumnFilter
           column={header.column}
           allColumnValues={ROLE_VALUES}
           renderValueLabel={({ value }) => <span>{value}</span>}
         />
       ),
-      enrollment_status: ({ header }: { header: Header<GradebookRow, EnumEnrollmentStatus> }) => (
+      enrollment_status: ({ header }) => (
         <MultiSelectColumnFilter
           column={header.column}
           allColumnValues={STATUS_VALUES}
           renderValueLabel={({ value }) => <EnrollmentStatusIcon type="text" status={value} />}
         />
       ),
-      student_labels: ({
-        header,
-      }: {
-        header: Header<GradebookRow, GradebookRow['student_label_ids']>;
-      }) => (
+      student_labels: ({ header }) => (
         <MultiSelectColumnFilter
           column={header.column}
           allColumnValues={labelIds}
@@ -423,10 +420,10 @@ function GradebookTable({
         />
       ),
       ...assessmentFilters,
-    };
+    } satisfies Record<string, ColumnFilter>;
   }, [courseAssessments, studentLabels, studentLabelsById]);
 
-  const table = useReactTable({
+  const table = useTanstackTable({
     data: gradebookRows,
     columns,
     columnResizeMode: 'onChange',
@@ -449,9 +446,6 @@ function GradebookTable({
     onColumnFiltersChange,
     onColumnVisibilityChange: setColumnVisibility,
     onColumnPinningChange: setColumnPinning,
-    getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
     defaultColumn: {
       size: 150,
       maxSize: 500,

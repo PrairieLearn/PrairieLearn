@@ -2,15 +2,8 @@ import { QueryClient, useMutation, useQuery, useQueryClient } from '@tanstack/re
 import {
   type ColumnPinningState,
   type ColumnSizingState,
-  type Header,
   type RowSelectionState,
   type SortingState,
-  type Table,
-  createColumnHelper,
-  getCoreRowModel,
-  getFilteredRowModel,
-  getSortedRowModel,
-  useReactTable,
 } from '@tanstack/react-table';
 import { parseAsString, useQueryState } from 'nuqs';
 import { useMemo, useState } from 'react';
@@ -26,14 +19,16 @@ import {
   NuqsAdapter,
   OverlayTrigger,
   TanstackTableCard,
+  type TanstackTableCoreInstance,
   TanstackTableEmptyState,
   applyMultiSelectFilter,
+  createTanstackTableColumnHelper,
   parseAsColumnPinningState,
   parseAsColumnVisibilityStateWithColumns,
   parseAsMultiSelectFilter,
   parseAsSortingState,
   useColumnFilters,
-  useShiftClickCheckbox,
+  useTanstackTable,
 } from '@prairielearn/ui';
 
 import { CopyButton } from '../../components/CopyButton.js';
@@ -60,13 +55,14 @@ import { InviteStudentsModal } from './components/InviteStudentsModal.js';
 import { SyncStudentsModal } from './components/SyncStudentsModal.js';
 import { STATUS_VALUES, type StudentRow, StudentRowSchema } from './instructorStudents.shared.js';
 
-function SelectAllCheckbox({ table }: { table: Table<StudentRow> }) {
+function SelectAllCheckbox({ table }: { table: TanstackTableCoreInstance<StudentRow> }) {
+  const allSelected = table.getIsAllPageRowsSelected();
   return (
     <IndeterminateCheckbox
-      checked={table.getIsAllPageRowsSelected()}
-      indeterminate={table.getIsSomePageRowsSelected()}
+      checked={allSelected}
+      indeterminate={table.getIsSomePageRowsSelected() && !allSelected}
       aria-label="Select all students"
-      onChange={() => table.toggleAllPageRowsSelected()}
+      onChange={table.getToggleAllPageRowsSelectedHandler()}
     />
   );
 }
@@ -75,7 +71,7 @@ function SelectAllCheckbox({ table }: { table: Table<StudentRow> }) {
 // stability across renders, as `[] !== []` in JavaScript.
 const DEFAULT_SORT: SortingState = [{ id: 'user_uid', desc: false }];
 
-const DEFAULT_PINNING: ColumnPinningState = { left: ['select', 'user_uid'], right: [] };
+const DEFAULT_PINNING: ColumnPinningState = { start: ['select', 'user_uid'], end: [] };
 
 const DEFAULT_ENROLLMENT_STATUS_FILTER: MultiSelectFilterValue<EnumEnrollmentStatus> = {
   values: [],
@@ -85,7 +81,7 @@ const DEFAULT_STUDENT_LABELS_FILTER: MultiSelectFilterValue = { values: [], mode
 
 const HIDDEN_BY_DEFAULT = new Set(['user_uin', 'user_email']);
 
-const columnHelper = createColumnHelper<StudentRow>();
+const columnHelper = createTanstackTableColumnHelper<StudentRow>();
 
 async function copyToClipboard(text: string) {
   await navigator.clipboard.writeText(text);
@@ -242,8 +238,6 @@ function StudentsCard({
   const { columnFilters, onColumnFiltersChange, onResetColumnFilters } =
     useColumnFilters(filterRegistry);
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
-
-  const { createCheckboxProps } = useShiftClickCheckbox<StudentRow>();
 
   const queryClient = useQueryClient();
   const [trpcClient] = useState(() =>
@@ -405,146 +399,154 @@ function StudentsCard({
   });
 
   const columns = useMemo(
-    () => [
-      columnHelper.display({
-        id: 'select',
-        header: ({ table }) => <SelectAllCheckbox table={table} />,
-        cell: ({ row, table }) => {
-          const uid = row.original.user?.uid ?? row.original.enrollment.pending_uid ?? 'student';
-          return (
-            <input
-              type="checkbox"
-              aria-label={`Select ${uid}`}
-              {...createCheckboxProps(row, table)}
-            />
-          );
-        },
-        size: 40,
-        minSize: 40,
-        maxSize: 40,
-        enableSorting: false,
-        enableHiding: false,
-        enablePinning: true,
-      }),
-      columnHelper.accessor((row) => row.user?.uid ?? row.enrollment.pending_uid, {
-        id: 'user_uid',
-        header: 'UID',
-        cell: (info) => {
-          return (
-            <a href={getStudentEnrollmentUrl(courseInstance.id, info.row.original.enrollment.id)}>
-              {info.getValue()}
-            </a>
-          );
-        },
-      }),
-      columnHelper.accessor((row) => row.user?.name, {
-        id: 'user_name',
-        header: 'Name',
-        cell: (info) => {
-          if (info.row.original.user) {
-            return info.getValue() || '—';
-          }
-          return (
-            <OverlayTrigger
-              tooltip={{
-                body: 'Student information is not yet available.',
-                props: { id: 'students-name-tooltip' },
-              }}
-            >
-              <i className="bi bi-question-circle" />
-            </OverlayTrigger>
-          );
-        },
-      }),
-      columnHelper.accessor((row) => row.enrollment.status, {
-        id: 'enrollment_status',
-        header: 'Status',
-        cell: (info) => <EnrollmentStatusIcon type="text" status={info.getValue()} />,
-        filterFn: (row, columnId, filter: MultiSelectFilterValue<EnumEnrollmentStatus>) => {
-          const current = row.getValue<StudentRow['enrollment']['status']>(columnId);
-          return applyMultiSelectFilter(filter, (values) => values.includes(current));
-        },
-      }),
-      columnHelper.accessor((row) => row.user?.uin, {
-        id: 'user_uin',
-        header: 'UIN',
-        cell: (info) => {
-          if (info.row.original.user) {
-            return info.getValue() || '—';
-          }
-          return (
-            <OverlayTrigger
-              tooltip={{
-                body: 'Student information is not yet available.',
-                props: { id: 'students-uin-tooltip' },
-              }}
-            >
-              <i className="bi bi-question-circle" />
-            </OverlayTrigger>
-          );
-        },
-      }),
-      columnHelper.accessor((row) => row.user?.email, {
-        id: 'user_email',
-        header: 'Email',
-        cell: (info) => {
-          if (info.row.original.user) {
-            return info.getValue() || '—';
-          }
-          return (
-            <OverlayTrigger
-              tooltip={{
-                body: 'Student information is not yet available.',
-                props: { id: 'students-email-tooltip' },
-              }}
-            >
-              <i className="bi bi-question-circle" />
-            </OverlayTrigger>
-          );
-        },
-      }),
+    () =>
+      columnHelper.columns([
+        columnHelper.display({
+          id: 'select',
+          header: ({ table }) => <SelectAllCheckbox table={table} />,
+          cell: ({ row }) => {
+            const uid = row.original.user?.uid ?? row.original.enrollment.pending_uid ?? 'student';
+            return (
+              <input
+                type="checkbox"
+                aria-label={`Select ${uid}`}
+                checked={row.getIsSelected()}
+                disabled={!row.getCanSelect()}
+                onChange={row.getToggleSelectedHandler()}
+              />
+            );
+          },
+          size: 40,
+          minSize: 40,
+          maxSize: 40,
+          enableSorting: false,
+          enableHiding: false,
+          enablePinning: true,
+        }),
+        columnHelper.accessor((row) => row.user?.uid ?? row.enrollment.pending_uid, {
+          id: 'user_uid',
+          header: 'UID',
+          cell: (info) => {
+            return (
+              <a href={getStudentEnrollmentUrl(courseInstance.id, info.row.original.enrollment.id)}>
+                {info.getValue()}
+              </a>
+            );
+          },
+        }),
+        columnHelper.accessor((row) => row.user?.name, {
+          id: 'user_name',
+          header: 'Name',
+          cell: (info) => {
+            if (info.row.original.user) {
+              return info.getValue() || '—';
+            }
+            return (
+              <OverlayTrigger
+                tooltip={{
+                  body: 'Student information is not yet available.',
+                  props: { id: 'students-name-tooltip' },
+                }}
+              >
+                <i className="bi bi-question-circle" />
+              </OverlayTrigger>
+            );
+          },
+        }),
+        columnHelper.accessor((row) => row.enrollment.status, {
+          id: 'enrollment_status',
+          header: 'Status',
+          cell: (info) => <EnrollmentStatusIcon type="text" status={info.getValue()} />,
+          filterFn: (row, _columnId, filter: MultiSelectFilterValue<EnumEnrollmentStatus>) => {
+            const current = row.original.enrollment.status;
+            return applyMultiSelectFilter(filter, (values) => values.includes(current));
+          },
+        }),
+        columnHelper.accessor((row) => row.user?.uin, {
+          id: 'user_uin',
+          header: 'UIN',
+          cell: (info) => {
+            if (info.row.original.user) {
+              return info.getValue() || '—';
+            }
+            return (
+              <OverlayTrigger
+                tooltip={{
+                  body: 'Student information is not yet available.',
+                  props: { id: 'students-uin-tooltip' },
+                }}
+              >
+                <i className="bi bi-question-circle" />
+              </OverlayTrigger>
+            );
+          },
+        }),
+        columnHelper.accessor((row) => row.user?.email, {
+          id: 'user_email',
+          header: 'Email',
+          cell: (info) => {
+            if (info.row.original.user) {
+              return info.getValue() || '—';
+            }
+            return (
+              <OverlayTrigger
+                tooltip={{
+                  body: 'Student information is not yet available.',
+                  props: { id: 'students-email-tooltip' },
+                }}
+              >
+                <i className="bi bi-question-circle" />
+              </OverlayTrigger>
+            );
+          },
+        }),
 
-      columnHelper.accessor((row) => row.student_label_ids, {
-        id: 'student_labels',
-        meta: {
-          label: 'Student labels',
-        },
-        header: 'Labels',
-        cell: (info) => {
-          const labelIds = info.getValue();
-          if (labelIds.length === 0) return '—';
-          const labelsUrl = getCourseInstanceStudentLabelsUrl(courseInstance.id);
-          const labels = labelIds
-            .map((id) => studentLabels.find((l) => l.id === id))
-            .filter((l): l is StaffStudentLabel => l != null);
-          return (
-            <div className="d-flex flex-wrap gap-1">
-              {labels.map((label) => (
-                <StudentLabelBadge key={label.id} label={label} href={labelsUrl} />
-              ))}
-            </div>
-          );
-        },
-        filterFn: (row, columnId, filter: MultiSelectFilterValue) => {
-          const labelIdSet = new Set(row.getValue<StudentRow['student_label_ids']>(columnId));
-          return applyMultiSelectFilter(filter, (values) =>
-            values.some((id) => labelIdSet.has(id)),
-          );
-        },
-      }),
-      columnHelper.accessor((row) => row.enrollment.first_joined_at, {
-        id: 'enrollment_first_joined_at',
-        header: 'Joined',
-        cell: (info) => {
-          const date = info.getValue();
-          if (date == null) return '—';
-          return (
-            <FriendlyDate date={date} timezone={timezone} options={{ includeTz: false }} tooltip />
-          );
-        },
-      }),
-    ],
-    [timezone, courseInstance.id, createCheckboxProps, studentLabels],
+        columnHelper.accessor((row) => row.student_label_ids, {
+          id: 'student_labels',
+          meta: {
+            label: 'Student labels',
+          },
+          header: 'Labels',
+          cell: (info) => {
+            const labelIds = info.getValue();
+            if (labelIds.length === 0) return '—';
+            const labelsUrl = getCourseInstanceStudentLabelsUrl(courseInstance.id);
+            const labels = labelIds
+              .map((id) => studentLabels.find((l) => l.id === id))
+              .filter((l): l is StaffStudentLabel => l != null);
+            return (
+              <div className="d-flex flex-wrap gap-1">
+                {labels.map((label) => (
+                  <StudentLabelBadge key={label.id} label={label} href={labelsUrl} />
+                ))}
+              </div>
+            );
+          },
+          filterFn: (row, _columnId, filter: MultiSelectFilterValue) => {
+            const labelIdSet = new Set(row.original.student_label_ids);
+            return applyMultiSelectFilter(filter, (values) =>
+              values.some((id) => labelIdSet.has(id)),
+            );
+          },
+        }),
+        columnHelper.accessor((row) => row.enrollment.first_joined_at, {
+          id: 'enrollment_first_joined_at',
+          header: 'Joined',
+          cell: (info) => {
+            const date = info.getValue();
+            if (date == null) return '—';
+            return (
+              <FriendlyDate
+                date={date}
+                timezone={timezone}
+                options={{ includeTz: false }}
+                tooltip
+              />
+            );
+          },
+        }),
+      ]),
+    [timezone, courseInstance.id, studentLabels],
   );
 
   const allColumnIds = useMemo(
@@ -563,7 +565,7 @@ function StudentsCard({
     parseAsColumnVisibilityStateWithColumns(allColumnIds).withDefault(defaultColumnVisibility),
   );
 
-  const table = useReactTable({
+  const table = useTanstackTable({
     data: students,
     columns,
     columnResizeMode: 'onChange',
@@ -589,9 +591,6 @@ function StudentsCard({
     onColumnVisibilityChange: setColumnVisibility,
     onColumnPinningChange: setColumnPinning,
     onRowSelectionChange: setRowSelection,
-    getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
     defaultColumn: {
       minSize: 150,
       size: 300,
@@ -800,11 +799,7 @@ function StudentsCard({
         }}
         tableOptions={{
           filters: {
-            enrollment_status: ({
-              header,
-            }: {
-              header: Header<StudentRow, StudentRow['enrollment']['status']>;
-            }) => (
+            enrollment_status: ({ header }) => (
               <MultiSelectColumnFilter
                 column={header.column}
                 allColumnValues={STATUS_VALUES}
@@ -813,11 +808,7 @@ function StudentsCard({
                 )}
               />
             ),
-            student_labels: ({
-              header,
-            }: {
-              header: Header<StudentRow, StudentRow['student_label_ids']>;
-            }) => {
+            student_labels: ({ header }) => {
               const labelIds = studentLabels.map((l) => l.id);
               return (
                 <MultiSelectColumnFilter
