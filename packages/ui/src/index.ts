@@ -6,6 +6,14 @@ export {
   TanstackTableCard,
   TanstackTableEmptyState,
 } from './components/TanstackTable.js';
+export {
+  createTanstackTableColumnHelper,
+  useTanstackTable,
+  type TanstackTableColumnDef,
+  type TanstackTableCoreInstance,
+  type TanstackTableFilterFn,
+  type TanstackTableHeader,
+} from './tanstack-table.js';
 export { ColumnManager } from './components/ColumnManager.js';
 export {
   TanstackTableDownloadButton,
@@ -28,7 +36,6 @@ export {
   numericColumnFilterFn,
   type NumericColumnFilterValue,
 } from './components/NumericInputColumnFilter.js';
-export { useShiftClickCheckbox } from './components/useShiftClickCheckbox.js';
 export { useAutoSizeColumns } from './components/useAutoSizeColumns.js';
 export { OverlayTrigger, type OverlayTriggerProps } from './components/OverlayTrigger.js';
 export { PresetFilterDropdown } from './components/PresetFilterDropdown.js';

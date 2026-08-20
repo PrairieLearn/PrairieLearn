@@ -1,24 +1,24 @@
-import {
-  type Column,
-  type ColumnSizingState,
-  type Header,
-  type Table,
-  flexRender,
-} from '@tanstack/react-table';
+import { type ColumnSizingState, type RowData, flexRender } from '@tanstack/react-table';
 import { type ReactNode, type RefObject, useEffect, useMemo, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { type Root, createRoot } from 'react-dom/client';
 
+import type {
+  TanstackTableColumn,
+  TanstackTableHeader,
+  TanstackTableInstance,
+} from '../tanstack-table.js';
+
 import { TanstackTableHeaderCell } from './TanstackTableHeaderCell.js';
 
-function HiddenMeasurementHeader<TData>({
+function HiddenMeasurementHeader<TData extends RowData>({
   table,
   columnsToMeasure,
   filters = {},
 }: {
-  table: Table<TData>;
+  table: TanstackTableInstance<TData>;
   columnsToMeasure: { id: string }[];
-  filters?: Record<string, (props: { header: Header<TData, unknown> }) => ReactNode>;
+  filters?: Record<string, (props: { header: TanstackTableHeader<TData> }) => ReactNode>;
 }) {
   const headerGroups = table.getHeaderGroups();
   const leafHeaderGroup = headerGroups[headerGroups.length - 1];
@@ -57,12 +57,12 @@ function HiddenMeasurementHeader<TData>({
   );
 }
 
-function HiddenMeasurementCells<TData>({
+function HiddenMeasurementCells<TData extends RowData>({
   table,
   columnsToMeasure,
 }: {
-  table: Table<TData>;
-  columnsToMeasure: Column<TData, unknown>[];
+  table: TanstackTableInstance<TData>;
+  columnsToMeasure: TanstackTableColumn<TData>[];
 }) {
   const rows = table.getRowModel().rows;
   const data = rows.map((row) => row.original);
@@ -84,7 +84,7 @@ function HiddenMeasurementCells<TData>({
 
             const sampleIndices = sampleFn(data);
 
-            return sampleIndices.map((idx) => {
+            return sampleIndices.map((idx: number) => {
               const row = rows[idx];
               if (!row) return null;
               const cell = row.getAllCells().find((c) => c.column.id === col.id);
@@ -120,10 +120,10 @@ function HiddenMeasurementCells<TData>({
  * @param filters - Optional filters map for rendering filter components in measurement
  * @returns A boolean indicating whether the initial measurement has completed
  */
-export function useAutoSizeColumns<TData>(
-  table: Table<TData>,
+export function useAutoSizeColumns<TData extends RowData>(
+  table: TanstackTableInstance<TData>,
   tableRef: RefObject<HTMLDivElement | null>,
-  filters?: Record<string, (props: { header: Header<TData, unknown> }) => ReactNode>,
+  filters?: Record<string, (props: { header: TanstackTableHeader<TData> }) => ReactNode>,
 ): boolean {
   const measurementContainerRef = useRef<HTMLDivElement | null>(null);
   const measurementRootRef = useRef<Root | null>(null);

@@ -23,7 +23,7 @@
     "esbuild": "^0.28.1",
     "express-static-gzip": "^2.2.0 <3",
     "fs-extra": "^11.4.0",
-    "globby": "^16.2.2",
+    "globby": "^16.2.3",
     "pretty-bytes": "^7.1.1",
     "tmp-promise": "^3.0.3"
   },
