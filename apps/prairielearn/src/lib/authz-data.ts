@@ -107,7 +107,11 @@ export async function calculateModernCourseInstanceStudentAccess(
     courseInstanceId: courseInstance.id,
     userId,
   });
-  const isJoined = classification.boundCandidate?.enrollment.status === 'joined';
+  const joinedEnrollment =
+    classification.boundCandidate?.enrollment.status === 'joined'
+      ? classification.boundCandidate.enrollment
+      : null;
+  const isJoined = joinedEnrollment !== null;
 
   // Not published at all.
   if (courseInstance.publishing_start_date == null) {
@@ -130,8 +134,9 @@ export async function calculateModernCourseInstanceStudentAccess(
     };
   }
 
-  // A publishing extension may be assigned to the joined enrollment or to any
-  // row that will be merged when a pending UID or UIN invitation is accepted.
+  // Before admission, any matching row may carry the extension that will be
+  // preserved when those rows are merged. Once the user has joined, pending
+  // rows are not merged automatically and must not extend the joined row's access.
   const hasActionableInvitation =
     classification.actionableUidInvitation !== null ||
     classification.actionableInstitutionUinInvitation !== null;
@@ -141,7 +146,10 @@ export async function calculateModernCourseInstanceStudentAccess(
 
   const latestPublishingExtension = await selectLatestPublishingExtensionByEnrollmentIds({
     courseInstance,
-    enrollmentIds: classification.candidates.map((candidate) => candidate.enrollment.id),
+    enrollmentIds:
+      joinedEnrollment === null
+        ? classification.candidates.map((candidate) => candidate.enrollment.id)
+        : [joinedEnrollment.id],
   });
 
   // Check if we have access via extension.
