@@ -91,6 +91,11 @@ __pycache__/
 ## Turborepo caches
 .turbo
 
+## Wrangler local state
+.wrangler
+.dev.vars
+apps/agent-worker/worker-configuration.d.ts
+
 ## Compiled files
 apps/*/dist
 apps/prairielearn/public/build

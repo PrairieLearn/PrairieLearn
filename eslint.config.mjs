@@ -244,6 +244,8 @@ export default [
     // We don't want to lint these files.
     'apps/prairielearn/v2-question-servers/*',
     'apps/prairielearn/public/*',
+    'apps/*/.wrangler/*',
+    'apps/agent-worker/worker-configuration.d.ts',
 
     // Transpiled code
     'apps/*/dist/*',

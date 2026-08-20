@@ -1,0 +1,15 @@
+columns
+    conversation_id: bigint not null
+    created_at: timestamp with time zone not null default now()
+    id: bigint not null default nextval('agent_draft_questions_id_seq'::regclass)
+    question_id: bigint
+    requested_qid: text not null
+
+indexes
+    agent_draft_questions_pkey: PRIMARY KEY (id) USING btree (id)
+    agent_draft_questions_conversation_id_requested_qid_key: UNIQUE CONSTRAINT, btree (conversation_id, requested_qid)
+    agent_draft_questions_question_id_key: UNIQUE CONSTRAINT, btree (question_id)
+
+foreign-key constraints
+    agent_draft_questions_conversation_id_fkey: FOREIGN KEY (conversation_id) REFERENCES agent_conversations(id) ON UPDATE CASCADE ON DELETE CASCADE
+    agent_draft_questions_question_id_fkey: FOREIGN KEY (question_id) REFERENCES questions(id) ON UPDATE CASCADE ON DELETE CASCADE

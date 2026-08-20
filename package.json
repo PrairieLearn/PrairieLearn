@@ -24,6 +24,8 @@
     "capture-access-control-screenshots": "CAPTURE_SCREENSHOTS=1 pnpm --filter @prairielearn/prairielearn test:e2e src/tests/e2e/captureAccessControlScreenshots.spec.ts",
     "capture-onboarding-screenshots": "CAPTURE_SCREENSHOTS=1 pnpm --filter @prairielearn/prairielearn test:e2e captureOnboardingScreenshots",
     "dev": "pnpm --filter @prairielearn/prairielearn dev",
+    "dev-agent": "node scripts/agent/dev.mjs",
+    "dev-agent-worker": "pnpm --filter @prairielearn/agent-worker dev",
     "dev-bun": "pnpm --filter @prairielearn/prairielearn dev:bun",
     "dev-vite": "pnpm --filter @prairielearn/prairielearn dev:vite",
     "dev-workspace-host": "pnpm --filter @prairielearn/workspace-host dev",
@@ -37,6 +39,7 @@
     "start": "pnpm --filter @prairielearn/prairielearn start",
     "start-workspace-host": "pnpm --filter @prairielearn/workspace-host start",
     "test": "vitest run --coverage",
+    "test-agent": "node scripts/agent/test.mjs",
     "version": "changeset version && pnpm install --no-frozen-lockfile --lockfile-only"
   },
   "dependencies": {

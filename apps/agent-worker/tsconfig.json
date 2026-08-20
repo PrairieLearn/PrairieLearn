@@ -1,0 +1,18 @@
+{
+  "extends": "@prairielearn/tsconfig/tsconfig.base.json",
+  "compilerOptions": {
+    "allowSyntheticDefaultImports": true,
+    "declaration": true,
+    "esModuleInterop": true,
+    "lib": ["ES2022", "WebWorker"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "strict": true,
+    "types": ["./worker-configuration.d.ts"]
+  },
+  "include": ["src/**/*", "worker-configuration.d.ts"]
+}

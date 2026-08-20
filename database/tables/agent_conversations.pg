@@ -1,0 +1,30 @@
+columns
+    authn_user_id: bigint
+    course_id: bigint not null
+    created_at: timestamp with time zone not null default now()
+    deleted_at: timestamp with time zone
+    id: bigint not null default nextval('agent_conversations_id_seq'::regclass)
+    repository_base_sha: text
+    repository_branch: text
+    repository_url: text
+    title: text
+    updated_at: timestamp with time zone not null default now()
+    user_id: bigint
+
+indexes
+    agent_conversations_pkey: PRIMARY KEY (id) USING btree (id)
+    agent_conversations_course_id_authn_user_id_idx: USING btree (course_id, authn_user_id) WHERE (deleted_at IS NULL)
+
+foreign-key constraints
+    agent_conversations_authn_user_id_fkey: FOREIGN KEY (authn_user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL
+    agent_conversations_course_id_fkey: FOREIGN KEY (course_id) REFERENCES courses(id) ON UPDATE CASCADE ON DELETE CASCADE
+    agent_conversations_user_id_fkey: FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL
+
+check constraints
+    agent_conversations_check: CHECK ((((repository_url IS NULL) AND (repository_branch IS NULL) AND (repository_base_sha IS NULL)) OR ((repository_url IS NOT NULL) AND (repository_branch IS NOT NULL) AND (repository_base_sha IS NOT NULL))))
+
+referenced by
+    agent_draft_questions: FOREIGN KEY (conversation_id) REFERENCES agent_conversations(id) ON UPDATE CASCADE ON DELETE CASCADE
+    agent_artifacts: FOREIGN KEY (conversation_id) REFERENCES agent_conversations(id) ON UPDATE CASCADE ON DELETE CASCADE
+    agent_events: FOREIGN KEY (conversation_id) REFERENCES agent_conversations(id) ON UPDATE CASCADE ON DELETE CASCADE
+    agent_runs: FOREIGN KEY (conversation_id) REFERENCES agent_conversations(id) ON UPDATE CASCADE ON DELETE CASCADE

@@ -851,6 +851,7 @@ export async function initExpress(): Promise<Express> {
   // API ///////////////////////////////////////////////////////////////
 
   app.use('/pl/api/trpc', (await import('./api/trpc/index.js')).default);
+  app.use('/pl/api/agent/v1', (await import('./api/agent/v1/index.js')).default);
   app.use('/pl/api/v1', (await import('./api/v1/index.js')).default);
 
   //////////////////////////////////////////////////////////////////////
@@ -1222,6 +1223,10 @@ export async function initExpress(): Promise<Express> {
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/questions',
     (await import('./pages/instructorQuestions/instructorQuestions.js')).default,
+  );
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/agents',
+    (await import('./pages/instructorAgentConversations/instructorAgentConversations.js')).default,
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/getting_started',
@@ -1714,6 +1719,10 @@ export async function initExpress(): Promise<Express> {
   app.use(
     '/pl/course/:course_id(\\d+)/course_admin/questions',
     (await import('./pages/instructorQuestions/instructorQuestions.js')).default,
+  );
+  app.use(
+    '/pl/course/:course_id(\\d+)/course_admin/agents',
+    (await import('./pages/instructorAgentConversations/instructorAgentConversations.js')).default,
   );
   if (isEnterprise()) {
     app.use(

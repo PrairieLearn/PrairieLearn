@@ -1,0 +1,42 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "prairielearn-agent-worker",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-08-18",
+  "compatibility_flags": ["nodejs_compat"],
+  "containers": [
+    {
+      "class_name": "AgentSandbox",
+      "image": "./Dockerfile",
+      "instance_type": "lite",
+      "max_instances": 20
+    }
+  ],
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "SANDBOX",
+        "class_name": "AgentSandbox"
+      },
+      {
+        "name": "CONVERSATIONS",
+        "class_name": "ConversationCoordinator"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": ["AgentSandbox", "ConversationCoordinator"]
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "AGENT_STATE",
+      "bucket_name": "prairielearn-agent-state"
+    }
+  ],
+  "dev": {
+    "port": 8787
+  }
+}

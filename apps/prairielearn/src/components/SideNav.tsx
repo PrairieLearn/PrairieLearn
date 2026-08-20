@@ -70,6 +70,15 @@ const sideNavPagesTabs = {
     },
     {
       activePages: ['course_admin'],
+      activeSubPages: ['agents'],
+      urlSuffix: '/course_admin/agents',
+      iconClasses: 'bi bi-stars',
+      tabLabel: 'Course agent',
+      renderCondition: ({ authz_data, cloud_agent_enabled, course }) =>
+        cloud_agent_enabled && authz_data.has_course_permission_edit && !course.example_course,
+    },
+    {
+      activePages: ['course_admin'],
       activeSubPages: ['issues'],
       urlSuffix: '/course_admin/issues',
       iconClasses: 'fas fa-bug',
