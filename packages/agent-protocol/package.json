@@ -1,0 +1,24 @@
+{
+  "name": "@prairielearn/agent-protocol",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "main": "./dist/index.js",
+  "scripts": {
+    "build": "tsgo",
+    "test": "vitest run --coverage"
+  },
+  "dependencies": {
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@prairielearn/tsconfig": "workspace:^",
+    "@types/node": "^24.13.3",
+    "@typescript/native-preview": "beta",
+    "@vitest/coverage-v8": "^4.1.10",
+    "vitest": "^4.1.10"
+  }
+}

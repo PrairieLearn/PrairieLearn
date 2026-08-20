@@ -1,0 +1,12 @@
+# Copy this file to .dev.vars only when you need to override the account-free
+# deterministic defaults supplied by the package scripts.
+AGENT_WORKER_ENABLED=
+LOCAL_DEVELOPMENT=
+AGENT_CAPABILITY_SECRET=
+PRAIRIELEARN_ORIGIN=
+
+# Optional live-provider compatibility testing. These are never required by
+# make dev-agent or make test-agent.
+ANTHROPIC_API_KEY=
+GITHUB_READ_TOKEN=
+GITHUB_WRITE_TOKEN=

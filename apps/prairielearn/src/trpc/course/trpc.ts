@@ -2,6 +2,7 @@ import { createExpressMiddleware } from '@trpc/server/adapters/express';
 
 import { handleTrpcError } from '../../lib/trpc.js';
 
+import { agentConversationsRouter } from './agent-conversations.js';
 import { assessmentModulesRouter } from './assessment-modules.js';
 import { courseStaffRouter } from './course-staff.js';
 import { createContext, t } from './init.js';
@@ -9,6 +10,7 @@ import { questionsRouter } from './questions.js';
 import { sharingRouter } from './sharing.js';
 
 const courseRouter = t.router({
+  agentConversations: agentConversationsRouter,
   assessmentModules: assessmentModulesRouter,
   courseStaff: courseStaffRouter,
   questions: questionsRouter,

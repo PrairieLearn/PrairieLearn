@@ -31,6 +31,25 @@ export type EnumAiQuestionGenerationMessageStatus = z.infer<
   typeof EnumAiQuestionGenerationMessageStatusSchema
 >;
 
+export const EnumAgentOperationStatusSchema = z.enum([
+  'pending',
+  'running',
+  'completed',
+  'failed',
+  'canceled',
+]);
+export type EnumAgentOperationStatus = z.infer<typeof EnumAgentOperationStatusSchema>;
+
+export const EnumAgentRunStatusSchema = z.enum([
+  'pending',
+  'running',
+  'stopping',
+  'completed',
+  'failed',
+  'canceled',
+]);
+export type EnumAgentRunStatus = z.infer<typeof EnumAgentRunStatusSchema>;
+
 export const EnumAssessmentTypeSchema = z.enum(['Exam', 'RetryExam', 'Basic', 'Game', 'Homework']);
 export type EnumAssessmentType = z.infer<typeof EnumAssessmentTypeSchema>;
 
@@ -308,6 +327,97 @@ export const AdministratorSchema = z.object({
   user_id: IdSchema,
 });
 export type Administrator = z.infer<typeof AdministratorSchema>;
+
+export const AgentArtifactSchema = z.object({
+  content_type: z.string().nullable(),
+  conversation_id: IdSchema,
+  created_at: DateFromISOString,
+  deleted_at: DateFromISOString.nullable(),
+  id: IdSchema,
+  kind: z.string(),
+  metadata: z.record(z.string(), z.unknown()),
+  operation_id: IdSchema.nullable(),
+  run_id: IdSchema.nullable(),
+  sha256: z.string().nullable(),
+  size_bytes: z.coerce.number().nullable(),
+  storage_key: z.string(),
+});
+export type AgentArtifact = z.infer<typeof AgentArtifactSchema>;
+
+export const AgentConversationSchema = z.object({
+  authn_user_id: IdSchema.nullable(),
+  course_id: IdSchema,
+  created_at: DateFromISOString,
+  deleted_at: DateFromISOString.nullable(),
+  id: IdSchema,
+  repository_base_sha: z.string().nullable(),
+  repository_branch: z.string().nullable(),
+  repository_url: z.string().nullable(),
+  title: z.string().nullable(),
+  updated_at: DateFromISOString,
+  user_id: IdSchema.nullable(),
+});
+export type AgentConversation = z.infer<typeof AgentConversationSchema>;
+
+export const AgentEventSchema = z.object({
+  conversation_id: IdSchema,
+  created_at: DateFromISOString,
+  data: z.record(z.string(), z.unknown()),
+  event_id: z.string(),
+  id: IdSchema,
+  operation_id: z.string().nullable(),
+  run_id: IdSchema.nullable(),
+  sequence: z.coerce.number(),
+  type: z.string(),
+});
+export type AgentEvent = z.infer<typeof AgentEventSchema>;
+
+export const AgentDraftQuestionSchema = z.object({
+  conversation_id: IdSchema,
+  created_at: DateFromISOString,
+  id: IdSchema,
+  question_id: IdSchema.nullable(),
+  requested_qid: z.string(),
+});
+export type AgentDraftQuestion = z.infer<typeof AgentDraftQuestionSchema>;
+
+export const AgentOperationSchema = z.object({
+  commit_sha: z.string().nullable(),
+  completed_at: DateFromISOString.nullable(),
+  created_at: DateFromISOString,
+  error: z.string().nullable(),
+  expected_revision: z.string().nullable(),
+  id: IdSchema,
+  job_sequence_id: IdSchema.nullable(),
+  operation_id: z.string(),
+  request: z.record(z.string(), z.unknown()),
+  response: z.record(z.string(), z.unknown()).nullable(),
+  run_id: IdSchema,
+  started_at: DateFromISOString.nullable(),
+  status: EnumAgentOperationStatusSchema,
+  tool_name: z.string(),
+});
+export type AgentOperation = z.infer<typeof AgentOperationSchema>;
+
+export const AgentRunSchema = z.object({
+  allowed_tools: z.array(z.string()),
+  authn_user_id: IdSchema.nullable(),
+  base_commit_sha: z.string().nullable(),
+  capability_expires_at: DateFromISOString,
+  capability_jti: z.uuid(),
+  claude_session_id: z.string().nullable(),
+  completed_at: DateFromISOString.nullable(),
+  conversation_id: IdSchema,
+  created_at: DateFromISOString,
+  error: z.string().nullable(),
+  id: IdSchema,
+  message: z.string(),
+  started_at: DateFromISOString.nullable(),
+  status: EnumAgentRunStatusSchema,
+  stop_requested_at: DateFromISOString.nullable(),
+  user_id: IdSchema.nullable(),
+});
+export type AgentRun = z.infer<typeof AgentRunSchema>;
 
 export const AiGradingCreditCheckoutSessionSchema = z.object({
   agent_user_id: IdSchema,
@@ -1775,6 +1885,12 @@ export type Zone = z.infer<typeof ZoneSchema>;
 export const TableNames = [
   'access_tokens',
   'administrators',
+  'agent_artifacts',
+  'agent_conversations',
+  'agent_draft_questions',
+  'agent_events',
+  'agent_operations',
+  'agent_runs',
   'ai_grading_credit_checkout_sessions',
   'ai_grading_credit_pool_changes',
   'ai_grading_jobs',

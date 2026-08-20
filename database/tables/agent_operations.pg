@@ -1,0 +1,27 @@
+columns
+    commit_sha: text
+    completed_at: timestamp with time zone
+    created_at: timestamp with time zone not null default now()
+    error: text
+    expected_revision: text
+    id: bigint not null default nextval('agent_operations_id_seq'::regclass)
+    job_sequence_id: bigint
+    operation_id: text not null
+    request: jsonb not null
+    response: jsonb
+    run_id: bigint not null
+    started_at: timestamp with time zone
+    status: enum_agent_operation_status not null default 'pending'::enum_agent_operation_status
+    tool_name: text not null
+
+indexes
+    agent_operations_pkey: PRIMARY KEY (id) USING btree (id)
+    agent_operations_operation_id_key: UNIQUE CONSTRAINT, btree (operation_id)
+    agent_operations_run_id_created_at_idx: USING btree (run_id, created_at)
+
+foreign-key constraints
+    agent_operations_job_sequence_id_fkey: FOREIGN KEY (job_sequence_id) REFERENCES job_sequences(id) ON UPDATE CASCADE ON DELETE SET NULL
+    agent_operations_run_id_fkey: FOREIGN KEY (run_id) REFERENCES agent_runs(id) ON UPDATE CASCADE ON DELETE CASCADE
+
+referenced by
+    agent_artifacts: FOREIGN KEY (operation_id) REFERENCES agent_operations(id) ON UPDATE CASCADE ON DELETE SET NULL

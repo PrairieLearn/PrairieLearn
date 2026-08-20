@@ -7,6 +7,7 @@ import {
   addMachineAccessToRepo,
   checkGithubOrgAccess,
   courseRepoContentUrl,
+  ensureDraftPullRequest,
   httpPrefixForCourseRepo,
 } from './github.js';
 
@@ -14,6 +15,9 @@ const orgsGet = vi.fn();
 const orgsGetMembershipForUser = vi.fn();
 const reposAddCollaborator = vi.fn();
 const teamsAddOrUpdateRepoPermissionsInOrg = vi.fn();
+const gitGetRef = vi.fn();
+const pullsCreate = vi.fn();
+const pullsList = vi.fn();
 
 const orgAccessClient = {
   orgs: { get: orgsGet, getMembershipForUser: orgsGetMembershipForUser },
@@ -24,6 +28,11 @@ const repoAccessClient = {
   teams: { addOrUpdateRepoPermissionsInOrg: teamsAddOrUpdateRepoPermissionsInOrg },
 } as unknown as Parameters<typeof addMachineAccessToRepo>[0];
 
+const pullRequestClient = {
+  git: { getRef: gitGetRef },
+  pulls: { create: pullsCreate, list: pullsList },
+} as unknown as Parameters<typeof ensureDraftPullRequest>[0]['client'];
+
 const job = { error: vi.fn(), warn: vi.fn(), info: vi.fn(), verbose: vi.fn() };
 
 beforeEach(() => {
@@ -31,6 +40,51 @@ beforeEach(() => {
   orgsGetMembershipForUser.mockReset();
   reposAddCollaborator.mockReset();
   teamsAddOrUpdateRepoPermissionsInOrg.mockReset();
+  gitGetRef.mockReset();
+  pullsCreate.mockReset();
+  pullsList.mockReset();
+});
+
+describe('ensureDraftPullRequest', () => {
+  const input = {
+    base: 'main',
+    body: 'Agent changes',
+    client: pullRequestClient,
+    expectedHeadSha: 'a'.repeat(40),
+    head: 'pl-agent/change',
+    owner: 'prairielearn',
+    repo: 'course',
+    title: 'Course agent changes',
+  };
+
+  it('rejects a remote branch at a different commit', async () => {
+    gitGetRef.mockResolvedValue({ data: { object: { sha: 'b'.repeat(40) } } });
+    await expect(ensureDraftPullRequest(input)).rejects.toThrow(
+      'Published GitHub branch does not point to the expected commit.',
+    );
+    expect(pullsCreate).not.toHaveBeenCalled();
+  });
+
+  it('reuses an existing open pull request after a lost response', async () => {
+    gitGetRef.mockResolvedValue({ data: { object: { sha: 'a'.repeat(40) } } });
+    pullsList.mockResolvedValue({ data: [{ html_url: 'https://example.test/pr/12', number: 12 }] });
+    await expect(ensureDraftPullRequest(input)).resolves.toEqual({
+      number: 12,
+      url: 'https://example.test/pr/12',
+    });
+    expect(pullsCreate).not.toHaveBeenCalled();
+  });
+
+  it('creates a draft only after verifying the remote head', async () => {
+    gitGetRef.mockResolvedValue({ data: { object: { sha: 'a'.repeat(40) } } });
+    pullsList.mockResolvedValue({ data: [] });
+    pullsCreate.mockResolvedValue({ data: { html_url: 'https://example.test/pr/13', number: 13 } });
+    await expect(ensureDraftPullRequest(input)).resolves.toEqual({
+      number: 13,
+      url: 'https://example.test/pr/13',
+    });
+    expect(pullsCreate).toHaveBeenCalledWith(expect.objectContaining({ draft: true }));
+  });
 });
 
 describe('checkGithubOrgAccess', () => {

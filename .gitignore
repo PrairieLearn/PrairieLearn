@@ -93,6 +93,7 @@ __pycache__/
 
 ## Wrangler local state
 .wrangler
+.dev.vars
 apps/agent-worker/worker-configuration.d.ts
 
 ## Compiled files

@@ -30,6 +30,76 @@ function getGithubClient(): Octokit | null {
   return new Octokit({ auth: config.githubClientToken });
 }
 
+export async function createDraftPullRequest({
+  owner,
+  repo,
+  base,
+  head,
+  title,
+  body,
+  expectedHeadSha,
+}: {
+  owner: string;
+  repo: string;
+  base: string;
+  head: string;
+  title: string;
+  body: string;
+  expectedHeadSha: string;
+}): Promise<{ number: number; url: string }> {
+  const client = getGithubClient();
+  if (client === null) {
+    throw new Error('GitHub client is not configured.');
+  }
+  return await ensureDraftPullRequest({
+    base,
+    body,
+    client,
+    expectedHeadSha,
+    head,
+    owner,
+    repo,
+    title,
+  });
+}
+
+export async function ensureDraftPullRequest({
+  client,
+  owner,
+  repo,
+  base,
+  head,
+  expectedHeadSha,
+  title,
+  body,
+}: {
+  client: Octokit;
+  owner: string;
+  repo: string;
+  base: string;
+  head: string;
+  expectedHeadSha: string;
+  title: string;
+  body: string;
+}): Promise<{ number: number; url: string }> {
+  const ref = await client.git.getRef({ owner, ref: `heads/${head}`, repo });
+  if (ref.data.object.sha !== expectedHeadSha) {
+    throw new Error('Published GitHub branch does not point to the expected commit.');
+  }
+  const existing = await client.pulls.list({
+    base,
+    head: `${owner}:${head}`,
+    owner,
+    repo,
+    state: 'open',
+  });
+  const pull = existing.data.at(0);
+  if (pull !== undefined) return { number: pull.number, url: pull.html_url };
+
+  const response = await client.pulls.create({ base, body, draft: true, head, owner, repo, title });
+  return { number: response.data.number, url: response.data.html_url };
+}
+
 /*
   Required configuration options to get this working:
   - config.githubClientToken

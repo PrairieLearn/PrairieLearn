@@ -1,36 +1,55 @@
 # PrairieLearn agent worker
 
-This app is the Cloudflare Worker and Sandbox execution boundary for PrairieLearn's course-authoring agent. The current foundation slice provides:
+This private Worker runs one serialized course-authoring conversation per Durable Object. Agent
+processes run in the pinned Cloudflare Sandbox image, use `/workspace/course`, mirror Claude sessions
+to immutable R2 parts, and checkpoint Git history as verified baseline/incremental bundles. No public
+endpoint accepts a command.
 
-- a health endpoint that runs without starting a container;
-- a local-only smoke endpoint that runs a fixed command in a real Cloudflare Sandbox;
-- one Durable Object per conversation to serialize run-state transitions; and
-- an R2 checkpoint write/read during the smoke run.
+The service is disabled unless both `AGENT_WORKER_ENABLED=true` and
+`AGENT_CAPABILITY_SECRET` are configured. PrairieLearn issues short-lived HS256 capabilities bound to
+the route purpose, prompt hash, run/conversation/course, callback origin, harness, repository, and
+allowed tools. Production also requires `PRAIRIELEARN_ORIGIN`; HTTP callback URLs are accepted only
+with `LOCAL_DEVELOPMENT=true`.
 
-The smoke endpoint intentionally does not accept a command from the caller. Arbitrary agent commands will be introduced behind PrairieLearn-issued run authorization rather than an unauthenticated HTTP endpoint.
+## API
 
-## Local development
+- `POST /v1/runs/start`
+- `GET /v1/runs/:run_id`
+- `POST /v1/runs/:run_id/cancel`
+- `POST /v1/runs/:run_id/publish`
+- `DELETE /v1/conversations/:conversation_id`
 
-Docker must be running. From the repository root:
+Publication uses a separate `purpose=publish` capability and a fresh model-free publisher sandbox.
+Its exact repository, branch, HEAD, operation ID, and capability JTI are verified before a temporary
+Git write handler is installed.
+
+## Local development and recovery smoke
+
+Docker must be running. Start the Worker from the repository root:
 
 ```sh
-pnpm dev-agent-worker
+pnpm --filter @prairielearn/agent-worker dev
 ```
 
-Wrangler builds the Sandbox image and persists local Durable Object and R2 state in `apps/agent-worker/.wrangler/state`.
-
-In another terminal, verify the Worker-only route:
+The dev script supplies the fixed local-only capability secret and persists Wrangler state in
+`.wrangler/state`. Run the first smoke phase:
 
 ```sh
-curl --fail-with-body --silent --show-error http://localhost:8787/health
+pnpm --filter @prairielearn/agent-worker test:smoke -- start /tmp/agent-smoke.json
 ```
 
-Then exercise the real Sandbox, Durable Object, and R2 bindings:
+After it completes, stop Wrangler, restart the same dev command (and therefore the same persisted
+DO/R2 directory), then run:
 
 ```sh
-pnpm --filter @prairielearn/agent-worker test:smoke
+pnpm --filter @prairielearn/agent-worker test:smoke -- resume /tmp/agent-smoke.json
 ```
 
-The first Sandbox image build can take several minutes. A successful response includes `sandbox-ok`, the installed Node and Git versions, `claude-agent-sdk-ok`, and the R2 checkpoint key.
+The phases cover signed start/status, concurrent-turn rejection, a real deterministic harness commit,
+Worker restart, sandbox destruction and R2 restore, publication and receipt replay, session resume,
+cancellation, deletion, and confirmation that the conversation R2 prefix is empty. `test:smoke`
+without a phase runs both halves without the explicit Worker restart.
 
-The `LOCAL_DEVELOPMENT` binding gates this endpoint. Production configuration must omit it.
+Production secrets are `AGENT_CAPABILITY_SECRET` and, when enabled, `ANTHROPIC_API_KEY`,
+`GITHUB_READ_TOKEN`, and `GITHUB_WRITE_TOKEN`. Deployable Wrangler configuration contains no secret
+values.

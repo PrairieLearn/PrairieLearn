@@ -7,6 +7,10 @@ import type { TableName } from '../lib/db-types.js';
  * The value will be taken from parameters, or inferred from the current row data or row ID if not provided.
  */
 export const requiredTableFields = {
+  agent_artifacts: ['course_id'],
+  agent_conversations: ['course_id'],
+  agent_operations: ['course_id'],
+  agent_runs: ['course_id'],
   ai_grading_credit_checkout_sessions: ['course_instance_id'],
   course_instances: ['course_instance_id'],
   course_instance_ai_grading_credentials: ['course_instance_id'],
@@ -29,6 +33,22 @@ export const requiredTableFields = {
  * This lists all the possible table+action_detail combinations that are supported.
  */
 export type SupportedTableActionCombination =
+  | {
+      tableName: 'agent_artifacts';
+      actionDetail?: 'deleted' | null;
+    }
+  | {
+      tableName: 'agent_conversations';
+      actionDetail?: 'deleted' | null;
+    }
+  | {
+      tableName: 'agent_operations';
+      actionDetail?: 'completed' | 'deleted' | 'failed' | 'retried' | null;
+    }
+  | {
+      tableName: 'agent_runs';
+      actionDetail?: 'deleted' | 'status' | null;
+    }
   | {
       tableName: 'ai_grading_credit_checkout_sessions';
       actionDetail?: 'refund' | null;

@@ -9,7 +9,7 @@
       "class_name": "AgentSandbox",
       "image": "./Dockerfile",
       "instance_type": "lite",
-      "max_instances": 1
+      "max_instances": 20
     }
   ],
   "durable_objects": {

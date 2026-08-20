@@ -8,14 +8,16 @@
   },
   "scripts": {
     "build": "wrangler types && tsgo && tscp",
-    "dev": "wrangler dev --local --persist-to .wrangler/state --var LOCAL_DEVELOPMENT:true",
+    "dev": "wrangler dev --local --persist-to .wrangler/state --var LOCAL_DEVELOPMENT:true --var AGENT_WORKER_ENABLED:true --var AGENT_CAPABILITY_SECRET:local-agent-capability-secret-32-bytes",
     "test": "vitest run --coverage",
     "test:smoke": "node scripts/smoke.mjs",
     "test:unit": "vitest run",
     "types": "wrangler types"
   },
   "dependencies": {
-    "@cloudflare/sandbox": "0.13.0-next.738.2"
+    "@cloudflare/sandbox": "0.13.0-next.738.2",
+    "@prairielearn/agent-protocol": "workspace:^",
+    "jose": "^6.2.8"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",

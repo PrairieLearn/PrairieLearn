@@ -58,6 +58,8 @@ dev-workspace-host: start-support
 	@pnpm dev-workspace-host
 dev-agent-worker:
 	@pnpm dev-agent-worker
+dev-agent: start-support python-deps
+	@pnpm dev-agent
 dev-all:
 	@$(MAKE) -s -j2 dev dev-workspace-host
 
@@ -85,6 +87,8 @@ start-s3rver:
 test-all: test-js test-python test-e2e
 
 test: test-js test-python
+test-agent: start-support python-deps
+	@pnpm test-agent
 test-js: start-support
 	@pnpm test
 test-prairielearn-docker-smoke-tests: start-support

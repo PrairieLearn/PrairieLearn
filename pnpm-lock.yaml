@@ -332,6 +332,12 @@ importers:
       '@cloudflare/sandbox':
         specifier: 0.13.0-next.738.2
         version: 0.13.0-next.738.2
+      '@prairielearn/agent-protocol':
+        specifier: workspace:^
+        version: link:../../packages/agent-protocol
+      jose:
+        specifier: ^6.2.8
+        version: 6.2.8
     devDependencies:
       '@prairielearn/tsconfig':
         specifier: workspace:^
@@ -544,6 +550,9 @@ importers:
       '@panzoom/panzoom':
         specifier: ^4.6.2
         version: 4.6.2
+      '@prairielearn/agent-protocol':
+        specifier: workspace:^
+        version: link:../../packages/agent-protocol
       '@prairielearn/aws':
         specifier: workspace:^
         version: link:../../packages/aws
@@ -1551,6 +1560,28 @@ importers:
         specifier: beta
         version: 7.0.0-dev.20260421.2
 
+  packages/agent-protocol:
+    dependencies:
+      zod:
+        specifier: ^4.4.3
+        version: 4.4.3
+    devDependencies:
+      '@prairielearn/tsconfig':
+        specifier: workspace:^
+        version: link:../tsconfig
+      '@types/node':
+        specifier: ^24.13.3
+        version: 24.13.3
+      '@typescript/native-preview':
+        specifier: beta
+        version: 7.0.0-dev.20260421.2
+      '@vitest/coverage-v8':
+        specifier: ^4.1.10
+        version: 4.1.10(vitest@4.1.10)
+      vitest:
+        specifier: ^4.1.10
+        version: 4.1.10(@opentelemetry/api@1.9.1)(@types/node@24.13.3)(@vitest/coverage-v8@4.1.10)(jsdom@29.1.1)(vite@8.2.0(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(sass@1.102.0)(tsx@4.23.5)(yaml@2.9.0))
+
   packages/aws:
     dependencies:
       '@aws-sdk/client-auto-scaling':
@@ -1649,7 +1680,7 @@ importers:
         version: link:../sentry
       ioredis:
         specifier: ^6.0.0
-        version: 6.0.0(supports-color@7.2.0)
+        version: 6.0.0(supports-color@10.2.2)
       lru-cache:
         specifier: ^11.5.2
         version: 11.5.2
@@ -2873,7 +2904,7 @@ importers:
         version: link:../zod
       '@socket.io/redis-emitter':
         specifier: ^5.1.0
-        version: 5.1.0(supports-color@7.2.0)
+        version: 5.1.0(supports-color@10.2.2)
       fast-glob:
         specifier: ^3.3.3
         version: 3.3.3
@@ -13740,14 +13771,6 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@socket.io/redis-emitter@5.1.0(supports-color@7.2.0)':
-    dependencies:
-      debug: 4.3.7(supports-color@7.2.0)
-      notepack.io: 3.0.1
-      socket.io-parser: 4.2.7(supports-color@7.2.0)
-    transitivePeerDependencies:
-      - supports-color
-
   '@speed-highlight/core@1.2.24': {}
 
   '@standard-schema/spec@1.1.0': {}
@@ -17108,17 +17131,6 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  ioredis@6.0.0(supports-color@7.2.0):
-    dependencies:
-      '@ioredis/commands': 2.0.0
-      cluster-key-slot: 1.1.1
-      debug: 4.4.3(supports-color@7.2.0)
-      denque: 2.1.0
-      redis-errors: 1.2.0
-      standard-as-callback: 2.1.0
-    transitivePeerDependencies:
-      - supports-color
-
   ip-address@10.5.0: {}
 
   ipaddr.js@1.9.1: {}
@@ -19505,13 +19517,6 @@ snapshots:
     dependencies:
       '@socket.io/component-emitter': 3.1.2
       debug: 4.4.3(supports-color@10.2.2)
-    transitivePeerDependencies:
-      - supports-color
-
-  socket.io-parser@4.2.7(supports-color@7.2.0):
-    dependencies:
-      '@socket.io/component-emitter': 3.1.2
-      debug: 4.4.3(supports-color@7.2.0)
     transitivePeerDependencies:
       - supports-color
 

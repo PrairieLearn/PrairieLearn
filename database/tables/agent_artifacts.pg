@@ -1,0 +1,23 @@
+columns
+    content_type: text
+    conversation_id: bigint not null
+    created_at: timestamp with time zone not null default now()
+    deleted_at: timestamp with time zone
+    id: bigint not null default nextval('agent_artifacts_id_seq'::regclass)
+    kind: text not null
+    metadata: jsonb not null default '{}'::jsonb
+    operation_id: bigint
+    run_id: bigint
+    sha256: text
+    size_bytes: bigint
+    storage_key: text not null
+
+indexes
+    agent_artifacts_pkey: PRIMARY KEY (id) USING btree (id)
+    agent_artifacts_storage_key_key: UNIQUE CONSTRAINT, btree (storage_key)
+    agent_artifacts_conversation_id_idx: USING btree (conversation_id) WHERE (deleted_at IS NULL)
+
+foreign-key constraints
+    agent_artifacts_conversation_id_fkey: FOREIGN KEY (conversation_id) REFERENCES agent_conversations(id) ON UPDATE CASCADE ON DELETE CASCADE
+    agent_artifacts_operation_id_fkey: FOREIGN KEY (operation_id) REFERENCES agent_operations(id) ON UPDATE CASCADE ON DELETE SET NULL
+    agent_artifacts_run_id_fkey: FOREIGN KEY (run_id) REFERENCES agent_runs(id) ON UPDATE CASCADE ON DELETE CASCADE

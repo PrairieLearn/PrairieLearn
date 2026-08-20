@@ -173,6 +173,14 @@ export const ConfigSchema = z.object({
    * `https://us.prairielearn.com`.
    */
   serverCanonicalHost: z.string().nullable().default(null),
+  agentCapabilitySecret: z.string().min(32).nullable().default(null),
+  agentCapabilityTtlSeconds: z
+    .number()
+    .int()
+    .positive()
+    .default(60 * 60),
+  agentHarness: z.enum(['deterministic', 'claude']).default('deterministic'),
+  agentWorkerUrl: z.url().nullable().default(null),
   runMigrations: z.boolean().default(true),
   runBatchedMigrations: z.boolean().default(true),
   /**
