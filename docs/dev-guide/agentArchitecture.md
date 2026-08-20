@@ -1,4 +1,4 @@
-# Cloud agent architecture (draft)
+# Cloud agent architecture
 
 This is a design proposal for an agent that can help instructors create and
 operate PrairieLearn courses. It is intentionally separate from the local MCP
@@ -22,6 +22,12 @@ but it has no production authorization or durability model.
   a successful GitHub push before PrairieLearn syncs the course. Store immutable
   Git bundles in R2 as recoverable conversation checkpoints, retained until the
   conversation is explicitly deleted; never use R2 as a mounted Git remote.
+- Reuse **PrairieLearn's existing centralized Git identity and repository
+  configuration**. Instructors do not connect GitHub or supply credentials.
+  The sandbox clones and pushes directly over HTTPS, while a Worker outbound
+  handler injects PrairieLearn's centrally managed GitHub token without
+  exposing it to Claude. PrairieLearn retains authorization, repository
+  administration, pull-request creation, and course sync.
 - Start with a **small conversation page and an append-only run timeline**.
   Every proposed side effect is visible, attributable, reviewable, and linked
   to the corresponding Git commit, PrairieLearn job, or approval.
@@ -39,26 +45,30 @@ Instructor browser
 | - authorization   |                                  v
 | - tool API        |                         +-------------------+
 | - jobs/audit/PG   |<---- authenticated ----| Cloudflare Worker  |
-+-------------------+       tool requests    | + Durable Object   |
-       ^                                      +---------+---------+
-       |                                                |
-       | operation status/events                        | creates/resumes
-       |                                                v
-       |                                      +-------------------+
-       +--------------------------------------| Cloudflare Sandbox |
-              HTTPS tool API                  | Claude Code        |
-                                                | course checkout    |
-                                                +-------------------+
-                                                         |
-                                      credential-injecting egress handlers
-                                                         v
-                                               GitHub / Anthropic API
++---------+---------+       tool requests    | + Durable Object   |
+          |                                    +---------+---------+
+          | GitHub API / course sync                     |
+          v                                             | creates/resumes
+       GitHub <------------------------------+           v
+          ^          credential-injected Git | +-------------------+
+          +----------------------------------| Cloudflare Sandbox |
+                                             | - Claude Code      |
+                                             | - local Git/Bash   |
+                                             | - MCP adapter      |
+                                             +-------------------+
+                                                       |
+                                                       | credential-injected
+                                                       | model egress
+                                                       v
+                                                Anthropic API
 ```
 
-The Worker and sandbox form an untrusted execution plane. The PrairieLearn app
-is the trust boundary: a tool call does not become authorized merely because a
-Claude process made it. PrairieLearn re-checks the instructor, institution,
-course, resource scope, operation type, and agent-run capability on every call.
+The sandbox is untrusted. The Worker is trusted to hold egress credentials and
+execute signed capabilities, but it is not an independent policy authority.
+The PrairieLearn app remains the authorization boundary: a tool call does not
+become authorized merely because a Claude process made it. PrairieLearn
+re-checks the instructor, institution, course, resource scope, operation type,
+and agent-run capability on every tool call and approval.
 
 ## Components and responsibilities
 
@@ -72,13 +82,21 @@ PrairieLearn login and authorization model. It should provide:
   `agent_artifacts` records in Postgres;
 - a course-scoped, versioned tool API;
 - approval and policy evaluation before every consequential action;
-- audit events in the same database transaction as each mutation; and
+- audit events in the same database transaction as each mutation;
 - a single-variant question preview adapter plus asynchronous job adapters for
-  sync, imports, and regrades.
+  sync, imports, and regrades;
+- signed, single-use publication capabilities bound to one repository, branch,
+  and commit; and
+- pull-request operations built on the course's existing repository
+  configuration and PrairieLearn's existing GitHub API machinery.
 
-The service issues a signed, audience-bound capability for one run. It contains
-the run ID, instructor ID, course ID, allowed tool families, expiry, and a nonce.
-The Worker may exchange it for a per-call token; the sandbox never gets the
+The service issues a signed, audience-bound **run-scoped access token**. It
+contains the run and conversation IDs, authenticated and effective user IDs,
+course ID, allowed tool families, expiry, and a unique token ID. Signing lets
+PrairieLearn reject altered claims without a database lookup; short expiry and
+revocation limit damage if a token is captured. PrairieLearn still recomputes
+the user's current authorization on every consequential call. The Worker may
+exchange the run token for a per-call token; the sandbox never gets the
 PrairieLearn session cookie or a reusable database credential.
 
 ### Cloudflare Worker and Durable Object
@@ -102,10 +120,14 @@ Build a pinned image containing Node, Git, the Claude Code CLI, the course
 authoring dependencies needed for static checks, and a small bootstrap program.
 At run start the Worker:
 
-1. obtains the current course repository ref and creates `pl-agent/<course>/<run>`;
+1. obtains the authorized repository URL and exact base ref from PrairieLearn;
 2. creates or resumes a sandbox identified by run ID;
-3. checks out that exact branch/commit under `/workspace/course`;
-4. writes an MCP configuration that points to the remote PrairieLearn tool API;
+3. attaches a read-only GitHub outbound handler, clones the course directly
+   under the stable path `/workspace/course`, creates
+   `pl-agent/<course>/<run>` from the authorized base commit, and durably uploads
+   and verifies the baseline Git bundle before model execution begins;
+4. starts a local MCP adapter whose tool implementations call the remote,
+   authenticated PrairieLearn tool API;
 5. launches Claude Code with an explicit allowed-tool policy and a bounded turn,
    cost, and wall-time budget; and
 6. streams structured harness output back through the Worker as run events.
@@ -132,16 +154,59 @@ The initial production tools should map the POC into four classes:
 | Preview | render question                                                          | Materializes one draft revision and renders one variant through PrairieLearn's preview path.    |
 | Apply   | sync course, publish, enroll, regrade, grade, change access control      | Requires a policy decision and often instructor approval; runs as an auditable, idempotent job. |
 
-`query_course_data` remains useful, but is not a general database credential.
-It must run in a read-only transaction through a dedicated database role, with
-course predicates injected by the server rather than trusted from agent SQL. For
-the most sensitive data, prefer named report operations over arbitrary SQL.
+### Arbitrary read queries
 
-File operations should use a server-side Git workspace or GitHub API and return
-the resulting commit SHA. The sandbox can edit its checkout for the harness,
-but the server validates the expected base ref and records the new commit before
-calling `sync_course`. An agent may prepare a pull request; the instructor or a
-policy-approved automation applies the content to the live course.
+Keep one general-purpose `query_course_data` tool rather than creating one tool
+per table or report. The model supplies one arbitrary SQL query and receives
+column names, structured rows, a row count, and a truncation flag. It may use the
+result in subsequent reasoning or scripts inside the sandbox.
+
+The tool is _presented_ locally to Claude by the sandbox MCP adapter, but its
+trusted implementation runs in PrairieLearn. The adapter forwards the SQL over
+authenticated HTTPS; the sandbox receives neither a Postgres connection string
+nor the PrairieLearn application database role. PrairieLearn executes the query
+in a read-only transaction with a dedicated query role, one-statement parsing,
+statement and lock timeouts, bounded rows and bytes, restricted concurrency,
+and a complete audit event. Keyword scanning may improve error messages but is
+not a security boundary.
+
+Read-only execution prevents mutation but does not prevent the query from
+reading another course. Production use therefore requires a deterministic
+database-enforced or query-engine-enforced row-scope mechanism. PrairieLearn
+currently uses neither application database views nor row-level security, so do
+not silently introduce a permanent view hierarchy or claim that the POC's
+read-only transaction is sufficient. Before enabling this tool outside local
+development, choose and threat-model one of:
+
+- policies for a dedicated query role that enforce course and course-instance
+  scope from an unforgeable run context;
+- a real SQL parser/compiler that exposes an allowlisted relational catalog and
+  inserts trusted scopes; or
+- a narrower structured-query surface backed by existing parameterized model
+  queries if arbitrary SQL cannot be secured without an alien database pattern.
+
+The release gate is behavioral, not architectural preference: fixtures with two
+courses and differently privileged instructors must prove that no accepted SQL
+can return rows or sensitive columns unavailable to the calling instructor.
+Writes, grades, enrollment, and access-control changes remain separate typed and
+audited tools regardless of the read-query design.
+
+The sandbox edits and commits its local checkout with normal Git and Bash. The
+Git credential remains in the Worker runtime and is added to Git HTTPS requests
+by an outbound handler, so it cannot be read from the sandbox environment,
+process list, filesystem, or remote URL. Normal runs receive clone/fetch access
+only.
+
+Publication requires a signed, single-use capability from PrairieLearn bound to
+the repository, agent branch, approved commit SHA, operation ID, and a short
+expiry. The Worker pauses the Claude harness, verifies the local head, enables
+the write handler only for the controlled push, and removes it in a `finally`
+block. A separate, model-free publisher sandbox is the preferred production
+hardening so no untrusted process shares the write window. PrairieLearn verifies
+the remote head and uses its existing GitHub API machinery to create the draft
+pull request. The instructor or a separately approved automation merges it;
+PrairieLearn then uses its existing course sync path to apply the merged content
+to the live course.
 
 ### Single-variant question preview
 
@@ -170,7 +235,43 @@ correct/incorrect/invalid submissions, grade them, or claim statistical
 coverage. Those behaviors belong in opt-in validation or CI if they are ever
 needed, not in the normal agent conversation.
 
-## Durability and Git
+## Conversation and workspace durability
+
+There are three related but distinct kinds of state:
+
+| State                                                                                               | Durable authority                                                                               |
+| --------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| User/assistant messages, normalized tool calls and results, approvals, operations, and audit events | PrairieLearn Postgres                                                                           |
+| Claude Code's provider-specific resumable transcript and subagent transcripts                       | R2 through an Agent SDK `SessionStore` adapter                                                  |
+| Course files and Git objects                                                                        | GitHub for published content; immutable R2 Git bundles for unpublished conversation checkpoints |
+
+Claude Code normally writes its transcript under `~/.claude/projects` in the
+container. Capture the session ID from the harness result, record it on the
+PrairieLearn run, and configure the Agent SDK with a custom `SessionStore`.
+The adapter addresses immutable R2 parts by stable project key, conversation,
+session ID, subpath, and sequence. A Worker internal-host handler exposes
+`append`, `load`, `listSubkeys`, and `delete` using an R2 binding; the sandbox
+receives no R2 credential. Serialize appends through the conversation Durable
+Object and deduplicate retried entries by their UUID.
+
+On restart, restore the repository at the stable `/workspace/course` path,
+attach the same session store, and launch the harness with
+`resume: <claude_session_id>`. Claude receives its prior prompt, tool calls,
+tool results, responses, and compacted context; the new user message need not
+replay the entire conversation. The Postgres event log remains the canonical UI
+and audit history and can seed a new provider session if the Claude-specific
+transcript cannot be resumed.
+
+Agent SDK session mirroring is best-effort. Treat its `mirror_error` event as a
+failed durability checkpoint: do not acknowledge the turn as durably complete
+or allow sandbox eviction until the bootstrap has retried or exported the local
+transcript successfully. Transcript objects follow the same retention rule as
+the conversation's Git bundles and are deleted only when the user explicitly
+deletes the conversation. Because transcripts may contain instructor-visible
+student data, apply the same encryption, residency, access logging, and deletion
+policy as other agent artifacts.
+
+### Git checkpoints
 
 Cloudflare Sandboxes retain state only while their container is active. After
 the default idle period, a new container starts with an empty filesystem. Their
@@ -184,23 +285,26 @@ consistency guarantees.
 
 Use this recovery protocol instead:
 
-1. After each meaningful edit or render checkpoint, commit the working tree and
-   create a self-contained Git bundle for the conversation head. Upload it to
-   an immutable R2 key, verify its checksum, and only then atomically advance
-   `{conversation, branch, head_sha, bundle_key}` in Postgres.
-2. Retain the conversation's checkpoint bundles without a TTL until the user
+1. After the initial direct GitHub clone, upload one complete baseline bundle to
+   R2. This preserves the authorized base even if GitHub becomes unavailable.
+2. After each meaningful edit or render checkpoint, commit the working tree and
+   upload an incremental bundle containing objects since the prior checkpoint.
+   Periodically compact the chain into a new complete bundle. Verify checksums
+   before atomically advancing
+   `{conversation, branch, head_sha, bundle_keys}` in Postgres.
+3. Retain the conversation's checkpoint bundles without a TTL until the user
    explicitly deletes the conversation. R2 is immutable checkpoint transport,
    not a filesystem on which Git executes.
-3. On a sandbox restart, download the latest bundle, verify it, and clone or
-   fetch it into the sandbox's normal local filesystem. Reconstruct harness
-   context from the event log and poll incomplete PrairieLearn operations by
-   their idempotency key.
-4. Publishing remains a distinct operation. Push the proposed commit to the
+4. On a sandbox restart, download and verify the baseline plus incremental
+   bundles and restore them into the sandbox's normal local filesystem. Resume
+   the Claude transcript from its R2 session store and poll incomplete
+   PrairieLearn operations by their idempotency key.
+5. Publishing remains a distinct operation. Push the proposed commit to the
    configured GitHub repository with an expected remote head, then use
    PrairieLearn's existing course application/sync path. If GitHub is down, the
    conversation remains safely checkpointed and may continue drafting, but the
    publish operation is blocked or retryable and must not report success.
-5. Optionally retain a Cloudflare `createBackup()` snapshot between adjacent
+6. Optionally retain a Cloudflare `createBackup()` snapshot between adjacent
    turns to avoid re-installing dependencies. Treat it only as a cache: validate
    the Git head after restore and fall back to the R2 bundle if it fails.
 
@@ -210,23 +314,38 @@ an explicit dependency, while sandbox recovery is not.
 
 ## Credentials and network policy
 
-The sandbox should begin with `enableInternet: false` (or an equivalent
-allowlist). Permit only required hosts: the PrairieLearn agent API, GitHub, the
-model endpoint, package registries during controlled setup, and explicitly
-approved source-material hosts.
+The sandbox begins with `enableInternet: false` and a deny-by-default host
+allowlist. Permit only the PrairieLearn agent API, the exact GitHub hosts needed
+by Git HTTPS, the model endpoint, package registries during controlled setup,
+and explicitly approved source-material hosts.
 
-Cloudflare outbound handlers can attach secrets in the Worker runtime while the
-sandbox makes a normal request, so use them for the GitHub App installation
-token and Anthropic API key. Scope credentials by sandbox/run ID, operation,
-and expiry; remove the GitHub write handler except during an explicit commit or
-push. Do not pass a personal access token, a PrairieLearn database credential,
-or the instructor's session into the container.
+PrairieLearn already uses platform-owned GitHub credentials and course
+repository configuration; instructors do not connect GitHub and must not supply
+a token. For the MVP, configure the Worker with a deployment-managed HTTPS Git
+credential representing that same PrairieLearn machine identity. Store it as a
+Worker secret, never in Wrangler configuration or a sandbox environment. This
+uses HTTPS rather than PrairieLearn's current SSH Git transport because
+Cloudflare outbound handlers intercept HTTP and HTTPS, not SSH.
 
-Use a GitHub App with per-organization/repository installation permissions:
-read-only for baseline checkout, contents/pull-request write only for the
-agent's branch, and no organization-wide administration. The Worker must
-validate the requested repository against the course record before enabling the
-handler.
+The Git handler validates the container/run mapping and exact course repository,
+and injects authorization only for the allowed Git smart-HTTP endpoints. Normal
+operation permits upload-pack for clone/fetch. Receive-pack is installed only
+after PrairieLearn supplies the single-use publication capability and is
+removed immediately after the controlled push. PrairieLearn's existing GitHub
+client performs repository administration and draft-PR creation. A future
+internal migration from a long-lived machine token to short-lived GitHub App
+installation tokens would reduce blast radius but would be invisible to
+instructors and is not an MVP dependency.
+
+Use the same outbound-handler pattern for the Anthropic API key and the
+PrairieLearn run credential. The sandbox receives neither secret, a Postgres
+connection string, nor the instructor's session cookie. Tool and Git policies
+may change at runtime without restarting the sandbox.
+
+This path also keeps bulk course traffic away from PrairieLearn: baseline Git
+objects move directly from GitHub to the sandbox, and recovery objects move
+directly between the sandbox and R2. PrairieLearn receives bounded tool payloads,
+events, approval records, preview inputs, and checkpoint metadata.
 
 ## Conversation UI
 
@@ -253,6 +372,77 @@ request -> plan -> draft branch edits -> checkpoint -> render one preview
         -> revise if needed -> summarize -> approval -> publish through GitHub
 ```
 
+### Example nontrivial workflow
+
+Suppose an instructor asks: "Analyze performance on last semester's homework,
+identify weak topics, and add three targeted practice questions to next
+semester's course instance."
+
+1. PrairieLearn checks that the instructor can read the requested historical
+   course instance and edit the destination course. It creates a conversation,
+   run, and read/draft capability. The Worker records the lease in the
+   conversation Durable Object, attaches read-only Git and model outbound
+   handlers, and directly clones the destination course from GitHub.
+2. Claude calls `query_course_data` with a query such as:
+
+   ```sql
+   SELECT
+     a.title,
+     count(*) AS attempts,
+     avg(ai.score_perc) AS mean_score_perc
+   FROM
+     assessments AS a
+     JOIN assessment_instances AS ai ON ai.assessment_id = a.id
+   WHERE
+     a.course_instance_id = 123
+     AND ai.include_in_statistics
+   GROUP BY
+     a.id,
+     a.title
+   ORDER BY
+     mean_score_perc
+   ```
+
+   The SQL is illustrative; the query engine must independently enforce that
+   `123` and every returned row are in the instructor's authorized scope even
+   if the model omits or tampers with that predicate. PrairieLearn executes one
+   read-only, time/row/byte-bounded statement and returns structured rows. No
+   database or database credential is copied into the sandbox.
+
+3. Claude can use Bash and local scripts to analyze those returned rows, inspect
+   the course's existing question conventions, and draft three new question
+   directories plus the course-instance configuration changes. Bash operates
+   only on sandbox files and already-returned data; database access still goes
+   through the one audited query tool.
+4. Claude commits the draft and uploads a baseline or incremental Git bundle to
+   R2. The Agent SDK mirrors its transcript to the R2 session store. Only after
+   both checkpoints succeed does PrairieLearn record the new head as durable.
+5. Claude calls `render_question` once for the first question. PrairieLearn
+   materializes that checkpoint as a draft and renders exactly one variant
+   through the existing instructor-preview path. Claude receives the seed and
+   structured issues, fixes an invalid element attribute, checkpoints, and
+   renders one replacement variant. It repeats the single-preview loop for the
+   other questions rather than generating a bulk variant suite.
+6. The instructor closes the browser and returns the next day after the sandbox
+   has been evicted. The Worker starts a new sandbox, restores the Git baseline
+   and incremental bundles at `/workspace/course`, loads the Claude transcript
+   from the R2 `SessionStore`, and resumes the recorded session ID. The UI is
+   reconstructed from Postgres. The recovery target for an ordinary course is
+   under one minute at p95, with a cold-path target under two minutes; these are
+   product SLOs to measure, not Cloudflare guarantees.
+7. Claude summarizes the analysis, changed files, preview results, and exact
+   commit. The instructor clicks **Create draft pull request**. PrairieLearn
+   issues a one-use capability for that repository, agent branch, and SHA. The
+   trusted publisher pushes through the credential-injecting Worker handler,
+   PrairieLearn verifies the remote SHA, and its existing GitHub client creates
+   the draft PR. A failure at any point is retryable and never reports a PR that
+   does not exist.
+8. After review and merge, PrairieLearn uses its existing course sync flow to
+   import the merged repository state. Until that merge and sync, the questions
+   remain drafts and cannot affect students. If GitHub is unavailable, analysis,
+   editing, previews, and R2 checkpoints can continue; push, PR creation, and
+   publication remain blocked for the MVP.
+
 Imports, regrades, and other expensive work should be asynchronous jobs. Return
 a job ID immediately, stream its logs, and let the harness poll `get_job_output`
 or receive a completion event. `render_question` is deliberately bounded to one
@@ -265,19 +455,125 @@ run delegates immutable tasks with scoped capabilities and merges their Git
 branches or artifacts through a reviewer step. The delegate never inherits a
 broader course or student-data scope merely because it is a subagent.
 
+## Local implementation and verification
+
+The MVP must be runnable and testable on one development machine. Local mode
+uses the real PrairieLearn application, Postgres, Worker code, Durable Objects,
+R2 bindings, Sandbox container image, Git CLI, MCP adapter, signed-capability
+path, and browser UI. Only the model provider and GitHub service are replaced by
+deterministic local fakes in the default test path.
+
+### Proposed repository layout
+
+- Keep the PrairieLearn conversation page, tRPC procedures, external agent API,
+  models, migrations, tool implementations, previews, jobs, and audits under
+  `apps/prairielearn`.
+- Add a small `apps/agent-worker` application containing the Worker entrypoint,
+  conversation Durable Object, Sandbox class, outbound handlers, R2 transcript
+  store, harness bootstrap, `wrangler.jsonc`, and pinned Sandbox Dockerfile.
+- Keep shared wire schemas in a narrowly scoped package only if both
+  applications need to compile against them; do not move PrairieLearn policy or
+  database models into the Worker.
+- Add local fixture services for an authenticated Git smart-HTTP remote and the
+  minimal GitHub REST calls needed to record draft PRs. Both operate on a local
+  bare repository and reject missing or incorrect injected credentials.
+
+### Local topology and commands
+
+Wrangler local development runs the Worker, Durable Objects, and R2 emulation;
+Docker runs the Sandbox container and local Git/model fixtures. PrairieLearn
+runs normally against the existing local Postgres, Redis, and S3-compatible
+support services.
+
+Add two top-level developer entrypoints:
+
+- `make dev-agent`: starts or verifies PrairieLearn support services, the local
+  Git and deterministic-model fixtures, PrairieLearn, and
+  `wrangler dev --local --persist-to <repo-local-state-directory>`. It prints
+  the conversation URL, service health, ports, and paths to local Wrangler
+  state. Docker and Wrangler are the only additional runtime prerequisites.
+- `make test-agent`: builds the Sandbox image and runs the deterministic unit,
+  integration, Worker, and end-to-end acceptance suites. It must require no
+  Cloudflare, GitHub, or Anthropic account and must leave failure logs and
+  sandbox output at a printed path.
+
+Use `.dev.vars` for optional local secrets and keep it ignored. A checked-in
+`.dev.vars.example` documents variables without values. Local development must
+not add an authentication bypass: test runs obtain the same signed run and
+publication capabilities as production. An optional `make smoke-agent-live`
+may use real Anthropic and GitHub credentials for manual compatibility testing,
+but it is neither required for implementation nor a substitute for the local
+suite.
+
+The deterministic harness fixture implements the same streaming contract as
+the Claude harness and executes a scripted sequence of MCP calls and Bash/file
+operations. This makes recovery, cancellation, approval, and failure tests
+repeatable and free. A separate adapter contract test runs the actual Claude
+Code bootstrap without making a paid model request, verifying its arguments,
+stable working directory, tool configuration, outbound policy, session ID
+capture, and `SessionStore` wiring.
+
+### Test layers
+
+1. **Pure unit tests:** capability signing, expiry, audience and repository
+   binding; operation idempotency; event folding; SQL statement classification
+   and limits; Git bundle creation/checksums/chains; outbound Git endpoint
+   allowlisting; and transcript-part ordering and deduplication.
+2. **PrairieLearn integration tests:** normal course authorization; read-query
+   timeout, size, and write rejection; audit events in the mutation transaction;
+   preview materialization; exactly one `getAndRenderVariant()` invocation per
+   `render_question`; publication approval; and remote-head verification.
+3. **Worker tests:** use Cloudflare's Vitest integration with local Durable
+   Object and R2 bindings to test one-turn leases, reconnects, cancellation,
+   session-store append/load/delete, sandbox-ID recovery, outbound policy
+   transitions, and one-use publication capabilities.
+4. **Container contract tests:** run the pinned image with Docker, assert that
+   the harness can use Git and Bash, cannot read injected secrets, cannot reach
+   denied hosts or PrairieLearn's database, and can call only the allowed MCP
+   adapter and Git smart-HTTP endpoints.
+5. **Playwright acceptance test:** create a conversation through the real
+   PrairieLearn UI, stream a deterministic agent turn, query fixture course
+   data, edit and commit a question, render one preview, and checkpoint the Git
+   and Claude state. Destroy the Sandbox container and Worker process, restart
+   Wrangler against its persisted local state, resume the same session and Git
+   SHA, approve publication, push to the authenticated local Git server, and
+   observe a draft-PR record. Finally delete the conversation and assert that
+   its Postgres records are tombstoned as required and its R2 transcript and Git
+   objects are removed.
+
+The cross-course query test is a release gate. Seed two courses and multiple
+roles, then exercise nested subqueries, joins, CTEs, functions, and deliberately
+misleading predicates. No accepted query may return a row or sensitive column
+outside the effective instructor's scope. If the arbitrary-SQL design cannot
+pass this test, ship the narrower structured-query surface instead.
+
+Local R2 tests use direct binding `put`, `get`, `list`, and `delete` calls, not
+an R2 filesystem mount. Sandbox backup/restore is only a performance cache and
+is not required to pass locally; the authoritative recovery acceptance test
+always destroys the sandbox and restores from Git bundles plus the transcript
+store. A small staging smoke test can later cover Cloudflare-specific scheduling,
+real outbound TLS interception, and the optional Sandbox backup API, but no core
+correctness claim may depend on it.
+
 ## Suggested delivery plan
 
-1. **Foundation:** schema, audit/event model, course-scoped read tools, remote
-   MCP adapter, and a minimal SSE conversation UI. No automated writes.
-2. **Draft authoring:** GitHub App integration, disposable sandbox checkout,
-   R2 Git-bundle checkpointing, draft-only course-file edits, single-variant
-   question previews, and PR creation.
-3. **Guarded apply:** instructor approval cards and idempotent implementations
+1. **Local spine:** `apps/agent-worker`, Wrangler/Docker orchestration,
+   deterministic harness and Git fixtures, signed-capability round trip, R2 and
+   Durable Object bindings, and the recovery acceptance test.
+2. **Foundation:** PrairieLearn schema, audit/event model, remote MCP adapter,
+   course-scoped read tools, and a minimal SSE conversation UI. No automated
+   writes; arbitrary SQL remains development-only until its isolation gate
+   passes.
+3. **Draft authoring:** direct credential-injected Git checkout, R2 Claude
+   session and Git checkpointing, draft-only course-file edits, single-variant
+   question previews, controlled branch push, and draft-PR creation through
+   PrairieLearn's existing GitHub client.
+4. **Guarded apply:** instructor approval cards and idempotent implementations
    for selected content operations. Keep grades, enrollment, and access control
    read-only initially.
-4. **Operations and grading:** add the higher-risk tool families one at a time,
+5. **Operations and grading:** add the higher-risk tool families one at a time,
    with separate permissions, audit views, and evaluation suites.
-5. **Scale and evaluation:** task fixtures, deterministic replay, model/tool
+6. **Scale and evaluation:** task fixtures, deterministic replay, model/tool
    evaluations, queues, per-institution budgets, and an agent rendering fleet
    if production measurements justify it.
 
@@ -287,8 +583,10 @@ broader course or student-data scope merely because it is a subagent.
   Cloudflare Tunnel/private connectivity, or a dedicated agent gateway? The
   choice must satisfy data residency and latency requirements before exposing
   student data outside the current deployment boundary.
-- Who owns the GitHub App installation: PrairieLearn centrally, each
-  institution, or each course repository owner?
+- Can arbitrary instructor SQL be given a simple, deterministic row- and
+  column-scope boundary that fits PrairieLearn's database conventions? The MVP
+  must keep it development-only or fall back to structured queries until the
+  cross-course isolation suite passes.
 - How should agents continue publishing if GitHub is unavailable? The MVP does
   not solve this: GitHub remains required for publication. Cloudflare Artifacts,
   a second managed Git remote, or a PrairieLearn-owned content store would each
@@ -310,3 +608,13 @@ broader course or student-data scope merely because it is a subagent.
 - [Cloudflare Sandbox outbound traffic and credential injection](https://developers.cloudflare.com/sandbox/guides/outbound-traffic/)
 - [Cloudflare Sandbox Git workflows](https://developers.cloudflare.com/sandbox/guides/git-workflows/)
 - [Cloudflare tutorial: run Claude Code on a Sandbox](https://developers.cloudflare.com/sandbox/tutorials/claude-code/)
+- [Cloudflare local development](https://developers.cloudflare.com/workers/local-development/)
+- [Cloudflare local persistence](https://developers.cloudflare.com/workers/local-development/local-data/)
+- [Cloudflare Sandbox Wrangler configuration](https://developers.cloudflare.com/sandbox/configuration/wrangler/)
+- [Cloudflare Containers local development](https://developers.cloudflare.com/containers/local-dev/)
+- [Cloudflare Workers Vitest integration](https://developers.cloudflare.com/workers/testing/vitest-integration/)
+- [Cloudflare Worker secrets](https://developers.cloudflare.com/workers/configuration/secrets/)
+- [Claude Agent SDK sessions](https://code.claude.com/docs/en/agent-sdk/sessions)
+- [Claude Agent SDK external session storage](https://code.claude.com/docs/en/agent-sdk/session-storage)
+- [AI SDK Claude Code harness](https://ai-sdk.dev/providers/ai-sdk-harnesses/claude-code)
+- [PrairieLearn course-content sync](../sync.md)
