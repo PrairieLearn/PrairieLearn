@@ -56,6 +56,8 @@ dev-bun: python-deps
 	@pnpm dev-bun
 dev-workspace-host: start-support
 	@pnpm dev-workspace-host
+dev-agent-worker:
+	@pnpm dev-agent-worker
 dev-all:
 	@$(MAKE) -s -j2 dev dev-workspace-host
 
@@ -159,7 +161,7 @@ lint-markdown:
 lint-links:
 	@node scripts/validate-links.mjs
 lint-docker:
-	@hadolint ./graders/**/Dockerfile ./workspaces/**/Dockerfile ./images/**/Dockerfile Dockerfile
+	@hadolint ./apps/agent-worker/Dockerfile ./graders/**/Dockerfile ./workspaces/**/Dockerfile ./images/**/Dockerfile Dockerfile
 lint-shell:
 	@shellcheck -S warning $(shell find . -type f -name "*.sh" ! -path "./node_modules/*" ! -path "./.venv/*" ! -path "./testCourse/*")
 lint-sql:

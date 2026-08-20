@@ -189,6 +189,10 @@ const config: KnipConfig = {
     'apps/grader-host': {
       project: ['**/*.{ts,cts,mts,tsx}'],
     },
+    'apps/agent-worker': {
+      ignoreDependencies: ['cloudflare'],
+      project: ['**/*.{ts,cts,mts,tsx}'],
+    },
     'packages/*': {
       project: ['**/*.{ts,cts,mts,tsx}'],
     },

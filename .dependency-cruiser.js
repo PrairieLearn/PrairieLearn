@@ -43,7 +43,7 @@ module.exports = {
       comment: "Depends on a module that cannot be found ('resolved to disk').",
       severity: 'error',
       from: {},
-      to: { couldNotResolve: true },
+      to: { couldNotResolve: true, pathNot: ['^cloudflare:'] },
     },
     {
       name: 'no-duplicate-dep-types',

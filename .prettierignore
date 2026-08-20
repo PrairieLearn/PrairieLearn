@@ -15,6 +15,9 @@ apps/*/dist/
 apps/prairielearn/public/build/
 packages/*/dist/
 
+# Wrangler-generated Worker runtime declarations
+apps/agent-worker/worker-configuration.d.ts
+
 # Built assets
 apps/prairielearn/public/build/
 
