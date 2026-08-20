@@ -21,7 +21,7 @@ import { gradeVariant, saveSubmission } from './grading.js';
 import { writeCourseIssues } from './issues.js';
 import { getAndRenderVariant } from './question-render.js';
 import { ensureVariant, getQuestionCourse } from './question-variant.js';
-import { type ServerJob, createServerJob } from './server-jobs.js';
+import { type ServerJobLogger, createServerJob } from './server-jobs.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
@@ -151,6 +151,43 @@ interface TestQuestionResults {
 
 export const TEST_TYPES = ['correct', 'incorrect', 'invalid'] as const;
 export type TestType = (typeof TEST_TYPES)[number];
+
+/**
+ * Upper bound on a variant seed's numeric value. `zygote.py` passes the seed to
+ * `np.random.seed()`, which rejects anything outside `[0, 2**32 - 1]`; exceeding
+ * it kills the Python worker rather than producing a useful error.
+ */
+const MAX_VARIANT_SEED = 2 ** 32 - 1;
+
+/** 32-bit FNV-1a. Deterministic across processes, unlike `Math.random`. */
+function hash32(value: string): number {
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < value.length; i++) {
+    hash ^= value.charCodeAt(i);
+    // `Math.imul` keeps the multiply in 32-bit range.
+    hash = Math.imul(hash, 0x01000193);
+  }
+  return hash >>> 0;
+}
+
+/**
+ * Builds a deterministic variant seed for a test iteration.
+ *
+ * Two constraints make this less obvious than it looks. Seeds reach Python via
+ * `Number.parseInt(variant_seed, 36)`, so any character outside `[0-9a-z]`
+ * terminates the parse — meaning a naive `${prefix}-${iteration}` collapses every
+ * iteration onto the same numeric seed and silently reduces a multi-variant run
+ * to repeated tests of one variant. And the parsed value must stay within
+ * {@link MAX_VARIANT_SEED} or the Python worker dies.
+ *
+ * So we hash the prefix into a 32-bit value, offset it by the iteration, and
+ * render the result in base 36. That round-trips exactly through `parseInt`,
+ * varies per iteration, and is always in range.
+ */
+export function buildVariantSeed(prefix: string, iteration: number): string {
+  const seed = (hash32(prefix) + iteration) % (MAX_VARIANT_SEED + 1);
+  return seed.toString(36);
+}
 
 export function questionSupportsTesting(question: Question): boolean {
   return questionServers.getModule(question.type).test != null;
@@ -508,8 +545,8 @@ async function runTest({
   authn_user_id,
   variant_seed,
 }: {
-  /** The server job to run within. */
-  logger: ServerJob;
+  /** Receives progress output. A `ServerJob` satisfies this. */
+  logger: ServerJobLogger;
   /** Whether to display test data details. */
   showDetails: boolean;
   /** The question for the variant. */
@@ -526,7 +563,7 @@ async function runTest({
   authn_user_id: string;
   /** Optional seed for the variant. */
   variant_seed?: string;
-}): Promise<{ success: boolean; stats: TestResultStats }> {
+}): Promise<{ success: boolean; stats: TestResultStats; variant: Variant; issueCount: number }> {
   logger.verbose('Testing ' + question.qid);
   const { variant, expectedTestData, submission, stats } = await testQuestion({
     question,
@@ -585,7 +622,106 @@ async function runTest({
     logger.verbose('Success: no issues during test');
   }
 
-  return { success: issueCount === 0, stats };
+  return { success: issueCount === 0, stats, variant, issueCount };
+}
+
+/** A single test iteration, as returned by {@link runQuestionTests}. */
+export interface QuestionTestResult {
+  testType: TestType;
+  /** The seed used, so a failure can be reproduced exactly. */
+  variantSeed: string;
+  success: boolean;
+  /** Generated parameters for this variant. */
+  params: Record<string, any> | null;
+  /** The correct answer for this variant. */
+  trueAnswer: Record<string, any> | null;
+  /** Set when the question's code raised during generate, render, or grade. */
+  brokenAt: Date | null;
+  issues: {
+    studentMessage: string | null;
+    instructorMessage: string | null;
+    /** Combined stdout/stderr from the failing Python code, when available. */
+    output: string | null;
+  }[];
+  durations: TestResultStats;
+}
+
+/**
+ * Runs a question's test cycle and returns structured results, rather than
+ * writing them to a server job's log. Intended for programmatic callers that
+ * need to act on the outcome — see `src/mcp/tools/test-question.ts`.
+ *
+ * Like {@link startTestQuestion}, this runs each of `correct`, `incorrect`, and
+ * `invalid` `count` times, and inserts issues into the `issues` table.
+ */
+export async function runQuestionTests({
+  question,
+  course,
+  course_instance = null,
+  count,
+  user_id,
+  authn_user_id,
+  variantSeedPrefix,
+  logger = { error() {}, warn() {}, info() {}, verbose() {} },
+}: {
+  question: Question;
+  course: Course;
+  course_instance?: CourseInstance | null;
+  /** Number of iterations of each test type. */
+  count: number;
+  user_id: string;
+  authn_user_id: string;
+  /** Makes seeds deterministic as `{prefix}-{iteration}`. */
+  variantSeedPrefix?: string;
+  logger?: ServerJobLogger;
+}): Promise<QuestionTestResult[]> {
+  const results: QuestionTestResult[] = [];
+
+  for (const iter of range(count * TEST_TYPES.length)) {
+    const test_type = TEST_TYPES[iter % TEST_TYPES.length];
+    const variant_seed = variantSeedPrefix ? buildVariantSeed(variantSeedPrefix, iter) : undefined;
+
+    const { success, stats, variant } = await runTest({
+      logger,
+      showDetails: false,
+      question,
+      course_instance,
+      course,
+      test_type,
+      user_id,
+      authn_user_id,
+      variant_seed,
+    });
+
+    const issues = success
+      ? []
+      : await sqldb.queryRows(
+          sql.select_issues_for_variant,
+          { variant_id: variant.id },
+          z.object({
+            student_message: z.string().nullable(),
+            instructor_message: z.string().nullable(),
+            output: z.string().nullable(),
+          }),
+        );
+
+    results.push({
+      testType: test_type,
+      variantSeed: variant.variant_seed,
+      success,
+      params: variant.params,
+      trueAnswer: variant.true_answer,
+      brokenAt: variant.broken_at,
+      issues: issues.map((issue) => ({
+        studentMessage: issue.student_message,
+        instructorMessage: issue.instructor_message,
+        output: issue.output,
+      })),
+      durations: stats,
+    });
+  }
+
+  return results;
 }
 
 /**
@@ -618,9 +754,9 @@ export async function startTestQuestion({
   /** The currently authenticated user. */
   authn_user_id: string;
   /**
-   * Optional prefix for variant seeds. When provided, seeds will be generated
-   * deterministically as `{prefix}-{iteration}` for each test iteration. This
-   * ensures reproducible tests while still testing different variants.
+   * Optional prefix for variant seeds. When provided, each test iteration gets a
+   * deterministic seed derived from the prefix via {@link buildVariantSeed}, so
+   * runs are reproducible while still exercising different variants.
    */
   variantSeedPrefix?: string;
 }): Promise<string> {
@@ -641,7 +777,9 @@ export async function startTestQuestion({
       const type = TEST_TYPES[iter % TEST_TYPES.length];
       const testIterationIndex = Math.floor(iter / TEST_TYPES.length) + 1;
       // Generate a deterministic seed if a prefix was provided, otherwise let the system generate a random one
-      const variant_seed = variantSeedPrefix ? `${variantSeedPrefix}-${iter}` : undefined;
+      const variant_seed = variantSeedPrefix
+        ? buildVariantSeed(variantSeedPrefix, iter)
+        : undefined;
       job.verbose(`Test ${testIterationIndex}, type ${type}`);
       const result = await runTest({
         logger: job,

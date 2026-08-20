@@ -175,7 +175,12 @@ export default [
     },
   },
   {
-    files: ['apps/prairielearn/src/tests/**/*', 'scripts/**/*', 'contrib/**/*'],
+    files: [
+      'apps/prairielearn/src/tests/**/*',
+      'apps/prairielearn/src/mcp/scripts/**/*',
+      'scripts/**/*',
+      'contrib/**/*',
+    ],
     rules: {
       'no-console': 'off',
     },

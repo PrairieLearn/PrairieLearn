@@ -72,6 +72,10 @@ module.exports = {
           '.(spec|test).(js|jsx|mjs|cjs|ts|tsx|ls|coffee|litcoffee|coffee.md)$',
           'src/tests/',
           'src/ee/tests/',
+          // The agent MCP server is a local development tool. Its SDK is
+          // deliberately a devDependency so it never ships to production.
+          'src/mcp/',
+          'src/mcp-server[.]ts$',
           '[.]d[.]ts$',
           'test-utils[.]ts$',
         ],
