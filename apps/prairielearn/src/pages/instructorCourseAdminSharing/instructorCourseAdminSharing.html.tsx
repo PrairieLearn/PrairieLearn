@@ -25,7 +25,6 @@ interface InstructorCourseAdminSharingProps {
   origHash: string;
   courseId: string;
   trpcCsrfToken: string;
-  isDevMode: boolean;
 }
 
 export function InstructorCourseAdminSharing(props: InstructorCourseAdminSharingProps) {
@@ -38,7 +37,7 @@ export function InstructorCourseAdminSharing(props: InstructorCourseAdminSharing
   );
 
   return (
-    <QueryClientProviderDebug client={queryClient} isDevMode={props.isDevMode}>
+    <QueryClientProviderDebug client={queryClient}>
       <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
         <InstructorCourseAdminSharingInner {...props} />
       </TRPCProvider>

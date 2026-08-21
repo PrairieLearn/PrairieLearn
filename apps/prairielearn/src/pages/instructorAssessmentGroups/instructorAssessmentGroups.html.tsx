@@ -112,7 +112,6 @@ interface InstructorAssessmentGroupsProps {
   groups?: GroupUsersRow[];
   notAssigned?: string[];
   trpcCsrfToken: string;
-  isDevMode: boolean;
   origHash: string | null;
   groupSettingsDefaults: GroupSettingsFormValues | null;
   hasAssessmentInstances: boolean;
@@ -129,7 +128,6 @@ export function InstructorAssessmentGroups({
   groups,
   notAssigned,
   trpcCsrfToken,
-  isDevMode,
   origHash,
   groupSettingsDefaults,
   hasAssessmentInstances,
@@ -144,7 +142,7 @@ export function InstructorAssessmentGroups({
   );
 
   return (
-    <QueryClientProviderDebug client={queryClient} isDevMode={isDevMode}>
+    <QueryClientProviderDebug client={queryClient}>
       <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
         <InstructorAssessmentGroupsInner
           courseInstanceId={courseInstanceId}
@@ -180,7 +178,7 @@ function InstructorAssessmentGroupsInner({
   origHash: initialOrigHash,
   groupSettingsDefaults: initialGroupSettingsDefaults,
   hasAssessmentInstances,
-}: Omit<InstructorAssessmentGroupsProps, 'trpcCsrfToken' | 'isDevMode'>) {
+}: Omit<InstructorAssessmentGroupsProps, 'trpcCsrfToken'>) {
   const [groupConfigInfo, setGroupConfigInfo] = useState(initialGroupConfigInfo);
   const [groupSettingsDefaults, setGroupSettingsDefaults] = useState(initialGroupSettingsDefaults);
   const [origHash, setOrigHash] = useState(initialOrigHash);

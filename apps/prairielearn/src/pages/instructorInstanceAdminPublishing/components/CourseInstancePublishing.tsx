@@ -22,7 +22,6 @@ export function CourseInstancePublishing({
   csrfToken,
   origHash,
   extensions,
-  isDevMode,
 }: {
   courseInstance: StaffCourseInstance;
   canEditPublishing: boolean;
@@ -31,7 +30,6 @@ export function CourseInstancePublishing({
   csrfToken: string;
   origHash: string | null;
   extensions: CourseInstancePublishingExtensionRow[];
-  isDevMode: boolean;
 }) {
   const [queryClient] = useState(() => new QueryClient());
 
@@ -99,7 +97,7 @@ export function CourseInstancePublishing({
         {startDate && (
           <>
             <hr className="my-4" />
-            <QueryClientProviderDebug client={queryClient} isDevMode={isDevMode}>
+            <QueryClientProviderDebug client={queryClient}>
               <PublishingExtensions
                 courseInstance={courseInstance}
                 initialExtensions={extensions}

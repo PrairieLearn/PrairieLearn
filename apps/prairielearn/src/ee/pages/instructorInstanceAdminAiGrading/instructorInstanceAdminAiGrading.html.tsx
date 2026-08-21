@@ -210,7 +210,6 @@ export function InstructorInstanceAdminAiGrading({
   initialUseCustomApiKeys,
   initialApiKeyCredentials,
   canEdit,
-  isDevMode,
   stripePurchasingEnabled,
   initialCheckoutStatus,
   initialCheckoutAmountMilliDollars,
@@ -220,7 +219,6 @@ export function InstructorInstanceAdminAiGrading({
   initialUseCustomApiKeys: boolean;
   initialApiKeyCredentials: AiGradingApiKeyCredential[];
   canEdit: boolean;
-  isDevMode: boolean;
   stripePurchasingEnabled: boolean;
   initialCheckoutStatus: 'success' | 'cancelled' | null;
   initialCheckoutAmountMilliDollars: number | null;
@@ -232,7 +230,7 @@ export function InstructorInstanceAdminAiGrading({
   );
 
   return (
-    <QueryClientProviderDebug client={queryClient} isDevMode={isDevMode}>
+    <QueryClientProviderDebug client={queryClient}>
       <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
         <AiGradingSettingsContent
           initialUseCustomApiKeys={initialUseCustomApiKeys}

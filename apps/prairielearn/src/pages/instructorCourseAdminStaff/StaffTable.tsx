@@ -1228,7 +1228,7 @@ export function StaffTable({ search, trpcCsrfToken, courseId, ...props }: StaffT
   );
 
   return (
-    <QueryClientProviderDebug client={queryClient} isDevMode={false}>
+    <QueryClientProviderDebug client={queryClient}>
       <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
         <NuqsAdapter search={search}>
           <StaffTableInner {...props} />

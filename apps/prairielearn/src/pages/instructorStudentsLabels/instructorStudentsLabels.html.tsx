@@ -20,7 +20,6 @@ interface StudentLabelsPageProps {
   initialLabels: StudentLabelWithUserData[];
   canEdit: boolean;
   isExampleCourse: boolean;
-  isDevMode: boolean;
   origHash: string | null;
 }
 
@@ -192,7 +191,6 @@ function StudentLabelsCard({
 }
 
 export function InstructorStudentsLabels({
-  isDevMode,
   trpcCsrfToken,
   courseInstanceId,
   ...innerProps
@@ -203,7 +201,7 @@ export function InstructorStudentsLabels({
   );
 
   return (
-    <QueryClientProviderDebug client={queryClient} isDevMode={isDevMode}>
+    <QueryClientProviderDebug client={queryClient}>
       <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
         <StudentLabelsCard courseInstanceId={courseInstanceId} {...innerProps} />
       </TRPCProvider>

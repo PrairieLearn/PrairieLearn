@@ -45,7 +45,7 @@ export function InstructorAssessmentInstances({
 
   return (
     <NuqsAdapter search={search}>
-      <QueryClientProviderDebug client={queryClient} isDevMode={isDevMode}>
+      <QueryClientProviderDebug client={queryClient}>
         <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
           <AssessmentInstancesTable
             initialRows={initialRows}

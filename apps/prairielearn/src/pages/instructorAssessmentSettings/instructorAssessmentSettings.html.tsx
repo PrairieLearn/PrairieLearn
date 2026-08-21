@@ -153,7 +153,6 @@ interface InstructorAssessmentSettingsProps {
   assessmentSets: StaffAssessmentSet[];
   assessmentModules: StaffAssessmentModule[];
   courseInstance: StaffCourseInstance;
-  isDevMode: boolean;
   assessmentTools: AssessmentToolsConfig;
   zonePointsRange: { min: number; max: number };
   nonPublicQuestionsInAssessment: { id: string; qid: string }[];
@@ -176,7 +175,6 @@ export function InstructorAssessmentSettings({
   assessmentSets,
   assessmentModules,
   courseInstance,
-  isDevMode,
   assessmentTools,
   zonePointsRange: initialZonePointsRange,
   nonPublicQuestionsInAssessment,
@@ -197,7 +195,7 @@ export function InstructorAssessmentSettings({
   const [typeChangeMessage, setTypeChangeMessage] = useState<string | null>(null);
 
   return (
-    <QueryClientProviderDebug client={queryClient} isDevMode={isDevMode}>
+    <QueryClientProviderDebug client={queryClient}>
       <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
         <InstructorAssessmentSettingsInner
           key={assessment.type}
@@ -676,7 +674,7 @@ function InstructorAssessmentSettingsInner({
   hasInstances,
   typeChangeMessage,
   setTypeChangeMessage,
-}: Omit<InstructorAssessmentSettingsProps, 'trpcCsrfToken' | 'isDevMode' | 'courseInstance'> & {
+}: Omit<InstructorAssessmentSettingsProps, 'trpcCsrfToken' | 'courseInstance'> & {
   setCurrentOrigHash: (hash: string) => void;
   setAssessment: (assessment: StaffAssessment) => void;
   setZonePointsRange: (range: { min: number; max: number }) => void;

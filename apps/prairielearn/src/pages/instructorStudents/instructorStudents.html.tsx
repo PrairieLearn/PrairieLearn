@@ -897,20 +897,18 @@ export const InstructorStudents = ({
   courseInstance,
   course,
   csrfToken,
-  isDevMode,
   trpcCsrfToken,
   origHash,
 }: {
   authzData: PageContext<'courseInstance', 'instructor'>['authz_data'];
   selfEnrollLink: string;
   search: string;
-  isDevMode: boolean;
 } & StudentsCardProps) => {
   const [queryClient] = useState(() => new QueryClient());
 
   return (
     <NuqsAdapter search={search}>
-      <QueryClientProviderDebug client={queryClient} isDevMode={isDevMode}>
+      <QueryClientProviderDebug client={queryClient}>
         <StudentsCard
           authzData={authzData}
           selfEnrollLink={selfEnrollLink}

@@ -10,6 +10,12 @@ declare global {
   }
 }
 
+interface QueryClientProviderEntry {
+  client: QueryClient;
+}
+
+const queryClientProviders = new WeakMap<Window, QueryClientProviderEntry[]>();
+
 /** Renders an application error inside a Bootstrap alert. */
 export function AppErrorAlert<E extends { code: string; message: string }>({
   error,
@@ -33,30 +39,42 @@ export function AppErrorAlert<E extends { code: string; message: string }>({
   );
 }
 
-/** Provides a TanStack Query client and exposes it to browser devtools in development mode. */
+/** Provides a TanStack Query client and exposes it to browser devtools. */
 export function QueryClientProviderDebug({
   client,
   children,
-  isDevMode,
 }: {
   client: QueryClient;
   children: ReactNode;
-  isDevMode?: boolean;
 }) {
-  // Expose the client after commit so rendering stays side-effect-free and cleanup follows its owner.
   useEffect(() => {
-    if (!isDevMode) return;
-
     const browserWindow = (globalThis as { window?: Window }).window;
     if (!browserWindow) return;
 
+    const entry = { client };
+    const entries = queryClientProviders.get(browserWindow) ?? [];
+    if (entries.length === 0) queryClientProviders.set(browserWindow, entries);
+    entries.push(entry);
     browserWindow.__TANSTACK_QUERY_CLIENT__ = client;
+
     return () => {
-      if (browserWindow.__TANSTACK_QUERY_CLIENT__ === client) {
-        delete browserWindow.__TANSTACK_QUERY_CLIENT__;
+      const index = entries.indexOf(entry);
+      if (index === -1) return;
+
+      const wasActive = index === entries.length - 1;
+      entries.splice(index, 1);
+      const activeEntry = entries.at(-1);
+      if (entries.length === 0) queryClientProviders.delete(browserWindow);
+
+      if (wasActive && browserWindow.__TANSTACK_QUERY_CLIENT__ === client) {
+        if (activeEntry) {
+          browserWindow.__TANSTACK_QUERY_CLIENT__ = activeEntry.client;
+        } else {
+          delete browserWindow.__TANSTACK_QUERY_CLIENT__;
+        }
       }
     };
-  }, [client, isDevMode]);
+  }, [client]);
 
   return <QueryClientProvider client={client}>{children}</QueryClientProvider>;
 }

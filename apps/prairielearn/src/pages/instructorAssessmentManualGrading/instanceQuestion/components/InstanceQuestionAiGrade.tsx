@@ -36,7 +36,6 @@ interface InstanceQuestionAiGradeInnerProps {
 export interface InstanceQuestionAiGradeProps extends InstanceQuestionAiGradeInnerProps {
   assessmentQuestionId: string;
   trpcCsrfToken: string;
-  isDevMode: boolean;
 }
 
 function InstanceQuestionAiGradeInner({
@@ -188,7 +187,7 @@ export function InstanceQuestionAiGrade(props: InstanceQuestionAiGradeProps) {
   );
 
   return (
-    <QueryClientProviderDebug client={queryClient} isDevMode={props.isDevMode}>
+    <QueryClientProviderDebug client={queryClient}>
       <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
         <InstanceQuestionAiGradeInner {...props} />
       </TRPCProvider>

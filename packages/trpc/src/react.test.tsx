@@ -49,7 +49,7 @@ describe('QueryClientProviderDebug', () => {
     assert.isUndefined(testGlobal.window.__TANSTACK_QUERY_CLIENT__);
     await act(async () => {
       root.render(
-        <QueryClientProviderDebug client={client} isDevMode>
+        <QueryClientProviderDebug client={client}>
           <ObserveQueryClientDuringRender />
         </QueryClientProviderDebug>,
       );
@@ -70,7 +70,7 @@ describe('QueryClientProviderDebug', () => {
 
     await act(async () => {
       root.render(
-        <QueryClientProviderDebug client={firstClient} isDevMode>
+        <QueryClientProviderDebug client={firstClient}>
           <span>Child</span>
         </QueryClientProviderDebug>,
       );
@@ -79,6 +79,79 @@ describe('QueryClientProviderDebug', () => {
 
     await act(async () => root.unmount());
     assert.strictEqual(testGlobal.window.__TANSTACK_QUERY_CLIENT__, secondClient);
+    firstClient.clear();
+    secondClient.clear();
+  });
+
+  it('restores the outer client when a nested provider unmounts', async () => {
+    testGlobal.IS_REACT_ACT_ENVIRONMENT = true;
+    const outerClient = new QueryClient();
+    const innerClient = new QueryClient();
+    const root = createRoot(testGlobal.document.createElement('div'));
+
+    await act(async () => {
+      root.render(
+        <QueryClientProviderDebug client={outerClient}>
+          <span>Child</span>
+        </QueryClientProviderDebug>,
+      );
+    });
+    assert.strictEqual(testGlobal.window.__TANSTACK_QUERY_CLIENT__, outerClient);
+
+    await act(async () => {
+      root.render(
+        <QueryClientProviderDebug client={outerClient}>
+          <QueryClientProviderDebug client={innerClient}>
+            <span>Child</span>
+          </QueryClientProviderDebug>
+        </QueryClientProviderDebug>,
+      );
+    });
+    assert.strictEqual(testGlobal.window.__TANSTACK_QUERY_CLIENT__, innerClient);
+
+    await act(async () => {
+      root.render(
+        <QueryClientProviderDebug client={outerClient}>
+          <span>Child</span>
+        </QueryClientProviderDebug>,
+      );
+    });
+    assert.strictEqual(testGlobal.window.__TANSTACK_QUERY_CLIENT__, outerClient);
+
+    await act(async () => root.unmount());
+    assert.isUndefined(testGlobal.window.__TANSTACK_QUERY_CLIENT__);
+    outerClient.clear();
+    innerClient.clear();
+  });
+
+  it('keeps the active client when an earlier provider unmounts', async () => {
+    testGlobal.IS_REACT_ACT_ENVIRONMENT = true;
+    const firstClient = new QueryClient();
+    const secondClient = new QueryClient();
+    const firstRoot = createRoot(testGlobal.document.createElement('div'));
+    const secondRoot = createRoot(testGlobal.document.createElement('div'));
+
+    await act(async () => {
+      firstRoot.render(
+        <QueryClientProviderDebug client={firstClient}>
+          <span>First child</span>
+        </QueryClientProviderDebug>,
+      );
+    });
+    await act(async () => {
+      secondRoot.render(
+        <QueryClientProviderDebug client={secondClient}>
+          <span>Second child</span>
+        </QueryClientProviderDebug>,
+      );
+    });
+    assert.strictEqual(testGlobal.window.__TANSTACK_QUERY_CLIENT__, secondClient);
+
+    await act(async () => firstRoot.unmount());
+    assert.strictEqual(testGlobal.window.__TANSTACK_QUERY_CLIENT__, secondClient);
+
+    await act(async () => secondRoot.unmount());
+    assert.isUndefined(testGlobal.window.__TANSTACK_QUERY_CLIENT__);
     firstClient.clear();
     secondClient.clear();
   });

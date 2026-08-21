@@ -39,7 +39,6 @@ interface AssessmentModulesPageProps {
   initialModules: StaffAssessmentModuleWithAssessments[];
   allowEdit: boolean;
   isExampleCourse: boolean;
-  isDevMode: boolean;
   origHash: string | null;
 }
 
@@ -418,7 +417,6 @@ function AssessmentModulesCard({
 }
 
 export function AssessmentModulesPage({
-  isDevMode,
   trpcCsrfToken,
   courseId,
   ...innerProps
@@ -429,7 +427,7 @@ export function AssessmentModulesPage({
   );
 
   return (
-    <QueryClientProviderDebug client={queryClient} isDevMode={isDevMode}>
+    <QueryClientProviderDebug client={queryClient}>
       <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
         <AssessmentModulesCard courseId={courseId} {...innerProps} />
       </TRPCProvider>

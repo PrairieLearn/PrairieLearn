@@ -16,19 +16,14 @@ interface PublicQuestionsTableProps {
   urlPrefix: string;
   qidPrefix?: string;
   search: string;
-  isDevMode: boolean;
 }
 
-export function PublicQuestionsTable({
-  search,
-  isDevMode,
-  ...innerProps
-}: PublicQuestionsTableProps) {
+export function PublicQuestionsTable({ search, ...innerProps }: PublicQuestionsTableProps) {
   const [queryClient] = useState(() => new QueryClient());
 
   return (
     <NuqsAdapter search={search}>
-      <QueryClientProviderDebug client={queryClient} isDevMode={isDevMode}>
+      <QueryClientProviderDebug client={queryClient}>
         <QuestionsTable
           {...innerProps}
           questionsQueryOptions={{ queryKey: ['public-questions'] }}

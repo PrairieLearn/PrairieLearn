@@ -532,7 +532,6 @@ router.get(
         content: (
           <Hydrate fullHeight>
             <InstructorStudents
-              isDevMode={config.devMode}
               authzData={authz_data}
               students={students}
               studentLabels={z.array(StaffStudentLabelSchema).parse(studentLabels)}

@@ -36,7 +36,6 @@ interface InstructorInstanceAdminSettingsProps {
   studentLink: string;
   publicLink: string;
   selfEnrollLink: string;
-  isDevMode: boolean;
   isAdministrator: boolean;
   nonPublicAssessmentsInCourseInstance: { id: string; tid: string }[];
   questionSharingEnabled: boolean;
@@ -45,7 +44,6 @@ interface InstructorInstanceAdminSettingsProps {
 
 export function InstructorInstanceAdminSettings({
   trpcCsrfToken,
-  isDevMode,
   courseInstance,
   ...rest
 }: InstructorInstanceAdminSettingsProps) {
@@ -58,7 +56,7 @@ export function InstructorInstanceAdminSettings({
   );
 
   return (
-    <QueryClientProviderDebug client={queryClient} isDevMode={isDevMode}>
+    <QueryClientProviderDebug client={queryClient}>
       <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
         <InstructorInstanceAdminSettingsInner courseInstance={courseInstance} {...rest} />
       </TRPCProvider>
@@ -85,7 +83,7 @@ function InstructorInstanceAdminSettingsInner({
   nonPublicAssessmentsInCourseInstance,
   questionSharingEnabled,
   accessControlMigrationNeeded,
-}: Omit<InstructorInstanceAdminSettingsProps, 'trpcCsrfToken' | 'isDevMode'>) {
+}: Omit<InstructorInstanceAdminSettingsProps, 'trpcCsrfToken'>) {
   const [showCopyModal, setShowCopyModal] = useState(false);
 
   const shortNames = new Set(names.map((name) => name.short_name.toLowerCase()));

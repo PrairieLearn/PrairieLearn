@@ -51,7 +51,6 @@ interface AssessmentQuestionManualGradingProps {
   initialOngoingJobSequenceTokens: Record<string, string> | null;
   numOpenInstances: number;
   search: string;
-  isDevMode: boolean;
   questionTitle: string;
   questionNumber: number;
   availableAiGradingProviders: EnumAiGradingProvider[];
@@ -61,7 +60,7 @@ interface AssessmentQuestionManualGradingProps {
 
 type AssessmentQuestionManualGradingInnerProps = Omit<
   AssessmentQuestionManualGradingProps,
-  'search' | 'isDevMode' | 'trpcCsrfToken'
+  'search' | 'trpcCsrfToken'
 >;
 
 function AssessmentQuestionManualGradingInner({
@@ -227,7 +226,6 @@ function AssessmentQuestionManualGradingInner({
 
 export function AssessmentQuestionManualGrading({
   search,
-  isDevMode,
   trpcCsrfToken,
   ...innerProps
 }: AssessmentQuestionManualGradingProps) {
@@ -242,7 +240,7 @@ export function AssessmentQuestionManualGrading({
   );
   return (
     <NuqsAdapter search={search}>
-      <QueryClientProviderDebug client={queryClient} isDevMode={isDevMode}>
+      <QueryClientProviderDebug client={queryClient}>
         <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
           <AssessmentQuestionManualGradingInner {...innerProps} />
         </TRPCProvider>
