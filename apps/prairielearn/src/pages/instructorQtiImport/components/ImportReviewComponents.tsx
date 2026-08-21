@@ -220,16 +220,14 @@ export function ImportSummary({
     ),
   );
   const totalQuestions = uniqueQuestions.size;
-  const totalAssets = [...uniqueQuestions.values()].reduce(
-    (sum, question) => sum + Object.keys(question.clientFiles).length,
-    0,
-  );
-  // Count created files rather than rewritten <img> references so this uses the same unit as
-  // totalAssets; repeated uses of the same downloaded image share one client file.
-  const totalExternalImageFilesCopied = [...uniqueQuestions.values()].reduce(
-    (sum, question) => sum + (question.copiedExternalImageFileCount ?? 0),
-    0,
-  );
+  let totalAssets = 0;
+  let totalExternalImageFilesCopied = 0;
+  let totalSkippedVideos = 0;
+  for (const question of uniqueQuestions.values()) {
+    totalAssets += Object.keys(question.clientFiles).length;
+    totalExternalImageFilesCopied += question.copiedExternalImageFileCount;
+    totalSkippedVideos += question.skippedVideos.length;
+  }
 
   const allWarnings = results.flatMap((r) => r.warnings);
   const rubricWarnings = allWarnings.filter((w) => isRubricWarning(w.message));
@@ -239,11 +237,6 @@ export function ImportSummary({
     .filter((w) => !isRubricWarning(w.message) && w.message.includes('Unsupported'))
     .map((w) => w.message);
   const uniqueUnsupported = [...new Set(unsupportedTypes)];
-
-  const totalSkippedVideos = [...uniqueQuestions.values()].reduce(
-    (sum, question) => sum + question.skippedVideos.length,
-    0,
-  );
 
   const notImportedItems: string[] = [];
   if (hasRubricIssues) notImportedItems.push('Rubrics (not supported in QTI quiz exports)');

@@ -40,6 +40,7 @@ function makeQuestions(directoryPrefix: string, questionSourceId: string, questi
           'image.png': 'aW1hZ2U=',
         },
         skippedVideos: [] as string[],
+        copiedExternalImageFileCount: 0,
       },
     ],
     warnings: [

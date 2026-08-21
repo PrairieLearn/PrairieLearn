@@ -20,7 +20,8 @@ export interface SerializedQuestionOutput {
   clientFiles: Record<string, { size: number }>;
   /** Video files that were excluded from this question's assets. */
   skippedVideos: string[];
-  copiedExternalImageFileCount?: number;
+  /** Number of unique client files created from external images. */
+  copiedExternalImageFileCount: number;
 }
 
 interface StoredSerializedQuestionOutput extends Omit<

@@ -34,6 +34,7 @@ function makeQuestion({
     questionHtml: '<pl-question-panel></pl-question-panel>',
     clientFiles: {},
     skippedVideos: [],
+    copiedExternalImageFileCount: 0,
   };
 }
 

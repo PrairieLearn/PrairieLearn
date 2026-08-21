@@ -481,9 +481,7 @@ export async function serializeConversionResult(
         serverPy: q.serverPy,
         clientFiles: files,
         skippedVideos: q.skippedFiles,
-        ...(remoteImageCopyReport && {
-          copiedExternalImageFileCount: remoteImageCopyReport.filesCreated,
-        }),
+        copiedExternalImageFileCount: remoteImageCopyReport?.filesCreated ?? 0,
       };
     }),
   );
