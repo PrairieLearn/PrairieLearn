@@ -80,6 +80,14 @@ SELECT
 FROM
   updated_course_permissions;
 
+-- BLOCK select_course_instance_ids_for_course
+SELECT
+  id
+FROM
+  course_instances
+WHERE
+  course_id = $course_id;
+
 -- BLOCK delete_course_permissions
 WITH
   deleted_course_permissions AS (

@@ -3,12 +3,14 @@ import z from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
 import { getCheckedSignedTokenData } from '@prairielearn/signed-token';
+import { IdSchema } from '@prairielearn/zod';
 
 import * as authnLib from '../lib/authn.js';
 import { type LoadUserAuth } from '../lib/authn.types.js';
 import { config } from '../lib/config.js';
 import { clearCookie, setCookie } from '../lib/cookie.js';
 import { EnrollmentSchema } from '../lib/db-types.js';
+import { runWithSharedEnrollmentBarrier } from '../lib/enrollment/barrier.js';
 import { insertAuditEvent } from '../models/audit-event.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -58,24 +60,36 @@ export default asyncHandler(async (req, res, next) => {
       redirect: false,
     });
 
-    // Enroll the load test user in the example course.
-    const enrollment = await sqldb.queryOptionalRow(
-      sql.enroll_user_in_example_course,
-      { user_id: res.locals.authn_user.id },
-      EnrollmentSchema,
+    const courseInstanceId = await sqldb.queryOptionalScalar(
+      sql.select_example_course_instance_id,
+      IdSchema,
     );
 
-    if (enrollment) {
-      await insertAuditEvent({
-        tableName: 'enrollments',
-        action: 'insert',
-        actionDetail: 'implicit_joined',
-        rowId: enrollment.id,
-        newRow: enrollment,
-        agentUserId: res.locals.user.id,
-        agentAuthnUserId: res.locals.authn_user.id,
-      });
-    }
+    if (!courseInstanceId) return next();
+
+    await runWithSharedEnrollmentBarrier(courseInstanceId, async () => {
+      // Enroll the load test user in the example course.
+      const enrollment = await sqldb.queryOptionalRow(
+        sql.enroll_user_in_example_course,
+        {
+          user_id: res.locals.authn_user.id,
+          course_instance_id: courseInstanceId,
+        },
+        EnrollmentSchema,
+      );
+
+      if (enrollment) {
+        await insertAuditEvent({
+          tableName: 'enrollments',
+          action: 'insert',
+          actionDetail: 'implicit_joined',
+          rowId: enrollment.id,
+          newRow: enrollment,
+          agentUserId: res.locals.user.id,
+          agentAuthnUserId: res.locals.authn_user.id,
+        });
+      }
+    });
 
     return next();
   }
