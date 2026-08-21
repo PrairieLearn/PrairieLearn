@@ -22,4 +22,4 @@ For a single procedure, pass its map entry to either helper, such as `throwAppEr
 
 `formatTrpcErrorResponse` builds the SuperJSON-wrapped tRPC error response used when authentication, authorization, CSRF, or other Express middleware fails before the tRPC adapter runs. Its numeric JSON-RPC code is sourced from tRPC's own `TRPC_ERROR_CODES_BY_KEY` constants.
 
-Error IDs generated for normal Express errors and adapter errors remain server-side and correlate application logs with error reporting. The shared response shape does not expose an error ID to clients; doing that consistently for both pre-adapter and adapter errors would be a separate protocol change.
+Error IDs generated for normal Express errors and adapter errors remain server-side and correlate application logs with error reporting. The shared response shape does not expose an error ID to clients.

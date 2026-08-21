@@ -10,12 +10,6 @@ declare global {
   }
 }
 
-interface QueryClientProviderEntry {
-  client: QueryClient;
-}
-
-const queryClientProviders = new WeakMap<Window, QueryClientProviderEntry[]>();
-
 /** Renders an application error inside a Bootstrap alert. */
 export function AppErrorAlert<E extends { code: string; message: string }>({
   error,
@@ -47,33 +41,12 @@ export function QueryClientProviderDebug({
   client: QueryClient;
   children: ReactNode;
 }) {
+  // Expose the page's query client after mount so the browser extension can discover it.
   useEffect(() => {
     const browserWindow = (globalThis as { window?: Window }).window;
     if (!browserWindow) return;
 
-    const entry = { client };
-    const entries = queryClientProviders.get(browserWindow) ?? [];
-    if (entries.length === 0) queryClientProviders.set(browserWindow, entries);
-    entries.push(entry);
     browserWindow.__TANSTACK_QUERY_CLIENT__ = client;
-
-    return () => {
-      const index = entries.indexOf(entry);
-      if (index === -1) return;
-
-      const wasActive = index === entries.length - 1;
-      entries.splice(index, 1);
-      const activeEntry = entries.at(-1);
-      if (entries.length === 0) queryClientProviders.delete(browserWindow);
-
-      if (wasActive && browserWindow.__TANSTACK_QUERY_CLIENT__ === client) {
-        if (activeEntry) {
-          browserWindow.__TANSTACK_QUERY_CLIENT__ = activeEntry.client;
-        } else {
-          delete browserWindow.__TANSTACK_QUERY_CLIENT__;
-        }
-      }
-    };
   }, [client]);
 
   return <QueryClientProvider client={client}>{children}</QueryClientProvider>;
