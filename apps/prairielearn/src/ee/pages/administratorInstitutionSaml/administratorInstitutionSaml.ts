@@ -8,9 +8,14 @@ import * as pem from 'pem/lib/pem.js';
 import formatXml from 'xml-formatter';
 import { z } from 'zod';
 
-import * as error from '@prairielearn/error';
+import { HttpStatusError } from '@prairielearn/error';
 import { execute, loadSqlEquiv, runInTransactionAsync } from '@prairielearn/postgres';
 
+import {
+  lockInstitutionForIdentityConfiguration,
+  normalizeUinAttribute,
+  selectInstitutionIdentityConfigurationStatus,
+} from '../../../lib/institution-identity.js';
 import { typedAsyncHandler } from '../../../lib/res-locals.js';
 import { getSamlOptions } from '../../auth/saml/index.js';
 import {
@@ -18,6 +23,7 @@ import {
   getInstitutionAuthenticationProviders,
   getInstitutionSamlProvider,
 } from '../../lib/institution.js';
+import { selectLti13InstancesWithRosterSyncAllowed } from '../../models/lti13Instance.js';
 
 import {
   AdministratorInstitutionSaml,
@@ -46,12 +52,16 @@ router.get(
     const institutionAuthenticationProviders = await getInstitutionAuthenticationProviders(
       req.params.institution_id,
     );
+    const lti13InstancesWithRosterSyncAllowed = await selectLti13InstancesWithRosterSyncAllowed(
+      req.params.institution_id,
+    );
 
     res.send(
       AdministratorInstitutionSaml({
         institution,
         samlProvider,
         institutionAuthenticationProviders,
+        lti13InstancesWithRosterSyncAllowed,
         host: z.string().parse(req.headers.host),
         resLocals: res.locals,
       }),
@@ -64,10 +74,31 @@ router.post(
   typedAsyncHandler<'plain'>(async (req, res) => {
     if (req.body.__action === 'save') {
       await runInTransactionAsync(async () => {
+        await lockInstitutionForIdentityConfiguration(req.params.institution_id);
+
         // Check if there's an existing SAML provider configured. We'll use
         // that to determine if we need to create a new keypair. That is, we'll
         // only create a new keypair if there's no existing provider.
         const samlProvider = await getInstitutionSamlProvider(req.params.institution_id);
+        const identityConfigurationStatus = await selectInstitutionIdentityConfigurationStatus(
+          req.params.institution_id,
+        );
+        // Disabled inputs are omitted from form submissions, so preserve locked values.
+        const issuer = z.string().parse(req.body.issuer ?? samlProvider?.issuer);
+        const uinAttribute = normalizeUinAttribute(
+          req.body.uin_attribute ?? samlProvider?.uin_attribute,
+        );
+
+        if (
+          identityConfigurationStatus.has_lti13_instance_with_roster_sync_allowed &&
+          (uinAttribute !== normalizeUinAttribute(samlProvider?.uin_attribute) ||
+            issuer !== samlProvider?.issuer)
+        ) {
+          throw new HttpStatusError(
+            400,
+            'Disallow roster syncing for all affected LTI 1.3 instances before changing the SAML issuer or UIN attribute',
+          );
+        }
 
         let publicKey, privateKey;
         if (!samlProvider) {
@@ -89,13 +120,13 @@ router.post(
         await execute(sql.insert_institution_saml_provider, {
           institution_id: req.params.institution_id,
           sso_login_url: req.body.sso_login_url,
-          issuer: req.body.issuer,
+          issuer,
           certificate: req.body.certificate,
           validate_audience: req.body.validate_audience === '1',
           want_assertions_signed: req.body.want_assertions_signed === '1',
           want_authn_response_signed: req.body.want_authn_response_signed === '1',
           // Normalize empty strings to `null`.
-          uin_attribute: req.body.uin_attribute || null,
+          uin_attribute: uinAttribute,
           uid_attribute: req.body.uid_attribute || null,
           name_attribute: req.body.name_attribute || null,
           given_name_attribute: req.body.given_name_attribute || null,
@@ -110,10 +141,23 @@ router.post(
       });
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'delete') {
-      await execute(sql.delete_institution_saml_provider, {
-        institution_id: req.params.institution_id,
-        // For audit logs
-        authn_user_id: res.locals.authn_user.id,
+      await runInTransactionAsync(async () => {
+        await lockInstitutionForIdentityConfiguration(req.params.institution_id);
+        const identityConfigurationStatus = await selectInstitutionIdentityConfigurationStatus(
+          req.params.institution_id,
+        );
+        if (identityConfigurationStatus.has_lti13_instance_with_roster_sync_allowed) {
+          throw new HttpStatusError(
+            400,
+            'Disallow roster syncing for all affected LTI 1.3 instances before deleting the SAML configuration',
+          );
+        }
+
+        await execute(sql.delete_institution_saml_provider, {
+          institution_id: req.params.institution_id,
+          // For audit logs
+          authn_user_id: res.locals.authn_user.id,
+        });
       });
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'decode_assertion') {
@@ -149,7 +193,7 @@ router.post(
 
       res.send(DecodedAssertion({ xml, profile: JSON.stringify(profile, null, 2) }));
     } else {
-      throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
+      throw new HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }
   }),
 );

@@ -108,8 +108,8 @@ def test_set_union_submission_parses_when_set_notation_is_enabled() -> None:
     ("sub", "allow_trig", "variables", "custom_functions", "expected"),
     [
         # Greek letters
-        ("Α", False, ["Α"], [], " Alpha "),  # noqa: RUF001
-        ("ΑΑ0Α0ΑΑ", False, ["Α", "Α0"], [], " Alpha  Alpha0 Alpha0 Alpha  Alpha "),  # noqa: RUF001
+        ("Α", False, ["Α"], [], " Alpha "),  # ruff:ignore[ambiguous-unicode-character-string]
+        ("ΑΑ0Α0ΑΑ", False, ["Α", "Α0"], [], " Alpha  Alpha0 Alpha0 Alpha  Alpha "),  # ruff:ignore[ambiguous-unicode-character-string]
         (
             "t h e t a s i n t h e t a c o s t h e t a",
             True,
@@ -149,7 +149,7 @@ def test_set_union_submission_parses_when_set_notation_is_enabled() -> None:
         ("s i n ( x )", True, ["x"], [], "sin ( x )"),
         ("s i n h ( s i n x )", True, ["x"], [], "sinh ( sin x )"),
         ("s i n ( x )", False, ["x"], [], "s i n ( x )"),
-        ("s i n ( Α )", False, ["Α"], [], "s i n (  Alpha  )"),  # noqa: RUF001
+        ("s i n ( Α )", False, ["Α"], [], "s i n (  Alpha  )"),  # ruff:ignore[ambiguous-unicode-character-string]
         # Variables
         ("t i m e + x", True, ["time", "x"], [], "time + x"),
         # Prefix test
@@ -160,7 +160,7 @@ def test_set_union_submission_parses_when_set_notation_is_enabled() -> None:
         # Custom functions
         ("m y f u n ( x )", False, ["x"], ["myfun"], "myfun ( x )"),
         ("f2(x) + x2", False, ["x"], ["f2"], "f2(x) + x 2"),
-        ("Α(x) + x2", False, ["x"], ["Α"], " Alpha (x) + x 2"),  # noqa: RUF001
+        ("Α(x) + x2", False, ["x"], ["Α"], " Alpha (x) + x 2"),  # ruff:ignore[ambiguous-unicode-character-string]
         ("x2 + x2 + f2(x)", False, ["x"], ["f2"], "x 2 + x 2 + f2(x)"),
         # Formatting operators
         ("{:s i n ( x ):}", True, ["x"], [], "sin ( x )"),

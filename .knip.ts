@@ -47,6 +47,7 @@ const AUTO_DETECTED_BUT_ALSO_IMPORTED = [
   'mathlive',
   'highlight.js',
   'web-tree-sitter',
+  'ansi_up',
 ];
 
 /**
@@ -86,6 +87,7 @@ const CLI_ONLY_DEPS = [
   's3rver',
   '@postgres-language-server/cli',
   '@typescript/native-preview',
+  '@prairielearn/pin-github-actions',
 ];
 
 // Collect packages referenced by element / question `info.json` files.
@@ -115,7 +117,7 @@ const sourceFileDependencies = (
   await Promise.all(
     sourceFiles.map(async (path) => {
       const content = await readFile(path, 'utf-8');
-      return [...content.matchAll(assetPathRegex)].map((match) => match[1]);
+      return Array.from(content.matchAll(assetPathRegex), (match) => match[1]);
     }),
   )
 ).flat();
@@ -176,8 +178,6 @@ const config: KnipConfig = {
         'src/lib/client/safe-db-types.ts',
         // We have team -> group aliases in this file
         'src/lib/db-types.ts',
-        // Ambient module declaration for echarts types
-        'src/typings/echarts.d.ts',
       ],
       project: ['**/*.{ts,cts,mts,tsx}'],
       // Tell knip not to flag these as unused.

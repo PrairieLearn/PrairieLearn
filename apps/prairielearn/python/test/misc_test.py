@@ -348,7 +348,7 @@ def test_get_enum_attrib(
 def test_get_enum_attrib_exceptions(html_str: str) -> None:
     element = lxml.html.fragment_fromstring(html_str)
 
-    with pytest.raises(ValueError):  # noqa: PT011
+    with pytest.raises(ValueError):  # ruff:ignore[pytest-raises-too-broad]
         pl.get_enum_attrib(element, "test-choice", DummyEnum)
 
 
@@ -369,7 +369,7 @@ def test_grade_answer_parametrized_correct(
     question_name: str,
     student_answer: str,
     weight: int,
-    expected_grade: bool,  # noqa: FBT001
+    expected_grade: bool,  # ruff:ignore[boolean-type-hint-positional-argument]
 ) -> None:
     question_data["submitted_answers"] = {question_name: student_answer}
 
@@ -910,17 +910,17 @@ def test_get_boolean_attrib_invalid(html_str: str) -> None:
         ("<pl-thing></pl-thing>", False),
     ],
 )
-def test_get_boolean_attrib_libxml(html_str: str, expected_result: bool | None) -> None:  # noqa: FBT001
+def test_get_boolean_attrib_libxml(html_str: str, expected_result: bool | None) -> None:  # ruff:ignore[boolean-type-hint-positional-argument]
     """Test that using HTML boolean attributes is only valid when reading as boolean with default False."""
     element = lxml.html.fragment_fromstring(html_str)
-    result = pl.get_boolean_attrib(element, "checked", False)  # noqa: FBT003
+    result = pl.get_boolean_attrib(element, "checked", False)  # ruff:ignore[boolean-positional-value-in-call]
     assert result == expected_result
     if not expected_result:
         expected_result = None
     result = pl.get_boolean_attrib(element, "checked")
     assert result == expected_result
     with pytest.raises(ValueError, match="boolean attribute"):
-        pl.get_boolean_attrib(element, "checked", True)  # noqa: FBT003
+        pl.get_boolean_attrib(element, "checked", True)  # ruff:ignore[boolean-positional-value-in-call]
     with pytest.raises(ValueError, match="boolean attribute"):
         pl.get_string_attrib(element, "checked", "")
     with pytest.raises(ValueError, match="boolean attribute"):

@@ -452,7 +452,7 @@ export abstract class Editor {
     debug('Checking folders', reverseFolders);
 
     let seenNonemptyFolder = false;
-    for (const [index] of reverseFolders.entries()) {
+    for (const index of reverseFolders.keys()) {
       if (!seenNonemptyFolder) {
         const delPath = path.join(rootDirectory, ...idSplit.slice(0, idSplit.length - 1 - index));
         debug('Checking', delPath);
@@ -1104,7 +1104,8 @@ async function updateInfoAssessmentFilesForTargetCourse(
 
     // We do not want to preserve certain settings when copying an assessment to another course
     delete infoJson.shareSourcePublicly;
-    infoJson.allowAccess = [];
+    delete infoJson.allowAccess;
+    infoJson.accessControl = [];
 
     function shouldAddSharingPrefix(qid: string) {
       return qid && !qid.startsWith('@') && questionsToImport.has(qid);

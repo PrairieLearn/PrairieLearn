@@ -5,6 +5,7 @@ import { Alert, Dropdown, Modal } from 'react-bootstrap';
 import { FormProvider, useForm } from 'react-hook-form';
 import ReactMarkdown from 'react-markdown';
 
+import { type AppError, getAppError } from '@prairielearn/trpc/client';
 import { OverlayTrigger, useModalState } from '@prairielearn/ui';
 
 import {
@@ -14,7 +15,6 @@ import {
   useInstitutionPrefix,
 } from '../../../components/AdminstratorCourseFormFields.js';
 import { JobStatus } from '../../../components/JobStatus.js';
-import { type AppError, getAppError } from '../../../lib/client/errors.js';
 import {
   type AdminInstitution,
   type AdminInstitutionWithSettings,
@@ -551,21 +551,20 @@ function CourseRequestApproveModalContent({
                       <div className="mt-1">
                         <span className="small text-muted">Sources</span>
                         <div className="d-flex flex-wrap gap-1">
-                          {[
-                            ...new Map(
-                              legitimacyQuery.data.sources.map((s) => [s.url, s]),
-                            ).values(),
-                          ].map((source) => (
-                            <a
-                              key={source.url}
-                              href={source.url}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="small"
-                            >
-                              {source.title ?? source.url}
-                            </a>
-                          ))}
+                          {Array.from(
+                            new Map(legitimacyQuery.data.sources.map((s) => [s.url, s])).values(),
+                            (source) => (
+                              <a
+                                key={source.url}
+                                href={source.url}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="small"
+                              >
+                                {source.title ?? source.url}
+                              </a>
+                            ),
+                          )}
                         </div>
                       </div>
                     )}

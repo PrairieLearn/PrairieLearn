@@ -714,7 +714,7 @@ def _greek_transform(text: str) -> str:
 
     Returns:
         The string with Greek unicode letters replaced by spaced-out English spelling
-    """  # noqa: RUF002
+    """  # ruff:ignore[ambiguous-unicode-character-docstring]
     transformed = psu.greek_unicode_transform(text)
     return (" " + " ".join(transformed) + " ") if transformed != text else text
 

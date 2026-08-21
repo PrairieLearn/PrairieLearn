@@ -1,4 +1,5 @@
-import { type Header, createColumnHelper } from '@tanstack/react-table';
+import clsx from 'clsx';
+import type { ReactNode } from 'react';
 
 import { run } from '@prairielearn/run';
 import {
@@ -6,8 +7,10 @@ import {
   type BooleanFilterOption,
   MultiSelectColumnFilter,
   type MultiSelectFilterValue,
+  type TanstackTableHeader,
   applyBooleanFilter,
   applyMultiSelectFilter,
+  createTanstackTableColumnHelper,
 } from '@prairielearn/ui';
 
 import { assessmentLabel } from '../lib/assessment.shared.js';
@@ -21,7 +24,9 @@ import { SyncProblemButton } from './SyncProblemButton.js';
 import { TagBadge, TagBadgeList } from './TagBadge.js';
 import { TopicBadge } from './TopicBadge.js';
 
-const columnHelper = createColumnHelper<SafeQuestionsPageData>();
+type ColumnFilter = (props: { header: TanstackTableHeader<SafeQuestionsPageData> }) => ReactNode;
+
+const columnHelper = createTanstackTableColumnHelper<SafeQuestionsPageData>();
 const NONE_FILTER_VALUE = '(None)';
 const AUTO_SIZE_SAMPLE_COUNT = 5;
 
@@ -55,7 +60,7 @@ export function createQuestionsTableColumns({
   courseInstanceId?: string;
   isPublic?: boolean;
 }) {
-  return [
+  return columnHelper.columns([
     columnHelper.accessor('qid', {
       id: 'qid',
       header: 'QID',
@@ -130,13 +135,13 @@ export function createQuestionsTableColumns({
       id: 'topic',
       header: 'Topic',
       cell: (info) => <TopicBadge topic={info.getValue()} />,
-      sortingFn: (rowA, rowB, columnId) => {
-        const topicA = rowA.getValue<SafeQuestionsPageData['topic']>(columnId);
-        const topicB = rowB.getValue<SafeQuestionsPageData['topic']>(columnId);
+      sortFn: (rowA, rowB) => {
+        const topicA = rowA.original.topic;
+        const topicB = rowB.original.topic;
         return topicA.name.localeCompare(topicB.name);
       },
-      filterFn: (row, columnId, filter: MultiSelectFilterValue) => {
-        const topic = row.getValue<SafeQuestionsPageData['topic']>(columnId);
+      filterFn: (row, _columnId, filter: MultiSelectFilterValue) => {
+        const topic = row.original.topic;
         return applyMultiSelectFilter(filter, (values) => values.includes(topic.name));
       },
       size: 150,
@@ -151,8 +156,8 @@ export function createQuestionsTableColumns({
         </div>
       ),
       enableSorting: false,
-      filterFn: (row, columnId, filter: MultiSelectFilterValue) => {
-        const tags = row.getValue<SafeQuestionsPageData['tags']>(columnId) ?? [];
+      filterFn: (row, _columnId, filter: MultiSelectFilterValue) => {
+        const tags = row.original.tags ?? [];
         return applyMultiSelectFilter(filter, (values) =>
           values.some((v) => tags.some((t) => t.name === v)),
         );
@@ -229,8 +234,8 @@ export function createQuestionsTableColumns({
         const value = info.getValue();
         return <span className={`badge color-${value === 'v3' ? 'green1' : 'red1'}`}>{value}</span>;
       },
-      filterFn: (row, columnId, filter: MultiSelectFilterValue) => {
-        const value = row.getValue<SafeQuestionsPageData['display_type']>(columnId);
+      filterFn: (row, _columnId, filter: MultiSelectFilterValue) => {
+        const value = row.original.display_type;
         return applyMultiSelectFilter(filter, (values) => values.includes(value));
       },
       size: 200,
@@ -240,8 +245,8 @@ export function createQuestionsTableColumns({
       id: 'grading_method',
       header: 'Grading Method',
       cell: (info) => info.getValue(),
-      filterFn: (row, columnId, filter: MultiSelectFilterValue) => {
-        const value = row.getValue<SafeQuestionsPageData['grading_method']>(columnId);
+      filterFn: (row, _columnId, filter: MultiSelectFilterValue) => {
+        const value = row.original.grading_method;
         return applyMultiSelectFilter(filter, (values) => values.includes(value));
       },
       size: 150,
@@ -254,8 +259,8 @@ export function createQuestionsTableColumns({
         const value = info.getValue();
         return value ? <code>{value}</code> : '—';
       },
-      filterFn: (row, columnId, filter: MultiSelectFilterValue) => {
-        const value = row.getValue<SafeQuestionsPageData['external_grading_image']>(columnId);
+      filterFn: (row, _columnId, filter: MultiSelectFilterValue) => {
+        const value = row.original.external_grading_image;
         return applyMultiSelectFilter(filter, (values) => values.includes(imageFilterValue(value)));
       },
       size: 200,
@@ -268,8 +273,8 @@ export function createQuestionsTableColumns({
         const value = info.getValue();
         return value ? <code>{value}</code> : '—';
       },
-      filterFn: (row, columnId, filter: MultiSelectFilterValue) => {
-        const value = row.getValue<SafeQuestionsPageData['workspace_image']>(columnId);
+      filterFn: (row, _columnId, filter: MultiSelectFilterValue) => {
+        const value = row.original.workspace_image;
         return applyMultiSelectFilter(filter, (values) => values.includes(imageFilterValue(value)));
       },
       size: 200,
@@ -279,8 +284,8 @@ export function createQuestionsTableColumns({
       id: 'single_variant',
       header: 'Single variant',
       cell: (info) => (info.getValue() ? 'Yes' : 'No'),
-      filterFn: (row, columnId, filter: MultiSelectFilterValue<BooleanFilterOption>) => {
-        return applyBooleanFilter(filter, row.getValue<boolean>(columnId));
+      filterFn: (row, _columnId, filter: MultiSelectFilterValue<BooleanFilterOption>) => {
+        return applyBooleanFilter(filter, row.original.single_variant);
       },
       size: 190,
     }),
@@ -289,8 +294,8 @@ export function createQuestionsTableColumns({
       id: 'has_preferences',
       header: 'Has preferences',
       cell: (info) => (info.getValue() ? 'Yes' : 'No'),
-      filterFn: (row, columnId, filter: MultiSelectFilterValue<BooleanFilterOption>) => {
-        return applyBooleanFilter(filter, row.getValue<boolean>(columnId));
+      filterFn: (row, _columnId, filter: MultiSelectFilterValue<BooleanFilterOption>) => {
+        return applyBooleanFilter(filter, row.original.has_preferences);
       },
       size: 170,
     }),
@@ -301,90 +306,96 @@ export function createQuestionsTableColumns({
           columnHelper.group({
             id: 'referenced_assessments',
             header: 'Referenced assessments',
-            columns: courseInstances.map((ci) =>
-              columnHelper.accessor(
-                (row) =>
-                  row.assessments
-                    ?.filter((a) => a.assessment.course_instance_id === ci.id)
-                    .map((a) => assessmentLabel(a.assessment, a.assessment_set)) ?? [],
-                {
-                  id: `ci_${ci.id}`,
-                  // TODO: Make non-nullable once we update the database schema
-                  header: () => <code>{ci.short_name}</code>,
-                  meta: {
-                    label: ci.short_name,
-                    autoSize: true,
-                    autoSizeSample: (questions) =>
-                      autoSizeSampleByMeasure(
-                        questions,
-                        (q) =>
-                          q.assessments
-                            ?.filter((a) => a.assessment.course_instance_id === ci.id)
-                            .reduce(
-                              (sum, a) =>
-                                sum + assessmentLabel(a.assessment, a.assessment_set).length,
-                              0,
-                            ) ?? 0,
-                      ),
-                  },
-                  cell: (info) => {
-                    const assessments =
-                      info.row.original.assessments
-                        ?.filter((a) => a.assessment.course_instance_id === ci.id)
-                        .sort((a, b) => {
-                          return assessmentLabel(a.assessment, a.assessment_set).localeCompare(
-                            assessmentLabel(b.assessment, b.assessment_set),
-                            undefined,
-                            {
-                              numeric: true,
-                            },
-                          );
-                        }) ?? [];
-                    if (assessments.length === 0) return null;
-                    return (
-                      <div className="d-flex flex-wrap gap-1">
-                        {assessments.map((a) => (
-                          <a
-                            key={a.assessment.id}
-                            href={getAssessmentQuestionEditorUrl({
-                              courseInstanceId: ci.id,
-                              assessmentId: a.assessment.id,
-                              qid: info.row.original.qid,
-                            })}
-                            className={`btn btn-badge color-${a.assessment_set.color}`}
-                          >
-                            {assessmentLabel(a.assessment, a.assessment_set)}
-                          </a>
-                        ))}
-                      </div>
-                    );
-                  },
-                  enableSorting: false,
-                  filterFn: (row, _columnId, filter: MultiSelectFilterValue) => {
-                    const assessments =
-                      row.original.assessments?.filter(
-                        (a) => a.assessment.course_instance_id === ci.id,
-                      ) ?? [];
-                    return applyMultiSelectFilter(filter, (values) => {
-                      if (assessments.length === 0) {
-                        return values.includes('(None)');
-                      }
-                      return values.some((v) =>
-                        assessments.some(
-                          (a) => assessmentLabel(a.assessment, a.assessment_set) === v,
+            columns: columnHelper.columns(
+              courseInstances.map((ci) =>
+                columnHelper.accessor(
+                  (row) =>
+                    row.assessments
+                      ?.filter((a) => a.assessment.course_instance_id === ci.id)
+                      .map((a) => assessmentLabel(a.assessment, a.assessment_set)) ?? [],
+                  {
+                    id: `ci_${ci.id}`,
+                    // TODO: Make non-nullable once we update the database schema
+                    header: () => <code>{ci.short_name}</code>,
+                    meta: {
+                      label: ci.short_name,
+                      autoSize: true,
+                      autoSizeSample: (questions) =>
+                        autoSizeSampleByMeasure(
+                          questions,
+                          (q) =>
+                            q.assessments
+                              ?.filter((a) => a.assessment.course_instance_id === ci.id)
+                              .reduce(
+                                (sum, a) =>
+                                  sum + assessmentLabel(a.assessment, a.assessment_set).length,
+                                0,
+                              ) ?? 0,
                         ),
+                    },
+                    cell: (info) => {
+                      const assessments =
+                        info.row.original.assessments
+                          ?.filter((a) => a.assessment.course_instance_id === ci.id)
+                          .sort((a, b) => {
+                            return assessmentLabel(a.assessment, a.assessment_set).localeCompare(
+                              assessmentLabel(b.assessment, b.assessment_set),
+                              undefined,
+                              {
+                                numeric: true,
+                              },
+                            );
+                          }) ?? [];
+                      if (assessments.length === 0) return null;
+                      return (
+                        <div className="d-flex flex-wrap gap-1">
+                          {assessments.map((a) => (
+                            <a
+                              key={a.assessment.id}
+                              href={getAssessmentQuestionEditorUrl({
+                                courseInstanceId: ci.id,
+                                assessmentId: a.assessment.id,
+                                qid: info.row.original.qid,
+                              })}
+                              className={clsx(
+                                'btn',
+                                'btn-badge',
+                                `color-${a.assessment_set.color}`,
+                              )}
+                            >
+                              {assessmentLabel(a.assessment, a.assessment_set)}
+                            </a>
+                          ))}
+                        </div>
                       );
-                    });
+                    },
+                    enableSorting: false,
+                    filterFn: (row, _columnId, filter: MultiSelectFilterValue) => {
+                      const assessments =
+                        row.original.assessments?.filter(
+                          (a) => a.assessment.course_instance_id === ci.id,
+                        ) ?? [];
+                      return applyMultiSelectFilter(filter, (values) => {
+                        if (assessments.length === 0) {
+                          return values.includes('(None)');
+                        }
+                        return values.some((v) =>
+                          assessments.some(
+                            (a) => assessmentLabel(a.assessment, a.assessment_set) === v,
+                          ),
+                        );
+                      });
+                    },
+                    size: 300,
+                    maxSize: 500,
                   },
-                  size: 300,
-                  maxSize: 500,
-                },
+                ),
               ),
             ),
           }),
         ]
       : []),
-  ];
+  ]);
 }
 
 export function createQuestionsTableFilters({
@@ -448,10 +459,7 @@ export function createQuestionsTableFilters({
     return map;
   });
 
-  const filterMap: Record<
-    string,
-    (props: { header: Header<SafeQuestionsPageData, unknown> }) => React.ReactNode
-  > = {
+  const filterMap: Record<string, ColumnFilter> = {
     topic: ({ header }) => (
       <MultiSelectColumnFilter
         column={header.column}
@@ -464,6 +472,7 @@ export function createQuestionsTableFilters({
             <span className="text-nowrap">{value}</span>
           );
         }}
+        showSearch
       />
     ),
     tag: ({ header }) => (
@@ -474,6 +483,7 @@ export function createQuestionsTableFilters({
           const tag = tagsByName.get(value);
           return tag ? <TagBadge tag={tag} /> : <span className="text-nowrap">{value}</span>;
         }}
+        showSearch
       />
     ),
     display_type: ({ header }) => (
@@ -483,15 +493,23 @@ export function createQuestionsTableFilters({
       <MultiSelectColumnFilter column={header.column} allColumnValues={allGradingMethods} />
     ),
     external_grading_image: ({ header }) => (
-      <MultiSelectColumnFilter column={header.column} allColumnValues={allExternalGradingImages} />
+      <MultiSelectColumnFilter
+        column={header.column}
+        allColumnValues={allExternalGradingImages}
+        showSearch
+      />
     ),
     workspace_image: ({ header }) => (
-      <MultiSelectColumnFilter column={header.column} allColumnValues={allWorkspaceImages} />
+      <MultiSelectColumnFilter
+        column={header.column}
+        allColumnValues={allWorkspaceImages}
+        showSearch
+      />
     ),
     single_variant: ({ header }) => <BooleanColumnFilter column={header.column} />,
     has_preferences: ({ header }) => <BooleanColumnFilter column={header.column} />,
     sharing_sets: ({ header }) => (
-      <MultiSelectColumnFilter column={header.column} allColumnValues={allSharingSets} />
+      <MultiSelectColumnFilter column={header.column} allColumnValues={allSharingSets} showSearch />
     ),
   };
 
@@ -517,6 +535,7 @@ export function createQuestionsTableFilters({
             <span className="text-nowrap">{value}</span>
           );
         }}
+        showSearch
       />
     );
   });

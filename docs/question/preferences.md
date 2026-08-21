@@ -104,8 +104,8 @@ Preferences can also be set on individual alternatives within a question alterna
       "preferences": { "gravitational_constant": 9.8 }
     },
     {
-      "id": "forces/fallingObject",
-      "preferences": { "gravitational_constant": 1.6 }
+      "id": "kinematics/projectileRange",
+      "preferences": { "unit_system": "imperial" }
     }
   ]
 }
@@ -174,6 +174,7 @@ A question can support different unit systems by defining a preference:
 import random
 import math
 
+
 def generate(data):
     if data["preferences"]["unit_system"] == "SI":
         g = 9.8
@@ -188,7 +189,9 @@ def generate(data):
     data["params"]["v0"] = v0
     data["params"]["angle"] = angle
     data["params"]["unit"] = unit
-    data["correct_answers"]["range"] = round(v0**2 * math.sin(2 * math.radians(angle)) / g, 2)
+    data["correct_answers"]["range"] = round(
+        v0**2 * math.sin(2 * math.radians(angle)) / g, 2
+    )
 ```
 
 Then one assessment can use `"preferences": { "unit_system": "SI" }` and another can use `"preferences": { "unit_system": "imperial" }`, reusing the same question.

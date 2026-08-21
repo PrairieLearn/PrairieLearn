@@ -12,6 +12,8 @@ A question is made up of three main components:
 2. **`question.html`**: The HTML template that defines the question. This is where you write the question text and define the input elements. Reference the [question template documentation](template.md) for more details.
 3. **`server.py`**: This is where you write the logic for generating random values, grading student responses, and any other server-side code. This file is optional, but it is necessary for any question that has non-trivial randomization or custom grading behavior. Reference the [server documentation](server.md) for more details.
 
+You can also include an optional `README.md` file directly in the question directory. PrairieLearn renders it as Markdown above the question on the instructor **Preview** page; it is not visible to students. Use it to document the question's intent, variants, or maintenance notes.
+
 ## Creating a question
 
 To create a new question through the PrairieLearn web interface:
@@ -221,6 +223,7 @@ The `server.py` file for each question creates randomized question variants by g
 
 ```python title="server.py"
 import random
+
 
 def generate(data):
     # Generate random parameters

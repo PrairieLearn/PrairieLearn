@@ -461,9 +461,10 @@ function normalizeCreditDeadlines(
     }
   }
 
-  const sorted = Array.from(bestCreditByDate.entries())
-    .map(([date, credit]) => ({ date, credit }))
-    .sort((a, b) => a.date.localeCompare(b.date));
+  const sorted = Array.from(bestCreditByDate.entries(), ([date, credit]) => ({
+    date,
+    credit,
+  })).sort((a, b) => a.date.localeCompare(b.date));
 
   const kept: { date: string; credit: number }[] = [];
   let maxCreditSeen = -Infinity;

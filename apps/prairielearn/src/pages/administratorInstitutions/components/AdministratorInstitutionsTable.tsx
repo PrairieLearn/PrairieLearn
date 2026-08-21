@@ -1,8 +1,9 @@
 import { QueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 
+import { QueryClientProviderDebug } from '@prairielearn/trpc/react';
+
 import type { AdminInstitution, StaffAuthnProvider } from '../../../lib/client/safe-db-types.js';
-import { QueryClientProviderDebug } from '../../../lib/client/tanstackQuery.js';
 import { type Timezone } from '../../../lib/timezone.shared.js';
 import { createAdministratorTrpcClient } from '../../../trpc/administrator/client.js';
 import { TRPCProvider } from '../../../trpc/administrator/context.js';

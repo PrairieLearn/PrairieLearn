@@ -14,7 +14,6 @@ overrides:
   'linkinator>marked': ^18
   'markdownlint-cli2>smol-toml': ^1
   'notebookjs>jsdom': '*'
-  'typescript-cp>tar': '*'
 
 # Delay newly published npm packages for 3 days.
 minimumReleaseAge: 4320
@@ -43,4 +42,4 @@ supportedArchitectures:
     - gnu
 
 minimumReleaseAgeExclude:
-  - '@prairielearn/tree-sitter-htmlmustache@1.4.3'
+  - 'typescript-cp@0.1.11'

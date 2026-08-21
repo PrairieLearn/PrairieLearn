@@ -11,6 +11,7 @@ import {
   queryScalar,
   queryScalars,
 } from '@prairielearn/postgres';
+import { run } from '@prairielearn/run';
 import { IdSchema } from '@prairielearn/zod';
 
 import { PageLayout } from '../../components/PageLayout.js';
@@ -19,7 +20,6 @@ import { extractPageContext } from '../../lib/client/page-context.js';
 import { idsEqual } from '../../lib/id.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { getUrl } from '../../lib/url.js';
-import type { ResLocalsCourseInstanceAuthz } from '../../middlewares/authzCourseOrInstance.js';
 import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances.js';
 
 import { InstructorIssues, IssueRowSchema, PAGE_SIZE } from './instructorIssues.html.js';
@@ -85,6 +85,14 @@ function parseRawQuery(str: string) {
         }
         break;
       case 'user':
+        // The filter by user applies even if the current user does not have
+        // permission to view the user data. Ideally we would not allow
+        // filtering by user in this case, but we still want to allow
+        // instructors to filter by user within the context of their own course
+        // instance, even if they do not have permission to view the user data
+        // in other course instances. While this is not ideal, it is a
+        // reasonable compromise. Future implementations may refine this
+        // further.
         if (!option.negated) {
           filters.filter_users = filters.filter_users || [];
           filters.filter_users.push(formatForLikeClause(option.value));
@@ -189,9 +197,11 @@ router.get(
       // There are three situations in which the issue need not be anonymized:
       //
       //  1) The issue is not associated with a course instance. The only way
-      //     for a user to generate an issue that is not associated with a course
-      //     instance is if they are an instructor, so there are no student data
-      //     to be protected in this case.
+      //     for a user to generate an issue that is not associated with a
+      //     course instance is if they are an instructor. In this case, the
+      //     user data is other instructors, so we only need to check that the
+      //     effective user has course preview access, which is required to view
+      //     the question preview in the first place.
       //
       //  2) We are accessing this page through a course instance, the issue is
       //     associated with the same course instance, and the user has student
@@ -205,17 +215,26 @@ router.get(
       //     effective user roles are taken into account.
       //
       // Otherwise, all issues must be anonymized.
-      showUser:
-        !row.course_instance_id ||
-        (res.locals.course_instance &&
-          idsEqual(res.locals.course_instance.id, row.course_instance_id) &&
-          (res.locals.authz_data as ResLocalsCourseInstanceAuthz)
-            .has_course_instance_permission_view) ||
-        ((!res.locals.course_instance ||
-          !idsEqual(res.locals.course_instance.id, row.course_instance_id)) &&
-          course_instances.some(
-            (ci) => ci.id === row.course_instance_id && ci.has_course_instance_permission_view,
-          )),
+      showUser: run(() => {
+        if (row.course_instance_id == null) {
+          return authzData.has_course_permission_preview;
+        }
+
+        // Use request-scoped authorization for the current course instance so
+        // that effective-user role overrides are respected. The model results
+        // below reflect stored roles instead.
+        if (
+          res.locals.course_instance &&
+          'course_instance_role' in res.locals.authz_data &&
+          idsEqual(res.locals.course_instance.id, row.course_instance_id)
+        ) {
+          return res.locals.authz_data.has_course_instance_permission_view;
+        }
+
+        return course_instances.some(
+          (ci) => ci.id === row.course_instance_id && ci.has_course_instance_permission_view,
+        );
+      }),
     }));
 
     const openFilteredIssuesCount = issueRows.reduce((acc, row) => (row.open ? acc + 1 : acc), 0);
@@ -244,6 +263,7 @@ router.get(
             urlPrefix={urlPrefix}
             csrfToken={__csrf_token}
             hasCoursePermissionEdit={authzData.has_course_permission_edit}
+            hasCoursePermissionPreview={authzData.has_course_permission_preview}
           />
         ),
       }),

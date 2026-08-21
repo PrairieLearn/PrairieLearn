@@ -24,7 +24,7 @@ def on_config(config: MkDocsConfig) -> MkDocsConfig:
     original_render = plugin.renderer
     plugin.keys = set()
 
-    def new_render(source, opts, alt):  # noqa: ANN001, ANN202 # pyright:ignore[reportUnknownParameterType,reportMissingParameterType]
+    def new_render(source, opts, alt):  # ruff:ignore[missing-type-function-argument, missing-return-type-private-function] # pyright:ignore[reportUnknownParameterType,reportMissingParameterType]
         """
         Hook into the renderer to provide a link to the rendered SVG.
         This only hooks into the renderer for superfences, not for images.
@@ -58,7 +58,7 @@ def on_config(config: MkDocsConfig) -> MkDocsConfig:
     return config
 
 
-def on_page_content(html: str, page: Page, config: MkDocsConfig, files: Files) -> str:  # noqa: ARG001
+def on_page_content(html: str, page: Page, config: MkDocsConfig, files: Files) -> str:  # ruff:ignore[unused-function-argument]
     """Hook into the page content, replacing the svg with a clickable link."""
     relative_route = page.url.count("/") * "../" + "assets/svg/"
     # Replace data-svg-file with a href to the svg file.

@@ -18,6 +18,7 @@ Displays a list of variables that are formatted for import into the supported pr
 import prairielearn as pl
 import numpy as np
 
+
 def generate(data):
 
     # Create fixed matrix
@@ -88,7 +89,7 @@ A = [1.23; 4.56]; (* matrix *)
 ```python
 import numpy as np
 
-A = np.array([[1.23], [4.56]]) # matrix
+A = np.array([[1.23], [4.56]])  # matrix
 ```
 
 **R format:**
@@ -103,7 +104,7 @@ A = matrix(c(1.23, 4.56, 8.90, 1.23), nrow = 2, ncol = 2, byrow = TRUE) # matrix
 ```python
 from sympy import *
 
-A = Matrix([[1.23], [4.56]]) # matrix
+A = Matrix([[1.23], [4.56]])  # matrix
 ```
 
 If a variable `v` is a complex object, you should use `import prairielearn as pl` and `data["params"][params-name] = pl.to_json(v)`.

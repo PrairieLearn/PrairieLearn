@@ -13,10 +13,10 @@ import { syncDiskToSql } from '../sync/syncFromDisk.js';
 import { logChunkChangesToJob, updateChunksForCourse } from './chunks.js';
 import { config } from './config.js';
 import { type Course, type User } from './db-types.js';
-import { sendCourseRequestMessage } from './opsbot.js';
 import { TEMPLATE_COURSE_PATH } from './paths.js';
 import { formatJsonWithPrettier } from './prettier.js';
 import { type ServerJob, type ServerJobLogger, createServerJob } from './server-jobs.js';
+import { sendCourseRequestMessage } from './slack.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 

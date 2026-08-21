@@ -64,12 +64,20 @@ There are two ways to do specify these variables.
     ```python title="server.py"
     def generate(data):
         data["params"]["names_for_user"] = [
-            {"name": "n", "description": r"Dimensionality of $\mathbf{A}$ and $\mathbf{b}$.", "type": "integer"},
+            {
+                "name": "n",
+                "description": r"Dimensionality of $\mathbf{A}$ and $\mathbf{b}$.",
+                "type": "integer",
+            },
             {"name": "A", "description": r"Matrix $\mathbf{A}$.", "type": "numpy array"},
-            {"name": "b", "description": r"Vector $\mathbf{b}$.", "type": "numpy array"}
+            {"name": "b", "description": r"Vector $\mathbf{b}$.", "type": "numpy array"},
         ]
         data["params"]["names_from_user"] = [
-            {"name": "x", "description": r"Solution to $\mathbf{Ax}=\mathbf{b}$.", "type": "numpy array"}
+            {
+                "name": "x",
+                "description": r"Solution to $\mathbf{Ax}=\mathbf{b}$.",
+                "type": "numpy array",
+            }
         ]
     ```
 
@@ -112,13 +120,15 @@ The test cases for each coding problem are defined as methods of a `Test` class 
 ```python title="tests/test.py"
 from pl_unit_test import PLTestCase, PLTestCaseWithPlot
 
+
 # No plot grading
 class Test(PLTestCase):
-  pass
+    pass
+
 
 # Plot grading enabled
 class Test(PLTestCaseWithPlot):
-  pass
+    pass
 ```
 
 These classes themselves extend `unittest.TestCase`, so any functionality from there is also available.
@@ -131,11 +141,12 @@ Adding a name and point value to the test case is done by means of python decora
 from pl_unit_test import PLTestCase
 from pl_helpers import name, points
 
+
 class Test(PLTestCase):
-  @points(10)
-  @name("Check basic math")
-  def test_0(self):
-    assert 1 == 1
+    @points(10)
+    @name("Check basic math")
+    def test_0(self):
+        assert 1 == 1
 ```
 
 Inside the test case implementation, the student answer variables and reference answer variables can be accessed as children of the tuples `self.st` and `self.ref`, respectively. There are various helper functions to check correctness of different types of variables, these are defined in `code_feedback.py`. These are taken from the RELATE grader, so this may be familiar to those with prior experience with RELATE.
@@ -149,14 +160,17 @@ from pl_unit_test import PLTestCase
 from pl_helpers import name, points
 from code_feedback import Feedback
 
+
 class Test(PLTestCase):
-  @points(10)
-  @name("name of the test case")
-  def test_0(self):
-    if Feedback.check_scalar("name of the variable", self.ref.variable_name, self.st.variable_names):
-        Feedback.set_score(1)
-    else:
-        Feedback.set_score(0)
+    @points(10)
+    @name("name of the test case")
+    def test_0(self):
+        if Feedback.check_scalar(
+            "name of the variable", self.ref.variable_name, self.st.variable_names
+        ):
+            Feedback.set_score(1)
+        else:
+            Feedback.set_score(0)
 ```
 
 Note that `Feedback.set_score()` is used to set the correctness of the test case between `0` and `1`, this is then multiplied by the number of points awarded by the test case. For example, if a test case is worth 10 points and `Feedback.set_score(0.5)` is run, the student will be awarded 5 points.

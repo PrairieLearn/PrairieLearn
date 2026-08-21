@@ -111,11 +111,12 @@ export async function sync(
   Object.entries(questions).forEach(([qid, question]) => {
     if (infofile.hasErrors(question)) return;
     // De-duplicate repeated authors in the same question info file
-    const dedupedQuestionAuthors = new Set<string>();
-    (question.data?.authors ?? []).forEach((a) => dedupedQuestionAuthors.add(JSON.stringify(a)));
+    const dedupedQuestionAuthors = new Set<string>(
+      question.data?.authors.map((a) => JSON.stringify(a)),
+    );
 
     // Lookup author IDs and set up data structure for DB
-    const authorIds = [...dedupedQuestionAuthors].map((a) => authorIdMapping[a]);
+    const authorIds = Array.from(dedupedQuestionAuthors, (a) => authorIdMapping[a]);
     // Include questions with empty author lists to ensure deletion of existing authors
     if (authorIds.length === 0) {
       qaPairs.push({ question_id: questionIds[qid], author_id: null });
