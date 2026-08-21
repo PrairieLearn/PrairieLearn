@@ -462,7 +462,7 @@ export async function serializeConversionResult(
           warning.questionId === q.sourceId && warning.code === 'remote-image-copy-failed',
       );
       const remoteImageCopyReport = result.reports.find(
-        (report) => report.type === 'remote-image-copy' && report.questionId === q.sourceId,
+        (report) => report.questionId === q.sourceId,
       );
       const seenMessages = new Set<string>();
       for (const d of await lintQuestionHtml(q.questionHtml)) {
