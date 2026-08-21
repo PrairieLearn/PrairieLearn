@@ -1,6 +1,6 @@
 # Authentication
 
-In a self-hosted PrairieLearn instance, PrairieLearn currently supports [Google OAuth 2](#google-oauth-2) as the main method of user authentication. While [LTI 1.1](../courseInstance/index.md#lti-support) is also available, it is currently deprecated and should be avoided for new deployments. [LTI 1.3](../lti13.md) is supported for interoperability with learning management systems, but not as an authentication method.
+PrairieLearn currently uses [Google OAuth 2](#google-oauth-2) as its only supported method of user authentication for self-hosted PrairieLearn instances. While [LTI 1.1](../courseInstance/index.md#lti-support) is also available, it is currently deprecated and should be avoided for new deployments. [LTI 1.3](../lti13.md) is supported for interoperability with learning management systems, but not as an authentication method.
 
 !!! note "SAML and Azure authentication"
 
