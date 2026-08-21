@@ -1,19 +1,21 @@
-import { type Column, type Table } from '@tanstack/react-table';
+import type { RowData } from '@tanstack/react-table';
 import clsx from 'clsx';
 import { type ReactNode, useEffect, useState } from 'react';
 import Button from 'react-bootstrap/Button';
 import Dropdown from 'react-bootstrap/Dropdown';
 
+import type { TanstackTableColumn, TanstackTableInstance } from '../tanstack-table.js';
+
 import { ExpandableCheckboxGroup } from './ExpandableCheckboxGroup.js';
 
-interface ColumnMenuItemProps<RowDataModel> {
-  column: Column<RowDataModel>;
+interface ColumnMenuItemProps<RowDataModel extends RowData> {
+  column: TanstackTableColumn<RowDataModel>;
   onPinningBoundary: boolean;
   onTogglePin: (columnId: string) => void;
   className?: string;
 }
 
-function ColumnLeafItem<RowDataModel>({
+function ColumnLeafItem<RowDataModel extends RowData>({
   column,
   onPinningBoundary = false,
   onTogglePin,
@@ -67,14 +69,14 @@ function ColumnLeafItem<RowDataModel>({
   );
 }
 
-function ColumnGroupItem<RowDataModel>({
+function ColumnGroupItem<RowDataModel extends RowData>({
   column,
   table,
   onTogglePin,
   getIsOnPinningBoundary,
 }: {
-  column: Column<RowDataModel>;
-  table: Table<RowDataModel>;
+  column: TanstackTableColumn<RowDataModel>;
+  table: TanstackTableInstance<RowDataModel>;
   onTogglePin: (columnId: string) => void;
   getIsOnPinningBoundary: (columnId: string) => boolean;
 }) {
@@ -125,14 +127,14 @@ function ColumnGroupItem<RowDataModel>({
   );
 }
 
-function ColumnItem<RowDataModel>({
+function ColumnItem<RowDataModel extends RowData>({
   column,
   table,
   onTogglePin,
   getIsOnPinningBoundary,
 }: {
-  column: Column<RowDataModel>;
-  table: Table<RowDataModel>;
+  column: TanstackTableColumn<RowDataModel>;
+  table: TanstackTableInstance<RowDataModel>;
   onTogglePin: (columnId: string) => void;
   getIsOnPinningBoundary: (columnId: string) => boolean;
 }) {
@@ -155,8 +157,8 @@ function ColumnItem<RowDataModel>({
   );
 }
 
-interface ColumnManagerProps<RowDataModel> {
-  table: Table<RowDataModel>;
+interface ColumnManagerProps<RowDataModel extends RowData> {
+  table: TanstackTableInstance<RowDataModel>;
   topContent?: ReactNode;
 }
 
@@ -173,18 +175,18 @@ function findLastIndex<T>(arr: T[], predicate: (value: T, index: number) => bool
   return -1;
 }
 
-export function ColumnManager<RowDataModel>({
+export function ColumnManager<RowDataModel extends RowData>({
   table,
   topContent,
 }: ColumnManagerProps<RowDataModel>) {
   const [activeElementId, setActiveElementId] = useState<string | null>(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const handleTogglePin = (columnId: string) => {
-    const currentLeft = table.getState().columnPinning.left ?? [];
-    const isPinned = currentLeft.includes(columnId);
+    const currentStart = table.state.columnPinning.start;
+    const isPinned = currentStart.includes(columnId);
     const allLeafColumns = table.getAllLeafColumns();
     const currentColumnIndex = allLeafColumns.findIndex((c) => c.id === columnId);
-    let newLeft: string[];
+    let newStart: string[];
     if (isPinned) {
       // Get the previous column that can be set to unpinned.
       // This is useful since we want to unpin/pin columns that are not shown in the view manager.
@@ -192,24 +194,22 @@ export function ColumnManager<RowDataModel>({
         allLeafColumns,
         (c, index) => c.getCanHide() && index < currentColumnIndex,
       );
-      newLeft = allLeafColumns.slice(0, previousFrozenColumnIndex + 1).map((c) => c.id);
+      newStart = allLeafColumns.slice(0, previousFrozenColumnIndex + 1).map((c) => c.id);
     } else {
-      // Pin all columns to the left of the current column.
-      const leftColumns = allLeafColumns.slice(0, currentColumnIndex + 1);
-      newLeft = leftColumns.map((c) => c.id);
+      // Pin all columns before the current column.
+      const precedingColumns = allLeafColumns.slice(0, currentColumnIndex + 1);
+      newStart = precedingColumns.map((c) => c.id);
     }
-    table.setColumnPinning({ left: newLeft, right: [] });
+    table.setColumnPinning({ start: newStart, end: [] });
     setActiveElementId(`${columnId}-pin`);
   };
 
-  const isVisibilityChanged = Object.entries(table.getState().columnVisibility).some(
-    ([key, value]) => {
-      return value !== table.initialState.columnVisibility[key];
-    },
-  );
+  const isVisibilityChanged = Object.entries(table.state.columnVisibility).some(([key, value]) => {
+    return value !== table.initialState.columnVisibility[key];
+  });
 
-  const initialPinning = table.initialState.columnPinning.left ?? [];
-  const currentPinning = table.getState().columnPinning.left ?? [];
+  const initialPinning = table.initialState.columnPinning.start;
+  const currentPinning = table.state.columnPinning.start;
   const isPinningChanged =
     initialPinning.length !== currentPinning.length ||
     initialPinning.some((id) => !currentPinning.includes(id));
@@ -217,11 +217,11 @@ export function ColumnManager<RowDataModel>({
 
   const allLeafColumns = table.getAllLeafColumns();
   const pinnedMenuColumns = allLeafColumns.filter(
-    (c) => c.getCanHide() && c.getIsPinned() === 'left',
+    (c) => c.getCanHide() && c.getIsPinned() === 'start',
   );
   // Only the first unpinned menu column can be pinned, so we only need to find the first one
   const firstUnpinnedMenuColumn = allLeafColumns.find(
-    (c) => c.getCanHide() && c.getIsPinned() !== 'left',
+    (c) => c.getCanHide() && c.getIsPinned() !== 'start',
   );
 
   // Determine if a column is on the pinning boundary (can toggle its pin state).
@@ -240,7 +240,7 @@ export function ColumnManager<RowDataModel>({
     const columnIdx = allLeafColumns.findIndex((c) => c.id === columnId);
     const hasGroupAtOrBefore = allLeafColumns.slice(0, columnIdx + 1).some((c) => c.parent);
 
-    if (column.getIsPinned() === 'left') {
+    if (column.getIsPinned() === 'start') {
       // Only the last pinned menu column can be unpinned
       return columnId === pinnedMenuColumns[pinnedMenuColumns.length - 1]?.id;
     } else {
@@ -259,7 +259,7 @@ export function ColumnManager<RowDataModel>({
     const leafCols = c.getLeafColumns();
     return (
       leafCols.length > 0 &&
-      leafCols.every((leaf) => leaf.getIsPinned() !== 'left' && c.getCanHide())
+      leafCols.every((leaf) => leaf.getIsPinned() !== 'start' && c.getCanHide())
     );
   });
 

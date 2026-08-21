@@ -1,5 +1,11 @@
 # @prairielearn/eslint-plugin
 
+## 4.3.6
+
+### Patch Changes
+
+- e2ed7cd: Apply additional eslint unicorn rules
+
 ## 4.3.5
 
 ### Patch Changes
