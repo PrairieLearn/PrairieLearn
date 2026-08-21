@@ -4,14 +4,14 @@ PrairieLearn currently uses [Google OAuth 2](#google-oauth-2) as its only suppor
 
 !!! note "SAML and Azure authentication"
 
-    Authentication using SAML or Azure are only available as enterprise features, and are not supported in self-hosted PrairieLearn instances. If you are interested in these features, please visit <https://www.prairielearn.com> for information about paid hosting and enterprise support.
+    Authentication using SAML or Azure are available only as enterprise features, and are not supported in self-hosted PrairieLearn instances. If you are interested in these features, please visit <https://www.prairielearn.com> for information about paid hosting and enterprise support.
 
 ## Google OAuth 2
 
 To start, create a [Google Cloud account](https://cloud.google.com/) and then:
 
 - Click [console](https://console.cloud.google.com/) to log in to your console.
-- Create a project then got to [APIs & Services](https://console.cloud.google.com/apis/dashboard).
+- Create a project then go to [APIs & Services](https://console.cloud.google.com/apis/dashboard).
   - Go to `OAuth consent screen` and complete the consent form.
   - Proceed to `Credentials` and create a new `OAuth client ID`.
   - Select `Web application`.
