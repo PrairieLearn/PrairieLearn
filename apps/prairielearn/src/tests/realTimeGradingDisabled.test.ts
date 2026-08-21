@@ -1,3 +1,4 @@
+import type { CheerioAPI } from 'cheerio';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
 import { config } from '../lib/config.js';
@@ -5,6 +6,12 @@ import { selectAssessmentByTid } from '../models/assessment.js';
 
 import * as helperClient from './helperClient.js';
 import * as helperServer from './helperServer.js';
+
+function getAssessmentQuestionRows($: CheerioAPI) {
+  return $('table[data-testid="assessment-questions"] tbody tr').filter(
+    (_index, elem) => $(elem).find('a[href*="/instance_question/"]').length > 0,
+  );
+}
 
 describe('Real-time grading control tests', { timeout: 60_000, concurrent: false }, function () {
   beforeAll(helperServer.before());
@@ -276,12 +283,7 @@ describe('Real-time grading control tests', { timeout: 60_000, concurrent: false
 
       // The first question (real-time grading disabled) should still be in the "Saved" state,
       // and its score should be pending.
-      //
-      // The question is actually in the second row of the table; the first row is the
-      // zone header.
-      const tableRow = otherEnabledGradeResponse.$(
-        'table[data-testid="assessment-questions"] tbody tr:nth-child(2)',
-      );
+      const tableRow = getAssessmentQuestionRows(otherEnabledGradeResponse.$).eq(0);
       const badge = tableRow.find('span.badge');
       assert.lengthOf(badge, 3);
       assert.equal(badge.eq(0).text().trim(), 'saved for grading after finish');
@@ -308,9 +310,7 @@ describe('Real-time grading control tests', { timeout: 60_000, concurrent: false
       });
       assert.isTrue(finishResponse.ok);
 
-      const gradedTableRow = finishResponse.$(
-        'table[data-testid="assessment-questions"] tbody tr:nth-child(2)',
-      );
+      const gradedTableRow = getAssessmentQuestionRows(finishResponse.$).eq(0);
       const gradedBadge = gradedTableRow.find('span.badge');
       assert.lengthOf(gradedBadge, 1);
       assert.equal(gradedBadge.text().trim(), 'complete');

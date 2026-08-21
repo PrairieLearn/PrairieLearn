@@ -1,5 +1,23 @@
 # @prairielearn/signed-token
 
+## 3.2.1
+
+### Patch Changes
+
+- df28e68: Bump dependencies
+
+## 3.2.0
+
+### Minor Changes
+
+- 4f719d4: Support ordered key rings so new tokens use the primary key and existing tokens can be verified with fallback keys.
+
+## 3.1.7
+
+### Patch Changes
+
+- 4a0ee46: Bump dependencies
+
 ## 3.1.6
 
 ### Patch Changes

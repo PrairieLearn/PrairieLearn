@@ -17,9 +17,10 @@ function skippedFieldsFromForm(form: HTMLFormElement): Set<string> {
   return new Set([
     '__csrf_token',
     '__variant_id',
-    ...Array.from(form.querySelectorAll<HTMLInputElement>('[data-skip-unload-check]'))
-      .map((input) => input.name)
-      .filter(Boolean),
+    ...Array.from(
+      form.querySelectorAll<HTMLInputElement>('[data-skip-unload-check]'),
+      (input) => input.name,
+    ).filter(Boolean),
   ]);
 }
 

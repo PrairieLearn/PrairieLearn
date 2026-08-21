@@ -28,7 +28,7 @@ const unauthorizedResult: SprocAuthzAssessment = {
 };
 
 const baseResolverResult: AccessControlResolverResult = {
-  authorized: true,
+  authorization: 'granted',
   credit: 100,
   creditDateString: '100%',
   timeLimitMin: null,
@@ -48,6 +48,22 @@ const baseResolverResult: AccessControlResolverResult = {
   showBeforeRelease: false,
   accessTimeline: [],
   nextActiveDate: null,
+};
+
+const prairieTestReviewResult: AccessControlResolverResult = {
+  ...baseResolverResult,
+  authorization: 'requires-completed-instance',
+  credit: 0,
+  creditDateString: 'None',
+  submittable: false,
+  visibility: {
+    showQuestions: false,
+    showScore: false,
+  },
+  afterCompleteVisibility: {
+    showQuestions: true,
+    showScore: true,
+  },
 };
 
 describe('applyInstanceAccess', () => {
@@ -141,6 +157,33 @@ describe('applyInstanceAccess', () => {
 });
 
 describe('resolverResultToAuthzAssessmentForInstance', () => {
+  it('does not authorize PrairieTest review without an assessment instance', () => {
+    const result = resolverResultToAuthzAssessmentForInstance({
+      result: prairieTestReviewResult,
+      authzMode: 'Public',
+      displayTimezone: 'America/Chicago',
+      assessmentInstance: null,
+      reqDate: new Date('2025-03-15T00:00:00Z'),
+    });
+
+    expect(result.authorized).toBe(false);
+  });
+
+  it('authorizes PrairieTest review for a closed assessment instance', () => {
+    const result = resolverResultToAuthzAssessmentForInstance({
+      result: prairieTestReviewResult,
+      authzMode: 'Public',
+      displayTimezone: 'America/Chicago',
+      assessmentInstance: { open: false, date_limit: null },
+      reqDate: new Date('2025-03-15T00:00:00Z'),
+    });
+
+    expect(result.authorized).toBe(true);
+    expect(result.active).toBe(false);
+    expect(result.show_closed_assessment).toBe(true);
+    expect(result.show_closed_assessment_score).toBe(true);
+  });
+
   it('does not apply afterComplete score visibility while an instance is open and unexpired', () => {
     const result = resolverResultToAuthzAssessmentForInstance({
       result: baseResolverResult,
@@ -181,7 +224,7 @@ describe('resolverResultToAuthzAssessmentForInstance', () => {
     const result = resolverResultToAuthzAssessmentForInstance({
       result: {
         ...baseResolverResult,
-        authorized: false,
+        authorization: 'denied',
         submittable: false,
         credit: 0,
         creditDateString: 'None',

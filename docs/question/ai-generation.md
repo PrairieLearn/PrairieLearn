@@ -47,6 +47,7 @@ Input elements:
 - [`pl-integer-input`](../elements/pl-integer-input.md)
 - [`pl-multiple-choice`](../elements/pl-multiple-choice.md)
 - [`pl-number-input`](../elements/pl-number-input.md)
+- [`pl-order-blocks`](../elements/pl-order-blocks.md)
 - [`pl-string-input`](../elements/pl-string-input.md)
 - [`pl-symbolic-input`](../elements/pl-symbolic-input.md)
 

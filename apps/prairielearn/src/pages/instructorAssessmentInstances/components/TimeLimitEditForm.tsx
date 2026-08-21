@@ -4,9 +4,9 @@ import { useState } from 'react';
 import { Alert, Button } from 'react-bootstrap';
 
 import { formatDate } from '@prairielearn/formatter';
+import { getAppError } from '@prairielearn/trpc/client';
 import { assertNever } from '@prairielearn/utils';
 
-import { getAppError } from '../../../lib/client/errors.js';
 import { useTRPC } from '../../../trpc/assessment/context.js';
 
 import { useInvalidateAssessmentInstancesList } from './useInvalidateAssessmentInstancesList.js';

@@ -67,7 +67,8 @@ export function AdministratorCourseFormFields({
   availableTimezones,
   coursesRoot,
   prefixState,
-  emailDomain,
+  contactEmailDomain,
+  accountUidDomain,
   aiSecretsConfigured,
   autoFilledInstitutionId,
   repositoryRequired,
@@ -77,7 +78,8 @@ export function AdministratorCourseFormFields({
   availableTimezones: Timezone[];
   coursesRoot: string;
   prefixState: InstitutionPrefixState;
-  emailDomain?: string;
+  contactEmailDomain?: string;
+  accountUidDomain?: string;
   aiSecretsConfigured: boolean;
   autoFilledInstitutionId?: string | null;
   repositoryRequired: boolean;
@@ -124,7 +126,8 @@ export function AdministratorCourseFormFields({
     ...trpc.courseRequests.suggestInstitutionPrefix.queryOptions({
       institutionLongName,
       institutionShortName,
-      emailDomain: emailDomain ?? '',
+      contactEmailDomain: contactEmailDomain ?? '',
+      accountUidDomain: accountUidDomain ?? '',
     }),
     enabled: false,
   });
@@ -430,16 +433,17 @@ export function AdministratorCourseFormFields({
               </ReactMarkdown>
               {suggestPrefixQuery.data.sources.length > 0 && (
                 <div className="mt-1">
-                  {[
-                    ...new Map(suggestPrefixQuery.data.sources.map((s) => [s.url, s])).values(),
-                  ].map((source, i) => (
-                    <span key={source.url}>
-                      {i > 0 && ' · '}
-                      <a href={source.url} target="_blank" rel="noreferrer">
-                        {source.title ?? source.url}
-                      </a>
-                    </span>
-                  ))}
+                  {Array.from(
+                    new Map(suggestPrefixQuery.data.sources.map((s) => [s.url, s])).values(),
+                    (source, i) => (
+                      <span key={source.url}>
+                        {i > 0 && ' · '}
+                        <a href={source.url} target="_blank" rel="noreferrer">
+                          {source.title ?? source.url}
+                        </a>
+                      </span>
+                    ),
+                  )}
                 </div>
               )}
             </div>

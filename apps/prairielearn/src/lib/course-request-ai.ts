@@ -86,24 +86,21 @@ export async function checkInstructorLegitimacy({
 }): Promise<LegitimacyResult> {
   const openai = createCourseRequestAiClient();
 
+  const instructions = formatPrompt([
+    'You are helping a PrairieLearn administrator vet a course creation request.',
+    'Search the web to determine whether the person described by the user is a legitimate academic instructor or researcher at their stated institution.',
+    'Use sources like faculty pages, staff directories, university websites, or professional profiles (e.g. LinkedIn, Google Scholar).',
+    'The user provides both the requester name and contact email and the name and UID on their PrairieLearn account. If these identities differ significantly, lower your confidence accordingly and treat it as a reason to doubt the request.',
+  ]);
   const input: ModelMessage[] = [
-    {
-      role: 'system',
-      content: formatPrompt([
-        'You are helping a PrairieLearn administrator vet a course creation request.',
-        'Search the web to determine whether the person described by the user is a legitimate academic instructor or researcher at their stated institution.',
-        'Use sources like faculty pages, staff directories, university websites, or professional profiles (e.g. LinkedIn, Google Scholar).',
-        'The user provides both the name entered on the course request form and the name on their PrairieLearn account. If the PrairieLearn account name or email differs significantly from the submitted name and work email, lower your confidence accordingly and treat it as a reason to doubt the request.',
-      ]),
-    },
     {
       role: 'user',
       content: formatPrompt([
         `Name (from form): ${instructorFirstName ?? 'Unknown'} ${instructorLastName ?? 'Unknown'}`,
-        `Work email (from form): ${instructorEmail ?? 'Unknown'}`,
+        `Requester / contact email: ${instructorEmail ?? 'Unknown'}`,
         `Institution (from form): ${institution ?? 'Unknown'}`,
         `PrairieLearn account name: ${userDisplayName ?? 'Unknown'}`,
-        `PrairieLearn account email/uid: ${userUid}`,
+        `PrairieLearn account (UID): ${userUid}`,
       ]),
     },
   ];
@@ -111,6 +108,7 @@ export async function checkInstructorLegitimacy({
   const response = await generateText({
     model: openai.responses('gpt-4o-mini'),
     output: Output.object({ schema: legitimacySchema }),
+    instructions,
     messages: input,
     tools: { web_search: openai.tools.webSearch({}) },
   });
@@ -132,14 +130,11 @@ export async function suggestTimezone({
 }): Promise<TimezoneResult> {
   const openai = createCourseRequestAiClient();
 
+  const instructions = formatPrompt([
+    'You are helping a PrairieLearn administrator configure a new institution.',
+    'Search the web to determine the correct timezone for the institution provided by the user.',
+  ]);
   const input: ModelMessage[] = [
-    {
-      role: 'system',
-      content: formatPrompt([
-        'You are helping a PrairieLearn administrator configure a new institution.',
-        'Search the web to determine the correct timezone for the institution provided by the user.',
-      ]),
-    },
     {
       role: 'user',
       content: formatPrompt([
@@ -152,6 +147,7 @@ export async function suggestTimezone({
   const response = await generateText({
     model: openai.responses('gpt-4o-mini'),
     output: Output.object({ schema: timezoneSchema }),
+    instructions,
     messages: input,
     tools: { web_search: openai.tools.webSearch({}) },
   });
@@ -167,32 +163,33 @@ export async function suggestTimezone({
 export async function suggestInstitutionPrefix({
   institutionLongName,
   institutionShortName,
-  emailDomain,
+  contactEmailDomain,
+  accountUidDomain,
 }: {
   institutionLongName: string;
   institutionShortName: string;
-  emailDomain: string;
+  contactEmailDomain: string;
+  accountUidDomain: string;
 }): Promise<PrefixResult> {
   const openai = createCourseRequestAiClient();
 
+  const instructions = formatPrompt([
+    'You are helping a PrairieLearn administrator name a GitHub repository for a new course.',
+    'Repository names follow the pattern "pl-{institution-prefix}-{course-name}". Your job is to determine the correct institution prefix.',
+    'Identify the institution as a whole, NOT a department. For example, if the domain is "cs.illinois.edu", the prefix is "uiuc" (not "cs").',
+    'Derive the prefix from the institution\'s primary domain name. For example, "berkeley.edu" gives "berkeley", "ubc.ca" gives "ubc".',
+    'The contact email and PrairieLearn account UID domains are supporting hints. The contact email may be self-reported, while the UID domain may identify an institution without being a routable email address.',
+    "Search the web to find the institution's primary domain if it is not obvious from the provided domains.",
+    'You MUST always return a non-empty prefix. If the domain or institution is unfamiliar, derive the best short prefix you can from the available information (e.g. the domain name itself). Never refuse or return an empty prefix.',
+  ]);
   const input: ModelMessage[] = [
-    {
-      role: 'system',
-      content: formatPrompt([
-        'You are helping a PrairieLearn administrator name a GitHub repository for a new course.',
-        'Repository names follow the pattern "pl-{institution-prefix}-{course-name}". Your job is to determine the correct institution prefix.',
-        'Identify the institution as a whole, NOT a department. For example, if the domain is "cs.illinois.edu", the prefix is "uiuc" (not "cs").',
-        'Derive the prefix from the institution\'s primary domain name. For example, "berkeley.edu" gives "berkeley", "ubc.ca" gives "ubc".',
-        "Search the web to find the institution's primary domain if it is not obvious from the email domain.",
-        'You MUST always return a non-empty prefix. If the domain or institution is unfamiliar, derive the best short prefix you can from the available information (e.g. the domain name itself). Never refuse or return an empty prefix.',
-      ]),
-    },
     {
       role: 'user',
       content: formatPrompt([
         `Institution name: ${institutionLongName}`,
         `Institution short name: ${institutionShortName}`,
-        `Email domain: ${emailDomain}`,
+        `Contact email domain: ${contactEmailDomain || 'Unknown'}`,
+        `PrairieLearn account UID domain: ${accountUidDomain || 'Unknown'}`,
       ]),
     },
   ];
@@ -200,6 +197,7 @@ export async function suggestInstitutionPrefix({
   const response = await generateText({
     model: openai.responses('gpt-4o-mini'),
     output: Output.object({ schema: prefixSchema }),
+    instructions,
     messages: input,
     tools: { web_search: openai.tools.webSearch({}) },
   });

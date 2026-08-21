@@ -68,6 +68,15 @@ SET
   state_changed_at = EXCLUDED.state_changed_at,
   ready_at = EXCLUDED.ready_at;
 
+-- BLOCK lock_workspace_host_for_load_count_update
+SELECT
+  id
+FROM
+  workspace_hosts
+WHERE
+  instance_id = $instance_id
+FOR NO KEY UPDATE;
+
 -- BLOCK update_load_count
 UPDATE workspace_hosts AS wh
 SET

@@ -580,7 +580,7 @@ async function loadCourseInfo({
     const result = deduplicateByName<Entry>(info![fieldName] ?? [], defaults);
 
     if (result.duplicates.size > 0) {
-      const duplicateIdsString = [...result.duplicates].map((name) => `"${name}"`).join(', ');
+      const duplicateIdsString = Array.from(result.duplicates, (name) => `"${name}"`).join(', ');
       infofile.addWarning(
         loadedData,
         `Found duplicates in '${fieldName}': ${duplicateIdsString}. Only the last of each duplicate will be synced.`,
@@ -1135,9 +1135,7 @@ function validateQuestion({
  * @returns A comma-separated list of double-quoted values.
  */
 function formatValues(qids: Set<string> | string[]) {
-  return Array.from(qids)
-    .map((qid) => `"${qid}"`)
-    .join(', ');
+  return Array.from(qids, (qid) => `"${qid}"`).join(', ');
 }
 
 function validateAssessment({
@@ -1795,7 +1793,7 @@ function validateCourseInstance({
   if (courseInstance.studentLabels) {
     const result = deduplicateByName(courseInstance.studentLabels);
     if (result.duplicates.size > 0) {
-      const duplicateNamesString = [...result.duplicates].map((name) => `"${name}"`).join(', ');
+      const duplicateNamesString = Array.from(result.duplicates, (name) => `"${name}"`).join(', ');
       warnings.push(
         `Found duplicates in 'studentLabels': ${duplicateNamesString}. Only the last of each duplicate will be synced.`,
       );

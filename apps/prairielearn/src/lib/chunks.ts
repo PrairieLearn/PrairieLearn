@@ -707,7 +707,7 @@ async function diffChunks({
       }
 
       await Promise.all(
-        [...courseInstanceInfo.assessments].map(async (tid) => {
+        Array.from(courseInstanceInfo.assessments, async (tid) => {
           const assessmentExists =
             courseInstanceExists && tid in courseData.courseInstances[ciid].assessments;
           const clientFilesAssessmentExists = await fs.pathExists(

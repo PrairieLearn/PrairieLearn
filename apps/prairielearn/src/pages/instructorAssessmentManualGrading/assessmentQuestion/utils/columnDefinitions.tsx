@@ -1,11 +1,11 @@
-import { type Row, type Table, createColumnHelper } from '@tanstack/react-table';
-import { useEffect, useRef } from 'react';
-
 import { run } from '@prairielearn/run';
 import {
+  IndeterminateCheckbox,
   type MultiSelectFilterValue,
   OverlayTrigger,
+  type TanstackTableCoreInstance,
   applyMultiSelectFilter,
+  createTanstackTableColumnHelper,
   numericColumnFilterFn,
 } from '@prairielearn/ui';
 
@@ -19,27 +19,14 @@ import { GradingStatusCell } from '../components/GradingStatusCell.js';
 
 import { PointsWithEditButton, ScoreWithEditButton, generateAiGraderName } from './columnUtils.js';
 
-const columnHelper = createColumnHelper<InstanceQuestionRow>();
+const columnHelper = createTanstackTableColumnHelper<InstanceQuestionRow>();
 
-/**
- * A checkbox component that properly handles the indeterminate state using a ref and useEffect,
- * since React doesn't support indeterminate as a native attribute.
- */
-function SelectAllCheckbox({ table }: { table: Table<InstanceQuestionRow> }) {
-  const checkboxRef = useRef<HTMLInputElement>(null);
-  const isIndeterminate = table.getIsSomeRowsSelected();
-
-  useEffect(() => {
-    if (checkboxRef.current) {
-      checkboxRef.current.indeterminate = isIndeterminate;
-    }
-  }, [isIndeterminate]);
-
+function SelectAllCheckbox({ table }: { table: TanstackTableCoreInstance<InstanceQuestionRow> }) {
+  const allSelected = table.getIsAllRowsSelected();
   return (
-    <input
-      ref={checkboxRef}
-      type="checkbox"
-      checked={table.getIsAllRowsSelected()}
+    <IndeterminateCheckbox
+      checked={allSelected}
+      indeterminate={table.getIsSomeRowsSelected() && !allSelected}
       // Prevent browser from autocompleting the checkbox value when you return to the page.
       autoComplete="off"
       onChange={table.getToggleAllRowsSelectedHandler()}
@@ -56,7 +43,6 @@ interface CreateColumnsParams {
   csrfToken: string;
   assessment: StaffAssessment;
   courseInstanceId: string;
-  createCheckboxProps: (row: Row<InstanceQuestionRow>, table: Table<InstanceQuestionRow>) => any;
   onEditPointsSuccess: () => void;
   onEditPointsConflict: (conflictDetailsUrl: string) => void;
   scrollRef: React.RefObject<HTMLDivElement | null> | null;
@@ -73,7 +59,6 @@ export function createColumns({
   urlPrefix,
   csrfToken,
   courseInstanceId,
-  createCheckboxProps,
   onEditPointsSuccess,
   onEditPointsConflict,
   scrollRef,
@@ -94,12 +79,19 @@ export function createColumns({
     />
   );
 
-  return [
+  return columnHelper.columns([
     columnHelper.display({
       id: 'select',
       header: ({ table }) => <SelectAllCheckbox table={table} />,
-      cell: ({ row, table }) => {
-        return <input type="checkbox" {...createCheckboxProps(row, table)} />;
+      cell: ({ row }) => {
+        return (
+          <input
+            type="checkbox"
+            checked={row.getIsSelected()}
+            disabled={!row.getCanSelect()}
+            onChange={row.getToggleSelectedHandler()}
+          />
+        );
       },
       size: 40,
       minSize: 40,
@@ -201,13 +193,8 @@ export function createColumns({
           </span>
         );
       },
-      filterFn: (row, columnId, filter: MultiSelectFilterValue) => {
-        // We have to do this cast because columnId is a string.
-        // See https://github.com/TanStack/table/issues/4142#issuecomment-3518670925.
-        const current =
-          row.getValue<InstanceQuestionRow['instance_question']['instance_question_group_name']>(
-            columnId,
-          );
+      filterFn: (row, _columnId, filter: MultiSelectFilterValue) => {
+        const current = row.original.instance_question.instance_question_group_name;
         const groupName = current ?? 'No Group';
         return applyMultiSelectFilter(filter, (values) => values.includes(groupName));
       },
@@ -247,8 +234,8 @@ export function createColumns({
           />
         );
       },
-      filterFn: ({ getValue }, columnId, filter: MultiSelectFilterValue) => {
-        const requiresGrading = getValue(columnId);
+      filterFn: (row, _columnId, filter: MultiSelectFilterValue) => {
+        const requiresGrading = row.original.instance_question.requires_manual_grading;
         const status = requiresGrading ? 'Requires grading' : 'Graded';
         return applyMultiSelectFilter(filter, (values) => values.includes(status));
       },
@@ -261,8 +248,8 @@ export function createColumns({
       id: 'assigned_grader_name',
       header: 'Assigned grader',
       cell: (info) => info.getValue() || 'Unassigned',
-      filterFn: (row, columnId, filter: MultiSelectFilterValue) => {
-        const current = row.getValue<InstanceQuestionRow['assigned_grader_name']>(columnId);
+      filterFn: (row, _columnId, filter: MultiSelectFilterValue) => {
+        const current = row.original.assigned_grader_name;
         const grader = current ?? 'Unassigned';
         return applyMultiSelectFilter(filter, (values) => values.includes(grader));
       },
@@ -356,8 +343,8 @@ export function createColumns({
           return info.getValue();
         }
       },
-      filterFn: (row, columnId, filter: MultiSelectFilterValue) => {
-        const current = row.getValue<InstanceQuestionRow['last_grader_name']>(columnId);
+      filterFn: (row, _columnId, filter: MultiSelectFilterValue) => {
+        const current = row.original.last_grader_name;
         const rowData = row.original;
         const aiGraderName =
           rowData.instance_question.ai_grading_status !== 'None'
@@ -370,7 +357,7 @@ export function createColumns({
             values.includes(grader) || (aiGraderName != null && values.includes(aiGraderName)),
         );
       },
-      sortingFn: (rowA, rowB) => {
+      sortFn: (rowA, rowB) => {
         const aAiGradingStatus = rowA.original.instance_question.ai_grading_status;
         const bAiGradingStatus = rowB.original.instance_question.ai_grading_status;
 
@@ -473,7 +460,7 @@ export function createColumns({
           filter.values.every((d) => rubricDiff.some((item) => item.description === d));
         return filter.mode === 'include' ? matches : !matches;
       },
-      sortingFn: (rowA, rowB) => {
+      sortFn: (rowA, rowB) => {
         const aDiff = run(() => {
           if (rowA.original.instance_question.rubric_difference == null) return -1;
           return rowA.original.instance_question.rubric_difference.length;
@@ -500,5 +487,5 @@ export function createColumns({
         return filterValues.every((itemId) => rubricItemIds.includes(itemId));
       },
     }),
-  ];
+  ]);
 }

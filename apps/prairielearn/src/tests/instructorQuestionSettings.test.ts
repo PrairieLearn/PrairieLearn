@@ -5,8 +5,9 @@ import fs from 'fs-extra';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
 import { config } from '../lib/config.js';
+import { features } from '../lib/features/index.js';
 import { insertCoursePermissionsByUserUid } from '../models/course-permissions.js';
-import { selectQuestionById } from '../models/question.js';
+import { selectQuestionById, updateQuestion } from '../models/question.js';
 
 import { assertEditError, fetchCheerio } from './helperClient.js';
 import {
@@ -546,5 +547,30 @@ describe('Editing question settings', { concurrent: false }, () => {
     });
 
     await assertEditError(response, 'would be a parent directory of the existing question');
+  });
+
+  describe('public link for shared questions', () => {
+    const settingsUrl = `${siteUrl}/pl/course_instance/1/instructor/question/1/settings`;
+
+    beforeAll(async () => {
+      await features.enable('question-sharing');
+    });
+
+    test('hides the public link when the question is not shared publicly', async () => {
+      const response = await fetchCheerio(settingsUrl);
+      assert.equal(response.status, 200);
+      assert.lengthOf(response.$('#publicLink'), 0);
+    });
+
+    test('shows the public link once the question is shared publicly', async () => {
+      await updateQuestion({ question_id: '1', patch: { share_publicly: true } });
+
+      const response = await fetchCheerio(settingsUrl);
+      assert.equal(response.status, 200);
+      assert.equal(
+        response.$('#publicLink').val(),
+        `${siteUrl}/pl/public/course/1/question/1/preview`,
+      );
+    });
   });
 });

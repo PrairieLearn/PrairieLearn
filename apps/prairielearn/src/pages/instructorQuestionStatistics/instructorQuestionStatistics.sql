@@ -40,6 +40,7 @@ FROM
   ) AS d
 WHERE
   aq.question_id = $question_id
+  AND ci.course_id = $course_id
   AND aq.deleted_at IS NULL
 ORDER BY
   d.start_date DESC NULLS LAST,

@@ -133,8 +133,9 @@ export function SubmissionPanel({
                   data-bs-target="#submission-feedback-${submission.id}-body"
                   aria-expanded="${expanded ? 'true' : 'false'}"
                   aria-controls="submission-feedback-${submission.id}-body"
+                  aria-label="Toggle feedback details"
                 >
-                  <i class="fa fa-angle-up ms-1 expand-icon"></i>
+                  <i class="fa fa-angle-up ms-1 expand-icon" aria-hidden="true"></i>
                 </button>
               </div>
               <div
@@ -237,8 +238,9 @@ export function SubmissionPanel({
               data-bs-target="#submission-${submission.id}-body"
               aria-expanded="${expanded ? 'true' : 'false'}"
               aria-controls="submission-${submission.id}-body"
+              aria-label="Toggle submission details"
             >
-              <i class="fa fa-angle-up ms-1 expand-icon"></i>
+              <i class="fa fa-angle-up ms-1 expand-icon" aria-hidden="true"></i>
             </button>
           </div>
         </div>
@@ -353,8 +355,10 @@ function SubmissionStatusBadge({
         }
       } else if (question.grading_method === 'External') {
         if (submission.gradable) {
+          // The external grading status ("Grading requested", "in progress",
+          // "Graded!") is updated live over the socket; announce it.
           autoGradingBadge = html`
-            <span class="badge text-bg-secondary">
+            <span class="badge text-bg-secondary" role="status">
               ${autoStatusPrefix}
               <span id="grading-status-${submission.id}"></span>
             </span>

@@ -1,5 +1,6 @@
 import { isEmpty } from 'es-toolkit/compat';
 import jsonStringifySafe from 'json-stringify-safe';
+import { z } from 'zod';
 
 import { formatErrorStack } from '@prairielearn/error';
 import { html, unsafeHtml } from '@prairielearn/html';
@@ -40,6 +41,9 @@ export function ErrorPage({
   } = error.data ?? {};
 
   const formattedSqlQuery = formatQueryWithErrorPosition(sqlQuery, sqlError?.position);
+  const isZodError = error instanceof z.ZodError;
+  const errorHeading = isZodError ? 'Validation error' : error.message;
+  const zodErrorDetails = isZodError ? z.prettifyError(error) : undefined;
 
   return PageLayout({
     resLocals,
@@ -55,8 +59,10 @@ export function ErrorPage({
         </div>
 
         <div class="card-body">
-          <h2 class="mb-3 h4">${error.message}</h2>
-
+          <h2 class="mb-3 h4">${errorHeading}</h2>
+          ${isZodError
+            ? html` <pre class="bg-light border rounded p-2">${zodErrorDetails}</pre> `
+            : ''}
           ${unsafeHtml(errorInfo ?? '')}
 
           <p><strong>Error ID:</strong> <code>${errorId}</code></p>
@@ -88,7 +94,7 @@ export function ErrorPage({
             : ''}
           ${error.stack
             ? html`
-                <p><strong>Stack trace:</strong></p>
+                <p class="mt-3"><strong>Stack trace:</strong></p>
                 <pre class="bg-dark text-white rounded p-2">${formatErrorStack(error)}</pre>
               `
             : ''}

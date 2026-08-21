@@ -52,7 +52,8 @@ export async function sync(
     if (infofile.hasErrors(question)) return;
     syncedQuestionIds.push(questionIds[qid]);
     const dedupedQuestionSharingSetNames = new Set(question.data?.sharingSets);
-    const questionSharingSetIds = [...dedupedQuestionSharingSetNames].map(
+    const questionSharingSetIds = Array.from(
+      dedupedQuestionSharingSetNames,
       (sharingSet) => sharingSetIdsByName[sharingSet],
     );
     questionSharingSetIds.forEach((sharingSetId) => {

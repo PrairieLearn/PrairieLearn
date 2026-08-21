@@ -1,5 +1,23 @@
 # @prairielearn/config
 
+## 5.1.1
+
+### Patch Changes
+
+- df28e68: Bump dependencies
+
+## 5.1.0
+
+### Minor Changes
+
+- 87c8b71: Add a shared config source for Conductor workspace environment variables.
+
+## 5.0.1
+
+### Patch Changes
+
+- 4a0ee46: Bump dependencies
+
 ## 5.0.0
 
 ### Major Changes

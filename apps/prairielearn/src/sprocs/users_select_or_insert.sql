@@ -23,14 +23,16 @@ BEGIN
     FROM users
     WHERE
         users.uin = users_select_or_insert.uin
-        AND (users_select_or_insert.institution_id IS NULL OR users.institution_id = users_select_or_insert.institution_id);
+        AND (users_select_or_insert.institution_id IS NULL OR users.institution_id = users_select_or_insert.institution_id)
+    FOR NO KEY UPDATE;
 
     -- if we couldn't match "uin", try "uid"
     IF u.id IS NULL THEN
         SELECT *
         INTO u
         FROM users
-        WHERE users.uid = users_select_or_insert.uid;
+        WHERE users.uid = users_select_or_insert.uid
+        FOR NO KEY UPDATE;
     END IF;
 
     -- if we found a user, with institution_id not 1, try their existing institution for a uid match to avoid checking all institutions

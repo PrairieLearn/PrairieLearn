@@ -5,6 +5,8 @@ import { useState } from 'react';
 import { Alert, Form, Modal, Spinner } from 'react-bootstrap';
 import { FormProvider, useForm, useWatch } from 'react-hook-form';
 
+import { type AppError, getAppError } from '@prairielearn/trpc/client';
+
 import {
   CourseInstancePermissionsForm,
   type PermissionsFormValues,
@@ -18,12 +20,12 @@ import {
   type SelfEnrollmentFormValues,
 } from '../../../components/CourseInstanceSelfEnrollmentForm.js';
 import { CourseInstanceShortNameDescription } from '../../../components/ShortNameDescriptions.js';
-import { type AppError, getAppError } from '../../../lib/client/errors.js';
 import type { PageContext } from '../../../lib/client/page-context.js';
 import {
   getCourseInstanceEditErrorUrl,
   getCourseInstanceSettingsUrl,
 } from '../../../lib/client/url.js';
+import { DUPLICATE_COURSE_INSTANCE_SHORT_NAME_ERROR } from '../../../lib/course-instances.shared.js';
 import { validateShortName } from '../../../lib/short-name.js';
 import { useTRPC } from '../../../trpc/courseInstance/context.js';
 import type { InstanceAdminSettingsError } from '../../../trpc/courseInstance/instance-admin-settings.js';
@@ -50,6 +52,7 @@ export function CopyCourseInstanceModal({
   courseShortName,
   isAdministrator,
   accessControlMigrationNeeded,
+  names,
 }: {
   show: boolean;
   onHide: () => void;
@@ -58,8 +61,16 @@ export function CopyCourseInstanceModal({
   courseShortName: string;
   isAdministrator: boolean;
   accessControlMigrationNeeded: boolean;
+  names: { short_name: string }[];
 }) {
   const [step, setStep] = useState<Step>('settings');
+
+  // Seeded from the short names known at page load and extended whenever the
+  // server rejects one (e.g. a race where another instance took it), so a
+  // rejected short name is blocked client-side and can't be re-submitted.
+  const [takenShortNames, setTakenShortNames] = useState(
+    () => new Set(names.map((name) => name.short_name.toLowerCase())),
+  );
 
   const trpc = useTRPC();
   const methods = useForm<CopyFormValues>({
@@ -83,6 +94,7 @@ export function CopyCourseInstanceModal({
     reset,
     control,
     trigger,
+    setError,
     formState: { errors },
   } = methods;
 
@@ -143,6 +155,17 @@ export function CopyCourseInstanceModal({
         window.location.href = getCourseInstanceSettingsUrl(data.course_instance_id);
       }
     },
+    onError: (error, variables) => {
+      // Map the short-name conflict back to its field, block the rejected value,
+      // and return to the settings step so the user lands where the fix is. Reset
+      // the mutation so the message shows only on the field, not also in the alert.
+      if (error.message === DUPLICATE_COURSE_INSTANCE_SHORT_NAME_ERROR) {
+        setTakenShortNames((prev) => new Set(prev).add(variables.short_name.trim().toLowerCase()));
+        setError('short_name', { type: 'server', message: error.message });
+        setStep('settings');
+        copyMutation.reset();
+      }
+    },
   });
 
   const handleClose = () => {
@@ -168,6 +191,7 @@ export function CopyCourseInstanceModal({
   };
 
   const isPending = copyMutation.isPending;
+  const copyErrorMessage = copyMutation.error?.message;
 
   return (
     <Modal show={show} backdrop="static" size="lg" onHide={handleClose}>
@@ -193,6 +217,7 @@ export function CopyCourseInstanceModal({
               courseShortName={courseShortName}
               errors={errors}
               register={register}
+              takenShortNames={takenShortNames}
             />
           )}
           {step === 'access-control' && (
@@ -202,6 +227,17 @@ export function CopyCourseInstanceModal({
               accessControlStrategy={accessControlStrategy}
               register={register}
             />
+          )}
+
+          {copyErrorMessage && (
+            <Alert
+              variant="danger"
+              className="mx-3 mb-0"
+              dismissible
+              onClose={() => copyMutation.reset()}
+            >
+              {copyErrorMessage}
+            </Alert>
           )}
 
           <Modal.Footer>
@@ -250,11 +286,13 @@ function SettingsStep({
   courseShortName,
   errors,
   register,
+  takenShortNames,
 }: {
   courseInstance: PageContext<'courseInstance', 'instructor'>['course_instance'];
   courseShortName: string;
   errors: ReturnType<typeof useForm<CopyFormValues>>['formState']['errors'];
   register: ReturnType<typeof useForm<CopyFormValues>>['register'];
+  takenShortNames: Set<string>;
 }) {
   return (
     <Modal.Body>
@@ -300,9 +338,14 @@ function SettingsStep({
           defaultValue=""
           {...register('short_name', {
             required: 'Short name is required',
-            validate: (value) => {
-              const result = validateShortName(value);
-              return result.valid || result.message;
+            validate: {
+              format: (value) => {
+                const result = validateShortName(value);
+                return result.valid || result.message;
+              },
+              duplicate: (value) =>
+                !takenShortNames.has(value.trim().toLowerCase()) ||
+                DUPLICATE_COURSE_INSTANCE_SHORT_NAME_ERROR,
             },
           })}
         />
@@ -386,6 +429,13 @@ function AccessControlStep({
   const blockedAssessments = assessments.filter((a) => a.errors.length > 0);
   const showPreserveOption = accessControlStrategy === 'migrate' && (appError || !allCanMigrate);
 
+  // Only the assessments that need attention (caveats or manual review) are listed;
+  // the ones that migrate cleanly are summarized by the count but not enumerated.
+  const assessmentsNeedingAttention = assessments.filter(
+    (a) => a.errors.length > 0 || a.notes.length > 0,
+  );
+  const cleanlyMigratableCount = assessments.length - assessmentsNeedingAttention.length;
+
   if (!appError && assessments.length === 0) {
     return (
       <Modal.Body>
@@ -412,8 +462,14 @@ function AccessControlStep({
             <strong>
               {assessments.length} assessment{assessments.length !== 1 ? 's' : ''}
             </strong>{' '}
-            with legacy access control rules. Choose how to handle them in the copy. Learn more
-            about{' '}
+            with legacy access control rules. Choose how to handle copying them.{' '}
+            {cleanlyMigratableCount > 0 && assessmentsNeedingAttention.length > 0 && (
+              <>
+                <strong>{cleanlyMigratableCount}</strong> will migrate cleanly and{' '}
+                {cleanlyMigratableCount === 1 ? 'is' : 'are'} not listed below.{' '}
+              </>
+            )}
+            Learn more about{' '}
             <a
               href="https://docs.prairielearn.com/assessment/accessControl/"
               target="_blank"
@@ -442,50 +498,46 @@ function AccessControlStep({
             </Alert>
           )}
 
-          <div className="border rounded mb-3" style={{ maxHeight: '240px', overflowY: 'auto' }}>
-            <table
-              className="table table-sm table-hover mb-0"
-              aria-label="Assessments with legacy access control"
-            >
-              <thead className="table-light sticky-top">
-                <tr>
-                  <th>Assessment</th>
-                  <th>Status</th>
-                  <th>Notes</th>
-                </tr>
-              </thead>
-              <tbody>
-                {assessments.map((a) => (
-                  <tr key={a.tid}>
-                    <td>
-                      <code>{a.tid}</code>
-                      <small className="text-muted d-block">{a.title}</small>
-                    </td>
-                    <td>
-                      {a.errors.length === 0 ? (
-                        a.notes.length > 0 ? (
-                          <span className="badge text-bg-info">Migrates with notes</span>
-                        ) : (
-                          <span className="badge text-bg-success">Can migrate</span>
-                        )
-                      ) : (
-                        <span className="badge text-bg-warning">Manual review</span>
-                      )}
-                    </td>
-                    <td>
-                      {a.errors.length > 0 ? (
-                        <small className="text-danger">{a.errors.join(' ')}</small>
-                      ) : a.notes.length > 0 ? (
-                        <small className="text-muted">{a.notes.join(' ')}</small>
-                      ) : (
-                        <small className="text-muted">-</small>
-                      )}
-                    </td>
+          {assessmentsNeedingAttention.length > 0 && (
+            <div className="border rounded mb-3" style={{ maxHeight: '240px', overflowY: 'auto' }}>
+              <table
+                className="table table-sm table-hover mb-0"
+                aria-label="Assessments that need attention"
+              >
+                <thead className="table-light sticky-top">
+                  <tr>
+                    <th>Assessment</th>
+                    <th>Status</th>
+                    <th>Notes</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {assessmentsNeedingAttention.map((a) => (
+                    <tr key={a.tid}>
+                      <td>
+                        <code>{a.tid}</code>
+                        <small className="text-muted d-block">{a.title}</small>
+                      </td>
+                      <td>
+                        {a.errors.length > 0 ? (
+                          <span className="badge text-bg-warning">Manual review</span>
+                        ) : (
+                          <span className="badge text-bg-info">Migrates with notes</span>
+                        )}
+                      </td>
+                      <td>
+                        {a.errors.length > 0 ? (
+                          <small className="text-danger">{a.errors.join(' ')}</small>
+                        ) : (
+                          <small className="text-muted">{a.notes.join(' ')}</small>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </>
       )}
 

@@ -491,7 +491,6 @@ function checkComponentProps({
         node: reportNode,
         messageId: 'spreadAttributes',
       });
-      continue;
     }
   }
 }

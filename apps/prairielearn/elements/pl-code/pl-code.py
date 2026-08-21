@@ -19,7 +19,9 @@ from pygments.token import Token, _TokenType
 from pygments_ansi_color import color_tokens
 
 LANGUAGE_DEFAULT = None
-STYLE_NAME_DEFAULT = "friendly"
+# `xcode` is used as the default because it is the light Pygments style whose
+# every token color meets AA contrast (4.5:1) against its background.
+STYLE_NAME_DEFAULT = "xcode"
 NO_HIGHLIGHT_DEFAULT = False
 SOURCE_FILE_NAME_DEFAULT = None
 PREVENT_SELECT_DEFAULT = False
@@ -174,7 +176,7 @@ def get_formatter(
 ) -> HighlightingHtmlFormatter:
     class CustomStyleWithAnsiColors(BaseStyle):
         # pygments did not annotate their class variables correctly (https://github.com/pygments/pygments/pull/2838)
-        styles = {**BaseStyle.styles, **get_ansi_color_tokens()}  # noqa: RUF012
+        styles = {**BaseStyle.styles, **get_ansi_color_tokens()}  # ruff:ignore[mutable-class-default]
 
         highlight_color = (
             highlight_lines_color or BaseStyle.highlight_color or "#b3d7ff"

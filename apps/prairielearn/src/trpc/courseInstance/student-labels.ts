@@ -5,6 +5,7 @@ import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
 import { runInTransactionAsync } from '@prairielearn/postgres';
+import { throwAppError } from '@prairielearn/trpc/server';
 import { IdSchema } from '@prairielearn/zod';
 
 import { StaffStudentLabelSchema } from '../../lib/client/safe-db-types.js';
@@ -37,7 +38,6 @@ import {
   MAX_STUDENT_LABELS_PER_COURSE_INSTANCE,
   MAX_STUDENT_LABEL_NAME_LENGTH,
 } from '../../schemas/infoCourseInstance.js';
-import { throwAppError } from '../app-errors.js';
 
 import {
   requireCourseInstancePermissionEdit,

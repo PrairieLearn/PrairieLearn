@@ -28,6 +28,7 @@ First, the `generate` function is called to generate the question variant. It sh
 ```python title="server.py"
 import random
 
+
 def generate(data):
     # Generate random parameters for the question and store them in the data["params"] dict:
     data["params"]["x"] = random.randint(5, 10)
@@ -57,6 +58,7 @@ Question variants are randomized based on the variant seed (`data["variant_seed"
 
     ```python title="server.py"
     from faker import Faker
+
     fake = Faker()
 
     fake.name()
@@ -74,8 +76,8 @@ For generated floating point answers, it's important to use consistent rounding 
         # Rounds numbers at the beginning
         a = np.round(33.33337, 2)
         b = np.round(33.33333, 2)
-        data["params"]["a_for_student"] = f'{a:.2f}'
-        data["params"]["b_for_student"] = f'{b:.2f}'
+        data["params"]["a_for_student"] = f"{a:.2f}"
+        data["params"]["b_for_student"] = f"{b:.2f}"
         data["correct_answers"]["c"] = a - b
     ```
 
@@ -85,8 +87,8 @@ For generated floating point answers, it's important to use consistent rounding 
     def generate(data):
         a = 33.33337
         b = 33.33333
-        data["params"]["a_for_student"] = f'{a:.2f}'
-        data["params"]["b_for_student"] = f'{a:.2f}'
+        data["params"]["a_for_student"] = f"{a:.2f}"
+        data["params"]["b_for_student"] = f"{a:.2f}"
         # Correct answer is computed with full precision,
         # but the parameters displayed to students are rounded.
         data["correct_answers"]["c"] = a - b
@@ -145,8 +147,9 @@ The `parse()` function can also be used to create custom files to be sent to an 
 ```python title="server.py"
 import prairielearn as pl
 
+
 def parse(data):
-    code = f"x = {data["submitted_answers"]["expression"]}"
+    code = f"x = {data['submitted_answers']['expression']}"
     pl.add_submitted_file(data, "user_code.py", raw_contents=code)
 ```
 
@@ -176,6 +179,7 @@ You can set `data["format_errors"][NAME]` to mark the submission as invalid. Thi
 ```python title="server.py"
 import math
 import prairielearn as pl
+
 
 def grade(data):
     # Give half points for incorrect answers larger than "x", only if not already correct.
@@ -233,6 +237,7 @@ This can be used like so:
 ```python title="server.py"
 import prairielearn as pl
 
+
 def grade(data):
     # update partial_scores as necessary
     data["partial_scores"]["y"]["score"] = 0.5
@@ -249,6 +254,7 @@ If you prefer not to show score badges for individual parts, you can unset the d
 
     ```python title="server.py"
     import prairielearn as pl
+
 
     def grade(data):
         # update partial_scores as necessary
@@ -287,6 +293,7 @@ import random
 import math
 import prairielearn as pl
 
+
 def generate(data):
     # Generate random parameters for the question and store them in the data["params"] dict:
     data["params"]["x"] = random.randint(5, 10)
@@ -294,10 +301,12 @@ def generate(data):
     # Also compute the correct answer (if there is one) and store in the data["correct_answers"] dict:
     data["correct_answers"]["y"] = 2 * data["params"]["x"]
 
+
 def parse(data):
     # Reject negative numbers for "y" if we don't already have a format error
     if "y" not in data["format_errors"] and int(data["submitted_answers"]["y"]) < 0:
         data["format_errors"]["y"] = "Negative numbers are not allowed"
+
 
 def grade(data):
     # Give half points for incorrect answers larger than "x", only if not already correct.
@@ -395,8 +404,10 @@ The `prairielearn` Python library provides the utility functions [`to_json`][pra
 import numpy as np
 import prairielearn as pl
 
+
 def generate(data):
     data["params"]["numpy_array"] = pl.to_json(np.array([1.2, 3.5, 5.1]))
+
 
 def grade(data):
     pl.from_json(data["params"]["numpy_array"])
@@ -418,7 +429,7 @@ Courses can opt in so that `server.py` receives user and group identity. A cours
 
 ```python
 def generate(data):
-    user = data["options"]["user"]    # Variant owner; None on group assessments
+    user = data["options"]["user"]  # Variant owner; None on group assessments
     # { "uid": "student@example.com", "uin": "123456", "name": "John Doe" }
     group = data["options"]["group"]  # None on individual assessments
     # { "name": "Group 1", "members": [ { "uid": "student@example.com", "uin": "123456", "name": "John Doe" } ] }
@@ -462,8 +473,10 @@ import random
 import io
 import matplotlib.pyplot as plt
 
+
 def generate(data):
     data["params"]["a"] = random.choice([0.25, 0.5, 1, 2, 4])
+
 
 def file(data):
     # check for the appropriate filename

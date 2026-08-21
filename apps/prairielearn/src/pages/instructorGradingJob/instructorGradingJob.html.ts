@@ -184,7 +184,8 @@ export function InstructorGradingJob({
                     .id}/file/output.log"
                 ></pre>
                 <div id="job-output-loading" class="w-100 text-center">
-                  <i class="fa fa-spinner fa-spin fa-2x"></i>
+                  <i class="fa fa-spinner fa-spin fa-2x" aria-hidden="true"></i>
+                  <span class="visually-hidden">Loading grading job output…</span>
                 </div>
               `
             : gradingJobRow.grading_job.output

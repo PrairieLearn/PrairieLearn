@@ -30,10 +30,9 @@ export interface SyncEnrollmentInfo {
  * Computes the diff between the input student list and the current enrollments.
  *
  * Sync logic (student list is the source of truth):
- * - Students on list but not `joined`/`invited`/`lti13_pending`: invite or re-enroll.
+ * - Students on list but not `joined`/`invited`: invite or re-enroll.
  * - Students not on list who are `joined`: remove.
  * - Students not on list who are `invited`/`rejected`: cancel invitation.
- * - `lti13_pending` is intentionally non-actionable until LTI roster sync is supported.
  */
 export function computeSyncDiff(
   inputUids: string[],
@@ -62,7 +61,7 @@ export function computeSyncDiff(
         currentStatus: null,
         enrollmentId: null,
       });
-    } else if (!['joined', 'invited', 'lti13_pending'].includes(existing.enrollment.status)) {
+    } else if (!['joined', 'invited'].includes(existing.enrollment.status)) {
       toInvite.push({
         uid: existing.user?.uid ?? existing.enrollment.pending_uid ?? uid,
         currentStatus: existing.enrollment.status,

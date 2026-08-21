@@ -1,13 +1,13 @@
 interface ColumnWithOptionalChildren {
   id?: string | null;
-  columns?: ColumnWithOptionalChildren[];
+  columns?: readonly ColumnWithOptionalChildren[];
 }
 
 /**
  * Recursively extracts leaf column IDs from column definitions.
  * Group columns are skipped, only actual data columns are included.
  */
-export function extractLeafColumnIds(columns: ColumnWithOptionalChildren[]): string[] {
+export function extractLeafColumnIds(columns: readonly ColumnWithOptionalChildren[]): string[] {
   const leafIds: string[] = [];
   for (const col of columns) {
     if (col.columns && col.columns.length > 0) {

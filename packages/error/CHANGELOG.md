@@ -1,5 +1,29 @@
 # @prairielearn/error
 
+## 3.0.13
+
+### Patch Changes
+
+- e2ed7cd: Apply additional eslint unicorn rules
+
+## 3.0.12
+
+### Patch Changes
+
+- 00945c2: Deprecate `formatErrorStackSafe` in favor of structured error logging.
+
+## 3.0.11
+
+### Patch Changes
+
+- df28e68: Bump dependencies
+
+## 3.0.10
+
+### Patch Changes
+
+- 4a0ee46: Bump dependencies
+
 ## 3.0.9
 
 ### Patch Changes

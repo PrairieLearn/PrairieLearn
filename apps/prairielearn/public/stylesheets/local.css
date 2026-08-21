@@ -2,6 +2,19 @@
  * General styles
  *****************/
 
+/* WCAG 1.4.3: Bootstrap's default link blue (#0d6efd) drops below 4.5:1 on the
+   tinted surfaces we use it on (bg-light 4.3:1, inline-code bg 3.8:1, and the
+   `.nav-link` pills used by pl-variable-output). Darken the link token to
+   $blue-700 (#0a58ca), which clears 4.5:1 on all of them. `<a>` reads the `-rgb`
+   variant while `.nav-link` reads the literal, so both are overridden.
+   (Links inside alerts use `.alert-link`, which is colored per alert variant.) */
+:root {
+  --bs-link-color: #0a58ca;
+  --bs-link-color-rgb: 10, 88, 202;
+  --bs-link-hover-color: #084298;
+  --bs-link-hover-color-rgb: 8, 66, 152;
+}
+
 body {
   overflow-y: scroll;
 }
@@ -262,6 +275,10 @@ mjx-container {
   margin-bottom: 0;
 }
 
+.card-body > :last-child {
+  margin-bottom: 0 !important;
+}
+
 .btn.btn-xs {
   padding: 1px 5px;
   font-size: 0.7rem;
@@ -311,6 +328,11 @@ a.badge {
   border-top-color: var(--bs-primary);
   border-top-width: 0.2rem;
   padding-top: 0.4rem;
+}
+
+/* Ensure inactive tabs have sufficient contrast on light tab bars. */
+.nav-tabs.pl-nav-tabs-bar .nav-link:not(.active) {
+  color: var(--bs-gray-700);
 }
 
 /* Used to give table rows the same padding as Bootstrap card headers */

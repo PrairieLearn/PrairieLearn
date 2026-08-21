@@ -28,7 +28,7 @@ columns
 indexes
     variants_pkey: PRIMARY KEY (id) USING btree (id)
     variants_instance_question_id_number_key: UNIQUE (instance_question_id, number) USING btree (instance_question_id, number)
-    variants_workspace_id_key: USING btree (workspace_id)
+    variants_workspace_id_unique_idx: UNIQUE USING btree (workspace_id) WHERE workspace_id IS NOT NULL
 
 check constraints
     user_team_xor: CHECK (user_id IS NOT NULL AND team_id IS NULL OR team_id IS NOT NULL AND user_id IS NULL)
