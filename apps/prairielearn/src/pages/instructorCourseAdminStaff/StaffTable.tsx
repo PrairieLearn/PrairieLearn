@@ -878,7 +878,7 @@ function StaffTableInner({
     return registry;
   }, [courseInstances]);
 
-  const { columnFilters, onColumnFiltersChange, onResetColumnFilters } =
+  const { columnFilters, activeColumnFilterIds, onColumnFiltersChange, onResetColumnFilters } =
     useColumnFilters(filterRegistry);
 
   const { activeCourseInstanceIds, upcomingCourseInstanceIds } = useMemo(() => {
@@ -1208,6 +1208,7 @@ function StaffTableInner({
           headerButtons={headerButtons}
           columnManager={{ buttons: instancePresetDropdown }}
           statusContent={statusContent}
+          activeColumnFilterIds={activeColumnFilterIds}
           onResetColumnFilters={onResetColumnFilters}
         />
       </div>
