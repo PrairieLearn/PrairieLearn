@@ -279,7 +279,7 @@ function GradebookTable({
           },
         }),
 
-        ...Array.from(assessmentsBySet.groups.entries()).map(([setId, assessments]) =>
+        ...Array.from(assessmentsBySet.groups.entries(), ([setId, assessments]) =>
           columnHelper.group({
             id: `group_${setId}`,
             header: assessmentsBySet.headingById.get(setId) ?? 'Unknown',

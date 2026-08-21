@@ -667,7 +667,7 @@ const previewDeletion = t.procedure
     }
 
     const collator = new Intl.Collator(undefined, { numeric: true });
-    const questionMemberships = [...membershipsByQid].map(([qid, perCourseInstance]) => ({
+    const questionMemberships = Array.from(membershipsByQid, ([qid, perCourseInstance]) => ({
       qid,
       courseInstances: [...perCourseInstance.values()]
         .sort((a, b) => collator.compare(a.courseInstanceShortName, b.courseInstanceShortName))

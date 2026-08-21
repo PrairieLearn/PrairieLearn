@@ -551,21 +551,20 @@ function CourseRequestApproveModalContent({
                       <div className="mt-1">
                         <span className="small text-muted">Sources</span>
                         <div className="d-flex flex-wrap gap-1">
-                          {[
-                            ...new Map(
-                              legitimacyQuery.data.sources.map((s) => [s.url, s]),
-                            ).values(),
-                          ].map((source) => (
-                            <a
-                              key={source.url}
-                              href={source.url}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="small"
-                            >
-                              {source.title ?? source.url}
-                            </a>
-                          ))}
+                          {Array.from(
+                            new Map(legitimacyQuery.data.sources.map((s) => [s.url, s])).values(),
+                            (source) => (
+                              <a
+                                key={source.url}
+                                href={source.url}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="small"
+                              >
+                                {source.title ?? source.url}
+                              </a>
+                            ),
+                          )}
                         </div>
                       </div>
                     )}
