@@ -2703,9 +2703,6 @@ importers:
 
   packages/trpc:
     dependencies:
-      '@tanstack/react-query':
-        specifier: ^5.101.4
-        version: 5.101.4(react@19.2.8)
       '@trpc/client':
         specifier: ^11.18.0
         version: 11.18.0(@trpc/server@11.18.0(typescript@6.0.3))(typescript@6.0.3)
@@ -2721,19 +2718,13 @@ importers:
       es-toolkit:
         specifier: ^1.50.0
         version: 1.50.0
-      react:
-        specifier: ^19.2.8
-        version: 19.2.8
-      react-bootstrap:
-        specifier: 3.0.0-beta.5
-        version: 3.0.0-beta.5(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
-      react-dom:
-        specifier: ^19.2.8
-        version: 19.2.8(react@19.2.8)
     devDependencies:
       '@prairielearn/tsconfig':
         specifier: workspace:^
         version: link:../tsconfig
+      '@tanstack/react-query':
+        specifier: ^5.101.4
+        version: 5.101.4(react@19.2.8)
       '@types/node':
         specifier: ^24.13.3
         version: 24.13.3
@@ -2746,6 +2737,15 @@ importers:
       jsdom:
         specifier: ^29.1.1
         version: 29.1.1
+      react:
+        specifier: ^19.2.8
+        version: 19.2.8
+      react-bootstrap:
+        specifier: 3.0.0-beta.5
+        version: 3.0.0-beta.5(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      react-dom:
+        specifier: ^19.2.8
+        version: 19.2.8(react@19.2.8)
       vitest:
         specifier: ^4.1.10
         version: 4.1.10(@opentelemetry/api@1.9.1)(@types/node@24.13.3)(@vitest/coverage-v8@4.1.10)(jsdom@29.1.1)(vite@8.2.1(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(sass@1.102.0)(tsx@4.23.12)(yaml@2.9.0))
