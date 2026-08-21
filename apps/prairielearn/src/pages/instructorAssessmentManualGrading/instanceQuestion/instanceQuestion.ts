@@ -25,7 +25,6 @@ import {
 } from '../../../ee/lib/ai-instance-question-grouping/ai-instance-question-grouping-util.js';
 import { getAiGradingSettingsUrl, getAssessmentQuestionTrpcUrl } from '../../../lib/client/url.js';
 import { config } from '../../../lib/config.js';
-import { UserSchema } from '../../../lib/db-types.js';
 import { features } from '../../../lib/features/index.js';
 import { generateJobSequenceToken } from '../../../lib/generateJobSequenceToken.js';
 import { idsEqual } from '../../../lib/id.js';
@@ -240,8 +239,7 @@ router.get(
         };
       });
 
-      const authn_user = UserSchema.parse(res.locals.authn_user);
-      const userSettings = await selectUserSettings({ user_id: authn_user.id });
+      const userSettings = await selectUserSettings({ user_id: res.locals.authn_user.id });
 
       res.send(
         InstanceQuestionPage({
@@ -363,8 +361,7 @@ router.get(
             })) ?? undefined)
           : undefined;
 
-        const authn_user = UserSchema.parse(res.locals.authn_user);
-        const userSettings = await selectUserSettings({ user_id: authn_user.id });
+        const userSettings = await selectUserSettings({ user_id: res.locals.authn_user.id });
 
         const gradingPanel = GradingPanel({
           ...locals,
