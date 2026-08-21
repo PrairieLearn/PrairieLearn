@@ -438,11 +438,6 @@
             `<button type="button" class="btn btn-outline-secondary btn-sm me-1" id="file-delete-${uuid}-${index}">Delete</button>`,
           );
 
-          const $previewNotAvailable = $(
-            '<div class="alert alert-info mt-2 d-none" role="alert">Content preview is not available for this type of file.</div>',
-          );
-          $preview.append($previewNotAvailable);
-
           const $imgPreview = $('<img class="mw-100 mt-2 d-none"/>');
           $preview.append($imgPreview);
 
@@ -455,9 +450,28 @@
             $preview.addClass('show');
           }
 
+          const $fileButtons = $('<div class="align-self-center"></div>');
+          $fileButtons.append($download);
+          $deleteUpload.on('click', () => this.deleteUploadedFile(fileName));
+          $fileButtons.append($deleteUpload);
+          $fileButtons.append(
+            `<button type="button" class="btn btn-outline-secondary btn-sm file-preview-button ${!isExpanded ? 'collapsed' : ''}" data-bs-toggle="collapse" data-bs-target="#file-preview-${uuid}-${index}" aria-expanded="${isExpanded ? 'true' : 'false'}" aria-controls="file-preview-${uuid}-${index}"><span class="file-preview-icon fas fa-angle-down"></span></button>`,
+          );
+          $fileStatusContainer.append($fileButtons);
+
           try {
-            if (this.isPdf(fileData)) {
-              const url = this.b64ToBlobUrl(fileData, { type: 'application/pdf' });
+            // We don't use Uint8Array.fromBase64 because it is not supported in
+            // all browsers (e.g. Safari). atob returns a string where every
+            // char code represents a byte, so we need to convert it to a
+            // Uint8Array to properly interpret it. We only convert it to
+            // unicode text if needed.
+            const binaryData = Uint8Array.from(atob(fileData), (c) => c.charCodeAt(0));
+            const isPdf = this.isPdf(binaryData);
+            const url = URL.createObjectURL(
+              new Blob([binaryData], isPdf ? { type: 'application/pdf' } : undefined),
+            );
+
+            if (isPdf) {
               const $objectPreview = $(
                 `<div class="mt-2 ratio ratio-4x3">
                    <iframe src="${url}">
@@ -469,39 +483,41 @@
                 URL.revokeObjectURL(url);
               });
               $preview.append($objectPreview);
+              this.expandPreviewForFile($file, $preview);
             } else {
-              const fileContents = this.b64DecodeUnicode(fileData);
-              if (!this.isBinary(fileContents)) {
-                $preview.find('code').text(fileContents);
-              } else {
-                $preview.find('code').text('Binary file not previewed.');
-              }
-              $codePreview.removeClass('d-none');
+              // First try to display the file as an image. If that fails,
+              // try to display it as text.
+              $imgPreview
+                .on('load', () => {
+                  $imgPreview.removeClass('d-none');
+                  this.expandPreviewForFile($file, $preview);
+                  URL.revokeObjectURL(url);
+                })
+                .on('error', () => {
+                  URL.revokeObjectURL(url);
+                  if (!this.isBinary(binaryData)) {
+                    // To support unicode strings, we use a TextDecoder.
+                    $codePreview.find('code').text(new TextDecoder().decode(binaryData));
+                  } else {
+                    $codePreview.find('code').text('Binary file not previewed.');
+                  }
+                  $codePreview.removeClass('d-none');
+                  this.expandPreviewForFile($file, $preview);
+                })
+                .attr('src', url);
             }
-            this.expandPreviewForFile(fileName);
-          } catch {
-            const url = this.b64ToBlobUrl(fileData);
-            $imgPreview
-              .on('load', () => {
-                $imgPreview.removeClass('d-none');
-                this.expandPreviewForFile(fileName);
-                URL.revokeObjectURL(url);
-              })
-              .on('error', () => {
-                $previewNotAvailable.removeClass('d-none');
-                URL.revokeObjectURL(url);
-              })
-              .attr('src', url);
+          } catch (err) {
+            // This is a defensive catch in case the file is not a valid base64
+            // string. This should never happen, but if it does, we don't want
+            // to break the entire file upload element.
+            console.error(err);
+            $preview.append(
+              $(
+                '<div class="alert alert-info mt-2" role="alert">Content preview is not available for this type of file.</div>',
+              ),
+            );
           }
           $file.append($preview);
-          const $fileButtons = $('<div class="align-self-center"></div>');
-          $fileButtons.append($download);
-          $deleteUpload.on('click', () => this.deleteUploadedFile(fileName));
-          $fileButtons.append($deleteUpload);
-          $fileButtons.append(
-            `<button type="button" class="btn btn-outline-secondary btn-sm file-preview-button ${!isExpanded ? 'collapsed' : ''}" data-bs-toggle="collapse" data-bs-target="#file-preview-${uuid}-${index}" aria-expanded="${isExpanded ? 'true' : 'false'}" aria-controls="file-preview-${uuid}-${index}"><span class="file-preview-icon fas fa-angle-down"></span></button>`,
-          );
-          $fileStatusContainer.append($fileButtons);
         }
 
         $fileList.append($file);
@@ -556,9 +572,8 @@
       this.element.find('.messages').append($alert);
     }
 
-    expandPreviewForFile(name) {
-      const container = this.element.find(`li[data-file="${escapeFileName(name)}"]`);
-      container.find('.file-preview').addClass('show');
+    expandPreviewForFile(container, preview) {
+      preview.addClass('show');
       container.find('.file-preview-button').removeClass('collapsed');
     }
 
@@ -567,62 +582,24 @@
      * text. Uses the same method as git: if the first 8000 bytes contain a
      * NUL character ('\0'), we consider the file to be binary.
      * http://stackoverflow.com/questions/6119956/how-to-determine-if-git-handles-a-file-as-binary-or-as-text
-     * @param {string} decodedFileContents File contents to check
+     * @param {Uint8Array} binaryData The binary data to check
      * @returns {boolean} If the file is recognized as binary
      */
-    isBinary(decodedFileContents) {
-      const nulIdx = decodedFileContents.indexOf('\0');
-      const fileLength = decodedFileContents.length;
-      return nulIdx !== -1 && nulIdx <= Math.min(fileLength, 8000);
+    isBinary(binaryData) {
+      return binaryData.subarray(0, 8000).includes(0);
     }
 
     /**
      * Checks if the given file contents should be interpreted as a PDF file.
      * Using the magic numbers from the `file` utility command:
      * https://github.com/file/file/blob/master/magic/Magdir/pdf
-     * The signatures are converted to base64 for comparison, to avoid issues
-     * with converting from base64 to binary.
+     *
+     * @param {Uint8Array} binaryData The binary data to check
+     * @returns {boolean} If the file is recognized as a PDF
      */
-    isPdf(base64FileData) {
-      return (
-        base64FileData.match(/^JVBERi[0-3]/) || // "%PDF-"
-        base64FileData.match(/^CiVQREYt/) || // "\x0a%PDF-"
-        base64FileData.match(/^77u\/JVBERi[0-3]/) // "\xef\xbb\xbf%PDF-"
-      );
-    }
-
-    /**
-     * To support unicode strings, we use a method from Mozilla to decode:
-     * first we get the bytestream, then we percent-encode it, then we
-     * decode that to the original string.
-     * https://developer.mozilla.org/en-US/docs/Web/API/WindowBase64/Base64_encoding_and_decoding#The_Unicode_Problem
-     * @param {string} str the base64 string to decode
-     * @returns {string} the decoded string
-     */
-    b64DecodeUnicode(str) {
-      // Going backwards: from bytestream, to percent-encoding, to original string.
-      return decodeURIComponent(
-        atob(str)
-          .split('')
-          .map(function (c) {
-            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-          })
-          .join(''),
-      );
-    }
-
-    b64ToBlobUrl(str, options = undefined) {
-      const blob = new Blob(
-        [
-          new Uint8Array(
-            atob(str)
-              .split('')
-              .map((c) => c.charCodeAt(0)),
-          ),
-        ],
-        options,
-      );
-      return URL.createObjectURL(blob);
+    isPdf(binaryData) {
+      // Consider the first 8 bytes, to contain both the prefix and a potential BOM.
+      return new TextDecoder().decode(binaryData.subarray(0, 8)).match(/^\n?%PDF/);
     }
   }
 
