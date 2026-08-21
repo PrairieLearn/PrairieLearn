@@ -465,6 +465,8 @@ The element `pl-drawing-group` combines several elements as a group, to allow gr
       <pl-drawing-group visible="false">
           <!-- objects here will not be displayed -->
       </pl-drawing-group>
+
+  </pl-drawing-initial>
 </pl-drawing>
 ```
 
