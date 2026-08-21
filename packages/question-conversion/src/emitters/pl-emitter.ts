@@ -16,12 +16,18 @@ import type {
   PLQuestionInfoJson,
   PLQuestionOutput,
 } from '../types/pl-output.js';
-import { isWhitespaceText, loadHtmlFragment } from '../utils/html.js';
+import { CLIENT_FILES_QUESTION_URL, isWhitespaceText, loadHtmlFragment } from '../utils/html.js';
 import { slugify } from '../utils/slugify.js';
 import { stableUuid } from '../utils/uuid.js';
 
 import type { BodyEmitRegistry } from './body-emit-handler.js';
-import type { ConversionResult, ConversionWarning, EmitOptions, OutputEmitter } from './emitter.js';
+import type {
+  ConversionResult,
+  ConversionWarning,
+  EmitOptions,
+  EmitProcessedOptions,
+  OutputEmitter,
+} from './emitter.js';
 import { createPLBodyRegistry } from './handlers/index.js';
 
 /** Emits PrairieLearn question directories and assessment config from IR. */
@@ -79,6 +85,20 @@ export class PLEmitter implements OutputEmitter {
       questions,
       warnings,
     };
+  }
+
+  async emitProcessed(
+    itemContainer: IRItemContainer,
+    { processors, ...options }: EmitProcessedOptions,
+  ): Promise<ConversionResult> {
+    for (const processor of processors) {
+      await processor.beforeEmit?.(itemContainer);
+    }
+    const result = this.emit(itemContainer, options);
+    for (const processor of processors) {
+      await processor.afterEmit?.(result, itemContainer);
+    }
+    return result;
   }
 
   private emitAssessment(
@@ -341,6 +361,17 @@ export class PLEmitter implements OutputEmitter {
       ? handler.renderGradePy(question.body, question.feedback)
       : renderDefaultGradeFn(question.feedback);
     if (grade) parts.push(grade);
+
+    // Feedback is inserted after question.html's initial Mustache render. Resolve client-file
+    // references once the feedback has been inserted into the rendered HTML.
+    if (grade.includes(CLIENT_FILES_QUESTION_URL)) {
+      parts.push(`def render(data, html):
+    return html.replace(
+        ${JSON.stringify(CLIENT_FILES_QUESTION_URL)},
+        data["options"]["client_files_question_url"],
+    )
+`);
+    }
 
     return parts.join('\n');
   }

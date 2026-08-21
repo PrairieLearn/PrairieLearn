@@ -36,6 +36,44 @@ function makeQuestion(overrides: Partial<IRQuestion> = {}): IRQuestion {
 const emitter = new PLEmitter();
 
 describe('PLEmitter', () => {
+  it('runs asynchronous processors sequentially around emission', async () => {
+    const calls: string[] = [];
+    const result = await emitter.emitProcessed(makeAssessment([makeQuestion()]), {
+      processors: [
+        {
+          async beforeEmit(itemContainer) {
+            calls.push('first:before:start');
+            await Promise.resolve();
+            calls.push('first:before:end');
+            itemContainer.questions[0].title = 'Processed Question';
+          },
+          afterEmit(result) {
+            calls.push('first:after');
+            result.warnings.push({ questionId: 'q1', message: 'Processed' });
+          },
+        },
+        {
+          beforeEmit() {
+            calls.push('second:before');
+          },
+          afterEmit(result) {
+            calls.push(`second:after:${result.warnings.length}`);
+          },
+        },
+      ],
+    });
+
+    assert.deepEqual(calls, [
+      'first:before:start',
+      'first:before:end',
+      'second:before',
+      'first:after',
+      'second:after:1',
+    ]);
+    assert.equal(result.questions[0].infoJson.title, 'Processed Question');
+    assert.equal(result.warnings[0].message, 'Processed');
+  });
+
   it('generates info.json with correct fields', () => {
     const result = emitter.emit(makeAssessment([makeQuestion()]));
     assert.equal(result.questions.length, 1);

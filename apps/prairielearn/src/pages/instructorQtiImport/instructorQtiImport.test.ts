@@ -4,7 +4,11 @@ import fs from 'fs-extra';
 import * as tmp from 'tmp-promise';
 import { assert, describe, expect, it } from 'vitest';
 
-import type { ConversionResult } from '@prairielearn/question-conversion';
+import {
+  type ConversionResult,
+  type IRAssessment,
+  QtiImportRemoteImageCopier,
+} from '@prairielearn/question-conversion';
 
 import {
   countDeduplicatedQuestionBankQuestions,
@@ -40,6 +44,7 @@ function makeQuestions(directoryPrefix: string, questionSourceId: string, questi
           'image.png': 'aW1hZ2U=',
         },
         skippedVideos: [] as string[],
+        remoteImagesCopied: 0,
       },
     ],
     warnings: [
@@ -105,6 +110,19 @@ function makeResult({
     questions,
     warnings,
   };
+}
+
+async function processRemoteImages(
+  result: ConversionResult,
+  copier: QtiImportRemoteImageCopier,
+): Promise<void> {
+  const itemContainer: IRAssessment = {
+    sourceId: result.sourceId,
+    title: result.assessmentTitle,
+    sourceType: 'assessment',
+    questions: [],
+  };
+  await copier.afterEmit(result, itemContainer);
 }
 
 function makeConversionResult({
@@ -222,6 +240,7 @@ describe('serializeConversionResult', () => {
       }),
       'defaultwebctcategory-2',
       '/nonexistent',
+      new QtiImportRemoteImageCopier(),
     );
 
     assert(result.sourceType === 'assessment');
@@ -236,10 +255,138 @@ describe('serializeConversionResult', () => {
       }),
       'unfiled-questions-2',
       '/nonexistent',
+      new QtiImportRemoteImageCopier(),
     );
 
     assert(result.sourceType === 'question-bank');
     expect(result.directoryName).toBe('unfiled-questions-2');
+  });
+
+  it('includes copied remote images in the stored question output without an external-image warning', async () => {
+    const conversionResult = makeConversionResult({
+      sourceType: 'assessment',
+      directoryName: 'quiz',
+    });
+    conversionResult.questions.push({
+      directoryName: 'q1',
+      sourceId: 'source-q1',
+      infoJson: {
+        uuid: 'question-uuid',
+        title: 'Question',
+        topic: 'Imported',
+        tags: ['imported'],
+        type: 'v3',
+      },
+      questionHtml: '<img src="https://canvas.example/image?verifier=secret">',
+      clientFiles: new Map(),
+      skippedFiles: [],
+    });
+    const copier = new QtiImportRemoteImageCopier(async () => ({
+      content: Buffer.from('image contents'),
+      extension: 'png',
+    }));
+    await processRemoteImages(conversionResult, copier);
+
+    const { result } = await serializeConversionResult(
+      conversionResult,
+      'quiz',
+      '/nonexistent',
+      copier,
+    );
+
+    expect(result.questions[0].remoteImagesCopied).toBe(1);
+    expect(Object.keys(result.questions[0].clientFiles)).toHaveLength(1);
+    expect(result.questions[0].questionHtml).toContain('<pl-figure');
+    expect(result.questions[0].questionHtml).not.toContain('canvas.example');
+    expect(result.warnings).toEqual([]);
+  });
+
+  it('keeps a focused warning when a remote image cannot be copied', async () => {
+    const conversionResult = makeConversionResult({
+      sourceType: 'assessment',
+      directoryName: 'quiz',
+    });
+    conversionResult.questions.push({
+      directoryName: 'q1',
+      sourceId: 'source-q1',
+      infoJson: {
+        uuid: 'question-uuid',
+        title: 'Question',
+        topic: 'Imported',
+        tags: ['imported'],
+        type: 'v3',
+      },
+      questionHtml: '<img src="https://canvas.example/image?verifier=secret">',
+      clientFiles: new Map(),
+      skippedFiles: [],
+    });
+    const copier = new QtiImportRemoteImageCopier(async () => {
+      throw new Error('unavailable');
+    });
+    await processRemoteImages(conversionResult, copier);
+
+    const { result } = await serializeConversionResult(
+      conversionResult,
+      'quiz',
+      '/nonexistent',
+      copier,
+    );
+
+    expect(result.questions[0].questionHtml).toContain('canvas.example');
+    expect(result.questions[0].remoteImagesCopied).toBe(0);
+    expect(result.warnings).toEqual([
+      {
+        questionId: 'source-q1',
+        message:
+          '1 remote image could not be copied because of its URL, availability, size, or format.',
+      },
+    ]);
+  });
+
+  it('keeps the generic warning for an unattempted URL when another image fails', async () => {
+    const conversionResult = makeConversionResult({
+      sourceType: 'assessment',
+      directoryName: 'quiz',
+    });
+    conversionResult.questions.push({
+      directoryName: 'q1',
+      sourceId: 'source-q1',
+      infoJson: {
+        uuid: 'question-uuid',
+        title: 'Question',
+        topic: 'Imported',
+        tags: ['imported'],
+        type: 'v3',
+      },
+      questionHtml:
+        '<img src="https://canvas.example/unavailable.png"><img src="://invalid.example/image.png">',
+      clientFiles: new Map(),
+      skippedFiles: [],
+    });
+    const copier = new QtiImportRemoteImageCopier(async () => {
+      throw new Error('unavailable');
+    });
+    await processRemoteImages(conversionResult, copier);
+
+    const { result } = await serializeConversionResult(
+      conversionResult,
+      'quiz',
+      '/nonexistent',
+      copier,
+    );
+
+    expect(result.warnings).toEqual([
+      {
+        questionId: 'source-q1',
+        message:
+          '2 remote images could not be copied because of their URLs, availability, size, or format.',
+      },
+      {
+        questionId: 'imported/quiz/q1',
+        message: 'Question contains an image reference to a remote URL.',
+        level: 'warn',
+      },
+    ]);
   });
 });
 

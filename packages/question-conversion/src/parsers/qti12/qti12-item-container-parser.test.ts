@@ -292,7 +292,7 @@ describe('QTI12ItemContainerParser', async () => {
           </respcondition>
         </resprocessing>
         <itemfeedback ident="correct_fb">
-          <flow_mat><material><mattext texttype="text/html">&lt;p&gt;Well done!&lt;/p&gt;</mattext></material></flow_mat>
+          <flow_mat><material><mattext texttype="text/html">&lt;p&gt;&lt;img data-equation-content="x^2" src="equation.svg"&gt;&lt;/p&gt;</mattext></material></flow_mat>
         </itemfeedback>
         <itemfeedback ident="general_incorrect_fb">
           <flow_mat><material><mattext texttype="text/html">&lt;p&gt;Try again.&lt;/p&gt;</mattext></material></flow_mat>
@@ -303,7 +303,7 @@ describe('QTI12ItemContainerParser', async () => {
 </questestinterop>`;
       const result = await parser.parse(xml);
       const q = result.questions[0];
-      assert.equal(q.feedback?.correct, '<p>Well done!</p>');
+      assert.equal(q.feedback?.correct, '<p>$x^2$</p>');
       assert.equal(q.feedback?.incorrect, '<p>Try again.</p>');
     });
 
@@ -464,6 +464,17 @@ describe('QTI12ItemContainerParser', async () => {
         q.promptHtml,
         '<p>Which collision resolution method tries different sequences?</p>',
       );
+    });
+
+    it('converts Canvas equation images to MathJax source before rewriting local images', async () => {
+      const xml = readFixture('canvas-mc.xml').replace(
+        'Which collision resolution method tries different sequences?',
+        '&lt;img class="equation_image" data-equation-content="\\alpha" src="equation.svg"&gt;',
+      );
+
+      const result = await parser.parse(xml);
+
+      assert.equal(result.questions[0].promptHtml, '<p>$\\alpha$</p>');
     });
 
     it('removes Canvas answer blocks from prompt HTML', async () => {

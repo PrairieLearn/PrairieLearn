@@ -19,6 +19,17 @@ export interface EmitOptions {
   questionIdPrefix?: string;
 }
 
+/** Processes a conversion in place before and/or after PrairieLearn output is emitted. */
+export interface ConversionProcessor {
+  beforeEmit?(itemContainer: IRItemContainer): void | Promise<void>;
+  afterEmit?(result: ConversionResult, itemContainer: IRItemContainer): void | Promise<void>;
+}
+
+/** Options for processing and emitting PrairieLearn output. */
+export interface EmitProcessedOptions extends EmitOptions {
+  processors: readonly ConversionProcessor[];
+}
+
 interface ConversionResultBase {
   sourceId: string;
   assessmentTitle: string;
@@ -46,5 +57,11 @@ export type ConversionResult = AssessmentConversionResult | QuestionBankConversi
 
 /** Interface for format-specific output emitters. */
 export interface OutputEmitter {
+  /** Emits PrairieLearn output synchronously. */
   emit(itemContainer: IRItemContainer, options?: EmitOptions): ConversionResult;
+  /** Runs processors around emission, awaiting each hook in order. */
+  emitProcessed(
+    itemContainer: IRItemContainer,
+    options: EmitProcessedOptions,
+  ): Promise<ConversionResult>;
 }

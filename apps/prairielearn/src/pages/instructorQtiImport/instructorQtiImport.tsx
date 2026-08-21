@@ -20,6 +20,7 @@ import {
   PLEmitter,
   QTI12ItemContainerParser,
   type QtiFileEntry,
+  QtiImportRemoteImageCopier,
   findQtiFilesFromManifest,
   findQtiXmlFiles,
   normalizeImsFilePath,
@@ -251,10 +252,11 @@ router.post(
       // Convert each QTI entry, assigning unique slugs so same-titled entries
       // (e.g. two "Quiz 1") don't collide on question prefixes.
       const usedSlugs = new Set<string>();
+      const remoteImageCopier = new QtiImportRemoteImageCopier();
       const convertedEntries: SerializedEntryResult[] = [];
       const parseWarnings: ParseWarning[] = [];
       for (const entry of entries) {
-        const result = await convertEntry(entry, rubricsXml, usedSlugs);
+        const result = await convertEntry(entry, rubricsXml, usedSlugs, remoteImageCopier);
         if (result.ok) {
           convertedEntries.push(result.value);
         } else {
@@ -356,6 +358,7 @@ async function convertEntry(
   entry: QtiFileEntry,
   rubricsXml: string | undefined,
   usedSlugs: Set<string>,
+  remoteImageCopier: QtiImportRemoteImageCopier,
 ): Promise<ConvertEntryResult> {
   const xmlContent = await readFile(entry.qtiPath, 'utf-8');
 
@@ -406,15 +409,21 @@ async function convertEntry(
   usedSlugs.add(assessmentSlug);
 
   const emitter = new PLEmitter();
-  const result = emitter.emit(ir, {
+  const result = await emitter.emitProcessed(ir, {
     ...baseOptions,
     tags: ['imported'],
     questionIdPrefix: `imported/${assessmentSlug}`,
+    processors: [remoteImageCopier],
   });
 
   return {
     ok: true,
-    value: await serializeConversionResult(result, assessmentSlug, webResourcesDir),
+    value: await serializeConversionResult(
+      result,
+      assessmentSlug,
+      webResourcesDir,
+      remoteImageCopier,
+    ),
   };
 }
 
@@ -435,6 +444,7 @@ export async function serializeConversionResult(
   result: ConversionResult,
   assessmentSlug: string,
   webResourcesDir: string,
+  remoteImageCopier: QtiImportRemoteImageCopier,
 ): Promise<SerializedEntryResult> {
   const extraWarnings: ConversionWarning[] = [];
   const questionPrefix = `imported/${assessmentSlug}`;
@@ -445,6 +455,7 @@ export async function serializeConversionResult(
       // questions live under the prefix path (e.g. "imported/quiz-slug/q1").
       // This must match the IDs used in the assessment zones.
       const questionId = `${questionPrefix}/${q.directoryName}`;
+      const remoteImageCopy = remoteImageCopier.getCopyResult(q);
       const { files, missingFiles } = await serializeClientFiles(q.clientFiles, webResourcesDir);
       if (missingFiles.length > 0) {
         extraWarnings.push({
@@ -455,6 +466,13 @@ export async function serializeConversionResult(
       }
       const seenMessages = new Set<string>();
       for (const d of await lintQuestionHtml(q.questionHtml)) {
+        if (
+          remoteImageCopy.failedImageCount > 0 &&
+          remoteImageCopy.unattemptedRemoteImageCount === 0 &&
+          d.ruleName === 'pl-remote-image-url'
+        ) {
+          continue;
+        }
         if (seenMessages.has(d.message)) continue;
         seenMessages.add(d.message);
         extraWarnings.push({ questionId, message: d.message, level: 'warn' });
@@ -467,6 +485,7 @@ export async function serializeConversionResult(
         serverPy: q.serverPy,
         clientFiles: files,
         skippedVideos: q.skippedFiles,
+        remoteImagesCopied: remoteImageCopy.remoteImagesCopied,
       };
     }),
   );

@@ -26,12 +26,14 @@
   },
   "dependencies": {
     "@prairielearn/logger": "workspace:^",
+    "@prairielearn/public-fetch": "workspace:^",
     "@vscode/vscode-languagedetection": "^1.0.23",
     "@zip.js/zip.js": "^2.8.35",
     "cheerio": "^1.2.0",
     "commander": "^15.0.0",
     "domhandler": "^5.0.3",
     "fast-xml-parser": "^5.10.1",
+    "file-type": "^22.0.1",
     "he": "^1.2.0",
     "mime": "^4.1.0",
     "uuid": "^14.0.1"
@@ -42,6 +44,7 @@
     "@types/node": "^24.13.3",
     "@typescript/native-preview": "beta",
     "@vitest/coverage-v8": "^4.1.10",
+    "undici": "^8.10.0",
     "vitest": "^4.1.10",
     "zod": "^4.4.3"
   }

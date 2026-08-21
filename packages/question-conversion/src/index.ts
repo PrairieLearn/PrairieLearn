@@ -31,10 +31,12 @@ export type {
 // Emitters
 export { PLEmitter } from './emitters/pl-emitter.js';
 export type {
+  ConversionProcessor,
   OutputEmitter,
   ConversionResult,
   ConversionWarning,
   EmitOptions,
+  EmitProcessedOptions,
 } from './emitters/emitter.js';
 export type { BodyEmitHandler } from './emitters/body-emit-handler.js';
 export { BodyEmitRegistry } from './emitters/body-emit-handler.js';
@@ -83,3 +85,7 @@ export {
 export type { CourseExportInfo, QtiFileEntry } from './utils/course-export.js';
 export { slugify } from './utils/slugify.js';
 export { normalizeImsFilePath, safeDecodeURIComponent } from './utils/ims-file-path.js';
+
+// Processors
+export { QtiImportRemoteImageCopier, fetchRemoteImage } from './remote-image-copier.js';
+export type { FetchedRemoteImage, RemoteImageCopyResult } from './remote-image-copier.js';

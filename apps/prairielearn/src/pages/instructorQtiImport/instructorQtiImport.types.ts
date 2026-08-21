@@ -20,6 +20,8 @@ export interface SerializedQuestionOutput {
   clientFiles: Record<string, { size: number }>;
   /** Video files that were excluded from this question's assets. */
   skippedVideos: string[];
+  /** Remote images that will be copied into this course. */
+  remoteImagesCopied: number;
 }
 
 interface StoredSerializedQuestionOutput extends Omit<
