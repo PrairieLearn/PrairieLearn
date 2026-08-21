@@ -105,6 +105,68 @@ def test_set_union_submission_parses_when_set_notation_is_enabled() -> None:
 
 
 @pytest.mark.parametrize(
+    ("allowed_values", "submission"),
+    [
+        ("expression", "x + 1"),
+        ("set", "{1, 2}"),
+        ("set", "{}"),
+        ("interval", "[1, 2]"),
+        ("interval", "{}"),
+        ("set, expression", "{1, 2}"),
+        ("set, expression", "x + 1"),
+        ("all", "{1, 2}"),
+        ("all", "[1, 2]"),
+        ("all", "1"),
+    ],
+)
+def test_parse_accepts_allowed_value_types(
+    allowed_values: str, submission: str
+) -> None:
+    element_html = build_element_html(
+        'allow-sets="true"',
+        'variables="x"',
+        f'allowed-values="{allowed_values}"',
+    )
+    data = make_question_data(submitted_answers={"test": submission})
+
+    symbolic_input.parse(element_html, data)
+
+    assert "test" not in data["format_errors"]
+    assert isinstance(data["submitted_answers"]["test"], dict)
+
+
+@pytest.mark.parametrize(
+    ("allowed_values", "submission", "expected_type"),
+    [
+        ("expression", "{1, 2}", "set"),
+        ("expression", "[1, 2]", "interval"),
+        ("set", "x + 1", "expression"),
+        ("set", "[1, 2]", "interval"),
+        ("set", "[1, 2] U [3, 4]", "non-finite set"),
+        ("interval", "{1, 2}", "set"),
+        ("interval", "x + 1", "expression"),
+    ],
+)
+def test_parse_rejects_disallowed_value_types(
+    allowed_values: str, submission: str, expected_type: str
+) -> None:
+    element_html = build_element_html(
+        'allow-sets="true"',
+        'variables="x"',
+        f'allowed-values="{allowed_values}"',
+    )
+    data = make_question_data(submitted_answers={"test": submission})
+
+    symbolic_input.parse(element_html, data)
+
+    assert data["submitted_answers"]["test"] is None
+    assert data["format_errors"]["test"] == (
+        f"Your answer has type '{expected_type}', but this input only accepts: "
+        f"{allowed_values}."
+    )
+
+
+@pytest.mark.parametrize(
     ("sub", "allow_trig", "variables", "custom_functions", "expected"),
     [
         # Greek letters
