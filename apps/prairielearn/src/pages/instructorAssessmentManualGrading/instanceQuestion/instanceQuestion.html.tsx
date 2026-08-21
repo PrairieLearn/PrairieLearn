@@ -50,6 +50,7 @@ export function InstanceQuestion({
   showSubmissionsAssignedToMeOnly,
   submissionCredits,
   instanceQuestionAiGradeProps,
+  enable_single_key_shortcuts,
 }: {
   resLocals: ResLocalsForPage<'instance-question'> & ResLocalsInstanceQuestionRender;
   conflict_grading_job: GradingJobData | null;
@@ -72,6 +73,7 @@ export function InstanceQuestion({
   showSubmissionsAssignedToMeOnly: boolean;
   submissionCredits: number[];
   instanceQuestionAiGradeProps: InstanceQuestionAiGradeProps | null;
+  enable_single_key_shortcuts: boolean;
 }) {
   const instanceQuestionGroupsExist = instanceQuestionGroups
     ? instanceQuestionGroups.length > 0
@@ -257,6 +259,7 @@ export function InstanceQuestion({
             lastGrader,
             skipGradedSubmissions,
             showSubmissionsAssignedToMeOnly,
+            enable_single_key_shortcuts,
           })
         : ''}
       <div class="row">
@@ -285,6 +288,7 @@ export function InstanceQuestion({
                 skip_graded_submissions: skipGradedSubmissions,
                 show_submissions_assigned_to_me_only: showSubmissionsAssignedToMeOnly,
                 gradedByHumanName: lastHumanGraderName,
+                enable_single_key_shortcuts,
               })}
             </div>
           </div>
@@ -332,6 +336,7 @@ function ConflictGradingJobModal({
   lastGrader,
   skipGradedSubmissions,
   showSubmissionsAssignedToMeOnly,
+  enable_single_key_shortcuts,
 }: {
   resLocals: ResLocalsForPage<'instance-question'> & ResLocalsInstanceQuestionRender;
   conflict_grading_job: GradingJobData;
@@ -339,6 +344,7 @@ function ConflictGradingJobModal({
   lastGrader: User | null;
   skipGradedSubmissions: boolean;
   showSubmissionsAssignedToMeOnly: boolean;
+  enable_single_key_shortcuts: boolean;
 }) {
   const lastGraderName = lastGrader?.name ?? lastGrader?.uid ?? 'an unknown grader';
   return html`
@@ -379,6 +385,7 @@ function ConflictGradingJobModal({
                     showInstanceQuestionGroup: false,
                     skip_graded_submissions: skipGradedSubmissions,
                     show_submissions_assigned_to_me_only: showSubmissionsAssignedToMeOnly,
+                    enable_single_key_shortcuts,
                   })}
                 </div>
               </div>
@@ -407,6 +414,7 @@ function ConflictGradingJobModal({
                     showInstanceQuestionGroup: false,
                     skip_graded_submissions: skipGradedSubmissions,
                     show_submissions_assigned_to_me_only: showSubmissionsAssignedToMeOnly,
+                    enable_single_key_shortcuts,
                   })}
                 </div>
               </div>

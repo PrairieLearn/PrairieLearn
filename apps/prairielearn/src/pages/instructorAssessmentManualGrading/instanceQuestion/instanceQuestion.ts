@@ -36,6 +36,7 @@ import { type ResLocalsForPage, typedAsyncHandler } from '../../../lib/res-local
 import { getOngoingJobSequenceIds } from '../../../lib/server-jobs.js';
 import { createAuthzMiddleware } from '../../../middlewares/authzHelper.js';
 import { selectCourseInstanceGraderStaff } from '../../../models/course-instances.js';
+import { selectUserSettings } from '../../../models/user-settings.js';
 import { selectUserById } from '../../../models/user.js';
 import { selectAndAuthzVariant } from '../../../models/variant.js';
 
@@ -238,6 +239,8 @@ router.get(
         };
       });
 
+      const userSettings = await selectUserSettings({ user_id: res.locals.authn_user.id });
+
       res.send(
         InstanceQuestionPage({
           ...localsForRender,
@@ -256,6 +259,7 @@ router.get(
           showSubmissionsAssignedToMeOnly: req.session.show_submissions_assigned_to_me_only,
           submissionCredits,
           instanceQuestionAiGradeProps,
+          enable_single_key_shortcuts: userSettings.enable_single_key_shortcuts,
         }),
       );
     },
@@ -357,6 +361,8 @@ router.get(
             })) ?? undefined)
           : undefined;
 
+        const userSettings = await selectUserSettings({ user_id: res.locals.authn_user.id });
+
         const gradingPanel = GradingPanel({
           ...locals,
           context: 'main',
@@ -370,6 +376,7 @@ router.get(
           show_submissions_assigned_to_me_only:
             req.session.show_submissions_assigned_to_me_only ?? true,
           gradedByHumanName: shared.lastHumanGraderName,
+          enable_single_key_shortcuts: userSettings.enable_single_key_shortcuts,
         }).toString();
 
         const aiGradingExplanation = aiGradingInfo
