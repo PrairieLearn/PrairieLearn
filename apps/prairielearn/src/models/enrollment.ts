@@ -222,8 +222,8 @@ export async function ensureUncheckedEnrollment({
 }
 
 /**
- * Ensures that the user is enrolled in the given course instance. If the
- * enrollment already exists, this is a no-op.
+ * Ensures enrollment without reconciling multiple identity candidates. Callers
+ * must establish any required enrollment authority before using this path.
  *
  * For enterprise installations, this will also check if the user is eligible
  * for an enrollment. They are considered eligible if they have all required
@@ -231,7 +231,7 @@ export async function ensureUncheckedEnrollment({
  * instance enrollment limit to be exceeded.
  *
  */
-export async function ensureEnrollment({
+export async function ensureEnrollmentWithoutReconciliation({
   institution,
   course,
   courseInstance,

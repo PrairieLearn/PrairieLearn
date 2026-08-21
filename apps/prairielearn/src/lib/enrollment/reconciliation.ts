@@ -194,7 +194,10 @@ export async function admitUserToCourseInstance(
      */
     expectedInvitationEnrollmentId?: string;
     userId: string;
-    validateAdmission: (context: { source: EnrollmentAdmissionSource }) => Promise<void>;
+    validateAdmission: (context: {
+      classification: EnrollmentIdentityClassification;
+      source: EnrollmentAdmissionSource;
+    }) => Promise<void>;
   } & EnrollmentAdmissionSourceSelection,
 ): Promise<Enrollment> {
   const { actor, userId, courseInstanceId, expectedInvitationEnrollmentId, validateAdmission } =
@@ -249,7 +252,7 @@ export async function admitUserToCourseInstance(
 
     // Check eligibility and enrollment limits only after re-reading the
     // matching invitation and bound enrollment while their locks are held.
-    await validateAdmission({ source: decision.source });
+    await validateAdmission({ classification, source: decision.source });
 
     const survivorCandidate = selectSurvivor(
       classification.candidates,

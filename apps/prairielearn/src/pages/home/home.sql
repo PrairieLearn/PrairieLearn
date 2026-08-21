@@ -198,7 +198,10 @@ WITH
       )
     WHERE
       e.user_id = $user_id
-      OR e.pending_uid = $pending_uid
+      OR (
+        e.pending_uid = $pending_uid
+        AND e.pending_lti13_course_instance_id IS NULL
+      )
   ),
   -- Legacy courses: use access rules for dates and initial filtering
   legacy_courses AS (
