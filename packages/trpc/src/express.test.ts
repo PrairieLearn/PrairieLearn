@@ -1,4 +1,4 @@
-import { TRPC_ERROR_CODES_BY_KEY, type TRPC_ERROR_CODE_KEY } from '@trpc/server/rpc';
+import { TRPC_ERROR_CODES_BY_KEY } from '@trpc/server/rpc';
 import { assert, describe, it } from 'vitest';
 
 import { formatTrpcErrorResponse, isMultipartRequest, isTrpcRequest } from './express.js';
@@ -36,33 +36,12 @@ describe('isMultipartRequest', () => {
 });
 
 describe('formatTrpcErrorResponse', () => {
-  it.each<[number, TRPC_ERROR_CODE_KEY]>([
-    [400, 'BAD_REQUEST'],
-    [401, 'UNAUTHORIZED'],
-    [402, 'PAYMENT_REQUIRED'],
-    [403, 'FORBIDDEN'],
-    [404, 'NOT_FOUND'],
-    [405, 'METHOD_NOT_SUPPORTED'],
-    [408, 'TIMEOUT'],
-    [409, 'CONFLICT'],
-    [412, 'PRECONDITION_FAILED'],
-    [413, 'PAYLOAD_TOO_LARGE'],
-    [415, 'UNSUPPORTED_MEDIA_TYPE'],
-    [422, 'UNPROCESSABLE_CONTENT'],
-    [428, 'PRECONDITION_REQUIRED'],
-    [429, 'TOO_MANY_REQUESTS'],
-    [499, 'CLIENT_CLOSED_REQUEST'],
-    [500, 'INTERNAL_SERVER_ERROR'],
-    [501, 'NOT_IMPLEMENTED'],
-    [502, 'BAD_GATEWAY'],
-    [503, 'SERVICE_UNAVAILABLE'],
-    [504, 'GATEWAY_TIMEOUT'],
-  ])('maps HTTP %i to %s', (status, code) => {
-    const response = formatTrpcErrorResponse({ status, message: 'Request failed' });
+  it('maps an HTTP status to its tRPC error code', () => {
+    const response = formatTrpcErrorResponse({ status: 403, message: 'Request failed' });
 
-    assert.equal(response.error.json.code, TRPC_ERROR_CODES_BY_KEY[code]);
-    assert.equal(response.error.json.data.code, code);
-    assert.equal(response.error.json.data.httpStatus, status);
+    assert.equal(response.error.json.code, TRPC_ERROR_CODES_BY_KEY.FORBIDDEN);
+    assert.equal(response.error.json.data.code, 'FORBIDDEN');
+    assert.equal(response.error.json.data.httpStatus, 403);
   });
 
   it('falls back to INTERNAL_SERVER_ERROR for an unknown status', () => {

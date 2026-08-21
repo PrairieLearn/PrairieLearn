@@ -373,11 +373,11 @@ export async function initExpress(): Promise<Express> {
     publicQuestionEndpoint: true,
   });
 
-  // Leave multipart bodies untouched for multer routes and tRPC FormData inputs.
   app.use((req, res, next) => {
     // Stripe webhook signature verification requires the raw body, so we avoid
     // using the body parser for that route.
     if (req.path === '/pl/webhooks/stripe') return next();
+    // Leave multipart bodies untouched for multer routes and tRPC FormData inputs.
     if (isMultipartRequest(req)) return next();
 
     // Limit to 5MB of JSON

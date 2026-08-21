@@ -1,7 +1,10 @@
 import { TRPCClientError } from '@trpc/client';
+import { TRPCError } from '@trpc/server';
+import { TRPC_ERROR_CODES_BY_KEY } from '@trpc/server/rpc';
 import { assert, describe, it } from 'vitest';
 
 import { getAppError, renderAppError } from './client.js';
+import { appErrorFormatter, throwAppError } from './server.js';
 
 interface ExpectedError {
   code: 'EXPECTED';
@@ -10,9 +13,28 @@ interface ExpectedError {
 
 describe('getAppError', () => {
   it('extracts typed metadata from a tRPC client error', () => {
-    const error = new TRPCClientError('Expected failure');
-    Object.defineProperty(error, 'data', {
-      value: { appError: { code: 'EXPECTED', detail: 'more context' } },
+    const serverError = assert.throws(() => {
+      throwAppError<ExpectedError>({
+        message: 'Expected failure',
+        code: 'EXPECTED',
+        detail: 'more context',
+      });
+    });
+    assert.instanceOf(serverError, TRPCError);
+
+    const errorShape = appErrorFormatter({
+      error: serverError,
+      shape: {
+        message: serverError.message,
+        code: TRPC_ERROR_CODES_BY_KEY.BAD_REQUEST,
+        data: {
+          code: 'BAD_REQUEST',
+          httpStatus: 400,
+        },
+      },
+    });
+    const error = new TRPCClientError(errorShape.message, {
+      result: { error: errorShape },
     });
 
     assert.deepEqual(getAppError<ExpectedError>(error), {
