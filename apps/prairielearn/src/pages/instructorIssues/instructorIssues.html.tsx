@@ -526,7 +526,9 @@ function FilterHelpModal() {
                     <td>
                       Shows all issues that were reported by a user with a UID like <code>UID</code>
                       . For example, <code>user:student@example.com</code> shows all issues that
-                      were reported by <code>student@example.com</code>.
+                      were reported by <code>student@example.com</code>. This will only include
+                      issues where the user information is not hidden due to insufficient
+                      permissions.
                     </td>
                   </tr>
                 </tbody>
