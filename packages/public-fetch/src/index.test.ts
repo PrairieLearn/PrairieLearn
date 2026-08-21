@@ -216,18 +216,21 @@ describe('publicFetch', () => {
     expect(didResolve).toBe(false);
   });
 
-  it('rejects non-HTTPS protocols before resolving the host', async () => {
-    let didResolve = false;
-    const fetch = createTestPublicFetch({
-      resolveAddress: async () => {
-        didResolve = true;
-        return '127.0.0.1';
-      },
-    });
+  it.each(['http://public.example/resource', 'data:text/plain,contents'])(
+    'rejects non-HTTPS URL %s before resolving the host',
+    async (url) => {
+      let didResolve = false;
+      const fetch = createTestPublicFetch({
+        resolveAddress: async () => {
+          didResolve = true;
+          return '127.0.0.1';
+        },
+      });
 
-    await expect(fetch('data:text/plain,contents')).rejects.toThrow('HTTPS');
-    expect(didResolve).toBe(false);
-  });
+      await expect(fetch(url)).rejects.toThrow('HTTPS');
+      expect(didResolve).toBe(false);
+    },
+  );
 
   it('rejects a redirect to a non-public address before connecting', async () => {
     let internalRequestCount = 0;

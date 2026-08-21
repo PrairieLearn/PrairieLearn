@@ -224,6 +224,9 @@ export function ImportSummary({
     (sum, question) => sum + Object.keys(question.clientFiles).length,
     0,
   );
+  // A single downloaded file can replace multiple <img> references, so report the number of
+  // references that will stop depending on a remote URL. Uncopied references remain remote and
+  // are communicated through warnings instead.
   const totalRemoteImageReferencesCopied = [...uniqueQuestions.values()].reduce(
     (sum, question) => sum + (question.remoteImageCopy?.referencesCopied ?? 0),
     0,

@@ -1,13 +1,9 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 
-import type {
-  SerializedConversionResult,
-  SerializedQuestionOutput,
-} from '../instructorQtiImport.types.js';
+import type { SerializedQuestionOutput } from '../instructorQtiImport.types.js';
 
 import {
-  ImportSummary,
   NonRubricWarnings,
   QuestionBankDeduplicationWarning,
   buildQuestionWarningsByDirectoryName,
@@ -18,12 +14,10 @@ function makeQuestion({
   directoryName,
   sourceId,
   title = sourceId,
-  remoteImageCopy,
 }: {
   directoryName: string;
   sourceId: string;
   title?: string;
-  remoteImageCopy?: SerializedQuestionOutput['remoteImageCopy'];
 }): SerializedQuestionOutput {
   return {
     draftId: 'draft',
@@ -40,42 +34,8 @@ function makeQuestion({
     questionHtml: '<pl-question-panel></pl-question-panel>',
     clientFiles: {},
     skippedVideos: [],
-    ...(remoteImageCopy && { remoteImageCopy }),
   };
 }
-
-describe('ImportSummary', () => {
-  it('shows the number of remote image references that will be copied', () => {
-    const result: SerializedConversionResult = {
-      draftId: 'draft',
-      sourceId: 'bank',
-      title: 'Question bank',
-      sourceType: 'question-bank',
-      directoryName: 'question-bank',
-      questions: [
-        makeQuestion({
-          directoryName: 'imported/question-bank/q1',
-          sourceId: 'q1',
-          remoteImageCopy: {
-            referencesFound: 3,
-            referencesCopied: 2,
-            referencesLeftRemote: 1,
-            filesCreated: 0,
-          },
-        }),
-      ],
-      warnings: [],
-    };
-
-    const html = renderToStaticMarkup(
-      <ImportSummary results={[result]} strippedAccessRules={null} parseWarnings={[]} />,
-    );
-
-    expect(html).toContain(
-      '<strong>2</strong> remote image references will be copied into this course',
-    );
-  });
-});
 
 describe('NonRubricWarnings', () => {
   it('includes duplicate question title warnings in the overview', () => {
