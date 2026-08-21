@@ -111,19 +111,10 @@ describe('QtiImportRemoteImageCopier', () => {
         questionId: 'source-q1',
         code: 'remote-image-copy-failed',
         message:
-          '4 remote image references could not be copied into the course and were left unchanged. Their URLs may be invalid or insecure, or the images may be unavailable, too large, or in an unsupported format.',
+          '4 images could not be copied into the course and were left unchanged. Their URLs may be invalid or insecure, or the images may be unavailable, too large, or in an unsupported format.',
       },
     ]);
-    expect(result.reports).toEqual([
-      {
-        type: 'remote-image-copy',
-        questionId: 'source-q1',
-        referencesFound: 4,
-        referencesCopied: 0,
-        referencesLeftRemote: 4,
-        filesCreated: 0,
-      },
-    ]);
+    expect(result.reports).toEqual([]);
   });
 
   it('copies remote feedback images before emission and resolves their client-file URLs', async () => {
@@ -166,9 +157,6 @@ describe('QtiImportRemoteImageCopier', () => {
       {
         type: 'remote-image-copy',
         questionId: 'source-q1',
-        referencesFound: 3,
-        referencesCopied: 3,
-        referencesLeftRemote: 0,
         filesCreated: 1,
       },
     ]);
@@ -204,9 +192,6 @@ describe('QtiImportRemoteImageCopier', () => {
       {
         type: 'remote-image-copy',
         questionId: 'source-q1',
-        referencesFound: 2,
-        referencesCopied: 2,
-        referencesLeftRemote: 0,
         filesCreated: 1,
       },
     ]);
@@ -253,9 +238,6 @@ describe('QtiImportRemoteImageCopier', () => {
     expect(result.reports[0]).toEqual({
       type: 'remote-image-copy',
       questionId: 'source-q1',
-      referencesFound: 101,
-      referencesCopied: 100,
-      referencesLeftRemote: 1,
       filesCreated: 100,
     });
   });
@@ -340,9 +322,6 @@ describe('QtiImportRemoteImageCopier', () => {
     expect(result.reports[0]).toEqual({
       type: 'remote-image-copy',
       questionId: 'source-q1',
-      referencesFound: 20,
-      referencesCopied: 5,
-      referencesLeftRemote: 15,
       filesCreated: 1,
     });
   });

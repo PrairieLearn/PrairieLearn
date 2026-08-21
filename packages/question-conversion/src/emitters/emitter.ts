@@ -16,12 +16,6 @@ export interface ConversionWarning {
 export interface RemoteImageCopyReport {
   type: 'remote-image-copy';
   questionId: string;
-  /** Number of remote image references found in the question and its feedback. */
-  referencesFound: number;
-  /** Number of references rewritten to use a local client file. */
-  referencesCopied: number;
-  /** Number of references left unchanged because they could not be copied. */
-  referencesLeftRemote: number;
   /** Number of unique client files created, after content-based deduplication. */
   filesCreated: number;
 }

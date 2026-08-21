@@ -461,7 +461,7 @@ export async function serializeConversionResult(
         (warning) =>
           warning.questionId === q.sourceId && warning.code === 'remote-image-copy-failed',
       );
-      const remoteImageCopy = result.reports.find(
+      const remoteImageCopyReport = result.reports.find(
         (report) => report.type === 'remote-image-copy' && report.questionId === q.sourceId,
       );
       const seenMessages = new Set<string>();
@@ -481,13 +481,8 @@ export async function serializeConversionResult(
         serverPy: q.serverPy,
         clientFiles: files,
         skippedVideos: q.skippedFiles,
-        ...(remoteImageCopy && {
-          remoteImageCopy: {
-            referencesFound: remoteImageCopy.referencesFound,
-            referencesCopied: remoteImageCopy.referencesCopied,
-            referencesLeftRemote: remoteImageCopy.referencesLeftRemote,
-            filesCreated: remoteImageCopy.filesCreated,
-          },
+        ...(remoteImageCopyReport && {
+          copiedExternalImageFileCount: remoteImageCopyReport.filesCreated,
         }),
       };
     }),

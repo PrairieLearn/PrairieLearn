@@ -224,11 +224,10 @@ export function ImportSummary({
     (sum, question) => sum + Object.keys(question.clientFiles).length,
     0,
   );
-  // A single downloaded file can replace multiple <img> references, so report the number of
-  // references that will stop depending on a remote URL. Uncopied references remain remote and
-  // are communicated through warnings instead.
-  const totalRemoteImageReferencesCopied = [...uniqueQuestions.values()].reduce(
-    (sum, question) => sum + (question.remoteImageCopy?.referencesCopied ?? 0),
+  // Count created files rather than rewritten <img> references so this uses the same unit as
+  // totalAssets; repeated uses of the same downloaded image share one client file.
+  const totalExternalImageFilesCopied = [...uniqueQuestions.values()].reduce(
+    (sum, question) => sum + (question.copiedExternalImageFileCount ?? 0),
     0,
   );
 
@@ -292,13 +291,13 @@ export function ImportSummary({
                 <li>
                   <strong>{totalAssets}</strong> image{totalAssets !== 1 ? 's' : ''} and other asset
                   {totalAssets !== 1 ? 's' : ''}
-                </li>
-              )}
-              {totalRemoteImageReferencesCopied > 0 && (
-                <li>
-                  <strong>{totalRemoteImageReferencesCopied}</strong> remote image reference
-                  {totalRemoteImageReferencesCopied !== 1 ? 's' : ''} will be copied into this
-                  course
+                  {totalExternalImageFilesCopied > 0 && (
+                    <>
+                      , including <strong>{totalExternalImageFilesCopied}</strong> image
+                      {totalExternalImageFilesCopied !== 1 ? 's' : ''} that will be copied from
+                      external websites
+                    </>
+                  )}
                 </li>
               )}
             </ul>

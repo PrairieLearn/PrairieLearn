@@ -270,20 +270,12 @@ describe('serializeConversionResult', () => {
     conversionResult.reports.push({
       type: 'remote-image-copy',
       questionId: 'source-q1',
-      referencesFound: 2,
-      referencesCopied: 1,
-      referencesLeftRemote: 1,
       filesCreated: 1,
     });
 
     const { result } = await serializeConversionResult(conversionResult, 'quiz', '/nonexistent');
 
-    expect(result.questions[0].remoteImageCopy).toEqual({
-      referencesFound: 2,
-      referencesCopied: 1,
-      referencesLeftRemote: 1,
-      filesCreated: 1,
-    });
+    expect(result.questions[0].copiedExternalImageFileCount).toBe(1);
     expect(result.warnings).toEqual([
       {
         questionId: 'source-q1',

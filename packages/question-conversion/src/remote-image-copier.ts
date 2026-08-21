@@ -6,11 +6,7 @@ import { fileTypeFromBuffer } from 'file-type';
 
 import { type PublicFetch, publicFetch, validatePublicHttpsUrl } from '@prairielearn/public-fetch';
 
-import type {
-  ConversionProcessor,
-  ConversionResult,
-  RemoteImageCopyReport,
-} from './emitters/emitter.js';
+import type { ConversionProcessor, ConversionResult } from './emitters/emitter.js';
 import type { IRItemContainer, IRQuestion } from './types/ir.js';
 import type { PLQuestionOutput } from './types/pl-output.js';
 import { CLIENT_FILES_QUESTION_URL, rewriteImagesAsPlFigure } from './utils/html.js';
@@ -44,14 +40,16 @@ interface FetchedRemoteImage {
 type ConsumeBytes = (byteLength: number) => void;
 type FetchRemoteImage = (url: URL, consumeBytes: ConsumeBytes) => Promise<FetchedRemoteImage>;
 type ImageReplacement = 'pl-figure' | 'img';
-type RemoteImageCopyOutcome = Omit<RemoteImageCopyReport, 'type' | 'questionId'>;
+
+interface RemoteImageCopyOutcome {
+  filesCreated: number;
+  referencesLeftRemote: number;
+}
 
 function emptyRemoteImageCopyOutcome(): RemoteImageCopyOutcome {
   return {
-    referencesFound: 0,
-    referencesCopied: 0,
-    referencesLeftRemote: 0,
     filesCreated: 0,
+    referencesLeftRemote: 0,
   };
 }
 
@@ -60,10 +58,8 @@ function combineRemoteImageCopyOutcomes(
 ): RemoteImageCopyOutcome {
   return outcomes.reduce<RemoteImageCopyOutcome>(
     (combined, outcome) => ({
-      referencesFound: combined.referencesFound + outcome.referencesFound,
-      referencesCopied: combined.referencesCopied + outcome.referencesCopied,
-      referencesLeftRemote: combined.referencesLeftRemote + outcome.referencesLeftRemote,
       filesCreated: combined.filesCreated + outcome.filesCreated,
+      referencesLeftRemote: combined.referencesLeftRemote + outcome.referencesLeftRemote,
     }),
     emptyRemoteImageCopyOutcome(),
   );
@@ -179,12 +175,10 @@ export class QtiImportRemoteImageCopier implements ConversionProcessor {
         const url = parseRemoteImageUrl(source);
         if (!url) {
           if (isRemoteImageReference(source)) {
-            outcome.referencesFound += 1;
             outcome.referencesLeftRemote += 1;
           }
           return;
         }
-        outcome.referencesFound += 1;
 
         const image = { $image, fragmentIndex };
         const existing = imagesByUrl.get(url.href);
@@ -235,7 +229,6 @@ export class QtiImportRemoteImageCopier implements ConversionProcessor {
             $image.attr('src', `${CLIENT_FILES_QUESTION_URL}/${filename}`);
             fragments[fragmentIndex].changed = true;
           }
-          outcome.referencesCopied += elements.length;
         })(),
       );
     }
@@ -341,11 +334,11 @@ export class QtiImportRemoteImageCopier implements ConversionProcessor {
         feedbackCopyOutcomes.get(question.sourceId) ?? emptyRemoteImageCopyOutcome(),
         copyResult,
       );
-      if (outcome.referencesFound > 0) {
+      if (outcome.filesCreated > 0) {
         result.reports.push({
           type: 'remote-image-copy',
           questionId: question.sourceId,
-          ...outcome,
+          filesCreated: outcome.filesCreated,
         });
       }
       if (outcome.referencesLeftRemote === 0) continue;
@@ -353,12 +346,12 @@ export class QtiImportRemoteImageCopier implements ConversionProcessor {
       const referenceCount = outcome.referencesLeftRemote;
       const cause =
         referenceCount === 1
-          ? 'The URL may be invalid or insecure, or the image may be unavailable, too large, or in an unsupported format.'
+          ? 'Its URL may be invalid or insecure, or the image may be unavailable, too large, or in an unsupported format.'
           : 'Their URLs may be invalid or insecure, or the images may be unavailable, too large, or in an unsupported format.';
       result.warnings.push({
         questionId: question.sourceId,
         code: 'remote-image-copy-failed',
-        message: `${referenceCount} remote image reference${referenceCount === 1 ? '' : 's'} could not be copied into the course and ${referenceCount === 1 ? 'was' : 'were'} left unchanged. ${cause}`,
+        message: `${referenceCount} image${referenceCount === 1 ? '' : 's'} could not be copied into the course and ${referenceCount === 1 ? 'was' : 'were'} left unchanged. ${cause}`,
       });
     }
   }
