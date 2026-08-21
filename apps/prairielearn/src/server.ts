@@ -37,6 +37,7 @@ import passport from 'passport';
 import favicon from 'serve-favicon';
 
 import { cache } from '@prairielearn/cache';
+import { generateErrorId } from '@prairielearn/error';
 import { flashMiddleware } from '@prairielearn/flash';
 import { addFileLogging, logger, reopenFileLogging } from '@prairielearn/logger';
 import * as migrations from '@prairielearn/migrations';
@@ -53,7 +54,6 @@ import { run } from '@prairielearn/run';
 import { createSessionMiddleware } from '@prairielearn/session';
 import { getCheckedSignedTokenData } from '@prairielearn/signed-token';
 import { isMultipartRequest } from '@prairielearn/trpc/express';
-import { generateErrorId } from '@prairielearn/trpc/server';
 import { assertNever } from '@prairielearn/utils';
 
 import * as cron from './cron/index.js';

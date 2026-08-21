@@ -2,9 +2,9 @@ import type { ProcedureType, TRPCError } from '@trpc/server';
 import { getHTTPStatusCodeFromError } from '@trpc/server/http';
 import type { Request } from 'express';
 
+import { generateErrorId } from '@prairielearn/error';
 import { logger } from '@prairielearn/logger';
 import * as Sentry from '@prairielearn/sentry';
-import { generateErrorId } from '@prairielearn/trpc/server';
 
 /**
  * Reimplements error handling from `pages/error/error.ts` for tRPC errors.

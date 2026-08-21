@@ -2,12 +2,12 @@
 
 Shared tRPC infrastructure for PrairieLearn applications. Import from an explicit subpath so that browser builds cannot pull in server-only dependencies.
 
-| Subpath                      | Public API                                                                           |
-| ---------------------------- | ------------------------------------------------------------------------------------ |
-| `@prairielearn/trpc/server`  | `appErrorFormatter`, `throwAppError`, `generateErrorId`, and application-error types |
-| `@prairielearn/trpc/client`  | `AppError`, `AppErrorRenderers`, `getAppError`, and `renderAppError`                 |
-| `@prairielearn/trpc/react`   | `AppErrorAlert` and `QueryClientProviderDebug`                                       |
-| `@prairielearn/trpc/express` | `isTrpcRequest`, `isMultipartRequest`, and `formatTrpcErrorResponse`                 |
+| Subpath                      | Public API                                                           |
+| ---------------------------- | -------------------------------------------------------------------- |
+| `@prairielearn/trpc/server`  | `appErrorFormatter`, `throwAppError`, and application-error types    |
+| `@prairielearn/trpc/client`  | `AppError`, `AppErrorRenderers`, `getAppError`, and `renderAppError` |
+| `@prairielearn/trpc/react`   | `AppErrorAlert` and `QueryClientProviderDebug`                       |
+| `@prairielearn/trpc/express` | `isTrpcRequest`, `isMultipartRequest`, and `formatTrpcErrorResponse` |
 
 ## Typed error maps
 

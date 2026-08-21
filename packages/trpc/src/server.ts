@@ -1,5 +1,4 @@
 import { type TRPCDefaultErrorShape, TRPCError, type TRPC_ERROR_CODE_KEY } from '@trpc/server';
-import { sampleSize } from 'es-toolkit';
 
 /** Metadata serialized for a typed application-level error. */
 export interface AppErrorBase {
@@ -75,11 +74,4 @@ export function throwAppError<T>(
   trpcCode: TRPC_ERROR_CODE_KEY = 'BAD_REQUEST',
 ): never {
   throw new AppError(meta as unknown as AppErrorBase, trpcCode);
-}
-
-const ERROR_ID_CHARACTERS = [...'0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'];
-
-/** Generates the correlation ID used by normal Express and tRPC adapter errors. */
-export function generateErrorId(): string {
-  return sampleSize(ERROR_ID_CHARACTERS, 12).join('');
 }

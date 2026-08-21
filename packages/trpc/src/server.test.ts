@@ -3,7 +3,7 @@ import { TRPC_ERROR_CODES_BY_KEY } from '@trpc/server/rpc';
 import { assert, describe, expectTypeOf, it } from 'vitest';
 
 import type { AppError } from './client.js';
-import { appErrorFormatter, generateErrorId, throwAppError } from './server.js';
+import { appErrorFormatter, throwAppError } from './server.js';
 
 interface WholeErrorMap {
   First: { code: 'FIRST_ONLY'; first: string } | { code: 'SHARED'; shared: string };
@@ -47,11 +47,5 @@ describe('typed application errors', () => {
     expectTypeOf<AppError<WholeErrorMap>['code']>().toEqualTypeOf<
       'FIRST_ONLY' | 'SECOND_ONLY' | 'SHARED' | 'UNKNOWN'
     >();
-  });
-});
-
-describe('generateErrorId', () => {
-  it('generates a 12-character uppercase alphanumeric ID', () => {
-    assert.match(generateErrorId(), /^[0-9A-Z]{12}$/);
   });
 });

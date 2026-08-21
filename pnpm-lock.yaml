@@ -2715,9 +2715,6 @@ importers:
       '@types/react':
         specifier: ^19.2.18
         version: 19.2.18
-      es-toolkit:
-        specifier: ^1.50.0
-        version: 1.50.0
       react:
         specifier: ^19.2.8
         version: 19.2.8
