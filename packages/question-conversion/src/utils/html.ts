@@ -101,7 +101,10 @@ const ABSOLUTE_URL_RE = /^(?:[a-z][a-z0-9+.-]*:|\/\/|:\/\/)/i;
  * The alt and width attributes are preserved; all others (style, class, etc.)
  * are dropped since pl-figure handles its own layout.
  */
-export function rewriteImagesAsPlFigure(html: string): string {
+export function rewriteImagesAsPlFigure(
+  html: string,
+  { display }: { display?: 'inline' } = {},
+): string {
   const $ = loadHtmlFragment(html);
   const mustachePrefix = `${CLIENT_FILES_QUESTION_URL}/`;
   let changed = false;
@@ -126,6 +129,7 @@ export function rewriteImagesAsPlFigure(html: string): string {
     const width = $img.attr('width');
     if (alt) $figure.attr('alt', alt);
     if (width) $figure.attr('width', width);
+    if (display) $figure.attr('display', display);
 
     $img.replaceWith($figure);
     changed = true;

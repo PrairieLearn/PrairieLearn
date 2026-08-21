@@ -6,7 +6,7 @@ import { pipeline } from 'node:stream/promises';
 import { ZipArchive } from 'archiver';
 
 import { getCourseAdminQuestionsUrl } from '../../lib/client/url.js';
-import { deleteQtiImportDraft, readQtiImportDraft } from '../../lib/qti-import-drafts.js';
+import { deleteQtiImportDraft } from '../../lib/qti-import-drafts.js';
 import type { UploadResponse } from '../../pages/instructorQtiImport/instructorQtiImport.types.js';
 
 import { expect, test } from './fixtures.js';
@@ -816,13 +816,7 @@ test.describe('QTI Import', () => {
 
     await expect(page.getByText('What can be imported')).toBeVisible({ timeout: 15000 });
 
-    const draft = await readQtiImportDraft({
-      draftId: uploadBody.results[0].questions[0].draftId,
-      courseId: courseInstance.course_id,
-      courseInstanceId: courseInstance.id,
-      userId: '1',
-    });
-    await deleteQtiImportDraft(draft);
+    await deleteQtiImportDraft(uploadBody.results[0].questions[0].draftId);
     await page.getByRole('button', { name: 'Import 1 assessment' }).click();
 
     await expect(

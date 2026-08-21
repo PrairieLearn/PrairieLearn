@@ -2,7 +2,6 @@ import { lookup as dnsLookup } from 'node:dns/promises';
 import { isIP } from 'node:net';
 import type { SecureContextOptions } from 'node:tls';
 
-import ipaddr from 'ipaddr.js';
 import {
   Agent,
   Request,
@@ -13,22 +12,14 @@ import {
   fetch as undiciFetch,
 } from 'undici';
 
-export type ResolveAddress = (hostname: string) => Promise<string>;
+import { resolvePublicAddressWithLookup, unwrapHostname } from './network.js';
 
-type LookupAddresses = (hostname: string) => Promise<readonly { address: string }[]>;
+export type ResolveAddress = (hostname: string) => Promise<string>;
 
 export type PublicFetchInit = Omit<RequestInit, 'dispatcher'>;
 export type PublicFetch = (input: RequestInfo, init?: PublicFetchInit) => Promise<Response>;
 
 const defaultConnector = buildConnector({});
-
-export function isPublicIpAddress(address: string): boolean {
-  try {
-    return ipaddr.process(address).range() === 'unicast';
-  } catch {
-    return false;
-  }
-}
 
 export function validatePublicHttpsUrl(url: URL): void {
   if (url.protocol !== 'https:') {
@@ -39,21 +30,10 @@ export function validatePublicHttpsUrl(url: URL): void {
   }
 }
 
-export async function resolvePublicAddress(
-  hostname: string,
-  {
-    lookupAddresses = async (hostname) => dnsLookup(hostname, { all: true, verbatim: true }),
-  }: { lookupAddresses?: LookupAddresses } = {},
-): Promise<string> {
-  const unwrappedHostname = unwrapHostname(hostname);
-  const addresses = isIP(unwrappedHostname)
-    ? [{ address: unwrappedHostname }]
-    : await lookupAddresses(unwrappedHostname);
-
-  if (addresses.length === 0 || addresses.some(({ address }) => !isPublicIpAddress(address))) {
-    throw new Error('Host did not resolve to a public address');
-  }
-  return addresses[0].address;
+async function resolvePublicAddress(hostname: string): Promise<string> {
+  return resolvePublicAddressWithLookup(hostname, (hostname) =>
+    dnsLookup(hostname, { all: true, verbatim: true }),
+  );
 }
 
 /**
@@ -104,7 +84,3 @@ export function createPublicFetch({
 }
 
 export const publicFetch = createPublicFetch();
-
-function unwrapHostname(hostname: string): string {
-  return hostname.startsWith('[') ? hostname.slice(1, -1) : hostname;
-}

@@ -220,14 +220,14 @@ export function ImportSummary({
     ),
   );
   const totalQuestions = uniqueQuestions.size;
-  let totalAssets = 0;
-  let totalRemoteImagesCopied = 0;
-  let totalSkippedVideos = 0;
-  for (const question of uniqueQuestions.values()) {
-    totalAssets += Object.keys(question.clientFiles).length;
-    totalRemoteImagesCopied += question.remoteImagesCopied;
-    totalSkippedVideos += question.skippedVideos.length;
-  }
+  const totalAssets = [...uniqueQuestions.values()].reduce(
+    (sum, question) => sum + Object.keys(question.clientFiles).length,
+    0,
+  );
+  const totalRemoteImageReferencesCopied = [...uniqueQuestions.values()].reduce(
+    (sum, question) => sum + (question.remoteImageCopy?.referencesCopied ?? 0),
+    0,
+  );
 
   const allWarnings = results.flatMap((r) => r.warnings);
   const rubricWarnings = allWarnings.filter((w) => isRubricWarning(w.message));
@@ -237,6 +237,11 @@ export function ImportSummary({
     .filter((w) => !isRubricWarning(w.message) && w.message.includes('Unsupported'))
     .map((w) => w.message);
   const uniqueUnsupported = [...new Set(unsupportedTypes)];
+
+  const totalSkippedVideos = [...uniqueQuestions.values()].reduce(
+    (sum, question) => sum + question.skippedVideos.length,
+    0,
+  );
 
   const notImportedItems: string[] = [];
   if (hasRubricIssues) notImportedItems.push('Rubrics (not supported in QTI quiz exports)');
@@ -286,10 +291,11 @@ export function ImportSummary({
                   {totalAssets !== 1 ? 's' : ''}
                 </li>
               )}
-              {totalRemoteImagesCopied > 0 && (
+              {totalRemoteImageReferencesCopied > 0 && (
                 <li>
-                  <strong>{totalRemoteImagesCopied}</strong> remote image
-                  {totalRemoteImagesCopied !== 1 ? 's' : ''} will be copied into this course
+                  <strong>{totalRemoteImageReferencesCopied}</strong> remote image reference
+                  {totalRemoteImageReferencesCopied !== 1 ? 's' : ''} will be copied into this
+                  course
                 </li>
               )}
             </ul>

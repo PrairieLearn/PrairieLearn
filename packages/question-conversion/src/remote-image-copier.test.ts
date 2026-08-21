@@ -67,9 +67,21 @@ function makeAssessment(question: IRQuestion): IRAssessment {
   };
 }
 
+async function processPrompt(
+  promptHtml: string,
+  copier: QtiImportRemoteImageCopier,
+  assets: IRQuestion['assets'] = new Map(),
+) {
+  return new PLEmitter().emitProcessed(makeAssessment(makeQuestion({ promptHtml, assets })), {
+    processors: [copier],
+  });
+}
+
 describe('QtiImportRemoteImageCopier', () => {
   it('processes conversion results and records uncopied-image warnings', async () => {
-    const copier = new QtiImportRemoteImageCopier(async () => {
+    const requestedUrls: string[] = [];
+    const copier = new QtiImportRemoteImageCopier(async (url) => {
+      requestedUrls.push(url.href);
       throw new Error('unavailable');
     });
 
@@ -77,17 +89,39 @@ describe('QtiImportRemoteImageCopier', () => {
       makeAssessment(
         makeQuestion({
           promptHtml:
-            '<img src="https://canvas.example/unavailable.png"><img src="://invalid.example/image.png">',
+            '<img src="https://canvas.example/unavailable.png"><img src="http://canvas.example/insecure.png"><img src="://invalid.example/image.png">',
+          feedback: {
+            incorrect: '<img src="https://canvas.example/feedback.png">',
+          },
         }),
       ),
       { processors: [copier] },
     );
 
+    expect(requestedUrls).toEqual([
+      'https://canvas.example/feedback.png',
+      'https://canvas.example/unavailable.png',
+    ]);
+    expect(result.questions[0].questionHtml).toContain('https://canvas.example/unavailable.png');
+    expect(result.questions[0].questionHtml).toContain('http://canvas.example/insecure.png');
+    expect(result.questions[0].questionHtml).toContain('://invalid.example/image.png');
+    expect(result.questions[0].serverPy).toContain('https://canvas.example/feedback.png');
     expect(result.warnings).toEqual([
       {
         questionId: 'source-q1',
+        code: 'remote-image-copy-failed',
         message:
-          '2 remote images could not be copied because of their URLs, availability, size, or format.',
+          '4 remote image references could not be copied into the course and were left unchanged. Their URLs may be invalid or insecure, or the images may be unavailable, too large, or in an unsupported format.',
+      },
+    ]);
+    expect(result.reports).toEqual([
+      {
+        type: 'remote-image-copy',
+        questionId: 'source-q1',
+        referencesFound: 4,
+        referencesCopied: 0,
+        referencesLeftRemote: 4,
+        filesCreated: 0,
       },
     ]);
   });
@@ -127,27 +161,15 @@ describe('QtiImportRemoteImageCopier', () => {
     );
     expect(question.questionHtml).not.toContain('canvas.example');
     expect(question.questionHtml).toContain('<pl-figure');
-    expect(copier.getCopyResult(question).remoteImagesCopied).toBe(2);
     expect(result.warnings).toEqual([]);
-  });
-
-  it('warns when a feedback image cannot be copied and preserves its remote URL', async () => {
-    const copier = new QtiImportRemoteImageCopier(async () => {
-      throw new Error('unavailable');
-    });
-    const imageUrl = 'https://canvas.example/feedback.png';
-
-    const result = await new PLEmitter().emitProcessed(
-      makeAssessment(makeQuestion({ feedback: { incorrect: `<img src="${imageUrl}">` } })),
-      { processors: [copier] },
-    );
-
-    expect(result.questions[0].serverPy).toContain(imageUrl);
-    expect(result.warnings).toEqual([
+    expect(result.reports).toEqual([
       {
+        type: 'remote-image-copy',
         questionId: 'source-q1',
-        message:
-          '1 remote image could not be copied because of its URL, availability, size, or format.',
+        referencesFound: 3,
+        referencesCopied: 3,
+        referencesLeftRemote: 0,
+        filesCreated: 1,
       },
     ]);
   });
@@ -159,78 +181,35 @@ describe('QtiImportRemoteImageCopier', () => {
       return { content: Buffer.from('image contents'), extension: 'png' };
     });
 
-    const result = await copier.copyRemoteImages(
+    const result = await processPrompt(
       [
-        '<p><img src="https://canvas.example/files/1/preview?verifier=secret" alt="Graph" width="200"></p>',
-        '<img src="https://canvas.example/files/1/preview?verifier=secret">',
+        '<p><img src="https://canvas.example/files/1/preview?verifier=secret#first" alt="Graph" width="200"></p>',
+        '<img src="//canvas.example/files/1/preview?verifier=secret#second">',
       ].join(''),
-      new Set(),
+      copier,
     );
+    const question = result.questions[0];
 
     expect(requestedUrls).toEqual(['https://canvas.example/files/1/preview?verifier=secret']);
-    expect(result.remoteImagesCopied).toBe(1);
-    expect(result.failedImageCount).toBe(0);
-    expect(result.unattemptedRemoteImageCount).toBe(0);
-    expect(result.files.size).toBe(1);
-    expect(result.html).not.toContain('canvas.example');
-    expect(result.html).not.toContain('verifier');
-    expect(result.html.match(/<pl-figure/g)).toHaveLength(2);
-    expect(result.html).toContain('directory="clientFilesQuestion"');
-    expect(result.html).toContain('display="inline"');
-    expect(result.html).toContain('alt="Graph"');
-    expect(result.html).toContain('width="200"');
-  });
-
-  it('normalizes protocol-relative image URLs and ignores fragments when deduplicating', async () => {
-    const requestedUrls: string[] = [];
-    const copier = new QtiImportRemoteImageCopier(async (url) => {
-      requestedUrls.push(url.href);
-      return { content: Buffer.from('image contents'), extension: 'jpg' };
-    });
-
-    const result = await copier.copyRemoteImages(
-      [
-        '<img src=" //canvas.example/files/1/preview#first">',
-        '<img src="//canvas.example/files/1/preview#second">',
-      ].join(''),
-      new Set(),
-    );
-
-    expect(requestedUrls).toEqual(['https://canvas.example/files/1/preview']);
-    expect(result.remoteImagesCopied).toBe(1);
-    expect(result.html.match(/<pl-figure/g)).toHaveLength(2);
-  });
-
-  it('leaves a remote reference unchanged when it cannot be fetched', async () => {
-    const copier = new QtiImportRemoteImageCopier(async () => {
-      throw new Error('unavailable');
-    });
-    const html = '<img src="https://canvas.example/files/1/preview?verifier=secret">';
-
-    const result = await copier.copyRemoteImages(html, new Set());
-
-    expect(result.html).toBe(html);
-    expect(result.files.size).toBe(0);
-    expect(result.remoteImagesCopied).toBe(0);
-    expect(result.failedImageCount).toBe(1);
-    expect(result.unattemptedRemoteImageCount).toBe(0);
-  });
-
-  it('counts insecure or malformed remote references that were not attempted', async () => {
-    let fetchCount = 0;
-    const copier = new QtiImportRemoteImageCopier(async () => {
-      fetchCount += 1;
-      return { content: Buffer.from('image contents'), extension: 'png' };
-    });
-
-    const result = await copier.copyRemoteImages(
-      '<img src="http://canvas.example/insecure.png"><img src="://invalid.example/image.png">',
-      new Set(),
-    );
-
-    expect(fetchCount).toBe(0);
-    expect(result.failedImageCount).toBe(0);
-    expect(result.unattemptedRemoteImageCount).toBe(2);
+    expect(question.clientFiles.size).toBe(1);
+    expect(question.questionHtml).not.toContain('canvas.example');
+    expect(question.questionHtml).not.toContain('verifier');
+    expect(question.questionHtml.match(/<pl-figure/g)).toHaveLength(2);
+    expect(question.questionHtml).toContain('directory="clientFilesQuestion"');
+    expect(question.questionHtml).toContain('display="inline"');
+    expect(question.questionHtml).toContain('alt="Graph"');
+    expect(question.questionHtml).toContain('width="200"');
+    expect(result.warnings).toEqual([]);
+    expect(result.reports).toEqual([
+      {
+        type: 'remote-image-copy',
+        questionId: 'source-q1',
+        referencesFound: 2,
+        referencesCopied: 2,
+        referencesLeftRemote: 0,
+        filesCreated: 1,
+      },
+    ]);
   });
 
   it('does not overwrite an existing client file with the generated filename', async () => {
@@ -241,13 +220,19 @@ describe('QtiImportRemoteImageCopier', () => {
       extension: 'png',
     }));
 
-    const result = await copier.copyRemoteImages(
+    const result = await processPrompt(
       '<img src="https://canvas.example/image.png">',
-      new Set([`remote-${digest}.png`]),
+      copier,
+      new Map([
+        [
+          `remote-${digest}.png`,
+          { type: 'base64', value: Buffer.from('different contents').toString('base64') },
+        ],
+      ]),
     );
 
-    expect(result.files.has(`remote-${digest}-2.png`)).toBe(true);
-    expect(result.html).toContain(`file-name="remote-${digest}-2.png"`);
+    expect(result.questions[0].clientFiles.has(`remote-${digest}-2.png`)).toBe(true);
+    expect(result.questions[0].questionHtml).toContain(`file-name="remote-${digest}-2.png"`);
   });
 
   it('limits the number of remote images copied across an import', async () => {
@@ -260,11 +245,19 @@ describe('QtiImportRemoteImageCopier', () => {
       (_, index) => `<img src="https://canvas.example/image-${index}.png">`,
     ).join('');
 
-    const result = await copier.copyRemoteImages(html, new Set());
+    const result = await processPrompt(html, copier);
 
-    expect(result.remoteImagesCopied).toBe(100);
-    expect(result.failedImageCount).toBe(1);
-    expect(result.html).toContain('https://canvas.example/image-100.png');
+    expect(result.questions[0].questionHtml.match(/<pl-figure/g)).toHaveLength(100);
+    expect(result.questions[0].questionHtml).toContain('https://canvas.example/image-100.png');
+    expect(result.warnings[0].code).toBe('remote-image-copy-failed');
+    expect(result.reports[0]).toEqual({
+      type: 'remote-image-copy',
+      questionId: 'source-q1',
+      referencesFound: 101,
+      referencesCopied: 100,
+      referencesLeftRemote: 1,
+      filesCreated: 100,
+    });
   });
 
   it('bounds concurrent remote image requests', async () => {
@@ -282,45 +275,48 @@ describe('QtiImportRemoteImageCopier', () => {
       (_, index) => `<img src="https://canvas.example/image-${index}.png">`,
     ).join('');
 
-    await copier.copyRemoteImages(html, new Set());
+    await processPrompt(html, copier);
 
     expect(maximumActiveRequestCount).toBe(5);
   });
 
   it('hands a released request slot to the queued batch before starting a later batch', async () => {
-    const copier = new QtiImportRemoteImageCopier();
     const startedRequests: string[] = [];
     const releaseActiveRequests: (() => void)[] = [];
-    const scheduleRequest = (name: string, block = false) =>
-      copier['scheduleRequest'](() => {
-        startedRequests.push(name);
-        if (!block) return Promise.resolve();
-        return new Promise<void>((resolve) => releaseActiveRequests.push(resolve));
-      });
-    const initialRequests = Array.from({ length: 5 }, (_, index) =>
-      scheduleRequest(`initial-${index}`, true),
+    const copier = new QtiImportRemoteImageCopier(async (url) => {
+      startedRequests.push(url.pathname);
+      if (url.pathname !== '/initial-queued.png' && url.pathname !== '/later.png') {
+        await new Promise<void>((resolve) => releaseActiveRequests.push(resolve));
+      }
+      return { content: Buffer.from(url.pathname), extension: 'png' };
+    });
+    const initialBatch = processPrompt(
+      Array.from(
+        { length: 6 },
+        (_, index) =>
+          `<img src="https://canvas.example/${index === 5 ? 'initial-queued' : `initial-${index}`}.png">`,
+      ).join(''),
+      copier,
     );
-    const queuedRequest = scheduleRequest('initial-queued');
+    const laterBatch = processPrompt('<img src="https://canvas.example/later.png">', copier);
+
+    await new Promise<void>((resolve) => setImmediate(resolve));
 
     expect(startedRequests).toEqual([
-      'initial-0',
-      'initial-1',
-      'initial-2',
-      'initial-3',
-      'initial-4',
+      '/initial-0.png',
+      '/initial-1.png',
+      '/initial-2.png',
+      '/initial-3.png',
+      '/initial-4.png',
     ]);
 
     releaseActiveRequests.shift()?.();
-    const laterRequest = new Promise<void>((resolve, reject) => {
-      // Run after the active request releases its slot but before the queued request resumes.
-      queueMicrotask(() => scheduleRequest('later').then(resolve, reject));
-    });
     await new Promise<void>((resolve) => setImmediate(resolve));
 
-    expect(startedRequests.slice(5)).toEqual(['initial-queued', 'later']);
+    expect(startedRequests.slice(5)).toEqual(['/initial-queued.png', '/later.png']);
 
     releaseActiveRequests.forEach((release) => release());
-    await Promise.all([...initialRequests, queuedRequest, laterRequest]);
+    await Promise.all([initialBatch, laterBatch]);
   });
 
   it('stops starting downloads after reaching the aggregate byte limit', async () => {
@@ -336,11 +332,19 @@ describe('QtiImportRemoteImageCopier', () => {
       (_, index) => `<img src="https://canvas.example/image-${index}.png">`,
     ).join('');
 
-    const result = await copier.copyRemoteImages(html, new Set());
+    const result = await processPrompt(html, copier);
 
     expect(fetchCount).toBeLessThan(20);
-    expect(result.remoteImagesCopied).toBe(5);
-    expect(result.failedImageCount).toBe(15);
+    expect(result.questions[0].questionHtml.match(/<pl-figure/g)).toHaveLength(5);
+    expect(result.warnings[0].code).toBe('remote-image-copy-failed');
+    expect(result.reports[0]).toEqual({
+      type: 'remote-image-copy',
+      questionId: 'source-q1',
+      referencesFound: 20,
+      referencesCopied: 5,
+      referencesLeftRemote: 15,
+      filesCreated: 1,
+    });
   });
 });
 

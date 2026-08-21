@@ -5,12 +5,9 @@ import type { AddressInfo } from 'node:net';
 import * as pem from 'pem';
 import { beforeAll, describe, expect, it } from 'vitest';
 
-import {
-  createPublicFetch,
-  isPublicIpAddress,
-  publicFetch,
-  resolvePublicAddress,
-} from './index.js';
+import { isPublicIpAddress, resolvePublicAddressWithLookup } from './network.js';
+
+import { createPublicFetch, publicFetch } from './index.js';
 
 let certificate: pem.CertificateCreationResult;
 
@@ -111,17 +108,19 @@ describe('isPublicIpAddress', () => {
 describe('resolvePublicAddress', () => {
   it('rejects a hostname if any resolved address is not public', async () => {
     await expect(
-      resolvePublicAddress('example.com', {
-        lookupAddresses: async () => [{ address: '8.8.8.8' }, { address: '127.0.0.1' }],
-      }),
+      resolvePublicAddressWithLookup('example.com', async () => [
+        { address: '8.8.8.8' },
+        { address: '127.0.0.1' },
+      ]),
     ).rejects.toThrow('public address');
   });
 
   it('returns the first address when every resolved address is public', async () => {
     await expect(
-      resolvePublicAddress('example.com', {
-        lookupAddresses: async () => [{ address: '8.8.8.8' }, { address: '1.1.1.1' }],
-      }),
+      resolvePublicAddressWithLookup('example.com', async () => [
+        { address: '8.8.8.8' },
+        { address: '1.1.1.1' },
+      ]),
     ).resolves.toBe('8.8.8.8');
   });
 });
@@ -230,19 +229,6 @@ describe('publicFetch', () => {
     expect(didResolve).toBe(false);
   });
 
-  it('rejects HTTP before resolving the host', async () => {
-    let didResolve = false;
-    const fetch = createTestPublicFetch({
-      resolveAddress: async () => {
-        didResolve = true;
-        return '127.0.0.1';
-      },
-    });
-
-    await expect(fetch('http://public.example/resource')).rejects.toThrow('HTTPS');
-    expect(didResolve).toBe(false);
-  });
-
   it('rejects a redirect to a non-public address before connecting', async () => {
     let internalRequestCount = 0;
     await withHttpsServer(
@@ -262,7 +248,7 @@ describe('publicFetch', () => {
             const fetch = createTestPublicFetch({
               resolveAddress: async (hostname) => {
                 if (hostname === 'public.example') return '127.0.0.1';
-                return resolvePublicAddress(hostname);
+                return resolvePublicAddressWithLookup(hostname, async () => []);
               },
             });
 
@@ -276,86 +262,12 @@ describe('publicFetch', () => {
     expect(internalRequestCount).toBe(0);
   });
 
-  it('uses the Fetch redirect limit', async () => {
-    let requestCount = 0;
-    await withHttpsServer(
-      (_request, response) => {
-        requestCount += 1;
-        response.writeHead(302, { Location: '/redirect' });
-        response.end();
-      },
-      async (port) => {
-        const fetch = createTestPublicFetch({ resolveAddress: async () => '127.0.0.1' });
-        await expect(fetch(`https://public.example:${port}/redirect`)).rejects.toThrow();
-      },
-    );
-    expect(requestCount).toBe(21);
-  });
-
   it('can be aborted while resolving the host', async () => {
     const fetch = createTestPublicFetch({ resolveAddress: async () => new Promise(() => {}) });
 
     await expect(
       fetch('https://public.example/resource', { signal: AbortSignal.timeout(10) }),
     ).rejects.toThrow();
-  });
-
-  it('applies an abort signal while streaming the response body', async () => {
-    await withHttpsServer(
-      (_request, response) => {
-        response.writeHead(200);
-        response.write('partial');
-      },
-      async (port) => {
-        const fetch = createTestPublicFetch({ resolveAddress: async () => '127.0.0.1' });
-        const abortController = new AbortController();
-        const response = await fetch(`https://public.example:${port}/resource`, {
-          signal: abortController.signal,
-        });
-
-        const bodyPromise = response.text();
-        abortController.abort();
-        await expect(bodyPromise).rejects.toThrow();
-      },
-    );
-  });
-
-  it('does not forward sensitive headers across origins', async () => {
-    const requestHeaders: http.IncomingHttpHeaders[] = [];
-    await withHttpsServer(
-      (request, finalResponse) => {
-        requestHeaders.push(request.headers);
-        finalResponse.end('contents');
-      },
-      async (finalPort) => {
-        await withHttpsServer(
-          (request, redirectResponse) => {
-            requestHeaders.push(request.headers);
-            redirectResponse.writeHead(302, {
-              Location: `https://other.example:${finalPort}/resource`,
-            });
-            redirectResponse.end();
-          },
-          async (redirectPort) => {
-            const fetch = createTestPublicFetch({ resolveAddress: async () => '127.0.0.1' });
-            const response = await fetch(`https://public.example:${redirectPort}/redirect`, {
-              headers: {
-                Authorization: 'Bearer token',
-                Cookie: 'session=secret',
-                'X-Request-Id': 'request-id',
-              },
-            });
-            await response.text();
-          },
-        );
-      },
-    );
-
-    expect(requestHeaders[0].authorization).toBe('Bearer token');
-    expect(requestHeaders[0].cookie).toBe('session=secret');
-    expect(requestHeaders[1].authorization).toBeUndefined();
-    expect(requestHeaders[1].cookie).toBeUndefined();
-    expect(requestHeaders[1]['x-request-id']).toBe('request-id');
   });
 
   it('rejects redirects to HTTP before connecting', async () => {

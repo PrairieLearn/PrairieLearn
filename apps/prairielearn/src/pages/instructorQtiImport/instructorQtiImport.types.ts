@@ -4,9 +4,12 @@ import type {
   PLAssessmentInfoJson,
   PLAssessmentZone,
   PLQuestionInfoJson,
+  RemoteImageCopyReport,
 } from '@prairielearn/question-conversion';
 
 export const QTI_IMPORT_MAX_UPLOAD_BYTES = 100 * 1024 * 1024;
+
+type SerializedRemoteImageCopyReport = Omit<RemoteImageCopyReport, 'type' | 'questionId'>;
 
 /** Question output sent to the browser. Binary client file contents stay in an import draft. */
 export interface SerializedQuestionOutput {
@@ -20,8 +23,7 @@ export interface SerializedQuestionOutput {
   clientFiles: Record<string, { size: number }>;
   /** Video files that were excluded from this question's assets. */
   skippedVideos: string[];
-  /** Remote images that will be copied into this course. */
-  remoteImagesCopied: number;
+  remoteImageCopy?: SerializedRemoteImageCopyReport;
 }
 
 interface StoredSerializedQuestionOutput extends Omit<
