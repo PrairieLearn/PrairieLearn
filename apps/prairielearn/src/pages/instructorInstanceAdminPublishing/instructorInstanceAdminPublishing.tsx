@@ -15,7 +15,6 @@ import { type AuthzData, assertHasRole } from '../../lib/authz-data-lib.js';
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
 import { isRenderableComment } from '../../lib/comments.js';
-import { config } from '../../lib/config.js';
 import { type CourseInstance, CourseInstanceAccessRuleSchema } from '../../lib/db-types.js';
 import { getOriginalHash } from '../../lib/editorUtil.js';
 import { propertyValueWithDefault } from '../../lib/editorUtil.shared.js';
@@ -206,7 +205,6 @@ router.get(
               csrfToken={csrfToken}
               origHash={origHash}
               extensions={publishingExtensions}
-              isDevMode={config.devMode}
             />
           </Hydrate>
         ) : (

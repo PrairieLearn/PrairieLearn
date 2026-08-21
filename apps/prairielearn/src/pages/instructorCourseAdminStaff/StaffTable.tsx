@@ -10,6 +10,8 @@ import { type ReactNode, useMemo, useState } from 'react';
 import { Button, ButtonGroup, Dropdown, Modal } from 'react-bootstrap';
 
 import { run } from '@prairielearn/run';
+import { getAppError } from '@prairielearn/trpc/client';
+import { QueryClientProviderDebug } from '@prairielearn/trpc/react';
 import {
   type ColumnFilterEntry,
   IndeterminateCheckbox,
@@ -31,8 +33,6 @@ import {
   useTanstackTable,
 } from '@prairielearn/ui';
 
-import { getAppError } from '../../lib/client/errors.js';
-import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
 import type { CourseInstanceAuthz } from '../../models/course-instances.js';
 import type { CourseUsersRow } from '../../models/course-permissions.js';
 import { createCourseTrpcClient } from '../../trpc/course/client.js';
@@ -1228,7 +1228,7 @@ export function StaffTable({ search, trpcCsrfToken, courseId, ...props }: StaffT
   );
 
   return (
-    <QueryClientProviderDebug client={queryClient} isDevMode={false}>
+    <QueryClientProviderDebug client={queryClient}>
       <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
         <NuqsAdapter search={search}>
           <StaffTableInner {...props} />

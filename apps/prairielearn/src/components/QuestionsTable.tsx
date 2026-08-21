@@ -10,6 +10,8 @@ import { type ReactNode, useMemo, useState } from 'react';
 import { ButtonGroup, Dropdown, DropdownButton } from 'react-bootstrap';
 
 import { run } from '@prairielearn/run';
+import { getAppError } from '@prairielearn/trpc/client';
+import { AppErrorAlert } from '@prairielearn/trpc/react';
 import {
   type ColumnFilterEntry,
   IndeterminateCheckbox,
@@ -29,7 +31,6 @@ import {
   useTanstackTable,
 } from '@prairielearn/ui';
 
-import { AppErrorAlert, getAppError } from '../lib/client/errors.js';
 import type { PublicCourseInstance } from '../lib/client/safe-db-types.js';
 import { rankSearchText } from '../lib/client/search.js';
 import {

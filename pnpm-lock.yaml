@@ -621,6 +621,9 @@ importers:
       '@prairielearn/tree-sitter-htmlmustache':
         specifier: ^1.4.3
         version: 1.4.3(node-gyp-build@4.8.4)(prettier@3.8.5)
+      '@prairielearn/trpc':
+        specifier: workspace:^
+        version: link:../../packages/trpc
       '@prairielearn/tsconfig':
         specifier: workspace:^
         version: link:../../packages/tsconfig
@@ -2694,6 +2697,52 @@ importers:
       '@vitest/coverage-v8':
         specifier: ^4.1.10
         version: 4.1.10(vitest@4.1.10)
+      vitest:
+        specifier: ^4.1.10
+        version: 4.1.10(@opentelemetry/api@1.9.1)(@types/node@24.13.3)(@vitest/coverage-v8@4.1.10)(jsdom@29.1.1)(vite@8.2.1(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(sass@1.102.0)(tsx@4.23.12)(yaml@2.9.0))
+
+  packages/trpc:
+    dependencies:
+      '@tanstack/react-query':
+        specifier: ^5.101.4
+        version: 5.101.4(react@19.2.8)
+      '@trpc/client':
+        specifier: ^11.18.0
+        version: 11.18.0(@trpc/server@11.18.0(typescript@6.0.3))(typescript@6.0.3)
+      '@trpc/server':
+        specifier: ^11.18.0
+        version: 11.18.0(typescript@6.0.3)
+      '@types/react':
+        specifier: ^19.2.18
+        version: 19.2.18
+      react:
+        specifier: ^19.2.8
+        version: 19.2.8
+      react-bootstrap:
+        specifier: 3.0.0-beta.5
+        version: 3.0.0-beta.5(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+    devDependencies:
+      '@prairielearn/tsconfig':
+        specifier: workspace:^
+        version: link:../tsconfig
+      '@types/node':
+        specifier: ^24.13.3
+        version: 24.13.3
+      '@types/react-dom':
+        specifier: ^19.2.4
+        version: 19.2.4(@types/react@19.2.18)
+      '@typescript/native-preview':
+        specifier: beta
+        version: 7.0.0-dev.20260421.2
+      '@vitest/coverage-v8':
+        specifier: ^4.1.10
+        version: 4.1.10(vitest@4.1.10)
+      jsdom:
+        specifier: ^29.1.1
+        version: 29.1.1
+      react-dom:
+        specifier: ^19.2.8
+        version: 19.2.8(react@19.2.8)
       vitest:
         specifier: ^4.1.10
         version: 4.1.10(@opentelemetry/api@1.9.1)(@types/node@24.13.3)(@vitest/coverage-v8@4.1.10)(jsdom@29.1.1)(vite@8.2.1(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(sass@1.102.0)(tsx@4.23.12)(yaml@2.9.0))

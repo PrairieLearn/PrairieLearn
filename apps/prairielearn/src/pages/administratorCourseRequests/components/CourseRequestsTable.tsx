@@ -5,6 +5,7 @@ import { Alert, Dropdown, Modal } from 'react-bootstrap';
 import { FormProvider, useForm } from 'react-hook-form';
 import ReactMarkdown from 'react-markdown';
 
+import { type AppError, getAppError } from '@prairielearn/trpc/client';
 import { OverlayTrigger, useModalState } from '@prairielearn/ui';
 
 import {
@@ -14,7 +15,6 @@ import {
   useInstitutionPrefix,
 } from '../../../components/AdminstratorCourseFormFields.js';
 import { JobStatus } from '../../../components/JobStatus.js';
-import { type AppError, getAppError } from '../../../lib/client/errors.js';
 import {
   type AdminInstitution,
   type AdminInstitutionWithSettings,

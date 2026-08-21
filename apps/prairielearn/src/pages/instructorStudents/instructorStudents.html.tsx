@@ -12,6 +12,7 @@ import z from 'zod';
 
 import { formatDate } from '@prairielearn/formatter';
 import { run } from '@prairielearn/run';
+import { QueryClientProviderDebug } from '@prairielearn/trpc/react';
 import {
   IndeterminateCheckbox,
   MultiSelectColumnFilter,
@@ -37,7 +38,6 @@ import { FriendlyDate } from '../../components/FriendlyDate.js';
 import { StudentLabelBadge } from '../../components/StudentLabelBadge.js';
 import type { PageContext } from '../../lib/client/page-context.js';
 import type { StaffStudentLabel } from '../../lib/client/safe-db-types.js';
-import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
 import {
   getCourseInstanceJobSequenceUrl,
   getCourseInstanceStudentLabelsUrl,
@@ -897,20 +897,18 @@ export const InstructorStudents = ({
   courseInstance,
   course,
   csrfToken,
-  isDevMode,
   trpcCsrfToken,
   origHash,
 }: {
   authzData: PageContext<'courseInstance', 'instructor'>['authz_data'];
   selfEnrollLink: string;
   search: string;
-  isDevMode: boolean;
 } & StudentsCardProps) => {
   const [queryClient] = useState(() => new QueryClient());
 
   return (
     <NuqsAdapter search={search}>
-      <QueryClientProviderDebug client={queryClient} isDevMode={isDevMode}>
+      <QueryClientProviderDebug client={queryClient}>
         <StudentsCard
           authzData={authzData}
           selfEnrollLink={selfEnrollLink}

@@ -223,7 +223,6 @@ router.get(
           assessmentQuestionId: res.locals.assessment_question.id,
           instanceQuestionId: res.locals.instance_question.id,
           trpcCsrfToken,
-          isDevMode: process.env.NODE_ENV === 'development',
           hasRubric: res.locals.assessment_question.manual_rubric_id != null,
           useCustomApiKeys: res.locals.course_instance.ai_grading_use_custom_api_keys,
           aiGradingSettingsUrl: getAiGradingSettingsUrl(res.locals.course_instance.id),

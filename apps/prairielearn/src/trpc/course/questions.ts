@@ -4,6 +4,7 @@ import { TRPCError } from '@trpc/server';
 import fs from 'fs-extra';
 import { z } from 'zod';
 
+import { throwAppError } from '@prairielearn/trpc/server';
 import { IdSchema } from '@prairielearn/zod';
 
 import {
@@ -47,7 +48,6 @@ import type {
   ZoneQuestionBlockJsonInput,
 } from '../../schemas/infoAssessment.js';
 import type { QuestionJsonInput } from '../../schemas/infoQuestion.js';
-import { throwAppError } from '../app-errors.js';
 
 import {
   type TRPCContext,
