@@ -49,7 +49,6 @@ import {
   GroupSchema as RawTeamSchema,
   TopicSchema as RawTopicSchema,
   UserSchema as RawUserSchema,
-  UserSettingSchema as RawUserSettingSchema,
   ZoneSchema as RawZoneSchema,
 } from '../db-types.js';
 
@@ -569,10 +568,6 @@ const RawStudentUserSchema = RawStaffUserSchema.pick({
 });
 export const StudentUserSchema = RawStudentUserSchema.brand<'StudentUser'>();
 export type StudentUser = z.infer<typeof StudentUserSchema>;
-
-/** User Settings */
-export const PublicUserSettingSchema = RawUserSettingSchema.brand<'PublicUserSetting'>();
-export type PublicUserSetting = z.infer<typeof PublicUserSettingSchema>;
 
 /** Zones */
 export const StaffZoneSchema = RawZoneSchema.brand<'StaffZone'>();

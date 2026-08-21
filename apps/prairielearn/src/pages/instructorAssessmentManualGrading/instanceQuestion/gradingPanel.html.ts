@@ -41,7 +41,7 @@ export function GradingPanel({
   skip_graded_submissions,
   show_submissions_assigned_to_me_only,
   gradedByHumanName = null,
-  enable_keyboard_shortcut = true,
+  enable_single_key_shortcuts,
 }: {
   resLocals: ResLocalsForPage<'instance-question'> & ResLocalsInstanceQuestionRender;
   context: 'main' | 'existing' | 'conflicting';
@@ -66,7 +66,7 @@ export function GradingPanel({
   skip_graded_submissions?: boolean;
   show_submissions_assigned_to_me_only?: boolean;
   gradedByHumanName?: string | null;
-  enable_keyboard_shortcut?: boolean;
+  enable_single_key_shortcuts: boolean;
 }) {
   const gradedByAi = aiGradingInfo != null;
   const gradedByHuman = gradedByHumanName != null;
@@ -83,7 +83,7 @@ export function GradingPanel({
   disable = disable || !resLocals.authz_data.has_course_instance_permission_edit;
   skip_text = skip_text || 'Next';
   // The conflict modal renders additional grading panels; shortcuts are reserved for the main panel.
-  const enableKeyboardShortcuts = context === 'main' && enable_keyboard_shortcut;
+  const enableKeyboardShortcuts = context === 'main' && enable_single_key_shortcuts;
   const enableEditKeyboardShortcuts = enableKeyboardShortcuts && !disable;
   const showNextShortcut = enableKeyboardShortcuts && skip_text === 'Next';
 
@@ -292,7 +292,7 @@ export function GradingPanel({
                 disable,
                 aiGradingInfo,
                 context,
-                enable_keyboard_shortcut,
+                enable_single_key_shortcuts,
               })
             : ''}
         </li>
@@ -309,7 +309,7 @@ export function GradingPanel({
                       disable,
                       aiGradingInfo,
                       context,
-                      enable_keyboard_shortcut,
+                      enable_single_key_shortcuts,
                     })
                   : ''}
               </li>

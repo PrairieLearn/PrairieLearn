@@ -2,20 +2,22 @@ import * as crypto from 'crypto';
 
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
-import z from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 import { Hydrate } from '@prairielearn/react/server';
+import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { UserSettingsPurchasesCard } from '../../ee/lib/billing/components/UserSettingsPurchasesCard.js';
 import { getPurchasesForUser } from '../../ee/lib/billing/purchases.js';
-import { PublicUserSettingSchema, UserAccessTokenSchema } from '../../lib/client/safe-db-types.js';
+import { UserAccessTokenSchema } from '../../lib/client/safe-db-types.js';
+import { getUserTrpcUrl } from '../../lib/client/url.js';
+import { config } from '../../lib/config.js';
 import { AccessTokenSchema, InstitutionSchema, UserSchema } from '../../lib/db-types.js';
 import { ipToMode } from '../../lib/exam-mode.js';
 import { isEnterprise } from '../../lib/license.js';
-import { selectUserSettings, updateUserSettings } from '../../models/user-settings.js';
+import { selectUserSettings } from '../../models/user-settings.js';
 
 import { UserSettingsPage } from './components/UserSettingsPage.js';
 
@@ -57,6 +59,10 @@ router.get(
     });
 
     const isExamMode = mode !== 'Public';
+    const trpcCsrfToken = generatePrefixCsrfToken(
+      { url: getUserTrpcUrl(), authn_user_id: authn_user.id },
+      config.secretKey,
+    );
 
     res.send(
       PageLayout({
@@ -85,7 +91,8 @@ router.get(
                 newAccessTokens={isExamMode ? [] : newAccessTokens}
                 isExamMode={isExamMode}
                 csrfToken={res.locals.__csrf_token}
-                userSettings={PublicUserSettingSchema.parse(userSettings)}
+                trpcCsrfToken={trpcCsrfToken}
+                initialEnableSingleKeyShortcuts={userSettings.enable_single_key_shortcuts}
               />
             </Hydrate>
             {
@@ -132,17 +139,6 @@ router.post(
         user_id: res.locals.authn_user.id,
       });
       res.redirect(req.originalUrl);
-    } else if (req.body.__action === 'user_setting_update') {
-      const authn_user = UserSchema.parse(res.locals.authn_user);
-      try {
-        await updateUserSettings({
-          user_id: authn_user.id,
-          enable_keyboard_shortcut: z.boolean().parse(req.body.enable_keyboard_shortcut),
-        });
-        res.send();
-      } catch (err) {
-        res.status(500).send({ err: String(err) });
-      }
     } else {
       throw new HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }

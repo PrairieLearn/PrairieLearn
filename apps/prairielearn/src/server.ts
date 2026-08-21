@@ -96,6 +96,7 @@ import { assessmentTrpcRouter } from './trpc/assessment/trpc.js';
 import { assessmentQuestionTrpcRouter } from './trpc/assessmentQuestion/trpc.js';
 import { courseTrpcRouter } from './trpc/course/trpc.js';
 import { courseInstanceTrpcRouter } from './trpc/courseInstance/trpc.js';
+import { userTrpcRouter } from './trpc/user/trpc.js';
 
 process.on('warning', (e) => console.warn(e));
 
@@ -549,6 +550,7 @@ export async function initExpress(): Promise<Express> {
   // some pages don't need authorization
   app.use('/', (await import('./pages/home/home.js')).default);
   app.use('/pl', (await import('./pages/home/home.js')).default);
+  app.use('/pl/user/trpc', userTrpcRouter);
   app.use('/pl/settings', (await import('./pages/userSettings/userSettings.js')).default);
   app.use('/pl/enroll', (await import('./pages/enroll/enroll.js')).default);
   app.use('/pl/password', (await import('./pages/authPassword/authPassword.js')).default);

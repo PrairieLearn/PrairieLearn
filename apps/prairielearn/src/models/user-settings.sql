@@ -8,11 +8,11 @@ WHERE
 
 -- BLOCK upsert_user_settings
 INSERT INTO
-  user_settings (user_id, enable_keyboard_shortcut)
+  user_settings (user_id, enable_single_key_shortcuts)
 VALUES
-  ($user_id, $enable_keyboard_shortcut)
+  ($user_id, $enable_single_key_shortcuts)
 ON CONFLICT (user_id) DO UPDATE
 SET
-  enable_keyboard_shortcut = EXCLUDED.enable_keyboard_shortcut
+  enable_single_key_shortcuts = EXCLUDED.enable_single_key_shortcuts
 RETURNING
   *;

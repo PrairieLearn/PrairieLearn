@@ -261,7 +261,7 @@ router.get(
           showSubmissionsAssignedToMeOnly: req.session.show_submissions_assigned_to_me_only,
           submissionCredits,
           instanceQuestionAiGradeProps,
-          enable_keyboard_shortcut: userSettings.enable_keyboard_shortcut,
+          enable_single_key_shortcuts: userSettings.enable_single_key_shortcuts,
         }),
       );
     },
@@ -379,7 +379,7 @@ router.get(
           show_submissions_assigned_to_me_only:
             req.session.show_submissions_assigned_to_me_only ?? true,
           gradedByHumanName: shared.lastHumanGraderName,
-          enable_keyboard_shortcut: userSettings.enable_keyboard_shortcut,
+          enable_single_key_shortcuts: userSettings.enable_single_key_shortcuts,
         }).toString();
 
         const aiGradingExplanation = aiGradingInfo

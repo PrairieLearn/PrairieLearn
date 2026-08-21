@@ -1,9 +1,15 @@
-import { useEffect, useState } from 'react';
-import { Alert } from 'react-bootstrap';
+import { QueryClient, useMutation } from '@tanstack/react-query';
+import clsx from 'clsx';
+import { useState } from 'react';
 
 import { formatDate } from '@prairielearn/formatter';
+import { getAppError } from '@prairielearn/trpc/client';
+import { AppErrorAlert, QueryClientProviderDebug } from '@prairielearn/trpc/react';
 
-import type { PublicUserSetting, UserAccessToken } from '../../../lib/client/safe-db-types.js';
+import type { UserAccessToken } from '../../../lib/client/safe-db-types.js';
+import { createUserTrpcClient } from '../../../trpc/user/client.js';
+import { TRPCProvider, useTRPC } from '../../../trpc/user/context.js';
+import type { UserSettingsError } from '../../../trpc/user/user-settings.js';
 
 import { DeleteTokenModal } from './DeleteTokenModal.js';
 import { GenerateTokenModal } from './GenerateTokenModal.js';
@@ -24,7 +30,8 @@ interface UserSettingsPageProps {
   newAccessTokens: string[];
   isExamMode: boolean;
   csrfToken: string;
-  userSettings: PublicUserSetting;
+  trpcCsrfToken: string;
+  initialEnableSingleKeyShortcuts: boolean;
 }
 
 export function UserSettingsPage({
@@ -35,29 +42,35 @@ export function UserSettingsPage({
   newAccessTokens,
   isExamMode,
   csrfToken,
-  userSettings,
+  trpcCsrfToken,
+  initialEnableSingleKeyShortcuts,
 }: UserSettingsPageProps) {
+  const [queryClient] = useState(() => new QueryClient());
+  const [trpcClient] = useState(() => createUserTrpcClient({ csrfToken: trpcCsrfToken }));
+
   return (
-    <>
-      <h1 className="mb-4">Settings</h1>
+    <QueryClientProviderDebug client={queryClient}>
+      <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
+        <h1 className="mb-4">Settings</h1>
 
-      <UserProfileCard
-        user={user}
-        institution={institution}
-        authnProviderName={authnProviderName}
-      />
+        <UserProfileCard
+          user={user}
+          institution={institution}
+          authnProviderName={authnProviderName}
+        />
 
-      <UserSettingsCard userSettings={userSettings} csrfToken={csrfToken} />
+        <UserSettingsCard initialEnableSingleKeyShortcuts={initialEnableSingleKeyShortcuts} />
 
-      <PersonalAccessTokensCard
-        accessTokens={accessTokens}
-        newAccessTokens={newAccessTokens}
-        isExamMode={isExamMode}
-        csrfToken={csrfToken}
-      />
+        <PersonalAccessTokensCard
+          accessTokens={accessTokens}
+          newAccessTokens={newAccessTokens}
+          isExamMode={isExamMode}
+          csrfToken={csrfToken}
+        />
 
-      <BrowserConfigurationCard />
-    </>
+        <BrowserConfigurationCard />
+      </TRPCProvider>
+    </QueryClientProviderDebug>
   );
 }
 
@@ -280,50 +293,26 @@ function BrowserConfigurationCard() {
 }
 
 function UserSettingsCard({
-  userSettings,
-  csrfToken,
+  initialEnableSingleKeyShortcuts,
 }: {
-  userSettings: PublicUserSetting;
-  csrfToken: string;
+  initialEnableSingleKeyShortcuts: boolean;
 }) {
-  const [enableKeyboardShortcut, setEnableKeyboardShortcut] = useState<boolean>(
-    userSettings.enable_keyboard_shortcut,
+  const trpc = useTRPC();
+  const [enableSingleKeyShortcuts, setEnableSingleKeyShortcuts] = useState(
+    initialEnableSingleKeyShortcuts,
   );
-
-  const [settingsError, setSettingsError] = useState<string | null>(null);
-  const [showSavedNotification, setShowSavedNotification] = useState(false);
-
-  useEffect(() => {
-    if (!showSavedNotification) return;
-    const t = setTimeout(() => setShowSavedNotification(false), 3000);
-    return () => clearTimeout(t);
-  }, [showSavedNotification]);
-
-  const submitSettings = async () => {
-    const payload = {
-      __csrf_token: csrfToken,
-      __action: 'user_setting_update',
-      enable_keyboard_shortcut: enableKeyboardShortcut,
-    };
-    const res = await fetch(window.location.pathname, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-      body: JSON.stringify(payload),
-    });
-    if (!res.ok) {
-      let data: { err: any };
-      try {
-        data = (await res.json()) ?? {};
-      } catch {
-        data = { err: `Error: ${res.statusText}` };
-      }
-      if (data.err) {
-        return setSettingsError(data.err);
-      }
-    }
-    setShowSavedNotification(true);
-    return;
-  };
+  const [savedEnableSingleKeyShortcuts, setSavedEnableSingleKeyShortcuts] = useState(
+    initialEnableSingleKeyShortcuts,
+  );
+  const updateMutation = useMutation({
+    ...trpc.settings.update.mutationOptions(),
+    onSuccess: ({ enableSingleKeyShortcuts: savedValue }) => {
+      setEnableSingleKeyShortcuts(savedValue);
+      setSavedEnableSingleKeyShortcuts(savedValue);
+    },
+  });
+  const appError = getAppError<UserSettingsError['Update']>(updateMutation.error);
+  const isDirty = enableSingleKeyShortcuts !== savedEnableSingleKeyShortcuts;
 
   return (
     <div className="card mb-4">
@@ -331,51 +320,61 @@ function UserSettingsCard({
         <h2>User settings</h2>
       </div>
       <div className="card-body">
-        <div className="form-check">
-          <label className="form-check-label">
-            <input
-              className="form-check-input"
-              type="checkbox"
-              checked={enableKeyboardShortcut}
-              onChange={() => setEnableKeyboardShortcut(!enableKeyboardShortcut)}
-            />
-            Character keys
+        <div className="form-check form-switch">
+          <input
+            id="enable-keyboard-shortcuts"
+            className="form-check-input"
+            type="checkbox"
+            role="switch"
+            aria-describedby="enable-keyboard-shortcuts-description"
+            checked={enableSingleKeyShortcuts}
+            disabled={updateMutation.isPending}
+            onChange={(event) => {
+              updateMutation.reset();
+              setEnableSingleKeyShortcuts(event.currentTarget.checked);
+            }}
+          />
+          <label className="form-check-label fw-semibold" htmlFor="enable-keyboard-shortcuts">
+            Enable single-key shortcuts
           </label>
+          <div id="enable-keyboard-shortcuts-description" className="form-text mt-1">
+            Use single-character keyboard shortcuts where available, including manual grading.
+            Available shortcuts are shown next to supported controls.
+          </div>
+        </div>
 
+        <AppErrorAlert
+          error={appError}
+          className="mt-3 mb-0"
+          render={{ UNKNOWN: ({ message }) => message }}
+          onDismiss={() => updateMutation.reset()}
+        />
+
+        <div className="d-flex align-items-center gap-2 mt-3">
           <button
             type="button"
-            className="btn btn-sm btn-ghost"
-            data-bs-toggle="tooltip"
-            data-bs-placement="bottom"
-            data-bs-title="Enable keyboard shortcuts."
-            aria-label="More information about enabling keyboard shortcuts."
+            className="btn btn-primary"
+            disabled={!isDirty || updateMutation.isPending}
+            onClick={() => updateMutation.mutate({ enableSingleKeyShortcuts })}
           >
-            <i className="fas fa-circle-info" aria-hidden="true" />
+            {updateMutation.isPending && (
+              <span className="spinner-border spinner-border-sm me-2" aria-hidden="true" />
+            )}
+            {updateMutation.isPending ? 'Saving…' : 'Save settings'}
           </button>
-        </div>
-        <Alert
-          show={showSavedNotification}
-          variant="success"
-          role="status"
-          aria-live="polite"
-          dismissible
-          onClose={() => setShowSavedNotification(false)}
-        >
-          Settings saved
-        </Alert>
-        {settingsError && (
-          <Alert
-            key={settingsError}
-            variant="danger"
-            dismissible
-            onClose={() => setSettingsError(null)}
+          <span
+            className={clsx('small text-success', {
+              invisible: !updateMutation.isSuccess || isDirty,
+            })}
+            aria-hidden={!updateMutation.isSuccess || isDirty}
           >
-            {settingsError}
-          </Alert>
-        )}
-        <button type="button" className="btn btn-primary" onClick={() => submitSettings()}>
-          Save
-        </button>
+            <i className="bi bi-check-circle-fill me-1" aria-hidden="true" />
+            Saved
+          </span>
+          <span className="visually-hidden" role="status" aria-live="polite">
+            {updateMutation.isSuccess && !isDirty ? 'Settings saved' : ''}
+          </span>
+        </div>
       </div>
     </div>
   );
