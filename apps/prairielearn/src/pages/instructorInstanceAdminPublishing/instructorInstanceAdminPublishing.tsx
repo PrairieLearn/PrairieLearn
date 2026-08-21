@@ -25,14 +25,13 @@ import { formatJsonWithPrettier } from '../../lib/prettier.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 import {
-  addEnrollmentToPublishingExtension,
   createPublishingExtensionWithEnrollments,
   deletePublishingExtension,
-  removeStudentFromPublishingExtension,
   selectEnrollmentsForPublishingExtension,
   selectPublishingExtensionById,
   selectPublishingExtensionByName,
   updatePublishingExtension,
+  updatePublishingExtensionEnrollments,
 } from '../../models/course-instance-publishing-extensions.js';
 import { selectUsersAndEnrollmentsByUidsInCourseInstance } from '../../models/enrollment.js';
 import { type CourseInstanceJsonInput } from '../../schemas/infoCourseInstance.js';
@@ -510,19 +509,11 @@ router.post(
           (e) => !desiredEnrollmentsIds.has(e.id),
         );
 
-        for (const enrollment of enrollmentsToRemove) {
-          await removeStudentFromPublishingExtension({
-            courseInstancePublishingExtension: extension,
-            enrollment,
-          });
-        }
-
-        for (const enrollment of enrollmentsToAdd) {
-          await addEnrollmentToPublishingExtension({
-            courseInstancePublishingExtension: extension,
-            enrollment,
-          });
-        }
+        await updatePublishingExtensionEnrollments({
+          courseInstancePublishingExtension: extension,
+          enrollmentsToAdd,
+          enrollmentsToRemove,
+        });
       });
 
       res.sendStatus(204);
