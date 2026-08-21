@@ -234,7 +234,11 @@ export async function admitUserToCourseInstance(
     const decision = getEnrollmentAdmissionDecision(classification, selectedSource);
 
     if (!decision.allowed) {
-      if (decision.reason === 'already_joined' && classification.boundCandidate !== null) {
+      if (
+        decision.reason === 'already_joined' &&
+        classification.boundCandidate !== null &&
+        !(selectedSource.type === 'invitation' && selectedSource.matchedBy === 'uid')
+      ) {
         return classification.boundCandidate.enrollment;
       }
       throw new EnrollmentAdmissionDeniedError(decision);
@@ -335,5 +339,99 @@ export async function admitUserToCourseInstance(
       deletedEnrollments,
     });
     return enrollment;
+  });
+}
+
+async function rejectInvitation({
+  source,
+  agentAuthnUserId,
+  agentUserId,
+  courseInstanceId,
+  enrollmentId,
+  userId,
+}: EnrollmentAuditActor & {
+  courseInstanceId: string;
+  enrollmentId: string;
+  source: Extract<
+    EnrollmentAdmissionSource,
+    { type: 'invitation'; matchedBy: 'institution_uin' | 'uid' }
+  >;
+  userId: string;
+}): Promise<Enrollment> {
+  const context = { courseInstanceId, userId };
+
+  return await runWithSharedEnrollmentBarrier(courseInstanceId, async () => {
+    const initialClassification = await selectEnrollmentIdentityClassification(context);
+    const enrollmentIds = initialClassification.candidates.map(
+      (candidate) => candidate.enrollment.id,
+    );
+    await lockEnrollments(enrollmentIds);
+    const classification = await selectEnrollmentIdentityClassification(context, enrollmentIds);
+    const decision = getEnrollmentAdmissionDecision(classification, source);
+
+    if (!decision.allowed || decision.invitationCandidate?.enrollment.id !== enrollmentId) {
+      throw new EnrollmentAdmissionDeniedError(
+        decision.allowed
+          ? {
+              allowed: false,
+              reason: 'no_matching_invitation',
+              source,
+            }
+          : decision,
+      );
+    }
+
+    const oldEnrollment = decision.invitationCandidate.enrollment;
+    const enrollment = await queryRow(
+      sql.reject_invitation,
+      { enrollment_id: oldEnrollment.id },
+      EnrollmentSchema,
+    );
+    await insertAuditEvent({
+      tableName: 'enrollments',
+      action: 'update',
+      actionDetail: 'invitation_rejected',
+      rowId: enrollment.id,
+      oldRow: oldEnrollment,
+      newRow: enrollment,
+      agentAuthnUserId,
+      agentUserId,
+    });
+    return enrollment;
+  });
+}
+
+/**
+ * Rejects the pending UID invitation with the ID selected by the caller. A UIN
+ * or LTI match on the same row is not enough to reject it through this method.
+ */
+export async function rejectUidInvitation(
+  options: EnrollmentAuditActor & {
+    courseInstanceId: string;
+    enrollmentId: string;
+    userId: string;
+  },
+): Promise<Enrollment> {
+  return await rejectInvitation({
+    ...options,
+    source: { type: 'invitation', matchedBy: 'uid' },
+  });
+}
+
+/**
+ * Hides a pending UIN invitation without binding the user or changing a paired
+ * `left` enrollment. A later import may set the invitation back to `invited`,
+ * making the course appear on the homepage again.
+ */
+export async function rejectInstitutionUinInvitation(
+  options: EnrollmentAuditActor & {
+    courseInstanceId: string;
+    enrollmentId: string;
+    userId: string;
+  },
+): Promise<Enrollment> {
+  return await rejectInvitation({
+    ...options,
+    source: { type: 'invitation', matchedBy: 'institution_uin' },
   });
 }

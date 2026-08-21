@@ -135,6 +135,16 @@ VALUES
 RETURNING
   *;
 
+-- BLOCK reject_invitation
+UPDATE enrollments
+SET
+  status = 'rejected'
+WHERE
+  id = $enrollment_id
+  AND status = 'invited'
+RETURNING
+  *;
+
 -- BLOCK delete_loser_enrollments
 DELETE FROM enrollments
 WHERE

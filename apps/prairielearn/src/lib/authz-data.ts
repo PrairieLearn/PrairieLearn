@@ -7,15 +7,13 @@ import { run } from '@prairielearn/run';
 import { withBrand } from '@prairielearn/utils';
 import { IdSchema } from '@prairielearn/zod';
 
-import { selectLatestPublishingExtensionByEnrollment } from '../models/course-instance-publishing-extensions.js';
-import { selectOptionalEnrollmentByUserId } from '../models/enrollment.js';
+import { selectLatestPublishingExtensionByEnrollmentIds } from '../models/course-instance-publishing-extensions.js';
 
 import {
   type ConstructedCourseOrInstanceContext,
   type PlainAuthzData,
   calculateCourseInstanceRolePermissions,
   calculateCourseRolePermissions,
-  dangerousFullSystemAuthz,
 } from './authz-data-lib.js';
 import {
   type CourseInstance,
@@ -28,6 +26,7 @@ import {
   InstitutionSchema,
   type User,
 } from './db-types.js';
+import { selectEnrollmentIdentityClassification } from './enrollment/identity.js';
 import { ipToMode } from './exam-mode.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -104,14 +103,15 @@ export async function calculateModernCourseInstanceStudentAccess(
   // modern publishing configs.
   assert(courseInstance.modern_publishing);
 
-  // We can't trust the authzData to have the correct permissioning,
-  // so we need to use system auth to get the enrollment.
-  const enrollment = await selectOptionalEnrollmentByUserId({
+  const classification = await selectEnrollmentIdentityClassification({
+    courseInstanceId: courseInstance.id,
     userId,
-    requiredRole: ['System'],
-    authzData: dangerousFullSystemAuthz(),
-    courseInstance,
   });
+  const joinedEnrollment =
+    classification.boundCandidate?.enrollment.status === 'joined'
+      ? classification.boundCandidate.enrollment
+      : null;
+  const isJoined = joinedEnrollment !== null;
 
   // Not published at all.
   if (courseInstance.publishing_start_date == null) {
@@ -130,18 +130,26 @@ export async function calculateModernCourseInstanceStudentAccess(
   if (reqDate < courseInstance.publishing_end_date) {
     return {
       has_student_access: true,
-      has_student_access_with_enrollment: enrollment?.status === 'joined',
+      has_student_access_with_enrollment: isJoined,
     };
   }
 
-  // We are after the end date. We might have access if we have an extension.
-  // Only enrolled students can have extensions.
-  if (enrollment?.status !== 'joined') {
+  // Before admission, any matching row may carry the extension that will be
+  // preserved when those rows are merged. Once the user has joined, pending
+  // rows are not merged automatically and must not extend the joined row's access.
+  const hasActionableInvitation =
+    classification.actionableUidInvitation !== null ||
+    classification.actionableInstitutionUinInvitation !== null;
+  if (!isJoined && !hasActionableInvitation) {
     return { has_student_access: false, has_student_access_with_enrollment: false };
   }
 
-  const latestPublishingExtension = await selectLatestPublishingExtensionByEnrollment({
-    enrollment,
+  const latestPublishingExtension = await selectLatestPublishingExtensionByEnrollmentIds({
+    courseInstance,
+    enrollmentIds:
+      joinedEnrollment === null
+        ? classification.candidates.map((candidate) => candidate.enrollment.id)
+        : [joinedEnrollment.id],
   });
 
   // Check if we have access via extension.
@@ -150,7 +158,7 @@ export async function calculateModernCourseInstanceStudentAccess(
 
   return {
     has_student_access: hasAccessViaExtension,
-    has_student_access_with_enrollment: hasAccessViaExtension,
+    has_student_access_with_enrollment: hasAccessViaExtension && isJoined,
   };
 }
 

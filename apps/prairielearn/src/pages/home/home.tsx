@@ -10,6 +10,7 @@ import { parseRequestBody } from '@prairielearn/zod';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { redirectToTermsPageIfNeeded } from '../../ee/lib/terms.js';
+import { hasRole } from '../../lib/authz-data-lib.js';
 import {
   checkCourseInstanceLegacyAccess,
   constructCourseOrInstanceContext,
@@ -17,25 +18,37 @@ import {
 import { extractPageContext } from '../../lib/client/page-context.js';
 import { StaffInstitutionSchema } from '../../lib/client/safe-db-types.js';
 import { config } from '../../lib/config.js';
+import type { CourseInstancePublishingExtension } from '../../lib/db-types.js';
+import { admitUserFromUidInvitation } from '../../lib/enrollment/admission.js';
 import {
-  admitUserFromUidInvitation,
-  rejectUserFromUidInvitation,
-} from '../../lib/enrollment/admission.js';
-import { selectEnrollmentAdmissionDecision } from '../../lib/enrollment/identity.js';
-import { EnrollmentAdmissionDeniedError } from '../../lib/enrollment/reconciliation.js';
+  type EnrollmentIdentityCandidate,
+  type EnrollmentIdentityClassification,
+  classifyEnrollmentIdentityCandidates,
+  selectEnrollmentAdmissionDecision,
+} from '../../lib/enrollment/identity.js';
+import {
+  EnrollmentAdmissionDeniedError,
+  rejectInstitutionUinInvitation,
+  rejectUidInvitation,
+} from '../../lib/enrollment/reconciliation.js';
 import { idsEqual } from '../../lib/id.js';
 import { isEnterprise } from '../../lib/license.js';
-import { computeStatus } from '../../lib/publishing.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { getUrl } from '../../lib/url.js';
-import { selectOptionalEnrollmentByUid, setEnrollmentStatus } from '../../models/enrollment.js';
+import { selectOptionalEnrollmentByUserId, setEnrollmentStatus } from '../../models/enrollment.js';
 import {
   markNewsItemsAsReadForUser,
   selectUnreadNewsItemsForUser,
 } from '../../models/news-items.js';
 
 import { Home } from './home.html.js';
-import { InstructorHomePageCourseSchema, StudentHomePageCourseSchema } from './home.types.js';
+import {
+  InstructorHomePageCourseSchema,
+  type StudentHomePageCourse,
+  type StudentHomePageCourseCandidateRow,
+  StudentHomePageCourseCandidateRowSchema,
+  type StudentHomePageCourseData,
+} from './home.types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 const router = Router();
@@ -43,10 +56,96 @@ const router = Router();
 const PostBodySchema = z.discriminatedUnion('__action', [
   z.object({ __action: z.literal('dismiss_news_alert') }),
   z.object({
-    __action: z.enum(['accept_invitation', 'reject_invitation', 'unenroll']),
+    __action: z.enum(['accept_invitation', 'reject_invitation']),
+    course_instance_id: z.string().min(1),
+    enrollment_id: z.string().min(1),
+  }),
+  z.object({
+    __action: z.literal('unenroll'),
     course_instance_id: z.string().min(1),
   }),
+  z.object({
+    __action: z.literal('remove_institution_access'),
+    course_instance_id: z.string().min(1),
+    enrollment_id: z.string().min(1),
+  }),
 ]);
+
+function isLaterPublishingExtension(
+  next: CourseInstancePublishingExtension,
+  current: CourseInstancePublishingExtension,
+): boolean {
+  const dateDifference = next.end_date.getTime() - current.end_date.getTime();
+  return dateDifference > 0 || (dateDifference === 0 && BigInt(next.id) > BigInt(current.id));
+}
+
+function groupStudentCourseCandidates(
+  rows: StudentHomePageCourseCandidateRow[],
+): (StudentHomePageCourseData & {
+  classification: EnrollmentIdentityClassification;
+})[] {
+  const groups = new Map<
+    string,
+    {
+      boundJoinedPublishingExtension: CourseInstancePublishingExtension | null;
+      course: StudentHomePageCourseData;
+      candidates: EnrollmentIdentityCandidate[];
+    }
+  >();
+
+  for (const row of rows) {
+    let group = groups.get(row.course_instance.id);
+    if (group === undefined) {
+      group = {
+        boundJoinedPublishingExtension: null,
+        course: {
+          course: row.course,
+          course_instance: row.course_instance,
+          start_date: row.start_date,
+          end_date: row.end_date,
+          latest_publishing_extension: null,
+        },
+        candidates: [],
+      };
+      groups.set(row.course_instance.id, group);
+    }
+
+    group.candidates.push({
+      enrollment: row.enrollment,
+      matches: {
+        boundUser: row.matches_bound_user,
+        institutionUin: row.matches_institution_uin,
+        lti13: row.matches_lti13,
+        pendingUid: row.matches_pending_uid,
+      },
+    });
+
+    const extension = row.latest_publishing_extension;
+    if (row.matches_bound_user && row.enrollment.status === 'joined') {
+      group.boundJoinedPublishingExtension = extension;
+    }
+    if (
+      extension !== null &&
+      (group.course.latest_publishing_extension === null ||
+        isLaterPublishingExtension(extension, group.course.latest_publishing_extension))
+    ) {
+      group.course.latest_publishing_extension = extension;
+    }
+  }
+
+  return [...groups.values()].map((group) => {
+    const classification = classifyEnrollmentIdentityCandidates(group.candidates);
+    return {
+      ...group.course,
+      // Pending rows are merged during admission, but not after the user has joined.
+      latest_publishing_extension:
+        classification.boundCandidate?.enrollment.status === 'joined'
+          ? group.boundJoinedPublishingExtension
+          : group.course.latest_publishing_extension,
+      classification,
+    };
+  });
+}
 
 router.get(
   '/',
@@ -71,13 +170,11 @@ router.get(
       InstructorHomePageCourseSchema,
     );
 
-    // Query all student courses (both legacy and modern publishing) in a single query
-    const allStudentCourses = await queryRows(
+    const studentCourseCandidateRows = await queryRows(
       sql.select_student_courses,
       {
         // Use the authenticated user, not the authorized user.
         user_id: res.locals.authn_user.id,
-        pending_uid: res.locals.authn_user.uid,
         // This is a somewhat ugly escape hatch specifically for load testing. In
         // general, we don't want to clutter the home page with example course
         // enrollments, but for load testing we want to enroll a large number of
@@ -87,8 +184,9 @@ router.get(
         include_example_course_enrollments: req.query.include_example_course_enrollments === 'true',
         req_date: res.locals.req_date,
       },
-      StudentHomePageCourseSchema,
+      StudentHomePageCourseCandidateRowSchema,
     );
+    const allStudentCourses = groupStudentCourseCandidates(studentCourseCandidateRows);
 
     const legacyCourseInstancesWithAccess = await checkCourseInstanceLegacyAccess({
       courseInstanceIds: allStudentCourses
@@ -98,9 +196,9 @@ router.get(
       reqDate: res.locals.req_date,
     });
 
-    const studentCourses = allStudentCourses.filter((entry) => {
+    const visibleStudentCourses = allStudentCourses.filter((entry) => {
       // Filter out courses where user also has instructor access.
-      if (instructorCourses.some((course) => idsEqual(course.id, entry.course_id))) return false;
+      if (instructorCourses.some((course) => idsEqual(course.id, entry.course.id))) return false;
 
       // Legacy courses must be filtered using access rules
       if (!entry.course_instance.modern_publishing) {
@@ -131,6 +229,32 @@ router.get(
         res.locals.req_date < endDate
       );
     });
+
+    const studentCourses = visibleStudentCourses
+      .map(({ classification, course, course_instance }) => {
+        const clientCourse = { course, course_instance };
+
+        if (classification.boundCandidate?.enrollment.status === 'joined') {
+          return { ...clientCourse, access_type: 'joined' };
+        }
+        if (classification.actionableInstitutionUinInvitation !== null) {
+          return {
+            ...clientCourse,
+            access_type: 'institution_access',
+            invitation_enrollment_id:
+              classification.actionableInstitutionUinInvitation.enrollment.id,
+          };
+        }
+        if (classification.actionableUidInvitation !== null) {
+          return {
+            ...clientCourse,
+            access_type: 'uid_invitation',
+            invitation_enrollment_id: classification.actionableUidInvitation.enrollment.id,
+          };
+        }
+        return null;
+      })
+      .filter((entry): entry is StudentHomePageCourse => entry !== null);
 
     const adminInstitutions = await queryRows(
       sql.select_admin_institutions,
@@ -188,14 +312,6 @@ router.post(
   typedAsyncHandler<'plain'>(async (req, res) => {
     const body = parseRequestBody(req, PostBodySchema);
 
-    const {
-      authn_user: { uid },
-    } = extractPageContext(res.locals, {
-      pageType: 'plain',
-      accessType: 'student',
-      withAuthzData: false,
-    });
-
     if (body.__action === 'dismiss_news_alert') {
       await markNewsItemsAsReadForUser(res.locals.authn_user);
       res.redirect(req.originalUrl);
@@ -211,31 +327,13 @@ router.post(
       is_administrator: res.locals.is_administrator,
     });
 
-    if (authzData === null || courseInstance === null) {
+    if (
+      authzData === null ||
+      courseInstance === null ||
+      !hasRole(authzData, ['Student']) ||
+      authzData.course_role !== 'None'
+    ) {
       throw new HttpStatusError(403, 'Access denied');
-    }
-
-    // Invitations and rejections are only supported for modern publishing courses.
-    if (
-      !courseInstance.modern_publishing &&
-      ['accept_invitation', 'reject_invitation'].includes(body.__action)
-    ) {
-      flash(
-        'error',
-        'Invitations and rejections are only supported for courses using modern publishing.',
-      );
-      res.redirect(req.originalUrl);
-      return;
-    }
-
-    if (
-      courseInstance.modern_publishing &&
-      computeStatus(courseInstance.publishing_start_date, courseInstance.publishing_end_date) !==
-        'published'
-    ) {
-      flash('error', 'This course instance is not accessible to students');
-      res.redirect(req.originalUrl);
-      return;
     }
 
     switch (body.__action) {
@@ -245,7 +343,11 @@ router.post(
           source: { type: 'invitation', matchedBy: 'uid' },
           userId: res.locals.authn_user.id,
         });
-        if (!decision.allowed || decision.invitationCandidate === null) {
+        if (
+          !decision.allowed ||
+          decision.invitationCandidate === null ||
+          !idsEqual(decision.invitationCandidate.enrollment.id, body.enrollment_id)
+        ) {
           flash('error', 'Failed to accept invitation');
           break;
         }
@@ -266,18 +368,24 @@ router.post(
         break;
       }
       case 'reject_invitation': {
-        const rejected = await rejectUserFromUidInvitation({
-          authzData,
-          courseInstanceId: courseInstance.id,
-          userId: res.locals.authn_user.id,
-        });
-        if (!rejected) flash('error', 'Failed to reject invitation');
+        try {
+          await rejectUidInvitation({
+            agentAuthnUserId: res.locals.authn_user.id,
+            agentUserId: res.locals.authn_user.id,
+            courseInstanceId: courseInstance.id,
+            enrollmentId: body.enrollment_id,
+            userId: res.locals.authn_user.id,
+          });
+        } catch (error) {
+          if (!(error instanceof EnrollmentAdmissionDeniedError)) throw error;
+          flash('error', 'Failed to reject invitation');
+        }
         break;
       }
       case 'unenroll': {
-        const enrollment = await selectOptionalEnrollmentByUid({
+        const enrollment = await selectOptionalEnrollmentByUserId({
           courseInstance,
-          uid,
+          userId: res.locals.authn_user.id,
           requiredRole: ['Student'],
           authzData,
         });
@@ -287,12 +395,31 @@ router.post(
           break;
         }
 
+        // A student may also have a pending UIN invitation for this course. We intentionally do
+        // not reject it here: doing so safely requires locking both enrollment rows in the same
+        // order as reconciliation. The course may therefore reappear using the invitation, which
+        // the student can remove separately.
         await setEnrollmentStatus({
           enrollment,
           status: 'left',
           authzData,
           requiredRole: ['Student'],
         });
+        break;
+      }
+      case 'remove_institution_access': {
+        try {
+          await rejectInstitutionUinInvitation({
+            agentAuthnUserId: res.locals.authn_user.id,
+            agentUserId: res.locals.authn_user.id,
+            courseInstanceId: courseInstance.id,
+            enrollmentId: body.enrollment_id,
+            userId: res.locals.authn_user.id,
+          });
+        } catch (error) {
+          if (!(error instanceof EnrollmentAdmissionDeniedError)) throw error;
+          flash('error', 'Failed to remove course');
+        }
         break;
       }
       default: {
