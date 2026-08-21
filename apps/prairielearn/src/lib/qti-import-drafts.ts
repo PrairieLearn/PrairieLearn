@@ -17,10 +17,6 @@ const QtiImportDraftDataSchema = z.object({
 
 type QtiImportDraftData = z.infer<typeof QtiImportDraftDataSchema>;
 
-type QtiImportDraft = QtiImportDraftData & {
-  draftId: string;
-};
-
 interface CreateQtiImportDraftData {
   courseId: string;
   courseInstanceId: string;
@@ -54,7 +50,7 @@ export async function readQtiImportDraft({
   courseId: string;
   courseInstanceId: string;
   userId: string;
-}): Promise<QtiImportDraft> {
+}): Promise<QtiImportDraftData> {
   const buffer = await getFromS3(getFileStoreS3Bucket(), draftKey(draftId), true);
   const data = QtiImportDraftDataSchema.parse(JSON.parse(buffer.toString('utf8')));
   if (
@@ -64,9 +60,9 @@ export async function readQtiImportDraft({
   ) {
     throw new Error('QTI import draft does not belong to this course instance or user');
   }
-  return { ...data, draftId };
+  return data;
 }
 
-export async function deleteQtiImportDraft(draft: QtiImportDraft): Promise<void> {
-  await deleteFromS3(getFileStoreS3Bucket(), draftKey(draft.draftId));
+export async function deleteQtiImportDraft(draftId: string): Promise<void> {
+  await deleteFromS3(getFileStoreS3Bucket(), draftKey(draftId));
 }

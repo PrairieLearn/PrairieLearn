@@ -80,7 +80,8 @@ const StoredSerializedQuestionOutputSchema = z.object({
   serverPy: z.string().optional(),
   clientFiles: z.record(z.string(), z.string()),
   skippedVideos: z.array(z.string()),
-  remoteImagesCopied: z.number().default(0),
+  // Drafts created before external image copying was added omit this field.
+  copiedExternalImageFileCount: z.number().int().nonnegative().default(0),
 });
 
 const StoredSerializedConversionResultForHydrationSchema = z.object({

@@ -36,8 +36,7 @@ For programmatic use, `@prairielearn/question-conversion` exports a small surfac
 
 The pipeline is `parse` (XML → IR) → `transform` (per-question normalization) → `emit` (IR → PrairieLearn files), with optional processing hooks around emission. `bin/convert.ts` runs these stages and orchestrates the file-system side. Canvas equation images are converted back to their LaTeX source during parsing, before local images are rewritten and feedback is emitted into `server.py`.
 
-`PLEmitter#emit(...)` is synchronous. Use the async `emitProcessed(...)` method when the emitted
-output needs processing:
+`PLEmitter#emit(...)` is synchronous. Use the async `emitProcessed(...)` method when the emitted output needs processing:
 
 ```ts
 const result = await emitter.emitProcessed(ir, {

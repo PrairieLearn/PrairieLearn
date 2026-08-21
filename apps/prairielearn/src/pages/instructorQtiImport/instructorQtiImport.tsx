@@ -418,12 +418,7 @@ async function convertEntry(
 
   return {
     ok: true,
-    value: await serializeConversionResult(
-      result,
-      assessmentSlug,
-      webResourcesDir,
-      remoteImageCopier,
-    ),
+    value: await serializeConversionResult(result, assessmentSlug, webResourcesDir),
   };
 }
 
@@ -444,7 +439,6 @@ export async function serializeConversionResult(
   result: ConversionResult,
   assessmentSlug: string,
   webResourcesDir: string,
-  remoteImageCopier: QtiImportRemoteImageCopier,
 ): Promise<SerializedEntryResult> {
   const extraWarnings: ConversionWarning[] = [];
   const questionPrefix = `imported/${assessmentSlug}`;
@@ -455,7 +449,6 @@ export async function serializeConversionResult(
       // questions live under the prefix path (e.g. "imported/quiz-slug/q1").
       // This must match the IDs used in the assessment zones.
       const questionId = `${questionPrefix}/${q.directoryName}`;
-      const remoteImageCopy = remoteImageCopier.getCopyResult(q);
       const { files, missingFiles } = await serializeClientFiles(q.clientFiles, webResourcesDir);
       if (missingFiles.length > 0) {
         extraWarnings.push({
@@ -464,13 +457,16 @@ export async function serializeConversionResult(
           level: 'warn',
         });
       }
+      const hasRemoteImageCopyWarning = result.warnings.some(
+        (warning) =>
+          warning.questionId === q.sourceId && warning.code === 'remote-image-copy-failed',
+      );
+      const remoteImageCopyReport = result.reports.find(
+        (report) => report.questionId === q.sourceId,
+      );
       const seenMessages = new Set<string>();
       for (const d of await lintQuestionHtml(q.questionHtml)) {
-        if (
-          remoteImageCopy.failedImageCount > 0 &&
-          remoteImageCopy.unattemptedRemoteImageCount === 0 &&
-          d.ruleName === 'pl-remote-image-url'
-        ) {
+        if (hasRemoteImageCopyWarning && d.ruleName === 'pl-remote-image-url') {
           continue;
         }
         if (seenMessages.has(d.message)) continue;
@@ -485,7 +481,7 @@ export async function serializeConversionResult(
         serverPy: q.serverPy,
         clientFiles: files,
         skippedVideos: q.skippedFiles,
-        remoteImagesCopied: remoteImageCopy.remoteImagesCopied,
+        copiedExternalImageFileCount: remoteImageCopyReport?.filesCreated ?? 0,
       };
     }),
   );
