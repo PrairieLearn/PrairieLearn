@@ -126,13 +126,18 @@ export class QtiImportRemoteImageCopier implements ConversionProcessor {
       await new Promise<void>((resolve) => {
         this.requestQueue.push(resolve);
       });
+    } else {
+      this.activeRequestCount += 1;
     }
-    this.activeRequestCount += 1;
     try {
       return await request();
     } finally {
-      this.activeRequestCount -= 1;
-      this.requestQueue.shift()?.();
+      const nextRequest = this.requestQueue.shift();
+      if (nextRequest) {
+        nextRequest();
+      } else {
+        this.activeRequestCount -= 1;
+      }
     }
   }
 

@@ -287,6 +287,42 @@ describe('QtiImportRemoteImageCopier', () => {
     expect(maximumActiveRequestCount).toBe(5);
   });
 
+  it('hands a released request slot to the queued batch before starting a later batch', async () => {
+    const copier = new QtiImportRemoteImageCopier();
+    const startedRequests: string[] = [];
+    const releaseActiveRequests: (() => void)[] = [];
+    const scheduleRequest = (name: string, block = false) =>
+      copier['scheduleRequest'](() => {
+        startedRequests.push(name);
+        if (!block) return Promise.resolve();
+        return new Promise<void>((resolve) => releaseActiveRequests.push(resolve));
+      });
+    const initialRequests = Array.from({ length: 5 }, (_, index) =>
+      scheduleRequest(`initial-${index}`, true),
+    );
+    const queuedRequest = scheduleRequest('initial-queued');
+
+    expect(startedRequests).toEqual([
+      'initial-0',
+      'initial-1',
+      'initial-2',
+      'initial-3',
+      'initial-4',
+    ]);
+
+    releaseActiveRequests.shift()?.();
+    const laterRequest = new Promise<void>((resolve, reject) => {
+      // Run after the active request releases its slot but before the queued request resumes.
+      queueMicrotask(() => scheduleRequest('later').then(resolve, reject));
+    });
+    await new Promise<void>((resolve) => setImmediate(resolve));
+
+    expect(startedRequests.slice(5)).toEqual(['initial-queued', 'later']);
+
+    releaseActiveRequests.forEach((release) => release());
+    await Promise.all([...initialRequests, queuedRequest, laterRequest]);
+  });
+
   it('stops starting downloads after reaching the aggregate byte limit', async () => {
     const content = Buffer.alloc(10 * 1024 * 1024);
     let fetchCount = 0;
