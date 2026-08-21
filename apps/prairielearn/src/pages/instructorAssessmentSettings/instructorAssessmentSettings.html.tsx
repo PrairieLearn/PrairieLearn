@@ -5,25 +5,21 @@ import { Alert, Button, Form, InputGroup, Modal, Spinner } from 'react-bootstrap
 import { useForm } from 'react-hook-form';
 
 import { run } from '@prairielearn/run';
+import { getAppError, renderAppError } from '@prairielearn/trpc/client';
+import { AppErrorAlert, QueryClientProviderDebug } from '@prairielearn/trpc/react';
 import { StickySaveBar, type StickySaveBarAlert, useModalState } from '@prairielearn/ui';
 
 import { GitHubButton } from '../../components/GitHubButton.js';
 import { StudentLinkSharing } from '../../components/LinkSharing.js';
 import { ShareSourcePubliclyCard } from '../../components/ShareSourcePubliclyCard.js';
 import { AssessmentShortNameDescription } from '../../components/ShortNameDescriptions.js';
-import {
-  AppErrorAlert,
-  getAppError,
-  renderAppError,
-  syncJobFailedRenderer,
-} from '../../lib/client/errors.js';
 import type {
   StaffAssessment,
   StaffAssessmentModule,
   StaffAssessmentSet,
   StaffCourseInstance,
 } from '../../lib/client/safe-db-types.js';
-import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
+import { syncJobFailedRenderer } from '../../lib/client/syncJobFailedRenderer.js';
 import {
   getAssessmentLogsUrl,
   getAssessmentStudentsUrl,

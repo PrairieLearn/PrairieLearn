@@ -2,9 +2,9 @@ import { QueryClient, useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Alert } from 'react-bootstrap';
 
+import { QueryClientProviderDebug } from '@prairielearn/trpc/react';
 import { useModalState } from '@prairielearn/ui';
 
-import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
 import { MAX_STUDENT_LABELS_PER_COURSE_INSTANCE } from '../../schemas/infoCourseInstance.js';
 import { createCourseInstanceTrpcClient } from '../../trpc/courseInstance/client.js';
 import { TRPCProvider, useTRPC } from '../../trpc/courseInstance/context.js';

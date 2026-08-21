@@ -1,10 +1,11 @@
 import { QueryClient, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 
+import { getAppError } from '@prairielearn/trpc/client';
+import { AppErrorAlert, QueryClientProviderDebug } from '@prairielearn/trpc/react';
 import { NuqsAdapter } from '@prairielearn/ui';
 
 import type { AiGradingGeneralStats } from '../../../ee/lib/ai-grading/types.js';
-import { AppErrorAlert, getAppError } from '../../../lib/client/errors.js';
 import type { PageContext } from '../../../lib/client/page-context.js';
 import type {
   StaffAssessment,
@@ -12,7 +13,6 @@ import type {
   StaffInstanceQuestionGroup,
   StaffUser,
 } from '../../../lib/client/safe-db-types.js';
-import { QueryClientProviderDebug } from '../../../lib/client/tanstackQuery.js';
 import type { EnumAiGradingProvider } from '../../../lib/db-types.js';
 import type { RubricData } from '../../../lib/manualGrading.types.js';
 import { createAssessmentQuestionTrpcClient } from '../../../trpc/assessmentQuestion/client.js';

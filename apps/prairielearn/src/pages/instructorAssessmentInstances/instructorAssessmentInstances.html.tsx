@@ -1,6 +1,7 @@
 import { QueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 
+import { QueryClientProviderDebug } from '@prairielearn/trpc/react';
 import { NuqsAdapter } from '@prairielearn/ui';
 
 import type {
@@ -8,7 +9,6 @@ import type {
   StaffAssessmentSet,
   StaffCourseInstance,
 } from '../../lib/client/safe-db-types.js';
-import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
 import { createAssessmentTrpcClient } from '../../trpc/assessment/client.js';
 import { TRPCProvider } from '../../trpc/assessment/context.js';
 

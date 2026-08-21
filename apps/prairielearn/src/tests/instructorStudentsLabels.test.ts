@@ -6,8 +6,8 @@ import { afterAll, assert, beforeAll, describe, expect, test } from 'vitest';
 
 import { queryOptionalRow } from '@prairielearn/postgres';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
+import { getAppError } from '@prairielearn/trpc/client';
 
-import { getAppError } from '../lib/client/errors.js';
 import { config } from '../lib/config.js';
 import { EnrollmentSchema } from '../lib/db-types.js';
 import { computeScopedJsonHash } from '../lib/editorUtil.js';

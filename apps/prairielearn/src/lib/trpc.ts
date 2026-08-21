@@ -1,26 +1,10 @@
 import type { ProcedureType, TRPCError } from '@trpc/server';
 import { getHTTPStatusCodeFromError } from '@trpc/server/http';
-import { sampleSize } from 'es-toolkit';
 import type { Request } from 'express';
 
 import { logger } from '@prairielearn/logger';
 import * as Sentry from '@prairielearn/sentry';
-
-/**
- * Returns true if the request is a tRPC request from one of our tRPC clients.
- *
- * All tRPC routers in this app are mounted under a path segment named `trpc`,
- * and our tRPC clients use `httpLink`, which produces URLs of the form
- * `/<base>/trpc/<procedureName>`. So we check that the segment immediately
- * before the procedure name is `trpc`.
- */
-export function isTrpcRequest(req: Request): boolean {
-  // This header is spoofable; the URL path is what Express actually uses to dispatch.
-  if (req.header('X-TRPC') !== 'true') return false;
-  const pathOnly = req.originalUrl.split('?')[0];
-  const segments = pathOnly.split('/');
-  return segments.at(-2) === 'trpc';
-}
+import { generateErrorId } from '@prairielearn/trpc/server';
 
 /**
  * Reimplements error handling from `pages/error/error.ts` for tRPC errors.
@@ -32,16 +16,17 @@ export function handleTrpcError(opts: {
   type: ProcedureType | 'unknown';
   req: Request;
 }) {
-  const error_id = sampleSize([...'0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'], 12).join('');
+  const errorId = opts.req.res?.locals.error_id ?? generateErrorId();
+  if (opts.req.res) opts.req.res.locals.error_id = errorId;
 
   const code = getHTTPStatusCodeFromError(opts.error);
   if (code >= 500) {
-    Sentry.captureException(opts.error, { tags: { error_id } });
+    Sentry.captureException(opts.error, { tags: { error_id: errorId } });
   }
 
   logger[code >= 500 ? 'error' : 'verbose']('tRPC error', {
     err: opts.error,
-    id: error_id,
+    id: errorId,
     status: code,
     url: opts.req.originalUrl,
     response_id: opts.req.res?.locals.response_id ?? null,

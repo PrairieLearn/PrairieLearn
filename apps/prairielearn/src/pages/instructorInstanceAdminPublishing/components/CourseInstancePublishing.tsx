@@ -2,12 +2,13 @@ import { QueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 
+import { QueryClientProviderDebug } from '@prairielearn/trpc/react';
+
 import {
   CourseInstancePublishingForm,
   type PublishingFormValues,
 } from '../../../components/CourseInstancePublishingForm.js';
 import type { StaffCourseInstance } from '../../../lib/client/safe-db-types.js';
-import { QueryClientProviderDebug } from '../../../lib/client/tanstackQuery.js';
 import type { CourseInstancePublishingExtensionRow } from '../instructorInstanceAdminPublishing.types.js';
 import { dateToPlainDateTime } from '../utils/dateUtils.js';
 

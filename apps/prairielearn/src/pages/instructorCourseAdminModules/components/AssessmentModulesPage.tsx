@@ -2,6 +2,8 @@ import { QueryClient, useMutation, useQuery, useQueryClient } from '@tanstack/re
 import { useState } from 'react';
 import { Alert } from 'react-bootstrap';
 
+import { getAppError } from '@prairielearn/trpc/client';
+import { AppErrorAlert, QueryClientProviderDebug } from '@prairielearn/trpc/react';
 import { useModalState } from '@prairielearn/ui';
 
 import { AssessmentModuleHeading } from '../../../components/AssessmentModuleHeading.js';
@@ -13,8 +15,6 @@ import {
   useReorderableRow,
 } from '../../../components/ReorderableTable.js';
 import { DEFAULT_ASSESSMENT_MODULE_NAME } from '../../../lib/assessment-modules.shared.js';
-import { AppErrorAlert, getAppError } from '../../../lib/client/errors.js';
-import { QueryClientProviderDebug } from '../../../lib/client/tanstackQuery.js';
 import { getCourseEditErrorUrl } from '../../../lib/client/url.js';
 import type { AssessmentModulesError } from '../../../trpc/course/assessment-modules.js';
 import { createCourseTrpcClient } from '../../../trpc/course/client.js';

@@ -21,7 +21,6 @@ import bodyParser from 'body-parser';
 import cookie from 'cookie';
 import cookieParser from 'cookie-parser';
 import esMain from 'es-main';
-import { sampleSize } from 'es-toolkit';
 import express, {
   type Express,
   type NextFunction,
@@ -53,6 +52,8 @@ import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 import { createSessionMiddleware } from '@prairielearn/session';
 import { getCheckedSignedTokenData } from '@prairielearn/signed-token';
+import { isMultipartRequest } from '@prairielearn/trpc/express';
+import { generateErrorId } from '@prairielearn/trpc/server';
 import { assertNever } from '@prairielearn/utils';
 
 import * as cron from './cron/index.js';
@@ -372,17 +373,7 @@ export async function initExpress(): Promise<Express> {
     publicQuestionEndpoint: true,
   });
 
-  /**
-   * `multipart/form-data` bodies are consumed by multer (file-upload routes) or
-   * read as a raw stream by tRPC (`FormData` inputs). The JSON/urlencoded body
-   * parsers don't parse multipart, but they still set `req.body = {}`, which
-   * makes tRPC's Express adapter stringify that empty object instead of reading
-   * the multipart stream. We skip them so the raw body reaches its real consumer.
-   */
-  function isMultipartRequest(req: Request) {
-    return (req.headers['content-type'] ?? '').startsWith('multipart/form-data');
-  }
-
+  // Leave multipart bodies untouched for multer routes and tRPC FormData inputs.
   app.use((req, res, next) => {
     // Stripe webhook signature verification requires the raw body, so we avoid
     // using the body parser for that route.
@@ -2058,7 +2049,7 @@ export async function initExpress(): Promise<Express> {
   // This should come first so that both Sentry and our own error page can
   // read the error ID and any status code.
   app.use((err: any, req: Request, res: Response, next: NextFunction) => {
-    res.locals.error_id = sampleSize([...'0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'], 12).join('');
+    res.locals.error_id ??= generateErrorId();
 
     err.status = err.status ?? maybeGetStatusCodeFromSqlError(err) ?? 500;
 

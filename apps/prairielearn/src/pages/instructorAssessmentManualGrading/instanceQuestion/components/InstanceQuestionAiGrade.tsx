@@ -2,11 +2,11 @@ import { QueryClient, useMutation } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
 import { Alert } from 'react-bootstrap';
 
+import { QueryClientProviderDebug } from '@prairielearn/trpc/react';
 import { useModalState } from '@prairielearn/ui';
 
 import { AiGradingProgressInfo } from '../../../../components/ServerJobProgress/AiGradingProgressInfo.js';
 import { useServerJobProgress } from '../../../../components/ServerJobProgress/useServerJobProgress.js';
-import { QueryClientProviderDebug } from '../../../../lib/client/tanstackQuery.js';
 import type { EnumAiGradingProvider } from '../../../../lib/db-types.js';
 import { JobItemStatus } from '../../../../lib/serverJobProgressSocket.shared.js';
 import { createAssessmentQuestionTrpcClient } from '../../../../trpc/assessmentQuestion/client.js';

@@ -5,13 +5,13 @@ import { useState } from 'react';
 import { Button, Form } from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
 
+import { QueryClientProviderDebug } from '@prairielearn/trpc/react';
 import { StickySaveBar } from '@prairielearn/ui';
 
 import { GitHubButton } from '../../components/GitHubButton.js';
 import { ShareSourcePubliclyCard } from '../../components/ShareSourcePubliclyCard.js';
 import { CourseInstanceShortNameDescription } from '../../components/ShortNameDescriptions.js';
 import type { PageContext } from '../../lib/client/page-context.js';
-import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
 import { getAssessmentSettingsUrl } from '../../lib/client/url.js';
 import { validateShortName } from '../../lib/short-name.js';
 import { type Timezone, formatTimezone } from '../../lib/timezone.shared.js';

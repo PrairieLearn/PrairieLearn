@@ -3,14 +3,14 @@ import { useState } from 'react';
 import { Alert } from 'react-bootstrap';
 
 import { run } from '@prairielearn/run';
+import { getAppError } from '@prairielearn/trpc/client';
+import { QueryClientProviderDebug } from '@prairielearn/trpc/react';
 
-import { getAppError } from '../../lib/client/errors.js';
 import type {
   StaffAssessment,
   StaffAssessmentSet,
   StaffGroupConfig,
 } from '../../lib/client/safe-db-types.js';
-import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
 import { type GroupSettingsFormValues } from '../../lib/group-config.js';
 import type { GroupUsersRow } from '../../models/group.js';
 import type { AssessmentGroupsError } from '../../trpc/assessment/assessment-groups.js';

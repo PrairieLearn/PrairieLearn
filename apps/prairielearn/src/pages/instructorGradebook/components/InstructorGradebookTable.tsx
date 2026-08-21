@@ -9,6 +9,7 @@ import { parseAsString, useQueryState } from 'nuqs';
 import { type ReactNode, useMemo, useRef, useState } from 'react';
 import { z } from 'zod';
 
+import { QueryClientProviderDebug } from '@prairielearn/trpc/react';
 import {
   type ColumnFilterEntry,
   MultiSelectColumnFilter,
@@ -36,7 +37,6 @@ import {
 import { EnrollmentStatusIcon } from '../../../components/EnrollmentStatusIcon.js';
 import { StudentLabelBadge } from '../../../components/StudentLabelBadge.js';
 import type { StaffStudentLabel } from '../../../lib/client/safe-db-types.js';
-import { QueryClientProviderDebug } from '../../../lib/client/tanstackQuery.js';
 import { getStudentEnrollmentUrl } from '../../../lib/client/url.js';
 import { type EnumEnrollmentStatus, EnumEnrollmentStatusSchema } from '../../../lib/db-types.js';
 import {

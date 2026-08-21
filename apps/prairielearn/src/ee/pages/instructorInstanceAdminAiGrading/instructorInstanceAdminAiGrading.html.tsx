@@ -4,10 +4,10 @@ import { useEffect, useState } from 'react';
 import { Alert, Form, Modal } from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
 
+import { QueryClientProviderDebug } from '@prairielearn/trpc/react';
 import { useModalState } from '@prairielearn/ui';
 
 import { formatMilliDollars } from '../../../lib/ai-grading-credits.js';
-import { QueryClientProviderDebug } from '../../../lib/client/tanstackQuery.js';
 import type { EnumAiGradingProvider } from '../../../lib/db-types.js';
 import { CreditPoolDashboard } from '../../components/ai-grading-credits/CreditPoolDashboard.js';
 import {
