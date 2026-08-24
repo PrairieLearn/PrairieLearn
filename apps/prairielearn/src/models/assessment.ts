@@ -256,8 +256,9 @@ export async function lockAssessment(assessment: Assessment): Promise<void> {
 }
 
 /**
- * Marks cached assessment statistics as stale for every assessment with instances in the course
+ * Best-effort invalidation of cached statistics for assessments with instances in the course
  * instance. This must be called in the same transaction as the change that invalidated the cache.
+ * See the SQL query for the deliberately accepted concurrent-refresh race.
  */
 export async function invalidateAssessmentStatisticsForCourseInstance({
   course_instance_id,

@@ -21,6 +21,10 @@ WHERE
     WHERE
       ai.assessment_id = a.id
   )
+  -- This intentionally avoids locking assessments without instances or whose statistics are
+  -- already stale. A concurrent statistics refresh can therefore race with an enrollment change,
+  -- but we accept that narrow race to avoid locking every assessment for every enrollment changed
+  -- by a large roster sync.
   AND NOT EXISTS (
     SELECT
       1

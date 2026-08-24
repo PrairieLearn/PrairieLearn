@@ -39,9 +39,14 @@ FROM
   JOIN teams AS g ON (g.team_config_id = gc.id)
   JOIN LATERAL (
     SELECT
-      *
+      gu.*
     FROM
       team_users AS gu
+      JOIN enrollments AS e ON (
+        e.user_id = gu.user_id
+        AND e.course_instance_id = ci.id
+        AND e.status = 'joined'
+      )
     WHERE
       gu.team_id = g.id
     LIMIT
