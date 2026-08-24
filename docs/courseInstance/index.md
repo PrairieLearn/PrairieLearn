@@ -240,6 +240,8 @@ If you want to disable self-enrollment completely, you can set the `enabled` pro
 
 Students can be invited to a course instance by an instructor. Instructors can invite students to a course instance by visiting the "Students" tab of the course instance and clicking the "Invite" button. Invites will show up on the student's PrairieLearn homepage. If a student rejects an invitation, they can still join via a link to the course. However, the invitation will not show up on their homepage until they are re-invited. If an invited student accesses any link to the course (regardless of the current self-enrollment settings), they will automatically join the course.
 
+Note that invited students are not notified of their invitations. Instructors need to notify students using their own communication channels (e.g., email, LMS announcements, etc.), instructing students to visit PrairieLearn or the course instance self-enrollment link and accept the invitation.
+
 #### Blocking students
 
 If you want to remove students from a course instance, you can do this by visiting the individual student page and clicking the "Block" button. They will immediately be removed from the course instance and will no longer be able to enroll themselves in the course instance. If you later click "Unblock" on their page, they will be immediately re-enrolled in the course instance.

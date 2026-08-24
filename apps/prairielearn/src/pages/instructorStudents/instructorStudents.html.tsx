@@ -873,12 +873,14 @@ function StudentsCard({
       <InviteStudentsModal
         show={showInvite}
         courseInstance={courseInstance}
+        selfEnrollLink={selfEnrollLink}
         onHide={() => setShowInvite(false)}
         onSubmit={inviteStudents}
       />
       <SyncStudentsModal
         show={showSync}
         courseInstance={courseInstance}
+        selfEnrollLink={selfEnrollLink}
         students={students}
         onHide={() => setShowSync(false)}
         onSubmit={syncStudents}
