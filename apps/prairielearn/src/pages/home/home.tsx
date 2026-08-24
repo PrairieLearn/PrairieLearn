@@ -6,7 +6,7 @@ import { flash } from '@prairielearn/flash';
 import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 import { assertNever } from '@prairielearn/utils';
-import { parseRequestBody } from '@prairielearn/zod';
+import { IdSchema, parseRequestBody } from '@prairielearn/zod';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { redirectToTermsPageIfNeeded } from '../../ee/lib/terms.js';
@@ -57,17 +57,17 @@ const PostBodySchema = z.discriminatedUnion('__action', [
   z.object({ __action: z.literal('dismiss_news_alert') }),
   z.object({
     __action: z.enum(['accept_invitation', 'reject_invitation']),
-    course_instance_id: z.string().min(1),
-    enrollment_id: z.string().min(1),
+    course_instance_id: IdSchema,
+    enrollment_id: IdSchema,
   }),
   z.object({
     __action: z.literal('unenroll'),
-    course_instance_id: z.string().min(1),
+    course_instance_id: IdSchema,
   }),
   z.object({
     __action: z.literal('remove_institution_access'),
-    course_instance_id: z.string().min(1),
-    enrollment_id: z.string().min(1),
+    course_instance_id: IdSchema,
+    enrollment_id: IdSchema,
   }),
 ]);
 
