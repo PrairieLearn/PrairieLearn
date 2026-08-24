@@ -77,7 +77,7 @@ async function enforcePublicCourseSharing(res: Response, course: Course): Promis
  */
 export const resolvePublicCourse = typedAsyncHandler<'public-course'>(async (req, res, next) => {
   const course = await selectOptionalCourseById(req.params.course_id);
-  if (!course) throw new HttpStatusError(404, 'Not Found');
+  if (!course || course.deleted_at != null) throw new HttpStatusError(404, 'Not Found');
 
   res.locals.course = course;
 
@@ -105,10 +105,12 @@ export const resolvePublicCourse = typedAsyncHandler<'public-course'>(async (req
 export const resolvePublicCourseInstance = typedAsyncHandler<'public-course-instance'>(
   async (req, res, next) => {
     const course_instance = await selectOptionalCourseInstanceById(req.params.course_instance_id);
-    if (!course_instance) throw new HttpStatusError(404, 'Not Found');
+    if (!course_instance || course_instance.deleted_at != null) {
+      throw new HttpStatusError(404, 'Not Found');
+    }
 
     const course = await selectOptionalCourseById(course_instance.course_id);
-    if (!course) throw new HttpStatusError(404, 'Not Found');
+    if (!course || course.deleted_at != null) throw new HttpStatusError(404, 'Not Found');
 
     res.locals.course = course;
     res.locals.course_instance = course_instance;

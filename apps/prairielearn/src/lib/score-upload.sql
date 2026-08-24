@@ -16,7 +16,10 @@ SELECT
   ai.id AS assessment_instance_id
 FROM
   assessment_instances AS ai
-  JOIN teams AS g ON (g.id = ai.team_id)
+  JOIN teams AS g ON (
+    g.id = ai.team_id
+    AND g.deleted_at IS NULL
+  )
 WHERE
   ai.assessment_id = $assessment_id
   AND ai.number = $instance_number
