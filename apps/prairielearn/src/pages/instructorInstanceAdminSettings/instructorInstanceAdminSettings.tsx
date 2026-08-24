@@ -164,7 +164,6 @@ router.get(
                 studentLink={studentLink}
                 publicLink={publicLink}
                 selfEnrollLink={selfEnrollLink}
-                isDevMode={config.devMode}
                 isAdministrator={isAdministrator}
                 nonPublicAssessmentsInCourseInstance={nonPublicAssessmentsInCourseInstance}
                 questionSharingEnabled={questionSharingEnabled}

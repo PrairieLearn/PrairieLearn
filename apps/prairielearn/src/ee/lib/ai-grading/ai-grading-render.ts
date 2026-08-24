@@ -75,9 +75,10 @@ function stripStyleAttribute($: cheerio.CheerioAPI, el: Element): void {
   // `prop('style')` gives us a parsed style object, but no companion serializer.
   // Manual serialization is safe here because the property names come from a
   // fixed allowlist and values come from Cheerio's parser.
-  el.attribs.style = Array.from(preservedDeclarations.entries())
-    .map(([propertyName, propertyValue]) => `${propertyName}: ${propertyValue}`)
-    .join('; ');
+  el.attribs.style = Array.from(
+    preservedDeclarations.entries(),
+    ([propertyName, propertyValue]) => `${propertyName}: ${propertyValue}`,
+  ).join('; ');
 }
 
 function stripBootstrapAttributes(el: Element): void {

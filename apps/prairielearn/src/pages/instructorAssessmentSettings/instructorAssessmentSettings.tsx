@@ -148,7 +148,6 @@ router.get(
               assessmentSets={assessmentSets}
               assessmentModules={assessmentModules}
               courseInstance={course_instance}
-              isDevMode={config.devMode}
               assessmentTools={assessmentTools}
               zonePointsRange={zonePointsRange}
               nonPublicQuestionsInAssessment={nonPublicQuestionsInAssessment}

@@ -4,11 +4,11 @@ import { Fragment, useState } from 'react';
 import { Alert, Modal } from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
 
+import { getAppError } from '@prairielearn/trpc/client';
+import { AppErrorAlert, QueryClientProviderDebug } from '@prairielearn/trpc/react';
 import { useModalState } from '@prairielearn/ui';
 
 import { CopyButton } from '../../components/CopyButton.js';
-import { AppErrorAlert, getAppError } from '../../lib/client/errors.js';
-import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
 import { getCourseEditErrorUrl, getQuestionSettingsUrl } from '../../lib/client/url.js';
 import type { SharingSetRow } from '../../models/sharing-set.js';
 import { createCourseTrpcClient } from '../../trpc/course/client.js';
@@ -25,7 +25,6 @@ interface InstructorCourseAdminSharingProps {
   origHash: string;
   courseId: string;
   trpcCsrfToken: string;
-  isDevMode: boolean;
 }
 
 export function InstructorCourseAdminSharing(props: InstructorCourseAdminSharingProps) {
@@ -38,7 +37,7 @@ export function InstructorCourseAdminSharing(props: InstructorCourseAdminSharing
   );
 
   return (
-    <QueryClientProviderDebug client={queryClient} isDevMode={props.isDevMode}>
+    <QueryClientProviderDebug client={queryClient}>
       <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
         <InstructorCourseAdminSharingInner {...props} />
       </TRPCProvider>

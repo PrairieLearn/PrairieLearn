@@ -1,5 +1,17 @@
 # @prairielearn/eslint-plugin
 
+## 4.4.0
+
+### Minor Changes
+
+- 452f675: Allow applications to configure explicit permission middleware names for the tRPC authorization rule.
+
+## 4.3.6
+
+### Patch Changes
+
+- e2ed7cd: Apply additional eslint unicorn rules
+
 ## 4.3.5
 
 ### Patch Changes

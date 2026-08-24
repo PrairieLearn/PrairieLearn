@@ -5,6 +5,8 @@ import { useState } from 'react';
 import { Alert, Form, Modal, Spinner } from 'react-bootstrap';
 import { FormProvider, useForm, useWatch } from 'react-hook-form';
 
+import { type AppError, getAppError } from '@prairielearn/trpc/client';
+
 import {
   CourseInstancePermissionsForm,
   type PermissionsFormValues,
@@ -18,7 +20,6 @@ import {
   type SelfEnrollmentFormValues,
 } from '../../../components/CourseInstanceSelfEnrollmentForm.js';
 import { CourseInstanceShortNameDescription } from '../../../components/ShortNameDescriptions.js';
-import { type AppError, getAppError } from '../../../lib/client/errors.js';
 import type { PageContext } from '../../../lib/client/page-context.js';
 import {
   getCourseInstanceEditErrorUrl,

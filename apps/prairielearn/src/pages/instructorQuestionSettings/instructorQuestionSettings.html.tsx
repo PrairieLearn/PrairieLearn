@@ -1109,7 +1109,7 @@ export const InstructorQuestionSettingsForm = ({
                     ))}
                     {lockedSharingSetNamesSet.size > 0 && (
                       <div className="d-flex flex-wrap gap-1 mb-2">
-                        {Array.from(lockedSharingSetNamesSet).map((name) => (
+                        {Array.from(lockedSharingSetNamesSet, (name) => (
                           <span
                             key={name}
                             className="badge color-gray1"

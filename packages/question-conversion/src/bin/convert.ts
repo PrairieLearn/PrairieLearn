@@ -305,7 +305,7 @@ async function writeFiles(
         const cfDir = path.join(qDir, 'clientFilesQuestion');
         await mkdir(cfDir, { recursive: true });
         await Promise.all(
-          [...q.clientFiles].map(async ([name, content]) => {
+          Array.from(q.clientFiles, async ([name, content]) => {
             const destFile = safeJoin(cfDir, name);
             if (!destFile) {
               logger.warn(`Skipping clientFile with unsafe path "${name}" (would escape ${cfDir})`);

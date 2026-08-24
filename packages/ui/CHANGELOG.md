@@ -1,5 +1,27 @@
 # @prairielearn/ui
 
+## 4.0.0
+
+### Major Changes
+
+- d5c1739: Upgrade TanStack Table to v9. Consumers must create tables and column definitions with the exported `useTanstackTable` and `createTanstackTableColumnHelper`, use v9 pinning state (`{ start, end }` instead of `{ left, right }`), and rely on the built-in row selection handler for Shift-range selection instead of `useShiftClickCheckbox`.
+
+## 3.9.0
+
+### Minor Changes
+
+- 5d5bec7: Add a hook for pruning row selections when table data changes
+
+### Patch Changes
+
+- c36d9f5: Avoid closing the column manager before an adjacent dropdown is activated.
+
+## 3.8.2
+
+### Patch Changes
+
+- 057d37b: Update dependency on typescript-cp
+
 ## 3.8.1
 
 ### Patch Changes

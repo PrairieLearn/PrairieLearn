@@ -101,7 +101,7 @@ export async function close() {
 
   // Collect all namespace adapters. We do this before replacing the adapter
   // because we can't get references to the original adapters after that.
-  const adapters = [...io._nsps.values()].map((nsp) => nsp.adapter);
+  const adapters = Array.from(io._nsps.values(), (nsp) => nsp.adapter);
 
   // Replace the adapter with an in-memory adapter to prevent further broadcasts
   // in case anything is still producing events.
