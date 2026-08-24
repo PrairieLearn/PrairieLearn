@@ -79,15 +79,15 @@ export interface IRRubric {
   criteria: IRRubricCriterion[];
 }
 
-/** Feedback attached to a question. */
+/** HTML feedback fragments shown to a student after their response is graded. */
 export interface IRFeedback {
+  /** Feedback shown when the response is correct. */
   correct?: string;
+  /** Feedback shown when the response is incorrect. */
   incorrect?: string;
-  general?: string;
   /**
-   * Per-answer feedback keyed by the answer display text (matches what PL stores
-   * in data['submitted_answers']). Used for multi-select questions where multiple
-   * feedbacks may need to be concatenated based on which answers were selected.
+   * HTML feedback keyed by the source answer's display text. Emitters use the key to attach the
+   * feedback to the corresponding answer or to compose feedback for the submitted answers.
    */
   perAnswer?: Record<string, string>;
 }
