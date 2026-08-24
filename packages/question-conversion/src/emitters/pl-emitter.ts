@@ -73,6 +73,7 @@ export class PLEmitter implements OutputEmitter {
         assessment: assessmentOutput,
         questions,
         warnings,
+        reports: [],
       };
     }
 
@@ -84,12 +85,13 @@ export class PLEmitter implements OutputEmitter {
       assessment: assessmentOutput,
       questions,
       warnings,
+      reports: [],
     };
   }
 
   async emitProcessed(
     itemContainer: IRItemContainer,
-    { processors, ...options }: EmitProcessedOptions,
+    { processors = [], ...options }: EmitProcessedOptions = {},
   ): Promise<ConversionResult> {
     for (const processor of processors) {
       await processor.beforeEmit?.(itemContainer);

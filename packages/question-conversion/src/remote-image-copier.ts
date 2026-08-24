@@ -4,18 +4,12 @@ import * as cheerio from 'cheerio';
 import type { Element } from 'domhandler';
 import { fileTypeFromBuffer } from 'file-type';
 
-import {
-  type PublicFetch,
-  type ResolveAddress,
-  createPublicFetch,
-  publicFetch,
-  validatePublicHttpsUrl,
-} from '@prairielearn/public-fetch';
+import { type PublicFetch, publicFetch, validatePublicHttpsUrl } from '@prairielearn/public-fetch';
 
 import type { ConversionProcessor, ConversionResult } from './emitters/emitter.js';
 import type { IRItemContainer, IRQuestion } from './types/ir.js';
 import type { PLQuestionOutput } from './types/pl-output.js';
-import { CLIENT_FILES_QUESTION_URL } from './utils/html.js';
+import { CLIENT_FILES_QUESTION_URL, rewriteImagesAsPlFigure } from './utils/html.js';
 
 // These limits cap both remote work and the amount of binary data retained by a conversion. The
 // 10 MiB per-image limit matches PrairieLearn's image-upload limit; 100 URLs and 50 MiB total allow
@@ -38,39 +32,44 @@ const SUPPORTED_IMAGE_TYPES = new Map([
 ]);
 const ACCEPTED_IMAGE_CONTENT_TYPES = [...SUPPORTED_IMAGE_TYPES.keys()].join(', ');
 
-export interface FetchedRemoteImage {
+interface FetchedRemoteImage {
   content: Buffer;
   extension: string;
 }
 
-export interface RemoteImageCopyResult {
-  html: string;
-  files: Map<string, Buffer>;
-  remoteImagesCopied: number;
-  failedImageCount: number;
-  unattemptedRemoteImageCount: number;
-}
-
 type ConsumeBytes = (byteLength: number) => void;
 type FetchRemoteImage = (url: URL, consumeBytes: ConsumeBytes) => Promise<FetchedRemoteImage>;
-type ImageReplacement = 'pl-figure' | 'img';
+type ImageOutputElement = 'pl-figure' | 'img';
 
-interface RemoteImageCopyStats {
-  remoteImagesCopied: number;
-  failedImageCount: number;
-  unattemptedRemoteImageCount: number;
+interface CopyRemoteImagesOptions {
+  reservedFilenames: Set<string>;
+  existingFiles: ReadonlyMap<string, Buffer | string>;
+  outputElement: ImageOutputElement;
 }
 
-interface RemoteImageFragmentsCopyResult extends RemoteImageCopyStats {
-  html: string[];
-  files: Map<string, Buffer>;
+interface RemoteImageCopyOutcome {
+  filesCreated: number;
+  referencesLeftRemote: number;
 }
 
-const EMPTY_COPY_STATS: RemoteImageCopyStats = {
-  remoteImagesCopied: 0,
-  failedImageCount: 0,
-  unattemptedRemoteImageCount: 0,
-};
+function emptyRemoteImageCopyOutcome(): RemoteImageCopyOutcome {
+  return {
+    filesCreated: 0,
+    referencesLeftRemote: 0,
+  };
+}
+
+function combineRemoteImageCopyOutcomes(
+  ...outcomes: readonly RemoteImageCopyOutcome[]
+): RemoteImageCopyOutcome {
+  return outcomes.reduce<RemoteImageCopyOutcome>(
+    (combined, outcome) => ({
+      filesCreated: combined.filesCreated + outcome.filesCreated,
+      referencesLeftRemote: combined.referencesLeftRemote + outcome.referencesLeftRemote,
+    }),
+    emptyRemoteImageCopyOutcome(),
+  );
+}
 
 /**
  * Copies remote images across one complete QTI conversion while enforcing import-wide limits.
@@ -83,19 +82,17 @@ export class QtiImportRemoteImageCopier implements ConversionProcessor {
   private activeRequestCount = 0;
   private readonly requestQueue: (() => void)[] = [];
   private readonly fetchCache = new Map<string, Promise<FetchedRemoteImage>>();
-  private readonly feedbackCopyStats = new WeakMap<
+  private readonly feedbackOutcomesByItemContainer = new WeakMap<
     IRItemContainer,
-    Map<string, RemoteImageCopyStats>
+    Map<string, RemoteImageCopyOutcome>
   >();
-
-  private readonly questionCopyResults = new WeakMap<PLQuestionOutput, RemoteImageCopyResult>();
 
   constructor(
     private readonly fetchImage: FetchRemoteImage = (url, consumeBytes) =>
       fetchRemoteImage(url, { consumeBytes }),
   ) {}
 
-  private fetchWithCache(url: URL): Promise<FetchedRemoteImage> {
+  private fetchImageWithCache(url: URL): Promise<FetchedRemoteImage> {
     let promise = this.fetchCache.get(url.href);
     if (!promise) {
       if (this.attemptedImageCount >= MAX_REMOTE_IMAGE_COUNT) {
@@ -141,35 +138,23 @@ export class QtiImportRemoteImageCopier implements ConversionProcessor {
     }
   }
 
-  async copyRemoteImages(
-    html: string,
-    existingFilenames: Set<string>,
-  ): Promise<RemoteImageCopyResult> {
-    return this.copyHtml(html, existingFilenames, new Map(), 'pl-figure');
-  }
-
-  private async copyHtml(
-    html: string,
-    existingFilenames: Set<string>,
-    existingFiles: ReadonlyMap<string, Buffer | string>,
-    replacement: ImageReplacement,
-  ): Promise<RemoteImageCopyResult> {
-    const result = await this.copyHtmlFragments(
+  private async copyRemoteImagesInHtml(html: string, options: CopyRemoteImagesOptions) {
+    const { rewrittenHtmlFragments, ...result } = await this.copyRemoteImagesInHtmlFragments(
       [html],
-      existingFilenames,
-      existingFiles,
-      replacement,
+      options,
     );
-    return { ...result, html: result.html[0] };
+    return { ...result, rewrittenHtml: rewrittenHtmlFragments[0] };
   }
 
-  private async copyHtmlFragments(
-    html: readonly string[],
-    existingFilenames: Set<string>,
-    existingFiles: ReadonlyMap<string, Buffer | string>,
-    replacement: ImageReplacement,
-  ): Promise<RemoteImageFragmentsCopyResult> {
-    const fragments = html.map((originalHtml) => ({
+  /**
+   * Copies remote images across a batch of HTML fragments and returns the rewritten fragments in
+   * the same order. Processing them together deduplicates images shared by multiple fragments.
+   */
+  private async copyRemoteImagesInHtmlFragments(
+    htmlFragments: readonly string[],
+    { reservedFilenames, existingFiles, outputElement }: CopyRemoteImagesOptions,
+  ) {
+    const fragments = htmlFragments.map((originalHtml) => ({
       originalHtml,
       $: cheerio.load(originalHtml, null, false),
       changed: false,
@@ -181,7 +166,7 @@ export class QtiImportRemoteImageCopier implements ConversionProcessor {
         elements: { $image: cheerio.Cheerio<Element>; fragmentIndex: number }[];
       }
     >();
-    let unattemptedRemoteImageCount = 0;
+    const outcome = emptyRemoteImageCopyOutcome();
 
     for (const [fragmentIndex, fragment] of fragments.entries()) {
       fragment.$('img[src]').each((_, element) => {
@@ -190,8 +175,8 @@ export class QtiImportRemoteImageCopier implements ConversionProcessor {
         if (!source) return;
         const url = parseRemoteImageUrl(source);
         if (!url) {
-          if (/^(?:https?:\/\/|:\/\/)/i.test(source.trim())) {
-            unattemptedRemoteImageCount += 1;
+          if (isRemoteImageReference(source)) {
+            outcome.referencesLeftRemote += 1;
           }
           return;
         }
@@ -206,24 +191,21 @@ export class QtiImportRemoteImageCopier implements ConversionProcessor {
       });
     }
 
-    const files = new Map<string, Buffer>();
+    const createdFiles = new Map<string, Buffer>();
     const filenameByDigest = new Map<string, string>();
     for (const [filename, content] of existingFiles) {
       if (!Buffer.isBuffer(content)) continue;
       filenameByDigest.set(contentDigest(content), filename);
     }
-    let remoteImagesCopied = 0;
-    let failedImageCount = 0;
-
     const copyPromises: Promise<void>[] = [];
     for (const { url, elements } of imagesByUrl.values()) {
       copyPromises.push(
         (async () => {
           let image: FetchedRemoteImage;
           try {
-            image = await this.fetchWithCache(url);
+            image = await this.fetchImageWithCache(url);
           } catch {
-            failedImageCount += 1;
+            outcome.referencesLeftRemote += elements.length;
             return;
           }
 
@@ -233,90 +215,83 @@ export class QtiImportRemoteImageCopier implements ConversionProcessor {
           let filename = filenameByDigest.get(digest);
           if (!filename) {
             if (this.storedImageBytes + image.content.byteLength > MAX_TOTAL_REMOTE_IMAGE_BYTES) {
-              failedImageCount += 1;
+              outcome.referencesLeftRemote += elements.length;
               return;
             }
 
-            filename = allocateFilename(`remote-${digest}.${image.extension}`, existingFilenames);
+            filename = allocateFilename(`remote-${digest}.${image.extension}`, reservedFilenames);
             filenameByDigest.set(digest, filename);
-            existingFilenames.add(filename);
-            files.set(filename, image.content);
+            reservedFilenames.add(filename);
+            createdFiles.set(filename, image.content);
             this.storedImageBytes += image.content.byteLength;
           }
 
           for (const { $image, fragmentIndex } of elements) {
-            const $ = fragments[fragmentIndex].$;
-            if (replacement === 'img') {
-              $image.attr('src', `${CLIENT_FILES_QUESTION_URL}/${filename}`);
-            } else {
-              const $figure = $('<pl-figure></pl-figure>');
-              $figure.attr('file-name', filename);
-              $figure.attr('directory', 'clientFilesQuestion');
-              $figure.attr('display', 'inline');
-
-              const alt = $image.attr('alt');
-              const width = $image.attr('width');
-              if (alt) $figure.attr('alt', alt);
-              if (width) $figure.attr('width', width);
-              $image.replaceWith($figure);
-            }
+            $image.attr('src', `${CLIENT_FILES_QUESTION_URL}/${filename}`);
             fragments[fragmentIndex].changed = true;
           }
-          remoteImagesCopied += 1;
         })(),
       );
     }
     await Promise.all(copyPromises);
 
     return {
-      html: fragments.map((fragment) =>
-        fragment.changed ? fragment.$.html() : fragment.originalHtml,
-      ),
-      files,
-      remoteImagesCopied,
-      failedImageCount,
-      unattemptedRemoteImageCount,
+      rewrittenHtmlFragments: fragments.map((fragment) => {
+        if (!fragment.changed) return fragment.originalHtml;
+        const rewrittenHtml = fragment.$.html();
+        return outputElement === 'pl-figure'
+          ? rewriteImagesAsPlFigure(rewrittenHtml, { display: 'inline' })
+          : rewrittenHtml;
+      }),
+      createdFiles,
+      ...outcome,
+      filesCreated: createdFiles.size,
     };
   }
 
-  async copyIntoQuestion(question: PLQuestionOutput): Promise<RemoteImageCopyResult> {
-    const result = await this.copyHtml(
+  /**
+   * Copies remote images from emitted question HTML into its client files. Running after emission
+   * covers the prompt, answer choices, and any other HTML produced by a body handler.
+   */
+  private async copyRemoteImagesInQuestionHtml(
+    question: PLQuestionOutput,
+  ): Promise<RemoteImageCopyOutcome> {
+    const { createdFiles, rewrittenHtml, ...outcome } = await this.copyRemoteImagesInHtml(
       question.questionHtml,
-      new Set(question.clientFiles.keys()),
-      question.clientFiles,
-      'pl-figure',
+      {
+        reservedFilenames: new Set(question.clientFiles.keys()),
+        existingFiles: question.clientFiles,
+        outputElement: 'pl-figure',
+      },
     );
-    question.questionHtml = result.html;
-    for (const [filename, content] of result.files) {
+    question.questionHtml = rewrittenHtml;
+    for (const [filename, content] of createdFiles) {
       question.clientFiles.set(filename, content);
     }
-    return result;
+    return outcome;
   }
 
-  private async copyFeedback(question: IRQuestion): Promise<RemoteImageCopyStats> {
+  /**
+   * Copies remote images referenced by feedback HTML before PrairieLearn emission.
+   *
+   * The emitter may serialize feedback into question HTML attributes or generated grading code,
+   * so the fragments must be rewritten while they are still represented in the IR. This mutates
+   * both `question.feedback` and `question.assets`.
+   */
+  private async copyRemoteImagesInFeedback(question: IRQuestion): Promise<RemoteImageCopyOutcome> {
     const feedback = question.feedback;
-    if (!feedback) return EMPTY_COPY_STATS;
+    if (!feedback) return emptyRemoteImageCopyOutcome();
 
-    const html: string[] = [];
-    const updateHtml: ((html: string) => void)[] = [];
-    const addFragment = (fragment: string, update: (html: string) => void) => {
-      html.push(fragment);
-      updateHtml.push(update);
+    const fragments: { html: string; writeBack: (rewrittenHtml: string) => void }[] = [];
+    const addFragment = (html: string, writeBack: (rewrittenHtml: string) => void) => {
+      fragments.push({ html, writeBack });
     };
-    if (feedback.correct) {
-      addFragment(feedback.correct, (value) => {
-        feedback.correct = value;
-      });
-    }
-    if (feedback.incorrect) {
-      addFragment(feedback.incorrect, (value) => {
-        feedback.incorrect = value;
-      });
-    }
-    if (feedback.general) {
-      addFragment(feedback.general, (value) => {
-        feedback.general = value;
-      });
+    for (const key of ['correct', 'incorrect'] as const) {
+      if (feedback[key]) {
+        addFragment(feedback[key], (value) => {
+          feedback[key] = value;
+        });
+      }
     }
     const perAnswer = feedback.perAnswer;
     if (perAnswer) {
@@ -326,7 +301,7 @@ export class QtiImportRemoteImageCopier implements ConversionProcessor {
         });
       }
     }
-    if (html.length === 0) return EMPTY_COPY_STATS;
+    if (fragments.length === 0) return emptyRemoteImageCopyOutcome();
 
     const existingFiles = new Map<string, Buffer>();
     for (const [filename, asset] of question.assets) {
@@ -334,73 +309,81 @@ export class QtiImportRemoteImageCopier implements ConversionProcessor {
         existingFiles.set(filename, Buffer.from(asset.value, 'base64'));
       }
     }
-    const result = await this.copyHtmlFragments(
-      html,
-      new Set(question.assets.keys()),
-      existingFiles,
-      'img',
-    );
-    for (const [filename, content] of result.files) {
+    const { createdFiles, rewrittenHtmlFragments, ...outcome } =
+      await this.copyRemoteImagesInHtmlFragments(
+        fragments.map((fragment) => fragment.html),
+        {
+          reservedFilenames: new Set(question.assets.keys()),
+          existingFiles,
+          // Feedback may be emitted inside an element attribute or inserted after grading, so it
+          // must remain ordinary HTML rather than being converted to a nested PrairieLearn element.
+          outputElement: 'img',
+        },
+      );
+    for (const [filename, content] of createdFiles) {
       question.assets.set(filename, {
         type: 'base64',
         value: content.toString('base64'),
       });
     }
-    result.html.forEach((value, index) => updateHtml[index](value));
+    rewrittenHtmlFragments.forEach((rewrittenHtml, index) => {
+      fragments[index].writeBack(rewrittenHtml);
+    });
 
-    return result;
+    return outcome;
   }
 
   async beforeEmit(itemContainer: IRItemContainer): Promise<void> {
-    const statsByQuestionId = new Map<string, RemoteImageCopyStats>();
-    this.feedbackCopyStats.set(itemContainer, statsByQuestionId);
+    const outcomes = new Map<string, RemoteImageCopyOutcome>();
+    this.feedbackOutcomesByItemContainer.set(itemContainer, outcomes);
     await Promise.all(
       itemContainer.questions.map(async (question) => {
-        statsByQuestionId.set(question.sourceId, await this.copyFeedback(question));
+        outcomes.set(question.sourceId, await this.copyRemoteImagesInFeedback(question));
       }),
     );
   }
 
   async afterEmit(result: ConversionResult, itemContainer: IRItemContainer): Promise<void> {
-    const feedbackStats = this.feedbackCopyStats.get(itemContainer);
-    const copyResults = await Promise.all(
-      result.questions.map(async (question) => {
-        const copyResult = await this.copyIntoQuestion(question);
-        addCopyStats(copyResult, feedbackStats?.get(question.sourceId) ?? EMPTY_COPY_STATS);
-        this.questionCopyResults.set(question, copyResult);
-        return copyResult;
-      }),
+    const feedbackOutcomes = this.feedbackOutcomesByItemContainer.get(itemContainer) ?? new Map();
+    const questionHtmlOutcomes = await Promise.all(
+      result.questions.map((question) => this.copyRemoteImagesInQuestionHtml(question)),
     );
 
-    for (const [index, copyResult] of copyResults.entries()) {
-      const uncopiedCount = copyResult.failedImageCount + copyResult.unattemptedRemoteImageCount;
-      if (uncopiedCount === 0) continue;
+    for (const [index, questionHtmlOutcome] of questionHtmlOutcomes.entries()) {
+      const question = result.questions[index];
+      const outcome = combineRemoteImageCopyOutcomes(
+        feedbackOutcomes.get(question.sourceId) ?? emptyRemoteImageCopyOutcome(),
+        questionHtmlOutcome,
+      );
+      if (outcome.filesCreated > 0) {
+        result.reports.push({
+          type: 'remote-image-copy',
+          questionId: question.sourceId,
+          filesCreated: outcome.filesCreated,
+        });
+      }
+      if (outcome.referencesLeftRemote === 0) continue;
+
+      const referenceCount = outcome.referencesLeftRemote;
+      const cause =
+        referenceCount === 1
+          ? 'Its URL may be invalid or insecure, or the image may be unavailable, too large, or in an unsupported format.'
+          : 'Their URLs may be invalid or insecure, or the images may be unavailable, too large, or in an unsupported format.';
       result.warnings.push({
-        questionId: result.questions[index].sourceId,
-        message: `${uncopiedCount} remote image${uncopiedCount === 1 ? '' : 's'} could not be copied because of ${uncopiedCount === 1 ? 'its URL' : 'their URLs'}, availability, size, or format.`,
+        questionId: question.sourceId,
+        code: 'remote-image-copy-failed',
+        message: `${referenceCount} image${referenceCount === 1 ? '' : 's'} could not be copied into the course and ${referenceCount === 1 ? 'was' : 'were'} left unchanged. ${cause}`,
       });
     }
   }
+}
 
-  getCopyResult(question: PLQuestionOutput): RemoteImageCopyResult {
-    return (
-      this.questionCopyResults.get(question) ?? {
-        html: question.questionHtml,
-        files: new Map(),
-        ...EMPTY_COPY_STATS,
-      }
-    );
-  }
+function isRemoteImageReference(source: string): boolean {
+  return /^(?:https?:)?\/\/|^:\/\//i.test(source.trim());
 }
 
 function contentDigest(content: Buffer): string {
   return crypto.createHash('sha256').update(content).digest('hex').slice(0, 16);
-}
-
-function addCopyStats(target: RemoteImageCopyStats, source: RemoteImageCopyStats): void {
-  target.remoteImagesCopied += source.remoteImagesCopied;
-  target.failedImageCount += source.failedImageCount;
-  target.unattemptedRemoteImageCount += source.unattemptedRemoteImageCount;
 }
 
 function parseRemoteImageUrl(source: string): URL | null {
@@ -431,12 +414,10 @@ function allocateFilename(preferredFilename: string, existingFilenames: Set<stri
 export async function fetchRemoteImage(
   initialUrl: URL,
   {
-    resolveAddress,
-    fetch = resolveAddress ? createPublicFetch({ resolveAddress }) : publicFetch,
+    fetch = publicFetch,
     consumeBytes,
   }: {
     fetch?: PublicFetch;
-    resolveAddress?: ResolveAddress;
     consumeBytes?: ConsumeBytes;
   } = {},
 ): Promise<FetchedRemoteImage> {

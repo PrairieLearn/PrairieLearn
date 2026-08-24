@@ -57,6 +57,5 @@ export async function convertWith(
   options?: ConvertOptions,
 ): Promise<ConversionResult> {
   const ir = await parseAssessment(xmlContent, parsers, options);
-  const { processors = [], ...emitOptions } = options ?? {};
-  return emitter.emitProcessed(ir, { ...emitOptions, processors });
+  return emitter.emitProcessed(ir, options);
 }
