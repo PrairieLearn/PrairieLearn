@@ -47,6 +47,8 @@ WHERE
     s.id = $submission_id
     OR (
       $submission_id IS NULL
+      -- Exact submission IDs can reference retained work from deleted groups, but
+      -- name-based lookups must exclude deleted groups because names can be reused.
       AND g.deleted_at IS NULL
       AND COALESCE(g.name, u.uid) = $uid_or_group
       AND ai.number = $ai_number
