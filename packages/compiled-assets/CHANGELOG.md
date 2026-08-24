@@ -1,5 +1,23 @@
 # @prairielearn/compiled-assets
 
+## 4.1.12
+
+### Patch Changes
+
+- 439df7c: Use second argument of Array.from
+
+## 4.1.11
+
+### Patch Changes
+
+- 5fcb568: Migrate esbuild target to es2022
+
+## 4.1.10
+
+### Patch Changes
+
+- df28e68: Bump dependencies
+
 ## 4.1.9
 
 ### Patch Changes

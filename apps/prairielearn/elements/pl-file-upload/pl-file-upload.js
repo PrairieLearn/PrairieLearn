@@ -35,6 +35,8 @@
       // Checks whether a file name is acceptable
       // If yes, it returns the canonical name of the file, if not, it returns null
       // Note the priority order: first, fill required file names, then required patterns, then optional names, then optional patterns
+      // We finish by checking if an existing file already matches the name.
+      // This allows a file pattern already covered to be replaced with another file with the same name, presuming the file is acceptable if already submitted.
       this.findAcceptedFileName = (fileName) => {
         if (this.requiredFilesLowerCase.includes(fileName)) {
           return this.requiredFiles[this.requiredFilesLowerCase.indexOf(fileName)];
@@ -48,6 +50,8 @@
         if (this.optionalFilesRegex.some((f) => new RegExp(f[0], 'i').test(fileName))) {
           return fileName;
         }
+        const existingFile = this.files.find((f) => f.name.toLowerCase() === fileName);
+        if (existingFile) return existingFile.name;
         return null;
       };
 
@@ -175,9 +179,19 @@
         const acceptedFileName = this.findAcceptedFileName(fileNameLowerCase);
 
         if (acceptedFileName === null) {
-          this.addWarningMessage(
-            `<strong>${escapeFileName(file.name)}</strong> did not match any accepted file for this question.`,
+          // If the file matches a required regex, we show a different message, as the user may be attempting to replace an existing file with a different name.
+          const regexMatch = this.requiredFilesRegex.find((f) =>
+            new RegExp(f[0], 'i').test(fileNameLowerCase),
           );
+          if (regexMatch) {
+            this.addWarningMessage(
+              `A file with pattern <strong>${escapeFileName(regexMatch[1])}</strong> is already provided. To replace it with <strong>${escapeFileName(file.name)}</strong>, delete the existing file first and then upload the new file.`,
+            );
+          } else {
+            this.addWarningMessage(
+              `<strong>${escapeFileName(file.name)}</strong> did not match any accepted file for this question.`,
+            );
+          }
           continue;
         }
 
@@ -455,7 +469,6 @@
                 URL.revokeObjectURL(url);
               });
               $preview.append($objectPreview);
-              this.expandPreviewForFile(fileName);
             } else {
               const fileContents = this.b64DecodeUnicode(fileData);
               if (!this.isBinary(fileContents)) {
@@ -464,8 +477,8 @@
                 $preview.find('code').text('Binary file not previewed.');
               }
               $codePreview.removeClass('d-none');
-              this.expandPreviewForFile(fileName);
             }
+            this.expandPreviewForFile(fileName);
           } catch {
             const url = this.b64ToBlobUrl(fileData);
             $imgPreview

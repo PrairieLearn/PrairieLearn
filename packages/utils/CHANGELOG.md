@@ -1,5 +1,11 @@
 # @prairielearn/utils
 
+## 3.2.3
+
+### Patch Changes
+
+- df28e68: Bump dependencies
+
 ## 3.2.2
 
 ### Patch Changes

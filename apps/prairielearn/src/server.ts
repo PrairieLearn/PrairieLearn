@@ -21,7 +21,6 @@ import bodyParser from 'body-parser';
 import cookie from 'cookie';
 import cookieParser from 'cookie-parser';
 import esMain from 'es-main';
-import { sampleSize } from 'es-toolkit';
 import express, {
   type Express,
   type NextFunction,
@@ -38,8 +37,9 @@ import passport from 'passport';
 import favicon from 'serve-favicon';
 
 import { cache } from '@prairielearn/cache';
+import { generateErrorId } from '@prairielearn/error';
 import { flashMiddleware } from '@prairielearn/flash';
-import { addFileLogging, logger } from '@prairielearn/logger';
+import { addFileLogging, logger, reopenFileLogging } from '@prairielearn/logger';
 import * as migrations from '@prairielearn/migrations';
 import {
   SCHEMA_MIGRATIONS_PATH,
@@ -53,6 +53,7 @@ import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 import { createSessionMiddleware } from '@prairielearn/session';
 import { getCheckedSignedTokenData } from '@prairielearn/signed-token';
+import { isMultipartRequest } from '@prairielearn/trpc/express';
 import { assertNever } from '@prairielearn/utils';
 
 import * as cron from './cron/index.js';
@@ -62,6 +63,7 @@ import { canonicalLoggerMiddleware } from './lib/canonical-logger.js';
 import * as codeCaller from './lib/code-caller/index.js';
 import { DEV_EXECUTION_MODE, config, loadConfig, setLocalsFromConfig } from './lib/config.js';
 import { pullAndUpdateCourse } from './lib/course.js';
+import { runDatabaseEncryptionOperation } from './lib/database-encryption-rotation.js';
 import { UserSchema } from './lib/db-types.js';
 import * as externalGrader from './lib/externalGrader.js';
 import * as externalGraderDeadLetters from './lib/externalGraderDeadLetters.js';
@@ -94,6 +96,7 @@ import { assessmentTrpcRouter } from './trpc/assessment/trpc.js';
 import { assessmentQuestionTrpcRouter } from './trpc/assessmentQuestion/trpc.js';
 import { courseTrpcRouter } from './trpc/course/trpc.js';
 import { courseInstanceTrpcRouter } from './trpc/courseInstance/trpc.js';
+import { userTrpcRouter } from './trpc/user/trpc.js';
 
 process.on('warning', (e) => console.warn(e));
 
@@ -105,6 +108,7 @@ if ('h' in argv || 'help' in argv) {
   const msg = `PrairieLearn command line options:
     -h, --help                          Display this help and exit
     --config <filename>                 Use the specified configuration file
+    --database-encryption <check|rotate>  Check or rotate encrypted database values and exit
     --list-pending-migrations           List pending migrations as JSON and exit
     --migrate-and-exit                  Run the DB initialization parts and exit
     --refresh-workspace-hosts-and-exit  Refresh the workspace hosts and exit
@@ -370,21 +374,11 @@ export async function initExpress(): Promise<Express> {
     publicQuestionEndpoint: true,
   });
 
-  /**
-   * `multipart/form-data` bodies are consumed by multer (file-upload routes) or
-   * read as a raw stream by tRPC (`FormData` inputs). The JSON/urlencoded body
-   * parsers don't parse multipart, but they still set `req.body = {}`, which
-   * makes tRPC's Express adapter stringify that empty object instead of reading
-   * the multipart stream. We skip them so the raw body reaches its real consumer.
-   */
-  function isMultipartRequest(req: Request) {
-    return (req.headers['content-type'] ?? '').startsWith('multipart/form-data');
-  }
-
   app.use((req, res, next) => {
     // Stripe webhook signature verification requires the raw body, so we avoid
     // using the body parser for that route.
     if (req.path === '/pl/webhooks/stripe') return next();
+    // Leave multipart bodies untouched for multer routes and tRPC FormData inputs.
     if (isMultipartRequest(req)) return next();
 
     // Limit to 5MB of JSON
@@ -556,6 +550,7 @@ export async function initExpress(): Promise<Express> {
   // some pages don't need authorization
   app.use('/', (await import('./pages/home/home.js')).default);
   app.use('/pl', (await import('./pages/home/home.js')).default);
+  app.use('/pl/user/trpc', userTrpcRouter);
   app.use('/pl/settings', (await import('./pages/userSettings/userSettings.js')).default);
   app.use('/pl/enroll', (await import('./pages/enroll/enroll.js')).default);
   app.use('/pl/password', (await import('./pages/authPassword/authPassword.js')).default);
@@ -883,8 +878,22 @@ export async function initExpress(): Promise<Express> {
   );
   app.use(
     /^(\/pl\/course_instance\/[0-9]+\/instructor\/assessment\/[0-9]+)\/?$/,
-    (req, res, _next) => {
-      res.redirect(`${req.params[0]}/questions`);
+    (req, res, next) => {
+      if (res.locals.authz_data.has_course_permission_preview) {
+        // If the user has course permission, redirect them to the questions
+        // page, as they can view the assessment questions.
+        res.redirect(`${req.params[0]}/questions`);
+      } else if (res.locals.authz_data.has_course_instance_permission_view) {
+        // If the user does not have course permission, but has course instance
+        // permission, redirect them to the students page, as they can view the
+        // assessment students.
+        res.redirect(`${req.params[0]}/instances`);
+      } else {
+        // This should never happen, as an error would have been thrown in the
+        // `selectAndAuthzAssessment` middleware if the user did not have either
+        // permission.
+        next();
+      }
     },
   );
   app.use(
@@ -2042,7 +2051,7 @@ export async function initExpress(): Promise<Express> {
   // This should come first so that both Sentry and our own error page can
   // read the error ID and any status code.
   app.use((err: any, req: Request, res: Response, next: NextFunction) => {
-    res.locals.error_id = sampleSize([...'0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'], 12).join('');
+    res.locals.error_id ??= generateErrorId();
 
     err.status = err.status ?? maybeGetStatusCodeFromSqlError(err) ?? 500;
 
@@ -2367,6 +2376,8 @@ if (shouldStartServer) {
       addFileLogging({ filename: config.logErrorFilename, level: 'error' });
     }
 
+    process.on('SIGHUP', reopenFileLogging);
+
     if (config.blockedAtWarnEnable) {
       blockedAt(
         (time, stack) => {
@@ -2443,6 +2454,16 @@ if (shouldStartServer) {
         directories: migrationDirectories,
         project: migrationsProject,
       });
+    }
+
+    if ('database-encryption' in argv) {
+      const mode = argv['database-encryption'];
+      if (mode !== 'check' && mode !== 'rotate') {
+        throw new Error('--database-encryption must be either "check" or "rotate"');
+      }
+      const result = await runDatabaseEncryptionOperation({ mode });
+      logger.info(`Database encryption ${mode} complete`, result);
+      process.exit(0);
     }
 
     // We create and activate a random DB schema name

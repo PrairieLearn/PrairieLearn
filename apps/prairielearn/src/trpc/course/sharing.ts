@@ -5,6 +5,7 @@ import fs from 'fs-extra';
 import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
+import { throwAppError } from '@prairielearn/trpc/server';
 import { IdSchema } from '@prairielearn/zod';
 
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
@@ -18,7 +19,6 @@ import {
   updateCourseSharingNameIfAllowed,
 } from '../../models/course.js';
 import { selectSharingSetUsage, selectSharingSetsForCourse } from '../../models/sharing-set.js';
-import { throwAppError } from '../app-errors.js';
 
 import { requireCoursePermissionOwn, requireNotExampleCourse, t } from './init.js';
 

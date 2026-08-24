@@ -1,4 +1,6 @@
-import type { Column } from '@tanstack/react-table';
+import type { RowData } from '@tanstack/react-table';
+
+import type { TanstackTableColumn } from '../tanstack-table.js';
 
 import { MultiSelectColumnFilter, type MultiSelectFilterValue } from './MultiSelectColumnFilter.js';
 
@@ -17,7 +19,11 @@ const BOOLEAN_FILTER_OPTIONS: readonly BooleanFilterOption[] = ['Yes', 'No'];
  * @param params
  * @param params.column - The TanStack Table column object
  */
-export function BooleanColumnFilter<TData>({ column }: { column: Column<TData, unknown> }) {
+export function BooleanColumnFilter<TData extends RowData>({
+  column,
+}: {
+  column: TanstackTableColumn<TData>;
+}) {
   return (
     <MultiSelectColumnFilter
       column={column}

@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { flash } from '@prairielearn/flash';
+import { throwAppError } from '@prairielearn/trpc/server';
 
 import {
   type QtiImportAssessmentData,
@@ -11,7 +12,6 @@ import { readQtiImportDraft } from '../../lib/qti-import-drafts.js';
 import { SHORT_NAME_REGEX } from '../../lib/short-name.js';
 import { AssessmentJsonSchema } from '../../schemas/infoAssessment.js';
 import { QuestionJsonSchema } from '../../schemas/infoQuestion.js';
-import { throwAppError } from '../app-errors.js';
 
 import { requireCoursePermissionEdit, t } from './init.js';
 

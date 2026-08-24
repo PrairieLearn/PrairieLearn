@@ -6,8 +6,8 @@ import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 import { type AiGradingSettingsRouter } from '../ee/pages/instructorInstanceAdminAiGrading/trpc.js';
 import { createAiGradingSettingsTrpcClient } from '../ee/pages/instructorInstanceAdminAiGrading/utils/trpc-client.js';
 import { config } from '../lib/config.js';
+import { decryptFromStorage } from '../lib/encrypted-storage.js';
 import { features } from '../lib/features/index.js';
-import { decryptFromStorage } from '../lib/storage-crypt.js';
 import { selectCredentials } from '../models/ai-grading-credentials.js';
 import { selectCourseInstanceById } from '../models/course-instances.js';
 

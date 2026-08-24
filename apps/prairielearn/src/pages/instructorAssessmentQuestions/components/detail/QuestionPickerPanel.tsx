@@ -3,9 +3,9 @@ import { useVirtualizer } from '@tanstack/react-virtual';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { run } from '@prairielearn/run';
+import { type AppError, getAppError, renderAppError } from '@prairielearn/trpc/client';
 import { FilterDropdown, type FilterItem } from '@prairielearn/ui';
 
-import { type AppError, getAppError, renderAppError } from '../../../../lib/client/errors.js';
 import { rankSearchText } from '../../../../lib/client/search.js';
 import { getQuestionCreateUrl, getQuestionUrl } from '../../../../lib/client/url.js';
 import type {

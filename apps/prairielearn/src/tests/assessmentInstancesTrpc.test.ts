@@ -201,7 +201,7 @@ describe('assessmentInstances tRPC router', { timeout: 60_000, concurrent: false
     });
 
     async function fetchInstancesList(cookie: string) {
-      return await helperClient.fetchCheerio(
+      return await fetch(
         `${siteUrl}${getAssessmentTrpcUrl({ courseInstanceId, assessmentId })}/assessmentInstances.list`,
         { headers: { 'X-TRPC': 'true', cookie } },
       );
@@ -224,6 +224,11 @@ describe('assessmentInstances tRPC router', { timeout: 60_000, concurrent: false
         'pl_test_user=test_instructor; pl2_requested_course_instance_role=None',
       );
       assert.equal(response.status, 403);
+      const body = (await response.json()) as {
+        error: { json: { data: { code: string; httpStatus: number } } };
+      };
+      assert.equal(body.error.json.data.code, 'FORBIDDEN');
+      assert.equal(body.error.json.data.httpStatus, 403);
     });
   });
 });

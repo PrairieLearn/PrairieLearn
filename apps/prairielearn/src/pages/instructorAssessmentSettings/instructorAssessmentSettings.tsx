@@ -100,7 +100,9 @@ router.get(
 
     const questionSharingEnabled = res.locals.question_sharing_enabled;
     const nonPublicQuestionsInAssessment =
-      !questionSharingEnabled || assessment.share_source_publicly
+      !questionSharingEnabled ||
+      assessment.share_source_publicly ||
+      !authz_data.has_course_permission_preview
         ? []
         : await selectNonPublicQuestionsInAssessment({ assessment_id: assessment.id });
 
@@ -146,7 +148,6 @@ router.get(
               assessmentSets={assessmentSets}
               assessmentModules={assessmentModules}
               courseInstance={course_instance}
-              isDevMode={config.devMode}
               assessmentTools={assessmentTools}
               zonePointsRange={zonePointsRange}
               nonPublicQuestionsInAssessment={nonPublicQuestionsInAssessment}

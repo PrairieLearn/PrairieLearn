@@ -1,5 +1,11 @@
 # @prairielearn/express-list-endpoints
 
+## 2.0.8
+
+### Patch Changes
+
+- df28e68: Bump dependencies
+
 ## 2.0.7
 
 ### Patch Changes

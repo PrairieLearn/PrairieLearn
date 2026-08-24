@@ -119,7 +119,6 @@ router.get(
               groups={groups}
               notAssigned={notAssigned}
               trpcCsrfToken={trpcCsrfToken}
-              isDevMode={config.devMode}
               origHash={origHash}
               groupSettingsDefaults={groupSettingsDefaults}
               hasAssessmentInstances={hasAssessmentInstances}

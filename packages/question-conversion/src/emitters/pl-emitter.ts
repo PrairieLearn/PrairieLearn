@@ -337,13 +337,10 @@ export class PLEmitter implements OutputEmitter {
       if (gen) parts.push(gen);
     }
 
-    if (handler.renderGradePy) {
-      const grade = handler.renderGradePy(question.body, question.feedback);
-      if (grade) parts.push(grade);
-    } else {
-      const grade = renderDefaultGradeFn(question.feedback);
-      if (grade) parts.push(grade);
-    }
+    const grade = handler.renderGradePy
+      ? handler.renderGradePy(question.body, question.feedback)
+      : renderDefaultGradeFn(question.feedback);
+    if (grade) parts.push(grade);
 
     return parts.join('\n');
   }

@@ -433,16 +433,17 @@ export function AdministratorCourseFormFields({
               </ReactMarkdown>
               {suggestPrefixQuery.data.sources.length > 0 && (
                 <div className="mt-1">
-                  {[
-                    ...new Map(suggestPrefixQuery.data.sources.map((s) => [s.url, s])).values(),
-                  ].map((source, i) => (
-                    <span key={source.url}>
-                      {i > 0 && ' · '}
-                      <a href={source.url} target="_blank" rel="noreferrer">
-                        {source.title ?? source.url}
-                      </a>
-                    </span>
-                  ))}
+                  {Array.from(
+                    new Map(suggestPrefixQuery.data.sources.map((s) => [s.url, s])).values(),
+                    (source, i) => (
+                      <span key={source.url}>
+                        {i > 0 && ' · '}
+                        <a href={source.url} target="_blank" rel="noreferrer">
+                          {source.title ?? source.url}
+                        </a>
+                      </span>
+                    ),
+                  )}
                 </div>
               )}
             </div>
