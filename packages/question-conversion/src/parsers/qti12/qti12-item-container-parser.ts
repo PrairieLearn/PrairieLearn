@@ -1003,16 +1003,14 @@ export class QTI12ItemContainerParser implements InputParser {
 
     // Build feedback.
     // Canvas exports use two patterns:
-    //   1. Global idents: correct_fb / general_incorrect_fb
+    //   1. Question-wide idents: general_fb / correct_fb / general_incorrect_fb
     //   2. Per-answer idents: {answerLabelIdent}_fb (e.g. "7877_fb")
-    //
-    // Per-answer feedback is preferred: it supports multi-select questions where
-    // each selected answer's feedback needs to be concatenated at grade time.
-    // Global idents are kept as a fallback for questions that don't use per-answer.
     const feedback: IRFeedback = {};
 
+    const generalFbText = item.feedbacks.get('general_fb');
     const correctFbText = item.feedbacks.get('correct_fb');
     const incorrectFbText = item.feedbacks.get('general_incorrect_fb');
+    if (generalFbText) feedback.general = generalFbText;
     if (correctFbText) feedback.correct = correctFbText;
     if (incorrectFbText) feedback.incorrect = incorrectFbText;
 
@@ -1031,7 +1029,8 @@ export class QTI12ItemContainerParser implements InputParser {
       feedback.perAnswer = perAnswer;
     }
 
-    const hasFeedback = feedback.correct || feedback.incorrect || feedback.perAnswer;
+    const hasFeedback =
+      feedback.general || feedback.correct || feedback.incorrect || feedback.perAnswer;
 
     return {
       sourceId: item.ident,
