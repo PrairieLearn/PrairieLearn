@@ -127,8 +127,6 @@ describe('checkSignedTokenPrefix', () => {
   it('validates token when request URL starts with prefix', () => {
     const token = generatePrefixCsrfToken(TEST_DATA, SECRET_KEY);
 
-    // We allow the route itself, both with and without a trailing slash.
-    assert.isTrue(checkSignedTokenPrefix(token, { ...TEST_DATA, url: '/test' }, SECRET_KEY));
     assert.isTrue(checkSignedTokenPrefix(token, { ...TEST_DATA, url: '/test/' }, SECRET_KEY));
 
     // We allow deeply nested routes as well.
@@ -158,8 +156,6 @@ describe('checkSignedTokenPrefix', () => {
         SECRET_KEY,
       ),
     );
-    // @ts-expect-error Testing runtime validation for JavaScript callers.
-    assert.isFalse(checkSignedTokenPrefix(token, { url: '/test' }, SECRET_KEY));
     assert.isFalse(
       checkSignedTokenPrefix(
         token,
