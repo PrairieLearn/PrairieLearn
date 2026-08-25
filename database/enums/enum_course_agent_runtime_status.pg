@@ -1,0 +1,14 @@
+values
+    booting
+    checkpointing
+    cloning
+    destroying
+    error
+    finalizing
+    offline
+    preparing
+    ready
+    restoring
+    running
+    syncing
+    unallocated

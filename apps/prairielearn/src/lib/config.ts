@@ -611,6 +611,34 @@ export const ConfigSchema = z.object({
   aiGradingGoogleApiKey: z.string().nullable().default(null),
   aiGradingAnthropicApiKey: z.string().nullable().default(null),
   /**
+   * Experimental course-agent runtime. `fake` exercises the full PrairieLearn
+   * conversation lifecycle without starting Wrangler; `cloudflare` delegates
+   * runs to the configured Worker.
+   */
+  courseAgentRuntime: z.enum(['disabled', 'fake', 'cloudflare']).default('disabled'),
+  courseAgentWorkerOrigin: z.string().default('http://127.0.0.1:8787'),
+  courseAgentCapabilitySecret: z.string().nullable().default(null),
+  courseAgentAnthropicApiKey: z.string().nullable().default(null),
+  /** Dedicated token used only by the local course-agent Git workflow. */
+  courseAgentGithubToken: z.string().nullable().default(null),
+  courseAgentIdleTimeoutSeconds: z
+    .number()
+    .int()
+    .positive()
+    .default(10 * 60),
+  courseAgentWorkspaceBackupTtlSeconds: z
+    .number()
+    .int()
+    .positive()
+    .default(7 * 24 * 60 * 60),
+  courseAgentTestControlsEnabled: z.boolean().default(false),
+  /** Dedicated read-only PostgreSQL connection used by course-agent structured data queries. */
+  courseAgentPostgresqlHost: z.string().nullable().default(null),
+  courseAgentPostgresqlDatabase: z.string().nullable().default(null),
+  courseAgentPostgresqlUser: z.string().nullable().default(null),
+  courseAgentPostgresqlPassword: z.string().nullable().default(null),
+  courseAgentPostgresqlSsl: z.boolean().default(false),
+  /**
    * The hourly spending rate limit for AI grading, in US dollars.
    * This is applied per course instance.
    * Accounts for both input and output tokens.

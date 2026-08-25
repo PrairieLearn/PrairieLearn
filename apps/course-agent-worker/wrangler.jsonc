@@ -1,0 +1,56 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "prairielearn-course-agent",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-08-20",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": {
+    "enabled": true,
+    "logs": {
+      "enabled": true,
+      "invocation_logs": true
+    }
+  },
+  "vars": {
+    "COURSE_AGENT_IDLE_TIMEOUT_SECONDS": "600",
+    "COURSE_AGENT_BACKUP_TTL_SECONDS": "604800",
+    "ANTHROPIC_MODEL": "sonnet",
+    "BACKUP_BUCKET_NAME": "prairielearn-course-agent-artifacts"
+  },
+  "secrets": {
+    "required": ["ANTHROPIC_API_KEY", "GITHUB_TOKEN", "COURSE_AGENT_CAPABILITY_SECRET"]
+  },
+  "r2_buckets": [
+    {
+      "binding": "BACKUP_BUCKET",
+      "bucket_name": "prairielearn-course-agent-artifacts",
+      "preview_bucket_name": "prairielearn-course-agent-artifacts-local"
+    }
+  ],
+  "containers": [
+    {
+      "class_name": "Sandbox",
+      "image": "./Dockerfile",
+      "instance_type": "basic",
+      "max_instances": 10
+    }
+  ],
+  "durable_objects": {
+    "bindings": [
+      {
+        "class_name": "Sandbox",
+        "name": "Sandbox"
+      },
+      {
+        "class_name": "CourseAgentCoordinator",
+        "name": "COURSE_AGENT_COORDINATOR"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "new_sqlite_classes": ["Sandbox", "CourseAgentCoordinator"],
+      "tag": "v1"
+    }
+  ]
+}

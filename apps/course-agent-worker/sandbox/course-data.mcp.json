@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "prairielearn_data": {
+      "type": "stdio",
+      "command": "python3",
+      "args": ["/opt/prairielearn/course_data_mcp.py"],
+      "env": {
+        "PYTHONPATH": "/opt/prairielearn",
+        "PYTHONUNBUFFERED": "1"
+      }
+    }
+  }
+}

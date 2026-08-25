@@ -451,6 +451,13 @@ export async function initExpress(): Promise<Express> {
   app.use((await import('./middlewares/date.js')).default);
   app.use((await import('./middlewares/effectiveRequestChanged.js')).default);
 
+  // The signed run capability is the authentication proof for sandbox callbacks.
+  // This route intentionally runs before session authentication and CSRF middleware.
+  app.use(
+    '/pl/webhooks/course-agent',
+    (await import('./ee/routers/courseAgentCallback.js')).default,
+  );
+
   app.use('/pl/oauth2login', (await import('./pages/authLoginOAuth2/authLoginOAuth2.js')).default);
   app.use(
     '/pl/oauth2callback',

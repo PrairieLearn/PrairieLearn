@@ -8,6 +8,10 @@ export function PromptInput({
   refreshQuestionPreviewAfterChanges,
   setRefreshQuestionPreviewAfterChanges,
   placeholder = 'Ask anything...',
+  showRefreshQuestionPreviewOption = true,
+  disclaimer = 'AI can make mistakes. Review the generated question.',
+  ariaLabel = 'Modification instructions',
+  inputId = 'user-prompt-llm',
 }: {
   value: string;
   onChange: (value: string) => void;
@@ -18,6 +22,10 @@ export function PromptInput({
   refreshQuestionPreviewAfterChanges: boolean;
   setRefreshQuestionPreviewAfterChanges?: (value: boolean) => void;
   placeholder?: string;
+  showRefreshQuestionPreviewOption?: boolean;
+  disclaimer?: string;
+  ariaLabel?: string;
+  inputId?: string;
 }) {
   return (
     <form
@@ -35,10 +43,10 @@ export function PromptInput({
       }}
     >
       <textarea
-        id="user-prompt-llm"
+        id={inputId}
         className="form-control mb-2"
         placeholder={placeholder}
-        aria-label="Modification instructions"
+        aria-label={ariaLabel}
         value={value}
         required
         onInput={(e) => onChange(e.currentTarget.value)}
@@ -50,21 +58,25 @@ export function PromptInput({
         }}
       />
       <div className="d-flex flex-row gap-2 justify-content-between align-items-center">
-        <div className="form-check form-switch form-check-inline">
-          <input
-            className="form-check-input"
-            type="checkbox"
-            id="refresh-question-preview-after-changes"
-            checked={refreshQuestionPreviewAfterChanges}
-            onChange={(e) => setRefreshQuestionPreviewAfterChanges?.(e.currentTarget.checked)}
-          />
-          <label
-            className="form-check-label small text-muted"
-            htmlFor="refresh-question-preview-after-changes"
-          >
-            Refresh question preview after changes
-          </label>
-        </div>
+        {showRefreshQuestionPreviewOption ? (
+          <div className="form-check form-switch form-check-inline">
+            <input
+              className="form-check-input"
+              type="checkbox"
+              id="refresh-question-preview-after-changes"
+              checked={refreshQuestionPreviewAfterChanges}
+              onChange={(e) => setRefreshQuestionPreviewAfterChanges?.(e.currentTarget.checked)}
+            />
+            <label
+              className="form-check-label small text-muted"
+              htmlFor="refresh-question-preview-after-changes"
+            >
+              Refresh question preview after changes
+            </label>
+          </div>
+        ) : (
+          <span />
+        )}
 
         {isGenerating ? (
           <button
@@ -87,9 +99,7 @@ export function PromptInput({
           </button>
         )}
       </div>
-      <div className="text-muted small text-center mt-1">
-        AI can make mistakes. Review the generated question.
-      </div>
+      <div className="text-muted small text-center mt-1">{disclaimer}</div>
     </form>
   );
 }

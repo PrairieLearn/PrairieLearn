@@ -25,6 +25,7 @@
     "capture-onboarding-screenshots": "CAPTURE_SCREENSHOTS=1 pnpm --filter @prairielearn/prairielearn test:e2e captureOnboardingScreenshots",
     "dev": "pnpm --filter @prairielearn/prairielearn dev",
     "dev-bun": "pnpm --filter @prairielearn/prairielearn dev:bun",
+    "dev-course-agent-worker": "pnpm --filter @prairielearn/prairielearn course-agent:worker-dev",
     "dev-vite": "pnpm --filter @prairielearn/prairielearn dev:vite",
     "dev-workspace-host": "pnpm --filter @prairielearn/workspace-host dev",
     "grader-host-dev": "pnpm --filter @prairielearn/grader-host dev",

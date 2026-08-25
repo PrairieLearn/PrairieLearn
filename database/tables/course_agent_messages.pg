@@ -1,0 +1,23 @@
+columns
+    authn_user_id: bigint
+    conversation_id: bigint not null
+    created_at: timestamp with time zone not null default now()
+    id: bigint not null default nextval('course_agent_messages_id_seq'::regclass)
+    metadata: jsonb not null default '{}'::jsonb
+    parts: jsonb not null default '[]'::jsonb
+    role: enum_course_agent_message_role not null
+    run_id: bigint
+    status: enum_course_agent_message_status not null
+    updated_at: timestamp with time zone not null default now()
+
+indexes
+    course_agent_messages_pkey: PRIMARY KEY (id) USING btree (id)
+    course_agent_messages_conversation_id_idx: USING btree (conversation_id, id)
+
+check constraints
+    course_agent_messages_authn_user_check: CHECK (role = 'user'::enum_course_agent_message_role AND authn_user_id IS NOT NULL OR role = 'assistant'::enum_course_agent_message_role AND authn_user_id IS NULL)
+
+foreign-key constraints
+    course_agent_messages_authn_user_id_fkey: FOREIGN KEY (authn_user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL
+    course_agent_messages_conversation_id_fkey: FOREIGN KEY (conversation_id) REFERENCES course_agent_conversations(id) ON UPDATE CASCADE ON DELETE CASCADE
+    course_agent_messages_run_id_fkey: FOREIGN KEY (run_id) REFERENCES course_agent_runs(id) ON UPDATE CASCADE ON DELETE SET NULL
