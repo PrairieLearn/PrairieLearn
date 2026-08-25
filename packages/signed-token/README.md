@@ -39,8 +39,8 @@ console.log(getCheckedSignedTokenData(oldToken, ['NEW_SECRET_KEY', 'OLD_SECRET_K
 ```
 
 Prefix-based CSRF tokens allow a token to cover a URL and all of its sub-routes. Any additional
-properties are treated as claims and must match exactly during validation. At least one claim is
-required, and the internal `type` property is reserved:
+properties are treated as claims and must match exactly during validation. At least one defined
+claim is required, and the internal `type` property is reserved:
 
 ```ts
 const token = generatePrefixCsrfToken({ url: '/api/trpc', user_id: '123' }, 'SECRET_KEY');

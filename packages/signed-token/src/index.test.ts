@@ -87,11 +87,15 @@ describe('generatePrefixCsrfToken', () => {
     assert.equal(tokenData.user_id, TEST_DATA_WITH_ALTERNATE_CLAIM.user_id);
   });
 
-  it('rejects data without a claim', () => {
+  it('rejects data without a defined claim', () => {
     assert.throws(
       // @ts-expect-error Testing runtime validation for JavaScript callers.
       () => generatePrefixCsrfToken({ url: '/test' }, SECRET_KEY),
-      'Prefix CSRF token data must contain at least one claim',
+      'Prefix CSRF token data must contain at least one defined claim',
+    );
+    assert.throws(
+      () => generatePrefixCsrfToken({ url: '/test', user_id: undefined }, SECRET_KEY),
+      'Prefix CSRF token data must contain at least one defined claim',
     );
   });
 
@@ -165,11 +169,10 @@ describe('checkSignedTokenPrefix', () => {
     );
   });
 
-  it('rejects a prefix token without a claim', () => {
+  it('rejects a prefix token without a defined claim', () => {
     const token = generateSignedToken({ url: '/test', type: 'prefix' }, SECRET_KEY);
 
-    // @ts-expect-error Testing runtime validation for JavaScript callers.
-    assert.isFalse(checkSignedTokenPrefix(token, { url: '/test' }, SECRET_KEY));
+    assert.isFalse(checkSignedTokenPrefix(token, { url: '/test', user_id: undefined }, SECRET_KEY));
   });
 
   it('rejects the reserved type claim in request data', () => {

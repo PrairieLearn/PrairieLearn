@@ -23,7 +23,9 @@ type RequireClaim<Data extends PrefixCsrfTokenData> =
   Exclude<keyof Data, 'url' | 'type'> extends never ? never : Data;
 
 function hasClaim(data: PrefixCsrfTokenData): boolean {
-  return Object.keys(data).some((key) => key !== 'url' && key !== 'type');
+  return Object.entries(data).some(
+    ([key, value]) => key !== 'url' && key !== 'type' && value !== undefined,
+  );
 }
 
 function getSecretKeys(secretKey: SecretKey): readonly [string, ...string[]] {
@@ -157,8 +159,8 @@ export function checkSignedToken(
  * Generates a CSRF token that is valid for a URL prefix instead of an exact URL.
  * This is useful for tRPC and similar APIs where a single token should be valid
  * for all sub-routes under a prefix (e.g., `/foo/bar/trpc` is valid for
- * `/foo/bar/trpc/getUser` and `/foo/bar/trpc/updateUser`). At least one claim is
- * required to prevent claimless tokens.
+ * `/foo/bar/trpc/getUser` and `/foo/bar/trpc/updateUser`). At least one defined
+ * claim is required to prevent claimless tokens.
  */
 export function generatePrefixCsrfToken<const Data extends PrefixCsrfTokenData>(
   data: RequireClaim<Data>,
@@ -168,7 +170,7 @@ export function generatePrefixCsrfToken<const Data extends PrefixCsrfTokenData>(
     throw new Error('Prefix CSRF token data cannot contain the reserved "type" claim');
   }
   if (!hasClaim(data)) {
-    throw new Error('Prefix CSRF token data must contain at least one claim');
+    throw new Error('Prefix CSRF token data must contain at least one defined claim');
   }
   return generateSignedToken({ ...data, type: 'prefix' }, secretKey);
 }
@@ -176,7 +178,8 @@ export function generatePrefixCsrfToken<const Data extends PrefixCsrfTokenData>(
 /**
  * Validates a prefix-based CSRF token. The token's URL must be a prefix of the
  * request URL for validation to succeed. All claims other than the URL must
- * exactly match the claims in the token, and at least one claim must be present.
+ * exactly match the claims in the token, and at least one defined claim must be
+ * present.
  *
  * @param token - The CSRF token to validate
  * @param requestData - The request URL and claims to validate
