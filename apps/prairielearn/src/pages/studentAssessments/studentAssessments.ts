@@ -2,31 +2,48 @@ import { Router } from 'express';
 
 import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
+import { type AssessmentAuthzResult } from '../../lib/assessment-access-control/authz-result.js';
 import {
   resolveModernAssessmentAccessResultsBatch,
-  resolverResultToAuthzAssessmentForInstance,
+  resolverResultToAssessmentAuthzResultForInstance,
 } from '../../lib/assessment-access-control/authz.js';
-import { formatLegacyAssessmentAccess } from '../../lib/assessment-access-control/legacy.js';
-import { RawSprocAuthzAssessmentSchema } from '../../lib/db-types.js';
+import {
+  RawLegacyAssessmentAuthzResultSchema,
+  formatLegacyAssessmentAccess,
+} from '../../lib/assessment-access-control/legacy.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import logPageView from '../../middlewares/logPageView.js';
 
 import {
+  type StudentAssessmentSummary,
+  StudentAssessmentSummarySchema,
   StudentAssessments,
   type StudentAssessmentsRow,
-  StudentAssessmentsRowSchema,
 } from './studentAssessments.html.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 const router = Router();
 
-const RawStudentAssessmentsRowSchema = StudentAssessmentsRowSchema.omit({
-  active: true,
-  access_rules: true,
-  credit_date_string: true,
-}).extend({
-  raw_authz_result: RawSprocAuthzAssessmentSchema,
+const StudentAssessmentsQueryRowSchema = StudentAssessmentSummarySchema.extend({
+  raw_authz_result: RawLegacyAssessmentAuthzResultSchema,
 });
+
+function buildStudentAssessmentsRow(
+  summary: StudentAssessmentSummary,
+  authzResult: AssessmentAuthzResult,
+): StudentAssessmentsRow {
+  return {
+    ...summary,
+    authorized: authzResult.authorized,
+    credit_date_string: authzResult.credit_date_string ?? 'None',
+    active: authzResult.active,
+    access_rules: authzResult.access_rules,
+    access_timeline: authzResult.access_timeline,
+    show_closed_assessment_score: authzResult.show_closed_assessment_score,
+    show_before_release: authzResult.show_before_release,
+    will_release_at: authzResult.next_active_time,
+  };
+}
 
 router.get(
   '/',
@@ -41,25 +58,10 @@ router.get(
         req_date: res.locals.req_date,
         assessments_group_by: res.locals.course_instance.assessments_group_by,
       },
-      RawStudentAssessmentsRowSchema,
+      StudentAssessmentsQueryRowSchema,
     );
 
-    const rows = rawRows.map(({ raw_authz_result: rawAuthzResult, ...row }) => {
-      const authzResult = formatLegacyAssessmentAccess(
-        rawAuthzResult,
-        res.locals.course_instance.display_timezone,
-      );
-      return {
-        ...row,
-        active: authzResult.active,
-        access_rules: authzResult.access_rules,
-        credit_date_string: authzResult.credit_date_string ?? 'None',
-        show_closed_assessment_score: authzResult.show_closed_assessment_score,
-        will_release_at: authzResult.next_active_time,
-      } satisfies StudentAssessmentsRow;
-    });
-
-    const hasModern = rows.some((r) => r.modern_access_control);
+    const hasModern = rawRows.some((row) => row.modern_access_control);
     const modernAccessByAssessment = hasModern
       ? await resolveModernAssessmentAccessResultsBatch({
           courseInstance: res.locals.course_instance,
@@ -69,36 +71,34 @@ router.get(
         })
       : null;
 
-    const resolvedRows = rows
-      .map((row): StudentAssessmentsRow | null => {
-        if (!row.modern_access_control) return row;
+    const resolvedRows = rawRows
+      .map((rawRow): StudentAssessmentsRow | null => {
+        const { raw_authz_result: rawAuthzResult, ...summary } = rawRow;
+        let authzResult: AssessmentAuthzResult;
+        if (rawRow.modern_access_control) {
+          const assessmentAccess = modernAccessByAssessment?.get(rawRow.assessment_id);
+          if (!assessmentAccess) return null;
+          authzResult = resolverResultToAssessmentAuthzResultForInstance({
+            result: assessmentAccess,
+            authzMode: res.locals.authz_data.mode,
+            displayTimezone: res.locals.course_instance.display_timezone,
+            assessmentInstance:
+              rawRow.assessment_instance_id == null
+                ? null
+                : {
+                    open: rawRow.assessment_instance_open,
+                    date_limit: rawRow.assessment_instance_date_limit,
+                  },
+            reqDate: res.locals.req_date,
+          });
+        } else {
+          authzResult = formatLegacyAssessmentAccess(
+            rawAuthzResult,
+            res.locals.course_instance.display_timezone,
+          );
+        }
 
-        const assessmentAccess = modernAccessByAssessment?.get(row.assessment_id);
-        if (!assessmentAccess) return null;
-        const authzResult = resolverResultToAuthzAssessmentForInstance({
-          result: assessmentAccess,
-          authzMode: res.locals.authz_data.mode,
-          displayTimezone: res.locals.course_instance.display_timezone,
-          assessmentInstance:
-            row.assessment_instance_id == null
-              ? null
-              : {
-                  open: row.assessment_instance_open,
-                  date_limit: row.assessment_instance_date_limit,
-                },
-          reqDate: res.locals.req_date,
-        });
-
-        return {
-          ...row,
-          authorized: authzResult.authorized,
-          credit_date_string: authzResult.credit_date_string ?? 'None',
-          active: authzResult.active,
-          show_closed_assessment_score: authzResult.show_closed_assessment_score,
-          show_before_release: authzResult.show_before_release,
-          will_release_at: authzResult.next_active_time,
-          access_timeline: authzResult.access_timeline,
-        };
+        return buildStudentAssessmentsRow(summary, authzResult);
       })
       .filter((row): row is NonNullable<typeof row> => {
         if (row == null) return false;

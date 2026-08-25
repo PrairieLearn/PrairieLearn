@@ -1,12 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
-import type { RawSprocAuthzAssessment } from '../db-types.js';
-
-import { formatLegacyAssessmentAccess } from './legacy.js';
+import { type RawLegacyAssessmentAuthzResult, formatLegacyAssessmentAccess } from './legacy.js';
 
 describe('formatLegacyAssessmentAccess', () => {
   it('formats raw access timestamps in the course instance timezone', () => {
-    const raw: RawSprocAuthzAssessment = {
+    const raw: RawLegacyAssessmentAuthzResult = {
       access_rules: [
         {
           credit: 100,

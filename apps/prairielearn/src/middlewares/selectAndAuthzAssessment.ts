@@ -5,15 +5,13 @@ import { HttpStatusError } from '@prairielearn/error';
 import { loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
 import { isTrpcRequest } from '@prairielearn/trpc/express';
 
+import { AssessmentAuthzResultSchema } from '../lib/assessment-access-control/authz-result.js';
 import { resolveModernAssessmentAccess } from '../lib/assessment-access-control/authz.js';
-import { formatLegacyAssessmentAccess } from '../lib/assessment-access-control/legacy.js';
 import {
-  AssessmentModuleSchema,
-  AssessmentSchema,
-  AssessmentSetSchema,
-  RawSprocAuthzAssessmentSchema,
-  SprocAuthzAssessmentSchema,
-} from '../lib/db-types.js';
+  RawLegacyAssessmentAuthzResultSchema,
+  formatLegacyAssessmentAccess,
+} from '../lib/assessment-access-control/legacy.js';
+import { AssessmentModuleSchema, AssessmentSchema, AssessmentSetSchema } from '../lib/db-types.js';
 
 import { AccessDenied } from './selectAndAuthzAssessment.html.js';
 
@@ -23,14 +21,14 @@ const SelectAndAuthzAssessmentSchema = z.object({
   assessment: AssessmentSchema,
   assessment_set: AssessmentSetSchema,
   assessment_module: AssessmentModuleSchema.nullable(),
-  authz_result: SprocAuthzAssessmentSchema,
+  authz_result: AssessmentAuthzResultSchema,
   assessment_label: z.string(),
 });
 
 export type ResLocalsAssessment = z.infer<typeof SelectAndAuthzAssessmentSchema>;
 
 const RawSelectAndAuthzAssessmentSchema = SelectAndAuthzAssessmentSchema.extend({
-  authz_result: RawSprocAuthzAssessmentSchema,
+  authz_result: RawLegacyAssessmentAuthzResultSchema,
 });
 
 export default asyncHandler(async (req, res, next) => {

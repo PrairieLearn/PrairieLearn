@@ -5,8 +5,12 @@ import z from 'zod';
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
+import { AssessmentInstanceAuthzResultSchema } from '../lib/assessment-access-control/authz-result.js';
 import { resolveModernAssessmentInstanceAccess } from '../lib/assessment-access-control/authz.js';
-import { formatLegacyAssessmentInstanceAccess } from '../lib/assessment-access-control/legacy.js';
+import {
+  RawLegacyAssessmentInstanceAuthzResultSchema,
+  formatLegacyAssessmentInstanceAccess,
+} from '../lib/assessment-access-control/legacy.js';
 import {
   type AssessmentInstanceTimeLimit,
   assessmentInstanceLabel,
@@ -19,8 +23,6 @@ import {
   AssessmentSetSchema,
   FileSchema,
   GroupSchema,
-  RawSprocAuthzAssessmentInstanceSchema,
-  SprocAuthzAssessmentInstanceSchema,
   SprocUsersGetDisplayedRoleSchema,
   UserSchema,
 } from '../lib/db-types.js';
@@ -32,13 +34,13 @@ const SelectAndAuthzAssessmentInstanceBaseSchema = z.object({
   instance_role: SprocUsersGetDisplayedRoleSchema,
   assessment: AssessmentSchema,
   assessment_set: AssessmentSetSchema,
-  authz_result: SprocAuthzAssessmentInstanceSchema,
+  authz_result: AssessmentInstanceAuthzResultSchema,
   file_list: z.array(FileSchema),
   instance_group_uid_list: z.array(z.string()),
 });
 
 // See `user_team_xor` constraint
-const _SelectAndAuthzAssessmentInstanceSchema = z.union([
+const SelectAndAuthzAssessmentInstanceSchema = z.union([
   SelectAndAuthzAssessmentInstanceBaseSchema.extend({
     instance_user: UserSchema,
     instance_group: z.null(),
@@ -51,18 +53,18 @@ const _SelectAndAuthzAssessmentInstanceSchema = z.union([
 
 const RawSelectAndAuthzAssessmentInstanceSchema = z.union([
   SelectAndAuthzAssessmentInstanceBaseSchema.extend({
-    authz_result: RawSprocAuthzAssessmentInstanceSchema,
+    authz_result: RawLegacyAssessmentInstanceAuthzResultSchema,
     instance_user: UserSchema,
     instance_group: z.null(),
   }),
   SelectAndAuthzAssessmentInstanceBaseSchema.extend({
-    authz_result: RawSprocAuthzAssessmentInstanceSchema,
+    authz_result: RawLegacyAssessmentInstanceAuthzResultSchema,
     instance_user: z.null(),
     instance_group: GroupSchema,
   }),
 ]);
 
-export type ResLocalsAssessmentInstance = z.infer<typeof _SelectAndAuthzAssessmentInstanceSchema> &
+export type ResLocalsAssessmentInstance = z.infer<typeof SelectAndAuthzAssessmentInstanceSchema> &
   AssessmentInstanceTimeLimit & {
     assessment_instance_label: string;
     assessment_label: string;

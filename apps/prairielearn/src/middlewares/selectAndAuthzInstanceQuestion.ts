@@ -6,8 +6,12 @@ import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
+import { AssessmentInstanceAuthzResultSchema } from '../lib/assessment-access-control/authz-result.js';
 import { resolveModernAssessmentInstanceAccess } from '../lib/assessment-access-control/authz.js';
-import { formatLegacyAssessmentInstanceAccess } from '../lib/assessment-access-control/legacy.js';
+import {
+  RawLegacyAssessmentInstanceAuthzResultSchema,
+  formatLegacyAssessmentInstanceAccess,
+} from '../lib/assessment-access-control/legacy.js';
 import {
   type AssessmentInstanceTimeLimit,
   assessmentInstanceLabel,
@@ -24,8 +28,6 @@ import {
   GroupSchema,
   InstanceQuestionSchema,
   QuestionSchema,
-  RawSprocAuthzAssessmentInstanceSchema,
-  SprocAuthzAssessmentInstanceSchema,
   SprocUsersGetDisplayedRoleSchema,
   UserSchema,
 } from '../lib/db-types.js';
@@ -68,12 +70,12 @@ const SelectAndAuthzInstanceQuestionSchema = z.object({
   question: QuestionSchema,
   assessment: AssessmentSchema,
   assessment_set: AssessmentSetSchema,
-  authz_result: SprocAuthzAssessmentInstanceSchema,
+  authz_result: AssessmentInstanceAuthzResultSchema,
   file_list: z.array(FileSchema),
 });
 
 const RawSelectAndAuthzInstanceQuestionSchema = SelectAndAuthzInstanceQuestionSchema.extend({
-  authz_result: RawSprocAuthzAssessmentInstanceSchema,
+  authz_result: RawLegacyAssessmentInstanceAuthzResultSchema,
 });
 
 export type ResLocalsInstanceQuestion = z.infer<typeof SelectAndAuthzInstanceQuestionSchema> &

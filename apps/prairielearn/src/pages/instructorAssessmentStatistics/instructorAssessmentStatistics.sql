@@ -23,6 +23,7 @@ FROM
   JOIN enrollments AS e ON (
     e.user_id = u.id
     AND e.course_instance_id = ci.id
+    AND e.status = 'joined'
   )
 WHERE
   ai.assessment_id = $assessment_id
@@ -40,6 +41,7 @@ FROM
   JOIN enrollments AS e ON (
     e.user_id = u.id
     AND e.course_instance_id = ci.id
+    AND e.status = 'joined'
   )
 WHERE
   ai.assessment_id = $assessment_id

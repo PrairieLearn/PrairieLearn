@@ -95,7 +95,15 @@ BEGIN
     ),
     update_matched_dest_rows AS (
         UPDATE assessments AS dest
-        SET tid = src_tid, uuid = src_uuid, deleted_at = NULL
+        SET
+            tid = src_tid,
+            uuid = src_uuid,
+            deleted_at = NULL,
+            -- Statistics may have become stale while the assessment was deleted.
+            statistics_last_updated_at = CASE
+                WHEN dest.deleted_at IS NOT NULL THEN now() - interval '100 years'
+                ELSE dest.statistics_last_updated_at
+            END
         FROM matched_rows
         WHERE dest.id = dest_id AND dest.course_instance_id = syncing_course_instance_id
     ),
