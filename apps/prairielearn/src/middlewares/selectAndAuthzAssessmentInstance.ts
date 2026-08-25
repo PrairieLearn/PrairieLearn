@@ -5,6 +5,7 @@ import z from 'zod';
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
+import { AssessmentInstanceAuthzResultSchema } from '../lib/assessment-access-control/authz-result.js';
 import { resolveModernAssessmentInstanceAccess } from '../lib/assessment-access-control/authz.js';
 import {
   type AssessmentInstanceTimeLimit,
@@ -18,7 +19,6 @@ import {
   AssessmentSetSchema,
   FileSchema,
   GroupSchema,
-  SprocAuthzAssessmentInstanceSchema,
   SprocUsersGetDisplayedRoleSchema,
   UserSchema,
 } from '../lib/db-types.js';
@@ -30,7 +30,7 @@ const SelectAndAuthzAssessmentInstanceBaseSchema = z.object({
   instance_role: SprocUsersGetDisplayedRoleSchema,
   assessment: AssessmentSchema,
   assessment_set: AssessmentSetSchema,
-  authz_result: SprocAuthzAssessmentInstanceSchema,
+  authz_result: AssessmentInstanceAuthzResultSchema,
   file_list: z.array(FileSchema),
   instance_group_uid_list: z.array(z.string()),
 });

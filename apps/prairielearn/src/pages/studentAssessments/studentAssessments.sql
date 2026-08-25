@@ -15,11 +15,7 @@ WITH
       aset.color AS assessment_set_color,
       aset.number AS assessment_set_number,
       aset.abbreviation || a.number AS label,
-      aa.authorized,
-      aa.credit_date_string,
-      aa.active,
-      aa.access_rules,
-      aa.show_closed_assessment_score,
+      to_jsonb(aa) AS authz_result,
       NULL::integer AS assessment_instance_id,
       NULL::integer AS assessment_instance_number,
       NULL::integer AS assessment_instance_score_perc,
@@ -39,6 +35,10 @@ WITH
       ci.id = $course_instance_id
       AND a.multiple_instance
       AND a.deleted_at IS NULL
+      AND (
+        aa.authorized
+        OR a.modern_access_control
+      )
   ),
   multiple_instance_assessment_instances AS (
     SELECT
@@ -55,11 +55,7 @@ WITH
       mia.assessment_set_color,
       mia.assessment_set_number,
       mia.label || '#' || ai.number AS label,
-      mia.authorized,
-      mia.credit_date_string,
-      mia.active,
-      mia.access_rules,
-      mia.show_closed_assessment_score,
+      mia.authz_result,
       ai.id AS assessment_instance_id,
       ai.number AS assessment_instance_number,
       ai.score_perc AS assessment_instance_score_perc,
@@ -92,11 +88,7 @@ WITH
       aset.color AS assessment_set_color,
       aset.number AS assessment_set_number,
       aset.abbreviation || a.number AS label,
-      aa.authorized,
-      aa.credit_date_string,
-      aa.active,
-      aa.access_rules,
-      aa.show_closed_assessment_score,
+      to_jsonb(aa) AS authz_result,
       ai.id AS assessment_instance_id,
       ai.number AS assessment_instance_number,
       ai.score_perc AS assessment_instance_score_perc,
@@ -150,6 +142,10 @@ WITH
       AND NOT a.multiple_instance
       AND a.deleted_at IS NULL
       AND gc.deleted_at IS NULL
+      AND (
+        aa.authorized
+        OR a.modern_access_control
+      )
   ),
   all_rows AS (
     SELECT
@@ -187,9 +183,6 @@ SELECT
   ) AS assessment_group_heading
 FROM
   all_rows
-WHERE
-  authorized
-  OR modern_access_control
 ORDER BY
   CASE
     WHEN $assessments_group_by = 'Module' THEN assessment_module_number

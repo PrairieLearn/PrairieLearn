@@ -6,13 +6,14 @@ import { IdSchema } from '@prairielearn/zod';
 import { PageLayout } from '../../components/PageLayout.js';
 import { ScorebarHtml } from '../../components/Scorebar.js';
 import {
-  AuthzAccessRuleSchema,
   StudentAccessRulesPopover,
   StudentAccessTimelinePopover,
 } from '../../components/StudentAccessPopovers.js';
-import { AccessTimelineEntrySchema } from '../../lib/assessment-access-control/timeline.js';
 import {
-  AssessmentAccessRuleSchema,
+  AssessmentAuthzResultSchema,
+  LegacyAssessmentAccessRuleResultSchema,
+} from '../../lib/assessment-access-control/authz-result.js';
+import {
   AssessmentInstanceSchema,
   AssessmentSchema,
   AssessmentSetSchema,
@@ -20,22 +21,16 @@ import {
 import { idsEqual } from '../../lib/id.js';
 import { type ResLocalsForPage } from '../../lib/res-locals.js';
 
-export const StudentAssessmentsRowSchema = z.object({
+export const StudentAssessmentSummarySchema = z.object({
   assessment_id: AssessmentSchema.shape.id,
   multiple_instance_header: z.boolean(),
   assessment_number: AssessmentSchema.shape.number,
   title: AssessmentSchema.shape.title,
   team_work: AssessmentSchema.shape.team_work.nullable(),
   modern_access_control: AssessmentSchema.shape.modern_access_control,
-  authorized: z.boolean(),
   assessment_set_name: AssessmentSetSchema.shape.name,
   assessment_set_color: AssessmentSetSchema.shape.color,
   label: z.string(),
-  credit_date_string: z.string(),
-  active: AssessmentAccessRuleSchema.shape.active,
-  access_rules: AuthzAccessRuleSchema.array(),
-  access_timeline: z.array(AccessTimelineEntrySchema).optional().default([]).readonly(),
-  show_closed_assessment_score: AssessmentAccessRuleSchema.shape.show_closed_assessment_score,
   assessment_instance_id: AssessmentInstanceSchema.shape.id.nullable(),
   assessment_instance_score_perc: AssessmentInstanceSchema.shape.score_perc.nullable(),
   assessment_instance_open: AssessmentInstanceSchema.shape.open.nullable(),
@@ -43,8 +38,18 @@ export const StudentAssessmentsRowSchema = z.object({
   link: z.string(),
   assessment_group_id: IdSchema,
   assessment_group_heading: z.string(),
-  show_before_release: z.boolean().optional(),
-  will_release_at: z.string().nullable().optional(),
+});
+export type StudentAssessmentSummary = z.infer<typeof StudentAssessmentSummarySchema>;
+
+export const StudentAssessmentsRowSchema = StudentAssessmentSummarySchema.extend({
+  authorized: AssessmentAuthzResultSchema.shape.authorized,
+  credit_date_string: z.string(),
+  active: AssessmentAuthzResultSchema.shape.active,
+  access_rules: LegacyAssessmentAccessRuleResultSchema.array(),
+  access_timeline: AssessmentAuthzResultSchema.shape.access_timeline,
+  show_closed_assessment_score: AssessmentAuthzResultSchema.shape.show_closed_assessment_score,
+  show_before_release: AssessmentAuthzResultSchema.shape.show_before_release,
+  will_release_at: AssessmentAuthzResultSchema.shape.next_active_time,
 });
 export type StudentAssessmentsRow = z.infer<typeof StudentAssessmentsRowSchema>;
 

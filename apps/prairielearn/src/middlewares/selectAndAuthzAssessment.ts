@@ -5,13 +5,9 @@ import { HttpStatusError } from '@prairielearn/error';
 import { loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
 import { isTrpcRequest } from '@prairielearn/trpc/express';
 
+import { AssessmentAuthzResultSchema } from '../lib/assessment-access-control/authz-result.js';
 import { resolveModernAssessmentAccess } from '../lib/assessment-access-control/authz.js';
-import {
-  AssessmentModuleSchema,
-  AssessmentSchema,
-  AssessmentSetSchema,
-  SprocAuthzAssessmentSchema,
-} from '../lib/db-types.js';
+import { AssessmentModuleSchema, AssessmentSchema, AssessmentSetSchema } from '../lib/db-types.js';
 
 import { AccessDenied } from './selectAndAuthzAssessment.html.js';
 
@@ -21,7 +17,7 @@ const SelectAndAuthzAssessmentSchema = z.object({
   assessment: AssessmentSchema,
   assessment_set: AssessmentSetSchema,
   assessment_module: AssessmentModuleSchema.nullable(),
-  authz_result: SprocAuthzAssessmentSchema,
+  authz_result: AssessmentAuthzResultSchema,
   assessment_label: z.string(),
 });
 

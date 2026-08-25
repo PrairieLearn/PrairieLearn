@@ -1,11 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
-import type { SprocAuthzAssessment } from '../db-types.js';
-
-import { applyInstanceAccess, resolverResultToAuthzAssessmentForInstance } from './authz.js';
+import type { AssessmentAuthzResult } from './authz-result.js';
+import { applyInstanceAccess, resolverResultToAssessmentAuthzResultForInstance } from './authz.js';
 import type { AccessControlResolverResult } from './resolver.js';
 
-const baseAssessmentResult: SprocAuthzAssessment = {
+const baseAssessmentResult: AssessmentAuthzResult = {
   authorized: true,
   credit: 100,
   credit_date_string: '2025-03-15T12:00:00Z',
@@ -22,7 +21,7 @@ const baseAssessmentResult: SprocAuthzAssessment = {
   access_timeline: [],
 };
 
-const unauthorizedResult: SprocAuthzAssessment = {
+const unauthorizedResult: AssessmentAuthzResult = {
   ...baseAssessmentResult,
   authorized: false,
 };
@@ -156,9 +155,9 @@ describe('applyInstanceAccess', () => {
   });
 });
 
-describe('resolverResultToAuthzAssessmentForInstance', () => {
+describe('resolverResultToAssessmentAuthzResultForInstance', () => {
   it('does not authorize PrairieTest review without an assessment instance', () => {
-    const result = resolverResultToAuthzAssessmentForInstance({
+    const result = resolverResultToAssessmentAuthzResultForInstance({
       result: prairieTestReviewResult,
       authzMode: 'Public',
       displayTimezone: 'America/Chicago',
@@ -170,7 +169,7 @@ describe('resolverResultToAuthzAssessmentForInstance', () => {
   });
 
   it('authorizes PrairieTest review for a closed assessment instance', () => {
-    const result = resolverResultToAuthzAssessmentForInstance({
+    const result = resolverResultToAssessmentAuthzResultForInstance({
       result: prairieTestReviewResult,
       authzMode: 'Public',
       displayTimezone: 'America/Chicago',
@@ -185,7 +184,7 @@ describe('resolverResultToAuthzAssessmentForInstance', () => {
   });
 
   it('does not apply afterComplete score visibility while an instance is open and unexpired', () => {
-    const result = resolverResultToAuthzAssessmentForInstance({
+    const result = resolverResultToAssessmentAuthzResultForInstance({
       result: baseResolverResult,
       authzMode: 'Public',
       displayTimezone: 'America/Chicago',
@@ -199,7 +198,7 @@ describe('resolverResultToAuthzAssessmentForInstance', () => {
   });
 
   it('applies afterComplete score visibility when an instance is closed', () => {
-    const result = resolverResultToAuthzAssessmentForInstance({
+    const result = resolverResultToAssessmentAuthzResultForInstance({
       result: {
         ...baseResolverResult,
         creditDateString: '100% until 12:00, Sat, Mar 15',
@@ -221,7 +220,7 @@ describe('resolverResultToAuthzAssessmentForInstance', () => {
   });
 
   it('keeps unmatched Exam-mode denies hidden for closed instances', () => {
-    const result = resolverResultToAuthzAssessmentForInstance({
+    const result = resolverResultToAssessmentAuthzResultForInstance({
       result: {
         ...baseResolverResult,
         authorization: 'denied',
@@ -251,7 +250,7 @@ describe('resolverResultToAuthzAssessmentForInstance', () => {
   });
 
   it('applies afterComplete score visibility when the time limit has expired', () => {
-    const result = resolverResultToAuthzAssessmentForInstance({
+    const result = resolverResultToAssessmentAuthzResultForInstance({
       result: {
         ...baseResolverResult,
         creditDateString: '100% until 12:00, Sat, Mar 15',
@@ -273,7 +272,7 @@ describe('resolverResultToAuthzAssessmentForInstance', () => {
   });
 
   it('leaves PrairieTest visibility in control while a reservation is active', () => {
-    const result = resolverResultToAuthzAssessmentForInstance({
+    const result = resolverResultToAssessmentAuthzResultForInstance({
       result: {
         ...baseResolverResult,
         visibility: {
