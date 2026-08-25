@@ -307,14 +307,15 @@ export class PLEmitter implements OutputEmitter {
       ? wrapInlineInputPrompt(promptHtml)
       : ['<pl-question-panel>', promptHtml, '</pl-question-panel>', ''];
 
-    // Checkbox per-answer feedback is rendered in the answer panel so all selected answers'
+    // Checkbox per-answer feedback is rendered in the submission panel so all selected answers'
     // messages can be shown. PL only surfaces one feedback attribute per answer element.
     const perAnswerForHtml =
       question.body.type === 'checkbox' ? undefined : question.feedback?.perAnswer;
     const bodyHtml = handler.renderHtml(question.body, question.shuffleAnswers, perAnswerForHtml);
     if (bodyHtml) parts.push(bodyHtml);
 
-    const feedbackHtml = renderFeedbackHtml(feedbackMessages);
+    const generalFeedback = buildGeneralFeedback(question);
+    const feedbackHtml = renderFeedbackHtml(feedbackMessages, generalFeedback);
     if (feedbackHtml) {
       parts.push('', feedbackHtml);
     }
@@ -334,7 +335,10 @@ export class PLEmitter implements OutputEmitter {
       if (gen) parts.push(gen);
     }
 
-    const grade = renderFeedbackGradeFn(feedbackMessages);
+    const grade = renderFeedbackGradeFn(
+      feedbackMessages,
+      buildGeneralFeedback(question).length > 0,
+    );
     if (grade) parts.push(grade);
 
     return parts.join('\n');
@@ -434,14 +438,15 @@ function buildFeedbackMessages(
     handler.renderFeedback?.(question.body, question.feedback?.perAnswer) ?? []
   ).map((message, index) => ({ ...message, name: `qti_import_answer_${index}` }));
 
-  if (question.feedback?.correct) {
+  const generalFeedback = buildGeneralFeedback(question);
+  if (question.feedback?.correct && !generalFeedback.includes(question.feedback.correct)) {
     messages.push({
       name: 'qti_import',
       html: question.feedback.correct,
       trigger: { type: 'score', outcome: 'correct' },
     });
   }
-  if (question.feedback?.incorrect) {
+  if (question.feedback?.incorrect && !generalFeedback.includes(question.feedback.incorrect)) {
     messages.push({
       name: 'qti_import',
       html: question.feedback.incorrect,
@@ -452,38 +457,47 @@ function buildFeedbackMessages(
   return messages;
 }
 
-function renderFeedbackHtml(messages: NamedFeedbackMessage[]): string {
-  if (messages.length === 0) return '';
+function buildGeneralFeedback(question: IRQuestion): string[] {
+  const feedback = question.feedback;
+  if (!feedback) return [];
 
-  const lines = ['<pl-answer-panel>'];
-  const renderedScoreFeedbackNames = new Set<string>();
-  for (const message of messages) {
-    if (message.trigger.type === 'score') {
-      if (renderedScoreFeedbackNames.has(message.name)) continue;
+  const messages = feedback.general ? [feedback.general] : [];
+  if (feedback.correct && feedback.correct === feedback.incorrect) {
+    if (!messages.includes(feedback.correct)) messages.push(feedback.correct);
+  }
+  return messages;
+}
 
-      lines.push(`  {{#feedback.${message.name}}}`);
-      for (const scoreMessage of messages) {
-        if (scoreMessage.name !== message.name || scoreMessage.trigger.type !== 'score') continue;
+function renderFeedbackHtml(messages: NamedFeedbackMessage[], generalFeedback: string[]): string {
+  if (messages.length === 0 && generalFeedback.length === 0) return '';
 
-        const sectionType = scoreMessage.trigger.outcome === 'incorrect' ? '^' : '#';
-        lines.push(
-          `    {{${sectionType}is_correct}}`,
-          neutralizeMustacheDelimiters(scoreMessage.html),
-          '    {{/is_correct}}',
-        );
-      }
-      lines.push(`  {{/feedback.${message.name}}}`);
-      renderedScoreFeedbackNames.add(message.name);
-      continue;
+  const feedbackNames = new Set(messages.map((message) => message.name));
+  if (generalFeedback.length > 0) feedbackNames.add('qti_import');
+
+  const lines = ['<pl-submission-panel>'];
+  for (const name of feedbackNames) {
+    lines.push(`  {{#feedback.${name}}}`);
+    if (name === 'qti_import') {
+      lines.push(...generalFeedback.map(neutralizeMustacheDelimiters));
     }
 
-    lines.push(
-      `  {{#feedback.${message.name}}}`,
-      neutralizeMustacheDelimiters(message.html),
-      `  {{/feedback.${message.name}}}`,
-    );
+    for (const message of messages) {
+      if (message.name !== name) continue;
+
+      if (message.trigger.type === 'score') {
+        const sectionType = message.trigger.outcome === 'incorrect' ? '^' : '#';
+        lines.push(
+          `    {{${sectionType}is_correct}}`,
+          neutralizeMustacheDelimiters(message.html),
+          '    {{/is_correct}}',
+        );
+      } else {
+        lines.push(neutralizeMustacheDelimiters(message.html));
+      }
+    }
+    lines.push(`  {{/feedback.${name}}}`);
   }
-  lines.push('</pl-answer-panel>');
+  lines.push('</pl-submission-panel>');
   return lines.join('\n');
 }
 
@@ -495,8 +509,11 @@ function neutralizeMustacheDelimiters(html: string): string {
     .replaceAll('}}', '&#125;&#125;');
 }
 
-function renderFeedbackGradeFn(messages: NamedFeedbackMessage[]): string {
-  if (messages.length === 0) return '';
+function renderFeedbackGradeFn(
+  messages: NamedFeedbackMessage[],
+  hasGeneralFeedback: boolean,
+): string {
+  if (messages.length === 0 && !hasGeneralFeedback) return '';
 
   const lines = ['def grade(data):'];
   const assignedScoreFeedbackNames = new Set<string>();
@@ -539,6 +556,10 @@ function renderFeedbackGradeFn(messages: NamedFeedbackMessage[]): string {
       default:
         assertNever(message.trigger);
     }
+  }
+
+  if (hasGeneralFeedback && !assignedScoreFeedbackNames.has('qti_import')) {
+    lines.push('    data["feedback"]["qti_import"] = True');
   }
 
   lines.push('');
