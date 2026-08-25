@@ -158,7 +158,7 @@ export function checkSignedToken(
  * This is useful for tRPC and similar APIs where a single token should be valid
  * for all sub-routes under a prefix (e.g., `/foo/bar/trpc` is valid for
  * `/foo/bar/trpc/getUser` and `/foo/bar/trpc/updateUser`). At least one claim is
- * required to prevent unbound tokens.
+ * required to prevent claimless tokens.
  */
 export function generatePrefixCsrfToken<const Data extends PrefixCsrfTokenData>(
   data: RequireClaim<Data>,
