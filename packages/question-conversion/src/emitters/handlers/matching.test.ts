@@ -37,4 +37,16 @@ describe('matchingHandler.renderHtml', () => {
     });
     assert.include(html, 'match="&lt;em&gt;italic&lt;/em&gt;"');
   });
+
+  it('resolves question assets embedded in option HTML', () => {
+    const html = matchingHandler.renderHtml({
+      type: 'matching',
+      pairs: [{ statementHtml: 'Test', optionHtml: '<img src="question-asset://answer.png">' }],
+      distractors: [],
+    });
+    assert.include(
+      html,
+      'match="&lt;img src=&quot;{{ options.client_files_question_url }}/answer.png&quot;&gt;"',
+    );
+  });
 });

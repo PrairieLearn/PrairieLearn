@@ -36,42 +36,32 @@ function makeQuestion(overrides: Partial<IRQuestion> = {}): IRQuestion {
 }
 
 const emitter = new PLEmitter();
+const byId = (feedback: Record<string, string>) => new Map(Object.entries(feedback));
 
 describe('PLEmitter', () => {
-  it('runs asynchronous processors sequentially around emission', async () => {
+  it('runs asynchronous processors sequentially before emission', async () => {
     const calls: string[] = [];
     const result = await emitter.emitProcessed(makeAssessment([makeQuestion()]), {
       processors: [
         {
-          async beforeEmit(itemContainer) {
-            calls.push('first:before:start');
+          async process(itemContainer) {
+            calls.push('first:start');
             await Promise.resolve();
-            calls.push('first:before:end');
+            calls.push('first:end');
             itemContainer.questions[0].title = 'Processed Question';
-          },
-          afterEmit(result) {
-            calls.push('first:after');
-            result.warnings.push({ questionId: 'q1', message: 'Processed' });
+            return { warnings: [{ questionId: 'q1', message: 'Processed' }] };
           },
         },
         {
-          beforeEmit() {
-            calls.push('second:before');
-          },
-          afterEmit(result) {
-            calls.push(`second:after:${result.warnings.length}`);
+          process(itemContainer) {
+            calls.push(`second:${itemContainer.questions[0].title}`);
+            return {};
           },
         },
       ],
     });
 
-    assert.deepEqual(calls, [
-      'first:before:start',
-      'first:before:end',
-      'second:before',
-      'first:after',
-      'second:after:1',
-    ]);
+    assert.deepEqual(calls, ['first:start', 'first:end', 'second:Processed Question']);
     assert.equal(result.questions[0].infoJson.title, 'Processed Question');
     assert.equal(result.warnings[0].message, 'Processed');
   });
@@ -195,9 +185,11 @@ describe('PLEmitter', () => {
       assert.notInclude(html, 'feedback.general');
     });
 
-    function assertMustacheDelimiterIsNeutralized(delimiter: string) {
+    function assertMustacheDelimiterIsEscaped(delimiter: string) {
       const feedbackHtml = `<p>Imported feedback: ${delimiter}</p>`;
-      const q = makeQuestion({ feedback: { correct: feedbackHtml } });
+      const q = makeQuestion({
+        feedback: { correct: feedbackHtml },
+      });
       const html = emitter.emit(makeAssessment([q])).questions[0].questionHtml;
       const renderedHtml = mustache.render(html, {
         feedback: { qti_import_correct: true },
@@ -211,12 +203,12 @@ describe('PLEmitter', () => {
       assert.notInclude(renderedHtml, 'MUSTACHE_EVALUATED');
     }
 
-    it('neutralizes double-brace Mustache delimiters in imported feedback', () => {
-      assertMustacheDelimiterIsNeutralized('{{imported_feedback_value}}');
+    it('escapes double-brace Mustache delimiters in imported feedback', () => {
+      assertMustacheDelimiterIsEscaped('{{imported_feedback_value}}');
     });
 
-    it('neutralizes triple-brace Mustache delimiters in imported feedback', () => {
-      assertMustacheDelimiterIsNeutralized('{{{imported_feedback_value}}}');
+    it('escapes triple-brace Mustache delimiters in imported feedback', () => {
+      assertMustacheDelimiterIsEscaped('{{{imported_feedback_value}}}');
     });
 
     it('emits grade() that sets correct and incorrect display flags', () => {
@@ -234,20 +226,24 @@ describe('PLEmitter', () => {
     });
 
     it('emits grade() with only correct branch when incorrect is absent', () => {
-      const q = makeQuestion({ feedback: { correct: '<p>Correct!</p>' } });
+      const q = makeQuestion({
+        feedback: { correct: '<p>Correct!</p>' },
+      });
       const serverPy = emitter.emit(makeAssessment([q])).questions[0].serverPy;
       assert.include(serverPy, 'data["score"] >= 1.0');
       assert.notInclude(serverPy, 'else');
     });
 
     it('emits grade() with only incorrect branch when correct is absent', () => {
-      const q = makeQuestion({ feedback: { incorrect: '<p>Wrong.</p>' } });
+      const q = makeQuestion({
+        feedback: { incorrect: '<p>Wrong.</p>' },
+      });
       const serverPy = emitter.emit(makeAssessment([q])).questions[0].serverPy;
       assert.include(serverPy, 'data["score"] < 1.0');
       assert.notInclude(serverPy, 'else');
     });
 
-    it('emits feedback attribute on pl-answer elements for perAnswer feedback', () => {
+    it('emits choice feedback targeted by choice ID', () => {
       const q = makeQuestion({
         body: {
           type: 'multiple-choice',
@@ -256,17 +252,17 @@ describe('PLEmitter', () => {
             { id: 'b', html: 'False', correct: false },
           ],
         },
-        feedback: {
-          perAnswer: { True: '<p>Correct!</p>', False: '<p>Wrong.</p>' },
-        },
+        feedback: { perChoice: byId({ a: '<p>Correct!</p>', b: '<p>Wrong.</p>' }) },
       });
       const result = emitter.emit(makeAssessment([q]));
       const html = result.questions[0].questionHtml;
       const serverPy = result.questions[0].serverPy ?? '';
-      assert.include(html, 'feedback="&lt;p&gt;Correct!&lt;/p&gt;"');
-      assert.include(html, 'feedback="&lt;p&gt;Wrong.&lt;/p&gt;"');
-      assert.notInclude(html, '<pl-answer-panel>');
-      assert.notInclude(serverPy, 'grade');
+      assert.include(html, '{{#feedback.qti_import_answer_0}}');
+      assert.include(html, '<p>Correct!</p>');
+      assert.include(html, '{{#feedback.qti_import_answer_1}}');
+      assert.include(html, '<p>Wrong.</p>');
+      assert.include(serverPy, 'if "True" in _selected_answer_html:');
+      assert.include(serverPy, 'if "False" in _selected_answer_html:');
     });
 
     it('emits no pl-answer-panel and no grade() when feedback is absent', () => {
@@ -650,11 +646,12 @@ describe('PLEmitter', () => {
             { id: 'b', html: 'Blue', correct: false },
           ],
         },
-        feedback: { perAnswer: { Red: 'Interesting!', Blue: 'Cool!' } },
+        feedback: { perChoice: byId({ a: 'Interesting!', b: 'Cool!' }) },
       });
       const html = emitter.emit(makeAssessment([q])).questions[0].questionHtml;
       assert.include(html, 'builtin-grading="false"');
       assert.notInclude(html, 'feedback=');
+      assert.notInclude(html, 'qti_import_answer');
     });
   });
 
@@ -762,7 +759,7 @@ describe('PLEmitter', () => {
     });
   });
 
-  describe('checkbox per-answer feedback', () => {
+  describe('checkbox choice feedback', () => {
     it('omits feedback attributes on <pl-answer> elements', () => {
       const q = makeQuestion({
         body: {
@@ -772,7 +769,7 @@ describe('PLEmitter', () => {
             { id: 'b', html: 'Beta', correct: false },
           ],
         },
-        feedback: { perAnswer: { Alpha: '<p>Right!</p>', Beta: '<p>Nope.</p>' } },
+        feedback: { perChoice: byId({ a: '<p>Right!</p>', b: '<p>Nope.</p>' }) },
       });
       const html = emitter.emit(makeAssessment([q])).questions[0].questionHtml;
       assert.notInclude(html, 'feedback=');
@@ -789,7 +786,7 @@ describe('PLEmitter', () => {
           ],
         },
         feedback: {
-          perAnswer: { Alpha: '<p>Right!</p>', Beta: '<p>Nope.</p>' },
+          perChoice: byId({ a: '<p>Right!</p>', b: '<p>Nope.</p>' }),
           correct: '<p>All correct!</p>',
           incorrect: '<p>Some wrong.</p>',
         },
@@ -850,7 +847,7 @@ describe('PLEmitter', () => {
       const feedback = '<p>Feedback with "quotes", {braces}, \\slashes\\, and\na newline.</p>';
       const q = makeQuestion({
         body: { type: 'checkbox', choices: [{ id: 'a', html: answer, correct: true }] },
-        feedback: { perAnswer: { [answer]: feedback } },
+        feedback: { perChoice: byId({ a: feedback }) },
       });
       const result = emitter.emit(makeAssessment([q])).questions[0];
       assert.include(result.questionHtml, feedback);
@@ -859,7 +856,7 @@ describe('PLEmitter', () => {
     });
   });
 
-  describe('fill-in-blanks per-blank feedback', () => {
+  describe('fill-in-blanks targeted feedback', () => {
     it('emits distinct flags based on each blank partial score', () => {
       const q = makeQuestion({
         promptHtml: '<p>Colombia: [cap1], Estonia: [cap2].</p>',
@@ -871,7 +868,7 @@ describe('PLEmitter', () => {
           ],
         },
         feedback: {
-          perAnswer: { bogota: 'Great, Bogotá!', tallinn: 'Good job for Tallinn!' },
+          perBlank: byId({ cap1: 'Great, Bogotá!', cap2: 'Good job for Tallinn!' }),
           correct: 'Perfect!',
           incorrect: 'Not quite.',
         },
@@ -909,7 +906,7 @@ describe('PLEmitter', () => {
           type: 'fill-in-blanks',
           blanks: [{ id: answerName, correctText }],
         },
-        feedback: { perAnswer: { [correctText]: feedback } },
+        feedback: { perBlank: byId({ [answerName]: feedback }) },
       });
       const result = emitter.emit(makeAssessment([q])).questions[0];
       assert.include(

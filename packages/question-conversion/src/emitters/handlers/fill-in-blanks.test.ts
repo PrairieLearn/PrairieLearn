@@ -50,38 +50,3 @@ describe('fillInBlanksHandler.renderHtml', () => {
     assert.equal(html, '');
   });
 });
-
-describe('fillInBlanksHandler.renderFeedback', () => {
-  it('returns no messages when feedback is absent', () => {
-    const feedback = fillInBlanksHandler.renderFeedback!(
-      { type: 'fill-in-blanks', blanks },
-      undefined,
-    );
-    assert.deepEqual(feedback, []);
-  });
-
-  it('returns no messages when feedback does not match any blank', () => {
-    const feedback = fillInBlanksHandler.renderFeedback!(
-      { type: 'fill-in-blanks', blanks },
-      { unrelated: 'msg' },
-    );
-    assert.deepEqual(feedback, []);
-  });
-
-  it('describes feedback for each matching blank', () => {
-    const feedback = fillInBlanksHandler.renderFeedback!(
-      { type: 'fill-in-blanks', blanks },
-      { hello: 'You got blank1!', world: 'You got blank2!' },
-    );
-    assert.deepEqual(feedback, [
-      {
-        html: '<strong>hello</strong>: You got blank1!',
-        trigger: { type: 'blank-correct', answerName: 'blank1' },
-      },
-      {
-        html: '<strong>world</strong>: You got blank2!',
-        trigger: { type: 'blank-correct', answerName: 'blank2' },
-      },
-    ]);
-  });
-});

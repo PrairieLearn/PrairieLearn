@@ -18,6 +18,8 @@ const { ModelOperations } = _require('@vscode/vscode-languagedetection') as {
  * See https://docs.prairielearn.com/clientServerFiles/.
  */
 export const CLIENT_FILES_QUESTION_URL = '{{ options.client_files_question_url }}';
+/** URL prefix used for question assets while HTML is still in the intermediate representation. */
+export const QUESTION_ASSET_URL_PREFIX = 'question-asset://';
 
 const DATA_URI_SRC_RE = /^data:(image\/[a-zA-Z0-9.+-]+);base64,([^"']+)$/;
 
@@ -92,12 +94,11 @@ const ABSOLUTE_URL_RE = /^(?:[a-z][a-z0-9+.-]*:|\/\/|:\/\/)/i;
 /**
  * Rewrite local <img> tags in HTML to <pl-figure> elements.
  *
- * For images pointing into the question's clientFilesQuestion directory via the
- * Mustache prefix, the directory attribute is set explicitly and the prefix is
- * stripped from file-name. Other relative paths are passed through as file-name
- * without a directory attribute. Images with absolute URLs (http://, https://,
- * protocol-relative, data:, etc.) are left as <img> since pl-figure resolves
- * file-name against a local course directory and cannot host remote resources.
+ * For images pointing to an IR question asset or into clientFilesQuestion via the Mustache
+ * prefix, the directory attribute is set explicitly and the prefix is stripped from file-name.
+ * Other relative paths are passed through as file-name without a directory attribute. Images
+ * with absolute URLs (http://, https://, protocol-relative, data:, etc.) are left as <img> since
+ * pl-figure resolves file-name against a local course directory and cannot host remote resources.
  * The alt and width attributes are preserved; all others (style, class, etc.)
  * are dropped since pl-figure handles its own layout.
  */
@@ -114,11 +115,14 @@ export function rewriteImagesAsPlFigure(
     const src = $img.attr('src') ?? '';
     // Remote images stay as `<img>` because `<pl-figure>` resolves `file-name` locally inside
     // the course, which would turn an external URL into a broken course-file lookup.
-    if (ABSOLUTE_URL_RE.test(src)) return;
+    if (ABSOLUTE_URL_RE.test(src) && !src.startsWith(QUESTION_ASSET_URL_PREFIX)) return;
 
     const $figure = $('<pl-figure></pl-figure>');
 
-    if (src.startsWith(mustachePrefix)) {
+    if (src.startsWith(QUESTION_ASSET_URL_PREFIX)) {
+      $figure.attr('file-name', src.slice(QUESTION_ASSET_URL_PREFIX.length));
+      $figure.attr('directory', 'clientFilesQuestion');
+    } else if (src.startsWith(mustachePrefix)) {
       $figure.attr('file-name', src.slice(mustachePrefix.length));
       $figure.attr('directory', 'clientFilesQuestion');
     } else {

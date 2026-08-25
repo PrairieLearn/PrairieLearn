@@ -1,8 +1,8 @@
-import type { IRQuestionBody } from '../types/ir.js';
+import type { IRFeedback, IRQuestionBody } from '../types/ir.js';
 
 export type FeedbackTrigger =
   | { type: 'score'; outcome: 'correct' | 'incorrect' }
-  | { type: 'checkbox-answer-selected'; answerHtml: string }
+  | { type: 'answer-selected'; answerHtml: string }
   | { type: 'blank-correct'; answerName: string };
 
 export interface FeedbackMessage {
@@ -35,20 +35,13 @@ export interface BodyEmitHandler {
    * Render the interactive element(s) placed after <pl-question-panel>.
    * Return '' for types whose interaction lives inside the prompt (fill-in-blanks, text-only).
    */
-  renderHtml(
-    body: IRQuestionBody,
-    shuffleAnswers?: boolean,
-    perAnswer?: Record<string, string>,
-  ): string;
+  renderHtml(body: IRQuestionBody, shuffleAnswers?: boolean): string;
 
   /** Render the generate(data) Python function. Return '' or omit if not needed. */
   renderGeneratePy?(body: IRQuestionBody): string;
 
-  /** Describe per-answer feedback that requires custom grade-time conditions. */
-  renderFeedback?(
-    body: IRQuestionBody,
-    perAnswer: Record<string, string> | undefined,
-  ): FeedbackMessage[];
+  /** Describe answer-specific feedback that requires custom grade-time conditions. */
+  renderFeedback?(body: IRQuestionBody, feedback: IRFeedback | undefined): FeedbackMessage[];
 }
 
 export class BodyEmitRegistry {

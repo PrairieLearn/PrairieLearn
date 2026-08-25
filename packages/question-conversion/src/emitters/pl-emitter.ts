@@ -12,7 +12,7 @@ import type {
   PLQuestionInfoJson,
   PLQuestionOutput,
 } from '../types/pl-output.js';
-import { isWhitespaceText, loadHtmlFragment } from '../utils/html.js';
+import { isWhitespaceText, loadHtmlFragment, rewriteImagesAsPlFigure } from '../utils/html.js';
 import { slugify } from '../utils/slugify.js';
 import { stableUuid } from '../utils/uuid.js';
 
@@ -89,12 +89,14 @@ export class PLEmitter implements OutputEmitter {
     itemContainer: IRItemContainer,
     { processors = [], ...options }: EmitProcessedOptions = {},
   ): Promise<ConversionResult> {
+    const processorResults = [];
     for (const processor of processors) {
-      await processor.beforeEmit?.(itemContainer);
+      processorResults.push(await processor.process(itemContainer));
     }
     const result = this.emit(itemContainer, options);
-    for (const processor of processors) {
-      await processor.afterEmit?.(result, itemContainer);
+    for (const processorResult of processorResults) {
+      result.warnings.push(...(processorResult.warnings ?? []));
+      result.reports.push(...(processorResult.reports ?? []));
     }
     return result;
   }
@@ -324,16 +326,13 @@ export class PLEmitter implements OutputEmitter {
     if (handler.transformPrompt) {
       promptHtml = handler.transformPrompt(promptHtml, question.body);
     }
+    promptHtml = renderContentHtml(promptHtml);
 
     const parts: string[] = handler.inlineInputs
       ? wrapInlineInputPrompt(promptHtml)
       : ['<pl-question-panel>', promptHtml, '</pl-question-panel>', ''];
 
-    // Checkbox per-answer feedback is rendered in the answer panel so all selected answers'
-    // messages can be shown. PL only surfaces one feedback attribute per answer element.
-    const perAnswerForHtml =
-      question.body.type === 'checkbox' ? undefined : question.feedback?.perAnswer;
-    const bodyHtml = handler.renderHtml(question.body, question.shuffleAnswers, perAnswerForHtml);
+    const bodyHtml = renderContentHtml(handler.renderHtml(question.body, question.shuffleAnswers));
     if (bodyHtml) parts.push(bodyHtml);
 
     const feedbackHtml = renderFeedbackHtml(feedbackMessages);
@@ -452,9 +451,16 @@ function buildFeedbackMessages(
   question: IRQuestion,
   handler: BodyEmitHandler,
 ): NamedFeedbackMessage[] {
-  const messages = (
-    handler.renderFeedback?.(question.body, question.feedback?.perAnswer) ?? []
-  ).map((message, index) => ({ ...message, name: `qti_import_answer_${index}` }));
+  const messages = (handler.renderFeedback?.(question.body, question.feedback) ?? []).map(
+    (message, index) => ({
+      ...message,
+      name: `qti_import_answer_${index}`,
+      trigger:
+        message.trigger.type === 'answer-selected'
+          ? { ...message.trigger, answerHtml: renderContentHtml(message.trigger.answerHtml) }
+          : message.trigger,
+    }),
+  );
 
   if (question.feedback?.correct) {
     messages.push({
@@ -481,7 +487,7 @@ function renderFeedbackHtml(messages: NamedFeedbackMessage[]): string {
   for (const message of messages) {
     lines.push(
       `  {{#feedback.${message.name}}}`,
-      neutralizeMustacheDelimiters(message.html),
+      escapeMustacheDelimiters(renderContentHtml(message.html)),
       `  {{/feedback.${message.name}}}`,
     );
   }
@@ -489,7 +495,11 @@ function renderFeedbackHtml(messages: NamedFeedbackMessage[]): string {
   return lines.join('\n');
 }
 
-function neutralizeMustacheDelimiters(html: string): string {
+function renderContentHtml(html: string): string {
+  return rewriteImagesAsPlFigure(html, { display: 'inline' });
+}
+
+function escapeMustacheDelimiters(html: string): string {
   return html
     .replaceAll('{{{', '&#123;&#123;&#123;')
     .replaceAll('}}}', '&#125;&#125;&#125;')
@@ -501,7 +511,7 @@ function renderFeedbackGradeFn(messages: NamedFeedbackMessage[]): string {
   if (messages.length === 0) return '';
 
   const lines = ['def grade(data):'];
-  if (messages.some((message) => message.trigger.type === 'checkbox-answer-selected')) {
+  if (messages.some((message) => message.trigger.type === 'answer-selected')) {
     lines.push(
       '    _submitted = data["submitted_answers"].get("answer") or []',
       '    if isinstance(_submitted, str):',
@@ -525,7 +535,7 @@ function renderFeedbackGradeFn(messages: NamedFeedbackMessage[]): string {
           assignment,
         );
         break;
-      case 'checkbox-answer-selected':
+      case 'answer-selected':
         lines.push(
           `    if ${JSON.stringify(message.trigger.answerHtml)} in _selected_answer_html:`,
           assignment,

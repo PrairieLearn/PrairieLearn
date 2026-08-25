@@ -50,25 +50,6 @@ describe('multipleChoiceHandler', () => {
     assert.notInclude(html, 'order=');
   });
 
-  it('includes per-answer feedback attributes', () => {
-    const html = multipleChoiceHandler.renderHtml(
-      { type: 'multiple-choice', choices: twoChoices },
-      undefined,
-      { Red: 'Wrong color', Blue: 'Correct!' },
-    );
-    assert.include(html, 'feedback="Wrong color"');
-    assert.include(html, 'feedback="Correct!"');
-  });
-
-  it('escapes special characters in feedback', () => {
-    const html = multipleChoiceHandler.renderHtml(
-      { type: 'multiple-choice', choices: twoChoices },
-      undefined,
-      { Red: '<b>Wrong</b>' },
-    );
-    assert.include(html, 'feedback="&lt;b&gt;Wrong&lt;/b&gt;"');
-  });
-
   it('deduplicates choices preferring correct one', () => {
     const html = multipleChoiceHandler.renderHtml({
       type: 'multiple-choice',

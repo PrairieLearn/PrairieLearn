@@ -92,9 +92,7 @@ describe('QtiImportRemoteImageCopier', () => {
         makeQuestion({
           promptHtml:
             '<img src="https://canvas.example/unavailable.png"><img src="http://canvas.example/insecure.png"><img src="://invalid.example/image.png">',
-          feedback: {
-            incorrect: '<img src="https://canvas.example/feedback.png">',
-          },
+          feedback: { incorrect: '<img src="https://canvas.example/feedback.png">' },
         }),
       ),
       { processors: [copier] },
@@ -134,7 +132,7 @@ describe('QtiImportRemoteImageCopier', () => {
           promptHtml: `<p>Question <img src="${imageUrl}"></p>`,
           feedback: {
             correct: `<p>Correct <img src="${imageUrl}" alt="Explanation"></p>`,
-            perAnswer: { Yes: `<img src="${imageUrl}" class="answer-feedback">` },
+            perChoice: new Map([['a', `<img src="${imageUrl}" class="answer-feedback">`]]),
           },
         }),
       ),
@@ -151,9 +149,7 @@ describe('QtiImportRemoteImageCopier', () => {
     expect(question.serverPy).toContain('data["feedback"]["qti_import_correct"] = True');
     expect(question.questionHtml).toContain('<p>Correct <pl-figure file-name="remote-');
     expect(question.questionHtml).toContain('{{#feedback.qti_import_correct}}');
-    expect(question.questionHtml).toContain(
-      'feedback="<img src=&quot;{{ options.client_files_question_url }}/remote-',
-    );
+    expect(question.questionHtml).toContain('{{#feedback.qti_import_answer_0}}');
     expect(question.questionHtml).not.toContain('canvas.example');
     expect(question.questionHtml).toContain('<pl-figure');
     expect(result.warnings).toEqual([]);
@@ -166,7 +162,39 @@ describe('QtiImportRemoteImageCopier', () => {
     ]);
   });
 
-  it('preserves neutralized Mustache delimiters while rewriting copied images', async () => {
+  it('keeps choice-targeted feedback attached while localizing choice HTML', async () => {
+    const copier = new QtiImportRemoteImageCopier(async () => ({
+      content: Buffer.from('choice image'),
+      extension: 'png',
+    }));
+    const result = await new PLEmitter().emitProcessed(
+      makeAssessment(
+        makeQuestion({
+          body: {
+            type: 'multiple-choice',
+            choices: [
+              {
+                id: 'a',
+                html: '<img src="https://canvas.example/choice.png">',
+                correct: true,
+              },
+              { id: 'b', html: 'No', correct: false },
+            ],
+          },
+          feedback: { perChoice: new Map([['a', 'Choice feedback']]) },
+        }),
+      ),
+      { processors: [copier] },
+    );
+
+    expect(result.questions[0].questionHtml).toContain(
+      '<pl-answer correct="true"><pl-figure file-name="remote-',
+    );
+    expect(result.questions[0].questionHtml).toContain('Choice feedback');
+    expect(result.questions[0].questionHtml).not.toContain('canvas.example');
+  });
+
+  it('escapes imported Mustache delimiters after rewriting copied images', async () => {
     const copier = new QtiImportRemoteImageCopier(async () => ({
       content: Buffer.from('feedback image'),
       extension: 'png',

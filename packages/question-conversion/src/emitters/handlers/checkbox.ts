@@ -21,20 +21,21 @@ export const checkboxHandler: BodyEmitHandler = {
     return lines.join('\n');
   },
 
-  renderFeedback(body, perAnswer) {
-    if (!perAnswer) return [];
+  renderFeedback(body, feedback) {
+    const perChoice = feedback?.perChoice;
+    if (!perChoice) return [];
 
     const cb = body as CheckboxBody;
     return deduplicateChoices(cb.choices).flatMap((choice) => {
-      const feedback = perAnswer[choice.html];
-      if (feedback == null) return [];
-
-      return [
-        {
-          html: `<strong>${choice.html}</strong>: ${feedback}`,
-          trigger: { type: 'checkbox-answer-selected' as const, answerHtml: choice.html },
-        },
-      ];
+      const html = perChoice.get(choice.id);
+      return html == null
+        ? []
+        : [
+            {
+              html: `<strong>${choice.html}</strong>: ${html}`,
+              trigger: { type: 'answer-selected' as const, answerHtml: choice.html },
+            },
+          ];
     });
   },
 };

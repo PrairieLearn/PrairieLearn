@@ -24,20 +24,21 @@ export const fillInBlanksHandler: BodyEmitHandler = {
     return '';
   },
 
-  renderFeedback(body, perAnswer) {
+  renderFeedback(body, feedback) {
+    const perBlank = feedback?.perBlank;
+    if (!perBlank) return [];
+
     const fib = body as FIBBody;
-    if (!perAnswer) return [];
-
     return fib.blanks.flatMap((blank) => {
-      const feedback = perAnswer[blank.correctText];
-      if (!blank.correctText || feedback == null) return [];
-
-      return [
-        {
-          html: `<strong>${he.escape(blank.correctText)}</strong>: ${feedback}`,
-          trigger: { type: 'blank-correct' as const, answerName: blank.id },
-        },
-      ];
+      const html = perBlank.get(blank.id);
+      return !blank.correctText || html == null
+        ? []
+        : [
+            {
+              html: `<strong>${he.escape(blank.correctText)}</strong>: ${html}`,
+              trigger: { type: 'blank-correct' as const, answerName: blank.id },
+            },
+          ];
     });
   },
 };

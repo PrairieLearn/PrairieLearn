@@ -81,20 +81,15 @@ export interface IRRubric {
 
 /** HTML feedback fragments shown to a student after their response is graded. */
 export interface IRFeedback {
-  /** Feedback shown when the response is correct. */
   correct?: string;
-  /** Feedback shown when the response is incorrect. */
   incorrect?: string;
-  /**
-   * Per-answer feedback keyed by the answer display text. Emit handlers map these
-   * values to the corresponding PrairieLearn answer identifiers.
-   */
-  perAnswer?: Record<string, string>;
+  perChoice?: Map<string, string>;
+  perBlank?: Map<string, string>;
 }
 
 /** Reference to an asset (image, file) needed by the question. */
 export interface AssetReference {
-  type: 'file-path' | 'url' | 'base64';
+  type: 'file-path' | 'base64';
   value: string;
   contentType?: string;
 }

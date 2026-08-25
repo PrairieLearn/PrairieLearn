@@ -1006,37 +1006,34 @@ export class QTI12ItemContainerParser implements InputParser {
       }
     }
 
-    // Build feedback.
-    // Canvas exports use two patterns:
-    //   1. Global idents: correct_fb / general_incorrect_fb
-    //   2. Per-answer idents: {answerLabelIdent}_fb (e.g. "7877_fb")
-    //
-    // Per-answer feedback is preferred: it supports multi-select questions where
-    // each selected answer's feedback needs to be concatenated at grade time.
-    // Global idents are kept as a fallback for questions that don't use per-answer.
-    const feedback: IRFeedback = {};
-
-    const correctFbText = item.feedbacks.get('correct_fb');
-    const incorrectFbText = item.feedbacks.get('general_incorrect_fb');
-    if (correctFbText) feedback.correct = correctFbText;
-    if (incorrectFbText) feedback.incorrect = incorrectFbText;
-
-    // Collect per-answer feedback: any {labelIdent}_fb entry gets keyed by the
-    // answer display text so the emitter can match against submitted_answers.
-    const perAnswer: Record<string, string> = {};
-    for (const lid of item.responseLids) {
-      for (const label of lid.labels) {
-        const fb = item.feedbacks.get(`${label.ident}_fb`);
-        if (fb) {
-          perAnswer[label.text] = fb;
-        }
+    const correctFeedback = item.feedbacks.get('correct_fb');
+    const incorrectFeedback = item.feedbacks.get('general_incorrect_fb');
+    const feedback: IRFeedback = {
+      ...(correctFeedback ? { correct: correctFeedback } : {}),
+      ...(incorrectFeedback ? { incorrect: incorrectFeedback } : {}),
+    };
+    if (body.type === 'multiple-choice' || body.type === 'checkbox') {
+      const perChoice = new Map<string, string>();
+      for (const choice of body.choices) {
+        const html = item.feedbacks.get(`${choice.id}_fb`);
+        if (html) perChoice.set(choice.id, html);
       }
-    }
-    if (Object.keys(perAnswer).length > 0) {
-      feedback.perAnswer = perAnswer;
+      if (perChoice.size > 0) feedback.perChoice = perChoice;
+    } else if (body.type === 'fill-in-blanks') {
+      const perBlank = new Map<string, string>();
+      for (const [index, blank] of body.blanks.entries()) {
+        const response = item.responseLids[index];
+        const correctLabelId = item.correctConditions.find(
+          (condition) => !condition.negate && condition.responseIdent === response?.ident,
+        )?.correctLabelIdent;
+        const html = correctLabelId ? item.feedbacks.get(`${correctLabelId}_fb`) : undefined;
+        if (html) perBlank.set(blank.id, html);
+      }
+      if (perBlank.size > 0) feedback.perBlank = perBlank;
     }
 
-    const hasFeedback = feedback.correct || feedback.incorrect || feedback.perAnswer;
+    const hasFeedback =
+      feedback.correct || feedback.incorrect || feedback.perChoice || feedback.perBlank;
 
     return {
       sourceId: item.ident,
