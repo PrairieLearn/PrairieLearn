@@ -436,14 +436,14 @@ function buildFeedbackMessages(
 
   if (question.feedback?.correct) {
     messages.push({
-      name: 'qti_import_correct',
+      name: 'qti_import',
       html: question.feedback.correct,
       trigger: { type: 'score', outcome: 'correct' },
     });
   }
   if (question.feedback?.incorrect) {
     messages.push({
-      name: 'qti_import_incorrect',
+      name: 'qti_import',
       html: question.feedback.incorrect,
       trigger: { type: 'score', outcome: 'incorrect' },
     });
@@ -456,7 +456,27 @@ function renderFeedbackHtml(messages: NamedFeedbackMessage[]): string {
   if (messages.length === 0) return '';
 
   const lines = ['<pl-answer-panel>'];
+  const renderedScoreFeedbackNames = new Set<string>();
   for (const message of messages) {
+    if (message.trigger.type === 'score') {
+      if (renderedScoreFeedbackNames.has(message.name)) continue;
+
+      lines.push(`  {{#feedback.${message.name}}}`);
+      for (const scoreMessage of messages) {
+        if (scoreMessage.name !== message.name || scoreMessage.trigger.type !== 'score') continue;
+
+        const sectionType = scoreMessage.trigger.outcome === 'incorrect' ? '^' : '#';
+        lines.push(
+          `    {{${sectionType}is_correct}}`,
+          neutralizeMustacheDelimiters(scoreMessage.html),
+          '    {{/is_correct}}',
+        );
+      }
+      lines.push(`  {{/feedback.${message.name}}}`);
+      renderedScoreFeedbackNames.add(message.name);
+      continue;
+    }
+
     lines.push(
       `  {{#feedback.${message.name}}}`,
       neutralizeMustacheDelimiters(message.html),
@@ -479,6 +499,7 @@ function renderFeedbackGradeFn(messages: NamedFeedbackMessage[]): string {
   if (messages.length === 0) return '';
 
   const lines = ['def grade(data):'];
+  const assignedScoreFeedbackNames = new Set<string>();
   if (messages.some((message) => message.trigger.type === 'checkbox-answer-selected')) {
     lines.push(
       '    _submitted = data["submitted_answers"].get("answer") or []',
@@ -496,12 +517,12 @@ function renderFeedbackGradeFn(messages: NamedFeedbackMessage[]): string {
     const assignment = `        data["feedback"][${JSON.stringify(message.name)}] = True`;
     switch (message.trigger.type) {
       case 'score':
-        lines.push(
-          message.trigger.outcome === 'correct'
-            ? '    if data["score"] >= 1.0:'
-            : '    if data["score"] < 1.0:',
-          assignment,
-        );
+        if (!assignedScoreFeedbackNames.has(message.name)) {
+          lines.push(
+            `    data["feedback"][${JSON.stringify(message.name)}] = {"is_correct": data["score"] >= 1.0}`,
+          );
+          assignedScoreFeedbackNames.add(message.name);
+        }
         break;
       case 'checkbox-answer-selected':
         lines.push(
