@@ -5,7 +5,7 @@ import { z } from 'zod';
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 import { Hydrate } from '@prairielearn/react/server';
-import { parseRequestBody } from '@prairielearn/zod';
+import { DatetimeLocalStringSchema, parseRequestBody } from '@prairielearn/zod';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
@@ -128,8 +128,8 @@ router.post(
         z.object({
           short_name: z.string().trim(),
           long_name: z.string().trim(),
-          start_date: z.string(),
-          end_date: z.string(),
+          start_date: z.union([z.literal(''), DatetimeLocalStringSchema]),
+          end_date: z.union([z.literal(''), DatetimeLocalStringSchema]),
           self_enrollment_enabled: z.boolean().optional(),
           self_enrollment_use_enrollment_code: z.boolean().optional(),
           course_instance_permission: EnumCourseInstanceRoleSchema.optional().default('None'),

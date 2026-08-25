@@ -3,7 +3,7 @@ import { z } from 'zod';
 
 import { formatDate, formatInterval } from '@prairielearn/formatter';
 import * as sqldb from '@prairielearn/postgres';
-import { IdSchema } from '@prairielearn/zod';
+import { DatetimeLocalStringSchema, IdSchema } from '@prairielearn/zod';
 
 import {
   deleteAllAssessmentInstancesForAssessment,
@@ -94,7 +94,7 @@ const setTimeLimit = t.procedure
     AssessmentInstanceIdsInputSchema.extend({
       action: TimeLimitActionSchema,
       time_add: z.number().optional(),
-      date: z.string().optional(),
+      date: DatetimeLocalStringSchema.optional(),
       reopen_closed: z.boolean().optional(),
     }),
   )
