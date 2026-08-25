@@ -1,14 +1,15 @@
 import crypto from 'node:crypto';
 
-import * as cheerio from 'cheerio';
+import type * as cheerio from 'cheerio';
 import type { Element } from 'domhandler';
 import { fileTypeFromBuffer } from 'file-type';
+import he from 'he';
 
 import { type PublicFetch, publicFetch, validatePublicHttpsUrl } from '@prairielearn/public-fetch';
 
 import type { ConversionProcessor, ConversionProcessorResult } from './emitters/emitter.js';
 import type { IRItemContainer, IRQuestion } from './types/ir.js';
-import { QUESTION_ASSET_URL_PREFIX } from './utils/html.js';
+import { QUESTION_ASSET_URL_PREFIX, loadHtmlFragmentPreservingEntities } from './utils/html.js';
 
 // These limits cap both remote work and the amount of binary data retained by a conversion. The
 // 10 MiB per-image limit matches PrairieLearn's image-upload limit; 100 URLs and 50 MiB total allow
@@ -126,7 +127,7 @@ export class QtiImportRemoteImageCopier implements ConversionProcessor {
   ) {
     const fragments = htmlFragments.map((fragment) => ({
       ...fragment,
-      $: cheerio.load(fragment.html, null, false),
+      $: loadHtmlFragmentPreservingEntities(fragment.html),
       changed: false,
     }));
     const imagesByUrl = new Map<
@@ -141,7 +142,7 @@ export class QtiImportRemoteImageCopier implements ConversionProcessor {
     for (const [fragmentIndex, fragment] of fragments.entries()) {
       fragment.$('img[src]').each((_, element) => {
         const $image = fragment.$(element);
-        const source = $image.attr('src');
+        const source = he.decode($image.attr('src') ?? '');
         if (!source) return;
         const url = parseRemoteImageUrl(source);
         if (!url) {

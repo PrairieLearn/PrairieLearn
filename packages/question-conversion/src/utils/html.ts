@@ -4,6 +4,7 @@ import { createRequire } from 'node:module';
 import type { ModelOperations as ModelOperationsType } from '@vscode/vscode-languagedetection';
 import * as cheerio from 'cheerio';
 import { type AnyNode, type Element, Text, isTag, isText } from 'domhandler';
+import he from 'he';
 
 import { normalizeImsFilePath } from './ims-file-path.js';
 
@@ -29,12 +30,44 @@ export function loadHtmlFragment(html: string): cheerio.CheerioAPI {
   return cheerio.load(html, null, false);
 }
 
+/**
+ * Load an HTML fragment without decoding entities that are unrelated to the requested rewrite.
+ * This prevents serializing an image change from turning literal brace entities back into active
+ * PrairieLearn template delimiters.
+ */
+export function loadHtmlFragmentPreservingEntities(html: string): cheerio.CheerioAPI {
+  return cheerio.load(html, { xml: { xmlMode: false, decodeEntities: false } }, false);
+}
+
 function isElementNamed(node: AnyNode, name: string): node is Element {
   return isTag(node) && node.name.toLowerCase() === name;
 }
 
 export function isWhitespaceText(node: AnyNode): boolean {
   return isText(node) && node.data.trim() === '';
+}
+
+/** Escape imported Mustache delimiters so PrairieLearn renders them as literal text. */
+export function escapeMustacheDelimiters(html: string): string {
+  return html
+    .replaceAll('{{{', '&#123;&#123;&#123;')
+    .replaceAll('}}}', '&#125;&#125;&#125;')
+    .replaceAll('{{', '&#123;&#123;')
+    .replaceAll('}}', '&#125;&#125;');
+}
+
+/**
+ * Serialize imported HTML for a PrairieLearn attribute whose value is later rendered as HTML.
+ * Imported Mustache delimiters are escaped before generated question-asset URLs are expanded, so
+ * only the generated client-files expression remains active when PrairieLearn renders the question.
+ */
+export function serializeHtmlForAttribute(html: string): string {
+  const escapedHtml = escapeMustacheDelimiters(html);
+  const resolvedAssets = escapedHtml.replaceAll(
+    QUESTION_ASSET_URL_PREFIX,
+    `${CLIENT_FILES_QUESTION_URL}/`,
+  );
+  return he.escape(resolvedAssets);
 }
 
 /** Replace Canvas equation images with the LaTeX source that Canvas stores on the image. */
@@ -106,13 +139,13 @@ export function rewriteImagesAsPlFigure(
   html: string,
   { display }: { display?: 'inline' } = {},
 ): string {
-  const $ = loadHtmlFragment(html);
+  const $ = loadHtmlFragmentPreservingEntities(html);
   const mustachePrefix = `${CLIENT_FILES_QUESTION_URL}/`;
   let changed = false;
 
   $('img').each((_, img) => {
     const $img = $(img);
-    const src = $img.attr('src') ?? '';
+    const src = he.decode($img.attr('src') ?? '');
     // Remote images stay as `<img>` because `<pl-figure>` resolves `file-name` locally inside
     // the course, which would turn an external URL into a broken course-file lookup.
     if (ABSOLUTE_URL_RE.test(src) && !src.startsWith(QUESTION_ASSET_URL_PREFIX)) return;
@@ -120,19 +153,19 @@ export function rewriteImagesAsPlFigure(
     const $figure = $('<pl-figure></pl-figure>');
 
     if (src.startsWith(QUESTION_ASSET_URL_PREFIX)) {
-      $figure.attr('file-name', src.slice(QUESTION_ASSET_URL_PREFIX.length));
+      $figure.attr('file-name', he.escape(src.slice(QUESTION_ASSET_URL_PREFIX.length)));
       $figure.attr('directory', 'clientFilesQuestion');
     } else if (src.startsWith(mustachePrefix)) {
-      $figure.attr('file-name', src.slice(mustachePrefix.length));
+      $figure.attr('file-name', he.escape(src.slice(mustachePrefix.length)));
       $figure.attr('directory', 'clientFilesQuestion');
     } else {
-      $figure.attr('file-name', src);
+      $figure.attr('file-name', he.escape(src));
     }
 
-    const alt = $img.attr('alt');
-    const width = $img.attr('width');
-    if (alt) $figure.attr('alt', alt);
-    if (width) $figure.attr('width', width);
+    const alt = he.decode($img.attr('alt') ?? '');
+    const width = he.decode($img.attr('width') ?? '');
+    if (alt) $figure.attr('alt', he.escape(alt));
+    if (width) $figure.attr('width', he.escape(width));
     if (display) $figure.attr('display', display);
 
     $img.replaceWith($figure);

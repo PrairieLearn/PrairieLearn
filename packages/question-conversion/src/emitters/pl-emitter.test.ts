@@ -237,7 +237,7 @@ describe('PLEmitter', () => {
       assert.notInclude(serverPy, 'else');
     });
 
-    it('emits choice feedback targeted by choice ID', () => {
+    it('emits choice feedback as native pl-answer attributes targeted by choice ID', () => {
       const q = makeQuestion({
         body: {
           type: 'multiple-choice',
@@ -251,12 +251,16 @@ describe('PLEmitter', () => {
       const result = emitter.emit(makeAssessment([q]));
       const html = result.questions[0].questionHtml;
       const serverPy = result.questions[0].serverPy ?? '';
-      assert.include(html, '{{#feedback.qti_import_answer_0}}');
-      assert.include(html, '<p>Correct!</p>');
-      assert.include(html, '{{#feedback.qti_import_answer_1}}');
-      assert.include(html, '<p>Wrong.</p>');
-      assert.include(serverPy, 'if "True" in _selected_answer_html:');
-      assert.include(serverPy, 'if "False" in _selected_answer_html:');
+      assert.include(
+        html,
+        '<pl-answer correct="true" feedback="&lt;p&gt;Correct!&lt;/p&gt;">True</pl-answer>',
+      );
+      assert.include(
+        html,
+        '<pl-answer correct="false" feedback="&lt;p&gt;Wrong.&lt;/p&gt;">False</pl-answer>',
+      );
+      assert.notInclude(html, 'qti_import_answer');
+      assert.equal(serverPy, '');
     });
 
     it('emits no pl-answer-panel and no grade() when feedback is absent', () => {

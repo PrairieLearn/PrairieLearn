@@ -30,11 +30,11 @@ For programmatic use, `@prairielearn/question-conversion` exports a small surfac
 - `QTI12ItemContainerParser`, `InputParser`, `ParseOptions` — parser layer.
 - `PLEmitter`, `ConversionProcessor`, `BodyEmitRegistry`, `BodyEmitHandler`, `createPLBodyRegistry` — emitter layer and processing contract.
 - `TransformRegistry`, `TransformHandler`, `TransformResult`, `createQTI12Registry` — IR transform layer.
-- `QtiImportRemoteImageCopier` — async processor that safely copies public HTTPS images into emitted question files.
+- `QtiImportRemoteImageCopier` — async processor that safely copies public HTTPS images into question assets before emission.
 - IR and PL output types: `IRAssessment`, `IRQuestion`, `IRQuestionBody`, `PLQuestionInfoJson`, `PLAssessmentInfoJson`, etc.
 - `detectCourseExport`, `findQtiFilesFromManifest`, `slugify` — Canvas course-export helpers.
 
-The pipeline is `parse` (XML → IR) → `transform` (per-question normalization) → `emit` (IR → PrairieLearn files), with optional processing hooks around emission. `bin/convert.ts` runs these stages and orchestrates the file-system side. Canvas equation images are converted back to their LaTeX source during parsing, before local images are rewritten and feedback is emitted into `server.py`.
+The pipeline is `parse` (XML → IR) → `transform` (per-question normalization) → optional processing → `emit` (IR → PrairieLearn files). `bin/convert.ts` runs these stages and orchestrates the file-system side. Canvas equation images are converted back to their LaTeX source during parsing, before local images are rewritten and feedback is emitted into `server.py`.
 
 `PLEmitter#emit(...)` is synchronous. Use the async `emitProcessed(...)` method when the emitted output needs processing:
 
@@ -45,7 +45,7 @@ const result = await emitter.emitProcessed(ir, {
 });
 ```
 
-Processor hooks run sequentially in the order supplied.
+Processors run sequentially before emission in the order supplied.
 
 ## Supported question types
 

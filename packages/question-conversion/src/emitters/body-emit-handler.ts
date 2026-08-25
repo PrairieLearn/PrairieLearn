@@ -2,7 +2,7 @@ import type { IRFeedback, IRQuestionBody } from '../types/ir.js';
 
 export type FeedbackTrigger =
   | { type: 'score'; outcome: 'correct' | 'incorrect' }
-  | { type: 'answer-selected'; answerHtml: string }
+  | { type: 'checkbox-answer-selected'; answerHtml: string }
   | { type: 'blank-correct'; answerName: string };
 
 export interface FeedbackMessage {
@@ -33,9 +33,10 @@ export interface BodyEmitHandler {
 
   /**
    * Render the interactive element(s) placed after <pl-question-panel>.
+   * Feedback is provided for handlers that render it through native element attributes.
    * Return '' for types whose interaction lives inside the prompt (fill-in-blanks, text-only).
    */
-  renderHtml(body: IRQuestionBody, shuffleAnswers?: boolean): string;
+  renderHtml(body: IRQuestionBody, shuffleAnswers?: boolean, feedback?: IRFeedback): string;
 
   /** Render the generate(data) Python function. Return '' or omit if not needed. */
   renderGeneratePy?(body: IRQuestionBody): string;

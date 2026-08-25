@@ -12,7 +12,12 @@ import type {
   PLQuestionInfoJson,
   PLQuestionOutput,
 } from '../types/pl-output.js';
-import { isWhitespaceText, loadHtmlFragment, rewriteImagesAsPlFigure } from '../utils/html.js';
+import {
+  escapeMustacheDelimiters,
+  isWhitespaceText,
+  loadHtmlFragmentPreservingEntities,
+  rewriteImagesAsPlFigure,
+} from '../utils/html.js';
 import { slugify } from '../utils/slugify.js';
 import { stableUuid } from '../utils/uuid.js';
 
@@ -332,7 +337,9 @@ export class PLEmitter implements OutputEmitter {
       ? wrapInlineInputPrompt(promptHtml)
       : ['<pl-question-panel>', promptHtml, '</pl-question-panel>', ''];
 
-    const bodyHtml = renderContentHtml(handler.renderHtml(question.body, question.shuffleAnswers));
+    const bodyHtml = renderContentHtml(
+      handler.renderHtml(question.body, question.shuffleAnswers, question.feedback),
+    );
     if (bodyHtml) parts.push(bodyHtml);
 
     const feedbackHtml = renderFeedbackHtml(feedbackMessages);
@@ -383,7 +390,7 @@ export class PLEmitter implements OutputEmitter {
 function wrapInlineInputPrompt(html: string): string[] {
   // Treat the prompt as a fragment so top-level paragraphs, inputs, and text nodes remain
   // siblings. Wrapping a whole document would hide the boundaries we need for panel grouping.
-  const $ = loadHtmlFragment(html);
+  const $ = loadHtmlFragmentPreservingEntities(html);
   const blocks = $.root()
     .contents()
     .toArray()
@@ -456,7 +463,7 @@ function buildFeedbackMessages(
       ...message,
       name: `qti_import_answer_${index}`,
       trigger:
-        message.trigger.type === 'answer-selected'
+        message.trigger.type === 'checkbox-answer-selected'
           ? { ...message.trigger, answerHtml: renderContentHtml(message.trigger.answerHtml) }
           : message.trigger,
     }),
@@ -499,19 +506,11 @@ function renderContentHtml(html: string): string {
   return rewriteImagesAsPlFigure(html, { display: 'inline' });
 }
 
-function escapeMustacheDelimiters(html: string): string {
-  return html
-    .replaceAll('{{{', '&#123;&#123;&#123;')
-    .replaceAll('}}}', '&#125;&#125;&#125;')
-    .replaceAll('{{', '&#123;&#123;')
-    .replaceAll('}}', '&#125;&#125;');
-}
-
 function renderFeedbackGradeFn(messages: NamedFeedbackMessage[]): string {
   if (messages.length === 0) return '';
 
   const lines = ['def grade(data):'];
-  if (messages.some((message) => message.trigger.type === 'answer-selected')) {
+  if (messages.some((message) => message.trigger.type === 'checkbox-answer-selected')) {
     lines.push(
       '    _submitted = data["submitted_answers"].get("answer") or []',
       '    if isinstance(_submitted, str):',
@@ -535,7 +534,7 @@ function renderFeedbackGradeFn(messages: NamedFeedbackMessage[]): string {
           assignment,
         );
         break;
-      case 'answer-selected':
+      case 'checkbox-answer-selected':
         lines.push(
           `    if ${JSON.stringify(message.trigger.answerHtml)} in _selected_answer_html:`,
           assignment,
