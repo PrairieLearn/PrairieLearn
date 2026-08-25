@@ -36,7 +36,11 @@ export type {
   ConversionWarning,
   EmitOptions,
 } from './emitters/emitter.js';
-export type { BodyEmitHandler } from './emitters/body-emit-handler.js';
+export type {
+  BodyEmitHandler,
+  FeedbackMessage,
+  FeedbackTrigger,
+} from './emitters/body-emit-handler.js';
 export { BodyEmitRegistry } from './emitters/body-emit-handler.js';
 export { createPLBodyRegistry } from './emitters/handlers/index.js';
 
