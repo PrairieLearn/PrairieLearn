@@ -457,10 +457,22 @@ function renderFeedbackHtml(messages: NamedFeedbackMessage[]): string {
 
   const lines = ['<pl-answer-panel>'];
   for (const message of messages) {
-    lines.push(`  {{#feedback.${message.name}}}`, message.html, `  {{/feedback.${message.name}}}`);
+    lines.push(
+      `  {{#feedback.${message.name}}}`,
+      neutralizeMustacheDelimiters(message.html),
+      `  {{/feedback.${message.name}}}`,
+    );
   }
   lines.push('</pl-answer-panel>');
   return lines.join('\n');
+}
+
+function neutralizeMustacheDelimiters(html: string): string {
+  return html
+    .replaceAll('{{{', '&#123;&#123;&#123;')
+    .replaceAll('}}}', '&#125;&#125;&#125;')
+    .replaceAll('{{', '&#123;&#123;')
+    .replaceAll('}}', '&#125;&#125;');
 }
 
 function renderFeedbackGradeFn(messages: NamedFeedbackMessage[]): string {
