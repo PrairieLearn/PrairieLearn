@@ -15,7 +15,15 @@ export type SecretKey = string | readonly [string, ...string[]];
 
 interface PrefixCsrfTokenData {
   url: string;
+  type?: never;
   [claim: string]: unknown;
+}
+
+type RequireIdentityClaim<Data extends PrefixCsrfTokenData> =
+  Exclude<keyof Data, 'url' | 'type'> extends never ? never : Data;
+
+function hasIdentityClaim(data: PrefixCsrfTokenData): boolean {
+  return Object.keys(data).some((key) => key !== 'url' && key !== 'type');
 }
 
 function getSecretKeys(secretKey: SecretKey): readonly [string, ...string[]] {
@@ -149,16 +157,24 @@ export function checkSignedToken(
  * Generates a CSRF token that is valid for a URL prefix instead of an exact URL.
  * This is useful for tRPC and similar APIs where a single token should be valid
  * for all sub-routes under a prefix (e.g., `/foo/bar/trpc` is valid for
- * `/foo/bar/trpc/getUser` and `/foo/bar/trpc/updateUser`).
+ * `/foo/bar/trpc/getUser` and `/foo/bar/trpc/updateUser`). At least one identity
+ * claim is required to prevent tokens from being valid for every user.
  */
-export function generatePrefixCsrfToken(data: PrefixCsrfTokenData, secretKey: SecretKey) {
+export function generatePrefixCsrfToken<const Data extends PrefixCsrfTokenData>(
+  data: RequireIdentityClaim<Data>,
+  secretKey: SecretKey,
+) {
+  if (!hasIdentityClaim(data)) {
+    throw new Error('Prefix CSRF token data must contain at least one identity claim');
+  }
   return generateSignedToken({ ...data, type: 'prefix' }, secretKey);
 }
 
 /**
  * Validates a prefix-based CSRF token. The token's URL must be a prefix of the
  * request URL for validation to succeed. All claims other than the URL must
- * exactly match the claims in the token.
+ * exactly match the claims in the token, and at least one identity claim must
+ * be present.
  *
  * @param token - The CSRF token to validate
  * @param requestData - The request URL and claims to validate
@@ -167,9 +183,9 @@ export function generatePrefixCsrfToken(data: PrefixCsrfTokenData, secretKey: Se
  * @param options - Optional settings like maxAge
  * @returns true if the token is valid, false otherwise
  */
-export function checkSignedTokenPrefix(
+export function checkSignedTokenPrefix<const Data extends PrefixCsrfTokenData>(
   token: string,
-  requestData: PrefixCsrfTokenData,
+  requestData: RequireIdentityClaim<Data>,
   secretKey: SecretKey,
   options: CheckOptions = {},
 ): boolean {
@@ -188,6 +204,11 @@ export function checkSignedTokenPrefix(
   }
 
   const { url: requestUrl, ...requestClaims } = requestData;
+
+  if (!hasIdentityClaim(requestData)) {
+    debug('checkSignedTokenPrefix(): FAIL - no identity claims');
+    return false;
+  }
 
   if (!isEqual(tokenClaims, requestClaims)) {
     debug('checkSignedTokenPrefix(): FAIL - claims mismatch');
