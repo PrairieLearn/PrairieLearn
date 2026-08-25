@@ -40,7 +40,7 @@ const SelectAndAuthzAssessmentInstanceBaseSchema = z.object({
 });
 
 // See `user_team_xor` constraint
-const SelectAndAuthzAssessmentInstanceSchema = z.union([
+const _SelectAndAuthzAssessmentInstanceSchema = z.union([
   SelectAndAuthzAssessmentInstanceBaseSchema.extend({
     instance_user: UserSchema,
     instance_group: z.null(),
@@ -64,7 +64,7 @@ const RawSelectAndAuthzAssessmentInstanceSchema = z.union([
   }),
 ]);
 
-export type ResLocalsAssessmentInstance = z.infer<typeof SelectAndAuthzAssessmentInstanceSchema> &
+export type ResLocalsAssessmentInstance = z.infer<typeof _SelectAndAuthzAssessmentInstanceSchema> &
   AssessmentInstanceTimeLimit & {
     assessment_instance_label: string;
     assessment_label: string;
