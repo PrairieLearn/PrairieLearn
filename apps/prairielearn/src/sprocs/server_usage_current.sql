@@ -6,11 +6,12 @@ CREATE FUNCTION
         OUT submissions_per_second double precision,
         OUT internal_grading_jobs_per_second double precision,
         OUT external_grading_jobs_per_second double precision,
-        OUT measured_at timestamp with time zone
+        OUT timestamp_formatted text
     )
 AS $$
 BEGIN
-    measured_at = now();
+    SET LOCAL timezone TO 'UTC';
+    timestamp_formatted = to_char(now(), 'YYYY-MM-DD') || 'T' || to_char(now(), 'HH24:MI:SS') || 'Z';
 
     SELECT count(*)
     INTO user_count

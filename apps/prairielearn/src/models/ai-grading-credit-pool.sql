@@ -160,9 +160,41 @@ LIMIT
 OFFSET
   $offset;
 
--- BLOCK select_spending_changes
+-- BLOCK select_daily_spending
+WITH
+  daily_totals AS (
+    SELECT
+      (c.created_at AT TIME ZONE 'UTC')::date AS day,
+      SUM(ABS(c.delta_milli_dollars)) AS total
+    FROM
+      ai_grading_credit_pool_changes AS c
+    WHERE
+      c.course_instance_id = $course_instance_id
+      AND c.created_at >= ($start_date::date AT TIME ZONE 'UTC')
+      AND c.created_at < (
+        ($end_date::date + '1 day'::interval) AT TIME ZONE 'UTC'
+      )
+      AND c.delta_milli_dollars < 0
+      AND c.ai_grading_job_id IS NOT NULL
+    GROUP BY
+      (c.created_at AT TIME ZONE 'UTC')::date
+  )
 SELECT
-  c.created_at,
+  d::date AS date,
+  COALESCE(daily_totals.total, 0)::bigint AS spending_milli_dollars
+FROM
+  generate_series(
+    $start_date::date::timestamp without time zone,
+    $end_date::date::timestamp without time zone,
+    '1 day'::interval
+  ) AS d
+  LEFT JOIN daily_totals ON daily_totals.day = d::date
+ORDER BY
+  d ASC;
+
+-- BLOCK select_daily_spending_grouped
+SELECT
+  (c.created_at AT TIME ZONE 'UTC')::date AS date,
   CASE $group_by
     WHEN 'user' THEN COALESCE(u.name, u.uid, 'User ' || c.user_id::text)
     WHEN 'assessment' THEN COALESCE(
@@ -178,7 +210,7 @@ SELECT
       'Unknown question'
     )
   END AS group_label,
-  ABS(c.delta_milli_dollars)::bigint AS spending_milli_dollars
+  SUM(ABS(c.delta_milli_dollars))::bigint AS spending_milli_dollars
 FROM
   ai_grading_credit_pool_changes AS c
   LEFT JOIN users AS u ON u.id = c.user_id
@@ -187,10 +219,15 @@ FROM
   LEFT JOIN questions AS q ON q.id = aq.question_id
 WHERE
   c.course_instance_id = $course_instance_id
-  AND c.created_at >= $start_date
-  AND c.created_at < $end_date
+  AND c.created_at >= ($start_date::date AT TIME ZONE 'UTC')
+  AND c.created_at < (
+    ($end_date::date + '1 day'::interval) AT TIME ZONE 'UTC'
+  )
   AND c.delta_milli_dollars < 0
   AND c.ai_grading_job_id IS NOT NULL
+GROUP BY
+  (c.created_at AT TIME ZONE 'UTC')::date,
+  group_label
 ORDER BY
-  c.created_at ASC,
+  date ASC,
   group_label ASC;

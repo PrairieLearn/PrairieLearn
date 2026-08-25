@@ -235,7 +235,7 @@ export const SprocServerLoadsCurrentSchema = z.object({
   job_type: z.string(),
   load_perc: z.number(),
   max_jobs: z.number(),
-  measured_at: DateFromISOString,
+  timestamp_formatted: z.string(),
 });
 
 // Result of sync_assessments sproc

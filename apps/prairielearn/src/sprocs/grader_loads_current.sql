@@ -41,7 +41,7 @@ CREATE FUNCTION
         OUT desired_instances_current integer,  -- instantaneous number of requested grading instances
         OUT desired_instances_history integer,  -- max of historical values
         OUT desired_instances integer,          -- the actual number of requested grading instances
-        OUT measured_at timestamp with time zone
+        OUT timestamp_formatted text
     )
 AS $$
 DECLARE
@@ -234,6 +234,8 @@ BEGIN
 
     -- ######################################################################
     -- timestamp for sending to CloudWatch
-    measured_at := now();
+
+    SET LOCAL timezone TO 'UTC';
+    timestamp_formatted := to_char(now(), 'YYYY-MM-DD') || 'T' || to_char(now(), 'HH24:MI:SS') || 'Z';
 END;
 $$ LANGUAGE plpgsql VOLATILE;

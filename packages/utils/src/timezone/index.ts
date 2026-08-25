@@ -49,10 +49,6 @@ export function getLocalDayBounds(
   return { start, end };
 }
 
-export function getUtcDayStart(date: Date): Date {
-  return getLocalDayBounds(getLocalDate(date, 'UTC'), 'UTC').start;
-}
-
 function getTimezoneAtInstant(name: string, instant: Temporal.Instant): Timezone {
   let zonedDateTime: Temporal.ZonedDateTime;
   try {

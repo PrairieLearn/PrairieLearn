@@ -14,7 +14,7 @@ SELECT
   i.id AS institution_id,
   c.id AS course_id,
   ci.id AS course_instance_id,
-  $date,
+  date_trunc('day', s.date, 'UTC'),
   $user_id,
   coalesce(ai.include_in_statistics, FALSE)
 FROM
@@ -54,7 +54,7 @@ SELECT
   i.id AS institution_id,
   c.id AS course_id,
   ci.id AS course_instance_id,
-  $date,
+  date_trunc('day', gj.grading_finished_at, 'UTC'),
   -- Use v.authn_user_id because we don't care about really tracking the
   -- effective user, we are only using this to avoid contention when there are
   -- many users updating simultaneously.
@@ -107,7 +107,7 @@ SELECT
   c.id AS course_id,
   NULL,
   $cost_ai_question_generation,
-  $date,
+  date_trunc('day', now(), 'UTC'),
   $authn_user_id,
   FALSE
 FROM
@@ -143,7 +143,7 @@ SELECT
   c.id AS course_id,
   ci.id AS course_instance_id,
   $cost_ai_grading,
-  $date,
+  date_trunc('day', now(), 'UTC'),
   $authn_user_id,
   FALSE
 FROM
@@ -161,19 +161,3 @@ ON CONFLICT (
 ) DO UPDATE
 SET
   cost_ai_grading = course_instance_usages.cost_ai_grading + EXCLUDED.cost_ai_grading;
-
--- BLOCK select_submission_date
-SELECT
-  date
-FROM
-  submissions
-WHERE
-  id = $submission_id;
-
--- BLOCK select_grading_finished_at
-SELECT
-  grading_finished_at
-FROM
-  grading_jobs
-WHERE
-  id = $grading_job_id;

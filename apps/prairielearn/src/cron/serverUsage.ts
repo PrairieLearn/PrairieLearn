@@ -12,7 +12,7 @@ const ServerUsageStatsSchema = z.object({
   submissions_per_second: z.number(),
   internal_grading_jobs_per_second: z.number(),
   external_grading_jobs_per_second: z.number(),
-  measured_at: z.coerce.date(),
+  timestamp_formatted: z.string(),
 });
 
 export async function run() {
@@ -24,7 +24,7 @@ export async function run() {
     ServerUsageStatsSchema,
   );
   const dimensions = [{ Name: 'Server Group', Value: config.groupName }];
-  const timestamp = stats.measured_at;
+  const timestamp = new Date(stats.timestamp_formatted);
 
   const cloudwatch = new CloudWatch(makeAwsClientConfig());
   await cloudwatch.putMetricData({

@@ -45,7 +45,7 @@ const ExternalGraderLoadStatsSchema = z.object({
   desired_instances_current: z.number().int(),
   desired_instances_history: z.number().int(),
   desired_instances: z.number().int(),
-  measured_at: z.coerce.date(),
+  timestamp_formatted: z.string(),
 });
 
 type ExternalGraderLoadStats = z.infer<typeof ExternalGraderLoadStatsSchema>;
@@ -74,7 +74,7 @@ async function getLoadStats() {
 
 async function sendStatsToCloudWatch(stats: ExternalGraderLoadStats) {
   const dimensions = [{ Name: 'By Queue', Value: config.externalGradingJobsQueueName }];
-  const timestamp = stats.measured_at;
+  const timestamp = new Date(stats.timestamp_formatted);
 
   const cloudwatch = new CloudWatch(makeAwsClientConfig());
   await cloudwatch.putMetricData({
