@@ -33,7 +33,7 @@ const WorkspaceLoadStatsSchema = z.object({
   workspace_active_on_healthy_hosts_count: z.number().int(),
   workspace_longest_launching_sec: z.number(),
   workspace_longest_running_sec: z.number(),
-  timestamp_formatted: z.string(),
+  measured_at: z.coerce.date(),
 });
 type WorkspaceLoadStats = z.infer<typeof WorkspaceLoadStatsSchema>;
 
@@ -143,7 +143,7 @@ const cloudwatch_definitions: Record<string, { name: string; unit: StandardUnit 
   },
 };
 
-async function sendStatsToCloudwatch({ timestamp_formatted, ...numericStats }: WorkspaceLoadStats) {
+async function sendStatsToCloudwatch({ measured_at, ...numericStats }: WorkspaceLoadStats) {
   const cloudwatch = new CloudWatch(makeAwsClientConfig());
   const dimensions = [{ Name: 'By Server', Value: config.workspaceCloudWatchName }];
   const cloudwatch_metricdata_limit = 20; // AWS limits to 20 items within each list
@@ -160,7 +160,7 @@ async function sendStatsToCloudwatch({ timestamp_formatted, ...numericStats }: W
         return {
           MetricName: def.name,
           Dimensions: dimensions,
-          Timestamp: new Date(timestamp_formatted),
+          Timestamp: measured_at,
           Unit: def.unit,
           Value: value,
           StorageResolution: 1,

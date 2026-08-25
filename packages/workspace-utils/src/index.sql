@@ -143,7 +143,7 @@ SELECT
   i.id AS institution_id,
   c.id AS course_id,
   ci.id AS course_instance_id,
-  date_trunc('day', w.state_updated_at, 'UTC'),
+  $date,
   -- Use v.authn_user_id because we don't care about really tracking the
   -- effective user, we are only using this to avoid contention when there are
   -- many users updating simultaneously.
@@ -173,3 +173,11 @@ ON CONFLICT (
 ) DO UPDATE
 SET
   duration = course_instance_usages.duration + EXCLUDED.duration;
+
+-- BLOCK select_workspace_state_updated_at
+SELECT
+  state_updated_at
+FROM
+  workspaces
+WHERE
+  id = $workspace_id;

@@ -160,39 +160,9 @@ LIMIT
 OFFSET
   $offset;
 
--- BLOCK select_daily_spending
-WITH
-  daily_totals AS (
-    SELECT
-      c.created_at::date AS day,
-      SUM(ABS(c.delta_milli_dollars)) AS total
-    FROM
-      ai_grading_credit_pool_changes AS c
-    WHERE
-      c.course_instance_id = $course_instance_id
-      AND c.created_at >= $start_date::date
-      AND c.created_at < ($end_date::date + '1 day'::interval)
-      AND c.delta_milli_dollars < 0
-      AND c.ai_grading_job_id IS NOT NULL
-    GROUP BY
-      c.created_at::date
-  )
+-- BLOCK select_spending_changes
 SELECT
-  d::date AS date,
-  COALESCE(daily_totals.total, 0)::bigint AS spending_milli_dollars
-FROM
-  generate_series(
-    $start_date::date,
-    $end_date::date,
-    '1 day'::interval
-  ) AS d
-  LEFT JOIN daily_totals ON daily_totals.day = d::date
-ORDER BY
-  d ASC;
-
--- BLOCK select_daily_spending_grouped
-SELECT
-  DATE_TRUNC('day', c.created_at)::date AS date,
+  c.created_at,
   CASE $group_by
     WHEN 'user' THEN COALESCE(u.name, u.uid, 'User ' || c.user_id::text)
     WHEN 'assessment' THEN COALESCE(
@@ -208,7 +178,7 @@ SELECT
       'Unknown question'
     )
   END AS group_label,
-  SUM(ABS(c.delta_milli_dollars))::bigint AS spending_milli_dollars
+  ABS(c.delta_milli_dollars)::bigint AS spending_milli_dollars
 FROM
   ai_grading_credit_pool_changes AS c
   LEFT JOIN users AS u ON u.id = c.user_id
@@ -218,12 +188,9 @@ FROM
 WHERE
   c.course_instance_id = $course_instance_id
   AND c.created_at >= $start_date
-  AND c.created_at::date <= $end_date::date
+  AND c.created_at < $end_date
   AND c.delta_milli_dollars < 0
   AND c.ai_grading_job_id IS NOT NULL
-GROUP BY
-  DATE_TRUNC('day', c.created_at)::date,
-  group_label
 ORDER BY
-  date ASC,
+  c.created_at ASC,
   group_label ASC;

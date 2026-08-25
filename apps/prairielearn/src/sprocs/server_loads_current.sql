@@ -8,14 +8,13 @@ CREATE FUNCTION
         current_jobs double precision,
         max_jobs double precision,
         load_perc double precision,
-        timestamp_formatted text
+        measured_at timestamp with time zone
     )
 AS $$
 DECLARE
     r RECORD;
 BEGIN
-    SET LOCAL timezone TO 'UTC';
-    timestamp_formatted = to_char(now(), 'YYYY-MM-DD') || 'T' || to_char(now(), 'HH24:MI:SS') || 'Z';
+    measured_at = now();
 
     FOR r IN
         SELECT

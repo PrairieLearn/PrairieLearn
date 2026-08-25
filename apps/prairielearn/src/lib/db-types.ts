@@ -129,6 +129,41 @@ const SprocCheckAssessmentAccessSchema = z.object({
   time_limit_min: z.union([z.string(), z.literal('—')]),
 });
 
+export const RawSprocCheckAssessmentAccessSchema = z.object({
+  active: z.boolean().nullable(),
+  credit: z.number().nullable(),
+  end_date: DateFromISOString.nullable(),
+  mode: EnumModeSchema.nullable(),
+  start_date: DateFromISOString.nullable(),
+  time_limit_min: z.number().nullable(),
+});
+
+export const RawSprocAuthzAssessmentSchema = z.object({
+  access_rules: z.array(RawSprocCheckAssessmentAccessSchema),
+  access_timeline: z.array(AccessTimelineEntrySchema).readonly(),
+  active: z.boolean(),
+  authorized: z.boolean(),
+  credit: z.number().nullable(),
+  credit_end_date: DateFromISOString.nullable(),
+  exam_access_end: DateFromISOString.nullable(),
+  mode: EnumModeSchema.nullable(),
+  next_active_credit: z.number().nullable(),
+  next_active_date: DateFromISOString.nullable(),
+  password: z.string().nullable(),
+  show_before_release: z.boolean(),
+  show_closed_assessment: z.boolean(),
+  show_closed_assessment_score: z.boolean(),
+  staff_override: z.boolean(),
+  time_limit_min: z.number().nullable(),
+});
+export type RawSprocAuthzAssessment = z.infer<typeof RawSprocAuthzAssessmentSchema>;
+
+export const RawSprocAuthzAssessmentInstanceSchema = RawSprocAuthzAssessmentSchema.extend({
+  authorized_edit: z.boolean(),
+  time_limit_expired: z.boolean(),
+});
+export type RawSprocAuthzAssessmentInstance = z.infer<typeof RawSprocAuthzAssessmentInstanceSchema>;
+
 // Result of users_get_displayed_role sproc
 export const SprocUsersGetDisplayedRoleSchema = z.enum(['Staff', 'Student', 'None']);
 export type SprocUsersGetDisplayedRole = z.infer<typeof SprocUsersGetDisplayedRoleSchema>;
@@ -200,7 +235,7 @@ export const SprocServerLoadsCurrentSchema = z.object({
   job_type: z.string(),
   load_perc: z.number(),
   max_jobs: z.number(),
-  timestamp_formatted: z.string(),
+  measured_at: DateFromISOString,
 });
 
 // Result of sync_assessments sproc

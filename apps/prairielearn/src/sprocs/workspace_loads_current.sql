@@ -30,7 +30,7 @@ CREATE FUNCTION
         OUT workspace_longest_launching_sec double precision,
         OUT workspace_longest_running_sec double precision,
         --
-        OUT timestamp_formatted text
+        OUT measured_at timestamp with time zone
     )
 AS $$
 BEGIN
@@ -166,7 +166,6 @@ BEGIN
         ('workspace_longest_running_sec', workspace_longest_running_sec);
 
     -- CloudWatch timestamp
-    SET LOCAL timezone TO 'UTC';
-    timestamp_formatted := to_char(now(), 'YYYY-MM-DD') || 'T' || to_char(now(), 'HH24:MI:SS') || 'Z';
+    measured_at := now();
 END;
 $$ LANGUAGE plpgsql VOLATILE;

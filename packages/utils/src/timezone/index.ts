@@ -1,0 +1,107 @@
+import { Temporal } from '@js-temporal/polyfill';
+
+export interface Timezone {
+  /** IANA timezone identifier. */
+  name: string;
+  /** Offset from UTC at the represented instant, in milliseconds. */
+  utc_offset: number;
+}
+
+export type TimezoneDisambiguation = NonNullable<Temporal.ToInstantOptions['disambiguation']>;
+
+/**
+ * Interprets a civil date/time in an IANA timezone.
+ *
+ * Callers must choose a disambiguation policy explicitly so ambiguous and
+ * nonexistent local times cannot silently depend on Temporal's default.
+ */
+export function plainDateTimeToDate(
+  plainDateTime: Temporal.PlainDateTime,
+  timeZone: string,
+  disambiguation: TimezoneDisambiguation,
+): Date {
+  const zonedDateTime = plainDateTime.toZonedDateTime(timeZone, { disambiguation });
+  return new Date(zonedDateTime.epochMilliseconds);
+}
+
+export function getLocalDate(date: Date, timeZone: string): Temporal.PlainDate {
+  return Temporal.Instant.fromEpochMilliseconds(date.getTime())
+    .toZonedDateTimeISO(timeZone)
+    .toPlainDate();
+}
+
+/**
+ * Returns the absolute start and end instants for a local calendar day.
+ *
+ * `compatible` selects the earlier instant for an overlap and moves forward
+ * across a gap, which identifies the first representable instant of the day.
+ */
+export function getLocalDayBounds(
+  date: Temporal.PlainDate,
+  timeZone: string,
+): { start: Date; end: Date } {
+  const start = plainDateTimeToDate(date.toPlainDateTime('00:00'), timeZone, 'compatible');
+  const end = plainDateTimeToDate(
+    date.add({ days: 1 }).toPlainDateTime('00:00'),
+    timeZone,
+    'compatible',
+  );
+  return { start, end };
+}
+
+export function getUtcDayStart(date: Date): Date {
+  return getLocalDayBounds(getLocalDate(date, 'UTC'), 'UTC').start;
+}
+
+function getTimezoneAtInstant(name: string, instant: Temporal.Instant): Timezone {
+  let zonedDateTime: Temporal.ZonedDateTime;
+  try {
+    zonedDateTime = instant.toZonedDateTimeISO(name);
+  } catch {
+    throw new Error(`Timezone "${name}" is not supported by the server runtime`);
+  }
+
+  return {
+    name,
+    utc_offset: zonedDateTime.offsetNanoseconds / 1_000_000,
+  };
+}
+
+export function getTimezoneByName(name: string, at = new Date()): Timezone {
+  const instant = Temporal.Instant.fromEpochMilliseconds(at.getTime());
+  return getTimezoneAtInstant(name, instant);
+}
+
+/**
+ * Returns canonical timezone names supported by the server runtime, ordered by
+ * their offset at the supplied instant and then by name.
+ *
+ * Runtime-supported aliases can be retained with `alwaysInclude`; this is
+ * useful for existing stored configuration values because
+ * `Intl.supportedValuesOf('timeZone')` only returns canonical names.
+ */
+export function getCanonicalTimezones({
+  alwaysInclude = [],
+  at = new Date(),
+}: {
+  alwaysInclude?: readonly string[];
+  at?: Date;
+} = {}): Timezone[] {
+  const instant = Temporal.Instant.fromEpochMilliseconds(at.getTime());
+  const names = new Set(Intl.supportedValuesOf('timeZone'));
+  // Intl.supportedValuesOf('timeZone') omits UTC and a few other entries.
+  names.add('UTC');
+
+  for (const name of alwaysInclude) {
+    try {
+      getTimezoneAtInstant(name, instant);
+      names.add(name);
+    } catch {
+      // Ignore timezone names that the server runtime cannot interpret.
+    }
+  }
+
+  return [...names]
+    .map((name) => getTimezoneAtInstant(name, instant))
+    .sort((a, b) => a.utc_offset - b.utc_offset || a.name.localeCompare(b.name));
+}

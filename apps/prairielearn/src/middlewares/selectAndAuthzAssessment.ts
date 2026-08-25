@@ -6,10 +6,12 @@ import { loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
 import { isTrpcRequest } from '@prairielearn/trpc/express';
 
 import { resolveModernAssessmentAccess } from '../lib/assessment-access-control/authz.js';
+import { formatLegacyAssessmentAccess } from '../lib/assessment-access-control/legacy.js';
 import {
   AssessmentModuleSchema,
   AssessmentSchema,
   AssessmentSetSchema,
+  RawSprocAuthzAssessmentSchema,
   SprocAuthzAssessmentSchema,
 } from '../lib/db-types.js';
 
@@ -27,8 +29,12 @@ const SelectAndAuthzAssessmentSchema = z.object({
 
 export type ResLocalsAssessment = z.infer<typeof SelectAndAuthzAssessmentSchema>;
 
+const RawSelectAndAuthzAssessmentSchema = SelectAndAuthzAssessmentSchema.extend({
+  authz_result: RawSprocAuthzAssessmentSchema,
+});
+
 export default asyncHandler(async (req, res, next) => {
-  const row = await queryOptionalRow(
+  const rawRow = await queryOptionalRow(
     sql.select_and_auth,
     {
       assessment_id: req.params.assessment_id,
@@ -36,15 +42,22 @@ export default asyncHandler(async (req, res, next) => {
       authz_data: res.locals.authz_data,
       req_date: res.locals.req_date,
     },
-    SelectAndAuthzAssessmentSchema,
+    RawSelectAndAuthzAssessmentSchema,
   );
-  if (row === null) {
+  if (rawRow === null) {
     if (isTrpcRequest(req)) {
       throw new HttpStatusError(403, 'Access denied');
     }
     res.status(403).send(AccessDenied({ resLocals: res.locals }));
     return;
   }
+  const row = {
+    ...rawRow,
+    authz_result: formatLegacyAssessmentAccess(
+      rawRow.authz_result,
+      res.locals.course_instance.display_timezone,
+    ),
+  };
   if (row.assessment.modern_access_control) {
     const modernResult = await resolveModernAssessmentAccess({
       assessment: row.assessment,

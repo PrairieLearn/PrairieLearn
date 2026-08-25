@@ -6,6 +6,8 @@ import {
   resolveModernAssessmentAccessResultsBatch,
   resolverResultToAuthzAssessmentForInstance,
 } from '../../lib/assessment-access-control/authz.js';
+import { formatLegacyAssessmentAccess } from '../../lib/assessment-access-control/legacy.js';
+import { RawSprocAuthzAssessmentSchema } from '../../lib/db-types.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import logPageView from '../../middlewares/logPageView.js';
 
@@ -18,11 +20,19 @@ import {
 const sql = loadSqlEquiv(import.meta.url);
 const router = Router();
 
+const RawStudentAssessmentsRowSchema = StudentAssessmentsRowSchema.omit({
+  active: true,
+  access_rules: true,
+  credit_date_string: true,
+}).extend({
+  raw_authz_result: RawSprocAuthzAssessmentSchema,
+});
+
 router.get(
   '/',
   logPageView('studentAssessments'),
   typedAsyncHandler<'course-instance'>(async (req, res) => {
-    const rows = await queryRows(
+    const rawRows = await queryRows(
       sql.select_assessments,
       {
         course_instance_id: res.locals.course_instance.id,
@@ -31,8 +41,23 @@ router.get(
         req_date: res.locals.req_date,
         assessments_group_by: res.locals.course_instance.assessments_group_by,
       },
-      StudentAssessmentsRowSchema,
+      RawStudentAssessmentsRowSchema,
     );
+
+    const rows = rawRows.map(({ raw_authz_result: rawAuthzResult, ...row }) => {
+      const authzResult = formatLegacyAssessmentAccess(
+        rawAuthzResult,
+        res.locals.course_instance.display_timezone,
+      );
+      return {
+        ...row,
+        active: authzResult.active,
+        access_rules: authzResult.access_rules,
+        credit_date_string: authzResult.credit_date_string ?? 'None',
+        show_closed_assessment_score: authzResult.show_closed_assessment_score,
+        will_release_at: authzResult.next_active_time,
+      } satisfies StudentAssessmentsRow;
+    });
 
     const hasModern = rows.some((r) => r.modern_access_control);
     const modernAccessByAssessment = hasModern

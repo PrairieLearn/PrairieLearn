@@ -394,22 +394,28 @@ export async function selectCreditPoolChangesBatched(
   return { rows, totalCount };
 }
 
-const DailySpendingPointSchema = z.object({
-  date: z.coerce.date(),
+interface DailySpendingPoint {
+  date: Date;
+  spending_milli_dollars: number;
+}
+
+const SpendingChangeSchema = z.object({
+  created_at: z.coerce.date(),
+  group_label: z.string(),
   spending_milli_dollars: z.coerce.number(),
 });
 
-type DailySpendingPoint = z.infer<typeof DailySpendingPointSchema>;
-
-function computeDateRange(days: number): { start_date: string; end_date: string } {
-  const now = Temporal.Now.zonedDateTimeISO('UTC');
-  const startOfToday = now.startOfDay();
-  const startDate = startOfToday.subtract({ days: days - 1 });
-  const endDate = startOfToday.add({ hours: 23, minutes: 59, seconds: 59 });
-
+function computeDateRange(days: number): {
+  startDate: Temporal.PlainDate;
+  start_date: string;
+  end_date: string;
+} {
+  const endDate = Temporal.Now.plainDateISO('UTC').add({ days: 1 });
+  const startDate = endDate.subtract({ days });
   return {
-    start_date: startDate.toInstant().toString(),
-    end_date: endDate.toInstant().toString(),
+    startDate,
+    start_date: startDate.toZonedDateTime('UTC').toInstant().toString(),
+    end_date: endDate.toZonedDateTime('UTC').toInstant().toString(),
   };
 }
 
@@ -417,21 +423,34 @@ export async function selectDailySpending(
   course_instance_id: string,
   days: number,
 ): Promise<DailySpendingPoint[]> {
-  const { start_date, end_date } = computeDateRange(days);
-  return await queryRows(
-    sql.select_daily_spending,
-    { course_instance_id, start_date, end_date },
-    DailySpendingPointSchema,
+  const { startDate, start_date, end_date } = computeDateRange(days);
+  const changes = await queryRows(
+    sql.select_spending_changes,
+    { course_instance_id, start_date, end_date, group_by: 'user' },
+    SpendingChangeSchema,
   );
+
+  const spendingByDate = new Map<string, number>();
+  for (const change of changes) {
+    const date = Temporal.Instant.fromEpochMilliseconds(change.created_at.getTime())
+      .toZonedDateTimeISO('UTC')
+      .toPlainDate()
+      .toString();
+    spendingByDate.set(date, (spendingByDate.get(date) ?? 0) + change.spending_milli_dollars);
+  }
+
+  return Array.from({ length: days }, (_, index) => {
+    const date = startDate.add({ days: index });
+    return {
+      date: new Date(date.toZonedDateTime('UTC').epochMilliseconds),
+      spending_milli_dollars: spendingByDate.get(date.toString()) ?? 0,
+    };
+  });
 }
 
-const GroupedDailySpendingPointSchema = z.object({
-  date: z.coerce.date(),
-  group_label: z.string(),
-  spending_milli_dollars: z.coerce.number(),
-});
-
-type GroupedDailySpendingPoint = z.infer<typeof GroupedDailySpendingPointSchema>;
+interface GroupedDailySpendingPoint extends DailySpendingPoint {
+  group_label: string;
+}
 
 export async function selectDailySpendingGrouped(
   course_instance_id: string,
@@ -439,9 +458,28 @@ export async function selectDailySpendingGrouped(
   group_by: 'user' | 'assessment' | 'question',
 ): Promise<GroupedDailySpendingPoint[]> {
   const { start_date, end_date } = computeDateRange(days);
-  return await queryRows(
-    sql.select_daily_spending_grouped,
+  const changes = await queryRows(
+    sql.select_spending_changes,
     { course_instance_id, start_date, end_date, group_by },
-    GroupedDailySpendingPointSchema,
+    SpendingChangeSchema,
+  );
+
+  const grouped = new Map<string, GroupedDailySpendingPoint>();
+  for (const change of changes) {
+    const date = Temporal.Instant.fromEpochMilliseconds(change.created_at.getTime())
+      .toZonedDateTimeISO('UTC')
+      .toPlainDate();
+    const key = `${date.toString()}\0${change.group_label}`;
+    const current = grouped.get(key);
+    grouped.set(key, {
+      date: new Date(date.toZonedDateTime('UTC').epochMilliseconds),
+      group_label: change.group_label,
+      spending_milli_dollars:
+        (current?.spending_milli_dollars ?? 0) + change.spending_milli_dollars,
+    });
+  }
+
+  return [...grouped.values()].sort(
+    (a, b) => a.date.getTime() - b.date.getTime() || a.group_label.localeCompare(b.group_label),
   );
 }

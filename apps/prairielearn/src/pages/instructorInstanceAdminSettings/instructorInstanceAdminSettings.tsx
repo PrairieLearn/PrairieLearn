@@ -10,6 +10,7 @@ import { flash } from '@prairielearn/flash';
 import * as sqldb from '@prairielearn/postgres';
 import { Hydrate } from '@prairielearn/react/server';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
+import { getCanonicalTimezones } from '@prairielearn/utils/timezone';
 import { parseRequestBody } from '@prairielearn/zod';
 
 import { DeleteCourseInstanceModal } from '../../components/DeleteCourseInstanceModal.js';
@@ -42,7 +43,6 @@ import {
   selectNonPublicAssessmentsInCourseInstance,
 } from '../../lib/sharing-validation.js';
 import { validateShortName } from '../../lib/short-name.js';
-import { getCanonicalTimezones } from '../../lib/timezones.js';
 import { getCanonicalHost } from '../../lib/url.js';
 import { selectCourseInstanceByUuid } from '../../models/course-instances.js';
 import { insertCourseInstancePermissions } from '../../models/course-permissions.js';
@@ -92,7 +92,9 @@ router.get(
       }),
       host,
     ).href;
-    const availableTimezones = await getCanonicalTimezones([courseInstance.display_timezone]);
+    const availableTimezones = getCanonicalTimezones({
+      alwaysInclude: [courseInstance.display_timezone],
+    });
 
     const fullInfoCourseInstancePath = path.join(
       course.path,

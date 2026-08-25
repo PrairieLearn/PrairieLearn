@@ -25,7 +25,9 @@
 
 import type { GenerateTextResult, LanguageModelUsage } from 'ai';
 
-import { execute, loadSqlEquiv } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, queryScalar } from '@prairielearn/postgres';
+import { getUtcDayStart } from '@prairielearn/utils/timezone';
+import { DateFromISOString } from '@prairielearn/zod';
 
 import type { CounterClockwiseRotationDegrees } from '../ee/lib/ai-grading/types.js';
 import { calculateResponseCost } from '../lib/ai-util.js';
@@ -46,9 +48,15 @@ export async function updateCourseInstanceUsagesForSubmission({
   submission_id: string;
   user_id: string;
 }) {
+  const submissionDate = await queryScalar(
+    sql.select_submission_date,
+    { submission_id },
+    DateFromISOString,
+  );
   await execute(sql.update_course_instance_usages_for_submission, {
     submission_id,
     user_id,
+    date: getUtcDayStart(submissionDate),
   });
 }
 
@@ -63,8 +71,15 @@ export async function updateCourseInstanceUsagesForGradingJob({
 }: {
   grading_job_id: string;
 }) {
+  const gradingFinishedAt = await queryScalar(
+    sql.select_grading_finished_at,
+    { grading_job_id },
+    DateFromISOString.nullable(),
+  );
+  if (gradingFinishedAt == null) return;
   await execute(sql.update_course_instance_usages_for_external_grading, {
     grading_job_id,
+    date: getUtcDayStart(gradingFinishedAt),
   });
 }
 
@@ -92,6 +107,7 @@ export async function updateCourseInstanceUsagesForAiQuestionGeneration({
     course_id: courseId,
     authn_user_id: authnUserId,
     cost_ai_question_generation: calculateResponseCost({ model, usage }),
+    date: getUtcDayStart(new Date()),
   });
 }
 
@@ -116,6 +132,7 @@ async function updateCourseInstanceUsagesForAiGrading({
     course_instance_id: courseInstanceId,
     authn_user_id: authnUserId,
     cost_ai_grading: costAiGrading,
+    date: getUtcDayStart(new Date()),
   });
 }
 

@@ -1,4 +1,3 @@
-import { Temporal } from '@js-temporal/polyfill';
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
@@ -11,6 +10,7 @@ import {
   gradeAllAssessmentInstances,
 } from '../../lib/assessment.js';
 import { regradeAllAssessmentInstances } from '../../lib/regrading.js';
+import { parseLocalDateTime } from '../../lib/timezones.js';
 import {
   type TimeLimitBaseTime,
   updateAssessmentInstancesTimeLimit,
@@ -127,11 +127,7 @@ const setTimeLimit = t.procedure
         }
         base_time = 'exact_date';
         time_add = 0;
-        exact_date = new Date(
-          Temporal.PlainDateTime.from(input.date).toZonedDateTime(
-            ctx.course_instance.display_timezone,
-          ).epochMilliseconds,
-        );
+        exact_date = parseLocalDateTime(input.date, ctx.course_instance.display_timezone);
         break;
       case 'subtract':
         time_add *= -1;

@@ -1,4 +1,3 @@
-import { Temporal } from '@js-temporal/polyfill';
 import { Router } from 'express';
 import fs from 'fs-extra';
 import { z } from 'zod';
@@ -17,6 +16,7 @@ import { CourseInstanceAddEditor } from '../../lib/editors.js';
 import { idsEqual } from '../../lib/id.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { validateShortName } from '../../lib/short-name.js';
+import { parseLocalDateTime } from '../../lib/timezones.js';
 import {
   selectCourseInstanceByUuid,
   selectCourseInstancesWithStaffAccess,
@@ -168,13 +168,9 @@ router.post(
       const endDate = end_date.length > 0 ? end_date : undefined;
 
       if (startDate && endDate) {
-        const startAccessDate = Temporal.PlainDateTime.from(startDate).toZonedDateTime(
-          course.display_timezone,
-        );
-        const endAccessDate = Temporal.PlainDateTime.from(endDate).toZonedDateTime(
-          course.display_timezone,
-        );
-        if (startAccessDate.epochMilliseconds >= endAccessDate.epochMilliseconds) {
+        const startAccessDate = parseLocalDateTime(startDate, course.display_timezone);
+        const endAccessDate = parseLocalDateTime(endDate, course.display_timezone);
+        if (startAccessDate.getTime() >= endAccessDate.getTime()) {
           throw new error.HttpStatusError(400, 'End date must be after start date');
         }
       }

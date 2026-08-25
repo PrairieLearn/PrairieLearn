@@ -16,9 +16,7 @@ WITH
       aset.number AS assessment_set_number,
       aset.abbreviation || a.number AS label,
       aa.authorized,
-      aa.credit_date_string,
-      aa.active,
-      aa.access_rules,
+      to_jsonb(aa) AS raw_authz_result,
       aa.show_closed_assessment_score,
       NULL::integer AS assessment_instance_id,
       NULL::integer AS assessment_instance_number,
@@ -33,7 +31,7 @@ WITH
       assessments AS a
       JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
       JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
-      LEFT JOIN LATERAL authz_assessment (a.id, $authz_data, $req_date, ci.display_timezone) AS aa ON TRUE
+      LEFT JOIN LATERAL authz_assessment (a.id, $authz_data, $req_date) AS aa ON TRUE
       LEFT JOIN assessment_modules AS am ON am.id = a.assessment_module_id
     WHERE
       ci.id = $course_instance_id
@@ -56,9 +54,7 @@ WITH
       mia.assessment_set_number,
       mia.label || '#' || ai.number AS label,
       mia.authorized,
-      mia.credit_date_string,
-      mia.active,
-      mia.access_rules,
+      mia.raw_authz_result,
       mia.show_closed_assessment_score,
       ai.id AS assessment_instance_id,
       ai.number AS assessment_instance_number,
@@ -93,9 +89,7 @@ WITH
       aset.number AS assessment_set_number,
       aset.abbreviation || a.number AS label,
       aa.authorized,
-      aa.credit_date_string,
-      aa.active,
-      aa.access_rules,
+      to_jsonb(aa) AS raw_authz_result,
       aa.show_closed_assessment_score,
       ai.id AS assessment_instance_id,
       ai.number AS assessment_instance_number,
@@ -143,7 +137,7 @@ WITH
           ai2.assessment_id = a.id
           AND ai2.team_id = gu.team_id
       ) AS ai ON (TRUE)
-      LEFT JOIN LATERAL authz_assessment (a.id, $authz_data, $req_date, ci.display_timezone) AS aa ON TRUE
+      LEFT JOIN LATERAL authz_assessment (a.id, $authz_data, $req_date) AS aa ON TRUE
       LEFT JOIN assessment_modules AS am ON (am.id = a.assessment_module_id)
     WHERE
       ci.id = $course_instance_id

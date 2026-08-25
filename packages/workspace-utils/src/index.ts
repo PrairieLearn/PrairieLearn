@@ -10,7 +10,7 @@ import { z } from 'zod';
 
 import { contains } from '@prairielearn/path-utils';
 import { execute, loadSqlEquiv, queryRow, queryScalar } from '@prairielearn/postgres';
-import { IdSchema, IntervalSchema } from '@prairielearn/zod';
+import { DateFromISOString, IdSchema, IntervalSchema } from '@prairielearn/zod';
 
 const WorkspaceVersionSchema = z.object({
   id: IdSchema,
@@ -226,8 +226,21 @@ export async function updateCourseInstanceUsagesForWorkspace({
   workspace_id: string | number;
   duration_milliseconds: number;
 }) {
+  const stateUpdatedAt = await queryScalar(
+    sql.select_workspace_state_updated_at,
+    { workspace_id },
+    DateFromISOString,
+  );
+  const date = new Date(
+    Date.UTC(
+      stateUpdatedAt.getUTCFullYear(),
+      stateUpdatedAt.getUTCMonth(),
+      stateUpdatedAt.getUTCDate(),
+    ),
+  );
   await execute(sql.update_course_instance_usages_for_workspace, {
     workspace_id,
     duration_milliseconds,
+    date,
   });
 }

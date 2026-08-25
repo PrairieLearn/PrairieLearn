@@ -293,15 +293,13 @@ BEGIN
                     (access_rule->>'time_limit_min')::integer,
                     access_rule->>'password',
                     (access_rule->>'exam_uuid')::uuid,
-                    input_date(access_rule->>'start_date', ci.display_timezone),
-                    input_date(access_rule->>'end_date', ci.display_timezone),
+                    (access_rule->>'start_date')::timestamptz,
+                    (access_rule->>'end_date')::timestamptz,
                     (access_rule->>'show_closed_assessment')::boolean,
                     (access_rule->>'show_closed_assessment_score')::boolean,
                     (access_rule->>'active')::boolean,
                     (access_rule->'comment')
-                FROM
-                    assessments AS a
-                    JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
+                FROM assessments AS a
                 WHERE
                     a.id = new_assessment_id
             )

@@ -25,7 +25,7 @@ export async function run() {
       { Name: 'Server Group', Value: config.groupName },
       { Name: 'Job Type', Value: row.job_type },
     ];
-    const timestamp = new Date(row.timestamp_formatted);
+    const timestamp = row.measured_at;
 
     await cloudwatch.putMetricData({
       Namespace: 'PrairieLearn',

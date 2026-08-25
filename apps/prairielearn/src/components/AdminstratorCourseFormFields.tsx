@@ -5,9 +5,10 @@ import { useFormContext } from 'react-hook-form';
 import ReactMarkdown from 'react-markdown';
 
 import { OverlayTrigger } from '@prairielearn/ui';
+import type { Timezone } from '@prairielearn/utils/timezone';
 
 import type { AdminInstitution } from '../lib/client/safe-db-types.js';
-import { type Timezone, formatTimezone } from '../lib/timezone.shared.js';
+import { formatTimezone } from '../lib/timezone.shared.js';
 import { useTRPC } from '../trpc/administrator/context.js';
 
 export interface CourseFormFieldValues {

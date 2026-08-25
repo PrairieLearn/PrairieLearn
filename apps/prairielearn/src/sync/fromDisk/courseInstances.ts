@@ -10,6 +10,8 @@ import { IdSchema } from '@prairielearn/zod';
 
 import { config } from '../../lib/config.js';
 import { CourseInstanceSchema } from '../../lib/db-types.js';
+import { parseLocalDateTime } from '../../lib/timezones.js';
+import { selectCourseById } from '../../models/course.js';
 import { type CourseInstanceJson } from '../../schemas/index.js';
 import { type CourseData, type CourseInstanceData } from '../course-db.js';
 import { isDateInFuture } from '../dates.js';
@@ -68,8 +70,13 @@ function generateEnrollmentCode() {
   return raw;
 }
 
-function getParamsForCourseInstance(courseInstance: CourseInstanceJson | null | undefined) {
+function getParamsForCourseInstance(
+  courseInstance: CourseInstanceJson | null | undefined,
+  courseTimezone: string,
+) {
   if (!courseInstance) return null;
+
+  const displayTimezone = courseInstance.timezone ?? courseTimezone;
 
   // It used to be the case that instance access rules could be associated with a
   // particular user role, e.g., Student, TA, or Instructor. Now, all access rules
@@ -79,8 +86,8 @@ function getParamsForCourseInstance(courseInstance: CourseInstanceJson | null | 
     ?.filter((accessRule) => accessRule.role == null || accessRule.role === 'Student')
     .map((accessRule) => ({
       uids: accessRule.uids ?? null,
-      start_date: accessRule.startDate ?? null,
-      end_date: accessRule.endDate ?? null,
+      start_date: parseLocalDateTime(accessRule.startDate ?? null, displayTimezone),
+      end_date: parseLocalDateTime(accessRule.endDate ?? null, displayTimezone),
       institution: accessRule.institution ?? null,
       comment: accessRule.comment,
     }));
@@ -92,10 +99,19 @@ function getParamsForCourseInstance(courseInstance: CourseInstanceJson | null | 
     display_timezone: courseInstance.timezone ?? null,
     comment: JSON.stringify(courseInstance.comment),
     modern_publishing: accessRules == null,
-    publishing_start_date: courseInstance.publishing?.startDate ?? null,
-    publishing_end_date: courseInstance.publishing?.endDate ?? null,
+    publishing_start_date: parseLocalDateTime(
+      courseInstance.publishing?.startDate ?? null,
+      displayTimezone,
+    ),
+    publishing_end_date: parseLocalDateTime(
+      courseInstance.publishing?.endDate ?? null,
+      displayTimezone,
+    ),
     self_enrollment_enabled: courseInstance.selfEnrollment.enabled,
-    self_enrollment_enabled_before_date: courseInstance.selfEnrollment.beforeDate,
+    self_enrollment_enabled_before_date: parseLocalDateTime(
+      courseInstance.selfEnrollment.beforeDate ?? null,
+      displayTimezone,
+    ),
     self_enrollment_restrict_to_institution: courseInstance.selfEnrollment.restrictToInstitution,
     self_enrollment_use_enrollment_code: courseInstance.selfEnrollment.useEnrollmentCode,
     share_source_publicly: courseInstance.shareSourcePublicly,
@@ -107,6 +123,7 @@ export async function sync(
   courseId: string,
   courseData: CourseData,
 ): Promise<Record<string, string>> {
+  const course = await selectCourseById(courseId);
   if (config.checkInstitutionsOnSync) {
     // Collect all institutions from course instance access rules.
     const institutions = Object.values(courseData.courseInstances)
@@ -180,7 +197,10 @@ export async function sync(
           courseInstanceId,
           infofile.stringifyErrors(courseInstance),
           infofile.stringifyWarnings(courseInstance),
-          getParamsForCourseInstance(courseInstance.data),
+          getParamsForCourseInstance(
+            infofile.hasErrors(courseInstance) ? null : courseInstance.data,
+            course.display_timezone,
+          ),
         ]);
       },
     );

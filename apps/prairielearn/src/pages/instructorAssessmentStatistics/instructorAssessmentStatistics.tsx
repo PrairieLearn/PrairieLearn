@@ -1,6 +1,7 @@
 import { pipeline } from 'node:stream/promises';
 
 import { Router } from 'express';
+import { z } from 'zod';
 
 import { stringify, stringifyStream } from '@prairielearn/csv';
 import * as error from '@prairielearn/error';
@@ -10,6 +11,7 @@ import {
   formatDateYMD,
 } from '@prairielearn/formatter';
 import * as sqldb from '@prairielearn/postgres';
+import { getLocalDate } from '@prairielearn/utils/timezone';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import {
@@ -17,7 +19,7 @@ import {
   updateAssessmentStatistics,
 } from '../../lib/assessment.js';
 import { compiledScriptTag } from '../../lib/assets.js';
-import { AssessmentSchema } from '../../lib/db-types.js';
+import { AssessmentInstanceSchema, AssessmentSchema } from '../../lib/db-types.js';
 import { type ResLocalsForPage, typedAsyncHandler } from '../../lib/res-locals.js';
 import { assessmentFilenamePrefix } from '../../lib/sanitize-name.js';
 import { STAT_DESCRIPTIONS } from '../shared/assessmentStatDescriptions.js';
@@ -25,7 +27,7 @@ import { STAT_DESCRIPTIONS } from '../shared/assessmentStatDescriptions.js';
 import {
   type AssessmentQuestionStatsRow,
   AssessmentQuestionStatsRowSchema,
-  AssessmentScoreHistogramByDateSchema,
+  type AssessmentScoreHistogramByDateSchema,
   type Filenames,
   InstructorAssessmentStatistics,
   UserScoreSchema,
@@ -33,6 +35,60 @@ import {
 
 const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
+
+const AssessmentScoreByUserSchema = z.object({
+  user_id: AssessmentInstanceSchema.shape.user_id,
+  date: AssessmentInstanceSchema.shape.date,
+  score_perc: AssessmentInstanceSchema.shape.score_perc,
+});
+
+export function groupAssessmentScoresByLocalDate(
+  rows: z.infer<typeof AssessmentScoreByUserSchema>[],
+  displayTimezone: string,
+): z.infer<typeof AssessmentScoreHistogramByDateSchema>[] {
+  const scoresByUserAndDate = new Map<string, number[]>();
+  for (const row of rows) {
+    if (row.date == null || row.score_perc == null) continue;
+    const localDate = getLocalDate(row.date, displayTimezone).toString();
+    const key = `${row.user_id ?? 'null'}\0${localDate}`;
+    const scores = scoresByUserAndDate.get(key) ?? [];
+    scores.push(row.score_perc);
+    scoresByUserAndDate.set(key, scores);
+  }
+
+  const averagesByDate = new Map<string, number[]>();
+  for (const [key, scores] of scoresByUserAndDate) {
+    const localDate = key.split('\0')[1];
+    const averages = averagesByDate.get(localDate) ?? [];
+    averages.push(scores.reduce((sum, score) => sum + score, 0) / scores.length);
+    averagesByDate.set(localDate, averages);
+  }
+
+  return [...averagesByDate]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([localDate, scores]) => {
+      const histogram = Array.from({ length: 10 }, () => 0);
+      for (const score of scores) {
+        const bucket = Math.max(0, Math.min(9, Math.floor(score / 10)));
+        histogram[bucket]++;
+      }
+      return {
+        date: new Date(`${localDate}T00:00:00.000Z`),
+        number: scores.length,
+        mean_score_perc: scores.reduce((sum, score) => sum + score, 0) / scores.length,
+        histogram,
+      };
+    });
+}
+
+async function selectAssessmentScoreHistogramByDate(assessmentId: string, displayTimezone: string) {
+  const rows = await sqldb.queryRows(
+    sql.assessment_scores_by_user,
+    { assessment_id: assessmentId },
+    AssessmentScoreByUserSchema,
+  );
+  return groupAssessmentScoresByLocalDate(rows, displayTimezone);
+}
 
 function getFilenames(locals: ResLocalsForPage<'assessment'>): Filenames {
   const prefix = assessmentFilenamePrefix(
@@ -63,10 +119,9 @@ router.get(
     );
     res.locals.assessment = assessment;
 
-    const assessmentScoreHistogramByDate = await sqldb.queryRows(
-      sql.assessment_score_histogram_by_date,
-      { assessment_id: res.locals.assessment.id },
-      AssessmentScoreHistogramByDateSchema,
+    const assessmentScoreHistogramByDate = await selectAssessmentScoreHistogramByDate(
+      res.locals.assessment.id,
+      res.locals.course_instance.display_timezone,
     );
 
     const userScores = await sqldb.queryRows(
@@ -224,10 +279,9 @@ router.get(
         ],
       }).pipe(res);
     } else if (req.params.filename === filenames.statsByDateCsvFilename) {
-      const histByDateResult = await sqldb.queryRows(
-        sql.assessment_score_histogram_by_date,
-        { assessment_id: res.locals.assessment.id },
-        AssessmentScoreHistogramByDateSchema,
+      const histByDateResult = await selectAssessmentScoreHistogramByDate(
+        res.locals.assessment.id,
+        res.locals.course_instance.display_timezone,
       );
       const scoresByDay = histByDateResult;
 
