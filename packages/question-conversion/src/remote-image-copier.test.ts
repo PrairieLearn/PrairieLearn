@@ -1,6 +1,8 @@
 import * as http from 'node:http';
 import type { AddressInfo } from 'node:net';
 
+import he from 'he';
+import mustache from 'mustache';
 import { fetch as undiciFetch } from 'undici';
 import { describe, expect, it } from 'vitest';
 
@@ -162,6 +164,36 @@ describe('QtiImportRemoteImageCopier', () => {
         filesCreated: 1,
       },
     ]);
+  });
+
+  it('preserves neutralized Mustache delimiters while rewriting copied images', async () => {
+    const copier = new QtiImportRemoteImageCopier(async () => ({
+      content: Buffer.from('feedback image'),
+      extension: 'png',
+    }));
+    const importedFeedbackValue = '{{imported_feedback_value}}';
+
+    const result = await new PLEmitter().emitProcessed(
+      makeAssessment(
+        makeQuestion({
+          feedback: {
+            correct: `<p>${importedFeedbackValue} <img src="https://canvas.example/feedback.png"></p>`,
+          },
+        }),
+      ),
+      { processors: [copier] },
+    );
+
+    const questionHtml = result.questions[0].questionHtml;
+    const renderedHtml = mustache.render(questionHtml, {
+      feedback: { qti_import_correct: true },
+      imported_feedback_value: 'MUSTACHE_EVALUATED',
+    });
+
+    expect(questionHtml).toContain('&#123;&#123;imported_feedback_value&#125;&#125;');
+    expect(questionHtml).toContain('<pl-figure');
+    expect(renderedHtml).not.toContain('MUSTACHE_EVALUATED');
+    expect(he.decode(renderedHtml)).toContain(importedFeedbackValue);
   });
 
   it('copies remote images and rewrites all references to local pl-figure elements', async () => {

@@ -1,3 +1,5 @@
+import he from 'he';
+import mustache from 'mustache';
 import { assert, describe, it } from 'vitest';
 import z from 'zod';
 
@@ -191,6 +193,30 @@ describe('PLEmitter', () => {
       assert.include(html, '<p>Try again.</p>');
       assert.include(html, '{{/feedback.qti_import_incorrect}}');
       assert.notInclude(html, 'feedback.general');
+    });
+
+    function assertMustacheDelimiterIsNeutralized(delimiter: string) {
+      const feedbackHtml = `<p>Imported feedback: ${delimiter}</p>`;
+      const q = makeQuestion({ feedback: { correct: feedbackHtml } });
+      const html = emitter.emit(makeAssessment([q])).questions[0].questionHtml;
+      const renderedHtml = mustache.render(html, {
+        feedback: { qti_import_correct: true },
+        imported_feedback_value: 'MUSTACHE_EVALUATED',
+      });
+
+      assert.include(
+        he.decode(renderedHtml),
+        `<pl-answer-panel>\n${feedbackHtml}\n</pl-answer-panel>`,
+      );
+      assert.notInclude(renderedHtml, 'MUSTACHE_EVALUATED');
+    }
+
+    it('neutralizes double-brace Mustache delimiters in imported feedback', () => {
+      assertMustacheDelimiterIsNeutralized('{{imported_feedback_value}}');
+    });
+
+    it('neutralizes triple-brace Mustache delimiters in imported feedback', () => {
+      assertMustacheDelimiterIsNeutralized('{{{imported_feedback_value}}}');
     });
 
     it('emits grade() that sets correct and incorrect display flags', () => {

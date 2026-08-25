@@ -1,6 +1,6 @@
 import type { IRQuestionBody } from '../types/ir.js';
 
-type FeedbackTrigger =
+export type FeedbackTrigger =
   | { type: 'score'; outcome: 'correct' | 'incorrect' }
   | { type: 'checkbox-answer-selected'; answerHtml: string }
   | { type: 'blank-correct'; answerName: string };

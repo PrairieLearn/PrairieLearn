@@ -48,6 +48,26 @@ interface CopyRemoteImagesOptions {
   outputElement: ImageOutputElement;
 }
 
+function protectMustacheBraceEntities(html: string): {
+  html: string;
+  restore: (rewrittenHtml: string) => string;
+} {
+  let placeholderPrefix = '__PRAIRIELEARN_MUSTACHE_BRACE_ENTITY_';
+  while (html.includes(placeholderPrefix)) placeholderPrefix = `_${placeholderPrefix}`;
+  const leftBracePlaceholder = `${placeholderPrefix}LEFT__`;
+  const rightBracePlaceholder = `${placeholderPrefix}RIGHT__`;
+
+  return {
+    html: html
+      .replaceAll('&#123;', leftBracePlaceholder)
+      .replaceAll('&#125;', rightBracePlaceholder),
+    restore: (rewrittenHtml) =>
+      rewrittenHtml
+        .replaceAll(leftBracePlaceholder, '&#123;')
+        .replaceAll(rightBracePlaceholder, '&#125;'),
+  };
+}
+
 interface RemoteImageCopyOutcome {
   filesCreated: number;
   referencesLeftRemote: number;
@@ -155,11 +175,17 @@ export class QtiImportRemoteImageCopier implements ConversionProcessor {
     htmlFragments: readonly string[],
     { reservedFilenames, existingFiles, outputElement }: CopyRemoteImagesOptions,
   ) {
-    const fragments = htmlFragments.map((originalHtml) => ({
-      originalHtml,
-      $: cheerio.load(originalHtml, null, false),
-      changed: false,
-    }));
+    const fragments = htmlFragments.map((originalHtml) => {
+      // Cheerio decodes numeric brace entities when serializing. Keep them protected through both
+      // DOM passes so rewriting an image cannot reactivate imported Mustache delimiters.
+      const protectedHtml = protectMustacheBraceEntities(originalHtml);
+      return {
+        originalHtml,
+        $: cheerio.load(protectedHtml.html, null, false),
+        restoreHtml: protectedHtml.restore,
+        changed: false,
+      };
+    });
     const imagesByUrl = new Map<
       string,
       {
@@ -240,9 +266,11 @@ export class QtiImportRemoteImageCopier implements ConversionProcessor {
       rewrittenHtmlFragments: fragments.map((fragment) => {
         if (!fragment.changed) return fragment.originalHtml;
         const rewrittenHtml = fragment.$.html();
-        return outputElement === 'pl-figure'
-          ? rewriteImagesAsPlFigure(rewrittenHtml, { display: 'inline' })
-          : rewrittenHtml;
+        const rewrittenOutputHtml =
+          outputElement === 'pl-figure'
+            ? rewriteImagesAsPlFigure(rewrittenHtml, { display: 'inline' })
+            : rewrittenHtml;
+        return fragment.restoreHtml(rewrittenOutputHtml);
       }),
       createdFiles,
       ...outcome,
