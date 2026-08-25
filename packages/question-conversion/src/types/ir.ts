@@ -84,8 +84,9 @@ export interface IRFeedback {
   correct?: string;
   incorrect?: string;
   /**
-   * Per-answer feedback keyed by the answer display text. Emit handlers map these
-   * values to the corresponding PrairieLearn answer identifiers.
+   * Per-answer feedback keyed by the source answer's display text. Body handlers that
+   * support it either attach the message to an emitted answer or create an
+   * answer-specific feedback condition.
    */
   perAnswer?: Record<string, string>;
 }
