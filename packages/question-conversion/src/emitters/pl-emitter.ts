@@ -329,14 +329,15 @@ export class PLEmitter implements OutputEmitter {
       ? wrapInlineInputPrompt(promptHtml)
       : ['<pl-question-panel>', promptHtml, '</pl-question-panel>', ''];
 
-    // Checkbox per-answer feedback is rendered in the answer panel so all selected answers'
+    // Checkbox per-answer feedback is rendered in the submission panel so all selected answers'
     // messages can be shown. PL only surfaces one feedback attribute per answer element.
     const perAnswerForHtml =
       question.body.type === 'checkbox' ? undefined : question.feedback?.perAnswer;
     const bodyHtml = handler.renderHtml(question.body, question.shuffleAnswers, perAnswerForHtml);
     if (bodyHtml) parts.push(bodyHtml);
 
-    const feedbackHtml = renderFeedbackHtml(feedbackMessages);
+    const generalFeedback = buildGeneralFeedback(question);
+    const feedbackHtml = renderFeedbackHtml(feedbackMessages, generalFeedback);
     if (feedbackHtml) {
       parts.push('', feedbackHtml);
     }
@@ -356,7 +357,10 @@ export class PLEmitter implements OutputEmitter {
       if (gen) parts.push(gen);
     }
 
-    const grade = renderFeedbackGradeFn(feedbackMessages);
+    const grade = renderFeedbackGradeFn(
+      feedbackMessages,
+      buildGeneralFeedback(question).length > 0,
+    );
     if (grade) parts.push(grade);
 
     return parts.join('\n');
@@ -454,18 +458,19 @@ function buildFeedbackMessages(
 ): NamedFeedbackMessage[] {
   const messages = (
     handler.renderFeedback?.(question.body, question.feedback?.perAnswer) ?? []
-  ).map((message, index) => ({ ...message, name: `qti_import_answer_${index}` }));
+  ).map((message, index) => ({ ...message, name: `answer_${index}` }));
 
-  if (question.feedback?.correct) {
+  const generalFeedback = buildGeneralFeedback(question);
+  if (question.feedback?.correct && !generalFeedback.includes(question.feedback.correct)) {
     messages.push({
-      name: 'qti_import_correct',
+      name: 'overall',
       html: question.feedback.correct,
       trigger: { type: 'score', outcome: 'correct' },
     });
   }
-  if (question.feedback?.incorrect) {
+  if (question.feedback?.incorrect && !generalFeedback.includes(question.feedback.incorrect)) {
     messages.push({
-      name: 'qti_import_incorrect',
+      name: 'overall',
       html: question.feedback.incorrect,
       trigger: { type: 'score', outcome: 'incorrect' },
     });
@@ -474,18 +479,47 @@ function buildFeedbackMessages(
   return messages;
 }
 
-function renderFeedbackHtml(messages: NamedFeedbackMessage[]): string {
-  if (messages.length === 0) return '';
+function buildGeneralFeedback(question: IRQuestion): string[] {
+  const feedback = question.feedback;
+  if (!feedback) return [];
 
-  const lines = ['<pl-answer-panel>'];
-  for (const message of messages) {
-    lines.push(
-      `  {{#feedback.${message.name}}}`,
-      neutralizeMustacheDelimiters(message.html),
-      `  {{/feedback.${message.name}}}`,
-    );
+  const messages = feedback.general ? [feedback.general] : [];
+  if (feedback.correct && feedback.correct === feedback.incorrect) {
+    if (!messages.includes(feedback.correct)) messages.push(feedback.correct);
   }
-  lines.push('</pl-answer-panel>');
+  return messages;
+}
+
+function renderFeedbackHtml(messages: NamedFeedbackMessage[], generalFeedback: string[]): string {
+  if (messages.length === 0 && generalFeedback.length === 0) return '';
+
+  const feedbackNames = new Set(messages.map((message) => message.name));
+  if (generalFeedback.length > 0) feedbackNames.add('overall');
+
+  const lines = ['<pl-submission-panel>'];
+  for (const name of feedbackNames) {
+    lines.push(`  {{#feedback.${name}}}`);
+    if (name === 'overall') {
+      lines.push(...generalFeedback.map(neutralizeMustacheDelimiters));
+    }
+
+    for (const message of messages) {
+      if (message.name !== name) continue;
+
+      if (message.trigger.type === 'score') {
+        const sectionType = message.trigger.outcome === 'incorrect' ? '^' : '#';
+        lines.push(
+          `    {{${sectionType}is_correct}}`,
+          neutralizeMustacheDelimiters(message.html),
+          '    {{/is_correct}}',
+        );
+      } else {
+        lines.push(neutralizeMustacheDelimiters(message.html));
+      }
+    }
+    lines.push(`  {{/feedback.${name}}}`);
+  }
+  lines.push('</pl-submission-panel>');
   return lines.join('\n');
 }
 
@@ -497,10 +531,14 @@ function neutralizeMustacheDelimiters(html: string): string {
     .replaceAll('}}', '&#125;&#125;');
 }
 
-function renderFeedbackGradeFn(messages: NamedFeedbackMessage[]): string {
-  if (messages.length === 0) return '';
+function renderFeedbackGradeFn(
+  messages: NamedFeedbackMessage[],
+  hasGeneralFeedback: boolean,
+): string {
+  if (messages.length === 0 && !hasGeneralFeedback) return '';
 
   const lines = ['def grade(data):'];
+  const assignedScoreFeedbackNames = new Set<string>();
   if (messages.some((message) => message.trigger.type === 'checkbox-answer-selected')) {
     lines.push(
       '    _submitted = data["submitted_answers"].get("answer") or []',
@@ -518,12 +556,12 @@ function renderFeedbackGradeFn(messages: NamedFeedbackMessage[]): string {
     const assignment = `        data["feedback"][${JSON.stringify(message.name)}] = True`;
     switch (message.trigger.type) {
       case 'score':
-        lines.push(
-          message.trigger.outcome === 'correct'
-            ? '    if data["score"] >= 1.0:'
-            : '    if data["score"] < 1.0:',
-          assignment,
-        );
+        if (!assignedScoreFeedbackNames.has(message.name)) {
+          lines.push(
+            `    data["feedback"][${JSON.stringify(message.name)}] = {"is_correct": data["score"] >= 1.0}`,
+          );
+          assignedScoreFeedbackNames.add(message.name);
+        }
         break;
       case 'checkbox-answer-selected':
         lines.push(
@@ -540,6 +578,10 @@ function renderFeedbackGradeFn(messages: NamedFeedbackMessage[]): string {
       default:
         assertNever(message.trigger);
     }
+  }
+
+  if (hasGeneralFeedback && !assignedScoreFeedbackNames.has('overall')) {
+    lines.push('    data["feedback"]["overall"] = True');
   }
 
   lines.push('');

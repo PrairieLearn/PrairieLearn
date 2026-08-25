@@ -148,9 +148,12 @@ describe('QtiImportRemoteImageCopier', () => {
     expect(question.serverPy).not.toContain('<img src=');
     expect(question.serverPy).not.toContain('client_files_question_url');
     expect(question.serverPy).not.toContain('def render(data, html):');
-    expect(question.serverPy).toContain('data["feedback"]["qti_import_correct"] = True');
+    expect(question.serverPy).toContain(
+      'data["feedback"]["overall"] = {"is_correct": data["score"] >= 1.0}',
+    );
     expect(question.questionHtml).toContain('<p>Correct <pl-figure file-name="remote-');
-    expect(question.questionHtml).toContain('{{#feedback.qti_import_correct}}');
+    expect(question.questionHtml).toContain('{{#feedback.overall}}');
+    expect(question.questionHtml).toContain('{{#is_correct}}');
     expect(question.questionHtml).toContain(
       'feedback="<img src=&quot;{{ options.client_files_question_url }}/remote-',
     );
@@ -186,7 +189,7 @@ describe('QtiImportRemoteImageCopier', () => {
 
     const questionHtml = result.questions[0].questionHtml;
     const renderedHtml = mustache.render(questionHtml, {
-      feedback: { qti_import_correct: true },
+      feedback: { overall: { is_correct: true } },
       imported_feedback_value: 'MUSTACHE_EVALUATED',
     });
 

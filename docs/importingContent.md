@@ -28,22 +28,21 @@ Both entry points use the same importer. If you start from the Questions page, P
 
 The import tool supports individual quiz exports (`.zip` files) and full course exports (`.imscc` files). It handles the following QTI 1.2 question types:
 
-| QTI question type             | PrairieLearn output                                                                     |
-| ----------------------------- | --------------------------------------------------------------------------------------- |
-| Multiple choice               | [`pl-multiple-choice`](elements/pl-multiple-choice.md)                                  |
-| True/false                    | [`pl-multiple-choice`](elements/pl-multiple-choice.md)                                  |
-| Multiple answers (select all) | [`pl-checkbox`](elements/pl-checkbox.md)                                                |
-| Fill in the blank             | [`pl-string-input`](elements/pl-string-input.md)                                        |
-| Fill in multiple blanks       | Inline [`pl-string-input`](elements/pl-string-input.md) blanks                          |
-| Multiple dropdowns            | Inline [`pl-multiple-choice`](elements/pl-multiple-choice.md) with `display="dropdown"` |
-| Matching                      | [`pl-matching`](elements/pl-matching.md)                                                |
-| Numerical answer              | [`pl-number-input`](elements/pl-number-input.md)                                        |
-| Short answer                  | `pl-string-input`, `pl-integer-input`, or `pl-number-input`                             |
-| Calculated / formula          | [`pl-number-input`](elements/pl-number-input.md) with `server.py`                       |
-| Essay / free response         | [`pl-rich-text-editor`](elements/pl-rich-text-editor.md)                                |
-| File upload                   | [`pl-file-upload`](elements/pl-file-upload.md)                                          |
-| Ordering                      | [`pl-order-blocks`](elements/pl-order-blocks.md)                                        |
-| Text-only (no response)       | Prompt-only question panel                                                              |
+| QTI question type             | PrairieLearn output                                                                                                               |
+| ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| Multiple choice               | [`pl-multiple-choice`](elements/pl-multiple-choice.md)                                                                            |
+| True/false                    | [`pl-multiple-choice`](elements/pl-multiple-choice.md)                                                                            |
+| Multiple answers (select all) | [`pl-checkbox`](elements/pl-checkbox.md)                                                                                          |
+| Fill in the blank             | [`pl-string-input`](elements/pl-string-input.md)                                                                                  |
+| Fill in multiple blanks       | Inline [`pl-string-input`](elements/pl-string-input.md) blanks                                                                    |
+| Multiple dropdowns            | Inline [`pl-multiple-choice`](elements/pl-multiple-choice.md) with `display="dropdown"`                                           |
+| Matching                      | [`pl-matching`](elements/pl-matching.md)                                                                                          |
+| Numerical answer              | [`pl-integer-input`](elements/pl-integer-input.md) for exact integers; otherwise [`pl-number-input`](elements/pl-number-input.md) |
+| Short answer                  | `pl-string-input`, `pl-integer-input`, or `pl-number-input`                                                                       |
+| Calculated / formula          | [`pl-number-input`](elements/pl-number-input.md) with `server.py`                                                                 |
+| Essay / free response         | [`pl-rich-text-editor`](elements/pl-rich-text-editor.md)                                                                          |
+| File upload                   | [`pl-file-upload`](elements/pl-file-upload.md)                                                                                    |
+| Text-only (no response)       | Prompt-only question panel                                                                                                        |
 
 Referenced images and other non-video media files are imported into each question's `clientFilesQuestion` directory. Canvas equation images are converted back to their LaTeX source so PrairieLearn can render them with MathJax. If a question references a remote HTTPS image instead of an exported file, PrairieLearn attempts to copy it into this course. A remote image that cannot be copied is left unchanged in the generated HTML and produces a warning.
 
