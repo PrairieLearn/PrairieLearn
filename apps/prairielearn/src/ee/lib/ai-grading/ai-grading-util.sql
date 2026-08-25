@@ -115,7 +115,10 @@ WITH
       gj.submission_id = s.id
       AND gj.grading_method = 'AI'
       AND gj.deleted_at IS NULL
-      AND iq.assessment_question_id = ANY ($assessment_question_ids::bigint[])
+      AND iq.assessment_question_id IN (
+        SELECT
+          unnest($assessment_question_ids::bigint[])
+      )
     RETURNING
       gj.id AS grading_job_id,
       gj.submission_id,
