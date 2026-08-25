@@ -1,12 +1,6 @@
 import { type AnyNode, isTag } from 'domhandler';
 
-import type {
-  IRAssessmentMeta,
-  IRFeedback,
-  IRItemContainer,
-  IRQuestion,
-  IRZone,
-} from '../types/ir.js';
+import type { IRAssessmentMeta, IRItemContainer, IRQuestion, IRZone } from '../types/ir.js';
 import type {
   PLAllowAccessRule,
   PLAssessmentInfoJson,
@@ -20,7 +14,7 @@ import { isWhitespaceText, loadHtmlFragment } from '../utils/html.js';
 import { slugify } from '../utils/slugify.js';
 import { stableUuid } from '../utils/uuid.js';
 
-import type { BodyEmitRegistry } from './body-emit-handler.js';
+import type { BodyEmitHandler, BodyEmitRegistry, FeedbackMessage } from './body-emit-handler.js';
 import type { ConversionResult, ConversionWarning, EmitOptions, OutputEmitter } from './emitter.js';
 import { createPLBodyRegistry } from './handlers/index.js';
 
@@ -263,8 +257,12 @@ export class PLEmitter implements OutputEmitter {
       infoJson.gradingMethod = question.gradingMethod;
     }
 
-    const questionHtml = this.renderQuestionHtml(question);
-    const serverPy = this.renderServerPy(question);
+    const handler = this.registry.get(question.body.type);
+    if (!handler) throw new Error(`No emit handler for body type: ${question.body.type}`);
+
+    const feedbackMessages = buildFeedbackMessages(question, handler);
+    const questionHtml = this.renderQuestionHtml(question, handler, feedbackMessages);
+    const serverPy = this.renderServerPy(question, handler, feedbackMessages);
     const clientFiles = this.collectClientFiles(question);
 
     return {
@@ -293,10 +291,11 @@ export class PLEmitter implements OutputEmitter {
     return count === 0 ? baseDir : `${baseDir}-${count + 1}`;
   }
 
-  private renderQuestionHtml(question: IRQuestion): string {
-    const handler = this.registry.get(question.body.type);
-    if (!handler) throw new Error(`No emit handler for body type: ${question.body.type}`);
-
+  private renderQuestionHtml(
+    question: IRQuestion,
+    handler: BodyEmitHandler,
+    feedbackMessages: NamedFeedbackMessage[],
+  ): string {
     let promptHtml = question.promptHtml;
     if (handler.transformPrompt) {
       promptHtml = handler.transformPrompt(promptHtml, question.body);
@@ -306,34 +305,26 @@ export class PLEmitter implements OutputEmitter {
       ? wrapInlineInputPrompt(promptHtml)
       : ['<pl-question-panel>', promptHtml, '</pl-question-panel>', ''];
 
-    // Checkbox per-answer feedback is concatenated in grade() so all selected answers' messages
-    // show together — PL only surfaces one feedback attribute per element, so don't put them in HTML.
+    // Checkbox per-answer feedback is rendered in the answer panel so all selected answers'
+    // messages can be shown. PL only surfaces one feedback attribute per answer element.
     const perAnswerForHtml =
       question.body.type === 'checkbox' ? undefined : question.feedback?.perAnswer;
     const bodyHtml = handler.renderHtml(question.body, question.shuffleAnswers, perAnswerForHtml);
     if (bodyHtml) parts.push(bodyHtml);
 
-    const fb = question.feedback;
-    if (handler.renderGradePy) {
-      const willHaveGrade =
-        fb?.correct || fb?.incorrect || (fb?.perAnswer && Object.keys(fb.perAnswer).length > 0);
-      if (willHaveGrade) {
-        parts.push('', '<pl-answer-panel>', '{{{feedback.general}}}', '</pl-answer-panel>');
-      }
-    } else {
-      const feedbackHtml = renderGlobalFeedbackHtml(fb);
-      if (feedbackHtml) {
-        parts.push('', feedbackHtml);
-      }
+    const feedbackHtml = renderFeedbackHtml(feedbackMessages);
+    if (feedbackHtml) {
+      parts.push('', feedbackHtml);
     }
 
     return parts.join('\n');
   }
 
-  private renderServerPy(question: IRQuestion): string {
-    const handler = this.registry.get(question.body.type);
-    if (!handler) return '';
-
+  private renderServerPy(
+    question: IRQuestion,
+    handler: BodyEmitHandler,
+    feedbackMessages: NamedFeedbackMessage[],
+  ): string {
     const parts: string[] = [];
 
     if (handler.renderGeneratePy) {
@@ -341,9 +332,7 @@ export class PLEmitter implements OutputEmitter {
       if (gen) parts.push(gen);
     }
 
-    const grade = handler.renderGradePy
-      ? handler.renderGradePy(question.body, question.feedback)
-      : renderDefaultGradeFn(question.feedback);
+    const grade = renderFeedbackGradeFn(feedbackMessages);
     if (grade) parts.push(grade);
 
     return parts.join('\n');
@@ -431,47 +420,96 @@ function containsPlInput(node: AnyNode): boolean {
   return false;
 }
 
-function renderGlobalFeedbackHtml(feedback: IRFeedback | undefined): string {
-  const { correct, incorrect } = feedback ?? {};
-  if (!correct && !incorrect) return '';
+interface NamedFeedbackMessage extends FeedbackMessage {
+  name: string;
+}
+
+function buildFeedbackMessages(
+  question: IRQuestion,
+  handler: BodyEmitHandler,
+): NamedFeedbackMessage[] {
+  const messages = (
+    handler.renderFeedback?.(question.body, question.feedback?.perAnswer) ?? []
+  ).map((message, index) => ({ ...message, name: `qti_import_answer_${index}` }));
+
+  if (question.feedback?.correct) {
+    messages.push({
+      name: 'qti_import_correct',
+      html: question.feedback.correct,
+      trigger: { type: 'score', outcome: 'correct' },
+    });
+  }
+  if (question.feedback?.incorrect) {
+    messages.push({
+      name: 'qti_import_incorrect',
+      html: question.feedback.incorrect,
+      trigger: { type: 'score', outcome: 'incorrect' },
+    });
+  }
+
+  return messages;
+}
+
+function renderFeedbackHtml(messages: NamedFeedbackMessage[]): string {
+  if (messages.length === 0) return '';
 
   const lines = ['<pl-answer-panel>'];
-  if (correct) {
-    lines.push(
-      '  {{#feedback.qti_import_correct}}',
-      correct,
-      '  {{/feedback.qti_import_correct}}',
-    );
-  }
-  if (incorrect) {
-    lines.push(
-      '  {{#feedback.qti_import_incorrect}}',
-      incorrect,
-      '  {{/feedback.qti_import_incorrect}}',
-    );
+  for (const message of messages) {
+    lines.push(`  {{#feedback.${message.name}}}`, message.html, `  {{/feedback.${message.name}}}`);
   }
   lines.push('</pl-answer-panel>');
   return lines.join('\n');
 }
 
-/** Render the grade(data) function for types with only global correct/incorrect feedback. */
-function renderDefaultGradeFn(feedback: IRFeedback | undefined): string {
-  const { correct, incorrect } = feedback ?? {};
-  if (!correct && !incorrect) return '';
+function renderFeedbackGradeFn(messages: NamedFeedbackMessage[]): string {
+  if (messages.length === 0) return '';
 
   const lines = ['def grade(data):'];
-  if (correct) {
+  if (messages.some((message) => message.trigger.type === 'checkbox-answer-selected')) {
     lines.push(
-      '    if data["score"] >= 1.0:',
-      '        data["feedback"]["qti_import_correct"] = True',
+      '    _submitted = data["submitted_answers"].get("answer") or []',
+      '    if isinstance(_submitted, str):',
+      '        _submitted = [_submitted]',
+      '    _selected_answer_html = {',
+      '        answer["html"]',
+      '        for answer in data["params"].get("answer") or []',
+      '        if answer["key"] in _submitted',
+      '    }',
     );
   }
-  if (incorrect) {
-    lines.push(
-      '    if data["score"] < 1.0:',
-      '        data["feedback"]["qti_import_incorrect"] = True',
-    );
+
+  for (const message of messages) {
+    const assignment = `        data["feedback"][${JSON.stringify(message.name)}] = True`;
+    switch (message.trigger.type) {
+      case 'score':
+        lines.push(
+          message.trigger.outcome === 'correct'
+            ? '    if data["score"] >= 1.0:'
+            : '    if data["score"] < 1.0:',
+          assignment,
+        );
+        break;
+      case 'checkbox-answer-selected':
+        lines.push(
+          `    if ${JSON.stringify(message.trigger.answerHtml)} in _selected_answer_html:`,
+          assignment,
+        );
+        break;
+      case 'blank-correct':
+        lines.push(
+          `    if data["partial_scores"].get(${JSON.stringify(message.trigger.answerName)}, {}).get("score", 0) >= 1:`,
+          assignment,
+        );
+        break;
+      default:
+        assertNever(message.trigger);
+    }
   }
+
   lines.push('');
   return lines.join('\n');
+}
+
+function assertNever(value: never): never {
+  throw new Error(`Unexpected value: ${value}`);
 }

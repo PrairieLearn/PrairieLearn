@@ -1,4 +1,14 @@
-import type { IRFeedback, IRQuestionBody } from '../types/ir.js';
+import type { IRQuestionBody } from '../types/ir.js';
+
+export type FeedbackTrigger =
+  | { type: 'score'; outcome: 'correct' | 'incorrect' }
+  | { type: 'checkbox-answer-selected'; answerHtml: string }
+  | { type: 'blank-correct'; answerName: string };
+
+export interface FeedbackMessage {
+  html: string;
+  trigger: FeedbackTrigger;
+}
 
 /**
  * Handler for emitting one question body type as PrairieLearn HTML and Python.
@@ -34,13 +44,11 @@ export interface BodyEmitHandler {
   /** Render the generate(data) Python function. Return '' or omit if not needed. */
   renderGeneratePy?(body: IRQuestionBody): string;
 
-  /**
-   * Render the complete grade(data) Python function, covering both per-type and global feedback.
-   * When absent, PLEmitter falls back to a default renderer that handles only global
-   * correct/incorrect feedback.
-   * Return '' or omit if no grade function is needed.
-   */
-  renderGradePy?(body: IRQuestionBody, feedback: IRFeedback | undefined): string;
+  /** Describe per-answer feedback that requires custom grade-time conditions. */
+  renderFeedback?(
+    body: IRQuestionBody,
+    perAnswer: Record<string, string> | undefined,
+  ): FeedbackMessage[];
 }
 
 export class BodyEmitRegistry {
