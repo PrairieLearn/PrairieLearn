@@ -177,25 +177,34 @@ describe('PLEmitter', () => {
   });
 
   describe('feedback rendering', () => {
-    it('emits pl-answer-panel with both correct and incorrect feedback', () => {
+    it('emits static conditional blocks for correct and incorrect feedback', () => {
       const q = makeQuestion({
         feedback: { correct: '<p>Well done!</p>', incorrect: '<p>Try again.</p>' },
       });
       const result = emitter.emit(makeAssessment([q]));
       const html = result.questions[0].questionHtml;
       assert.include(html, '<pl-answer-panel>');
-      assert.include(html, '{{{feedback.general}}}');
+      assert.include(html, '{{#feedback.qti_import_correct}}');
+      assert.include(html, '<p>Well done!</p>');
+      assert.include(html, '{{/feedback.qti_import_correct}}');
+      assert.include(html, '{{#feedback.qti_import_incorrect}}');
+      assert.include(html, '<p>Try again.</p>');
+      assert.include(html, '{{/feedback.qti_import_incorrect}}');
+      assert.notInclude(html, 'feedback.general');
     });
 
-    it('emits grade() in server.py with correct and incorrect branches', () => {
+    it('emits grade() that sets correct and incorrect display flags', () => {
       const q = makeQuestion({
         feedback: { correct: '<p>Correct!</p>', incorrect: '<p>Wrong.</p>' },
       });
       const serverPy = emitter.emit(makeAssessment([q])).questions[0].serverPy;
       assert.include(serverPy, 'def grade(data):');
       assert.include(serverPy, 'data["score"] >= 1.0');
-      assert.include(serverPy, '"<p>Correct!</p>"');
-      assert.include(serverPy, '"<p>Wrong.</p>"');
+      assert.include(serverPy, 'data["feedback"]["qti_import_correct"] = True');
+      assert.include(serverPy, 'data["feedback"]["qti_import_incorrect"] = True');
+      assert.notInclude(serverPy, '<p>Correct!</p>');
+      assert.notInclude(serverPy, '<p>Wrong.</p>');
+      assert.notInclude(serverPy, 'feedback"]["general');
     });
 
     it('emits grade() with only correct branch when incorrect is absent', () => {
@@ -727,7 +736,7 @@ describe('PLEmitter', () => {
     });
   });
 
-  describe('checkbox per-answer feedback via grade()', () => {
+  describe('checkbox per-answer feedback', () => {
     it('omits feedback attributes on <pl-answer> elements', () => {
       const q = makeQuestion({
         body: {
@@ -744,19 +753,7 @@ describe('PLEmitter', () => {
       assert.include(html, '<pl-answer correct="true">Alpha</pl-answer>');
     });
 
-    it('emits pl-answer-panel for checkbox with perAnswer feedback', () => {
-      const q = makeQuestion({
-        body: {
-          type: 'checkbox',
-          choices: [{ id: 'a', html: 'Alpha', correct: true }],
-        },
-        feedback: { perAnswer: { Alpha: 'Good!' } },
-      });
-      const html = emitter.emit(makeAssessment([q])).questions[0].questionHtml;
-      assert.include(html, '<pl-answer-panel>');
-    });
-
-    it('emits grade() with _feedback_map and bold answer labels', () => {
+    it('emits independent flags for multiple selected-answer and global messages', () => {
       const q = makeQuestion({
         body: {
           type: 'checkbox',
@@ -765,40 +762,79 @@ describe('PLEmitter', () => {
             { id: 'b', html: 'Beta', correct: false },
           ],
         },
-        feedback: { perAnswer: { Alpha: '<p>Right!</p>', Beta: '<p>Nope.</p>' } },
+        feedback: {
+          perAnswer: { Alpha: '<p>Right!</p>', Beta: '<p>Nope.</p>' },
+          correct: '<p>All correct!</p>',
+          incorrect: '<p>Some wrong.</p>',
+        },
       });
-      const serverPy = emitter.emit(makeAssessment([q])).questions[0].serverPy ?? '';
-      assert.include(serverPy, 'def grade(data):');
-      assert.include(serverPy, '_feedback_map = {');
-      assert.include(serverPy, '"Alpha"');
-      assert.include(serverPy, '"Beta"');
-      assert.include(serverPy, 'data["submitted_answers"].get("answer")');
-      assert.include(serverPy, '<strong>{_html}</strong>');
-      assert.include(serverPy, '"<br>".join(_messages)');
+      const result = emitter.emit(makeAssessment([q])).questions[0];
+      const serverPy = result.serverPy ?? '';
+      assert.include(result.questionHtml, '{{#feedback.qti_import_answer_0}}');
+      assert.include(result.questionHtml, '<strong>Alpha</strong>: <p>Right!</p>');
+      assert.include(result.questionHtml, '{{#feedback.qti_import_answer_1}}');
+      assert.include(result.questionHtml, '<strong>Beta</strong>: <p>Nope.</p>');
+      assert.include(result.questionHtml, '{{#feedback.qti_import_correct}}');
+      assert.include(result.questionHtml, '{{#feedback.qti_import_incorrect}}');
+      assert.equal(
+        serverPy,
+        `def grade(data):
+    _submitted = data["submitted_answers"].get("answer") or []
+    if isinstance(_submitted, str):
+        _submitted = [_submitted]
+    _selected_answer_html = {
+        answer["html"]
+        for answer in data["params"].get("answer") or []
+        if answer["key"] in _submitted
+    }
+    if "Alpha" in _selected_answer_html:
+        data["feedback"]["qti_import_answer_0"] = True
+    if "Beta" in _selected_answer_html:
+        data["feedback"]["qti_import_answer_1"] = True
+    if data["score"] >= 1.0:
+        data["feedback"]["qti_import_correct"] = True
+    if data["score"] < 1.0:
+        data["feedback"]["qti_import_incorrect"] = True
+`,
+      );
+      assert.notInclude(serverPy, '<p>Right!</p>');
+      assert.notInclude(serverPy, '<p>Nope.</p>');
+      assert.notInclude(serverPy, '<p>All correct!</p>');
+      assert.notInclude(serverPy, '<p>Some wrong.</p>');
     });
 
-    it('appends global feedback to _messages after per-answer feedback', () => {
+    it('emits global-only feedback for checkbox questions', () => {
       const q = makeQuestion({
         body: {
           type: 'checkbox',
           choices: [{ id: 'a', html: 'Alpha', correct: true }],
         },
-        feedback: {
-          perAnswer: { Alpha: 'Nice!' },
-          correct: 'All correct!',
-          incorrect: 'Some wrong.',
-        },
+        feedback: { correct: '<p>All correct!</p>', incorrect: '<p>Try again.</p>' },
       });
-      const serverPy = emitter.emit(makeAssessment([q])).questions[0].serverPy ?? '';
-      assert.include(serverPy, '_feedback_map');
-      assert.include(serverPy, '"All correct!"');
-      assert.include(serverPy, '"Some wrong."');
-      assert.include(serverPy, '_messages.append');
+      const result = emitter.emit(makeAssessment([q])).questions[0];
+      assert.include(result.questionHtml, '{{#feedback.qti_import_correct}}');
+      assert.include(result.questionHtml, '{{#feedback.qti_import_incorrect}}');
+      assert.include(result.serverPy, 'data["feedback"]["qti_import_correct"] = True');
+      assert.include(result.serverPy, 'data["feedback"]["qti_import_incorrect"] = True');
+      assert.notInclude(result.serverPy, '_selected_answer_html');
+    });
+
+    it('safely encodes answer labels while keeping feedback HTML static', () => {
+      const answer = 'A "quoted" {answer} with \\slashes\\ and\na newline';
+      const feedback = '<p>Feedback with "quotes", {braces}, \\slashes\\, and\na newline.</p>';
+      const q = makeQuestion({
+        body: { type: 'checkbox', choices: [{ id: 'a', html: answer, correct: true }] },
+        feedback: { perAnswer: { [answer]: feedback } },
+      });
+      const result = emitter.emit(makeAssessment([q])).questions[0];
+      assert.include(result.questionHtml, feedback);
+      assert.include(result.serverPy, `if ${JSON.stringify(answer)} in _selected_answer_html:`);
+      assert.notInclude(result.serverPy, feedback);
     });
   });
 
-  describe('fill-in-blanks per-blank feedback via grade()', () => {
-    it('emits grade() that checks partial_scores per blank', () => {
+  describe('fill-in-blanks per-blank feedback', () => {
+    it('emits distinct flags based on each blank partial score', () => {
       const q = makeQuestion({
         promptHtml: '<p>Colombia: [cap1], Estonia: [cap2].</p>',
         body: {
@@ -814,31 +850,52 @@ describe('PLEmitter', () => {
           incorrect: 'Not quite.',
         },
       });
-      const serverPy = emitter.emit(makeAssessment([q])).questions[0].serverPy ?? '';
-      assert.include(serverPy, 'def grade(data):');
-      assert.include(serverPy, '_messages = []');
-      assert.include(serverPy, 'partial_scores');
-      assert.include(serverPy, '"cap1"');
-      assert.include(serverPy, '"cap2"');
-      assert.include(serverPy, '<strong>bogota</strong>');
-      assert.include(serverPy, '<strong>tallinn</strong>');
-      // Global feedback appended independently (non-short-circuit)
-      assert.include(serverPy, '"Perfect!"');
-      assert.include(serverPy, '"Not quite."');
-      assert.include(serverPy, '_messages.append');
+      const result = emitter.emit(makeAssessment([q])).questions[0];
+      const serverPy = result.serverPy ?? '';
+      assert.include(result.questionHtml, '{{#feedback.qti_import_answer_0}}');
+      assert.include(result.questionHtml, '<strong>bogota</strong>: Great, Bogotá!');
+      assert.include(result.questionHtml, '{{#feedback.qti_import_answer_1}}');
+      assert.include(result.questionHtml, '<strong>tallinn</strong>: Good job for Tallinn!');
+      assert.equal(
+        serverPy,
+        `def grade(data):
+    if data["partial_scores"].get("cap1", {}).get("score", 0) >= 1:
+        data["feedback"]["qti_import_answer_0"] = True
+    if data["partial_scores"].get("cap2", {}).get("score", 0) >= 1:
+        data["feedback"]["qti_import_answer_1"] = True
+    if data["score"] >= 1.0:
+        data["feedback"]["qti_import_correct"] = True
+    if data["score"] < 1.0:
+        data["feedback"]["qti_import_incorrect"] = True
+`,
+      );
+      assert.notInclude(serverPy, 'Great, Bogotá!');
+      assert.notInclude(serverPy, 'Good job for Tallinn!');
     });
 
-    it('emits pl-answer-panel for fill-in-blanks with perAnswer feedback', () => {
+    it('escapes answer metadata while keeping special-character feedback in static HTML', () => {
+      const answerName = 'answer"\\name\n';
+      const correctText = 'A <quoted> & "answer"';
+      const feedback = '<p>Feedback with "quotes", {braces}, \\slashes\\, and\na newline.</p>';
       const q = makeQuestion({
-        promptHtml: '<p>[ans]</p>',
+        promptHtml: `<p>[${answerName}]</p>`,
         body: {
           type: 'fill-in-blanks',
-          blanks: [{ id: 'ans', correctText: 'hello' }],
+          blanks: [{ id: answerName, correctText }],
         },
-        feedback: { perAnswer: { hello: 'Correct!' } },
+        feedback: { perAnswer: { [correctText]: feedback } },
       });
-      const html = emitter.emit(makeAssessment([q])).questions[0].questionHtml;
-      assert.include(html, '<pl-answer-panel>');
+      const result = emitter.emit(makeAssessment([q])).questions[0];
+      assert.include(
+        result.questionHtml,
+        `<strong>A &lt;quoted&gt; &amp; &quot;answer&quot;</strong>: ${feedback}`,
+      );
+      assert.include(
+        result.serverPy,
+        `data["partial_scores"].get(${JSON.stringify(answerName)}, {}).get("score", 0) >= 1`,
+      );
+      assert.notInclude(result.serverPy, correctText);
+      assert.notInclude(result.serverPy, feedback);
     });
   });
 

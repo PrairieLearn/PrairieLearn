@@ -2486,6 +2486,9 @@ importers:
       '@prairielearn/public-fetch':
         specifier: workspace:^
         version: link:../public-fetch
+      '@prairielearn/utils':
+        specifier: workspace:^
+        version: link:../utils
       '@vscode/vscode-languagedetection':
         specifier: ^1.0.23
         version: 1.0.23

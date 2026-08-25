@@ -7,6 +7,7 @@ import { fileTypeFromBuffer } from 'file-type';
 import { type PublicFetch, publicFetch, validatePublicHttpsUrl } from '@prairielearn/public-fetch';
 
 import type { ConversionProcessor, ConversionResult } from './emitters/emitter.js';
+import { deduplicateChoices } from './emitters/pl-emit-utils.js';
 import type { IRItemContainer, IRQuestion } from './types/ir.js';
 import type { PLQuestionOutput } from './types/pl-output.js';
 import { CLIENT_FILES_QUESTION_URL, rewriteImagesAsPlFigure } from './utils/html.js';
@@ -82,7 +83,7 @@ export class QtiImportRemoteImageCopier implements ConversionProcessor {
   private activeRequestCount = 0;
   private readonly requestQueue: (() => void)[] = [];
   private readonly fetchCache = new Map<string, Promise<FetchedRemoteImage>>();
-  private readonly feedbackOutcomesByItemContainer = new WeakMap<
+  private readonly feedbackAttributeOutcomesByItemContainer = new WeakMap<
     IRItemContainer,
     Map<string, RemoteImageCopyOutcome>
   >();
@@ -272,34 +273,37 @@ export class QtiImportRemoteImageCopier implements ConversionProcessor {
   }
 
   /**
-   * Copies remote images referenced by feedback HTML before PrairieLearn emission.
+   * Copies remote images in feedback that the emitter serializes inside HTML attributes.
    *
-   * The emitter may serialize feedback into question HTML attributes or generated grading code,
-   * so the fragments must be rewritten while they are still represented in the IR. This mutates
-   * both `question.feedback` and `question.assets`.
+   * Static answer-panel feedback is copied from the emitted question HTML. Multiple-choice
+   * per-answer feedback must instead be rewritten in the IR because it is escaped inside a
+   * `feedback` attribute, where the emitted-HTML pass cannot inspect it as nested markup.
    */
-  private async copyRemoteImagesInFeedback(question: IRQuestion): Promise<RemoteImageCopyOutcome> {
-    const feedback = question.feedback;
-    if (!feedback) return emptyRemoteImageCopyOutcome();
+  private async copyRemoteImagesInFeedbackAttributes(
+    question: IRQuestion,
+  ): Promise<RemoteImageCopyOutcome> {
+    const perAnswer = question.feedback?.perAnswer;
+    if (
+      question.body.type !== 'multiple-choice' ||
+      question.body.display === 'dropdown' ||
+      !perAnswer
+    ) {
+      return emptyRemoteImageCopyOutcome();
+    }
+
+    const choices = deduplicateChoices(question.body.choices);
+    if (!choices.some((choice) => choice.correct)) return emptyRemoteImageCopyOutcome();
 
     const fragments: { html: string; writeBack: (rewrittenHtml: string) => void }[] = [];
     const addFragment = (html: string, writeBack: (rewrittenHtml: string) => void) => {
       fragments.push({ html, writeBack });
     };
-    for (const key of ['correct', 'incorrect'] as const) {
-      if (feedback[key]) {
-        addFragment(feedback[key], (value) => {
-          feedback[key] = value;
-        });
-      }
-    }
-    const perAnswer = feedback.perAnswer;
-    if (perAnswer) {
-      for (const answer of Object.keys(perAnswer)) {
-        addFragment(perAnswer[answer], (value) => {
-          perAnswer[answer] = value;
-        });
-      }
+    for (const choice of choices) {
+      const feedbackHtml = perAnswer[choice.html];
+      if (!feedbackHtml) continue;
+      addFragment(feedbackHtml, (value) => {
+        perAnswer[choice.html] = value;
+      });
     }
     if (fragments.length === 0) return emptyRemoteImageCopyOutcome();
 
@@ -315,8 +319,8 @@ export class QtiImportRemoteImageCopier implements ConversionProcessor {
         {
           reservedFilenames: new Set(question.assets.keys()),
           existingFiles,
-          // Feedback may be emitted inside an element attribute or inserted after grading, so it
-          // must remain ordinary HTML rather than being converted to a nested PrairieLearn element.
+          // This markup is emitted inside an element attribute, so it must remain ordinary HTML
+          // rather than being converted to a nested PrairieLearn element.
           outputElement: 'img',
         },
       );
@@ -335,16 +339,17 @@ export class QtiImportRemoteImageCopier implements ConversionProcessor {
 
   async beforeEmit(itemContainer: IRItemContainer): Promise<void> {
     const outcomes = new Map<string, RemoteImageCopyOutcome>();
-    this.feedbackOutcomesByItemContainer.set(itemContainer, outcomes);
+    this.feedbackAttributeOutcomesByItemContainer.set(itemContainer, outcomes);
     await Promise.all(
       itemContainer.questions.map(async (question) => {
-        outcomes.set(question.sourceId, await this.copyRemoteImagesInFeedback(question));
+        outcomes.set(question.sourceId, await this.copyRemoteImagesInFeedbackAttributes(question));
       }),
     );
   }
 
   async afterEmit(result: ConversionResult, itemContainer: IRItemContainer): Promise<void> {
-    const feedbackOutcomes = this.feedbackOutcomesByItemContainer.get(itemContainer) ?? new Map();
+    const feedbackAttributeOutcomes =
+      this.feedbackAttributeOutcomesByItemContainer.get(itemContainer) ?? new Map();
     const questionHtmlOutcomes = await Promise.all(
       result.questions.map((question) => this.copyRemoteImagesInQuestionHtml(question)),
     );
@@ -352,7 +357,7 @@ export class QtiImportRemoteImageCopier implements ConversionProcessor {
     for (const [index, questionHtmlOutcome] of questionHtmlOutcomes.entries()) {
       const question = result.questions[index];
       const outcome = combineRemoteImageCopyOutcomes(
-        feedbackOutcomes.get(question.sourceId) ?? emptyRemoteImageCopyOutcome(),
+        feedbackAttributeOutcomes.get(question.sourceId) ?? emptyRemoteImageCopyOutcome(),
         questionHtmlOutcome,
       );
       if (outcome.filesCreated > 0) {

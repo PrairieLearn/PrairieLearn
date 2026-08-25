@@ -99,13 +99,14 @@ describe('QtiImportRemoteImageCopier', () => {
     );
 
     expect(requestedUrls).toEqual([
-      'https://canvas.example/feedback.png',
       'https://canvas.example/unavailable.png',
+      'https://canvas.example/feedback.png',
     ]);
     expect(result.questions[0].questionHtml).toContain('https://canvas.example/unavailable.png');
     expect(result.questions[0].questionHtml).toContain('http://canvas.example/insecure.png');
     expect(result.questions[0].questionHtml).toContain('://invalid.example/image.png');
-    expect(result.questions[0].serverPy).toContain('https://canvas.example/feedback.png');
+    expect(result.questions[0].questionHtml).toContain('https://canvas.example/feedback.png');
+    expect(result.questions[0].serverPy).not.toContain('https://canvas.example/feedback.png');
     expect(result.warnings).toEqual([
       {
         questionId: 'source-q1',
@@ -117,7 +118,7 @@ describe('QtiImportRemoteImageCopier', () => {
     expect(result.reports).toEqual([]);
   });
 
-  it('copies remote feedback images before emission and resolves their client-file URLs', async () => {
+  it('copies remote feedback images and resolves their client-file URLs', async () => {
     const requestedUrls: string[] = [];
     const copier = new QtiImportRemoteImageCopier(async (url) => {
       requestedUrls.push(url.href);
@@ -142,11 +143,12 @@ describe('QtiImportRemoteImageCopier', () => {
     expect(requestedUrls).toEqual([imageUrl]);
     expect(question.clientFiles.size).toBe(1);
     expect(question.serverPy).not.toContain('canvas.example');
-    expect(question.serverPy).toContain('<img src=');
-    expect(question.serverPy).not.toContain('<pl-figure');
-    expect(question.serverPy).toContain('{{ options.client_files_question_url }}/remote-');
-    expect(question.serverPy).toContain('def render(data, html):');
-    expect(question.serverPy).toContain('data["options"]["client_files_question_url"]');
+    expect(question.serverPy).not.toContain('<img src=');
+    expect(question.serverPy).not.toContain('client_files_question_url');
+    expect(question.serverPy).not.toContain('def render(data, html):');
+    expect(question.serverPy).toContain('data["feedback"]["qti_import_correct"] = True');
+    expect(question.questionHtml).toContain('<p>Correct <pl-figure file-name="remote-');
+    expect(question.questionHtml).toContain('{{#feedback.qti_import_correct}}');
     expect(question.questionHtml).toContain(
       'feedback="<img src=&quot;{{ options.client_files_question_url }}/remote-',
     );
