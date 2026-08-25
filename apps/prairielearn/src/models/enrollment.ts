@@ -42,6 +42,7 @@ import {
 import { isEnterprise } from '../lib/license.js';
 import { HttpRedirect } from '../lib/redirect.js';
 
+import { invalidateAssessmentStatisticsForCourseInstance } from './assessment.js';
 import { insertAuditEvent } from './audit-event.js';
 import type { SupportedActionsForTable } from './audit-event.types.js';
 import { selectCourseInstanceById } from './course-instances.js';
@@ -130,6 +131,12 @@ async function _enrollUserInCourseInstance({
     agentAuthnUserId: authzData.user.id,
     agentUserId: authzData.user.id,
   });
+
+  if (lockedEnrollment.user_id != null) {
+    await invalidateAssessmentStatisticsForCourseInstance({
+      course_instance_id: lockedEnrollment.course_instance_id,
+    });
+  }
 
   return newEnrollment;
 }
@@ -739,6 +746,12 @@ export async function setEnrollmentStatus({
       agentAuthnUserId: 'authn_user' in authzData ? authzData.authn_user.id : authzData.user.id,
     });
 
+    if ((lockedEnrollment.status === 'joined') !== (newEnrollment.status === 'joined')) {
+      await invalidateAssessmentStatisticsForCourseInstance({
+        course_instance_id: lockedEnrollment.course_instance_id,
+      });
+    }
+
     return newEnrollment;
   });
 }
@@ -795,6 +808,10 @@ export async function removeEnrollmentFromSync({
       newRow: newEnrollment,
       agentUserId: authzData.user.id,
       agentAuthnUserId: authzData.authn_user.id,
+    });
+
+    await invalidateAssessmentStatisticsForCourseInstance({
+      course_instance_id: lockedEnrollment.course_instance_id,
     });
 
     return newEnrollment;
@@ -856,6 +873,10 @@ export async function reenrollEnrollmentFromSync({
       newRow: newEnrollment,
       agentUserId: authzData.user.id,
       agentAuthnUserId: authzData.authn_user.id,
+    });
+
+    await invalidateAssessmentStatisticsForCourseInstance({
+      course_instance_id: lockedEnrollment.course_instance_id,
     });
 
     return newEnrollment;
