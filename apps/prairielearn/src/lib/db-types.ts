@@ -7,6 +7,8 @@ import { DateFromISOString, IdSchema, IntervalSchema } from '@prairielearn/zod';
 
 import { EnumAssessmentToolSchema, QuestionPreferencesSchemaJsonSchema } from '../schemas/index.js';
 
+import { AccessTimelineEntrySchema } from './assessment-access-control/timeline.js';
+
 // *******************************************************************************
 // Enum schemas. These should be alphabetized by their corresponding enum name.
 // *******************************************************************************
@@ -117,9 +119,59 @@ export const QuestionPreferenceValuesSchema = z.record(
 // Sproc schemas. These should be alphabetized by their corresponding sproc name.
 // *******************************************************************************
 
+// Result of check_assessment_access sproc
+const SprocCheckAssessmentAccessSchema = z.object({
+  active: z.boolean().nullable(),
+  credit: z.union([z.string(), z.literal('None')]),
+  end_date: z.union([z.string(), z.literal('—')]),
+  mode: EnumModeSchema.nullable(),
+  start_date: z.union([z.string(), z.literal('—')]),
+  time_limit_min: z.union([z.string(), z.literal('—')]),
+});
+
 // Result of users_get_displayed_role sproc
 export const SprocUsersGetDisplayedRoleSchema = z.enum(['Staff', 'Student', 'None']);
 export type SprocUsersGetDisplayedRole = z.infer<typeof SprocUsersGetDisplayedRoleSchema>;
+
+// Result of authz_assessment sproc
+export const SprocAuthzAssessmentSchema = z.object({
+  access_rules: z.array(SprocCheckAssessmentAccessSchema),
+  access_timeline: z.array(AccessTimelineEntrySchema).readonly(),
+  active: z.boolean(),
+  authorized: z.boolean(),
+  credit: z.number().nullable(),
+  credit_date_string: z.string().nullable(),
+  exam_access_end: DateFromISOString.nullable(),
+  mode: EnumModeSchema.nullable(),
+  next_active_time: z.string().nullable(),
+  password: z.string().nullable(),
+  show_before_release: z.boolean(),
+  show_closed_assessment: z.boolean(),
+  show_closed_assessment_score: z.boolean(),
+  time_limit_min: z.number().nullable(),
+});
+export type SprocAuthzAssessment = z.infer<typeof SprocAuthzAssessmentSchema>;
+
+// Result of authz_assessment_instance sproc
+export const SprocAuthzAssessmentInstanceSchema = z.object({
+  access_rules: z.array(SprocCheckAssessmentAccessSchema),
+  access_timeline: z.array(AccessTimelineEntrySchema).readonly(),
+  active: z.boolean(),
+  authorized: z.boolean(),
+  authorized_edit: z.boolean(),
+  credit: z.number().nullable(),
+  credit_date_string: z.string().nullable(),
+  exam_access_end: DateFromISOString.nullable(),
+  mode: EnumModeSchema.nullable(),
+  next_active_time: z.string().nullable(),
+  password: z.string().nullable(),
+  show_before_release: z.boolean(),
+  show_closed_assessment: z.boolean(),
+  show_closed_assessment_score: z.boolean(),
+  time_limit_expired: z.boolean(),
+  time_limit_min: z.number().nullable(),
+});
+export type SprocAuthzAssessmentInstance = z.infer<typeof SprocAuthzAssessmentInstanceSchema>;
 
 // Result of users_is_instructor_in_course_instance sproc
 export const SprocUsersIsInstructorInCourseInstanceSchema = z.object({
