@@ -1,6 +1,6 @@
 import assert from 'assert';
 
-import { html } from '@prairielearn/html';
+import { html, unsafeHtml } from '@prairielearn/html';
 import { markdownToHtml } from '@prairielearn/markdown';
 import { run } from '@prairielearn/run';
 
@@ -245,7 +245,9 @@ export function GradingPanel({
           ? html`
               <li class="list-group-item">
                 <div class="mb-1">Guidelines:</div>
-                <p class="my-3" style="white-space: pre-line;">${graderGuidelinesRendered}</p>
+                <p class="my-3" style="white-space: pre-line;" data-testid="grader-guidelines">
+                  ${unsafeHtml(graderGuidelinesRendered)}
+                </p>
               </li>
             `
           : ''}
