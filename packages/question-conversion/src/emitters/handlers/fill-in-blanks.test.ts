@@ -51,59 +51,37 @@ describe('fillInBlanksHandler.renderHtml', () => {
   });
 });
 
-describe('fillInBlanksHandler.renderGradePy', () => {
-  it('returns empty string when no feedback', () => {
-    const py = fillInBlanksHandler.renderGradePy!({ type: 'fill-in-blanks', blanks }, undefined);
-    assert.equal(py, '');
+describe('fillInBlanksHandler.renderFeedback', () => {
+  it('returns no messages when feedback is absent', () => {
+    const feedback = fillInBlanksHandler.renderFeedback!(
+      { type: 'fill-in-blanks', blanks },
+      undefined,
+    );
+    assert.deepEqual(feedback, []);
   });
 
-  it('returns empty string when perAnswer does not match any blank', () => {
-    const py = fillInBlanksHandler.renderGradePy!(
+  it('returns no messages when feedback does not match any blank', () => {
+    const feedback = fillInBlanksHandler.renderFeedback!(
       { type: 'fill-in-blanks', blanks },
-      { perAnswer: { unrelated: 'msg' } },
+      { unrelated: 'msg' },
     );
-    assert.equal(py, '');
+    assert.deepEqual(feedback, []);
   });
 
-  it('generates grade function checking partial_scores for matched blanks', () => {
-    const py = fillInBlanksHandler.renderGradePy!(
+  it('describes feedback for each matching blank', () => {
+    const feedback = fillInBlanksHandler.renderFeedback!(
       { type: 'fill-in-blanks', blanks },
-      { perAnswer: { hello: 'You got blank1!', world: 'You got blank2!' } },
+      { hello: 'You got blank1!', world: 'You got blank2!' },
     );
-    assert.include(py, 'def grade(data):');
-    assert.include(py, '_messages = []');
-    assert.include(py, 'partial_scores');
-    assert.include(py, '"blank1"');
-    assert.include(py, '"blank2"');
-    assert.include(py, 'data["feedback"]["general"]');
-  });
-
-  it('appends global correct/incorrect feedback', () => {
-    const py = fillInBlanksHandler.renderGradePy!(
-      { type: 'fill-in-blanks', blanks },
-      { correct: 'All correct!', incorrect: 'Try again', perAnswer: { hello: 'Nice' } },
-    );
-    assert.include(py, '"All correct!"');
-    assert.include(py, '"Try again"');
-  });
-
-  it('generates grade function from global-only feedback (no perAnswer)', () => {
-    const py = fillInBlanksHandler.renderGradePy!(
-      { type: 'fill-in-blanks', blanks },
-      { correct: 'Great job!' },
-    );
-    assert.include(py, 'def grade(data):');
-    assert.include(py, '"Great job!"');
-  });
-
-  it('emits feedback as a JSON-encoded string literal so special characters are safe', () => {
-    // Feedback that would explode inside an f-string: {braces} would get evaluated,
-    // backslashes would misbehave, unescaped quotes and newlines would break syntax.
-    const feedback = 'has "quotes", {braces}, \\back\\slash, and\nnewline';
-    const py = fillInBlanksHandler.renderGradePy!(
-      { type: 'fill-in-blanks', blanks },
-      { perAnswer: { hello: feedback } },
-    );
-    assert.include(py, JSON.stringify(`<strong>hello</strong>: ${feedback}`));
+    assert.deepEqual(feedback, [
+      {
+        html: '<strong>hello</strong>: You got blank1!',
+        trigger: { type: 'blank-correct', answerName: 'blank1' },
+      },
+      {
+        html: '<strong>world</strong>: You got blank2!',
+        trigger: { type: 'blank-correct', answerName: 'blank2' },
+      },
+    ]);
   });
 });

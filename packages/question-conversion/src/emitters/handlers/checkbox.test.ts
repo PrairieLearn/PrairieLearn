@@ -27,7 +27,7 @@ describe('checkboxHandler.renderHtml', () => {
     assert.notInclude(html, 'order=');
   });
 
-  it('does not include feedback attributes in HTML (per-answer handled in grade())', () => {
+  it('does not include feedback attributes in HTML (per-answer handled in the answer panel)', () => {
     const html = checkboxHandler.renderHtml({ type: 'checkbox', choices }, undefined, {
       Apple: 'Correct!',
     });
@@ -35,97 +35,36 @@ describe('checkboxHandler.renderHtml', () => {
   });
 });
 
-describe('checkboxHandler.renderGradePy', () => {
-  it('returns empty string when no perAnswer feedback', () => {
-    const py = checkboxHandler.renderGradePy!({ type: 'checkbox', choices }, undefined);
-    assert.equal(py, '');
+describe('checkboxHandler.renderFeedback', () => {
+  it('returns no messages when per-answer feedback is absent', () => {
+    const feedback = checkboxHandler.renderFeedback!({ type: 'checkbox', choices }, undefined);
+    assert.deepEqual(feedback, []);
   });
 
-  it('returns empty string when perAnswer is empty', () => {
-    const py = checkboxHandler.renderGradePy!({ type: 'checkbox', choices }, { perAnswer: {} });
-    assert.equal(py, '');
-  });
-
-  it('generates grade function with feedback map and key-to-html lookup', () => {
-    const py = checkboxHandler.renderGradePy!(
+  it('describes feedback for each matching answer', () => {
+    const feedback = checkboxHandler.renderFeedback!(
       { type: 'checkbox', choices },
-      { perAnswer: { Apple: 'Good choice', Banana: 'Not a fruit salad item' } },
+      { Apple: 'Good choice', Banana: 'Not a fruit salad item' },
     );
-    assert.equal(
-      py,
-      `def grade(data):
-    _feedback_map = {
-        "Apple": "Good choice",
-        "Banana": "Not a fruit salad item",
-    }
-    _key_to_html = {a["key"]: a["html"] for a in data["params"].get("answer") or []}
-    _submitted = data["submitted_answers"].get("answer") or []
-    if isinstance(_submitted, str):
-        _submitted = [_submitted]
-    _messages = []
-    for _key in _submitted:
-        _html = _key_to_html.get(_key)
-        if _html in _feedback_map:
-            _messages.append(f"<strong>{_html}</strong>: {_feedback_map[_html]}")
-    if _messages:
-        data["feedback"]["general"] = "<br>".join(_messages)
-`,
-    );
+    assert.deepEqual(feedback, [
+      {
+        html: '<strong>Apple</strong>: Good choice',
+        trigger: { type: 'checkbox-answer-selected', answerHtml: 'Apple' },
+      },
+      {
+        html: '<strong>Banana</strong>: Not a fruit salad item',
+        trigger: { type: 'checkbox-answer-selected', answerHtml: 'Banana' },
+      },
+    ]);
   });
 
-  it('appends global correct feedback', () => {
-    const py = checkboxHandler.renderGradePy!(
+  it('ignores feedback that does not match an emitted answer', () => {
+    const feedback = checkboxHandler.renderFeedback!(
       { type: 'checkbox', choices },
-      { correct: 'Well done!', perAnswer: { Apple: 'Yes' } },
+      {
+        Durian: 'Not present',
+      },
     );
-    assert.equal(
-      py,
-      `def grade(data):
-    _feedback_map = {
-        "Apple": "Yes",
-    }
-    _key_to_html = {a["key"]: a["html"] for a in data["params"].get("answer") or []}
-    _submitted = data["submitted_answers"].get("answer") or []
-    if isinstance(_submitted, str):
-        _submitted = [_submitted]
-    _messages = []
-    for _key in _submitted:
-        _html = _key_to_html.get(_key)
-        if _html in _feedback_map:
-            _messages.append(f"<strong>{_html}</strong>: {_feedback_map[_html]}")
-    if data["score"] >= 1.0:
-        _messages.append("Well done!")
-    if _messages:
-        data["feedback"]["general"] = "<br>".join(_messages)
-`,
-    );
-  });
-
-  it('appends global incorrect feedback', () => {
-    const py = checkboxHandler.renderGradePy!(
-      { type: 'checkbox', choices },
-      { incorrect: 'Try again', perAnswer: { Apple: 'Yes' } },
-    );
-    assert.equal(
-      py,
-      `def grade(data):
-    _feedback_map = {
-        "Apple": "Yes",
-    }
-    _key_to_html = {a["key"]: a["html"] for a in data["params"].get("answer") or []}
-    _submitted = data["submitted_answers"].get("answer") or []
-    if isinstance(_submitted, str):
-        _submitted = [_submitted]
-    _messages = []
-    for _key in _submitted:
-        _html = _key_to_html.get(_key)
-        if _html in _feedback_map:
-            _messages.append(f"<strong>{_html}</strong>: {_feedback_map[_html]}")
-    if data["score"] < 1.0:
-        _messages.append("Try again")
-    if _messages:
-        data["feedback"]["general"] = "<br>".join(_messages)
-`,
-    );
+    assert.deepEqual(feedback, []);
   });
 });
