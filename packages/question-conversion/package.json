@@ -40,9 +40,11 @@
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
     "@types/he": "^1.2.3",
+    "@types/mustache": "^4.2.6",
     "@types/node": "^24.13.3",
     "@typescript/native-preview": "beta",
     "@vitest/coverage-v8": "^4.1.10",
+    "mustache": "^4.2.0",
     "vitest": "^4.1.10",
     "zod": "^4.4.3"
   }
