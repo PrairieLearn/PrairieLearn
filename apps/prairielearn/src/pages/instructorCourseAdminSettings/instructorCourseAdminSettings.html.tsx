@@ -1,9 +1,8 @@
-import type { Timezone } from '@prairielearn/utils/timezone';
+import { type Timezone, formatTimezone } from '@prairielearn/utils/timezone';
 
 import { GitHubButton } from '../../components/GitHubButton.js';
 import type { PageAuthzData } from '../../lib/authz-data-lib.js';
 import type { Course, Institution } from '../../lib/db-types.js';
-import { formatTimezone } from '../../lib/timezone.shared.js';
 
 export function InstructorCourseAdminSettings({
   aiQuestionGenerationEnabled,

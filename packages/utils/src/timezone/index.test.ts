@@ -2,12 +2,58 @@ import { Temporal } from '@js-temporal/polyfill';
 import { describe, expect, it } from 'vitest';
 
 import {
+  formatTimezone,
   getCanonicalTimezones,
   getLocalDate,
   getLocalDayBounds,
   getTimezoneByName,
   plainDateTimeToDate,
 } from './index.js';
+
+describe('formatTimezone', () => {
+  it('formats positive hour and minute offsets', () => {
+    expect(
+      formatTimezone({
+        name: 'Europe/Berlin',
+        utc_offset: (2 * 60 + 30) * 60 * 1000,
+      }),
+    ).toBe('(UTC 2:30) Europe/Berlin');
+  });
+
+  it('formats negative hour and minute offsets', () => {
+    expect(
+      formatTimezone({
+        name: 'America/Chicago',
+        utc_offset: -(5 * 60 + 45) * 60 * 1000,
+      }),
+    ).toBe('(UTC -5:45) America/Chicago');
+  });
+
+  it('formats zero hour and minute offsets', () => {
+    expect(formatTimezone({ name: 'UTC', utc_offset: 0 })).toBe('(UTC 00:00) UTC');
+  });
+
+  it('formats positive whole-hour offsets', () => {
+    expect(formatTimezone({ name: 'Asia/Kolkata', utc_offset: 5 * 60 * 60 * 1000 })).toBe(
+      '(UTC 5:00) Asia/Kolkata',
+    );
+  });
+
+  it('formats positive sub-hour offsets', () => {
+    expect(formatTimezone({ name: 'Etc/GMT', utc_offset: 15 * 60 * 1000 })).toBe(
+      '(UTC 00:15) Etc/GMT',
+    );
+  });
+
+  it('formats negative fractional-hour offsets', () => {
+    expect(
+      formatTimezone({
+        name: 'America/St_Johns',
+        utc_offset: -(3 * 60 + 30) * 60 * 1000,
+      }),
+    ).toBe('(UTC -3:30) America/St_Johns');
+  });
+});
 
 describe('plainDateTimeToDate', () => {
   it.skipIf((process.versions.tz ?? '') < '2026b')(

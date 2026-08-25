@@ -7,6 +7,15 @@ export interface Timezone {
   utc_offset: number;
 }
 
+export function formatTimezone(timezone: Timezone): string {
+  const totalMinutes = Math.trunc(timezone.utc_offset / 60_000);
+  const sign = totalMinutes < 0 ? '-' : '';
+  const absoluteMinutes = Math.abs(totalMinutes);
+  const hours = Math.floor(absoluteMinutes / 60) || '00';
+  const minutes = absoluteMinutes % 60 || '00';
+  return `(UTC ${sign}${hours}:${minutes.toString().padStart(2, '0')}) ${timezone.name}`;
+}
+
 export type TimezoneDisambiguation = NonNullable<Temporal.ToInstantOptions['disambiguation']>;
 
 /**

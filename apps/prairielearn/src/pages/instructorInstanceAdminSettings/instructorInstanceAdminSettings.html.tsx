@@ -7,7 +7,7 @@ import { useForm } from 'react-hook-form';
 
 import { QueryClientProviderDebug } from '@prairielearn/trpc/react';
 import { StickySaveBar } from '@prairielearn/ui';
-import type { Timezone } from '@prairielearn/utils/timezone';
+import { type Timezone, formatTimezone } from '@prairielearn/utils/timezone';
 
 import { GitHubButton } from '../../components/GitHubButton.js';
 import { ShareSourcePubliclyCard } from '../../components/ShareSourcePubliclyCard.js';
@@ -15,7 +15,6 @@ import { CourseInstanceShortNameDescription } from '../../components/ShortNameDe
 import type { PageContext } from '../../lib/client/page-context.js';
 import { getAssessmentSettingsUrl } from '../../lib/client/url.js';
 import { validateShortName } from '../../lib/short-name.js';
-import { formatTimezone } from '../../lib/timezone.shared.js';
 import { createCourseInstanceTrpcClient } from '../../trpc/courseInstance/client.js';
 import { TRPCProvider } from '../../trpc/courseInstance/context.js';
 

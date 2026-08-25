@@ -2,12 +2,11 @@ import { z } from 'zod';
 
 import { compiledScriptTag } from '@prairielearn/compiled-assets';
 import { type HtmlValue, html } from '@prairielearn/html';
-import type { Timezone } from '@prairielearn/utils/timezone';
+import { type Timezone, formatTimezone } from '@prairielearn/utils/timezone';
 
 import { PageLayout } from '../../../components/PageLayout.js';
 import { type Institution, type PlanGrant } from '../../../lib/db-types.js';
 import type { ResLocalsForPage } from '../../../lib/res-locals.js';
-import { formatTimezone } from '../../../lib/timezone.shared.js';
 import { CourseRequestMessageSection } from '../../components/courseRequestMessage/CourseRequestMessageSection.js';
 import { PlanGrantsEditor } from '../../lib/billing/components/PlanGrantsEditor.js';
 
