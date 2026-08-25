@@ -313,14 +313,18 @@ export class PLEmitter implements OutputEmitter {
     const bodyHtml = handler.renderHtml(question.body, question.shuffleAnswers, perAnswerForHtml);
     if (bodyHtml) parts.push(bodyHtml);
 
-    // Show answer panel when grade() will set data["feedback"]["general"].
-    // Types with renderGradePy may produce grade output from perAnswer alone (checkbox, fill-in-blanks).
     const fb = question.feedback;
-    const willHaveGrade = handler.renderGradePy
-      ? fb?.correct || fb?.incorrect || (fb?.perAnswer && Object.keys(fb.perAnswer).length > 0)
-      : fb?.correct || fb?.incorrect;
-    if (willHaveGrade) {
-      parts.push('', '<pl-answer-panel>', '{{{feedback.general}}}', '</pl-answer-panel>');
+    if (handler.renderGradePy) {
+      const willHaveGrade =
+        fb?.correct || fb?.incorrect || (fb?.perAnswer && Object.keys(fb.perAnswer).length > 0);
+      if (willHaveGrade) {
+        parts.push('', '<pl-answer-panel>', '{{{feedback.general}}}', '</pl-answer-panel>');
+      }
+    } else {
+      const feedbackHtml = renderGlobalFeedbackHtml(fb);
+      if (feedbackHtml) {
+        parts.push('', feedbackHtml);
+      }
     }
 
     return parts.join('\n');
@@ -427,28 +431,45 @@ function containsPlInput(node: AnyNode): boolean {
   return false;
 }
 
+function renderGlobalFeedbackHtml(feedback: IRFeedback | undefined): string {
+  const { correct, incorrect } = feedback ?? {};
+  if (!correct && !incorrect) return '';
+
+  const lines = ['<pl-answer-panel>'];
+  if (correct) {
+    lines.push(
+      '  {{#feedback.qti_import_correct}}',
+      correct,
+      '  {{/feedback.qti_import_correct}}',
+    );
+  }
+  if (incorrect) {
+    lines.push(
+      '  {{#feedback.qti_import_incorrect}}',
+      incorrect,
+      '  {{/feedback.qti_import_incorrect}}',
+    );
+  }
+  lines.push('</pl-answer-panel>');
+  return lines.join('\n');
+}
+
 /** Render the grade(data) function for types with only global correct/incorrect feedback. */
 function renderDefaultGradeFn(feedback: IRFeedback | undefined): string {
   const { correct, incorrect } = feedback ?? {};
   if (!correct && !incorrect) return '';
 
   const lines = ['def grade(data):'];
-  if (correct && incorrect) {
+  if (correct) {
     lines.push(
       '    if data["score"] >= 1.0:',
-      `        data["feedback"]["general"] = ${JSON.stringify(correct)}`,
-      '    else:',
-      `        data["feedback"]["general"] = ${JSON.stringify(incorrect)}`,
+      '        data["feedback"]["qti_import_correct"] = True',
     );
-  } else if (correct) {
-    lines.push(
-      '    if data["score"] >= 1.0:',
-      `        data["feedback"]["general"] = ${JSON.stringify(correct)}`,
-    );
-  } else {
+  }
+  if (incorrect) {
     lines.push(
       '    if data["score"] < 1.0:',
-      `        data["feedback"]["general"] = ${JSON.stringify(incorrect)}`,
+      '        data["feedback"]["qti_import_incorrect"] = True',
     );
   }
   lines.push('');

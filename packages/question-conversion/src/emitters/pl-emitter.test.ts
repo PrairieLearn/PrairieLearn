@@ -139,25 +139,34 @@ describe('PLEmitter', () => {
   });
 
   describe('feedback rendering', () => {
-    it('emits pl-answer-panel with both correct and incorrect feedback', () => {
+    it('emits static conditional blocks for correct and incorrect feedback', () => {
       const q = makeQuestion({
         feedback: { correct: '<p>Well done!</p>', incorrect: '<p>Try again.</p>' },
       });
       const result = emitter.emit(makeAssessment([q]));
       const html = result.questions[0].questionHtml;
       assert.include(html, '<pl-answer-panel>');
-      assert.include(html, '{{{feedback.general}}}');
+      assert.include(html, '{{#feedback.qti_import_correct}}');
+      assert.include(html, '<p>Well done!</p>');
+      assert.include(html, '{{/feedback.qti_import_correct}}');
+      assert.include(html, '{{#feedback.qti_import_incorrect}}');
+      assert.include(html, '<p>Try again.</p>');
+      assert.include(html, '{{/feedback.qti_import_incorrect}}');
+      assert.notInclude(html, 'feedback.general');
     });
 
-    it('emits grade() in server.py with correct and incorrect branches', () => {
+    it('emits grade() that sets correct and incorrect display flags', () => {
       const q = makeQuestion({
         feedback: { correct: '<p>Correct!</p>', incorrect: '<p>Wrong.</p>' },
       });
       const serverPy = emitter.emit(makeAssessment([q])).questions[0].serverPy;
       assert.include(serverPy, 'def grade(data):');
       assert.include(serverPy, 'data["score"] >= 1.0');
-      assert.include(serverPy, '"<p>Correct!</p>"');
-      assert.include(serverPy, '"<p>Wrong.</p>"');
+      assert.include(serverPy, 'data["feedback"]["qti_import_correct"] = True');
+      assert.include(serverPy, 'data["feedback"]["qti_import_incorrect"] = True');
+      assert.notInclude(serverPy, '<p>Correct!</p>');
+      assert.notInclude(serverPy, '<p>Wrong.</p>');
+      assert.notInclude(serverPy, 'feedback"]["general');
     });
 
     it('emits grade() with only correct branch when incorrect is absent', () => {
