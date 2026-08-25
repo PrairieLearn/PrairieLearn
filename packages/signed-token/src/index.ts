@@ -19,10 +19,10 @@ interface PrefixCsrfTokenData {
   [claim: string]: unknown;
 }
 
-type RequireIdentityClaim<Data extends PrefixCsrfTokenData> =
+type RequireClaim<Data extends PrefixCsrfTokenData> =
   Exclude<keyof Data, 'url' | 'type'> extends never ? never : Data;
 
-function hasIdentityClaim(data: PrefixCsrfTokenData): boolean {
+function hasClaim(data: PrefixCsrfTokenData): boolean {
   return Object.keys(data).some((key) => key !== 'url' && key !== 'type');
 }
 
@@ -157,15 +157,18 @@ export function checkSignedToken(
  * Generates a CSRF token that is valid for a URL prefix instead of an exact URL.
  * This is useful for tRPC and similar APIs where a single token should be valid
  * for all sub-routes under a prefix (e.g., `/foo/bar/trpc` is valid for
- * `/foo/bar/trpc/getUser` and `/foo/bar/trpc/updateUser`). At least one identity
- * claim is required to prevent tokens from being valid for every user.
+ * `/foo/bar/trpc/getUser` and `/foo/bar/trpc/updateUser`). At least one claim is
+ * required to prevent unbound tokens.
  */
 export function generatePrefixCsrfToken<const Data extends PrefixCsrfTokenData>(
-  data: RequireIdentityClaim<Data>,
+  data: RequireClaim<Data>,
   secretKey: SecretKey,
 ) {
-  if (!hasIdentityClaim(data)) {
-    throw new Error('Prefix CSRF token data must contain at least one identity claim');
+  if (Object.hasOwn(data, 'type')) {
+    throw new Error('Prefix CSRF token data cannot contain the reserved "type" claim');
+  }
+  if (!hasClaim(data)) {
+    throw new Error('Prefix CSRF token data must contain at least one claim');
   }
   return generateSignedToken({ ...data, type: 'prefix' }, secretKey);
 }
@@ -173,8 +176,7 @@ export function generatePrefixCsrfToken<const Data extends PrefixCsrfTokenData>(
 /**
  * Validates a prefix-based CSRF token. The token's URL must be a prefix of the
  * request URL for validation to succeed. All claims other than the URL must
- * exactly match the claims in the token, and at least one identity claim must
- * be present.
+ * exactly match the claims in the token, and at least one claim must be present.
  *
  * @param token - The CSRF token to validate
  * @param requestData - The request URL and claims to validate
@@ -185,7 +187,7 @@ export function generatePrefixCsrfToken<const Data extends PrefixCsrfTokenData>(
  */
 export function checkSignedTokenPrefix<const Data extends PrefixCsrfTokenData>(
   token: string,
-  requestData: RequireIdentityClaim<Data>,
+  requestData: RequireClaim<Data>,
   secretKey: SecretKey,
   options: CheckOptions = {},
 ): boolean {
@@ -203,10 +205,15 @@ export function checkSignedTokenPrefix<const Data extends PrefixCsrfTokenData>(
     return false;
   }
 
+  if (Object.hasOwn(requestData, 'type')) {
+    debug('checkSignedTokenPrefix(): FAIL - request data contains reserved type claim');
+    return false;
+  }
+
   const { url: requestUrl, ...requestClaims } = requestData;
 
-  if (!hasIdentityClaim(requestData)) {
-    debug('checkSignedTokenPrefix(): FAIL - no identity claims');
+  if (!hasClaim(requestData)) {
+    debug('checkSignedTokenPrefix(): FAIL - no claims');
     return false;
   }
 

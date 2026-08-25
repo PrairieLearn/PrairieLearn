@@ -87,17 +87,32 @@ describe('generatePrefixCsrfToken', () => {
     assert.equal(tokenData.user_id, TEST_DATA_WITH_ALTERNATE_CLAIM.user_id);
   });
 
-  it('rejects data without an identity claim', () => {
+  it('rejects data without a claim', () => {
     assert.throws(
       // @ts-expect-error Testing runtime validation for JavaScript callers.
       () => generatePrefixCsrfToken({ url: '/test' }, SECRET_KEY),
-      'Prefix CSRF token data must contain at least one identity claim',
+      'Prefix CSRF token data must contain at least one claim',
+    );
+  });
+
+  it('rejects the reserved type claim', () => {
+    assert.throws(
+      () =>
+        generatePrefixCsrfToken(
+          {
+            ...TEST_DATA_WITH_ALTERNATE_CLAIM,
+            // @ts-expect-error Testing runtime validation for JavaScript callers.
+            type: 'custom',
+          },
+          SECRET_KEY,
+        ),
+      'Prefix CSRF token data cannot contain the reserved "type" claim',
     );
   });
 });
 
 describe('checkSignedTokenPrefix', () => {
-  it('validates an alternate identity claim', () => {
+  it('validates an alternate claim', () => {
     const token = generatePrefixCsrfToken(TEST_DATA_WITH_ALTERNATE_CLAIM, SECRET_KEY);
 
     assert.isTrue(checkSignedTokenPrefix(token, TEST_DATA_WITH_ALTERNATE_CLAIM, SECRET_KEY));
@@ -154,11 +169,27 @@ describe('checkSignedTokenPrefix', () => {
     );
   });
 
-  it('rejects a prefix token without an identity claim', () => {
+  it('rejects a prefix token without a claim', () => {
     const token = generateSignedToken({ url: '/test', type: 'prefix' }, SECRET_KEY);
 
     // @ts-expect-error Testing runtime validation for JavaScript callers.
     assert.isFalse(checkSignedTokenPrefix(token, { url: '/test' }, SECRET_KEY));
+  });
+
+  it('rejects the reserved type claim in request data', () => {
+    const token = generatePrefixCsrfToken(TEST_DATA_WITH_ALTERNATE_CLAIM, SECRET_KEY);
+
+    assert.isFalse(
+      checkSignedTokenPrefix(
+        token,
+        {
+          ...TEST_DATA_WITH_ALTERNATE_CLAIM,
+          // @ts-expect-error Testing runtime validation for JavaScript callers.
+          type: 'prefix',
+        },
+        SECRET_KEY,
+      ),
+    );
   });
 
   it('rejects non-prefix tokens', () => {
