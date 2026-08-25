@@ -9,10 +9,7 @@ import {
   StudentAccessRulesPopover,
   StudentAccessTimelinePopover,
 } from '../../components/StudentAccessPopovers.js';
-import {
-  AssessmentAuthzResultSchema,
-  LegacyAssessmentAccessRuleResultSchema,
-} from '../../lib/assessment-access-control/authz-result.js';
+import type { AssessmentAuthzResult } from '../../lib/assessment-access-control/authz-result.js';
 import {
   AssessmentInstanceSchema,
   AssessmentSchema,
@@ -41,17 +38,19 @@ export const StudentAssessmentSummarySchema = z.object({
 });
 export type StudentAssessmentSummary = z.infer<typeof StudentAssessmentSummarySchema>;
 
-const StudentAssessmentsRowSchema = StudentAssessmentSummarySchema.extend({
-  authorized: AssessmentAuthzResultSchema.shape.authorized,
-  credit_date_string: z.string(),
-  active: AssessmentAuthzResultSchema.shape.active,
-  access_rules: LegacyAssessmentAccessRuleResultSchema.array(),
-  access_timeline: AssessmentAuthzResultSchema.shape.access_timeline,
-  show_closed_assessment_score: AssessmentAuthzResultSchema.shape.show_closed_assessment_score,
-  show_before_release: AssessmentAuthzResultSchema.shape.show_before_release,
-  will_release_at: AssessmentAuthzResultSchema.shape.next_active_time,
-});
-export type StudentAssessmentsRow = z.infer<typeof StudentAssessmentsRowSchema>;
+export type StudentAssessmentsRow = StudentAssessmentSummary &
+  Pick<
+    AssessmentAuthzResult,
+    | 'access_rules'
+    | 'access_timeline'
+    | 'active'
+    | 'authorized'
+    | 'show_before_release'
+    | 'show_closed_assessment_score'
+  > & {
+    credit_date_string: string;
+    will_release_at: AssessmentAuthzResult['next_active_time'];
+  };
 
 export function StudentAssessments({
   resLocals,

@@ -6,7 +6,7 @@ import { EnumModeSchema } from '../db-types.js';
 
 import { AccessTimelineEntrySchema } from './timeline.js';
 
-export const LegacyAssessmentAccessRuleResultSchema = z.object({
+const LegacyAssessmentAccessRuleResultSchema = z.object({
   active: z.boolean().nullable(),
   credit: z.union([z.string(), z.literal('None')]),
   end_date: z.union([z.string(), z.literal('—')]),
