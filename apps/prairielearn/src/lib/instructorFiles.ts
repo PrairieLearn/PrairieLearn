@@ -92,7 +92,7 @@ function getContextPaths(
       clientDir: path.join(rootPath, 'clientFilesCourseInstance'),
       urlPrefix: `${locals.urlPrefix}/instance_admin`,
     };
-  } else if (locals.navPage === 'assessment') {
+  } else if (locals.navPage === 'assessment' || locals.navPage === 'public_assessment') {
     const rootPath = getAssessmentDir({
       course: locals.course,
       course_instance: locals.course_instance,
