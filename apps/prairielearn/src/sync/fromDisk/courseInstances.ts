@@ -71,10 +71,14 @@ function generateEnrollmentCode() {
 }
 
 function getParamsForCourseInstance(
-  courseInstance: CourseInstanceJson | null | undefined,
+  courseInstanceInfoFile: infofile.InfoFile<CourseInstanceJson>,
   courseTimezone: string,
 ) {
-  if (!courseInstance) return null;
+  if (infofile.hasErrors(courseInstanceInfoFile)) return null;
+  const courseInstance = courseInstanceInfoFile.data;
+  if (!courseInstance) {
+    throw new Error(`Missing course instance data for ${courseInstanceInfoFile.uuid}`);
+  }
 
   const displayTimezone = courseInstance.timezone ?? courseTimezone;
 
@@ -197,10 +201,7 @@ export async function sync(
           courseInstanceId,
           infofile.stringifyErrors(courseInstance),
           infofile.stringifyWarnings(courseInstance),
-          getParamsForCourseInstance(
-            infofile.hasErrors(courseInstance) ? null : courseInstance.data,
-            course.display_timezone,
-          ),
+          getParamsForCourseInstance(courseInstance, course.display_timezone),
         ]);
       },
     );
