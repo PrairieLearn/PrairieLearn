@@ -1667,6 +1667,12 @@ export const UserSessionSchema = z.object({
 });
 export type UserSession = z.infer<typeof UserSessionSchema>;
 
+export const UserSettingsSchema = z.object({
+  enable_single_key_shortcuts: z.boolean(),
+  user_id: IdSchema,
+});
+export type UserSettings = z.infer<typeof UserSettingsSchema>;
+
 export const VariantSchema = z.object({
   authn_user_id: IdSchema,
   broken: z.boolean().nullable(),
@@ -1879,6 +1885,7 @@ export const TableNames = [
   'time_series',
   'topics',
   'user_sessions',
+  'user_settings',
   'users',
   'variants',
   'workspace_host_logs',

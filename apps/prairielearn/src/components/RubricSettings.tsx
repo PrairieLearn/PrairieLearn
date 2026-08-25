@@ -375,23 +375,20 @@ export function RubricSettings({
 
       const rubricItems = parsedData.rubric_items;
 
-      const scaledRubricItems: RubricItemData[] = [];
-      for (const rubricItem of rubricItems) {
-        scaledRubricItems.push({
-          rubric_item: {
-            always_show_to_students: rubricItem.always_show_to_students,
-            deleted_at: null,
-            description: rubricItem.description,
-            explanation: rubricItem.explanation,
-            grader_note: rubricItem.grader_note,
-            key_binding: null,
-            points: roundPoints(rubricItem.points * scaleFactor),
-          },
-          unique_key: `imported-row-${crypto.randomUUID()}`,
-          num_submissions: null,
-          disagreement_count: null,
-        });
-      }
+      const scaledRubricItems: RubricItemData[] = Array.from(rubricItems, (rubricItem) => ({
+        rubric_item: {
+          always_show_to_students: rubricItem.always_show_to_students,
+          deleted_at: null,
+          description: rubricItem.description,
+          explanation: rubricItem.explanation,
+          grader_note: rubricItem.grader_note,
+          key_binding: null,
+          points: roundPoints(rubricItem.points * scaleFactor),
+        },
+        unique_key: `imported-row-${crypto.randomUUID()}`,
+        num_submissions: null,
+        disagreement_count: null,
+      }));
 
       setGraderGuidelines(parsedData.grader_guidelines ?? '');
       setRubricItems(scaledRubricItems);

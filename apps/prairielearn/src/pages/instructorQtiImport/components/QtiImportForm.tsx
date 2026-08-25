@@ -7,8 +7,8 @@ import {
   defaultTrimmedQtiArchiveName,
   trimQtiArchive,
 } from '@prairielearn/question-conversion/trimmer';
+import { getAppError } from '@prairielearn/trpc/client';
 
-import { getAppError } from '../../../lib/client/errors.js';
 import {
   getCourseInstanceBaseUrl,
   getCourseInstanceEditErrorUrl,

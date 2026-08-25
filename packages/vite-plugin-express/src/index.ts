@@ -142,9 +142,9 @@ async function createMiddleware(server: ViteDevServer): Promise<Connect.HandleFu
     // If the file is directly or indirectly imported by a module that matches
     // the full restart paths, then we need to do a full restart.
     const importers = recursivelyGetImporters(modules[0]);
-    const importerPaths = Array.from(importers)
-      .map((m) => m.file)
-      .filter((p): p is string => p !== null);
+    const importerPaths = Array.from(importers, (m) => m.file).filter(
+      (p): p is string => p !== null,
+    );
     return importerPaths.some((p) => fullRestartPathMatchers.some((matcher) => matcher(p)));
   }
 

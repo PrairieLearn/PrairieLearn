@@ -3,6 +3,7 @@ import z from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
 import { loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
+import { isTrpcRequest } from '@prairielearn/trpc/express';
 
 import { resolveModernAssessmentAccess } from '../lib/assessment-access-control/authz.js';
 import {
@@ -11,7 +12,6 @@ import {
   AssessmentSetSchema,
   SprocAuthzAssessmentSchema,
 } from '../lib/db-types.js';
-import { isTrpcRequest } from '../lib/trpc.js';
 
 import { AccessDenied } from './selectAndAuthzAssessment.html.js';
 

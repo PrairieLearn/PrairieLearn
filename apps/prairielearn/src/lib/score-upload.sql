@@ -16,7 +16,10 @@ SELECT
   ai.id AS assessment_instance_id
 FROM
   assessment_instances AS ai
-  JOIN teams AS g ON (g.id = ai.team_id)
+  JOIN teams AS g ON (
+    g.id = ai.team_id
+    AND g.deleted_at IS NULL
+  )
 WHERE
   ai.assessment_id = $assessment_id
   AND ai.number = $instance_number
@@ -37,10 +40,7 @@ FROM
   JOIN questions AS q ON (q.id = aq.question_id)
   JOIN courses AS c ON (c.id = q.course_id)
   JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
-  LEFT JOIN teams AS g ON (
-    g.id = ai.team_id
-    AND g.deleted_at IS NULL
-  )
+  LEFT JOIN teams AS g ON (g.id = ai.team_id)
   LEFT JOIN users AS u ON (u.id = ai.user_id)
   LEFT JOIN variants AS v ON (v.instance_question_id = iq.id)
   LEFT JOIN submissions AS s ON (s.variant_id = v.id)
@@ -50,6 +50,9 @@ WHERE
     s.id = $submission_id
     OR (
       $submission_id IS NULL
+      -- Exact submission IDs can reference retained work from deleted groups, but
+      -- name-based lookups must exclude deleted groups because names can be reused.
+      AND g.deleted_at IS NULL
       AND COALESCE(g.name, u.uid) = $uid_or_group
       AND ai.number = $ai_number
       AND q.qid = $qid

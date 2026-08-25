@@ -1,5 +1,7 @@
-import type { RowSelectionState, Table } from '@tanstack/react-table';
+import type { RowData, RowSelectionState } from '@tanstack/react-table';
 import { useEffect } from 'react';
+
+import type { TanstackTableCoreInstance } from '../tanstack-table.js';
 
 export function pruneRowSelection(
   selection: RowSelectionState,
@@ -15,7 +17,9 @@ export function pruneRowSelection(
  * Removes selected row IDs that are no longer present in the table's core data.
  * This is opt-in because tables with server-side pagination may intentionally retain off-page selections.
  */
-export function usePruneRowSelection<TData>(table: Table<TData>) {
+export function usePruneRowSelection<TData extends RowData>(
+  table: TanstackTableCoreInstance<TData>,
+) {
   const data = table.options.data;
 
   useEffect(() => {

@@ -1,5 +1,5 @@
 FROM node:26-trixie
-ARG CACHEBUST=2026-07-15-14-34-04
+ARG CACHEBUST=2026-08-15-14-04-29
 LABEL com.prairielearn.workspace.home="/home/student"
 LABEL com.prairielearn.workspace.port="8080"
 LABEL com.prairielearn.workspace.rewrite-url="true"

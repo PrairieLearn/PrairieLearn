@@ -92,7 +92,6 @@ router.get(
               initialLabels={initialLabels}
               canEdit={canEdit}
               isExampleCourse={course.example_course}
-              isDevMode={config.devMode}
               origHash={origHash}
             />
           </Hydrate>

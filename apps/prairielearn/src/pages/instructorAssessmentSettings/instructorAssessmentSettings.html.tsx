@@ -5,25 +5,21 @@ import { Alert, Button, Form, InputGroup, Modal, Spinner } from 'react-bootstrap
 import { useForm } from 'react-hook-form';
 
 import { run } from '@prairielearn/run';
+import { getAppError, renderAppError } from '@prairielearn/trpc/client';
+import { AppErrorAlert, QueryClientProviderDebug } from '@prairielearn/trpc/react';
 import { StickySaveBar, type StickySaveBarAlert, useModalState } from '@prairielearn/ui';
 
 import { GitHubButton } from '../../components/GitHubButton.js';
 import { StudentLinkSharing } from '../../components/LinkSharing.js';
 import { ShareSourcePubliclyCard } from '../../components/ShareSourcePubliclyCard.js';
 import { AssessmentShortNameDescription } from '../../components/ShortNameDescriptions.js';
-import {
-  AppErrorAlert,
-  getAppError,
-  renderAppError,
-  syncJobFailedRenderer,
-} from '../../lib/client/errors.js';
 import type {
   StaffAssessment,
   StaffAssessmentModule,
   StaffAssessmentSet,
   StaffCourseInstance,
 } from '../../lib/client/safe-db-types.js';
-import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
+import { syncJobFailedRenderer } from '../../lib/client/syncJobFailedRenderer.js';
 import {
   getAssessmentLogsUrl,
   getAssessmentStudentsUrl,
@@ -157,7 +153,6 @@ interface InstructorAssessmentSettingsProps {
   assessmentSets: StaffAssessmentSet[];
   assessmentModules: StaffAssessmentModule[];
   courseInstance: StaffCourseInstance;
-  isDevMode: boolean;
   assessmentTools: AssessmentToolsConfig;
   zonePointsRange: { min: number; max: number };
   nonPublicQuestionsInAssessment: { id: string; qid: string }[];
@@ -180,7 +175,6 @@ export function InstructorAssessmentSettings({
   assessmentSets,
   assessmentModules,
   courseInstance,
-  isDevMode,
   assessmentTools,
   zonePointsRange: initialZonePointsRange,
   nonPublicQuestionsInAssessment,
@@ -201,7 +195,7 @@ export function InstructorAssessmentSettings({
   const [typeChangeMessage, setTypeChangeMessage] = useState<string | null>(null);
 
   return (
-    <QueryClientProviderDebug client={queryClient} isDevMode={isDevMode}>
+    <QueryClientProviderDebug client={queryClient}>
       <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
         <InstructorAssessmentSettingsInner
           key={assessment.type}
@@ -680,7 +674,7 @@ function InstructorAssessmentSettingsInner({
   hasInstances,
   typeChangeMessage,
   setTypeChangeMessage,
-}: Omit<InstructorAssessmentSettingsProps, 'trpcCsrfToken' | 'isDevMode' | 'courseInstance'> & {
+}: Omit<InstructorAssessmentSettingsProps, 'trpcCsrfToken' | 'courseInstance'> & {
   setCurrentOrigHash: (hash: string) => void;
   setAssessment: (assessment: StaffAssessment) => void;
   setZonePointsRange: (range: { min: number; max: number }) => void;
