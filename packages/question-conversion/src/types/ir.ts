@@ -81,6 +81,8 @@ export interface IRRubric {
 
 /** Feedback attached to a question. */
 export interface IRFeedback {
+  /** Feedback shown after any graded response. */
+  general?: string;
   correct?: string;
   incorrect?: string;
   /**

@@ -91,14 +91,19 @@ describe('PLEmitter', () => {
   });
 
   describe('feedback rendering', () => {
-    it('uses one field to select correct or incorrect feedback', () => {
+    it('uses one field for general, correct, and incorrect feedback', () => {
       const q = makeQuestion({
-        feedback: { correct: '<p>Well done!</p>', incorrect: '<p>Try again.</p>' },
+        feedback: {
+          general: '<p>Review the explanation.</p>',
+          correct: '<p>Well done!</p>',
+          incorrect: '<p>Try again.</p>',
+        },
       });
       const result = emitter.emit(makeAssessment([q]));
       const html = result.questions[0].questionHtml;
-      assert.include(html, '<pl-answer-panel>');
+      assert.include(html, '<pl-submission-panel>');
       assert.include(html, '{{#feedback.qti_import}}');
+      assert.include(html, '<p>Review the explanation.</p>');
       assert.include(html, '{{#is_correct}}');
       assert.include(html, '<p>Well done!</p>');
       assert.include(html, '{{^is_correct}}');
@@ -109,16 +114,19 @@ describe('PLEmitter', () => {
       const correctHtml = mustache.render(html, {
         feedback: { qti_import: { is_correct: true } },
       });
+      assert.include(correctHtml, '<p>Review the explanation.</p>');
       assert.include(correctHtml, '<p>Well done!</p>');
       assert.notInclude(correctHtml, '<p>Try again.</p>');
 
       const incorrectHtml = mustache.render(html, {
         feedback: { qti_import: { is_correct: false } },
       });
+      assert.include(incorrectHtml, '<p>Review the explanation.</p>');
       assert.notInclude(incorrectHtml, '<p>Well done!</p>');
       assert.include(incorrectHtml, '<p>Try again.</p>');
 
       const noFeedbackHtml = mustache.render(html, { feedback: {} });
+      assert.notInclude(noFeedbackHtml, '<p>Review the explanation.</p>');
       assert.notInclude(noFeedbackHtml, '<p>Well done!</p>');
       assert.notInclude(noFeedbackHtml, '<p>Try again.</p>');
 
@@ -130,18 +138,64 @@ describe('PLEmitter', () => {
       );
     });
 
+    it('shows general feedback without score-based branching', () => {
+      const result = emitter.emit(
+        makeAssessment([makeQuestion({ feedback: { general: '<p>Explanation.</p>' } })]),
+      ).questions[0];
+
+      assert.include(result.questionHtml, '<pl-submission-panel>');
+      assert.include(result.questionHtml, '{{#feedback.qti_import}}');
+      assert.include(result.questionHtml, '<p>Explanation.</p>');
+      assert.notInclude(result.questionHtml, 'is_correct');
+      assert.equal(
+        result.serverPy,
+        `def grade(data):
+    data["feedback"]["qti_import"] = True
+`,
+      );
+    });
+
+    it('renders duplicate question-wide feedback only once', () => {
+      const [sameOutcomes, generalMatchesCorrect] = emitter.emit(
+        makeAssessment([
+          makeQuestion({
+            sourceId: 'same-outcomes',
+            feedback: { correct: '<p>Shared.</p>', incorrect: '<p>Shared.</p>' },
+          }),
+          makeQuestion({
+            sourceId: 'general-matches-correct',
+            title: 'General matches correct',
+            feedback: {
+              general: '<p>Shared.</p>',
+              correct: '<p>Shared.</p>',
+              incorrect: '<p>Try again.</p>',
+            },
+          }),
+        ]),
+      ).questions;
+
+      assert.equal([...sameOutcomes.questionHtml.matchAll(/<p>Shared\.<\/p>/g)].length, 1);
+      assert.notInclude(sameOutcomes.questionHtml, 'is_correct');
+      assert.include(sameOutcomes.serverPy, 'data["feedback"]["qti_import"] = True');
+
+      assert.equal([...generalMatchesCorrect.questionHtml.matchAll(/<p>Shared\.<\/p>/g)].length, 1);
+      assert.notInclude(generalMatchesCorrect.questionHtml, '{{#is_correct}}');
+      assert.include(generalMatchesCorrect.questionHtml, '{{^is_correct}}');
+      assert.include(generalMatchesCorrect.questionHtml, '<p>Try again.</p>');
+    });
+
     function assertMustacheDelimiterIsNeutralized(delimiter: string) {
       const feedbackHtml = `<p>Imported feedback: ${delimiter}</p>`;
-      const q = makeQuestion({ feedback: { correct: feedbackHtml } });
+      const q = makeQuestion({ feedback: { general: feedbackHtml } });
       const html = emitter.emit(makeAssessment([q])).questions[0].questionHtml;
       const renderedHtml = mustache.render(html, {
-        feedback: { qti_import: { is_correct: true } },
+        feedback: { qti_import: true },
         imported_feedback_value: 'MUSTACHE_EVALUATED',
       });
 
       assert.include(
         he.decode(renderedHtml),
-        `<pl-answer-panel>\n${feedbackHtml}\n</pl-answer-panel>`,
+        `<pl-submission-panel>\n${feedbackHtml}\n</pl-submission-panel>`,
       );
       assert.notInclude(renderedHtml, 'MUSTACHE_EVALUATED');
     }
@@ -154,7 +208,7 @@ describe('PLEmitter', () => {
       assertMustacheDelimiterIsNeutralized('{{{imported_feedback_value}}}');
     });
 
-    it('supports one-sided global feedback', () => {
+    it('supports one-sided outcome feedback', () => {
       const [correctOnly, incorrectOnly] = emitter.emit(
         makeAssessment([
           makeQuestion({ sourceId: 'correct', feedback: { correct: '<p>Correct!</p>' } }),
