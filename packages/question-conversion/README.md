@@ -1,6 +1,6 @@
 # `@prairielearn/question-conversion`
 
-Internal package that converts questions from interchange formats into PrairieLearn course content. Today it supports **QTI 1.2** assessments (the format Canvas exports), producing PrairieLearn `question.html`, `info.json`, and `infoAssessment.json` files. The package is private — it ships as the `question-convert` CLI used by PrairieLearn maintainers and is not published to npm.
+Internal package that powers PrairieLearn's built-in content importer and the `question-convert` CLI. It currently converts **QTI 1.2** assessments (the format Canvas exports) into PrairieLearn `question.html`, `info.json`, and `infoAssessment.json` files, generating `server.py` when needed. The package is private and is not published to npm.
 
 ## CLI
 
@@ -28,7 +28,7 @@ For programmatic use, `@prairielearn/question-conversion` exports a small surfac
 
 - `convert`, `convertWith`, `parseAssessment` — high-level pipeline entry points.
 - `QTI12ItemContainerParser`, `InputParser`, `ParseOptions` — parser layer.
-- `PLEmitter`, `ConversionProcessor`, `BodyEmitRegistry`, `BodyEmitHandler`, `createPLBodyRegistry` — emitter layer and processing contract.
+- `PLEmitter`, `ConversionProcessor`, `BodyEmitRegistry`, `BodyEmitHandler`, `FeedbackMessage`, `FeedbackTrigger`, `createPLBodyRegistry` — emitter layer and processing contract.
 - `TransformRegistry`, `TransformHandler`, `TransformResult`, `createQTI12Registry` — IR transform layer.
 - `QtiImportRemoteImageCopier` — async processor that safely copies public HTTPS images into question assets before emission.
 - IR and PL output types: `IRAssessment`, `IRQuestion`, `IRQuestionBody`, `PLQuestionInfoJson`, `PLAssessmentInfoJson`, etc.
@@ -57,7 +57,7 @@ Processors run sequentially before emission in the order supplied.
 | `fill_in_multiple_blanks_question`                | inline `pl-string-input` blanks                                                     |
 | `multiple_dropdowns_question`                     | inline `pl-multiple-choice` with `display="dropdown"`                               |
 | `short_answer_question`                           | `pl-string-input` / `pl-integer-input` / `pl-number-input` (chosen by answer shape) |
-| `numerical_question`                              | `pl-number-input`                                                                   |
+| `numerical_question`                              | `pl-integer-input` for exact integers; otherwise `pl-number-input`                  |
 | `calculated_question`                             | `pl-number-input` with a generated `server.py`                                      |
 | `essay_question`                                  | `pl-rich-text-editor` (manually graded)                                             |
 | `file_upload_question`                            | `pl-file-upload` (manually graded)                                                  |

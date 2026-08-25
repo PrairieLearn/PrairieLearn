@@ -81,6 +81,8 @@ export interface IRRubric {
 
 /** HTML feedback fragments shown to a student after their response is graded. */
 export interface IRFeedback {
+  /** Feedback shown after any graded response. */
+  general?: string;
   /** Feedback shown when the response is correct. */
   correct?: string;
   /** Feedback shown when the response is incorrect. */

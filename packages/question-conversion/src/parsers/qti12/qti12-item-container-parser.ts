@@ -1006,9 +1006,11 @@ export class QTI12ItemContainerParser implements InputParser {
       }
     }
 
+    const generalFeedback = item.feedbacks.get('general_fb');
     const correctFeedback = item.feedbacks.get('correct_fb');
     const incorrectFeedback = item.feedbacks.get('general_incorrect_fb');
     const feedback: IRFeedback = {
+      ...(generalFeedback ? { general: generalFeedback } : {}),
       ...(correctFeedback ? { correct: correctFeedback } : {}),
       ...(incorrectFeedback ? { incorrect: incorrectFeedback } : {}),
     };
@@ -1033,7 +1035,11 @@ export class QTI12ItemContainerParser implements InputParser {
     }
 
     const hasFeedback =
-      feedback.correct || feedback.incorrect || feedback.perChoice || feedback.perBlank;
+      feedback.general ||
+      feedback.correct ||
+      feedback.incorrect ||
+      feedback.perChoice ||
+      feedback.perBlank;
 
     return {
       sourceId: item.ident,

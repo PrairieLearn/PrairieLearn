@@ -131,6 +131,7 @@ describe('QtiImportRemoteImageCopier', () => {
         makeQuestion({
           promptHtml: `<p>Question <img src="${imageUrl}"></p>`,
           feedback: {
+            general: `<p>Explanation <img src="${imageUrl}"></p>`,
             correct: `<p>Correct <img src="${imageUrl}" alt="Explanation"></p>`,
             perChoice: new Map([['a', `<img src="${imageUrl}" class="answer-feedback">`]]),
           },
@@ -146,10 +147,14 @@ describe('QtiImportRemoteImageCopier', () => {
     expect(question.serverPy).not.toContain('<img src=');
     expect(question.serverPy).not.toContain('client_files_question_url');
     expect(question.serverPy).not.toContain('def render(data, html):');
-    expect(question.serverPy).toContain('data["feedback"]["qti_import_correct"] = True');
+    expect(question.serverPy).toContain(
+      'data["feedback"]["qti_import"] = {"is_correct": data["score"] >= 1.0}',
+    );
     expect(question.serverPy).not.toContain('qti_import_answer');
     expect(question.questionHtml).toContain('<p>Correct <pl-figure file-name="remote-');
-    expect(question.questionHtml).toContain('{{#feedback.qti_import_correct}}');
+    expect(question.questionHtml).toContain('{{#feedback.qti_import}}');
+    expect(question.questionHtml).toContain('<p>Explanation <pl-figure file-name="remote-');
+    expect(question.questionHtml).toContain('{{#is_correct}}');
     expect(question.questionHtml).toContain(
       'feedback="&lt;img src=&quot;{{ options.client_files_question_url }}/remote-',
     );

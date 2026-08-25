@@ -251,7 +251,7 @@ export class QtiImportRemoteImageCopier implements ConversionProcessor {
 
     const feedback = question.feedback;
     if (feedback) {
-      for (const key of ['correct', 'incorrect'] as const) {
+      for (const key of ['general', 'correct', 'incorrect'] as const) {
         const html = feedback[key];
         if (html) {
           addFragment(html, (html) => {

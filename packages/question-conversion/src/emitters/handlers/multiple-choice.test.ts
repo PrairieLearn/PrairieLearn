@@ -16,6 +16,14 @@ describe('multipleChoiceHandler', () => {
     );
   });
 
+  it('preserves HTML in choice content', () => {
+    const html = multipleChoiceHandler.renderHtml({
+      type: 'multiple-choice',
+      choices: [{ id: 'a', html: 'O(n<sup>2</sup>)', correct: true }],
+    });
+    assert.include(html, '>O(n<sup>2</sup>)<');
+  });
+
   it('renders choice feedback as a native feedback attribute', () => {
     const html = multipleChoiceHandler.renderHtml(
       { type: 'multiple-choice', choices: twoChoices },
@@ -67,6 +75,30 @@ describe('multipleChoiceHandler', () => {
     assert.notInclude(html, 'order=');
   });
 
+  it('disables built-in grading and feedback when no choice is correct', () => {
+    const html = multipleChoiceHandler.renderHtml(
+      {
+        type: 'multiple-choice',
+        choices: twoChoices.map((choice) => ({ ...choice, correct: false })),
+      },
+      undefined,
+      { perChoice: new Map([['a', 'Interesting!']]) },
+    );
+    assert.include(html, '<pl-multiple-choice answers-name="answer" builtin-grading="false">');
+    assert.notInclude(html, 'feedback=');
+  });
+
+  it('disables built-in grading for a dropdown with no correct choice', () => {
+    const html = multipleChoiceHandler.renderHtml({
+      type: 'multiple-choice',
+      display: 'dropdown',
+      choices: twoChoices.map((choice) => ({ ...choice, correct: false })),
+    });
+    assert.include(
+      html,
+      '<pl-multiple-choice answers-name="answer" display="dropdown" builtin-grading="false">',
+    );
+  });
   it('deduplicates choices preferring correct one', () => {
     const html = multipleChoiceHandler.renderHtml({
       type: 'multiple-choice',

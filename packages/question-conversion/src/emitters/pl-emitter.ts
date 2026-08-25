@@ -342,7 +342,8 @@ export class PLEmitter implements OutputEmitter {
     );
     if (bodyHtml) parts.push(bodyHtml);
 
-    const feedbackHtml = renderFeedbackHtml(feedbackMessages);
+    const generalFeedback = buildGeneralFeedback(question);
+    const feedbackHtml = renderFeedbackHtml(feedbackMessages, generalFeedback);
     if (feedbackHtml) {
       parts.push('', feedbackHtml);
     }
@@ -362,7 +363,10 @@ export class PLEmitter implements OutputEmitter {
       if (gen) parts.push(gen);
     }
 
-    const grade = renderFeedbackGradeFn(feedbackMessages);
+    const grade = renderFeedbackGradeFn(
+      feedbackMessages,
+      buildGeneralFeedback(question).length > 0,
+    );
     if (grade) parts.push(grade);
 
     return parts.join('\n');
@@ -469,16 +473,17 @@ function buildFeedbackMessages(
     }),
   );
 
-  if (question.feedback?.correct) {
+  const generalFeedback = buildGeneralFeedback(question);
+  if (question.feedback?.correct && !generalFeedback.includes(question.feedback.correct)) {
     messages.push({
-      name: 'qti_import_correct',
+      name: 'qti_import',
       html: question.feedback.correct,
       trigger: { type: 'score', outcome: 'correct' },
     });
   }
-  if (question.feedback?.incorrect) {
+  if (question.feedback?.incorrect && !generalFeedback.includes(question.feedback.incorrect)) {
     messages.push({
-      name: 'qti_import_incorrect',
+      name: 'qti_import',
       html: question.feedback.incorrect,
       trigger: { type: 'score', outcome: 'incorrect' },
     });
@@ -487,18 +492,47 @@ function buildFeedbackMessages(
   return messages;
 }
 
-function renderFeedbackHtml(messages: NamedFeedbackMessage[]): string {
-  if (messages.length === 0) return '';
+function buildGeneralFeedback(question: IRQuestion): string[] {
+  const feedback = question.feedback;
+  if (!feedback) return [];
 
-  const lines = ['<pl-answer-panel>'];
-  for (const message of messages) {
-    lines.push(
-      `  {{#feedback.${message.name}}}`,
-      escapeMustacheDelimiters(renderContentHtml(message.html)),
-      `  {{/feedback.${message.name}}}`,
-    );
+  const messages = feedback.general ? [feedback.general] : [];
+  if (feedback.correct && feedback.correct === feedback.incorrect) {
+    if (!messages.includes(feedback.correct)) messages.push(feedback.correct);
   }
-  lines.push('</pl-answer-panel>');
+  return messages;
+}
+
+function renderFeedbackHtml(messages: NamedFeedbackMessage[], generalFeedback: string[]): string {
+  if (messages.length === 0 && generalFeedback.length === 0) return '';
+
+  const feedbackNames = new Set(messages.map((message) => message.name));
+  if (generalFeedback.length > 0) feedbackNames.add('qti_import');
+
+  const lines = ['<pl-submission-panel>'];
+  for (const name of feedbackNames) {
+    lines.push(`  {{#feedback.${name}}}`);
+    if (name === 'qti_import') {
+      lines.push(...generalFeedback.map(renderFeedbackContentHtml));
+    }
+
+    for (const message of messages) {
+      if (message.name !== name) continue;
+
+      if (message.trigger.type === 'score') {
+        const sectionType = message.trigger.outcome === 'incorrect' ? '^' : '#';
+        lines.push(
+          `    {{${sectionType}is_correct}}`,
+          renderFeedbackContentHtml(message.html),
+          '    {{/is_correct}}',
+        );
+      } else {
+        lines.push(renderFeedbackContentHtml(message.html));
+      }
+    }
+    lines.push(`  {{/feedback.${name}}}`);
+  }
+  lines.push('</pl-submission-panel>');
   return lines.join('\n');
 }
 
@@ -506,10 +540,18 @@ function renderContentHtml(html: string): string {
   return rewriteImagesAsPlFigure(html, { display: 'inline' });
 }
 
-function renderFeedbackGradeFn(messages: NamedFeedbackMessage[]): string {
-  if (messages.length === 0) return '';
+function renderFeedbackContentHtml(html: string): string {
+  return escapeMustacheDelimiters(renderContentHtml(html));
+}
+
+function renderFeedbackGradeFn(
+  messages: NamedFeedbackMessage[],
+  hasGeneralFeedback: boolean,
+): string {
+  if (messages.length === 0 && !hasGeneralFeedback) return '';
 
   const lines = ['def grade(data):'];
+  const assignedScoreFeedbackNames = new Set<string>();
   if (messages.some((message) => message.trigger.type === 'checkbox-answer-selected')) {
     lines.push(
       '    _submitted = data["submitted_answers"].get("answer") or []',
@@ -527,12 +569,12 @@ function renderFeedbackGradeFn(messages: NamedFeedbackMessage[]): string {
     const assignment = `        data["feedback"][${JSON.stringify(message.name)}] = True`;
     switch (message.trigger.type) {
       case 'score':
-        lines.push(
-          message.trigger.outcome === 'correct'
-            ? '    if data["score"] >= 1.0:'
-            : '    if data["score"] < 1.0:',
-          assignment,
-        );
+        if (!assignedScoreFeedbackNames.has(message.name)) {
+          lines.push(
+            `    data["feedback"][${JSON.stringify(message.name)}] = {"is_correct": data["score"] >= 1.0}`,
+          );
+          assignedScoreFeedbackNames.add(message.name);
+        }
         break;
       case 'checkbox-answer-selected':
         lines.push(
@@ -549,6 +591,10 @@ function renderFeedbackGradeFn(messages: NamedFeedbackMessage[]): string {
       default:
         assertNever(message.trigger);
     }
+  }
+
+  if (hasGeneralFeedback && !assignedScoreFeedbackNames.has('qti_import')) {
+    lines.push('    data["feedback"]["qti_import"] = True');
   }
 
   lines.push('');

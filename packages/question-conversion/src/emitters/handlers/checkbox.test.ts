@@ -17,6 +17,14 @@ describe('checkboxHandler.renderHtml', () => {
     assert.include(html, '</pl-checkbox>');
   });
 
+  it('preserves HTML in choice content', () => {
+    const html = checkboxHandler.renderHtml({
+      type: 'checkbox',
+      choices: [{ id: 'a', html: 'x<sub>0</sub>', correct: true }],
+    });
+    assert.include(html, '>x<sub>0</sub><');
+  });
+
   it('adds order="fixed" when shuffleAnswers is false', () => {
     const html = checkboxHandler.renderHtml({ type: 'checkbox', choices }, false);
     assert.include(html, 'order="fixed"');
@@ -30,5 +38,17 @@ describe('checkboxHandler.renderHtml', () => {
   it('does not include feedback attributes in HTML', () => {
     const html = checkboxHandler.renderHtml({ type: 'checkbox', choices });
     assert.notInclude(html, 'feedback=');
+  });
+
+  it('deduplicates choices preferring the correct one', () => {
+    const html = checkboxHandler.renderHtml({
+      type: 'checkbox',
+      choices: [
+        { id: 'a', html: 'Same', correct: false },
+        { id: 'b', html: 'Same', correct: true },
+      ],
+    });
+    assert.equal(html.match(/>Same</g)?.length, 1);
+    assert.include(html, 'correct="true">Same<');
   });
 });
