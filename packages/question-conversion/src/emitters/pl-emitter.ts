@@ -1,5 +1,7 @@
 import { type AnyNode, isTag } from 'domhandler';
 
+import { assertNever } from '@prairielearn/utils';
+
 import type { IRAssessmentMeta, IRItemContainer, IRQuestion, IRZone } from '../types/ir.js';
 import type {
   PLAllowAccessRule,
@@ -508,8 +510,4 @@ function renderFeedbackGradeFn(messages: NamedFeedbackMessage[]): string {
 
   lines.push('');
   return lines.join('\n');
-}
-
-function assertNever(value: never): never {
-  throw new Error(`Unexpected value: ${value}`);
 }
