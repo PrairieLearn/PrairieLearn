@@ -83,11 +83,9 @@ export interface IRRubric {
 export interface IRFeedback {
   correct?: string;
   incorrect?: string;
-  general?: string;
   /**
-   * Per-answer feedback keyed by the answer display text (matches what PL stores
-   * in data['submitted_answers']). Used for multi-select questions where multiple
-   * feedbacks may need to be concatenated based on which answers were selected.
+   * Per-answer feedback keyed by the answer display text. Emit handlers map these
+   * values to the corresponding PrairieLearn answer identifiers.
    */
   perAnswer?: Record<string, string>;
 }
