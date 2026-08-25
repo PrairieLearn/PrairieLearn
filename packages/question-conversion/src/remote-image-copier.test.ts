@@ -162,7 +162,7 @@ describe('QtiImportRemoteImageCopier', () => {
     ]);
   });
 
-  it('keeps choice-targeted feedback attached while localizing choice HTML', async () => {
+  it('keeps choice-targeted feedback attached while copying an image from choice HTML', async () => {
     const copier = new QtiImportRemoteImageCopier(async () => ({
       content: Buffer.from('choice image'),
       extension: 'png',

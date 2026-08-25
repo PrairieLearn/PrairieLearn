@@ -81,9 +81,13 @@ export interface IRRubric {
 
 /** HTML feedback fragments shown to a student after their response is graded. */
 export interface IRFeedback {
+  /** Feedback shown when the response is correct. */
   correct?: string;
+  /** Feedback shown when the response is incorrect. */
   incorrect?: string;
+  /** Feedback for individual choices, keyed by `IRChoice.id`. */
   perChoice?: Map<string, string>;
+  /** Feedback for individual fill-in-the-blank slots, keyed by `IRBlank.id`. */
   perBlank?: Map<string, string>;
 }
 

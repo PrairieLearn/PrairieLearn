@@ -218,8 +218,8 @@ export class QtiImportRemoteImageCopier implements ConversionProcessor {
 
   /**
    * Collects the HTML fragments in a question without making assumptions about how an emitter
-   * will embed them. This processor only localizes URLs; output-specific element rewriting stays
-   * in the emitter.
+   * will embed them. This processor only replaces remote image URLs with question-asset URLs;
+   * output-specific element rewriting stays in the emitter.
    */
   private collectHtmlFragments(question: IRQuestion): MutableHtmlFragment[] {
     const fragments: MutableHtmlFragment[] = [];

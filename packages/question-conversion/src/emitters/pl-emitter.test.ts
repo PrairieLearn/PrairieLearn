@@ -187,9 +187,7 @@ describe('PLEmitter', () => {
 
     function assertMustacheDelimiterIsEscaped(delimiter: string) {
       const feedbackHtml = `<p>Imported feedback: ${delimiter}</p>`;
-      const q = makeQuestion({
-        feedback: { correct: feedbackHtml },
-      });
+      const q = makeQuestion({ feedback: { correct: feedbackHtml } });
       const html = emitter.emit(makeAssessment([q])).questions[0].questionHtml;
       const renderedHtml = mustache.render(html, {
         feedback: { qti_import_correct: true },
@@ -226,18 +224,14 @@ describe('PLEmitter', () => {
     });
 
     it('emits grade() with only correct branch when incorrect is absent', () => {
-      const q = makeQuestion({
-        feedback: { correct: '<p>Correct!</p>' },
-      });
+      const q = makeQuestion({ feedback: { correct: '<p>Correct!</p>' } });
       const serverPy = emitter.emit(makeAssessment([q])).questions[0].serverPy;
       assert.include(serverPy, 'data["score"] >= 1.0');
       assert.notInclude(serverPy, 'else');
     });
 
     it('emits grade() with only incorrect branch when correct is absent', () => {
-      const q = makeQuestion({
-        feedback: { incorrect: '<p>Wrong.</p>' },
-      });
+      const q = makeQuestion({ feedback: { incorrect: '<p>Wrong.</p>' } });
       const serverPy = emitter.emit(makeAssessment([q])).questions[0].serverPy;
       assert.include(serverPy, 'data["score"] < 1.0');
       assert.notInclude(serverPy, 'else');
