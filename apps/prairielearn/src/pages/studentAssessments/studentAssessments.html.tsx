@@ -41,7 +41,7 @@ export const StudentAssessmentSummarySchema = z.object({
 });
 export type StudentAssessmentSummary = z.infer<typeof StudentAssessmentSummarySchema>;
 
-export const StudentAssessmentsRowSchema = StudentAssessmentSummarySchema.extend({
+const StudentAssessmentsRowSchema = StudentAssessmentSummarySchema.extend({
   authorized: AssessmentAuthzResultSchema.shape.authorized,
   credit_date_string: z.string(),
   active: AssessmentAuthzResultSchema.shape.active,
