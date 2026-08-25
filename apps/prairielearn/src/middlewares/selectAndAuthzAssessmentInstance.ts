@@ -7,10 +7,7 @@ import * as sqldb from '@prairielearn/postgres';
 
 import { AssessmentInstanceAuthzResultSchema } from '../lib/assessment-access-control/authz-result.js';
 import { resolveModernAssessmentInstanceAccess } from '../lib/assessment-access-control/authz.js';
-import {
-  RawLegacyAssessmentInstanceAuthzResultSchema,
-  formatLegacyAssessmentInstanceAccess,
-} from '../lib/assessment-access-control/legacy.js';
+import { formatLegacyAssessmentInstanceAccess } from '../lib/assessment-access-control/legacy.js';
 import {
   type AssessmentInstanceTimeLimit,
   assessmentInstanceLabel,
@@ -23,6 +20,7 @@ import {
   AssessmentSetSchema,
   FileSchema,
   GroupSchema,
+  SprocAuthzAssessmentInstanceSchema,
   SprocUsersGetDisplayedRoleSchema,
   UserSchema,
 } from '../lib/db-types.js';
@@ -53,12 +51,12 @@ const _SelectAndAuthzAssessmentInstanceSchema = z.union([
 
 const RawSelectAndAuthzAssessmentInstanceSchema = z.union([
   SelectAndAuthzAssessmentInstanceBaseSchema.extend({
-    authz_result: RawLegacyAssessmentInstanceAuthzResultSchema,
+    authz_result: SprocAuthzAssessmentInstanceSchema,
     instance_user: UserSchema,
     instance_group: z.null(),
   }),
   SelectAndAuthzAssessmentInstanceBaseSchema.extend({
-    authz_result: RawLegacyAssessmentInstanceAuthzResultSchema,
+    authz_result: SprocAuthzAssessmentInstanceSchema,
     instance_user: z.null(),
     instance_group: GroupSchema,
   }),

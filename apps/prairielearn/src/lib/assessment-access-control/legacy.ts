@@ -1,51 +1,9 @@
-import { z } from 'zod';
-
 import { formatDate, formatDateISO } from '@prairielearn/formatter';
-import { DateFromISOString } from '@prairielearn/zod';
 
-import { EnumModeSchema } from '../db-types.js';
+import type { SprocAuthzAssessment, SprocAuthzAssessmentInstance } from '../db-types.js';
 
 import type { AssessmentAuthzResult, AssessmentInstanceAuthzResult } from './authz-result.js';
 import { formatDateShort } from './resolver.js';
-import { AccessTimelineEntrySchema } from './timeline.js';
-
-const RawLegacyAssessmentAccessRuleSchema = z.object({
-  active: z.boolean().nullable(),
-  credit: z.number().nullable(),
-  end_date: DateFromISOString.nullable(),
-  mode: EnumModeSchema.nullable(),
-  start_date: DateFromISOString.nullable(),
-  time_limit_min: z.number().nullable(),
-});
-
-export const RawLegacyAssessmentAuthzResultSchema = z.object({
-  access_rules: z.array(RawLegacyAssessmentAccessRuleSchema),
-  access_timeline: z.array(AccessTimelineEntrySchema).readonly(),
-  active: z.boolean(),
-  authorized: z.boolean(),
-  credit: z.number().nullable(),
-  credit_end_date: DateFromISOString.nullable(),
-  exam_access_end: DateFromISOString.nullable(),
-  mode: EnumModeSchema.nullable(),
-  next_active_credit: z.number().nullable(),
-  next_active_date: DateFromISOString.nullable(),
-  password: z.string().nullable(),
-  show_before_release: z.boolean(),
-  show_closed_assessment: z.boolean(),
-  show_closed_assessment_score: z.boolean(),
-  staff_override: z.boolean(),
-  time_limit_min: z.number().nullable(),
-});
-export type RawLegacyAssessmentAuthzResult = z.infer<typeof RawLegacyAssessmentAuthzResultSchema>;
-
-export const RawLegacyAssessmentInstanceAuthzResultSchema =
-  RawLegacyAssessmentAuthzResultSchema.extend({
-    authorized_edit: z.boolean(),
-    time_limit_expired: z.boolean(),
-  });
-export type RawLegacyAssessmentInstanceAuthzResult = z.infer<
-  typeof RawLegacyAssessmentInstanceAuthzResultSchema
->;
 
 function formatDateFull(date: Date, displayTimezone: string): string {
   const compact = formatDate(date, displayTimezone);
@@ -54,7 +12,7 @@ function formatDateFull(date: Date, displayTimezone: string): string {
 }
 
 export function formatLegacyAssessmentAccess(
-  raw: RawLegacyAssessmentAuthzResult,
+  raw: SprocAuthzAssessment,
   displayTimezone: string,
 ): AssessmentAuthzResult {
   const creditDateString = (() => {
@@ -100,7 +58,7 @@ export function formatLegacyAssessmentAccess(
 }
 
 export function formatLegacyAssessmentInstanceAccess(
-  raw: RawLegacyAssessmentInstanceAuthzResult,
+  raw: SprocAuthzAssessmentInstance,
   displayTimezone: string,
 ): AssessmentInstanceAuthzResult {
   return {

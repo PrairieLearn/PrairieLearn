@@ -8,10 +8,7 @@ import { IdSchema } from '@prairielearn/zod';
 
 import { AssessmentInstanceAuthzResultSchema } from '../lib/assessment-access-control/authz-result.js';
 import { resolveModernAssessmentInstanceAccess } from '../lib/assessment-access-control/authz.js';
-import {
-  RawLegacyAssessmentInstanceAuthzResultSchema,
-  formatLegacyAssessmentInstanceAccess,
-} from '../lib/assessment-access-control/legacy.js';
+import { formatLegacyAssessmentInstanceAccess } from '../lib/assessment-access-control/legacy.js';
 import {
   type AssessmentInstanceTimeLimit,
   assessmentInstanceLabel,
@@ -28,6 +25,7 @@ import {
   GroupSchema,
   InstanceQuestionSchema,
   QuestionSchema,
+  SprocAuthzAssessmentInstanceSchema,
   SprocUsersGetDisplayedRoleSchema,
   UserSchema,
 } from '../lib/db-types.js';
@@ -75,7 +73,7 @@ const SelectAndAuthzInstanceQuestionSchema = z.object({
 });
 
 const RawSelectAndAuthzInstanceQuestionSchema = SelectAndAuthzInstanceQuestionSchema.extend({
-  authz_result: RawLegacyAssessmentInstanceAuthzResultSchema,
+  authz_result: SprocAuthzAssessmentInstanceSchema,
 });
 
 export type ResLocalsInstanceQuestion = z.infer<typeof SelectAndAuthzInstanceQuestionSchema> &

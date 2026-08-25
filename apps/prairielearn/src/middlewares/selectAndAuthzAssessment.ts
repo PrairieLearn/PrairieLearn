@@ -7,11 +7,13 @@ import { isTrpcRequest } from '@prairielearn/trpc/express';
 
 import { AssessmentAuthzResultSchema } from '../lib/assessment-access-control/authz-result.js';
 import { resolveModernAssessmentAccess } from '../lib/assessment-access-control/authz.js';
+import { formatLegacyAssessmentAccess } from '../lib/assessment-access-control/legacy.js';
 import {
-  RawLegacyAssessmentAuthzResultSchema,
-  formatLegacyAssessmentAccess,
-} from '../lib/assessment-access-control/legacy.js';
-import { AssessmentModuleSchema, AssessmentSchema, AssessmentSetSchema } from '../lib/db-types.js';
+  AssessmentModuleSchema,
+  AssessmentSchema,
+  AssessmentSetSchema,
+  SprocAuthzAssessmentSchema,
+} from '../lib/db-types.js';
 
 import { AccessDenied } from './selectAndAuthzAssessment.html.js';
 
@@ -28,7 +30,7 @@ const SelectAndAuthzAssessmentSchema = z.object({
 export type ResLocalsAssessment = z.infer<typeof SelectAndAuthzAssessmentSchema>;
 
 const RawSelectAndAuthzAssessmentSchema = SelectAndAuthzAssessmentSchema.extend({
-  authz_result: RawLegacyAssessmentAuthzResultSchema,
+  authz_result: SprocAuthzAssessmentSchema,
 });
 
 export default asyncHandler(async (req, res, next) => {

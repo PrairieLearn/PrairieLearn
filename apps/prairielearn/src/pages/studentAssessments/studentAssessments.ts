@@ -7,10 +7,8 @@ import {
   resolveModernAssessmentAccessResultsBatch,
   resolverResultToAssessmentAuthzResultForInstance,
 } from '../../lib/assessment-access-control/authz.js';
-import {
-  RawLegacyAssessmentAuthzResultSchema,
-  formatLegacyAssessmentAccess,
-} from '../../lib/assessment-access-control/legacy.js';
+import { formatLegacyAssessmentAccess } from '../../lib/assessment-access-control/legacy.js';
+import { SprocAuthzAssessmentSchema } from '../../lib/db-types.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import logPageView from '../../middlewares/logPageView.js';
 
@@ -25,7 +23,7 @@ const sql = loadSqlEquiv(import.meta.url);
 const router = Router();
 
 const StudentAssessmentsQueryRowSchema = StudentAssessmentSummarySchema.extend({
-  raw_authz_result: RawLegacyAssessmentAuthzResultSchema,
+  raw_authz_result: SprocAuthzAssessmentSchema,
 });
 
 function buildStudentAssessmentsRow(
