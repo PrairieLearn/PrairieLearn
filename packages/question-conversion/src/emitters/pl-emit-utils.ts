@@ -13,35 +13,6 @@ export function deduplicateChoices<T extends { html: string; correct: boolean }>
 }
 
 /**
- * Append lines to a grade() body that push global correct/incorrect feedback onto `_messages`.
- * Both branches are independent — a question can show both if it somehow satisfies both.
- */
-export function appendGlobalFeedback(
-  lines: string[],
-  correct: string | undefined,
-  incorrect: string | undefined,
-): void {
-  if (correct && incorrect) {
-    lines.push(
-      '    if data["score"] >= 1.0:',
-      `        _messages.append(${JSON.stringify(correct)})`,
-      '    else:',
-      `        _messages.append(${JSON.stringify(incorrect)})`,
-    );
-  } else if (correct) {
-    lines.push(
-      '    if data["score"] >= 1.0:',
-      `        _messages.append(${JSON.stringify(correct)})`,
-    );
-  } else if (incorrect) {
-    lines.push(
-      '    if data["score"] < 1.0:',
-      `        _messages.append(${JSON.stringify(incorrect)})`,
-    );
-  }
-}
-
-/**
  * Convert a Canvas formula string to a valid Python expression.
  *
  * Canvas uses [varname] for variable references and supports common math functions.
