@@ -13,6 +13,11 @@ interface CheckOptions {
 
 export type SecretKey = string | readonly [string, ...string[]];
 
+interface PrefixCsrfTokenData {
+  url: string;
+  [claim: string]: unknown;
+}
+
 function getSecretKeys(secretKey: SecretKey): readonly [string, ...string[]] {
   if (typeof secretKey === 'string') {
     return [secretKey];
@@ -146,28 +151,25 @@ export function checkSignedToken(
  * for all sub-routes under a prefix (e.g., `/foo/bar/trpc` is valid for
  * `/foo/bar/trpc/getUser` and `/foo/bar/trpc/updateUser`).
  */
-export function generatePrefixCsrfToken(
-  data: { url: string; authn_user_id: string },
-  secretKey: SecretKey,
-) {
+export function generatePrefixCsrfToken(data: PrefixCsrfTokenData, secretKey: SecretKey) {
   return generateSignedToken({ ...data, type: 'prefix' }, secretKey);
 }
 
 /**
  * Validates a prefix-based CSRF token. The token's URL must be a prefix of the
- * request URL for validation to succeed.
+ * request URL for validation to succeed. All claims other than the URL must
+ * exactly match the claims in the token.
  *
  * @param token - The CSRF token to validate
- * @param requestData - The request URL and authenticated user ID
+ * @param requestData - The request URL and claims to validate
  * @param requestData.url - The request URL to validate against
- * @param requestData.authn_user_id - The authenticated user ID to validate against
  * @param secretKey - The secret key used for signing
  * @param options - Optional settings like maxAge
  * @returns true if the token is valid, false otherwise
  */
 export function checkSignedTokenPrefix(
   token: string,
-  requestData: { url: string; authn_user_id: string },
+  requestData: PrefixCsrfTokenData,
   secretKey: SecretKey,
   options: CheckOptions = {},
 ): boolean {
@@ -177,23 +179,24 @@ export function checkSignedTokenPrefix(
   const tokenData = getCheckedSignedTokenData(token, secretKey, options);
   if (tokenData == null) return false;
 
+  const { type, url: prefixUrl, ...tokenClaims } = tokenData;
+
   // Verify this is a prefix token (prevents token type confusion)
-  if (tokenData.type !== 'prefix') {
+  if (type !== 'prefix') {
     debug('checkSignedTokenPrefix(): FAIL - token type is not prefix');
     return false;
   }
 
-  // Verify user ID matches exactly
-  if (tokenData.authn_user_id !== requestData.authn_user_id) {
-    debug('checkSignedTokenPrefix(): FAIL - authn_user_id mismatch');
+  const { url: requestUrl, ...requestClaims } = requestData;
+
+  if (!isEqual(tokenClaims, requestClaims)) {
+    debug('checkSignedTokenPrefix(): FAIL - claims mismatch');
     return false;
   }
 
   // Verify the request URL starts with the token's prefix URL.
   // We treat the prefix as implicitly ending with a trailing slash, so
   // `/test` matches `/test`, `/test/`, and `/test/nested`, but NOT `/testy`.
-  const prefixUrl = tokenData.url;
-  const requestUrl = requestData.url;
   const normalizedPrefix = prefixUrl.endsWith('/') ? prefixUrl : prefixUrl + '/';
   if (requestUrl !== prefixUrl && !requestUrl.startsWith(normalizedPrefix)) {
     debug(

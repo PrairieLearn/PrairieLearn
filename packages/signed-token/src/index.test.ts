@@ -11,6 +11,10 @@ import {
 const SECRET_KEY = 'test-secret-key';
 const OLD_SECRET_KEY = 'old-test-secret-key';
 const TEST_DATA = { url: '/test', authn_user_id: '123' };
+const TEST_DATA_WITH_MULTIPLE_CLAIMS = {
+  ...TEST_DATA,
+  authentication: { provider: 'saml', institution_id: '456' },
+};
 
 describe('generateSignedToken', () => {
   it('generates a token that can be validated', () => {
@@ -78,16 +82,23 @@ describe('getCheckedSignedTokenData', () => {
 
 describe('generatePrefixCsrfToken', () => {
   it('generates a token with type prefix', () => {
-    const token = generatePrefixCsrfToken(TEST_DATA, SECRET_KEY);
+    const token = generatePrefixCsrfToken(TEST_DATA_WITH_MULTIPLE_CLAIMS, SECRET_KEY);
 
     const tokenData = getCheckedSignedTokenData(token, SECRET_KEY);
     assert.equal(tokenData.type, 'prefix');
-    assert.equal(tokenData.url, TEST_DATA.url);
-    assert.equal(tokenData.authn_user_id, TEST_DATA.authn_user_id);
+    assert.equal(tokenData.url, TEST_DATA_WITH_MULTIPLE_CLAIMS.url);
+    assert.equal(tokenData.authn_user_id, TEST_DATA_WITH_MULTIPLE_CLAIMS.authn_user_id);
+    assert.deepEqual(tokenData.authentication, TEST_DATA_WITH_MULTIPLE_CLAIMS.authentication);
   });
 });
 
 describe('checkSignedTokenPrefix', () => {
+  it('validates multiple claims', () => {
+    const token = generatePrefixCsrfToken(TEST_DATA_WITH_MULTIPLE_CLAIMS, SECRET_KEY);
+
+    assert.isTrue(checkSignedTokenPrefix(token, TEST_DATA_WITH_MULTIPLE_CLAIMS, SECRET_KEY));
+  });
+
   it('validates token when request URL matches prefix exactly', () => {
     const token = generatePrefixCsrfToken(TEST_DATA, SECRET_KEY);
 
@@ -118,11 +129,34 @@ describe('checkSignedTokenPrefix', () => {
     assert.isFalse(checkSignedTokenPrefix(token, { ...TEST_DATA, url: '/testy' }, SECRET_KEY));
   });
 
-  it('rejects token when user ID does not match', () => {
-    const token = generatePrefixCsrfToken(TEST_DATA, SECRET_KEY);
+  it('rejects token when claims do not match exactly', () => {
+    const token = generatePrefixCsrfToken(TEST_DATA_WITH_MULTIPLE_CLAIMS, SECRET_KEY);
 
     assert.isFalse(
-      checkSignedTokenPrefix(token, { ...TEST_DATA, authn_user_id: '456' }, SECRET_KEY),
+      checkSignedTokenPrefix(
+        token,
+        { ...TEST_DATA_WITH_MULTIPLE_CLAIMS, authn_user_id: '456' },
+        SECRET_KEY,
+      ),
+    );
+    assert.isFalse(
+      checkSignedTokenPrefix(
+        token,
+        {
+          ...TEST_DATA_WITH_MULTIPLE_CLAIMS,
+          authentication: { provider: 'oidc', institution_id: '456' },
+        },
+        SECRET_KEY,
+      ),
+    );
+    const { authentication: _authentication, ...missingClaimData } = TEST_DATA_WITH_MULTIPLE_CLAIMS;
+    assert.isFalse(checkSignedTokenPrefix(token, missingClaimData, SECRET_KEY));
+    assert.isFalse(
+      checkSignedTokenPrefix(
+        token,
+        { ...TEST_DATA_WITH_MULTIPLE_CLAIMS, role: 'student' },
+        SECRET_KEY,
+      ),
     );
   });
 
