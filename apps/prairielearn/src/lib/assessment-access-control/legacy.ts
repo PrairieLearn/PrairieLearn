@@ -1,15 +1,9 @@
-import { formatDate, formatDateISO } from '@prairielearn/formatter';
+import { formatDate } from '@prairielearn/formatter';
 
 import type { SprocAuthzAssessment, SprocAuthzAssessmentInstance } from '../db-types.js';
 
 import type { AssessmentAuthzResult, AssessmentInstanceAuthzResult } from './authz-result.js';
 import { formatDateShort } from './resolver.js';
-
-function formatDateFull(date: Date, displayTimezone: string): string {
-  const compact = formatDate(date, displayTimezone);
-  const offset = formatDateISO(date, displayTimezone).slice(19).replace(/:00$/, '');
-  return compact.replace(' (', `${offset} (`);
-}
 
 export function formatLegacyAssessmentAccess(
   raw: SprocAuthzAssessment,
@@ -34,8 +28,8 @@ export function formatLegacyAssessmentAccess(
     access_rules: raw.access_rules.map((rule) => ({
       credit: rule.credit == null ? 'None' : `${rule.credit}%`,
       time_limit_min: rule.time_limit_min == null ? '—' : `${rule.time_limit_min} min`,
-      start_date: rule.start_date ? formatDateFull(rule.start_date, displayTimezone) : '—',
-      end_date: rule.end_date ? formatDateFull(rule.end_date, displayTimezone) : '—',
+      start_date: rule.start_date ? formatDate(rule.start_date, displayTimezone) : '—',
+      end_date: rule.end_date ? formatDate(rule.end_date, displayTimezone) : '—',
       mode: rule.mode,
       active: rule.active,
     })),

@@ -37,7 +37,7 @@ describe('formatLegacyAssessmentAccess', () => {
     const result = formatLegacyAssessmentAccess(raw, 'America/Chicago');
 
     expect(result.credit_date_string).toBe('100% until 01:30, Thu, Jan 2');
-    expect(result.access_rules[0].start_date).toBe('2025-01-02 00:30:00-06 (CST)');
-    expect(result.access_rules[0].end_date).toBe('2025-01-02 01:30:00-06 (CST)');
+    expect(result.access_rules[0].start_date).toBe('2025-01-02 00:30:00 (CST)');
+    expect(result.access_rules[0].end_date).toBe('2025-01-02 01:30:00 (CST)');
   });
 });
