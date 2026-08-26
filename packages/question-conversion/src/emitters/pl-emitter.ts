@@ -19,7 +19,7 @@ import { stableUuid } from '../utils/uuid.js';
 import type { BodyEmitHandler, BodyEmitRegistry, FeedbackMessage } from './body-emit-handler.js';
 import type { ConversionResult, ConversionWarning, EmitOptions, OutputEmitter } from './emitter.js';
 import { createPLBodyRegistry } from './handlers/index.js';
-import { neutralizeMustacheDelimiters } from './pl-emit-utils.js';
+import { escapeMustacheDelimiters } from './pl-emit-utils.js';
 
 /** Emits PrairieLearn question directories and assessment config from IR. */
 export class PLEmitter implements OutputEmitter {
@@ -479,7 +479,7 @@ function renderFeedbackHtml(messages: NamedFeedbackMessage[], generalFeedback: s
   for (const name of feedbackNames) {
     lines.push(`  {{#feedback.${name}}}`);
     if (name === 'overall') {
-      lines.push(...generalFeedback.map(neutralizeMustacheDelimiters));
+      lines.push(...generalFeedback.map(escapeMustacheDelimiters));
     }
 
     for (const message of messages) {
@@ -489,11 +489,11 @@ function renderFeedbackHtml(messages: NamedFeedbackMessage[], generalFeedback: s
         const sectionType = message.trigger.outcome === 'incorrect' ? '^' : '#';
         lines.push(
           `    {{${sectionType}is_correct}}`,
-          neutralizeMustacheDelimiters(message.html),
+          escapeMustacheDelimiters(message.html),
           '    {{/is_correct}}',
         );
       } else {
-        lines.push(neutralizeMustacheDelimiters(message.html));
+        lines.push(escapeMustacheDelimiters(message.html));
       }
     }
     lines.push(`  {{/feedback.${name}}}`);
