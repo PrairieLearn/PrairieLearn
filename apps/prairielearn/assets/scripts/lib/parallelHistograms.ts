@@ -155,7 +155,7 @@ export function parallelHistograms(
   plot
     .selectAll('text.label')
     .attr('y', -50)
-    .attr('x', (-1 * heightWithPadding) / 2)
+    .attr('x', -heightWithPadding / 2)
     .attr('dy', '.35em')
     .attr('transform', 'rotate(-90)')
     .style('text-anchor', 'start');

@@ -98,6 +98,8 @@ If a migration was created on the current feature branch (i.e., it has not been 
 
 If you make a change to the database, make sure to update the database schema description in `database/` and the Zod types/table list in `apps/prairielearn/src/lib/db-types.ts`.
 
+After any migration or `database/` schema-description change, run `apps/prairielearn/src/tests/database.test.ts` after the final edit. Re-run it after renaming a constraint or index: entry ordering in `database/tables/*.pg` is significant and must match the generated database description.
+
 Dropping a sproc (stored procedure) only requires removing the file from `apps/prairielearn/src/sprocs` and updating `apps/prairielearn/src/sprocs/index.ts`. Do not author a migration that uses `DROP FUNCTION`.
 
 When inserting audit events (`insertAuditEvent`), always do so inside the same transaction as the action being audited. Use `runInTransactionAsync` to wrap the original database mutation and its corresponding audit log insertion together. This ensures that if either the action or the audit event fails, both are rolled back.
@@ -108,9 +110,17 @@ Course content repositories use JSON files like `infoCourse.json`, `infoCourseIn
 
 When working with assessment "groups" / "teams", see the [`groups-and-teams` skill](./.agents/skills/groups-and-teams/SKILL.md).
 
+### Models and libraries
+
+`apps/prairielearn/src/models/` and `apps/prairielearn/src/lib/` are organizational conventions for reusable application code, not strict dependency layers. Choose a location based on the helper's primary responsibility:
+
+- Model modules in `apps/prairielearn/src/models/` should map one-to-one to a primary database table and contain operations centered on that table's entity. Do not create a model without a corresponding primary table. A model may join or update related tables and contain entity-specific business rules, but those operations must remain centered on its primary table.
+- Put cross-entity workflows, orchestration, authorization or context helpers, analytics, and other reusable logic without a corresponding primary database table in `apps/prairielearn/src/lib/`. Library modules may execute SQL or call model functions.
+- Before adding a helper or query, extend an existing model or library module that already owns the responsibility when one exists.
+
 ### SQL query conventions
 
-- Always prefer existing model functions or library helpers over one-off raw SQL queries. Check `apps/prairielearn/src/models/` and existing lib functions before writing any database queries. Only write raw queries when no suitable abstraction exists.
+- Always prefer existing model functions or library helpers over one-off raw SQL queries. Check `apps/prairielearn/src/models/` and `apps/prairielearn/src/lib/` before writing any database queries. Only write raw queries when no suitable abstraction exists.
 - Use `to_jsonb(table.*)` if you need to select all columns from a table as JSON. This is preferred over explicit `jsonb_build_object` calls or returning columns explicitly in a SELECT statement because it automatically includes all columns and stays in sync with schema changes and Zod types.
 - When a query spans multiple tables, model it as a composite object with named canonical `db-types` entities plus any true computed fields, rather than flattening columns or embedding one entity inside another.
 - When writing SQL, get table and column names from `database/tables/` (the source of truth) or from nearby existing queries in the same feature area. Do NOT rely on names found in old migrations, as tables and columns may have been renamed since those migrations were written.
@@ -122,6 +132,7 @@ When working with assessment "groups" / "teams", see the [`groups-and-teams` ski
 
 - Use `tRPC + @trpc/tanstack-react-query` for new client/server communication. When interacting with existing REST APIs, use `@tanstack/react-query`. See the [`trpc` skill](./.agents/skills/trpc/SKILL.md) for conventions on authorization scopes, file structure, and client-side patterns.
 - Use `react-hook-form` for form handling.
+- Use the [`express-request-validation` skill](./.agents/skills/express-request-validation/SKILL.md) when validating Express request parameters, query strings, or bodies with Zod.
 - Prefer `extractPageContext(res.locals, ...)` over accessing `res.locals` properties directly in route handlers. This provides better type safety and ensures consistent access patterns.
 - Use `nuqs` for URL query state in hydrated components. Use `NuqsAdapter` from `@prairielearn/ui` and pass the search string from the router. See `pages/home/` for an example.
 
@@ -201,6 +212,8 @@ When changing element properties or options, you MUST update the corresponding d
 When modifying or reviewing element controllers — especially adding fields to `data["params"]` or `data["correct_answers"]` — see the [`element-backwards-compat` skill](./.agents/skills/element-backwards-compat/SKILL.md) for the rules that protect existing variants from breaking.
 
 When changing or reviewing an element's accepted/generated HTML attribute contract, see the [`element-validation` skill](./.agents/skills/element-validation/SKILL.md) to keep schema modules, legacy AI validation, Python render-time checks, and element docs aligned.
+
+When creating a new element or changing an element's runtime dependencies, scripts, styles, or bundled assets, see the [`element-runtime-assets` skill](./.agents/skills/element-runtime-assets/SKILL.md) for the requirement that those assets be browser-loadable as standalone bundles.
 
 ### Testing
 

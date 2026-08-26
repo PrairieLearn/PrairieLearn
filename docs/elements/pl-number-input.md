@@ -14,6 +14,7 @@ tolerances.
 ```python title="server.py"
 import random
 
+
 def generate(data):
 
     # Generate a random value
@@ -34,6 +35,7 @@ def generate(data):
 
 ```python title="server.py"
 import random
+
 
 def generate(data):
 

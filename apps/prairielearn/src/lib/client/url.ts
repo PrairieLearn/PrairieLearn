@@ -404,6 +404,10 @@ export function getEndExamExitUrl(): string {
 
 // tRPC scope URLs
 
+export function getUserTrpcUrl(): string {
+  return '/pl/user/trpc';
+}
+
 export function getAdministratorTrpcUrl(): string {
   return '/pl/administrator/trpc';
 }

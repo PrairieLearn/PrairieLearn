@@ -39,7 +39,7 @@
 # Their site has more documentation.
 
 FROM rocker/rstudio:4.6.1
-ARG CACHEBUST=2026-07-15-14-34-04
+ARG CACHEBUST=2026-08-15-14-04-29
 LABEL com.prairielearn.workspace.home="/home/rstudio/workspace"
 LABEL com.prairielearn.workspace.port="3939"
 LABEL com.prairielearn.workspace.rewrite-url="false"
@@ -156,6 +156,7 @@ ENV USER=rstudio
 # Judging from some discussion online, the PASSWORD variable may be necessary
 # due to a bug in RStudio Server's DISABLE_AUTH mode.
 ENV DISABLE_AUTH=true
+# hadolint ignore=DL3064
 ENV PASSWORD=placeholder
 # This tells s6 to use alternative, writable locations if the paths it
 # expects to write to are read-only.

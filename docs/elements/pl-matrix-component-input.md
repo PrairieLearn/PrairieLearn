@@ -16,6 +16,7 @@ the same shape of the variable stored in `answers-name`
 import prairielearn as pl
 import numpy as np
 
+
 def generate(data):
 
     # Generate a random 3x3 matrix

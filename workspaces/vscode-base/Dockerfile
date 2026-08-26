@@ -1,6 +1,6 @@
 # noble is the codename for Ubuntu 24.04 LTS
-FROM codercom/code-server:4.126.0-noble
-ARG CACHEBUST=2026-07-15-14-34-04
+FROM codercom/code-server:4.131.0-noble
+ARG CACHEBUST=2026-08-15-14-04-29
 LABEL com.prairielearn.workspace.home="/home/coder/workspace" 
 LABEL com.prairielearn.workspace.port="8080"
 LABEL com.prairielearn.workspace.rewrite-url="true"

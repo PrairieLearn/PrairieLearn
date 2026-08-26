@@ -13,6 +13,7 @@ Fill in the blank field that requires an **integer** input.
 ```python title="server.py"
 import random
 
+
 def generate(data):
 
     # Generate a random whole number

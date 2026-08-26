@@ -2,7 +2,7 @@
   "controller": "pl-symbolic-input.py",
   "dependencies": {
     "nodeModulesScripts": [
-      "@cortex-js/compute-engine/dist/compute-engine.min.umd.cjs",
+      "@cortex-js/compute-engine/dist/umd-min/compute-engine.cjs",
       "mathlive/mathlive.min.js"
     ],
     "elementScripts": ["pl-symbolic-input.js"],

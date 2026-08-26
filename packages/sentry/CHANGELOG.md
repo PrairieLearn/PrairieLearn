@@ -1,5 +1,11 @@
 # @prairielearn/sentry
 
+## 5.0.9
+
+### Patch Changes
+
+- df28e68: Bump dependencies
+
 ## 5.0.8
 
 ### Patch Changes

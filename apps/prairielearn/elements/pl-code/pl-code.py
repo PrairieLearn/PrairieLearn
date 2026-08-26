@@ -176,7 +176,7 @@ def get_formatter(
 ) -> HighlightingHtmlFormatter:
     class CustomStyleWithAnsiColors(BaseStyle):
         # pygments did not annotate their class variables correctly (https://github.com/pygments/pygments/pull/2838)
-        styles = {**BaseStyle.styles, **get_ansi_color_tokens()}  # noqa: RUF012
+        styles = {**BaseStyle.styles, **get_ansi_color_tokens()}  # ruff:ignore[mutable-class-default]
 
         highlight_color = (
             highlight_lines_color or BaseStyle.highlight_color or "#b3d7ff"

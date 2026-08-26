@@ -5,6 +5,7 @@ import { useController, useForm } from 'react-hook-form';
 
 import { ComboBox, type ComboBoxItem, StickySaveBar, TagPicker } from '@prairielearn/ui';
 
+import { PublicLinkSharing } from '../../components/LinkSharing.js';
 import { QuestionShortNameDescription } from '../../components/ShortNameDescriptions.js';
 import { TagBadge } from '../../components/TagBadge.js';
 import { TagDescription } from '../../components/TagDescription.js';
@@ -188,6 +189,7 @@ export const InstructorQuestionSettingsForm = ({
   hasCoursePermissionView,
   editableCourses,
   questionGHLink,
+  publicLink,
   sharing,
   questionTest,
 }: {
@@ -205,6 +207,7 @@ export const InstructorQuestionSettingsForm = ({
   hasCoursePermissionView: boolean;
   editableCourses: EditableCourse[];
   questionGHLink: string | null;
+  publicLink: string;
   sharing: {
     enabled: boolean;
     sets: QuestionSharingSetRow[];
@@ -1106,7 +1109,7 @@ export const InstructorQuestionSettingsForm = ({
                     ))}
                     {lockedSharingSetNamesSet.size > 0 && (
                       <div className="d-flex flex-wrap gap-1 mb-2">
-                        {Array.from(lockedSharingSetNamesSet).map((name) => (
+                        {Array.from(lockedSharingSetNamesSet, (name) => (
                           <span
                             key={name}
                             className="badge color-gray1"
@@ -1157,6 +1160,20 @@ export const InstructorQuestionSettingsForm = ({
                   </>
                 )}
               </div>
+
+              {question.share_publicly || question.share_source_publicly ? (
+                <div className="mt-3">
+                  <PublicLinkSharing
+                    publicLink={publicLink}
+                    sharingMessage={
+                      question.share_source_publicly
+                        ? "This question's source is publicly shared."
+                        : 'This question is publicly shared.'
+                    }
+                    publicLinkMessage="The link that other instructors can use to view this question."
+                  />
+                </div>
+              ) : null}
             </div>
           </div>
         )}

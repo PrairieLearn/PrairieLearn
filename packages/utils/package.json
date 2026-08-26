@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/utils",
-  "version": "3.2.2",
+  "version": "3.2.3",
   "type": "module",
   "repository": {
     "type": "git",
@@ -27,11 +27,11 @@
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
     "@types/archiver": "^8.0.0",
-    "@types/node": "^24.13.2",
+    "@types/node": "^24.13.3",
     "@types/yauzl": "^2.10.3",
     "@typescript/native-preview": "beta",
-    "@vitest/coverage-v8": "^4.1.9",
+    "@vitest/coverage-v8": "^4.1.10",
     "archiver": "^8.0.0",
-    "vitest": "^4.1.9"
+    "vitest": "^4.1.10"
   }
 }

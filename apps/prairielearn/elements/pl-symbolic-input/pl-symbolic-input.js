@@ -586,6 +586,7 @@
           },
         ];
       }
+      // eslint-disable-next-line unicorn/no-useless-recursion -- MathJSON expressions are recursive trees.
       return collectMathJSONParseErrors(fn);
     }
 
@@ -654,6 +655,7 @@
     }
 
     if (expr && typeof expr === 'object') {
+      // eslint-disable-next-line unicorn/no-useless-recursion -- MathJSON expressions are recursive trees.
       if ('fn' in expr) return collectMathJSONConversionErrors(expr.fn, options);
     }
 
@@ -852,6 +854,7 @@
       if ('sym' in expr && (expr.sym === 'True' || expr.sym === 'False')) return 'logical';
       if ('sym' in expr && expr.sym === 'EmptySet') return 'set';
       if ('num' in expr || 'sym' in expr) return 'numeric';
+      // eslint-disable-next-line unicorn/no-useless-recursion -- MathJSON expressions are recursive trees.
       if ('fn' in expr) return mathJSONExpressionKind(expr.fn, options);
       return 'unknown';
     }
@@ -924,6 +927,7 @@
     if (typeof expr === 'number' || typeof expr === 'boolean') return String(expr);
 
     if (Array.isArray(expr)) {
+      // eslint-disable-next-line unicorn/no-useless-recursion -- MathJSON expressions are recursive trees.
       if (expr[0] === 'LatexString') return formatMathJSONParseErrorPart(expr[1]);
       if (expr[0] === 'Error') return formatMathJSONParseError(expr);
       if (expr[0] === 'ErrorCode') {
@@ -936,6 +940,7 @@
       if ('str' in expr && typeof expr.str === 'string') return stripMathJSONStringQuotes(expr.str);
       if ('sym' in expr && typeof expr.sym === 'string') return stripMathJSONStringQuotes(expr.sym);
       if ('num' in expr && typeof expr.num === 'string') return expr.num;
+      // eslint-disable-next-line unicorn/no-useless-recursion -- MathJSON expressions are recursive trees.
       if ('fn' in expr) return formatMathJSONParseErrorPart(expr.fn);
     }
 
@@ -1270,7 +1275,7 @@
     const signKey = {
       class: 'small',
       latex: '\\mathrm{sign}',
-      insert: '\\operatorname{sign}\\left({#@}\\right)',
+      insert: '\\operatorname{sign}\\left({#0}\\right)',
     };
 
     /**
@@ -1290,12 +1295,13 @@
         id: 'power',
         label: () => '<span class="ML__insert-template">x<sup>y</sup></span>',
         onMenuSelect: () =>
-          isSelected(mf) ? mf.insert('\\left({#@}\\right)^{#?}') : mf.insert('{#@}^{#?}'),
+          // Keep power bases ungrouped so implicit fraction insertion does not detach their superscripts.
+          isSelected(mf) ? mf.insert('\\left({#@}\\right)^{#?}') : mf.insert('#@^{#?}'),
       },
       {
         id: 'sqrt',
         label: '√',
-        onMenuSelect: () => mf.insert('\\sqrt{#@}'),
+        onMenuSelect: () => mf.insert('\\sqrt{#0}'),
       },
       {
         id: 'pi',
@@ -1320,12 +1326,12 @@
       rows: [
         [
           ...onlyIfSets('[separator]'),
-          makeShortcutProxy({ class: 'small', latex: '{#@}^{#?}' }, mf),
+          makeShortcutProxy({ class: 'small', latex: '#@^{#?}' }, mf),
           makeShortcutProxy(
             {
               class: 'small',
-              latex: '{#@}^{2}',
-              variants: [{ class: 'small', latex: '{#@}^{3}' }],
+              latex: '#@^{2}',
+              variants: [{ class: 'small', latex: '#@^{3}' }],
             },
             mf,
           ),
@@ -1347,17 +1353,17 @@
         ],
         [
           ...onlyIfSets('[separator]'),
-          { class: 'small', latex: '\\sqrt', insert: '\\sqrt{#@}' },
+          { class: 'small', latex: '\\sqrt', insert: '\\sqrt{#0}' },
           logAsLn
             ? {
                 class: 'small',
                 latex: '\\ln',
-                insert: '\\operatorname{ln}\\left({#@}\\right)',
+                insert: '\\operatorname{ln}\\left({#0}\\right)',
               }
             : {
                 class: 'small',
                 latex: '\\log',
-                insert: '\\operatorname{log}\\left({#@}\\right)',
+                insert: '\\operatorname{log}\\left({#0}\\right)',
               },
           { class: 'small', latex: '!' },
           '[separator]',
@@ -1373,9 +1379,9 @@
         ],
         [
           ...onlyIfSets('[separator]'),
-          { class: 'small', latex: '|#@|', insert: '|{#@}|' },
-          { class: 'small', latex: '\\min', insert: '\\operatorname{min}\\left({#@}\\right)' },
-          { class: 'small', latex: '\\max', insert: '\\operatorname{max}\\left({#@}\\right)' },
+          { class: 'small', latex: '|#0|', insert: '|{#0}|' },
+          { class: 'small', latex: '\\min', insert: '\\operatorname{min}\\left({#0}\\right)' },
+          { class: 'small', latex: '\\max', insert: '\\operatorname{max}\\left({#0}\\right)' },
           '[separator]',
           '1',
           '2',
@@ -1400,27 +1406,27 @@
                 class: 'small',
                 latex: '\\sin',
 
-                insert: '\\operatorname{sin}\\left({#@}\\right)',
+                insert: '\\operatorname{sin}\\left({#0}\\right)',
                 variants: [
                   {
                     class: 'small',
                     latex: '\\csc',
-                    insert: '\\operatorname{csc}\\left({#@}\\right)',
+                    insert: '\\operatorname{csc}\\left({#0}\\right)',
                   },
                   {
                     class: 'small',
                     latex: '\\arcsin',
-                    insert: '\\operatorname{arcsin}\\left({#@}\\right)',
+                    insert: '\\operatorname{arcsin}\\left({#0}\\right)',
                   },
                   {
                     class: 'small',
                     latex: '\\mathrm{sinh}',
-                    insert: '\\operatorname{sinh}\\left({#@}\\right)',
+                    insert: '\\operatorname{sinh}\\left({#0}\\right)',
                   },
                   {
                     class: 'small',
                     latex: '\\mathrm{asinh}',
-                    insert: '\\operatorname{asinh}\\left({#@}\\right)',
+                    insert: '\\operatorname{asinh}\\left({#0}\\right)',
                   },
                 ],
               }
@@ -1429,27 +1435,27 @@
             ? {
                 class: 'small',
                 latex: '\\cos',
-                insert: '\\operatorname{cos}\\left({#@}\\right)',
+                insert: '\\operatorname{cos}\\left({#0}\\right)',
                 variants: [
                   {
                     class: 'small',
                     latex: '\\sec',
-                    insert: '\\operatorname{sec}\\left({#@}\\right)',
+                    insert: '\\operatorname{sec}\\left({#0}\\right)',
                   },
                   {
                     class: 'small',
                     latex: '\\arccos',
-                    insert: '\\operatorname{arccos}\\left({#@}\\right)',
+                    insert: '\\operatorname{arccos}\\left({#0}\\right)',
                   },
                   {
                     class: 'small',
                     latex: '\\mathrm{cosh}',
-                    insert: '\\operatorname{cosh}\\left({#@}\\right)',
+                    insert: '\\operatorname{cosh}\\left({#0}\\right)',
                   },
                   {
                     class: 'small',
                     latex: '\\mathrm{acosh}',
-                    insert: '\\operatorname{acosh}\\left({#@}\\right)',
+                    insert: '\\operatorname{acosh}\\left({#0}\\right)',
                   },
                 ],
               }
@@ -1458,32 +1464,32 @@
             ? {
                 class: 'small',
                 latex: '\\tan',
-                insert: '\\operatorname{tan}\\left({#@}\\right)',
+                insert: '\\operatorname{tan}\\left({#0}\\right)',
                 variants: [
                   {
                     class: 'small',
                     latex: '\\cot',
-                    insert: '\\operatorname{cot}\\left({#@}\\right)',
+                    insert: '\\operatorname{cot}\\left({#0}\\right)',
                   },
                   {
                     class: 'small',
                     latex: '\\arctan',
-                    insert: '\\operatorname{arctan}\\left({#@}\\right)',
+                    insert: '\\operatorname{arctan}\\left({#0}\\right)',
                   },
                   {
                     class: 'small',
                     latex: '\\mathrm{tanh}',
-                    insert: '\\operatorname{tanh}\\left({#@}\\right)',
+                    insert: '\\operatorname{tanh}\\left({#0}\\right)',
                   },
                   {
                     class: 'small',
                     latex: '\\mathrm{atanh}',
-                    insert: '\\operatorname{atanh}\\left({#@}\\right)',
+                    insert: '\\operatorname{atanh}\\left({#0}\\right)',
                   },
                   {
                     class: 'small',
                     latex: '\\mathrm{arctan2}',
-                    insert: '\\operatorname{arctan2}\\left({#@}\\right)',
+                    insert: '\\operatorname{arctan2}\\left({#0}\\right)',
                   },
                 ],
               }
@@ -1508,7 +1514,13 @@
     mf.addEventListener('focus', updateKeyboardLayout);
     mf.addEventListener('selection-change', updateKeyboardLayout);
 
+    const initialLatex = $('#symbolic-input-latex-' + name).val();
+
     setUpSymbolicInputMacros(mf);
+
+    if (typeof initialLatex === 'string') {
+      mf.value = initialLatex;
+    }
 
     // Disable auto-complete suggestions for macros
     mf.popoverPolicy = 'off';
@@ -1659,8 +1671,8 @@
 
     /** @type {Record<string, string>} */
     const macros = {};
-    [...customFunctions].forEach((fun) => (macros[fun] = `\\operatorname{${fun}}`));
-    [...greekLettersToUnicode].forEach(
+    customFunctions.forEach((fun) => (macros[fun] = `\\operatorname{${fun}}`));
+    greekLettersToUnicode.forEach(
       ([letter, unicode]) => (macros[letter] = String.fromCodePoint(Number.parseInt(unicode, 16))),
     );
 
@@ -1669,21 +1681,20 @@
      * @type {import('mathlive').InlineShortcutDefinitions}
      */
     const inlineShortcuts = {
-      // Using {#@}^{#?} makes abc^2 interpret as (abc)^2 instead of a*b*c^2 which is likely the intention
-      '^': {
+      '**': {
         value: '#@^{#?}',
       },
-      '**': {
+      '^': {
         value: '#@^{#?}',
       },
       '*': {
         value: '{#@}\\cdot',
       },
       '|': {
-        value: '|{#@}|',
+        value: '|{#0}|',
       },
       sqrt: {
-        value: '\\sqrt{#@}',
+        value: '\\sqrt{#0}',
       },
       pi: {
         value: '\\pi',

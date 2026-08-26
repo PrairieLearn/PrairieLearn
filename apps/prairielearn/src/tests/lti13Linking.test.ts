@@ -6,15 +6,29 @@ import express from 'express';
 import fetchCookie from 'fetch-cookie';
 import getPort from 'get-port';
 import nodeJose from 'node-jose';
-import { afterAll, assert, beforeAll, describe, test } from 'vitest';
+import { afterAll, assert, beforeAll, describe, expect, test } from 'vitest';
 
-import { execute, queryOptionalRow, queryRow } from '@prairielearn/postgres';
+import {
+  execute,
+  queryOptionalRow,
+  queryRow,
+  queryRows,
+  queryScalar,
+} from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
-import { Lti13CombinedInstanceSchema, inspectRoster } from '../ee/lib/lti13.js';
+import {
+  type Lti13CombinedInstance,
+  Lti13CombinedInstanceSchema,
+  inspectRoster,
+  queryAndLinkLineitem,
+  updateLti13Scores,
+} from '../ee/lib/lti13.js';
 import { config } from '../lib/config.js';
-import { Lti13CourseInstanceSchema } from '../lib/db-types.js';
+import { Lti13AssessmentSchema, Lti13CourseInstanceSchema } from '../lib/db-types.js';
 import { createServerJob, selectJobsByJobSequenceId } from '../lib/server-jobs.js';
-import { selectOptionalUserByUid } from '../models/user.js';
+import { selectCourseInstanceById } from '../models/course-instances.js';
+import { selectOptionalUserByUid, selectOrInsertUserByUid } from '../models/user.js';
 
 import { fetchCheerio } from './helperClient.js';
 import * as helperServer from './helperServer.js';
@@ -23,6 +37,7 @@ import {
   LTI_DEPLOYMENT_ID,
   createCrossInstitutionFixture,
   createLti13Instance,
+  enableLti13Authentication,
   grantCoursePermissions,
   linkLtiContext,
   makeLoginExecutor,
@@ -61,25 +76,7 @@ describe('LTI 1.3 course instance linking', { concurrent: false }, () => {
       },
     });
 
-    // Enable LTI 1.3 as auth provider
-    const ssoResponse = await fetchCheerio(`${siteUrl}/pl/administrator/institution/1/sso`);
-    assert.equal(ssoResponse.status, 200, 'Failed to load SSO settings page');
-
-    const saveButton = ssoResponse.$('button:contains(Save)');
-    const form = saveButton.closest('form');
-    const lti13Input = form.find('label:contains(LTI 1.3)').closest('div').find('input');
-    const lti13InputValue = lti13Input.attr('value');
-    assert.ok(lti13InputValue, 'Could not find LTI 1.3 input value in SSO form');
-
-    const enableLtiResponse = await fetchCheerio(`${siteUrl}/pl/administrator/institution/1/sso`, {
-      method: 'POST',
-      body: new URLSearchParams({
-        __csrf_token: form.find('input[name=__csrf_token]').val() as string,
-        enabled_authn_provider_ids: lti13InputValue,
-        default_authn_provider_id: '',
-      }),
-    });
-    assert.equal(enableLtiResponse.status, 200, 'Failed to enable LTI 1.3 as auth provider');
+    await enableLti13Authentication(siteUrl);
   });
 
   afterAll(async () => {
@@ -132,6 +129,7 @@ describe('LTI 1.3 course instance linking', { concurrent: false }, () => {
     // since the target user doesn't exist yet - grantCoursePermissions will create them.
     await grantCoursePermissions({
       uid: 'linking-instructor@example.com',
+      uin: '111222333',
       courseId: '1',
       courseRole: 'Editor',
       courseInstanceId: '1',
@@ -277,6 +275,7 @@ describe('LTI 1.3 course instance linking', { concurrent: false }, () => {
     // since the target user doesn't exist yet - grantCoursePermissions will create them.
     await grantCoursePermissions({
       uid: 'linked-instructor@example.com',
+      uin: '101010101',
       courseId: '1',
       courseRole: 'Editor',
       courseInstanceId: '1',
@@ -405,6 +404,7 @@ describe('LTI 1.3 course instance linking', { concurrent: false }, () => {
       // This user has permissions for course in institution 2, but the LTI instance is in institution 1
       await grantCoursePermissions({
         uid: 'cross-inst-instructor@example.com',
+        uin: '888000222',
         courseId,
         courseRole: 'Editor',
         courseInstanceId,
@@ -484,6 +484,7 @@ describe('LTI 1.3 course instance linking', { concurrent: false }, () => {
       // since the target user doesn't exist yet - grantCoursePermissions will create them.
       await grantCoursePermissions({
         uid: 'admin-test@example.com',
+        uin: '131313131',
         courseId: '1',
         courseRole: 'Editor',
         courseInstanceId: '1',
@@ -540,6 +541,7 @@ describe('LTI 1.3 course instance linking', { concurrent: false }, () => {
       // since the target user doesn't exist yet - grantCoursePermissions will create them.
       await grantCoursePermissions({
         uid: 'admin-redirect@example.com',
+        uin: '141414141',
         courseId: '1',
         courseRole: 'Editor',
         courseInstanceId: '1',
@@ -579,7 +581,7 @@ describe('LTI 1.3 course instance linking', { concurrent: false }, () => {
   });
 
   describe('LTI 1.3 NRPS roster inspector', () => {
-    test('inspectRoster appends rlid, dumps members, and annotates sub/custom/lis matches', async () => {
+    test('inspectRoster appends rlid, dumps members, and annotates sub/custom/lis identity candidates', async () => {
       // Ensure course instance 1 is linked to LTI instance 1.
       await execute(
         `DELETE FROM lti13_course_instances
@@ -595,11 +597,12 @@ describe('LTI 1.3 course instance linking', { concurrent: false }, () => {
         courseInstanceId: '1',
       });
 
-      // Create a user with a known sub and UIN to exercise both match paths.
+      // Create a user with a known sub and UIN to exercise both identity annotations.
       const knownSub = 'roster-inspector-sub-1';
       const knownUin = '555000555';
       await grantCoursePermissions({
         uid: 'roster-inspector@example.com',
+        uin: knownUin,
         courseId: '1',
         courseRole: 'Editor',
         courseInstanceId: '1',
@@ -649,6 +652,8 @@ describe('LTI 1.3 course instance linking', { concurrent: false }, () => {
       );
 
       const capturedRlids: (string | undefined)[] = [];
+      const capturedAuthorizationHeaders: (string | undefined)[] = [];
+      const capturedAcceptHeaders: (string | undefined)[] = [];
       const app = express();
       app.use(express.urlencoded({ extended: true }));
       app.post('/token', (_req, res) => {
@@ -661,6 +666,8 @@ describe('LTI 1.3 course instance linking', { concurrent: false }, () => {
       });
       app.get('/memberships', (req, res) => {
         capturedRlids.push(typeof req.query.rlid === 'string' ? req.query.rlid : undefined);
+        capturedAuthorizationHeaders.push(req.get('authorization'));
+        capturedAcceptHeaders.push(req.get('accept'));
         res.setHeader('Content-Type', 'application/vnd.ims.lti-nrps.v2.membershipcontainer+json');
         res.json({
           id: membershipsUrl,
@@ -739,18 +746,27 @@ describe('LTI 1.3 course instance linking', { concurrent: false }, () => {
 
       // The custom run appended the chosen rlid; the lis run requested a plain roster.
       assert.deepEqual(capturedRlids, ['rl-course-nav', undefined]);
+      assert.deepEqual(capturedAuthorizationHeaders, [
+        'Bearer roster-inspector-token',
+        'Bearer roster-inspector-token',
+      ]);
+      assert.deepEqual(capturedAcceptHeaders, [
+        'application/vnd.ims.lti-nrps.v2.membershipcontainer+json',
+        'application/vnd.ims.lti-nrps.v2.membershipcontainer+json',
+      ]);
 
       const customJobs = await selectJobsByJobSequenceId(customJob.jobSequenceId);
       assert.lengthOf(customJobs, 1);
       const customOutput = customJobs[0].output ?? '';
       assert.include(customOutput, 'Found 3 members.');
       assert.include(customOutput, 'roster-inspector@example.com');
-      assert.include(customOutput, 'Matched by sub');
+      assert.include(customOutput, 'Stored sub binding: PrairieLearn user');
       assert.include(
         customOutput,
-        `Matched by UIN ${knownUin} to PrairieLearn user roster-inspector@example.com`,
+        `Roster UIN ${knownUin}: PrairieLearn user roster-inspector@example.com`,
       );
-      assert.include(customOutput, 'No PrairieLearn user matched');
+      assert.include(customOutput, 'Stored sub binding: none');
+      assert.include(customOutput, 'Configured-UIN grade routing would fail');
 
       // With no rlid (no custom claims), the lis-configured instance still resolves
       // the UIN from the lis sourcedid that NRPS flattens onto the member.
@@ -759,8 +775,253 @@ describe('LTI 1.3 course instance linking', { concurrent: false }, () => {
       const lisOutput = lisJobs[0].output ?? '';
       assert.include(
         lisOutput,
-        `Matched by UIN ${knownUin} to PrairieLearn user roster-inspector@example.com`,
+        `Roster UIN ${knownUin}: PrairieLearn user roster-inspector@example.com`,
       );
+    });
+  });
+
+  describe('LTI 1.3 assessment linking with multiple linked LMS courses', () => {
+    const SECOND_CONTEXT_ID = '5a0b3f2c-8e1d-4a6b-9c7f-2d3e4f5a6b7c';
+    const STUDENT_UID = 'multi-lms-student@example.com';
+    const STUDENT_UIN = '246802468';
+
+    let lmsCourses: { instance: Lti13CombinedInstance; lineitemUrl: string }[];
+    let assessmentId: string;
+    let app: express.Express;
+    let scoredLineitems: string[];
+    let failingMembershipRlid: string | null = null;
+
+    beforeAll(async () => {
+      // Two LMS courses in the same LTI instance, both linked to course instance 1.
+      await execute("DELETE FROM lti13_course_instances WHERE lti13_instance_id = '1'");
+      for (const contextId of [LTI_CONTEXT_ID, SECOND_CONTEXT_ID]) {
+        await linkLtiContext({
+          lti13InstanceId: '1',
+          deploymentId: LTI_DEPLOYMENT_ID,
+          contextId,
+          courseInstanceId: '1',
+        });
+      }
+      await execute(
+        `UPDATE lti13_course_instances
+         SET context_memberships_url = $memberships_url,
+             lineitems_url = $lineitems_url,
+             resource_link_id = context_id
+         WHERE lti13_instance_id = '1'`,
+        {
+          memberships_url: `http://localhost:${oidcProviderPort}/memberships`,
+          lineitems_url: `http://localhost:${oidcProviderPort}/line_items`,
+        },
+      );
+
+      const instances = await queryRows(
+        `SELECT to_jsonb(lci) AS lti13_course_instance, to_jsonb(li) AS lti13_instance
+         FROM lti13_course_instances AS lci
+         JOIN lti13_instances AS li ON li.id = lci.lti13_instance_id
+         WHERE lci.lti13_instance_id = '1'
+         ORDER BY lci.id`,
+        {},
+        Lti13CombinedInstanceSchema,
+      );
+      assert.lengthOf(instances, 2);
+      lmsCourses = instances.map((instance, index) => ({
+        instance,
+        lineitemUrl: `http://localhost:${oidcProviderPort}/line_items/${index}`,
+      }));
+
+      assessmentId = await queryScalar(
+        `SELECT id FROM assessments
+         WHERE course_instance_id = '1' AND team_work IS NOT TRUE AND deleted_at IS NULL
+         ORDER BY id LIMIT 1`,
+        {},
+        IdSchema,
+      );
+
+      const student = await selectOrInsertUserByUid(STUDENT_UID);
+      await execute('UPDATE users SET uin = $uin WHERE id = $user_id', {
+        uin: STUDENT_UIN,
+        user_id: student.id,
+      });
+      await execute(
+        `INSERT INTO assessment_instances (assessment_id, user_id, number, score_perc, date, open)
+         VALUES ($assessment_id, $user_id, 1, 80, NOW(), FALSE)`,
+        { assessment_id: assessmentId, user_id: student.id },
+      );
+
+      app = express();
+      app.use(express.urlencoded({ extended: true }));
+      app.post('/token', (_req, res) => {
+        res.json({ access_token: 'multi-lms-token', token_type: 'bearer', expires_in: 3600 });
+      });
+      app.get('/line_items/:index', (req, res) => {
+        res.json({
+          id: `http://localhost:${oidcProviderPort}/line_items/${req.params.index}`,
+          label: `Assignment in LMS course ${req.params.index}`,
+          scoreMaximum: 100,
+        });
+      });
+      app.post('/line_items/:index/scores', (req, res) => {
+        scoredLineitems.push(req.params.index);
+        res.json({});
+      });
+      // Each LMS course must see its own context, which the rlid identifies here.
+      app.get('/memberships', (req, res) => {
+        if (req.query.rlid === failingMembershipRlid) {
+          res.json({});
+          return;
+        }
+
+        res.setHeader('Content-Type', 'application/vnd.ims.lti-nrps.v2.membershipcontainer+json');
+        res.json({
+          id: `http://localhost:${oidcProviderPort}/memberships`,
+          context: { id: req.query.rlid },
+          members: [
+            {
+              status: 'Active',
+              user_id: 'multi-lms-student-sub',
+              roles: ['http://purl.imsglobal.org/vocab/lis/v2/membership#Learner'],
+              email: STUDENT_UID,
+              message: [
+                {
+                  'https://purl.imsglobal.org/spec/lti/claim/message_type':
+                    'LtiResourceLinkRequest',
+                  'https://purl.imsglobal.org/spec/lti/claim/custom': { uin: STUDENT_UIN },
+                },
+              ],
+            },
+          ],
+        });
+      });
+
+      await withServer(app, oidcProviderPort, async () => {
+        for (const { instance, lineitemUrl } of lmsCourses) {
+          await queryAndLinkLineitem(instance, lineitemUrl, assessmentId);
+        }
+      });
+    });
+
+    test('links one assessment to an assignment in each LMS course', async () => {
+      const links = await queryRows(
+        `SELECT * FROM lti13_assessments
+         WHERE assessment_id = $assessment_id
+         ORDER BY lti13_course_instance_id`,
+        { assessment_id: assessmentId },
+        Lti13AssessmentSchema,
+      );
+
+      assert.deepEqual(
+        links.map((link) => [link.lti13_course_instance_id, link.lineitem_id_url]),
+        lmsCourses.map(({ instance, lineitemUrl }) => [
+          instance.lti13_course_instance.id,
+          lineitemUrl,
+        ]),
+      );
+    });
+
+    test('rejects a second assignment link for the same assessment in one LMS course', async () => {
+      await withServer(app, oidcProviderPort, async () => {
+        await expect(
+          queryAndLinkLineitem(
+            lmsCourses[0].instance,
+            `http://localhost:${oidcProviderPort}/line_items/9`,
+            assessmentId,
+          ),
+        ).rejects.toThrow(/lti13_assessments_assessment_id_lti13_course_instance_id_key/);
+      });
+    });
+
+    test('sends grades to the assignment in the LMS course they were sent from', async () => {
+      scoredLineitems = [];
+      const courseInstance = await selectCourseInstanceById('1');
+
+      await withServer(app, oidcProviderPort, async () => {
+        for (const { instance } of lmsCourses) {
+          const serverJob = await createServerJob({
+            type: 'lti13',
+            description: 'LTI 1.3 send assessment grades to LMS (test)',
+            userId: null,
+            authnUserId: null,
+          });
+          await serverJob.executeUnsafe(async (job) => {
+            await updateLti13Scores({
+              courseInstance,
+              unsafe_assessment_id: assessmentId,
+              instance,
+              job,
+            });
+          });
+        }
+      });
+
+      assert.deepEqual(scoredLineitems, ['0', '1']);
+    });
+
+    test('sends grades to every linked LMS course from one action', async () => {
+      scoredLineitems = [];
+      const pageUrl = `${siteUrl}/pl/course_instance/1/instructor/instance_admin/lti13_instance/${lmsCourses[0].instance.lti13_course_instance.id}`;
+
+      const pageRes = await fetchCheerio(pageUrl);
+      assert.equal(pageRes.status, 200);
+      assert.lengthOf(pageRes.$('button[value="send_grades_all_lms_courses"]'), 1);
+
+      await withServer(app, oidcProviderPort, async () => {
+        const postRes = await fetchCheerio(pageUrl, {
+          method: 'POST',
+          body: new URLSearchParams({
+            __csrf_token: pageRes.$('input[name="__csrf_token"]').first().val() as string,
+            __action: 'send_grades_all_lms_courses',
+            unsafe_assessment_id: assessmentId,
+          }),
+          redirect: 'manual',
+        });
+        assert.equal(postRes.status, 302);
+
+        const jobSequenceId = postRes.headers.get('location')?.split('/jobSequence/')[1];
+        assert.ok(jobSequenceId);
+        await helperServer.waitForJobSequenceSuccess(jobSequenceId);
+      });
+
+      assert.deepEqual(scoredLineitems, ['0', '1']);
+    });
+
+    test('continues sending grades after one LMS course fails', async () => {
+      scoredLineitems = [];
+      failingMembershipRlid = lmsCourses[0].instance.lti13_course_instance.resource_link_id;
+      assert.ok(failingMembershipRlid);
+
+      const pageUrl = `${siteUrl}/pl/course_instance/1/instructor/instance_admin/lti13_instance/${lmsCourses[0].instance.lti13_course_instance.id}`;
+      const pageRes = await fetchCheerio(pageUrl);
+      assert.equal(pageRes.status, 200);
+
+      let jobSequenceId: string | null = null;
+      try {
+        await withServer(app, oidcProviderPort, async () => {
+          const postRes = await fetchCheerio(pageUrl, {
+            method: 'POST',
+            body: new URLSearchParams({
+              __csrf_token: pageRes.$('input[name="__csrf_token"]').first().val() as string,
+              __action: 'send_grades_all_lms_courses',
+              unsafe_assessment_id: assessmentId,
+            }),
+            redirect: 'manual',
+          });
+          assert.equal(postRes.status, 302);
+
+          jobSequenceId = postRes.headers.get('location')?.split('/jobSequence/')[1] ?? null;
+          assert.ok(jobSequenceId);
+          await helperServer.waitForJobSequenceStatus(jobSequenceId, 'Error');
+        });
+      } finally {
+        failingMembershipRlid = null;
+      }
+
+      assert.deepEqual(scoredLineitems, ['1']);
+
+      assert.ok(jobSequenceId);
+      const jobs = await selectJobsByJobSequenceId(jobSequenceId);
+      assert.lengthOf(jobs, 1);
+      assert.include(jobs[0].output, 'Error sending grades to');
+      assert.include(jobs[0].output, 'Failed to send grades to 1 LMS course');
     });
   });
 });

@@ -2,12 +2,8 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   type ColumnPinningState,
   type ColumnSizingState,
+  type ColumnVisibilityState,
   type SortingState,
-  type VisibilityState,
-  getCoreRowModel,
-  getFilteredRowModel,
-  getSortedRowModel,
-  useReactTable,
 } from '@tanstack/react-table';
 import { parseAsArrayOf, parseAsString, useQueryState } from 'nuqs';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -26,7 +22,7 @@ import {
   parseAsSortingState,
   useColumnFilters,
   useModalState,
-  useShiftClickCheckbox,
+  useTanstackTable,
 } from '@prairielearn/ui';
 
 import { RubricSettings } from '../../../../components/RubricSettings.js';
@@ -47,7 +43,6 @@ import type { ManualGradingError } from '../../../../trpc/assessmentQuestion/man
 import {
   GRADING_STATUS_VALUES,
   type GradingStatusValue,
-  type InstanceQuestionRowWithAIGradingStats as InstanceQuestionRow,
   type InstanceQuestionRowWithAIGradingStats,
 } from '../assessmentQuestion.types.js';
 import type { RubricSettingsContextKeys } from '../queries.js';
@@ -71,7 +66,7 @@ function userToExportFields(user: StaffUser | null) {
 }
 
 const DEFAULT_SORT: SortingState = [];
-const DEFAULT_PINNING: ColumnPinningState = { left: [], right: [] };
+const DEFAULT_PINNING: ColumnPinningState = { start: [], end: [] };
 const DEFAULT_GRADING_STATUS_FILTER: MultiSelectFilterValue<GradingStatusValue> = {
   values: [],
   mode: 'include',
@@ -245,8 +240,6 @@ export function AssessmentQuestionTable({
     parseAsArrayOf(parseAsString).withDefault([]),
   );
 
-  const { createCheckboxProps } = useShiftClickCheckbox<InstanceQuestionRow>();
-
   const [columnSizing, setColumnSizing] = useState<ColumnSizingState>({});
   const [rowSelection, setRowSelection] = useState({});
   const [showDeleteAiGradingModal, setShowDeleteAiGradingModal] = useState(false);
@@ -368,7 +361,6 @@ export function AssessmentQuestionTable({
         urlPrefix,
         csrfToken,
         courseInstanceId: courseInstance.id,
-        createCheckboxProps,
         scrollRef,
         onEditPointsSuccess: () => {
           void queryClientInstance.invalidateQueries({
@@ -389,7 +381,6 @@ export function AssessmentQuestionTable({
       urlPrefix,
       csrfToken,
       courseInstance.id,
-      createCheckboxProps,
       scrollRef,
       queryClientInstance,
       trpc.manualGrading.instances,
@@ -458,7 +449,7 @@ export function AssessmentQuestionTable({
     }));
   }, [aiGradingMode, instanceQuestionGroups, setColumnVisibility]);
 
-  const table = useReactTable({
+  const table = useTanstackTable({
     data: instanceQuestionsInfo,
     columns,
     columnResizeMode: 'onChange',
@@ -484,9 +475,6 @@ export function AssessmentQuestionTable({
     onRowSelectionChange: setRowSelection,
     onColumnFiltersChange,
     enableRowSelection: true,
-    getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
     defaultColumn: {
       minSize: 100,
       size: 150,
@@ -519,9 +507,9 @@ export function AssessmentQuestionTable({
   // Handle student info checkbox click - toggles between checked (both visible) and unchecked (both hidden)
   const handleStudentInfoCheckboxClick = useCallback(() => {
     const currentState = studentInfoCheckboxState;
-    const currentVisibility = table.getState().columnVisibility;
+    const currentVisibility = table.state.columnVisibility;
 
-    let newVisibility: VisibilityState;
+    let newVisibility: ColumnVisibilityState;
     if (currentState === 'checked') {
       // Checked -> Unchecked (hide both)
       newVisibility = {

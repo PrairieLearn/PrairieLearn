@@ -120,7 +120,6 @@ router.get(
               initialUseCustomApiKeys={courseInstance.ai_grading_use_custom_api_keys}
               initialApiKeyCredentials={credentials}
               canEdit={!!canEdit}
-              isDevMode={config.devMode}
               stripePurchasingEnabled={stripePurchasingEnabled}
               initialCheckoutStatus={checkoutStatus}
               initialCheckoutAmountMilliDollars={checkoutAmountMilliDollars}

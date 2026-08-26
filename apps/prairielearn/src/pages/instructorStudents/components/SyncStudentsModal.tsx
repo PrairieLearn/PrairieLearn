@@ -38,8 +38,6 @@ function getCurrentStatusLabel(status: EnumEnrollmentStatus): string {
       return 'Currently rejected';
     case 'left':
       return 'Currently left';
-    case 'lti13_pending':
-      return 'Currently invited via LTI';
     default:
       assertNever(status);
   }
@@ -57,12 +55,14 @@ export function SyncStudentsModal({
   show,
   courseInstance,
   students,
+  selfEnrollLink,
   onHide,
   onSubmit,
 }: {
   show: boolean;
   courseInstance: StaffCourseInstance;
   students: StudentRow[];
+  selfEnrollLink: string;
   onHide: () => void;
   onSubmit: (toInvite: string[], toCancelInvitation: string[], toRemove: string[]) => Promise<void>;
 }) {
@@ -245,7 +245,16 @@ export function SyncStudentsModal({
                   </div>
                 )}
                 <div className="form-text" id="sync-uids-help">
-                  One UID per line, or comma/space/semicolon separated.
+                  One UID per line, or comma/space/semicolon separated. Students are not notified
+                  about the invitation: you must instruct them to visit{' '}
+                  <a href="/" target="_blank" rel="noopener noreferrer">
+                    the PrairieLearn homepage
+                  </a>{' '}
+                  or{' '}
+                  <a href={selfEnrollLink} target="_blank" rel="noopener noreferrer">
+                    the course instance enrollment link
+                  </a>{' '}
+                  to accept the invitation.
                 </div>
               </div>
             </form>

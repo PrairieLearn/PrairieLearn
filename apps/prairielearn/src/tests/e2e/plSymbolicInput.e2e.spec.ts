@@ -1,166 +1,22 @@
-import { randomUUID } from 'node:crypto';
-import fs from 'node:fs/promises';
-import path from 'node:path';
-
 import type { Locator, Page } from '@playwright/test';
-import * as tmp from 'tmp-promise';
 
 import type { CourseInstance } from '../../lib/db-types.js';
 import { selectQuestionByQid } from '../../models/question.js';
-import { syncCourse } from '../helperCourse.js';
 
 import { expect, test } from './fixtures.js';
 
-const parseErrorCases = [
-  {
-    latex: String.raw`\foo`,
-    message: String.raw`'\foo' is not a recognized symbol.`,
-  },
-  {
-    latex: String.raw`\frac{}{2}`,
-    message: 'Fill in the empty box.',
-  },
-  {
-    latex: '(x',
-    message: "There is an unmatched '('.",
-  },
-  {
-    latex: 'x+',
-    message: "'+' is missing a value next to it.",
-  },
-  {
-    latex: '@',
-    message: "'@' cannot be used here.",
-  },
-] as const;
-
-const backendErrorCases = [
-  {
-    name: 'formula editor parser error nodes',
-    mathJson: ['Error', { str: 'unexpected-command' }, ['LatexString', { str: String.raw`\foo` }]],
-    message: String.raw`Parse error: Formula editor parse error: unexpected-command: \foo`,
-  },
-  {
-    name: 'structured parser error codes',
-    mathJson: [
-      'Error',
-      ['ErrorCode', { str: 'unexpected-token' }, { str: '@' }],
-      ['LatexString', { str: '@' }],
-    ],
-    message: 'Parse error: Formula editor parse error: unexpected-token: @',
-  },
-  {
-    name: 'multiple nested parser errors',
-    mathJson: [
-      'Sequence',
-      [
-        'InvisibleOperator',
-        'x',
-        ['Error', { str: 'unexpected-command' }, ['LatexString', { str: String.raw`\left` }]],
-      ],
-      ['Error', { str: 'unexpected-delimiter' }, ['LatexString', { str: '(' }]],
-    ],
-    message: String.raw`Parse error: Formula editor parse errors: unexpected-command: \left; unexpected-delimiter: (`,
-  },
-  {
-    name: 'student-safe conversion errors',
-    mathJson: ['Add', ['Set', 1], 2],
-    message: 'Parse error: Expected a numeric expression.',
-  },
-  {
-    name: 'arity conversion errors',
-    mathJson: ['Power', 2],
-    message: 'Parse error: Power expects exactly 2 arguments.',
-  },
-  {
-    name: 'unexpected composition errors',
-    mathJson: ['Rational', 'x'],
-    message: 'Parse error: Could not parse submitted answer.',
-  },
-] as const;
-
-async function createSymbolicInputQuestion(
-  testCoursePath: string,
-): Promise<{ cleanup: () => Promise<void>; qid: string }> {
-  const questionDir = await tmp.dir({
-    dir: path.join(testCoursePath, 'questions'),
-    prefix: 'symbolicInputE2E',
-    unsafeCleanup: true,
-  });
-  const questionPath = questionDir.path;
-  const qid = path.basename(questionPath);
-
-  await fs.writeFile(
-    path.join(questionPath, 'info.json'),
-    JSON.stringify(
-      {
-        uuid: randomUUID(),
-        title: 'Symbolic input e2e',
-        topic: 'Element',
-        tags: ['e2e'],
-        type: 'v3',
-      },
-      null,
-      2,
-    ),
-  );
-  await fs.writeFile(
-    path.join(questionPath, 'question.html'),
-    `
-<pl-question-panel>
-  <p>Enter symbolic expressions.</p>
-</pl-question-panel>
-
-<pl-symbolic-input
-  aria-label="Raw symbolic expression"
-  answers-name="raw"
-  variables="x"
-  correct-answer="x"
-></pl-symbolic-input>
-
-<pl-symbolic-input
-  formula-editor="true"
-  answers-name="editor"
-  variables="x"
-  correct-answer="x"
-></pl-symbolic-input>
-
-<pl-symbolic-input
-  formula-editor="true"
-  answers-name="sets-editor"
-  allow-sets="true"
-  correct-answer="{1}"
-></pl-symbolic-input>
-`,
-  );
-  return { cleanup: questionDir.cleanup, qid };
-}
-
-async function openSymbolicInputPreview({
-  courseInstance,
-  page,
-  testCoursePath,
-}: {
-  courseInstance: CourseInstance;
-  page: Page;
-  testCoursePath: string;
-}): Promise<() => Promise<void>> {
-  const questionDir = await createSymbolicInputQuestion(testCoursePath);
-  await syncCourse(testCoursePath);
-
+async function openSymbolicInputEditorQuestion(
+  page: Page,
+  courseInstance: CourseInstance,
+): Promise<void> {
   const question = await selectQuestionByQid({
-    qid: questionDir.qid,
+    qid: 'symbolicInputEditor',
     course_id: courseInstance.course_id,
   });
 
   await page.goto(
     `/pl/course_instance/${courseInstance.id}/instructor/question/${question.id}/preview`,
   );
-
-  return async () => {
-    await questionDir.cleanup();
-    await syncCourse(testCoursePath);
-  };
 }
 
 async function fillFormulaEditor(formulaEditor: Locator, latex: string): Promise<void> {
@@ -170,133 +26,111 @@ async function fillFormulaEditor(formulaEditor: Locator, latex: string): Promise
   }, latex);
 }
 
-function getFormulaEditor(page: Page): Locator {
-  return page.locator('#symbolic-input-editor');
+async function expectPrefixInsertion(
+  page: Page,
+  formulaEditor: Locator,
+  answersName: string,
+  insert: () => Promise<void>,
+): Promise<void> {
+  await fillFormulaEditor(formulaEditor, '');
+  await formulaEditor.press('3');
+  await insert();
+  await page.keyboard.press('y');
+
+  await expect(page.locator(`#symbolic-input-latex-${answersName}`)).toHaveValue(/^3.*y.+$/);
 }
 
-function getSetsFormulaEditor(page: Page): Locator {
-  return page.locator('#symbolic-input-sets-editor');
-}
+test.describe('pl-symbolic-input prefix insertion', () => {
+  test.beforeEach(async ({ page, courseInstance }) => {
+    await openSymbolicInputEditorQuestion(page, courseInstance);
+  });
 
-async function setHiddenMathJson(page: Page, rawMathJson: string): Promise<void> {
-  await page.locator('input[name="editor-json"]').evaluate((el, rawMathJson) => {
-    (el as HTMLInputElement).value = rawMathJson;
-  }, rawMathJson);
-}
-
-async function showSubmittedErrorDetails(page: Page): Promise<void> {
-  await page.getByRole('button', { name: /Save & Grade/ }).click();
-  await expect(page.getByText('Invalid', { exact: true }).first()).toBeVisible();
-  await page.getByRole('button', { name: 'More info…' }).first().click();
-}
-
-async function submitFormulaEditorMathJson(page: Page, rawMathJson: string): Promise<void> {
-  await page.getByLabel('Raw symbolic expression').fill('x');
-  await fillFormulaEditor(getFormulaEditor(page), 'x');
-  await fillFormulaEditor(getSetsFormulaEditor(page), String.raw`\{1\}`);
-  await setHiddenMathJson(page, rawMathJson);
-  await showSubmittedErrorDetails(page);
-}
-
-test.describe('pl-symbolic-input', () => {
-  test('reports formula editor parse errors on blur without blocking submission', async ({
+  test('keeps preceding content outside typed square roots and absolute values', async ({
     page,
-    testCoursePath,
-    courseInstance,
   }) => {
-    const cleanupQuestion = await openSymbolicInputPreview({
-      courseInstance,
-      page,
-      testCoursePath,
-    });
+    const formulaEditor = page.locator('#symbolic-input-x');
+    await expect(formulaEditor).toBeVisible();
 
-    try {
-      await expect(page.locator('input[name="raw-json"]')).toHaveCount(0);
-      await expect(page.locator('input[name="editor-json"]')).toHaveCount(1);
-      let submitRequests = 0;
-      page.on('request', (request) => {
-        if (request.method() === 'POST' && request.url().includes('/preview')) submitRequests++;
+    await fillFormulaEditor(formulaEditor, '');
+    for (const key of '3sqrty') await formulaEditor.press(key);
+    await expect(page.locator('#symbolic-input-latex-x')).toHaveValue(/^3\\sqrt/);
+
+    await fillFormulaEditor(formulaEditor, '');
+    for (const key of '3|y') await formulaEditor.press(key);
+    await expect(page.locator('#symbolic-input-latex-x')).toHaveValue(/^3.*y.+$/);
+  });
+
+  test('keeps preceding content outside square roots inserted from the context menu', async ({
+    page,
+  }) => {
+    const formulaEditor = page.locator('#symbolic-input-x');
+    await expect(formulaEditor).toBeVisible();
+    await formulaEditor.press('3');
+    await formulaEditor.click({ button: 'right' });
+    await page.getByRole('menuitem', { name: /√/ }).click();
+
+    await expect(page.locator('#symbolic-input-latex-x')).toHaveValue(/^3\\sqrt/);
+  });
+
+  test('keeps preceding content outside virtual keyboard prefix functions', async ({ page }) => {
+    const formulaEditor = page.locator('#symbolic-input-x');
+    await expect(formulaEditor).toBeVisible();
+    await formulaEditor.getByRole('button', { name: /Toggle Virtual Keyboard/ }).click();
+
+    const cases = [
+      /sqrt/,
+      /operatorname\{log\}/,
+      /^\|\{#0\}\|$/,
+      /operatorname\{min\}/,
+      /operatorname\{max\}/,
+      /operatorname\{sign\}/,
+      /operatorname\{sin\}/,
+      /operatorname\{cos\}/,
+      /operatorname\{tan\}/,
+    ];
+
+    for (const label of cases) {
+      await expectPrefixInsertion(page, formulaEditor, 'x', async () => {
+        await page.getByLabel(label).click();
       });
+    }
 
-      const formulaEditor = getFormulaEditor(page);
-      await expect(formulaEditor).toBeVisible();
-      await expect(getSetsFormulaEditor(page)).toBeVisible();
+    const variantCases = [
+      { label: /operatorname\{sin\}/, count: 4 },
+      { label: /operatorname\{cos\}/, count: 4 },
+      { label: /operatorname\{tan\}/, count: 5 },
+    ];
 
-      // Simulate the editor losing focus, mirroring how fillFormulaEditor
-      // simulates editing with a synthetic input event.
-      const blurFormulaEditor = async (editor: Locator) => {
-        await editor.evaluate((el) => el.dispatchEvent(new Event('blur')));
-      };
+    for (const { label, count } of variantCases) {
+      for (let index = 0; index < count; index++) {
+        await expectPrefixInsertion(page, formulaEditor, 'x', async () => {
+          await page.getByLabel(label).dispatchEvent('pointerdown', {
+            button: 0,
+            isPrimary: true,
+            pointerId: 1,
+            pointerType: 'mouse',
+          });
 
-      // No error feedback while the expression is being edited.
-      await fillFormulaEditor(formulaEditor, String.raw`\foo`);
-      await expect(page.getByText(String.raw`'\foo' is not a recognized symbol.`)).toBeHidden();
-      await expect(formulaEditor).not.toHaveClass(/is-invalid/);
-
-      // Errors are reported when the editor loses focus...
-      await blurFormulaEditor(formulaEditor);
-      await expect(page.getByText(String.raw`'\foo' is not a recognized symbol.`)).toBeVisible();
-
-      // ...and cleared again as soon as the student resumes editing.
-      await fillFormulaEditor(formulaEditor, 'x + 1');
-      await expect(page.getByText(String.raw`'\foo' is not a recognized symbol.`)).toBeHidden();
-
-      for (const { latex, message } of parseErrorCases) {
-        await fillFormulaEditor(formulaEditor, latex);
-        await blurFormulaEditor(formulaEditor);
-        await expect(page.getByText(message)).toBeVisible();
-
-        await fillFormulaEditor(formulaEditor, 'x + 1');
-        await expect(page.getByText(message)).toBeHidden();
+          const variants = page.locator('.MLK__variant-panel.is-visible .item');
+          await expect(variants).toHaveCount(count);
+          await variants.nth(index).dispatchEvent('pointerup', {
+            button: 0,
+            isPrimary: true,
+            pointerId: 1,
+            pointerType: 'mouse',
+          });
+        });
       }
-
-      // Missing values always render a highlighted placeholder box, even when
-      // the student deleted a slot's contents, and each error renders as its
-      // own prompt.
-      await fillFormulaEditor(formulaEditor, String.raw`\frac{}{}`);
-      await blurFormulaEditor(formulaEditor);
-      await expect(page.getByText('Fill in the empty box.')).toHaveCount(2);
-      expect(
-        await formulaEditor.evaluate((el) =>
-          (el as HTMLElement & { getValue: (format: string) => string }).getValue('latex-unstyled'),
-        ),
-      ).toBe(String.raw`\frac{\placeholder{}}{\placeholder{}}`);
-      await fillFormulaEditor(formulaEditor, 'x + 1');
-      await expect(page.getByText('Fill in the empty box.')).toBeHidden();
-
-      // Each editor validates on its own blur.
-      await fillFormulaEditor(getSetsFormulaEditor(page), String.raw`\{1\}+2`);
-      await expect(page.getByText('Expected a numeric expression.')).toBeHidden();
-      await blurFormulaEditor(getSetsFormulaEditor(page));
-      await expect(page.getByText('Expected a numeric expression.')).toBeVisible();
-
-      // Validation never blocks submission: grading with parse errors present
-      // submits, and the server reports the errors on the submission.
-      await fillFormulaEditor(formulaEditor, String.raw`\foo`);
-      await blurFormulaEditor(formulaEditor);
-      await expect(page.getByText(String.raw`'\foo' is not a recognized symbol.`)).toBeVisible();
-      await page.getByRole('button', { name: /Save & Grade/ }).click();
-      await expect.poll(() => submitRequests).toBe(1);
-      await expect(page.getByText('Invalid', { exact: true }).first()).toBeVisible();
-    } finally {
-      await cleanupQuestion();
     }
   });
 
-  for (const { name, mathJson, message } of backendErrorCases) {
-    test(`reports backend ${name} on submit`, async ({ page, testCoursePath, courseInstance }) => {
-      const cleanupQuestion = await openSymbolicInputPreview({
-        courseInstance,
-        page,
-        testCoursePath,
-      });
+  test('keeps preceding content outside natural log when configured', async ({ page }) => {
+    const formulaEditor = page.locator('#symbolic-input-lnx');
+    await expect(formulaEditor).toBeVisible();
+    await formulaEditor.getByRole('button', { name: /Toggle Virtual Keyboard/ }).click();
 
-      try {
-        await submitFormulaEditorMathJson(page, JSON.stringify(mathJson));
-        await expect(page.getByText(message)).toBeVisible();
-      } finally {
-        await cleanupQuestion();
-      }
+    await expectPrefixInsertion(page, formulaEditor, 'lnx', async () => {
+      await page.getByLabel(/operatorname\{ln\}/).click();
     });
-  }
+  });
 });

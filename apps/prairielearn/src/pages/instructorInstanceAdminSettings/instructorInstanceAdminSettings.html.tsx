@@ -5,13 +5,13 @@ import { useState } from 'react';
 import { Button, Form } from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
 
+import { QueryClientProviderDebug } from '@prairielearn/trpc/react';
 import { StickySaveBar } from '@prairielearn/ui';
 
 import { GitHubButton } from '../../components/GitHubButton.js';
 import { ShareSourcePubliclyCard } from '../../components/ShareSourcePubliclyCard.js';
 import { CourseInstanceShortNameDescription } from '../../components/ShortNameDescriptions.js';
 import type { PageContext } from '../../lib/client/page-context.js';
-import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
 import { getAssessmentSettingsUrl } from '../../lib/client/url.js';
 import { validateShortName } from '../../lib/short-name.js';
 import { type Timezone, formatTimezone } from '../../lib/timezone.shared.js';
@@ -29,14 +29,13 @@ interface InstructorInstanceAdminSettingsProps {
   course: PageContext<'courseInstance', 'instructor'>['course'];
   courseInstance: PageContext<'courseInstance', 'instructor'>['course_instance'];
   institution: PageContext<'courseInstance', 'instructor'>['institution'];
-  names: { short_name: string; long_name: string | null }[];
+  names: { short_name: string }[];
   availableTimezones: Timezone[];
   origHash: string;
   instanceGHLink: string | undefined | null;
   studentLink: string;
   publicLink: string;
   selfEnrollLink: string;
-  isDevMode: boolean;
   isAdministrator: boolean;
   nonPublicAssessmentsInCourseInstance: { id: string; tid: string }[];
   questionSharingEnabled: boolean;
@@ -45,7 +44,6 @@ interface InstructorInstanceAdminSettingsProps {
 
 export function InstructorInstanceAdminSettings({
   trpcCsrfToken,
-  isDevMode,
   courseInstance,
   ...rest
 }: InstructorInstanceAdminSettingsProps) {
@@ -58,7 +56,7 @@ export function InstructorInstanceAdminSettings({
   );
 
   return (
-    <QueryClientProviderDebug client={queryClient} isDevMode={isDevMode}>
+    <QueryClientProviderDebug client={queryClient}>
       <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
         <InstructorInstanceAdminSettingsInner courseInstance={courseInstance} {...rest} />
       </TRPCProvider>
@@ -85,10 +83,10 @@ function InstructorInstanceAdminSettingsInner({
   nonPublicAssessmentsInCourseInstance,
   questionSharingEnabled,
   accessControlMigrationNeeded,
-}: Omit<InstructorInstanceAdminSettingsProps, 'trpcCsrfToken' | 'isDevMode'>) {
+}: Omit<InstructorInstanceAdminSettingsProps, 'trpcCsrfToken'>) {
   const [showCopyModal, setShowCopyModal] = useState(false);
 
-  const shortNames = new Set(names.map((name) => name.short_name));
+  const shortNames = new Set(names.map((name) => name.short_name.toLowerCase()));
 
   const defaultValues: SettingsFormValues = {
     ciid: courseInstance.short_name,
@@ -131,6 +129,7 @@ function InstructorInstanceAdminSettingsInner({
         courseInstance={courseInstance}
         isAdministrator={isAdministrator}
         accessControlMigrationNeeded={accessControlMigrationNeeded}
+        names={names}
         onHide={() => setShowCopyModal(false)}
       />
       <form
@@ -138,8 +137,8 @@ function InstructorInstanceAdminSettingsInner({
         name="edit-course-instance-settings-form"
         onSubmit={async (e) => {
           if (!isValid) {
-            await trigger();
             e.preventDefault();
+            await trigger();
             return;
           }
         }}
@@ -173,7 +172,10 @@ function InstructorInstanceAdminSettingsInner({
                         return result.valid || result.message;
                       },
                       duplicate: (value) => {
-                        if (shortNames.has(value) && value !== defaultValues.ciid) {
+                        if (
+                          shortNames.has(value.toLowerCase()) &&
+                          value.toLowerCase() !== defaultValues.ciid.toLowerCase()
+                        ) {
                           return 'This ID is already in use';
                         }
                         return true;

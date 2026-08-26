@@ -114,14 +114,7 @@ export function AdministratorInstitutionCourse({
         </div>
 
         <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
-        <button
-          type="submit"
-          name="__action"
-          value="update_enrollment_limits"
-          class="btn btn-primary"
-        >
-          Save
-        </button>
+        <button type="submit" class="btn btn-primary">Save</button>
       </form>
 
       <h2 class="h4">Course instances</h2>

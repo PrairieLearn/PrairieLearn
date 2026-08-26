@@ -2,7 +2,7 @@ import { formatDistance } from 'date-fns';
 import { z } from 'zod';
 
 import { formatDate } from '@prairielearn/formatter';
-import { IdSchema } from '@prairielearn/zod';
+import { DateFromISOString, IdSchema } from '@prairielearn/zod';
 
 import { AssessmentBadge } from '../../components/AssessmentBadge.js';
 import { Pager } from '../../components/Pager.js';
@@ -24,7 +24,12 @@ export const IssueRowSchema = IssueSchema.extend({
   display_timezone: CourseInstanceSchema.shape.display_timezone,
   assessment_id: IdSchema.nullable(),
   assessment: z
-    .object({ label: z.string(), assessment_id: IdSchema, color: AssessmentSetSchema.shape.color })
+    .object({
+      label: z.string(),
+      assessment_id: IdSchema,
+      color: AssessmentSetSchema.shape.color,
+      deleted_at: DateFromISOString.nullable(),
+    })
     .nullable(),
   assessment_instance_id: IdSchema.nullable(),
   question_qid: QuestionSchema.shape.qid.nullable(),
@@ -61,6 +66,7 @@ export function InstructorIssues({
   urlPrefix,
   csrfToken,
   hasCoursePermissionEdit,
+  hasCoursePermissionPreview,
 }: {
   issues: IssueComputedRow[];
   filterQuery: string;
@@ -71,6 +77,7 @@ export function InstructorIssues({
   urlPrefix: string;
   csrfToken: string;
   hasCoursePermissionEdit: boolean;
+  hasCoursePermissionPreview: boolean;
 }) {
   const issueCount = issues[0]?.issue_count ?? 0;
 
@@ -188,6 +195,7 @@ export function InstructorIssues({
                 issue={row}
                 urlPrefix={urlPrefix}
                 hasCoursePermissionEdit={hasCoursePermissionEdit}
+                hasCoursePermissionPreview={hasCoursePermissionPreview}
                 csrfToken={csrfToken}
               />
             ))}
@@ -211,11 +219,13 @@ export function InstructorIssues({
 function IssueRow({
   issue,
   urlPrefix,
+  hasCoursePermissionPreview,
   hasCoursePermissionEdit,
   csrfToken,
 }: {
   issue: IssueComputedRow;
   urlPrefix: string;
+  hasCoursePermissionPreview: boolean;
   hasCoursePermissionEdit: boolean;
   csrfToken: string;
 }) {
@@ -249,30 +259,59 @@ function IssueRow({
           />
         )}
         <div className="d-block">
-          <strong>{issue.question_qid}</strong>
+          <strong>{issue.question_qid}</strong>{' '}
           {!issue.instance_question_id ? (
             // Issue not associated to an instance question (originates from question preview)
-            <>
-              {' '}
-              (<a href={`${questionPreviewUrl}?variant_id=${issue.variant_id}`}>instructor view</a>)
-            </>
+            hasCoursePermissionPreview ? (
+              <>
+                (
+                <a href={`${questionPreviewUrl}?variant_id=${issue.variant_id}`}>instructor view</a>
+                )
+              </>
+            ) : (
+              <button
+                type="button"
+                className="badge text-bg-warning badge-sm"
+                data-bs-toggle="tooltip"
+                data-bs-html="true"
+                title={
+                  "This issue was not raised in an assessment. You do not have access to this question outside of an assessment, so you can't view some of the issue details. Course permissions can be granted by a course owner on the Staff page."
+                }
+              >
+                Insufficient permissions
+              </button>
+            )
           ) : issue.showUser ? (
-            <>
-              {' '}
-              (<a href={`${questionPreviewUrl}?variant_id=${issue.variant_id}`}>
-                instructor view
-              </a>, <a href={studentViewUrl}>student view</a>,{' '}
-              <a href={manualGradingUrl}>manual grading</a>,{' '}
-              <a href={assessmentInstanceUrl}> assessment details</a>)
-            </>
+            (hasCoursePermissionPreview || !issue.assessment?.deleted_at) && (
+              <>
+                (
+                {hasCoursePermissionPreview && (
+                  <a href={`${questionPreviewUrl}?variant_id=${issue.variant_id}`}>
+                    instructor view
+                  </a>
+                )}
+                {!issue.assessment?.deleted_at && (
+                  <>
+                    {hasCoursePermissionPreview && <>, </>}
+                    <a href={studentViewUrl}>student view</a>,{' '}
+                    <a href={manualGradingUrl}>manual grading</a>,{' '}
+                    <a href={assessmentInstanceUrl}> assessment details</a>
+                  </>
+                )}
+                )
+              </>
+            )
           ) : (
             <>
-              {' '}
-              (
-              <a href={`${questionPreviewUrl}?variant_seed=${issue.variant_seed}`}>
-                instructor view
-              </a>
-              ){' '}
+              {hasCoursePermissionPreview && (
+                <>
+                  (
+                  <a href={`${questionPreviewUrl}?variant_seed=${issue.variant_seed}`}>
+                    instructor view
+                  </a>
+                  ){' '}
+                </>
+              )}
               <button
                 type="button"
                 className="badge text-bg-warning badge-sm"
@@ -302,21 +341,28 @@ function IssueRow({
             </>
           )}
         </small>
-        {issue.manually_reported ? (
-          <span className="badge text-bg-info">Manually reported</span>
-        ) : (
-          <span className="badge text-bg-warning">Automatically reported</span>
-        )}
-        {issue.assessment && issue.course_instance_id && (
-          <AssessmentBadge
-            courseInstanceId={issue.course_instance_id}
-            hideLink={issue.hideAssessmentLink}
-            assessment={issue.assessment}
-          />
-        )}
-        {issue.course_instance_short_name && (
-          <span className="badge text-bg-dark">{issue.course_instance_short_name}</span>
-        )}
+        <span className="d-inline-flex flex-wrap align-items-center gap-1">
+          {issue.manually_reported ? (
+            <span className="badge text-bg-info">Manually reported</span>
+          ) : (
+            <span className="badge text-bg-warning">Automatically reported</span>
+          )}
+          {issue.assessment &&
+            (issue.assessment.deleted_at ? (
+              <span className="badge color-red3">{issue.assessment.label} (deleted)</span>
+            ) : (
+              issue.course_instance_id && (
+                <AssessmentBadge
+                  courseInstanceId={issue.course_instance_id}
+                  hideLink={issue.hideAssessmentLink}
+                  assessment={issue.assessment}
+                />
+              )
+            ))}
+          {issue.course_instance_short_name && (
+            <span className="badge text-bg-dark">{issue.course_instance_short_name}</span>
+          )}
+        </span>
       </div>
       {hasCoursePermissionEdit && (
         <div className="ms-auto ps-4">
@@ -480,7 +526,9 @@ function FilterHelpModal() {
                     <td>
                       Shows all issues that were reported by a user with a UID like <code>UID</code>
                       . For example, <code>user:student@example.com</code> shows all issues that
-                      were reported by <code>student@example.com</code>.
+                      were reported by <code>student@example.com</code>. Searching by UID will only
+                      include issues in course instances where you have permission to see student
+                      data.
                     </td>
                   </tr>
                 </tbody>

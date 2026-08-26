@@ -354,7 +354,7 @@ def dfs_until(
 
     Raises:
         - If a cycle is found in the multigraph.
-    """  # noqa: DOC501 (false positive)
+    """  # ruff:ignore[docstring-missing-exception] (false positive)
     # ruff throws an error for sphinx style doc strings: https://github.com/astral-sh/ruff/issues/12434
     stack: list[tuple[str, list[str]]] = []
     visited: list[str] = []
