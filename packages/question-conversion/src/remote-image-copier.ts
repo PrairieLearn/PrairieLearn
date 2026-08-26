@@ -3,12 +3,11 @@ import crypto from 'node:crypto';
 import * as cheerio from 'cheerio';
 import type { Element } from 'domhandler';
 import { fileTypeFromBuffer } from 'file-type';
+import he from 'he';
 
 import { type PublicFetch, publicFetch, validatePublicHttpsUrl } from '@prairielearn/public-fetch';
 
 import type { ConversionProcessor, ConversionResult } from './emitters/emitter.js';
-import { deduplicateChoices } from './emitters/pl-emit-utils.js';
-import type { IRItemContainer, IRQuestion } from './types/ir.js';
 import type { PLQuestionOutput } from './types/pl-output.js';
 import { CLIENT_FILES_QUESTION_URL, rewriteImagesAsPlFigure } from './utils/html.js';
 
@@ -48,23 +47,31 @@ interface CopyRemoteImagesOptions {
   outputElement: ImageOutputElement;
 }
 
+const HTML_CHARACTER_REFERENCE_RE = /&(?:#[xX][0-9A-Fa-f]+|#[0-9]+|[A-Za-z][A-Za-z0-9]+);?/g;
+
 function protectMustacheBraceEntities(html: string): {
   html: string;
   restore: (rewrittenHtml: string) => string;
 } {
   let placeholderPrefix = '__PRAIRIELEARN_MUSTACHE_BRACE_ENTITY_';
   while (html.includes(placeholderPrefix)) placeholderPrefix = `_${placeholderPrefix}`;
-  const leftBracePlaceholder = `${placeholderPrefix}LEFT__`;
-  const rightBracePlaceholder = `${placeholderPrefix}RIGHT__`;
+  const protectedReferences = new Map<string, string>();
 
   return {
-    html: html
-      .replaceAll('&#123;', leftBracePlaceholder)
-      .replaceAll('&#125;', rightBracePlaceholder),
-    restore: (rewrittenHtml) =>
-      rewrittenHtml
-        .replaceAll(leftBracePlaceholder, '&#123;')
-        .replaceAll(rightBracePlaceholder, '&#125;'),
+    html: html.replaceAll(HTML_CHARACTER_REFERENCE_RE, (reference) => {
+      const decoded = he.decode(reference);
+      if (decoded !== '{' && decoded !== '}') return reference;
+
+      const placeholder = `${placeholderPrefix}${protectedReferences.size}__`;
+      protectedReferences.set(placeholder, reference);
+      return placeholder;
+    }),
+    restore: (rewrittenHtml) => {
+      for (const [placeholder, reference] of protectedReferences) {
+        rewrittenHtml = rewrittenHtml.replaceAll(placeholder, reference);
+      }
+      return rewrittenHtml;
+    },
   };
 }
 
@@ -103,10 +110,6 @@ export class QtiImportRemoteImageCopier implements ConversionProcessor {
   private activeRequestCount = 0;
   private readonly requestQueue: (() => void)[] = [];
   private readonly fetchCache = new Map<string, Promise<FetchedRemoteImage>>();
-  private readonly feedbackAttributeOutcomesByItemContainer = new WeakMap<
-    IRItemContainer,
-    Map<string, RemoteImageCopyOutcome>
-  >();
 
   constructor(
     private readonly fetchImage: FetchRemoteImage = (url, consumeBytes) =>
@@ -301,93 +304,51 @@ export class QtiImportRemoteImageCopier implements ConversionProcessor {
   }
 
   /**
-   * Copies remote images in feedback that the emitter serializes inside HTML attributes.
-   *
-   * Static answer-panel feedback is copied from the emitted question HTML. Multiple-choice
-   * per-answer feedback must instead be rewritten in the IR because it is escaped inside a
-   * `feedback` attribute, where the emitted-HTML pass cannot inspect it as nested markup.
+   * Copies remote images from HTML stored in emitted `pl-answer` feedback attributes.
    */
   private async copyRemoteImagesInFeedbackAttributes(
-    question: IRQuestion,
+    question: PLQuestionOutput,
   ): Promise<RemoteImageCopyOutcome> {
-    const perAnswer = question.feedback?.perAnswer;
-    if (
-      question.body.type !== 'multiple-choice' ||
-      question.body.display === 'dropdown' ||
-      !perAnswer
-    ) {
-      return emptyRemoteImageCopyOutcome();
-    }
+    const protectedQuestionHtml = protectMustacheBraceEntities(question.questionHtml);
+    const $ = cheerio.load(protectedQuestionHtml.html, null, false);
+    const feedbackElements = $('pl-answer[feedback]').toArray();
+    if (feedbackElements.length === 0) return emptyRemoteImageCopyOutcome();
 
-    const choices = deduplicateChoices(question.body.choices);
-    if (!choices.some((choice) => choice.correct)) return emptyRemoteImageCopyOutcome();
-
-    const fragments: { html: string; writeBack: (rewrittenHtml: string) => void }[] = [];
-    const addFragment = (html: string, writeBack: (rewrittenHtml: string) => void) => {
-      fragments.push({ html, writeBack });
-    };
-    for (const choice of choices) {
-      const feedbackHtml = perAnswer[choice.html];
-      if (!feedbackHtml) continue;
-      addFragment(feedbackHtml, (value) => {
-        perAnswer[choice.html] = value;
-      });
-    }
-    if (fragments.length === 0) return emptyRemoteImageCopyOutcome();
-
-    const existingFiles = new Map<string, Buffer>();
-    for (const [filename, asset] of question.assets) {
-      if (asset.type === 'base64') {
-        existingFiles.set(filename, Buffer.from(asset.value, 'base64'));
-      }
-    }
+    const originalFragments = feedbackElements.map((element) => $(element).attr('feedback') ?? '');
     const { createdFiles, rewrittenHtmlFragments, ...outcome } =
-      await this.copyRemoteImagesInHtmlFragments(
-        fragments.map((fragment) => fragment.html),
-        {
-          reservedFilenames: new Set(question.assets.keys()),
-          existingFiles,
-          // This markup is emitted inside an element attribute, so it must remain ordinary HTML
-          // rather than being converted to a nested PrairieLearn element.
-          outputElement: 'img',
-        },
-      );
-    for (const [filename, content] of createdFiles) {
-      question.assets.set(filename, {
-        type: 'base64',
-        value: content.toString('base64'),
+      await this.copyRemoteImagesInHtmlFragments(originalFragments, {
+        reservedFilenames: new Set(question.clientFiles.keys()),
+        existingFiles: question.clientFiles,
+        // This markup is rendered inside an answer panel, so it must remain ordinary HTML rather
+        // than being converted to a nested PrairieLearn element.
+        outputElement: 'img',
       });
+    for (const [filename, content] of createdFiles) {
+      question.clientFiles.set(filename, content);
     }
+
+    let changed = false;
     rewrittenHtmlFragments.forEach((rewrittenHtml, index) => {
-      fragments[index].writeBack(rewrittenHtml);
+      if (rewrittenHtml === originalFragments[index]) return;
+      $(feedbackElements[index]).attr('feedback', rewrittenHtml);
+      changed = true;
     });
+    if (changed) question.questionHtml = protectedQuestionHtml.restore($.html());
 
     return outcome;
   }
 
-  async beforeEmit(itemContainer: IRItemContainer): Promise<void> {
-    const outcomes = new Map<string, RemoteImageCopyOutcome>();
-    this.feedbackAttributeOutcomesByItemContainer.set(itemContainer, outcomes);
-    await Promise.all(
-      itemContainer.questions.map(async (question) => {
-        outcomes.set(question.sourceId, await this.copyRemoteImagesInFeedbackAttributes(question));
+  async afterEmit(result: ConversionResult): Promise<void> {
+    const outcomes = await Promise.all(
+      result.questions.map(async (question) => {
+        const feedbackAttributeOutcome = await this.copyRemoteImagesInFeedbackAttributes(question);
+        const questionHtmlOutcome = await this.copyRemoteImagesInQuestionHtml(question);
+        return combineRemoteImageCopyOutcomes(feedbackAttributeOutcome, questionHtmlOutcome);
       }),
     );
-  }
 
-  async afterEmit(result: ConversionResult, itemContainer: IRItemContainer): Promise<void> {
-    const feedbackAttributeOutcomes =
-      this.feedbackAttributeOutcomesByItemContainer.get(itemContainer) ?? new Map();
-    const questionHtmlOutcomes = await Promise.all(
-      result.questions.map((question) => this.copyRemoteImagesInQuestionHtml(question)),
-    );
-
-    for (const [index, questionHtmlOutcome] of questionHtmlOutcomes.entries()) {
+    for (const [index, outcome] of outcomes.entries()) {
       const question = result.questions[index];
-      const outcome = combineRemoteImageCopyOutcomes(
-        feedbackAttributeOutcomes.get(question.sourceId) ?? emptyRemoteImageCopyOutcome(),
-        questionHtmlOutcome,
-      );
       if (outcome.filesCreated > 0) {
         result.reports.push({
           type: 'remote-image-copy',
