@@ -127,6 +127,9 @@ const setTimeLimit = t.procedure
         }
         base_time = 'exact_date';
         time_add = 0;
+        // A datetime-local value cannot distinguish repeated times during fall-back.
+        // Choose the later occurrence, such as 01:30 CST rather than 01:30 CDT in
+        // America/Chicago, so the deadline does not expire while that time recurs.
         exact_date = parseLocalDateTime(input.date, ctx.course_instance.display_timezone);
         break;
       case 'subtract':

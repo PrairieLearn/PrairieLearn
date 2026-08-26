@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { AugmentedError } from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 import * as Sentry from '@prairielearn/sentry';
+import { getTimezoneByName } from '@prairielearn/utils/timezone';
 import { IdSchema } from '@prairielearn/zod';
 
 import { config } from '../../lib/config.js';
@@ -80,7 +81,9 @@ function getParamsForCourseInstance(
     throw new Error(`Missing course instance data for ${courseInstanceInfoFile.uuid}`);
   }
 
-  const displayTimezone = courseInstance.timezone ?? courseTimezone;
+  // Validate even when every date field is null; date parsing short-circuits on
+  // null, so otherwise an unsupported timezone could be stored and fail later.
+  const displayTimezone = getTimezoneByName(courseInstance.timezone ?? courseTimezone).name;
 
   // It used to be the case that instance access rules could be associated with a
   // particular user role, e.g., Student, TA, or Instructor. Now, all access rules

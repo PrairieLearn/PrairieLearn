@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { groupAssessmentScoresByLocalDate } from './instructorAssessmentStatistics.js';
 
 describe('groupAssessmentScoresByLocalDate', () => {
-  it('averages each user\'s scores within the local calendar date', () => {
+  it("averages each user's scores within the local calendar date", () => {
     const result = groupAssessmentScoresByLocalDate(
       [
         { user_id: '1', date: new Date('2026-07-03T04:30:00.000Z'), score_perc: 80 },
