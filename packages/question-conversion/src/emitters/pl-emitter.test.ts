@@ -286,7 +286,7 @@ describe('PLEmitter', () => {
       assert.isUndefined(result.serverPy);
     });
 
-    it('keeps overall feedback in the submission panel when per-answer feedback exists', () => {
+    it('renders overall feedback in the answer panel when per-answer feedback is inline', () => {
       const result = emitter.emit(
         makeAssessment([
           makeQuestion({
@@ -299,10 +299,11 @@ describe('PLEmitter', () => {
       ).questions[0];
 
       assert.include(result.questionHtml, 'feedback="&lt;p&gt;Three is too small.&lt;/p&gt;"');
-      assert.include(result.questionHtml, '<pl-submission-panel>');
-      assert.include(result.questionHtml, '{{#feedback.overall}}');
-      assert.notInclude(result.questionHtml, '<pl-answer-panel>');
-      assert.include(result.serverPy, 'data["feedback"]["overall"] = True');
+      assert.include(result.questionHtml, '<pl-answer-panel>');
+      assert.include(result.questionHtml, '<p>General explanation.</p>');
+      assert.notInclude(result.questionHtml, '<pl-submission-panel>');
+      assert.notInclude(result.questionHtml, 'feedback.overall');
+      assert.isUndefined(result.serverPy);
     });
 
     it('omits feedback HTML and Python when feedback is absent', () => {
@@ -358,6 +359,27 @@ describe('PLEmitter', () => {
       );
       assert.notInclude(result.serverPy, correctText);
       assert.notInclude(result.serverPy, feedback);
+    });
+
+    it('keeps overall feedback in the submission panel with explicitly rendered feedback', () => {
+      const q = makeQuestion({
+        promptHtml: '<p>[capital]</p>',
+        body: {
+          type: 'fill-in-blanks',
+          blanks: [{ id: 'capital', correctText: 'Bogotá' }],
+        },
+        feedback: {
+          general: '<p>Capitals are proper nouns.</p>',
+          perAnswer: { Bogotá: '<p>Bogotá is the capital of Colombia.</p>' },
+        },
+      });
+      const result = emitter.emit(makeAssessment([q])).questions[0];
+
+      assert.include(result.questionHtml, '<pl-submission-panel>');
+      assert.include(result.questionHtml, '{{#feedback.answer_0}}');
+      assert.include(result.questionHtml, '{{#feedback.overall}}');
+      assert.notInclude(result.questionHtml, '<pl-answer-panel>');
+      assert.include(result.serverPy, 'data["feedback"]["overall"] = True');
     });
   });
 

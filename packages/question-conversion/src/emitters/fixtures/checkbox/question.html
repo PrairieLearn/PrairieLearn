@@ -8,9 +8,9 @@
   <pl-answer correct="true" feedback="&lt;p&gt;5 is prime.&lt;/p&gt;">5</pl-answer>
 </pl-checkbox>
 
-<pl-submission-panel>
-  {{#feedback.overall}}
+<pl-answer-panel>
 <p>A prime has exactly two positive divisors.</p>
+  {{#feedback.overall}}
     {{#is_correct}}
 <p>Correct: 2 and 5 are prime.</p>
     {{/is_correct}}
@@ -18,4 +18,4 @@
 <p>Check each number's positive divisors.</p>
     {{/is_correct}}
   {{/feedback.overall}}
-</pl-submission-panel>
+</pl-answer-panel>
