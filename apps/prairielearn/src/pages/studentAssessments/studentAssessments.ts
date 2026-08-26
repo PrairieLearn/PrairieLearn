@@ -13,35 +13,17 @@ import { typedAsyncHandler } from '../../lib/res-locals.js';
 import logPageView from '../../middlewares/logPageView.js';
 
 import {
-  type StudentAssessmentSummary,
-  StudentAssessmentSummarySchema,
   StudentAssessments,
   type StudentAssessmentsRow,
+  StudentAssessmentsRowBaseSchema,
 } from './studentAssessments.html.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 const router = Router();
 
-const StudentAssessmentsQueryRowSchema = StudentAssessmentSummarySchema.extend({
+const StudentAssessmentsQueryRowSchema = StudentAssessmentsRowBaseSchema.extend({
   raw_authz_result: SprocAuthzAssessmentSchema,
 });
-
-function buildStudentAssessmentsRow(
-  summary: StudentAssessmentSummary,
-  authzResult: AssessmentAuthzResult,
-): StudentAssessmentsRow {
-  return {
-    ...summary,
-    authorized: authzResult.authorized,
-    credit_date_string: authzResult.credit_date_string ?? 'None',
-    active: authzResult.active,
-    access_rules: authzResult.access_rules,
-    access_timeline: authzResult.access_timeline,
-    show_closed_assessment_score: authzResult.show_closed_assessment_score,
-    show_before_release: authzResult.show_before_release,
-    will_release_at: authzResult.next_active_time,
-  };
-}
 
 router.get(
   '/',
@@ -71,7 +53,7 @@ router.get(
 
     const resolvedRows = rawRows
       .map((rawRow): StudentAssessmentsRow | null => {
-        const { raw_authz_result: rawAuthzResult, ...summary } = rawRow;
+        const { raw_authz_result: rawAuthzResult, ...rowData } = rawRow;
         let authzResult: AssessmentAuthzResult;
         if (rawRow.modern_access_control) {
           const assessmentAccess = modernAccessByAssessment?.get(rawRow.assessment_id);
@@ -96,12 +78,12 @@ router.get(
           );
         }
 
-        return buildStudentAssessmentsRow(summary, authzResult);
+        return { ...rowData, authz_result: authzResult };
       })
       .filter((row): row is NonNullable<typeof row> => {
         if (row == null) return false;
-        if (row.show_before_release) return true;
-        return row.authorized;
+        if (row.authz_result.show_before_release) return true;
+        return row.authz_result.authorized;
       });
 
     res.send(StudentAssessments({ resLocals: res.locals, rows: resolvedRows }));

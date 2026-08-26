@@ -5,7 +5,7 @@ import z from 'zod';
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
-import { AssessmentInstanceAuthzResultSchema } from '../lib/assessment-access-control/authz-result.js';
+import type { AssessmentInstanceAuthzResult } from '../lib/assessment-access-control/authz-result.js';
 import { resolveModernAssessmentInstanceAccess } from '../lib/assessment-access-control/authz.js';
 import { formatLegacyAssessmentInstanceAccess } from '../lib/assessment-access-control/legacy.js';
 import {
@@ -32,37 +32,35 @@ const SelectAndAuthzAssessmentInstanceBaseSchema = z.object({
   instance_role: SprocUsersGetDisplayedRoleSchema,
   assessment: AssessmentSchema,
   assessment_set: AssessmentSetSchema,
-  authz_result: AssessmentInstanceAuthzResultSchema,
   file_list: z.array(FileSchema),
   instance_group_uid_list: z.array(z.string()),
 });
 
 // See `user_team_xor` constraint
-const _SelectAndAuthzAssessmentInstanceSchema = z.union([
-  SelectAndAuthzAssessmentInstanceBaseSchema.extend({
+const AssessmentInstanceOwnerSchema = z.union([
+  z.object({
     instance_user: UserSchema,
     instance_group: z.null(),
   }),
-  SelectAndAuthzAssessmentInstanceBaseSchema.extend({
+  z.object({
     instance_user: z.null(),
     instance_group: GroupSchema,
   }),
 ]);
 
-const RawSelectAndAuthzAssessmentInstanceSchema = z.union([
+const SelectAndAuthzAssessmentInstanceRowSchema = z.intersection(
   SelectAndAuthzAssessmentInstanceBaseSchema.extend({
     authz_result: SprocAuthzAssessmentInstanceSchema,
-    instance_user: UserSchema,
-    instance_group: z.null(),
   }),
-  SelectAndAuthzAssessmentInstanceBaseSchema.extend({
-    authz_result: SprocAuthzAssessmentInstanceSchema,
-    instance_user: z.null(),
-    instance_group: GroupSchema,
-  }),
-]);
+  AssessmentInstanceOwnerSchema,
+);
 
-export type ResLocalsAssessmentInstance = z.infer<typeof _SelectAndAuthzAssessmentInstanceSchema> &
+type SelectAndAuthzAssessmentInstance = z.infer<typeof SelectAndAuthzAssessmentInstanceBaseSchema> &
+  z.infer<typeof AssessmentInstanceOwnerSchema> & {
+    authz_result: AssessmentInstanceAuthzResult;
+  };
+
+export type ResLocalsAssessmentInstance = SelectAndAuthzAssessmentInstance &
   AssessmentInstanceTimeLimit & {
     assessment_instance_label: string;
     assessment_label: string;
@@ -77,29 +75,24 @@ async function selectAndAuthzAssessmentInstance(req: Request, res: Response) {
       authz_data: res.locals.authz_data,
       req_date: res.locals.req_date,
     },
-    RawSelectAndAuthzAssessmentInstanceSchema,
+    SelectAndAuthzAssessmentInstanceRowSchema,
   );
   if (rawRow === null) throw new error.HttpStatusError(403, 'Access denied');
 
-  const row = {
-    ...rawRow,
-    authz_result: formatLegacyAssessmentInstanceAccess(
-      rawRow.authz_result,
-      res.locals.course_instance.display_timezone,
-    ),
-  };
-
-  if (row.assessment.modern_access_control) {
-    const modernResult = await resolveModernAssessmentInstanceAccess({
-      assessment: row.assessment,
-      userId: res.locals.authz_data.user.id,
-      courseInstance: res.locals.course_instance,
-      authzData: res.locals.authz_data,
-      reqDate: res.locals.req_date,
-      assessmentInstance: row.assessment_instance,
-    });
-    row.authz_result = modernResult;
-  }
+  const authzResult = rawRow.assessment.modern_access_control
+    ? await resolveModernAssessmentInstanceAccess({
+        assessment: rawRow.assessment,
+        userId: res.locals.authz_data.user.id,
+        courseInstance: res.locals.course_instance,
+        authzData: res.locals.authz_data,
+        reqDate: res.locals.req_date,
+        assessmentInstance: rawRow.assessment_instance,
+      })
+    : formatLegacyAssessmentInstanceAccess(
+        rawRow.authz_result,
+        res.locals.course_instance.display_timezone,
+      );
+  const row: SelectAndAuthzAssessmentInstance = { ...rawRow, authz_result: authzResult };
 
   if (!row.authz_result.authorized) {
     throw new error.HttpStatusError(403, 'Access denied');
