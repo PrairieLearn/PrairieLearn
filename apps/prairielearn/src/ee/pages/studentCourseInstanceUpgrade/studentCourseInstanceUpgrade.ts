@@ -432,6 +432,22 @@ router.get(
       });
     };
 
+    const shouldRequireLti13Relaunch = async () => {
+      if (!lti13UpgradeRequested) return false;
+
+      // The Stripe success URL can be revisited after admission consumes the
+      // saved LTI authorization. Check the enrollment before asking the
+      // student to return to the LMS.
+      const decision = await selectEnrollmentAccessDecision({
+        course,
+        courseInstance,
+        user: authn_user,
+      });
+      if (!decision.allowed && decision.reason === 'already_joined') return false;
+
+      return true;
+    };
+
     if (localSession.completed_at) {
       if (await finishLti13Admission()) {
         res.redirect(`/pl/course_instance/${courseInstance.id}/`);
@@ -443,7 +459,7 @@ router.get(
         CourseInstanceStudentUpdateSuccess({
           course,
           courseInstance,
-          requireLti13Relaunch: lti13UpgradeRequested,
+          requireLti13Relaunch: await shouldRequireLti13Relaunch(),
           paid: true,
           resLocals: res.locals,
         }),
@@ -493,7 +509,7 @@ router.get(
         CourseInstanceStudentUpdateSuccess({
           course,
           courseInstance,
-          requireLti13Relaunch: lti13UpgradeRequested,
+          requireLti13Relaunch: await shouldRequireLti13Relaunch(),
           paid: true,
           resLocals: res.locals,
         }),

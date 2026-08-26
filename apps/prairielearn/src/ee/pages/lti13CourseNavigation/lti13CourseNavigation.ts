@@ -196,9 +196,9 @@ router.get(
             isAdministrator: res.locals.is_administrator,
             lti13CourseInstanceId,
             onPlanGrantsRequired: () => {
-              // Remember why this student was sent to the upgrade page. That
-              // page checks the invitation again, and enrollment still requires
-              // another launch from the LMS after payment.
+              // Remember the invitation while the student completes the
+              // upgrade. The upgrade page checks it again before admitting the
+              // student.
               setLti13CourseInstanceUpgradeAuthorization({
                 courseInstanceId,
                 enrollmentId: invitationEnrollmentId,
