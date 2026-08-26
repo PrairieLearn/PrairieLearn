@@ -3,21 +3,12 @@
 </pl-question-panel>
 
 <pl-checkbox answers-name="answer" partial-credit="net-correct">
-  <pl-answer correct="true">2</pl-answer>
-  <pl-answer correct="false">4</pl-answer>
-  <pl-answer correct="true">5</pl-answer>
+  <pl-answer correct="true" feedback="&lt;p&gt;2 is the only even prime.&lt;/p&gt;">2</pl-answer>
+  <pl-answer correct="false" feedback="&lt;p&gt;4 = 2 × 2, so it is composite.&lt;/p&gt;">4</pl-answer>
+  <pl-answer correct="true" feedback="&lt;p&gt;5 is prime.&lt;/p&gt;">5</pl-answer>
 </pl-checkbox>
 
 <pl-submission-panel>
-  {{#feedback.answer_0}}
-<strong>2</strong>: <p>2 is the only even prime.</p>
-  {{/feedback.answer_0}}
-  {{#feedback.answer_1}}
-<strong>4</strong>: <p>4 = 2 × 2, so it is composite.</p>
-  {{/feedback.answer_1}}
-  {{#feedback.answer_2}}
-<strong>5</strong>: <p>5 is prime.</p>
-  {{/feedback.answer_2}}
   {{#feedback.overall}}
 <p>A prime has exactly two positive divisors.</p>
     {{#is_correct}}

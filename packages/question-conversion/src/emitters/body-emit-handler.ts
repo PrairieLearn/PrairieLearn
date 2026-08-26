@@ -7,11 +7,6 @@ export type FeedbackTrigger =
       outcome: 'correct' | 'incorrect';
     }
   | {
-      /** Show feedback when a particular checkbox answer is selected. */
-      type: 'checkbox-answer-selected';
-      answerHtml: string;
-    }
-  | {
       /** Show feedback when a particular fill-in-the-blank input is fully correct. */
       type: 'fill-in-the-blank-correct';
       answerName: string;
