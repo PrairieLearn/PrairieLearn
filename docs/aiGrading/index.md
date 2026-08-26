@@ -142,6 +142,8 @@ For transparency and debugging, the exact prompt sent to the model is available 
 
 **Rotation correction:** Specifically for image grading with Gemini models, a separate LLM call first rotates submitted image files so the handwriting is upright before grading runs. Pages inside PDF documents are not rotated separately.
 
+**PDF visual detail:** For OpenAI models, PrairieLearn explicitly requests [high-detail PDF page images](https://developers.openai.com/api/docs/guides/file-inputs#pdf-detail-levels) to preserve small notation, diagrams, and scanned work. Text extracted from the PDF is included separately. Other providers use their default PDF processing.
+
 **Concurrency:** AI grading keeps up to 20 submissions in progress at any time. When one finishes, the next begins automatically.
 
 **Privacy:** Student identifying information (name, email, UIN) is not sent to LLM providers, as long as it is not in the submission, question, or correct answer. Avoid including unnecessary personal data in questions, rubrics, grader guidelines, or submissions. Student submissions are not used for model training when using PrairieLearn AI grading credits.

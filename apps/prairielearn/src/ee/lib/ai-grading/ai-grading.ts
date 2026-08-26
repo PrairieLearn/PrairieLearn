@@ -64,6 +64,7 @@ import {
   selectInstanceQuestionsForAssessmentQuestion,
   selectLastVariantAndSubmission,
 } from './ai-grading-util.js';
+import { withOpenAiHighPdfDetail } from './openai-pdf-detail.js';
 import {
   type AIGradingLog,
   type AIGradingLogger,
@@ -349,6 +350,7 @@ export async function aiGrade({
       return createOpenAI({
         apiKey: resolvedKeys.openai.apiKey,
         organization: resolvedKeys.openai.organization ?? undefined,
+        fetch: withOpenAiHighPdfDetail(fetch),
       })(model_id);
     } else if (provider === 'google') {
       if (!resolvedKeys.google) {
