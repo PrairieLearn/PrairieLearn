@@ -1,13 +1,15 @@
+import he from 'he';
+
 import type { IRQuestionBody } from '../../types/ir.js';
 import type { BodyEmitHandler } from '../body-emit-handler.js';
-import { deduplicateChoices } from '../pl-emit-utils.js';
+import { deduplicateChoices, escapeMustacheDelimiters } from '../pl-emit-utils.js';
 
 type CheckboxBody = Extract<IRQuestionBody, { type: 'checkbox' }>;
 
 export const checkboxHandler: BodyEmitHandler = {
   bodyType: 'checkbox',
 
-  renderHtml(body, shuffleAnswers) {
+  renderHtml(body, shuffleAnswers, perAnswer) {
     const cb = body as CheckboxBody;
     const deduped = deduplicateChoices(cb.choices);
     const orderAttr = shuffleAnswers === false ? ' order="fixed"' : '';
@@ -15,26 +17,14 @@ export const checkboxHandler: BodyEmitHandler = {
     // strategy, so emit the matching pl-checkbox partial-credit mode.
     const lines = [`<pl-checkbox answers-name="answer" partial-credit="net-correct"${orderAttr}>`];
     for (const choice of deduped) {
-      lines.push(`  <pl-answer correct="${choice.correct}">${choice.html}</pl-answer>`);
+      const feedback = perAnswer?.[choice.html];
+      const feedbackAttr =
+        feedback == null ? '' : ` feedback="${escapeMustacheDelimiters(he.escape(feedback))}"`;
+      lines.push(
+        `  <pl-answer correct="${choice.correct}"${feedbackAttr}>${choice.html}</pl-answer>`,
+      );
     }
     lines.push('</pl-checkbox>');
     return lines.join('\n');
-  },
-
-  renderFeedback(body, perAnswer) {
-    if (!perAnswer) return [];
-
-    const cb = body as CheckboxBody;
-    return deduplicateChoices(cb.choices).flatMap((choice) => {
-      const feedback = perAnswer[choice.html];
-      if (feedback == null) return [];
-
-      return [
-        {
-          html: `<strong>${choice.html}</strong>: ${feedback}`,
-          trigger: { type: 'checkbox-answer-selected' as const, answerHtml: choice.html },
-        },
-      ];
-    });
   },
 };

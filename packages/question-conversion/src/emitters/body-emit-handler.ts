@@ -1,9 +1,16 @@
 import type { IRQuestionBody } from '../types/ir.js';
 
 export type FeedbackTrigger =
-  | { type: 'score'; outcome: 'correct' | 'incorrect' }
-  | { type: 'checkbox-answer-selected'; answerHtml: string }
-  | { type: 'blank-correct'; answerName: string };
+  | {
+      /** Show feedback based on whether the question's final score is fully correct. */
+      type: 'score';
+      outcome: 'correct' | 'incorrect';
+    }
+  | {
+      /** Show feedback when a particular fill-in-the-blank input is fully correct. */
+      type: 'fill-in-the-blank-correct';
+      answerName: string;
+    };
 
 export interface FeedbackMessage {
   html: string;

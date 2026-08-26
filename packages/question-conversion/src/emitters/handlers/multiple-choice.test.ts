@@ -77,6 +77,20 @@ describe('multipleChoiceHandler', () => {
     assert.include(html, 'feedback="&lt;b&gt;Wrong&lt;/b&gt;"');
   });
 
+  it('keeps Mustache delimiters in feedback attributes literal', () => {
+    const html = multipleChoiceHandler.renderHtml(
+      { type: 'multiple-choice', choices: twoChoices },
+      undefined,
+      { Red: '{{double_brace}} and {{{triple_brace}}}' },
+    );
+    assert.include(
+      html,
+      'feedback="&#123;&#123;double_brace&#125;&#125; and &#123;&#123;&#123;triple_brace&#125;&#125;&#125;"',
+    );
+    assert.notInclude(html, '{{double_brace}}');
+    assert.notInclude(html, '{{{triple_brace}}}');
+  });
+
   it('disables built-in grading and feedback when no choice is correct', () => {
     const html = multipleChoiceHandler.renderHtml(
       {

@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 
 import he from 'he';
@@ -9,9 +9,12 @@ import { convert } from '../pipeline.js';
 import type { PLQuestionOutput } from '../types/pl-output.js';
 
 const FIXTURES = path.join(import.meta.dirname, 'fixtures');
-const FIXTURE_NAMES = ['multiple-choice', 'checkbox', 'fill-in-blanks'] as const;
+const FIXTURE_NAMES = readdirSync(FIXTURES, { withFileTypes: true })
+  .filter((entry) => entry.isDirectory())
+  .map((entry) => entry.name)
+  .sort();
 
-function readFixture(name: (typeof FIXTURE_NAMES)[number], filename: string): string {
+function readFixture(name: string, filename: string): string {
   return readFileSync(path.join(FIXTURES, name, filename), 'utf8');
 }
 
@@ -19,7 +22,11 @@ function normalizeTerminalNewline(value: string): string {
   return value.replace(/\r?\n$/, '');
 }
 
-async function emitFixture(name: (typeof FIXTURE_NAMES)[number]): Promise<PLQuestionOutput> {
+function normalizeOptionalTerminalNewline(value: string | undefined): string | undefined {
+  return value == null ? undefined : normalizeTerminalNewline(value);
+}
+
+async function emitFixture(name: string): Promise<PLQuestionOutput> {
   const result = await convert(readFixture(name, 'question.xml'));
   assert.deepEqual(result.warnings, []);
   assert.lengthOf(result.questions, 1);
@@ -33,13 +40,19 @@ describe('PLEmitter output fixtures', () => {
     expect(normalizeTerminalNewline(question.questionHtml)).toBe(
       normalizeTerminalNewline(readFixture(name, 'question.html')),
     );
-    expect(normalizeTerminalNewline(question.serverPy ?? '')).toBe(
-      normalizeTerminalNewline(readFixture(name, 'server.py')),
+
+    const expectedServerPyPath = path.join(FIXTURES, name, 'server.py');
+    const expectedServerPy = existsSync(expectedServerPyPath)
+      ? readFileSync(expectedServerPyPath, 'utf8')
+      : undefined;
+    expect(expectedServerPy?.trim()).not.toBe('');
+    expect(normalizeOptionalTerminalNewline(question.serverPy)).toBe(
+      normalizeOptionalTerminalNewline(expectedServerPy),
     );
   });
 
   it('preserves imported Mustache delimiters without evaluating them', async () => {
-    const question = await emitFixture('multiple-choice');
+    const question = await emitFixture('mustache-delimiters');
     const renderedHtml = mustache.render(question.questionHtml, {
       feedback: { overall: true },
       double_brace_value: 'DOUBLE_BRACE_EVALUATED',

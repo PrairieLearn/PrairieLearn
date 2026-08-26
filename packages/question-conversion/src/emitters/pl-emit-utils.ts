@@ -12,6 +12,15 @@ export function deduplicateChoices<T extends { html: string; correct: boolean }>
   return [...seen.values()];
 }
 
+/** Escape Mustache delimiters so imported content remains literal during template rendering. */
+export function escapeMustacheDelimiters(html: string): string {
+  return html
+    .replaceAll('{{{', '&#123;&#123;&#123;')
+    .replaceAll('}}}', '&#125;&#125;&#125;')
+    .replaceAll('{{', '&#123;&#123;')
+    .replaceAll('}}', '&#125;&#125;');
+}
+
 /**
  * Convert a Canvas formula string to a valid Python expression.
  *
