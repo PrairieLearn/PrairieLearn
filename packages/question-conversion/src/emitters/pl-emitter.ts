@@ -465,7 +465,7 @@ function buildFeedbackMessages(
   const messages = (handler.renderFeedback?.(question.body, question.feedback) ?? []).map(
     (message, index) => ({
       ...message,
-      name: `qti_import_answer_${index}`,
+      name: `answer_${index}`,
       trigger:
         message.trigger.type === 'checkbox-answer-selected'
           ? { ...message.trigger, answerHtml: renderContentHtml(message.trigger.answerHtml) }
@@ -476,14 +476,14 @@ function buildFeedbackMessages(
   const generalFeedback = buildGeneralFeedback(question);
   if (question.feedback?.correct && !generalFeedback.includes(question.feedback.correct)) {
     messages.push({
-      name: 'qti_import',
+      name: 'overall',
       html: question.feedback.correct,
       trigger: { type: 'score', outcome: 'correct' },
     });
   }
   if (question.feedback?.incorrect && !generalFeedback.includes(question.feedback.incorrect)) {
     messages.push({
-      name: 'qti_import',
+      name: 'overall',
       html: question.feedback.incorrect,
       trigger: { type: 'score', outcome: 'incorrect' },
     });
@@ -507,12 +507,12 @@ function renderFeedbackHtml(messages: NamedFeedbackMessage[], generalFeedback: s
   if (messages.length === 0 && generalFeedback.length === 0) return '';
 
   const feedbackNames = new Set(messages.map((message) => message.name));
-  if (generalFeedback.length > 0) feedbackNames.add('qti_import');
+  if (generalFeedback.length > 0) feedbackNames.add('overall');
 
   const lines = ['<pl-submission-panel>'];
   for (const name of feedbackNames) {
     lines.push(`  {{#feedback.${name}}}`);
-    if (name === 'qti_import') {
+    if (name === 'overall') {
       lines.push(...generalFeedback.map(renderFeedbackContentHtml));
     }
 
@@ -593,8 +593,8 @@ function renderFeedbackGradeFn(
     }
   }
 
-  if (hasGeneralFeedback && !assignedScoreFeedbackNames.has('qti_import')) {
-    lines.push('    data["feedback"]["qti_import"] = True');
+  if (hasGeneralFeedback && !assignedScoreFeedbackNames.has('overall')) {
+    lines.push('    data["feedback"]["overall"] = True');
   }
 
   lines.push('');
