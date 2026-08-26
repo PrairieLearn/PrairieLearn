@@ -200,22 +200,22 @@ export class ExternalGraderLocal implements Grader {
 
       // Now that the job has completed, let's extract the results from `results.json`.
       if (results.succeeded) {
-        let data: Buffer | undefined;
-        try {
-          data = await readFileWithinDirectory(dir, 'results/results.json', 1024 * 1024);
-        } catch (err) {
-          results.succeeded = false;
-          if (err instanceof FileSizeLimitError) {
-            results.message =
-              'The grading results were larger than 1MB. ' +
-              'If the problem persists, please contact course staff or a proctor.';
-          } else {
-            logger.error('Could not read results.json', err);
-            results.message = 'Could not read grading results.';
-          }
-        }
+        const data = await readFileWithinDirectory(dir, 'results/results.json', 1024 * 1024).catch(
+          (err: unknown) => {
+            results.succeeded = false;
+            if (err instanceof FileSizeLimitError) {
+              results.message =
+                'The grading results were larger than 1MB. ' +
+                'If the problem persists, please contact course staff or a proctor.';
+            } else {
+              logger.error('Could not read results.json', err);
+              results.message = 'Could not read grading results.';
+            }
+            return null;
+          },
+        );
 
-        if (data != null) {
+        if (data !== null) {
           try {
             results.results = JSON.parse(data.toString('utf8'));
             results.succeeded = true;

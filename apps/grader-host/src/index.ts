@@ -620,23 +620,24 @@ async function runJob(
     // Now that the job has completed, let's extract the results
     // First up: results.json
     if (results.succeeded) {
-      let data: Buffer;
-      try {
-        data = await readFileWithinDirectory(tempDir, 'results/results.json', 1024 * 1024);
-      } catch (err) {
+      const data = await readFileWithinDirectory(
+        tempDir,
+        'results/results.json',
+        1024 * 1024,
+      ).catch((err: unknown) => {
+        results.succeeded = false;
         if (err instanceof FileSizeLimitError) {
-          results.succeeded = false;
           results.message =
             'The grading results were larger than 1MB. ' +
             'If the problem persists, please contact course staff or a proctor.';
-          return;
+        } else {
+          logger.error('Could not read results.json', err);
+          results.message = 'Could not read grading results.';
         }
+        return null;
+      });
 
-        logger.error('Could not read results.json', err);
-        results.succeeded = false;
-        results.message = 'Could not read grading results.';
-        return;
-      }
+      if (data === null) return;
 
       try {
         const parsedResults = JSON.parse(data.toString());
