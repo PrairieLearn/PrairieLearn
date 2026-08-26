@@ -14,8 +14,10 @@ const FIXTURE_NAMES = readdirSync(FIXTURES, { withFileTypes: true })
   .filter((entry) => entry.isDirectory())
   .map((entry) => entry.name)
   .sort();
-// The injected copier receives already-validated bytes; fixed text keeps generated names stable.
-const FIXTURE_REMOTE_IMAGE_CONTENT = Buffer.from('fixture image\n');
+const FIXTURE_REMOTE_IMAGE_CONTENT = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
+  'base64',
+);
 
 function readFixture(name: string, filename: string): string {
   return readFileSync(path.join(FIXTURES, name, filename), 'utf8');
@@ -36,7 +38,14 @@ function readExpectedClientFiles(name: string): Map<string, Buffer> {
   return new Map(
     readdirSync(directory, { withFileTypes: true }).map((entry) => {
       assert.isTrue(entry.isFile());
-      return [entry.name, readFileSync(path.join(directory, entry.name))];
+      const filePath = path.join(directory, entry.name);
+      if (entry.name.endsWith('.base64')) {
+        return [
+          entry.name.slice(0, -'.base64'.length),
+          Buffer.from(readFileSync(filePath, 'utf8').trim(), 'base64'),
+        ];
+      }
+      return [entry.name, readFileSync(filePath)];
     }),
   );
 }
@@ -115,7 +124,7 @@ describe('PLEmitter output fixtures', () => {
     assert.notInclude(renderedHtml, 'ENTITY_EVALUATED');
 
     const decodedHtml = he.decode(renderedHtml);
-    assert.include(decodedHtml, '/client-files-question/remote-061d63149a55fb16.png');
+    assert.include(decodedHtml, '/client-files-question/remote-431ced6916a2a21a.png');
     assert.include(decodedHtml, '{{imported_per_answer_value}}');
     assert.include(decodedHtml, '{{ options.client_files_question_url }}');
     assert.include(he.decode(decodedHtml), '{{imported_entity_value}}');
