@@ -9,7 +9,13 @@ import { convert } from '../pipeline.js';
 import type { PLQuestionOutput } from '../types/pl-output.js';
 
 const FIXTURES = path.join(import.meta.dirname, 'fixtures');
-const FIXTURE_NAMES = ['multiple-choice', 'checkbox', 'fill-in-blanks'] as const;
+const FIXTURE_NAMES = [
+  'multiple-choice',
+  'true-false',
+  'checkbox',
+  'matching',
+  'fill-in-blanks',
+] as const;
 
 function readFixture(name: (typeof FIXTURE_NAMES)[number], filename: string): string {
   return readFileSync(path.join(FIXTURES, name, filename), 'utf8');
