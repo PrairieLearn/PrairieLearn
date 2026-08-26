@@ -263,9 +263,9 @@ export class PLEmitter implements OutputEmitter {
     const handler = this.registry.get(question.body.type);
     if (!handler) throw new Error(`No emit handler for body type: ${question.body.type}`);
 
-    const feedbackMessages = buildFeedbackMessages(question, handler);
-    const questionHtml = this.renderQuestionHtml(question, handler, feedbackMessages);
-    const serverPy = this.renderServerPy(question, handler, feedbackMessages);
+    const feedback = buildFeedbackPlan(question, handler);
+    const questionHtml = this.renderQuestionHtml(question, handler, feedback);
+    const serverPy = this.renderServerPy(question, handler, feedback);
     const clientFiles = this.collectClientFiles(question);
 
     return {
@@ -297,7 +297,7 @@ export class PLEmitter implements OutputEmitter {
   private renderQuestionHtml(
     question: IRQuestion,
     handler: BodyEmitHandler,
-    feedbackMessages: NamedFeedbackMessage[],
+    feedback: FeedbackPlan,
   ): string {
     let promptHtml = question.promptHtml;
     if (handler.transformPrompt) {
@@ -315,8 +315,7 @@ export class PLEmitter implements OutputEmitter {
     );
     if (bodyHtml) parts.push(bodyHtml);
 
-    const generalFeedback = buildGeneralFeedback(question);
-    const feedbackHtml = renderFeedbackHtml(feedbackMessages, generalFeedback);
+    const feedbackHtml = renderFeedbackHtml(feedback);
     if (feedbackHtml) {
       parts.push('', feedbackHtml);
     }
@@ -327,7 +326,7 @@ export class PLEmitter implements OutputEmitter {
   private renderServerPy(
     question: IRQuestion,
     handler: BodyEmitHandler,
-    feedbackMessages: NamedFeedbackMessage[],
+    feedback: FeedbackPlan,
   ): string {
     const parts: string[] = [];
 
@@ -337,8 +336,8 @@ export class PLEmitter implements OutputEmitter {
     }
 
     const grade = renderFeedbackGradeFn(
-      feedbackMessages,
-      buildGeneralFeedback(question).length > 0,
+      feedback.messages,
+      feedback.panel === 'submission' && feedback.generalFeedback.length > 0,
     );
     if (grade) parts.push(grade);
 
@@ -431,15 +430,39 @@ interface NamedFeedbackMessage extends FeedbackMessage {
   name: string;
 }
 
+interface FeedbackPlan {
+  messages: NamedFeedbackMessage[];
+  generalFeedback: string[];
+  panel?: 'answer' | 'submission';
+}
+
+function buildFeedbackPlan(question: IRQuestion, handler: BodyEmitHandler): FeedbackPlan {
+  const generalFeedback = buildGeneralFeedback(question);
+  const messages = buildFeedbackMessages(question, handler, generalFeedback);
+  if (messages.length === 0 && generalFeedback.length === 0) {
+    return { messages, generalFeedback };
+  }
+
+  const hasAnswerSpecificFeedback =
+    Object.keys(question.feedback?.perAnswer ?? {}).length > 0 ||
+    messages.some((message) => message.name !== 'overall');
+
+  return {
+    messages,
+    generalFeedback,
+    panel: hasAnswerSpecificFeedback ? 'submission' : 'answer',
+  };
+}
+
 function buildFeedbackMessages(
   question: IRQuestion,
   handler: BodyEmitHandler,
+  generalFeedback: string[],
 ): NamedFeedbackMessage[] {
   const messages = (
     handler.renderFeedback?.(question.body, question.feedback?.perAnswer) ?? []
   ).map((message, index) => ({ ...message, name: `answer_${index}` }));
 
-  const generalFeedback = buildGeneralFeedback(question);
   if (question.feedback?.correct && !generalFeedback.includes(question.feedback.correct)) {
     messages.push({
       name: 'overall',
@@ -469,16 +492,19 @@ function buildGeneralFeedback(question: IRQuestion): string[] {
   return messages;
 }
 
-function renderFeedbackHtml(messages: NamedFeedbackMessage[], generalFeedback: string[]): string {
-  if (messages.length === 0 && generalFeedback.length === 0) return '';
+function renderFeedbackHtml({ messages, generalFeedback, panel }: FeedbackPlan): string {
+  if (!panel) return '';
 
   const feedbackNames = new Set(messages.map((message) => message.name));
-  if (generalFeedback.length > 0) feedbackNames.add('overall');
+  if (panel === 'submission' && generalFeedback.length > 0) feedbackNames.add('overall');
 
-  const lines = ['<pl-submission-panel>'];
+  const lines = [`<pl-${panel}-panel>`];
+  if (panel === 'answer') {
+    lines.push(...generalFeedback.map(escapeMustacheDelimiters));
+  }
   for (const name of feedbackNames) {
     lines.push(`  {{#feedback.${name}}}`);
-    if (name === 'overall') {
+    if (panel === 'submission' && name === 'overall') {
       lines.push(...generalFeedback.map(escapeMustacheDelimiters));
     }
 
@@ -498,15 +524,15 @@ function renderFeedbackHtml(messages: NamedFeedbackMessage[], generalFeedback: s
     }
     lines.push(`  {{/feedback.${name}}}`);
   }
-  lines.push('</pl-submission-panel>');
+  lines.push(`</pl-${panel}-panel>`);
   return lines.join('\n');
 }
 
 function renderFeedbackGradeFn(
   messages: NamedFeedbackMessage[],
-  hasGeneralFeedback: boolean,
+  hasSubmissionPanelGeneralFeedback: boolean,
 ): string {
-  if (messages.length === 0 && !hasGeneralFeedback) return '';
+  if (messages.length === 0 && !hasSubmissionPanelGeneralFeedback) return '';
 
   const lines = ['def grade(data):'];
   const assignedScoreFeedbackNames = new Set<string>();
@@ -533,7 +559,7 @@ function renderFeedbackGradeFn(
     }
   }
 
-  if (hasGeneralFeedback && !assignedScoreFeedbackNames.has('overall')) {
+  if (hasSubmissionPanelGeneralFeedback && !assignedScoreFeedbackNames.has('overall')) {
     lines.push('    data["feedback"]["overall"] = True');
   }
 

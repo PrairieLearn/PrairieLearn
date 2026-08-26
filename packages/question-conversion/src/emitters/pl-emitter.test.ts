@@ -244,7 +244,8 @@ describe('PLEmitter', () => {
       ({ feedback, expectedSection, unexpectedSection }) => {
         const result = emitter.emit(makeAssessment([makeQuestion({ feedback })])).questions[0];
 
-        assert.include(result.questionHtml, '<pl-submission-panel>');
+        assert.include(result.questionHtml, '<pl-answer-panel>');
+        assert.notInclude(result.questionHtml, '<pl-submission-panel>');
         assert.include(result.questionHtml, '{{#feedback.overall}}');
         assert.include(result.questionHtml, expectedSection);
         assert.notInclude(result.questionHtml, unexpectedSection);
@@ -256,10 +257,59 @@ describe('PLEmitter', () => {
       },
     );
 
+    it.each([
+      {
+        name: 'general feedback',
+        feedback: { general: '<p>Review {{the explanation}}.</p>' },
+        expectedHtml: '<p>Review &#123;&#123;the explanation&#125;&#125;.</p>',
+      },
+      {
+        name: 'identical correct and incorrect feedback',
+        feedback: {
+          correct: '<p>Shared explanation.</p>',
+          incorrect: '<p>Shared explanation.</p>',
+        },
+        expectedHtml: '<p>Shared explanation.</p>',
+      },
+      {
+        name: 'general feedback with an empty per-answer map',
+        feedback: { general: '<p>General explanation.</p>', perAnswer: {} },
+        expectedHtml: '<p>General explanation.</p>',
+      },
+    ])('renders $name directly in the answer panel', ({ feedback, expectedHtml }) => {
+      const result = emitter.emit(makeAssessment([makeQuestion({ feedback })])).questions[0];
+
+      assert.include(result.questionHtml, '<pl-answer-panel>');
+      assert.include(result.questionHtml, expectedHtml);
+      assert.notInclude(result.questionHtml, '<pl-submission-panel>');
+      assert.notInclude(result.questionHtml, 'feedback.overall');
+      assert.isUndefined(result.serverPy);
+    });
+
+    it('keeps overall feedback in the submission panel when per-answer feedback exists', () => {
+      const result = emitter.emit(
+        makeAssessment([
+          makeQuestion({
+            feedback: {
+              general: '<p>General explanation.</p>',
+              perAnswer: { Three: '<p>Three is too small.</p>' },
+            },
+          }),
+        ]),
+      ).questions[0];
+
+      assert.include(result.questionHtml, 'feedback="&lt;p&gt;Three is too small.&lt;/p&gt;"');
+      assert.include(result.questionHtml, '<pl-submission-panel>');
+      assert.include(result.questionHtml, '{{#feedback.overall}}');
+      assert.notInclude(result.questionHtml, '<pl-answer-panel>');
+      assert.include(result.serverPy, 'data["feedback"]["overall"] = True');
+    });
+
     it('omits feedback HTML and Python when feedback is absent', () => {
       const result = emitter.emit(makeAssessment([makeQuestion()])).questions[0];
 
       assert.notInclude(result.questionHtml, '<pl-submission-panel>');
+      assert.notInclude(result.questionHtml, '<pl-answer-panel>');
       assert.notInclude(result.questionHtml, 'feedback.');
       assert.isUndefined(result.serverPy);
     });
