@@ -9,7 +9,9 @@ import {
   generateText,
 } from 'ai';
 import * as cheerio from 'cheerio';
+import { type Element } from 'domhandler';
 import { Redis } from 'ioredis';
+import mime from 'mime';
 import sharp from 'sharp';
 import { z } from 'zod';
 
@@ -68,6 +70,14 @@ const SubmissionVariantSchema = z.object({
 });
 
 type UserContentParts = Exclude<UserContent, string>;
+
+// Keep this to media types supported as inline file parts by every AI-grading provider.
+const SUPPORTED_UPLOADED_FILE_MEDIA_TYPES = new Set([
+  'application/pdf',
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+]);
 
 export interface AiGradingPrompt {
   instructions: string;
@@ -209,6 +219,24 @@ export function containsImageCapture(submission_text: string): boolean {
 }
 
 /**
+ * Returns true if the text contains any AI-grading marker emitted by pl-file-upload.
+ */
+export function containsFileUpload(submission_text: string): boolean {
+  return cheerio.load(submission_text)('[data-file-upload-file-name]').length > 0;
+}
+
+function getUploadedFileMediaType(fileName: string): string {
+  const mediaType = mime.getType(fileName);
+  if (mediaType && SUPPORTED_UPLOADED_FILE_MEDIA_TYPES.has(mediaType)) {
+    return mediaType;
+  }
+
+  throw new Error(
+    `AI grading only supports PDF, JPEG, PNG, and WebP files from pl-file-upload; found "${fileName}".`,
+  );
+}
+
+/**
  * Parses the student's answer and the HTML of the student's submission into user-content parts.
  *
  * @param options
@@ -227,28 +255,70 @@ export function generateSubmissionContent({
     submitted_answer,
   });
 
-  const content: UserContentParts = segments.map((segment) => {
+  const content: UserContentParts = segments.flatMap((segment): UserContentParts => {
     switch (segment.type) {
       case 'text':
-        return segment;
+        return [segment];
       case 'image':
         if (segment.fileData) {
-          return {
-            type: 'file',
-            data: segment.fileData,
-            mediaType: 'image/jpeg',
-            providerOptions: {
-              openai: {
-                imageDetail: 'auto',
+          return [
+            {
+              type: 'text',
+              text: `Image capture: ${segment.fileName}`,
+            },
+            {
+              type: 'file',
+              data: segment.fileData,
+              filename: segment.fileName,
+              mediaType: 'image/jpeg',
+              providerOptions: {
+                openai: {
+                  imageDetail: 'auto',
+                },
               },
             },
-          };
+          ];
         } else {
-          return {
-            type: 'text',
-            text: `Image capture with ${segment.fileName} was not captured.`,
-          };
+          return [
+            {
+              type: 'text',
+              text: `Image capture with ${segment.fileName} was not captured.`,
+            },
+          ];
         }
+      case 'file': {
+        if (!segment.fileData) {
+          return [
+            {
+              type: 'text',
+              text: `Uploaded file ${segment.fileName} was not found.`,
+            },
+          ];
+        }
+
+        const mediaType = getUploadedFileMediaType(segment.fileName);
+        return [
+          {
+            type: 'text',
+            text: `Uploaded file: ${segment.fileName}`,
+          },
+          {
+            type: 'file',
+            data: segment.fileData,
+            filename: segment.fileName,
+            mediaType,
+            ...(mediaType.startsWith('image/')
+              ? {
+                  providerOptions: {
+                    openai: {
+                      imageDetail: 'auto',
+                    },
+                  },
+                }
+              : {}),
+          },
+        ];
+      }
       default:
         assertNever(segment);
     }
@@ -270,6 +340,15 @@ type SubmissionHTMLSegment =
        * If null, the image was not found in the submitted answer.
        */
       fileData: string | null;
+    }
+  | {
+      type: 'file';
+      fileName: string;
+      /**
+       * Base64-encoded file data. Does not include a MIME type header.
+       * If null, the file was not found in the submitted answer.
+       */
+      fileData: string | null;
     };
 
 /**
@@ -278,8 +357,8 @@ type SubmissionHTMLSegment =
  * The submission HTML is expected to have already been processed by `stripHtmlForAiGrading`
  * (this happens in `freeform.ts` when `questionRenderContext === 'ai_grading'`). This function
  * preserves the full HTML structure for text segments, ensuring the prompt matches what the
- * instructor sees on the AI grading preview page. Images (identified by `data-image-capture-uuid`
- * attributes) are extracted and returned as separate segments.
+ * instructor sees on the AI grading preview page. Attachments (identified by markers emitted by
+ * `pl-image-capture` and `pl-file-upload`) are extracted and returned as separate segments.
  */
 export function parseSubmission({
   submission_text,
@@ -290,34 +369,52 @@ export function parseSubmission({
 }): SubmissionHTMLSegment[] {
   const $ = cheerio.load(submission_text);
   const imageElements = $('[data-image-capture-uuid]');
+  const attachmentElements = $('[data-image-capture-uuid], [data-file-upload-file-name]');
 
-  // If there are no images, return the full HTML as a single text segment.
-  if (imageElements.length === 0) {
+  // If there are no attachments, return the full HTML as a single text segment.
+  if (attachmentElements.length === 0) {
     const text = $('body').html()?.trim();
     if (!text) return [];
     return [{ type: 'text', text }];
   }
 
-  // Extract image data and replace each image element with a unique marker
-  // so we can split the HTML into alternating text/image segments.
+  const getImageCaptureFileName = (el: Element): string | undefined => {
+    // New style, where `<pl-image-capture>` has been specialized for AI grading rendering.
+    const submittedFileName = $(el).data('file-name');
+    if (submittedFileName && typeof submittedFileName === 'string') {
+      return submittedFileName.trim();
+    }
+
+    // Old style, where we have to pick the filename out of the `data-options` attribute.
+    const options = $(el).data('options') as Record<string, string> | null;
+    return options?.submitted_file_name;
+  };
+
+  // A wildcard pl-file-upload can also match a file owned by pl-image-capture because all
+  // submitted files share the same `_files` array. Prefer the image-capture marker so the file is
+  // sent once and remains eligible for image-orientation correction.
+  const imageCaptureFileNames = new Set<string>();
+  imageElements.each((_, el) => {
+    const fileName = getImageCaptureFileName(el);
+    if (fileName) imageCaptureFileNames.add(fileName);
+  });
+
+  // Extract attachment data and replace each element with a unique marker so we can split the
+  // HTML into alternating text/attachment segments.
   // The nonce prevents students from injecting markers into their submissions.
   const nonce = crypto.randomUUID();
-  const imageDataByMarker = new Map<string, { fileName: string; fileData: string | null }>();
+  const attachmentDataByMarker = new Map<
+    string,
+    { type: 'image' | 'file'; fileName: string; fileData: string | null }
+  >();
+  const includedFileNames = new Set<string>();
 
-  imageElements.each((i, el) => {
-    const marker = `__AI_GRADING_IMAGE_${nonce}_${i}__`;
-
-    const fileName = run(() => {
-      // New style, where `<pl-image-capture>` has been specialized for AI grading rendering.
-      const submittedFileName = $(el).data('file-name');
-      if (submittedFileName && typeof submittedFileName === 'string') {
-        return submittedFileName.trim();
-      }
-
-      // Old style, where we have to pick the filename out of the `data-options` attribute.
-      const options = $(el).data('options') as Record<string, string> | null;
-      return options?.submitted_file_name;
-    });
+  attachmentElements.each((i, el) => {
+    const type = $(el).is('[data-image-capture-uuid]') ? 'image' : 'file';
+    const fileName =
+      type === 'image'
+        ? getImageCaptureFileName(el)
+        : $(el).attr('data-file-upload-file-name')?.trim();
 
     if (!submitted_answer) {
       throw new Error('No submitted answers found.');
@@ -327,27 +424,38 @@ export function parseSubmission({
       throw new Error('No file name found.');
     }
 
+    if (
+      includedFileNames.has(fileName) ||
+      (type === 'file' && imageCaptureFileNames.has(fileName))
+    ) {
+      $(el).remove();
+      return;
+    }
+
+    includedFileNames.add(fileName);
+    const marker = `__AI_GRADING_ATTACHMENT_${nonce}_${i}__`;
+
     const fileData =
       submitted_answer._files?.find(
         (file: { name: string; contents: string }) => file.name === fileName,
       )?.contents ?? null;
 
-    imageDataByMarker.set(marker, { fileName, fileData });
+    attachmentDataByMarker.set(marker, { type, fileName, fileData });
     $(el).replaceWith(marker);
   });
 
   // Get the HTML with markers in place of images, then split on them.
   const htmlWithMarkers = $('body').html() ?? '';
-  const parts = htmlWithMarkers.split(new RegExp(`(__AI_GRADING_IMAGE_${nonce}_\\d+__)`));
+  const parts = htmlWithMarkers.split(new RegExp(`(__AI_GRADING_ATTACHMENT_${nonce}_\\d+__)`));
 
   const segments: SubmissionHTMLSegment[] = [];
   for (const part of parts) {
-    const imageData = imageDataByMarker.get(part);
-    if (imageData) {
+    const attachmentData = attachmentDataByMarker.get(part);
+    if (attachmentData) {
       segments.push({
-        type: 'image',
-        fileName: imageData.fileName,
-        fileData: imageData.fileData,
+        type: attachmentData.type,
+        fileName: attachmentData.fileName,
+        fileData: attachmentData.fileData,
       });
     } else {
       const text = part.trim();
@@ -361,7 +469,7 @@ export function parseSubmission({
 }
 
 /**
- * Returns all images the student submitted via pl-image-capture.
+ * Returns all images the student submitted via pl-image-capture or pl-file-upload.
  * Returns a mapping from an image's filename to its base64-encoded contents.
  */
 export function extractSubmissionImages({
@@ -378,7 +486,12 @@ export function extractSubmissionImages({
 
   const images = segments.reduce(
     (acc, segment) => {
-      if (segment.type === 'image' && segment.fileData) {
+      if (segment.type === 'text' || !segment.fileData) return acc;
+
+      if (
+        segment.type === 'image' ||
+        getUploadedFileMediaType(segment.fileName).startsWith('image/')
+      ) {
         acc[segment.fileName] = segment.fileData;
       }
       return acc;

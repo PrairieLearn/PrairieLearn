@@ -53,7 +53,7 @@ import { selectGradingJobsInfo } from './ai-grading-stats.js';
 import {
   type AiGradingPrompt,
   addAiGradingCostToIntervalUsage,
-  containsImageCapture,
+  containsFileUpload,
   correctImagesOrientation,
   extractSubmissionImages,
   generatePrompt,
@@ -616,7 +616,14 @@ export async function aiGrade({
       });
       const submission_text = render_submission_results.data.submissionHtmls[0];
 
-      const hasImage = containsImageCapture(submission_text);
+      const submittedImages = submission.submitted_answer
+        ? extractSubmissionImages({
+            submission_text,
+            submitted_answer: submission.submitted_answer,
+          })
+        : {};
+      const hasImage = Object.keys(submittedImages).length > 0;
+      const hasFileUpload = containsFileUpload(submission_text);
 
       const { rubric, rubric_items } = await selectCompleteRubric(assessment_question.id);
 
@@ -672,21 +679,14 @@ export async function aiGrade({
         true_answer: variant.true_answer ?? {},
       });
 
-      const submittedImages = submission.submitted_answer
-        ? extractSubmissionImages({
-            submission_text,
-            submitted_answer: submission.submitted_answer,
-          })
-        : {};
-
-      // If the submission contains images, prompt the model to transcribe any relevant information
-      // out of the image.
+      // If the submission contains attachments, prompt the model to transcribe any relevant
+      // information out of them.
       const explanationDescription = run(() => {
         const parts = ['Instructor-facing explanation of the grading decision.'];
-        if (hasImage) {
+        if (hasImage || hasFileUpload) {
           parts.push(
-            'You MUST include a complete transcription of all relevant text, numbers, and information from any images the student submitted.',
-            'You MUST transcribe the final answer(s) from the images.',
+            'You MUST include a complete transcription of all relevant text, numbers, and information from any files or images the student submitted.',
+            'You MUST transcribe the final answer(s) from the files and images.',
             'You MUST use LaTeX formatting for mathematical expressions, equations, and formulas.',
             'You MUST wrap inline LaTeX in dollar signs ($).',
             'You MUST wrap block LaTeX in double dollar signs ($$).',

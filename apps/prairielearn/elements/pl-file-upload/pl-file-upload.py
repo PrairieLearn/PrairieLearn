@@ -2,6 +2,7 @@ import base64
 import csv
 import fnmatch
 import hashlib
+import html as stdlib_html
 import json
 import random
 import re
@@ -162,7 +163,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 
 
 def render(element_html: str, data: pl.QuestionData) -> str:
-    if data["panel"] != "question":
+    if data["panel"] == "answer":
         return ""
 
     element = lxml.html.fragment_fromstring(element_html)
@@ -231,6 +232,21 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     accepted_file_names = list(
         required_files | optional_files | wildcard_files | opt_wildcard_files
     )
+
+    if data["ai_grading"]:
+        if data["panel"] != "submission":
+            return ""
+
+        # Keep the filename as text so that the AI-grading HTML sanitizer does not
+        # remove these otherwise-empty marker nodes.
+        return "\n".join(
+            f'<div data-file-upload-file-name="{stdlib_html.escape(file_name, quote=True)}">'
+            f"{stdlib_html.escape(file_name)}</div>"
+            for file_name in sorted(accepted_file_names)
+        )
+
+    if data["panel"] != "question":
+        return ""
 
     submitted_file_names_json = json.dumps(accepted_file_names, allow_nan=False)
 

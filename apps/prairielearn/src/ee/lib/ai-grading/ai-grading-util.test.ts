@@ -9,7 +9,9 @@ import { type RubricItem } from '../../../lib/db-types.js';
 
 import {
   extractAiGradingExplanationFromCompletion,
+  extractSubmissionImages,
   generatePrompt,
+  generateSubmissionContent,
   parseAiRubricItems,
   parseSubmission,
 } from './ai-grading-util.js';
@@ -144,6 +146,36 @@ describe('parseSubmission', () => {
     ]);
   });
 
+  it('should extract a file-upload segment', () => {
+    const result = parseSubmission({
+      submission_text: '<div data-file-upload-file-name="solution.pdf">solution.pdf</div>',
+      submitted_answer: {
+        _files: [{ name: 'solution.pdf', contents: 'pdfdata' }],
+      },
+    });
+    expect(result).toEqual([{ type: 'file', fileName: 'solution.pdf', fileData: 'pdfdata' }]);
+  });
+
+  it('should prefer an image-capture marker when a file-upload marker matches the same file', () => {
+    const result = parseSubmission({
+      submission_text: [
+        '<div data-file-upload-file-name="solution.pdf">solution.pdf</div>',
+        '<div data-file-upload-file-name="capture.jpg">capture.jpg</div>',
+        '<div data-image-capture-uuid="abc" data-file-name="capture.jpg">capture.jpg</div>',
+      ].join(''),
+      submitted_answer: {
+        _files: [
+          { name: 'solution.pdf', contents: 'pdfdata' },
+          { name: 'capture.jpg', contents: 'imagedata' },
+        ],
+      },
+    });
+    expect(result).toEqual([
+      { type: 'file', fileName: 'solution.pdf', fileData: 'pdfdata' },
+      { type: 'image', fileName: 'capture.jpg', fileData: 'imagedata' },
+    ]);
+  });
+
   it('should handle old-style data-options attribute for file name', () => {
     const options = JSON.stringify({ submitted_file_name: 'old.jpg' });
     const result = parseSubmission({
@@ -187,6 +219,49 @@ describe('parseSubmission', () => {
         submitted_answer: { _files: [] },
       }),
     ).toThrow('No file name found.');
+  });
+});
+
+describe('generateSubmissionContent', () => {
+  it('generates named PDF file parts', () => {
+    const result = generateSubmissionContent({
+      submission_text: '<div data-file-upload-file-name="solution.pdf">solution.pdf</div>',
+      submitted_answer: {
+        _files: [{ name: 'solution.pdf', contents: 'pdfdata' }],
+      },
+    });
+
+    expect(result).toEqual([
+      { type: 'text', text: 'Uploaded file: solution.pdf' },
+      {
+        type: 'file',
+        data: 'pdfdata',
+        filename: 'solution.pdf',
+        mediaType: 'application/pdf',
+      },
+    ]);
+  });
+
+  it('rejects uploaded file types that are not portable across grading providers', () => {
+    expect(() =>
+      generateSubmissionContent({
+        submission_text: '<div data-file-upload-file-name="solution.zip">solution.zip</div>',
+        submitted_answer: {
+          _files: [{ name: 'solution.zip', contents: 'zipdata' }],
+        },
+      }),
+    ).toThrow('AI grading only supports PDF, JPEG, PNG, and WebP files');
+  });
+
+  it('includes uploaded images in orientation correction', () => {
+    const result = extractSubmissionImages({
+      submission_text: '<div data-file-upload-file-name="solution.png">solution.png</div>',
+      submitted_answer: {
+        _files: [{ name: 'solution.png', contents: 'imagedata' }],
+      },
+    });
+
+    expect(result).toEqual({ 'solution.png': 'imagedata' });
   });
 });
 
