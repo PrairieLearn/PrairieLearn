@@ -76,11 +76,11 @@ describe('fillInBlanksHandler.renderFeedback', () => {
     assert.deepEqual(feedback, [
       {
         html: '<strong>hello</strong>: You got blank1!',
-        trigger: { type: 'blank-correct', answerName: 'blank1' },
+        trigger: { type: 'fill-in-the-blank-correct', answerName: 'blank1' },
       },
       {
         html: '<strong>world</strong>: You got blank2!',
-        trigger: { type: 'blank-correct', answerName: 'blank2' },
+        trigger: { type: 'fill-in-the-blank-correct', answerName: 'blank2' },
       },
     ]);
   });

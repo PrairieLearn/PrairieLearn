@@ -35,7 +35,7 @@ export const fillInBlanksHandler: BodyEmitHandler = {
       return [
         {
           html: `<strong>${he.escape(blank.correctText)}</strong>: ${feedback}`,
-          trigger: { type: 'blank-correct' as const, answerName: blank.id },
+          trigger: { type: 'fill-in-the-blank-correct' as const, answerName: blank.id },
         },
       ];
     });
