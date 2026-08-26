@@ -170,6 +170,7 @@ WITH
       courses AS c
     WHERE
       path = $path
+      AND deleted_at IS NULL
     ORDER BY
       c.id DESC
     LIMIT

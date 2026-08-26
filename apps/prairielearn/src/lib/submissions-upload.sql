@@ -5,7 +5,8 @@ FROM
   assessment_questions
 WHERE
   assessment_id = $assessment_id
-  AND question_id = $question_id;
+  AND question_id = $question_id
+  AND deleted_at IS NULL;
 
 -- BLOCK insert_assessment_instance
 INSERT INTO

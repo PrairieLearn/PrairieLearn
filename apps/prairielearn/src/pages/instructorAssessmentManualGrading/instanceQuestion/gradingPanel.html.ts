@@ -1,6 +1,6 @@
 import assert from 'assert';
 
-import { html } from '@prairielearn/html';
+import { html, unsafeHtml } from '@prairielearn/html';
 import { markdownToHtml } from '@prairielearn/markdown';
 import { run } from '@prairielearn/run';
 
@@ -119,7 +119,7 @@ export function GradingPanel({
   const graderGuidelinesRendered = run(() => {
     if (!graderGuidelines) return null;
     const { rendered, error } = safeMustacheRender(graderGuidelines, mustacheParams);
-    const renderedHtml = markdownToHtml(rendered, { inline: true });
+    const renderedHtml = markdownToHtml(rendered);
     if (!error) return renderedHtml;
     return (
       renderedHtml +
@@ -245,7 +245,9 @@ export function GradingPanel({
           ? html`
               <li class="list-group-item">
                 <div class="mb-1">Guidelines:</div>
-                <p class="my-3" style="white-space: pre-line;">${graderGuidelinesRendered}</p>
+                <div class="markdown-body mt-3" data-testid="grader-guidelines">
+                  ${unsafeHtml(graderGuidelinesRendered)}
+                </div>
               </li>
             `
           : ''}
