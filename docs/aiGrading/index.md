@@ -8,6 +8,7 @@ AI grading uses large language models to grade manual questions in PrairieLearn.
 
 AI grading works on manually graded questions that use these elements:
 
+- [`pl-file-upload`](../elements/pl-file-upload.md) for PDF, JPEG, PNG, and WebP files
 - [`pl-image-capture`](../elements/pl-image-capture.md)
 - [`pl-rich-text-editor`](../elements/pl-rich-text-editor.md)
 - [`pl-string-input`](../elements/pl-string-input.md)
@@ -17,8 +18,11 @@ Common use cases include:
 - Essay and free-response questions
 - Mathematical proofs and derivations
 - Diagrams and handwritten work
+- PDF documents produced with external tools
 - Code explanations and written reasoning
 - Short-answer justifications
+
+Questions can combine these elements. For example, when a question contains both `pl-file-upload` and `pl-image-capture`, every distinct submitted file is sent to the model once.
 
 ## Prerequisites
 
@@ -56,6 +60,8 @@ Before you can use AI grading, you'll need:
 - **Use rubrics over point-based grading.** Rubrics give the model clear, discrete criteria, which significantly improves accuracy and consistency.
 - **Write well-specified rubric items.** Each item should describe exactly what earns or loses credit. Ambiguous items produce ambiguous grades.
 - **Use grader guidelines.** This field is for instructions the model should follow but that shouldn't appear in the student-facing rubric — e.g., "accept equivalent algebraic forms" or "do not penalize minor notation differences."
+- **Keep uploaded documents upright.** Automatic rotation correction applies to submitted image files, but not to individual pages inside PDF documents.
+- **Keep PDFs concise.** Providers process every PDF page, so long documents cost more and may exceed model context or page limits.
 - **Test with a small batch first.** Running on 5–10 submissions surfaces rubric problems early, before you spend credits and time on the full set.
 - **Iterate.** If you see systematic errors in the first batch, refine the rubric rather than overriding grades one by one.
 
@@ -79,7 +85,7 @@ Instructors should review AI output before relying on it for grades. For each su
 
 - **Explanation** — The reasoning behind the model's grading decisions.
 
-  When the submission contains an image, the model's transcription of the image content is included.
+  When the submission contains a file or image attachment, the model's transcription of relevant content is included.
 
   ??? example "Explanation example"
 
@@ -87,7 +93,7 @@ Instructors should review AI output before relying on it for grades. For each su
 
       ![AI grading explanation describing the model's reasoning.](ai-grading-explanation.png)
 
-      **Transcription** (image submissions only)**:**
+      **Transcription (file and image submissions):**
 
       ![AI transcription of a student's image submission, shown beneath the explanation.](ai-grading-transcription.png)
 
@@ -126,7 +132,7 @@ AI grading assembles a prompt from the following inputs and sends it to the sele
 
 - Graded rubric (item-by-item scoring)
 - Explanation
-- Transcription _(image submissions only)_
+- Transcription _(file and image submissions)_
 
 For transparency and debugging, the exact prompt sent to the model is available on each graded submission.
 
@@ -134,7 +140,7 @@ For transparency and debugging, the exact prompt sent to the model is available 
 
     ![Raw prompt sent to the model for a single submission.](ai-grading-raw-prompt.png)
 
-**Rotation correction:** Specifically for image grading with Gemini models, a separate LLM call first rotates the image so the handwriting is upright before grading runs.
+**Rotation correction:** Specifically for image grading with Gemini models, a separate LLM call first rotates submitted image files so the handwriting is upright before grading runs. Pages inside PDF documents are not rotated separately.
 
 **Concurrency:** AI grading keeps up to 20 submissions in progress at any time. When one finishes, the next begins automatically.
 
@@ -203,7 +209,7 @@ For more detail, see our published research:
 | Factor                | Increases cost                       | Decreases cost                                                    |
 | --------------------- | ------------------------------------ | ----------------------------------------------------------------- |
 | Model                 | Larger, reasoning models             | Smaller, non-reasoning models                                     |
-| Submission type       | Image submissions                    | Text submissions                                                  |
+| Submission type       | File and image submissions           | Text submissions                                                  |
 | Question content size | Longer prompts and reference answers | Shorter prompts and reference answers                             |
 | Cached input          | —                                    | Repeated content across submissions (e.g., question text, rubric) |
 

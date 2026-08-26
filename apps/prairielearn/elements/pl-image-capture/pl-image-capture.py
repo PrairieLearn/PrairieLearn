@@ -6,7 +6,6 @@
 
 import base64
 import hashlib
-import html
 import json
 import urllib.parse
 from io import BytesIO
@@ -85,16 +84,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         if data["panel"] == "question":
             return ""
 
-        uuid = html.escape(pl.get_uuid())
-        name = html.escape(file_name)
-
-        # The AI grading rendering process will recursively strip any nodes that
-        # don't contain text. Usually this is fine, but in this case this node
-        # really only serves to provide a filename and data attribute for the
-        # AI grading system to pick up on.
-        #
-        # To avoid this node being stripped, we just include the filename as text.
-        return f'<div data-image-capture-uuid="{uuid}" data-file-name="{name}">{name}</div>'
+        return pl.render_ai_grading_file(file_name)
 
     html_params = {
         "uuid": pl.get_uuid(),

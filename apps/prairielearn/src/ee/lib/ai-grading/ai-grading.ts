@@ -53,7 +53,7 @@ import { selectGradingJobsInfo } from './ai-grading-stats.js';
 import {
   type AiGradingPrompt,
   addAiGradingCostToIntervalUsage,
-  containsFileUpload,
+  containsSubmissionAttachment,
   correctImagesOrientation,
   extractSubmissionImages,
   generatePrompt,
@@ -623,7 +623,7 @@ export async function aiGrade({
           })
         : {};
       const hasImage = Object.keys(submittedImages).length > 0;
-      const hasFileUpload = containsFileUpload(submission_text);
+      const hasAttachment = containsSubmissionAttachment(submission_text);
 
       const { rubric, rubric_items } = await selectCompleteRubric(assessment_question.id);
 
@@ -683,7 +683,7 @@ export async function aiGrade({
       // information out of them.
       const explanationDescription = run(() => {
         const parts = ['Instructor-facing explanation of the grading decision.'];
-        if (hasImage || hasFileUpload) {
+        if (hasAttachment) {
           parts.push(
             'You MUST include a complete transcription of all relevant text, numbers, and information from any files or images the student submitted.',
             'You MUST transcribe the final answer(s) from the files and images.',

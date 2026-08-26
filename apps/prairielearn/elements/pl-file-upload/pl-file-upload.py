@@ -2,7 +2,6 @@ import base64
 import csv
 import fnmatch
 import hashlib
-import html as stdlib_html
 import json
 import random
 import re
@@ -237,11 +236,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         if data["panel"] != "submission":
             return ""
 
-        # Keep the filename as text so that the AI-grading HTML sanitizer does not
-        # remove these otherwise-empty marker nodes.
         return "\n".join(
-            f'<div data-file-upload-file-name="{stdlib_html.escape(file_name, quote=True)}">'
-            f"{stdlib_html.escape(file_name)}</div>"
+            pl.render_ai_grading_file(file_name)
             for file_name in sorted(accepted_file_names)
         )
 

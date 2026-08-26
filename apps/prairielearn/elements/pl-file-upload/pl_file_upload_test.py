@@ -206,8 +206,8 @@ def test_render_ai_grading_submission_with_matching_files() -> None:
     )
 
     assert output == (
-        '<div data-file-upload-file-name="notes.png">notes.png</div>\n'
-        '<div data-file-upload-file-name="solution.pdf">solution.pdf</div>'
+        '<div data-ai-grading-file-name="notes.png">notes.png</div>\n'
+        '<div data-ai-grading-file-name="solution.pdf">solution.pdf</div>'
     )
 
 
