@@ -1,4 +1,4 @@
-import { readFileSync, readdirSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 
 import he from 'he';
@@ -22,6 +22,10 @@ function normalizeTerminalNewline(value: string): string {
   return value.replace(/\r?\n$/, '');
 }
 
+function normalizeOptionalTerminalNewline(value: string | undefined): string | undefined {
+  return value == null ? undefined : normalizeTerminalNewline(value);
+}
+
 async function emitFixture(name: string): Promise<PLQuestionOutput> {
   const result = await convert(readFixture(name, 'question.xml'));
   assert.deepEqual(result.warnings, []);
@@ -36,8 +40,14 @@ describe('PLEmitter output fixtures', () => {
     expect(normalizeTerminalNewline(question.questionHtml)).toBe(
       normalizeTerminalNewline(readFixture(name, 'question.html')),
     );
-    expect(normalizeTerminalNewline(question.serverPy ?? '')).toBe(
-      normalizeTerminalNewline(readFixture(name, 'server.py')),
+
+    const expectedServerPyPath = path.join(FIXTURES, name, 'server.py');
+    const expectedServerPy = existsSync(expectedServerPyPath)
+      ? readFileSync(expectedServerPyPath, 'utf8')
+      : undefined;
+    expect(expectedServerPy?.trim()).not.toBe('');
+    expect(normalizeOptionalTerminalNewline(question.serverPy)).toBe(
+      normalizeOptionalTerminalNewline(expectedServerPy),
     );
   });
 
