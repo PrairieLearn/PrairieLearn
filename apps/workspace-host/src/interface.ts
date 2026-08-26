@@ -17,7 +17,6 @@ import debugfn from 'debug';
 import Docker from 'dockerode';
 import express, { type Response } from 'express';
 import asyncHandler from 'express-async-handler';
-import { type Entry } from 'fast-glob';
 import minimist from 'minimist';
 import * as shlex from 'shlex';
 import { z } from 'zod';
@@ -1156,20 +1155,16 @@ async function sendGradedFilesArchive(workspace_id: string | number, res: Respon
   const zipName = `${workspace.remote_name}-${timestamp}.zip`;
   const workspaceDir = path.join(config.workspaceHostHomeDirRoot, workspace.remote_name, 'current');
 
-  let gradedFiles: Entry[] | undefined;
-  try {
-    gradedFiles = await workspaceUtils.getWorkspaceGradedFiles(
-      workspaceDir,
-      workspace_graded_files,
-      {
-        maxFiles: config.workspaceMaxGradedFilesCount,
-        maxSize: config.workspaceMaxGradedFilesSize,
-      },
-    );
-  } catch (err: any) {
-    res.status(500).send(err.message);
-    return;
-  }
+  await using gradedFiles = await workspaceUtils
+    .openWorkspaceGradedFiles(workspaceDir, workspace_graded_files, {
+      maxFiles: config.workspaceMaxGradedFilesCount,
+      maxSize: config.workspaceMaxGradedFilesSize,
+    })
+    .catch((err: Error) => {
+      res.status(500).send(err.message);
+      return null;
+    });
+  if (gradedFiles == null) return;
 
   // Stream the archive back to the client as it's generated.
   res.attachment(zipName).status(200);
@@ -1188,14 +1183,8 @@ async function sendGradedFilesArchive(workspace_id: string | number, res: Respon
   });
 
   for (const file of gradedFiles) {
-    try {
-      const filePath = path.join(workspaceDir, file.path);
-      archive.file(filePath, { name: file.path });
-      debug(`Sending ${file.path}`);
-    } catch {
-      logger.warn(`Graded file ${file.path} does not exist.`);
-      continue;
-    }
+    archive.append(file.createReadStream(), { name: file.path });
+    debug(`Sending ${file.path}`);
   }
 
   await archive.finalize();
