@@ -443,14 +443,12 @@ function buildFeedbackPlan(question: IRQuestion, handler: BodyEmitHandler): Feed
     return { messages, generalFeedback };
   }
 
-  const hasAnswerSpecificFeedback =
-    Object.keys(question.feedback?.perAnswer ?? {}).length > 0 ||
-    messages.some((message) => message.name !== 'overall');
+  const hasExplicitAnswerFeedback = messages.some((message) => message.name !== 'overall');
 
   return {
     messages,
     generalFeedback,
-    panel: hasAnswerSpecificFeedback ? 'submission' : 'answer',
+    panel: hasExplicitAnswerFeedback ? 'submission' : 'answer',
   };
 }
 
