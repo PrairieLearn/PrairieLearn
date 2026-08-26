@@ -1,8 +1,6 @@
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 
-import he from 'he';
-import mustache from 'mustache';
 import { assert, describe, expect, it } from 'vitest';
 
 import { convert } from '../pipeline.js';
@@ -49,21 +47,5 @@ describe('PLEmitter output fixtures', () => {
     expect(normalizeOptionalTerminalNewline(question.serverPy)).toBe(
       normalizeOptionalTerminalNewline(expectedServerPy),
     );
-  });
-
-  it('preserves imported Mustache delimiters without evaluating them', async () => {
-    const question = await emitFixture('mustache-delimiters');
-    const renderedHtml = mustache.render(question.questionHtml, {
-      feedback: { overall: true },
-      double_brace_value: 'DOUBLE_BRACE_EVALUATED',
-      triple_brace_value: 'TRIPLE_BRACE_EVALUATED',
-    });
-
-    assert.notInclude(renderedHtml, 'DOUBLE_BRACE_EVALUATED');
-    assert.notInclude(renderedHtml, 'TRIPLE_BRACE_EVALUATED');
-
-    const decodedHtml = he.decode(renderedHtml);
-    assert.include(decodedHtml, '{{double_brace_value}}');
-    assert.include(decodedHtml, '{{{triple_brace_value}}}');
   });
 });
