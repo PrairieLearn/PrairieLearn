@@ -37,21 +37,4 @@ describe('matchingHandler.renderHtml', () => {
     });
     assert.include(html, 'match="&lt;em&gt;italic&lt;/em&gt;"');
   });
-
-  it('protects imported Mustache and resolves question assets in option HTML', () => {
-    const html = matchingHandler.renderHtml({
-      type: 'matching',
-      pairs: [
-        {
-          statementHtml: 'Test',
-          optionHtml: '{{imported_value}} <img src="question-asset://answer.png">',
-        },
-      ],
-      distractors: [],
-    });
-    assert.include(
-      html,
-      'match="&amp;#123;&amp;#123;imported_value&amp;#125;&amp;#125; &lt;img src=&quot;{{ options.client_files_question_url }}/answer.png&quot;&gt;"',
-    );
-  });
 });

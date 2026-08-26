@@ -19,8 +19,6 @@ const { ModelOperations } = _require('@vscode/vscode-languagedetection') as {
  * See https://docs.prairielearn.com/clientServerFiles/.
  */
 export const CLIENT_FILES_QUESTION_URL = '{{ options.client_files_question_url }}';
-/** URL prefix used for question assets while HTML is still in the intermediate representation. */
-export const QUESTION_ASSET_URL_PREFIX = 'question-asset://';
 
 const DATA_URI_SRC_RE = /^data:(image\/[a-zA-Z0-9.+-]+);base64,([^"']+)$/;
 
@@ -30,11 +28,7 @@ export function loadHtmlFragment(html: string): cheerio.CheerioAPI {
   return cheerio.load(html, null, false);
 }
 
-/**
- * Load an HTML fragment without decoding entities that are unrelated to the requested rewrite.
- * This prevents serializing an image change from turning literal brace entities back into active
- * PrairieLearn template delimiters.
- */
+/** Load an HTML fragment without decoding entities that are unrelated to the requested rewrite. */
 export function loadHtmlFragmentPreservingEntities(html: string): cheerio.CheerioAPI {
   return cheerio.load(html, { xml: { xmlMode: false, decodeEntities: false } }, false);
 }
@@ -45,29 +39,6 @@ function isElementNamed(node: AnyNode, name: string): node is Element {
 
 export function isWhitespaceText(node: AnyNode): boolean {
   return isText(node) && node.data.trim() === '';
-}
-
-/** Escape imported Mustache delimiters so PrairieLearn renders them as literal text. */
-export function escapeMustacheDelimiters(html: string): string {
-  return html
-    .replaceAll('{{{', '&#123;&#123;&#123;')
-    .replaceAll('}}}', '&#125;&#125;&#125;')
-    .replaceAll('{{', '&#123;&#123;')
-    .replaceAll('}}', '&#125;&#125;');
-}
-
-/**
- * Serialize imported HTML for a PrairieLearn attribute whose value is later rendered as HTML.
- * Imported Mustache delimiters are escaped before generated question-asset URLs are expanded, so
- * only the generated client-files expression remains active when PrairieLearn renders the question.
- */
-export function serializeHtmlForAttribute(html: string): string {
-  const escapedHtml = escapeMustacheDelimiters(html);
-  const resolvedAssets = escapedHtml.replaceAll(
-    QUESTION_ASSET_URL_PREFIX,
-    `${CLIENT_FILES_QUESTION_URL}/`,
-  );
-  return he.escape(resolvedAssets);
 }
 
 /** Replace Canvas equation images with the LaTeX source that Canvas stores on the image. */
@@ -127,11 +98,12 @@ const ABSOLUTE_URL_RE = /^(?:[a-z][a-z0-9+.-]*:|\/\/|:\/\/)/i;
 /**
  * Rewrite local <img> tags in HTML to <pl-figure> elements.
  *
- * For images pointing to an IR question asset or into clientFilesQuestion via the Mustache
- * prefix, the directory attribute is set explicitly and the prefix is stripped from file-name.
- * Other relative paths are passed through as file-name without a directory attribute. Images
- * with absolute URLs (http://, https://, protocol-relative, data:, etc.) are left as <img> since
- * pl-figure resolves file-name against a local course directory and cannot host remote resources.
+ * For images pointing into the question's clientFilesQuestion directory via the
+ * Mustache prefix, the directory attribute is set explicitly and the prefix is
+ * stripped from file-name. Other relative paths are passed through as file-name
+ * without a directory attribute. Images with absolute URLs (http://, https://,
+ * protocol-relative, data:, etc.) are left as <img> since pl-figure resolves
+ * file-name against a local course directory and cannot host remote resources.
  * The alt and width attributes are preserved; all others (style, class, etc.)
  * are dropped since pl-figure handles its own layout.
  */
@@ -148,14 +120,11 @@ export function rewriteImagesAsPlFigure(
     const src = he.decode($img.attr('src') ?? '');
     // Remote images stay as `<img>` because `<pl-figure>` resolves `file-name` locally inside
     // the course, which would turn an external URL into a broken course-file lookup.
-    if (ABSOLUTE_URL_RE.test(src) && !src.startsWith(QUESTION_ASSET_URL_PREFIX)) return;
+    if (ABSOLUTE_URL_RE.test(src)) return;
 
     const $figure = $('<pl-figure></pl-figure>');
 
-    if (src.startsWith(QUESTION_ASSET_URL_PREFIX)) {
-      $figure.attr('file-name', he.escape(src.slice(QUESTION_ASSET_URL_PREFIX.length)));
-      $figure.attr('directory', 'clientFilesQuestion');
-    } else if (src.startsWith(mustachePrefix)) {
+    if (src.startsWith(mustachePrefix)) {
       $figure.attr('file-name', he.escape(src.slice(mustachePrefix.length)));
       $figure.attr('directory', 'clientFilesQuestion');
     } else {

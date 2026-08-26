@@ -92,7 +92,9 @@ describe('QtiImportRemoteImageCopier', () => {
         makeQuestion({
           promptHtml:
             '<img src="https://canvas.example/unavailable.png"><img src="http://canvas.example/insecure.png"><img src="://invalid.example/image.png">',
-          feedback: { incorrect: '<img src="https://canvas.example/feedback.png">' },
+          feedback: {
+            incorrect: '<img src="https://canvas.example/feedback.png">',
+          },
         }),
       ),
       { processors: [copier] },
@@ -131,9 +133,8 @@ describe('QtiImportRemoteImageCopier', () => {
         makeQuestion({
           promptHtml: `<p>Question <img src="${imageUrl}"></p>`,
           feedback: {
-            general: `<p>Explanation <img src="${imageUrl}"></p>`,
             correct: `<p>Correct <img src="${imageUrl}" alt="Explanation"></p>`,
-            perChoice: new Map([['a', `<img src="${imageUrl}" class="answer-feedback">`]]),
+            perAnswer: { Yes: `<img src="${imageUrl}" class="answer-feedback">` },
           },
         }),
       ),
@@ -150,15 +151,12 @@ describe('QtiImportRemoteImageCopier', () => {
     expect(question.serverPy).toContain(
       'data["feedback"]["overall"] = {"is_correct": data["score"] >= 1.0}',
     );
-    expect(question.serverPy).not.toContain('data["feedback"]["answer_');
     expect(question.questionHtml).toContain('<p>Correct <pl-figure file-name="remote-');
-    expect(question.questionHtml).toContain('<p>Explanation <pl-figure file-name="remote-');
     expect(question.questionHtml).toContain('{{#feedback.overall}}');
     expect(question.questionHtml).toContain('{{#is_correct}}');
     expect(question.questionHtml).toContain(
       'feedback="&lt;img src=&quot;{{ options.client_files_question_url }}/remote-',
     );
-    expect(question.questionHtml).toContain('class=&quot;answer-feedback&quot;');
     expect(question.questionHtml).not.toContain('canvas.example');
     expect(question.questionHtml).toContain('<pl-figure');
     expect(result.warnings).toEqual([]);
@@ -171,55 +169,19 @@ describe('QtiImportRemoteImageCopier', () => {
     ]);
   });
 
-  it('keeps choice-targeted feedback attached while copying an image from choice HTML', async () => {
-    const copier = new QtiImportRemoteImageCopier(async () => ({
-      content: Buffer.from('choice image'),
-      extension: 'png',
-    }));
-    const result = await new PLEmitter().emitProcessed(
-      makeAssessment(
-        makeQuestion({
-          body: {
-            type: 'multiple-choice',
-            choices: [
-              {
-                id: 'a',
-                html: '<img src="https://canvas.example/choice.png">',
-                correct: true,
-              },
-              { id: 'b', html: 'No', correct: false },
-            ],
-          },
-          feedback: { perChoice: new Map([['a', 'Choice feedback']]) },
-        }),
-      ),
-      { processors: [copier] },
-    );
-
-    expect(result.questions[0].questionHtml).toContain(
-      '<pl-answer correct="true" feedback="Choice feedback"><pl-figure file-name="remote-',
-    );
-    expect(result.questions[0].questionHtml).toContain('Choice feedback');
-    expect(result.questions[0].questionHtml).not.toContain('canvas.example');
-  });
-
-  it('escapes imported Mustache in native choice feedback while resolving copied images', async () => {
-    const copier = new QtiImportRemoteImageCopier(async () => ({
-      content: Buffer.from('feedback image'),
-      extension: 'png',
-    }));
+  it('preserves neutralized Mustache delimiters while rewriting copied images', async () => {
+    const requestedUrls: string[] = [];
+    const copier = new QtiImportRemoteImageCopier(async (url) => {
+      requestedUrls.push(url.href);
+      return { content: Buffer.from('feedback image'), extension: 'png' };
+    });
     const importedFeedbackValue = '{{imported_feedback_value}}';
 
     const result = await new PLEmitter().emitProcessed(
       makeAssessment(
         makeQuestion({
           feedback: {
-            perChoice: new Map([
-              [
-                'a',
-                `<p>${importedFeedbackValue} <img src="https://canvas.example/feedback.png"></p>`,
-              ],
-            ]),
+            correct: `<p>${importedFeedbackValue} <img src="https://canvas.example/feedback.png?one=1&amp;two=2"></p>`,
           },
         }),
       ),
@@ -228,40 +190,15 @@ describe('QtiImportRemoteImageCopier', () => {
 
     const questionHtml = result.questions[0].questionHtml;
     const renderedHtml = mustache.render(questionHtml, {
-      options: { client_files_question_url: '/client-files-question' },
+      feedback: { overall: { is_correct: true } },
       imported_feedback_value: 'MUSTACHE_EVALUATED',
     });
 
-    expect(questionHtml).toContain(
-      '&amp;#123;&amp;#123;imported_feedback_value&amp;#125;&amp;#125;',
-    );
-    expect(questionHtml).toContain('{{ options.client_files_question_url }}/remote-');
+    expect(requestedUrls).toEqual(['https://canvas.example/feedback.png?one=1&two=2']);
+    expect(questionHtml).toContain('&#123;&#123;imported_feedback_value&#125;&#125;');
+    expect(questionHtml).toContain('<pl-figure');
     expect(renderedHtml).not.toContain('MUSTACHE_EVALUATED');
-    expect(he.decode(renderedHtml)).toContain('/client-files-question/remote-');
-    expect(he.decode(he.decode(renderedHtml))).toContain(importedFeedbackValue);
-  });
-
-  it('preserves literal brace entities while rewriting an image in the same fragment', async () => {
-    const requestedUrls: string[] = [];
-    const copier = new QtiImportRemoteImageCopier(async (url) => {
-      requestedUrls.push(url.href);
-      return { content: Buffer.from('prompt image'), extension: 'png' };
-    });
-    const importedPromptValue = '{{imported_prompt_value}}';
-
-    const result = await processPrompt(
-      '<p>&#123;&#123;imported_prompt_value&#125;&#125; <img src="https://canvas.example/image.png?one=1&amp;two=2"></p>',
-      copier,
-    );
-
-    const questionHtml = result.questions[0].questionHtml;
-    const renderedHtml = mustache.render(questionHtml, {
-      imported_prompt_value: 'MUSTACHE_EVALUATED',
-    });
-    expect(requestedUrls).toEqual(['https://canvas.example/image.png?one=1&two=2']);
-    expect(questionHtml).toContain('&#123;&#123;imported_prompt_value&#125;&#125;');
-    expect(renderedHtml).not.toContain('MUSTACHE_EVALUATED');
-    expect(he.decode(renderedHtml)).toContain(importedPromptValue);
+    expect(he.decode(renderedHtml)).toContain(importedFeedbackValue);
   });
 
   it('copies remote images and rewrites all references to local pl-figure elements', async () => {

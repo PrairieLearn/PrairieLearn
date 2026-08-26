@@ -21,23 +21,20 @@ export const checkboxHandler: BodyEmitHandler = {
     return lines.join('\n');
   },
 
-  renderFeedback(body, feedback) {
-    const perChoice = feedback?.perChoice;
-    if (!perChoice) return [];
+  renderFeedback(body, perAnswer) {
+    if (!perAnswer) return [];
 
-    // pl-checkbox suppresses native answer feedback when partial credit is enabled, so these
-    // messages must be rendered separately for every selected choice.
     const cb = body as CheckboxBody;
     return deduplicateChoices(cb.choices).flatMap((choice) => {
-      const html = perChoice.get(choice.id);
-      return html == null
-        ? []
-        : [
-            {
-              html: `<strong>${choice.html}</strong>: ${html}`,
-              trigger: { type: 'checkbox-answer-selected' as const, answerHtml: choice.html },
-            },
-          ];
+      const feedback = perAnswer[choice.html];
+      if (feedback == null) return [];
+
+      return [
+        {
+          html: `<strong>${choice.html}</strong>: ${feedback}`,
+          trigger: { type: 'checkbox-answer-selected' as const, answerHtml: choice.html },
+        },
+      ];
     });
   },
 };

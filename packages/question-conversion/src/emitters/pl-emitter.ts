@@ -12,12 +12,7 @@ import type {
   PLQuestionInfoJson,
   PLQuestionOutput,
 } from '../types/pl-output.js';
-import {
-  escapeMustacheDelimiters,
-  isWhitespaceText,
-  loadHtmlFragmentPreservingEntities,
-  rewriteImagesAsPlFigure,
-} from '../utils/html.js';
+import { isWhitespaceText, loadHtmlFragment } from '../utils/html.js';
 import { slugify } from '../utils/slugify.js';
 import { stableUuid } from '../utils/uuid.js';
 
@@ -94,14 +89,12 @@ export class PLEmitter implements OutputEmitter {
     itemContainer: IRItemContainer,
     { processors = [], ...options }: EmitProcessedOptions = {},
   ): Promise<ConversionResult> {
-    const processorResults = [];
     for (const processor of processors) {
-      processorResults.push(await processor.process(itemContainer));
+      await processor.beforeEmit?.(itemContainer);
     }
     const result = this.emit(itemContainer, options);
-    for (const processorResult of processorResults) {
-      result.warnings.push(...(processorResult.warnings ?? []));
-      result.reports.push(...(processorResult.reports ?? []));
+    for (const processor of processors) {
+      await processor.afterEmit?.(result, itemContainer);
     }
     return result;
   }
@@ -331,15 +324,16 @@ export class PLEmitter implements OutputEmitter {
     if (handler.transformPrompt) {
       promptHtml = handler.transformPrompt(promptHtml, question.body);
     }
-    promptHtml = renderContentHtml(promptHtml);
 
     const parts: string[] = handler.inlineInputs
       ? wrapInlineInputPrompt(promptHtml)
       : ['<pl-question-panel>', promptHtml, '</pl-question-panel>', ''];
 
-    const bodyHtml = renderContentHtml(
-      handler.renderHtml(question.body, question.shuffleAnswers, question.feedback),
-    );
+    // Checkbox per-answer feedback is rendered in the submission panel so all selected answers'
+    // messages can be shown. PL only surfaces one feedback attribute per answer element.
+    const perAnswerForHtml =
+      question.body.type === 'checkbox' ? undefined : question.feedback?.perAnswer;
+    const bodyHtml = handler.renderHtml(question.body, question.shuffleAnswers, perAnswerForHtml);
     if (bodyHtml) parts.push(bodyHtml);
 
     const generalFeedback = buildGeneralFeedback(question);
@@ -394,7 +388,7 @@ export class PLEmitter implements OutputEmitter {
 function wrapInlineInputPrompt(html: string): string[] {
   // Treat the prompt as a fragment so top-level paragraphs, inputs, and text nodes remain
   // siblings. Wrapping a whole document would hide the boundaries we need for panel grouping.
-  const $ = loadHtmlFragmentPreservingEntities(html);
+  const $ = loadHtmlFragment(html);
   const blocks = $.root()
     .contents()
     .toArray()
@@ -462,16 +456,9 @@ function buildFeedbackMessages(
   question: IRQuestion,
   handler: BodyEmitHandler,
 ): NamedFeedbackMessage[] {
-  const messages = (handler.renderFeedback?.(question.body, question.feedback) ?? []).map(
-    (message, index) => ({
-      ...message,
-      name: `answer_${index}`,
-      trigger:
-        message.trigger.type === 'checkbox-answer-selected'
-          ? { ...message.trigger, answerHtml: renderContentHtml(message.trigger.answerHtml) }
-          : message.trigger,
-    }),
-  );
+  const messages = (
+    handler.renderFeedback?.(question.body, question.feedback?.perAnswer) ?? []
+  ).map((message, index) => ({ ...message, name: `answer_${index}` }));
 
   const generalFeedback = buildGeneralFeedback(question);
   if (question.feedback?.correct && !generalFeedback.includes(question.feedback.correct)) {
@@ -513,7 +500,7 @@ function renderFeedbackHtml(messages: NamedFeedbackMessage[], generalFeedback: s
   for (const name of feedbackNames) {
     lines.push(`  {{#feedback.${name}}}`);
     if (name === 'overall') {
-      lines.push(...generalFeedback.map(renderFeedbackContentHtml));
+      lines.push(...generalFeedback.map(neutralizeMustacheDelimiters));
     }
 
     for (const message of messages) {
@@ -523,11 +510,11 @@ function renderFeedbackHtml(messages: NamedFeedbackMessage[], generalFeedback: s
         const sectionType = message.trigger.outcome === 'incorrect' ? '^' : '#';
         lines.push(
           `    {{${sectionType}is_correct}}`,
-          renderFeedbackContentHtml(message.html),
+          neutralizeMustacheDelimiters(message.html),
           '    {{/is_correct}}',
         );
       } else {
-        lines.push(renderFeedbackContentHtml(message.html));
+        lines.push(neutralizeMustacheDelimiters(message.html));
       }
     }
     lines.push(`  {{/feedback.${name}}}`);
@@ -536,12 +523,12 @@ function renderFeedbackHtml(messages: NamedFeedbackMessage[], generalFeedback: s
   return lines.join('\n');
 }
 
-function renderContentHtml(html: string): string {
-  return rewriteImagesAsPlFigure(html, { display: 'inline' });
-}
-
-function renderFeedbackContentHtml(html: string): string {
-  return escapeMustacheDelimiters(renderContentHtml(html));
+function neutralizeMustacheDelimiters(html: string): string {
+  return html
+    .replaceAll('{{{', '&#123;&#123;&#123;')
+    .replaceAll('}}}', '&#125;&#125;&#125;')
+    .replaceAll('{{', '&#123;&#123;')
+    .replaceAll('}}', '&#125;&#125;');
 }
 
 function renderFeedbackGradeFn(

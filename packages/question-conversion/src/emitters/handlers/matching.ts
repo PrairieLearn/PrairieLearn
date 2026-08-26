@@ -1,5 +1,6 @@
+import he from 'he';
+
 import type { IRQuestionBody } from '../../types/ir.js';
-import { serializeHtmlForAttribute } from '../../utils/html.js';
 import type { BodyEmitHandler } from '../body-emit-handler.js';
 
 type MatchingBody = Extract<IRQuestionBody, { type: 'matching' }>;
@@ -12,7 +13,7 @@ export const matchingHandler: BodyEmitHandler = {
     const lines = ['<pl-matching answers-name="answer">'];
     for (const pair of m.pairs) {
       lines.push(
-        `  <pl-statement match="${serializeHtmlForAttribute(pair.optionHtml)}">${pair.statementHtml}</pl-statement>`,
+        `  <pl-statement match="${he.escape(pair.optionHtml)}">${pair.statementHtml}</pl-statement>`,
       );
     }
     for (const distractor of m.distractors) {

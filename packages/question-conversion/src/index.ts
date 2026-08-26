@@ -32,7 +32,6 @@ export type {
 export { PLEmitter } from './emitters/pl-emitter.js';
 export type {
   ConversionProcessor,
-  ConversionProcessorResult,
   ConversionReport,
   OutputEmitter,
   ConversionResult,

@@ -24,23 +24,6 @@ describe('multipleChoiceHandler', () => {
     assert.include(html, '>O(n<sup>2</sup>)<');
   });
 
-  it('renders choice feedback as a native feedback attribute', () => {
-    const html = multipleChoiceHandler.renderHtml(
-      { type: 'multiple-choice', choices: twoChoices },
-      undefined,
-      {
-        perChoice: new Map([
-          ['b', '<p>{{imported_value}} <img src="question-asset://feedback.png"></p>'],
-        ]),
-      },
-    );
-    assert.include(html, '<pl-answer correct="false">Red</pl-answer>');
-    assert.include(
-      html,
-      '<pl-answer correct="true" feedback="&lt;p&gt;&amp;#123;&amp;#123;imported_value&amp;#125;&amp;#125; &lt;img src=&quot;{{ options.client_files_question_url }}/feedback.png&quot;&gt;&lt;/p&gt;">Blue</pl-answer>',
-    );
-  });
-
   it('adds order="fixed" when shuffleAnswers is false', () => {
     const html = multipleChoiceHandler.renderHtml(
       { type: 'multiple-choice', choices: twoChoices },
@@ -75,6 +58,25 @@ describe('multipleChoiceHandler', () => {
     assert.notInclude(html, 'order=');
   });
 
+  it('includes per-answer feedback attributes', () => {
+    const html = multipleChoiceHandler.renderHtml(
+      { type: 'multiple-choice', choices: twoChoices },
+      undefined,
+      { Red: 'Wrong color', Blue: 'Correct!' },
+    );
+    assert.include(html, 'feedback="Wrong color"');
+    assert.include(html, 'feedback="Correct!"');
+  });
+
+  it('escapes special characters in feedback', () => {
+    const html = multipleChoiceHandler.renderHtml(
+      { type: 'multiple-choice', choices: twoChoices },
+      undefined,
+      { Red: '<b>Wrong</b>' },
+    );
+    assert.include(html, 'feedback="&lt;b&gt;Wrong&lt;/b&gt;"');
+  });
+
   it('disables built-in grading and feedback when no choice is correct', () => {
     const html = multipleChoiceHandler.renderHtml(
       {
@@ -82,7 +84,7 @@ describe('multipleChoiceHandler', () => {
         choices: twoChoices.map((choice) => ({ ...choice, correct: false })),
       },
       undefined,
-      { perChoice: new Map([['a', 'Interesting!']]) },
+      { Red: 'Interesting!', Blue: 'Cool!' },
     );
     assert.include(html, '<pl-multiple-choice answers-name="answer" builtin-grading="false">');
     assert.notInclude(html, 'feedback=');
@@ -99,6 +101,7 @@ describe('multipleChoiceHandler', () => {
       '<pl-multiple-choice answers-name="answer" display="dropdown" builtin-grading="false">',
     );
   });
+
   it('deduplicates choices preferring correct one', () => {
     const html = multipleChoiceHandler.renderHtml({
       type: 'multiple-choice',

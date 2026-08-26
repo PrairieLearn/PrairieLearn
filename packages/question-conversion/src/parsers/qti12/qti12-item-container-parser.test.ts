@@ -317,16 +317,14 @@ describe('QTI12ItemContainerParser', async () => {
 </questestinterop>`;
       const result = await parser.parse(xml);
       const [q, generalOnly] = result.questions;
-      assert.deepEqual(q.feedback, {
-        general: '<p>Remember the definition.</p>',
-        correct: '<p>$x^2$</p>',
-        incorrect: '<p>Try again.</p>',
-      });
+      assert.equal(q.feedback?.general, '<p>Remember the definition.</p>');
+      assert.equal(q.feedback?.correct, '<p>$x^2$</p>');
+      assert.equal(q.feedback?.incorrect, '<p>Try again.</p>');
       assert.deepEqual(generalOnly.feedback, { general: '<p>General only.</p>' });
     });
 
-    it('associates {ident}_fb feedback with stable choice IDs', async () => {
-      // This is the Canvas pattern for true/false and multiple-choice answer feedback.
+    it('extracts per-answer {ident}_fb feedback', async () => {
+      // This is the Canvas pattern for true/false and MC questions with per-answer feedback.
       const xml = `<?xml version="1.0"?>
 <questestinterop xmlns="http://www.imsglobal.org/xsd/ims_qtiasiv1p2">
   <assessment ident="a1" title="Q">
@@ -370,11 +368,9 @@ describe('QTI12ItemContainerParser', async () => {
 </questestinterop>`;
       const result = await parser.parse(xml);
       const q = result.questions[0];
-      assert.deepEqual(q.feedback, {
-        perChoice: new Map([
-          ['7877', '<p>Indeed, coconuts are migratory.</p>'],
-          ['5840', '<p>Incorrect, coconuts migrate.</p>'],
-        ]),
+      assert.deepEqual(q.feedback?.perAnswer, {
+        True: '<p>Indeed, coconuts are migratory.</p>',
+        False: '<p>Incorrect, coconuts migrate.</p>',
       });
     });
 
@@ -410,7 +406,7 @@ describe('QTI12ItemContainerParser', async () => {
 </questestinterop>`;
       const result = await parser.parse(xml);
       const q = result.questions[0];
-      assert.deepEqual(q.feedback, { correct: '<p>Correct!</p>' });
+      assert.equal(q.feedback?.correct, '<p>Correct!</p>');
     });
   });
 
@@ -595,28 +591,6 @@ describe('QTI12ItemContainerParser', async () => {
         assert.equal(q.body.blanks[1].id, 'capital2');
         assert.equal(q.body.blanks[1].correctText, 'tallinn');
       }
-    });
-
-    it('associates answer feedback with stable blank IDs', async () => {
-      const xml = readFixture('canvas-fitb.xml').replace(
-        '      </item>',
-        `        <itemfeedback ident="7591_fb">
-          <material><mattext texttype="text/html">&lt;p&gt;Bogotá feedback&lt;/p&gt;</mattext></material>
-        </itemfeedback>
-        <itemfeedback ident="5151_fb">
-          <material><mattext texttype="text/html">&lt;p&gt;Tallinn feedback&lt;/p&gt;</mattext></material>
-        </itemfeedback>
-      </item>`,
-      );
-
-      const result = await parser.parse(xml);
-
-      assert.deepEqual(result.questions[0].feedback, {
-        perBlank: new Map([
-          ['capital1', '<p>Bogotá feedback</p>'],
-          ['capital2', '<p>Tallinn feedback</p>'],
-        ]),
-      });
     });
   });
 

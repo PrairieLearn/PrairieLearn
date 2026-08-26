@@ -79,23 +79,23 @@ export interface IRRubric {
   criteria: IRRubricCriterion[];
 }
 
-/** HTML feedback fragments shown to a student after their response is graded. */
+/** Feedback attached to a question. */
 export interface IRFeedback {
   /** Feedback shown after any graded response. */
   general?: string;
-  /** Feedback shown when the response is correct. */
   correct?: string;
-  /** Feedback shown when the response is incorrect. */
   incorrect?: string;
-  /** Feedback for individual choices, keyed by `IRChoice.id`. */
-  perChoice?: Map<string, string>;
-  /** Feedback for individual fill-in-the-blank slots, keyed by `IRBlank.id`. */
-  perBlank?: Map<string, string>;
+  /**
+   * Per-answer feedback keyed by the source answer's display text. Body handlers that
+   * support it either attach the message to an emitted answer or create an
+   * answer-specific feedback condition.
+   */
+  perAnswer?: Record<string, string>;
 }
 
 /** Reference to an asset (image, file) needed by the question. */
 export interface AssetReference {
-  type: 'file-path' | 'base64';
+  type: 'file-path' | 'url' | 'base64';
   value: string;
   contentType?: string;
 }

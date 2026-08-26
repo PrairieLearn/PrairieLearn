@@ -34,32 +34,42 @@ function makeQuestion(overrides: Partial<IRQuestion> = {}): IRQuestion {
 }
 
 const emitter = new PLEmitter();
-const byId = (feedback: Record<string, string>) => new Map(Object.entries(feedback));
 
 describe('PLEmitter', () => {
-  it('runs asynchronous processors sequentially before emission', async () => {
+  it('runs asynchronous processors sequentially around emission', async () => {
     const calls: string[] = [];
     const result = await emitter.emitProcessed(makeAssessment([makeQuestion()]), {
       processors: [
         {
-          async process(itemContainer) {
-            calls.push('first:start');
+          async beforeEmit(itemContainer) {
+            calls.push('first:before:start');
             await Promise.resolve();
-            calls.push('first:end');
+            calls.push('first:before:end');
             itemContainer.questions[0].title = 'Processed Question';
-            return { warnings: [{ questionId: 'q1', message: 'Processed' }] };
+          },
+          afterEmit(result) {
+            calls.push('first:after');
+            result.warnings.push({ questionId: 'q1', message: 'Processed' });
           },
         },
         {
-          process(itemContainer) {
-            calls.push(`second:${itemContainer.questions[0].title}`);
-            return {};
+          beforeEmit() {
+            calls.push('second:before');
+          },
+          afterEmit(result) {
+            calls.push(`second:after:${result.warnings.length}`);
           },
         },
       ],
     });
 
-    assert.deepEqual(calls, ['first:start', 'first:end', 'second:Processed Question']);
+    assert.deepEqual(calls, [
+      'first:before:start',
+      'first:before:end',
+      'second:before',
+      'first:after',
+      'second:after:1',
+    ]);
     assert.equal(result.questions[0].infoJson.title, 'Processed Question');
     assert.equal(result.warnings[0].message, 'Processed');
   });
@@ -253,7 +263,7 @@ describe('PLEmitter', () => {
       const feedback = '<p>Feedback with "quotes", {braces}, \\slashes\\, and\na newline.</p>';
       const q = makeQuestion({
         body: { type: 'checkbox', choices: [{ id: 'a', html: answer, correct: true }] },
-        feedback: { perChoice: byId({ a: feedback }) },
+        feedback: { perAnswer: { [answer]: feedback } },
       });
       const result = emitter.emit(makeAssessment([q])).questions[0];
       assert.include(result.questionHtml, feedback);
@@ -273,7 +283,7 @@ describe('PLEmitter', () => {
           type: 'fill-in-blanks',
           blanks: [{ id: answerName, correctText }],
         },
-        feedback: { perBlank: byId({ [answerName]: feedback }) },
+        feedback: { perAnswer: { [correctText]: feedback } },
       });
       const result = emitter.emit(makeAssessment([q])).questions[0];
       assert.include(
