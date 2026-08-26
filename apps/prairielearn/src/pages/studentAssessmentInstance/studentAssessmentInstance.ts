@@ -272,7 +272,10 @@ router.get(
 
     const showTimeLimitExpiredModal = req.query.timeLimitExpired === 'true';
 
-    if (!res.locals.assessment.team_work) {
+    // team_id can be null when an assessment instance was created before
+    // team_work was enabled on the assessment.
+    // The redirect middleware filters these out, but we guard here too for safety.
+    if (!res.locals.assessment.team_work || !res.locals.assessment_instance.team_id) {
       res.send(
         StudentAssessmentInstance({
           instance_question_rows,
@@ -286,7 +289,7 @@ router.get(
 
     // Get the group config info
     const groupConfig = await getGroupConfig(res.locals.assessment.id);
-    const groupInfo = await getGroupInfo(res.locals.assessment_instance.team_id!, groupConfig);
+    const groupInfo = await getGroupInfo(res.locals.assessment_instance.team_id, groupConfig);
     const userCanAssignRoles =
       groupConfig.has_roles &&
       (canUserAssignGroupRoles(groupInfo, res.locals.user.id) ||
@@ -299,7 +302,7 @@ router.get(
         for (const row of instance_question_rows) {
           row.group_role_permissions = await getQuestionGroupPermissions(
             row.instance_question.id,
-            res.locals.assessment_instance.team_id!,
+            res.locals.assessment_instance.team_id,
             res.locals.authz_data.user.id,
           );
         }
