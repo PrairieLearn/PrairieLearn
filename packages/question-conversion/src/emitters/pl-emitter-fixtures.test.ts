@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 
 import he from 'he';
@@ -9,15 +9,12 @@ import { convert } from '../pipeline.js';
 import type { PLQuestionOutput } from '../types/pl-output.js';
 
 const FIXTURES = path.join(import.meta.dirname, 'fixtures');
-const FIXTURE_NAMES = [
-  'multiple-choice',
-  'true-false',
-  'checkbox',
-  'matching',
-  'fill-in-blanks',
-] as const;
+const FIXTURE_NAMES = readdirSync(FIXTURES, { withFileTypes: true })
+  .filter((entry) => entry.isDirectory())
+  .map((entry) => entry.name)
+  .sort();
 
-function readFixture(name: (typeof FIXTURE_NAMES)[number], filename: string): string {
+function readFixture(name: string, filename: string): string {
   return readFileSync(path.join(FIXTURES, name, filename), 'utf8');
 }
 
@@ -25,7 +22,7 @@ function normalizeTerminalNewline(value: string): string {
   return value.replace(/\r?\n$/, '');
 }
 
-async function emitFixture(name: (typeof FIXTURE_NAMES)[number]): Promise<PLQuestionOutput> {
+async function emitFixture(name: string): Promise<PLQuestionOutput> {
   const result = await convert(readFixture(name, 'question.xml'));
   assert.deepEqual(result.warnings, []);
   assert.lengthOf(result.questions, 1);
