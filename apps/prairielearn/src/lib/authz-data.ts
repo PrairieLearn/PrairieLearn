@@ -26,7 +26,11 @@ import {
   InstitutionSchema,
   type User,
 } from './db-types.js';
-import { selectEnrollmentIdentityClassification } from './enrollment/identity.js';
+import {
+  type EnrollmentIdentityContext,
+  getEnrollmentAdmissionDecision,
+  selectEnrollmentIdentityClassification,
+} from './enrollment/identity.js';
 import { ipToMode } from './exam-mode.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -93,11 +97,13 @@ export async function checkCourseInstanceLegacyAccess({
  * @param courseInstance - The course instance to check access for.
  * @param userId - The ID of the user to check access for.
  * @param reqDate - The date of the request.
+ * @param lti13Identity - Exact link and `sub` from a verified LTI launch, used to find a pending enrollment's publishing extension.
  */
 export async function calculateModernCourseInstanceStudentAccess(
   courseInstance: CourseInstance,
   userId: string,
   reqDate: Date,
+  lti13Identity?: NonNullable<EnrollmentIdentityContext['lti13Identity']>,
 ) {
   // This function should only be called for course instances that are using
   // modern publishing configs.
@@ -105,6 +111,7 @@ export async function calculateModernCourseInstanceStudentAccess(
 
   const classification = await selectEnrollmentIdentityClassification({
     courseInstanceId: courseInstance.id,
+    lti13Identity,
     userId,
   });
   const joinedEnrollment =
@@ -139,7 +146,14 @@ export async function calculateModernCourseInstanceStudentAccess(
   // rows are not merged automatically and must not extend the joined row's access.
   const hasActionableInvitation =
     classification.actionableUidInvitation !== null ||
-    classification.actionableInstitutionUinInvitation !== null;
+    classification.actionableInstitutionUinInvitation !== null ||
+    (lti13Identity !== undefined &&
+      getEnrollmentAdmissionDecision(classification, {
+        type: 'invitation',
+        matchedBy: 'lti13',
+        lti13CourseInstanceId: lti13Identity.lti13CourseInstanceId,
+        sub: lti13Identity.sub,
+      }).allowed);
   if (!isJoined && !hasActionableInvitation) {
     return { has_student_access: false, has_student_access_with_enrollment: false };
   }
@@ -163,33 +177,34 @@ export async function calculateModernCourseInstanceStudentAccess(
 }
 
 /**
- * Builds the authorization data for a user on a page. The optional parameters are used for effective user overrides,
- * most scenarios should not need to change these parameters.
- *
- * @param params
- * @param params.user - The authenticated user.
- * @param params.course_id - The ID of the course. Inferred from the course instance if null.
- * @param params.course_instance_id - The ID of the course instance.
- * @param params.ip - The IP address of the request.
- * @param params.req_date - The date of the request.
- * @param params.is_administrator - Whether the user is an administrator.
- * @param params.overrides - The overrides to apply to the authorization data.
+ * Builds the authorization data for a user on a page. Most callers should not
+ * need the LTI identity or effective-user overrides.
  */
 export async function constructCourseOrInstanceContext({
   user,
   course_id,
   course_instance_id,
+  lti13Identity,
   ip,
   req_date,
   is_administrator,
   overrides = {},
 }: {
+  /** The authenticated user. */
   user: User;
+  /** The course ID, or `null` to infer it from the course instance. */
   course_id: string | null;
+  /** The course instance ID. */
   course_instance_id: string | null;
+  /** Exact link and `sub` from a verified LTI launch, used when checking publishing extensions. */
+  lti13Identity?: NonNullable<EnrollmentIdentityContext['lti13Identity']>;
+  /** The request IP address. */
   ip: string | null;
+  /** The request date. */
   req_date: Date;
+  /** Whether the authenticated user is an administrator. */
   is_administrator: boolean;
+  /** Effective-user and course-context overrides. */
   overrides?: CourseOrInstanceOverrides;
 }): Promise<ConstructedCourseOrInstanceContext> {
   const resolvedOverrides = {
@@ -273,6 +288,7 @@ export async function constructCourseOrInstanceContext({
                 rawAuthzData.course_instance,
                 user.id,
                 req_date,
+                lti13Identity,
               );
             }
             const courseInstanceIdsWithAccess = await checkCourseInstanceLegacyAccess({

@@ -211,6 +211,8 @@ function createAdmissionValidator({
       await constructCourseOrInstanceContext({
         course_id: null,
         course_instance_id: courseInstanceId,
+        lti13Identity:
+          source.type === 'invitation' && source.matchedBy === 'lti13' ? source : undefined,
         ip,
         is_administrator: isAdministrator,
         req_date: reqDate,

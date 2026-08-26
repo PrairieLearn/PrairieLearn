@@ -37,6 +37,7 @@ import {
   Lti13CourseInstanceSchema,
 } from '../lib/db-types.js';
 import { createServerJob, selectJobsByJobSequenceId } from '../lib/server-jobs.js';
+import { createPublishingExtensionWithEnrollments } from '../models/course-instance-publishing-extensions.js';
 import { selectCourseInstanceById } from '../models/course-instances.js';
 import { selectOptionalEnrollmentByUserId } from '../models/enrollment.js';
 import { selectOptionalUserByUid, selectOrInsertUserByUid } from '../models/user.js';
@@ -399,10 +400,14 @@ describe('LTI 1.3 course instance linking', { concurrent: false }, () => {
         selfEnrollmentUseEnrollmentCode: false,
         restrictToInstitution: false,
       });
+      await execute(
+        "UPDATE course_instances SET publishing_end_date = $publishing_end_date WHERE id = '1'",
+        { publishing_end_date: courseInstance.publishing_end_date },
+      );
       await execute("UPDATE course_instances SET enrollment_limit = NULL WHERE id = '1'");
     });
 
-    test('admits only the exact link and sub from the fresh launch', async () => {
+    test('admits an exact link and sub using its publishing extension', async () => {
       await updateCourseInstanceSettings('1', {
         selfEnrollmentEnabled: false,
         selfEnrollmentUseEnrollmentCode: true,
@@ -417,6 +422,17 @@ describe('LTI 1.3 course instance linking', { concurrent: false }, () => {
         pendingUin: 'exact-invitation-unmatched-uin',
         status: 'invited',
       });
+      const now = new Date();
+      await createPublishingExtensionWithEnrollments({
+        courseInstance,
+        name: 'Exact LTI invitation extension',
+        endDate: new Date(now.getTime() + 24 * 60 * 60 * 1000),
+        enrollments: [invitation],
+      });
+      await execute(
+        "UPDATE course_instances SET publishing_end_date = $publishing_end_date WHERE id = '1'",
+        { publishing_end_date: new Date(now.getTime() - 24 * 60 * 60 * 1000) },
+      );
       const fetchWithCookies = fetchCookie(fetch);
       const targetLinkUri = `${siteUrl}/pl/lti13_instance/1/course_navigation`;
       const executor = await makeLoginExecutor({
