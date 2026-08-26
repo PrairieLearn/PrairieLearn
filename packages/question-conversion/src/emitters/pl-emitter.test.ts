@@ -147,6 +147,12 @@ describe('PLEmitter', () => {
       { title: 'Final Exam', assessmentType: 'Exam' as const, set: 'Exam', number: '1' },
       { title: 'Exam 3', assessmentType: 'Exam' as const, set: 'Exam', number: '3' },
       { title: 'Quiz 5', assessmentType: 'Homework' as const, set: 'Quiz', number: '5' },
+      {
+        title: 'Random Assignment',
+        assessmentType: 'Homework' as const,
+        set: 'Homework',
+        number: '1',
+      },
       { title: 'Random Assignment', assessmentType: 'Exam' as const, set: 'Exam', number: '1' },
     ])('infers $set/$number from "$title"', ({ title, assessmentType, set, number }) => {
       const assessment = {
@@ -216,6 +222,46 @@ describe('PLEmitter', () => {
       assert.equal(zones[1].title, 'Part 2');
       assert.notProperty(zones[1], 'numberChoose');
       assert.equal(zones[1].questions[0].id, 'second');
+    });
+  });
+
+  describe('question-wide feedback', () => {
+    it.each([
+      {
+        name: 'correct-only',
+        feedback: { correct: '<p>Correct response.</p>' },
+        expectedSection: '{{#is_correct}}',
+        unexpectedSection: '{{^is_correct}}',
+      },
+      {
+        name: 'incorrect-only',
+        feedback: { incorrect: '<p>Incorrect response.</p>' },
+        expectedSection: '{{^is_correct}}',
+        unexpectedSection: '{{#is_correct}}',
+      },
+    ])(
+      'renders $name feedback for the matching score outcome',
+      ({ feedback, expectedSection, unexpectedSection }) => {
+        const result = emitter.emit(makeAssessment([makeQuestion({ feedback })])).questions[0];
+
+        assert.include(result.questionHtml, '<pl-submission-panel>');
+        assert.include(result.questionHtml, '{{#feedback.overall}}');
+        assert.include(result.questionHtml, expectedSection);
+        assert.notInclude(result.questionHtml, unexpectedSection);
+        assert.include(result.questionHtml, feedback.correct ?? feedback.incorrect);
+        assert.include(
+          result.serverPy,
+          'data["feedback"]["overall"] = {"is_correct": data["score"] >= 1.0}',
+        );
+      },
+    );
+
+    it('omits feedback HTML and Python when feedback is absent', () => {
+      const result = emitter.emit(makeAssessment([makeQuestion()])).questions[0];
+
+      assert.notInclude(result.questionHtml, '<pl-submission-panel>');
+      assert.notInclude(result.questionHtml, 'feedback.');
+      assert.isUndefined(result.serverPy);
     });
   });
 
