@@ -30,7 +30,7 @@ export const calculatedHandler: BodyEmitHandler = {
   renderGeneratePy(body) {
     const c = body as CalculatedBody;
     const pyFormula = convertFormulaToPython(c.formula);
-    const lines = ['import math', 'import random', '', 'def generate(data):'];
+    const lines = ['import math', 'import random', '', '', 'def generate(data):'];
     for (const v of c.vars) {
       lines.push(`    ${v.name} = round(random.uniform(${v.min}, ${v.max}), ${v.decimalPlaces})`);
     }
@@ -42,7 +42,7 @@ export const calculatedHandler: BodyEmitHandler = {
     // display tolerance, but we also record it in the server so the question is self-contained.
     const tolComment =
       c.tolerance > 0
-        ? ` # tolerance: ${c.tolerance}${c.toleranceType === 'relative' ? '%' : ''}`
+        ? `  # tolerance: ${c.tolerance}${c.toleranceType === 'relative' ? '%' : ''}`
         : '';
     lines.push(`    data["correct_answers"]["answer"] = answer${tolComment}`, '');
     return lines.join('\n');
