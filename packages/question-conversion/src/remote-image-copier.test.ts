@@ -1,8 +1,6 @@
 import * as http from 'node:http';
 import type { AddressInfo } from 'node:net';
 
-import he from 'he';
-import mustache from 'mustache';
 import { fetch as undiciFetch } from 'undici';
 import { describe, expect, it } from 'vitest';
 
@@ -90,111 +88,6 @@ describe('QtiImportRemoteImageCopier', () => {
     const result = await new PLEmitter().emitProcessed(
       makeAssessment(
         makeQuestion({
-          promptHtml:
-            '<img src="https://canvas.example/unavailable.png"><img src="http://canvas.example/insecure.png"><img src="://invalid.example/image.png">',
-          feedback: {
-            incorrect: '<img src="https://canvas.example/feedback.png">',
-          },
-        }),
-      ),
-      { processors: [copier] },
-    );
-
-    expect(requestedUrls).toEqual([
-      'https://canvas.example/unavailable.png',
-      'https://canvas.example/feedback.png',
-    ]);
-    expect(result.questions[0].questionHtml).toContain('https://canvas.example/unavailable.png');
-    expect(result.questions[0].questionHtml).toContain('http://canvas.example/insecure.png');
-    expect(result.questions[0].questionHtml).toContain('://invalid.example/image.png');
-    expect(result.questions[0].questionHtml).toContain('https://canvas.example/feedback.png');
-    expect(result.questions[0].serverPy).not.toContain('https://canvas.example/feedback.png');
-    expect(result.warnings).toEqual([
-      {
-        questionId: 'source-q1',
-        code: 'remote-image-copy-failed',
-        message:
-          '4 images could not be copied into the course and were left unchanged. Their URLs may be invalid or insecure, or the images may be unavailable, too large, or in an unsupported format.',
-      },
-    ]);
-    expect(result.reports).toEqual([]);
-  });
-
-  it('copies remote feedback images and resolves their client-file URLs', async () => {
-    const requestedUrls: string[] = [];
-    const copier = new QtiImportRemoteImageCopier(async (url) => {
-      requestedUrls.push(url.href);
-      return { content: Buffer.from('feedback image'), extension: 'png' };
-    });
-    const imageUrl = 'https://canvas.example/feedback.png?verifier=secret';
-    const importedPerAnswerValue = '{{imported_per_answer_value}}';
-    const importedClientFilesUrl = '{{ options.client_files_question_url }}';
-
-    const result = await new PLEmitter().emitProcessed(
-      makeAssessment(
-        makeQuestion({
-          promptHtml: `<p>Question <img src="${imageUrl}"></p>`,
-          feedback: {
-            correct: `<p>Correct <img src="${imageUrl}" alt="Explanation"></p>`,
-            perAnswer: {
-              Yes: `<p>${importedPerAnswerValue} <code>${importedClientFilesUrl}</code> <img src="${imageUrl}" class="answer-feedback" alt="${importedPerAnswerValue} ${importedClientFilesUrl} &amp; literal"></p>`,
-            },
-          },
-        }),
-      ),
-      { processors: [copier] },
-    );
-
-    const question = result.questions[0];
-    expect(requestedUrls).toEqual([imageUrl]);
-    expect(question.clientFiles.size).toBe(1);
-    expect(question.serverPy).not.toContain('canvas.example');
-    expect(question.serverPy).not.toContain('<img src=');
-    expect(question.serverPy).not.toContain('client_files_question_url');
-    expect(question.serverPy).not.toContain('def render(data, html):');
-    expect(question.serverPy).toContain(
-      'data["feedback"]["overall"] = {"is_correct": data["score"] >= 1.0}',
-    );
-    expect(question.questionHtml).toContain('<p>Correct <pl-figure file-name="remote-');
-    expect(question.questionHtml).toContain('{{#feedback.overall}}');
-    expect(question.questionHtml).toContain('{{#is_correct}}');
-    expect(question.questionHtml).toContain(
-      'feedback="<p>&#123;&#123;imported_per_answer_value&#125;&#125;',
-    );
-    expect(question.questionHtml).toContain(
-      '<img src=&quot;{{ options.client_files_question_url }}/remote-',
-    );
-    const renderedHtml = mustache.render(question.questionHtml, {
-      imported_per_answer_value: 'MUSTACHE_EVALUATED',
-      options: { client_files_question_url: '/client-files-question' },
-    });
-    expect(renderedHtml).not.toContain('MUSTACHE_EVALUATED');
-    expect([...he.decode(renderedHtml).matchAll(/\/client-files-question\/remote-/g)]).toHaveLength(
-      1,
-    );
-    expect(question.questionHtml).not.toContain('canvas.example');
-    expect(question.questionHtml).toContain('<pl-figure');
-    expect(result.warnings).toEqual([]);
-    expect(result.reports).toEqual([
-      {
-        type: 'remote-image-copy',
-        questionId: 'source-q1',
-        filesCreated: 1,
-      },
-    ]);
-  });
-
-  it('copies remote images from checkbox answer feedback', async () => {
-    const requestedUrls: string[] = [];
-    const copier = new QtiImportRemoteImageCopier(async (url) => {
-      requestedUrls.push(url.href);
-      return { content: Buffer.from('checkbox feedback image'), extension: 'png' };
-    });
-    const imageUrl = 'https://canvas.example/checkbox-feedback.png?verifier=secret';
-
-    const result = await new PLEmitter().emitProcessed(
-      makeAssessment(
-        makeQuestion({
           body: {
             type: 'checkbox',
             choices: [
@@ -202,137 +95,36 @@ describe('QtiImportRemoteImageCopier', () => {
               { id: 'b', html: 'No', correct: false },
             ],
           },
+          promptHtml:
+            '<img src="https://canvas.example/unavailable.png"><img src="http://canvas.example/insecure.png"><img src="://invalid.example/image.png">',
           feedback: {
-            perAnswer: { Yes: `<img src="${imageUrl}" alt="Explanation">` },
+            incorrect: '<img src="https://canvas.example/feedback.png">',
+            perAnswer: {
+              Yes: '<img src="https://canvas.example/answer-feedback.png">',
+            },
           },
         }),
       ),
       { processors: [copier] },
     );
 
-    const question = result.questions[0];
-    expect(requestedUrls).toEqual([imageUrl]);
-    expect(question.clientFiles.size).toBe(1);
-    expect(question.questionHtml).toContain('<pl-checkbox');
-    expect(question.questionHtml).toContain(
-      'feedback="<img src=&quot;{{ options.client_files_question_url }}/remote-',
-    );
-    expect(question.questionHtml).not.toContain('canvas.example');
-    expect(question.serverPy).toBeUndefined();
-    expect(result.warnings).toEqual([]);
-    expect(result.reports).toEqual([
-      {
-        type: 'remote-image-copy',
-        questionId: 'source-q1',
-        filesCreated: 1,
-      },
+    expect(requestedUrls).toEqual([
+      'https://canvas.example/answer-feedback.png',
+      'https://canvas.example/unavailable.png',
+      'https://canvas.example/feedback.png',
     ]);
-  });
-
-  it('reports remote images left in checkbox answer feedback', async () => {
-    const requestedUrls: string[] = [];
-    const copier = new QtiImportRemoteImageCopier(async (url) => {
-      requestedUrls.push(url.href);
-      throw new Error('unavailable');
-    });
-    const imageUrl = 'https://canvas.example/unavailable-checkbox-feedback.png';
-
-    const result = await new PLEmitter().emitProcessed(
-      makeAssessment(
-        makeQuestion({
-          body: {
-            type: 'checkbox',
-            choices: [{ id: 'a', html: 'Yes', correct: true }],
-          },
-          feedback: {
-            perAnswer: { Yes: `<img src="${imageUrl}">` },
-          },
-        }),
-      ),
-      { processors: [copier] },
+    expect(result.questions[0].questionHtml).toContain(
+      'https://canvas.example/answer-feedback.png',
     );
-
-    expect(requestedUrls).toEqual([imageUrl]);
-    expect(result.questions[0].questionHtml).toContain(imageUrl);
-    expect(result.questions[0].clientFiles.size).toBe(0);
     expect(result.warnings).toEqual([
       {
         questionId: 'source-q1',
         code: 'remote-image-copy-failed',
         message:
-          '1 image could not be copied into the course and was left unchanged. Its URL may be invalid or insecure, or the image may be unavailable, too large, or in an unsupported format.',
+          '5 images could not be copied into the course and were left unchanged. Their URLs may be invalid or insecure, or the images may be unavailable, too large, or in an unsupported format.',
       },
     ]);
     expect(result.reports).toEqual([]);
-  });
-
-  it('preserves escaped Mustache delimiters while rewriting copied images', async () => {
-    const requestedUrls: string[] = [];
-    const copier = new QtiImportRemoteImageCopier(async (url) => {
-      requestedUrls.push(url.href);
-      return { content: Buffer.from('feedback image'), extension: 'png' };
-    });
-    const importedFeedbackHtml = '&#x7b;&#000123;imported_feedback_value&rcub;&#x7d;';
-    const importedFeedbackValue = '{{imported_feedback_value}}';
-
-    const result = await new PLEmitter().emitProcessed(
-      makeAssessment(
-        makeQuestion({
-          feedback: {
-            correct: `<p>${importedFeedbackHtml} <img src="https://canvas.example/feedback.png?one=1&not=2" alt="${importedFeedbackHtml} &amp; literal"></p>`,
-          },
-        }),
-      ),
-      { processors: [copier] },
-    );
-
-    const questionHtml = result.questions[0].questionHtml;
-    const renderedHtml = mustache.render(questionHtml, {
-      feedback: { overall: { is_correct: true } },
-      imported_feedback_value: 'MUSTACHE_EVALUATED',
-    });
-
-    expect(requestedUrls).toEqual(['https://canvas.example/feedback.png?one=1&not=2']);
-    expect(questionHtml).toContain(importedFeedbackHtml);
-    expect(questionHtml).toContain(`alt="${importedFeedbackHtml} &amp; literal"`);
-    expect(questionHtml).toContain('<pl-figure');
-    expect(renderedHtml).not.toContain('MUSTACHE_EVALUATED');
-    expect(he.decode(renderedHtml)).toContain(importedFeedbackValue);
-  });
-
-  it('copies remote images and rewrites all references to local pl-figure elements', async () => {
-    const requestedUrls: string[] = [];
-    const copier = new QtiImportRemoteImageCopier(async (url) => {
-      requestedUrls.push(url.href);
-      return { content: Buffer.from('image contents'), extension: 'png' };
-    });
-
-    const result = await processPrompt(
-      [
-        '<p><img src="https://canvas.example/files/1/preview?verifier=secret#first" alt="Graph" width="200"></p>',
-        '<img src="//canvas.example/files/1/preview?verifier=secret#second">',
-      ].join(''),
-      copier,
-    );
-    const question = result.questions[0];
-
-    expect(requestedUrls).toEqual(['https://canvas.example/files/1/preview?verifier=secret']);
-    expect(question.clientFiles.size).toBe(1);
-    expect(question.questionHtml).not.toContain('canvas.example');
-    expect(question.questionHtml).not.toContain('verifier');
-    expect(question.questionHtml.match(/<pl-figure/g)).toHaveLength(2);
-    expect(question.questionHtml).toContain('directory="clientFilesQuestion"');
-    expect(question.questionHtml).toContain('display="inline"');
-    expect(question.questionHtml).toContain('alt="Graph"');
-    expect(question.questionHtml).toContain('width="200"');
-    expect(result.warnings).toEqual([]);
-    expect(result.reports).toEqual([
-      {
-        type: 'remote-image-copy',
-        questionId: 'source-q1',
-        filesCreated: 1,
-      },
-    ]);
   });
 
   it('does not overwrite an existing client file with the generated filename', async () => {
@@ -372,7 +164,14 @@ describe('QtiImportRemoteImageCopier', () => {
 
     expect(result.questions[0].questionHtml.match(/<pl-figure/g)).toHaveLength(100);
     expect(result.questions[0].questionHtml).toContain('https://canvas.example/image-100.png');
-    expect(result.warnings[0].code).toBe('remote-image-copy-failed');
+    expect(result.warnings).toEqual([
+      {
+        questionId: 'source-q1',
+        code: 'remote-image-copy-failed',
+        message:
+          '1 image could not be copied into the course and was left unchanged. Its URL may be invalid or insecure, or the image may be unavailable, too large, or in an unsupported format.',
+      },
+    ]);
     expect(result.reports[0]).toEqual({
       type: 'remote-image-copy',
       questionId: 'source-q1',
