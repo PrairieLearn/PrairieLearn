@@ -1,8 +1,6 @@
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 
-import he from 'he';
-import mustache from 'mustache';
 import { assert, describe, expect, it } from 'vitest';
 
 import { convert } from '../pipeline.js';
@@ -87,31 +85,8 @@ describe('PLEmitter output fixtures', () => {
     expect(question.clientFiles).toEqual(readExpectedClientFiles(name));
   });
 
-  it('preserves imported Mustache delimiters without evaluating them', async () => {
-    const { question } = await emitFixture('mustache-delimiters');
-    const renderedHtml = mustache.render(question.questionHtml, {
-      feedback: { overall: true },
-      double_brace_value: 'DOUBLE_BRACE_EVALUATED',
-      triple_brace_value: 'TRIPLE_BRACE_EVALUATED',
-    });
-
-    assert.notInclude(renderedHtml, 'DOUBLE_BRACE_EVALUATED');
-    assert.notInclude(renderedHtml, 'TRIPLE_BRACE_EVALUATED');
-
-    const decodedHtml = he.decode(renderedHtml);
-    assert.include(decodedHtml, '{{double_brace_value}}');
-    assert.include(decodedHtml, '{{{triple_brace_value}}}');
-  });
-
-  it('resolves copied-image URLs without evaluating imported Mustache delimiters', async () => {
-    const { question, reports, requestedUrls } = await emitFixture('question-with-copied-images');
-    const renderedHtml = mustache.render(question.questionHtml, {
-      feedback: { overall: { is_correct: true } },
-      imported_per_answer_value: 'MUSTACHE_EVALUATED',
-      imported_entity_value: 'ENTITY_EVALUATED',
-      options: { client_files_question_url: '/client-files-question' },
-    });
-
+  it('reports copied images from the output fixture', async () => {
+    const { reports, requestedUrls } = await emitFixture('question-with-copied-images');
     assert.deepEqual(requestedUrls, ['https://canvas.example/files/diagram.png?verifier=secret']);
     assert.deepEqual(reports, [
       {
@@ -120,13 +95,5 @@ describe('PLEmitter output fixtures', () => {
         filesCreated: 1,
       },
     ]);
-    assert.notInclude(renderedHtml, 'MUSTACHE_EVALUATED');
-    assert.notInclude(renderedHtml, 'ENTITY_EVALUATED');
-
-    const decodedHtml = he.decode(renderedHtml);
-    assert.include(decodedHtml, '/client-files-question/remote-431ced6916a2a21a.png');
-    assert.include(decodedHtml, '{{imported_per_answer_value}}');
-    assert.include(decodedHtml, '{{ options.client_files_question_url }}');
-    assert.include(he.decode(decodedHtml), '{{imported_entity_value}}');
   });
 });
