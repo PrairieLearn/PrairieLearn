@@ -170,7 +170,7 @@ WITH
       ai_grading_credit_pool_changes AS c
     WHERE
       c.course_instance_id = $course_instance_id
-      AND c.created_at >= ($start_date::date AT TIME ZONE 'UTC')
+      AND c.created_at >= $start_date
       AND c.created_at < (
         ($end_date::date + '1 day'::interval) AT TIME ZONE 'UTC'
       )
@@ -219,7 +219,7 @@ FROM
   LEFT JOIN questions AS q ON q.id = aq.question_id
 WHERE
   c.course_instance_id = $course_instance_id
-  AND c.created_at >= ($start_date::date AT TIME ZONE 'UTC')
+  AND c.created_at >= $start_date
   AND c.created_at < (
     ($end_date::date + '1 day'::interval) AT TIME ZONE 'UTC'
   )
