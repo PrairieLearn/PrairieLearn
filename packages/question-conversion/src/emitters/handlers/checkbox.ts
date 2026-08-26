@@ -2,7 +2,7 @@ import he from 'he';
 
 import type { IRQuestionBody } from '../../types/ir.js';
 import type { BodyEmitHandler } from '../body-emit-handler.js';
-import { deduplicateChoices, neutralizeMustacheDelimiters } from '../pl-emit-utils.js';
+import { deduplicateChoices, escapeMustacheDelimiters } from '../pl-emit-utils.js';
 
 type CheckboxBody = Extract<IRQuestionBody, { type: 'checkbox' }>;
 
@@ -19,7 +19,7 @@ export const checkboxHandler: BodyEmitHandler = {
     for (const choice of deduped) {
       const feedback = perAnswer?.[choice.html];
       const feedbackAttr =
-        feedback == null ? '' : ` feedback="${neutralizeMustacheDelimiters(he.escape(feedback))}"`;
+        feedback == null ? '' : ` feedback="${escapeMustacheDelimiters(he.escape(feedback))}"`;
       lines.push(
         `  <pl-answer correct="${choice.correct}"${feedbackAttr}>${choice.html}</pl-answer>`,
       );

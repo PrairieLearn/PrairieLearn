@@ -12,7 +12,8 @@ export function deduplicateChoices<T extends { html: string; correct: boolean }>
   return [...seen.values()];
 }
 
-export function neutralizeMustacheDelimiters(html: string): string {
+/** Escape Mustache delimiters so imported content remains literal during template rendering. */
+export function escapeMustacheDelimiters(html: string): string {
   return html
     .replaceAll('{{{', '&#123;&#123;&#123;')
     .replaceAll('}}}', '&#125;&#125;&#125;')
