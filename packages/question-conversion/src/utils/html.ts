@@ -4,7 +4,6 @@ import { createRequire } from 'node:module';
 import type { ModelOperations as ModelOperationsType } from '@vscode/vscode-languagedetection';
 import * as cheerio from 'cheerio';
 import { type AnyNode, type Element, Text, isTag, isText } from 'domhandler';
-import he from 'he';
 
 import { normalizeImsFilePath } from './ims-file-path.js';
 
@@ -28,9 +27,13 @@ export function loadHtmlFragment(html: string): cheerio.CheerioAPI {
   return cheerio.load(html, null, false);
 }
 
-/** Load an HTML fragment without decoding entities that are unrelated to the requested rewrite. */
-export function loadHtmlFragmentPreservingEntities(html: string): cheerio.CheerioAPI {
-  return cheerio.load(html, { xml: { xmlMode: false, decodeEntities: false } }, false);
+/** Encode imported Mustache delimiters as HTML entities so they remain literal. */
+export function escapeMustacheDelimiters(html: string): string {
+  return html
+    .replaceAll('{{{', '&#123;&#123;&#123;')
+    .replaceAll('}}}', '&#125;&#125;&#125;')
+    .replaceAll('{{', '&#123;&#123;')
+    .replaceAll('}}', '&#125;&#125;');
 }
 
 function isElementNamed(node: AnyNode, name: string): node is Element {
@@ -111,13 +114,13 @@ export function rewriteImagesAsPlFigure(
   html: string,
   { display }: { display?: 'inline' } = {},
 ): string {
-  const $ = loadHtmlFragmentPreservingEntities(html);
+  const $ = loadHtmlFragment(html);
   const mustachePrefix = `${CLIENT_FILES_QUESTION_URL}/`;
   let changed = false;
 
   $('img').each((_, img) => {
     const $img = $(img);
-    const src = he.decode($img.attr('src') ?? '');
+    const src = $img.attr('src') ?? '';
     // Remote images stay as `<img>` because `<pl-figure>` resolves `file-name` locally inside
     // the course, which would turn an external URL into a broken course-file lookup.
     if (ABSOLUTE_URL_RE.test(src)) return;
@@ -125,16 +128,16 @@ export function rewriteImagesAsPlFigure(
     const $figure = $('<pl-figure></pl-figure>');
 
     if (src.startsWith(mustachePrefix)) {
-      $figure.attr('file-name', he.escape(src.slice(mustachePrefix.length)));
+      $figure.attr('file-name', src.slice(mustachePrefix.length));
       $figure.attr('directory', 'clientFilesQuestion');
     } else {
-      $figure.attr('file-name', he.escape(src));
+      $figure.attr('file-name', src);
     }
 
-    const alt = he.decode($img.attr('alt') ?? '');
-    const width = he.decode($img.attr('width') ?? '');
-    if (alt) $figure.attr('alt', he.escape(alt));
-    if (width) $figure.attr('width', he.escape(width));
+    const alt = $img.attr('alt');
+    const width = $img.attr('width');
+    if (alt) $figure.attr('alt', alt);
+    if (width) $figure.attr('width', width);
     if (display) $figure.attr('display', display);
 
     $img.replaceWith($figure);

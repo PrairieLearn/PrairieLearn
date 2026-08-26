@@ -44,10 +44,12 @@ describe('PLEmitter output fixtures', () => {
       feedback: { overall: true },
       double_brace_value: 'DOUBLE_BRACE_EVALUATED',
       triple_brace_value: 'TRIPLE_BRACE_EVALUATED',
+      options: { client_files_question_url: 'CLIENT_FILES_URL_EVALUATED' },
     });
 
     assert.notInclude(renderedHtml, 'DOUBLE_BRACE_EVALUATED');
     assert.notInclude(renderedHtml, 'TRIPLE_BRACE_EVALUATED');
+    assert.notInclude(renderedHtml, 'CLIENT_FILES_URL_EVALUATED');
 
     const decodedHtml = he.decode(renderedHtml);
     assert.include(decodedHtml, '{{double_brace_value}}');

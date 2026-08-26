@@ -12,7 +12,7 @@ import type {
   PLQuestionInfoJson,
   PLQuestionOutput,
 } from '../types/pl-output.js';
-import { isWhitespaceText, loadHtmlFragment } from '../utils/html.js';
+import { escapeMustacheDelimiters, isWhitespaceText, loadHtmlFragment } from '../utils/html.js';
 import { slugify } from '../utils/slugify.js';
 import { stableUuid } from '../utils/uuid.js';
 
@@ -500,7 +500,7 @@ function renderFeedbackHtml(messages: NamedFeedbackMessage[], generalFeedback: s
   for (const name of feedbackNames) {
     lines.push(`  {{#feedback.${name}}}`);
     if (name === 'overall') {
-      lines.push(...generalFeedback.map(neutralizeMustacheDelimiters));
+      lines.push(...generalFeedback.map(escapeMustacheDelimiters));
     }
 
     for (const message of messages) {
@@ -510,25 +510,17 @@ function renderFeedbackHtml(messages: NamedFeedbackMessage[], generalFeedback: s
         const sectionType = message.trigger.outcome === 'incorrect' ? '^' : '#';
         lines.push(
           `    {{${sectionType}is_correct}}`,
-          neutralizeMustacheDelimiters(message.html),
+          escapeMustacheDelimiters(message.html),
           '    {{/is_correct}}',
         );
       } else {
-        lines.push(neutralizeMustacheDelimiters(message.html));
+        lines.push(escapeMustacheDelimiters(message.html));
       }
     }
     lines.push(`  {{/feedback.${name}}}`);
   }
   lines.push('</pl-submission-panel>');
   return lines.join('\n');
-}
-
-function neutralizeMustacheDelimiters(html: string): string {
-  return html
-    .replaceAll('{{{', '&#123;&#123;&#123;')
-    .replaceAll('}}}', '&#125;&#125;&#125;')
-    .replaceAll('{{', '&#123;&#123;')
-    .replaceAll('}}', '&#125;&#125;');
 }
 
 function renderFeedbackGradeFn(

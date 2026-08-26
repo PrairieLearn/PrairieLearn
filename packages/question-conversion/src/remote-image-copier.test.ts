@@ -127,6 +127,8 @@ describe('QtiImportRemoteImageCopier', () => {
       return { content: Buffer.from('feedback image'), extension: 'png' };
     });
     const imageUrl = 'https://canvas.example/feedback.png?verifier=secret';
+    const importedPerAnswerValue = '{{imported_per_answer_value}}';
+    const importedClientFilesUrl = '{{ options.client_files_question_url }}';
 
     const result = await new PLEmitter().emitProcessed(
       makeAssessment(
@@ -134,7 +136,9 @@ describe('QtiImportRemoteImageCopier', () => {
           promptHtml: `<p>Question <img src="${imageUrl}"></p>`,
           feedback: {
             correct: `<p>Correct <img src="${imageUrl}" alt="Explanation"></p>`,
-            perAnswer: { Yes: `<img src="${imageUrl}" class="answer-feedback">` },
+            perAnswer: {
+              Yes: `<p>${importedPerAnswerValue} <code>${importedClientFilesUrl}</code> <img src="${imageUrl}" class="answer-feedback" alt="${importedPerAnswerValue} ${importedClientFilesUrl} &amp; literal"></p>`,
+            },
           },
         }),
       ),
@@ -155,7 +159,18 @@ describe('QtiImportRemoteImageCopier', () => {
     expect(question.questionHtml).toContain('{{#feedback.overall}}');
     expect(question.questionHtml).toContain('{{#is_correct}}');
     expect(question.questionHtml).toContain(
-      'feedback="&lt;img src=&quot;{{ options.client_files_question_url }}/remote-',
+      'feedback="<p>&amp;#123;&amp;#123;imported_per_answer_value&amp;#125;&amp;#125;',
+    );
+    expect(question.questionHtml).toContain(
+      '<img src=&quot;{{ options.client_files_question_url }}/remote-',
+    );
+    const renderedHtml = mustache.render(question.questionHtml, {
+      imported_per_answer_value: 'MUSTACHE_EVALUATED',
+      options: { client_files_question_url: '/client-files-question' },
+    });
+    expect(renderedHtml).not.toContain('MUSTACHE_EVALUATED');
+    expect([...he.decode(renderedHtml).matchAll(/\/client-files-question\/remote-/g)]).toHaveLength(
+      1,
     );
     expect(question.questionHtml).not.toContain('canvas.example');
     expect(question.questionHtml).toContain('<pl-figure');
@@ -169,19 +184,20 @@ describe('QtiImportRemoteImageCopier', () => {
     ]);
   });
 
-  it('preserves neutralized Mustache delimiters while rewriting copied images', async () => {
+  it('preserves escaped Mustache delimiters while rewriting copied images', async () => {
     const requestedUrls: string[] = [];
     const copier = new QtiImportRemoteImageCopier(async (url) => {
       requestedUrls.push(url.href);
       return { content: Buffer.from('feedback image'), extension: 'png' };
     });
+    const importedFeedbackHtml = '&#x7b;&#000123;imported_feedback_value&rcub;&#x7d;';
     const importedFeedbackValue = '{{imported_feedback_value}}';
 
     const result = await new PLEmitter().emitProcessed(
       makeAssessment(
         makeQuestion({
           feedback: {
-            correct: `<p>${importedFeedbackValue} <img src="https://canvas.example/feedback.png?one=1&amp;two=2"></p>`,
+            correct: `<p>${importedFeedbackHtml} <img src="https://canvas.example/feedback.png?one=1&not=2" alt="${importedFeedbackHtml} &amp; literal"></p>`,
           },
         }),
       ),
@@ -194,8 +210,9 @@ describe('QtiImportRemoteImageCopier', () => {
       imported_feedback_value: 'MUSTACHE_EVALUATED',
     });
 
-    expect(requestedUrls).toEqual(['https://canvas.example/feedback.png?one=1&two=2']);
-    expect(questionHtml).toContain('&#123;&#123;imported_feedback_value&#125;&#125;');
+    expect(requestedUrls).toEqual(['https://canvas.example/feedback.png?one=1&not=2']);
+    expect(questionHtml).toContain(importedFeedbackHtml);
+    expect(questionHtml).toContain(`alt="${importedFeedbackHtml} &amp; literal"`);
     expect(questionHtml).toContain('<pl-figure');
     expect(renderedHtml).not.toContain('MUSTACHE_EVALUATED');
     expect(he.decode(renderedHtml)).toContain(importedFeedbackValue);

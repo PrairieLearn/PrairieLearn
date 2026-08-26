@@ -67,7 +67,7 @@
         <itemfeedback ident="answer_1_fb">
           <flow_mat>
             <material>
-              <mattext texttype="text/html">&lt;p&gt;Plants use carbon dioxide to make sugars.&lt;/p&gt;</mattext>
+              <mattext texttype="text/html">&lt;p&gt;Plants use carbon dioxide to make sugars. Keep {{double_brace_value}}, {{{triple_brace_value}}}, and {{ options.client_files_question_url }} literal.&lt;/p&gt;</mattext>
             </material>
           </flow_mat>
         </itemfeedback>
