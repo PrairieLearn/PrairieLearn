@@ -5,6 +5,7 @@ import * as http from 'node:http';
 import * as net from 'node:net';
 import * as os from 'node:os';
 import * as path from 'node:path';
+import { pipeline } from 'node:stream/promises';
 
 import { ECRClient } from '@aws-sdk/client-ecr';
 import { S3 } from '@aws-sdk/client-s3';
@@ -1169,25 +1170,14 @@ async function sendGradedFilesArchive(workspace_id: string | number, res: Respon
   // Stream the archive back to the client as it's generated.
   res.attachment(zipName).status(200);
   const archive = new ZipArchive();
-  archive.pipe(res);
-
-  archive.on('error', (err) => {
-    logger.error('Error creating archive', err);
-    Sentry.captureException(err);
-
-    // Since we've probably already sent some data to the client, we can't do
-    // anything to gracefully let them know that we encountered an error.
-    // Instead, we'll just destroy the socket so that they pick up an error
-    // and handle that however they want.
-    res.socket?.destroy();
-  });
+  const archiveCompleted = pipeline(archive, res);
 
   for (const file of gradedFiles) {
     archive.append(file.createReadStream(), { name: file.path });
     debug(`Sending ${file.path}`);
   }
 
-  await archive.finalize();
+  await Promise.all([archive.finalize(), archiveCompleted]);
 }
 
 async function sendLogs(workspaceId: string | number, res: Response) {

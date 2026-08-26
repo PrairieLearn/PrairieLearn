@@ -1,5 +1,6 @@
 import { ok as assert } from 'node:assert';
 import { promises as fsPromises } from 'node:fs';
+import { pipeline } from 'node:stream/promises';
 import { setTimeout as sleep } from 'node:timers/promises';
 import * as path from 'path';
 
@@ -726,7 +727,6 @@ async function getGradedFilesFromFileSystem(workspace_id: string): Promise<strin
   );
   const zipPath = await tmp.tmpName({ postfix: '.zip' });
 
-  const archive = new ZipArchive();
   const remoteName = `workspace-${workspace_id}-${workspace_version}`;
   const remoteDir = path.join(config.workspaceHomeDirRoot, remoteName, 'current');
 
@@ -740,26 +740,16 @@ async function getGradedFilesFromFileSystem(workspace_id: string): Promise<strin
       throw new SubmissionFormatError(err.message);
     });
 
-  const stream = fs.createWriteStream(zipPath);
-  await new Promise<void>((resolve, reject) => {
-    archive.on('error', (err) => reject(err));
+  const archive = new ZipArchive();
+  const archiveCompleted = pipeline(archive, fs.createWriteStream(zipPath));
 
-    stream
-      .on('error', (err) => reject(err))
-      .on('finish', () => {
-        debug(`Zipped graded files as ${zipPath} (${archive.pointer()} total bytes)`);
-        resolve();
-      });
+  for (const file of gradedFiles) {
+    debug(`Zipping graded file ${path.join(remoteDir, file.path)} into ${zipPath}`);
+    archive.append(file.createReadStream(), { name: file.path });
+  }
 
-    archive.pipe(stream);
-
-    for (const file of gradedFiles) {
-      debug(`Zipping graded file ${path.join(remoteDir, file.path)} into ${zipPath}`);
-      archive.append(file.createReadStream(), { name: file.path });
-    }
-
-    archive.finalize().catch((err) => reject(err));
-  });
+  await Promise.all([archive.finalize(), archiveCompleted]);
+  debug(`Zipped graded files as ${zipPath} (${archive.pointer()} total bytes)`);
   return zipPath;
 }
 
