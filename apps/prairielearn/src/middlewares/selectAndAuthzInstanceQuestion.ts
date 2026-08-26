@@ -8,6 +8,7 @@ import { IdSchema } from '@prairielearn/zod';
 
 import { AssessmentInstanceAuthzResultSchema } from '../lib/assessment-access-control/authz-result.js';
 import { resolveModernAssessmentInstanceAccess } from '../lib/assessment-access-control/authz.js';
+import { formatLegacyAssessmentInstanceAccess } from '../lib/assessment-access-control/legacy.js';
 import {
   type AssessmentInstanceTimeLimit,
   assessmentInstanceLabel,
@@ -24,6 +25,7 @@ import {
   GroupSchema,
   InstanceQuestionSchema,
   QuestionSchema,
+  SprocAuthzAssessmentInstanceSchema,
   SprocUsersGetDisplayedRoleSchema,
   UserSchema,
 } from '../lib/db-types.js';
@@ -70,6 +72,10 @@ const SelectAndAuthzInstanceQuestionSchema = z.object({
   file_list: z.array(FileSchema),
 });
 
+const RawSelectAndAuthzInstanceQuestionSchema = SelectAndAuthzInstanceQuestionSchema.extend({
+  authz_result: SprocAuthzAssessmentInstanceSchema,
+});
+
 export type ResLocalsInstanceQuestion = z.infer<typeof SelectAndAuthzInstanceQuestionSchema> &
   AssessmentInstanceTimeLimit & {
     assessment_instance_label: string;
@@ -87,7 +93,7 @@ export type ResLocalsInstanceQuestion = z.infer<typeof SelectAndAuthzInstanceQue
   };
 
 export async function selectAndAuthzInstanceQuestion(req: Request, res: Response) {
-  const row = await sqldb.queryOptionalRow(
+  const rawRow = await sqldb.queryOptionalRow(
     sql.select_and_auth,
     {
       instance_question_id: req.params.instance_question_id,
@@ -96,9 +102,17 @@ export async function selectAndAuthzInstanceQuestion(req: Request, res: Response
       authz_data: res.locals.authz_data,
       req_date: res.locals.req_date,
     },
-    SelectAndAuthzInstanceQuestionSchema,
+    RawSelectAndAuthzInstanceQuestionSchema,
   );
-  if (row === null) throw new error.HttpStatusError(403, 'Access denied');
+  if (rawRow === null) throw new error.HttpStatusError(403, 'Access denied');
+
+  const row = {
+    ...rawRow,
+    authz_result: formatLegacyAssessmentInstanceAccess(
+      rawRow.authz_result,
+      res.locals.course_instance.display_timezone,
+    ),
+  };
 
   // Sequence/lockpoint restrictions should not block instructors from accessing
   // student question instances (e.g. for manual grading or viewing submissions).

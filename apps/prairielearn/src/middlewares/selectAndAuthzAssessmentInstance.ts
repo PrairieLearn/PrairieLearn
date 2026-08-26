@@ -7,6 +7,7 @@ import * as sqldb from '@prairielearn/postgres';
 
 import { AssessmentInstanceAuthzResultSchema } from '../lib/assessment-access-control/authz-result.js';
 import { resolveModernAssessmentInstanceAccess } from '../lib/assessment-access-control/authz.js';
+import { formatLegacyAssessmentInstanceAccess } from '../lib/assessment-access-control/legacy.js';
 import {
   type AssessmentInstanceTimeLimit,
   assessmentInstanceLabel,
@@ -19,6 +20,7 @@ import {
   AssessmentSetSchema,
   FileSchema,
   GroupSchema,
+  SprocAuthzAssessmentInstanceSchema,
   SprocUsersGetDisplayedRoleSchema,
   UserSchema,
 } from '../lib/db-types.js';
@@ -36,7 +38,7 @@ const SelectAndAuthzAssessmentInstanceBaseSchema = z.object({
 });
 
 // See `user_team_xor` constraint
-const SelectAndAuthzAssessmentInstanceSchema = z.union([
+const _SelectAndAuthzAssessmentInstanceSchema = z.union([
   SelectAndAuthzAssessmentInstanceBaseSchema.extend({
     instance_user: UserSchema,
     instance_group: z.null(),
@@ -47,14 +49,27 @@ const SelectAndAuthzAssessmentInstanceSchema = z.union([
   }),
 ]);
 
-export type ResLocalsAssessmentInstance = z.infer<typeof SelectAndAuthzAssessmentInstanceSchema> &
+const RawSelectAndAuthzAssessmentInstanceSchema = z.union([
+  SelectAndAuthzAssessmentInstanceBaseSchema.extend({
+    authz_result: SprocAuthzAssessmentInstanceSchema,
+    instance_user: UserSchema,
+    instance_group: z.null(),
+  }),
+  SelectAndAuthzAssessmentInstanceBaseSchema.extend({
+    authz_result: SprocAuthzAssessmentInstanceSchema,
+    instance_user: z.null(),
+    instance_group: GroupSchema,
+  }),
+]);
+
+export type ResLocalsAssessmentInstance = z.infer<typeof _SelectAndAuthzAssessmentInstanceSchema> &
   AssessmentInstanceTimeLimit & {
     assessment_instance_label: string;
     assessment_label: string;
   };
 
 async function selectAndAuthzAssessmentInstance(req: Request, res: Response) {
-  const row = await sqldb.queryOptionalRow(
+  const rawRow = await sqldb.queryOptionalRow(
     sql.select_and_auth,
     {
       assessment_instance_id: req.params.assessment_instance_id,
@@ -62,9 +77,17 @@ async function selectAndAuthzAssessmentInstance(req: Request, res: Response) {
       authz_data: res.locals.authz_data,
       req_date: res.locals.req_date,
     },
-    SelectAndAuthzAssessmentInstanceSchema,
+    RawSelectAndAuthzAssessmentInstanceSchema,
   );
-  if (row === null) throw new error.HttpStatusError(403, 'Access denied');
+  if (rawRow === null) throw new error.HttpStatusError(403, 'Access denied');
+
+  const row = {
+    ...rawRow,
+    authz_result: formatLegacyAssessmentInstanceAccess(
+      rawRow.authz_result,
+      res.locals.course_instance.display_timezone,
+    ),
+  };
 
   if (row.assessment.modern_access_control) {
     const modernResult = await resolveModernAssessmentInstanceAccess({

@@ -15,7 +15,7 @@ WITH
       aset.color AS assessment_set_color,
       aset.number AS assessment_set_number,
       aset.abbreviation || a.number AS label,
-      to_jsonb(aa) AS authz_result,
+      to_jsonb(aa) AS raw_authz_result,
       NULL::integer AS assessment_instance_id,
       NULL::integer AS assessment_instance_number,
       NULL::integer AS assessment_instance_score_perc,
@@ -29,7 +29,7 @@ WITH
       assessments AS a
       JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
       JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
-      LEFT JOIN LATERAL authz_assessment (a.id, $authz_data, $req_date, ci.display_timezone) AS aa ON TRUE
+      LEFT JOIN LATERAL authz_assessment (a.id, $authz_data, $req_date) AS aa ON TRUE
       LEFT JOIN assessment_modules AS am ON am.id = a.assessment_module_id
     WHERE
       ci.id = $course_instance_id
@@ -55,7 +55,7 @@ WITH
       mia.assessment_set_color,
       mia.assessment_set_number,
       mia.label || '#' || ai.number AS label,
-      mia.authz_result,
+      mia.raw_authz_result,
       ai.id AS assessment_instance_id,
       ai.number AS assessment_instance_number,
       ai.score_perc AS assessment_instance_score_perc,
@@ -88,7 +88,7 @@ WITH
       aset.color AS assessment_set_color,
       aset.number AS assessment_set_number,
       aset.abbreviation || a.number AS label,
-      to_jsonb(aa) AS authz_result,
+      to_jsonb(aa) AS raw_authz_result,
       ai.id AS assessment_instance_id,
       ai.number AS assessment_instance_number,
       ai.score_perc AS assessment_instance_score_perc,
@@ -135,7 +135,7 @@ WITH
           ai2.assessment_id = a.id
           AND ai2.team_id = gu.team_id
       ) AS ai ON (TRUE)
-      LEFT JOIN LATERAL authz_assessment (a.id, $authz_data, $req_date, ci.display_timezone) AS aa ON TRUE
+      LEFT JOIN LATERAL authz_assessment (a.id, $authz_data, $req_date) AS aa ON TRUE
       LEFT JOIN assessment_modules AS am ON (am.id = a.assessment_module_id)
     WHERE
       ci.id = $course_instance_id
