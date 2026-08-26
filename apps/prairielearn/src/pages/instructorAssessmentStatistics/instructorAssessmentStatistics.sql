@@ -8,7 +8,7 @@ WHERE
 
 -- BLOCK assessment_scores_by_user
 SELECT
-  ai.user_id,
+  u.id AS user_id,
   ai.date,
   ai.score_perc
 FROM

@@ -9,7 +9,6 @@ import {
 import { config } from '../../lib/config.js';
 import { StudentLabelSchema } from '../../lib/db-types.js';
 import { parseLocalDateTime } from '../../lib/timezones.js';
-import { selectCourseInstanceById } from '../../models/course-instances.js';
 import type { AccessControlJson } from '../../schemas/accessControl.js';
 import type { CourseInstanceData } from '../course-db.js';
 import * as infofile from '../infofile.js';
@@ -273,12 +272,12 @@ export async function validateAccessControl(
  */
 export async function syncAccessControl(
   courseInstanceId: string,
+  displayTimezone: string,
   assessments: AccessControlSyncInput[],
 ): Promise<void> {
   if (assessments.length === 0) return;
 
   const studentLabelIdByName = await selectStudentLabelIdByName(courseInstanceId);
-  const courseInstance = await selectCourseInstanceById(courseInstanceId);
   const assessmentIds: string[] = [];
   const allRuleRows: string[] = [];
   const allStudentLabels: string[] = [];
@@ -298,7 +297,7 @@ export async function syncAccessControl(
           rule,
           targetType,
           studentLabelIdByName,
-          courseInstance.display_timezone,
+          displayTimezone,
         );
 
       allRuleRows.push(ruleRow);

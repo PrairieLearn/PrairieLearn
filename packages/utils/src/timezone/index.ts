@@ -39,25 +39,6 @@ export function getLocalDate(date: Date, timeZone: string): Temporal.PlainDate {
     .toPlainDate();
 }
 
-/**
- * Returns the absolute start and end instants for a local calendar day.
- *
- * `compatible` selects the earlier instant for an overlap and moves forward
- * across a gap, which identifies the first representable instant of the day.
- */
-export function getLocalDayBounds(
-  date: Temporal.PlainDate,
-  timeZone: string,
-): { start: Date; end: Date } {
-  const start = plainDateTimeToDate(date.toPlainDateTime('00:00'), timeZone, 'compatible');
-  const end = plainDateTimeToDate(
-    date.add({ days: 1 }).toPlainDateTime('00:00'),
-    timeZone,
-    'compatible',
-  );
-  return { start, end };
-}
-
 function getTimezoneAtInstant(name: string, instant: Temporal.Instant): Timezone {
   let zonedDateTime: Temporal.ZonedDateTime;
   try {

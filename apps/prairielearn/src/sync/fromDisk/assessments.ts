@@ -12,7 +12,6 @@ import { features } from '../../lib/features/index.js';
 import { convertLegacyGroupsToGroupsConfig } from '../../lib/group-config.js';
 import { extractDefaultPreferences } from '../../lib/question-preferences.js';
 import { parseLocalDateTime } from '../../lib/timezones.js';
-import { selectCourseInstanceById } from '../../models/course-instances.js';
 import {
   type AssessmentJson,
   EnumAssessmentToolSchema,
@@ -508,11 +507,11 @@ function isCourseInstanceAccessible(courseInstanceData: CourseInstanceData) {
 export async function sync(
   courseId: string,
   courseInstanceId: string,
+  displayTimezone: string,
   courseInstanceData: CourseInstanceData,
   questionIds: Record<string, any>,
 ) {
   const assessments = courseInstanceData.assessments;
-  const courseInstance = await selectCourseInstanceById(courseInstanceId);
 
   // We only check exam UUIDs if the course instance is accessible. This allows
   // us to delete the legacy `exams` table without producing sync warnings for
@@ -560,7 +559,7 @@ export async function sync(
   }
 
   const assessmentParams = Object.entries(assessments).map(([tid, assessment]) => {
-    const params = getParamsForAssessment(assessment, questionIds, courseInstance.display_timezone);
+    const params = getParamsForAssessment(assessment, questionIds, displayTimezone);
     return JSON.stringify([
       tid,
       assessment.uuid,

@@ -5,7 +5,6 @@ import {
   formatTimezone,
   getCanonicalTimezones,
   getLocalDate,
-  getLocalDayBounds,
   getTimezoneByName,
   plainDateTimeToDate,
 } from './index.js';
@@ -91,13 +90,12 @@ describe('plainDateTimeToDate', () => {
 });
 
 describe('local calendar helpers', () => {
-  it('gets the local date and DST-aware UTC bounds of a local day', () => {
+  it('gets the local date', () => {
     const instant = new Date('2025-03-09T12:00:00.000Z');
     expect(getLocalDate(instant, 'America/Chicago').toString()).toBe('2025-03-09');
 
-    const bounds = getLocalDayBounds(Temporal.PlainDate.from('2025-03-09'), 'America/Chicago');
-    expect(bounds.start.toISOString()).toBe('2025-03-09T06:00:00.000Z');
-    expect(bounds.end.toISOString()).toBe('2025-03-10T05:00:00.000Z');
+    const previousLocalDate = new Date('2025-03-09T04:00:00.000Z');
+    expect(getLocalDate(previousLocalDate, 'America/Chicago').toString()).toBe('2025-03-08');
   });
 });
 

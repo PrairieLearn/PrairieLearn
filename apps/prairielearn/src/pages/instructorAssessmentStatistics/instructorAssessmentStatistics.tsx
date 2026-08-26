@@ -19,7 +19,7 @@ import {
   updateAssessmentStatistics,
 } from '../../lib/assessment.js';
 import { compiledScriptTag } from '../../lib/assets.js';
-import { AssessmentInstanceSchema, AssessmentSchema } from '../../lib/db-types.js';
+import { AssessmentInstanceSchema, AssessmentSchema, UserSchema } from '../../lib/db-types.js';
 import { type ResLocalsForPage, typedAsyncHandler } from '../../lib/res-locals.js';
 import { assessmentFilenamePrefix } from '../../lib/sanitize-name.js';
 import { STAT_DESCRIPTIONS } from '../shared/assessmentStatDescriptions.js';
@@ -37,7 +37,7 @@ const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const AssessmentScoreByUserSchema = z.object({
-  user_id: AssessmentInstanceSchema.shape.user_id,
+  user_id: UserSchema.shape.id,
   date: AssessmentInstanceSchema.shape.date,
   score_perc: AssessmentInstanceSchema.shape.score_perc,
 });
@@ -57,7 +57,7 @@ function addAssessmentScoresByLocalDate(
   for (const row of rows) {
     if (row.date == null || row.score_perc == null) continue;
     const localDate = getLocalDate(row.date, displayTimezone).toString();
-    const key = `${row.user_id ?? 'null'}\0${localDate}`;
+    const key = `${row.user_id}\0${localDate}`;
     const scoreTotals = scoreTotalsByUserAndDate.get(key) ?? {
       localDate,
       sum: 0,
