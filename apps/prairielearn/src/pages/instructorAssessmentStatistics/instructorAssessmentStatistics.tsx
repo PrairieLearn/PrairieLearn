@@ -41,53 +41,86 @@ const AssessmentScoreByUserSchema = z.object({
   date: AssessmentInstanceSchema.shape.date,
   score_perc: AssessmentInstanceSchema.shape.score_perc,
 });
+type AssessmentScoreByUser = z.infer<typeof AssessmentScoreByUserSchema>;
 
-export function groupAssessmentScoresByLocalDate(
-  rows: z.infer<typeof AssessmentScoreByUserSchema>[],
+interface ScoreTotals {
+  localDate: string;
+  sum: number;
+  count: number;
+}
+
+function addAssessmentScoresByLocalDate(
+  scoreTotalsByUserAndDate: Map<string, ScoreTotals>,
+  rows: Iterable<AssessmentScoreByUser>,
   displayTimezone: string,
-): z.infer<typeof AssessmentScoreHistogramByDateSchema>[] {
-  const scoresByUserAndDate = new Map<string, number[]>();
+) {
   for (const row of rows) {
     if (row.date == null || row.score_perc == null) continue;
     const localDate = getLocalDate(row.date, displayTimezone).toString();
     const key = `${row.user_id ?? 'null'}\0${localDate}`;
-    const scores = scoresByUserAndDate.get(key) ?? [];
-    scores.push(row.score_perc);
-    scoresByUserAndDate.set(key, scores);
+    const scoreTotals = scoreTotalsByUserAndDate.get(key) ?? {
+      localDate,
+      sum: 0,
+      count: 0,
+    };
+    scoreTotals.sum += row.score_perc;
+    scoreTotals.count++;
+    scoreTotalsByUserAndDate.set(key, scoreTotals);
+  }
+}
+
+function buildAssessmentScoreHistogramByDate(
+  scoreTotalsByUserAndDate: Map<string, ScoreTotals>,
+): z.infer<typeof AssessmentScoreHistogramByDateSchema>[] {
+  const statisticsByDate = new Map<
+    string,
+    { number: number; scoreSum: number; histogram: number[] }
+  >();
+
+  for (const { localDate, sum, count } of scoreTotalsByUserAndDate.values()) {
+    const averageScore = sum / count;
+    const statistics = statisticsByDate.get(localDate) ?? {
+      number: 0,
+      scoreSum: 0,
+      histogram: Array.from({ length: 10 }, () => 0),
+    };
+    statistics.number++;
+    statistics.scoreSum += averageScore;
+    const bucket = Math.max(0, Math.min(9, Math.floor(averageScore / 10)));
+    statistics.histogram[bucket]++;
+    statisticsByDate.set(localDate, statistics);
   }
 
-  const averagesByDate = new Map<string, number[]>();
-  for (const [key, scores] of scoresByUserAndDate) {
-    const localDate = key.split('\0')[1];
-    const averages = averagesByDate.get(localDate) ?? [];
-    averages.push(scores.reduce((sum, score) => sum + score, 0) / scores.length);
-    averagesByDate.set(localDate, averages);
-  }
-
-  return [...averagesByDate]
+  return [...statisticsByDate]
     .sort(([a], [b]) => a.localeCompare(b))
-    .map(([localDate, scores]) => {
-      const histogram = Array.from({ length: 10 }, () => 0);
-      for (const score of scores) {
-        const bucket = Math.max(0, Math.min(9, Math.floor(score / 10)));
-        histogram[bucket]++;
-      }
-      return {
-        date: new Date(`${localDate}T00:00:00.000Z`),
-        number: scores.length,
-        mean_score_perc: scores.reduce((sum, score) => sum + score, 0) / scores.length,
-        histogram,
-      };
-    });
+    .map(([localDate, statistics]) => ({
+      date: new Date(`${localDate}T00:00:00.000Z`),
+      number: statistics.number,
+      mean_score_perc: statistics.scoreSum / statistics.number,
+      histogram: statistics.histogram,
+    }));
+}
+
+export function groupAssessmentScoresByLocalDate(
+  rows: Iterable<AssessmentScoreByUser>,
+  displayTimezone: string,
+): z.infer<typeof AssessmentScoreHistogramByDateSchema>[] {
+  const scoreTotalsByUserAndDate = new Map<string, ScoreTotals>();
+  addAssessmentScoresByLocalDate(scoreTotalsByUserAndDate, rows, displayTimezone);
+  return buildAssessmentScoreHistogramByDate(scoreTotalsByUserAndDate);
 }
 
 async function selectAssessmentScoreHistogramByDate(assessmentId: string, displayTimezone: string) {
-  const rows = await sqldb.queryRows(
+  const cursor = await sqldb.queryCursor(
     sql.assessment_scores_by_user,
     { assessment_id: assessmentId },
     AssessmentScoreByUserSchema,
   );
-  return groupAssessmentScoresByLocalDate(rows, displayTimezone);
+  const scoreTotalsByUserAndDate = new Map<string, ScoreTotals>();
+  for await (const rows of cursor.iterate(100)) {
+    addAssessmentScoresByLocalDate(scoreTotalsByUserAndDate, rows, displayTimezone);
+  }
+  return buildAssessmentScoreHistogramByDate(scoreTotalsByUserAndDate);
 }
 
 function getFilenames(locals: ResLocalsForPage<'assessment'>): Filenames {
@@ -315,9 +348,8 @@ router.get(
         header: true,
         columns: [
           'Date',
-          // The date is already extracted from the timestamp in the query and
-          // returned as UTC, so we can safely format it without worrying
-          // about timezones here.
+          // These values represent local calendar dates as UTC midnight solely
+          // so they can be formatted without applying another timezone conversion.
           ...scoresByDay.map((day) => formatDateYMD(day.date, 'UTC')),
         ],
       }).pipe(res);
