@@ -19,7 +19,7 @@ export type LegacyAssessmentAccessRuleResult = z.infer<
 >;
 
 // Application-level result consumed after either legacy or modern access control has been resolved.
-export const AssessmentAuthzResultSchema = z.object({
+const AssessmentAuthzResultSchema = z.object({
   access_rules: z.array(LegacyAssessmentAccessRuleResultSchema),
   access_timeline: z.array(AccessTimelineEntrySchema).readonly(),
   active: z.boolean(),
