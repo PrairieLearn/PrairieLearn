@@ -1,0 +1,27 @@
+columns
+    base_commit_sha: text
+    commit_sha: text
+    completed_at: timestamp with time zone
+    conversation_id: bigint not null
+    created_at: timestamp with time zone not null default now()
+    error_code: text
+    error_message: text
+    id: bigint not null default nextval('course_agent_runs_id_seq'::regclass)
+    prompt_digest: text not null
+    pushed_sha: text
+    started_at: timestamp with time zone
+    status: enum_course_agent_run_status not null default 'queued'::enum_course_agent_run_status
+    sync_job_sequence_id: bigint
+
+indexes
+    course_agent_runs_pkey: PRIMARY KEY (id) USING btree (id)
+    course_agent_runs_one_active_per_conversation_idx: UNIQUE, btree (conversation_id) WHERE (status = ANY (ARRAY['queued'::enum_course_agent_run_status, 'preparing'::enum_course_agent_run_status, 'running'::enum_course_agent_run_status, 'finalizing'::enum_course_agent_run_status, 'syncing'::enum_course_agent_run_status, 'checkpointing'::enum_course_agent_run_status]))
+
+foreign-key constraints
+    course_agent_runs_conversation_id_fkey: FOREIGN KEY (conversation_id) REFERENCES course_agent_conversations(id) ON UPDATE CASCADE ON DELETE CASCADE
+    course_agent_runs_sync_job_sequence_id_fkey: FOREIGN KEY (sync_job_sequence_id) REFERENCES job_sequences(id) ON UPDATE CASCADE ON DELETE SET NULL
+
+referenced by
+    course_agent_events: FOREIGN KEY (run_id) REFERENCES course_agent_runs(id) ON UPDATE CASCADE ON DELETE CASCADE
+    course_agent_messages: FOREIGN KEY (run_id) REFERENCES course_agent_runs(id) ON UPDATE CASCADE ON DELETE SET NULL
+    course_agent_workspace_backups: FOREIGN KEY (run_id) REFERENCES course_agent_runs(id) ON UPDATE CASCADE ON DELETE SET NULL

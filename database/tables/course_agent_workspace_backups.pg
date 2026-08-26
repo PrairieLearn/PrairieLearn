@@ -1,0 +1,20 @@
+columns
+    backup_handle: jsonb not null
+    conversation_id: bigint not null
+    course_commit_sha: text
+    created_at: timestamp with time zone not null default now()
+    expires_at: timestamp with time zone
+    id: bigint not null default nextval('course_agent_workspace_backups_id_seq'::regclass)
+    reason: enum_course_agent_backup_reason not null
+    run_id: bigint
+    sandbox_id: text not null
+    size_bytes: bigint
+    workspace_manifest_version: integer not null
+
+indexes
+    course_agent_workspace_backups_pkey: PRIMARY KEY (id) USING btree (id)
+    course_agent_workspace_backups_conversation_id_idx: USING btree (conversation_id, id DESC)
+
+foreign-key constraints
+    course_agent_workspace_backups_conversation_id_fkey: FOREIGN KEY (conversation_id) REFERENCES course_agent_conversations(id) ON UPDATE CASCADE ON DELETE CASCADE
+    course_agent_workspace_backups_run_id_fkey: FOREIGN KEY (run_id) REFERENCES course_agent_runs(id) ON UPDATE CASCADE ON DELETE SET NULL

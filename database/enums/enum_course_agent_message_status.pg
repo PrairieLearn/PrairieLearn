@@ -1,0 +1,6 @@
+values
+    canceled
+    completed
+    errored
+    pending
+    streaming

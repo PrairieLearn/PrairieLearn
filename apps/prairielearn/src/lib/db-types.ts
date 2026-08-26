@@ -31,6 +31,55 @@ export type EnumAiQuestionGenerationMessageStatus = z.infer<
   typeof EnumAiQuestionGenerationMessageStatusSchema
 >;
 
+export const EnumCourseAgentBackupReasonSchema = z.enum([
+  'idle_timeout',
+  'test_kill',
+  'conversation_deleted',
+]);
+export type EnumCourseAgentBackupReason = z.infer<typeof EnumCourseAgentBackupReasonSchema>;
+
+export const EnumCourseAgentMessageRoleSchema = z.enum(['user', 'assistant']);
+export type EnumCourseAgentMessageRole = z.infer<typeof EnumCourseAgentMessageRoleSchema>;
+
+export const EnumCourseAgentMessageStatusSchema = z.enum([
+  'pending',
+  'streaming',
+  'completed',
+  'errored',
+  'canceled',
+]);
+export type EnumCourseAgentMessageStatus = z.infer<typeof EnumCourseAgentMessageStatusSchema>;
+
+export const EnumCourseAgentRunStatusSchema = z.enum([
+  'queued',
+  'preparing',
+  'running',
+  'finalizing',
+  'syncing',
+  'checkpointing',
+  'completed',
+  'failed',
+  'canceled',
+]);
+export type EnumCourseAgentRunStatus = z.infer<typeof EnumCourseAgentRunStatusSchema>;
+
+export const EnumCourseAgentRuntimeStatusSchema = z.enum([
+  'unallocated',
+  'booting',
+  'preparing',
+  'cloning',
+  'restoring',
+  'ready',
+  'running',
+  'finalizing',
+  'syncing',
+  'checkpointing',
+  'destroying',
+  'offline',
+  'error',
+]);
+export type EnumCourseAgentRuntimeStatus = z.infer<typeof EnumCourseAgentRuntimeStatusSchema>;
+
 export const EnumAssessmentTypeSchema = z.enum(['Exam', 'RetryExam', 'Basic', 'Game', 'Homework']);
 export type EnumAssessmentType = z.infer<typeof EnumAssessmentTypeSchema>;
 
@@ -714,6 +763,83 @@ export const ClientFingerprintSchema = z.object({
   user_session_id: IdSchema,
 });
 export type ClientFingerprint = z.infer<typeof ClientFingerprintSchema>;
+
+export const CourseAgentConversationSchema = z.object({
+  container_id: z.string().nullable(),
+  course_id: IdSchema,
+  course_path: z.string().nullable(),
+  created_at: DateFromISOString,
+  deleted_at: DateFromISOString.nullable(),
+  id: IdSchema,
+  idle_deadline_at: DateFromISOString.nullable(),
+  last_activity_at: DateFromISOString.nullable(),
+  last_error: z.string().nullable(),
+  runtime_status: EnumCourseAgentRuntimeStatusSchema,
+  sandbox_id: z.string(),
+  title: z.string(),
+  updated_at: DateFromISOString,
+  user_id: IdSchema,
+  workspace_path: z.string(),
+});
+export type CourseAgentConversation = z.infer<typeof CourseAgentConversationSchema>;
+
+export const CourseAgentEventSchema = z.object({
+  conversation_id: IdSchema,
+  created_at: DateFromISOString,
+  data: z.record(z.string(), z.unknown()),
+  event_type: z.string(),
+  external_event_id: z.string(),
+  id: IdSchema,
+  run_id: IdSchema.nullable(),
+  sequence: IdSchema,
+});
+export type CourseAgentEvent = z.infer<typeof CourseAgentEventSchema>;
+
+export const CourseAgentMessageSchema = z.object({
+  authn_user_id: IdSchema.nullable(),
+  conversation_id: IdSchema,
+  created_at: DateFromISOString,
+  id: IdSchema,
+  metadata: z.record(z.string(), z.unknown()),
+  parts: z.array(z.any()),
+  role: EnumCourseAgentMessageRoleSchema,
+  run_id: IdSchema.nullable(),
+  status: EnumCourseAgentMessageStatusSchema,
+  updated_at: DateFromISOString,
+});
+export type CourseAgentMessage = z.infer<typeof CourseAgentMessageSchema>;
+
+export const CourseAgentRunSchema = z.object({
+  base_commit_sha: z.string().nullable(),
+  commit_sha: z.string().nullable(),
+  completed_at: DateFromISOString.nullable(),
+  conversation_id: IdSchema,
+  created_at: DateFromISOString,
+  error_code: z.string().nullable(),
+  error_message: z.string().nullable(),
+  id: IdSchema,
+  prompt_digest: z.string(),
+  pushed_sha: z.string().nullable(),
+  started_at: DateFromISOString.nullable(),
+  status: EnumCourseAgentRunStatusSchema,
+  sync_job_sequence_id: IdSchema.nullable(),
+});
+export type CourseAgentRun = z.infer<typeof CourseAgentRunSchema>;
+
+export const CourseAgentWorkspaceBackupSchema = z.object({
+  backup_handle: z.unknown(),
+  conversation_id: IdSchema,
+  course_commit_sha: z.string().nullable(),
+  created_at: DateFromISOString,
+  expires_at: DateFromISOString.nullable(),
+  id: IdSchema,
+  reason: EnumCourseAgentBackupReasonSchema,
+  run_id: IdSchema.nullable(),
+  sandbox_id: z.string(),
+  size_bytes: z.coerce.number().nullable(),
+  workspace_manifest_version: z.number(),
+});
+export type CourseAgentWorkspaceBackup = z.infer<typeof CourseAgentWorkspaceBackupSchema>;
 
 export const CourseSchema = z.object({
   ai_grading_free_credit_redemptions_used: z.number(),
@@ -1812,6 +1938,11 @@ export const TableNames = [
   'batched_migrations',
   'chunks',
   'client_fingerprints',
+  'course_agent_conversations',
+  'course_agent_events',
+  'course_agent_messages',
+  'course_agent_runs',
+  'course_agent_workspace_backups',
   'course_instance_access_rules',
   'course_instance_ai_grading_credentials',
   'course_instance_permissions',

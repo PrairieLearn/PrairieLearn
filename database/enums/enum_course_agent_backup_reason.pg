@@ -1,0 +1,4 @@
+values
+    conversation_deleted
+    idle_timeout
+    test_kill

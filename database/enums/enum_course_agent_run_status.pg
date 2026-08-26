@@ -1,0 +1,10 @@
+values
+    canceled
+    checkpointing
+    completed
+    failed
+    finalizing
+    preparing
+    queued
+    running
+    syncing

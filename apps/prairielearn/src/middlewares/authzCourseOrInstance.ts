@@ -342,6 +342,8 @@ export interface ResLocalsCourse {
   user: ResLocalsCourseAuthz['user'];
   course_has_course_instances: boolean;
   question_sharing_enabled: boolean;
+  course_agent_enabled: boolean;
+  course_agent_test_controls_enabled: boolean;
   is_administrator: boolean;
 }
 
@@ -701,6 +703,16 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
     'question-sharing',
     res.locals,
   );
+  res.locals.course_agent_enabled =
+    authnAuthzData.has_course_permission_own &&
+    effectiveAuthzData.has_course_permission_own &&
+    !authnCourse.example_course &&
+    (await features.enabledFromLocals('cloud-agent', res.locals));
+  res.locals.course_agent_test_controls_enabled =
+    res.locals.course_agent_enabled &&
+    config.devMode &&
+    config.courseAgentTestControlsEnabled &&
+    (await features.enabledFromLocals('cloud-agent-test-controls', res.locals));
 }
 
 export default asyncHandler(async (req, res, next) => {
