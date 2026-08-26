@@ -547,7 +547,7 @@ function renderFeedbackGradeFn(
           assignment,
         );
         break;
-      case 'blank-correct':
+      case 'fill-in-the-blank-correct':
         lines.push(
           `    if data["partial_scores"].get(${JSON.stringify(message.trigger.answerName)}, {}).get("score", 0) >= 1:`,
           assignment,
