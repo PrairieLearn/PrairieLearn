@@ -12,6 +12,14 @@ export function deduplicateChoices<T extends { html: string; correct: boolean }>
   return [...seen.values()];
 }
 
+export function neutralizeMustacheDelimiters(html: string): string {
+  return html
+    .replaceAll('{{{', '&#123;&#123;&#123;')
+    .replaceAll('}}}', '&#125;&#125;&#125;')
+    .replaceAll('{{', '&#123;&#123;')
+    .replaceAll('}}', '&#125;&#125;');
+}
+
 /**
  * Convert a Canvas formula string to a valid Python expression.
  *

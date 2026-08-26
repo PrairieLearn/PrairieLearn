@@ -19,6 +19,7 @@ import { stableUuid } from '../utils/uuid.js';
 import type { BodyEmitHandler, BodyEmitRegistry, FeedbackMessage } from './body-emit-handler.js';
 import type { ConversionResult, ConversionWarning, EmitOptions, OutputEmitter } from './emitter.js';
 import { createPLBodyRegistry } from './handlers/index.js';
+import { neutralizeMustacheDelimiters } from './pl-emit-utils.js';
 
 /** Emits PrairieLearn question directories and assessment config from IR. */
 export class PLEmitter implements OutputEmitter {
@@ -307,11 +308,11 @@ export class PLEmitter implements OutputEmitter {
       ? wrapInlineInputPrompt(promptHtml)
       : ['<pl-question-panel>', promptHtml, '</pl-question-panel>', ''];
 
-    // Checkbox per-answer feedback is rendered in the submission panel so all selected answers'
-    // messages can be shown. PL only surfaces one feedback attribute per answer element.
-    const perAnswerForHtml =
-      question.body.type === 'checkbox' ? undefined : question.feedback?.perAnswer;
-    const bodyHtml = handler.renderHtml(question.body, question.shuffleAnswers, perAnswerForHtml);
+    const bodyHtml = handler.renderHtml(
+      question.body,
+      question.shuffleAnswers,
+      question.feedback?.perAnswer,
+    );
     if (bodyHtml) parts.push(bodyHtml);
 
     const generalFeedback = buildGeneralFeedback(question);
@@ -501,14 +502,6 @@ function renderFeedbackHtml(messages: NamedFeedbackMessage[], generalFeedback: s
   return lines.join('\n');
 }
 
-function neutralizeMustacheDelimiters(html: string): string {
-  return html
-    .replaceAll('{{{', '&#123;&#123;&#123;')
-    .replaceAll('}}}', '&#125;&#125;&#125;')
-    .replaceAll('{{', '&#123;&#123;')
-    .replaceAll('}}', '&#125;&#125;');
-}
-
 function renderFeedbackGradeFn(
   messages: NamedFeedbackMessage[],
   hasGeneralFeedback: boolean,
@@ -517,18 +510,6 @@ function renderFeedbackGradeFn(
 
   const lines = ['def grade(data):'];
   const assignedScoreFeedbackNames = new Set<string>();
-  if (messages.some((message) => message.trigger.type === 'checkbox-answer-selected')) {
-    lines.push(
-      '    _submitted = data["submitted_answers"].get("answer") or []',
-      '    if isinstance(_submitted, str):',
-      '        _submitted = [_submitted]',
-      '    _selected_answer_html = {',
-      '        answer["html"]',
-      '        for answer in data["params"].get("answer") or []',
-      '        if answer["key"] in _submitted',
-      '    }',
-    );
-  }
 
   for (const message of messages) {
     const assignment = `        data["feedback"][${JSON.stringify(message.name)}] = True`;
@@ -540,12 +521,6 @@ function renderFeedbackGradeFn(
           );
           assignedScoreFeedbackNames.add(message.name);
         }
-        break;
-      case 'checkbox-answer-selected':
-        lines.push(
-          `    if ${JSON.stringify(message.trigger.answerHtml)} in _selected_answer_html:`,
-          assignment,
-        );
         break;
       case 'fill-in-the-blank-correct':
         lines.push(

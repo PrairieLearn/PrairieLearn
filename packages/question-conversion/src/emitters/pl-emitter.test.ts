@@ -266,17 +266,21 @@ describe('PLEmitter', () => {
   });
 
   describe('checkbox per-answer feedback', () => {
-    it('safely encodes answer labels while keeping feedback HTML static', () => {
-      const answer = 'A "quoted" {answer} with \\slashes\\ and\na newline';
-      const feedback = '<p>Feedback with "quotes", {braces}, \\slashes\\, and\na newline.</p>';
+    it('uses native answer feedback without generated Python', () => {
+      const answer = 'A<br/>B';
+      const feedback = '<p>Feedback with "quotes", {{braces}}, and \\slashes\\.</p>';
       const q = makeQuestion({
         body: { type: 'checkbox', choices: [{ id: 'a', html: answer, correct: true }] },
         feedback: { perAnswer: { [answer]: feedback } },
       });
       const result = emitter.emit(makeAssessment([q])).questions[0];
-      assert.include(result.questionHtml, feedback);
-      assert.include(result.serverPy, `if ${JSON.stringify(answer)} in _selected_answer_html:`);
-      assert.notInclude(result.serverPy, feedback);
+      assert.include(result.questionHtml, '>A<br/>B</pl-answer>');
+      assert.include(
+        result.questionHtml,
+        'feedback="&lt;p&gt;Feedback with &quot;quotes&quot;, &#123;&#123;braces&#125;&#125;, and \\slashes\\.&lt;/p&gt;"',
+      );
+      assert.notInclude(result.questionHtml, '<pl-submission-panel>');
+      assert.isUndefined(result.serverPy);
     });
   });
 
