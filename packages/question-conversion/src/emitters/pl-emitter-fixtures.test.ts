@@ -42,7 +42,7 @@ describe('PLEmitter output fixtures', () => {
   });
 
   it('preserves imported Mustache delimiters without evaluating them', async () => {
-    const question = await emitFixture('multiple-choice');
+    const question = await emitFixture('mustache-delimiters');
     const renderedHtml = mustache.render(question.questionHtml, {
       feedback: { overall: true },
       double_brace_value: 'DOUBLE_BRACE_EVALUATED',

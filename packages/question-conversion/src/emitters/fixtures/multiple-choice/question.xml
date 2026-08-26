@@ -81,14 +81,14 @@
         <itemfeedback ident="correct_fb">
           <flow_mat>
             <material>
-              <mattext texttype="text/html">&lt;p&gt;Plants use carbon dioxide, water, and light to make sugars. Keep these placeholders literal: &lt;code&gt;{{double_brace_value}}&lt;/code&gt; and &lt;code&gt;{{{triple_brace_value}}}&lt;/code&gt;.&lt;/p&gt;</mattext>
+              <mattext texttype="text/html">&lt;p&gt;Plants use carbon dioxide, water, and light to make sugars.&lt;/p&gt;</mattext>
             </material>
           </flow_mat>
         </itemfeedback>
         <itemfeedback ident="general_incorrect_fb">
           <flow_mat>
             <material>
-              <mattext texttype="text/html">&lt;p&gt;Plants use carbon dioxide, water, and light to make sugars. Keep these placeholders literal: &lt;code&gt;{{double_brace_value}}&lt;/code&gt; and &lt;code&gt;{{{triple_brace_value}}}&lt;/code&gt;.&lt;/p&gt;</mattext>
+              <mattext texttype="text/html">&lt;p&gt;Plants use carbon dioxide, water, and light to make sugars.&lt;/p&gt;</mattext>
             </material>
           </flow_mat>
         </itemfeedback>
