@@ -6,6 +6,7 @@
 
 import base64
 import hashlib
+import html
 import json
 import urllib.parse
 from io import BytesIO
@@ -84,7 +85,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         if data["panel"] == "question":
             return ""
 
-        return pl.render_ai_grading_file(file_name)
+        # This marker is internal to PrairieLearn's AI grading implementation.
+        name = html.escape(file_name, quote=True)
+        return f'<div data-ai-grading-file-name="{name}">{name}</div>'
 
     html_params = {
         "uuid": pl.get_uuid(),

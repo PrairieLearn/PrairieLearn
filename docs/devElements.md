@@ -120,22 +120,6 @@ The above table describes the purpose of each function and the values in `data` 
 
 All functions above have equivalents in [question code](question/server.md) (i.e., the question's own `server.py` file). When the functions are declared in both the element and the question, the element function is always executed first for each element in the question, in the order the elements appear in the question, followed by the question function. This allows question code to override or modify the behavior of the element if necessary.
 
-### Providing submitted files to AI grading
-
-An element that stores a submitted file in `data["submitted_answers"]["_files"]` can make that file available to AI grading by returning `pl.render_ai_grading_file(file_name)` from `render()` when `data["ai_grading"]` is `True`. The marker should be rendered in the submission panel at the position where the attachment belongs in the student's response. If multiple elements reference the same file name, AI grading sends the file to the model only once.
-
-AI grading currently supports PDF, JPEG, PNG, and WebP attachments. The helper only renders the marker; the element remains responsible for parsing, validating, and adding the submitted file to `_files`.
-
-```python
-def render(element_html: str, data: pl.QuestionData) -> str:
-    # ...
-    if data["ai_grading"]:
-        if data["panel"] != "submission":
-            return ""
-        return pl.render_ai_grading_file(file_name)
-    # ...
-```
-
 ## Element dependencies
 
 It's likely that your element will depend on certain client-side assets, such as scripts or stylesheets. To keep clean separation of HTML, CSS, and JS, you can place those dependencies in other files. If you depend on libraries like `lodash` or `d3`, you can also link to node modules containing these libraries. PrairieLearn will compile a list of all dependencies needed by all elements on a page, deduplicate the dependencies, and ensure they are loaded on the page.

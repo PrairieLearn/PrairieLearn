@@ -2,6 +2,7 @@ import base64
 import csv
 import fnmatch
 import hashlib
+import html as stdlib_html
 import json
 import random
 import re
@@ -236,8 +237,10 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         if data["panel"] != "submission":
             return ""
 
+        # This marker is internal to PrairieLearn's AI grading implementation.
         return "\n".join(
-            pl.render_ai_grading_file(file_name)
+            f'<div data-ai-grading-file-name="{stdlib_html.escape(file_name, quote=True)}">'
+            f"{stdlib_html.escape(file_name)}</div>"
             for file_name in sorted(accepted_file_names)
         )
 

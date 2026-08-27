@@ -29,7 +29,6 @@ __all__ = [
     "is_boolean_value",
     "is_float_value",
     "is_integer_value",
-    "render_ai_grading_file",
 ]
 
 # From https://gitlab.gnome.org/GNOME/libxml2/-/blob/4aa08c80b711ab296f6e6ecab24df8cf6d0be5fc/HTMLtree.c#L305-309
@@ -474,21 +473,6 @@ def inner_html(element: lxml.html.HtmlElement) -> str:
     for child in element:
         inner += lxml.html.tostring(child, method="html").decode("utf-8")
     return inner
-
-
-def render_ai_grading_file(file_name: str) -> str:
-    """Render a submitted-file marker for AI grading.
-
-    The file name must identify a file in ``data["submitted_answers"]["_files"]``.
-
-    Returns:
-        HTML containing the AI-grading file marker.
-    """
-    escaped_file_name = html.escape(file_name, quote=True)
-    return (
-        f'<div data-ai-grading-file-name="{escaped_file_name}">'
-        f"{escaped_file_name}</div>"
-    )
 
 
 def escape_invalid_string(string: str) -> str:

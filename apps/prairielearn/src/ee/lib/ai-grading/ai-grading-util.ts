@@ -342,8 +342,8 @@ type SubmissionHTMLSegment =
  * The submission HTML is expected to have already been processed by `stripHtmlForAiGrading`
  * (this happens in `freeform.ts` when `questionRenderContext === 'ai_grading'`). This function
  * preserves the full HTML structure for text segments, ensuring the prompt matches what the
- * instructor sees on the AI grading preview page. Attachments are identified by the common marker
- * emitted by `render_ai_grading_file` and returned as separate segments. Legacy markers emitted by
+ * instructor sees on the AI grading preview page. Attachments are identified by an internal marker
+ * emitted by supported elements and returned as separate segments. Legacy markers emitted by
  * `pl-image-capture` and `pl-file-upload` are also recognized.
  */
 export function parseSubmission({
