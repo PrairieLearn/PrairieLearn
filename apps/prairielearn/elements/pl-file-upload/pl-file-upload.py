@@ -1,3 +1,8 @@
+# The pl-file-upload element enables students to submit files to questions.
+
+# Neither this element nor its implementation strategy should be copied or forked
+# because it is tightly coupled with logic within PrairieLearn's web server.
+
 import base64
 import csv
 import fnmatch
