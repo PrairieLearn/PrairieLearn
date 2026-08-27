@@ -268,7 +268,7 @@ describe('QTI12ItemContainerParser', async () => {
   });
 
   describe('feedback parsing', async () => {
-    it('extracts question-wide feedback via flow_mat path', async () => {
+    it('converts Canvas equation images in prompts and question-wide feedback', async () => {
       const xml = `<?xml version="1.0"?>
 <questestinterop xmlns="http://www.imsglobal.org/xsd/ims_qtiasiv1p2">
   <assessment ident="a1" title="Q">
@@ -278,7 +278,7 @@ describe('QTI12ItemContainerParser', async () => {
           <qtimetadatafield><fieldlabel>question_type</fieldlabel><fieldentry>multiple_choice_question</fieldentry></qtimetadatafield>
         </qtimetadata></itemmetadata>
         <presentation>
-          <material><mattext texttype="text/html">&lt;p&gt;Pick&lt;/p&gt;</mattext></material>
+          <material><mattext texttype="text/html">&lt;p&gt;&lt;img data-equation-content="\\alpha" src="equation.svg"&gt;&lt;/p&gt;</mattext></material>
           <response_lid ident="response1" rcardinality="Single">
             <render_choice>
               <response_label ident="a1"><material><mattext>A</mattext></material></response_label>
@@ -295,7 +295,7 @@ describe('QTI12ItemContainerParser', async () => {
           <flow_mat><material><mattext texttype="text/html">&lt;p&gt;Remember the definition.&lt;/p&gt;</mattext></material></flow_mat>
         </itemfeedback>
         <itemfeedback ident="correct_fb">
-          <flow_mat><material><mattext texttype="text/html">&lt;p&gt;Well done!&lt;/p&gt;</mattext></material></flow_mat>
+          <flow_mat><material><mattext texttype="text/html">&lt;p&gt;&lt;img data-equation-content="x^2" src="equation.svg"&gt;&lt;/p&gt;</mattext></material></flow_mat>
         </itemfeedback>
         <itemfeedback ident="general_incorrect_fb">
           <flow_mat><material><mattext texttype="text/html">&lt;p&gt;Try again.&lt;/p&gt;</mattext></material></flow_mat>
@@ -317,8 +317,9 @@ describe('QTI12ItemContainerParser', async () => {
 </questestinterop>`;
       const result = await parser.parse(xml);
       const [q, generalOnly] = result.questions;
+      assert.equal(q.promptHtml, '<p>$\\alpha$</p>');
       assert.equal(q.feedback?.general, '<p>Remember the definition.</p>');
-      assert.equal(q.feedback?.correct, '<p>Well done!</p>');
+      assert.equal(q.feedback?.correct, '<p>$x^2$</p>');
       assert.equal(q.feedback?.incorrect, '<p>Try again.</p>');
       assert.deepEqual(generalOnly.feedback, { general: '<p>General only.</p>' });
     });

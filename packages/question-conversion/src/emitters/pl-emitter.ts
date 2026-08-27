@@ -17,7 +17,13 @@ import { slugify } from '../utils/slugify.js';
 import { stableUuid } from '../utils/uuid.js';
 
 import type { BodyEmitHandler, BodyEmitRegistry, FeedbackMessage } from './body-emit-handler.js';
-import type { ConversionResult, ConversionWarning, EmitOptions, OutputEmitter } from './emitter.js';
+import type {
+  ConversionResult,
+  ConversionWarning,
+  EmitOptions,
+  EmitProcessedOptions,
+  OutputEmitter,
+} from './emitter.js';
 import { createPLBodyRegistry } from './handlers/index.js';
 import { escapeMustacheDelimiters } from './pl-emit-utils.js';
 
@@ -64,6 +70,7 @@ export class PLEmitter implements OutputEmitter {
         assessment: assessmentOutput,
         questions,
         warnings,
+        reports: [],
       };
     }
 
@@ -75,7 +82,22 @@ export class PLEmitter implements OutputEmitter {
       assessment: assessmentOutput,
       questions,
       warnings,
+      reports: [],
     };
+  }
+
+  async emitProcessed(
+    itemContainer: IRItemContainer,
+    { processors = [], ...options }: EmitProcessedOptions = {},
+  ): Promise<ConversionResult> {
+    for (const processor of processors) {
+      await processor.beforeEmit?.(itemContainer);
+    }
+    const result = this.emit(itemContainer, options);
+    for (const processor of processors) {
+      await processor.afterEmit?.(result, itemContainer);
+    }
+    return result;
   }
 
   private emitAssessment(

@@ -31,10 +31,14 @@ export type {
 // Emitters
 export { PLEmitter } from './emitters/pl-emitter.js';
 export type {
+  ConversionProcessor,
+  ConversionReport,
   OutputEmitter,
   ConversionResult,
   ConversionWarning,
   EmitOptions,
+  EmitProcessedOptions,
+  RemoteImageCopyReport,
 } from './emitters/emitter.js';
 export type {
   BodyEmitHandler,
@@ -87,3 +91,6 @@ export {
 export type { CourseExportInfo, QtiFileEntry } from './utils/course-export.js';
 export { slugify } from './utils/slugify.js';
 export { normalizeImsFilePath, safeDecodeURIComponent } from './utils/ims-file-path.js';
+
+// Processors
+export { QtiImportRemoteImageCopier } from './remote-image-copier.js';

@@ -12,6 +12,7 @@ import { PLEmitter } from '../emitters/pl-emitter.js';
 import type { ParseOptions } from '../parsers/parser.js';
 import { QTI12ItemContainerParser } from '../parsers/qti12/index.js';
 import { parseAssessment } from '../pipeline.js';
+import { QtiImportRemoteImageCopier } from '../remote-image-copier.js';
 import type { IRItemContainer } from '../types/ir.js';
 import {
   type CourseExportInfo,
@@ -73,6 +74,7 @@ program
       );
 
       await ensureCourseFiles(courseDir, options.courseInstance, timezone, courseExportInfo);
+      const remoteImageCopier = new QtiImportRemoteImageCopier();
 
       if (inputStat.isDirectory()) {
         // Prefer the manifest for file discovery — it's present in both quiz
@@ -116,13 +118,13 @@ program
         const usedSlugs = new Set<string>();
         for (const p of parsed) {
           const slug = uniqueSlug(slugify(p.ir.title), usedSlugs);
-          const converted = emitWithSlug(p, slug, options);
+          const converted = await emitWithSlug(p, slug, options, remoteImageCopier);
           await writeFiles(converted, courseDir, options);
         }
       } else {
         const entry = { qtiPath: resolvedInput, assessmentDir: path.dirname(resolvedInput) };
         const p = await parseFile(entry, timezone);
-        const converted = emitWithSlug(p, slugify(p.ir.title), options);
+        const converted = await emitWithSlug(p, slugify(p.ir.title), options, remoteImageCopier);
         await writeFiles(converted, courseDir, options);
       }
     },
@@ -241,16 +243,18 @@ async function parseFile(
   return { ir, parseOptions, webResourcesDir };
 }
 
-function emitWithSlug(
+async function emitWithSlug(
   parsed: ParsedInput,
   assessmentSlug: string,
   options: { topic?: string; tags: string[] },
-): ParsedAssessment {
-  const result = EMITTER.emit(parsed.ir, {
+  remoteImageCopier: QtiImportRemoteImageCopier,
+): Promise<ParsedAssessment> {
+  const result = await EMITTER.emitProcessed(parsed.ir, {
     ...parsed.parseOptions,
     topic: options.topic,
     tags: options.tags,
     questionIdPrefix: `imported/${assessmentSlug}`,
+    processors: [remoteImageCopier],
   });
   return { result, assessmentSlug, webResourcesDir: parsed.webResourcesDir };
 }
