@@ -5,11 +5,10 @@ import * as path from 'path';
 import byline from 'byline';
 import Docker from 'dockerode';
 import { execa } from 'execa';
-import fs from 'fs-extra';
 import * as shlex from 'shlex';
 
 import { logger } from '@prairielearn/logger';
-import { contains } from '@prairielearn/path-utils';
+import { FileSizeLimitError, contains, readFileWithinDirectory } from '@prairielearn/path-utils';
 import * as sqldb from '@prairielearn/postgres';
 
 import { config } from './config.js';
@@ -201,26 +200,29 @@ export class ExternalGraderLocal implements Grader {
 
       // Now that the job has completed, let's extract the results from `results.json`.
       if (results.succeeded) {
-        const data = await fs.readFile(path.join(dir, 'results', 'results.json'));
-        try {
-          if (Buffer.byteLength(data) > 1024 * 1024) {
-            // Cap data size at 1MB
+        const data = await readFileWithinDirectory(dir, 'results/results.json', 1024 * 1024).catch(
+          (err: unknown) => {
             results.succeeded = false;
-            results.message =
-              'The grading results were larger than 1MB. ' +
-              'If the problem persists, please contact course staff or a proctor.';
-          } else {
-            try {
-              results.results = JSON.parse(data.toString('utf8'));
-              results.succeeded = true;
-            } catch {
-              results.succeeded = false;
-              results.message = 'Could not parse the grading results.';
+            if (err instanceof FileSizeLimitError) {
+              results.message =
+                'The grading results were larger than 1MB. ' +
+                'If the problem persists, please contact course staff or a proctor.';
+            } else {
+              logger.error('Could not read results.json', err);
+              results.message = 'Could not read grading results.';
             }
+            return null;
+          },
+        );
+
+        if (data !== null) {
+          try {
+            results.results = JSON.parse(data.toString('utf8'));
+            results.succeeded = true;
+          } catch {
+            results.succeeded = false;
+            results.message = 'Could not parse the grading results.';
           }
-        } catch {
-          logger.error('Could not read results.json');
-          results.succeeded = false;
         }
       } else {
         results.results = null;

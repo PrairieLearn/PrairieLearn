@@ -6,7 +6,6 @@ import type { SerializedQuestionOutput } from '../instructorQtiImport.types.js';
 import {
   NonRubricWarnings,
   QuestionBankDeduplicationWarning,
-  REMOTE_IMAGE_URL_WARNING,
   buildQuestionWarningsByDirectoryName,
   findDuplicateQuestionTitles,
 } from './ImportReviewComponents.js';
@@ -35,30 +34,11 @@ function makeQuestion({
     questionHtml: '<pl-question-panel></pl-question-panel>',
     clientFiles: {},
     skippedVideos: [],
+    copiedExternalImageFileCount: 0,
   };
 }
 
 describe('NonRubricWarnings', () => {
-  it('collapses remote image URL warnings in the overview', () => {
-    const html = renderToStaticMarkup(
-      <NonRubricWarnings
-        questions={[
-          makeQuestion({ directoryName: 'imported/quiz/q1', sourceId: 'q1' }),
-          makeQuestion({ directoryName: 'imported/quiz/q2', sourceId: 'q2' }),
-        ]}
-        warnings={[
-          { questionId: 'imported/quiz/q1', message: REMOTE_IMAGE_URL_WARNING },
-          { questionId: 'imported/quiz/q2', message: REMOTE_IMAGE_URL_WARNING },
-        ]}
-      />,
-    );
-
-    expect(
-      html.match(/One or more questions contain an image reference to a remote URL/g),
-    ).toHaveLength(1);
-    expect(html).not.toContain(REMOTE_IMAGE_URL_WARNING);
-  });
-
   it('includes duplicate question title warnings in the overview', () => {
     const html = renderToStaticMarkup(
       <NonRubricWarnings
@@ -100,12 +80,12 @@ describe('NonRubricWarnings', () => {
           makeQuestion({ directoryName: 'imported/quiz/q1', sourceId: 'q1', title: 'Question' }),
           makeQuestion({ directoryName: 'imported/quiz/q2', sourceId: 'q2', title: 'Question' }),
         ]}
-        warnings={[{ questionId: 'imported/quiz/q1', message: REMOTE_IMAGE_URL_WARNING }]}
+        warnings={[{ questionId: 'imported/quiz/q1', message: 'Missing asset file: diagram.png' }]}
       />,
     );
 
     expect(html.match(/alert-warning/g)).toHaveLength(1);
-    expect(html).toContain('One or more questions contain an image reference to a remote URL');
+    expect(html).toContain('Missing asset file: diagram.png');
     expect(html).toContain('We detected several questions named');
   });
 });
@@ -187,13 +167,13 @@ describe('buildQuestionWarningsByDirectoryName', () => {
     const warnings = buildQuestionWarningsByDirectoryName(
       [question],
       [
-        { questionId: 'imported/quiz/q1', message: REMOTE_IMAGE_URL_WARNING },
+        { questionId: 'imported/quiz/q1', message: 'Missing asset file: diagram.png' },
         { questionId: 'source-q1', message: 'Unsupported question type "magic_question"' },
       ],
     );
 
     expect(warnings.get('imported/quiz/q1')?.map((warning) => warning.message)).toEqual([
-      REMOTE_IMAGE_URL_WARNING,
+      'Missing asset file: diagram.png',
       'Unsupported question type "magic_question"',
     ]);
   });

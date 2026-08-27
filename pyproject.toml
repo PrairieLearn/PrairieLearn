@@ -237,6 +237,8 @@ convention = "google"
 "apps/prairielearn/elements/pl-drawing/**/*.py" = ["ANN"]
 "apps/prairielearn/elements/pl-prairiedraw-figure/**/*.py" = ["ANN"]
 "apps/prairielearn/elements/pl-checkbox/**/*.py" = ["ANN"]
+# These are exact-output fixtures, not repository Python source.
+"packages/question-conversion/src/emitters/fixtures/**/server.py" = ["ALL"]
 # Issues rebuilding workspace
 "workspaces/jupyterlab-base/jupyter_server_config.py" = ["PLW1508"]
 

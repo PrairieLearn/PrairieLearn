@@ -13,8 +13,8 @@ DECLARE
     existing_rule_id bigint;
     new_rule_id bigint;
 BEGIN
-    -- Lock the assessment row to serialize concurrent access control modifications.
-    PERFORM id FROM assessments WHERE id = syncing_assessment_id FOR NO KEY UPDATE;
+    -- The caller locks all affected enrollments in numeric order, then locks
+    -- the assessment, before invoking this function.
 
     -- Check if updating an existing rule (rule_data contains 'id')
     existing_rule_id := (rule_data ->> 'id')::bigint;
