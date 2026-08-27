@@ -1,5 +1,6 @@
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
+import { formatDateYMDHM } from '@prairielearn/formatter';
 import * as sqldb from '@prairielearn/postgres';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
@@ -8,6 +9,7 @@ import { config } from '../lib/config.js';
 import { SprocUsersSelectOrInsertSchema } from '../lib/db-types.js';
 import { selectJobSequenceStatus } from '../lib/server-jobs.js';
 import { selectAssessmentByTid } from '../models/assessment.js';
+import { selectCourseInstanceById } from '../models/course-instances.js';
 import {
   insertCourseInstancePermissions,
   insertCoursePermissionsByUserUid,
@@ -81,6 +83,24 @@ describe('assessmentInstances tRPC router', { timeout: 60_000, concurrent: false
     const after = await trpcClient.assessmentInstances.list.query();
     assert.isNotNull(after[0].time_remaining_sec);
     assert.isTrue(after[0].assessment_instance.open);
+  });
+
+  test('setTimeLimit (set_exact) accepts a native datetime-local value', async () => {
+    const before = await trpcClient.assessmentInstances.list.query();
+    await trpcClient.assessmentInstances.setTimeLimit.mutate({
+      assessmentInstanceIds: [before[0].assessment_instance.id],
+      action: 'set_exact',
+      date: '2030-01-15T14:30',
+    });
+
+    const [after, courseInstance] = await Promise.all([
+      trpcClient.assessmentInstances.list.query(),
+      selectCourseInstanceById(courseInstanceId),
+    ]);
+    assert.equal(
+      formatDateYMDHM(after[0].assessment_instance.date_limit!, courseInstance.display_timezone),
+      '2030-01-15 14:30',
+    );
   });
 
   test('setTimeLimit (remove) clears the time limit', async () => {

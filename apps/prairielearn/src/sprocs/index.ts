@@ -16,7 +16,6 @@ export async function init() {
       'array_var.sql',
       'histogram.sql',
       'array_histogram.sql',
-      'input_date.sql',
       'interval_hist_thresholds.sql',
       'jsonb_array_to_text_array.sql',
       'jsonb_array_to_double_precision_array.sql',

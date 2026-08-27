@@ -17,9 +17,11 @@ import {
   AssessmentAccessControlRuleSchema,
 } from '../lib/db-types.js';
 import { lockEnrollments } from '../lib/enrollment/lock.js';
+import { parseLocalDateTime } from '../lib/timezones.js';
 import type { AccessControlJson } from '../schemas/accessControl.js';
 
 import { lockAssessment } from './assessment.js';
+import { selectCourseInstanceById } from './course-instances.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -314,14 +316,15 @@ async function syncEnrollmentAccessControlRule(
   ruleData: EnrollmentAccessControlRuleData,
   ruleNumber: number,
   enrollmentIds: string[],
+  displayTimezone: string,
 ): Promise<string> {
   const ruleJson = JSON.stringify({
     id: ruleData.id ?? null,
     number: ruleNumber,
     before_release_listed: ruleData.beforeReleaseListed,
-    date_control_release_date: ruleData.releaseDate,
+    date_control_release_date: parseLocalDateTime(ruleData.releaseDate, displayTimezone),
     date_control_due_overridden: ruleData.dueOverridden,
-    date_control_due_date: ruleData.dueDate,
+    date_control_due_date: parseLocalDateTime(ruleData.dueDate, displayTimezone),
     date_control_due_credit: ruleData.dueCredit,
     date_control_early_deadlines_overridden: ruleData.earlyDeadlinesOverridden,
     date_control_late_deadlines_overridden: ruleData.lateDeadlinesOverridden,
@@ -333,17 +336,26 @@ async function syncEnrollmentAccessControlRule(
     date_control_password_overridden: ruleData.passwordOverridden,
     date_control_password: ruleData.password,
     after_complete_questions_hidden: ruleData.questionsHidden,
-    after_complete_questions_visible_from_date: ruleData.questionsVisibleFromDate,
-    after_complete_questions_visible_until_date: ruleData.questionsVisibleUntilDate,
+    after_complete_questions_visible_from_date: parseLocalDateTime(
+      ruleData.questionsVisibleFromDate,
+      displayTimezone,
+    ),
+    after_complete_questions_visible_until_date: parseLocalDateTime(
+      ruleData.questionsVisibleUntilDate,
+      displayTimezone,
+    ),
     after_complete_score_hidden: ruleData.scoreHidden,
-    after_complete_score_visible_from_date: ruleData.scoreVisibleFromDate,
+    after_complete_score_visible_from_date: parseLocalDateTime(
+      ruleData.scoreVisibleFromDate,
+      displayTimezone,
+    ),
   });
 
   const earlyDeadlinesJson = ruleData.earlyDeadlines.map((d) =>
-    JSON.stringify({ date: d.date, credit: d.credit }),
+    JSON.stringify({ date: parseLocalDateTime(d.date, displayTimezone), credit: d.credit }),
   );
   const lateDeadlinesJson = ruleData.lateDeadlines.map((d) =>
-    JSON.stringify({ date: d.date, credit: d.credit }),
+    JSON.stringify({ date: parseLocalDateTime(d.date, displayTimezone), credit: d.credit }),
   );
 
   return callScalar(
@@ -364,6 +376,7 @@ export async function replaceEnrollmentAccessControlRules(
   assessment: Assessment,
   rules: EnrollmentAccessControlRuleInput[],
 ): Promise<void> {
+  const courseInstance = await selectCourseInstanceById(assessment.course_instance_id);
   const submittedIds = new Set<string>();
   for (const rule of rules) {
     const id = rule.ruleData.id;
@@ -431,6 +444,7 @@ export async function replaceEnrollmentAccessControlRules(
           rule.ruleData,
           index + 1,
           rule.enrollmentIds,
+          courseInstance.display_timezone,
         );
       }
     }
