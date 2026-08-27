@@ -44,16 +44,37 @@ export function computeAiGradingRelativeCosts(
 export const AI_GRADING_MODELS = [
   {
     provider: 'openai',
+    modelId: 'gpt-5.6-terra',
+    name: 'GPT 5.6 Terra',
+    sublabel: 'Good for most grading tasks',
+    recommended: true,
+  },
+  {
+    provider: 'openai',
+    modelId: 'gpt-5.6-sol',
+    name: 'GPT 5.6 Sol',
+    sublabel: 'Best for text-based submissions',
+    recommended: true,
+  },
+  {
+    provider: 'openai',
     modelId: 'gpt-5.4-mini-2026-03-17',
     name: 'GPT 5.4-mini',
     sublabel: 'Good for most grading tasks',
-    recommended: true,
+    recommended: false,
   },
   {
     provider: 'openai',
     modelId: 'gpt-5.4-2026-03-05',
     name: 'GPT 5.4',
     sublabel: 'Best for text-based submissions',
+    recommended: false,
+  },
+  {
+    provider: 'google',
+    modelId: 'gemini-3.7-flash',
+    name: 'Gemini 3.7 Flash',
+    sublabel: 'Best for handwriting and images',
     recommended: true,
   },
   {
@@ -61,7 +82,7 @@ export const AI_GRADING_MODELS = [
     modelId: 'gemini-3.1-pro-preview',
     name: 'Gemini 3.1 Pro',
     sublabel: 'Best for handwriting and images',
-    recommended: true,
+    recommended: false,
   },
   {
     provider: 'google',
@@ -86,9 +107,23 @@ export const AI_GRADING_MODELS = [
   },
   {
     provider: 'anthropic',
+    modelId: 'claude-sonnet-5',
+    name: 'Claude Sonnet 5',
+    sublabel: 'Balanced code grading',
+    recommended: false,
+  },
+  {
+    provider: 'anthropic',
     modelId: 'claude-sonnet-4-6',
     name: 'Claude Sonnet 4.6',
     sublabel: 'Balanced code grading',
+    recommended: false,
+  },
+  {
+    provider: 'anthropic',
+    modelId: 'claude-opus-5',
+    name: 'Claude Opus 5',
+    sublabel: 'Best for code submissions',
     recommended: false,
   },
   {
@@ -107,13 +142,18 @@ export const AI_GRADING_MODEL_IDS: AiGradingModelId[] = AI_GRADING_MODELS.map(
 );
 
 export const AI_GRADING_MODEL_PROVIDERS = {
+  'gpt-5.6-terra': 'openai',
+  'gpt-5.6-sol': 'openai',
   'gpt-5.4-mini-2026-03-17': 'openai',
   'gpt-5.4-2026-03-05': 'openai',
+  'gemini-3.7-flash': 'google',
   'gemini-3.5-flash': 'google',
   'gemini-3-flash-preview': 'google',
   'gemini-3.1-pro-preview': 'google',
   'claude-haiku-4-5': 'anthropic',
+  'claude-sonnet-5': 'anthropic',
   'claude-sonnet-4-6': 'anthropic',
+  'claude-opus-5': 'anthropic',
   'claude-opus-4-7': 'anthropic',
 } as const;
 
@@ -136,4 +176,4 @@ export const AI_GRADING_PROVIDER_OPTIONS = AI_GRADING_PROVIDERS.map((provider) =
 /**
  * Fallback model used when no prior model has been selected.
  */
-export const DEFAULT_AI_GRADING_MODEL = 'gpt-5.4-mini-2026-03-17' as const;
+export const DEFAULT_AI_GRADING_MODEL = 'gpt-5.6-terra' as const;

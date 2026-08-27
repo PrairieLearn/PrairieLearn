@@ -683,35 +683,44 @@ export const ConfigSchema = z.object({
       'gpt-5.2-2025-12-11': TokenPricingSchema,
       'gpt-5.4-mini-2026-03-17': TokenPricingSchema,
       'gpt-5.4-2026-03-05': TokenPricingSchema,
+      'gpt-5.6-terra': TokenPricingSchema,
+      'gpt-5.6-sol': TokenPricingSchema,
+      'gemini-3.7-flash': TokenPricingSchema,
       'gemini-3.5-flash': TokenPricingSchema,
       'gemini-3-flash-preview': TokenPricingSchema,
       'gemini-3.1-pro-preview': TokenPricingSchema,
       'claude-haiku-4-5': TokenPricingSchema,
+      'claude-sonnet-5': TokenPricingSchema,
       'claude-sonnet-4-6': TokenPricingSchema,
+      'claude-opus-5': TokenPricingSchema,
       'claude-opus-4-7': TokenPricingSchema,
     })
     .default({
-      // Prices current as of 2026-04-16. Values obtained from
+      // Prices current as of 2026-08-26. Values obtained from
       // https://developers.openai.com/api/docs/pricing
-      // OpenAI does not charge for cache writes.
       'gpt-4o-2024-11-20': { input: 2.5, cachedInput: 1.25, cacheWrite: 0, output: 10 },
       'gpt-5-2025-08-07': { input: 1.25, cachedInput: 0.125, cacheWrite: 0, output: 10 },
       'gpt-5.2-2025-12-11': { input: 1.75, cachedInput: 0.175, cacheWrite: 0, output: 14 },
       'gpt-5.4-mini-2026-03-17': { input: 0.75, cachedInput: 0.075, cacheWrite: 0, output: 4.5 },
       'gpt-5.4-2026-03-05': { input: 2.5, cachedInput: 0.25, cacheWrite: 0, output: 15 },
+      'gpt-5.6-terra': { input: 2, cachedInput: 0.2, cacheWrite: 2.5, output: 12 },
+      'gpt-5.6-sol': { input: 4, cachedInput: 0.4, cacheWrite: 5, output: 20 },
 
-      // Prices current as of 2026-05-19. Values obtained from
+      // Prices current as of 2026-08-26. Values obtained from
       // https://ai.google.dev/gemini-api/docs/pricing
       // Google does not charge for cache writes.
+      'gemini-3.7-flash': { input: 0.75, cachedInput: 0.075, cacheWrite: 0, output: 3.75 },
       'gemini-3.5-flash': { input: 1.5, cachedInput: 0.15, cacheWrite: 0, output: 9 },
       'gemini-3-flash-preview': { input: 0.5, cachedInput: 0.05, cacheWrite: 0, output: 3 },
       'gemini-3.1-pro-preview': { input: 2, cachedInput: 0.2, cacheWrite: 0, output: 12 },
 
-      // Prices current as of 2026-04-16. Values obtained from
+      // Prices current as of 2026-08-26. Values obtained from
       // https://claude.com/pricing#api
       // Anthropic charges 1.25x the input price for cache writes.
       'claude-haiku-4-5': { input: 1, cachedInput: 0.1, cacheWrite: 1.25, output: 5 },
+      'claude-sonnet-5': { input: 2, cachedInput: 0.2, cacheWrite: 2.5, output: 10 },
       'claude-sonnet-4-6': { input: 3, cachedInput: 0.3, cacheWrite: 3.75, output: 15 },
+      'claude-opus-5': { input: 5, cachedInput: 0.5, cacheWrite: 6.25, output: 25 },
       'claude-opus-4-7': { input: 5, cachedInput: 0.5, cacheWrite: 6.25, output: 25 },
     }),
   exampleCoursePath: z.string().default('./exampleCourse'),
