@@ -172,7 +172,9 @@ WITH
       c.course_instance_id = $course_instance_id
       AND c.created_at >= $start_date
       AND c.created_at < (
-        ($end_date::date + '1 day'::interval) AT TIME ZONE 'UTC'
+        (
+          ($end_date AT TIME ZONE 'UTC')::date + '1 day'::interval
+        ) AT TIME ZONE 'UTC'
       )
       AND c.delta_milli_dollars < 0
       AND c.ai_grading_job_id IS NOT NULL
@@ -184,8 +186,8 @@ SELECT
   COALESCE(daily_totals.total, 0)::bigint AS spending_milli_dollars
 FROM
   generate_series(
-    $start_date::date::timestamp without time zone,
-    $end_date::date::timestamp without time zone,
+    (($start_date AT TIME ZONE 'UTC')::date)::timestamp without time zone,
+    (($end_date AT TIME ZONE 'UTC')::date)::timestamp without time zone,
     '1 day'::interval
   ) AS d
   LEFT JOIN daily_totals ON daily_totals.day = d::date
@@ -221,7 +223,9 @@ WHERE
   c.course_instance_id = $course_instance_id
   AND c.created_at >= $start_date
   AND c.created_at < (
-    ($end_date::date + '1 day'::interval) AT TIME ZONE 'UTC'
+    (
+      ($end_date AT TIME ZONE 'UTC')::date + '1 day'::interval
+    ) AT TIME ZONE 'UTC'
   )
   AND c.delta_milli_dollars < 0
   AND c.ai_grading_job_id IS NOT NULL
