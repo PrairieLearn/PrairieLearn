@@ -1,3 +1,4 @@
+import * as cheerio from 'cheerio';
 import fetchCookie from 'fetch-cookie';
 import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
@@ -18,6 +19,11 @@ import * as helperCourse from './helperCourse.js';
 import * as helperServer from './helperServer.js';
 import { getOrCreateUser, withUser } from './utils/auth.js';
 import { getCsrfToken } from './utils/csrf.js';
+import {
+  createEnrollment,
+  createLti13CourseInstance,
+  selectEnrollments,
+} from './utils/enrollment-identity.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -43,7 +49,9 @@ async function createEnrollmentWithStatus({
       course_instance_id: courseInstanceId,
       status,
       pending_uid: pendingUid,
-      first_joined_at: status === 'joined' ? new Date() : null,
+      first_joined_at: ['joined', 'left', 'removed', 'blocked'].includes(status)
+        ? new Date()
+        : null,
     },
     EnrollmentSchema,
   );
@@ -206,6 +214,54 @@ describe('Homepage enrollment actions', () => {
     });
   });
 
+  it('does not show or reject an LTI invitation that only matches by UID', async () => {
+    const user = await getOrCreateUser({
+      uid: 'lti-uid-only@example.com',
+      name: 'UID-only LTI user',
+      uin: 'different-uin',
+      email: 'lti-uid-only@example.com',
+      institutionId: '1',
+    });
+    const courseInstance = await selectCourseInstanceById('1');
+    const lti13CourseInstance = await createLti13CourseInstance(courseInstance);
+    const invitation = await createEnrollment({
+      courseInstance,
+      pendingLti13CourseInstanceId: lti13CourseInstance.id,
+      pendingLti13Sub: 'rightful-student-sub',
+      pendingUid: user.uid,
+      pendingUin: 'rightful-student-uin',
+    });
+
+    try {
+      await withUser(user, async () => {
+        const page = await fetchCheerio(homeUrl);
+        assert.lengthOf(
+          page.$(`form:has(input[name="course_instance_id"][value="${courseInstance.id}"])`),
+          0,
+        );
+
+        const response = await fetchCookie(fetch)(homeUrl, {
+          method: 'POST',
+          body: new URLSearchParams({
+            __action: 'reject_invitation',
+            course_instance_id: courseInstance.id,
+            __csrf_token: await getCsrfToken(homeUrl),
+          }),
+        });
+        assert.equal(response.status, 200);
+        assertAlert(cheerio.load(await response.text()), 'Failed to reject invitation');
+      });
+
+      const enrollments = await selectEnrollments([invitation.id]);
+      assert.lengthOf(enrollments, 1);
+      assert.equal(enrollments[0].status, 'invited');
+    } finally {
+      await execute(sql.delete_lti13_course_instance, {
+        lti13_course_instance_id: lti13CourseInstance.id,
+      });
+    }
+  });
+
   it('shows error when rejecting after accepting invitation', async () => {
     const user = await getOrCreateUser({
       uid: 'invited3@example.com',
@@ -255,7 +311,6 @@ describe('Homepage enrollment actions', () => {
 
       // Get the HTML to check for flash message
       const rejectResponseText = await rejectResponse.text();
-      const cheerio = await import('cheerio');
       const $ = cheerio.load(rejectResponseText);
 
       // Verify error message is shown
@@ -279,78 +334,71 @@ describe('Homepage enrollment actions', () => {
     });
   });
 
-  it('allows accepting invitation after rejecting it', async () => {
-    const user = await getOrCreateUser({
-      uid: 'invited4@example.com',
-      name: 'Invited User 4',
-      uin: 'invited4',
-      email: 'invited4@example.com',
-      institutionId: '1',
-    });
-
-    // Create an invited enrollment
-    await createEnrollmentWithStatus({
-      userId: null,
-      courseInstanceId: '1',
-      status: 'invited',
-      pendingUid: user.uid,
-    });
-
-    await withUser(user, async () => {
-      const csrfToken = await getCsrfToken(homeUrl);
-
-      // First reject the invitation
-      const rejectResponse = await fetchCheerio(homeUrl, {
-        method: 'POST',
-        body: new URLSearchParams({
-          __action: 'reject_invitation',
-          course_instance_id: '1',
-          __csrf_token: csrfToken,
-        }),
+  it.each(['left', 'removed', 'rejected'] as const)(
+    'does not treat a %s enrollment as an invitation',
+    async (status) => {
+      const user = await getOrCreateUser({
+        uid: `non-actionable-${status}@example.com`,
+        name: `Non-actionable ${status} user`,
+        uin: `non-actionable-${status}`,
+        email: `non-actionable-${status}@example.com`,
+        institutionId: '1',
       });
-      assert.equal(rejectResponse.status, 200);
-      assert.equal(rejectResponse.url, homeUrl);
-
-      // Verify enrollment is rejected
-      const courseInstance = await selectCourseInstanceById('1');
-      const rejectedEnrollment = await selectOptionalEnrollmentByPendingUid({
-        pendingUid: user.uid,
-        courseInstance,
-        requiredRole: ['System'],
-        authzData: dangerousFullSystemAuthz(),
+      const isPending = status === 'rejected';
+      await createEnrollmentWithStatus({
+        userId: isPending ? null : user.id,
+        courseInstanceId: '1',
+        status,
+        pendingUid: isPending ? user.uid : null,
       });
-      assert.isNotNull(rejectedEnrollment);
-      assert.equal(rejectedEnrollment.status, 'rejected');
 
-      // Now accept the invitation (should succeed)
-      const csrfToken2 = await getCsrfToken(homeUrl);
-      const acceptResponse = await fetchCheerio(homeUrl, {
-        method: 'POST',
-        body: new URLSearchParams({
-          __action: 'accept_invitation',
-          course_instance_id: '1',
-          __csrf_token: csrfToken2,
-        }),
-      });
-      assert.equal(acceptResponse.status, 200);
-      assert.equal(acceptResponse.url, homeUrl);
+      try {
+        await withUser(user, async () => {
+          const fetchWithCookies = fetchCookie(fetch);
+          const response = await fetchWithCookies(homeUrl, {
+            method: 'POST',
+            body: new URLSearchParams({
+              __action: 'accept_invitation',
+              course_instance_id: '1',
+              __csrf_token: await getCsrfToken(homeUrl),
+            }),
+          });
+          assert.equal(response.status, 200);
+          const $ = cheerio.load(await response.text());
+          assertAlert($, 'Failed to accept invitation');
 
-      // Verify enrollment is now joined
-      const finalEnrollment = await selectOptionalEnrollmentByUserId({
-        userId: user.id,
-        courseInstance,
-        requiredRole: ['System'],
-        authzData: dangerousFullSystemAuthz(),
-      });
-      assert.isNotNull(finalEnrollment);
-      assert.equal(finalEnrollment.status, 'joined');
-    });
-
-    await execute(sql.delete_enrollment_by_course_instance_and_user, {
-      course_instance_id: '1',
-      user_id: user.id,
-    });
-  });
+          const courseInstance = await selectCourseInstanceById('1');
+          const enrollment = isPending
+            ? await selectOptionalEnrollmentByPendingUid({
+                pendingUid: user.uid,
+                courseInstance,
+                requiredRole: ['System'],
+                authzData: dangerousFullSystemAuthz(),
+              })
+            : await selectOptionalEnrollmentByUserId({
+                userId: user.id,
+                courseInstance,
+                requiredRole: ['System'],
+                authzData: dangerousFullSystemAuthz(),
+              });
+          assert.isNotNull(enrollment);
+          assert.equal(enrollment.status, status);
+        });
+      } finally {
+        if (isPending) {
+          await execute(sql.delete_enrollment_by_course_instance_and_pending_uid, {
+            course_instance_id: '1',
+            pending_uid: user.uid,
+          });
+        } else {
+          await execute(sql.delete_enrollment_by_course_instance_and_user, {
+            course_instance_id: '1',
+            user_id: user.id,
+          });
+        }
+      }
+    },
+  );
 
   it('does not show invited course that is not published', async () => {
     const user = await getOrCreateUser({
