@@ -12,6 +12,7 @@ import { updateAssessmentInstanceGrade } from '../lib/assessment-grading.js';
 import {
   type GradingJob,
   GradingJobSchema,
+  QuestionSchema,
   type Submission,
   SubmissionSchema,
 } from '../lib/db-types.js';
@@ -38,6 +39,7 @@ const VariantForGradingJobUpdateSchema = z.object({
   instance_question_id: IdSchema.nullable(),
   assessment_instance_id: IdSchema.nullable(),
   has_newer_submission: z.boolean(),
+  partial_credit: QuestionSchema.shape.partial_credit,
 });
 
 /**
@@ -102,6 +104,7 @@ export async function updateGradingJobAfterGrading({
   partial_scores,
   score,
   v2_score,
+  overridePartialCredit = false,
 }: {
   grading_job_id: string;
   /** null => no change */
@@ -123,6 +126,7 @@ export async function updateGradingJobAfterGrading({
   partial_scores?: Submission['partial_scores'];
   score?: Submission['score'];
   v2_score?: Submission['v2_score'];
+  overridePartialCredit?: boolean;
 }): Promise<GradingJob> {
   return await runInTransactionAsync(async () => {
     const originalGradingJob = await selectGradingJobById(grading_job_id);
@@ -143,6 +147,7 @@ export async function updateGradingJobAfterGrading({
       assessment_instance_id,
       variant_id,
       credit,
+      partial_credit,
     } = await queryRow(
       sql.select_variant_for_grading_job_update,
       { submission_id: originalGradingJob.submission_id },
@@ -161,6 +166,13 @@ export async function updateGradingJobAfterGrading({
       score = null;
       partial_scores = null;
     }
+
+    // If partial credit is not allowed, then any score less than 1 is treated
+    // as 0. This is only done for externally graded questions. For internally
+    // graded questions, the grade() function may override the partial credit
+    // setting, so we don't want to override it here. The partial_credit is
+    // considered before the grade() function is applied in that case.
+    if (overridePartialCredit && !partial_credit && score != null && score < 1) score = 0;
 
     const gradingJob = await queryRow(
       sql.update_grading_job_after_grading,

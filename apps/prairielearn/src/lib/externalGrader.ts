@@ -218,6 +218,7 @@ export async function processGradingResult(content: any): Promise<void> {
       feedback: content.grading.feedback,
       partial_scores: {},
       score: content.grading.score,
+      overridePartialCredit: true,
     });
 
     if (updateUsages) {
