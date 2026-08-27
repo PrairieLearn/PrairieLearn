@@ -26,6 +26,7 @@
   },
   "dependencies": {
     "@prairielearn/logger": "workspace:^",
+    "@prairielearn/utils": "workspace:^",
     "@vscode/vscode-languagedetection": "^1.0.23",
     "@zip.js/zip.js": "^2.8.35",
     "cheerio": "^1.2.0",

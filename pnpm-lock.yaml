@@ -2449,6 +2449,9 @@ importers:
       '@prairielearn/logger':
         specifier: workspace:^
         version: link:../logger
+      '@prairielearn/utils':
+        specifier: workspace:^
+        version: link:../utils
       '@vscode/vscode-languagedetection':
         specifier: ^1.0.23
         version: 1.0.23
