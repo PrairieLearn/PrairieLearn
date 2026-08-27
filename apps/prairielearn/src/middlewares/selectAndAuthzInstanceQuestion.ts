@@ -6,7 +6,9 @@ import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
+import type { AssessmentInstanceAuthzResult } from '../lib/assessment-access-control/authz-result.js';
 import { resolveModernAssessmentInstanceAccess } from '../lib/assessment-access-control/authz.js';
+import { formatLegacyAssessmentInstanceAccess } from '../lib/assessment-access-control/legacy.js';
 import {
   type AssessmentInstanceTimeLimit,
   assessmentInstanceLabel,
@@ -54,7 +56,7 @@ const InstanceQuestionInfoSchema = z.object({
 });
 type InstanceQuestionInfo = z.infer<typeof InstanceQuestionInfoSchema>;
 
-const SelectAndAuthzInstanceQuestionSchema = z.object({
+const SelectAndAuthzInstanceQuestionRowSchema = z.object({
   assessment_instance: AssessmentInstanceSchema,
   instance_user: UserSchema.nullable(),
   instance_role: SprocUsersGetDisplayedRoleSchema,
@@ -70,7 +72,14 @@ const SelectAndAuthzInstanceQuestionSchema = z.object({
   file_list: z.array(FileSchema),
 });
 
-export type ResLocalsInstanceQuestion = z.infer<typeof SelectAndAuthzInstanceQuestionSchema> &
+type SelectAndAuthzInstanceQuestion = Omit<
+  z.infer<typeof SelectAndAuthzInstanceQuestionRowSchema>,
+  'authz_result'
+> & {
+  authz_result: AssessmentInstanceAuthzResult;
+};
+
+export type ResLocalsInstanceQuestion = SelectAndAuthzInstanceQuestion &
   AssessmentInstanceTimeLimit & {
     assessment_instance_label: string;
 
@@ -87,7 +96,7 @@ export type ResLocalsInstanceQuestion = z.infer<typeof SelectAndAuthzInstanceQue
   };
 
 export async function selectAndAuthzInstanceQuestion(req: Request, res: Response) {
-  const row = await sqldb.queryOptionalRow(
+  const rawRow = await sqldb.queryOptionalRow(
     sql.select_and_auth,
     {
       instance_question_id: req.params.instance_question_id,
@@ -96,9 +105,9 @@ export async function selectAndAuthzInstanceQuestion(req: Request, res: Response
       authz_data: res.locals.authz_data,
       req_date: res.locals.req_date,
     },
-    SelectAndAuthzInstanceQuestionSchema,
+    SelectAndAuthzInstanceQuestionRowSchema,
   );
-  if (row === null) throw new error.HttpStatusError(403, 'Access denied');
+  if (rawRow === null) throw new error.HttpStatusError(403, 'Access denied');
 
   // Sequence/lockpoint restrictions should not block instructors from accessing
   // student question instances (e.g. for manual grading or viewing submissions).
@@ -107,22 +116,25 @@ export async function selectAndAuthzInstanceQuestion(req: Request, res: Response
   const isInstructor =
     res.locals.authz_data?.has_course_permission_preview ||
     res.locals.authz_data?.has_course_instance_permission_view;
-  const accessMode = row.instance_question_info.question_access_mode;
+  const accessMode = rawRow.instance_question_info.question_access_mode;
   if (!isInstructor && (accessMode === 'blocked_sequence' || accessMode === 'blocked_lockpoint')) {
     throw new error.HttpStatusError(403, 'Access denied');
   }
 
-  if (row.assessment.modern_access_control) {
-    const modernResult = await resolveModernAssessmentInstanceAccess({
-      assessment: row.assessment,
-      userId: res.locals.authz_data.user.id,
-      courseInstance: res.locals.course_instance,
-      authzData: res.locals.authz_data,
-      reqDate: res.locals.req_date,
-      assessmentInstance: row.assessment_instance,
-    });
-    row.authz_result = modernResult;
-  }
+  const authzResult = rawRow.assessment.modern_access_control
+    ? await resolveModernAssessmentInstanceAccess({
+        assessment: rawRow.assessment,
+        userId: res.locals.authz_data.user.id,
+        courseInstance: res.locals.course_instance,
+        authzData: res.locals.authz_data,
+        reqDate: res.locals.req_date,
+        assessmentInstance: rawRow.assessment_instance,
+      })
+    : formatLegacyAssessmentInstanceAccess(
+        rawRow.authz_result,
+        res.locals.course_instance.display_timezone,
+      );
+  const row: SelectAndAuthzInstanceQuestion = { ...rawRow, authz_result: authzResult };
 
   if (!row.authz_result.authorized) throw new error.HttpStatusError(403, 'Access denied');
 
