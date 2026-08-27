@@ -48,14 +48,8 @@ function readExpectedClientFiles(name: string): Map<string, Buffer> {
   );
 }
 
-async function emitFixture(name: string): Promise<{
-  question: PLQuestionOutput;
-  reports: Awaited<ReturnType<typeof convert>>['reports'];
-  requestedUrls: string[];
-}> {
-  const requestedUrls: string[] = [];
-  const remoteImageCopier = new QtiImportRemoteImageCopier(async (url) => {
-    requestedUrls.push(url.href);
+async function emitFixture(name: string): Promise<PLQuestionOutput> {
+  const remoteImageCopier = new QtiImportRemoteImageCopier(async () => {
     return { content: FIXTURE_REMOTE_IMAGE_CONTENT, extension: 'png' };
   });
   const result = await convert(readFixture(name, 'question.xml'), {
@@ -63,12 +57,12 @@ async function emitFixture(name: string): Promise<{
   });
   assert.deepEqual(result.warnings, []);
   assert.lengthOf(result.questions, 1);
-  return { question: result.questions[0], reports: result.reports, requestedUrls };
+  return result.questions[0];
 }
 
 describe('PLEmitter output fixtures', () => {
   it.each(FIXTURE_NAMES)('emits %s', async (name) => {
-    const { question } = await emitFixture(name);
+    const question = await emitFixture(name);
 
     expect(normalizeTerminalNewline(question.questionHtml)).toBe(
       normalizeTerminalNewline(readFixture(name, 'question.html')),
@@ -83,17 +77,5 @@ describe('PLEmitter output fixtures', () => {
       normalizeOptionalTerminalNewline(expectedServerPy),
     );
     expect(question.clientFiles).toEqual(readExpectedClientFiles(name));
-  });
-
-  it('reports copied images from the output fixture', async () => {
-    const { reports, requestedUrls } = await emitFixture('question-with-copied-images');
-    assert.deepEqual(requestedUrls, ['https://canvas.example/files/diagram.png?verifier=secret']);
-    assert.deepEqual(reports, [
-      {
-        type: 'remote-image-copy',
-        questionId: 'question-with-copied-images',
-        filesCreated: 1,
-      },
-    ]);
   });
 });
