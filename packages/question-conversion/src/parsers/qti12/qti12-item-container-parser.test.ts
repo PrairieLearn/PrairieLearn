@@ -268,7 +268,7 @@ describe('QTI12ItemContainerParser', async () => {
   });
 
   describe('feedback parsing', async () => {
-    it('extracts question-wide feedback via flow_mat path', async () => {
+    it('converts Canvas equation images in prompts and question-wide feedback', async () => {
       const xml = `<?xml version="1.0"?>
 <questestinterop xmlns="http://www.imsglobal.org/xsd/ims_qtiasiv1p2">
   <assessment ident="a1" title="Q">
@@ -278,7 +278,7 @@ describe('QTI12ItemContainerParser', async () => {
           <qtimetadatafield><fieldlabel>question_type</fieldlabel><fieldentry>multiple_choice_question</fieldentry></qtimetadatafield>
         </qtimetadata></itemmetadata>
         <presentation>
-          <material><mattext texttype="text/html">&lt;p&gt;Pick&lt;/p&gt;</mattext></material>
+          <material><mattext texttype="text/html">&lt;p&gt;&lt;img data-equation-content="\\alpha" src="equation.svg"&gt;&lt;/p&gt;</mattext></material>
           <response_lid ident="response1" rcardinality="Single">
             <render_choice>
               <response_label ident="a1"><material><mattext>A</mattext></material></response_label>
@@ -317,6 +317,7 @@ describe('QTI12ItemContainerParser', async () => {
 </questestinterop>`;
       const result = await parser.parse(xml);
       const [q, generalOnly] = result.questions;
+      assert.equal(q.promptHtml, '<p>$\\alpha$</p>');
       assert.equal(q.feedback?.general, '<p>Remember the definition.</p>');
       assert.equal(q.feedback?.correct, '<p>$x^2$</p>');
       assert.equal(q.feedback?.incorrect, '<p>Try again.</p>');
@@ -479,17 +480,6 @@ describe('QTI12ItemContainerParser', async () => {
         q.promptHtml,
         '<p>Which collision resolution method tries different sequences?</p>',
       );
-    });
-
-    it('converts Canvas equation images to MathJax source before rewriting local images', async () => {
-      const xml = readFixture('canvas-mc.xml').replace(
-        'Which collision resolution method tries different sequences?',
-        '&lt;img class="equation_image" data-equation-content="\\alpha" src="equation.svg"&gt;',
-      );
-
-      const result = await parser.parse(xml);
-
-      assert.equal(result.questions[0].promptHtml, '<p>$\\alpha$</p>');
     });
 
     it('removes Canvas answer blocks from prompt HTML', async () => {
