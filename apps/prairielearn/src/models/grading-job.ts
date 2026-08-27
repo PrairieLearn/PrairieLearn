@@ -104,7 +104,7 @@ export async function updateGradingJobAfterGrading({
   partial_scores,
   score,
   v2_score,
-  overridePartialCredit = false,
+  overridePartialCreditScore = false,
 }: {
   grading_job_id: string;
   /** null => no change */
@@ -126,7 +126,7 @@ export async function updateGradingJobAfterGrading({
   partial_scores?: Submission['partial_scores'];
   score?: Submission['score'];
   v2_score?: Submission['v2_score'];
-  overridePartialCredit?: boolean;
+  overridePartialCreditScore?: boolean;
 }): Promise<GradingJob> {
   return await runInTransactionAsync(async () => {
     const originalGradingJob = await selectGradingJobById(grading_job_id);
@@ -172,7 +172,7 @@ export async function updateGradingJobAfterGrading({
     // graded questions, the grade() function may override the partial credit
     // setting, so we don't want to override it here. The partial_credit is
     // considered before the grade() function is applied in that case.
-    if (overridePartialCredit && !partial_credit && score != null && score < 1) score = 0;
+    if (overridePartialCreditScore && !partial_credit && score != null && score < 1) score = 0;
 
     const gradingJob = await queryRow(
       sql.update_grading_job_after_grading,
