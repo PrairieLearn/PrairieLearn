@@ -1,3 +1,8 @@
+import { registerCustomLanguage, registerCustomTheme } from '@pierre/diffs';
+import { PatchDiff } from '@pierre/diffs/react';
+import htmlLanguage from '@shikijs/langs/html';
+import pythonLanguage from '@shikijs/langs/python';
+import githubLightTheme from '@shikijs/themes/github-light';
 import { type ReactNode, useState } from 'react';
 import { Dropdown, Form, Modal } from 'react-bootstrap';
 
@@ -61,6 +66,67 @@ const COURSE_AGENT_MODELS = [
     relativeCost: '1x',
   },
 ] as const;
+
+registerCustomLanguage('html', () => Promise.resolve({ default: htmlLanguage }));
+registerCustomLanguage('python', () => Promise.resolve({ default: pythonLanguage }));
+registerCustomTheme('github-light', () => Promise.resolve(githubLightTheme));
+
+const DIFF_OPTIONS = {
+  diffStyle: 'unified',
+  overflow: 'scroll',
+  hunkSeparators: 'line-info-basic',
+  lineDiffType: 'word-alt',
+  theme: 'github-light',
+  themeType: 'light',
+} as const;
+
+const QUESTION_HTML_PATCH = `diff --git a/questions/vectorField/question.html b/questions/vectorField/question.html
+index 291f246..b74d5e9 100644
+--- a/questions/vectorField/question.html
++++ b/questions/vectorField/question.html
+@@ -12,4 +12,5 @@
+ <pl-question-panel>
+-  <p>Evaluate the vector field at the point shown.</p>
+-  <p>Normalize the result and select its direction.</p>
++  <p>At this point, the field evaluates to</p>
++  <p>\\(\\vec F = ({{params.fx}}, {{params.fy}})\\).</p>
++  <p>Select its direction and briefly justify your choice.</p>
+ </pl-question-panel>
+@@ -29,3 +30,3 @@
+-<pl-vector-input answers-name="direction" normalize="true" />
+-<pl-hint level="1">Normalize the vector before answering.</pl-hint>
+-<pl-hint level="2">Enter the direction as an angle.</pl-hint>
++<pl-multiple-choice answers-name="direction">
++  <!-- direction choices -->
++</pl-multiple-choice>
+`;
+
+const QUESTION_SERVER_PATCH = `diff --git a/questions/vectorField/server.py b/questions/vectorField/server.py
+index f14ff70..e013c23 100644
+--- a/questions/vectorField/server.py
++++ b/questions/vectorField/server.py
+@@ -18,5 +18,5 @@ def generate(data):
+     fx = 2 * x - y
+     fy = x + 3 * y
+-    magnitude = math.sqrt(fx**2 + fy**2)
+-    ux = fx / magnitude
+-    uy = fy / magnitude
++    data['params']['fx'] = fx
++    data['params']['fy'] = fy
++    data['correct_answers']['direction'] = direction(fx, fy)
+@@ -42,4 +42,1 @@ def grade(data):
+ def grade(data):
+-    grade_vector_length(data)
+-    grade_normalization(data)
+-    grade_direction(data)
+`;
+
+const renderQuestionHtmlDiffHeader = () => (
+  <DiffFileHeader path="questions/vectorField/question.html" additions={6} deletions={5} />
+);
+const renderQuestionServerDiffHeader = () => (
+  <DiffFileHeader path="questions/vectorField/server.py" additions={3} deletions={6} />
+);
 
 export function CourseAgentPanelMockup() {
   const [open, setOpen] = useState(true);
@@ -249,7 +315,7 @@ export function CourseAgentPanelMockup() {
               placeholder="Ask anything about your course…"
               defaultValue=""
             />
-            <div className="course-agent-controls d-flex align-items-center gap-1 mt-2">
+            <div className="course-agent-controls d-flex align-items-center gap-2 mt-2">
               <OverlayTrigger
                 placement="top"
                 tooltip={{
@@ -257,26 +323,24 @@ export function CourseAgentPanelMockup() {
                   props: { id: 'course-agent-attach-tooltip' },
                 }}
               >
-                <button type="button" className="btn btn-sm btn-light" aria-label="Attach file">
+                <button
+                  type="button"
+                  className="btn btn-sm btn-outline-secondary border-0"
+                  aria-label="Attach file"
+                >
                   <i className="bi bi-paperclip" />
                 </button>
               </OverlayTrigger>
-              <span className="text-muted" aria-hidden="true">
-                ·
-              </span>
               <button
                 type="button"
-                className="btn btn-sm btn-link text-decoration-none text-nowrap px-1"
+                className="course-agent-approval-mode btn btn-sm btn-outline-primary text-nowrap"
                 onClick={() => setApprovalMode(approvalMode === 'ask' ? 'always' : 'ask')}
               >
                 {approvalMode === 'ask' ? 'Ask for approval' : 'Always approve'}
               </button>
-              <span className="text-muted" aria-hidden="true">
-                ·
-              </span>
               <button
                 type="button"
-                className="btn btn-sm btn-link text-decoration-none text-truncate px-1"
+                className="course-agent-model-button btn btn-sm btn-outline-primary text-truncate"
                 onClick={() => {
                   setPendingModelId(selectedModelId);
                   setModelModalOpen(true);
@@ -293,9 +357,6 @@ export function CourseAgentPanelMockup() {
               </button>
             </div>
           </Form>
-          <div className="text-center text-muted mt-2" style={{ fontSize: '0.75rem' }}>
-            AI can make mistakes. Review changes before applying them.
-          </div>
         </footer>
       </div>
 
@@ -492,14 +553,17 @@ function ToolCallGroup({ count, children }: { count: number; children: ReactNode
     <div className="course-agent-tool-group">
       <button
         type="button"
-        className="course-agent-tool-group-toggle btn btn-sm d-flex align-items-center gap-2 border-0 px-2 py-1 text-muted"
+        className="course-agent-tool-group-toggle btn btn-sm d-flex align-items-center gap-2 border-0 px-0 py-1 text-muted"
         aria-expanded={expanded}
         onClick={() => setExpanded(!expanded)}
       >
-        <i className={`bi bi-chevron-${expanded ? 'down' : 'right'} small`} aria-hidden="true" />
-        <span>
+        <span className="flex-grow-1 text-start">
           Made {count} tool {count === 1 ? 'call' : 'calls'}
         </span>
+        <i
+          className={`course-agent-tool-group-chevron bi bi-chevron-${expanded ? 'down' : 'up'}`}
+          aria-hidden="true"
+        />
       </button>
       {expanded && (
         <div className="d-flex flex-column gap-1 border-start ms-2 mt-1 ps-3 py-1">{children}</div>
@@ -566,88 +630,17 @@ function DiffApproval() {
         </div>
       </div>
 
-      <div className="course-agent-diff-files p-2">
-        <DiffFile path="questions/vectorField/question.html" additions={6} deletions={5}>
-          <DiffLine kind="range" oldLine="" newLine="" text="@@ -12,10 +12,11 @@" />
-          <DiffLine kind="context" oldLine="12" newLine="12" text="<pl-question-panel>" />
-          <DiffLine
-            kind="remove"
-            oldLine="13"
-            newLine=""
-            text="  <p>Evaluate the vector field at the point shown.</p>"
-          />
-          <DiffLine
-            kind="remove"
-            oldLine="14"
-            newLine=""
-            text="  <p>Normalize the result and select its direction.</p>"
-          />
-          <DiffLine
-            kind="add"
-            oldLine=""
-            newLine="13"
-            text="  <p>At this point, the field evaluates to</p>"
-          />
-          <DiffLine
-            kind="add"
-            oldLine=""
-            newLine="14"
-            text={'  <p>\\(\\vec F = ({{params.fx}}, {{params.fy}})\\).</p>'}
-          />
-          <DiffLine
-            kind="add"
-            oldLine=""
-            newLine="15"
-            text="  <p>Select its direction and briefly justify your choice.</p>"
-          />
-          <DiffLine kind="context" oldLine="15" newLine="16" text="</pl-question-panel>" />
-          <DiffLine kind="range" oldLine="" newLine="" text="@@ -29,7 +30,9 @@" />
-          <DiffLine
-            kind="remove"
-            oldLine="29"
-            newLine=""
-            text={'<pl-vector-input answers-name="direction" normalize="true" />'}
-          />
-          <DiffLine
-            kind="add"
-            oldLine=""
-            newLine="30"
-            text={'<pl-multiple-choice answers-name="direction">'}
-          />
-          <DiffLine kind="add" oldLine="" newLine="31" text="  <!-- direction choices -->" />
-          <DiffLine kind="add" oldLine="" newLine="32" text="</pl-multiple-choice>" />
-        </DiffFile>
-
-        <DiffFile path="questions/vectorField/server.py" additions={3} deletions={6}>
-          <DiffLine
-            kind="range"
-            oldLine=""
-            newLine=""
-            text="@@ -18,13 +18,10 @@ def generate(data):"
-          />
-          <DiffLine kind="context" oldLine="18" newLine="18" text="    fx = 2 * x - y" />
-          <DiffLine kind="context" oldLine="19" newLine="19" text="    fy = x + 3 * y" />
-          <DiffLine
-            kind="remove"
-            oldLine="20"
-            newLine=""
-            text="    magnitude = math.sqrt(fx**2 + fy**2)"
-          />
-          <DiffLine kind="remove" oldLine="21" newLine="" text="    ux = fx / magnitude" />
-          <DiffLine kind="remove" oldLine="22" newLine="" text="    uy = fy / magnitude" />
-          <DiffLine kind="add" oldLine="" newLine="20" text="    data['params']['fx'] = fx" />
-          <DiffLine kind="add" oldLine="" newLine="21" text="    data['params']['fy'] = fy" />
-          <DiffLine
-            kind="add"
-            oldLine=""
-            newLine="22"
-            text="    data['correct_answers']['direction'] = direction(fx, fy)"
-          />
-          <DiffLine kind="range" oldLine="" newLine="" text="@@ -42,4 +39,2 @@ def grade(data):" />
-          <DiffLine kind="remove" oldLine="42" newLine="" text="    grade_vector_length(data)" />
-          <DiffLine kind="remove" oldLine="43" newLine="" text="    grade_normalization(data)" />
-          <DiffLine kind="remove" oldLine="44" newLine="" text="    grade_direction(data)" />
-        </DiffFile>
+      <div className="course-agent-diff-files d-flex flex-column gap-2 p-2">
+        <PatchDiff
+          patch={QUESTION_HTML_PATCH}
+          options={DIFF_OPTIONS}
+          renderCustomHeader={renderQuestionHtmlDiffHeader}
+        />
+        <PatchDiff
+          patch={QUESTION_SERVER_PATCH}
+          options={DIFF_OPTIONS}
+          renderCustomHeader={renderQuestionServerDiffHeader}
+        />
       </div>
 
       <div className="d-flex justify-content-end gap-2 border-top px-2 py-2">
@@ -665,49 +658,27 @@ function DiffApproval() {
   );
 }
 
-function DiffFile({
+function DiffFileHeader({
   path,
   additions,
   deletions,
-  children,
 }: {
   path: string;
   additions: number;
   deletions: number;
-  children: ReactNode;
 }) {
   return (
-    <div className="border rounded mb-2 overflow-hidden">
-      <div className="d-flex align-items-center gap-2 border-bottom bg-body-tertiary px-2 py-1 small">
-        <i className="bi bi-file-earmark-code text-muted" aria-hidden="true" />
-        <code className="text-truncate flex-grow-1">{path}</code>
-        <span className="text-success">+{additions}</span>
-        <span className="text-danger">−{deletions}</span>
-      </div>
-      <div className="course-agent-file-diff">{children}</div>
-    </div>
-  );
-}
-
-function DiffLine({
-  kind,
-  oldLine,
-  newLine,
-  text,
-}: {
-  kind: 'context' | 'add' | 'remove' | 'range';
-  oldLine: string;
-  newLine: string;
-  text: string;
-}) {
-  return (
-    <div className={`course-agent-diff-line course-agent-diff-line-${kind}`}>
-      <span className="course-agent-line-number">{oldLine}</span>
-      <span className="course-agent-line-number">{newLine}</span>
-      <code>
-        {kind === 'add' ? '+' : kind === 'remove' ? '−' : ' '}
-        {text}
-      </code>
+    <div className="course-agent-diff-file-header d-flex align-items-center gap-2">
+      <button
+        type="button"
+        className="course-agent-diff-file-link btn btn-link d-flex min-width-0 flex-grow-1 align-items-center gap-2 p-0 text-start text-decoration-none"
+        aria-label={`Open ${path}`}
+      >
+        <i className="bi bi-file-earmark-code flex-shrink-0" aria-hidden="true" />
+        <code className="text-primary text-truncate">{path}</code>
+      </button>
+      <span className="text-success">+{additions}</span>
+      <span className="text-danger">−{deletions}</span>
     </div>
   );
 }

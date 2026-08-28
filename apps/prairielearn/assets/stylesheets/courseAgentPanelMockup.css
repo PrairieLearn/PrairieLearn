@@ -115,14 +115,19 @@
 }
 
 .course-agent-tool-group-toggle {
-  width: fit-content;
+  width: 100%;
   border-radius: var(--bs-border-radius);
-  background-color: var(--bs-secondary-bg);
+  background-color: transparent;
 }
 
 .course-agent-tool-group-toggle:hover,
 .course-agent-tool-group-toggle:focus-visible {
   background-color: var(--bs-tertiary-bg);
+}
+
+.course-agent-tool-group-chevron {
+  flex: 0 0 auto;
+  line-height: 1;
 }
 
 .course-agent-accepted-approval {
@@ -155,44 +160,27 @@
   overflow: auto;
 }
 
-.course-agent-file-diff {
-  max-height: 18rem;
-  overflow: auto;
-  font-size: 0.72rem;
+.course-agent-diff-files > diffs-container {
+  display: block;
+  overflow: hidden;
+  border: var(--bs-border-width) solid var(--bs-border-color);
+  border-radius: var(--bs-border-radius);
+  --diffs-font-size: 0.75rem;
+  --diffs-line-height: 1.25rem;
+  --diffs-gap-inline: 0.5rem;
+  --diffs-gap-block: 0.25rem;
 }
 
-.course-agent-diff-line {
-  display: grid;
-  grid-template-columns: 2.75rem 2.75rem minmax(max-content, 1fr);
-  min-width: max-content;
-  line-height: 1.5;
+.course-agent-diff-file-header {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  background-color: var(--bs-tertiary-bg);
+  font-size: 0.75rem;
 }
 
-.course-agent-diff-line > code {
-  padding: 0 0.75rem;
-  color: var(--bs-body-color);
-  white-space: pre;
-}
-
-.course-agent-line-number {
-  padding: 0 0.4rem;
-  border-right: var(--bs-border-width) solid var(--bs-border-color);
-  color: var(--bs-secondary-color);
-  text-align: right;
-  user-select: none;
-}
-
-.course-agent-diff-line-add {
-  background-color: var(--bs-success-bg-subtle);
-}
-
-.course-agent-diff-line-remove {
-  background-color: var(--bs-danger-bg-subtle);
-}
-
-.course-agent-diff-line-range {
-  background-color: var(--bs-info-bg-subtle);
-  color: var(--bs-info-text-emphasis);
+.course-agent-diff-file-link:hover code,
+.course-agent-diff-file-link:focus-visible code {
+  text-decoration: underline;
 }
 
 .course-agent-chat-input:focus {
@@ -204,9 +192,13 @@
   min-width: 0;
 }
 
-.course-agent-controls .btn-link {
+.course-agent-controls .btn {
   min-width: 0;
   font-size: 0.875rem;
+}
+
+.course-agent-model-button {
+  max-width: 11rem;
 }
 
 .course-agent-usage .btn-link {
