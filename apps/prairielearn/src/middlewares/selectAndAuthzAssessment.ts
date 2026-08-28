@@ -5,7 +5,9 @@ import { HttpStatusError } from '@prairielearn/error';
 import { loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
 import { isTrpcRequest } from '@prairielearn/trpc/express';
 
+import type { AssessmentAuthzResult } from '../lib/assessment-access-control/authz-result.js';
 import { resolveModernAssessmentAccess } from '../lib/assessment-access-control/authz.js';
+import { formatLegacyAssessmentAccess } from '../lib/assessment-access-control/legacy.js';
 import {
   AssessmentModuleSchema,
   AssessmentSchema,
@@ -17,7 +19,7 @@ import { AccessDenied } from './selectAndAuthzAssessment.html.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
-const SelectAndAuthzAssessmentSchema = z.object({
+const SelectAndAuthzAssessmentRowSchema = z.object({
   assessment: AssessmentSchema,
   assessment_set: AssessmentSetSchema,
   assessment_module: AssessmentModuleSchema.nullable(),
@@ -25,10 +27,15 @@ const SelectAndAuthzAssessmentSchema = z.object({
   assessment_label: z.string(),
 });
 
-export type ResLocalsAssessment = z.infer<typeof SelectAndAuthzAssessmentSchema>;
+export type ResLocalsAssessment = Omit<
+  z.infer<typeof SelectAndAuthzAssessmentRowSchema>,
+  'authz_result'
+> & {
+  authz_result: AssessmentAuthzResult;
+};
 
 export default asyncHandler(async (req, res, next) => {
-  const row = await queryOptionalRow(
+  const rawRow = await queryOptionalRow(
     sql.select_and_auth,
     {
       assessment_id: req.params.assessment_id,
@@ -36,25 +43,28 @@ export default asyncHandler(async (req, res, next) => {
       authz_data: res.locals.authz_data,
       req_date: res.locals.req_date,
     },
-    SelectAndAuthzAssessmentSchema,
+    SelectAndAuthzAssessmentRowSchema,
   );
-  if (row === null) {
+  if (rawRow === null) {
     if (isTrpcRequest(req)) {
       throw new HttpStatusError(403, 'Access denied');
     }
     res.status(403).send(AccessDenied({ resLocals: res.locals }));
     return;
   }
-  if (row.assessment.modern_access_control) {
-    const modernResult = await resolveModernAssessmentAccess({
-      assessment: row.assessment,
-      userId: res.locals.authz_data.user.id,
-      courseInstance: res.locals.course_instance,
-      authzData: res.locals.authz_data,
-      reqDate: res.locals.req_date,
-    });
-    row.authz_result = modernResult;
-  }
+  const authzResult = rawRow.assessment.modern_access_control
+    ? await resolveModernAssessmentAccess({
+        assessment: rawRow.assessment,
+        userId: res.locals.authz_data.user.id,
+        courseInstance: res.locals.course_instance,
+        authzData: res.locals.authz_data,
+        reqDate: res.locals.req_date,
+      })
+    : formatLegacyAssessmentAccess(
+        rawRow.authz_result,
+        res.locals.course_instance.display_timezone,
+      );
+  const row: ResLocalsAssessment = { ...rawRow, authz_result: authzResult };
   if (!row.authz_result.authorized) {
     if (isTrpcRequest(req)) {
       throw new HttpStatusError(403, 'Access denied');

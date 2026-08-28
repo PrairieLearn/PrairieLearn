@@ -10,12 +10,19 @@ import { formatStripePrice } from '../../lib/billing/stripe.shared.js';
 export function StudentCourseInstanceUpgrade({
   course,
   courseInstance,
+  lti13AdmissionPending,
   missingPlans,
   planPrices,
   resLocals,
 }: {
   course: Course;
   courseInstance: CourseInstance;
+  /**
+   * Whether this upgrade started with an LTI invitation that is still pending.
+   * The hidden field lets the server look up the saved invitation again after
+   * the form submission and Stripe checkout.
+   */
+  lti13AdmissionPending: boolean;
   missingPlans: PlanName[];
   /**
    * `null` here will indicate that we aren't configured with Stripe credentials
@@ -47,7 +54,7 @@ export function StudentCourseInstanceUpgrade({
         : html`
             ${PriceTable({ planNames: missingPlans, planPrices })}
 
-            <form method="POST">
+            <form method="POST" action="/pl/course_instance/${courseInstance.id}/upgrade">
               <div class="form-check mb-3">
                 <input
                   type="checkbox"
@@ -64,6 +71,9 @@ export function StudentCourseInstanceUpgrade({
               </div>
 
               <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+              ${lti13AdmissionPending
+                ? html`<input type="hidden" name="lti13_relaunch" value="1" />`
+                : ''}
               ${missingPlans.map(
                 (plan) => html` <input type="hidden" name="unsafe_plan_names" value="${plan}" /> `,
               )}
@@ -83,17 +93,53 @@ export function StudentCourseInstanceUpgrade({
   });
 }
 
+export function Lti13CourseInstanceRelaunch({
+  course,
+  courseInstance,
+  resLocals,
+}: {
+  course: Course;
+  courseInstance: CourseInstance;
+  resLocals: ResLocalsForPage<'course-instance'>;
+}) {
+  return PageLayout({
+    resLocals,
+    pageTitle: 'Return to your LMS',
+    navContext: {
+      type: 'student',
+      page: 'upgrade',
+    },
+    content: html`
+      <h1>Return to your LMS</h1>
+      <p>
+        ${course.short_name}: ${courseInstance.long_name} is ready. Return to your LMS and relaunch
+        this course to finish enrollment.
+      </p>
+    `,
+  });
+}
+
 export function CourseInstanceStudentUpdateSuccess({
   course,
   courseInstance,
+  requireLti13Relaunch,
   paid,
   resLocals,
 }: {
   course: Course;
   courseInstance: CourseInstance;
+  /**
+   * Whether the saved LTI invitation could not be used after payment and the
+   * student must launch the course from the LMS again.
+   */
+  requireLti13Relaunch: boolean;
   paid: boolean;
   resLocals: ResLocalsForPage<'course-instance'>;
 }) {
+  if (paid && requireLti13Relaunch) {
+    return Lti13CourseInstanceRelaunch({ course, courseInstance, resLocals });
+  }
+
   return PageLayout({
     resLocals,
     pageTitle: 'Upgrade successful',

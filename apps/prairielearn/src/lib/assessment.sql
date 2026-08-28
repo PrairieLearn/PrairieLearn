@@ -632,6 +632,7 @@ WITH
       JOIN enrollments AS e ON (
         e.user_id = u.id
         AND e.course_instance_id = a.course_instance_id
+        AND e.status = 'joined'
       )
     WHERE
       a.id = $assessment_id
@@ -719,6 +720,7 @@ WITH
       JOIN enrollments AS e ON (
         e.user_id = u.id
         AND e.course_instance_id = a.course_instance_id
+        AND e.status = 'joined'
       )
     WHERE
       a.id = $assessment_id
@@ -776,6 +778,7 @@ WITH
       JOIN enrollments AS e ON (
         e.user_id = u.id
         AND e.course_instance_id = a.course_instance_id
+        AND e.status = 'joined'
       )
     WHERE
       a.id = $assessment_id

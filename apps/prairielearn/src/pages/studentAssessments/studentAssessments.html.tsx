@@ -6,13 +6,11 @@ import { IdSchema } from '@prairielearn/zod';
 import { PageLayout } from '../../components/PageLayout.js';
 import { ScorebarHtml } from '../../components/Scorebar.js';
 import {
-  AuthzAccessRuleSchema,
   StudentAccessRulesPopover,
   StudentAccessTimelinePopover,
 } from '../../components/StudentAccessPopovers.js';
-import { AccessTimelineEntrySchema } from '../../lib/assessment-access-control/timeline.js';
+import type { AssessmentAuthzResult } from '../../lib/assessment-access-control/authz-result.js';
 import {
-  AssessmentAccessRuleSchema,
   AssessmentInstanceSchema,
   AssessmentSchema,
   AssessmentSetSchema,
@@ -20,22 +18,16 @@ import {
 import { idsEqual } from '../../lib/id.js';
 import { type ResLocalsForPage } from '../../lib/res-locals.js';
 
-export const StudentAssessmentsRowSchema = z.object({
+export const StudentAssessmentsRowBaseSchema = z.object({
   assessment_id: AssessmentSchema.shape.id,
   multiple_instance_header: z.boolean(),
   assessment_number: AssessmentSchema.shape.number,
   title: AssessmentSchema.shape.title,
   team_work: AssessmentSchema.shape.team_work.nullable(),
   modern_access_control: AssessmentSchema.shape.modern_access_control,
-  authorized: z.boolean(),
   assessment_set_name: AssessmentSetSchema.shape.name,
   assessment_set_color: AssessmentSetSchema.shape.color,
   label: z.string(),
-  credit_date_string: z.string(),
-  active: AssessmentAccessRuleSchema.shape.active,
-  access_rules: AuthzAccessRuleSchema.array(),
-  access_timeline: z.array(AccessTimelineEntrySchema).optional().default([]).readonly(),
-  show_closed_assessment_score: AssessmentAccessRuleSchema.shape.show_closed_assessment_score,
   assessment_instance_id: AssessmentInstanceSchema.shape.id.nullable(),
   assessment_instance_score_perc: AssessmentInstanceSchema.shape.score_perc.nullable(),
   assessment_instance_open: AssessmentInstanceSchema.shape.open.nullable(),
@@ -43,10 +35,11 @@ export const StudentAssessmentsRowSchema = z.object({
   link: z.string(),
   assessment_group_id: IdSchema,
   assessment_group_heading: z.string(),
-  show_before_release: z.boolean().optional(),
-  will_release_at: z.string().nullable().optional(),
 });
-export type StudentAssessmentsRow = z.infer<typeof StudentAssessmentsRowSchema>;
+
+export type StudentAssessmentsRow = z.infer<typeof StudentAssessmentsRowBaseSchema> & {
+  authz_result: AssessmentAuthzResult;
+};
 
 export function StudentAssessments({
   resLocals,
@@ -114,10 +107,10 @@ export function StudentAssessments({
                           </span>
                         </td>
                         <td class="align-middle">
-                          ${row.show_before_release
+                          ${row.authz_result.show_before_release
                             ? html`<span class="text-muted">${row.title}</span>`
                             : row.multiple_instance_header ||
-                                (!row.active && row.assessment_instance_id == null)
+                                (!row.authz_result.active && row.assessment_instance_id == null)
                               ? row.title
                               : html`
                                   <a href="${urlPrefix}${row.link}">
@@ -163,12 +156,12 @@ export function StudentAssessments({
 
 function AssessmentScore(row: StudentAssessmentsRow) {
   if (row.assessment_instance_id == null) return 'Not started';
-  if (!row.show_closed_assessment_score) return 'Score not shown';
+  if (!row.authz_result.show_closed_assessment_score) return 'Score not shown';
   return ScorebarHtml(row.assessment_instance_score_perc, { classes: 'mx-auto' });
 }
 
 function NewInstanceButton({ urlPrefix, row }: { urlPrefix: string; row: StudentAssessmentsRow }) {
-  if (row.active) {
+  if (row.authz_result.active) {
     return html`<a href="${urlPrefix}${row.link}" class="btn btn-primary btn-sm">New instance</a>`;
   } else {
     return html`<button type="button" disabled class="btn btn-primary btn-sm">
@@ -184,22 +177,24 @@ function AvailableCredit({
   row: StudentAssessmentsRow;
   displayTimezone: string;
 }) {
-  if (row.modern_access_control && row.assessment_instance_id == null && !row.authorized) {
-    if (row.will_release_at) {
-      return html`<span class="text-muted">Available ${row.will_release_at}</span>`;
+  const authzResult = row.authz_result;
+  if (row.modern_access_control && row.assessment_instance_id == null && !authzResult.authorized) {
+    if (authzResult.next_active_time) {
+      return html`<span class="text-muted">Available ${authzResult.next_active_time}</span>`;
     }
     return html`<span class="text-muted">Not yet available</span>`;
   }
-  if (row.credit_date_string === 'None') return null;
+  const creditDateString = authzResult.credit_date_string ?? 'None';
+  if (creditDateString === 'None') return null;
   if (row.assessment_instance_open !== false) {
     return html`
-      ${row.credit_date_string}
+      ${creditDateString}
       ${row.modern_access_control
         ? StudentAccessTimelinePopover({
-            accessTimeline: row.access_timeline,
+            accessTimeline: authzResult.access_timeline,
             displayTimezone,
           })
-        : StudentAccessRulesPopover({ accessRules: row.access_rules })}
+        : StudentAccessRulesPopover({ accessRules: authzResult.access_rules })}
     `;
   }
   return html`Assessment closed.`;

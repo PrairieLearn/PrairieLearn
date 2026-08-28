@@ -81,13 +81,14 @@ export interface IRRubric {
 
 /** Feedback attached to a question. */
 export interface IRFeedback {
+  /** Question-wide feedback that applies regardless of score or selected answer. */
+  general?: string;
   correct?: string;
   incorrect?: string;
-  general?: string;
   /**
-   * Per-answer feedback keyed by the answer display text (matches what PL stores
-   * in data['submitted_answers']). Used for multi-select questions where multiple
-   * feedbacks may need to be concatenated based on which answers were selected.
+   * Per-answer feedback keyed by the source answer's display text. Body handlers that
+   * support it either attach the message to an emitted answer or create an
+   * answer-specific feedback condition.
    */
   perAnswer?: Record<string, string>;
 }

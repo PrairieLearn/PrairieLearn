@@ -3,7 +3,7 @@ import { createRequire } from 'node:module';
 
 import type { ModelOperations as ModelOperationsType } from '@vscode/vscode-languagedetection';
 import * as cheerio from 'cheerio';
-import { type AnyNode, type Element, isTag, isText } from 'domhandler';
+import { type AnyNode, type Element, Text, isTag, isText } from 'domhandler';
 
 import { normalizeImsFilePath } from './ims-file-path.js';
 
@@ -17,7 +17,7 @@ const { ModelOperations } = _require('@vscode/vscode-languagedetection') as {
  * Mustache URL prefix recommended by PrairieLearn for referencing files in `clientFilesQuestion/`.
  * See https://docs.prairielearn.com/clientServerFiles/.
  */
-const CLIENT_FILES_QUESTION_URL = '{{ options.client_files_question_url }}';
+export const CLIENT_FILES_QUESTION_URL = '{{ options.client_files_question_url }}';
 
 const DATA_URI_SRC_RE = /^data:(image\/[a-zA-Z0-9.+-]+);base64,([^"']+)$/;
 
@@ -33,6 +33,22 @@ function isElementNamed(node: AnyNode, name: string): node is Element {
 
 export function isWhitespaceText(node: AnyNode): boolean {
   return isText(node) && node.data.trim() === '';
+}
+
+/** Replace Canvas equation images with the LaTeX source that Canvas stores on the image. */
+export function convertCanvasEquationImages(html: string): string {
+  const $ = loadHtmlFragment(html);
+  let changed = false;
+
+  $('img[data-equation-content]').each((_, image) => {
+    const equation = $(image).attr('data-equation-content');
+    if (equation == null) return;
+
+    $(image).replaceWith(new Text(`$${equation.replaceAll('$', String.raw`\$`)}$`));
+    changed = true;
+  });
+
+  return changed ? $.html() : html;
 }
 
 /**
@@ -85,7 +101,10 @@ const ABSOLUTE_URL_RE = /^(?:[a-z][a-z0-9+.-]*:|\/\/|:\/\/)/i;
  * The alt and width attributes are preserved; all others (style, class, etc.)
  * are dropped since pl-figure handles its own layout.
  */
-export function rewriteImagesAsPlFigure(html: string): string {
+export function rewriteImagesAsPlFigure(
+  html: string,
+  { display }: { display?: 'inline' } = {},
+): string {
   const $ = loadHtmlFragment(html);
   const mustachePrefix = `${CLIENT_FILES_QUESTION_URL}/`;
   let changed = false;
@@ -110,6 +129,7 @@ export function rewriteImagesAsPlFigure(html: string): string {
     const width = $img.attr('width');
     if (alt) $figure.attr('alt', alt);
     if (width) $figure.attr('width', width);
+    if (display) $figure.attr('display', display);
 
     $img.replaceWith($figure);
     changed = true;
