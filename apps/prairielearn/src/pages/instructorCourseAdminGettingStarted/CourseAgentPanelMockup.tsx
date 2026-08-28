@@ -1,23 +1,59 @@
 import { type ReactNode, useState } from 'react';
-import { Form, Modal } from 'react-bootstrap';
+import { Dropdown, Form, Modal } from 'react-bootstrap';
 
 import { OverlayTrigger } from '@prairielearn/ui';
 
 const CHAT_TITLES = ['Exam 1 analysis', 'Improve vector-field question', 'Course setup plan'];
-const COURSE_INSTANCES = ['Fall 2026', 'Spring 2026', 'Fall 2025'] as const;
+const COURSE_INSTANCES = [
+  {
+    id: 'fall-2026',
+    longName: 'Fall 2026',
+    shortName: 'Fa26',
+    billing: { kind: 'credits', balance: '$18.42', selectable: true },
+  },
+  {
+    id: 'spring-2026',
+    longName: 'Spring 2026',
+    shortName: 'Sp26',
+    billing: { kind: 'credits', balance: '$7.05', selectable: true },
+  },
+  {
+    id: 'fall-2025',
+    longName: 'Fall 2025',
+    shortName: 'Fa25',
+    billing: { kind: 'credits', balance: '$0.00', selectable: false },
+  },
+  {
+    id: 'summer-2026',
+    longName: 'Summer 2026',
+    shortName: 'Su26',
+    billing: { kind: 'byok', providers: ['OpenAI', 'Google'] },
+  },
+] as const;
+
+const COURSE_AGENT_MODELS = [
+  { id: 'sol-5.6', provider: 'OpenAI', name: 'OpenAI Sol 5.6' },
+  { id: 'terra-5.6', provider: 'OpenAI', name: 'OpenAI Terra 5.6' },
+  { id: 'luna-5.6', provider: 'OpenAI', name: 'OpenAI Luna 5.6' },
+  { id: 'gpt-5.5', provider: 'OpenAI', name: 'OpenAI GPT-5.5' },
+  { id: 'gpt-5.4', provider: 'OpenAI', name: 'OpenAI GPT-5.4' },
+  { id: 'claude-haiku-4-5', provider: 'Anthropic', name: 'Claude Haiku 4.5' },
+  { id: 'claude-sonnet-4-6', provider: 'Anthropic', name: 'Claude Sonnet 4.6' },
+  { id: 'claude-opus-4-7', provider: 'Anthropic', name: 'Claude Opus 4.7' },
+] as const;
 
 const COURSE_DATA_DSL = JSON.stringify(
   {
-    resource: 'assessment_attempts',
-    select: ['assessment.tid'],
-    where: [{ field: 'assessment.tid', op: 'eq', value: 'exam1' }],
-    groupBy: ['assessment.tid'],
+    resource: 'submissions',
+    select: [],
+    where: [{ field: 'course_instance.short_name', op: 'eq', value: 'Fa26' }],
+    groupBy: ['question.qid', 'question.title', 'assessment.tid'],
     metrics: [
-      { op: 'avg', field: 'attempt.score_perc', as: 'average_score' },
-      { op: 'count', field: 'attempt.id', as: 'attempt_count' },
+      { op: 'avg', field: 'submission.score_perc', as: 'average_score' },
+      { op: 'count', field: 'submission.id', as: 'submission_count' },
     ],
-    orderBy: [{ field: 'average_score', direction: 'desc' }],
-    limit: 20,
+    orderBy: [{ field: 'average_score', direction: 'asc' }],
+    limit: 10,
   },
   null,
   2,
@@ -25,12 +61,19 @@ const COURSE_DATA_DSL = JSON.stringify(
 
 export function CourseAgentPanelMockup() {
   const [open, setOpen] = useState(true);
-  const [showDiagnostics, setShowDiagnostics] = useState(false);
-  const [expandedTool, setExpandedTool] = useState<'sandbox' | 'query' | null>('sandbox');
+  const [selectedChat, setSelectedChat] = useState(CHAT_TITLES[0]);
   const [billingModalOpen, setBillingModalOpen] = useState(false);
-  const [billingCourseInstance, setBillingCourseInstance] = useState<
-    (typeof COURSE_INSTANCES)[number]
-  >(COURSE_INSTANCES[0]);
+  const [billingCourseInstanceId, setBillingCourseInstanceId] =
+    useState<(typeof COURSE_INSTANCES)[number]['id']>('fall-2026');
+  const [approvalMode, setApprovalMode] = useState<'ask' | 'always'>('ask');
+  const [modelModalOpen, setModelModalOpen] = useState(false);
+  const [selectedModelId, setSelectedModelId] =
+    useState<(typeof COURSE_AGENT_MODELS)[number]['id']>('sol-5.6');
+
+  const billingCourseInstance =
+    COURSE_INSTANCES.find(({ id }) => id === billingCourseInstanceId) ?? COURSE_INSTANCES[0];
+  const selectedModel =
+    COURSE_AGENT_MODELS.find(({ id }) => id === selectedModelId) ?? COURSE_AGENT_MODELS[0];
 
   return (
     <aside
@@ -67,19 +110,32 @@ export function CourseAgentPanelMockup() {
                 <i className="bi bi-arrow-bar-right" />
               </button>
             </OverlayTrigger>
-            <strong>Course Agent</strong>
+            <strong className="d-flex align-items-center gap-2">
+              <i className="bi bi-stars text-primary" aria-hidden="true" /> Course Agent
+            </strong>
           </div>
           <div className="d-flex align-items-center gap-2">
-            <Form.Select
-              size="sm"
-              className="course-agent-conversation-picker border-secondary"
-              aria-label="Select conversation"
-              defaultValue={CHAT_TITLES[0]}
-            >
-              {CHAT_TITLES.map((title) => (
-                <option key={title}>{title}</option>
-              ))}
-            </Form.Select>
+            <Dropdown className="min-width-0 flex-grow-1">
+              <Dropdown.Toggle
+                size="sm"
+                variant="light"
+                className="course-agent-conversation-picker d-flex w-100 align-items-center justify-content-between border bg-white text-start"
+                aria-label="Select conversation"
+              >
+                <span className="text-truncate">{selectedChat}</span>
+              </Dropdown.Toggle>
+              <Dropdown.Menu className="course-agent-conversation-menu w-100 py-0 overflow-hidden">
+                {CHAT_TITLES.map((title) => (
+                  <Dropdown.Item
+                    key={title}
+                    active={selectedChat === title}
+                    onClick={() => setSelectedChat(title)}
+                  >
+                    {title}
+                  </Dropdown.Item>
+                ))}
+              </Dropdown.Menu>
+            </Dropdown>
             <OverlayTrigger
               placement="bottom"
               tooltip={{
@@ -97,109 +153,75 @@ export function CourseAgentPanelMockup() {
         <div className="course-agent-transcript px-3 py-3">
           <div className="text-center small text-muted mb-3">Today</div>
 
-          <div className="d-flex justify-content-end mb-3">
-            <div className="course-agent-user-message bg-secondary-subtle">
-              Analyze Exam 1, then improve the instructions if anything is unclear.
+          <UserMessage time="9:41 AM">
+            Please create a Fall 2027 version of my Fall 2026 course instance.
+          </UserMessage>
+          <AgentMessage>
+            <CompletedToolCall>Set up the course sandbox</CompletedToolCall>
+            <CompletedToolCall>
+              Read <code>courseInstances/Fa26</code>
+            </CompletedToolCall>
+            <CompletedToolCall>Prepared a Fall 2027 course instance</CompletedToolCall>
+            <CompletedToolCall>Validated the proposed course changes</CompletedToolCall>
+            <div className="course-agent-accepted-approval border rounded px-2 py-2 small">
+              <div className="d-flex align-items-center gap-2 fw-semibold text-success">
+                <i className="bi bi-shield-check" aria-hidden="true" /> Approval accepted
+              </div>
+              <div className="mt-1">
+                Created <code>courseInstances/Fa27</code> from Fall 2026.
+              </div>
+              <div className="text-muted mt-1">Accepted by Dev User</div>
             </div>
-          </div>
+            <CompletedToolCall>Applied and validated the approved changes</CompletedToolCall>
+            <p className="mb-0">
+              Fall 2027 was created with the Fall 2026 assessments and settings. I updated its
+              dates, short name, and display name, and the course validated successfully.
+            </p>
+          </AgentMessage>
 
-          <div className="d-flex align-items-start gap-2">
-            <span className="course-agent-avatar bg-primary-subtle text-primary">
-              <i className="bi bi-stars" />
-            </span>
-            <div className="min-width-0 flex-grow-1">
-              <div className="small text-muted mb-1">Course agent</div>
-              <p className="mb-3">
-                I’ll start a sandbox, query the Exam 1 attempt data, and inspect the relevant course
-                files. I’ll ask before applying any edits.
-              </p>
-
-              <ToolCard
-                title="Starting sandbox"
-                summary="Cloning the latest safe course commit"
-                status="ongoing"
-                expanded={expandedTool === 'sandbox'}
-                onToggle={() => setExpandedTool(expandedTool === 'sandbox' ? null : 'sandbox')}
-              >
-                <div className="d-flex align-items-center justify-content-between mb-2">
-                  <span className="small fw-semibold">Live trace</span>
-                  <Form.Check
-                    type="switch"
-                    id="course-agent-diagnostics"
-                    className="small mb-0"
-                    label="Diagnostics"
-                    checked={showDiagnostics}
-                    onChange={(event) => setShowDiagnostics(event.currentTarget.checked)}
-                  />
-                </div>
-                <TraceRow state="complete" text="Allocated Cloudflare sandbox" />
-                <TraceRow state="complete" text="Restored conversation workspace" />
-                <TraceRow state="ongoing" text="Cloning the latest safe commit" />
-                <TraceRow state="queued" text="Preparing PrairieLearn tools" />
-                {showDiagnostics && (
-                  <div className="border-top mt-2 pt-2 small text-muted">
-                    <div className="d-flex justify-content-between">
-                      <span>Run</span>
-                      <span>run_01J8Q</span>
-                    </div>
-                    <div className="d-flex justify-content-between">
-                      <span>Tokens</span>
-                      <span>8,432</span>
-                    </div>
-                    <div className="d-flex justify-content-between">
-                      <span>Estimated cost</span>
-                      <span>$0.08</span>
-                    </div>
-                  </div>
-                )}
-              </ToolCard>
-
-              <ToolCard
-                title="Query course data"
-                summary="Queued until the sandbox is ready"
-                status="queued"
-                expanded={expandedTool === 'query'}
-                onToggle={() => setExpandedTool(expandedTool === 'query' ? null : 'query')}
-              >
-                <div className="small fw-semibold mb-1">DSL input</div>
-                <pre className="course-agent-code border rounded bg-dark text-light p-2 mb-0">
+          <UserMessage time="9:47 AM">Where did students tend to fail in Fall 2026?</UserMessage>
+          <AgentMessage>
+            <CompletedToolCall>Restored the course sandbox</CompletedToolCall>
+            <CompletedToolCall>
+              Queried Fall 2026 submission performance
+              <details className="mt-1 ms-4">
+                <summary className="course-agent-query-summary">View query</summary>
+                <pre className="course-agent-code border rounded bg-dark text-light p-2 mt-1 mb-0">
                   <code>{COURSE_DATA_DSL}</code>
                 </pre>
-              </ToolCard>
+              </details>
+            </CompletedToolCall>
+            <CompletedToolCall>Read the three lowest-performing question files</CompletedToolCall>
+            <CompletedToolCall>
+              Compared attempts, scores, and common incorrect answers
+            </CompletedToolCall>
+            <p className="mb-1">
+              Students struggled most with <code>vectorField</code>: its average score was 41%, and
+              58% of first attempts chose the field’s magnitude instead of its direction. The
+              steepest drop occurred at the final instruction, which asked for both a normalized
+              vector and a written justification without showing the field components.
+            </p>
+            <p className="mb-0">
+              The next two problem areas were <code>lineIntegralSetup</code> (54%) and{' '}
+              <code>jacobianChangeOfVariables</code> (59%).
+            </p>
+          </AgentMessage>
 
-              <div className="course-agent-approval border rounded bg-white mt-3 overflow-hidden">
-                <div className="border-bottom px-3 py-2">
-                  <div className="d-flex align-items-center gap-2 fw-semibold">
-                    <i className="bi bi-shield-check text-warning" /> Approval required
-                  </div>
-                  <div className="small text-muted mt-1">
-                    Apply this change to <code>questions/vectorField/question.html</code>?
-                  </div>
-                </div>
-                <pre className="course-agent-diff mb-0 small">
-                  <code>
-                    <span className="d-block bg-danger-subtle text-danger">
-                      - Choose the vector direction.
-                    </span>
-                    <span className="d-block bg-success-subtle text-success">
-                      + Evaluate the field, then choose its direction.
-                    </span>
-                    <span className="d-block bg-success-subtle text-success">
-                      + Explain your direction choice.
-                    </span>
-                  </code>
-                </pre>
-                <div className="d-flex justify-content-end gap-2 border-top px-2 py-2">
-                  <button type="button" className="btn btn-sm btn-outline-secondary">
-                    No
-                  </button>
-                  <button type="button" className="btn btn-sm btn-primary">
-                    Yes, apply
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
+          <UserMessage time="9:53 AM">
+            Got it. Make <code>vectorField</code> easier by showing the evaluated field components
+            at the point and asking students only to choose and justify the direction.
+          </UserMessage>
+          <AgentMessage>
+            <CompletedToolCall>
+              Read <code>questions/vectorField/question.html</code>
+            </CompletedToolCall>
+            <CompletedToolCall>
+              Read <code>questions/vectorField/server.py</code>
+            </CompletedToolCall>
+            <CompletedToolCall>Prepared and validated the question edits</CompletedToolCall>
+            <p className="mb-0">I prepared the following changes for your approval.</p>
+            <DiffApproval />
+          </AgentMessage>
         </div>
 
         <footer className="course-agent-footer border-top bg-white p-2">
@@ -211,7 +233,7 @@ export function CourseAgentPanelMockup() {
                 className="btn btn-link btn-sm p-0 align-baseline"
                 onClick={() => setBillingModalOpen(true)}
               >
-                {billingCourseInstance}
+                {billingCourseInstance.longName}
               </button>
             </div>
             <Form.Control
@@ -222,19 +244,43 @@ export function CourseAgentPanelMockup() {
               placeholder="Ask anything about your course…"
               defaultValue=""
             />
-            <div className="course-agent-controls mt-2">
-              <button type="button" className="btn btn-sm btn-light" aria-label="Add context">
-                <i className="bi bi-plus-lg" />
+            <div className="course-agent-controls d-flex align-items-center gap-1 mt-2">
+              <OverlayTrigger
+                placement="top"
+                tooltip={{
+                  body: 'Attach file',
+                  props: { id: 'course-agent-attach-tooltip' },
+                }}
+              >
+                <button type="button" className="btn btn-sm btn-light" aria-label="Attach file">
+                  <i className="bi bi-paperclip" />
+                </button>
+              </OverlayTrigger>
+              <span className="text-muted" aria-hidden="true">
+                ·
+              </span>
+              <button
+                type="button"
+                className="btn btn-sm btn-link text-decoration-none text-nowrap px-1"
+                onClick={() => setApprovalMode(approvalMode === 'ask' ? 'always' : 'ask')}
+              >
+                {approvalMode === 'ask' ? 'Ask for approval' : 'Always approve'}
               </button>
-              <Form.Select size="sm" aria-label="Approval mode" defaultValue="ask">
-                <option value="ask">Ask for approval</option>
-                <option value="always">Always approve</option>
-              </Form.Select>
-              <Form.Select size="sm" aria-label="Model" defaultValue="sol-5.6">
-                <option value="sol-5.6">OpenAI Sol 5.6</option>
-                <option value="terra-5.6">OpenAI Terra 5.6</option>
-              </Form.Select>
-              <button type="submit" className="btn btn-sm btn-primary" aria-label="Send message">
+              <span className="text-muted" aria-hidden="true">
+                ·
+              </span>
+              <button
+                type="button"
+                className="btn btn-sm btn-link text-decoration-none text-truncate px-1"
+                onClick={() => setModelModalOpen(true)}
+              >
+                {selectedModel.name}
+              </button>
+              <button
+                type="submit"
+                className="btn btn-sm btn-primary ms-auto"
+                aria-label="Send message"
+              >
                 <i className="bi bi-send-fill" />
               </button>
             </div>
@@ -245,30 +291,114 @@ export function CourseAgentPanelMockup() {
         </footer>
       </div>
 
-      <Modal size="sm" show={billingModalOpen} centered onHide={() => setBillingModalOpen(false)}>
+      <Modal size="lg" show={billingModalOpen} centered onHide={() => setBillingModalOpen(false)}>
         <Modal.Header closeButton>
           <Modal.Title className="fs-5">Billing course instance</Modal.Title>
         </Modal.Header>
-        <Modal.Body className="p-0">
-          <div className="list-group list-group-flush">
+        <Modal.Body>
+          <p className="text-muted mb-3">
+            Choose the course instance that will pay for this conversation’s AI usage.
+          </p>
+          <div className="border rounded overflow-hidden">
             {COURSE_INSTANCES.map((courseInstance) => {
-              const selected = courseInstance === billingCourseInstance;
-              return (
+              const selected = courseInstance.id === billingCourseInstanceId;
+              const selectable =
+                courseInstance.billing.kind === 'byok' || courseInstance.billing.selectable;
+              const option = (
                 <button
-                  key={courseInstance}
+                  key={courseInstance.id}
                   type="button"
-                  className={`list-group-item list-group-item-action ${selected ? 'active' : ''}`}
+                  className={`course-agent-instance-option d-flex w-100 align-items-center gap-3 border-0 border-bottom px-3 py-2 text-start ${selected ? 'bg-primary-subtle' : 'bg-white'}`}
                   aria-current={selected ? 'true' : undefined}
+                  disabled={!selectable}
                   onClick={() => {
-                    setBillingCourseInstance(courseInstance);
+                    setBillingCourseInstanceId(courseInstance.id);
                     setBillingModalOpen(false);
                   }}
                 >
-                  {courseInstance}
+                  <span className="course-agent-instance-name min-width-0 text-truncate text-primary">
+                    {courseInstance.longName}
+                  </span>
+                  <span className="course-agent-instance-short-name text-muted">
+                    {courseInstance.shortName}
+                  </span>
+                  <span className="course-agent-instance-billing ms-auto text-end">
+                    {courseInstance.billing.kind === 'credits' ? (
+                      <>
+                        <span className="d-block fw-semibold text-body">
+                          {courseInstance.billing.balance}
+                        </span>
+                        <span className="d-block small text-muted">AI credit balance</span>
+                      </>
+                    ) : (
+                      <>
+                        <span className="badge text-bg-secondary">BYOK</span>
+                        <span className="d-block small text-muted">
+                          Custom keys for {courseInstance.billing.providers.join(' and ')}
+                        </span>
+                      </>
+                    )}
+                  </span>
+                  <span className="course-agent-instance-selected">
+                    {selected && <i className="bi bi-check-circle-fill text-primary" />}
+                  </span>
                 </button>
+              );
+
+              return selectable ? (
+                option
+              ) : (
+                <OverlayTrigger
+                  key={courseInstance.id}
+                  placement="top"
+                  tooltip={{
+                    body: 'This course instance has no AI credits available.',
+                    props: { id: `course-agent-billing-tooltip-${courseInstance.id}` },
+                  }}
+                >
+                  <div>{option}</div>
+                </OverlayTrigger>
               );
             })}
           </div>
+        </Modal.Body>
+      </Modal>
+
+      <Modal size="md" show={modelModalOpen} centered onHide={() => setModelModalOpen(false)}>
+        <Modal.Header closeButton>
+          <Modal.Title className="fs-5">Select model</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          {(['OpenAI', 'Anthropic'] as const).map((provider) => (
+            <div key={provider} className="mb-3">
+              <div className="fw-semibold mb-2">{provider}</div>
+              <div className="d-flex flex-column gap-1">
+                {COURSE_AGENT_MODELS.filter((model) => model.provider === provider).map((model) => {
+                  const selected = model.id === selectedModelId;
+                  return (
+                    <label
+                      key={model.id}
+                      htmlFor={`course-agent-model-${model.id}`}
+                      className={`course-agent-model-option rounded-2 border px-3 py-2 mb-0 ${selected ? 'border-primary bg-primary-subtle' : 'border-transparent'}`}
+                    >
+                      <Form.Check
+                        type="radio"
+                        id={`course-agent-model-${model.id}`}
+                        name="course-agent-model"
+                        className="mb-0"
+                        checked={selected}
+                        label={model.name}
+                        onChange={() => {
+                          setSelectedModelId(model.id);
+                          setModelModalOpen(false);
+                        }}
+                      />
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </Modal.Body>
       </Modal>
     </aside>
@@ -277,57 +407,206 @@ export function CourseAgentPanelMockup() {
 
 CourseAgentPanelMockup.displayName = 'CourseAgentPanelMockup';
 
-function ToolCard({
-  title,
-  summary,
-  status,
-  expanded,
-  onToggle,
-  children,
-}: {
-  title: string;
-  summary: string;
-  status: 'ongoing' | 'queued';
-  expanded: boolean;
-  onToggle: () => void;
-  children: ReactNode;
-}) {
+function UserMessage({ time, children }: { time: string; children: ReactNode }) {
   return (
-    <div className="border rounded bg-white mb-2 overflow-hidden">
-      <button
-        type="button"
-        className="btn w-100 border-0 rounded-0 d-flex align-items-center gap-2 px-2 py-2 text-start"
-        aria-expanded={expanded}
-        onClick={onToggle}
-      >
-        {status === 'ongoing' ? (
-          <span
-            className="spinner-border spinner-border-sm text-primary"
-            aria-label="In progress"
-          />
-        ) : (
-          <i className="bi bi-clock text-muted" />
-        )}
-        <span className="flex-grow-1 min-width-0">
-          <span className="d-block small fw-semibold">{title}</span>
-          <span className="d-block small text-muted">{summary}</span>
-        </span>
-        <i className={`bi bi-chevron-${expanded ? 'up' : 'down'} small text-muted`} />
-      </button>
-      {expanded && <div className="border-top px-2 py-2">{children}</div>}
+    <div
+      className="d-flex flex-column align-items-end mb-3"
+      role="article"
+      aria-label="Message from Dev User"
+    >
+      <div className="course-agent-user-message d-flex flex-column gap-2 rounded bg-secondary-subtle p-3">
+        {children}
+      </div>
+      <div className="d-flex align-items-center gap-2 small text-muted mb-1 px-1">
+        <span className="fw-medium">Dev User</span>
+        <span aria-hidden="true">·</span>
+        <span>{time}</span>
+      </div>
     </div>
   );
 }
 
-function TraceRow({ state, text }: { state: 'complete' | 'ongoing' | 'queued'; text: string }) {
+function AgentMessage({ children }: { children: ReactNode }) {
   return (
-    <div className="d-flex align-items-center gap-2 py-1 small">
-      {state === 'complete' && <i className="bi bi-check-circle-fill text-success" />}
-      {state === 'ongoing' && (
-        <span className="spinner-border spinner-border-sm text-primary" aria-hidden="true" />
-      )}
-      {state === 'queued' && <i className="bi bi-circle text-muted" />}
-      <span className={state === 'queued' ? 'text-muted' : undefined}>{text}</span>
+    <div
+      className="d-flex flex-column gap-2 mb-3"
+      role="article"
+      aria-label="Message from PrairieLearn"
+    >
+      {children}
+    </div>
+  );
+}
+
+function CompletedToolCall({ children }: { children: ReactNode }) {
+  return (
+    <div className="small text-muted">
+      <div className="d-flex flex-row align-items-center gap-1">
+        <i className="bi bi-fw bi-check-lg text-success" aria-hidden="true" />
+        <div className="min-width-0 flex-grow-1">{children}</div>
+      </div>
+    </div>
+  );
+}
+
+function DiffApproval() {
+  return (
+    <div className="course-agent-approval border rounded bg-white overflow-hidden">
+      <div className="border-bottom px-3 py-2">
+        <div className="d-flex align-items-center gap-2 fw-semibold">
+          <i className="bi bi-shield-check text-warning" aria-hidden="true" /> Approval required
+        </div>
+        <div className="d-flex align-items-center justify-content-between gap-2 small mt-1">
+          <span className="text-muted">Apply these question changes?</span>
+          <span className="text-nowrap">
+            2 files changed <span className="text-success">+9</span>{' '}
+            <span className="text-danger">−11</span>
+          </span>
+        </div>
+      </div>
+
+      <div className="course-agent-diff-files p-2">
+        <DiffFile path="questions/vectorField/question.html" additions={6} deletions={5}>
+          <DiffLine kind="range" oldLine="" newLine="" text="@@ -12,10 +12,11 @@" />
+          <DiffLine kind="context" oldLine="12" newLine="12" text="<pl-question-panel>" />
+          <DiffLine
+            kind="remove"
+            oldLine="13"
+            newLine=""
+            text="  <p>Evaluate the vector field at the point shown.</p>"
+          />
+          <DiffLine
+            kind="remove"
+            oldLine="14"
+            newLine=""
+            text="  <p>Normalize the result and select its direction.</p>"
+          />
+          <DiffLine
+            kind="add"
+            oldLine=""
+            newLine="13"
+            text="  <p>At this point, the field evaluates to</p>"
+          />
+          <DiffLine
+            kind="add"
+            oldLine=""
+            newLine="14"
+            text={'  <p>\\(\\vec F = ({{params.fx}}, {{params.fy}})\\).</p>'}
+          />
+          <DiffLine
+            kind="add"
+            oldLine=""
+            newLine="15"
+            text="  <p>Select its direction and briefly justify your choice.</p>"
+          />
+          <DiffLine kind="context" oldLine="15" newLine="16" text="</pl-question-panel>" />
+          <DiffLine kind="range" oldLine="" newLine="" text="@@ -29,7 +30,9 @@" />
+          <DiffLine
+            kind="remove"
+            oldLine="29"
+            newLine=""
+            text={'<pl-vector-input answers-name="direction" normalize="true" />'}
+          />
+          <DiffLine
+            kind="add"
+            oldLine=""
+            newLine="30"
+            text={'<pl-multiple-choice answers-name="direction">'}
+          />
+          <DiffLine kind="add" oldLine="" newLine="31" text="  <!-- direction choices -->" />
+          <DiffLine kind="add" oldLine="" newLine="32" text="</pl-multiple-choice>" />
+        </DiffFile>
+
+        <DiffFile path="questions/vectorField/server.py" additions={3} deletions={6}>
+          <DiffLine
+            kind="range"
+            oldLine=""
+            newLine=""
+            text="@@ -18,13 +18,10 @@ def generate(data):"
+          />
+          <DiffLine kind="context" oldLine="18" newLine="18" text="    fx = 2 * x - y" />
+          <DiffLine kind="context" oldLine="19" newLine="19" text="    fy = x + 3 * y" />
+          <DiffLine
+            kind="remove"
+            oldLine="20"
+            newLine=""
+            text="    magnitude = math.sqrt(fx**2 + fy**2)"
+          />
+          <DiffLine kind="remove" oldLine="21" newLine="" text="    ux = fx / magnitude" />
+          <DiffLine kind="remove" oldLine="22" newLine="" text="    uy = fy / magnitude" />
+          <DiffLine kind="add" oldLine="" newLine="20" text="    data['params']['fx'] = fx" />
+          <DiffLine kind="add" oldLine="" newLine="21" text="    data['params']['fy'] = fy" />
+          <DiffLine
+            kind="add"
+            oldLine=""
+            newLine="22"
+            text="    data['correct_answers']['direction'] = direction(fx, fy)"
+          />
+          <DiffLine kind="range" oldLine="" newLine="" text="@@ -42,4 +39,2 @@ def grade(data):" />
+          <DiffLine kind="remove" oldLine="42" newLine="" text="    grade_vector_length(data)" />
+          <DiffLine kind="remove" oldLine="43" newLine="" text="    grade_normalization(data)" />
+          <DiffLine kind="remove" oldLine="44" newLine="" text="    grade_direction(data)" />
+        </DiffFile>
+      </div>
+
+      <div className="d-flex justify-content-end gap-2 border-top px-2 py-2">
+        <button type="button" className="btn btn-sm btn-primary">
+          Approve
+        </button>
+        <button type="button" className="btn btn-sm btn-outline-primary">
+          Always approve
+        </button>
+        <button type="button" className="btn btn-sm btn-outline-danger">
+          Deny
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function DiffFile({
+  path,
+  additions,
+  deletions,
+  children,
+}: {
+  path: string;
+  additions: number;
+  deletions: number;
+  children: ReactNode;
+}) {
+  return (
+    <div className="border rounded mb-2 overflow-hidden">
+      <div className="d-flex align-items-center gap-2 border-bottom bg-body-tertiary px-2 py-1 small">
+        <i className="bi bi-file-earmark-code text-muted" aria-hidden="true" />
+        <code className="text-truncate flex-grow-1">{path}</code>
+        <span className="text-success">+{additions}</span>
+        <span className="text-danger">−{deletions}</span>
+      </div>
+      <div className="course-agent-file-diff">{children}</div>
+    </div>
+  );
+}
+
+function DiffLine({
+  kind,
+  oldLine,
+  newLine,
+  text,
+}: {
+  kind: 'context' | 'add' | 'remove' | 'range';
+  oldLine: string;
+  newLine: string;
+  text: string;
+}) {
+  return (
+    <div className={`course-agent-diff-line course-agent-diff-line-${kind}`}>
+      <span className="course-agent-line-number">{oldLine}</span>
+      <span className="course-agent-line-number">{newLine}</span>
+      <code>
+        {kind === 'add' ? '+' : kind === 'remove' ? '−' : ' '}
+        {text}
+      </code>
     </div>
   );
 }
