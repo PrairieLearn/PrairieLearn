@@ -72,6 +72,8 @@ export function CourseAgentPanelMockup() {
   const [modelModalOpen, setModelModalOpen] = useState(false);
   const [selectedModelId, setSelectedModelId] =
     useState<(typeof COURSE_AGENT_MODELS)[number]['id']>('sol-5.6');
+  const [pendingModelId, setPendingModelId] =
+    useState<(typeof COURSE_AGENT_MODELS)[number]['id']>('sol-5.6');
 
   const billingCourseInstance =
     COURSE_INSTANCES.find(({ id }) => id === billingCourseInstanceId) ?? COURSE_INSTANCES[0];
@@ -95,7 +97,7 @@ export function CourseAgentPanelMockup() {
       </div>
 
       <div className="course-agent-panel-content border-start bg-light">
-        <header className="course-agent-header border-bottom bg-white px-2 py-2">
+        <header className="course-agent-header border-bottom bg-white px-3 py-3">
           <div className="d-flex align-items-center gap-2 mb-2">
             <OverlayTrigger
               placement="bottom"
@@ -153,7 +155,7 @@ export function CourseAgentPanelMockup() {
           </div>
         </header>
 
-        <div className="course-agent-transcript px-3 py-3">
+        <div className="course-agent-transcript px-4 py-4">
           <div className="text-center small text-muted mb-3">Today</div>
 
           <UserMessage>
@@ -190,8 +192,9 @@ export function CourseAgentPanelMockup() {
               Compared attempts, scores, and common incorrect answers
             </CompletedToolCall>
             <p className="mb-0">
-              Students struggled most with <code>vectorField</code> (41% average). Most errors came
-              from confusing the field’s magnitude with its direction.
+              The lowest-performing item was the question <strong>Vector-field direction</strong> (
+              <code>vectorField</code>, 41% average). Most errors came from confusing the field’s
+              magnitude with its direction.
             </p>
             <PerformanceVisualization />
           </AgentMessage>
@@ -213,7 +216,7 @@ export function CourseAgentPanelMockup() {
           </AgentMessage>
         </div>
 
-        <footer className="course-agent-footer border-top bg-white p-2">
+        <footer className="course-agent-footer border-top bg-white p-3">
           <Form onSubmit={(event) => event.preventDefault()}>
             <div className="course-agent-usage small text-muted mb-1 px-1">
               $0.08 used <span aria-hidden="true">·</span> Billing to{' '}
@@ -261,7 +264,10 @@ export function CourseAgentPanelMockup() {
               <button
                 type="button"
                 className="btn btn-sm btn-link text-decoration-none text-truncate px-1"
-                onClick={() => setModelModalOpen(true)}
+                onClick={() => {
+                  setPendingModelId(selectedModelId);
+                  setModelModalOpen(true);
+                }}
               >
                 {selectedModel.name}
               </button>
@@ -355,7 +361,7 @@ export function CourseAgentPanelMockup() {
 
       <Modal size="md" show={modelModalOpen} centered onHide={() => setModelModalOpen(false)}>
         <Modal.Header closeButton>
-          <Modal.Title className="fs-5">Select model</Modal.Title>
+          <Modal.Title className="fs-5">Course agent model</Modal.Title>
         </Modal.Header>
         <Modal.Body>
           <div className="d-flex align-items-center justify-content-between gap-2 mb-3 small text-muted">
@@ -377,7 +383,7 @@ export function CourseAgentPanelMockup() {
               <div className="fw-semibold mb-2">{provider}</div>
               <div className="d-flex flex-column gap-1">
                 {COURSE_AGENT_MODELS.filter((model) => model.provider === provider).map((model) => {
-                  const selected = model.id === selectedModelId;
+                  const selected = model.id === pendingModelId;
                   return (
                     <label
                       key={model.id}
@@ -401,10 +407,7 @@ export function CourseAgentPanelMockup() {
                             </span>
                           </span>
                         }
-                        onChange={() => {
-                          setSelectedModelId(model.id);
-                          setModelModalOpen(false);
-                        }}
+                        onChange={() => setPendingModelId(model.id)}
                       />
                     </label>
                   );
@@ -413,6 +416,18 @@ export function CourseAgentPanelMockup() {
             </div>
           ))}
         </Modal.Body>
+        <Modal.Footer>
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={() => {
+              setSelectedModelId(pendingModelId);
+              setModelModalOpen(false);
+            }}
+          >
+            Select
+          </button>
+        </Modal.Footer>
       </Modal>
     </aside>
   );
@@ -423,7 +438,7 @@ CourseAgentPanelMockup.displayName = 'CourseAgentPanelMockup';
 function UserMessage({ children }: { children: ReactNode }) {
   return (
     <div
-      className="d-flex flex-column align-items-end mb-3"
+      className="d-flex flex-column align-items-end mb-4"
       role="article"
       aria-label="Message from you"
     >
@@ -437,7 +452,7 @@ function UserMessage({ children }: { children: ReactNode }) {
 function AgentMessage({ children }: { children: ReactNode }) {
   return (
     <div
-      className="d-flex flex-column gap-2 mb-3"
+      className="d-flex flex-column gap-2 mb-4"
       role="article"
       aria-label="Message from PrairieLearn"
     >
@@ -459,27 +474,36 @@ function CompletedToolCall({ children }: { children: ReactNode }) {
 
 function PerformanceVisualization() {
   const rows = [
-    { qid: 'vectorField', score: 41 },
-    { qid: 'lineIntegralSetup', score: 54 },
-    { qid: 'jacobianChangeOfVariables', score: 59 },
+    { title: 'Vector-field direction', qid: 'vectorField', score: 41 },
+    { title: 'Line integral setup', qid: 'lineIntegralSetup', score: 54 },
+    {
+      title: 'Jacobian change of variables',
+      qid: 'jacobianChangeOfVariables',
+      score: 59,
+    },
   ];
 
   return (
     <div
       className="course-agent-visualization border rounded bg-white p-3"
       role="img"
-      aria-label="Fall 2026 lowest average question scores: vectorField 41 percent, lineIntegralSetup 54 percent, and jacobianChangeOfVariables 59 percent"
+      aria-label="Fall 2026 lowest average question scores: Vector-field direction 41 percent, Line integral setup 54 percent, and Jacobian change of variables 59 percent"
     >
       <div className="d-flex align-items-baseline justify-content-between gap-2 mb-3">
         <span className="fw-semibold">Lowest average scores</span>
         <span className="small text-muted">Fall 2026</span>
       </div>
       <div className="d-flex flex-column gap-2">
-        {rows.map(({ qid, score }) => (
+        {rows.map(({ title, qid, score }) => (
           <div key={qid} className="course-agent-chart-row small">
-            <code className="text-truncate" title={qid}>
-              {qid}
-            </code>
+            <span className="min-width-0">
+              <span className="d-block text-truncate fw-medium" title={title}>
+                {title}
+              </span>
+              <code className="d-block text-truncate small" title={qid}>
+                {qid}
+              </code>
+            </span>
             <span className="course-agent-chart-track">
               <span className="course-agent-chart-bar" style={{ width: `${score}%` }} />
             </span>

@@ -1,5 +1,5 @@
 :root {
-  --course-agent-panel-width: clamp(26rem, 34vw, 34rem);
+  --course-agent-panel-width: clamp(32rem, 40vw, 42rem);
   --course-agent-panel-rail-width: 3.5rem;
 }
 
@@ -120,7 +120,7 @@
 
 .course-agent-chart-row {
   display: grid;
-  grid-template-columns: minmax(7rem, 1.35fr) minmax(6rem, 1fr) 2.5rem;
+  grid-template-columns: minmax(12rem, 1.5fr) minmax(7rem, 1fr) 2.5rem;
   align-items: center;
   gap: 0.6rem;
 }
@@ -195,7 +195,7 @@
 
 .course-agent-controls .btn-link {
   min-width: 0;
-  font-size: 0.75rem;
+  font-size: 0.875rem;
 }
 
 .course-agent-usage .btn-link {
