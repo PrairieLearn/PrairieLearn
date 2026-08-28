@@ -1,7 +1,10 @@
 import { type ReactNode, useState } from 'react';
-import { Form } from 'react-bootstrap';
+import { Form, Modal } from 'react-bootstrap';
+
+import { OverlayTrigger } from '@prairielearn/ui';
 
 const CHAT_TITLES = ['Exam 1 analysis', 'Improve vector-field question', 'Course setup plan'];
+const COURSE_INSTANCES = ['Fall 2026', 'Spring 2026', 'Fall 2025'] as const;
 
 const COURSE_DATA_DSL = JSON.stringify(
   {
@@ -24,6 +27,10 @@ export function CourseAgentPanelMockup() {
   const [open, setOpen] = useState(true);
   const [showDiagnostics, setShowDiagnostics] = useState(false);
   const [expandedTool, setExpandedTool] = useState<'sandbox' | 'query' | null>('sandbox');
+  const [billingModalOpen, setBillingModalOpen] = useState(false);
+  const [billingCourseInstance, setBillingCourseInstance] = useState<
+    (typeof COURSE_INSTANCES)[number]
+  >(COURSE_INSTANCES[0]);
 
   return (
     <aside
@@ -37,29 +44,54 @@ export function CourseAgentPanelMockup() {
           aria-label="Open course agent"
           onClick={() => setOpen(true)}
         >
-          <i className="bi bi-stars fs-5" />
+          <i className="bi bi-arrow-bar-left fs-5" />
         </button>
       </div>
 
       <div className="course-agent-panel-content border-start bg-light">
-        <header className="course-agent-header d-flex align-items-center gap-2 border-bottom bg-white px-2 py-2">
-          <strong className="text-nowrap">Course agent</strong>
-          <Form.Select size="sm" aria-label="Select conversation" defaultValue={CHAT_TITLES[0]}>
-            {CHAT_TITLES.map((title) => (
-              <option key={title}>{title}</option>
-            ))}
-          </Form.Select>
-          <button type="button" className="btn btn-sm btn-light" aria-label="Start new chat">
-            <i className="bi bi-plus-lg" />
-          </button>
-          <button
-            type="button"
-            className="btn btn-sm btn-light"
-            aria-label="Collapse course agent"
-            onClick={() => setOpen(false)}
-          >
-            <i className="bi bi-chevron-right" />
-          </button>
+        <header className="course-agent-header border-bottom bg-white px-2 py-2">
+          <div className="d-flex align-items-center gap-2 mb-2">
+            <OverlayTrigger
+              placement="bottom"
+              tooltip={{
+                body: 'Collapse',
+                props: { id: 'course-agent-collapse-tooltip' },
+              }}
+            >
+              <button
+                type="button"
+                className="btn btn-sm btn-light"
+                aria-label="Collapse course agent"
+                onClick={() => setOpen(false)}
+              >
+                <i className="bi bi-arrow-bar-right" />
+              </button>
+            </OverlayTrigger>
+            <strong>Course Agent</strong>
+          </div>
+          <div className="d-flex align-items-center gap-2">
+            <Form.Select
+              size="sm"
+              className="course-agent-conversation-picker border-secondary"
+              aria-label="Select conversation"
+              defaultValue={CHAT_TITLES[0]}
+            >
+              {CHAT_TITLES.map((title) => (
+                <option key={title}>{title}</option>
+              ))}
+            </Form.Select>
+            <OverlayTrigger
+              placement="bottom"
+              tooltip={{
+                body: 'New chat',
+                props: { id: 'course-agent-new-chat-tooltip' },
+              }}
+            >
+              <button type="button" className="btn btn-sm btn-light" aria-label="Start new chat">
+                <i className="bi bi-pencil-square" />
+              </button>
+            </OverlayTrigger>
+          </div>
         </header>
 
         <div className="course-agent-transcript px-3 py-3">
@@ -172,6 +204,16 @@ export function CourseAgentPanelMockup() {
 
         <footer className="course-agent-footer border-top bg-white p-2">
           <Form onSubmit={(event) => event.preventDefault()}>
+            <div className="course-agent-usage small text-muted mb-1 px-1">
+              $0.08 used <span aria-hidden="true">·</span> Billing to{' '}
+              <button
+                type="button"
+                className="btn btn-link btn-sm p-0 align-baseline"
+                onClick={() => setBillingModalOpen(true)}
+              >
+                {billingCourseInstance}
+              </button>
+            </div>
             <Form.Control
               as="textarea"
               rows={2}
@@ -188,11 +230,6 @@ export function CourseAgentPanelMockup() {
                 <option value="ask">Ask for approval</option>
                 <option value="always">Always approve</option>
               </Form.Select>
-              <span className="course-agent-billing-label text-muted text-nowrap">Billing to</span>
-              <Form.Select size="sm" aria-label="Billing course instance" defaultValue="fall-2026">
-                <option value="fall-2026">Fall 2026</option>
-                <option value="spring-2027">Spring 2027</option>
-              </Form.Select>
               <Form.Select size="sm" aria-label="Model" defaultValue="sol-5.6">
                 <option value="sol-5.6">OpenAI Sol 5.6</option>
                 <option value="terra-5.6">OpenAI Terra 5.6</option>
@@ -207,6 +244,33 @@ export function CourseAgentPanelMockup() {
           </div>
         </footer>
       </div>
+
+      <Modal size="sm" show={billingModalOpen} centered onHide={() => setBillingModalOpen(false)}>
+        <Modal.Header closeButton>
+          <Modal.Title className="fs-5">Billing course instance</Modal.Title>
+        </Modal.Header>
+        <Modal.Body className="p-0">
+          <div className="list-group list-group-flush">
+            {COURSE_INSTANCES.map((courseInstance) => {
+              const selected = courseInstance === billingCourseInstance;
+              return (
+                <button
+                  key={courseInstance}
+                  type="button"
+                  className={`list-group-item list-group-item-action ${selected ? 'active' : ''}`}
+                  aria-current={selected ? 'true' : undefined}
+                  onClick={() => {
+                    setBillingCourseInstance(courseInstance);
+                    setBillingModalOpen(false);
+                  }}
+                >
+                  {courseInstance}
+                </button>
+              );
+            })}
+          </div>
+        </Modal.Body>
+      </Modal>
     </aside>
   );
 }

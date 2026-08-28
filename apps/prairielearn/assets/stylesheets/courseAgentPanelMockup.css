@@ -122,16 +122,22 @@
 
 .course-agent-controls {
   display: grid;
-  grid-template-columns:
-    min-content minmax(7.5rem, 1fr) min-content minmax(6rem, 0.8fr) minmax(8.5rem, 1fr)
-    min-content;
+  grid-template-columns: min-content minmax(7.5rem, 1fr) minmax(8.5rem, 1fr) min-content;
   align-items: center;
   gap: 0.35rem;
 }
 
-.course-agent-controls .form-select,
-.course-agent-billing-label {
+.course-agent-controls .form-select {
   font-size: 0.75rem;
+}
+
+.course-agent-usage .btn-link {
+  font-size: inherit;
+  text-decoration: none;
+}
+
+.course-agent-usage .btn-link:hover {
+  text-decoration: underline;
 }
 
 .min-width-0 {
@@ -166,13 +172,5 @@
     border: 0 !important;
     border-radius: 50%;
     background: var(--bs-body-bg) !important;
-  }
-
-  .course-agent-controls {
-    grid-template-columns: min-content minmax(7.5rem, 1fr) min-content minmax(6rem, 0.8fr);
-  }
-
-  .course-agent-controls > :nth-last-child(2) {
-    grid-column: 2 / 4;
   }
 }
