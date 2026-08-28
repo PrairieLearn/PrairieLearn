@@ -1,3 +1,4 @@
+import { compiledStylesheetTag } from '@prairielearn/compiled-assets';
 import { html } from '@prairielearn/html';
 import { Hydrate } from '@prairielearn/react/server';
 
@@ -22,6 +23,7 @@ export function InstructorCourseAdminGettingStarted({
       page: 'course_admin',
       subPage: 'getting_started',
     },
+    headContent: compiledStylesheetTag('courseAgentPanelMockup.css'),
     content: html`
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">

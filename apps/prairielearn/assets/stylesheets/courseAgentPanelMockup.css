@@ -1,0 +1,130 @@
+:root {
+  --course-agent-panel-width: clamp(24rem, 32vw, 32rem);
+  --course-agent-panel-rail-width: 3.5rem;
+}
+
+.app-main-container:has(.course-agent-panel-open) {
+  margin-right: var(--course-agent-panel-width);
+}
+
+.app-main-container:has(.course-agent-panel-collapsed) {
+  margin-right: var(--course-agent-panel-rail-width);
+}
+
+.app-main-container:has(.course-agent-panel) {
+  transition: margin-right 180ms ease;
+}
+
+.course-agent-panel {
+  position: fixed;
+  z-index: 1030;
+  top: var(--navbar-height);
+  right: 0;
+  bottom: 0;
+  color: var(--bs-body-color);
+}
+
+.course-agent-panel-content {
+  display: grid;
+  grid-template-rows: min-content minmax(0, 1fr) min-content;
+  width: var(--course-agent-panel-width);
+  height: 100%;
+  box-shadow: -0.25rem 0 0.75rem rgb(0 0 0 / 4%);
+}
+
+.course-agent-panel-rail {
+  display: none;
+  width: var(--course-agent-panel-rail-width);
+  height: 100%;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding-top: 0.5rem;
+}
+
+.course-agent-panel-collapsed .course-agent-panel-content {
+  display: none;
+}
+
+.course-agent-panel-collapsed .course-agent-panel-rail {
+  display: flex;
+}
+
+.course-agent-transcript {
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.course-agent-user-message {
+  max-width: 82%;
+  border-radius: 0.75rem 0.75rem 0 0.75rem;
+  padding: 0.55rem 0.75rem;
+}
+
+.course-agent-avatar {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 50%;
+}
+
+.course-agent-artifact svg {
+  max-height: 9rem;
+  padding: 0.5rem;
+}
+
+.course-agent-diff {
+  overflow: hidden;
+  white-space: pre-wrap;
+}
+
+.course-agent-diff span {
+  padding: 0.15rem 0.5rem;
+}
+
+.course-agent-composer:focus-within {
+  border-color: rgba(var(--bs-primary-rgb), 0.65) !important;
+  box-shadow: 0 0 0 0.2rem rgba(var(--bs-primary-rgb), 0.12);
+}
+
+.min-width-0 {
+  min-width: 0;
+}
+
+@media (max-width: 991.98px) {
+  .app-main-container:has(.course-agent-panel) {
+    margin-right: 0;
+  }
+
+  .course-agent-panel {
+    z-index: 1050;
+    top: 0;
+  }
+
+  .course-agent-panel-content {
+    width: min(100vw, 30rem);
+    box-shadow: -0.5rem 0 1.5rem rgb(0 0 0 / 18%);
+  }
+
+  .course-agent-panel-collapsed {
+    top: auto;
+    right: 1rem;
+    bottom: 1rem;
+  }
+
+  .course-agent-panel-collapsed .course-agent-panel-rail {
+    width: auto;
+    height: auto;
+    padding: 0;
+    border: 0 !important;
+    border-radius: 50%;
+    box-shadow: var(--bs-box-shadow);
+  }
+
+  .course-agent-panel-collapsed .course-agent-panel-rail > :first-child {
+    display: none;
+  }
+}
