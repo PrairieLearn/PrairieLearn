@@ -32,32 +32,35 @@ const COURSE_INSTANCES = [
 ] as const;
 
 const COURSE_AGENT_MODELS = [
-  { id: 'sol-5.6', provider: 'OpenAI', name: 'OpenAI Sol 5.6' },
-  { id: 'terra-5.6', provider: 'OpenAI', name: 'OpenAI Terra 5.6' },
-  { id: 'luna-5.6', provider: 'OpenAI', name: 'OpenAI Luna 5.6' },
-  { id: 'gpt-5.5', provider: 'OpenAI', name: 'OpenAI GPT-5.5' },
-  { id: 'gpt-5.4', provider: 'OpenAI', name: 'OpenAI GPT-5.4' },
-  { id: 'claude-haiku-4-5', provider: 'Anthropic', name: 'Claude Haiku 4.5' },
-  { id: 'claude-sonnet-4-6', provider: 'Anthropic', name: 'Claude Sonnet 4.6' },
-  { id: 'claude-opus-4-7', provider: 'Anthropic', name: 'Claude Opus 4.7' },
-] as const;
-
-const COURSE_DATA_DSL = JSON.stringify(
   {
-    resource: 'submissions',
-    select: [],
-    where: [{ field: 'course_instance.short_name', op: 'eq', value: 'Fa26' }],
-    groupBy: ['question.qid', 'question.title', 'assessment.tid'],
-    metrics: [
-      { op: 'avg', field: 'submission.score_perc', as: 'average_score' },
-      { op: 'count', field: 'submission.id', as: 'submission_count' },
-    ],
-    orderBy: [{ field: 'average_score', direction: 'asc' }],
-    limit: 10,
+    id: 'sol-5.6',
+    provider: 'OpenAI',
+    name: 'OpenAI Sol 5.6',
+    tier: 'Higher quality',
+    relativeCost: '5x',
   },
-  null,
-  2,
-);
+  {
+    id: 'luna-5.6',
+    provider: 'OpenAI',
+    name: 'OpenAI Luna 5.6',
+    tier: 'Faster, lower cost',
+    relativeCost: '1x',
+  },
+  {
+    id: 'claude-opus-4-7',
+    provider: 'Anthropic',
+    name: 'Claude Opus 4.7',
+    tier: 'Higher quality',
+    relativeCost: '5x',
+  },
+  {
+    id: 'claude-haiku-4-5',
+    provider: 'Anthropic',
+    name: 'Claude Haiku 4.5',
+    tier: 'Faster, lower cost',
+    relativeCost: '1x',
+  },
+] as const;
 
 export function CourseAgentPanelMockup() {
   const [open, setOpen] = useState(true);
@@ -153,7 +156,7 @@ export function CourseAgentPanelMockup() {
         <div className="course-agent-transcript px-3 py-3">
           <div className="text-center small text-muted mb-3">Today</div>
 
-          <UserMessage time="9:41 AM">
+          <UserMessage>
             Please create a Fall 2027 version of my Fall 2026 course instance.
           </UserMessage>
           <AgentMessage>
@@ -170,7 +173,6 @@ export function CourseAgentPanelMockup() {
               <div className="mt-1">
                 Created <code>courseInstances/Fa27</code> from Fall 2026.
               </div>
-              <div className="text-muted mt-1">Accepted by Dev User</div>
             </div>
             <CompletedToolCall>Applied and validated the approved changes</CompletedToolCall>
             <p className="mb-0">
@@ -179,35 +181,22 @@ export function CourseAgentPanelMockup() {
             </p>
           </AgentMessage>
 
-          <UserMessage time="9:47 AM">Where did students tend to fail in Fall 2026?</UserMessage>
+          <UserMessage>Where did students tend to fail in Fall 2026?</UserMessage>
           <AgentMessage>
             <CompletedToolCall>Restored the course sandbox</CompletedToolCall>
-            <CompletedToolCall>
-              Queried Fall 2026 submission performance
-              <details className="mt-1 ms-4">
-                <summary className="course-agent-query-summary">View query</summary>
-                <pre className="course-agent-code border rounded bg-dark text-light p-2 mt-1 mb-0">
-                  <code>{COURSE_DATA_DSL}</code>
-                </pre>
-              </details>
-            </CompletedToolCall>
+            <CompletedToolCall>Queried Fall 2026 submission performance</CompletedToolCall>
             <CompletedToolCall>Read the three lowest-performing question files</CompletedToolCall>
             <CompletedToolCall>
               Compared attempts, scores, and common incorrect answers
             </CompletedToolCall>
-            <p className="mb-1">
-              Students struggled most with <code>vectorField</code>: its average score was 41%, and
-              58% of first attempts chose the field’s magnitude instead of its direction. The
-              steepest drop occurred at the final instruction, which asked for both a normalized
-              vector and a written justification without showing the field components.
-            </p>
             <p className="mb-0">
-              The next two problem areas were <code>lineIntegralSetup</code> (54%) and{' '}
-              <code>jacobianChangeOfVariables</code> (59%).
+              Students struggled most with <code>vectorField</code> (41% average). Most errors came
+              from confusing the field’s magnitude with its direction.
             </p>
+            <PerformanceVisualization />
           </AgentMessage>
 
-          <UserMessage time="9:53 AM">
+          <UserMessage>
             Got it. Make <code>vectorField</code> easier by showing the evaluated field components
             at the point and asking students only to choose and justify the direction.
           </UserMessage>
@@ -369,6 +358,20 @@ export function CourseAgentPanelMockup() {
           <Modal.Title className="fs-5">Select model</Modal.Title>
         </Modal.Header>
         <Modal.Body>
+          <div className="d-flex align-items-center justify-content-between gap-2 mb-3 small text-muted">
+            <span>All models available</span>
+            <OverlayTrigger
+              placement="top"
+              tooltip={{
+                body: 'Relative cost compared with the lowest-cost model.',
+                props: { id: 'course-agent-relative-cost-tooltip' },
+              }}
+            >
+              <span className="text-nowrap">
+                Relative cost <i className="bi bi-question-circle" aria-hidden="true" />
+              </span>
+            </OverlayTrigger>
+          </div>
           {(['OpenAI', 'Anthropic'] as const).map((provider) => (
             <div key={provider} className="mb-3">
               <div className="fw-semibold mb-2">{provider}</div>
@@ -385,9 +388,19 @@ export function CourseAgentPanelMockup() {
                         type="radio"
                         id={`course-agent-model-${model.id}`}
                         name="course-agent-model"
-                        className="mb-0"
+                        className="course-agent-model-check mb-0"
                         checked={selected}
-                        label={model.name}
+                        label={
+                          <span className="d-flex align-items-center justify-content-between gap-3">
+                            <span>
+                              <span className="d-block fw-medium">{model.name}</span>
+                              <span className="d-block small text-muted">{model.tier}</span>
+                            </span>
+                            <span className="small text-muted text-nowrap">
+                              {model.relativeCost}
+                            </span>
+                          </span>
+                        }
                         onChange={() => {
                           setSelectedModelId(model.id);
                           setModelModalOpen(false);
@@ -407,20 +420,15 @@ export function CourseAgentPanelMockup() {
 
 CourseAgentPanelMockup.displayName = 'CourseAgentPanelMockup';
 
-function UserMessage({ time, children }: { time: string; children: ReactNode }) {
+function UserMessage({ children }: { children: ReactNode }) {
   return (
     <div
       className="d-flex flex-column align-items-end mb-3"
       role="article"
-      aria-label="Message from Dev User"
+      aria-label="Message from you"
     >
       <div className="course-agent-user-message d-flex flex-column gap-2 rounded bg-secondary-subtle p-3">
         {children}
-      </div>
-      <div className="d-flex align-items-center gap-2 small text-muted mb-1 px-1">
-        <span className="fw-medium">Dev User</span>
-        <span aria-hidden="true">·</span>
-        <span>{time}</span>
       </div>
     </div>
   );
@@ -449,16 +457,49 @@ function CompletedToolCall({ children }: { children: ReactNode }) {
   );
 }
 
+function PerformanceVisualization() {
+  const rows = [
+    { qid: 'vectorField', score: 41 },
+    { qid: 'lineIntegralSetup', score: 54 },
+    { qid: 'jacobianChangeOfVariables', score: 59 },
+  ];
+
+  return (
+    <div
+      className="course-agent-visualization border rounded bg-white p-3"
+      role="img"
+      aria-label="Fall 2026 lowest average question scores: vectorField 41 percent, lineIntegralSetup 54 percent, and jacobianChangeOfVariables 59 percent"
+    >
+      <div className="d-flex align-items-baseline justify-content-between gap-2 mb-3">
+        <span className="fw-semibold">Lowest average scores</span>
+        <span className="small text-muted">Fall 2026</span>
+      </div>
+      <div className="d-flex flex-column gap-2">
+        {rows.map(({ qid, score }) => (
+          <div key={qid} className="course-agent-chart-row small">
+            <code className="text-truncate" title={qid}>
+              {qid}
+            </code>
+            <span className="course-agent-chart-track">
+              <span className="course-agent-chart-bar" style={{ width: `${score}%` }} />
+            </span>
+            <span className="text-end fw-medium">{score}%</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function DiffApproval() {
   return (
     <div className="course-agent-approval border rounded bg-white overflow-hidden">
       <div className="border-bottom px-3 py-2">
-        <div className="d-flex align-items-center gap-2 fw-semibold">
-          <i className="bi bi-shield-check text-warning" aria-hidden="true" /> Approval required
-        </div>
-        <div className="d-flex align-items-center justify-content-between gap-2 small mt-1">
-          <span className="text-muted">Apply these question changes?</span>
-          <span className="text-nowrap">
+        <div className="d-flex align-items-center justify-content-between gap-2">
+          <div className="d-flex align-items-center gap-2 fw-semibold">
+            <i className="bi bi-shield-check text-warning" aria-hidden="true" /> Approval required
+          </div>
+          <span className="small text-nowrap">
             2 files changed <span className="text-success">+9</span>{' '}
             <span className="text-danger">−11</span>
           </span>

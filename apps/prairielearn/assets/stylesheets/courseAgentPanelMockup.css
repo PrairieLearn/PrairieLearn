@@ -105,14 +105,6 @@
   border-radius: 50%;
 }
 
-.course-agent-code {
-  max-height: 17rem;
-  overflow: auto;
-  font-size: 0.72rem;
-  line-height: 1.35;
-  white-space: pre;
-}
-
 .course-agent-panel .bi-fw {
   width: 1em;
   height: 1em;
@@ -122,13 +114,29 @@
   vertical-align: unset;
 }
 
-.course-agent-query-summary {
-  cursor: pointer;
-  width: fit-content;
-}
-
 .course-agent-accepted-approval {
   background-color: var(--bs-success-bg-subtle);
+}
+
+.course-agent-chart-row {
+  display: grid;
+  grid-template-columns: minmax(7rem, 1.35fr) minmax(6rem, 1fr) 2.5rem;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.course-agent-chart-track {
+  height: 0.6rem;
+  overflow: hidden;
+  border-radius: var(--bs-border-radius-pill);
+  background-color: var(--bs-secondary-bg);
+}
+
+.course-agent-chart-bar {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background-color: var(--bs-primary);
 }
 
 .course-agent-diff-files {
@@ -235,6 +243,10 @@
 
 .course-agent-model-option:hover {
   background-color: var(--bs-secondary-bg);
+}
+
+.course-agent-model-check .form-check-label {
+  width: 100%;
 }
 
 .min-width-0 {
