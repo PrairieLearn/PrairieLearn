@@ -114,6 +114,17 @@
   vertical-align: unset;
 }
 
+.course-agent-tool-group-toggle {
+  width: fit-content;
+  border-radius: var(--bs-border-radius);
+  background-color: var(--bs-secondary-bg);
+}
+
+.course-agent-tool-group-toggle:hover,
+.course-agent-tool-group-toggle:focus-visible {
+  background-color: var(--bs-tertiary-bg);
+}
+
 .course-agent-accepted-approval {
   background-color: var(--bs-success-bg-subtle);
 }

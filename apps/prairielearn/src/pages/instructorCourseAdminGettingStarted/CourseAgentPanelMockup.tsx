@@ -170,12 +170,14 @@ export function CourseAgentPanelMockup() {
             Please create a Fall 2027 version of my Fall 2026 course instance.
           </UserMessage>
           <AgentMessage>
-            <CompletedToolCall>Set up the course sandbox</CompletedToolCall>
-            <CompletedToolCall>
-              Read <code>courseInstances/Fa26</code>
-            </CompletedToolCall>
-            <CompletedToolCall>Prepared a Fall 2027 course instance</CompletedToolCall>
-            <CompletedToolCall>Validated the proposed course changes</CompletedToolCall>
+            <ToolCallGroup count={4}>
+              <CompletedToolCall>Set up the course sandbox</CompletedToolCall>
+              <CompletedToolCall>
+                Read <code>courseInstances/Fa26</code>
+              </CompletedToolCall>
+              <CompletedToolCall>Prepared a Fall 2027 course instance</CompletedToolCall>
+              <CompletedToolCall>Validated the proposed course changes</CompletedToolCall>
+            </ToolCallGroup>
             <div className="course-agent-accepted-approval border rounded px-2 py-2 small">
               <div className="d-flex align-items-center gap-2 fw-semibold text-success">
                 <i className="bi bi-shield-check" aria-hidden="true" /> Approval accepted
@@ -184,7 +186,6 @@ export function CourseAgentPanelMockup() {
                 Created <code>courseInstances/Fa27</code> from Fall 2026.
               </div>
             </div>
-            <CompletedToolCall>Applied and validated the approved changes</CompletedToolCall>
             <p className="mb-0">
               Fall 2027 was created with the Fall 2026 assessments and settings. I updated its
               dates, short name, and display name, and the course validated successfully.
@@ -193,12 +194,14 @@ export function CourseAgentPanelMockup() {
 
           <UserMessage>Where did students tend to fail in Fall 2026?</UserMessage>
           <AgentMessage>
-            <CompletedToolCall>Restored the course sandbox</CompletedToolCall>
-            <CompletedToolCall>Queried Fall 2026 submission performance</CompletedToolCall>
-            <CompletedToolCall>Read the three lowest-performing question files</CompletedToolCall>
-            <CompletedToolCall>
-              Compared attempts, scores, and common incorrect answers
-            </CompletedToolCall>
+            <ToolCallGroup count={4}>
+              <CompletedToolCall>Restored the course sandbox</CompletedToolCall>
+              <CompletedToolCall>Queried Fall 2026 submission performance</CompletedToolCall>
+              <CompletedToolCall>Read the three lowest-performing question files</CompletedToolCall>
+              <CompletedToolCall>
+                Compared attempts, scores, and common incorrect answers
+              </CompletedToolCall>
+            </ToolCallGroup>
             <p className="mb-0">
               The lowest-performing item was the question <strong>Vector-field direction</strong> (
               <code>vectorField</code>, 41% average). Most errors came from confusing the field’s
@@ -212,13 +215,15 @@ export function CourseAgentPanelMockup() {
             at the point and asking students only to choose and justify the direction.
           </UserMessage>
           <AgentMessage>
-            <CompletedToolCall>
-              Read <code>questions/vectorField/question.html</code>
-            </CompletedToolCall>
-            <CompletedToolCall>
-              Read <code>questions/vectorField/server.py</code>
-            </CompletedToolCall>
-            <CompletedToolCall>Prepared and validated the question edits</CompletedToolCall>
+            <ToolCallGroup count={3}>
+              <CompletedToolCall>
+                Read <code>questions/vectorField/question.html</code>
+              </CompletedToolCall>
+              <CompletedToolCall>
+                Read <code>questions/vectorField/server.py</code>
+              </CompletedToolCall>
+              <CompletedToolCall>Prepared and validated the question edits</CompletedToolCall>
+            </ToolCallGroup>
             <p className="mb-0">I prepared the following changes for your approval.</p>
             <DiffApproval />
           </AgentMessage>
@@ -476,6 +481,29 @@ function CompletedToolCall({ children }: { children: ReactNode }) {
         <i className="bi bi-fw bi-check-lg text-success" aria-hidden="true" />
         <div className="min-width-0 flex-grow-1">{children}</div>
       </div>
+    </div>
+  );
+}
+
+function ToolCallGroup({ count, children }: { count: number; children: ReactNode }) {
+  const [expanded, setExpanded] = useState(false);
+
+  return (
+    <div className="course-agent-tool-group">
+      <button
+        type="button"
+        className="course-agent-tool-group-toggle btn btn-sm d-flex align-items-center gap-2 border-0 px-2 py-1 text-muted"
+        aria-expanded={expanded}
+        onClick={() => setExpanded(!expanded)}
+      >
+        <i className={`bi bi-chevron-${expanded ? 'down' : 'right'} small`} aria-hidden="true" />
+        <span>
+          Made {count} tool {count === 1 ? 'call' : 'calls'}
+        </span>
+      </button>
+      {expanded && (
+        <div className="d-flex flex-column gap-1 border-start ms-2 mt-1 ps-3 py-1">{children}</div>
+      )}
     </div>
   );
 }
