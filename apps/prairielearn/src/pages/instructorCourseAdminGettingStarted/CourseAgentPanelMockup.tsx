@@ -1,12 +1,29 @@
 import { type ReactNode, useState } from 'react';
 import { Form } from 'react-bootstrap';
 
-const CHAT_TITLES = ['Exam 1 performance', 'Revise vector fields', 'Course setup help'];
+const CHAT_TITLES = ['Exam 1 analysis', 'Improve vector-field question', 'Course setup plan'];
+
+const COURSE_DATA_DSL = JSON.stringify(
+  {
+    resource: 'assessment_attempts',
+    select: ['assessment.tid'],
+    where: [{ field: 'assessment.tid', op: 'eq', value: 'exam1' }],
+    groupBy: ['assessment.tid'],
+    metrics: [
+      { op: 'avg', field: 'attempt.score_perc', as: 'average_score' },
+      { op: 'count', field: 'attempt.id', as: 'attempt_count' },
+    ],
+    orderBy: [{ field: 'average_score', direction: 'desc' }],
+    limit: 20,
+  },
+  null,
+  2,
+);
 
 export function CourseAgentPanelMockup() {
   const [open, setOpen] = useState(true);
   const [showDiagnostics, setShowDiagnostics] = useState(false);
-  const [expandedActivity, setExpandedActivity] = useState<'data' | 'diff' | null>('data');
+  const [expandedTool, setExpandedTool] = useState<'sandbox' | 'query' | null>('sandbox');
 
   return (
     <aside
@@ -16,16 +33,8 @@ export function CourseAgentPanelMockup() {
       <div className="course-agent-panel-rail border-start bg-light">
         <button
           type="button"
-          className="btn btn-link text-body p-2"
-          aria-label="Open course agent"
-          onClick={() => setOpen(true)}
-        >
-          <i className="bi bi-chevron-left" />
-        </button>
-        <button
-          type="button"
           className="btn btn-link text-primary p-2"
-          aria-label="Open course agent chat"
+          aria-label="Open course agent"
           onClick={() => setOpen(true)}
         >
           <i className="bi bi-stars fs-5" />
@@ -33,46 +42,24 @@ export function CourseAgentPanelMockup() {
       </div>
 
       <div className="course-agent-panel-content border-start bg-light">
-        <header className="border-bottom bg-white">
-          <div className="d-flex align-items-center gap-2 px-3 py-2">
-            <span
-              className="d-inline-flex align-items-center justify-content-center rounded bg-primary text-white"
-              style={{ width: 30, height: 30 }}
-            >
-              <i className="bi bi-stars small" />
-            </span>
-            <div className="min-width-0 flex-grow-1">
-              <div className="fw-semibold lh-sm">Course agent</div>
-              <div className="small text-muted">
-                <span className="text-success me-1">●</span>Ready
-              </div>
-            </div>
-            <button type="button" className="btn btn-sm btn-light" aria-label="Start new chat">
-              <i className="bi bi-plus-lg" />
-            </button>
-            <button
-              type="button"
-              className="btn btn-sm btn-light"
-              aria-label="Collapse course agent"
-              onClick={() => setOpen(false)}
-            >
-              <i className="bi bi-chevron-right" />
-            </button>
-          </div>
-
-          <div className="d-flex align-items-center gap-1 border-top px-2 py-2">
-            <Form.Select size="sm" aria-label="Select chat" defaultValue={CHAT_TITLES[0]}>
-              {CHAT_TITLES.map((title) => (
-                <option key={title}>{title}</option>
-              ))}
-            </Form.Select>
-            <button type="button" className="btn btn-sm btn-light" aria-label="Rename chat">
-              <i className="bi bi-pencil" />
-            </button>
-            <button type="button" className="btn btn-sm btn-light" aria-label="More chat options">
-              <i className="bi bi-three-dots" />
-            </button>
-          </div>
+        <header className="course-agent-header d-flex align-items-center gap-2 border-bottom bg-white px-2 py-2">
+          <strong className="text-nowrap">Course agent</strong>
+          <Form.Select size="sm" aria-label="Select conversation" defaultValue={CHAT_TITLES[0]}>
+            {CHAT_TITLES.map((title) => (
+              <option key={title}>{title}</option>
+            ))}
+          </Form.Select>
+          <button type="button" className="btn btn-sm btn-light" aria-label="Start new chat">
+            <i className="bi bi-plus-lg" />
+          </button>
+          <button
+            type="button"
+            className="btn btn-sm btn-light"
+            aria-label="Collapse course agent"
+            onClick={() => setOpen(false)}
+          >
+            <i className="bi bi-chevron-right" />
+          </button>
         </header>
 
         <div className="course-agent-transcript px-3 py-3">
@@ -80,7 +67,7 @@ export function CourseAgentPanelMockup() {
 
           <div className="d-flex justify-content-end mb-3">
             <div className="course-agent-user-message bg-secondary-subtle">
-              Which Exam 1 questions did students struggle with most? Show me the data.
+              Analyze Exam 1, then improve the instructions if anything is unclear.
             </div>
           </div>
 
@@ -89,101 +76,75 @@ export function CourseAgentPanelMockup() {
               <i className="bi bi-stars" />
             </span>
             <div className="min-width-0 flex-grow-1">
-              <div className="small text-muted mb-2">Course agent</div>
-
-              <ActivityCard
-                icon="bi-database"
-                title="Queried course data"
-                summary="86 assessment attempts"
-                expanded={expandedActivity === 'data'}
-                onToggle={() => setExpandedActivity(expandedActivity === 'data' ? null : 'data')}
-              >
-                <div className="table-responsive">
-                  <table className="table table-sm table-borderless align-middle mb-1 small">
-                    <thead className="border-bottom">
-                      <tr>
-                        <th>Question</th>
-                        <th className="text-end">Average</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr>
-                        <td>Vector fields</td>
-                        <td className="text-end text-danger fw-semibold">42%</td>
-                      </tr>
-                      <tr>
-                        <td>Line integrals</td>
-                        <td className="text-end">51%</td>
-                      </tr>
-                      <tr>
-                        <td>Gradient interpretation</td>
-                        <td className="text-end">58%</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-                <div className="d-flex gap-2 mt-2">
-                  <button type="button" className="btn btn-sm btn-outline-secondary py-0">
-                    <i className="bi bi-download me-1" /> CSV
-                  </button>
-                  <button type="button" className="btn btn-sm btn-outline-secondary py-0">
-                    <i className="bi bi-download me-1" /> JSON
-                  </button>
-                </div>
-              </ActivityCard>
-
-              <p className="mt-3 mb-2">
-                <strong>Vector fields</strong> was the hardest question, followed by line integrals
-                and gradient interpretation. The most common issue was choosing a direction before
-                evaluating the field.
+              <div className="small text-muted mb-1">Course agent</div>
+              <p className="mb-3">
+                I’ll start a sandbox, query the Exam 1 attempt data, and inspect the relevant course
+                files. I’ll ask before applying any edits.
               </p>
 
-              <div className="course-agent-artifact border rounded bg-white mb-2">
-                <div className="d-flex align-items-center justify-content-between border-bottom px-2 py-1 small">
-                  <span className="fw-semibold">
-                    <i className="bi bi-bar-chart me-1 text-primary" /> Question performance
-                  </span>
-                  <span className="badge text-bg-light border">Visualization</span>
-                </div>
-                <svg
-                  className="d-block w-100"
-                  viewBox="0 0 320 112"
-                  role="img"
-                  aria-label="Bar chart showing three question average scores"
-                >
-                  <line x1="95" y1="16" x2="95" y2="96" stroke="#dee2e6" />
-                  <text x="8" y="34" fontSize="11" fill="currentColor">
-                    Vector fields
-                  </text>
-                  <rect x="100" y="21" width="88" height="16" rx="3" fill="#dc3545" />
-                  <text x="194" y="33" fontSize="11" fill="currentColor">
-                    42%
-                  </text>
-                  <text x="8" y="61" fontSize="11" fill="currentColor">
-                    Line integrals
-                  </text>
-                  <rect x="100" y="48" width="107" height="16" rx="3" fill="#f0ad4e" />
-                  <text x="213" y="60" fontSize="11" fill="currentColor">
-                    51%
-                  </text>
-                  <text x="8" y="88" fontSize="11" fill="currentColor">
-                    Gradient
-                  </text>
-                  <rect x="100" y="75" width="122" height="16" rx="3" fill="#0d6efd" />
-                  <text x="228" y="87" fontSize="11" fill="currentColor">
-                    58%
-                  </text>
-                </svg>
-              </div>
-
-              <ActivityCard
-                icon="bi-file-diff"
-                title="Proposed question.html revision"
-                summary="4 lines changed"
-                expanded={expandedActivity === 'diff'}
-                onToggle={() => setExpandedActivity(expandedActivity === 'diff' ? null : 'diff')}
+              <ToolCard
+                title="Starting sandbox"
+                summary="Cloning the latest safe course commit"
+                status="ongoing"
+                expanded={expandedTool === 'sandbox'}
+                onToggle={() => setExpandedTool(expandedTool === 'sandbox' ? null : 'sandbox')}
               >
-                <pre className="course-agent-diff rounded mb-0 small">
+                <div className="d-flex align-items-center justify-content-between mb-2">
+                  <span className="small fw-semibold">Live trace</span>
+                  <Form.Check
+                    type="switch"
+                    id="course-agent-diagnostics"
+                    className="small mb-0"
+                    label="Diagnostics"
+                    checked={showDiagnostics}
+                    onChange={(event) => setShowDiagnostics(event.currentTarget.checked)}
+                  />
+                </div>
+                <TraceRow state="complete" text="Allocated Cloudflare sandbox" />
+                <TraceRow state="complete" text="Restored conversation workspace" />
+                <TraceRow state="ongoing" text="Cloning the latest safe commit" />
+                <TraceRow state="queued" text="Preparing PrairieLearn tools" />
+                {showDiagnostics && (
+                  <div className="border-top mt-2 pt-2 small text-muted">
+                    <div className="d-flex justify-content-between">
+                      <span>Run</span>
+                      <span>run_01J8Q</span>
+                    </div>
+                    <div className="d-flex justify-content-between">
+                      <span>Tokens</span>
+                      <span>8,432</span>
+                    </div>
+                    <div className="d-flex justify-content-between">
+                      <span>Estimated cost</span>
+                      <span>$0.08</span>
+                    </div>
+                  </div>
+                )}
+              </ToolCard>
+
+              <ToolCard
+                title="Query course data"
+                summary="Queued until the sandbox is ready"
+                status="queued"
+                expanded={expandedTool === 'query'}
+                onToggle={() => setExpandedTool(expandedTool === 'query' ? null : 'query')}
+              >
+                <div className="small fw-semibold mb-1">DSL input</div>
+                <pre className="course-agent-code border rounded bg-dark text-light p-2 mb-0">
+                  <code>{COURSE_DATA_DSL}</code>
+                </pre>
+              </ToolCard>
+
+              <div className="course-agent-approval border rounded bg-white mt-3 overflow-hidden">
+                <div className="border-bottom px-3 py-2">
+                  <div className="d-flex align-items-center gap-2 fw-semibold">
+                    <i className="bi bi-shield-check text-warning" /> Approval required
+                  </div>
+                  <div className="small text-muted mt-1">
+                    Apply this change to <code>questions/vectorField/question.html</code>?
+                  </div>
+                </div>
+                <pre className="course-agent-diff mb-0 small">
                   <code>
                     <span className="d-block bg-danger-subtle text-danger">
                       - Choose the vector direction.
@@ -196,67 +157,53 @@ export function CourseAgentPanelMockup() {
                     </span>
                   </code>
                 </pre>
-              </ActivityCard>
-
-              {showDiagnostics && (
-                <div className="border rounded bg-body-tertiary p-2 mt-2 small text-muted">
-                  <div className="fw-semibold text-body mb-1">Developer diagnostics</div>
-                  <div className="d-flex justify-content-between">
-                    <span>Run</span>
-                    <span>run_01J8Q</span>
-                  </div>
-                  <div className="d-flex justify-content-between">
-                    <span>Sandbox</span>
-                    <span>ready · 4.8 s</span>
-                  </div>
-                  <div className="d-flex justify-content-between">
-                    <span>Context</span>
-                    <span>8,432 tokens</span>
-                  </div>
+                <div className="d-flex justify-content-end gap-2 border-top px-2 py-2">
+                  <button type="button" className="btn btn-sm btn-outline-secondary">
+                    No
+                  </button>
+                  <button type="button" className="btn btn-sm btn-primary">
+                    Yes, apply
+                  </button>
                 </div>
-              )}
+              </div>
             </div>
           </div>
         </div>
 
-        <footer className="border-top bg-white p-2">
-          <div className="d-flex align-items-center justify-content-between px-1 pb-2 small text-muted">
-            <span>8,432 tokens · est. $0.08</span>
-            <Form.Check
-              type="switch"
-              id="course-agent-diagnostics"
-              className="mb-0"
-              label="Diagnostics"
-              checked={showDiagnostics}
-              onChange={(event) => setShowDiagnostics(event.currentTarget.checked)}
-            />
-          </div>
+        <footer className="course-agent-footer border-top bg-white p-2">
           <Form onSubmit={(event) => event.preventDefault()}>
-            <div className="course-agent-composer border rounded bg-white p-2">
-              <Form.Control
-                as="textarea"
-                rows={2}
-                className="border-0 shadow-none"
-                aria-label="Message course agent"
-                placeholder="Ask anything about your course…"
-                defaultValue=""
-              />
-              <div className="d-flex align-items-center justify-content-between px-1">
-                <button
-                  type="button"
-                  className="btn btn-sm btn-link text-muted p-1"
-                  aria-label="Attach files"
-                >
-                  <i className="bi bi-paperclip" />
-                </button>
-                <button type="submit" className="btn btn-sm btn-primary" aria-label="Send message">
-                  <i className="bi bi-send-fill" />
-                </button>
-              </div>
+            <Form.Control
+              as="textarea"
+              rows={2}
+              className="course-agent-chat-input shadow-none"
+              aria-label="Message course agent"
+              placeholder="Ask anything about your course…"
+              defaultValue=""
+            />
+            <div className="course-agent-controls mt-2">
+              <button type="button" className="btn btn-sm btn-light" aria-label="Add context">
+                <i className="bi bi-plus-lg" />
+              </button>
+              <Form.Select size="sm" aria-label="Approval mode" defaultValue="ask">
+                <option value="ask">Ask for approval</option>
+                <option value="always">Always approve</option>
+              </Form.Select>
+              <span className="course-agent-billing-label text-muted text-nowrap">Billing to</span>
+              <Form.Select size="sm" aria-label="Billing course instance" defaultValue="fall-2026">
+                <option value="fall-2026">Fall 2026</option>
+                <option value="spring-2027">Spring 2027</option>
+              </Form.Select>
+              <Form.Select size="sm" aria-label="Model" defaultValue="sol-5.6">
+                <option value="sol-5.6">OpenAI Sol 5.6</option>
+                <option value="terra-5.6">OpenAI Terra 5.6</option>
+              </Form.Select>
+              <button type="submit" className="btn btn-sm btn-primary" aria-label="Send message">
+                <i className="bi bi-send-fill" />
+              </button>
             </div>
           </Form>
-          <div className="text-center text-muted mt-1" style={{ fontSize: '0.75rem' }}>
-            Static prototype · Nothing is sent or saved
+          <div className="text-center text-muted mt-2" style={{ fontSize: '0.75rem' }}>
+            AI can make mistakes. Review changes before applying them.
           </div>
         </footer>
       </div>
@@ -266,17 +213,17 @@ export function CourseAgentPanelMockup() {
 
 CourseAgentPanelMockup.displayName = 'CourseAgentPanelMockup';
 
-function ActivityCard({
-  icon,
+function ToolCard({
   title,
   summary,
+  status,
   expanded,
   onToggle,
   children,
 }: {
-  icon: string;
   title: string;
   summary: string;
+  status: 'ongoing' | 'queued';
   expanded: boolean;
   onToggle: () => void;
   children: ReactNode;
@@ -289,7 +236,14 @@ function ActivityCard({
         aria-expanded={expanded}
         onClick={onToggle}
       >
-        <i className={`bi ${icon} text-success`} />
+        {status === 'ongoing' ? (
+          <span
+            className="spinner-border spinner-border-sm text-primary"
+            aria-label="In progress"
+          />
+        ) : (
+          <i className="bi bi-clock text-muted" />
+        )}
         <span className="flex-grow-1 min-width-0">
           <span className="d-block small fw-semibold">{title}</span>
           <span className="d-block small text-muted">{summary}</span>
@@ -297,6 +251,19 @@ function ActivityCard({
         <i className={`bi bi-chevron-${expanded ? 'up' : 'down'} small text-muted`} />
       </button>
       {expanded && <div className="border-top px-2 py-2">{children}</div>}
+    </div>
+  );
+}
+
+function TraceRow({ state, text }: { state: 'complete' | 'ongoing' | 'queued'; text: string }) {
+  return (
+    <div className="d-flex align-items-center gap-2 py-1 small">
+      {state === 'complete' && <i className="bi bi-check-circle-fill text-success" />}
+      {state === 'ongoing' && (
+        <span className="spinner-border spinner-border-sm text-primary" aria-hidden="true" />
+      )}
+      {state === 'queued' && <i className="bi bi-circle text-muted" />}
+      <span className={state === 'queued' ? 'text-muted' : undefined}>{text}</span>
     </div>
   );
 }
