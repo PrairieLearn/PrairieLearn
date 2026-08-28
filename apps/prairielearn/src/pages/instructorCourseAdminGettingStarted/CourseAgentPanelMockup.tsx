@@ -86,14 +86,22 @@ export function CourseAgentPanelMockup() {
       aria-label="Course agent panel"
     >
       <div className="course-agent-panel-rail border-start bg-light">
-        <button
-          type="button"
-          className="btn btn-link text-primary p-2"
-          aria-label="Open course agent"
-          onClick={() => setOpen(true)}
+        <OverlayTrigger
+          placement="left"
+          tooltip={{
+            body: 'Expand course agent',
+            props: { id: 'course-agent-expand-tooltip' },
+          }}
         >
-          <i className="bi bi-arrow-bar-left fs-5" />
-        </button>
+          <button
+            type="button"
+            className="btn btn-link text-primary p-2"
+            aria-label="Expand course agent"
+            onClick={() => setOpen(true)}
+          >
+            <i className="bi bi-arrow-bar-left fs-5" />
+          </button>
+        </OverlayTrigger>
       </div>
 
       <div className="course-agent-panel-content border-start bg-light">
