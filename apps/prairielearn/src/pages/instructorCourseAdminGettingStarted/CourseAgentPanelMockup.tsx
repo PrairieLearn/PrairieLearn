@@ -145,6 +145,10 @@ export function CourseAgentPanelMockup() {
     COURSE_INSTANCES.find(({ id }) => id === billingCourseInstanceId) ?? COURSE_INSTANCES[0];
   const selectedModel =
     COURSE_AGENT_MODELS.find(({ id }) => id === selectedModelId) ?? COURSE_AGENT_MODELS[0];
+  const billingStatus =
+    billingCourseInstance.billing.kind === 'credits'
+      ? `${billingCourseInstance.billing.balance} remaining`
+      : 'BYOK';
 
   return (
     <aside
@@ -298,14 +302,15 @@ export function CourseAgentPanelMockup() {
         <footer className="course-agent-footer border-top bg-white p-3">
           <Form onSubmit={(event) => event.preventDefault()}>
             <div className="course-agent-usage small text-muted mb-1 px-1">
-              $0.08 used <span aria-hidden="true">·</span> Billing to{' '}
+              Billing to{' '}
               <button
                 type="button"
                 className="btn btn-link btn-sm p-0 align-baseline"
                 onClick={() => setBillingModalOpen(true)}
               >
                 {billingCourseInstance.longName}
-              </button>
+              </button>{' '}
+              <span aria-hidden="true">·</span> {billingStatus}
             </div>
             <Form.Control
               as="textarea"
@@ -331,23 +336,42 @@ export function CourseAgentPanelMockup() {
                   <i className="bi bi-paperclip" />
                 </button>
               </OverlayTrigger>
-              <button
-                type="button"
-                className="course-agent-approval-mode btn btn-sm btn-outline-primary text-nowrap"
-                onClick={() => setApprovalMode(approvalMode === 'ask' ? 'always' : 'ask')}
-              >
-                {approvalMode === 'ask' ? 'Ask for approval' : 'Always approve'}
-              </button>
-              <button
-                type="button"
-                className="course-agent-model-button btn btn-sm btn-outline-primary text-truncate"
-                onClick={() => {
-                  setPendingModelId(selectedModelId);
-                  setModelModalOpen(true);
+              <OverlayTrigger
+                placement="top"
+                tooltip={{
+                  body:
+                    approvalMode === 'ask'
+                      ? 'Require approval before applying changes'
+                      : 'Apply changes without asking for approval',
+                  props: { id: 'course-agent-approval-mode-tooltip' },
                 }}
               >
-                {selectedModel.name}
-              </button>
+                <button
+                  type="button"
+                  className="course-agent-approval-mode btn btn-sm btn-outline-primary text-nowrap"
+                  onClick={() => setApprovalMode(approvalMode === 'ask' ? 'always' : 'ask')}
+                >
+                  {approvalMode === 'ask' ? 'Ask for approval' : 'Always approve'}
+                </button>
+              </OverlayTrigger>
+              <OverlayTrigger
+                placement="top"
+                tooltip={{
+                  body: 'Change the course agent model',
+                  props: { id: 'course-agent-model-tooltip' },
+                }}
+              >
+                <button
+                  type="button"
+                  className="course-agent-model-button btn btn-sm btn-outline-primary text-truncate"
+                  onClick={() => {
+                    setPendingModelId(selectedModelId);
+                    setModelModalOpen(true);
+                  }}
+                >
+                  {selectedModel.name}
+                </button>
+              </OverlayTrigger>
               <button
                 type="submit"
                 className="btn btn-sm btn-primary ms-auto"
@@ -600,8 +624,8 @@ function PerformanceVisualization() {
               <span className="d-block text-truncate fw-medium" title={title}>
                 {title}
               </span>
-              <code className="d-block text-truncate small" title={qid}>
-                {qid}
+              <code className="d-block text-truncate small" title={`QID: ${qid}`}>
+                QID: {qid}
               </code>
             </span>
             <span className="course-agent-chart-track">
