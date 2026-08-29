@@ -3,7 +3,7 @@ import { PatchDiff } from '@pierre/diffs/react';
 import htmlLanguage from '@shikijs/langs/html';
 import pythonLanguage from '@shikijs/langs/python';
 import githubLightTheme from '@shikijs/themes/github-light';
-import { type ReactNode, useEffect, useRef, useState } from 'react';
+import { type ReactNode, useState } from 'react';
 import { Dropdown, Form, Modal } from 'react-bootstrap';
 
 import { OverlayTrigger } from '@prairielearn/ui';
@@ -412,47 +412,12 @@ function DiffFile({
   deletions: number;
   patch: string;
 }) {
-  const [expanded, setExpanded] = useState(false);
-  const [hasCollapsedContent, setHasCollapsedContent] = useState(false);
-  const bodyRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const body = bodyRef.current;
-    if (!body) return;
-
-    const updateCollapsedContent = () => {
-      if (!expanded) {
-        setHasCollapsedContent(body.scrollHeight > body.clientHeight + 1);
-      }
-    };
-
-    // Pierre renders inside a custom element, so observe its size before enabling expansion.
-    const resizeObserver = new ResizeObserver(updateCollapsedContent);
-    resizeObserver.observe(body);
-    const diff = body.querySelector('diffs-container');
-    if (diff) resizeObserver.observe(diff);
-
-    return () => resizeObserver.disconnect();
-  }, [expanded]);
-
   return (
-    <div
-      className={`course-agent-diff-file overflow-hidden rounded border ${expanded ? 'course-agent-diff-file-expanded' : ''}`}
-    >
+    <div className="course-agent-diff-file overflow-hidden rounded border">
       <DiffFileHeader path={path} additions={additions} deletions={deletions} />
-      <div ref={bodyRef} className="course-agent-diff-body border-top">
+      <div className="course-agent-diff-body border-top">
         <PatchDiff patch={patch} options={DIFF_OPTIONS} renderCustomHeader={() => null} />
       </div>
-      <button
-        type="button"
-        className="course-agent-diff-expand btn btn-light d-flex w-100 align-items-center justify-content-center gap-2 rounded-0 border-0 border-top py-2 text-secondary"
-        aria-expanded={expanded}
-        disabled={!expanded && !hasCollapsedContent}
-        onClick={() => setExpanded(!expanded)}
-      >
-        <span>{expanded ? 'Collapse' : 'Expand'}</span>
-        <i className={`bi bi-chevron-${expanded ? 'up' : 'down'}`} aria-hidden="true" />
-      </button>
     </div>
   );
 }

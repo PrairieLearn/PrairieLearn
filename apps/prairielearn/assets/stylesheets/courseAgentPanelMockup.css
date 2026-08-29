@@ -139,10 +139,6 @@
   overflow: auto;
 }
 
-.course-agent-diff-file-expanded .course-agent-diff-body {
-  max-height: none;
-}
-
 .course-agent-diff-body > diffs-container {
   display: block;
   overflow: auto;
@@ -150,11 +146,6 @@
   --diffs-line-height: 1.25rem;
   --diffs-gap-inline: 0.5rem;
   --diffs-gap-block: 0.25rem;
-}
-
-.course-agent-diff-expand:hover,
-.course-agent-diff-expand:focus-visible {
-  color: var(--bs-body-color) !important;
 }
 
 .course-agent-diff-file-header {
