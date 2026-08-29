@@ -134,41 +134,26 @@
   background-color: var(--bs-success-bg-subtle);
 }
 
-.course-agent-chart-row {
-  display: grid;
-  grid-template-columns: minmax(12rem, 1.5fr) minmax(7rem, 1fr) 2.5rem;
-  align-items: center;
-  gap: 0.6rem;
-}
-
-.course-agent-chart-track {
-  height: 0.6rem;
-  overflow: hidden;
-  border-radius: var(--bs-border-radius-pill);
-  background-color: var(--bs-secondary-bg);
-}
-
-.course-agent-chart-bar {
-  display: block;
-  height: 100%;
-  border-radius: inherit;
-  background-color: var(--bs-primary);
-}
-
 .course-agent-diff-files {
   max-height: min(38rem, 55vh);
   overflow: auto;
 }
 
-.course-agent-diff-files > diffs-container {
+.course-agent-diff-files > diffs-container,
+.course-agent-expanded-diff > diffs-container {
   display: block;
-  overflow: hidden;
+  overflow: auto;
   border: var(--bs-border-width) solid var(--bs-border-color);
   border-radius: var(--bs-border-radius);
   --diffs-font-size: 0.75rem;
   --diffs-line-height: 1.25rem;
   --diffs-gap-inline: 0.5rem;
   --diffs-gap-block: 0.25rem;
+}
+
+.course-agent-expanded-diff {
+  max-height: calc(100vh - 10rem);
+  overflow: auto;
 }
 
 .course-agent-diff-file-header {

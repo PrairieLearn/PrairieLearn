@@ -8,7 +8,11 @@ import { Dropdown, Form, Modal } from 'react-bootstrap';
 
 import { OverlayTrigger } from '@prairielearn/ui';
 
-const CHAT_TITLES = ['Exam 1 analysis', 'Improve vector-field question', 'Course setup plan'];
+const CHAT_TITLES = [
+  'Prepare Fall 2027 course',
+  'Improve vector-field question',
+  'Course setup plan',
+];
 const COURSE_INSTANCES = [
   {
     id: 'fall-2026',
@@ -41,7 +45,7 @@ const COURSE_AGENT_MODELS = [
     id: 'sol-5.6',
     provider: 'OpenAI',
     name: 'OpenAI Sol 5.6',
-    tier: 'Higher quality',
+    tier: 'Highest quality',
     relativeCost: '5x',
   },
   {
@@ -55,7 +59,7 @@ const COURSE_AGENT_MODELS = [
     id: 'claude-opus-4-7',
     provider: 'Anthropic',
     name: 'Claude Opus 4.7',
-    tier: 'Higher quality',
+    tier: 'Highest quality',
     relativeCost: '5x',
   },
   {
@@ -121,12 +125,20 @@ index f14ff70..e013c23 100644
 -    grade_direction(data)
 `;
 
-const renderQuestionHtmlDiffHeader = () => (
-  <DiffFileHeader path="questions/vectorField/question.html" additions={6} deletions={5} />
-);
-const renderQuestionServerDiffHeader = () => (
-  <DiffFileHeader path="questions/vectorField/server.py" additions={3} deletions={6} />
-);
+const DIFF_FILES = [
+  {
+    path: 'questions/vectorField/question.html',
+    additions: 6,
+    deletions: 5,
+    patch: QUESTION_HTML_PATCH,
+  },
+  {
+    path: 'questions/vectorField/server.py',
+    additions: 3,
+    deletions: 6,
+    patch: QUESTION_SERVER_PATCH,
+  },
+] as const;
 
 export function CourseAgentPanelMockup() {
   const [open, setOpen] = useState(true);
@@ -262,27 +274,9 @@ export function CourseAgentPanelMockup() {
             </p>
           </AgentMessage>
 
-          <UserMessage>Where did students tend to fail in Fall 2026?</UserMessage>
-          <AgentMessage>
-            <ToolCallGroup count={4}>
-              <CompletedToolCall>Restored the course sandbox</CompletedToolCall>
-              <CompletedToolCall>Queried Fall 2026 submission performance</CompletedToolCall>
-              <CompletedToolCall>Read the three lowest-performing question files</CompletedToolCall>
-              <CompletedToolCall>
-                Compared attempts, scores, and common incorrect answers
-              </CompletedToolCall>
-            </ToolCallGroup>
-            <p className="mb-0">
-              The lowest-performing item was the question <strong>Vector-field direction</strong> (
-              <code>vectorField</code>, 41% average). Most errors came from confusing the field’s
-              magnitude with its direction.
-            </p>
-            <PerformanceVisualization />
-          </AgentMessage>
-
           <UserMessage>
-            Got it. Make <code>vectorField</code> easier by showing the evaluated field components
-            at the point and asking students only to choose and justify the direction.
+            Next, make <code>vectorField</code> easier by showing the evaluated field components at
+            the point and asking students only to choose and justify the direction.
           </UserMessage>
           <AgentMessage>
             <ToolCallGroup count={3}>
@@ -302,15 +296,13 @@ export function CourseAgentPanelMockup() {
         <footer className="course-agent-footer border-top bg-white p-3">
           <Form onSubmit={(event) => event.preventDefault()}>
             <div className="course-agent-usage small text-muted mb-1 px-1">
-              Billing to{' '}
               <button
                 type="button"
                 className="btn btn-link btn-sm p-0 align-baseline"
                 onClick={() => setBillingModalOpen(true)}
               >
-                {billingCourseInstance.longName}
-              </button>{' '}
-              <span aria-hidden="true">·</span> {billingStatus}
+                {billingStatus}
+              </button>
             </div>
             <Form.Control
               as="textarea"
@@ -321,21 +313,6 @@ export function CourseAgentPanelMockup() {
               defaultValue=""
             />
             <div className="course-agent-controls d-flex align-items-center gap-2 mt-2">
-              <OverlayTrigger
-                placement="top"
-                tooltip={{
-                  body: 'Attach file',
-                  props: { id: 'course-agent-attach-tooltip' },
-                }}
-              >
-                <button
-                  type="button"
-                  className="btn btn-sm btn-outline-secondary border-0"
-                  aria-label="Attach file"
-                >
-                  <i className="bi bi-paperclip" />
-                </button>
-              </OverlayTrigger>
               <OverlayTrigger
                 placement="top"
                 tooltip={{
@@ -596,49 +573,6 @@ function ToolCallGroup({ count, children }: { count: number; children: ReactNode
   );
 }
 
-function PerformanceVisualization() {
-  const rows = [
-    { title: 'Vector-field direction', qid: 'vectorField', score: 41 },
-    { title: 'Line integral setup', qid: 'lineIntegralSetup', score: 54 },
-    {
-      title: 'Jacobian change of variables',
-      qid: 'jacobianChangeOfVariables',
-      score: 59,
-    },
-  ];
-
-  return (
-    <div
-      className="course-agent-visualization border rounded bg-white p-3"
-      role="img"
-      aria-label="Fall 2026 lowest average question scores: Vector-field direction 41 percent, Line integral setup 54 percent, and Jacobian change of variables 59 percent"
-    >
-      <div className="d-flex align-items-baseline justify-content-between gap-2 mb-3">
-        <span className="fw-semibold">Lowest average scores</span>
-        <span className="small text-muted">Fall 2026</span>
-      </div>
-      <div className="d-flex flex-column gap-2">
-        {rows.map(({ title, qid, score }) => (
-          <div key={qid} className="course-agent-chart-row small">
-            <span className="min-width-0">
-              <span className="d-block text-truncate fw-medium" title={title}>
-                {title}
-              </span>
-              <code className="d-block text-truncate small" title={`QID: ${qid}`}>
-                QID: {qid}
-              </code>
-            </span>
-            <span className="course-agent-chart-track">
-              <span className="course-agent-chart-bar" style={{ width: `${score}%` }} />
-            </span>
-            <span className="text-end fw-medium">{score}%</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 function DiffApproval() {
   return (
     <div className="course-agent-approval border rounded bg-white overflow-hidden">
@@ -655,16 +589,9 @@ function DiffApproval() {
       </div>
 
       <div className="course-agent-diff-files d-flex flex-column gap-2 p-2">
-        <PatchDiff
-          patch={QUESTION_HTML_PATCH}
-          options={DIFF_OPTIONS}
-          renderCustomHeader={renderQuestionHtmlDiffHeader}
-        />
-        <PatchDiff
-          patch={QUESTION_SERVER_PATCH}
-          options={DIFF_OPTIONS}
-          renderCustomHeader={renderQuestionServerDiffHeader}
-        />
+        {DIFF_FILES.map((file) => (
+          <DiffFile key={file.path} {...file} />
+        ))}
       </div>
 
       <div className="d-flex justify-content-end gap-2 border-top px-2 py-2">
@@ -682,14 +609,67 @@ function DiffApproval() {
   );
 }
 
-function DiffFileHeader({
+function DiffFile({
   path,
   additions,
   deletions,
+  patch,
 }: {
   path: string;
   additions: number;
   deletions: number;
+  patch: string;
+}) {
+  const [expanded, setExpanded] = useState(false);
+
+  return (
+    <>
+      <PatchDiff
+        patch={patch}
+        options={DIFF_OPTIONS}
+        renderCustomHeader={() => (
+          <DiffFileHeader
+            path={path}
+            additions={additions}
+            deletions={deletions}
+            onExpand={() => setExpanded(true)}
+          />
+        )}
+      />
+      <Modal
+        size="xl"
+        fullscreen="lg-down"
+        show={expanded}
+        centered
+        onHide={() => setExpanded(false)}
+      >
+        <Modal.Header closeButton>
+          <Modal.Title className="fs-5">Expanded diff</Modal.Title>
+        </Modal.Header>
+        <Modal.Body className="course-agent-expanded-diff p-3">
+          <PatchDiff
+            patch={patch}
+            options={DIFF_OPTIONS}
+            renderCustomHeader={() => (
+              <DiffFileHeader path={path} additions={additions} deletions={deletions} />
+            )}
+          />
+        </Modal.Body>
+      </Modal>
+    </>
+  );
+}
+
+function DiffFileHeader({
+  path,
+  additions,
+  deletions,
+  onExpand,
+}: {
+  path: string;
+  additions: number;
+  deletions: number;
+  onExpand?: () => void;
 }) {
   return (
     <div className="course-agent-diff-file-header d-flex align-items-center gap-2">
@@ -703,6 +683,24 @@ function DiffFileHeader({
       </button>
       <span className="text-success">+{additions}</span>
       <span className="text-danger">−{deletions}</span>
+      {onExpand && (
+        <OverlayTrigger
+          placement="top"
+          tooltip={{
+            body: 'Expand diff',
+            props: { id: `course-agent-expand-diff-${path.replaceAll('/', '-')}` },
+          }}
+        >
+          <button
+            type="button"
+            className="btn btn-sm btn-link p-0 text-secondary"
+            aria-label={`Expand diff for ${path}`}
+            onClick={onExpand}
+          >
+            <i className="bi bi-arrows-fullscreen" aria-hidden="true" />
+          </button>
+        </OverlayTrigger>
+      )}
     </div>
   );
 }
