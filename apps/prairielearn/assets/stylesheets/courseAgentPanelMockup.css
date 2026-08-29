@@ -134,26 +134,27 @@
   background-color: var(--bs-success-bg-subtle);
 }
 
-.course-agent-diff-files {
-  max-height: min(38rem, 55vh);
+.course-agent-diff-body {
+  max-height: 32rem;
   overflow: auto;
 }
 
-.course-agent-diff-files > diffs-container,
-.course-agent-expanded-diff > diffs-container {
+.course-agent-diff-file-expanded .course-agent-diff-body {
+  max-height: none;
+}
+
+.course-agent-diff-body > diffs-container {
   display: block;
   overflow: auto;
-  border: var(--bs-border-width) solid var(--bs-border-color);
-  border-radius: var(--bs-border-radius);
   --diffs-font-size: 0.75rem;
   --diffs-line-height: 1.25rem;
   --diffs-gap-inline: 0.5rem;
   --diffs-gap-block: 0.25rem;
 }
 
-.course-agent-expanded-diff {
-  max-height: calc(100vh - 10rem);
-  overflow: auto;
+.course-agent-diff-expand:hover,
+.course-agent-diff-expand:focus-visible {
+  color: var(--bs-body-color) !important;
 }
 
 .course-agent-diff-file-header {

@@ -623,40 +623,23 @@ function DiffFile({
   const [expanded, setExpanded] = useState(false);
 
   return (
-    <>
-      <PatchDiff
-        patch={patch}
-        options={DIFF_OPTIONS}
-        renderCustomHeader={() => (
-          <DiffFileHeader
-            path={path}
-            additions={additions}
-            deletions={deletions}
-            onExpand={() => setExpanded(true)}
-          />
-        )}
-      />
-      <Modal
-        size="xl"
-        fullscreen="lg-down"
-        show={expanded}
-        centered
-        onHide={() => setExpanded(false)}
+    <div
+      className={`course-agent-diff-file overflow-hidden rounded border ${expanded ? 'course-agent-diff-file-expanded' : ''}`}
+    >
+      <DiffFileHeader path={path} additions={additions} deletions={deletions} />
+      <div className="course-agent-diff-body border-top">
+        <PatchDiff patch={patch} options={DIFF_OPTIONS} renderCustomHeader={() => null} />
+      </div>
+      <button
+        type="button"
+        className="course-agent-diff-expand btn btn-light d-flex w-100 align-items-center justify-content-center gap-2 rounded-0 border-0 border-top py-2 text-secondary"
+        aria-expanded={expanded}
+        onClick={() => setExpanded(!expanded)}
       >
-        <Modal.Header closeButton>
-          <Modal.Title className="fs-5">Expanded diff</Modal.Title>
-        </Modal.Header>
-        <Modal.Body className="course-agent-expanded-diff p-3">
-          <PatchDiff
-            patch={patch}
-            options={DIFF_OPTIONS}
-            renderCustomHeader={() => (
-              <DiffFileHeader path={path} additions={additions} deletions={deletions} />
-            )}
-          />
-        </Modal.Body>
-      </Modal>
-    </>
+        <span>{expanded ? 'Collapse' : 'Expand'}</span>
+        <i className={`bi bi-chevron-${expanded ? 'up' : 'down'}`} aria-hidden="true" />
+      </button>
+    </div>
   );
 }
 
@@ -664,12 +647,10 @@ function DiffFileHeader({
   path,
   additions,
   deletions,
-  onExpand,
 }: {
   path: string;
   additions: number;
   deletions: number;
-  onExpand?: () => void;
 }) {
   return (
     <div className="course-agent-diff-file-header d-flex align-items-center gap-2">
@@ -683,24 +664,6 @@ function DiffFileHeader({
       </button>
       <span className="text-success">+{additions}</span>
       <span className="text-danger">−{deletions}</span>
-      {onExpand && (
-        <OverlayTrigger
-          placement="top"
-          tooltip={{
-            body: 'Expand diff',
-            props: { id: `course-agent-expand-diff-${path.replaceAll('/', '-')}` },
-          }}
-        >
-          <button
-            type="button"
-            className="btn btn-sm btn-link p-0 text-secondary"
-            aria-label={`Expand diff for ${path}`}
-            onClick={onExpand}
-          >
-            <i className="bi bi-arrows-fullscreen" aria-hidden="true" />
-          </button>
-        </OverlayTrigger>
-      )}
     </div>
   );
 }
