@@ -183,59 +183,8 @@
   font-size: 0.875rem;
 }
 
-.course-agent-model-button {
-  max-width: 11rem;
-}
-
-.course-agent-usage .btn-link {
-  font-size: inherit;
-  text-decoration: none;
-}
-
-.course-agent-usage .btn-link:hover {
-  text-decoration: underline;
-}
-
-.course-agent-instance-option:last-child,
-.course-agent-instance-option:last-child button {
+.course-agent-statistics > div:last-child {
   border-bottom: 0 !important;
-}
-
-.course-agent-instance-option:not(:disabled):hover {
-  background-color: var(--bs-secondary-bg) !important;
-}
-
-.course-agent-instance-option:disabled {
-  cursor: not-allowed;
-  opacity: 0.55;
-}
-
-.course-agent-instance-name {
-  flex: 1 1 45%;
-}
-
-.course-agent-instance-short-name {
-  flex: 0 0 4.5rem;
-}
-
-.course-agent-instance-billing {
-  flex: 0 0 13rem;
-}
-
-.course-agent-instance-selected {
-  flex: 0 0 1rem;
-}
-
-.course-agent-model-option {
-  cursor: pointer;
-}
-
-.course-agent-model-option:hover {
-  background-color: var(--bs-secondary-bg);
-}
-
-.course-agent-model-check .form-check-label {
-  width: 100%;
 }
 
 .min-width-0 {

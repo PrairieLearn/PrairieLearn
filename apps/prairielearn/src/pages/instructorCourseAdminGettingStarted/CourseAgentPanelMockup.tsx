@@ -3,7 +3,7 @@ import { PatchDiff } from '@pierre/diffs/react';
 import htmlLanguage from '@shikijs/langs/html';
 import pythonLanguage from '@shikijs/langs/python';
 import githubLightTheme from '@shikijs/themes/github-light';
-import { type ReactNode, useState } from 'react';
+import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { Dropdown, Form, Modal } from 'react-bootstrap';
 
 import { OverlayTrigger } from '@prairielearn/ui';
@@ -13,63 +13,7 @@ const CHAT_TITLES = [
   'Improve vector-field question',
   'Course setup plan',
 ];
-const COURSE_INSTANCES = [
-  {
-    id: 'fall-2026',
-    longName: 'Fall 2026',
-    shortName: 'Fa26',
-    billing: { kind: 'credits', balance: '$18.42', selectable: true },
-  },
-  {
-    id: 'spring-2026',
-    longName: 'Spring 2026',
-    shortName: 'Sp26',
-    billing: { kind: 'credits', balance: '$7.05', selectable: true },
-  },
-  {
-    id: 'fall-2025',
-    longName: 'Fall 2025',
-    shortName: 'Fa25',
-    billing: { kind: 'credits', balance: '$0.00', selectable: false },
-  },
-  {
-    id: 'summer-2026',
-    longName: 'Summer 2026',
-    shortName: 'Su26',
-    billing: { kind: 'byok', providers: ['OpenAI', 'Google'] },
-  },
-] as const;
-
-const COURSE_AGENT_MODELS = [
-  {
-    id: 'sol-5.6',
-    provider: 'OpenAI',
-    name: 'OpenAI Sol 5.6',
-    tier: 'Highest quality',
-    relativeCost: '5x',
-  },
-  {
-    id: 'luna-5.6',
-    provider: 'OpenAI',
-    name: 'OpenAI Luna 5.6',
-    tier: 'Faster, lower cost',
-    relativeCost: '1x',
-  },
-  {
-    id: 'claude-opus-4-7',
-    provider: 'Anthropic',
-    name: 'Claude Opus 4.7',
-    tier: 'Highest quality',
-    relativeCost: '5x',
-  },
-  {
-    id: 'claude-haiku-4-5',
-    provider: 'Anthropic',
-    name: 'Claude Haiku 4.5',
-    tier: 'Faster, lower cost',
-    relativeCost: '1x',
-  },
-] as const;
+const COURSE_AGENT_MODEL = 'OpenAI Sol 5.6';
 
 registerCustomLanguage('html', () => Promise.resolve({ default: htmlLanguage }));
 registerCustomLanguage('python', () => Promise.resolve({ default: pythonLanguage }));
@@ -143,24 +87,8 @@ const DIFF_FILES = [
 export function CourseAgentPanelMockup() {
   const [open, setOpen] = useState(true);
   const [selectedChat, setSelectedChat] = useState(CHAT_TITLES[0]);
-  const [billingModalOpen, setBillingModalOpen] = useState(false);
-  const [billingCourseInstanceId, setBillingCourseInstanceId] =
-    useState<(typeof COURSE_INSTANCES)[number]['id']>('fall-2026');
   const [approvalMode, setApprovalMode] = useState<'ask' | 'always'>('ask');
-  const [modelModalOpen, setModelModalOpen] = useState(false);
-  const [selectedModelId, setSelectedModelId] =
-    useState<(typeof COURSE_AGENT_MODELS)[number]['id']>('sol-5.6');
-  const [pendingModelId, setPendingModelId] =
-    useState<(typeof COURSE_AGENT_MODELS)[number]['id']>('sol-5.6');
-
-  const billingCourseInstance =
-    COURSE_INSTANCES.find(({ id }) => id === billingCourseInstanceId) ?? COURSE_INSTANCES[0];
-  const selectedModel =
-    COURSE_AGENT_MODELS.find(({ id }) => id === selectedModelId) ?? COURSE_AGENT_MODELS[0];
-  const billingStatus =
-    billingCourseInstance.billing.kind === 'credits'
-      ? `${billingCourseInstance.billing.balance} remaining`
-      : 'BYOK';
+  const [statisticsModalOpen, setStatisticsModalOpen] = useState(false);
 
   return (
     <aside
@@ -295,15 +223,6 @@ export function CourseAgentPanelMockup() {
 
         <footer className="course-agent-footer border-top bg-white p-3">
           <Form onSubmit={(event) => event.preventDefault()}>
-            <div className="course-agent-usage small text-muted mb-1 px-1">
-              <button
-                type="button"
-                className="btn btn-link btn-sm p-0 align-baseline"
-                onClick={() => setBillingModalOpen(true)}
-              >
-                {billingStatus}
-              </button>
-            </div>
             <Form.Control
               as="textarea"
               rows={2}
@@ -313,42 +232,21 @@ export function CourseAgentPanelMockup() {
               defaultValue=""
             />
             <div className="course-agent-controls d-flex align-items-center gap-2 mt-2">
-              <OverlayTrigger
-                placement="top"
-                tooltip={{
-                  body:
-                    approvalMode === 'ask'
-                      ? 'Require approval before applying changes'
-                      : 'Apply changes without asking for approval',
-                  props: { id: 'course-agent-approval-mode-tooltip' },
-                }}
+              <button
+                type="button"
+                className="btn btn-sm btn-outline-secondary text-nowrap"
+                aria-label="View cost statistics"
+                onClick={() => setStatisticsModalOpen(true)}
               >
-                <button
-                  type="button"
-                  className="course-agent-approval-mode btn btn-sm btn-outline-primary text-nowrap"
-                  onClick={() => setApprovalMode(approvalMode === 'ask' ? 'always' : 'ask')}
-                >
-                  {approvalMode === 'ask' ? 'Ask for approval' : 'Always approve'}
-                </button>
-              </OverlayTrigger>
-              <OverlayTrigger
-                placement="top"
-                tooltip={{
-                  body: 'Change the course agent model',
-                  props: { id: 'course-agent-model-tooltip' },
-                }}
+                <i className="bi bi-bar-chart me-1" aria-hidden="true" /> $0.08
+              </button>
+              <button
+                type="button"
+                className="course-agent-approval-mode btn btn-sm btn-outline-primary text-nowrap"
+                onClick={() => setApprovalMode(approvalMode === 'ask' ? 'always' : 'ask')}
               >
-                <button
-                  type="button"
-                  className="course-agent-model-button btn btn-sm btn-outline-primary text-truncate"
-                  onClick={() => {
-                    setPendingModelId(selectedModelId);
-                    setModelModalOpen(true);
-                  }}
-                >
-                  {selectedModel.name}
-                </button>
-              </OverlayTrigger>
+                {approvalMode === 'ask' ? 'Ask for approval' : 'Always approve'}
+              </button>
               <button
                 type="submit"
                 className="btn btn-sm btn-primary ms-auto"
@@ -361,154 +259,48 @@ export function CourseAgentPanelMockup() {
         </footer>
       </div>
 
-      <Modal size="lg" show={billingModalOpen} centered onHide={() => setBillingModalOpen(false)}>
+      <Modal
+        size="sm"
+        show={statisticsModalOpen}
+        centered
+        onHide={() => setStatisticsModalOpen(false)}
+      >
         <Modal.Header closeButton>
-          <Modal.Title className="fs-5">Billing course instance</Modal.Title>
+          <Modal.Title className="fs-5">Statistics</Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          <p className="text-muted mb-3">
-            Choose the course instance that will pay for this conversation’s AI usage.
-          </p>
-          <div className="border rounded overflow-hidden">
-            {COURSE_INSTANCES.map((courseInstance) => {
-              const selected = courseInstance.id === billingCourseInstanceId;
-              const selectable =
-                courseInstance.billing.kind === 'byok' || courseInstance.billing.selectable;
-              const option = (
-                <button
-                  key={courseInstance.id}
-                  type="button"
-                  className={`course-agent-instance-option d-flex w-100 align-items-center gap-3 border-0 border-bottom px-3 py-2 text-start ${selected ? 'bg-primary-subtle' : 'bg-white'}`}
-                  aria-current={selected ? 'true' : undefined}
-                  disabled={!selectable}
-                  onClick={() => {
-                    setBillingCourseInstanceId(courseInstance.id);
-                    setBillingModalOpen(false);
-                  }}
-                >
-                  <span className="course-agent-instance-name min-width-0 text-truncate text-primary">
-                    {courseInstance.longName}
-                  </span>
-                  <span className="course-agent-instance-short-name text-muted">
-                    {courseInstance.shortName}
-                  </span>
-                  <span className="course-agent-instance-billing ms-auto text-end">
-                    {courseInstance.billing.kind === 'credits' ? (
-                      <>
-                        <span className="d-block fw-semibold text-body">
-                          {courseInstance.billing.balance}
-                        </span>
-                        <span className="d-block small text-muted">AI credit balance</span>
-                      </>
-                    ) : (
-                      <>
-                        <span className="badge text-bg-secondary">BYOK</span>
-                        <span className="d-block small text-muted">
-                          Custom keys for {courseInstance.billing.providers.join(' and ')}
-                        </span>
-                      </>
-                    )}
-                  </span>
-                  <span className="course-agent-instance-selected">
-                    {selected && <i className="bi bi-check-circle-fill text-primary" />}
-                  </span>
-                </button>
-              );
-
-              return selectable ? (
-                option
-              ) : (
-                <OverlayTrigger
-                  key={courseInstance.id}
-                  placement="top"
-                  tooltip={{
-                    body: 'This course instance has no AI credits available.',
-                    props: { id: `course-agent-billing-tooltip-${courseInstance.id}` },
-                  }}
-                >
-                  <div>{option}</div>
-                </OverlayTrigger>
-              );
-            })}
-          </div>
+          <dl className="course-agent-statistics mb-0">
+            <StatisticsRow label="Model" value={COURSE_AGENT_MODEL} />
+            <StatisticsRow label="Input tokens" value="8,432" />
+            <StatisticsRow label="Cached input tokens" value="6,144" />
+            <StatisticsRow label="Output tokens" value="1,284" />
+            <StatisticsRow label="Cached output tokens" value="0" />
+            <StatisticsRow label="Total cost" value="$0.08" emphasis />
+          </dl>
         </Modal.Body>
-      </Modal>
-
-      <Modal size="md" show={modelModalOpen} centered onHide={() => setModelModalOpen(false)}>
-        <Modal.Header closeButton>
-          <Modal.Title className="fs-5">Course agent model</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <div className="d-flex align-items-center justify-content-between gap-2 mb-3 small text-muted">
-            <span>All models available</span>
-            <OverlayTrigger
-              placement="top"
-              tooltip={{
-                body: 'Relative cost compared with the lowest-cost model.',
-                props: { id: 'course-agent-relative-cost-tooltip' },
-              }}
-            >
-              <span className="text-nowrap">
-                Relative cost <i className="bi bi-question-circle" aria-hidden="true" />
-              </span>
-            </OverlayTrigger>
-          </div>
-          {(['OpenAI', 'Anthropic'] as const).map((provider) => (
-            <div key={provider} className="mb-3">
-              <div className="fw-semibold mb-2">{provider}</div>
-              <div className="d-flex flex-column gap-1">
-                {COURSE_AGENT_MODELS.filter((model) => model.provider === provider).map((model) => {
-                  const selected = model.id === pendingModelId;
-                  return (
-                    <label
-                      key={model.id}
-                      htmlFor={`course-agent-model-${model.id}`}
-                      className={`course-agent-model-option rounded-2 border px-3 py-2 mb-0 ${selected ? 'border-primary bg-primary-subtle' : 'border-transparent'}`}
-                    >
-                      <Form.Check
-                        type="radio"
-                        id={`course-agent-model-${model.id}`}
-                        name="course-agent-model"
-                        className="course-agent-model-check mb-0"
-                        checked={selected}
-                        label={
-                          <span className="d-flex align-items-center justify-content-between gap-3">
-                            <span>
-                              <span className="d-block fw-medium">{model.name}</span>
-                              <span className="d-block small text-muted">{model.tier}</span>
-                            </span>
-                            <span className="small text-muted text-nowrap">
-                              {model.relativeCost}
-                            </span>
-                          </span>
-                        }
-                        onChange={() => setPendingModelId(model.id)}
-                      />
-                    </label>
-                  );
-                })}
-              </div>
-            </div>
-          ))}
-        </Modal.Body>
-        <Modal.Footer>
-          <button
-            type="button"
-            className="btn btn-primary"
-            onClick={() => {
-              setSelectedModelId(pendingModelId);
-              setModelModalOpen(false);
-            }}
-          >
-            Select
-          </button>
-        </Modal.Footer>
       </Modal>
     </aside>
   );
 }
 
 CourseAgentPanelMockup.displayName = 'CourseAgentPanelMockup';
+
+function StatisticsRow({
+  label,
+  value,
+  emphasis = false,
+}: {
+  label: string;
+  value: string;
+  emphasis?: boolean;
+}) {
+  return (
+    <div className="d-flex align-items-baseline justify-content-between gap-3 border-bottom py-2">
+      <dt className="text-muted fw-normal">{label}</dt>
+      <dd className={`mb-0 text-end ${emphasis ? 'fw-semibold' : ''}`}>{value}</dd>
+    </div>
+  );
+}
 
 function UserMessage({ children }: { children: ReactNode }) {
   return (
@@ -621,19 +413,41 @@ function DiffFile({
   patch: string;
 }) {
   const [expanded, setExpanded] = useState(false);
+  const [hasCollapsedContent, setHasCollapsedContent] = useState(false);
+  const bodyRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const body = bodyRef.current;
+    if (!body) return;
+
+    const updateCollapsedContent = () => {
+      if (!expanded) {
+        setHasCollapsedContent(body.scrollHeight > body.clientHeight + 1);
+      }
+    };
+
+    // Pierre renders inside a custom element, so observe its size before enabling expansion.
+    const resizeObserver = new ResizeObserver(updateCollapsedContent);
+    resizeObserver.observe(body);
+    const diff = body.querySelector('diffs-container');
+    if (diff) resizeObserver.observe(diff);
+
+    return () => resizeObserver.disconnect();
+  }, [expanded]);
 
   return (
     <div
       className={`course-agent-diff-file overflow-hidden rounded border ${expanded ? 'course-agent-diff-file-expanded' : ''}`}
     >
       <DiffFileHeader path={path} additions={additions} deletions={deletions} />
-      <div className="course-agent-diff-body border-top">
+      <div ref={bodyRef} className="course-agent-diff-body border-top">
         <PatchDiff patch={patch} options={DIFF_OPTIONS} renderCustomHeader={() => null} />
       </div>
       <button
         type="button"
         className="course-agent-diff-expand btn btn-light d-flex w-100 align-items-center justify-content-center gap-2 rounded-0 border-0 border-top py-2 text-secondary"
         aria-expanded={expanded}
+        disabled={!expanded && !hasCollapsedContent}
         onClick={() => setExpanded(!expanded)}
       >
         <span>{expanded ? 'Collapse' : 'Expand'}</span>
