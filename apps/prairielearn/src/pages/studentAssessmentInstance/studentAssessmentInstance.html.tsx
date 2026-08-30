@@ -17,13 +17,9 @@ import {
   StudentAccessTimelinePopover,
 } from '../../components/StudentAccessPopovers.js';
 import { TimeLimitExpiredModal } from '../../components/TimeLimitExpiredModal.js';
+import type { AssessmentInstanceAuthzResult } from '../../lib/assessment-access-control/authz-result.js';
 import { compiledScriptTag } from '../../lib/assets.js';
-import {
-  type Assessment,
-  type AssessmentInstance,
-  type GroupConfig,
-  type SprocAuthzAssessmentInstance,
-} from '../../lib/db-types.js';
+import { type Assessment, type AssessmentInstance, type GroupConfig } from '../../lib/db-types.js';
 import { formatPoints } from '../../lib/format.js';
 import { type GroupInfo, getRoleNamesForUser } from '../../lib/groups.shared.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
@@ -366,24 +362,23 @@ export function StudentAssessmentInstance({
                 someQuestionsAllowRealTimeGrading,
               })}
             </thead>
-            <tbody>
-              ${QuestionTableBody({
-                rows: instance_question_rows,
-                courseInstanceId: resLocals.course_instance.id,
-                displayTimezone: resLocals.course_instance.display_timezone,
-                assessmentType: resLocals.assessment.type,
-                someQuestionsAllowRealTimeGrading,
-                someQuestionsForbidRealTimeGrading,
-                hasAutoGradingQuestion: resLocals.has_auto_grading_question,
-                hasManualGradingQuestion: resLocals.has_manual_grading_question,
-                assessmentInstanceOpen: !!resLocals.assessment_instance.open,
-                isGroupAssessment: !!groupConfig,
-                zoneTitleColspan,
-                userGroupRoles,
-                isLockpointCrossable,
-                hasUnmetAdvanceScorePercBeforeLockpoint,
-              })}
-            </tbody>
+            ${QuestionTableBody({
+              rows: instance_question_rows,
+              courseInstanceId: resLocals.course_instance.id,
+              displayTimezone: resLocals.course_instance.display_timezone,
+              assessmentType: resLocals.assessment.type,
+              showQuestionTitles: !!resLocals.assessment.show_question_titles,
+              someQuestionsAllowRealTimeGrading,
+              someQuestionsForbidRealTimeGrading,
+              hasAutoGradingQuestion: resLocals.has_auto_grading_question,
+              hasManualGradingQuestion: resLocals.has_manual_grading_question,
+              assessmentInstanceOpen: !!resLocals.assessment_instance.open,
+              isGroupAssessment: !!groupConfig,
+              zoneTitleColspan,
+              userGroupRoles,
+              isLockpointCrossable,
+              hasUnmetAdvanceScorePercBeforeLockpoint,
+            })}
           </table>
         </div>
 
@@ -451,7 +446,7 @@ function AssessmentStatus({
   assessment: Assessment;
   assessment_instance: AssessmentInstance;
   displayTimezone: string;
-  authz_result: SprocAuthzAssessmentInstance;
+  authz_result: AssessmentInstanceAuthzResult;
 }) {
   if (assessment_instance.open && authz_result.active) {
     return html`
@@ -555,7 +550,7 @@ function InstanceQuestionTableHeader({
                 <tr>
                   <th rowspan="2">Question</th>
                   <th rowspan="2">Status</th>
-                  <th class="text-center" colspan="2">Auto-grading</th>
+                  <th class="text-center" colspan="2" scope="colgroup">Auto-grading</th>
                   <th class="text-center" rowspan="2">Manual grading points</th>
                   <th class="text-center" rowspan="2">Total points</th>
                 </tr>
@@ -576,7 +571,7 @@ function InstanceQuestionTableHeader({
             ? html`
                 <tr>
                   <th rowspan="2">Question</th>
-                  <th class="text-center" colspan="3">Auto-grading</th>
+                  <th class="text-center" colspan="3" scope="colgroup">Auto-grading</th>
                   <th class="text-center" rowspan="2">Manual grading points</th>
                   <th class="text-center" rowspan="2">Total points</th>
                 </tr>

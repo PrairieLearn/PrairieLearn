@@ -6,6 +6,7 @@ import {
   loadSqlEquiv,
   queryRows,
   queryScalar,
+  queryScalars,
   runInTransactionAsync,
 } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
@@ -15,9 +16,12 @@ import {
   AssessmentAccessControlPrairietestExamSchema,
   AssessmentAccessControlRuleSchema,
 } from '../lib/db-types.js';
+import { lockEnrollments } from '../lib/enrollment/lock.js';
+import { parseLocalDateTime } from '../lib/timezones.js';
 import type { AccessControlJson } from '../schemas/accessControl.js';
 
 import { lockAssessment } from './assessment.js';
+import { selectCourseInstanceById } from './course-instances.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -51,7 +55,6 @@ export interface EnrollmentAccessControlRuleData {
   dueCredit: number | null;
   earlyDeadlinesOverridden: boolean;
   lateDeadlinesOverridden: boolean;
-  afterLastDeadlineOverridden: boolean;
   afterLastDeadlineAllowSubmissions: boolean | null;
   afterLastDeadlineCredit: number | null;
   durationMinutesOverridden: boolean;
@@ -117,8 +120,9 @@ function dbBaseRowToAccessControlJson(
   >,
 ): AccessControlJsonWithRequiredId {
   const rule = row.access_control_rule;
-  const dateControl: AccessControlJson['dateControl'] = {};
+  const isDefaultRule = rule.number === 0 && rule.target_type === 'none';
 
+  const dateControl: AccessControlJson['dateControl'] = {};
   if (rule.date_control_release_date) {
     dateControl.release = { date: rule.date_control_release_date.toISOString() };
   }
@@ -135,26 +139,13 @@ function dbBaseRowToAccessControlJson(
     dateControl.lateDeadlines = row.late_deadlines ?? [];
   }
   const allowSubmissions = rule.date_control_after_last_deadline_allow_submissions;
-  if (rule.date_control_after_last_deadline_overridden) {
-    if (allowSubmissions === true) {
-      const credit = rule.date_control_after_last_deadline_credit;
-      dateControl.afterLastDeadline = {
-        allowSubmissions,
-        ...(credit != null ? { credit } : {}),
-      };
-    } else if (allowSubmissions === false) {
-      dateControl.afterLastDeadline = { allowSubmissions };
-    } else {
-      dateControl.afterLastDeadline = null;
-    }
-  } else if (allowSubmissions === true) {
-    // Legacy rows written before the overridden flag was added.
+  if (allowSubmissions === true) {
     const credit = rule.date_control_after_last_deadline_credit;
     dateControl.afterLastDeadline = {
       allowSubmissions,
-      ...(credit != null ? { credit } : {}),
+      credit: credit ?? 0,
     };
-  } else if (allowSubmissions === false) {
+  } else if (allowSubmissions === false && !isDefaultRule) {
     dateControl.afterLastDeadline = { allowSubmissions };
   }
   if (rule.date_control_duration_minutes_overridden) {
@@ -207,13 +198,13 @@ function dbBaseRowToAccessControlJson(
     afterComplete.score = score;
   }
 
-  const isDefaultRule = rule.number === 0 && rule.target_type === 'none';
   const beforeReleaseListed = isDefaultRule
     ? (rule.before_release_listed ?? false)
     : rule.before_release_listed;
 
   return {
     id: rule.id,
+    ...(rule.uuid != null ? { uuid: rule.uuid } : {}),
     number: rule.number,
     ...(beforeReleaseListed != null ? { beforeRelease: { listed: beforeReleaseListed } } : {}),
     dateControl: Object.keys(dateControl).length > 0 ? dateControl : undefined,
@@ -288,6 +279,14 @@ export async function countEnrollmentAccessControlRules(assessment: Assessment):
   );
 }
 
+async function selectEnrollmentAccessControlTargetIds(assessment: Assessment): Promise<string[]> {
+  return await queryScalars(
+    sql.select_enrollment_access_control_target_ids,
+    { assessment_id: assessment.id },
+    IdSchema,
+  );
+}
+
 const PrairieTestExamMetadataSchema = z.object({
   uuid: z.string(),
   pt_exam_id: z.string().nullable(),
@@ -317,40 +316,46 @@ async function syncEnrollmentAccessControlRule(
   ruleData: EnrollmentAccessControlRuleData,
   ruleNumber: number,
   enrollmentIds: string[],
+  displayTimezone: string,
 ): Promise<string> {
   const ruleJson = JSON.stringify({
     id: ruleData.id ?? null,
     number: ruleNumber,
     before_release_listed: ruleData.beforeReleaseListed,
-    date_control_release_date: ruleData.releaseDate,
+    date_control_release_date: parseLocalDateTime(ruleData.releaseDate, displayTimezone),
     date_control_due_overridden: ruleData.dueOverridden,
-    date_control_due_date: ruleData.dueDate,
+    date_control_due_date: parseLocalDateTime(ruleData.dueDate, displayTimezone),
     date_control_due_credit: ruleData.dueCredit,
     date_control_early_deadlines_overridden: ruleData.earlyDeadlinesOverridden,
     date_control_late_deadlines_overridden: ruleData.lateDeadlinesOverridden,
-    date_control_after_last_deadline_overridden: ruleData.afterLastDeadlineOverridden,
-    date_control_after_last_deadline_allow_submissions: ruleData.afterLastDeadlineOverridden
-      ? ruleData.afterLastDeadlineAllowSubmissions
-      : null,
-    date_control_after_last_deadline_credit: ruleData.afterLastDeadlineOverridden
-      ? ruleData.afterLastDeadlineCredit
-      : null,
+    date_control_after_last_deadline_allow_submissions: ruleData.afterLastDeadlineAllowSubmissions,
+    date_control_after_last_deadline_credit:
+      ruleData.afterLastDeadlineAllowSubmissions === true ? ruleData.afterLastDeadlineCredit : null,
     date_control_duration_minutes_overridden: ruleData.durationMinutesOverridden,
     date_control_duration_minutes: ruleData.durationMinutes,
     date_control_password_overridden: ruleData.passwordOverridden,
     date_control_password: ruleData.password,
     after_complete_questions_hidden: ruleData.questionsHidden,
-    after_complete_questions_visible_from_date: ruleData.questionsVisibleFromDate,
-    after_complete_questions_visible_until_date: ruleData.questionsVisibleUntilDate,
+    after_complete_questions_visible_from_date: parseLocalDateTime(
+      ruleData.questionsVisibleFromDate,
+      displayTimezone,
+    ),
+    after_complete_questions_visible_until_date: parseLocalDateTime(
+      ruleData.questionsVisibleUntilDate,
+      displayTimezone,
+    ),
     after_complete_score_hidden: ruleData.scoreHidden,
-    after_complete_score_visible_from_date: ruleData.scoreVisibleFromDate,
+    after_complete_score_visible_from_date: parseLocalDateTime(
+      ruleData.scoreVisibleFromDate,
+      displayTimezone,
+    ),
   });
 
   const earlyDeadlinesJson = ruleData.earlyDeadlines.map((d) =>
-    JSON.stringify({ date: d.date, credit: d.credit }),
+    JSON.stringify({ date: parseLocalDateTime(d.date, displayTimezone), credit: d.credit }),
   );
   const lateDeadlinesJson = ruleData.lateDeadlines.map((d) =>
-    JSON.stringify({ date: d.date, credit: d.credit }),
+    JSON.stringify({ date: parseLocalDateTime(d.date, displayTimezone), credit: d.credit }),
   );
 
   return callScalar(
@@ -371,6 +376,7 @@ export async function replaceEnrollmentAccessControlRules(
   assessment: Assessment,
   rules: EnrollmentAccessControlRuleInput[],
 ): Promise<void> {
+  const courseInstance = await selectCourseInstanceById(assessment.course_instance_id);
   const submittedIds = new Set<string>();
   for (const rule of rules) {
     const id = rule.ruleData.id;
@@ -382,7 +388,38 @@ export async function replaceEnrollmentAccessControlRules(
   }
 
   await runInTransactionAsync(async () => {
+    // Enrollment rows must be locked before the access-control rows that
+    // reference them, so we cannot lock the assessment first to stabilize its
+    // target set. Instead, snapshot the existing targets, lock their union with
+    // the submitted targets, lock the assessment, and then verify that the
+    // snapshot still covered every current target.
+    //
+    // For example, suppose a rule targets enrollment A and this request changes
+    // it to C. After we snapshot A, reconciliation may lock A and B, move the
+    // rule from A to B, and commit while this request is waiting to lock A. This
+    // request would then hold A and C but not the now-current target B. Continuing
+    // would mutate B's dependent rows without first locking B, violating the lock
+    // order that prevents deadlocks and concurrent dependent changes.
+    //
+    // If that rare overlap occurs, this transaction leaves the enrollment rules
+    // unchanged and the access-control UI displays the error below. JSON-backed
+    // rules may already have been saved by the caller, so the instructor must
+    // refresh to load both the saved JSON and current enrollment targets, then
+    // retry the student-specific change.
+    const existingTargetIds = await selectEnrollmentAccessControlTargetIds(assessment);
+    const targetIdsToLock = new Set([
+      ...existingTargetIds,
+      ...rules.flatMap((rule) => rule.enrollmentIds),
+    ]);
+    await lockEnrollments(targetIdsToLock);
     await lockAssessment(assessment);
+
+    const revalidatedTargetIds = await selectEnrollmentAccessControlTargetIds(assessment);
+    if (revalidatedTargetIds.some((id) => !targetIdsToLock.has(id))) {
+      throw new Error(
+        'Student-specific access control targets changed while saving. Refresh the page and try again.',
+      );
+    }
 
     const currentRules = await selectAccessControlRules(assessment, ['enrollment']);
     const existingIds = new Set(currentRules.map((rule) => rule.id));
@@ -394,21 +431,22 @@ export async function replaceEnrollmentAccessControlRules(
       });
     }
 
-    if (rules.length === 0) return;
-
-    // Reordering can swap existing rule numbers, which would otherwise violate
-    // the unique constraint before the batch finishes. These temporary values
-    // stay inside this transaction and are replaced by the loop below.
-    await execute(sql.move_enrollment_rules_to_temporary_numbers, {
-      assessment_id: assessment.id,
-    });
-    for (const [index, rule] of rules.entries()) {
-      await syncEnrollmentAccessControlRule(
-        assessment,
-        rule.ruleData,
-        index + 1,
-        rule.enrollmentIds,
-      );
+    if (rules.length > 0) {
+      // Reordering can swap existing rule numbers, which would otherwise violate
+      // the unique constraint before the batch finishes. These temporary values
+      // stay inside this transaction and are replaced by the loop below.
+      await execute(sql.move_enrollment_rules_to_temporary_numbers, {
+        assessment_id: assessment.id,
+      });
+      for (const [index, rule] of rules.entries()) {
+        await syncEnrollmentAccessControlRule(
+          assessment,
+          rule.ruleData,
+          index + 1,
+          rule.enrollmentIds,
+          courseInstance.display_timezone,
+        );
+      }
     }
   });
 }

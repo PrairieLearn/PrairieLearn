@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { loadSqlEquiv, queryRows, runInTransactionAsync } from '@prairielearn/postgres';
 
 import { makeAssessmentInstance } from '../lib/assessment.js';
+import { config } from '../lib/config.js';
 import {
   type AssessmentInstance,
   CourseInstanceSchema,
@@ -17,6 +18,7 @@ import { type AdministratorQueryResult, type AdministratorQuerySpecs } from './l
 export const specs: AdministratorQuerySpecs = {
   description:
     'Simulates all students enrolled in a course starting an assessment. For group assessments, groups must have been created.',
+  enabled: config.devMode,
   params: [
     {
       name: 'assessment_id',
@@ -66,7 +68,7 @@ export default async function ({
     const users = assessment.team_work
       ? await queryRows(sql.select_groups, { assessment_id }, GroupRowSchema)
       : await queryRows(sql.select_users, { assessment_id }, UserRowSchema);
-    if (assessment.team_work) columns.splice(0, 0, 'group_name');
+    if (assessment.team_work) columns.unshift('group_name');
 
     const rows = await mapSeries(users, async (user: UserRow | GroupRow) => ({
       ...user,

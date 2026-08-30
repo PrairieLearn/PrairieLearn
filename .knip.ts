@@ -46,6 +46,8 @@ const AUTO_DETECTED_BUT_ALSO_IMPORTED = [
   'jquery',
   'mathlive',
   'highlight.js',
+  'web-tree-sitter',
+  'ansi_up',
 ];
 
 /**
@@ -69,7 +71,6 @@ const EXTERNAL_ELEMENT_DEPS = [
   'lodash',
   'mersenne',
   'numeric',
-  'popper.js',
   'showdown',
 ];
 
@@ -85,8 +86,8 @@ const CLI_ONLY_DEPS = [
   'pyright',
   's3rver',
   '@postgres-language-server/cli',
-  '@prairielearn/tree-sitter-htmlmustache',
   '@typescript/native-preview',
+  '@prairielearn/pin-github-actions',
 ];
 
 // Collect packages referenced by element / question `info.json` files.
@@ -116,7 +117,7 @@ const sourceFileDependencies = (
   await Promise.all(
     sourceFiles.map(async (path) => {
       const content = await readFile(path, 'utf-8');
-      return [...content.matchAll(assetPathRegex)].map((match) => match[1]);
+      return Array.from(content.matchAll(assetPathRegex), (match) => match[1]);
     }),
   )
 ).flat();
@@ -152,18 +153,20 @@ for (const dep of AUTO_DETECTED_BUT_ALSO_IMPORTED) {
 const config: KnipConfig = {
   tags: ['-knipignore'],
   treatConfigHintsAsErrors: true,
+  treatTagHintsAsErrors: true,
   workspaces: {
     '.': {
-      entry: ['scripts/*.{mts,mjs}', 'contrib/*.{mts,mjs}'],
+      // `vitest.shared.ts` is imported by `vitest.config.ts` (which knip
+      // auto-detects), but it isn't a recognized config filename.
+      entry: ['scripts/*.{mts,mjs}', 'contrib/*.{mts,mjs}', 'vitest.shared.ts'],
       project: ['scripts/*.{mts,mjs}', 'contrib/*.{mts,mjs}'],
-      // https://knip.dev/guides/configuring-project-files#ignore-issues-in-specific-files
-      ignore: ['vitest.config.ts'],
       ignoreDependencies: ['@prairielearn/tsconfig', ...CLI_ONLY_DEPS],
     },
     'apps/prairielearn': {
       // https://knip.dev/guides/handling-issues#dynamic-import-specifiers
       entry: [
         'assets/scripts/**/*.{ts,tsx}',
+        'src/lib/element-schemas/htmlmustache-plugin.ts',
         'src/{batched-migrations,migrations}/*.{ts,mts}',
         'src/admin_queries/*.ts',
         'src/executor.ts',
@@ -175,8 +178,6 @@ const config: KnipConfig = {
         'src/lib/client/safe-db-types.ts',
         // We have team -> group aliases in this file
         'src/lib/db-types.ts',
-        // Ambient module declaration for echarts types
-        'src/typings/echarts.d.ts',
       ],
       project: ['**/*.{ts,cts,mts,tsx}'],
       // Tell knip not to flag these as unused.

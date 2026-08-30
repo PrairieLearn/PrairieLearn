@@ -7,8 +7,6 @@
   "type": "v3",
   "workspaceOptions": {
     "image": "prairielearn/workspace-vscode-cpp",
-    "port": 8080,
-    "home": "/home/coder/workspace",
     "gradedFiles": ["source.cpp"]
   },
   "gradingMethod": "External",

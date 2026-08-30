@@ -321,6 +321,8 @@ export const QUESTION_TABLE_FILTER_URL_KEYS = {
   grading_method: 'grading',
   external_grading_image: 'extImage',
   workspace_image: 'wsImage',
+  single_variant: 'singleVariant',
+  has_preferences: 'preferences',
 } as const;
 
 interface CourseAdminQuestionsFilter {
@@ -401,6 +403,10 @@ export function getEndExamExitUrl(): string {
 }
 
 // tRPC scope URLs
+
+export function getUserTrpcUrl(): string {
+  return '/pl/user/trpc';
+}
 
 export function getAdministratorTrpcUrl(): string {
   return '/pl/administrator/trpc';

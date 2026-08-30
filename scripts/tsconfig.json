@@ -1,7 +1,8 @@
 {
   "extends": "@prairielearn/tsconfig/tsconfig.app.json",
   "compilerOptions": {
-    "noEmit": true
+    "noEmit": true,
+    "types": ["node"]
   },
   "exclude": [
     // This script reaches into `apps/prairielearn/dist` to access migration code.

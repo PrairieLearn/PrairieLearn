@@ -4,6 +4,7 @@ import * as error from '@prairielearn/error';
 import { type HtmlSafeString, html } from '@prairielearn/html';
 import { contains } from '@prairielearn/path-utils';
 
+import { getAssessmentDir } from './editorUtil.js';
 import type { UntypedResLocals } from './res-locals.types.js';
 
 export interface InstructorFilePaths {
@@ -33,6 +34,34 @@ export interface InstructorFilePaths {
   }[];
 }
 
+/**
+ * The file-editor container for course-level files (e.g. `infoCourse.json`):
+ * the course root, excluding the directories owned by other editing contexts.
+ */
+export function getCourseContainer(coursePath: string) {
+  return {
+    rootPath: coursePath,
+    invalidRootPaths: [
+      path.join(coursePath, '.git'),
+      path.join(coursePath, 'questions'),
+      path.join(coursePath, 'courseInstances'),
+    ],
+  };
+}
+
+/**
+ * The file-editor container for course-instance-level files (e.g.
+ * `infoCourseInstance.json`): the course instance directory, excluding its
+ * assessments.
+ */
+export function getCourseInstanceContainer(coursePath: string, shortName: string) {
+  const rootPath = path.join(coursePath, 'courseInstances', shortName);
+  return {
+    rootPath,
+    invalidRootPaths: [path.join(rootPath, 'assessments')],
+  };
+}
+
 function getContextPaths(
   locals: UntypedResLocals,
 ): Pick<
@@ -49,12 +78,7 @@ function getContextPaths(
   if (locals.navPage === 'course_admin') {
     const rootPath = coursePath;
     return {
-      rootPath,
-      invalidRootPaths: [
-        path.join(rootPath, '.git'),
-        path.join(rootPath, 'questions'),
-        path.join(rootPath, 'courseInstances'),
-      ],
+      ...getCourseContainer(coursePath),
       cannotMove: [path.join(rootPath, 'infoCourse.json')],
       clientDir: path.join(rootPath, 'clientFilesCourse'),
       serverDir: path.join(rootPath, 'serverFilesCourse'),
@@ -63,20 +87,17 @@ function getContextPaths(
   } else if (locals.navPage === 'instance_admin') {
     const rootPath = path.join(coursePath, 'courseInstances', locals.course_instance.short_name);
     return {
-      rootPath,
-      invalidRootPaths: [path.join(rootPath, 'assessments')],
+      ...getCourseInstanceContainer(coursePath, locals.course_instance.short_name),
       cannotMove: [path.join(rootPath, 'infoCourseInstance.json')],
       clientDir: path.join(rootPath, 'clientFilesCourseInstance'),
       urlPrefix: `${locals.urlPrefix}/instance_admin`,
     };
   } else if (locals.navPage === 'assessment') {
-    const rootPath = path.join(
-      coursePath,
-      'courseInstances',
-      locals.course_instance.short_name,
-      'assessments',
-      locals.assessment.tid,
-    );
+    const rootPath = getAssessmentDir({
+      course: locals.course,
+      course_instance: locals.course_instance,
+      assessment: locals.assessment,
+    });
     return {
       rootPath,
       invalidRootPaths: [],
@@ -133,7 +154,7 @@ export function getPaths(
     specialDirs.push({
       label: 'Client',
       path: clientDir,
-      info: html`This file will be placed in the subdirectory
+      info: html`These files will be placed in the subdirectory
         <code>${path.basename(clientDir)}</code> and will be accessible from the student's web
         browser.`,
     });
@@ -141,8 +162,8 @@ export function getPaths(
       specialDirs.push({
         label: 'Server',
         path: serverDir,
-        info: html`This file will be placed in the subdirectory
-          <code>${path.basename(serverDir)}</code> and will be accessible only from the server. It
+        info: html`These files will be placed in the subdirectory
+          <code>${path.basename(serverDir)}</code> and will be accessible only from the server. They
           will not be accessible from the student's web browser.`,
       });
     }
@@ -150,8 +171,8 @@ export function getPaths(
       specialDirs.push({
         label: 'Test',
         path: testsDir,
-        info: html`This file will be placed in the subdirectory
-          <code>${path.basename(testsDir)}</code> and will be accessible only from the server. It
+        info: html`These files will be placed in the subdirectory
+          <code>${path.basename(testsDir)}</code> and will be accessible only from the server. They
           will not be accessible from the student's web browser. This is appropriate for code to
           support
           <a href="https://docs.prairielearn.com/externalGrading/" target="_blank" rel="noreferrer">

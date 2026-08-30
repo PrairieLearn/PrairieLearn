@@ -85,7 +85,7 @@ class QuestionData(TypedDict):
     feedback: dict[str, Any]
     """Any feedback to the student on their submitted answer. Elements will never read or write to this dictionary, with the exception of the `<pl-external-grader-results>` element."""
 
-    variant_seed: str
+    variant_seed: int
     """The random seed for this question variant."""
 
     options: dict[str, Any]

@@ -1,5 +1,57 @@
 # @prairielearn/migrations
 
+## 5.2.2
+
+### Patch Changes
+
+- 057d37b: Update dependency on typescript-cp
+- Updated dependencies [00945c2]
+- Updated dependencies [9757f58]
+  - @prairielearn/logger@4.0.0
+
+## 5.2.1
+
+### Patch Changes
+
+- df28e68: Bump dependencies
+
+## 5.2.0
+
+### Minor Changes
+
+- 5ca8b69: Add a read-only API for inspecting pending migrations.
+
+## 5.1.2
+
+### Patch Changes
+
+- 81ad435: Update typescript-cp to remove its transitive tar dependency.
+
+## 5.1.1
+
+### Patch Changes
+
+- 4a0ee46: Bump dependencies
+
+## 5.1.0
+
+### Minor Changes
+
+- fd27a2a: Add `selectTableIdBounds` for batched migrations that need to derive ID ranges from table names.
+
+### Patch Changes
+
+- Updated dependencies [fd27a2a]
+  - @prairielearn/postgres@7.1.0
+
+## 5.0.8
+
+### Patch Changes
+
+- 288ff13: Update package metadata for Zod 4 compatibility. Zod is used only internally in these packages (their public APIs expose plain inferred types), so consumers are unaffected.
+- Updated dependencies [288ff13]
+  - @prairielearn/postgres@7.0.0
+
 ## 5.0.7
 
 ### Patch Changes

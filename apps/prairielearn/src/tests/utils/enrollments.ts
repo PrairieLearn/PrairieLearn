@@ -1,4 +1,3 @@
-import fetch from 'node-fetch';
 import { z } from 'zod';
 
 import { queryScalar } from '@prairielearn/postgres';
@@ -8,7 +7,7 @@ import '../helperServer.js';
 import { type PotentialEnrollmentStatus } from '../../ee/models/enrollment.js';
 import { constructCourseOrInstanceContext } from '../../lib/authz-data.js';
 import { config } from '../../lib/config.js';
-import { ensureEnrollment } from '../../models/enrollment.js';
+import { ensureEnrollmentWithoutReconciliation } from '../../models/enrollment.js';
 
 import { type AuthUser, getOrCreateUser, withUser } from './auth.js';
 import { getCsrfToken } from './csrf.js';
@@ -41,7 +40,7 @@ export async function enrollUser(
 
   const { authzData, course, institution, courseInstance } = context;
 
-  return ensureEnrollment({
+  return ensureEnrollmentWithoutReconciliation({
     institution,
     course,
     courseInstance,

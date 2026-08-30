@@ -1,4 +1,4 @@
-import fetch from 'node-fetch';
+import type { CheerioAPI } from 'cheerio';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
 import { config } from '../lib/config.js';
@@ -7,7 +7,13 @@ import { selectAssessmentByTid } from '../models/assessment.js';
 import * as helperClient from './helperClient.js';
 import * as helperServer from './helperServer.js';
 
-describe('Real-time grading control tests', { timeout: 60_000 }, function () {
+function getAssessmentQuestionRows($: CheerioAPI) {
+  return $('table[data-testid="assessment-questions"] tbody tr').filter(
+    (_index, elem) => $(elem).find('a[href*="/instance_question/"]').length > 0,
+  );
+}
+
+describe('Real-time grading control tests', { timeout: 60_000, concurrent: false }, function () {
   beforeAll(helperServer.before());
   afterAll(helperServer.after);
 
@@ -25,7 +31,7 @@ describe('Real-time grading control tests', { timeout: 60_000 }, function () {
       context.assessmentUrl = `${context.courseInstanceBaseUrl}/assessment/${context.assessmentId}/`;
     });
 
-    test.sequential('visit start exam page', async () => {
+    test('visit start exam page', async () => {
       const response = await helperClient.fetchCheerio(context.assessmentUrl);
       assert.isTrue(response.ok);
 
@@ -34,7 +40,7 @@ describe('Real-time grading control tests', { timeout: 60_000 }, function () {
       helperClient.extractAndSaveCSRFToken(context, response.$, 'form');
     });
 
-    test.sequential('start the exam', async () => {
+    test('start the exam', async () => {
       const response = await helperClient.fetchCheerio(context.assessmentUrl, {
         method: 'POST',
         body: new URLSearchParams({
@@ -53,14 +59,14 @@ describe('Real-time grading control tests', { timeout: 60_000 }, function () {
       context.questionUrl = `${context.siteUrl}${questionUrl}`;
     });
 
-    test.sequential('check for grade button on the assessment page', async () => {
+    test('check for grade button on the assessment page', async () => {
       const response = await helperClient.fetchCheerio(context.assessmentUrl);
       assert.isTrue(response.ok);
 
       assert.lengthOf(response.$('form[name="grade-form"]'), 0);
     });
 
-    test.sequential('check for grade button on a question page', async () => {
+    test('check for grade button on a question page', async () => {
       const response = await helperClient.fetchCheerio(context.questionUrl);
       assert.isTrue(response.ok);
 
@@ -69,7 +75,7 @@ describe('Real-time grading control tests', { timeout: 60_000 }, function () {
       helperClient.extractAndSaveCSRFToken(context, response.$, '.question-form');
     });
 
-    test.sequential('try to manually grade request on the question page', async () => {
+    test('try to manually grade request on the question page', async () => {
       const response = await fetch(context.assessmentInstanceUrl, {
         method: 'POST',
         body: new URLSearchParams({
@@ -103,7 +109,7 @@ describe('Real-time grading control tests', { timeout: 60_000 }, function () {
       context.assessmentUrl = `${context.courseInstanceBaseUrl}/assessment/${context.assessmentId}/`;
     });
 
-    test.sequential('start assessment with mixed real-time grading', async () => {
+    test('start assessment with mixed real-time grading', async () => {
       const response = await helperClient.fetchCheerio(context.assessmentUrl);
       assert.isTrue(response.ok);
 
@@ -123,7 +129,7 @@ describe('Real-time grading control tests', { timeout: 60_000 }, function () {
       context.assessmentInstanceUrl = assessmentInstanceUrl;
     });
 
-    test.sequential('verify mixed grading UI on assessment instance page', async () => {
+    test('verify mixed grading UI on assessment instance page', async () => {
       const response = await helperClient.fetchCheerio(context.assessmentInstanceUrl);
       assert.isTrue(response.ok);
 
@@ -133,7 +139,7 @@ describe('Real-time grading control tests', { timeout: 60_000 }, function () {
       assert.equal(gradeButton.attr('disabled'), 'disabled');
     });
 
-    test.sequential('verify question-specific grading controls', async () => {
+    test('verify question-specific grading controls', async () => {
       const assessmentResponse = await helperClient.fetchCheerio(context.assessmentInstanceUrl);
       assert.isTrue(assessmentResponse.ok);
       const questionLinks = assessmentResponse.$('a[href*="/instance_question/"]');
@@ -258,7 +264,7 @@ describe('Real-time grading control tests', { timeout: 60_000 }, function () {
       assert.isTrue(otherEnabledSaveResponse.ok);
     });
 
-    test.sequential('verify assessment instance grading controls', async () => {
+    test('verify assessment instance grading controls', async () => {
       const assessmentResponse = await helperClient.fetchCheerio(context.assessmentInstanceUrl);
       assert.isTrue(assessmentResponse.ok);
 
@@ -277,12 +283,7 @@ describe('Real-time grading control tests', { timeout: 60_000 }, function () {
 
       // The first question (real-time grading disabled) should still be in the "Saved" state,
       // and its score should be pending.
-      //
-      // The question is actually in the second row of the table; the first row is the
-      // zone header.
-      const tableRow = otherEnabledGradeResponse.$(
-        'table[data-testid="assessment-questions"] tbody tr:nth-child(2)',
-      );
+      const tableRow = getAssessmentQuestionRows(otherEnabledGradeResponse.$).eq(0);
       const badge = tableRow.find('span.badge');
       assert.lengthOf(badge, 3);
       assert.equal(badge.eq(0).text().trim(), 'saved for grading after finish');
@@ -309,9 +310,7 @@ describe('Real-time grading control tests', { timeout: 60_000 }, function () {
       });
       assert.isTrue(finishResponse.ok);
 
-      const gradedTableRow = finishResponse.$(
-        'table[data-testid="assessment-questions"] tbody tr:nth-child(2)',
-      );
+      const gradedTableRow = getAssessmentQuestionRows(finishResponse.$).eq(0);
       const gradedBadge = gradedTableRow.find('span.badge');
       assert.lengthOf(gradedBadge, 1);
       assert.equal(gradedBadge.text().trim(), 'complete');

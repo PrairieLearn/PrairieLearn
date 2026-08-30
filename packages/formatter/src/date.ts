@@ -279,6 +279,7 @@ export function formatDateWithinRange(
   if (dateY === startY && dateY === endY) {
     const options: Intl.DateTimeFormatOptions = {
       timeZone,
+      hourCycle: 'h23',
       month: 'short',
       day: 'numeric',
       hour: '2-digit',

@@ -19,7 +19,7 @@ const PACKAGES_DIR = 'packages';
  */
 function packageExistsOnNpm(packageName) {
   try {
-    execSync(`npm view ${packageName} version`, {
+    execSync(`pnpm view ${packageName} version`, {
       stdio: 'pipe',
       timeout: 30000,
     });

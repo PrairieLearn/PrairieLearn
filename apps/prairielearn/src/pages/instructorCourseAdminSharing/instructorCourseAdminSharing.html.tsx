@@ -4,11 +4,11 @@ import { Fragment, useState } from 'react';
 import { Alert, Modal } from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
 
+import { getAppError } from '@prairielearn/trpc/client';
+import { AppErrorAlert, QueryClientProviderDebug } from '@prairielearn/trpc/react';
 import { useModalState } from '@prairielearn/ui';
 
 import { CopyButton } from '../../components/CopyButton.js';
-import { AppErrorAlert, getAppError } from '../../lib/client/errors.js';
-import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
 import { getCourseEditErrorUrl, getQuestionSettingsUrl } from '../../lib/client/url.js';
 import type { SharingSetRow } from '../../models/sharing-set.js';
 import { createCourseTrpcClient } from '../../trpc/course/client.js';
@@ -25,7 +25,6 @@ interface InstructorCourseAdminSharingProps {
   origHash: string;
   courseId: string;
   trpcCsrfToken: string;
-  isDevMode: boolean;
 }
 
 export function InstructorCourseAdminSharing(props: InstructorCourseAdminSharingProps) {
@@ -38,7 +37,7 @@ export function InstructorCourseAdminSharing(props: InstructorCourseAdminSharing
   );
 
   return (
-    <QueryClientProviderDebug client={queryClient} isDevMode={props.isDevMode}>
+    <QueryClientProviderDebug client={queryClient}>
       <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
         <InstructorCourseAdminSharingInner {...props} />
       </TRPCProvider>
@@ -651,8 +650,7 @@ function AddSharingSetModal({
             </a>{' '}
             is a named set of questions which you can share to another course. This lets you share
             different sets of your questions &mdash; for example, share some questions only with
-            other courses in your department, and other questions with anyone using PrairieLearn.
-            See the{' '}
+            other courses in your department. See the{' '}
             <a
               href="https://docs.prairielearn.com/contentSharing/"
               target="_blank"

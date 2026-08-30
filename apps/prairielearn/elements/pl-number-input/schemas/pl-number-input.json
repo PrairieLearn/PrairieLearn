@@ -1,0 +1,100 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "allow-blank": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "allow-complex": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "allow-fractions": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "answers-name": {
+      "type": "string"
+    },
+    "aria-label": {
+      "type": "string"
+    },
+    "atol": {
+      "type": "string",
+      "format": "number"
+    },
+    "blank-value": {
+      "type": "string"
+    },
+    "comparison": {
+      "type": "string",
+      "enum": ["relabs", "sigfig", "decdig"]
+    },
+    "correct-answer": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "number"
+        },
+        {
+          "type": "string",
+          "enum": [""]
+        }
+      ]
+    },
+    "custom-format": {
+      "type": "string"
+    },
+    "digits": {
+      "type": "string",
+      "format": "integer"
+    },
+    "display": {
+      "type": "string",
+      "enum": ["block", "inline"]
+    },
+    "initial-value": {
+      "type": "string"
+    },
+    "label": {
+      "type": "string"
+    },
+    "placeholder": {
+      "type": "string"
+    },
+    "rtol": {
+      "type": "string",
+      "format": "number"
+    },
+    "show-correct-answer": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "show-help-text": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "show-placeholder": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "show-score": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "size": {
+      "type": "string",
+      "format": "integer"
+    },
+    "suffix": {
+      "type": "string"
+    },
+    "weight": {
+      "type": "string",
+      "format": "integer"
+    }
+  },
+  "required": ["answers-name"],
+  "additionalProperties": false
+}

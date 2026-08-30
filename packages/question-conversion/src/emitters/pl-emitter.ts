@@ -1,10 +1,8 @@
-import type {
-  IRAssessmentMeta,
-  IRFeedback,
-  IRItemContainer,
-  IRQuestion,
-  IRZone,
-} from '../types/ir.js';
+import { type AnyNode, isTag } from 'domhandler';
+
+import { assertNever } from '@prairielearn/utils';
+
+import type { IRAssessmentMeta, IRItemContainer, IRQuestion, IRZone } from '../types/ir.js';
 import type {
   PLAllowAccessRule,
   PLAssessmentInfoJson,
@@ -14,12 +12,20 @@ import type {
   PLQuestionInfoJson,
   PLQuestionOutput,
 } from '../types/pl-output.js';
+import { isWhitespaceText, loadHtmlFragment } from '../utils/html.js';
 import { slugify } from '../utils/slugify.js';
 import { stableUuid } from '../utils/uuid.js';
 
-import type { BodyEmitRegistry } from './body-emit-handler.js';
-import type { ConversionResult, ConversionWarning, EmitOptions, OutputEmitter } from './emitter.js';
+import type { BodyEmitHandler, BodyEmitRegistry, FeedbackMessage } from './body-emit-handler.js';
+import type {
+  ConversionResult,
+  ConversionWarning,
+  EmitOptions,
+  EmitProcessedOptions,
+  OutputEmitter,
+} from './emitter.js';
 import { createPLBodyRegistry } from './handlers/index.js';
+import { escapeMustacheDelimiters } from './pl-emit-utils.js';
 
 /** Emits PrairieLearn question directories and assessment config from IR. */
 export class PLEmitter implements OutputEmitter {
@@ -64,6 +70,7 @@ export class PLEmitter implements OutputEmitter {
         assessment: assessmentOutput,
         questions,
         warnings,
+        reports: [],
       };
     }
 
@@ -75,7 +82,22 @@ export class PLEmitter implements OutputEmitter {
       assessment: assessmentOutput,
       questions,
       warnings,
+      reports: [],
     };
+  }
+
+  async emitProcessed(
+    itemContainer: IRItemContainer,
+    { processors = [], ...options }: EmitProcessedOptions = {},
+  ): Promise<ConversionResult> {
+    for (const processor of processors) {
+      await processor.beforeEmit?.(itemContainer);
+    }
+    const result = this.emit(itemContainer, options);
+    for (const processor of processors) {
+      await processor.afterEmit?.(result, itemContainer);
+    }
+    return result;
   }
 
   private emitAssessment(
@@ -243,18 +265,29 @@ export class PLEmitter implements OutputEmitter {
 
     const uuid = stableUuid(options?.uuidNamespace ?? itemContainer.sourceId, question.sourceId);
 
+    // Omit properties whose values match the PrairieLearn schema defaults
+    // (singleVariant: false, gradingMethod: 'Internal') so the emitted
+    // info.json contains only what's strictly necessary.
     const infoJson: PLQuestionInfoJson = {
       uuid,
       title: question.title,
       topic,
       tags,
       type: 'v3',
-      singleVariant: question.body.type !== 'calculated',
-      gradingMethod: question.gradingMethod,
     };
+    if (question.body.type !== 'calculated') {
+      infoJson.singleVariant = true;
+    }
+    if (question.gradingMethod != null && question.gradingMethod !== 'Internal') {
+      infoJson.gradingMethod = question.gradingMethod;
+    }
 
-    const questionHtml = this.renderQuestionHtml(question);
-    const serverPy = this.renderServerPy(question);
+    const handler = this.registry.get(question.body.type);
+    if (!handler) throw new Error(`No emit handler for body type: ${question.body.type}`);
+
+    const feedback = buildFeedbackPlan(question, handler);
+    const questionHtml = this.renderQuestionHtml(question, handler, feedback);
+    const serverPy = this.renderServerPy(question, handler, feedback);
     const clientFiles = this.collectClientFiles(question);
 
     return {
@@ -283,10 +316,11 @@ export class PLEmitter implements OutputEmitter {
     return count === 0 ? baseDir : `${baseDir}-${count + 1}`;
   }
 
-  private renderQuestionHtml(question: IRQuestion): string {
-    const handler = this.registry.get(question.body.type);
-    if (!handler) throw new Error(`No emit handler for body type: ${question.body.type}`);
-
+  private renderQuestionHtml(
+    question: IRQuestion,
+    handler: BodyEmitHandler,
+    feedback: FeedbackPlan,
+  ): string {
     let promptHtml = question.promptHtml;
     if (handler.transformPrompt) {
       promptHtml = handler.transformPrompt(promptHtml, question.body);
@@ -296,30 +330,26 @@ export class PLEmitter implements OutputEmitter {
       ? wrapInlineInputPrompt(promptHtml)
       : ['<pl-question-panel>', promptHtml, '</pl-question-panel>', ''];
 
-    // Checkbox per-answer feedback is concatenated in grade() so all selected answers' messages
-    // show together — PL only surfaces one feedback attribute per element, so don't put them in HTML.
-    const perAnswerForHtml =
-      question.body.type === 'checkbox' ? undefined : question.feedback?.perAnswer;
-    const bodyHtml = handler.renderHtml(question.body, question.shuffleAnswers, perAnswerForHtml);
+    const bodyHtml = handler.renderHtml(
+      question.body,
+      question.shuffleAnswers,
+      question.feedback?.perAnswer,
+    );
     if (bodyHtml) parts.push(bodyHtml);
 
-    // Show answer panel when grade() will set data["feedback"]["general"].
-    // Types with renderGradePy may produce grade output from perAnswer alone (checkbox, fill-in-blanks).
-    const fb = question.feedback;
-    const willHaveGrade = handler.renderGradePy
-      ? fb?.correct || fb?.incorrect || (fb?.perAnswer && Object.keys(fb.perAnswer).length > 0)
-      : fb?.correct || fb?.incorrect;
-    if (willHaveGrade) {
-      parts.push('', '<pl-answer-panel>', '{{{feedback.general}}}', '</pl-answer-panel>');
+    const feedbackHtml = renderFeedbackHtml(feedback);
+    if (feedbackHtml) {
+      parts.push('', feedbackHtml);
     }
 
     return parts.join('\n');
   }
 
-  private renderServerPy(question: IRQuestion): string {
-    const handler = this.registry.get(question.body.type);
-    if (!handler) return '';
-
+  private renderServerPy(
+    question: IRQuestion,
+    handler: BodyEmitHandler,
+    feedback: FeedbackPlan,
+  ): string {
     const parts: string[] = [];
 
     if (handler.renderGeneratePy) {
@@ -327,13 +357,11 @@ export class PLEmitter implements OutputEmitter {
       if (gen) parts.push(gen);
     }
 
-    if (handler.renderGradePy) {
-      const grade = handler.renderGradePy(question.body, question.feedback);
-      if (grade) parts.push(grade);
-    } else {
-      const grade = renderDefaultGradeFn(question.feedback);
-      if (grade) parts.push(grade);
-    }
+    const grade = renderFeedbackGradeFn(
+      feedback.messages,
+      feedback.panel === 'submission' && feedback.generalFeedback.length > 0,
+    );
+    if (grade) parts.push(grade);
 
     return parts.join('\n');
   }
@@ -358,12 +386,13 @@ export class PLEmitter implements OutputEmitter {
  * (e.g. `<pl-string-input>`) are emitted bare.
  */
 function wrapInlineInputPrompt(html: string): string[] {
-  // Split between adjacent top-level block elements. The lookbehind matches
-  // after a closing block tag; the lookahead matches the start of the next tag.
-  // Whitespace between them is consumed so it doesn't become a stray text node.
-  const blocks = html.split(
-    /(?<=<\/(?:p|div|ul|ol|table|blockquote|h[1-6]|pre|figure|section)>)\s*(?=<)/,
-  );
+  // Treat the prompt as a fragment so top-level paragraphs, inputs, and text nodes remain
+  // siblings. Wrapping a whole document would hide the boundaries we need for panel grouping.
+  const $ = loadHtmlFragment(html);
+  const blocks = $.root()
+    .contents()
+    .toArray()
+    .filter((node) => !isWhitespaceText(node));
 
   const parts: string[] = [];
   let panel: string[] = [];
@@ -376,12 +405,15 @@ function wrapInlineInputPrompt(html: string): string[] {
   }
 
   for (const block of blocks) {
-    if (!block.trim()) continue;
-    if (PL_INPUT_RE.test(block)) {
+    const blockHtml = $.html(block);
+    if (!blockHtml.trim()) continue;
+    // A paragraph that already contains an input must stay outside `<pl-question-panel>`;
+    // otherwise PrairieLearn would render an interactive element inside static prompt chrome.
+    if (containsPlInput(block)) {
       flushPanel();
-      parts.push(block);
+      parts.push(blockHtml);
     } else {
-      panel.push(block);
+      panel.push(blockHtml);
     }
   }
   flushPanel();
@@ -391,33 +423,166 @@ function wrapInlineInputPrompt(html: string): string[] {
   return parts;
 }
 
-const PL_INPUT_RE =
-  /<pl-(?:big-o-input|checkbox|excalidraw|image-capture|integer-input|matching|matrix-component-input|matrix-input|multiple-choice|number-input|order-blocks|rich-text-editor|string-input|symbolic-input|units-input|file-upload)\b/;
+const PL_INPUT_ELEMENTS = new Set([
+  'pl-big-o-input',
+  'pl-checkbox',
+  'pl-excalidraw',
+  'pl-image-capture',
+  'pl-integer-input',
+  'pl-matching',
+  'pl-matrix-component-input',
+  'pl-matrix-input',
+  'pl-multiple-choice',
+  'pl-number-input',
+  'pl-order-blocks',
+  'pl-rich-text-editor',
+  'pl-string-input',
+  'pl-symbolic-input',
+  'pl-units-input',
+  'pl-file-upload',
+]);
 
-/** Render the grade(data) function for types with only global correct/incorrect feedback. */
-function renderDefaultGradeFn(feedback: IRFeedback | undefined): string {
-  const { correct, incorrect } = feedback ?? {};
-  if (!correct && !incorrect) return '';
+function containsPlInput(node: AnyNode): boolean {
+  if (isTag(node) && PL_INPUT_ELEMENTS.has(node.name.toLowerCase())) return true;
+  if ('children' in node) return node.children.some((child) => containsPlInput(child));
+  return false;
+}
+
+interface NamedFeedbackMessage extends FeedbackMessage {
+  name: string;
+}
+
+interface FeedbackPlan {
+  messages: NamedFeedbackMessage[];
+  generalFeedback: string[];
+  panel?: 'answer' | 'submission';
+}
+
+function buildFeedbackPlan(question: IRQuestion, handler: BodyEmitHandler): FeedbackPlan {
+  const generalFeedback = buildGeneralFeedback(question);
+  const messages = buildFeedbackMessages(question, handler, generalFeedback);
+  if (messages.length === 0 && generalFeedback.length === 0) {
+    return { messages, generalFeedback };
+  }
+
+  const hasExplicitAnswerFeedback = messages.some((message) => message.name !== 'overall');
+
+  return {
+    messages,
+    generalFeedback,
+    panel: hasExplicitAnswerFeedback ? 'submission' : 'answer',
+  };
+}
+
+function buildFeedbackMessages(
+  question: IRQuestion,
+  handler: BodyEmitHandler,
+  generalFeedback: string[],
+): NamedFeedbackMessage[] {
+  const messages = (
+    handler.renderFeedback?.(question.body, question.feedback?.perAnswer) ?? []
+  ).map((message, index) => ({ ...message, name: `answer_${index}` }));
+
+  if (question.feedback?.correct && !generalFeedback.includes(question.feedback.correct)) {
+    messages.push({
+      name: 'overall',
+      html: question.feedback.correct,
+      trigger: { type: 'score', outcome: 'correct' },
+    });
+  }
+  if (question.feedback?.incorrect && !generalFeedback.includes(question.feedback.incorrect)) {
+    messages.push({
+      name: 'overall',
+      html: question.feedback.incorrect,
+      trigger: { type: 'score', outcome: 'incorrect' },
+    });
+  }
+
+  return messages;
+}
+
+function buildGeneralFeedback(question: IRQuestion): string[] {
+  const feedback = question.feedback;
+  if (!feedback) return [];
+
+  const messages = feedback.general ? [feedback.general] : [];
+  if (feedback.correct && feedback.correct === feedback.incorrect) {
+    if (!messages.includes(feedback.correct)) messages.push(feedback.correct);
+  }
+  return messages;
+}
+
+function renderFeedbackHtml({ messages, generalFeedback, panel }: FeedbackPlan): string {
+  if (!panel) return '';
+
+  const feedbackNames = new Set(messages.map((message) => message.name));
+  if (panel === 'submission' && generalFeedback.length > 0) feedbackNames.add('overall');
+
+  const lines = [`<pl-${panel}-panel>`];
+  if (panel === 'answer') {
+    lines.push(...generalFeedback.map(escapeMustacheDelimiters));
+  }
+  for (const name of feedbackNames) {
+    lines.push(`  {{#feedback.${name}}}`);
+    if (panel === 'submission' && name === 'overall') {
+      lines.push(...generalFeedback.map(escapeMustacheDelimiters));
+    }
+
+    for (const message of messages) {
+      if (message.name !== name) continue;
+
+      if (message.trigger.type === 'score') {
+        const sectionType = message.trigger.outcome === 'incorrect' ? '^' : '#';
+        lines.push(
+          `    {{${sectionType}is_correct}}`,
+          escapeMustacheDelimiters(message.html),
+          '    {{/is_correct}}',
+        );
+      } else {
+        lines.push(escapeMustacheDelimiters(message.html));
+      }
+    }
+    lines.push(`  {{/feedback.${name}}}`);
+  }
+  lines.push(`</pl-${panel}-panel>`);
+  return lines.join('\n');
+}
+
+function renderFeedbackGradeFn(
+  messages: NamedFeedbackMessage[],
+  hasSubmissionPanelGeneralFeedback: boolean,
+): string {
+  if (messages.length === 0 && !hasSubmissionPanelGeneralFeedback) return '';
 
   const lines = ['def grade(data):'];
-  if (correct && incorrect) {
-    lines.push(
-      '    if data["score"] >= 1.0:',
-      `        data["feedback"]["general"] = ${JSON.stringify(correct)}`,
-      '    else:',
-      `        data["feedback"]["general"] = ${JSON.stringify(incorrect)}`,
-    );
-  } else if (correct) {
-    lines.push(
-      '    if data["score"] >= 1.0:',
-      `        data["feedback"]["general"] = ${JSON.stringify(correct)}`,
-    );
-  } else {
-    lines.push(
-      '    if data["score"] < 1.0:',
-      `        data["feedback"]["general"] = ${JSON.stringify(incorrect)}`,
-    );
+  const assignedScoreFeedbackNames = new Set<string>();
+
+  for (const message of messages) {
+    const assignment = `        data["feedback"][${JSON.stringify(message.name)}] = True`;
+    switch (message.trigger.type) {
+      case 'score':
+        if (!assignedScoreFeedbackNames.has(message.name)) {
+          lines.push(
+            `    data["feedback"][${JSON.stringify(message.name)}] = {"is_correct": data["score"] >= 1.0}`,
+          );
+          assignedScoreFeedbackNames.add(message.name);
+        }
+        break;
+      case 'fill-in-the-blank-correct':
+        lines.push(
+          `    if data["partial_scores"].get(${JSON.stringify(message.trigger.answerName)}, {}).get("score", 0) >= 1:`,
+          assignment,
+        );
+        break;
+      default:
+        assertNever(message.trigger);
+    }
   }
+
+  if (hasSubmissionPanelGeneralFeedback && !assignedScoreFeedbackNames.has('overall')) {
+    lines.push('    data["feedback"]["overall"] = True');
+  }
+
   lines.push('');
   return lines.join('\n');
 }

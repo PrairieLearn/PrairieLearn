@@ -1,6 +1,5 @@
 import * as cheerio from 'cheerio';
 import fetchCookie from 'fetch-cookie';
-import fetch from 'node-fetch';
 import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 import { z } from 'zod';
 

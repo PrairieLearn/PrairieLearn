@@ -28,6 +28,7 @@ First, the `generate` function is called to generate the question variant. It sh
 ```python title="server.py"
 import random
 
+
 def generate(data):
     # Generate random parameters for the question and store them in the data["params"] dict:
     data["params"]["x"] = random.randint(5, 10)
@@ -57,6 +58,7 @@ Question variants are randomized based on the variant seed (`data["variant_seed"
 
     ```python title="server.py"
     from faker import Faker
+
     fake = Faker()
 
     fake.name()
@@ -74,8 +76,8 @@ For generated floating point answers, it's important to use consistent rounding 
         # Rounds numbers at the beginning
         a = np.round(33.33337, 2)
         b = np.round(33.33333, 2)
-        data["params"]["a_for_student"] = f'{a:.2f}'
-        data["params"]["b_for_student"] = f'{b:.2f}'
+        data["params"]["a_for_student"] = f"{a:.2f}"
+        data["params"]["b_for_student"] = f"{b:.2f}"
         data["correct_answers"]["c"] = a - b
     ```
 
@@ -85,8 +87,8 @@ For generated floating point answers, it's important to use consistent rounding 
     def generate(data):
         a = 33.33337
         b = 33.33333
-        data["params"]["a_for_student"] = f'{a:.2f}'
-        data["params"]["b_for_student"] = f'{a:.2f}'
+        data["params"]["a_for_student"] = f"{a:.2f}"
+        data["params"]["b_for_student"] = f"{a:.2f}"
         # Correct answer is computed with full precision,
         # but the parameters displayed to students are rounded.
         data["correct_answers"]["c"] = a - b
@@ -145,8 +147,9 @@ The `parse()` function can also be used to create custom files to be sent to an 
 ```python title="server.py"
 import prairielearn as pl
 
+
 def parse(data):
-    code = f"x = {data["submitted_answers"]["expression"]}"
+    code = f"x = {data['submitted_answers']['expression']}"
     pl.add_submitted_file(data, "user_code.py", raw_contents=code)
 ```
 
@@ -177,6 +180,7 @@ You can set `data["format_errors"][NAME]` to mark the submission as invalid. Thi
 import math
 import prairielearn as pl
 
+
 def grade(data):
     # Give half points for incorrect answers larger than "x", only if not already correct.
     # Use math.isclose to avoid possible floating point errors.
@@ -186,6 +190,13 @@ def grade(data):
         pl.set_weighted_score_data(data)
         data["feedback"]["y"] = "Your value for $y$ is larger than $x$, but incorrect."
 ```
+
+### Grading without a fixed correct answer
+
+A custom `grade` function is not limited to comparing the submission against `data["correct_answers"]`:
+
+- For questions with many correct answers (e.g., "give an example of a matrix with some property"), the grade function can check that the submitted answer satisfies the required property. In this case, `data["correct_answers"]` can hold one example of a valid answer to show to students. See [this demo question](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/custom/gradeAnyValidAnswer) for an example.
+- For questions where students collect their own data (e.g., measurements from a lab experiment), the grade function can compute the expected answer from the student's own submitted values, so that any answer consistent with their data is accepted. See [this demo question](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/custom/gradeFromStudentData) for an example.
 
 ### Providing feedback
 
@@ -226,6 +237,7 @@ This can be used like so:
 ```python title="server.py"
 import prairielearn as pl
 
+
 def grade(data):
     # update partial_scores as necessary
     data["partial_scores"]["y"]["score"] = 0.5
@@ -242,6 +254,7 @@ If you prefer not to show score badges for individual parts, you can unset the d
 
     ```python title="server.py"
     import prairielearn as pl
+
 
     def grade(data):
         # update partial_scores as necessary
@@ -280,6 +293,7 @@ import random
 import math
 import prairielearn as pl
 
+
 def generate(data):
     # Generate random parameters for the question and store them in the data["params"] dict:
     data["params"]["x"] = random.randint(5, 10)
@@ -287,10 +301,12 @@ def generate(data):
     # Also compute the correct answer (if there is one) and store in the data["correct_answers"] dict:
     data["correct_answers"]["y"] = 2 * data["params"]["x"]
 
+
 def parse(data):
     # Reject negative numbers for "y" if we don't already have a format error
     if "y" not in data["format_errors"] and int(data["submitted_answers"]["y"]) < 0:
         data["format_errors"]["y"] = "Negative numbers are not allowed"
+
 
 def grade(data):
     # Give half points for incorrect answers larger than "x", only if not already correct.
@@ -388,8 +404,10 @@ The `prairielearn` Python library provides the utility functions [`to_json`][pra
 import numpy as np
 import prairielearn as pl
 
+
 def generate(data):
     data["params"]["numpy_array"] = pl.to_json(np.array([1.2, 3.5, 5.1]))
+
 
 def grade(data):
     pl.from_json(data["params"]["numpy_array"])
@@ -411,7 +429,7 @@ Courses can opt in so that `server.py` receives user and group identity. A cours
 
 ```python
 def generate(data):
-    user = data["options"]["user"]    # Variant owner; None on group assessments
+    user = data["options"]["user"]  # Variant owner; None on group assessments
     # { "uid": "student@example.com", "uin": "123456", "name": "John Doe" }
     group = data["options"]["group"]  # None on individual assessments
     # { "name": "Group 1", "members": [ { "uid": "student@example.com", "uin": "123456", "name": "John Doe" } ] }
@@ -455,8 +473,10 @@ import random
 import io
 import matplotlib.pyplot as plt
 
+
 def generate(data):
     data["params"]["a"] = random.choice([0.25, 0.5, 1, 2, 4])
+
 
 def file(data):
     # check for the appropriate filename
@@ -482,6 +502,49 @@ We recommend using the [`pl-figure`](../elements/pl-figure.md) and [`pl-file-dow
     <p>Here is a dynamically-rendered figure showing a line of slope $a = {{params.a}}$:</p>
     <img src="{{options.client_files_question_dynamic_url}}/fig.png" />
     ```
+
+### Dynamic files that rely on submission data
+
+When a dynamic file is included in a submission panel, it will also get access to the submission information, including `data["submitted_answers"]`, `data["score"]`, `data["partial_scores"]`, and [all other submission-related data listed above](#data-field-scopes).
+
+If your dynamic file relies on submission data (e.g., `data["submitted_answers"]`), you should ensure that the `pl-figure` or `pl-file-download` element is only visible in the submission panel. This can be done by wrapping the element in a `<pl-submission-panel>` tag, as shown below. This ensures that the file is only generated after the student has submitted an answer.
+
+```html title="question.html"
+<pl-submission-panel>
+  <p>Here is a dynamically-rendered figure showing your submitted answer:</p>
+  <pl-figure file-name="submitted.png" type="dynamic"></pl-figure>
+</pl-submission-panel>
+```
+
+Note that the submission panel will include the file for any kind of submission, including:
+
+- Valid (correct or incorrect) submissions.
+- Invalid submissions (e.g., submissions with format errors).
+- "Save only" submissions (e.g., when the student clicks "Save only" or in an assessment without real-time grading).
+
+You should ensure that your file generation code can handle all of these cases. For example, if the file relies on a valid submitted answer, you should check that the answer is present and valid in `data["submitted_answers"]` before using it. If the answer is not present, you can generate a default file or a blank image.
+
+```python title="server.py"
+def file(data):
+    if data["filename"] == "submitted.png":
+        if data["submitted_answers"].get("y") is None:
+            # generate a default image
+        else:
+            # generate the file using data["submitted_answers"]["y"]
+```
+
+Alternatively, you can include the image in the HTML only when the answer is present and valid, using a mustache conditional on `data["format_errors"]`:
+
+```html title="question.html"
+<pl-submission-panel>
+  {{^format_errors.y}}
+  <p>Here is a dynamically-rendered figure showing your submitted answer:</p>
+  <pl-figure file-name="submitted.png" type="dynamic"></pl-figure>
+  {{/format_errors.y}}
+</pl-submission-panel>
+```
+
+In particular, note that for "Save only" submissions, scores will not be populated. If your dynamic file uses score information, you should check that `data["score"]` or the values in `data["partial_scores"]` are not `None` before using them.
 
 ## Testing questions with `test()`
 

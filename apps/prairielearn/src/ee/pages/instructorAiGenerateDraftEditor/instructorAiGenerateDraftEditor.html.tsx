@@ -85,6 +85,7 @@ export function InstructorAiGenerateDraftEditor({
           chatCsrfToken={chatCsrfToken}
           question={StaffQuestionSchema.parse(question)}
           initialMessages={messages}
+          currentUserName={resLocals.authn_user.name}
           questionFiles={questionFiles}
           richTextEditorEnabled={richTextEditorEnabled}
           urlPrefix={resLocals.urlPrefix}

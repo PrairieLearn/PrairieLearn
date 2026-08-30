@@ -11,6 +11,7 @@ import { type AssessmentTool, SprocSyncAssessmentsSchema } from '../../lib/db-ty
 import { features } from '../../lib/features/index.js';
 import { convertLegacyGroupsToGroupsConfig } from '../../lib/group-config.js';
 import { extractDefaultPreferences } from '../../lib/question-preferences.js';
+import { parseLocalDateTime } from '../../lib/timezones.js';
 import {
   type AssessmentJson,
   EnumAssessmentToolSchema,
@@ -111,7 +112,7 @@ function mergeAndValidatePreferences(
 function getParamsForAssessment(
   assessmentInfoFile: AssessmentInfoFile,
   questionIds: Record<string, any>,
-  enhancedAccessControlEnabled: boolean,
+  displayTimezone: string,
 ) {
   if (infofile.hasErrors(assessmentInfoFile)) return null;
   const assessment = assessmentInfoFile.data;
@@ -132,8 +133,8 @@ function getParamsForAssessment(
           return null;
         }),
         uids: accessRule.uids ?? null,
-        start_date: accessRule.startDate ?? null,
-        end_date: accessRule.endDate ?? null,
+        start_date: parseLocalDateTime(accessRule.startDate ?? null, displayTimezone),
+        end_date: parseLocalDateTime(accessRule.endDate ?? null, displayTimezone),
         credit: accessRule.credit ?? null,
         time_limit_min: accessRule.timeLimitMin ?? null,
         password: accessRule.password ?? null,
@@ -446,7 +447,7 @@ function getParamsForAssessment(
     has_roles: groupRoles.length > 0,
     json_can_view: groups?.rolePermissions.canView ?? [],
     json_can_submit: groups?.rolePermissions.canSubmit ?? [],
-    modern_access_control: enhancedAccessControlEnabled && assessment.allowAccess == null,
+    modern_access_control: assessment.allowAccess == null,
     allowAccess,
     zones,
     alternativePools,
@@ -506,9 +507,9 @@ function isCourseInstanceAccessible(courseInstanceData: CourseInstanceData) {
 export async function sync(
   courseId: string,
   courseInstanceId: string,
+  displayTimezone: string,
   courseInstanceData: CourseInstanceData,
   questionIds: Record<string, any>,
-  enhancedAccessControlEnabled: boolean,
 ) {
   const assessments = courseInstanceData.assessments;
 
@@ -558,7 +559,7 @@ export async function sync(
   }
 
   const assessmentParams = Object.entries(assessments).map(([tid, assessment]) => {
-    const params = getParamsForAssessment(assessment, questionIds, enhancedAccessControlEnabled);
+    const params = getParamsForAssessment(assessment, questionIds, displayTimezone);
     return JSON.stringify([
       tid,
       assessment.uuid,

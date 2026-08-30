@@ -8,7 +8,7 @@ import { DatetimeLocalStringSchema } from '@prairielearn/zod';
 
 import { analyzeCourseInstanceAssessments } from '../../lib/assessment-access-control/migration.js';
 
-import { requireCoursePermissionEdit, requireEnhancedAccessControl, t } from './init.js';
+import { requireCoursePermissionEdit, t } from './init.js';
 
 export interface InstanceAdminSettingsError {
   AnalyzeAccessControl: never;
@@ -20,7 +20,6 @@ function todayAsDatetimeLocal(timezone: string): string {
 }
 
 const analyzeAccessControl = t.procedure
-  .use(requireEnhancedAccessControl)
   .use(requireCoursePermissionEdit)
   .input(z.object({ publishingStartDate: DatetimeLocalStringSchema.nullable() }))
   .query(async (opts) => {

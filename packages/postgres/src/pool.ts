@@ -1,9 +1,8 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
-import { Readable, Transform } from 'node:stream';
+import { Readable } from 'node:stream';
 
 import debugfn from 'debug';
 import { difference, sampleSize } from 'es-toolkit';
-import multipipe from 'multipipe';
 import pg, { DatabaseError, type QueryResult, escapeLiteral } from 'pg';
 import Cursor from 'pg-cursor';
 import { z } from 'zod';
@@ -12,7 +11,7 @@ export type QueryParams = Record<string, any> | any[];
 
 export interface CursorIterator<T> {
   iterate: (batchSize: number) => AsyncGenerator<T[]>;
-  stream: (batchSize: number) => NodeJS.ReadWriteStream;
+  stream: (batchSize: number) => Readable;
 }
 
 export interface PostgresPoolConfig extends pg.PoolConfig {
@@ -92,7 +91,7 @@ function paramsToArray(
   let remainingSql = sql;
   let nParams = 0;
   const map: Record<string, string> = {};
-  let paramsArray: any[] = [];
+  const paramsArray: any[] = [];
   while ((result = re.exec(remainingSql)) !== null) {
     const v = result[1];
     if (!(v in map)) {
@@ -100,7 +99,7 @@ function paramsToArray(
       if (Array.isArray(params[v])) {
         map[v] = 'ARRAY[' + params[v].map((_, n) => '$' + (n + nParams + 1)).join(',') + ']';
         nParams += params[v].length;
-        paramsArray = paramsArray.concat(params[v]);
+        paramsArray.push(...params[v]);
       } else {
         nParams++;
         map[v] = '$' + nParams;
@@ -125,11 +124,7 @@ function paramsToArray(
  * Escapes the given identifier for use in an SQL query. Useful for preventing
  * SQL injection.
  */
-function escapeIdentifier(identifier: string): string {
-  // Note that as of 2021-06-29 escapeIdentifier() is undocumented. See:
-  // https://github.com/brianc/node-postgres/pull/396
-  // https://github.com/brianc/node-postgres/issues/1978
-  // https://www.postgresql.org/docs/current/sql-syntax-lexical.html
+export function escapeIdentifier(identifier: string): string {
   return pg.Client.prototype.escapeIdentifier(identifier);
 }
 
@@ -1026,32 +1021,15 @@ export class PostgresPool {
         }
       },
       stream(batchSize: number) {
-        const transform = new Transform({
-          readableObjectMode: true,
-          writableObjectMode: true,
-          transform(chunk, _encoding, callback) {
-            for (const row of chunk) {
-              this.push(row);
+        return Readable.from(
+          (async function* () {
+            for await (const rows of iterator.iterate(batchSize)) {
+              for (const row of rows) {
+                yield row;
+              }
             }
-            callback();
-          },
-        });
-
-        // TODO: use native `node:stream#compose` once it's stable.
-        const generator = iterator.iterate(batchSize);
-        const pipe = multipipe(Readable.from(generator), transform);
-
-        // When the underlying stream is closed, we need to make sure that the
-        // cursor is also closed. We do this by calling `return()` on the generator,
-        // which will trigger its `finally` block, which will in turn release
-        // the client and close the cursor. The fact that the stream is already
-        // closed by this point means that someone reading from the stream will
-        // never actually see the `null` value that's returned.
-        pipe.once('close', () => {
-          generator.return(null);
-        });
-
-        return pipe;
+          })(),
+        );
       },
     };
     return iterator;

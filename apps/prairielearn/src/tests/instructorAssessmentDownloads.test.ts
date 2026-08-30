@@ -2,7 +2,6 @@
 import * as cheerio from 'cheerio';
 import { parse as csvParse } from 'csv-parse/sync';
 import type { Element } from 'domhandler';
-import fetch from 'node-fetch';
 import * as unzipper from 'unzipper';
 import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
@@ -338,6 +337,7 @@ describe('Instructor Assessment Downloads', { timeout: 60_000 }, function () {
           userId: studentUser.id,
           accessStart: new Date(Date.now() - 60_000),
           accessEnd: new Date(Date.now() + 600_000),
+          examUuid: helperExam.exam1AutomaticTestSuite.examUuid,
         },
         () =>
           withUser(studentUser, async () => {

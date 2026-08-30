@@ -139,6 +139,7 @@ export interface QuestionServer {
   file?: (
     filename: string,
     variant: Variant,
+    submission: Submission | null,
     question: Question,
     course: Course,
     caller: QuestionCaller,

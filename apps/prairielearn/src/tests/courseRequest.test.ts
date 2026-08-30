@@ -3,11 +3,16 @@ import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
 import { config } from '../lib/config.js';
-import { insertCourseRequest, selectAllCourseRequests } from '../lib/course-request.js';
+import {
+  insertCourseRequest,
+  selectAllCourseRequests,
+  selectCourseRequestById,
+} from '../lib/course-request.js';
 import { createAdministratorTrpcClient } from '../trpc/administrator/client.js';
 
 import * as helperClient from './helperClient.js';
 import * as helperServer from './helperServer.js';
+import { getOrCreateUser } from './utils/auth.js';
 
 const siteUrl = `http://localhost:${config.serverPort}`;
 const baseUrl = `${siteUrl}/pl`;
@@ -15,7 +20,7 @@ const coursesAdminUrl = `${baseUrl}/administrator/courses`;
 const courseRequestsAdminUrl = `${baseUrl}/administrator/courseRequests`;
 const allCourseRequestsAdminUrl = `${courseRequestsAdminUrl}?status=all`;
 
-describe('Course requests', { timeout: 60_000 }, function () {
+describe('Course requests', { timeout: 60_000, concurrent: false }, function () {
   let trpcClient: ReturnType<typeof createAdministratorTrpcClient>;
 
   beforeAll(helperServer.before());
@@ -34,7 +39,84 @@ describe('Course requests', { timeout: 60_000 }, function () {
   const shortName = 'TEST 101';
   const title = 'Course Request Test Course';
 
-  test.sequential('insert a course request', async () => {
+  test('derives the contact email without conflating it with the account UID', async () => {
+    const [userWithEmail, userWithoutEmail] = await Promise.all([
+      getOrCreateUser({
+        uid: 'contact-test-login',
+        name: 'Contact Test User',
+        uin: null,
+        email: 'account-contact@example.com',
+      }),
+      getOrCreateUser({
+        uid: 'legacy-contact-uid@example.com',
+        name: 'Legacy Contact Test User',
+        uin: null,
+        email: null,
+      }),
+    ]);
+
+    const cases = [
+      {
+        shortName: 'CONTACT EXPLICIT',
+        userId: userWithEmail.id,
+        workEmail: 'explicit-contact@example.com',
+        expectedContactEmail: 'explicit-contact@example.com',
+      },
+      {
+        shortName: 'CONTACT LEGACY',
+        userId: userWithEmail.id,
+        workEmail: userWithEmail.uid,
+        expectedContactEmail: userWithEmail.email,
+      },
+      {
+        shortName: 'CONTACT UID FALLBACK',
+        userId: userWithoutEmail.id,
+        workEmail: userWithoutEmail.uid,
+        expectedContactEmail: userWithoutEmail.uid,
+      },
+      {
+        shortName: 'CONTACT ACCOUNT FALLBACK',
+        userId: userWithEmail.id,
+        workEmail: null,
+        expectedContactEmail: userWithEmail.email,
+      },
+      {
+        shortName: 'CONTACT UNAVAILABLE',
+        userId: userWithoutEmail.id,
+        workEmail: null,
+        expectedContactEmail: null,
+      },
+    ];
+
+    const requests = await Promise.all(
+      cases.map(async ({ shortName, userId, workEmail, expectedContactEmail }) => ({
+        requestId: await insertCourseRequest({
+          short_name: shortName,
+          title: `${shortName} title`,
+          user_id: userId,
+          github_user: null,
+          first_name: 'Contact',
+          last_name: 'Test',
+          work_email: workEmail,
+          institution: 'Test Institution',
+          referral_source: null,
+        }),
+        expectedContactEmail,
+      })),
+    );
+
+    const allRequests = await selectAllCourseRequests();
+    for (const { requestId, expectedContactEmail } of requests) {
+      const listedRequest = allRequests.find((request) => request.id === requestId);
+      assert.isDefined(listedRequest);
+      assert.equal(listedRequest.contact_email, expectedContactEmail);
+
+      const selectedRequest = await selectCourseRequestById({ courseRequestId: requestId });
+      assert.equal(selectedRequest.contact_email, expectedContactEmail);
+    }
+  });
+
+  test('insert a course request', async () => {
     courseRequestId = await insertCourseRequest({
       short_name: shortName,
       title,
@@ -49,18 +131,18 @@ describe('Course requests', { timeout: 60_000 }, function () {
   });
 
   describe('deny a course request', () => {
-    test.sequential('deny the course request', async () => {
+    test('deny the course request', async () => {
       await trpcClient.courseRequests.deny.mutate({ courseRequestId });
     });
 
-    test.sequential('verify status is denied in database', async () => {
+    test('verify status is denied in database', async () => {
       const allRequests = await selectAllCourseRequests();
       const request = allRequests.find((r) => r.id === courseRequestId);
       assert.isDefined(request);
       assert.equal(request.approved_status, 'denied');
     });
 
-    test.sequential('verify denied badge is rendered on the page', async () => {
+    test('verify denied badge is rendered on the page', async () => {
       const response = await helperClient.fetchCheerio(allCourseRequestsAdminUrl);
       assert.isTrue(response.ok);
 
@@ -72,7 +154,7 @@ describe('Course requests', { timeout: 60_000 }, function () {
   });
 
   describe('dedicated course requests page', () => {
-    test.sequential('default course requests page shows pending requests', async () => {
+    test('default course requests page shows pending requests', async () => {
       const response = await helperClient.fetchCheerio(courseRequestsAdminUrl);
       assert.isTrue(response.ok);
 
@@ -84,7 +166,7 @@ describe('Course requests', { timeout: 60_000 }, function () {
       assert.strictEqual(requestCell.length, 0);
     });
 
-    test.sequential('all course requests page loads and shows all statuses', async () => {
+    test('all course requests page loads and shows all statuses', async () => {
       const response = await helperClient.fetchCheerio(allCourseRequestsAdminUrl);
       assert.isTrue(response.ok);
 
@@ -96,7 +178,7 @@ describe('Course requests', { timeout: 60_000 }, function () {
       assert.strictEqual(requestCell.text().trim(), `${shortName}: ${title}`);
     });
 
-    test.sequential('all course requests page shows "Updated By" column', async () => {
+    test('all course requests page shows "Updated By" column', async () => {
       const response = await helperClient.fetchCheerio(allCourseRequestsAdminUrl);
       assert.isTrue(response.ok);
 
@@ -110,7 +192,7 @@ describe('Course requests', { timeout: 60_000 }, function () {
     let secondRequestId: string;
     const secondShortName = 'CR TEST 202';
 
-    test.sequential('insert a new pending course request', async () => {
+    test('insert a new pending course request', async () => {
       secondRequestId = await insertCourseRequest({
         short_name: secondShortName,
         title: 'Second Test Course',
@@ -124,7 +206,7 @@ describe('Course requests', { timeout: 60_000 }, function () {
       });
     });
 
-    test.sequential('pending request has deny and approve buttons', async () => {
+    test('pending request has deny and approve buttons', async () => {
       const response = await helperClient.fetchCheerio(courseRequestsAdminUrl);
       assert.isTrue(response.ok);
 
@@ -136,13 +218,13 @@ describe('Course requests', { timeout: 60_000 }, function () {
       assert.include(rowHtml, 'Approve');
     });
 
-    test.sequential('deny the second request', async () => {
+    test('deny the second request', async () => {
       await trpcClient.courseRequests.deny.mutate({
         courseRequestId: secondRequestId,
       });
     });
 
-    test.sequential('denied request still has action buttons (can be re-approved)', async () => {
+    test('denied request still has action buttons (can be re-approved)', async () => {
       const response = await helperClient.fetchCheerio(allCourseRequestsAdminUrl);
       assert.isTrue(response.ok);
 
@@ -160,7 +242,7 @@ describe('Course requests', { timeout: 60_000 }, function () {
     const pendingShortName = 'CR TEST 303';
     const pendingTitle = 'Pending Test Course';
 
-    test.sequential('insert a pending course request', async () => {
+    test('insert a pending course request', async () => {
       pendingRequestId = await insertCourseRequest({
         short_name: pendingShortName,
         title: pendingTitle,
@@ -174,7 +256,7 @@ describe('Course requests', { timeout: 60_000 }, function () {
       });
     });
 
-    test.sequential('pending request does not appear on admin courses page', async () => {
+    test('pending request does not appear on admin courses page', async () => {
       const response = await helperClient.fetchCheerio(coursesAdminUrl);
       assert.isTrue(response.ok);
 
@@ -182,7 +264,7 @@ describe('Course requests', { timeout: 60_000 }, function () {
       assert.strictEqual(requestCell.length, 0);
     });
 
-    test.sequential('pending request appears on default course requests page', async () => {
+    test('pending request appears on default course requests page', async () => {
       const response = await helperClient.fetchCheerio(courseRequestsAdminUrl);
       assert.isTrue(response.ok);
 
@@ -191,7 +273,7 @@ describe('Course requests', { timeout: 60_000 }, function () {
       assert.strictEqual(requestCell.text().trim(), `${pendingShortName}: ${pendingTitle}`);
     });
 
-    test.sequential('pending request appears on all course requests page', async () => {
+    test('pending request appears on all course requests page', async () => {
       const response = await helperClient.fetchCheerio(allCourseRequestsAdminUrl);
       assert.isTrue(response.ok);
 
@@ -200,24 +282,21 @@ describe('Course requests', { timeout: 60_000 }, function () {
       assert.strictEqual(requestCell.text().trim(), `${pendingShortName}: ${pendingTitle}`);
     });
 
-    test.sequential('deny the pending request', async () => {
+    test('deny the pending request', async () => {
       await trpcClient.courseRequests.deny.mutate({
         courseRequestId: pendingRequestId,
       });
     });
 
-    test.sequential(
-      'denied request does NOT appear on admin courses page (pending only)',
-      async () => {
-        const response = await helperClient.fetchCheerio(coursesAdminUrl);
-        assert.isTrue(response.ok);
+    test('denied request does NOT appear on admin courses page (pending only)', async () => {
+      const response = await helperClient.fetchCheerio(coursesAdminUrl);
+      assert.isTrue(response.ok);
 
-        const requestCell = response.$(`td:contains("${pendingShortName}")`);
-        assert.equal(requestCell.length, 0);
-      },
-    );
+      const requestCell = response.$(`td:contains("${pendingShortName}")`);
+      assert.equal(requestCell.length, 0);
+    });
 
-    test.sequential('denied request does not appear on default course requests page', async () => {
+    test('denied request does not appear on default course requests page', async () => {
       const response = await helperClient.fetchCheerio(courseRequestsAdminUrl);
       assert.isTrue(response.ok);
 
@@ -225,7 +304,7 @@ describe('Course requests', { timeout: 60_000 }, function () {
       assert.strictEqual(requestCell.length, 0);
     });
 
-    test.sequential('denied request still appears on all course requests page', async () => {
+    test('denied request still appears on all course requests page', async () => {
       const response = await helperClient.fetchCheerio(allCourseRequestsAdminUrl);
       assert.isTrue(response.ok);
 

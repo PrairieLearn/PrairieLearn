@@ -1,22 +1,14 @@
-import { z } from 'zod';
-
 import { formatDate } from '@prairielearn/formatter';
 import { escapeHtml, html } from '@prairielearn/html';
 
+import type { LegacyAssessmentAccessRuleResult } from '../lib/assessment-access-control/authz-result.js';
 import type { AccessTimelineEntry } from '../lib/assessment-access-control/timeline.js';
-import { EnumModeSchema } from '../lib/db-types.js';
 
-export const AuthzAccessRuleSchema = z.object({
-  credit: z.string(),
-  time_limit_min: z.string(),
-  start_date: z.string(),
-  end_date: z.string(),
-  mode: EnumModeSchema.nullable(),
-  active: z.boolean().nullable(),
-});
-type AuthzAccessRule = z.infer<typeof AuthzAccessRuleSchema>;
-
-export function StudentAccessRulesPopover({ accessRules }: { accessRules: AuthzAccessRule[] }) {
+export function StudentAccessRulesPopover({
+  accessRules,
+}: {
+  accessRules: LegacyAssessmentAccessRuleResult[];
+}) {
   return html`
     <button
       type="button"
@@ -32,7 +24,11 @@ export function StudentAccessRulesPopover({ accessRules }: { accessRules: AuthzA
   `;
 }
 
-function StudentAccessRulesPopoverContent({ accessRules }: { accessRules: AuthzAccessRule[] }) {
+function StudentAccessRulesPopoverContent({
+  accessRules,
+}: {
+  accessRules: LegacyAssessmentAccessRuleResult[];
+}) {
   return html`
     <table class="table" aria-label="Access details">
       <tr>

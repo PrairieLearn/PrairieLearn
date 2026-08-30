@@ -1,5 +1,3 @@
-import * as path from 'path';
-
 import { Router } from 'express';
 import { z } from 'zod';
 
@@ -19,12 +17,11 @@ import {
   getStudentAssessmentUrl,
 } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
-import { computeScopedJsonHash } from '../../lib/editorUtil.js';
+import { computeScopedJsonHash, getAssessmentInfoJsonPath } from '../../lib/editorUtil.js';
 import { type AssessmentToolsConfig } from '../../lib/editors.js';
 import { courseRepoContentUrl } from '../../lib/github.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { selectNonPublicQuestionsInAssessment } from '../../lib/sharing-validation.js';
-import { encodePath } from '../../lib/uri-util.js';
 import { getCanonicalHost } from '../../lib/url.js';
 import { selectAssessmentHasInstances } from '../../models/assessment-instance.js';
 import { selectAssessmentModulesForCourse } from '../../models/assessment-module.js';
@@ -71,16 +68,11 @@ router.get(
       `${getPublicAssessmentUrl(course_instance.id, assessment.id)}/questions`,
       host,
     ).href;
-    const infoAssessmentPath = encodePath(
-      path.join(
-        'courseInstances',
-        course_instance.short_name,
-        'assessments',
-        assessment.tid!,
-        'infoAssessment.json',
-      ),
-    );
-    const fullInfoAssessmentPath = path.join(course.path, infoAssessmentPath);
+    const fullInfoAssessmentPath = getAssessmentInfoJsonPath({
+      course,
+      course_instance,
+      assessment,
+    });
 
     const origHash =
       (await computeScopedJsonHash<AssessmentJsonInput>(fullInfoAssessmentPath, settingsScope)) ??
@@ -108,7 +100,9 @@ router.get(
 
     const questionSharingEnabled = res.locals.question_sharing_enabled;
     const nonPublicQuestionsInAssessment =
-      !questionSharingEnabled || assessment.share_source_publicly
+      !questionSharingEnabled ||
+      assessment.share_source_publicly ||
+      !authz_data.has_course_permission_preview
         ? []
         : await selectNonPublicQuestionsInAssessment({ assessment_id: assessment.id });
 
@@ -154,7 +148,6 @@ router.get(
               assessmentSets={assessmentSets}
               assessmentModules={assessmentModules}
               courseInstance={course_instance}
-              isDevMode={config.devMode}
               assessmentTools={assessmentTools}
               zonePointsRange={zonePointsRange}
               nonPublicQuestionsInAssessment={nonPublicQuestionsInAssessment}

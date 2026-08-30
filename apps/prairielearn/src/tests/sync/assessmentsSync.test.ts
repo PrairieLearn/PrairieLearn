@@ -2,7 +2,7 @@
 import * as path from 'path';
 
 import fs from 'fs-extra';
-import { afterAll, assert, beforeAll, beforeEach, describe, it } from 'vitest';
+import { afterAll, assert, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
@@ -2944,29 +2944,22 @@ describe('Assessment syncing', () => {
 
       // This assessment has both valid and invalid exam UUIDs.
       const assessment = makeAssessment(courseData);
+      const invalidExamUuid = 'df12ea39-8d47-4825-ab22-bbc690a1fc20';
+      const validExamUuid = 'a817e4b9-b1b1-40b6-b076-c3a752dd8e72';
       assessment.allowAccess = [
-        {
-          mode: 'Exam',
-          examUuid: '00000000-0000-0000-0000-000000000000',
-        },
-        {
-          mode: 'Exam',
-          examUuid: '11111111-1111-1111-1111-111111111111',
-        },
+        { mode: 'Exam', examUuid: invalidExamUuid },
+        { mode: 'Exam', examUuid: validExamUuid },
       ];
       courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['fail'] = assessment;
 
       // Insert a `pt_exams` row for the valid exam UUID.
-      await sqldb.execute(sql.insert_pt_exam, { uuid: '11111111-1111-1111-1111-111111111111' });
+      await sqldb.execute(sql.insert_pt_exam, { uuid: validExamUuid });
 
       await util.writeAndSyncCourseData(courseData);
       const syncedAssessment = await findSyncedAssessment('fail');
       assert.isNotNull(syncedAssessment.sync_warnings);
-      assert.match(
-        syncedAssessment.sync_warnings,
-        /examUuid "00000000-0000-0000-0000-000000000000" not found./,
-      );
-      assert.notMatch(syncedAssessment.sync_warnings, /11111111-1111-1111-1111-111111111111/);
+      expect(syncedAssessment.sync_warnings).to.contain(`examUuid "${invalidExamUuid}" not found.`);
+      expect(syncedAssessment.sync_warnings).to.not.contain(validExamUuid);
     });
 
     it('does not validate exam UUIDs for assessments in an inaccessible course instance', async () => {
@@ -2988,7 +2981,7 @@ describe('Assessment syncing', () => {
       assessment.allowAccess = [
         {
           mode: 'Exam',
-          examUuid: '00000000-0000-0000-0000-000000000000',
+          examUuid: '2ba49357-1592-4f6e-9dab-f8ef3d969321',
         },
       ];
       courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['fail'] = assessment;

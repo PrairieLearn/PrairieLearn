@@ -13,7 +13,7 @@ jobs:
       - name: 'CLA Assistant'
         if: (github.event.comment.body == 'recheck' || github.event.comment.body == 'I have reviewed and hereby sign the CLA') || github.event_name == 'pull_request_target'
         # Pin to a specific version - this third-party action uses a personal access token
-        uses: cla-assistant/github-action@ca4a40a7d1004f18d9960b404b97e5f30a505a08
+        uses: cla-assistant/github-action@ca4a40a7d1004f18d9960b404b97e5f30a505a08 # v2.6.1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PERSONAL_ACCESS_TOKEN: ${{ secrets.CLA_PERSONAL_ACCESS_TOKEN }}
@@ -24,7 +24,7 @@ jobs:
           path-to-signatures: signatures.json
           path-to-document: https://github.com/PrairieLearn/cla/blob/main/CLA.md
           branch: main
-          allowlist: dependabot[bot],prairielearn-ci-bot[bot],coderabbitai[bot],Copilot,claude,nwalters512,mwest1066,mfsilva22,reteps,EduardoMVAz,austinbillings-pl,SybelBlue
+          allowlist: dependabot[bot],prairielearn-ci-bot[bot],coderabbitai[bot],Copilot,claude,nwalters512,mwest1066,mfsilva22,EduardoMVAz,austinbillings-pl,SybelBlue
           custom-pr-sign-comment: I have reviewed and hereby sign the CLA
           create-file-commit-message: Create signatures.json
           signed-commit-message: '$contributorName signed the CLA in https://github.com/PrairieLearn/PrairieLearn/pull/$pullRequestNo'

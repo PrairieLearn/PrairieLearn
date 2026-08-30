@@ -127,7 +127,10 @@ async function pullAndPushToECR(image: string, dockerAuth: DockerAuth, job: Serv
     docker.modem.followProgress(
       pullStream,
       (err) => {
-        if (err) reject(err);
+        if (err) {
+          reject(err);
+          return;
+        }
         resolve(null);
       },
       (output) => {
@@ -170,7 +173,10 @@ async function pullAndPushToECR(image: string, dockerAuth: DockerAuth, job: Serv
     docker.modem.followProgress(
       pushStream,
       (err) => {
-        if (err) reject(err);
+        if (err) {
+          reject(err);
+          return;
+        }
         resolve(null);
       },
       (output) => {

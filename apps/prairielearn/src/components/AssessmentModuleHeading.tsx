@@ -14,8 +14,7 @@ export function AssessmentModuleHeadingHtml({
   return html`
     ${assessment_module.name}
     <span class="text-muted">
-      (Auto-generated from use in an assessment; add this assessment module to your infoCourse.json
-      file to customize)
+      (Auto-generated from use in an assessment; edit this assessment module to customize)
     </span>
   `;
 }
@@ -34,8 +33,7 @@ export function AssessmentModuleHeading({
       {assessmentModule.name}
       <span className="text-muted">
         {' '}
-        (Auto-generated from use in an assessment; add this assessment module to your
-        infoCourse.json file to customize)
+        (Auto-generated from use in an assessment; edit this assessment module to customize)
       </span>
     </>
   );

@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 import { getSupportedAuthenticationProviders } from '../../lib/authn-providers.js';
 import { suggestTimezone as suggestTimezoneImpl } from '../../lib/course-request-ai.js';
+import { UidRegexpSchema } from '../../lib/uid-regexp.js';
 import { updateInstitutionAuthnProviders } from '../../models/institution-authn-provider.js';
 import { insertInstitution } from '../../models/institution.js';
 
@@ -36,7 +37,7 @@ const addInstitution = t.procedure
       shortName: z.string().trim().min(1),
       longName: z.string().trim().min(1),
       displayTimezone: z.string().trim().min(1),
-      uidRegexp: z.string().trim(),
+      uidRegexp: UidRegexpSchema,
       enabledAuthnProviderIds: z.array(z.string()),
     }),
   )

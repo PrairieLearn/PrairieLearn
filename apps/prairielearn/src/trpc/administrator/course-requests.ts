@@ -1,6 +1,7 @@
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
+import { throwAppError } from '@prairielearn/trpc/server';
 import { IdSchema } from '@prairielearn/zod';
 
 import { type StaffCourse, StaffCourseSchema } from '../../lib/client/safe-db-types.js';
@@ -15,12 +16,15 @@ import {
   selectInstitutionPrefix,
   updateCourseRequestNote,
 } from '../../lib/course-request.js';
+import {
+  GITHUB_USERNAME_VALIDATION_MESSAGE,
+  isValidGithubUsername,
+} from '../../lib/github-utils.js';
 import { checkGithubRepositoryExists, validateGithubCourseOwner } from '../../lib/github.js';
 import {
   selectOptionalCourseByGithubRepository,
   selectOptionalCourseByPath,
 } from '../../models/course.js';
-import { throwAppError } from '../app-errors.js';
 
 import { normalizeCoursePathInput } from './course-path.js';
 import { requireAdministrator, t } from './init.js';
@@ -72,7 +76,13 @@ const createCourse = t.procedure
       path: z.string().min(1, 'Path is required'),
       repoShortName: z.string().min(1, 'Repository name is required'),
       githubCourseOwner: z.string().min(1, 'GitHub organization is required'),
-      githubUser: z.string(),
+      githubUser: z
+        .string()
+        .trim()
+        .refine((value) => value.length === 0 || isValidGithubUsername(value), {
+          message: GITHUB_USERNAME_VALIDATION_MESSAGE,
+        })
+        .transform((value) => (value.length > 0 ? value : null)),
     }),
   )
   .output(z.object({ jobSequenceId: z.string() }))
@@ -117,7 +127,7 @@ const createCourse = t.procedure
       path: normalizedPath,
       repoShortName: input.repoShortName,
       githubCourseOwner: input.githubCourseOwner,
-      githubUser: input.githubUser.trim().length > 0 ? input.githubUser.trim() : null,
+      githubUser: input.githubUser,
       authnUser: ctx.authn_user,
     });
     return { jobSequenceId };
@@ -155,7 +165,7 @@ const checkInstructorLegitimacyProcedure = t.procedure
     return await checkInstructorLegitimacy({
       instructorFirstName: courseRequest.first_name,
       instructorLastName: courseRequest.last_name,
-      instructorEmail: courseRequest.work_email,
+      instructorEmail: courseRequest.contact_email,
       institution: courseRequest.institution,
       userDisplayName: courseRequest.user_name,
       userUid: courseRequest.user_uid,
@@ -181,7 +191,8 @@ const suggestInstitutionPrefixProcedure = t.procedure
     z.object({
       institutionLongName: z.string(),
       institutionShortName: z.string(),
-      emailDomain: z.string(),
+      contactEmailDomain: z.string(),
+      accountUidDomain: z.string(),
     }),
   )
   .output(
@@ -195,7 +206,8 @@ const suggestInstitutionPrefixProcedure = t.procedure
     return await suggestInstitutionPrefix({
       institutionLongName: input.institutionLongName,
       institutionShortName: input.institutionShortName,
-      emailDomain: input.emailDomain,
+      contactEmailDomain: input.contactEmailDomain,
+      accountUidDomain: input.accountUidDomain,
     });
   });
 

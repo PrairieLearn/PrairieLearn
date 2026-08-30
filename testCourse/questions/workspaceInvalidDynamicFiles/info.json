@@ -6,8 +6,6 @@
   "type": "v3",
   "workspaceOptions": {
     "image": "prairielearn/workspace-xtermjs",
-    "port": 8080,
-    "home": "/home/prairie",
     "gradedFiles": []
   }
 }

@@ -5,64 +5,55 @@ on:
     branches:
       - 'master'
 
+# Avoid concurrent version-PR updates or package publish attempts.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+
 jobs:
   release:
     name: Release
     if: github.repository == 'PrairieLearn/PrairieLearn'
     runs-on: ubuntu-latest
     permissions:
+      contents: read
       # Needed for OIDC trusted publishing
       id-token: write
     steps:
+      - name: Checkout repo
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          # Changesets needs the full history to generate changelogs with the correct commits.
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
+
+      - name: Set up Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24'
+          package-manager-cache: false
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # The App token allows checks to run automatically on the pull request created below.
       - name: Generate token
         id: generate-token
-        uses: actions/create-github-app-token@v3
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
         with:
           app-id: ${{ secrets.CI_BOT_APP_ID }}
           private-key: ${{ secrets.CI_BOT_APP_PRIVATE_KEY }}
+          permission-contents: write
+          permission-pull-requests: write
 
-      - name: Checkout Repo
-        uses: actions/checkout@v6
+      - name: Create release pull request or publish to npm
+        uses: changesets/action@22ccf9aa43179fe9e27dc62e575971d28cce197c # v2.0.0
         with:
-          token: ${{ steps.generate-token.outputs.token }}
-          # This makes Actions fetch all Git history so that Changesets can generate changelogs with the correct commits
-          fetch-depth: 0
-
-      - name: Set up Node
-        uses: actions/setup-node@v6
-        with:
-          node-version: '24'
-          cache: 'yarn'
-
-      # We need to be running the latest version of `npm` to support OIDC trusted publishing
-      - name: Upgrade npm
-        run: npm install -g npm@latest
-
-      - name: Preinstall node-gyp headers
-        run: yarn dlx node-gyp install
-
-      - name: Install Dependencies
-        run: yarn --immutable
-
-      # `changesets` will use Prettier to format our changelogs. Because our
-      # config points to a custom plugin, we need to build that plugin first.
-      # We'll build everything for good measure.
-      - name: Build Packages
-        run: make build
-
-      - name: Create Release Pull Request or Publish to npm
-        id: changesets
-        uses: changesets/action@v1
-        with:
-          # This invokes the `version` script in `package.json`, which will run
-          # `changeset version` and then `yarn`. We need to run `yarn` in order
-          # to update `yarn.lock`:  https://github.com/changesets/action/issues/170
-          version: yarn run version
-          # This invokes the `release` script in `package.json`, which will build
-          # all the packages and then invoke `changeset publish`.
-          publish: yarn run release
-          # Avoid creating GitHub releaseses, as we don't need them.
-          # This complements `--no-git-tag` in the `release` script in `package.json`.
-          createGithubReleases: false
-        env:
-          GITHUB_TOKEN: ${{ steps.generate-token.outputs.token }}
+          # Updating versions must be followed by an install to update pnpm-lock.yaml.
+          version-script: pnpm run version
+          publish-script: pnpm run release
+          github-token: ${{ steps.generate-token.outputs.token }}
+          # PrairieLearn does not use per-package GitHub releases or remote package tags.
+          create-github-releases: false
+          push-git-tags: false

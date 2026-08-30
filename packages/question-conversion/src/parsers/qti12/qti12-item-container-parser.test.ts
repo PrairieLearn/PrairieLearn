@@ -268,7 +268,7 @@ describe('QTI12ItemContainerParser', async () => {
   });
 
   describe('feedback parsing', async () => {
-    it('extracts correct_fb and general_incorrect_fb via flow_mat path', async () => {
+    it('converts Canvas equation images in prompts and question-wide feedback', async () => {
       const xml = `<?xml version="1.0"?>
 <questestinterop xmlns="http://www.imsglobal.org/xsd/ims_qtiasiv1p2">
   <assessment ident="a1" title="Q">
@@ -278,7 +278,7 @@ describe('QTI12ItemContainerParser', async () => {
           <qtimetadatafield><fieldlabel>question_type</fieldlabel><fieldentry>multiple_choice_question</fieldentry></qtimetadatafield>
         </qtimetadata></itemmetadata>
         <presentation>
-          <material><mattext texttype="text/html">&lt;p&gt;Pick&lt;/p&gt;</mattext></material>
+          <material><mattext texttype="text/html">&lt;p&gt;&lt;img data-equation-content="\\alpha" src="equation.svg"&gt;&lt;/p&gt;</mattext></material>
           <response_lid ident="response1" rcardinality="Single">
             <render_choice>
               <response_label ident="a1"><material><mattext>A</mattext></material></response_label>
@@ -291,25 +291,41 @@ describe('QTI12ItemContainerParser', async () => {
             <setvar varname="SCORE">100</setvar>
           </respcondition>
         </resprocessing>
+        <itemfeedback ident="general_fb">
+          <flow_mat><material><mattext texttype="text/html">&lt;p&gt;Remember the definition.&lt;/p&gt;</mattext></material></flow_mat>
+        </itemfeedback>
         <itemfeedback ident="correct_fb">
-          <flow_mat><material><mattext texttype="text/html">&lt;p&gt;Well done!&lt;/p&gt;</mattext></material></flow_mat>
+          <flow_mat><material><mattext texttype="text/html">&lt;p&gt;&lt;img data-equation-content="x^2" src="equation.svg"&gt;&lt;/p&gt;</mattext></material></flow_mat>
         </itemfeedback>
         <itemfeedback ident="general_incorrect_fb">
           <flow_mat><material><mattext texttype="text/html">&lt;p&gt;Try again.&lt;/p&gt;</mattext></material></flow_mat>
+        </itemfeedback>
+      </item>
+      <item ident="q2" title="Q2">
+        <itemmetadata><qtimetadata>
+          <qtimetadatafield><fieldlabel>question_type</fieldlabel><fieldentry>text_only_question</fieldentry></qtimetadatafield>
+        </qtimetadata></itemmetadata>
+        <presentation>
+          <material><mattext texttype="text/html">&lt;p&gt;Read this&lt;/p&gt;</mattext></material>
+        </presentation>
+        <itemfeedback ident="general_fb">
+          <flow_mat><material><mattext texttype="text/html">&lt;p&gt;General only.&lt;/p&gt;</mattext></material></flow_mat>
         </itemfeedback>
       </item>
     </section>
   </assessment>
 </questestinterop>`;
       const result = await parser.parse(xml);
-      const q = result.questions[0];
-      assert.equal(q.feedback?.correct, '<p>Well done!</p>');
+      const [q, generalOnly] = result.questions;
+      assert.equal(q.promptHtml, '<p>$\\alpha$</p>');
+      assert.equal(q.feedback?.general, '<p>Remember the definition.</p>');
+      assert.equal(q.feedback?.correct, '<p>$x^2$</p>');
       assert.equal(q.feedback?.incorrect, '<p>Try again.</p>');
+      assert.deepEqual(generalOnly.feedback, { general: '<p>General only.</p>' });
     });
 
-    it('falls back to per-answer {ident}_fb feedback when global idents are absent', async () => {
+    it('extracts per-answer {ident}_fb feedback', async () => {
       // This is the Canvas pattern for true/false and MC questions with per-answer feedback.
-      // The correct answer's {ident}_fb becomes feedback.correct; an incorrect one becomes feedback.incorrect.
       const xml = `<?xml version="1.0"?>
 <questestinterop xmlns="http://www.imsglobal.org/xsd/ims_qtiasiv1p2">
   <assessment ident="a1" title="Q">
@@ -464,6 +480,38 @@ describe('QTI12ItemContainerParser', async () => {
         q.promptHtml,
         '<p>Which collision resolution method tries different sequences?</p>',
       );
+    });
+
+    it('removes Canvas answer blocks from prompt HTML', async () => {
+      const xml = `<?xml version="1.0"?>
+<questestinterop xmlns="http://www.imsglobal.org/xsd/ims_qtiasiv1p2">
+  <assessment ident="a1" title="Quiz">
+    <section ident="root_section">
+      <item ident="q1" title="Leaky prompt">
+        <itemmetadata><qtimetadata>
+          <qtimetadatafield><fieldlabel>question_type</fieldlabel><fieldentry>multiple_choice_question</fieldentry></qtimetadatafield>
+        </qtimetadata></itemmetadata>
+        <presentation>
+          <material><mattext texttype="text/html">&lt;p&gt;Pick one.&lt;/p&gt;&lt;div class="answers"&gt;&lt;div class="answers_wrapper"&gt;&lt;div&gt;Correct answer&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;</mattext></material>
+          <response_lid ident="response1" rcardinality="Single">
+            <render_choice>
+              <response_label ident="a"><material><mattext>A</mattext></material></response_label>
+              <response_label ident="b"><material><mattext>B</mattext></material></response_label>
+            </render_choice>
+          </response_lid>
+        </presentation>
+        <resprocessing>
+          <respcondition continue="No">
+            <conditionvar><varequal respident="response1">a</varequal></conditionvar>
+            <setvar varname="SCORE">100</setvar>
+          </respcondition>
+        </resprocessing>
+      </item>
+    </section>
+  </assessment>
+</questestinterop>`;
+      const result = await parser.parse(xml);
+      assert.equal(result.questions[0].promptHtml, '<p>Pick one.</p>');
     });
   });
 

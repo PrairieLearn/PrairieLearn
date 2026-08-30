@@ -16,9 +16,10 @@ import {
 import { useForm } from 'react-hook-form';
 
 import { run } from '@prairielearn/run';
+import { getAppError } from '@prairielearn/trpc/client';
+import { AppErrorAlert } from '@prairielearn/trpc/react';
 import { useModalState } from '@prairielearn/ui';
 
-import { AppErrorAlert, getAppError } from '../../../lib/client/errors.js';
 import type { StaffAssessment, StaffAssessmentSet } from '../../../lib/client/safe-db-types.js';
 import {
   getAssessmentDownloadUrl,
@@ -239,18 +240,14 @@ function UploadAssessmentGroupsModal({
         </Modal.Header>
         <Modal.Body>
           <p>Upload a CSV file in the format of:</p>
-          <code className="text-dark">
-            group_name,uid
-            <br />
-            groupA,one@example.com
-            <br />
-            groupA,two@example.com
-            <br />
-            groupB,three@example.com
-            <br />
-            groupB,four@example.com
-          </code>
-          <p className="mt-3">
+          <pre className="ms-4">
+            {`group_name,uid
+groupA,one@example.com
+groupA,two@example.com
+groupB,three@example.com
+groupB,four@example.com`}
+          </pre>
+          <p>
             The <code>group_name</code> column should be a unique identifier for each group. To
             change the grouping, link uids to the group name.
           </p>

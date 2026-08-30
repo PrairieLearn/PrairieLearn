@@ -18,6 +18,8 @@ export const requiredTableFields = {
   assessments: ['assessment_id'],
   institution_settings: ['institution_id'],
   institutions: ['institution_id'],
+  lti13_instances: ['institution_id'],
+  lti13_users: ['institution_id', 'subject_user_id'],
   enrollments: ['course_instance_id', 'subject_user_id', 'action_detail'],
   student_label_enrollments: ['enrollment_id', 'action_detail'],
   assessment_access_control_rules: ['assessment_id'],
@@ -68,6 +70,14 @@ export type SupportedTableActionCombination =
       actionDetail?: null;
     }
   | {
+      tableName: 'lti13_instances';
+      actionDetail?: 'roster_sync_allowed' | null;
+    }
+  | {
+      tableName: 'lti13_users';
+      actionDetail?: 'sub' | null;
+    }
+  | {
       tableName: 'institution_settings';
       actionDetail?: 'course_request_message' | 'github_course_owner' | null;
     }
@@ -83,6 +93,7 @@ export type SupportedTableActionCombination =
         | 'invited_by_manual_sync'
         | 'invitation_accepted'
         | 'invitation_rejected'
+        | 'identity_merged'
         | 'blocked'
         | 'unblocked'
         | 'unblocked_by_manual_sync'

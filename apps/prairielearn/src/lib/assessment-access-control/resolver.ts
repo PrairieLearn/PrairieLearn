@@ -90,16 +90,21 @@ export interface AccessControlResolverInput {
   prairieTestReservations: PrairieTestReservation[];
 }
 
+export type AccessControlAuthorization = 'granted' | 'denied' | 'requires-completed-instance';
+
 export interface AccessControlResolverResult {
-  /** Whether the student is authorized to access the assessment. */
-  authorized: boolean;
+  /**
+   * Whether access is granted, denied, or conditional on the student having a
+   * completed assessment instance.
+   */
+  authorization: AccessControlAuthorization;
   credit: number | null;
   creditDateString: string | null;
   timeLimitMin: number | null;
   password: string | null;
   /**
    * Whether the student can currently submit work.
-   * `authorized: true, submittable: false` is the review-only state.
+   * `authorization: 'granted', submittable: false` is the review-only state.
    * Translates to the legacy `authz_result.active` field.
    */
   submittable: boolean;
@@ -118,11 +123,11 @@ export interface AccessControlResolverResult {
    */
   visibilitySource: 'default' | 'afterComplete' | 'prairieTest';
   /**
-   * True when the assessment has reached a "complete" phase from the
-   * resolver's perspective: a non-submittable after-last-deadline segment
-   * under date control, or a read-only PrairieTest reservation. Instance-
-   * specific completion (closed instance or expired time limit) is applied
-   * separately in the modern authz layer.
+   * True when the assessment has reached a "complete" visibility phase from
+   * the resolver's perspective: a non-submittable after-last-deadline segment
+   * under date control, or a read-only PrairieTest reservation.
+   * Instance-specific completion (closed instance or expired time limit) is
+   * applied separately in the modern authz layer.
    */
   complete: boolean;
   /**
@@ -170,7 +175,7 @@ const HIDDEN = Object.freeze({
 const EMPTY_ACCESS_TIMELINE: readonly Readonly<AccessTimelineEntry>[] = Object.freeze([]);
 
 const UNAUTHORIZED_RESULT = Object.freeze({
-  authorized: false,
+  authorization: 'denied',
   credit: 0,
   creditDateString: 'None',
   timeLimitMin: null,
@@ -187,7 +192,7 @@ const UNAUTHORIZED_RESULT = Object.freeze({
 } satisfies Readonly<AccessControlResolverResult>);
 
 const STAFF_OVERRIDE_RESULT = Object.freeze({
-  authorized: true,
+  authorization: 'granted',
   credit: 100,
   creditDateString: '100% (Staff override)',
   timeLimitMin: null,
@@ -478,7 +483,7 @@ export function resolveAccessControl(
     const examVisibility = computePrairieTestVisibility(matched);
     const submittable = !matched.readOnly;
     return {
-      authorized: true,
+      authorization: 'granted',
       credit: 100,
       creditDateString: formatCreditDateString(100, submittable, null, displayTimezone),
       timeLimitMin: null,
@@ -500,20 +505,21 @@ export function resolveAccessControl(
   const hasRelease = !!rule.dateControl?.release;
   const shouldShowBeforeRelease = rule.beforeRelease?.listed ?? false;
 
-  // No DC release configured: either PT-gated (review-only once visibility
-  // unlocks; `beforeRelease.listed` is ignored) or a date-less rule (deny).
+  // A PT-gated assessment without date control has no assessment-level access
+  // path outside a reservation. Carry the after-complete policy forward so a
+  // completed instance can be authorized separately, but do not treat an
+  // unstarted assessment as complete merely because no reservation is active.
   if (!hasRelease) {
     if (rule.prairieTestExams.length > 0) {
-      const reviewMode = afterCompleteVisibility.showQuestions;
       return {
         ...UNAUTHORIZED_RESULT,
-        authorized: reviewMode,
-        visibility: afterCompleteVisibility,
+        authorization: afterCompleteVisibility.showQuestions
+          ? 'requires-completed-instance'
+          : 'denied',
         afterCompleteVisibility,
-        visibilitySource: 'afterComplete',
-        complete: true,
+        visibility: HIDDEN,
         accessTimeline,
-        showBeforeRelease: reviewMode ? false : shouldShowBeforeRelease,
+        showBeforeRelease: shouldShowBeforeRelease,
       };
     }
     return {
@@ -542,25 +548,12 @@ export function resolveAccessControl(
     };
   }
 
-  // afterLastDeadline omitted = no access at all (distinct from
-  // allowSubmissions: false which is view-only).
-  if (!current.accessible) {
-    return {
-      ...UNAUTHORIZED_RESULT,
-      visibility: afterCompleteVisibility,
-      afterCompleteVisibility,
-      visibilitySource: 'afterComplete',
-      complete: true,
-      accessTimeline,
-    };
-  }
-
   const complete = current.kind === 'afterLastDeadline' && !current.submittable;
   const visibility = complete ? afterCompleteVisibility : VISIBLE;
   const visibilitySource = complete ? 'afterComplete' : 'default';
 
   return {
-    authorized: true,
+    authorization: 'granted',
     credit: current.credit,
     creditDateString: formatCreditDateString(
       current.credit,

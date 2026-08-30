@@ -4,17 +4,17 @@ import { memo, useState } from 'react';
 import { Alert, Modal } from 'react-bootstrap';
 import { FormProvider, useForm } from 'react-hook-form';
 
+import { getAppError } from '@prairielearn/trpc/client';
+import { QueryClientProviderDebug } from '@prairielearn/trpc/react';
 import { OverlayTrigger } from '@prairielearn/ui';
+import type { Timezone } from '@prairielearn/utils/timezone';
 
 import {
   AdministratorCourseFormFields,
   type CourseFormFieldValues,
   useInstitutionPrefix,
 } from '../../components/AdminstratorCourseFormFields.js';
-import { getAppError } from '../../lib/client/errors.js';
 import type { AdminInstitution } from '../../lib/client/safe-db-types.js';
-import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
-import type { Timezone } from '../../lib/timezone.shared.js';
 import { createAdministratorTrpcClient } from '../../trpc/administrator/client.js';
 import { TRPCProvider, useTRPC } from '../../trpc/administrator/context.js';
 import type { AdminCourseError } from '../../trpc/administrator/courses.js';
@@ -248,7 +248,11 @@ function CourseDeleteForm({
           id={`inputConfirm${id}`}
           aria-invalid={errors.short_name ? true : undefined}
           aria-errormessage={errors.short_name ? `inputConfirm${id}-error` : undefined}
-          {...register('short_name')}
+          {...register('short_name', {
+            validate: (value) =>
+              value === row.course.short_name ||
+              `Type "${row.course.short_name}" exactly to confirm deletion.`,
+          })}
         />
         {errors.short_name && (
           <div id={`inputConfirm${id}-error`} className="invalid-feedback">
@@ -494,14 +498,6 @@ function CourseUpdateColumnForm({
           aria-label={label}
           {...register('value', {
             required: required && `Enter a ${label}`,
-            pattern:
-              columnName === 'short_name'
-                ? {
-                    value: /^[A-Z]+ [A-Z0-9]+$/,
-                    message:
-                      'The course rubric and number should be a series of upper case letters, followed by a space, followed by a series of numbers and/or letters.',
-                  }
-                : undefined,
           })}
         />
         {errors.value && <div className="invalid-feedback">{errors.value.message}</div>}

@@ -18,6 +18,7 @@ import {
   StaffCourseSchema,
   StaffEnrollmentSchema,
   StaffInstitutionSchema,
+  StaffJobSchema,
   StaffJobSequenceSchema,
   StaffQuestionSchema,
   StaffTagSchema,
@@ -309,12 +310,12 @@ const minimalRawStaffEnrollment: z.input<typeof RawStaffEnrollmentSchema> = {
   created_at: new Date(),
   first_joined_at: new Date(),
   id: '1',
-  lti_managed: false,
-  pending_lti13_email: null,
-  pending_lti13_instance_id: null,
-  pending_lti13_name: null,
+  pending_email: null,
+  pending_lti13_course_instance_id: null,
   pending_lti13_sub: null,
+  pending_name: null,
   pending_uid: null,
+  pending_uin: null,
   status: 'joined',
   user_id: '1',
 };
@@ -324,7 +325,6 @@ const minimalStudentEnrollment: z.input<typeof RawStudentEnrollmentSchema> = {
   created_at: new Date(),
   first_joined_at: new Date(),
   id: '1',
-  lti_managed: false,
   pending_uid: null,
   status: 'joined',
   user_id: null,
@@ -444,12 +444,12 @@ const minimalStaffEnrollment: z.input<typeof StaffEnrollmentSchema> = {
   created_at: null,
   first_joined_at: null,
   id: '9',
-  lti_managed: false,
-  pending_lti13_email: null,
-  pending_lti13_instance_id: null,
-  pending_lti13_name: null,
+  pending_email: null,
+  pending_lti13_course_instance_id: null,
   pending_lti13_sub: null,
+  pending_name: null,
   pending_uid: null,
+  pending_uin: null,
   status: 'joined',
   user_id: null,
 };
@@ -482,23 +482,29 @@ const minimalAdminInstitutionWithSettings: z.input<typeof AdminInstitutionWithSe
   },
 };
 
-const minimalStaffJobSequence: z.input<typeof StaffJobSequenceSchema> = {
-  assessment_id: '2',
-  assessment_question_id: null,
-  authn_user_id: '4',
-  course_id: '1',
-  course_instance_id: '3',
-  course_request_id: null,
-  description: 'Regrade assessment',
+const minimalStaffJob: z.input<typeof StaffJobSchema> = {
+  arguments: ['--force'],
+  command: 'sync',
+  description: 'Sync course',
+  error_message: null,
+  exit_code: null,
+  exit_signal: null,
   finish_date: null,
+  id: '13',
+  number_in_sequence: 1,
+  output: 'Done',
+  start_date: new Date(),
+  status: 'Success',
+  working_directory: null,
+};
+
+const minimalStaffJobSequence: z.input<typeof StaffJobSequenceSchema> = {
+  description: 'Regrade assessment',
   id: '12',
   legacy: false,
   number: 1,
   start_date: new Date(),
   status: 'Success',
-  stop_requested_by_authn_user_id: null,
-  type: 'regrade_assessment',
-  user_id: '4',
 };
 
 const minimalStaffQuestion: z.input<typeof StaffQuestionSchema> = {
@@ -665,14 +671,28 @@ describe('safe-db-types schemas', () => {
   });
 
   it('parses valid RawStaffEnrollment and drops extra fields', () => {
-    const parsed = RawStaffEnrollmentSchema.parse({ ...minimalRawStaffEnrollment, extra: 123 });
+    const parsed = RawStaffEnrollmentSchema.parse({
+      ...minimalRawStaffEnrollment,
+      extra: 123,
+      is_guest: true,
+      lti_managed: false,
+    });
     expect(parsed).not.toHaveProperty('extra');
+    expect(parsed).not.toHaveProperty('is_guest');
+    expect(parsed).not.toHaveProperty('lti_managed');
     expect(parsed).toMatchObject(minimalRawStaffEnrollment);
   });
 
   it('parses valid RawStudentEnrollment and drops extra fields', () => {
-    const parsed = RawStudentEnrollmentSchema.parse({ ...minimalStudentEnrollment, extra: 123 });
+    const parsed = RawStudentEnrollmentSchema.parse({
+      ...minimalStudentEnrollment,
+      extra: 123,
+      is_guest: true,
+      lti_managed: false,
+    });
     expect(parsed).not.toHaveProperty('extra');
+    expect(parsed).not.toHaveProperty('is_guest');
+    expect(parsed).not.toHaveProperty('lti_managed');
     expect(parsed).toMatchObject(minimalStudentEnrollment);
   });
 
@@ -786,9 +806,28 @@ describe('safe-db-types schemas', () => {
     expect(parsed).toMatchObject(minimalAdminInstitutionWithSettings);
   });
 
-  it('parses valid StaffJobSequence and drops extra fields', () => {
-    const parsed = StaffJobSequenceSchema.parse({ ...minimalStaffJobSequence, extra: 123 });
+  it('parses valid StaffJob and drops extra fields', () => {
+    const parsed = StaffJobSchema.parse({ ...minimalStaffJob, data: {}, env: {}, extra: 123 });
+    expect(parsed).not.toHaveProperty('data');
+    expect(parsed).not.toHaveProperty('env');
     expect(parsed).not.toHaveProperty('extra');
+    expect(parsed).toMatchObject(minimalStaffJob);
+  });
+
+  it('parses valid StaffJobSequence and drops extra fields', () => {
+    const parsed = StaffJobSequenceSchema.parse({
+      ...minimalStaffJobSequence,
+      assessment_id: '2',
+      authn_user_id: '4',
+      course_id: '1',
+      extra: 123,
+      user_id: '4',
+    });
+    expect(parsed).not.toHaveProperty('assessment_id');
+    expect(parsed).not.toHaveProperty('authn_user_id');
+    expect(parsed).not.toHaveProperty('course_id');
+    expect(parsed).not.toHaveProperty('extra');
+    expect(parsed).not.toHaveProperty('user_id');
     expect(parsed).toMatchObject(minimalStaffJobSequence);
   });
 

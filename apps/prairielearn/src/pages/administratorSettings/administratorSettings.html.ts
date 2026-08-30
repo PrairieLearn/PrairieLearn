@@ -30,6 +30,24 @@ export function AdministratorSettings({
     options: {
       fullWidth: true,
     },
+    headContent: html`
+      <script type="module">
+        // This script has type="module" so it's deferred until after the DOM is loaded.
+        const invalidateButton = document.getElementById('invalidate-render-cache');
+        const confirmInvalidateContainer = document.getElementById(
+          'confirm-invalidate-cache-container',
+        );
+        const cancelInvalidateButton = document.getElementById('cancel-invalidate-render-cache');
+        invalidateButton.addEventListener('click', () => {
+          confirmInvalidateContainer.classList.remove('d-none');
+          invalidateButton.classList.add('d-none');
+        });
+        cancelInvalidateButton.addEventListener('click', () => {
+          invalidateButton.classList.remove('d-none');
+          confirmInvalidateContainer.classList.add('d-none');
+        });
+      </script>
+    `,
     content: html`
       <h1 class="visually-hidden">Administrator Settings</h1>
       <!-- Chunk generation -->
@@ -68,11 +86,7 @@ export function AdministratorSettings({
             <button id="invalidate-render-cache" type="button" class="btn btn-danger">
               Invalidate question render cache
             </button>
-            <div
-              id="confirm-invalidate-cache-container"
-              class="confirm-invalidate-cache"
-              style="display: none;"
-            >
+            <div id="confirm-invalidate-cache-container" class="confirm-invalidate-cache d-none">
               <button id="confirm-invalidate-render-cache" type="submit" class="btn btn-danger">
                 Confirm invalidate cache
               </button>
@@ -81,21 +95,6 @@ export function AdministratorSettings({
               </button>
             </div>
           </form>
-          <script>
-            $(function () {
-              var invalidateButton = $('#invalidate-render-cache');
-              var confirmInvalidateContainer = $('#confirm-invalidate-cache-container');
-              var cancelInvalidateButton = $('#cancel-invalidate-render-cache');
-              invalidateButton.click(function () {
-                confirmInvalidateContainer.show();
-                invalidateButton.hide();
-              });
-              cancelInvalidateButton.click(function () {
-                invalidateButton.show();
-                confirmInvalidateContainer.hide();
-              });
-            });
-          </script>
           ${config.newsFeedUrl
             ? html`
                 <hr />

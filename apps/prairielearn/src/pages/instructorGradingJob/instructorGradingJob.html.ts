@@ -4,6 +4,7 @@ import { formatDate } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
 
 import { PageLayout } from '../../components/PageLayout.js';
+import { compiledScriptTag } from '../../lib/assets.js';
 import { GradingJobSchema, QuestionSchema, UserSchema, VariantSchema } from '../../lib/db-types.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
 
@@ -46,6 +47,7 @@ export function InstructorGradingJob({
       type: 'instructor',
       page: 'course_instance' in resLocals ? 'instance_admin' : 'course_admin',
     },
+    headContent: compiledScriptTag('instructorGradingJobClient.ts'),
     content: html`
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">
@@ -175,32 +177,15 @@ export function InstructorGradingJob({
         <div class="card-body">
           ${gradingJobRow.grading_job.s3_bucket && gradingJobRow.grading_job.s3_root_key
             ? html`
-                <script>
-                  $(() => {
-                    const outputUrl = document.getElementById('job-output').dataset.outputUrl;
-
-                    $.get(outputUrl)
-                      .done(function (data) {
-                        $('#job-output-loading').hide();
-                        $('#job-output').text(data);
-                        $('#job-output').show();
-                      })
-                      .fail(function () {
-                        $('#job-output-loading').hide();
-                        $('#job-output').text('Unable to load grader results');
-                        $('#job-output').show();
-                      });
-                  });
-                </script>
                 <pre
-                  class="bg-dark text-white rounded p-3 mb-0"
+                  class="bg-dark text-white rounded p-3 mb-0 d-none"
                   id="job-output"
-                  style="display: none;"
                   data-output-url="${resLocals.urlPrefix}/grading_job/${gradingJobRow.grading_job
                     .id}/file/output.log"
                 ></pre>
                 <div id="job-output-loading" class="w-100 text-center">
-                  <i class="fa fa-spinner fa-spin fa-2x"></i>
+                  <i class="fa fa-spinner fa-spin fa-2x" aria-hidden="true"></i>
+                  <span class="visually-hidden">Loading grading job output…</span>
                 </div>
               `
             : gradingJobRow.grading_job.output

@@ -193,21 +193,15 @@ export async function syncDiskToSqlWithLock(
       });
     });
 
-    const enhancedAccessControlEnabled = await features.enabled('enhanced-access-control', {
-      institution_id: course.institution_id,
-      course_id: course.id,
+    await timed('Validated access control', async () => {
+      await async.eachLimit(
+        Object.entries(courseData.courseInstances),
+        3,
+        async ([ciid, { assessments }]) => {
+          await validateAccessControl(courseInstanceIds[ciid], assessments);
+        },
+      );
     });
-    if (enhancedAccessControlEnabled) {
-      await timed('Validated access control', async () => {
-        await async.eachLimit(
-          Object.entries(courseData.courseInstances),
-          3,
-          async ([ciid, { assessments }]) => {
-            await validateAccessControl(courseInstanceIds[ciid], assessments);
-          },
-        );
-      });
-    }
 
     await timed('Synced sharing sets', () =>
       syncSharingSets.sync(course.id, courseData, questionIds),
@@ -225,17 +219,18 @@ export async function syncDiskToSqlWithLock(
         3,
         async ([ciid, courseInstanceData]) => {
           const courseInstanceId = courseInstanceIds[ciid];
+          const courseInstance = await selectCourseInstanceById(courseInstanceId);
           const assessmentIds = await timed(`Synced assessments for ${ciid}`, () =>
             syncAssessments.sync(
               course.id,
               courseInstanceId,
+              courseInstance.display_timezone,
               courseInstanceData,
               questionIds,
-              enhancedAccessControlEnabled,
             ),
           );
 
-          if (assessmentIds.name_to_id_map && enhancedAccessControlEnabled) {
+          if (assessmentIds.name_to_id_map) {
             const idMap = assessmentIds.name_to_id_map;
             await timed(`Synced access control for ${ciid}`, async () => {
               const inputs: AccessControlSyncInput[] = [];
@@ -249,7 +244,7 @@ export async function syncDiskToSqlWithLock(
                 inputs.push({ assessmentId, rules: assessment.data?.accessControl ?? [] });
               }
 
-              await syncAccessControl(courseInstanceId, inputs);
+              await syncAccessControl(courseInstanceId, courseInstance.display_timezone, inputs);
             });
           }
         },

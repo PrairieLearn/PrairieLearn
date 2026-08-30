@@ -1,5 +1,36 @@
 # @prairielearn/postgres
 
+## 7.1.3
+
+### Patch Changes
+
+- b98ca1c: Update Unicorn overrides for v73 and address selected correctness-focused lint findings.
+
+## 7.1.2
+
+### Patch Changes
+
+- 38ef3b6: Honor downstream backpressure when streaming rows from a PostgreSQL cursor.
+- df28e68: Bump dependencies
+
+## 7.1.1
+
+### Patch Changes
+
+- 4a0ee46: Bump dependencies
+
+## 7.1.0
+
+### Minor Changes
+
+- fd27a2a: Export `escapeIdentifier` for safely constructing SQL queries with dynamic identifiers.
+
+## 7.0.0
+
+### Major Changes
+
+- 288ff13: Upgrade to Zod 4. Zod is part of these packages' public API surface (exported schemas and schema-generic functions such as `ConfigLoader` and the `query*` helpers), so consumers must also upgrade to Zod 4. Additionally, `@prairielearn/postgres` no longer exports the `AnyRowSchema` type alias; use `z.ZodType` instead.
+
 ## 6.0.5
 
 ### Patch Changes

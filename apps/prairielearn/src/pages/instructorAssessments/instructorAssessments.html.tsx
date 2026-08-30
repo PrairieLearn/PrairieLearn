@@ -29,7 +29,6 @@ export function InstructorAssessments({
   assessmentSets,
   assessmentModules,
   assessmentsGroupBy,
-  qtiImportEnabled,
 }: {
   resLocals: ResLocalsForPage<'assessment'>;
   rows: AssessmentRow[];
@@ -38,9 +37,16 @@ export function InstructorAssessments({
   assessmentSets: AssessmentSet[];
   assessmentModules: AssessmentModule[];
   assessmentsGroupBy: 'Set' | 'Module';
-  qtiImportEnabled: boolean;
 }) {
   const { urlPrefix, authz_data, course, course_instance, __csrf_token } = resLocals;
+  const assessmentGroups: AssessmentRow[][] = [];
+  rows.forEach((row) => {
+    if (row.start_new_assessment_group || assessmentGroups.length === 0) {
+      assessmentGroups.push([row]);
+    } else {
+      assessmentGroups[assessmentGroups.length - 1].push(row);
+    }
+  });
 
   return PageLayout({
     resLocals,
@@ -64,23 +70,17 @@ export function InstructorAssessments({
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex align-items-center">
           <h1>Assessments</h1>
-          ${authz_data.has_course_permission_edit &&
-          !course.example_course &&
-          (rows.length > 0 || qtiImportEnabled)
+          ${authz_data.has_course_permission_edit && !course.example_course
             ? html`
                 <div class="d-flex gap-2 ms-auto">
-                  ${qtiImportEnabled
-                    ? html`
-                        <a
-                          href="${urlPrefix}/instance_admin/qti_import"
-                          class="btn btn-sm btn-light"
-                          aria-label="Import content"
-                        >
-                          <i class="bi bi-cloud-arrow-up" aria-hidden="true"></i>
-                          <span class="d-none d-sm-inline">Import content</span>
-                        </a>
-                      `
-                    : ''}
+                  <a
+                    href="${urlPrefix}/instance_admin/qti_import"
+                    class="btn btn-sm btn-light"
+                    aria-label="Import content"
+                  >
+                    <i class="bi bi-cloud-arrow-up" aria-hidden="true"></i>
+                    <span class="d-none d-sm-inline">Import content</span>
+                  </a>
                   ${rows.length > 0
                     ? html`
                         <button
@@ -114,67 +114,70 @@ export function InstructorAssessments({
                       <th class="text-center">Mean Duration</th>
                     </tr>
                   </thead>
-                  <tbody>
-                    ${rows.map(
-                      (row) => html`
-                        ${row.start_new_assessment_group
-                          ? html`
-                              <tr>
-                                <th colspan="7" scope="row">
-                                  ${assessmentsGroupBy === 'Set'
-                                    ? AssessmentSetHeadingHtml({
-                                        assessment_set: row.assessment_set,
-                                      })
-                                    : AssessmentModuleHeadingHtml({
-                                        assessment_module: row.assessment_module,
-                                      })}
-                                </th>
-                              </tr>
-                            `
-                          : ''}
-                        <tr id="row-${row.id}">
-                          <td class="align-middle" style="width: 1%">
-                            <span class="badge color-${row.assessment_set.color}">
-                              ${row.label}
-                            </span>
-                          </td>
-                          <td class="align-middle">
-                            ${row.sync_errors
-                              ? SyncProblemButtonHtml({
-                                  type: 'error',
-                                  output: row.sync_errors,
+                  ${assessmentGroups.map(
+                    (groupRows) => html`
+                      <tbody>
+                        <tr>
+                          <th colspan="7" scope="rowgroup">
+                            ${assessmentsGroupBy === 'Set'
+                              ? AssessmentSetHeadingHtml({
+                                  assessment_set: groupRows[0].assessment_set,
                                 })
-                              : row.sync_warnings
-                                ? SyncProblemButtonHtml({
-                                    type: 'warning',
-                                    output: row.sync_warnings,
-                                  })
-                                : ''}
-                            <a href="${urlPrefix}/assessment/${row.id}/">
-                              ${row.title}
-                              ${row.team_work
-                                ? html` <i class="fas fa-users" aria-hidden="true"></i> `
-                                : ''}
-                            </a>
-                            ${IssueBadgeHtml({
-                              count: row.open_issue_count,
-                              courseInstanceId: course_instance.id,
-                              issueAid: row.tid,
-                            })}
-                            ${ManualGradingBadgeHtml({
-                              ungradedSubmissionCount: row.ungraded_manual_grading_submission_count,
-                              courseInstanceId: course_instance.id,
-                              assessmentId: row.id,
-                            })}
-                          </td>
-
-                          <td class="align-middle">${row.tid}</td>
-
-                          ${AssessmentStats({ row })}
+                              : AssessmentModuleHeadingHtml({
+                                  assessment_module: groupRows[0].assessment_module,
+                                })}
+                          </th>
                         </tr>
-                      `,
-                    )}
-                  </tbody>
+                        ${groupRows.map(
+                          (row) => html`
+                            <tr id="row-${row.id}">
+                              <td class="align-middle" style="width: 1%">
+                                <span class="badge color-${row.assessment_set.color}">
+                                  ${row.label}
+                                </span>
+                              </td>
+                              <td class="align-middle">
+                                ${row.sync_errors
+                                  ? SyncProblemButtonHtml({
+                                      type: 'error',
+                                      output: row.sync_errors,
+                                    })
+                                  : row.sync_warnings
+                                    ? SyncProblemButtonHtml({
+                                        type: 'warning',
+                                        output: row.sync_warnings,
+                                      })
+                                    : ''}
+                                <a href="${urlPrefix}/assessment/${row.id}/">
+                                  ${row.title}
+                                  ${row.team_work
+                                    ? html` <i class="fas fa-users" aria-hidden="true"></i> `
+                                    : ''}
+                                </a>
+                                ${IssueBadgeHtml({
+                                  count: row.open_issue_count,
+                                  courseInstanceId: course_instance.id,
+                                  issueAid: row.tid,
+                                })}
+                                ${resLocals.authz_data.has_course_instance_permission_view
+                                  ? ManualGradingBadgeHtml({
+                                      ungradedSubmissionCount:
+                                        row.ungraded_manual_grading_submission_count,
+                                      courseInstanceId: course_instance.id,
+                                      assessmentId: row.id,
+                                    })
+                                  : ''}
+                              </td>
+
+                              <td class="align-middle">${row.tid}</td>
+
+                              ${AssessmentStats({ row })}
+                            </tr>
+                          `,
+                        )}
+                      </tbody>
+                    `,
+                  )}
                 </table>
               </div>
               <div class="card-footer">

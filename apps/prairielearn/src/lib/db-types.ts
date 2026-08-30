@@ -65,7 +65,6 @@ export const EnumEnrollmentStatusSchema = z.enum([
   'removed',
   'rejected',
   'blocked',
-  'lti13_pending',
 ]);
 export type EnumEnrollmentStatus = z.infer<typeof EnumEnrollmentStatusSchema>;
 
@@ -123,11 +122,11 @@ export const QuestionPreferenceValuesSchema = z.record(
 // Result of check_assessment_access sproc
 const SprocCheckAssessmentAccessSchema = z.object({
   active: z.boolean().nullable(),
-  credit: z.union([z.string(), z.literal('None')]),
-  end_date: z.union([z.string(), z.literal('—')]),
+  credit: z.number().nullable(),
+  end_date: DateFromISOString.nullable(),
   mode: EnumModeSchema.nullable(),
-  start_date: z.union([z.string(), z.literal('—')]),
-  time_limit_min: z.union([z.string(), z.literal('—')]),
+  start_date: DateFromISOString.nullable(),
+  time_limit_min: z.number().nullable(),
 });
 
 // Result of users_get_displayed_role sproc
@@ -141,36 +140,24 @@ export const SprocAuthzAssessmentSchema = z.object({
   active: z.boolean(),
   authorized: z.boolean(),
   credit: z.number().nullable(),
-  credit_date_string: z.string().nullable(),
+  credit_end_date: DateFromISOString.nullable(),
   exam_access_end: DateFromISOString.nullable(),
   mode: EnumModeSchema.nullable(),
-  next_active_time: z.string().nullable(),
+  next_active_credit: z.number().nullable(),
+  next_active_date: DateFromISOString.nullable(),
   password: z.string().nullable(),
   show_before_release: z.boolean(),
   show_closed_assessment: z.boolean(),
   show_closed_assessment_score: z.boolean(),
+  staff_override: z.boolean(),
   time_limit_min: z.number().nullable(),
 });
 export type SprocAuthzAssessment = z.infer<typeof SprocAuthzAssessmentSchema>;
 
 // Result of authz_assessment_instance sproc
-export const SprocAuthzAssessmentInstanceSchema = z.object({
-  access_rules: z.array(SprocCheckAssessmentAccessSchema),
-  access_timeline: z.array(AccessTimelineEntrySchema).readonly(),
-  active: z.boolean(),
-  authorized: z.boolean(),
+export const SprocAuthzAssessmentInstanceSchema = SprocAuthzAssessmentSchema.extend({
   authorized_edit: z.boolean(),
-  credit: z.number().nullable(),
-  credit_date_string: z.string().nullable(),
-  exam_access_end: DateFromISOString.nullable(),
-  mode: EnumModeSchema.nullable(),
-  next_active_time: z.string().nullable(),
-  password: z.string().nullable(),
-  show_before_release: z.boolean(),
-  show_closed_assessment: z.boolean(),
-  show_closed_assessment_score: z.boolean(),
   time_limit_expired: z.boolean(),
-  time_limit_min: z.number().nullable(),
 });
 export type SprocAuthzAssessmentInstance = z.infer<typeof SprocAuthzAssessmentInstanceSchema>;
 
@@ -231,7 +218,6 @@ export const AssessmentAccessControlRuleSchema = z.object({
   // Date control fields
   date_control_after_last_deadline_allow_submissions: z.boolean().nullable(),
   date_control_after_last_deadline_credit: z.number().nullable(),
-  date_control_after_last_deadline_overridden: z.boolean(),
   date_control_due_credit: z.number().nullable(),
   date_control_due_date: DateFromISOString.nullable(),
   date_control_due_overridden: z.boolean(),
@@ -248,6 +234,7 @@ export const AssessmentAccessControlRuleSchema = z.object({
 
   // Target type: 'none' for default rule (applies to all), 'student_label' for labels, 'enrollment' for individual students
   target_type: z.enum(['none', 'student_label', 'enrollment']),
+  uuid: z.string().nullable(),
 });
 export type AssessmentAccessControlRule = z.infer<typeof AssessmentAccessControlRuleSchema>;
 
@@ -887,18 +874,17 @@ export const EnrollmentSchema = z.object({
   created_at: DateFromISOString.nullable(),
   first_joined_at: DateFromISOString.nullable(),
   id: IdSchema,
-  lti_managed: z.boolean(),
-  pending_lti13_email: z.string().nullable(),
-  pending_lti13_instance_id: IdSchema.nullable(),
-  pending_lti13_name: z.string().nullable(),
+  is_guest: z.boolean(),
+  pending_email: z.string().nullable(),
+  pending_lti13_course_instance_id: IdSchema.nullable(),
   pending_lti13_sub: z.string().nullable(),
+  pending_name: z.string().nullable(),
   pending_uid: z.string().nullable(),
+  pending_uin: z.string().nullable(),
   status: EnumEnrollmentStatusSchema,
   user_id: IdSchema.nullable(),
 });
 export type Enrollment = z.infer<typeof EnrollmentSchema>;
-
-export const ExamModeNetworkSchema = null;
 
 export const FeatureGrantSchema = null;
 
@@ -1271,6 +1257,7 @@ export const Lti13CourseInstanceSchema = z.object({
   id: IdSchema,
   lineitems_url: z.string().nullable(),
   lti13_instance_id: IdSchema,
+  resource_link_id: z.string().nullable(),
 });
 export type Lti13CourseInstance = z.infer<typeof Lti13CourseInstanceSchema>;
 
@@ -1313,6 +1300,7 @@ export const Lti13InstanceSchema = z.object({
   name_attribute: z.string().nullable(),
   platform: z.string(),
   require_linked_lti_user: z.boolean(),
+  roster_sync_allowed: z.boolean(),
   tool_platform_name: z.string().nullable(),
   uid_attribute: z.string().nullable(),
   uin_attribute: z.string().nullable(),
@@ -1641,7 +1629,6 @@ export const TopicSchema = z.object({
 export type Topic = z.infer<typeof TopicSchema>;
 
 export const UserSchema = z.object({
-  deleted_at: DateFromISOString.nullable(),
   email: z.string().nullable(),
   id: IdSchema,
   institution_id: IdSchema,
@@ -1667,6 +1654,12 @@ export const UserSessionSchema = z.object({
   user_id: IdSchema.nullable(),
 });
 export type UserSession = z.infer<typeof UserSessionSchema>;
+
+export const UserSettingsSchema = z.object({
+  enable_single_key_shortcuts: z.boolean(),
+  user_id: IdSchema,
+});
+export type UserSettings = z.infer<typeof UserSettingsSchema>;
 
 export const VariantSchema = z.object({
   authn_user_id: IdSchema,
@@ -1716,6 +1709,7 @@ export const WorkspaceSchema = z.object({
   state: z.enum(['uninitialized', 'stopped', 'launching', 'running']),
   state_updated_at: DateFromISOString,
   stopped_at: DateFromISOString.nullable(),
+  url_rewrite: z.boolean().nullable(),
   version: z.coerce.number(), // This is BIGINT, but always fits a number
   workspace_host_id: IdSchema.nullable(),
 });
@@ -1820,7 +1814,6 @@ export const TableNames = [
   'current_pages',
   'draft_question_metadata',
   'enrollments',
-  'exam_mode_networks',
   'feature_grants',
   'file_edits',
   'file_transfers',
@@ -1880,6 +1873,7 @@ export const TableNames = [
   'time_series',
   'topics',
   'user_sessions',
+  'user_settings',
   'users',
   'variants',
   'workspace_host_logs',

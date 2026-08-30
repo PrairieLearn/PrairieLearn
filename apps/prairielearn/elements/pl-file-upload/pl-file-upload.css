@@ -26,7 +26,7 @@
 .pl-file-upload-container .file-status {
   margin-bottom: 0px;
   font-size: 0.8em;
-  color: #999;
+  color: var(--bs-secondary-color);
 }
 
 .pl-file-upload-container .file-preview-button::before {

@@ -1,5 +1,23 @@
 # @prairielearn/session
 
+## 4.0.10
+
+### Patch Changes
+
+- df28e68: Bump dependencies
+
+## 4.0.9
+
+### Patch Changes
+
+- 4a0ee46: Bump dependencies
+
+## 4.0.8
+
+### Patch Changes
+
+- 4ad46ed: Remove dev dependency on node-fetch
+
 ## 4.0.7
 
 ### Patch Changes

@@ -20,6 +20,7 @@ import {
   PLEmitter,
   QTI12ItemContainerParser,
   type QtiFileEntry,
+  QtiImportRemoteImageCopier,
   findQtiFilesFromManifest,
   findQtiXmlFiles,
   normalizeImsFilePath,
@@ -38,7 +39,6 @@ import { extractPageContext } from '../../lib/client/page-context.js';
 import { getCourseInstanceTrpcUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
 import { discoverInfoDirs } from '../../lib/discover-info-dirs.js';
-import { features } from '../../lib/features/index.js';
 import { createQtiImportDraft } from '../../lib/qti-import-drafts.js';
 import { lintQuestionHtml } from '../../lib/question-html-linter.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
@@ -55,6 +55,7 @@ import {
   type StoredSerializedConversionResult,
   type StrippedAccessRules,
   type UploadResponse,
+  deduplicateAssessmentZoneQuestions,
 } from './instructorQtiImport.types.js';
 
 const router = Router();
@@ -89,24 +90,24 @@ const qtiImportUploadSingle: RequestHandler = (req, res, next) => {
     });
     if (err instanceof multer.MulterError && err.code === 'LIMIT_FILE_SIZE') {
       const maxSizeLabel = filesize(QTI_IMPORT_MAX_UPLOAD_BYTES, { round: 0, standard: 'jedec' });
-      res.status(413).json({ error: `The maximum upload size is ${maxSizeLabel}.` });
+      res.status(413).json({ error: `The maximum import size is ${maxSizeLabel}.` });
       return;
     }
     next(err);
   });
 };
 
-// Gate all routes behind the feature flag and require edit permissions.
+// Require edit permissions for all routes.
 router.use(
   typedAsyncHandler<'course-instance'>(async (req, res, next) => {
-    const enabled = await features.enabledFromLocals('qti-content-import', res.locals);
-    if (!enabled) {
-      throw new HttpStatusError(403, 'QTI content import is not enabled for this course');
-    }
-    if (!res.locals.authz_data.has_course_permission_edit) {
+    const { authz_data: authzData, course } = extractPageContext(res.locals, {
+      pageType: 'course',
+      accessType: 'instructor',
+    });
+    if (!authzData.has_course_permission_edit) {
       throw new HttpStatusError(403, 'Access denied (must be course editor)');
     }
-    if (res.locals.course.example_course) {
+    if (course.example_course) {
       throw new HttpStatusError(403, 'Cannot import into the example course');
     }
     next();
@@ -251,10 +252,11 @@ router.post(
       // Convert each QTI entry, assigning unique slugs so same-titled entries
       // (e.g. two "Quiz 1") don't collide on question prefixes.
       const usedSlugs = new Set<string>();
+      const remoteImageCopier = new QtiImportRemoteImageCopier();
       const convertedEntries: SerializedEntryResult[] = [];
       const parseWarnings: ParseWarning[] = [];
       for (const entry of entries) {
-        const result = await convertEntry(entry, rubricsXml, usedSlugs);
+        const result = await convertEntry(entry, rubricsXml, usedSlugs, remoteImageCopier);
         if (result.ok) {
           convertedEntries.push(result.value);
         } else {
@@ -356,6 +358,7 @@ async function convertEntry(
   entry: QtiFileEntry,
   rubricsXml: string | undefined,
   usedSlugs: Set<string>,
+  remoteImageCopier: QtiImportRemoteImageCopier,
 ): Promise<ConvertEntryResult> {
   const xmlContent = await readFile(entry.qtiPath, 'utf-8');
 
@@ -406,10 +409,11 @@ async function convertEntry(
   usedSlugs.add(assessmentSlug);
 
   const emitter = new PLEmitter();
-  const result = emitter.emit(ir, {
+  const result = await emitter.emitProcessed(ir, {
     ...baseOptions,
     tags: ['imported'],
     questionIdPrefix: `imported/${assessmentSlug}`,
+    processors: [remoteImageCopier],
   });
 
   return {
@@ -453,8 +457,18 @@ export async function serializeConversionResult(
           level: 'warn',
         });
       }
+      const hasRemoteImageCopyWarning = result.warnings.some(
+        (warning) =>
+          warning.questionId === q.sourceId && warning.code === 'remote-image-copy-failed',
+      );
+      const remoteImageCopyReport = result.reports.find(
+        (report) => report.questionId === q.sourceId,
+      );
       const seenMessages = new Set<string>();
       for (const d of await lintQuestionHtml(q.questionHtml)) {
+        if (hasRemoteImageCopyWarning && d.ruleName === 'pl-remote-image-url') {
+          continue;
+        }
         if (seenMessages.has(d.message)) continue;
         seenMessages.add(d.message);
         extraWarnings.push({ questionId, message: d.message, level: 'warn' });
@@ -467,6 +481,7 @@ export async function serializeConversionResult(
         serverPy: q.serverPy,
         clientFiles: files,
         skippedVideos: q.skippedFiles,
+        copiedExternalImageFileCount: remoteImageCopyReport?.filesCreated ?? 0,
       };
     }),
   );
@@ -656,20 +671,25 @@ export function deduplicateIdenticalQuestions(
     };
 
     if (result.sourceType === 'assessment') {
+      const canonicalZones = result.assessment.infoJson.zones.map((zone) => ({
+        ...zone,
+        questions: zone.questions.map((question) => ({
+          ...question,
+          id: canonicalDirectoryNameByOriginal.get(question.id) ?? question.id,
+        })),
+      }));
+      // Collapsing identical questions can leave the same canonical question
+      // referenced multiple times within the assessment; keep only the first.
+      const { zones, warnings } = deduplicateAssessmentZoneQuestions(canonicalZones);
       return {
         ...deduped,
         sourceType: 'assessment' as const,
+        warnings: [...deduped.warnings, ...warnings],
         assessment: {
           ...result.assessment,
           infoJson: {
             ...result.assessment.infoJson,
-            zones: result.assessment.infoJson.zones.map((zone) => ({
-              ...zone,
-              questions: zone.questions.map((question) => ({
-                ...question,
-                id: canonicalDirectoryNameByOriginal.get(question.id) ?? question.id,
-              })),
-            })),
+            zones,
           },
         },
       };

@@ -12,7 +12,7 @@ Each assessment is a single directory in the `assessments` folder or any subfold
   "set": "Quiz",
   "module": "Linear algebra review",
   "number": "2",
-  "allowAccess": [],
+  "accessControl": [],
   "zones": [],
   "comment": "You can add comments to JSON files using this property."
 }

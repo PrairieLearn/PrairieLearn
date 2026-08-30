@@ -1,5 +1,35 @@
 # @prairielearn/utils
 
+## 3.3.0
+
+### Minor Changes
+
+- 9b99f72: Add shared timezone interpretation, formatting, local-calendar, and timezone-catalog utilities under `@prairielearn/utils/timezone`.
+
+## 3.2.3
+
+### Patch Changes
+
+- df28e68: Bump dependencies
+
+## 3.2.2
+
+### Patch Changes
+
+- 4a0ee46: Bump dependencies
+
+## 3.2.1
+
+### Patch Changes
+
+- 1053fc5: Update the archiver test dependency to v8.
+
+## 3.2.0
+
+### Minor Changes
+
+- fdfca12: Add a Node-only `@prairielearn/utils/zip` subpath for zip extraction with entry-count, expanded-size, and symlink validation.
+
 ## 3.1.6
 
 ### Patch Changes

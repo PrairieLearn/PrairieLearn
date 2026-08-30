@@ -1,4 +1,3 @@
-import { filesize } from 'filesize';
 import { type SubmitEvent, useMemo, useState } from 'react';
 import { Alert, Button, Card, Form, Spinner } from 'react-bootstrap';
 
@@ -8,7 +7,6 @@ import {
   type CollisionStrategy,
   type CourseInstanceOption,
   type ParseWarning,
-  QTI_IMPORT_MAX_UPLOAD_BYTES,
   type QuestionOverrides,
   type SerializedConversionResult,
   type SerializedQuestionOutput,
@@ -21,26 +19,6 @@ import { QuestionReviewPanel } from './QuestionReviewPanel.js';
 
 function isRubricWarning(message: string): boolean {
   return message.includes('rubric') || message.includes('Rubric');
-}
-
-export const REMOTE_IMAGE_URL_WARNING = 'Question contains an image reference to a remote URL.';
-const REMOTE_IMAGE_URL_SUMMARY =
-  'One or more questions contain an image reference to a remote URL.';
-const QTI_IMPORT_MAX_UPLOAD_SIZE_LABEL = filesize(QTI_IMPORT_MAX_UPLOAD_BYTES, {
-  round: 0,
-  standard: 'jedec',
-});
-
-export function fileSizeWarning(file: File | undefined): string | null {
-  if (!file || file.size <= QTI_IMPORT_MAX_UPLOAD_BYTES) return null;
-  const fileSizeLabel = filesize(file.size, { round: 0, standard: 'jedec' });
-  return `This file is ${fileSizeLabel}. The maximum upload size is ${QTI_IMPORT_MAX_UPLOAD_SIZE_LABEL}.`;
-}
-
-function selectedFile(eventTarget: EventTarget): File | undefined {
-  return eventTarget instanceof HTMLInputElement
-    ? (eventTarget.files?.[0] ?? undefined)
-    : undefined;
 }
 
 function uniqueCanvasCourseIds(refs: IRSourceBankRef[]): string[] {
@@ -119,9 +97,9 @@ export function QuestionBankDeduplicationWarning({
   if (deduplicatedQuestionCount === 0) return null;
 
   return (
-    <Alert variant="warning" className="mb-3">
+    <Alert variant="info" className="mb-3">
       <div className="d-flex align-items-start gap-2">
-        <i className="bi bi-exclamation-triangle-fill mt-1" aria-hidden="true" />
+        <i className="bi bi-info-circle-fill mt-1" aria-hidden="true" />
         <div>
           <strong>Duplicate question bank questions were deduplicated</strong>
           <p className="mb-0 mt-1">
@@ -137,16 +115,17 @@ export function QuestionBankDeduplicationWarning({
 export function NonRubricWarnings({
   warnings,
   questions,
+  questionOverrides = new Map(),
 }: {
   warnings: SerializedConversionResult['warnings'];
   questions: SerializedQuestionOutput[];
+  questionOverrides?: Map<string, QuestionOverrides>;
 }) {
   const filtered = warnings.filter((w) => !isRubricWarning(w.message));
-  if (filtered.length === 0) return null;
-  const hasRemoteImageUrlWarning = filtered.some((w) => w.message === REMOTE_IMAGE_URL_WARNING);
-  const individualWarnings = uniqueWarnings(
-    filtered.filter((w) => w.message !== REMOTE_IMAGE_URL_WARNING),
-  );
+  const duplicateQuestionTitles = findDuplicateQuestionTitles(questions, questionOverrides);
+  if (filtered.length === 0 && duplicateQuestionTitles.length === 0) return null;
+
+  const individualWarnings = uniqueWarnings(filtered);
 
   const questionById = new Map<string, { title: string; number: number }>();
   for (const [index, question] of questions.entries()) {
@@ -160,9 +139,7 @@ export function NonRubricWarnings({
     <Alert variant="warning" className="mb-3">
       <strong>Warnings:</strong>
       <ul className="mb-0 mt-1">
-        {hasRemoteImageUrlWarning && (
-          <li key="remote-image-url-warning">{REMOTE_IMAGE_URL_SUMMARY}</li>
-        )}
+        <DuplicateQuestionTitleWarningListItem duplicateTitles={duplicateQuestionTitles} />
         {individualWarnings.map((w) => {
           const q = questionById.get(w.questionId);
           return (
@@ -173,6 +150,40 @@ export function NonRubricWarnings({
         })}
       </ul>
     </Alert>
+  );
+}
+
+export function findDuplicateQuestionTitles(
+  questions: SerializedQuestionOutput[],
+  questionOverrides: Map<string, QuestionOverrides>,
+): string[] {
+  const titleCounts = new Map<string, number>();
+  for (const question of questions) {
+    const override = questionOverrides.get(question.directoryName);
+    if (override?.included === false) continue;
+
+    const title = (override?.title ?? question.infoJson.title).trim();
+    if (title === '') continue;
+
+    titleCounts.set(title, (titleCounts.get(title) ?? 0) + 1);
+  }
+
+  return [...titleCounts.entries()].filter(([, count]) => count > 1).map(([title]) => title);
+}
+
+function DuplicateQuestionTitleWarningListItem({ duplicateTitles }: { duplicateTitles: string[] }) {
+  if (duplicateTitles.length === 0) return null;
+
+  return duplicateTitles.length === 1 ? (
+    <li key="duplicate-question-title">
+      We detected several questions named &ldquo;{duplicateTitles[0]}&rdquo;. We recommend you add
+      meaningful names to these questions to find and edit them more easily in PrairieLearn.
+    </li>
+  ) : (
+    <li key="duplicate-question-titles">
+      We detected several questions with the same names. We recommend you add meaningful names to
+      these questions to find and edit them more easily in PrairieLearn.
+    </li>
   );
 }
 
@@ -209,10 +220,14 @@ export function ImportSummary({
     ),
   );
   const totalQuestions = uniqueQuestions.size;
-  const totalAssets = [...uniqueQuestions.values()].reduce(
-    (sum, question) => sum + Object.keys(question.clientFiles).length,
-    0,
-  );
+  let totalAssets = 0;
+  let totalExternalImageFilesCopied = 0;
+  let totalSkippedVideos = 0;
+  for (const question of uniqueQuestions.values()) {
+    totalAssets += Object.keys(question.clientFiles).length;
+    totalExternalImageFilesCopied += question.copiedExternalImageFileCount;
+    totalSkippedVideos += question.skippedVideos.length;
+  }
 
   const allWarnings = results.flatMap((r) => r.warnings);
   const rubricWarnings = allWarnings.filter((w) => isRubricWarning(w.message));
@@ -222,11 +237,6 @@ export function ImportSummary({
     .filter((w) => !isRubricWarning(w.message) && w.message.includes('Unsupported'))
     .map((w) => w.message);
   const uniqueUnsupported = [...new Set(unsupportedTypes)];
-
-  const totalSkippedVideos = [...uniqueQuestions.values()].reduce(
-    (sum, question) => sum + question.skippedVideos.length,
-    0,
-  );
 
   const notImportedItems: string[] = [];
   if (hasRubricIssues) notImportedItems.push('Rubrics (not supported in QTI quiz exports)');
@@ -274,6 +284,13 @@ export function ImportSummary({
                 <li>
                   <strong>{totalAssets}</strong> image{totalAssets !== 1 ? 's' : ''} and other asset
                   {totalAssets !== 1 ? 's' : ''}
+                  {totalExternalImageFilesCopied > 0 && (
+                    <>
+                      , including <strong>{totalExternalImageFilesCopied}</strong> image
+                      {totalExternalImageFilesCopied !== 1 ? 's' : ''} that will be copied from
+                      external websites
+                    </>
+                  )}
                 </li>
               )}
             </ul>
@@ -301,33 +318,31 @@ export function ImportSummary({
   );
 }
 
+export type ProcessingPhase = 'idle' | 'trimming' | 'uploading';
+
+const PROCESSING_PHASE_LABELS: Record<ProcessingPhase, string> = {
+  idle: '',
+  trimming: 'Extracting QTI content\u2026',
+  uploading: 'Uploading\u2026',
+};
+
 export function UploadStep({
   uploading,
+  processingPhase,
   onSubmit,
   courseInstances,
   selectedCourseInstanceId,
   onCourseInstanceChange,
 }: {
   uploading: boolean;
+  processingPhase: ProcessingPhase;
   onSubmit: (e: SubmitEvent<HTMLFormElement>) => void;
   courseInstances: CourseInstanceOption[];
   selectedCourseInstanceId: string;
   onCourseInstanceChange: (id: string) => void;
 }) {
-  const [uploadFileSizeWarning, setUploadFileSizeWarning] = useState<string | null>(null);
-  const fileInputDescriptionId = uploadFileSizeWarning ? 'qti-file-size-warning' : 'qti-file-help';
-
   return (
-    <form
-      encType="multipart/form-data"
-      onSubmit={(e) => {
-        if (uploadFileSizeWarning != null) {
-          e.preventDefault();
-          return;
-        }
-        onSubmit(e);
-      }}
-    >
+    <form encType="multipart/form-data" onSubmit={onSubmit}>
       <p>
         Import quiz and question content from Canvas or another LMS. Upload a quiz export (
         <code>.zip</code>) or a full course export (<code>.imscc</code>) in the QTI 1.2 format.{' '}
@@ -361,27 +376,18 @@ export function UploadStep({
           name="file"
           accept=".zip,.imscc"
           disabled={uploading}
-          isInvalid={uploadFileSizeWarning != null}
-          aria-describedby={fileInputDescriptionId}
+          aria-describedby="qti-file-help"
           required
-          onChange={(e) => setUploadFileSizeWarning(fileSizeWarning(selectedFile(e.target)))}
         />
-        {uploadFileSizeWarning ? (
-          <Form.Text id="qti-file-size-warning" className="text-danger">
-            {uploadFileSizeWarning}
-          </Form.Text>
-        ) : (
-          <Form.Text id="qti-file-help">
-            Supported formats: .zip (quiz export), .imscc (course export). Maximum size:{' '}
-            {QTI_IMPORT_MAX_UPLOAD_SIZE_LABEL}.
-          </Form.Text>
-        )}
+        <Form.Text id="qti-file-help">
+          Supported formats: .zip (quiz export), .imscc (course export).
+        </Form.Text>
       </div>
-      <Button type="submit" variant="primary" disabled={uploading || uploadFileSizeWarning != null}>
+      <Button type="submit" variant="primary" disabled={uploading}>
         {uploading ? (
           <>
             <Spinner size="sm" className="me-2" />
-            Processing...
+            {PROCESSING_PHASE_LABELS[processingPhase]}
           </>
         ) : (
           <>
@@ -397,6 +403,7 @@ export function UploadStep({
 export function MissingBanksStep({
   results,
   uploading,
+  processingPhase,
   uploadingBankKey,
   successMessage,
   onSubmit,
@@ -405,6 +412,7 @@ export function MissingBanksStep({
 }: {
   results: SerializedConversionResult[];
   uploading: boolean;
+  processingPhase: ProcessingPhase;
   uploadingBankKey: string | null;
   successMessage: string | null;
   onSubmit: (e: SubmitEvent<HTMLFormElement>) => void;
@@ -420,18 +428,6 @@ export function MissingBanksStep({
   const hasUnknownCounts = refs.some((ref) => ref.numberChoose == null);
   const countPrefix = hasUnknownCounts ? 'At least ' : '';
   const isCanvasExport = hasCanvasUnresolvedSourceBankRefs(refs);
-  const [fileSizeWarningsByRefKey, setFileSizeWarningsByRefKey] = useState<
-    Map<string, string | null>
-  >(new Map());
-
-  const updateFileSizeWarning = (refKey: string, file: File | undefined) => {
-    const warning = fileSizeWarning(file);
-    setFileSizeWarningsByRefKey((warnings) => {
-      const next = new Map(warnings);
-      next.set(refKey, warning);
-      return next;
-    });
-  };
 
   return (
     <>
@@ -481,10 +477,6 @@ export function MissingBanksStep({
             ? `Supplemental export for "${ref.title}" from Canvas course ${ref.externalCourseId}`
             : `Supplemental export for "${ref.title}"`;
           const hasCanvasRef = ref.sourceBankExportId != null || ref.externalCourseId != null;
-          const uploadFileSizeWarning = fileSizeWarningsByRefKey.get(refKey) ?? null;
-          const fileInputDescriptionId = uploadFileSizeWarning
-            ? `${inputId}-size-warning`
-            : `${inputId}-help`;
 
           return (
             <form
@@ -492,13 +484,7 @@ export function MissingBanksStep({
               data-source-bank-key={refKey}
               encType="multipart/form-data"
               className="border rounded p-3"
-              onSubmit={(e) => {
-                if (uploadFileSizeWarning != null) {
-                  e.preventDefault();
-                  return;
-                }
-                onSubmit(e);
-              }}
+              onSubmit={onSubmit}
             >
               <div className="fw-semibold">{ref.title}</div>
               <div className="text-muted small mb-2">
@@ -525,33 +511,25 @@ export function MissingBanksStep({
                     name="file"
                     accept=".zip,.imscc"
                     disabled={uploading}
-                    isInvalid={uploadFileSizeWarning != null}
-                    aria-describedby={fileInputDescriptionId}
+                    aria-describedby={`${inputId}-help`}
                     required
-                    onChange={(e) => updateFileSizeWarning(refKey, selectedFile(e.target))}
                   />
-                  {uploadFileSizeWarning ? (
-                    <Form.Text id={`${inputId}-size-warning`} className="text-danger">
-                      {uploadFileSizeWarning}
-                    </Form.Text>
-                  ) : (
-                    <Form.Text id={`${inputId}-help`}>
-                      Upload {hasCanvasRef ? 'the Canvas course export' : 'an export'} that contains
-                      this bank. Maximum size: {QTI_IMPORT_MAX_UPLOAD_SIZE_LABEL}.
-                    </Form.Text>
-                  )}
+                  <Form.Text id={`${inputId}-help`}>
+                    Upload {hasCanvasRef ? 'the Canvas course export' : 'an export'} that contains
+                    this bank.
+                  </Form.Text>
                 </div>
                 <Button
                   type="submit"
                   className="flex-shrink-0"
                   variant="primary"
-                  disabled={uploading || uploadFileSizeWarning != null}
+                  disabled={uploading}
                   aria-label={`Upload export for ${ref.title}`}
                 >
                   {isUploadingThisBank ? (
                     <>
                       <Spinner size="sm" className="me-2" />
-                      Processing...
+                      {PROCESSING_PHASE_LABELS[processingPhase]}
                     </>
                   ) : (
                     <>

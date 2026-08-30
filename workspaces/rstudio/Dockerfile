@@ -29,13 +29,7 @@
 # Set up your question with these options in info.json, editing the "image"
 # parameter if you are using a custom image build for testing:
 
-#    "workspaceOptions": {
-#        "image": "prairielearn/workspace-rstudio",
-#        "port": 3939,
-#        "args": "",
-#        "rewriteUrl": false,
-#        "home": "/home/rstudio/workspace"
-#    }
+#    "workspaceOptions": { "image": "prairielearn/workspace-rstudio" }
 
 # If you just want to use RStudio locally for its own sake:
 # $ docker build -t rstudio-local .
@@ -44,8 +38,11 @@
 # However, you could use the Rocker base images in that case.
 # Their site has more documentation.
 
-FROM rocker/rstudio:4.6.0
-ARG CACHEBUST=2026-05-15-14-49-21
+FROM rocker/rstudio:4.6.1
+ARG CACHEBUST=2026-08-15-14-04-29
+LABEL com.prairielearn.workspace.home="/home/rstudio/workspace"
+LABEL com.prairielearn.workspace.port="3939"
+LABEL com.prairielearn.workspace.rewrite-url="false"
 
 # On PL, we need to use 1001:1001 for the default user account. We adjust the
 # pre-existing rstudio user which is typically uid 1000 otherwise.
@@ -159,6 +156,7 @@ ENV USER=rstudio
 # Judging from some discussion online, the PASSWORD variable may be necessary
 # due to a bug in RStudio Server's DISABLE_AUTH mode.
 ENV DISABLE_AUTH=true
+# hadolint ignore=DL3064
 ENV PASSWORD=placeholder
 # This tells s6 to use alternative, writable locations if the paths it
 # expects to write to are read-only.

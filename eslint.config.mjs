@@ -189,13 +189,6 @@ export default [
     },
   },
   {
-    files: ['**/*.test.{ts,tsx}', '**/*.spec.{ts,tsx}', '**/tests/**/*.{ts,tsx}'],
-    rules: {
-      // TODO: Fix deprecations in tests
-      '@typescript-eslint/no-deprecated': 'off',
-    },
-  },
-  {
     files: ['**/*.html', '**/*.mustache'],
     languageOptions: {
       parser: htmlParser,
@@ -229,7 +222,6 @@ export default [
   globalIgnores([
     '.claude/worktrees/*',
     '.venv/*',
-    '.yarn/*',
     'docs/*',
     'node_modules/*',
     'testCourse',

@@ -1,6 +1,6 @@
+import crypto from 'node:crypto';
 import * as path from 'path';
 
-import sha256 from 'crypto-js/sha256.js';
 import fs from 'fs-extra';
 import z from 'zod';
 
@@ -12,8 +12,52 @@ import { computeStableHash } from './json.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
+export function computeEncodedFileContentHash(encodedContents: string | Buffer): string {
+  return crypto.createHash('sha256').update(encodedContents).digest('hex');
+}
+
+/**
+ * Structural type matching the subset of `res.locals` (or an equivalent context
+ * object) needed to locate an assessment's files on disk.
+ */
+interface AssessmentLocation {
+  course: { path: string };
+  course_instance: { short_name: string | null };
+  assessment: { tid: string | null };
+}
+
+/**
+ * Returns the absolute filesystem path to an assessment's directory under its
+ * course (`{course.path}/courseInstances/{short_name}/assessments/{tid}`).
+ *
+ * Throws if either path component is missing, rather than silently building a
+ * malformed path that could read or write the wrong location.
+ */
+export function getAssessmentDir(loc: AssessmentLocation): string {
+  if (!loc.course_instance.short_name) {
+    throw new Error('Cannot locate assessment directory: course instance short_name is missing');
+  }
+  if (!loc.assessment.tid) {
+    throw new Error('Cannot locate assessment directory: assessment tid is missing');
+  }
+  return path.join(
+    loc.course.path,
+    'courseInstances',
+    loc.course_instance.short_name,
+    'assessments',
+    loc.assessment.tid,
+  );
+}
+
+/**
+ * Returns the absolute filesystem path to an assessment's `infoAssessment.json`.
+ */
+export function getAssessmentInfoJsonPath(loc: AssessmentLocation): string {
+  return path.join(getAssessmentDir(loc), 'infoAssessment.json');
+}
+
 export function computeFileContentHash(contents: string): string {
-  return sha256(b64EncodeUnicode(contents)).toString();
+  return computeEncodedFileContentHash(b64EncodeUnicode(contents));
 }
 
 export async function getOriginalHash(filePath: string) {

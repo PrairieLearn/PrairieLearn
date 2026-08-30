@@ -1,4 +1,4 @@
-import { afterAll, assert, beforeAll, describe, it, test } from 'vitest';
+import { afterAll, assert, beforeAll, describe, expect, it, test } from 'vitest';
 
 import { execute, queryOptionalRow, queryRow } from '@prairielearn/postgres';
 
@@ -7,6 +7,7 @@ import { dangerousFullSystemAuthz } from '../lib/authz-data-lib.js';
 import { getSelfEnrollmentLinkUrl } from '../lib/client/url.js';
 import { config } from '../lib/config.js';
 import { type CourseInstance, EnrollmentSchema } from '../lib/db-types.js';
+import { admitUserForCourseInstanceAccess } from '../lib/enrollment/admission.js';
 import { EXAMPLE_COURSE_PATH } from '../lib/paths.js';
 import { selectCourseInstanceById } from '../models/course-instances.js';
 import {
@@ -23,6 +24,7 @@ import {
   updateCourseInstanceSettings,
   withUser,
 } from './utils/auth.js';
+import { createEnrollment, selectEnrollments } from './utils/enrollment-identity.js';
 import { enrollUser, unenrollUser } from './utils/enrollments.js';
 
 const siteUrl = 'http://localhost:' + config.serverPort;
@@ -61,7 +63,7 @@ describe('Enrollment status pages', function () {
   });
 });
 
-describe('Enrollment limits (enterprise)', function () {
+describe('Enrollment limits (enterprise)', { concurrent: false }, function () {
   beforeAll(helperServer.before());
   afterAll(helperServer.after);
 
@@ -69,67 +71,67 @@ describe('Enrollment limits (enterprise)', function () {
   beforeAll(() => (config.isEnterprise = true));
   afterAll(() => (config.isEnterprise = originalIsEnterprise));
 
-  test.sequential('enroll a single student', async () => {
+  test('enroll a single student', async () => {
     const status = await enrollUser('1', USER_1);
     assert.equal(status, PotentialEnrollmentStatus.ALLOWED);
   });
 
-  test.sequential('enrolls the same student again', async () => {
+  test('enrolls the same student again', async () => {
     const status = await enrollUser('1', USER_1);
     assert.equal(status, PotentialEnrollmentStatus.ALLOWED);
   });
 
-  test.sequential('unenroll a single student', async () => {
+  test('unenroll a single student', async () => {
     const res = await unenrollUser('1', USER_1);
     assert.isOk(res.ok);
     assert.equal(res.url, siteUrl + '/');
   });
 
-  test.sequential('unenroll the same student again', async () => {
+  test('unenroll the same student again', async () => {
     const res = await unenrollUser('1', USER_1);
     assert.isOk(res.ok);
     assert.equal(res.url, siteUrl + '/');
   });
 
-  test.sequential('apply a course instance enrollment limit', async () => {
+  test('apply a course instance enrollment limit', async () => {
     await execute('UPDATE course_instances SET enrollment_limit = 1 WHERE id = 1');
   });
 
-  test.sequential('enroll one student', async () => {
+  test('enroll one student', async () => {
     const status = await enrollUser('1', USER_1);
     assert.equal(status, PotentialEnrollmentStatus.ALLOWED);
   });
 
-  test.sequential('fail to enroll a second student', async () => {
+  test('fail to enroll a second student', async () => {
     const status = await enrollUser('1', USER_2);
     assert.equal(status, PotentialEnrollmentStatus.LIMIT_EXCEEDED);
   });
 
-  test.sequential('apply an institution-level course instance enrollment limit', async () => {
+  test('apply an institution-level course instance enrollment limit', async () => {
     await execute('UPDATE course_instances SET enrollment_limit = NULL WHERE id = 1');
     await execute('UPDATE institutions SET course_instance_enrollment_limit = 1 WHERE id = 1');
   });
 
-  test.sequential('fail to enroll a second student', async () => {
+  test('fail to enroll a second student', async () => {
     const status = await enrollUser('1', USER_2);
     assert.equal(status, PotentialEnrollmentStatus.LIMIT_EXCEEDED);
   });
 
-  test.sequential('set a higher course instance enrollment limit', async () => {
+  test('set a higher course instance enrollment limit', async () => {
     await execute('UPDATE course_instances SET enrollment_limit = 2 WHERE id = 1');
   });
 
-  test.sequential('enroll a second student', async () => {
+  test('enroll a second student', async () => {
     const status = await enrollUser('1', USER_2);
     assert.equal(status, PotentialEnrollmentStatus.ALLOWED);
   });
 
-  test.sequential('fail to enroll a third student', async () => {
+  test('fail to enroll a third student', async () => {
     const status = await enrollUser('1', USER_3);
     assert.equal(status, PotentialEnrollmentStatus.LIMIT_EXCEEDED);
   });
 
-  test.sequential('set a yearly enrollment limit', async () => {
+  test('set a yearly enrollment limit', async () => {
     await execute('UPDATE course_instances SET enrollment_limit = NULL WHERE id = 1');
     await execute(
       'UPDATE institutions SET course_instance_enrollment_limit = 100000, yearly_enrollment_limit = 2 WHERE id = 1',
@@ -137,27 +139,27 @@ describe('Enrollment limits (enterprise)', function () {
     );
   });
 
-  test.sequential('fail to enroll a third student', async () => {
+  test('fail to enroll a third student', async () => {
     const status = await enrollUser('1', USER_3);
     assert.equal(status, PotentialEnrollmentStatus.LIMIT_EXCEEDED);
   });
 });
 
 // Enrollment limits should not apply for non-enterprise instances (the default).
-describe('Enrollment limits (non-enterprise)', () => {
+describe('Enrollment limits (non-enterprise)', { concurrent: false }, () => {
   beforeAll(helperServer.before());
   afterAll(helperServer.after);
 
-  test.sequential('apply a course instance enrollment limit', async () => {
+  test('apply a course instance enrollment limit', async () => {
     await execute('UPDATE course_instances SET enrollment_limit = 1 WHERE id = 1');
   });
 
-  test.sequential('enroll one student', async () => {
+  test('enroll one student', async () => {
     const status = await enrollUser('1', USER_1);
     assert.equal(status, PotentialEnrollmentStatus.ALLOWED);
   });
 
-  test.sequential('enroll a second student (limits not enforced in non-enterprise)', async () => {
+  test('enroll a second student (limits not enforced in non-enterprise)', async () => {
     const status = await enrollUser('1', USER_2);
     // In non-enterprise mode, limits are not enforced
     assert.equal(status, PotentialEnrollmentStatus.ALLOWED);
@@ -315,6 +317,75 @@ describe('Self-enrollment settings transitions', () => {
     });
   });
 
+  it.each([
+    {
+      name: 'without a bound enrollment',
+      prefix: 'uin-invitation',
+      boundStatus: null,
+      expectedHttpStatus: 200,
+      expectedPersistedStatuses: ['joined'],
+    },
+    {
+      name: 'paired with a left enrollment',
+      prefix: 'left-with-invitation',
+      boundStatus: 'left' as const,
+      expectedHttpStatus: 200,
+      expectedPersistedStatuses: ['joined'],
+    },
+    {
+      name: 'paired with a removed enrollment',
+      prefix: 'removed-with-invitation',
+      boundStatus: 'removed' as const,
+      expectedHttpStatus: 403,
+      expectedPersistedStatuses: ['removed', 'invited'],
+    },
+  ])(
+    'handles an institution UIN invitation $name',
+    async ({ prefix, boundStatus, expectedHttpStatus, expectedPersistedStatuses }) => {
+      await deleteEnrollmentsInCourseInstance('1');
+      await updateCourseInstanceSettings('1', {
+        selfEnrollmentEnabled: false,
+        selfEnrollmentUseEnrollmentCode: true,
+        restrictToInstitution: false,
+      });
+
+      const user = await getOrCreateUser({
+        uid: `${prefix}@example.com`,
+        name: prefix,
+        uin: prefix,
+        email: `${prefix}@example.com`,
+        institutionId: '1',
+      });
+      const enrollmentIds: string[] = [];
+      if (boundStatus !== null) {
+        const boundEnrollment = await createEnrollment({
+          courseInstance,
+          userId: user.id,
+          status: boundStatus,
+          firstJoinedAt: new Date('2024-01-01T00:00:00Z'),
+        });
+        enrollmentIds.push(boundEnrollment.id);
+      }
+      const invitation = await createEnrollment({
+        courseInstance,
+        pendingUin: user.uin,
+        status: 'invited',
+      });
+      enrollmentIds.push(invitation.id);
+
+      await withUser(user, async () => {
+        const response = await fetch(assessmentsUrl);
+        assert.equal(response.status, expectedHttpStatus);
+      });
+
+      const persistedEnrollments = await selectEnrollments(enrollmentIds);
+      assert.deepEqual(
+        persistedEnrollments.map((enrollment) => enrollment.status),
+        expectedPersistedStatuses,
+      );
+    },
+  );
+
   it('does not allow rejected user to self-enroll via the assessments endpoint when self-enrollment is disabled', async () => {
     await deleteEnrollmentsInCourseInstance('1');
     await updateCourseInstanceSettings('1', {
@@ -454,6 +525,19 @@ describe('Self-enrollment settings transitions', () => {
       });
       assert.isNotNull(finalEnrollment);
       assert.equal(finalEnrollment.status, 'blocked');
+    });
+
+    await expect(
+      admitUserForCourseInstanceAccess({
+        courseInstanceId: courseInstance.id,
+        ip: null,
+        isAdministrator: false,
+        reqDate: new Date(),
+        userId: blockedUser.id,
+      }),
+    ).rejects.toMatchObject({
+      message: 'You are blocked from accessing this course',
+      status: 403,
     });
   });
 

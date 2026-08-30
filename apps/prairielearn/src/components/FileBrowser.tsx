@@ -457,7 +457,7 @@ function DirectoryBrowserActions({
             data-bs-container="body"
             data-bs-html="true"
             data-bs-placement="auto"
-            data-bs-title="Upload file"
+            data-bs-title="Upload files"
             data-bs-content="${escapeHtml(
               FileUploadForm({
                 file: { id: `New${d.label}`, info: d.info, working_path: d.path },
@@ -467,7 +467,7 @@ function DirectoryBrowserActions({
           "
           >
             <i class="fa fa-plus"></i>
-            <span>Add new ${d.label.toLowerCase()} file</span>
+            <span>Add new ${d.label.toLowerCase()} files</span>
           </button>
         `,
       )}
@@ -479,7 +479,7 @@ function DirectoryBrowserActions({
         data-bs-container="body"
         data-bs-html="true"
         data-bs-placement="auto"
-        data-bs-title="Upload file"
+        data-bs-title="Upload files"
         data-bs-content="${escapeHtml(
           FileUploadForm({
             file: { id: 'New', working_path: paths.workingPath },
@@ -488,7 +488,7 @@ function DirectoryBrowserActions({
         )}"
       >
         <i class="fa fa-plus"></i>
-        <span>Add new file</span>
+        <span>Add new files</span>
       </button>
     </div>
   `;
@@ -677,6 +677,7 @@ function DirectoryBrowserBody({
 }
 
 function FileUploadForm({ file, csrfToken }: { file: FileUploadInfo; csrfToken: string }) {
+  const maxFileSizeFormatted = filesize(config.fileUploadMaxBytes, { base: 10, round: 0 });
   return html`
     <form
       class="needs-validation"
@@ -688,16 +689,24 @@ function FileUploadForm({ file, csrfToken }: { file: FileUploadInfo; csrfToken: 
       ${file.info ? html`<div class="mb-3">${file.info}</div>` : ''}
 
       <div class="mb-3">
-        <label class="form-label" for="attachFileInput-${file.id}">Choose file</label>
+        <label class="form-label" for="attachFileInput-${file.id}"
+          >Choose ${file.path == null ? 'files' : 'file'}</label
+        >
         <input
           type="file"
-          name="file"
+          name="files"
+          ${file.path == null
+            ? html`multiple data-max-file-count="${config.fileUploadMaxFiles}"`
+            : ''}
+          data-max-file-size="${config.fileUploadMaxBytes}"
+          data-max-file-size-formatted="${maxFileSizeFormatted}"
           class="form-control"
           id="attachFileInput-${file.id}"
           required
         />
         <small class="form-text text-muted">
-          Max file size: ${filesize(config.fileUploadMaxBytes, { base: 10, round: 0 })}
+          Max file size: ${maxFileSizeFormatted}
+          ${file.path == null ? `per file (at most ${config.fileUploadMaxFiles} files)` : ''}
         </small>
       </div>
 
@@ -709,7 +718,9 @@ function FileUploadForm({ file, csrfToken }: { file: FileUploadInfo; csrfToken: 
           : html`<input type="hidden" name="working_path" value="${file.working_path}" />`}
         <div class="text-end justify-content-end gap-2 d-flex flex-wrap">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
-          <button type="submit" class="btn btn-primary">Upload file</button>
+          <button type="submit" class="btn btn-primary">
+            Upload ${file.path == null ? 'files' : 'file'}
+          </button>
         </div>
       </div>
     </form>

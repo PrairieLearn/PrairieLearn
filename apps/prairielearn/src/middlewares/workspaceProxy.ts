@@ -3,14 +3,18 @@ import type { Socket } from 'net';
 
 import { type Request, type Response } from 'express';
 import { createProxyMiddleware } from 'http-proxy-middleware';
+import z from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
 import { logger } from '@prairielearn/logger';
-import { queryOptionalScalar, queryScalar } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryOptionalScalar, queryScalar } from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
 import { config } from '../lib/config.js';
-import { QuestionSchema, WorkspaceSchema } from '../lib/db-types.js';
+import { WorkspaceSchema } from '../lib/db-types.js';
 import { LocalCache } from '../lib/local-cache.js';
+
+const sql = loadSqlEquiv(import.meta.url);
 
 /**
  * Removes "sensitive" cookies from the request to avoid exposing them to
@@ -100,20 +104,14 @@ export function makeWorkspaceProxyMiddleware(containerPathRegex: RegExp) {
       try {
         const match = path.match(containerPathRegex);
         if (!match) throw new Error(`Could not match path: ${path}`);
-        const workspace_id = Number.parseInt(match[1]);
+        const workspace_id = IdSchema.parse(match[1]);
         let workspace_url_rewrite = workspaceUrlRewriteCache.get(workspace_id);
         if (workspace_url_rewrite == null) {
-          const sql =
-            'SELECT q.workspace_url_rewrite' +
-            ' FROM questions AS q' +
-            ' JOIN variants AS v ON (v.question_id = q.id)' +
-            ' WHERE v.workspace_id = $workspace_id;';
-          workspace_url_rewrite =
-            (await queryScalar(
-              sql,
-              { workspace_id },
-              QuestionSchema.shape.workspace_url_rewrite,
-            )) ?? true;
+          workspace_url_rewrite = await queryScalar(
+            sql.select_workspace_url_rewrite,
+            { workspace_id },
+            z.boolean(),
+          );
           workspaceUrlRewriteCache.set(workspace_id, workspace_url_rewrite);
         }
 
@@ -123,7 +121,7 @@ export function makeWorkspaceProxyMiddleware(containerPathRegex: RegExp) {
         const newPath = '/' + pathSuffix;
         return newPath;
       } catch (err: any) {
-        logger.error(`Error in pathRewrite for path=${path}: ${err}`);
+        logger.error('Error in workspace path rewrite', { err, path });
         return path;
       }
     },
@@ -132,9 +130,9 @@ export function makeWorkspaceProxyMiddleware(containerPathRegex: RegExp) {
       const match = path.match(containerPathRegex);
       if (!match) throw new Error(`Could not match path: ${path}`);
 
-      const workspace_id = match[1];
+      const workspace_id = IdSchema.parse(match[1]);
       const hostname = await queryOptionalScalar(
-        "SELECT hostname FROM workspaces WHERE id = $workspace_id AND state = 'running';",
+        sql.select_hostname_from_workspace_id,
         { workspace_id },
         WorkspaceSchema.shape.hostname,
       );
@@ -153,7 +151,7 @@ export function makeWorkspaceProxyMiddleware(containerPathRegex: RegExp) {
         stripSensitiveCookies(proxyReq);
       },
       error: (err, req, res) => {
-        logger.error(`Error proxying workspace request: ${err}`, {
+        logger.error('Error proxying workspace request', {
           err,
           url: req.url,
           originalUrl: req.originalUrl,

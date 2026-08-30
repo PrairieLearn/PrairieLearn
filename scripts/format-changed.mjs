@@ -159,7 +159,7 @@ let hasErrors = false;
 // Run ESLint
 if (eslintFiles.length > 0) {
   console.log(`Running ESLint on ${eslintFiles.length} file(s)...`);
-  const result = await runCommand('yarn', ['eslint', '--fix', '--', ...eslintFiles]);
+  const result = await runCommand('pnpm', ['eslint', '--fix', '--', ...eslintFiles]);
   if (!result.success) {
     console.error('ESLint encountered errors');
     hasErrors = true;
@@ -169,7 +169,7 @@ if (eslintFiles.length > 0) {
 // Run Prettier
 if (prettierFiles.length > 0) {
   console.log(`Running Prettier on ${prettierFiles.length} file(s)...`);
-  const result = await runCommand('yarn', ['prettier', '--write', '--', ...prettierFiles]);
+  const result = await runCommand('pnpm', ['prettier', '--write', '--', ...prettierFiles]);
   if (!result.success) {
     console.error('Prettier encountered errors');
     hasErrors = true;

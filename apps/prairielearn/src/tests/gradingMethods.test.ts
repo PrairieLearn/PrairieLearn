@@ -1,5 +1,4 @@
 import * as cheerio from 'cheerio';
-import fetch, { type Response } from 'node-fetch';
 import { io } from 'socket.io-client';
 import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 

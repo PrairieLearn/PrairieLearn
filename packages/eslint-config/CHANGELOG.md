@@ -1,5 +1,47 @@
 # @prairielearn/eslint-config
 
+## 3.1.5
+
+### Patch Changes
+
+- 439df7c: Use second argument of Array.from
+- Updated dependencies [452f675]
+  - @prairielearn/eslint-plugin@4.4.0
+
+## 3.1.4
+
+### Patch Changes
+
+- e2ed7cd: Apply additional eslint unicorn rules
+
+## 3.1.3
+
+### Patch Changes
+
+- b98ca1c: Update Unicorn overrides for v73 and address selected correctness-focused lint findings.
+
+## 3.1.2
+
+### Patch Changes
+
+- df28e68: Bump dependencies
+
+## 3.1.1
+
+### Patch Changes
+
+- 4a0ee46: Bump dependencies
+
+## 3.1.0
+
+### Minor Changes
+
+- d0e7952: enable @typescript-eslint/no-deprecated
+
+### Patch Changes
+
+- e253b31: Migrate package builds and executable links to pnpm.
+
 ## 3.0.3
 
 ### Patch Changes

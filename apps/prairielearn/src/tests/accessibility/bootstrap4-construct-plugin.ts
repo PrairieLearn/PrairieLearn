@@ -18,6 +18,7 @@ const BOOTSTRAP_LEGACY_ATTRIBUTES = [
   'data-keyboard',
   'data-html',
   'data-offset',
+  'data-parent',
   'data-pause',
   'data-placement',
   'data-popper-config',
@@ -25,6 +26,8 @@ const BOOTSTRAP_LEGACY_ATTRIBUTES = [
   'data-ride',
   'data-selector',
   'data-show',
+  'data-slide',
+  'data-slide-to',
   'data-spy',
   'data-target',
   'data-template',
@@ -111,6 +114,8 @@ class Bootstrap4ConstructRule extends Rule {
       const { document } = event;
 
       BOOTSTRAP_LEGACY_ATTRIBUTES.forEach((attr) => {
+        // The attribute names come from the fixed list above, and html-validate does not expose CSS.escape().
+        // eslint-disable-next-line unicorn/require-css-escape
         document.querySelectorAll(`[${attr}]`).forEach((node) => {
           // `tom-select` uses a `data-content` attribute on `option` elements.
           // This is unrelated to Bootstrap, so we don't want to do anything with this.
@@ -118,7 +123,7 @@ class Bootstrap4ConstructRule extends Rule {
 
           this.report({
             node,
-            message: `Bootstrap 4 attribute "${attr}" should not be used. Use "${attr.replace('data-', 'data-bs-')}" instead.`,
+            message: `Bootstrap 4 attribute "${attr}" should not be used. Migrate to the Bootstrap 5 equivalent.`,
           });
         });
       });

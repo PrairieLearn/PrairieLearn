@@ -37,7 +37,8 @@ The `file-patterns` and `optional-file-patterns` attributes support a number of 
 - The `*` placeholder allows an arbitrary number of wildcard characters. For example, `*.txt`
   allows files like "solution.txt", "my_file.txt", and also ".txt".
 - The `[seq]` placeholder allows a single character from the set of options listed inside the square
-  brackets. For example, `file_[abc].txt` allows "file_a.txt", "file_b.txt" and "file_c.txt", but not
+  brackets. For example, `file_[abc].txt` allows "file_a.txt", "file_b.txt" and "file_c.txt" (as well
+  as their uppercase equivalents like "file_A.txt", since matching is case-insensitive), but not
   "file_x.txt".
 - The `[seq]` placeholder also supports ranges like "a-z" or "0-9". For example, `file[0-9].txt`
   allows "file5.txt", but not "filex.txt". Ranges can also be combined. For example,`file[0-9a-z].txt` allows a single alphanumeric
@@ -47,13 +48,17 @@ The `file-patterns` and `optional-file-patterns` attributes support a number of 
 
     `file-patterns` and `optional-file-patterns` accepts [fnmatch](https://docs.python.org/3/library/fnmatch.html) file globs, not regular expressions. Brace expansion (`{foo,bar}.txt`) is not currently supported.
 
+!!! note
+
+    Pattern matching is case-insensitive, so a pattern like `file[0-9a-z].txt` also matches uppercase characters (e.g. "fileX.txt").
+
 | File pattern       | Allowed :white_check_mark:                        | Disallowed :x:                   |
 | ------------------ | ------------------------------------------------- | -------------------------------- |
 | `solution?.txt`    | `solution1.txt`, `solution2.txt`, `solutionA.txt` | `solution10.txt`, `solution.txt` |
 | `*.txt`            | `solution.txt`, `my_file.txt`, `.txt`             | `solution.py`, `my_file`         |
 | `file_[abc].txt`   | `file_a.txt`, `file_b.txt`, `file_c.txt`          | `file_x.txt`, `file_ab.txt`      |
 | `file[0-9].txt`    | `file5.txt`, `file0.txt`, `file9.txt`             | `filex.txt`, `file10.txt`        |
-| `file[0-9a-z].txt` | `file5.txt`, `filex.txt`, `file0.txt`             | `fileX.txt`, `file10.txt`        |
+| `file[0-9a-z].txt` | `file5.txt`, `filex.txt`, `fileX.txt`             | `file10.txt`, `file_.txt`        |
 | `[!_]*.py`         | `solution.py`, `my_file.py`                       | `_foo.py`, `file.txt`            |
 
 If file names or patterns overlap, uploaded files are first used to fill the required file names in `file-names`. Next, files that match a required pattern in `file-patterns` are used to fill that pattern. Any remaining uploaded files are accepted if they match either a name in `optional-file-names` or a pattern in `optional-file-patterns`.

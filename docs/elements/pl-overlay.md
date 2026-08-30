@@ -30,22 +30,22 @@ The overlay element allows existing PrairieLearn and HTML elements to be layered
 
 ## `pl-overlay` Customizations
 
-| Attribute | Type    | Default | Description                                                          |
-| --------- | ------- | ------- | -------------------------------------------------------------------- |
-| `clip`    | boolean | true    | If true, children will be cut off when exceeding overlay boundaries. |
-| `height`  | float   | —       | The height of the overlay canvas in pixels.                          |
-| `width`   | float   | —       | The width of the overlay canvas in pixels.                           |
+| Attribute | Type    | Default | Description                                                                                |
+| --------- | ------- | ------- | ------------------------------------------------------------------------------------------ |
+| `clip`    | boolean | true    | If true, children will be cut off when exceeding overlay boundaries.                       |
+| `height`  | float   | —       | The height of the overlay canvas in pixels. Required unless a `pl-background` is provided. |
+| `width`   | float   | —       | The width of the overlay canvas in pixels. Required unless a `pl-background` is provided.  |
 
 ## `pl-location` Customizations
 
-| Attribute | Type   | Default    | Description                                                                                           |
-| --------- | ------ | ---------- | ----------------------------------------------------------------------------------------------------- |
-| `bottom`  | float  | —          | The y coordinate of the child element (relative to the bottom of the overlay)                         |
-| `halign`  | string | `"center"` | Specifies the horizontal alignment of the contents. Can be one of `"left"`, `"center"`, or `"right"`. |
-| `left`    | float  | —          | The x coordinate of the child element (relative to the left of the overlay)                           |
-| `right`   | float  | —          | The x coordinate of the child element (relative to the right of the overlay)                          |
-| `top`     | float  | —          | The y coordinate of the child element (relative to the top of the overlay)                            |
-| `valign`  | string | `"middle"` | Specifies the vertical alignment of the contents. Can be one of `"top"`, `"middle"`, or `"bottom"`.   |
+| Attribute | Type   | Default    | Description                                                                                                                                  |
+| --------- | ------ | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `bottom`  | float  | —          | The y coordinate of the child element (relative to the bottom of the overlay)                                                                |
+| `halign`  | string | `"center"` | Specifies the horizontal alignment of the contents. Can be one of `"left"`, `"center"`, `"middle"` (equivalent to `"center"`), or `"right"`. |
+| `left`    | float  | —          | The x coordinate of the child element (relative to the left of the overlay)                                                                  |
+| `right`   | float  | —          | The x coordinate of the child element (relative to the right of the overlay)                                                                 |
+| `top`     | float  | —          | The y coordinate of the child element (relative to the top of the overlay)                                                                   |
+| `valign`  | string | `"middle"` | Specifies the vertical alignment of the contents. Can be one of `"top"`, `"middle"`, `"center"` (equivalent to `"middle"`), or `"bottom"`.   |
 
 ## `pl-background` Customizations
 
@@ -57,7 +57,7 @@ An overlay is pre-defined as a "overlay area" with a static size. By default, el
 
 A background can be specified by wrapping HTML in a `<pl-background>` tag. If the contents of `<pl-background>` don't have a fixed size (e.g. using `<pl-figure>`, which uses a responsive width), then you should explicitly specify at least a `width` on `<pl-overlay>` to ensure that children will be displayed at the expected location no matter how big the browser viewport is. However, if the contents of `<pl-background>` have a fixed size (e.g. using `<pl-drawing width="500">`), then manually specifying a `width`/`height` on `<pl-overlay>` is not necessary.
 
-Floating child elements are wrapped with a `<pl-location>` tag that specifies the position relative to some defined edge of the overlay area using `left`, `right`, `top`, and `bottom`. Anything inside the location tag will be displayed at that position. Children are layered in the order they are specified, with later child elements being displayed on top of those defined earlier.
+Floating child elements are wrapped with a `<pl-location>` tag that specifies the position relative to some defined edge of the overlay area using `left`, `right`, `top`, and `bottom`. Each `<pl-location>` must specify exactly one of `left` or `right` and exactly one of `top` or `bottom`. Anything inside the location tag will be displayed at that position. Children are layered in the order they are specified, with later child elements being displayed on top of those defined earlier.
 
 ## Example implementations
 

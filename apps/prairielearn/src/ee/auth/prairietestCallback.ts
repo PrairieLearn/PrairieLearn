@@ -1,5 +1,3 @@
-import * as crypto from 'node:crypto';
-
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import * as jose from 'jose';
@@ -10,6 +8,7 @@ import { AugmentedError, HttpStatusError } from '@prairielearn/error';
 import * as authnLib from '../../lib/authn.js';
 import { getStudentAssessmentUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
+import { jwtVerifyWithKeyRing } from '../../lib/jwt.js';
 
 const router = Router({ mergeParams: true });
 
@@ -31,12 +30,11 @@ router.post(
       throw new HttpStatusError(400, 'Missing JWT');
     }
 
-    const key = crypto.createSecretKey(config.prairieTestSharedAuthSecret, 'utf-8');
     let payload: jose.JWTPayload;
     try {
       // TODO: require `audience: 'prairielearn'` once all PrairieTest deployments
       // are issuing JWTs with the `aud` claim set.
-      const verifyResult = await jose.jwtVerify(jwt, key);
+      const verifyResult = await jwtVerifyWithKeyRing(jwt, config.prairieTestSharedAuthSecret);
       payload = verifyResult.payload;
     } catch (err) {
       if (err instanceof jose.errors.JWSSignatureVerificationFailed) {

@@ -1,5 +1,4 @@
 columns
-    deleted_at: timestamp with time zone
     email: character varying(255)
     id: bigint not null default nextval('users_user_id_seq'::regclass)
     institution_id: bigint not null default 1
@@ -83,6 +82,7 @@ referenced by
     team_user_roles: FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
     team_users: FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
     user_sessions: FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
+    user_settings: FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
     variants: FOREIGN KEY (authn_user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
     variants: FOREIGN KEY (broken_by) REFERENCES users(id)
     variants: FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE

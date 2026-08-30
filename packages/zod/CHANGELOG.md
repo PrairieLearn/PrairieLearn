@@ -1,5 +1,36 @@
 # @prairielearn/zod
 
+## 3.1.0
+
+### Minor Changes
+
+- 4edf496: Add helpers for parsing and validating Express path parameters or multiple request data sources with Zod, and report unrecognized `__action` discriminators with an action-specific error
+
+## 3.0.3
+
+### Patch Changes
+
+- c84e41c: Add a composable schema for parsing JSON strings.
+- 53f4716: Validate that PostgreSQL IDs are positive scalar values within the `BIGINT` range, and add helpers for parsing request query parameters and bodies with consistent HTTP 400 errors.
+
+## 3.0.2
+
+### Patch Changes
+
+- df28e68: Bump dependencies
+
+## 3.0.1
+
+### Patch Changes
+
+- 4a0ee46: Bump dependencies
+
+## 3.0.0
+
+### Major Changes
+
+- 288ff13: Upgrade to Zod 4. Zod is part of these packages' public API surface (exported schemas and schema-generic functions such as `ConfigLoader` and the `query*` helpers), so consumers must also upgrade to Zod 4. Additionally, `@prairielearn/postgres` no longer exports the `AnyRowSchema` type alias; use `z.ZodType` instead.
+
 ## 2.0.6
 
 ### Patch Changes

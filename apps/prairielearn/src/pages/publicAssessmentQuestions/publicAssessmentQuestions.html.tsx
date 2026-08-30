@@ -64,6 +64,15 @@ function AssessmentQuestionsTable({
   course: Course;
 }) {
   const nTableCols = 5;
+  const questionGroups: StaffAssessmentQuestionRow[][] = [];
+  questions.forEach((question) => {
+    if (question.start_new_zone || questionGroups.length === 0) {
+      questionGroups.push([question]);
+    } else {
+      questionGroups[questionGroups.length - 1].push(question);
+    }
+  });
+
   return html`
     <div class="table-responsive">
       <table class="table table-sm table-hover">
@@ -76,50 +85,57 @@ function AssessmentQuestionsTable({
             <th>Other Assessments</th>
           </tr>
         </thead>
-        <tbody>
-          ${questions.map((question) => {
-            return html`
-              ${renderHtml(
-                <AssessmentQuestionHeaders question={question} nTableCols={nTableCols} />,
-              )}
-              <tr>
-                <td>
-                  <a href="/pl/public/course/${course_id}/question/${question.question.id}/preview">
-                    ${renderHtml(
-                      <AssessmentQuestionNumber
-                        questionNumber={question.alternative_pool.number}
-                        alternativeNumber={
-                          question.alternative_pool_size > 1
-                            ? question.assessment_question.number_in_alternative_group
-                            : undefined
-                        }
-                        className="me-2"
-                      />,
-                    )}${question.question.title}
-                  </a>
-                </td>
-                <td>@${course.sharing_name}/${question.question.qid}</td>
-                <td>${TopicBadgeHtml(question.topic)}</td>
-                <td>${renderHtml(<TagBadgeList tags={question.tags} />)}</td>
-                <td>
-                  ${question.other_assessments
-                    ? question.other_assessments.map((assessment) => {
-                        return AssessmentBadgeHtml({
-                          assessment: {
-                            assessment_id: assessment.assessment_id,
-                            color: assessment.assessment_set_color,
-                            label: `${assessment.assessment_set_abbreviation}${assessment.assessment_number}`,
-                          },
-                          courseInstanceId: course_instance_id,
-                          publicURL: true,
-                        });
-                      })
-                    : ''}
-                </td>
-              </tr>
-            `;
-          })}
-        </tbody>
+        ${questionGroups.map(
+          (groupQuestions) => html`
+            <tbody>
+              ${groupQuestions.map((question) => {
+                return html`
+                  ${renderHtml(
+                    <AssessmentQuestionHeaders question={question} nTableCols={nTableCols} />,
+                  )}
+                  <tr>
+                    <td>
+                      <a
+                        href="/pl/public/course/${course_id}/question/${question.question
+                          .id}/preview"
+                      >
+                        ${renderHtml(
+                          <AssessmentQuestionNumber
+                            questionNumber={question.alternative_pool.number}
+                            alternativeNumber={
+                              question.alternative_pool_size > 1
+                                ? question.assessment_question.number_in_alternative_group
+                                : undefined
+                            }
+                            className="me-2"
+                          />,
+                        )}${question.question.title}
+                      </a>
+                    </td>
+                    <td>@${course.sharing_name}/${question.question.qid}</td>
+                    <td>${TopicBadgeHtml(question.topic)}</td>
+                    <td>${renderHtml(<TagBadgeList tags={question.tags} />)}</td>
+                    <td>
+                      ${question.other_assessments
+                        ? question.other_assessments.map((assessment) => {
+                            return AssessmentBadgeHtml({
+                              assessment: {
+                                assessment_id: assessment.assessment_id,
+                                color: assessment.assessment_set_color,
+                                label: `${assessment.assessment_set_abbreviation}${assessment.assessment_number}`,
+                              },
+                              courseInstanceId: course_instance_id,
+                              publicURL: true,
+                            });
+                          })
+                        : ''}
+                    </td>
+                  </tr>
+                `;
+              })}
+            </tbody>
+          `,
+        )}
       </table>
     </div>
   `;

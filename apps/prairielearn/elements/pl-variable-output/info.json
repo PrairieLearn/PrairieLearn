@@ -1,4 +1,7 @@
 {
   "controller": "pl-variable-output.py",
+  "dependencies": {
+    "elementStyles": ["pl-variable-output.css"]
+  },
   "additionalNames": ["pl-matrix-output"]
 }

@@ -4,6 +4,7 @@ import fs from 'fs-extra';
 import { assert, describe, expect, it, test } from 'vitest';
 
 import { EXAMPLE_COURSE_PATH } from '../../../lib/paths.js';
+import { UUID_REGEXP } from '../../../lib/string-util.js';
 import {
   type ZoneAssessmentJson,
   ZoneAssessmentJsonSchema,
@@ -235,9 +236,7 @@ describe('prepareZonesForEditor', () => {
 
     expect(result).toHaveLength(1);
     expect(result[0].trackingId).toBeDefined();
-    expect(result[0].trackingId).toMatch(
-      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/,
-    );
+    expect(result[0].trackingId).toMatch(UUID_REGEXP);
     expect(result[0].questions[0].trackingId).toBeDefined();
     expect(result[0].questions[1].trackingId).toBeDefined();
     expect(result[0].questions[1].alternatives![0].trackingId).toBeDefined();

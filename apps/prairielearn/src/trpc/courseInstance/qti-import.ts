@@ -1,19 +1,17 @@
-import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
 import { flash } from '@prairielearn/flash';
+import { throwAppError } from '@prairielearn/trpc/server';
 
 import {
   type QtiImportAssessmentData,
   QtiImportEditor,
   type QtiImportQuestionData,
 } from '../../lib/editors.js';
-import { features } from '../../lib/features/index.js';
 import { readQtiImportDraft } from '../../lib/qti-import-drafts.js';
 import { SHORT_NAME_REGEX } from '../../lib/short-name.js';
 import { AssessmentJsonSchema } from '../../schemas/infoAssessment.js';
 import { QuestionJsonSchema } from '../../schemas/infoQuestion.js';
-import { throwAppError } from '../app-errors.js';
 
 import { requireCoursePermissionEdit, t } from './init.js';
 
@@ -25,8 +23,28 @@ const SafeDirectoryName = z
   .min(1)
   .regex(SHORT_NAME_REGEX, 'Directory name contains invalid characters');
 
-const QuestionInfoJsonSchema = QuestionJsonSchema.loose();
-const AssessmentInfoJsonSchema = AssessmentJsonSchema.loose();
+/**
+ * Validates an info JSON blob against the given schema without rewriting it.
+ * Parsing directly with the schema would fill in every `.default()` value,
+ * and those defaults would then be written verbatim into the imported
+ * info.json files. Validate for correctness but keep the original input so
+ * only the properties the client actually sent are written to disk.
+ */
+function validatedInfoJsonSchema(schema: z.ZodType) {
+  return z.record(z.string(), z.unknown()).superRefine((value, ctx) => {
+    const result = schema.safeParse(value);
+    if (!result.success) {
+      for (const issue of result.error.issues) {
+        // Spread into a fresh object: $ZodIssue is not assignable to
+        // addIssue's raw issue parameter type.
+        ctx.addIssue({ ...issue });
+      }
+    }
+  });
+}
+
+const QuestionInfoJsonSchema = validatedInfoJsonSchema(QuestionJsonSchema.loose());
+const AssessmentInfoJsonSchema = validatedInfoJsonSchema(AssessmentJsonSchema.loose());
 
 const BaseQuestionDataSchema = z.object({
   directoryName: SafeDirectoryName,
@@ -62,6 +80,8 @@ const StoredSerializedQuestionOutputSchema = z.object({
   serverPy: z.string().optional(),
   clientFiles: z.record(z.string(), z.string()),
   skippedVideos: z.array(z.string()),
+  // Drafts created before external image copying was added omit this field.
+  copiedExternalImageFileCount: z.number().int().nonnegative().default(0),
 });
 
 const StoredSerializedConversionResultForHydrationSchema = z.object({
@@ -71,17 +91,6 @@ type StoredSerializedConversionResultForHydration = z.infer<
   typeof StoredSerializedConversionResultForHydrationSchema
 >;
 
-const requireQtiImportEnabled = t.middleware(async (opts) => {
-  const enabled = await features.enabledFromLocals('qti-content-import', opts.ctx.locals);
-  if (!enabled) {
-    throw new TRPCError({
-      code: 'FORBIDDEN',
-      message: 'QTI content import is not enabled for this course',
-    });
-  }
-  return opts.next();
-});
-
 export interface QtiImportError {
   Create:
     | { code: 'QTI_IMPORT_DRAFT_UNAVAILABLE'; message: string }
@@ -90,7 +99,6 @@ export interface QtiImportError {
 
 const create = t.procedure
   .use(requireCoursePermissionEdit)
-  .use(requireQtiImportEnabled)
   .input(
     z
       .object({

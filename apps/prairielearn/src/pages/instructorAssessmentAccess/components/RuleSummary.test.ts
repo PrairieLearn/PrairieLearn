@@ -14,7 +14,7 @@ function makeDefaultRule(partial: Partial<DefaultRuleData> = {}): DefaultRuleDat
     due: { date: '2026-05-01T23:59:59', credit: null, customCredit: false },
     earlyDeadlines: [],
     lateDeadlines: [],
-    afterLastDeadline: null,
+    afterLastDeadline: { allowSubmissions: false },
     durationMinutes: null,
     password: null,
     prairieTestExams: [],

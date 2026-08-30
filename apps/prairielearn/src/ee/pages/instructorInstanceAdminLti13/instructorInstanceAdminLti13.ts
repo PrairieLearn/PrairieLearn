@@ -5,13 +5,7 @@ import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import { html } from '@prairielearn/html';
 import { logger } from '@prairielearn/logger';
-import {
-  execute,
-  loadSqlEquiv,
-  queryRow,
-  queryRows,
-  runInTransactionAsync,
-} from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 
 import { InsufficientCoursePermissionsCardPage } from '../../../components/InsufficientCoursePermissionsCard.js';
 import { getCourseOwners } from '../../../lib/course.js';
@@ -21,11 +15,13 @@ import {
   Lti13CourseInstanceSchema,
   Lti13InstanceSchema,
 } from '../../../lib/db-types.js';
+import { runWithSharedEnrollmentBarrier } from '../../../lib/enrollment/barrier.js';
 import { typedAsyncHandler } from '../../../lib/res-locals.js';
 import { createServerJob } from '../../../lib/server-jobs.js';
 import { getCanonicalHost } from '../../../lib/url.js';
 import { createAuthzMiddleware } from '../../../middlewares/authzHelper.js';
 import { insertAuditLog } from '../../../models/audit-log.js';
+import { getLti13CourseDisplayName } from '../../lib/lti13-course-instance.js';
 import {
   Lti13CombinedInstanceSchema,
   createAndLinkLineitem,
@@ -175,7 +171,9 @@ router.post(
     };
 
     if (req.body.__action === 'delete_lti13_course_instance') {
-      await runInTransactionAsync(async () => {
+      // Deleting the LTI course instance cascades through
+      // `enrollments.pending_lti13_course_instance_id`, so it must take the enrollment barrier.
+      await runWithSharedEnrollmentBarrier(res.locals.course_instance.id, async () => {
         const deleted_lti13_course_instance = await queryRow(
           sql.delete_lti13_course_instance,
           {
@@ -272,6 +270,7 @@ router.post(
         sql.select_assessments_to_create,
         {
           course_instance_id: instance.lti13_course_instance.course_instance_id,
+          lti13_course_instance_id: instance.lti13_course_instance.id,
           group_id,
           assessments_group_by: res.locals.course_instance.assessments_group_by,
         },
@@ -300,7 +299,12 @@ router.post(
         }
       });
       return res.redirect(res.locals.urlPrefix + '/jobSequence/' + serverJob.jobSequenceId);
-    } else if (req.body.__action === 'send_grades') {
+    } else if (
+      req.body.__action === 'send_grades' ||
+      req.body.__action === 'send_grades_all_lms_courses'
+    ) {
+      const sendToAllLmsCourses = req.body.__action === 'send_grades_all_lms_courses';
+
       const assessment = await queryRow(
         sql.select_assessment_in_course_instance,
         {
@@ -310,20 +314,53 @@ router.post(
         AssessmentSchema,
       );
 
-      serverJobOptions.description = 'LTI 1.3 send assessment grades to LMS';
+      const targetInstances = sendToAllLmsCourses
+        ? await queryRows(
+            sql.select_combined_lti13_instances_for_assessment,
+            {
+              course_instance_id: res.locals.course_instance.id,
+              assessment_id: assessment.id,
+            },
+            Lti13CombinedInstanceSchema,
+          )
+        : [instance];
+
+      serverJobOptions.description = sendToAllLmsCourses
+        ? 'LTI 1.3 send assessment grades to all LMS courses'
+        : 'LTI 1.3 send assessment grades to LMS';
       const serverJob = await createServerJob(serverJobOptions);
 
       serverJob.executeInBackground(async (job) => {
-        await updateLti13Scores({
-          courseInstance: res.locals.course_instance,
-          unsafe_assessment_id: assessment.id,
-          instance,
-          job,
-        });
+        let errorCount = 0;
+        for (const targetInstance of targetInstances) {
+          try {
+            await updateLti13Scores({
+              courseInstance: res.locals.course_instance,
+              unsafe_assessment_id: assessment.id,
+              instance: targetInstance,
+              job,
+            });
 
-        await execute(sql.update_lti13_assessment_last_activity, {
-          assessment_id: assessment.id,
-        });
+            await execute(sql.update_lti13_assessment_last_activity, {
+              assessment_id: assessment.id,
+              lti13_course_instance_id: targetInstance.lti13_course_instance.id,
+            });
+          } catch (err) {
+            errorCount++;
+            job.error(
+              `Error sending grades to ${targetInstance.lti13_instance.name} course ` +
+                `${getLti13CourseDisplayName(targetInstance.lti13_course_instance)}:\n` +
+                error.formatErrorStack(err),
+            );
+          }
+        }
+
+        if (errorCount > 0) {
+          job.fail(
+            `Failed to send grades to ${errorCount} LMS course${errorCount === 1 ? '' : 's'}, ` +
+              'see output for details',
+          );
+        }
       });
       return res.redirect(res.locals.urlPrefix + '/jobSequence/' + serverJob.jobSequenceId);
     } else {

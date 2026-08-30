@@ -3,23 +3,39 @@ import { Router } from 'express';
 import jose from 'node-jose';
 import { z } from 'zod';
 
-import * as error from '@prairielearn/error';
+import { HttpStatusError } from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import {
   execute,
   loadSqlEquiv,
   queryOptionalScalar,
+  queryRow,
   queryRows,
   queryScalar,
+  runInTransactionAsync,
 } from '@prairielearn/postgres';
 
 import { config } from '../../../lib/config.js';
 import { type Lti13Instance, Lti13InstanceSchema } from '../../../lib/db-types.js';
+import {
+  assertLti13RosterSyncCanBeAllowed,
+  getLti13RosterSyncPrerequisiteIssues,
+  lockInstitutionForIdentityConfiguration,
+  normalizeUinAttribute,
+  selectInstitutionIdentityConfigurationStatus,
+} from '../../../lib/institution-identity.js';
 import { typedAsyncHandler } from '../../../lib/res-locals.js';
+import { createServerJob } from '../../../lib/server-jobs.js';
 import { getCanonicalHost } from '../../../lib/url.js';
+import { insertAuditEvent } from '../../../models/audit-event.js';
 import { getInstitution } from '../../lib/institution.js';
+import { Lti13CombinedInstanceSchema, inspectRoster } from '../../lib/lti13.js';
+import { selectLti13InstanceForUpdate } from '../../models/lti13Instance.js';
 
-import { AdministratorInstitutionLti13 } from './administratorInstitutionLti13.html.js';
+import {
+  AdministratorInstitutionLti13,
+  LinkedCourseInstanceSchema,
+} from './administratorInstitutionLti13.html.js';
 import { type LTI13InstancePlatforms } from './administratorInstitutionLti13.types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
@@ -42,7 +58,6 @@ router.get(
       { institution_id: req.params.institution_id },
       Lti13InstanceSchema,
     );
-
     const platform_defaults_hardcoded: LTI13InstancePlatforms = [
       {
         platform: 'Unknown',
@@ -57,6 +72,19 @@ router.get(
           jwks_uri: 'https://sso.canvaslms.com/api/lti/security/jwks',
           token_endpoint: 'https://sso.canvaslms.com/login/oauth2/token',
           authorization_endpoint: 'https://sso.canvaslms.com/api/lti/authorize_redirect',
+        },
+        custom_fields: {
+          uin: '$Canvas.user.sisIntegrationId',
+        },
+      },
+      {
+        platform: 'Canvas Test',
+        display_order: 20,
+        issuer_params: {
+          issuer: 'https://canvas.test.instructure.com',
+          jwks_uri: 'https://sso.test.canvaslms.com/api/lti/security/jwks',
+          token_endpoint: 'https://sso.test.canvaslms.com/login/oauth2/token',
+          authorization_endpoint: 'https://sso.test.canvaslms.com/api/lti/authorize_redirect',
         },
         custom_fields: {
           uin: '$Canvas.user.sisIntegrationId',
@@ -85,21 +113,38 @@ router.get(
       paramInstance = lti13Instances.find(({ id }) => id === req.params.unsafe_lti13_instance_id);
 
       if (!paramInstance) {
-        throw new error.HttpStatusError(
+        throw new HttpStatusError(
           404,
           `LTI 1.3 instance ${req.params.unsafe_lti13_instance_id} not found`,
         );
       }
     }
 
+    const rosterSyncPrerequisiteIssues = paramInstance
+      ? getLti13RosterSyncPrerequisiteIssues(
+          await selectInstitutionIdentityConfigurationStatus(req.params.institution_id),
+          paramInstance.uin_attribute,
+        )
+      : [];
+
+    const linkedCourseInstances = paramInstance
+      ? await queryRows(
+          sql.select_linked_course_instances,
+          { lti13_instance_id: paramInstance.id },
+          LinkedCourseInstanceSchema,
+        )
+      : [];
+
     res.send(
       AdministratorInstitutionLti13({
         institution,
         lti13Instances,
         instance: paramInstance ?? null,
+        linkedCourseInstances,
         resLocals: res.locals,
         platform_defaults,
         canonicalHost: getCanonicalHost(req),
+        rosterSyncPrerequisiteIssues,
       }),
     );
   }),
@@ -169,13 +214,57 @@ router.post(
         flash('success', `Key ${key.kid} deleted.`);
         return res.redirect(req.originalUrl);
       } else {
-        throw new error.HttpStatusError(500, 'error removing key');
+        throw new HttpStatusError(500, 'error removing key');
       }
+    } else if (
+      req.body.__action === 'allow_roster_sync' ||
+      req.body.__action === 'disallow_roster_sync'
+    ) {
+      const shouldAllowRosterSync = req.body.__action === 'allow_roster_sync';
+      await runInTransactionAsync(async () => {
+        await lockInstitutionForIdentityConfiguration(req.params.institution_id);
+        const instance = await selectLti13InstanceForUpdate(
+          req.params.institution_id,
+          req.params.unsafe_lti13_instance_id,
+        );
+        if (shouldAllowRosterSync) {
+          await assertLti13RosterSyncCanBeAllowed(
+            req.params.institution_id,
+            instance.uin_attribute,
+            req.body,
+          );
+        }
+        await execute(sql.update_roster_sync_allowed, {
+          institution_id: req.params.institution_id,
+          unsafe_lti13_instance_id: req.params.unsafe_lti13_instance_id,
+          roster_sync_allowed: shouldAllowRosterSync,
+        });
+        await insertAuditEvent({
+          tableName: 'lti13_instances',
+          action: 'update',
+          actionDetail: 'roster_sync_allowed',
+          rowId: instance.id,
+          institutionId: req.params.institution_id,
+          oldRow: { roster_sync_allowed: instance.roster_sync_allowed },
+          newRow: { roster_sync_allowed: shouldAllowRosterSync },
+          agentAuthnUserId: res.locals.authn_user.id,
+          agentUserId: res.locals.authn_user.id,
+        });
+      });
+      flash(
+        'success',
+        shouldAllowRosterSync ? 'Roster syncing allowed.' : 'Roster syncing disallowed.',
+      );
+      return res.redirect(req.originalUrl);
     } else if (req.body.__action === 'update_platform') {
       const url = getCanonicalHost(req);
+      const platform = z.string().parse(req.body.platform).trim();
+      const issuer_params = JSON.parse(z.string().parse(req.body.issuer_params));
+      const custom_fields = JSON.parse(z.string().parse(req.body.custom_fields));
+      const clientId = req.body.client_id || null;
 
       const client_params = {
-        client_id: req.body.client_id || null,
+        client_id: clientId,
         redirect_uris: [
           `${url}/pl/lti13_instance/${req.params.unsafe_lti13_instance_id}/auth/callback`,
         ],
@@ -183,13 +272,28 @@ router.post(
         token_endpoint_auth_signing_alg: 'RS256',
       };
 
-      await execute(sql.update_platform, {
-        unsafe_lti13_instance_id: req.params.unsafe_lti13_instance_id,
-        institution_id: req.params.institution_id,
-        issuer_params: req.body.issuer_params,
-        platform: req.body.platform,
-        client_params,
-        custom_fields: req.body.custom_fields,
+      await runInTransactionAsync(async () => {
+        await lockInstitutionForIdentityConfiguration(req.params.institution_id);
+        const instance = await selectLti13InstanceForUpdate(
+          req.params.institution_id,
+          req.params.unsafe_lti13_instance_id,
+        );
+
+        if (instance.roster_sync_allowed) {
+          throw new HttpStatusError(
+            400,
+            'Disallow roster syncing before changing the LTI platform configuration',
+          );
+        }
+
+        await execute(sql.update_platform, {
+          unsafe_lti13_instance_id: req.params.unsafe_lti13_instance_id,
+          institution_id: req.params.institution_id,
+          issuer_params,
+          platform,
+          client_params,
+          custom_fields,
+        });
       });
       flash('success', 'Platform updated.');
       return res.redirect(req.originalUrl);
@@ -216,14 +320,36 @@ router.post(
       flash('success', 'Name updated.');
       return res.redirect(req.originalUrl);
     } else if (req.body.__action === 'save_pl_config') {
-      await execute(sql.update_pl_config, {
-        name_attribute: req.body.name_attribute,
-        uid_attribute: req.body.uid_attribute,
-        uin_attribute: req.body.uin_attribute,
-        email_attribute: req.body.email_attribute,
-        require_linked_lti_user: !!req.body.require_linked_lti_user,
-        institution_id: req.params.institution_id,
-        unsafe_lti13_instance_id: req.params.unsafe_lti13_instance_id,
+      await runInTransactionAsync(async () => {
+        await lockInstitutionForIdentityConfiguration(req.params.institution_id);
+        const instance = await selectLti13InstanceForUpdate(
+          req.params.institution_id,
+          req.params.unsafe_lti13_instance_id,
+        );
+        // Disabled inputs are omitted from form submissions, so preserve the locked UIN.
+        const uinAttribute = normalizeUinAttribute(
+          req.body.uin_attribute ?? instance.uin_attribute,
+        );
+
+        if (
+          instance.roster_sync_allowed &&
+          uinAttribute !== normalizeUinAttribute(instance.uin_attribute)
+        ) {
+          throw new HttpStatusError(
+            400,
+            'Disallow roster syncing before changing the LTI UIN attribute',
+          );
+        }
+
+        await execute(sql.update_pl_config, {
+          name_attribute: req.body.name_attribute,
+          uid_attribute: req.body.uid_attribute,
+          uin_attribute: uinAttribute,
+          email_attribute: req.body.email_attribute,
+          require_linked_lti_user: !!req.body.require_linked_lti_user,
+          institution_id: req.params.institution_id,
+          unsafe_lti13_instance_id: req.params.unsafe_lti13_instance_id,
+        });
       });
       flash('success', 'PrairieLearn config updated.');
       res.redirect(req.originalUrl);
@@ -234,8 +360,42 @@ router.post(
       });
       flash('success', 'Instance deleted.');
       return res.redirect(`/pl/administrator/institution/${req.params.institution_id}/lti13`);
+    } else if (req.body.__action === 'inspect_roster') {
+      const instance = await queryRow(
+        sql.select_combined_lti13_instance,
+        {
+          institution_id: req.params.institution_id,
+          lti13_instance_id: req.params.unsafe_lti13_instance_id,
+          lti13_course_instance_id: req.body.lti13_course_instance_id,
+        },
+        Lti13CombinedInstanceSchema,
+      );
+
+      // Intentionally not associated with a course or course instance. The roster
+      // dump contains every member's sub/email/UIN, so it must stay viewable only
+      // via the administrator job sequence page (gated by authzIsAdministrator).
+      // Setting courseId/courseInstanceId would both expose it to that course's
+      // student data viewers and hide its output from the admin view (which fetches
+      // jobs scoped to course_id IS NULL).
+      const serverJob = await createServerJob({
+        type: 'lti13',
+        description: 'Inspect LTI 1.3 NRPS roster',
+        userId: res.locals.authn_user.id,
+        authnUserId: res.locals.authn_user.id,
+      });
+
+      serverJob.executeInBackground(async (job) => {
+        await inspectRoster({
+          instance,
+          // An empty selection means a plain roster with no custom claims.
+          rlid: String(req.body.rlid ?? '').trim() || null,
+          job,
+        });
+      });
+
+      return res.redirect(`/pl/administrator/jobSequence/${serverJob.jobSequenceId}`);
     } else {
-      throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
+      throw new HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }
   }),
 );

@@ -46,26 +46,6 @@ WITH
   )
 SELECT
   to_jsonb(ai) AS assessment_instance,
-  CASE
-    WHEN COALESCE(aai.exam_access_end, ai.date_limit) IS NOT NULL THEN floor(
-      DATE_PART(
-        'epoch',
-        LEAST(aai.exam_access_end, ai.date_limit) - $req_date::timestamptz
-      ) * 1000
-    )
-  END AS assessment_instance_remaining_ms,
-  CASE
-    WHEN COALESCE(aai.exam_access_end, ai.date_limit) IS NOT NULL THEN floor(
-      DATE_PART(
-        'epoch',
-        LEAST(aai.exam_access_end, ai.date_limit) - ai.date
-      ) * 1000
-    )
-  END AS assessment_instance_time_limit_ms,
-  (
-    ai.date_limit IS NOT NULL
-    AND ai.date_limit <= $req_date::timestamptz
-  ) AS assessment_instance_time_limit_expired,
   to_jsonb(u) AS instance_user,
   users_get_displayed_role (u.id, ci.id) AS instance_role,
   to_jsonb(g) AS instance_group,
@@ -107,13 +87,7 @@ FROM
     AND g.deleted_at IS NULL
   )
   LEFT JOIN users AS u ON (u.id = ai.user_id)
-  JOIN LATERAL authz_assessment_instance (
-    ai.id,
-    $authz_data,
-    $req_date,
-    ci.display_timezone,
-    a.team_work
-  ) AS aai ON TRUE
+  JOIN LATERAL authz_assessment_instance (ai.id, $authz_data, $req_date, a.team_work) AS aai ON TRUE
   CROSS JOIN file_list AS fl
 WHERE
   iq.id = $instance_question_id

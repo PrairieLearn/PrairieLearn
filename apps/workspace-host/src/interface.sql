@@ -23,12 +23,25 @@ FOR NO KEY UPDATE;
 
 -- BLOCK select_workspace_settings
 SELECT
-  q.*
+  q.*,
+  -- If `url_rewrite` has already been retrieved in a previous container launch,
+  -- use that value. Otherwise, use the value from the `questions` table. The
+  -- value may still be null, in which case the container creation process
+  -- retrieves the settings from the image labels or defaults to true.
+  COALESCE(w.url_rewrite, q.workspace_url_rewrite) AS workspace_url_rewrite
 FROM
-  questions AS q
-  JOIN variants AS v ON (v.question_id = q.id)
+  workspaces AS w
+  JOIN variants AS v ON (v.workspace_id = w.id)
+  JOIN questions AS q ON (q.id = v.question_id)
 WHERE
-  v.workspace_id = $workspace_id;
+  w.id = $workspace_id;
+
+-- BLOCK update_workspace_url_rewrite
+UPDATE workspaces AS w
+SET
+  url_rewrite = $url_rewrite
+WHERE
+  w.id = $workspace_id;
 
 -- BLOCK update_workspace_hostname
 UPDATE workspaces AS w
@@ -54,6 +67,15 @@ SET
   state = EXCLUDED.state,
   state_changed_at = EXCLUDED.state_changed_at,
   ready_at = EXCLUDED.ready_at;
+
+-- BLOCK lock_workspace_host_for_load_count_update
+SELECT
+  id
+FROM
+  workspace_hosts
+WHERE
+  instance_id = $instance_id
+FOR NO KEY UPDATE;
 
 -- BLOCK update_load_count
 UPDATE workspace_hosts AS wh

@@ -85,7 +85,7 @@ You can extend the end date of the course instance to particular students by cre
 
 !!! warning "`allowAccess` is deprecated"
 
-    The previous system, `allowAccess`, allowed you to (1) list UIDs in the JSON file, (2) change the start date for certain students and (2) set the end date to a date _before_ the overall end date. The new system does not support these features.
+    The previous system, `allowAccess`, allowed you to (1) list UIDs in the JSON file, (2) change the start date for certain students and (3) set the end date to a date _before_ the overall end date. The new system does not support these features.
 
 ### Controlling access by institution
 
@@ -220,7 +220,7 @@ If you want to disable self-enrollment after a certain date, you can set the `be
 
 #### Completely disabling self-enrollment
 
-If you want to disable self-enrollment completely, you can set the `enabled` property to `false` in the `selfEnrollment` section of `infoCourseInstance.json`. This will mean that only invited students can enroll in the course instance, not via a direct link or enrollment code.
+If you want to disable self-enrollment completely, you can set the `enabled` property to `false` in the `selfEnrollment` section of `infoCourseInstance.json`. This will mean that only invited students can enroll in the course instance, and a direct link or enrollment code is not sufficient to enroll.
 
 ```json title="infoCourseInstance.json"
 {
@@ -239,6 +239,8 @@ If you want to disable self-enrollment completely, you can set the `enabled` pro
 #### Inviting students
 
 Students can be invited to a course instance by an instructor. Instructors can invite students to a course instance by visiting the "Students" tab of the course instance and clicking the "Invite" button. Invites will show up on the student's PrairieLearn homepage. If a student rejects an invitation, they can still join via a link to the course. However, the invitation will not show up on their homepage until they are re-invited. If an invited student accesses any link to the course (regardless of the current self-enrollment settings), they will automatically join the course.
+
+Note that invited students are not notified of their invitations. Instructors need to notify students using their own communication channels (e.g., email, LMS announcements, etc.), instructing students to visit PrairieLearn or the course instance self-enrollment link and accept the invitation.
 
 #### Blocking students
 
@@ -317,7 +319,7 @@ A single LMS course should use the same credential. If multiple courses need to 
 
 PrairieLearn logins via LTI are unique to their LMS course. For example, if an Illinois student is taking a Coursera LTI course they will have two different user accounts in PrairieLearn.
 
-It is also necessary to add an `accessRule` in `infoCourseInstance.json` with `"institution": "LTI"`. See [Access control](../assessment/accessControl.md) for more details.
+It is also necessary to add an `allowAccess` rule in `infoCourseInstance.json` with `"institution": "LTI"`. See [controlling access by institution](#controlling-access-by-institution) for more details.
 
 ### LTI linking into an assessment
 

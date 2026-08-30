@@ -25,8 +25,9 @@ WHERE
 
 -- BLOCK insert_workspace
 INSERT INTO
-  workspaces
-DEFAULT VALUES
+  workspaces (url_rewrite)
+VALUES
+  ($url_rewrite)
 RETURNING
   id;
 

@@ -1,7 +1,6 @@
 import { S3 } from '@aws-sdk/client-s3';
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
-import fetch from 'node-fetch';
 import z from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';

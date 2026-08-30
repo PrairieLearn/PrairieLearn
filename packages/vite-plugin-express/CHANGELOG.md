@@ -1,5 +1,23 @@
 # @prairielearn/vite-plugin-express
 
+## 2.0.8
+
+### Patch Changes
+
+- 439df7c: Use second argument of Array.from
+
+## 2.0.7
+
+### Patch Changes
+
+- df28e68: Bump dependencies
+
+## 2.0.6
+
+### Patch Changes
+
+- 4a0ee46: Bump dependencies
+
 ## 2.0.5
 
 ### Patch Changes

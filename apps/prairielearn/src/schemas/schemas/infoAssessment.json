@@ -11,8 +11,9 @@
     },
     "uuid": {
       "type": "string",
-      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
-      "description": "Unique identifier (UUID v4)."
+      "format": "uuid",
+      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})$",
+      "description": "Unique identifier (UUID)."
     },
     "type": {
       "type": "string",
@@ -50,10 +51,9 @@
       "items": {
         "$ref": "#/definitions/AssessmentAccessRuleJsonSchema"
       },
-      "description": "List of access rules for the assessment. Access is permitted if any access rule is satisfied."
+      "description": "(Legacy) List of access rules for the assessment. Access is permitted if any access rule is satisfied."
     },
     "accessControl": {
-      "maxItems": 101,
       "type": "array",
       "items": {
         "$ref": "#/definitions/AccessControlJsonSchema"
@@ -348,7 +348,8 @@
         },
         "examUuid": {
           "type": "string",
-          "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+          "format": "uuid",
+          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
           "description": "The PrairieTest exam UUID for which a student must be registered. Implies mode: Exam."
         },
         "role": {
@@ -409,6 +410,12 @@
     "AccessControlJsonSchema": {
       "type": "object",
       "properties": {
+        "uuid": {
+          "description": "Stable UUID for non-default access control override rules",
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})$"
+        },
         "labels": {
           "description": "Array of student label names this set targets",
           "maxItems": 100,
@@ -502,12 +509,24 @@
               ]
             },
             "afterLastDeadline": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
                     "allowSubmissions": {
-                      "type": "boolean"
+                      "type": "boolean",
+                      "const": false
+                    }
+                  },
+                  "required": ["allowSubmissions"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "allowSubmissions": {
+                      "type": "boolean",
+                      "const": true
                     },
                     "credit": {
                       "type": "integer",
@@ -515,14 +534,11 @@
                       "maximum": 99
                     }
                   },
-                  "required": ["allowSubmissions"],
+                  "required": ["allowSubmissions", "credit"],
                   "additionalProperties": false
-                },
-                {
-                  "type": "null"
                 }
               ],
-              "description": "Controls for assessment behavior after last deadline. Null means no access; omitted on overrides inherits from the default rule. On the default rule, omitting is equivalent to null (no access)."
+              "description": "Controls whether submissions are allowed after the last deadline. Omitted on overrides inherits from the default rule. On the default rule, omitting means no submissions."
             },
             "durationMinutes": {
               "description": "Desired duration limit for assessment",
@@ -568,7 +584,8 @@
                     "properties": {
                       "examUuid": {
                         "type": "string",
-                        "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
                         "description": "UUID of associated PrairieTest exam"
                       },
                       "readOnly": {

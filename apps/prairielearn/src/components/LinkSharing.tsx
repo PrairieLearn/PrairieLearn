@@ -19,7 +19,7 @@ export function PublicLinkSharing({
   return (
     <>
       <p>
-        <span className="badge color-green3 me-1">Public source</span>
+        <span className="badge color-green3 me-1">Public</span>
         {sharingMessage}
       </p>
       <div className="mb-3">
@@ -68,7 +68,7 @@ export function StudentLinkSharing({
 }) {
   const [showQR, setShowQR] = useState(false);
   return (
-    <div className="mb-3">
+    <div className="mb-0">
       <label className="form-label" htmlFor="student_link">
         Student link
       </label>

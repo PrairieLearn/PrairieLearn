@@ -103,7 +103,7 @@ export function formatIntervalHM(
   interval: number,
   { signed = false }: { signed?: boolean } = { signed: false },
 ): string {
-  const sign = interval < 0 ? '-' : interval > 0 ? (signed ? '+' : '') : '';
+  const sign = interval < 0 ? '-' : interval > 0 && signed ? '+' : '';
   const hours = Math.floor(Math.abs(interval) / HOUR_IN_MILLISECONDS);
   const mins = Math.floor(Math.abs(interval) / MINUTE_IN_MILLISECONDS) % 60;
   return `${sign}${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;

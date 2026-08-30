@@ -1,5 +1,33 @@
 # @prairielearn/aws
 
+## 3.2.0
+
+### Minor Changes
+
+- 7b5bb27: Retry Auto Scaling termination lifecycle completion while the action remains active.
+
+### Patch Changes
+
+- df28e68: Bump dependencies
+
+## 3.1.0
+
+### Minor Changes
+
+- 0ae4ba8: Add utilities for detecting and waiting for EC2 Auto Scaling lifecycle transitions.
+
+## 3.0.8
+
+### Patch Changes
+
+- 4a0ee46: Bump dependencies
+
+## 3.0.7
+
+### Patch Changes
+
+- e253b31: Migrate package builds and executable links to pnpm.
+
 ## 3.0.6
 
 ### Patch Changes

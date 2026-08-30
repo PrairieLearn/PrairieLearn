@@ -1,6 +1,5 @@
 import * as crypto from 'node:crypto';
 
-import fetch from 'node-fetch';
 import oauthSignature from 'oauth-signature';
 import * as xml2js from 'xml2js';
 import z from 'zod';

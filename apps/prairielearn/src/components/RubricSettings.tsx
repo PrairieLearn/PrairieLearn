@@ -16,6 +16,7 @@ type RubricItemData = Omit<RenderedRubricItem, 'rubric_item' | 'num_submissions'
     id?: string;
     points: number | null;
   };
+  unique_key: string;
   disagreement_count: number | null;
   num_submissions: number | null;
 };
@@ -90,6 +91,7 @@ export function RubricSettings({
   const rubricItemDataMerged =
     rubricData?.rubric_items.map((item) => ({
       ...item,
+      unique_key: `rubric-item-${item.rubric_item.id}`,
       disagreement_count:
         item.rubric_item.id in rubricItemsWithDisagreementCount
           ? rubricItemsWithDisagreementCount[item.rubric_item.id]
@@ -150,7 +152,7 @@ export function RubricSettings({
   const defaultMaxExtraPointsRef = useRef<number>(rubricData?.rubric.max_extra_points ?? 0);
   const defaultGraderGuidelinesRef = useRef<string>(rubricData?.rubric.grader_guidelines ?? '');
 
-  // Derived totals/warnings
+  // Derived totals
   const { totalPositive, totalNegative } = useMemo(() => {
     const [pos, neg] = rubricItems
       .map((item) => item.rubric_item.points ?? 0)
@@ -168,22 +170,9 @@ export function RubricSettings({
       : (assessmentQuestion.max_manual_points ?? 0)) + (maxExtraPoints ?? 0),
   );
 
-  const pointsWarnings: string[] = useMemo(() => {
-    const warnings: string[] = [];
-    // Don't alarm users on the empty state before they've added any items.
-    if (rubricItems.length === 0) return warnings;
-    if (totalPositive < maxPoints) {
-      warnings.push(
-        `Rubric item points reach at most ${totalPositive} points. ${roundPoints(
-          maxPoints - totalPositive,
-        )} left to reach maximum.`,
-      );
-    }
-    if (totalNegative > (minPoints ?? 0)) {
-      warnings.push(`Minimum grade from rubric item penalties is ${totalNegative} points.`);
-    }
-    return warnings;
-  }, [rubricItems.length, totalPositive, totalNegative, maxPoints, minPoints]);
+  const minRubricScore = roundPoints(minPoints ?? 0);
+  const maxPointsShortfall = roundPoints(maxPoints - totalPositive);
+  const minPointsShortfall = roundPoints(totalNegative - minRubricScore);
 
   const defaultRubricItems = defaultRubricItemsRef.current;
   const isDirty = run(() => {
@@ -213,6 +202,10 @@ export function RubricSettings({
           key_binding: null,
           points: 1,
         },
+        // Use a stable ID for the new row so that it can be used as a key in
+        // the list. This is important for React to correctly identify and
+        // manage the list items, especially when reordering or deleting rows.
+        unique_key: `new-row-${crypto.randomUUID()}`,
         num_submissions: null,
         disagreement_count: null,
       },
@@ -382,22 +375,20 @@ export function RubricSettings({
 
       const rubricItems = parsedData.rubric_items;
 
-      const scaledRubricItems: RubricItemData[] = [];
-      for (const rubricItem of rubricItems) {
-        scaledRubricItems.push({
-          rubric_item: {
-            always_show_to_students: rubricItem.always_show_to_students,
-            deleted_at: null,
-            description: rubricItem.description,
-            explanation: rubricItem.explanation,
-            grader_note: rubricItem.grader_note,
-            key_binding: null,
-            points: roundPoints(rubricItem.points * scaleFactor),
-          },
-          num_submissions: null,
-          disagreement_count: null,
-        });
-      }
+      const scaledRubricItems: RubricItemData[] = Array.from(rubricItems, (rubricItem) => ({
+        rubric_item: {
+          always_show_to_students: rubricItem.always_show_to_students,
+          deleted_at: null,
+          description: rubricItem.description,
+          explanation: rubricItem.explanation,
+          grader_note: rubricItem.grader_note,
+          key_binding: null,
+          points: roundPoints(rubricItem.points * scaleFactor),
+        },
+        unique_key: `imported-row-${crypto.randomUUID()}`,
+        num_submissions: null,
+        disagreement_count: null,
+      }));
 
       setGraderGuidelines(parsedData.grader_guidelines ?? '');
       setRubricItems(scaledRubricItems);
@@ -524,7 +515,9 @@ export function RubricSettings({
             });
           rubricFormData.forEach(([item_name, item_value]) => {
             newRubricForm
-              .querySelectorAll<HTMLInputElement | HTMLTextAreaElement>(`[name="${item_name}"]`)
+              .querySelectorAll<
+                HTMLInputElement | HTMLTextAreaElement
+              >(`[name="${CSS.escape(item_name)}"]`)
               .forEach((input) => {
                 if (input.name === 'modified_at') {
                   // Do not reset modified_at, as the rubric settings may have changed it
@@ -553,6 +546,7 @@ export function RubricSettings({
         const rubricItemsWithDisagreementCount = data.aiGradingStats?.rubric_stats ?? {};
         const rubricItemDataMerged = rubricItemsWithSelectionCount.map((item) => ({
           ...item,
+          unique_key: `rubric-item-${item.rubric_item.id}`,
           disagreement_count:
             item.rubric_item.id in rubricItemsWithDisagreementCount
               ? rubricItemsWithDisagreementCount[item.rubric_item.id]
@@ -827,7 +821,7 @@ export function RubricSettings({
                 {rubricItems.length > 0 ? (
                   rubricItems.map((it, idx) => (
                     <RubricRow
-                      key={it.rubric_item.id ?? `row-${idx}`}
+                      key={it.unique_key}
                       item={it}
                       showAiGradingStats={showAiGradingStats}
                       submissionCount={aiGradingStats?.submission_rubric_count ?? 0}
@@ -873,17 +867,37 @@ export function RubricSettings({
                   </tr>
                 )}
               </tbody>
+              <tfoot className="table-light">
+                <tr>
+                  <td colSpan={7}>
+                    <div className="d-flex flex-wrap column-gap-4 row-gap-1 small">
+                      <span>
+                        <span className="fw-semibold">Max score from items:</span> {totalPositive} /{' '}
+                        {maxPoints} points
+                        {maxPointsShortfall > 0 && rubricItems.length > 0 && (
+                          <span className="text-muted ms-2">
+                            <i className="bi bi-exclamation-triangle-fill" aria-hidden="true" />{' '}
+                            {maxPointsShortfall} below maximum
+                          </span>
+                        )}
+                      </span>
+                      <span>
+                        <span className="fw-semibold">Min score from items:</span> {totalNegative} /{' '}
+                        {minRubricScore} points
+                        {minPointsShortfall > 0 && rubricItems.length > 0 && (
+                          <span className="text-muted ms-2">
+                            <i className="bi bi-exclamation-triangle-fill" aria-hidden="true" />{' '}
+                            {minPointsShortfall} above minimum
+                          </span>
+                        )}
+                      </span>
+                    </div>
+                  </td>
+                </tr>
+              </tfoot>
             </table>
           </div>
 
-          {/* Warnings derive from state; no dismiss button (a previous
-              data-bs-dismiss made Bootstrap remove a React-owned node and
-              crashed the component on the next reconcile). */}
-          {pointsWarnings.map((warning) => (
-            <Alert key={warning} variant="warning">
-              {warning}
-            </Alert>
-          ))}
           <Alert
             show={showSavedNotification}
             variant="success"

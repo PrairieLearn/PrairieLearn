@@ -118,12 +118,11 @@ WITH
       -- need all of these rows to join on question_order
       ai.id IN (
         SELECT
-          iq.assessment_instance_id
+          iqsub.assessment_instance_id
         FROM
           submissions AS s
           JOIN variants AS v ON (v.id = s.variant_id)
-          JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
-          JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
+          JOIN instance_questions AS iqsub ON (iqsub.id = v.instance_question_id)
         WHERE
           s.id = $unsafe_submission_id
       )

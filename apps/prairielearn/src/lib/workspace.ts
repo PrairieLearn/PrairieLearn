@@ -1,16 +1,15 @@
-import { promises as fsPromises } from 'fs';
 import { ok as assert } from 'node:assert';
+import { promises as fsPromises } from 'node:fs';
+import { pipeline } from 'node:stream/promises';
 import { setTimeout as sleep } from 'node:timers/promises';
 import * as path from 'path';
 
-import archiver from 'archiver';
+import { ZipArchive } from 'archiver';
 import * as async from 'async';
 import debugfn from 'debug';
-import type { Entry } from 'fast-glob';
 import fs from 'fs-extra';
 import klaw from 'klaw';
 import mustache from 'mustache';
-import fetch from 'node-fetch';
 import type { Socket } from 'socket.io';
 import * as tmp from 'tmp-promise';
 import { z } from 'zod';
@@ -201,7 +200,7 @@ async function controlContainer(
 
   if (action === 'getGradedFiles') {
     if (!res.ok) {
-      throw new SubmissionFormatError(((await res.json()) as any).message);
+      throw new SubmissionFormatError((await res.json()).message);
     }
 
     const body = res.body;
@@ -216,26 +215,15 @@ async function controlContainer(
     const zipPath = await tmp.tmpName({ postfix: '.zip' });
 
     debug(`controlContainer: saving ${zipPath}`);
-    const stream = fs.createWriteStream(zipPath);
 
-    return new Promise((resolve, reject) => {
-      stream
-        .on('open', () => {
-          body.pipe(stream);
-        })
-        .on('error', (err) => {
-          reject(err);
-        })
-        .on('finish', () => {
-          resolve(zipPath);
-        });
-    });
+    await fsPromises.writeFile(zipPath, body);
+    return zipPath;
   }
 
   if (res.ok) return;
 
   // if there was an error, we should have an error message from the host
-  const json = (await res.json()) as any;
+  const json = await res.json();
   throw new Error(`Error from workspace host: ${json.message}`);
 }
 
@@ -373,16 +361,24 @@ async function startup(workspace_id: string): Promise<void> {
   // already trying to assign this host to a workspace.
   if (!shouldAssignHost) return;
 
-  let workspace_host_id: string | null = null;
   let attempt = 0;
   while (true) {
     if (attempt > config.workspaceLaunchingRetryAttempts) {
       throw new Error('Time exceeded to deploy more computational resources');
     }
-    workspace_host_id = await assignHost(workspace_id);
-    if (workspace_host_id != null) {
-      break; // success, we got a host
+
+    if (await assignHost(workspace_id)) {
+      // Success, we got a host.
+      break;
     }
+
+    if (!config.workspaceAutoscalingEnabled) {
+      // If no autoscaler is running, there won't be any new hosts after retrying.
+      throw new Error(
+        'No workspace host is available. Ensure the workspace-host process is running ',
+      );
+    }
+
     const t = attempt * config.workspaceLaunchingRetryIntervalSec;
     await workspaceUtils.updateWorkspaceMessage(
       workspace_id,
@@ -391,6 +387,7 @@ async function startup(workspace_id: string): Promise<void> {
     await sleep(config.workspaceLaunchingRetryIntervalSec * 1000);
     attempt++;
   }
+
   await workspaceUtils.updateWorkspaceMessage(workspace_id, 'Sending launch command to host');
   await controlContainer(workspace_id, 'init', { useInitialZip });
 }
@@ -730,47 +727,29 @@ async function getGradedFilesFromFileSystem(workspace_id: string): Promise<strin
   );
   const zipPath = await tmp.tmpName({ postfix: '.zip' });
 
-  const archive = archiver('zip');
   const remoteName = `workspace-${workspace_id}-${workspace_version}`;
   const remoteDir = path.join(config.workspaceHomeDirRoot, remoteName, 'current');
 
-  let gradedFiles: Entry[];
-  try {
-    gradedFiles = await workspaceUtils.getWorkspaceGradedFiles(
-      remoteDir,
-      workspace_graded_files ?? [],
-      {
-        maxFiles: config.workspaceMaxGradedFilesCount,
-        maxSize: config.workspaceMaxGradedFilesSize,
-      },
-    );
-  } catch (err: any) {
-    // Turn any error into a `SubmissionFormatError` so that it is handled correctly.
-    throw new SubmissionFormatError(err.message);
+  await using gradedFiles = await workspaceUtils
+    .openWorkspaceGradedFiles(remoteDir, workspace_graded_files ?? [], {
+      maxFiles: config.workspaceMaxGradedFilesCount,
+      maxSize: config.workspaceMaxGradedFilesSize,
+    })
+    .catch((err: Error) => {
+      // Turn any error into a `SubmissionFormatError` so that it is handled correctly.
+      throw new SubmissionFormatError(err.message);
+    });
+
+  const archive = new ZipArchive();
+  const archiveCompleted = pipeline(archive, fs.createWriteStream(zipPath));
+
+  for (const file of gradedFiles) {
+    debug(`Zipping graded file ${path.join(remoteDir, file.path)} into ${zipPath}`);
+    archive.append(file.createReadStream(), { name: file.path });
   }
 
-  // Zip files from filesystem to zip file
-  gradedFiles.forEach((file) => {
-    const remotePath = path.join(remoteDir, file.path);
-    debug(`Zipping graded file ${remotePath} into ${zipPath}`);
-    archive.file(remotePath, { name: file.path });
-  });
-
-  // Write zip file to disk
-  const stream = fs.createWriteStream(zipPath);
-  await new Promise((resolve, reject) => {
-    archive.on('error', (err) => reject(err));
-
-    stream
-      .on('error', (err) => reject(err))
-      .on('finish', () => {
-        debug(`Zipped graded files as ${zipPath} (${archive.pointer()} total bytes)`);
-        resolve(zipPath);
-      });
-
-    archive.pipe(stream);
-    archive.finalize().catch((err) => reject(err));
-  });
+  await Promise.all([archive.finalize(), archiveCompleted]);
+  debug(`Zipped graded files as ${zipPath} (${archive.pointer()} total bytes)`);
   return zipPath;
 }
 

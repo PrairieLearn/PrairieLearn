@@ -85,22 +85,3 @@ export function isFormFieldPathEditable(formValues: AccessControlFormData, path:
   if (!overrideField.fieldName) return true;
   return isOverrideFieldActive(formValues, overrideField.index, overrideField.fieldName);
 }
-
-/**
- * Wraps a `useController` `validate` function so it short-circuits to a
- * passing result when the override field is not active. Without this
- * wrapper, `useController` validators keep running for as long as the
- * component is mounted — even after the user removes the override — and
- * can produce phantom errors that block saving. Apply to every override
- * field validator; the default rule's validators do not need it.
- */
-export function validateActiveOverrideField<T>(
-  index: number,
-  fieldName: OverridableFieldName,
-  validate: (value: T, formValues: AccessControlFormData) => string | true,
-): (value: T, formValues: AccessControlFormData) => string | true {
-  return (value, formValues) => {
-    if (!isOverrideFieldActive(formValues, index, fieldName)) return true;
-    return validate(value, formValues);
-  };
-}

@@ -20,6 +20,8 @@ The file is structured as a JSON dictionary with the following syntax:
 
 A full list of properties can be found in [`lib/config.ts`](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/src/lib/config.ts).
 
+Secrets that support application-managed rotation can be configured as an ordered, nonempty array while retaining scalar compatibility. See [Rotating application-managed keys](keyRotation.md) for supported properties and the required deployment sequence.
+
 ## Setting Course Directories
 
 The default course directories to be loaded by PrairieLearn can be overridden with the `"courseDirs"` setting. This setting takes a list of paths to load that are located _in the Docker container_.

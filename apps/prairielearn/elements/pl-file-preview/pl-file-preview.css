@@ -1,7 +1,7 @@
 [id^='file-preview'] .file-status {
   margin-bottom: 0px;
   font-size: 0.8em;
-  color: #999;
+  color: var(--bs-secondary-color);
 }
 
 [id^='file-preview'] .file-preview-icon {
@@ -20,9 +20,4 @@
 [id^='file-preview'] .file-preview-expand {
   border-top-right-radius: 0;
   border-top-left-radius: 0;
-}
-
-[id^='file-preview'] .nb-input pre {
-  padding: 1rem;
-  background-color: #f5f2f0;
 }

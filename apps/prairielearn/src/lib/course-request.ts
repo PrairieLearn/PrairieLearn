@@ -15,7 +15,7 @@ import { DateFromISOString, IdSchema } from '@prairielearn/zod';
 
 import { JobSequenceSchema, type User } from '../lib/db-types.js';
 import { createCourseRepoJob } from '../lib/github.js';
-import { sendCourseRequestMessage } from '../lib/opsbot.js';
+import { sendCourseRequestMessage } from '../lib/slack.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -47,6 +47,7 @@ const CourseRequestRowSchema = z.object({
   user_name: z.string().nullable(),
   user_uid: z.string(),
   work_email: z.string().nullable(),
+  contact_email: z.string().nullable(),
 });
 export type CourseRequestRow = z.infer<typeof CourseRequestRowSchema>;
 

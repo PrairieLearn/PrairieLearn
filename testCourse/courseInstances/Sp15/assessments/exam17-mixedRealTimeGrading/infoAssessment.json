@@ -5,7 +5,9 @@
   "set": "Exam",
   "number": "17",
   "shuffleQuestions": false,
-  "allowAccess": [{ "credit": 100, "timeLimitMin": 50 }],
+  "accessControl": [
+    { "dateControl": { "durationMinutes": 50, "release": { "date": "2000-01-01T00:00:00" } } }
+  ],
   "zones": [
     {
       "title": "Auto-graded questions with real-time grading disabled",

@@ -1,5 +1,23 @@
 # @prairielearn/express-test-utils
 
+## 2.0.13
+
+### Patch Changes
+
+- df28e68: Bump dependencies
+
+## 2.0.12
+
+### Patch Changes
+
+- 4a0ee46: Bump dependencies
+
+## 2.0.11
+
+### Patch Changes
+
+- e253b31: Migrate package builds and executable links to pnpm.
+
 ## 2.0.10
 
 ### Patch Changes

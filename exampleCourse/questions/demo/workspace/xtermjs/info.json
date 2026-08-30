@@ -8,8 +8,6 @@
   "workspaceOptions": {
     "comment": { "why": "testing comments in workspace blocks", "also": "testing object comments" },
     "image": "prairielearn/workspace-xtermjs",
-    "port": 8080,
-    "home": "/home/student",
     "gradedFiles": ["**/*.h", "**/*.c"]
   }
 }

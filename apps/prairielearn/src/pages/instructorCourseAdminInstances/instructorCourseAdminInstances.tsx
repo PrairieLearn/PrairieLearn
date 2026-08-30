@@ -1,4 +1,3 @@
-import { Temporal } from '@js-temporal/polyfill';
 import { Router } from 'express';
 import fs from 'fs-extra';
 import { z } from 'zod';
@@ -6,15 +5,18 @@ import { z } from 'zod';
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 import { Hydrate } from '@prairielearn/react/server';
+import { DatetimeLocalStringSchema, parseRequestBody } from '@prairielearn/zod';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
+import { DUPLICATE_COURSE_INSTANCE_SHORT_NAME_ERROR } from '../../lib/course-instances.shared.js';
 import { CourseInstanceSchema, EnumCourseInstanceRoleSchema } from '../../lib/db-types.js';
 import { propertyValueWithDefault } from '../../lib/editorUtil.shared.js';
 import { CourseInstanceAddEditor } from '../../lib/editors.js';
 import { idsEqual } from '../../lib/id.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { validateShortName } from '../../lib/short-name.js';
+import { parseLocalDateTime } from '../../lib/timezones.js';
 import {
   selectCourseInstanceByUuid,
   selectCourseInstancesWithStaffAccess,
@@ -121,17 +123,18 @@ router.post(
         self_enrollment_enabled,
         self_enrollment_use_enrollment_code,
         course_instance_permission,
-      } = z
-        .object({
+      } = parseRequestBody(
+        req,
+        z.object({
           short_name: z.string().trim(),
           long_name: z.string().trim(),
-          start_date: z.string(),
-          end_date: z.string(),
+          start_date: z.union([z.literal(''), DatetimeLocalStringSchema]),
+          end_date: z.union([z.literal(''), DatetimeLocalStringSchema]),
           self_enrollment_enabled: z.boolean().optional(),
           self_enrollment_use_enrollment_code: z.boolean().optional(),
           course_instance_permission: EnumCourseInstanceRoleSchema.optional().default('None'),
-        })
-        .parse(req.body);
+        }),
+      );
 
       if (!short_name) {
         throw new error.HttpStatusError(400, 'Short name is required');
@@ -152,25 +155,12 @@ router.post(
       const existingNames = await sqldb.queryRows(
         sql.select_names,
         { course_id: course.id },
-        z.object({ short_name: z.string(), long_name: z.string().nullable() }),
+        z.object({ short_name: z.string() }),
       );
       const existingShortNames = existingNames.map((name) => name.short_name.toLowerCase());
-      const existingLongNames = existingNames
-        .map((name) => name.long_name?.toLowerCase())
-        .filter((name) => name != null);
 
       if (existingShortNames.includes(short_name.toLowerCase())) {
-        throw new error.HttpStatusError(
-          400,
-          'A course instance with this short name already exists',
-        );
-      }
-
-      if (existingLongNames.includes(long_name.toLowerCase())) {
-        throw new error.HttpStatusError(
-          400,
-          'A course instance with this long name already exists',
-        );
+        throw new error.HttpStatusError(400, DUPLICATE_COURSE_INSTANCE_SHORT_NAME_ERROR);
       }
 
       // Parse dates if provided (empty strings mean unpublished)
@@ -178,13 +168,9 @@ router.post(
       const endDate = end_date.length > 0 ? end_date : undefined;
 
       if (startDate && endDate) {
-        const startAccessDate = Temporal.PlainDateTime.from(startDate).toZonedDateTime(
-          course.display_timezone,
-        );
-        const endAccessDate = Temporal.PlainDateTime.from(endDate).toZonedDateTime(
-          course.display_timezone,
-        );
-        if (startAccessDate.epochMilliseconds >= endAccessDate.epochMilliseconds) {
+        const startAccessDate = parseLocalDateTime(startDate, course.display_timezone);
+        const endAccessDate = parseLocalDateTime(endDate, course.display_timezone);
+        if (startAccessDate.getTime() >= endAccessDate.getTime()) {
           throw new error.HttpStatusError(400, 'End date must be after start date');
         }
       }

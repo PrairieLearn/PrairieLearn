@@ -225,12 +225,9 @@ function PreferenceRow({
     <div
       ref={setNodeRef}
       style={{
-        // Force scaleX/scaleY to 1: dnd-kit's `useDerivedTransform` animates
-        // index changes by computing scaleX/Y from old-rect/new-rect ratios,
-        // which warps tall rows when they land in shorter rows' slots.
-        transform: CSS.Transform.toString(
-          transform ? { ...transform, scaleX: 1, scaleY: 1 } : null,
-        ),
+        // Use Translate, not Transform: dnd-kit's full transform includes scaleX/scaleY,
+        // which visually warps variable-height rows. See https://github.com/clauderic/dnd-kit/issues/44.
+        transform: CSS.Translate.toString(transform),
         transition,
         opacity: isDragging ? 0.6 : 1,
       }}

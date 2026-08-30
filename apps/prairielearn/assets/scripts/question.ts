@@ -14,6 +14,7 @@ import type { GradingJobStatus } from '../../src/models/grading-job.js';
 import { confirmOnUnload } from './lib/confirmOnUnload.js';
 import { copyContentModal } from './lib/copyContent.js';
 import { setupCountdown } from './lib/countdown.js';
+import './behaviors/bootstrap-compat.js';
 
 // We use `selector-observer` throughout this file to handle the case of
 // updating the page's contents without reloading the whole page. At the
@@ -27,13 +28,19 @@ onDocumentReady(() => {
     constructor: HTMLDivElement,
     initialize(container) {
       void mathjaxTypeset([container]);
-      initializeReadmeExpansion(container);
       setupDisableOnSubmit(container);
 
       if (container.dataset.gradingMethod === 'External') {
         const externalGrading = initializeExternalGrading({ container });
         return { remove: () => externalGrading?.close() };
       }
+    },
+  });
+
+  observe('.js-readme-card', {
+    constructor: HTMLDivElement,
+    initialize(readmeCard) {
+      initializeReadmeExpansion(readmeCard);
     },
   });
 
@@ -291,7 +298,8 @@ function updateDynamicPanels({
     }
 
     const currentLinks = new Set(
-      Array.from(document.head.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]')).map(
+      Array.from(
+        document.head.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]'),
         (link) => link.href,
       ),
     );
@@ -304,7 +312,8 @@ function updateDynamicPanels({
     const currentScripts = new Set(
       Array.from(
         document.head.querySelectorAll<HTMLScriptElement>('script[type="text/javascript"]'),
-      ).map((script) => script.src),
+        (script) => script.src,
+      ),
     );
     headers
       .querySelectorAll<HTMLScriptElement>('script[type="text/javascript"]')

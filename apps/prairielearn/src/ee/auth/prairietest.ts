@@ -5,6 +5,7 @@ import asyncHandler from 'express-async-handler';
 import * as jose from 'jose';
 
 import { config } from '../../lib/config.js';
+import { getActiveKey } from '../../lib/key-ring.js';
 import { isEnterprise } from '../../lib/license.js';
 import { redirectToTermsPageIfNeeded } from '../lib/terms.js';
 
@@ -21,7 +22,7 @@ router.get(
       await redirectToTermsPageIfNeeded(res, res.locals.authn_user, req.ip, req.originalUrl);
     }
 
-    const key = crypto.createSecretKey(config.prairieTestSharedAuthSecret, 'utf-8');
+    const key = crypto.createSecretKey(getActiveKey(config.prairieTestSharedAuthSecret), 'utf-8');
 
     // Generate a signed JWT containing just the user ID. PrairieTest shares a
     // database with PrairieLearn, so it can use the same user ID to look up any

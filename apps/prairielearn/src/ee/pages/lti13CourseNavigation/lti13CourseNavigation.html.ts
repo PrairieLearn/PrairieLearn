@@ -4,7 +4,7 @@ import { Modal } from '../../../components/Modal.js';
 import { PageLayout } from '../../../components/PageLayout.js';
 import { type Course } from '../../../lib/db-types.js';
 import type { ResLocalsForPage } from '../../../lib/res-locals.js';
-import { STUDENT_ROLE } from '../../lib/lti13.js';
+import { STUDENT_ROLE } from '../../lib/lti13-memberships.js';
 
 export function Lti13CourseNavigationInstructor({
   courseName,

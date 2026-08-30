@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { AccessControlJsonSchema, MAX_ACCESS_CONTROL_RULES } from './accessControl.js';
+import { AccessControlJsonSchema } from './accessControl.js';
 import { CommentJsonSchema } from './comment.js';
 
 export const EnumAssessmentToolSchema = z.enum(['calculator']);
@@ -128,8 +128,7 @@ export const AssessmentAccessRuleJsonSchema = z
     comment: CommentJsonSchema.optional(),
     mode: z.enum(['Public', 'Exam']).describe('The server mode required for access.').optional(),
     examUuid: z
-      .string()
-      .regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/)
+      .uuid({ version: 'v4' })
       .describe(
         'The PrairieTest exam UUID for which a student must be registered. Implies mode: Exam.',
       )
@@ -403,10 +402,7 @@ export type ZoneAssessmentJsonInput = z.input<typeof ZoneAssessmentJsonSchema>;
 export const AssessmentJsonSchema = z
   .object({
     comment: CommentJsonSchema.optional(),
-    uuid: z
-      .string()
-      .regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/)
-      .describe('Unique identifier (UUID v4).'),
+    uuid: z.guid().describe('Unique identifier (UUID).'),
     type: z.enum(['Homework', 'Exam']).describe('Type of the assessment.'),
     title: z
       .string()
@@ -436,12 +432,11 @@ export const AssessmentJsonSchema = z
     allowAccess: z
       .array(AssessmentAccessRuleJsonSchema)
       .describe(
-        'List of access rules for the assessment. Access is permitted if any access rule is satisfied.',
+        '(Legacy) List of access rules for the assessment. Access is permitted if any access rule is satisfied.',
       )
       .optional(),
     accessControl: z
       .array(AccessControlJsonSchema)
-      .max(MAX_ACCESS_CONTROL_RULES)
       .describe('Access control settings for the assessment.')
       .optional(),
     text: z.string().describe('HTML text shown on the assessment overview page.').optional(),

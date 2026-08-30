@@ -1,7 +1,4 @@
-import * as path from 'path';
-
 import { Router } from 'express';
-import asyncHandler from 'express-async-handler';
 import fs from 'fs-extra';
 import { z } from 'zod';
 
@@ -9,7 +6,9 @@ import { HttpStatusError } from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import { Hydrate } from '@prairielearn/react/server';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
+import { JsonFromStringSchema, parseRequestBody } from '@prairielearn/zod';
 
+import { InsufficientCoursePermissionsCardPage } from '../../components/InsufficientCoursePermissionsCard.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { selectAssessmentQuestions } from '../../lib/assessment-question.js';
 import { compiledScriptTag, compiledStylesheetTag } from '../../lib/assets.js';
@@ -17,37 +16,30 @@ import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
 import { getAssessmentTrpcUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
-import { getOriginalHash } from '../../lib/editorUtil.js';
+import { getCourseOwners } from '../../lib/course.js';
+import { getAssessmentInfoJsonPath, getOriginalHash } from '../../lib/editorUtil.js';
 import { FileModifyEditor } from '../../lib/editors.js';
 import { features } from '../../lib/features/index.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
+import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { getUrl } from '../../lib/url.js';
 import { selectAssessmentToolDefaults, selectZoneToolOverrides } from '../../models/assessment.js';
 import {
   selectGroupConfigForAssessment,
   selectGroupRoleNamesForAssessment,
 } from '../../models/group.js';
+import { selectCourseHasQuestions } from '../../models/questions.js';
 import { resetVariantsForAssessmentQuestion } from '../../models/variant.js';
 import { type EnumAssessmentTool, ZoneAssessmentJsonSchema } from '../../schemas/infoAssessment.js';
 
 import { AssessmentQuestionsEditor } from './components/AssessmentEditor.js';
-import { InstructorAssessmentQuestionsTableLegacy } from './components/InstructorAssessmentQuestionsTableLegacy.js';
 import { serializeZonesForJson } from './utils/dataTransform.js';
 import { buildHierarchicalAssessment } from './utils/questions.js';
 
 const router = Router();
 
-const SaveQuestionsZonesSchema = z
-  .string()
-  .transform((str) => {
-    try {
-      return JSON.parse(str);
-    } catch {
-      throw new Error('Invalid JSON in zones field');
-    }
-  })
-  .pipe(z.array(ZoneAssessmentJsonSchema));
+const SaveQuestionsZonesSchema = JsonFromStringSchema.pipe(z.array(ZoneAssessmentJsonSchema));
 
 const SaveQuestionsSchema = z.object({
   __action: z.literal('save_questions'),
@@ -57,23 +49,37 @@ const SaveQuestionsSchema = z.object({
 
 router.get(
   '/',
-  asyncHandler(async (req, res) => {
-    if (!res.locals.authz_data.has_course_permission_preview) {
-      throw new HttpStatusError(403, 'Access denied (must be course previewer)');
+  typedAsyncHandler<'assessment'>(async (req, res) => {
+    const pageContext = extractPageContext(res.locals, {
+      pageType: 'assessment',
+      accessType: 'instructor',
+    });
+
+    if (!pageContext.authz_data.has_course_permission_preview) {
+      // Access denied, but instead of sending them to an error page, we'll show
+      // them an explanatory message and prompt them to get view permissions.
+      const courseOwners = await getCourseOwners(pageContext.course.id);
+      res.status(403).send(
+        InsufficientCoursePermissionsCardPage({
+          resLocals: res.locals,
+          navContext: {
+            type: 'instructor',
+            page: 'assessment',
+            subPage: 'questions',
+          },
+          courseOwners,
+          pageTitle: 'Questions',
+          requiredPermissions: 'Previewer',
+        }),
+      );
+      return;
     }
 
     const questionRows = await selectAssessmentQuestions({
       assessment_id: res.locals.assessment.id,
     });
 
-    const assessmentPath = path.join(
-      res.locals.course.path,
-      'courseInstances',
-      res.locals.course_instance.short_name,
-      'assessments',
-      res.locals.assessment.tid,
-      'infoAssessment.json',
-    );
+    const assessmentPath = getAssessmentInfoJsonPath(res.locals);
 
     const origHash = (await getOriginalHash(assessmentPath)) ?? '';
 
@@ -91,7 +97,7 @@ router.get(
 
     // We use the database instead of the contents on disk as we want to consider the database as the 'source of truth'
     // for doing operations.
-    const jsonZones = buildHierarchicalAssessment(res.locals.course, questionRows);
+    const jsonZones = buildHierarchicalAssessment(pageContext.course, questionRows);
 
     // Populate zone-level tool overrides from the assessment_tools table.
     const zoneToolRows = await selectZoneToolOverrides({
@@ -117,15 +123,11 @@ router.get(
       'consume-public-questions',
       res.locals,
     );
-    const showEditor = req.query.view !== 'legacy';
-
-    const pageContext = extractPageContext(res.locals, {
-      pageType: 'assessment',
-      accessType: 'instructor',
-    });
 
     const canEdit =
       pageContext.authz_data.has_course_permission_edit && !res.locals.course.example_course;
+
+    const courseHasQuestions = await selectCourseHasQuestions(pageContext.course.id);
 
     const trpcCsrfToken = generatePrefixCsrfToken(
       {
@@ -139,19 +141,6 @@ router.get(
     );
 
     const search = getUrl(req).search;
-
-    // Build toggle link that adds/removes the `view=legacy` query parameter.
-    const toggleUrl = (() => {
-      const url = getUrl(req);
-      const params = new URLSearchParams(url.search);
-      if (showEditor) {
-        params.set('view', 'legacy');
-      } else {
-        params.delete('view');
-      }
-      const qs = params.toString();
-      return `${url.pathname}${qs ? `?${qs}` : ''}`;
-    })();
 
     res.send(
       PageLayout({
@@ -169,53 +158,35 @@ router.get(
         },
         options: {
           fullWidth: true,
-          contentPadding: !showEditor,
+          contentPadding: false,
         },
         content: (
           <Hydrate>
-            {showEditor ? (
-              <AssessmentQuestionsEditor
-                course={pageContext.course}
-                courseInstance={pageContext.course_instance}
-                questionRows={questionRows}
-                jsonZones={jsonZones}
-                assessment={pageContext.assessment}
-                assessmentToolDefaults={assessmentToolDefaults}
-                groupsConfigured={groupsConfigured}
-                groupRoles={groupRoles}
-                assessmentCanView={assessmentCanView}
-                assessmentCanSubmit={assessmentCanSubmit}
-                groupsPageUrl={`${pageContext.urlPrefix}/assessment/${res.locals.assessment.id}/groups`}
-                hasCoursePermissionPreview={pageContext.authz_data.has_course_permission_preview}
-                hasCourseInstancePermissionEdit={
-                  pageContext.authz_data.has_course_instance_permission_edit
-                }
-                canEdit={canEdit}
-                csrfToken={res.locals.__csrf_token}
-                origHash={origHash}
-                trpcCsrfToken={trpcCsrfToken}
-                search={search}
-                switchViewUrl={toggleUrl}
-                questionSharingEnabled={questionSharingEnabled}
-                consumePublicQuestionsEnabled={consumePublicQuestionsEnabled}
-              />
-            ) : (
-              <InstructorAssessmentQuestionsTableLegacy
-                course={pageContext.course}
-                questionRows={questionRows}
-                urlPrefix={pageContext.urlPrefix}
-                courseInstance={pageContext.course_instance}
-                assessmentType={pageContext.assessment.type}
-                assessmentSetName={pageContext.assessment_set.name}
-                assessmentNumber={pageContext.assessment.number}
-                hasCoursePermissionPreview={pageContext.authz_data.has_course_permission_preview}
-                hasCourseInstancePermissionEdit={
-                  pageContext.authz_data.has_course_instance_permission_edit
-                }
-                csrfToken={res.locals.__csrf_token}
-                switchViewUrl={toggleUrl}
-              />
-            )}
+            <AssessmentQuestionsEditor
+              course={pageContext.course}
+              courseInstance={pageContext.course_instance}
+              questionRows={questionRows}
+              jsonZones={jsonZones}
+              assessment={pageContext.assessment}
+              assessmentToolDefaults={assessmentToolDefaults}
+              groupsConfigured={groupsConfigured}
+              groupRoles={groupRoles}
+              assessmentCanView={assessmentCanView}
+              assessmentCanSubmit={assessmentCanSubmit}
+              groupsPageUrl={`${pageContext.urlPrefix}/assessment/${res.locals.assessment.id}/groups`}
+              hasCoursePermissionPreview={pageContext.authz_data.has_course_permission_preview}
+              hasCourseInstancePermissionEdit={
+                pageContext.authz_data.has_course_instance_permission_edit
+              }
+              canEdit={canEdit}
+              courseHasQuestions={courseHasQuestions}
+              csrfToken={res.locals.__csrf_token}
+              origHash={origHash}
+              trpcCsrfToken={trpcCsrfToken}
+              search={search}
+              questionSharingEnabled={questionSharingEnabled}
+              consumePublicQuestionsEnabled={consumePublicQuestionsEnabled}
+            />
           </Hydrate>
         ),
       }),
@@ -225,7 +196,7 @@ router.get(
 
 router.post(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'assessment'>(async (req, res) => {
     if (req.body.__action === 'reset_question_variants') {
       if (!res.locals.authz_data.has_course_instance_permission_edit) {
         throw new HttpStatusError(403, 'Access denied (must be course instance editor)');
@@ -247,16 +218,9 @@ router.post(
         throw new HttpStatusError(403, 'Access denied (must be course editor)');
       }
 
-      const body = SaveQuestionsSchema.parse(req.body);
+      const body = parseRequestBody(req, SaveQuestionsSchema);
 
-      const assessmentPath = path.join(
-        res.locals.course.path,
-        'courseInstances',
-        res.locals.course_instance.short_name,
-        'assessments',
-        res.locals.assessment.tid,
-        'infoAssessment.json',
-      );
+      const assessmentPath = getAssessmentInfoJsonPath(res.locals);
 
       if (!(await fs.pathExists(assessmentPath))) {
         throw new HttpStatusError(400, 'infoAssessment.json does not exist');
@@ -274,7 +238,7 @@ router.post(
       const formattedJson = await formatJsonWithPrettier(JSON.stringify(assessmentInfo));
 
       const editor = new FileModifyEditor({
-        locals: res.locals as any,
+        locals: res.locals,
         container: {
           rootPath: paths.rootPath,
           invalidRootPaths: paths.invalidRootPaths,

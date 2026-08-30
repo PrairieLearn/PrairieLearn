@@ -1,9 +1,15 @@
-import { type AppError, AppErrorAlert, syncJobFailedRenderer } from '../../../lib/client/errors.js';
+import type { AppError } from '@prairielearn/trpc/client';
+import { AppErrorAlert } from '@prairielearn/trpc/react';
+
+import { syncJobFailedRenderer } from '../../../lib/client/syncJobFailedRenderer.js';
 import type { QuestionsError } from '../../../trpc/course/questions.js';
 
 type BulkQuestionError = QuestionsError[
   | 'AddToAssessment'
   | 'RemoveFromAssessment'
+  | 'ChangeTopic'
+  | 'AddTags'
+  | 'RemoveTags'
   | 'DeleteQuestions'];
 
 export function BulkQuestionErrorAlert({
@@ -19,6 +25,9 @@ export function BulkQuestionErrorAlert({
       className="mt-3 mb-0"
       render={{
         SYNC_JOB_FAILED: syncJobFailedRenderer(urlPrefix),
+        INVALID_TOPIC: ({ topic }) => `Invalid topic: ${topic}`,
+        INVALID_TAGS: ({ tags }) =>
+          tags.length === 1 ? `Invalid tag: ${tags[0]}` : `Invalid tags: ${tags.join(', ')}`,
         QUESTIONS_USED_IN_OTHER_COURSES: ({ message, qids }) => (
           <>
             {message}

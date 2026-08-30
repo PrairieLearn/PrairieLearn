@@ -96,9 +96,7 @@ test.describe.serial('Student access control', () => {
     baseURL,
     courseInstance,
     testCoursePath,
-    enableFeatureFlag,
   }) => {
-    await enableFeatureFlag('enhanced-access-control');
     await writeAssessmentConfig(testCoursePath, [{}]);
     await syncCourse(testCoursePath);
 
@@ -114,9 +112,7 @@ test.describe.serial('Student access control', () => {
     baseURL,
     courseInstance,
     testCoursePath,
-    enableFeatureFlag,
   }) => {
-    await enableFeatureFlag('enhanced-access-control');
     await writeAssessmentConfig(testCoursePath, [
       {
         beforeRelease: { listed: true },
@@ -146,9 +142,7 @@ test.describe.serial('Student access control', () => {
     baseURL,
     courseInstance,
     testCoursePath,
-    enableFeatureFlag,
   }) => {
-    await enableFeatureFlag('enhanced-access-control');
     await writeAssessmentConfig(testCoursePath, [
       {
         dateControl: {
@@ -173,9 +167,7 @@ test.describe.serial('Student access control', () => {
     baseURL,
     courseInstance,
     testCoursePath,
-    enableFeatureFlag,
   }) => {
-    await enableFeatureFlag('enhanced-access-control');
     await writeAssessmentConfig(testCoursePath, [
       {
         beforeRelease: { listed: false },

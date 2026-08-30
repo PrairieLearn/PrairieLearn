@@ -1,5 +1,29 @@
 # @prairielearn/config
 
+## 5.1.1
+
+### Patch Changes
+
+- df28e68: Bump dependencies
+
+## 5.1.0
+
+### Minor Changes
+
+- 87c8b71: Add a shared config source for Conductor workspace environment variables.
+
+## 5.0.1
+
+### Patch Changes
+
+- 4a0ee46: Bump dependencies
+
+## 5.0.0
+
+### Major Changes
+
+- 288ff13: Upgrade to Zod 4. Zod is part of these packages' public API surface (exported schemas and schema-generic functions such as `ConfigLoader` and the `query*` helpers), so consumers must also upgrade to Zod 4. Additionally, `@prairielearn/postgres` no longer exports the `AnyRowSchema` type alias; use `z.ZodType` instead.
+
 ## 4.2.3
 
 ### Patch Changes

@@ -4,8 +4,6 @@
 #
 # Security considerations:
 # - Only runs when github.actor is dependabot[bot], preventing abuse from forks
-# - Uses YARN_ENABLE_SCRIPTS=0 to disable postinstall scripts, preventing any
-#   untrusted code execution from dependencies
 
 name: 'Dedupe Dependabot PRs'
 
@@ -14,7 +12,9 @@ on:
     branches:
       - master
     paths:
-      - 'yarn.lock'
+      - 'pnpm-lock.yaml'
+      - '.github/actions/**'
+      - '.github/workflows/**'
 
 jobs:
   dedupe:
@@ -24,21 +24,22 @@ jobs:
     steps:
       - name: Generate token
         id: generate-token
-        uses: actions/create-github-app-token@v3
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
         with:
           app-id: ${{ secrets.CI_BOT_APP_ID }}
           private-key: ${{ secrets.CI_BOT_APP_PRIVATE_KEY }}
+          permission-contents: write
 
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           token: ${{ steps.generate-token.outputs.token }}
           ref: ${{ github.head_ref }}
 
-      - uses: actions/setup-node@v6
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: '24'
-
-      - run: corepack enable
 
       - name: 'Configure Git'
         run: |
@@ -46,12 +47,12 @@ jobs:
           git config user.email 'github-actions[bot]@users.noreply.github.com'
 
       - name: 'Dedupe dependencies'
-        run: yarn dedupe
-        env:
-          YARN_ENABLE_SCRIPTS: 0
-
-      - name: 'Commit and push changes'
+        run: pnpm dedupe
+      - name: 'Commit changes'
         run: |
           git add .
-          git commit -m 'Dedupe dependencies' || true
+          git diff --cached --quiet || git commit -m 'Dedupe dependencies'
+
+      - name: 'Push changes'
+        run: |
           git push

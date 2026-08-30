@@ -4,7 +4,7 @@ import * as path from 'node:path';
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
-import { runInTransactionAsync } from '@prairielearn/postgres';
+import { throwAppError } from '@prairielearn/trpc/server';
 import { IdSchema } from '@prairielearn/zod';
 
 import { StaffStudentLabelSchema } from '../../lib/client/safe-db-types.js';
@@ -14,6 +14,7 @@ import {
   prepareAccessControlLabelRewriteEditors,
   prepareJsonFileEditor,
 } from '../../lib/editors.js';
+import { getCourseInstanceContainer } from '../../lib/instructorFiles.js';
 import {
   selectEnrollmentsByIdsInCourseInstance,
   selectEnrollmentsByUidsOrPendingUidsInCourseInstance,
@@ -24,6 +25,7 @@ import {
   selectEnrollmentsInStudentLabel,
   selectStudentLabelByUuid,
   selectStudentLabelsInCourseInstance,
+  updateStudentLabelEnrollments,
 } from '../../models/student-label.js';
 import {
   MAX_LABEL_UIDS,
@@ -36,7 +38,6 @@ import {
   MAX_STUDENT_LABELS_PER_COURSE_INSTANCE,
   MAX_STUDENT_LABEL_NAME_LENGTH,
 } from '../../schemas/infoCourseInstance.js';
-import { throwAppError } from '../app-errors.js';
 
 import {
   requireCourseInstancePermissionEdit,
@@ -49,14 +50,6 @@ import {
 export interface StudentLabelError {
   Upsert: { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
   Destroy: { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
-}
-
-function getCourseInstanceContainer(coursePath: string, shortName: string) {
-  const rootPath = path.join(coursePath, 'courseInstances', shortName);
-  return {
-    rootPath,
-    invalidRootPaths: [path.join(rootPath, 'assessments')],
-  };
 }
 
 const list = t.procedure
@@ -285,21 +278,11 @@ const upsert = t.procedure
         const toRemove = currentEnrollments.filter((e) => !desiredEnrollmentIdSet.has(e.id));
 
         if (toAdd.length > 0 || toRemove.length > 0) {
-          await runInTransactionAsync(async () => {
-            if (toAdd.length > 0) {
-              await addLabelToEnrollments({
-                enrollments: toAdd,
-                label: updatedLabel,
-                authzData: authz_data,
-              });
-            }
-            if (toRemove.length > 0) {
-              await removeLabelFromEnrollments({
-                enrollments: toRemove,
-                label: updatedLabel,
-                authzData: authz_data,
-              });
-            }
+          await updateStudentLabelEnrollments({
+            enrollmentsToAdd: toAdd,
+            enrollmentsToRemove: toRemove,
+            label: updatedLabel,
+            authzData: authz_data,
           });
         }
       } else if (desiredEnrollments.length > 0) {

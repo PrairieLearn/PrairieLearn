@@ -1,18 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
 import {
-  type ColumnDef,
   type ColumnPinningState,
   type ColumnSizingState,
-  type FilterFn,
-  type Header,
   type RowSelectionState,
   type SortingState,
-  type Table,
-  createColumnHelper,
-  getCoreRowModel,
-  getFilteredRowModel,
-  getSortedRowModel,
-  useReactTable,
 } from '@tanstack/react-table';
 import { parseAsString, useQueryState } from 'nuqs';
 import { type ReactNode, useMemo, useState } from 'react';
@@ -27,9 +18,14 @@ import {
   NumericInputColumnFilter,
   PresetFilterDropdown,
   TanstackTableCard,
+  type TanstackTableColumnDef,
+  type TanstackTableCoreInstance,
   type TanstackTableCsvCell,
   TanstackTableEmptyState,
+  type TanstackTableFilterFn,
+  type TanstackTableHeader,
   applyMultiSelectFilter,
+  createTanstackTableColumnHelper,
   extractLeafColumnIds,
   numericColumnFilterFn,
   parseAsColumnPinningState,
@@ -39,7 +35,7 @@ import {
   parseAsSortingState,
   parseNumericFilter,
   useColumnFilters,
-  useShiftClickCheckbox,
+  useTanstackTable,
 } from '@prairielearn/ui';
 
 import { FriendlyDate } from '../../../components/FriendlyDate.js';
@@ -57,7 +53,9 @@ import { type HelpModalId, HelpModals } from './HelpModals.js';
 import { InstanceSelectionToolbar } from './InstanceSelectionToolbar.js';
 import { TimeLimitEditForm } from './TimeLimitEditForm.js';
 
-const columnHelper = createColumnHelper<AssessmentInstanceRow>();
+type ColumnFilter = (props: { header: TanstackTableHeader<AssessmentInstanceRow> }) => ReactNode;
+
+const columnHelper = createTanstackTableColumnHelper<AssessmentInstanceRow>();
 const DEFAULT_SORT: SortingState = [];
 
 const ROLE_VALUES = ['Staff', 'Student', 'None'] as const;
@@ -93,7 +91,9 @@ const SECONDS_PER_MINUTE = 60;
  * dividing the raw value by `rawUnitsPerMinute` (e.g. 60000 for milliseconds,
  * 60 for seconds) before applying the operator.
  */
-function makeMinutesFilterFn(rawUnitsPerMinute: number): FilterFn<AssessmentInstanceRow> {
+function makeMinutesFilterFn(
+  rawUnitsPerMinute: number,
+): TanstackTableFilterFn<AssessmentInstanceRow> {
   return (row, columnId, value: NumericColumnFilterValue) => {
     const raw = row.getValue<number | null>(columnId);
     if (value.emptyOnly) return raw == null;
@@ -175,18 +175,19 @@ function HelpHeader({
   );
 }
 
-function SelectAllCheckbox({ table }: { table: Table<AssessmentInstanceRow> }) {
+function SelectAllCheckbox({ table }: { table: TanstackTableCoreInstance<AssessmentInstanceRow> }) {
+  const allSelected = table.getIsAllPageRowsSelected();
   return (
     <IndeterminateCheckbox
-      checked={table.getIsAllPageRowsSelected()}
-      indeterminate={table.getIsSomePageRowsSelected()}
+      checked={allSelected}
+      indeterminate={table.getIsSomePageRowsSelected() && !allSelected}
       aria-label="Select all instances"
-      onChange={() => table.toggleAllPageRowsSelected()}
+      onChange={table.getToggleAllPageRowsSelectedHandler()}
     />
   );
 }
 
-const globalFilterFn: FilterFn<AssessmentInstanceRow> = (row, _columnId, value) => {
+const globalFilterFn: TanstackTableFilterFn<AssessmentInstanceRow> = (row, _columnId, value) => {
   const search = String(value).toLowerCase();
   if (!search) return true;
   const r = row.original;
@@ -237,7 +238,11 @@ export function AssessmentInstancesTable({
       [roleColumnId]: {
         urlKey: 'role',
         parser: parseAsMultiSelectFilter(ROLE_VALUES),
-        defaultValue: STUDENTS_ONLY_FILTER,
+        // Default to all roles rather than students-only so deep links to a
+        // specific instance (e.g. prompts to close or delete a staff-owned or
+        // test instance) aren't hidden by the filter. The role column is shown
+        // by default to match (see defaultColumnVisibility).
+        defaultValue: ALL_ROLES_FILTER,
       },
     };
     for (const id of NUMERIC_COLUMN_IDS) {
@@ -255,7 +260,6 @@ export function AssessmentInstancesTable({
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [helpModal, setHelpModal] = useState<HelpModalId | null>(null);
   const [timeLimitRow, setTimeLimitRow] = useState<AssessmentInstanceRow | null>(null);
-  const { createCheckboxProps } = useShiftClickCheckbox<AssessmentInstanceRow>();
 
   const { data = initialRows } = useQuery({
     ...trpc.assessmentInstances.list.queryOptions(),
@@ -264,18 +268,20 @@ export function AssessmentInstancesTable({
   });
 
   const columns = useMemo(() => {
-    const cols: ColumnDef<AssessmentInstanceRow, any>[] = [];
+    const cols: TanstackTableColumnDef<AssessmentInstanceRow, any>[] = [];
 
     if (canEdit) {
       cols.push(
         columnHelper.display({
           id: 'select',
           header: ({ table }) => <SelectAllCheckbox table={table} />,
-          cell: ({ row, table }) => (
+          cell: ({ row }) => (
             <input
               type="checkbox"
               aria-label={`Select instance ${row.original.assessment_instance.id}`}
-              {...createCheckboxProps(row, table)}
+              checked={row.getIsSelected()}
+              disabled={!row.getCanSelect()}
+              onChange={row.getToggleSelectedHandler()}
             />
           ),
           size: 40,
@@ -315,7 +321,7 @@ export function AssessmentInstancesTable({
             </a>
           );
         },
-        sortingFn: (rowA, rowB) => {
+        sortFn: (rowA, rowB) => {
           const a = rowA.original;
           const b = rowB.original;
           const nameA = (assessment.team_work ? a.group?.name : a.user?.uid) ?? '';
@@ -395,10 +401,8 @@ export function AssessmentInstancesTable({
           header: () => <HelpHeader label="Role" modalId="roles" onShowHelp={setHelpModal} />,
           cell: (info) => info.getValue(),
           meta: { label: 'Role' },
-          filterFn: (row, columnId, filter: MultiSelectFilterValue<RoleValue>) =>
-            applyMultiSelectFilter(filter, (values) =>
-              values.includes(row.getValue<RoleValue>(columnId)),
-            ),
+          filterFn: (row, _columnId, filter: MultiSelectFilterValue<RoleValue>) =>
+            applyMultiSelectFilter(filter, (values) => values.includes(row.original.role)),
           size: 120,
         }),
       );
@@ -433,7 +437,7 @@ export function AssessmentInstancesTable({
             </span>
           );
         },
-        sortingFn: 'datetime',
+        sortFn: 'datetime',
         meta: {
           label: 'Date started',
           autoSize: true,
@@ -458,12 +462,12 @@ export function AssessmentInstancesTable({
         cell: (info) => {
           const row = info.row.original;
           return (
-            <span className="text-nowrap">
-              {row.time_remaining}
+            <span className="text-nowrap d-flex align-items-center">
+              <span className="flex-shrink-1 text-truncate">{row.time_remaining}</span>
               {canEdit ? (
                 <button
                   type="button"
-                  className="btn btn-xs btn-ghost text-muted ms-1"
+                  className="btn btn-xs btn-ghost text-muted ms-1 flex-shrink-0"
                   aria-label="Change time limit"
                   onClick={() => setTimeLimitRow(row)}
                 >
@@ -473,7 +477,7 @@ export function AssessmentInstancesTable({
             </span>
           );
         },
-        sortingFn: (rowA, rowB) => {
+        sortFn: (rowA, rowB) => {
           const a = rowA.original;
           const b = rowB.original;
           return (
@@ -519,27 +523,17 @@ export function AssessmentInstancesTable({
     assessmentSet.abbreviation,
     courseInstance.id,
     courseInstance.display_timezone,
-    createCheckboxProps,
   ]);
 
   const allColumnIds = useMemo(() => extractLeafColumnIds(columns), [columns]);
 
   const defaultColumnVisibility = useMemo(() => {
-    // The role column is hidden by default since the "Students only" filter is
-    // active by default, making the column redundant.
-    const hidden = new Set([
-      'uid',
-      'number',
-      'total_time',
-      'group_name',
-      'user_name_list',
-      roleColumnId,
-    ]);
+    const hidden = new Set(['uid', 'number', 'total_time', 'group_name', 'user_name_list']);
     if (assessment.team_work) hidden.add('client_fingerprint_id_change_count');
     const visibility: Record<string, boolean> = {};
     for (const id of allColumnIds) visibility[id] = !hidden.has(id);
     return visibility;
-  }, [allColumnIds, assessment.team_work, roleColumnId]);
+  }, [allColumnIds, assessment.team_work]);
 
   const columnVisibilityParser = useMemo(
     () =>
@@ -549,8 +543,8 @@ export function AssessmentInstancesTable({
   const [columnVisibility, setColumnVisibility] = useQueryState('columns', columnVisibilityParser);
 
   const defaultPinning: ColumnPinningState = {
-    left: canEdit ? ['select', 'identity'] : ['identity'],
-    right: [],
+    start: canEdit ? ['select', 'identity'] : ['identity'],
+    end: [],
   };
   const [columnPinning, setColumnPinning] = useQueryState(
     'frozen',
@@ -558,10 +552,7 @@ export function AssessmentInstancesTable({
   );
 
   const filters = useMemo(() => {
-    const map: Record<
-      string,
-      (props: { header: Header<AssessmentInstanceRow, unknown> }) => ReactNode
-    > = {
+    const map: Record<string, ColumnFilter> = {
       [roleColumnId]: ({ header }) => (
         <MultiSelectColumnFilter column={header.column} allColumnValues={ROLE_VALUES} />
       ),
@@ -573,7 +564,7 @@ export function AssessmentInstancesTable({
     return map;
   }, [roleColumnId]);
 
-  const table = useReactTable({
+  const table = useTanstackTable({
     data,
     columns,
     columnResizeMode: 'onChange',
@@ -600,9 +591,6 @@ export function AssessmentInstancesTable({
     onColumnVisibilityChange: setColumnVisibility,
     onColumnPinningChange: setColumnPinning,
     onRowSelectionChange: setRowSelection,
-    getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
     defaultColumn: {
       minSize: 80,
       size: 150,

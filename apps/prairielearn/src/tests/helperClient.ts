@@ -1,6 +1,6 @@
 import * as cheerio from 'cheerio';
-import fetch, { type RequestInit, type Response } from 'node-fetch';
 import { assert } from 'vitest';
+import z from 'zod';
 
 import { config } from '../lib/config.js';
 
@@ -9,7 +9,7 @@ export interface CheerioResponse extends Response {
 }
 
 /**
- * A wrapper around node-fetch that provides a few features:
+ * A wrapper around fetch that provides a few features:
  *
  * - Automatic parsing with cheerio
  * - A `form` option akin to that from the `request` library
@@ -207,8 +207,6 @@ export async function assertEditError(response: Response, expectedText: string) 
   assert.include(jobOutput, expectedText);
 }
 
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
-
 /**
  * Generates an API access token for testing by navigating through the settings UI.
  *
@@ -244,7 +242,6 @@ export async function generateApiToken(baseUrl: string, tokenName = 'test'): Pro
       __csrf_token: csrfToken,
       token_name: tokenName,
     }),
-    redirect: 'follow',
   });
   if (!res.ok) {
     throw new Error(`Failed to generate token: ${res.status}`);
@@ -262,7 +259,7 @@ export async function generateApiToken(baseUrl: string, tokenName = 'test'): Pro
   const token = tokenContainer.text().trim();
 
   // Validate token format (UUID)
-  if (!UUID_REGEX.test(token)) {
+  if (!z.uuid().safeParse(token).success) {
     throw new Error(`Generated token does not match expected UUID format: ${token}`);
   }
 

@@ -3,11 +3,11 @@ import { useState } from 'react';
 import { Button } from 'react-bootstrap';
 
 import { formatDate } from '@prairielearn/formatter';
+import { QueryClientProviderDebug } from '@prairielearn/trpc/react';
 import { OverlayTrigger } from '@prairielearn/ui';
 
 import { SyncProblemButton } from '../../components/SyncProblemButton.js';
 import type { StaffCourse } from '../../lib/client/safe-db-types.js';
-import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
 
 import { CreateCourseInstanceModal } from './components/CreateCourseInstanceModal.js';
 import { EmptyState } from './components/EmptyState.js';

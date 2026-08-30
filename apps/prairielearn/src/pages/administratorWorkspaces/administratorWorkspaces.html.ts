@@ -46,15 +46,21 @@ export function AdministratorWorkspaces({
       subPage: 'workspaces',
     },
     preContent: html`
-      <script>
-        $(() => {
-          const toggleButton = document.querySelector('#toggle-all-workspaces');
-          toggleButton.addEventListener('click', () => {
-            const state = toggleButton.dataset.state;
-            $('#content .collapse').collapse(state === 'collapsed' ? 'show' : 'hide');
-            toggleButton.dataset.state = state === 'collapsed' ? 'expanded' : 'collapsed';
-            toggleButton.textContent = state === 'collapsed' ? 'Collapse all' : 'Expand all';
+      <script type="module">
+        // This script has type="module" so it's deferred until after the DOM is loaded.
+        const toggleButton = document.querySelector('#toggle-all-workspaces');
+        toggleButton.addEventListener('click', () => {
+          const state = toggleButton.dataset.state;
+          document.querySelectorAll('#content .collapse').forEach((element) => {
+            const collapse = window.bootstrap.Collapse.getOrCreateInstance(element);
+            if (state === 'collapsed') {
+              collapse.show();
+            } else {
+              collapse.hide();
+            }
           });
+          toggleButton.dataset.state = state === 'collapsed' ? 'expanded' : 'collapsed';
+          toggleButton.textContent = state === 'collapsed' ? 'Collapse all' : 'Expand all';
         });
       </script>
     `,

@@ -5,6 +5,7 @@ console.log('Enabling Bootstrap compatibility layer.');
 
 // The following list of attributes was compiled from the Bootstrap 4 docs:
 // https://getbootstrap.com/docs/4.6/components/carousel/
+// https://getbootstrap.com/docs/4.6/components/collapse/
 // https://getbootstrap.com/docs/4.6/components/dropdowns/
 // https://getbootstrap.com/docs/4.6/components/modal/
 // https://getbootstrap.com/docs/4.6/components/popovers/
@@ -29,6 +30,7 @@ const BOOTSTRAP_LEGACY_ATTRIBUTES = [
   'data-keyboard',
   'data-html',
   'data-offset',
+  'data-parent',
   'data-pause',
   'data-placement',
   'data-popper-config',
@@ -36,6 +38,8 @@ const BOOTSTRAP_LEGACY_ATTRIBUTES = [
   'data-ride',
   'data-selector',
   'data-show',
+  'data-slide',
+  'data-slide-to',
   'data-spy',
   'data-target',
   'data-template',

@@ -6,7 +6,6 @@ import type { Locator, Page } from '@playwright/test';
 import * as sqldb from '@prairielearn/postgres';
 
 import { AssessmentAccessControlRuleSchema } from '../../lib/db-types.js';
-import { features } from '../../lib/features/index.js';
 import { TEST_COURSE_PATH } from '../../lib/paths.js';
 import { selectAssessmentByTid } from '../../models/assessment.js';
 import { syncCourse } from '../helperCourse.js';
@@ -70,7 +69,6 @@ test.describe('Access control UI', () => {
       path.join(TEST_COURSE_PATH, relativePath),
       path.join(testCoursePath, relativePath),
     );
-    await features.enable('enhanced-access-control');
     await syncCourse(testCoursePath);
   });
 
@@ -140,15 +138,104 @@ test.describe('Access control UI', () => {
 
     // Verify DB: new rule with labels
     const records = await getAccessControlRecords(assessment.id);
-    const overrides = records.filter((r) => r.number > 0);
-    expect(overrides.length).toBe(2); // Section A + Extra time
+    const labelOverrides = records.filter((r) => r.number > 0 && r.target_type === 'student_label');
+    expect(labelOverrides.length).toBe(2); // Section A + Extra time
 
-    // Verify disk: accessControl array has 3 rules (main + 2 overrides)
+    // Verify disk: accessControl array has the 2 label-targeted overrides.
     const json = await readAssessmentJson(testCoursePath);
-    expect(json.accessControl).toHaveLength(3);
-    const overrideLabels = json.accessControl.slice(1).map((r: { labels: string[] }) => r.labels);
+    const overrideLabels = json.accessControl
+      .slice(1)
+      .map((r: { labels?: string[] }) => r.labels)
+      .filter((labels: string[] | undefined) => labels !== undefined);
+    expect(overrideLabels).toHaveLength(2);
     expect(overrideLabels).toContainEqual(['Section A']);
     expect(overrideLabels).toContainEqual(['Extra time']);
+  });
+
+  test('keeps default validation errors when adding an override', async ({
+    page,
+    courseInstance,
+  }) => {
+    const assessment = await selectAssessmentByTid({
+      course_instance_id: courseInstance.id,
+      tid: ASSESSMENT_TID,
+    });
+    await navigateToAccessPage(page, courseInstance.id, assessment.id);
+
+    await page.getByRole('button', { name: 'Edit' }).first().click();
+
+    const panel = getDetailPanel(page);
+    await expect(panel).toBeVisible();
+
+    await panel.getByLabel('PrairieTest').check();
+    await expect(panel.getByText('Exam UUID is required')).toBeVisible();
+
+    const saveButton = page.getByRole('button', { name: 'Save' });
+    await expect(saveButton).toBeDisabled();
+
+    await page.getByRole('button', { name: /Add override/i }).click();
+
+    await expect(panel.getByText('Applies to')).toBeVisible();
+    await expect(saveButton).toBeDisabled();
+    await expect(page.getByText('Exam UUID is required').first()).toBeVisible();
+
+    await page.getByRole('button', { name: 'Edit' }).first().click();
+    await expect(panel.getByText('Exam UUID is required')).toBeVisible();
+  });
+
+  test('clears a release date error when the release mode resolves it', async ({
+    page,
+    courseInstance,
+  }) => {
+    const assessment = await selectAssessmentByTid({
+      course_instance_id: courseInstance.id,
+      tid: ASSESSMENT_TID,
+    });
+    await navigateToAccessPage(page, courseInstance.id, assessment.id);
+
+    await page.getByRole('button', { name: 'Edit' }).first().click();
+
+    const panel = getDetailPanel(page);
+    await panel.getByLabel('Scheduled for release').check();
+    await panel.getByLabel('Release date').fill('2000-01-01T00:00');
+
+    const errorMessage = 'Release date must be in the future when scheduled for release.';
+    await expect(panel.getByText(errorMessage)).toBeVisible();
+
+    await panel.getByLabel('Released').check();
+    await expect(panel.getByText(errorMessage)).toBeHidden();
+  });
+
+  test('can switch after-due-date submissions from partial credit to practice', async ({
+    page,
+    courseInstance,
+  }) => {
+    const assessment = await selectAssessmentByTid({
+      course_instance_id: courseInstance.id,
+      tid: ASSESSMENT_TID,
+    });
+    await navigateToAccessPage(page, courseInstance.id, assessment.id);
+
+    await page.getByRole('button', { name: 'Edit' }).first().click();
+
+    const panel = getDetailPanel(page);
+    const afterDueDateSelect = panel.getByRole('button', { name: 'After due date' });
+    const creditInput = panel.getByRole('spinbutton', {
+      name: 'Credit percentage after last deadline',
+    });
+
+    await afterDueDateSelect.click();
+    await page.getByRole('option', { name: /Allow submissions for partial credit/ }).click();
+    await expect(creditInput).toBeVisible();
+
+    // Regression check: switching to practice hides the credit input but must preserve
+    // `credit: 0`, otherwise the mode immediately reverts to partial credit.
+    await afterDueDateSelect.click();
+    await page.getByRole('option', { name: /Allow practice submissions/ }).click();
+
+    await expect(afterDueDateSelect).toContainText('Allow practice submissions');
+    await expect(creditInput).toBeHidden();
+    await expect(panel.getByText('Credit is required')).toBeHidden();
   });
 
   test('can delete an override', async ({ page, courseInstance, testCoursePath }) => {
@@ -165,7 +252,7 @@ test.describe('Access control UI', () => {
     const initialOverrideCount = initialRecords.filter((r) => r.number > 0).length;
 
     await sectionACard.getByRole('button', { name: /Remove/i }).click();
-    await expect(page.getByText('No overrides configured')).toBeVisible();
+    await expect(sectionACard).toBeHidden();
 
     // Save
     await page.getByRole('button', { name: 'Save' }).click();
@@ -176,10 +263,11 @@ test.describe('Access control UI', () => {
     const overrideCount = records.filter((r) => r.number > 0).length;
     expect(overrideCount).toBe(initialOverrideCount - 1);
 
-    // Verify disk: accessControl array has only 1 rule (main, no overrides)
+    // Verify disk: accessControl array has no label-targeted overrides.
     const json = await readAssessmentJson(testCoursePath);
-    expect(json.accessControl).toHaveLength(1);
-    expect(json.accessControl[0].labels).toBeUndefined();
+    expect(json.accessControl.every((r: { labels?: string[] }) => r.labels === undefined)).toBe(
+      true,
+    );
   });
 
   test('can edit override with duration and question visibility', async ({

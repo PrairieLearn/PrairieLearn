@@ -54,7 +54,7 @@ function SelfEnrollmentLink({
   const [showConfirm, setShowConfirm] = useState(false);
   return (
     <>
-      <div className="mb-3">
+      <div className="mb-0">
         <label className="form-label" htmlFor="self_enrollment_link">
           Self-enrollment link
         </label>
@@ -219,7 +219,7 @@ export function SelfEnrollmentSettings({
           Allow self-enrollment
         </label>
         <div className="small text-muted">
-          If not checked, students will need to be invited to this course instance.
+          If self-enrollment is disabled, students must be invited to this course instance.
         </div>
       </div>
 
@@ -240,10 +240,11 @@ export function SelfEnrollmentSettings({
           />
         )}
         <label className="form-check-label" htmlFor="self_enrollment_use_enrollment_code">
-          Use enrollment code for self-enrollment
+          Require enrollment code for self-enrollment
         </label>
         <div className="small text-muted">
-          If not checked, any link to anything in the course instance will allow self-enrollment.
+          If an enrollment code is not required, any course instance or assessment link allows
+          self-enrollment.
         </div>
       </div>
 
@@ -267,7 +268,7 @@ export function SelfEnrollmentSettings({
           Restrict self-enrollment to institution "{institution.long_name}"
         </label>
         <div className="small text-muted">
-          If not checked, users from any institution can self-enroll.
+          If the institution restriction is disabled, users from any institution can self-enroll.
         </div>
       </div>
 

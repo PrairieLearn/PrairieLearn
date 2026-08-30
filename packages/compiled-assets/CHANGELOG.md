@@ -1,5 +1,41 @@
 # @prairielearn/compiled-assets
 
+## 4.1.12
+
+### Patch Changes
+
+- 439df7c: Use second argument of Array.from
+
+## 4.1.11
+
+### Patch Changes
+
+- 5fcb568: Migrate esbuild target to es2022
+
+## 4.1.10
+
+### Patch Changes
+
+- df28e68: Bump dependencies
+
+## 4.1.9
+
+### Patch Changes
+
+- 4a0ee46: Bump dependencies
+
+## 4.1.8
+
+### Patch Changes
+
+- 4ad46ed: Remove dev dependency on node-fetch
+
+## 4.1.7
+
+### Patch Changes
+
+- e253b31: Migrate package builds and executable links to pnpm.
+
 ## 4.1.6
 
 ### Patch Changes

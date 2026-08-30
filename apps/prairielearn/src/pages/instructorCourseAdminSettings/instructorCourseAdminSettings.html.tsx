@@ -1,7 +1,8 @@
+import { type Timezone, formatTimezone } from '@prairielearn/utils/timezone';
+
 import { GitHubButton } from '../../components/GitHubButton.js';
 import type { PageAuthzData } from '../../lib/authz-data-lib.js';
 import type { Course, Institution } from '../../lib/db-types.js';
-import { type Timezone, formatTimezone } from '../../lib/timezone.shared.js';
 
 export function InstructorCourseAdminSettings({
   aiQuestionGenerationEnabled,
@@ -30,6 +31,8 @@ export function InstructorCourseAdminSettings({
   origHash: string;
   urlPrefix: string;
 }) {
+  const disabled =
+    !courseInfoExists || !authzData.has_course_permission_edit || course.example_course;
   return (
     <div className="card mb-4">
       <div className="card-header bg-primary text-white d-flex align-items-center justify-content-between">
@@ -60,13 +63,7 @@ export function InstructorCourseAdminSettings({
               id="short_name"
               name="short_name"
               defaultValue={course.short_name ?? ''}
-              disabled={
-                !(
-                  courseInfoExists &&
-                  authzData.has_course_permission_edit &&
-                  !course.example_course
-                )
-              }
+              disabled={disabled}
               required
             />
             <small className="form-text text-muted">
@@ -84,13 +81,7 @@ export function InstructorCourseAdminSettings({
               id="title"
               name="title"
               defaultValue={course.title ?? ''}
-              disabled={
-                !(
-                  courseInfoExists &&
-                  authzData.has_course_permission_edit &&
-                  !course.example_course
-                )
-              }
+              disabled={disabled}
               required
             />
             <small className="form-text text-muted">
@@ -106,13 +97,7 @@ export function InstructorCourseAdminSettings({
               id="display_timezone"
               name="display_timezone"
               defaultValue={course.display_timezone}
-              disabled={
-                !(
-                  courseInfoExists &&
-                  authzData.has_course_permission_edit &&
-                  !course.example_course
-                )
-              }
+              disabled={disabled}
             >
               {availableTimezones.map((tz) => (
                 <option key={tz.name} value={tz.name}>
@@ -304,14 +289,14 @@ function CourseDirectoryMissingAlert({
   if (!coursePathExists) {
     return (
       <div className="alert alert-danger">
-        Course directory not found. You must
+        Course directory not found. You must{' '}
         <a href={`${urlPrefix}/course_admin/syncs`}>sync your course</a>.
       </div>
     );
   } else if (!courseInfoExists) {
     return (
       <form name="add-configuration-form" method="POST" className="alert alert-danger">
-        <code>infoCourse.json</code> is missing. You must
+        <code>infoCourse.json</code> is missing. You must{' '}
         <input type="hidden" name="__csrf_token" value={csrfToken} />
         <button
           name="__action"
@@ -319,7 +304,7 @@ function CourseDirectoryMissingAlert({
           className="btn btn-link btn-link-inline mt-n1 p-0 border-0"
         >
           create this file
-        </button>
+        </button>{' '}
         to edit your course settings.
       </form>
     );

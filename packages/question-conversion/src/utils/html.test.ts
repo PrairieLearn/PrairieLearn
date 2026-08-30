@@ -2,12 +2,29 @@ import { assert, describe, it } from 'vitest';
 
 import {
   cleanQuestionHtml,
+  convertCanvasEquationImages,
   convertLatexItemizeToMarkdown,
   extractInlineImages,
   resolveImsFileRefs,
   rewriteImagesAsPlFigure,
   rewritePreAsPlCode,
 } from './html.js';
+
+describe('convertCanvasEquationImages', () => {
+  it('replaces Canvas equation images with escaped inline MathJax source', () => {
+    assert.equal(
+      convertCanvasEquationImages(
+        '<p><img class="equation_image" data-equation-content="x &lt; y + $z$" src="https://canvas.example/equation.svg"></p>',
+      ),
+      '<p>$x &lt; y + \\$z\\$$</p>',
+    );
+  });
+
+  it('passes HTML without Canvas equation images through unchanged', () => {
+    const html = '<p><img src="https://canvas.example/diagram.png"></p>';
+    assert.equal(convertCanvasEquationImages(html), html);
+  });
+});
 
 describe('extractInlineImages', () => {
   it('replaces data URI with file reference', () => {
@@ -145,7 +162,7 @@ describe('resolveImsFileRefs', () => {
     assert.equal(
       result.html,
       '<!-- TODO: Re-host this file and update the URL below, then uncomment to restore.\n' +
-        '<video src="{{ options.client_files_question_url }}/clip.webm" />\n' +
+        '<video src="{{ options.client_files_question_url }}/clip.webm"></video>\n' +
         '-->',
     );
     assert.deepEqual(result.skippedFiles, ['clip.webm']);
@@ -296,7 +313,7 @@ describe('rewritePreAsPlCode', () => {
     assert.include(result, '<pl-code');
     assert.notInclude(result, '<span>');
     assert.notInclude(result, '<br>');
-    assert.include(result, 'for (int i = 0; i <= n; i++)\n');
+    assert.include(result, 'for (int i = 0; i &lt;= n; i++)\n');
     assert.include(result, '  // body\n');
   });
 });
@@ -321,5 +338,28 @@ describe('cleanQuestionHtml', () => {
 
   it('trims whitespace', () => {
     assert.equal(cleanQuestionHtml('  <p>Hello</p>  '), '<p>Hello</p>');
+  });
+
+  it('removes Canvas answer blocks from prompt HTML', () => {
+    assert.equal(
+      cleanQuestionHtml(
+        '<p>Prompt</p><div class="answers"><div class="answers_wrapper"><div>Correct</div></div></div>',
+      ),
+      '<p>Prompt</p>',
+    );
+  });
+
+  it('removes answer blocks with extra classes and attributes', () => {
+    assert.equal(
+      cleanQuestionHtml(
+        '<div class="prompt"><p>Prompt</p><div id="answer-list" class="canvas answers"><div class="answers_wrapper hidden">Correct</div></div></div>',
+      ),
+      '<p>Prompt</p>',
+    );
+  });
+
+  it('preserves answers divs without an answers_wrapper child', () => {
+    const html = '<p>Prompt</p><div class="answers"><p>Discussion of answers</p></div>';
+    assert.equal(cleanQuestionHtml(html), html);
   });
 });

@@ -18,7 +18,7 @@ import * as tmp from 'tmp-promise';
 import z from 'zod';
 
 import { DockerName, setupDockerAuth } from '@prairielearn/docker-utils';
-import { contains } from '@prairielearn/path-utils';
+import { FileSizeLimitError, contains, readFileWithinDirectory } from '@prairielearn/path-utils';
 import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 import { sanitizeObject } from '@prairielearn/sanitize';
@@ -49,15 +49,50 @@ interface GradingResults {
   message?: string;
 }
 
-// catch SIGTERM and exit after waiting for all current jobs to finish
-let processTerminating = false;
+const workerAbortController = new AbortController();
+const terminationLifecycleActionAbortController = new AbortController();
+let workersFinished: Promise<void> = Promise.resolve();
+
+function startGracefulShutdown({
+  source,
+  waitForLifecycleAction,
+}: {
+  source: string;
+  waitForLifecycleAction: boolean;
+}) {
+  if (workerAbortController.signal.aborted) {
+    globalLogger.info(`Ignoring shutdown trigger from ${source}; shutdown is already in progress`);
+    return;
+  }
+
+  workerAbortController.abort();
+  globalLogger.info(`Starting graceful shutdown (source: ${source}); draining jobs`);
+  lifecycle.terminating();
+  void drainJobsAndExit(waitForLifecycleAction);
+}
+
+async function drainJobsAndExit(waitForLifecycleAction: boolean) {
+  await workersFinished.catch((error) => {
+    globalLogger.error('Error while draining grader workers', error);
+  });
+
+  if (waitForLifecycleAction) {
+    try {
+      await lifecycle.completeTermination(terminationLifecycleActionAbortController.signal);
+    } catch (error) {
+      globalLogger.error('Error completing termination lifecycle action', error);
+    }
+  }
+
+  process.exit(0);
+}
+
 process.on('SIGTERM', () => {
-  globalLogger.info('caught SIGTERM, draining jobs to exit...');
-  processTerminating = true;
-  (function tryToExit() {
-    if (load.getCurrentJobs() === 0) process.exit(0);
-    setTimeout(tryToExit, 1000);
-  })();
+  terminationLifecycleActionAbortController.abort();
+  startGracefulShutdown({
+    source: 'external SIGTERM',
+    waitForLifecycleAction: false,
+  });
 });
 
 async.series(
@@ -83,6 +118,7 @@ async.series(
         password: config.postgresqlPassword ?? undefined,
         max: config.postgresqlPoolSize,
         idleTimeoutMillis: config.postgresqlIdleTimeoutMillis,
+        ssl: config.postgresqlSsl,
       };
 
       function idleErrorHandler(err: Error & { data?: { lastQuery?: string } }) {
@@ -121,20 +157,28 @@ async.series(
     },
     async () => {
       await lifecycle.inService();
+      lifecycle.startTerminationWatcher((state) => {
+        startGracefulShutdown({
+          source: `IMDS Auto Scaling target lifecycle state ${state}`,
+          waitForLifecycleAction: true,
+        });
+      });
     },
     async () => {
       globalLogger.info('Initialization complete; beginning to process jobs');
       const sqs = new SQSClient(makeAwsClientConfig());
+      const jobsQueueUrl = config.jobsQueueUrl;
+      if (!jobsQueueUrl) {
+        throw new Error('jobsQueueUrl is not defined');
+      }
+      const receiveNextJob = (callback: (job: GradingJobMessage) => Promise<void>) =>
+        receiveFromQueue(sqs, jobsQueueUrl, callback, workerAbortController.signal);
 
       async function worker() {
         while (true) {
-          if (!healthCheck.isHealthy() || processTerminating) return;
+          if (!healthCheck.isHealthy() || workerAbortController.signal.aborted) return;
 
-          if (!config.jobsQueueUrl) {
-            throw new Error('jobsQueueUrl is not defined');
-          }
-
-          await receiveFromQueue(sqs, config.jobsQueueUrl, async (job) => {
+          await receiveNextJob(async (job) => {
             globalLogger.info(`received ${job.jobId} from queue`);
 
             // Ensure that this job wasn't canceled in the time since job submission.
@@ -156,6 +200,14 @@ async.series(
               },
             );
           }).catch((err) => {
+            if (
+              workerAbortController.signal.aborted &&
+              err instanceof Error &&
+              err.name === 'AbortError'
+            ) {
+              return;
+            }
+
             globalLogger.error('receiveFromQueue error', err);
             Sentry.captureException(err);
           });
@@ -163,10 +215,15 @@ async.series(
       }
 
       // Start an appropriate number of workers
-      await Promise.all(Array.from({ length: config.maxConcurrentJobs }).map(() => worker()));
+      workersFinished = Promise.all(
+        Array.from({ length: config.maxConcurrentJobs }, () => worker()),
+      ).then(() => {});
+      await workersFinished;
     },
   ],
   (err) => {
+    if (workerAbortController.signal.aborted) return;
+
     Sentry.captureException(err, {
       level: 'fatal',
     });
@@ -563,33 +620,34 @@ async function runJob(
     // Now that the job has completed, let's extract the results
     // First up: results.json
     if (results.succeeded) {
-      await fs.readFile(path.join(tempDir, 'results', 'results.json')).then(
-        (data) => {
-          if (Buffer.byteLength(data) > 1024 * 1024) {
-            // Cap output at 1MB
-            results.succeeded = false;
-            results.message =
-              'The grading results were larger than 1MB. ' +
-              'If the problem persists, please contact course staff or a proctor.';
-            return;
-          }
-
-          try {
-            const parsedResults = JSON.parse(data.toString());
-            results.results = sanitizeObject(parsedResults);
-            results.succeeded = true;
-          } catch (e) {
-            logger.error('Could not parse results.json:', e);
-            results.succeeded = false;
-            results.message = 'Could not parse the grading results.';
-          }
-        },
-        (err) => {
+      const data = await readFileWithinDirectory(
+        tempDir,
+        'results/results.json',
+        1024 * 1024,
+      ).catch((err: unknown) => {
+        results.succeeded = false;
+        if (err instanceof FileSizeLimitError) {
+          results.message =
+            'The grading results were larger than 1MB. ' +
+            'If the problem persists, please contact course staff or a proctor.';
+        } else {
           logger.error('Could not read results.json', err);
-          results.succeeded = false;
           results.message = 'Could not read grading results.';
-        },
-      );
+        }
+        return null;
+      });
+
+      if (data === null) return;
+
+      try {
+        const parsedResults = JSON.parse(data.toString());
+        results.results = sanitizeObject(parsedResults);
+        results.succeeded = true;
+      } catch (e) {
+        logger.error('Could not parse results.json:', e);
+        results.succeeded = false;
+        results.message = 'Could not parse the grading results.';
+      }
     } else {
       if (results.timedOut) {
         results.message = `Your grading job did not complete within the time limit of ${timeout} seconds.\nPlease fix your code before submitting again.`;

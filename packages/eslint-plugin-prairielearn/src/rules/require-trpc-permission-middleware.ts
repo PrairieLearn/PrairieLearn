@@ -25,17 +25,16 @@ const { findVariable } = ASTUtils;
  * - requireCourseInstancePermissionPreview / View / Edit / Own
  * - Or-combinations of the above, e.g. requireCoursePermissionEditOrCourseInstancePermissionView
  * - requireAdministrator
+ * - Exact additional names configured by another application
  *
- * Feature gates like `requireEnhancedAccessControl` and `requireAiGradingFeature`
- * don't count — they must be paired with a permission middleware.
+ * Feature gates like `requireAiGradingFeature` don't count — they must be
+ * paired with a permission middleware.
  *
  * The rule follows intermediate procedure-base variables so patterns like
  * `const protected = t.procedure.use(...); ...; protected.query(...)` are
  * checked end-to-end.
  */
 
-// TODO: This list requires manual maintenance. We should consider making feature gates
-// not use the `require` prefix, and then we can use a more generic pattern here.
 const PERMISSION_MIDDLEWARE_PATTERN =
   /^require(Course|CourseInstance)Permission(Preview|View|Edit|Own)(Or(Course|CourseInstance)Permission(Preview|View|Edit|Own))*$|^requireAdministrator$/;
 const TERMINAL_METHODS = new Set(['query', 'mutation', 'subscription']);
@@ -129,18 +128,37 @@ function getProcedureChainInfo(
   return { matchesTProcedure: false, middlewares: [] };
 }
 
-export default ESLintUtils.RuleCreator.withoutDocs({
+export default ESLintUtils.RuleCreator.withoutDocs<
+  [{ additionalPermissionMiddlewareNames?: string[] }?],
+  'missingPermissionMiddleware'
+>({
   meta: {
     type: 'problem',
     messages: {
       missingPermissionMiddleware:
         'tRPC procedure must call .use() with a permission middleware (e.g. requireCoursePermissionEdit)',
     },
-    schema: [],
+    schema: [
+      {
+        type: 'object',
+        properties: {
+          additionalPermissionMiddlewareNames: {
+            type: 'array',
+            items: { type: 'string' },
+            uniqueItems: true,
+          },
+        },
+        additionalProperties: false,
+      },
+    ],
   },
-  defaultOptions: [],
+  defaultOptions: [{}],
 
   create(context) {
+    const additionalPermissionMiddlewareNames = new Set(
+      context.options[0]?.additionalPermissionMiddlewareNames,
+    );
+
     return {
       CallExpression(node) {
         if (
@@ -157,8 +175,10 @@ export default ESLintUtils.RuleCreator.withoutDocs({
 
         if (!info.matchesTProcedure) return;
 
-        const hasPermissionGate = info.middlewares.some((name) =>
-          PERMISSION_MIDDLEWARE_PATTERN.test(name),
+        const hasPermissionGate = info.middlewares.some(
+          (name) =>
+            PERMISSION_MIDDLEWARE_PATTERN.test(name) ||
+            additionalPermissionMiddlewareNames.has(name),
         );
         if (!hasPermissionGate) {
           context.report({ node, messageId: 'missingPermissionMiddleware' });

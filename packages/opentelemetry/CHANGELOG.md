@@ -1,5 +1,23 @@
 # @prairielearn/opentelemetry
 
+## 4.0.13
+
+### Patch Changes
+
+- df28e68: Bump dependencies
+
+## 4.0.12
+
+### Patch Changes
+
+- 4a0ee46: Bump dependencies
+
+## 4.0.11
+
+### Patch Changes
+
+- 3c3d457: Upgrade dependencies
+
 ## 4.0.10
 
 ### Patch Changes

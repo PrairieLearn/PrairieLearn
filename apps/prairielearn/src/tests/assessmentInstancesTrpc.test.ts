@@ -1,5 +1,6 @@
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
+import { formatDateYMDHM } from '@prairielearn/formatter';
 import * as sqldb from '@prairielearn/postgres';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
@@ -8,6 +9,7 @@ import { config } from '../lib/config.js';
 import { SprocUsersSelectOrInsertSchema } from '../lib/db-types.js';
 import { selectJobSequenceStatus } from '../lib/server-jobs.js';
 import { selectAssessmentByTid } from '../models/assessment.js';
+import { selectCourseInstanceById } from '../models/course-instances.js';
 import {
   insertCourseInstancePermissions,
   insertCoursePermissionsByUserUid,
@@ -30,7 +32,7 @@ async function waitForJobSequence(jobSequenceId: string): Promise<void> {
   throw new Error(`Job sequence ${jobSequenceId} did not finish in time`);
 }
 
-describe('assessmentInstances tRPC router', { timeout: 60_000 }, () => {
+describe('assessmentInstances tRPC router', { timeout: 60_000, concurrent: false }, () => {
   let assessmentId: string;
   let trpcClient: ReturnType<typeof createAssessmentTrpcClient>;
 
@@ -65,13 +67,13 @@ describe('assessmentInstances tRPC router', { timeout: 60_000 }, () => {
     });
   });
 
-  test.sequential('list returns the created instance', async () => {
+  test('list returns the created instance', async () => {
     const rows = await trpcClient.assessmentInstances.list.query();
     assert.lengthOf(rows, 1);
     assert.isTrue(rows[0].assessment_instance.open);
   });
 
-  test.sequential('setTimeLimit (set_rem) applies a time limit', async () => {
+  test('setTimeLimit (set_rem) applies a time limit', async () => {
     const before = await trpcClient.assessmentInstances.list.query();
     await trpcClient.assessmentInstances.setTimeLimit.mutate({
       assessmentInstanceIds: [before[0].assessment_instance.id],
@@ -83,7 +85,25 @@ describe('assessmentInstances tRPC router', { timeout: 60_000 }, () => {
     assert.isTrue(after[0].assessment_instance.open);
   });
 
-  test.sequential('setTimeLimit (remove) clears the time limit', async () => {
+  test('setTimeLimit (set_exact) accepts a native datetime-local value', async () => {
+    const before = await trpcClient.assessmentInstances.list.query();
+    await trpcClient.assessmentInstances.setTimeLimit.mutate({
+      assessmentInstanceIds: [before[0].assessment_instance.id],
+      action: 'set_exact',
+      date: '2030-01-15T14:30',
+    });
+
+    const [after, courseInstance] = await Promise.all([
+      trpcClient.assessmentInstances.list.query(),
+      selectCourseInstanceById(courseInstanceId),
+    ]);
+    assert.equal(
+      formatDateYMDHM(after[0].assessment_instance.date_limit!, courseInstance.display_timezone),
+      '2030-01-15 14:30',
+    );
+  });
+
+  test('setTimeLimit (remove) clears the time limit', async () => {
     const before = await trpcClient.assessmentInstances.list.query();
     await trpcClient.assessmentInstances.setTimeLimit.mutate({
       assessmentInstanceIds: [before[0].assessment_instance.id],
@@ -94,7 +114,7 @@ describe('assessmentInstances tRPC router', { timeout: 60_000 }, () => {
     assert.isTrue(after[0].assessment_instance.open);
   });
 
-  test.sequential('setTimeLimit accepts null ids to update all instances', async () => {
+  test('setTimeLimit accepts null ids to update all instances', async () => {
     await trpcClient.assessmentInstances.setTimeLimit.mutate({
       assessmentInstanceIds: null,
       action: 'set_rem',
@@ -111,7 +131,7 @@ describe('assessmentInstances tRPC router', { timeout: 60_000 }, () => {
     assert.isNull(withoutLimit[0].time_remaining_sec);
   });
 
-  test.sequential('setTimeLimit ignores foreign ids', async () => {
+  test('setTimeLimit ignores foreign ids', async () => {
     // A foreign id simply doesn't match the assessment_id predicate, so the
     // instance for this assessment is untouched.
     await trpcClient.assessmentInstances.setTimeLimit.mutate({
@@ -123,7 +143,7 @@ describe('assessmentInstances tRPC router', { timeout: 60_000 }, () => {
     assert.isNull(after[0].time_remaining_sec);
   });
 
-  test.sequential('grade returns a job sequence', async () => {
+  test('grade returns a job sequence', async () => {
     const rows = await trpcClient.assessmentInstances.list.query();
     const { jobSequenceId } = await trpcClient.assessmentInstances.grade.mutate({
       assessmentInstanceIds: [rows[0].assessment_instance.id],
@@ -134,7 +154,7 @@ describe('assessmentInstances tRPC router', { timeout: 60_000 }, () => {
     assert.isTrue(after[0].assessment_instance.open);
   });
 
-  test.sequential('gradeAndClose returns a job sequence and closes the instance', async () => {
+  test('gradeAndClose returns a job sequence and closes the instance', async () => {
     const rows = await trpcClient.assessmentInstances.list.query();
     const { jobSequenceId } = await trpcClient.assessmentInstances.gradeAndClose.mutate({
       assessmentInstanceIds: [rows[0].assessment_instance.id],
@@ -145,7 +165,7 @@ describe('assessmentInstances tRPC router', { timeout: 60_000 }, () => {
     assert.isFalse(after[0].assessment_instance.open);
   });
 
-  test.sequential('regrade returns a job sequence', async () => {
+  test('regrade returns a job sequence', async () => {
     const rows = await trpcClient.assessmentInstances.list.query();
     const { jobSequenceId } = await trpcClient.assessmentInstances.regrade.mutate({
       assessmentInstanceIds: [rows[0].assessment_instance.id],
@@ -154,14 +174,14 @@ describe('assessmentInstances tRPC router', { timeout: 60_000 }, () => {
     await waitForJobSequence(jobSequenceId);
   });
 
-  test.sequential('regradePreview accepts null ids to preview all instances', async () => {
+  test('regradePreview accepts null ids to preview all instances', async () => {
     const questions = await trpcClient.assessmentInstances.regradePreview.query({
       assessmentInstanceIds: null,
     });
     assert.isArray(questions);
   });
 
-  test.sequential('delete ignores foreign ids', async () => {
+  test('delete ignores foreign ids', async () => {
     await trpcClient.assessmentInstances.delete.mutate({
       assessmentInstanceIds: ['999999999'],
     });
@@ -169,7 +189,7 @@ describe('assessmentInstances tRPC router', { timeout: 60_000 }, () => {
     assert.lengthOf(after, 1);
   });
 
-  test.sequential('delete removes the selected instance', async () => {
+  test('delete removes the selected instance', async () => {
     const rows = await trpcClient.assessmentInstances.list.query();
     await trpcClient.assessmentInstances.delete.mutate({
       assessmentInstanceIds: [rows[0].assessment_instance.id],
@@ -201,7 +221,7 @@ describe('assessmentInstances tRPC router', { timeout: 60_000 }, () => {
     });
 
     async function fetchInstancesList(cookie: string) {
-      return await helperClient.fetchCheerio(
+      return await fetch(
         `${siteUrl}${getAssessmentTrpcUrl({ courseInstanceId, assessmentId })}/assessmentInstances.list`,
         { headers: { 'X-TRPC': 'true', cookie } },
       );
@@ -224,6 +244,11 @@ describe('assessmentInstances tRPC router', { timeout: 60_000 }, () => {
         'pl_test_user=test_instructor; pl2_requested_course_instance_role=None',
       );
       assert.equal(response.status, 403);
+      const body = (await response.json()) as {
+        error: { json: { data: { code: string; httpStatus: number } } };
+      };
+      assert.equal(body.error.json.data.code, 'FORBIDDEN');
+      assert.equal(body.error.json.data.httpStatus, 403);
     });
   });
 });

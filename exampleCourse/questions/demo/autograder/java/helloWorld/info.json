@@ -8,7 +8,6 @@
   "gradingMethod": "External",
   "externalGradingOptions": {
     "image": "prairielearn/grader-java",
-    "timeout": 10,
     "environment": { "JDK_JAVAC_OPTIONS": "--release 11" }
   }
 }

@@ -10,6 +10,8 @@ import {
 } from '@prairielearn/postgres';
 
 import { type AuthzData } from '../lib/authz-data-lib.js';
+// eslint-disable-next-line no-restricted-imports
+import type { StaffEnrollment } from '../lib/client/safe-db-types.js';
 import {
   type CourseInstance,
   type Enrollment,
@@ -19,6 +21,7 @@ import {
   StudentLabelEnrollmentSchema,
   StudentLabelSchema,
 } from '../lib/db-types.js';
+import { lockEnrollments } from '../lib/enrollment/lock.js';
 import type { ColorJson } from '../schemas/infoCourse.js';
 
 import { insertAuditEvent } from './audit-event.js';
@@ -175,6 +178,8 @@ export async function addLabelToEnrollments({
   }
 
   return await runInTransactionAsync(async () => {
+    await lockEnrollments(enrollments.map((enrollment) => enrollment.id));
+
     const results = await queryRows(
       sql.add_label_to_enrollments,
       { enrollment_ids: enrollments.map((e) => e.id), student_label_id: label.id },
@@ -226,6 +231,8 @@ export async function removeLabelFromEnrollments({
   }
 
   return await runInTransactionAsync(async () => {
+    await lockEnrollments(enrollments.map((enrollment) => enrollment.id));
+
     const deletedRows = await queryRows(
       sql.remove_label_from_enrollments,
       { enrollment_ids: enrollments.map((e) => e.id), student_label_id: label.id },
@@ -256,6 +263,38 @@ export async function removeLabelFromEnrollments({
   });
 }
 
+export async function updateStudentLabelEnrollments({
+  enrollmentsToAdd,
+  enrollmentsToRemove,
+  label,
+  authzData,
+}: {
+  enrollmentsToAdd: Enrollment[];
+  enrollmentsToRemove: Enrollment[];
+  label: StudentLabel;
+  authzData: AuthzData;
+}): Promise<void> {
+  const affectedEnrollments = [...enrollmentsToAdd, ...enrollmentsToRemove];
+  for (const enrollment of affectedEnrollments) {
+    assertEnrollmentMatchesLabel(enrollment, label);
+  }
+
+  await runInTransactionAsync(async () => {
+    await lockEnrollments(affectedEnrollments.map((enrollment) => enrollment.id));
+
+    await addLabelToEnrollments({
+      enrollments: enrollmentsToAdd,
+      label,
+      authzData,
+    });
+    await removeLabelFromEnrollments({
+      enrollments: enrollmentsToRemove,
+      label,
+      authzData,
+    });
+  });
+}
+
 export async function selectEnrollmentsInStudentLabel(label: StudentLabel): Promise<Enrollment[]> {
   return await queryRows(
     sql.select_enrollments_in_student_label,
@@ -265,7 +304,7 @@ export async function selectEnrollmentsInStudentLabel(label: StudentLabel): Prom
 }
 
 export async function selectStudentLabelsForEnrollment(
-  enrollment: Enrollment,
+  enrollment: Enrollment | StaffEnrollment,
 ): Promise<StudentLabel[]> {
   return await queryRows(
     sql.select_student_labels_for_enrollment,

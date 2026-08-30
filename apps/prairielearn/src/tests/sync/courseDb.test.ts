@@ -93,7 +93,7 @@ describe('course database', () => {
       });
     });
 
-    it('errors if UUID is not valid v4 UUID', async () => {
+    it('errors if UUID is not valid UUID', async () => {
       await withTempFile(async (file) => {
         const json = { uuid: 'bar' };
         await fs.writeJson(file.path, json);

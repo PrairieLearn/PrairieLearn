@@ -6,7 +6,6 @@ import { useAccessControlRuleEditable } from '../AccessControlEditabilityContext
 import { FieldWrapper } from '../FieldWrapper.js';
 import { ToggleTitle } from '../ToggleTitle.js';
 import { useOverrideField } from '../hooks/useOverrideField.js';
-import { validateActiveOverrideField } from '../overrideFields.js';
 import type { AccessControlFormData } from '../types.js';
 
 function DurationDetails({
@@ -70,14 +69,6 @@ function DurationDetails({
   );
 }
 
-function validateDuration(value: number | null): string | true {
-  if (value !== null && value < 1) return 'Duration must be at least 1 minute';
-  if (value !== null && value > MAX_ACCESS_CONTROL_DURATION_MINUTES) {
-    return `Duration must be at most ${MAX_ACCESS_CONTROL_DURATION_MINUTES} minutes`;
-  }
-  return true;
-}
-
 function DurationToggle({
   value,
   onChange,
@@ -105,7 +96,6 @@ export function DefaultDurationField() {
     fieldState: { error },
   } = useController<AccessControlFormData, 'defaultRule.durationMinutes'>({
     name: 'defaultRule.durationMinutes',
-    rules: { validate: validateDuration },
   });
 
   return (
@@ -131,9 +121,6 @@ export function OverrideDurationField({ index }: { index: number }) {
     fieldState: { error },
   } = useController<AccessControlFormData, `overrides.${number}.durationMinutes`>({
     name: `overrides.${index}.durationMinutes`,
-    rules: {
-      validate: validateActiveOverrideField(index, 'durationMinutes', validateDuration),
-    },
   });
 
   const { isOverridden, addOverride, removeOverride } = useOverrideField(index, 'durationMinutes');

@@ -34,27 +34,26 @@ const AllowAccessJsonSchema = z
     'List of access rules for the course instance. Access is permitted if any access rule is satisfied.',
   );
 
-const PublishingJsonSchema = z.object({
-  startDate: z
-    .string()
-    .describe(
-      'When the course instance is published. If specified, endDate must also be specified.',
-    )
-    .optional(),
-  endDate: z
-    .string()
-    .describe(
-      'When the course instance is unpublished. If specified, startDate must also be specified.',
-    )
-    .optional(),
-});
+const PublishingJsonSchema = z
+  .object({
+    startDate: z
+      .string()
+      .describe(
+        'When the course instance is published. If specified, endDate must also be specified.',
+      )
+      .optional(),
+    endDate: z
+      .string()
+      .describe(
+        'When the course instance is unpublished. If specified, startDate must also be specified.',
+      )
+      .optional(),
+  })
+  .strict();
 
 export const StudentLabelJsonSchema = z
   .object({
-    uuid: z
-      .string()
-      .regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/)
-      .describe('Unique identifier (UUID v4).'),
+    uuid: z.guid().describe('Unique identifier (UUID).'),
     name: z
       .string()
       .trim()
@@ -71,10 +70,7 @@ export type StudentLabelJson = z.infer<typeof StudentLabelJsonSchema>;
 export const CourseInstanceJsonSchema = z
   .object({
     comment: CommentJsonSchema.optional(),
-    uuid: z
-      .string()
-      .regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/)
-      .describe('Unique identifier (UUID v4).'),
+    uuid: z.guid().describe('Unique identifier (UUID).'),
     longName: z.string().describe("The long name of this course instance (e.g., 'Spring 2015')."),
     shortName: z.string().meta({ deprecated: true }).optional(),
     timezone: z
@@ -114,6 +110,7 @@ export const CourseInstanceJsonSchema = z
           .optional()
           .default(false),
       })
+      .strict()
       .prefault({}),
     hideInEnrollPage: z
       .boolean()

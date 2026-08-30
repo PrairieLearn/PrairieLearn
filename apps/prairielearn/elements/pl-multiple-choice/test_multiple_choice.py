@@ -1,4 +1,5 @@
 import importlib
+import json
 from typing import Any
 
 import pytest
@@ -121,10 +122,111 @@ def test_prepare_no_correct_answers_from_html() -> None:
     assert data["correct_answers"]["survey"] is None
 
 
+def test_prepare_accepts_legacy_underscore_answer_tags() -> None:
+    data = _make_question_data()
+    pl_multiple_choice.prepare(
+        mc_html(
+            answers='<pl_answer correct="true">A</pl_answer><pl_answer>B</pl_answer>',
+            builtin_grading=True,
+        ),
+        data,
+    )
+
+    assert len(data["params"]["survey"]) == 2
+
+
 def test_prepare_no_correct_answers_default_raises() -> None:
     data = _make_question_data()
     with pytest.raises(ValueError, match="at least 1 correct answer"):
         pl_multiple_choice.prepare(DEFAULT_GRADING_NO_CORRECT_HTML, data)
+
+
+@pytest.mark.parametrize(
+    "attr",
+    ['all-of-the-above="true"', 'none-of-the-above="true"'],
+    ids=["aota_boolean", "nota_boolean"],
+)
+def test_prepare_allows_aota_nota_boolean_with_builtin_grading(attr: str) -> None:
+    data = _make_question_data()
+    pl_multiple_choice.prepare(
+        mc_html(
+            attr,
+            '<pl-answer correct="true">A</pl-answer><pl-answer correct="true">B</pl-answer>',
+            builtin_grading=True,
+        ),
+        data,
+    )
+    assert "survey" in data["params"]
+
+
+def test_prepare_allows_python_float_score() -> None:
+    data = _make_question_data()
+    pl_multiple_choice.prepare(
+        mc_html(
+            answers='<pl-answer correct="true" score=".5">A</pl-answer><pl-answer>B</pl-answer>',
+            builtin_grading=True,
+        ),
+        data,
+    )
+    assert data["params"]["survey"][0]["score"] == pytest.approx(0.5)
+
+
+def test_prepare_rejects_score_outside_range() -> None:
+    with pytest.raises(ValueError, match="invalid, must be in the range"):
+        pl_multiple_choice.prepare(
+            mc_html(
+                answers='<pl-answer correct="true" score="1.5">A</pl-answer><pl-answer>B</pl-answer>',
+                builtin_grading=True,
+            ),
+            _make_question_data(),
+        )
+
+
+@pytest.mark.parametrize(
+    ("attr", "match"),
+    [
+        ('size="5"', 'should only be set if display is "dropdown"'),
+        ('placeholder="Pick one"', 'should only be set if display is "dropdown"'),
+    ],
+    ids=["size", "placeholder"],
+)
+def test_prepare_requires_dropdown_for_dropdown_attributes(
+    attr: str, match: str
+) -> None:
+    with pytest.raises(ValueError, match=match):
+        pl_multiple_choice.prepare(
+            mc_html(
+                attr,
+                '<pl-answer correct="true">A</pl-answer><pl-answer>B</pl-answer>',
+                builtin_grading=True,
+            ),
+            _make_question_data(),
+        )
+
+
+def test_prepare_allows_duplicate_visible_text_with_different_markup() -> None:
+    pl_multiple_choice.prepare(
+        mc_html(
+            answers='<pl-answer correct="true"><strong>A</strong></pl-answer><pl-answer>A</pl-answer>',
+            builtin_grading=True,
+        ),
+        _make_question_data(),
+    )
+
+
+def test_prepare_rejects_duplicate_external_json_answers(tmp_path: Any) -> None:
+    answers_path = tmp_path / "answers.json"
+    answers_path.write_text(json.dumps({"correct": ["A"], "incorrect": ["A"]}))
+
+    with pytest.raises(ValueError, match="duplicate choices"):
+        pl_multiple_choice.prepare(
+            mc_html(
+                f'external-json="{answers_path}"',
+                answers="",
+                builtin_grading=True,
+            ),
+            _make_question_data(),
+        )
 
 
 @pytest.mark.parametrize(
@@ -146,7 +248,10 @@ def test_prepare_no_correct_answers_default_raises() -> None:
             ),
             r"none-of-the-above.*true or false",
         ),
-        (mc_html('hide-score-badge="true"'), r"hide-score-badge.*should not be set"),
+        (
+            mc_html('hide-score-badge="true"'),
+            r"hide-score-badge.*should not be set",
+        ),
         (
             mc_html(
                 answers='<pl-answer score="0.5">A</pl-answer><pl-answer>B</pl-answer>'

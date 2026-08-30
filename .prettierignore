@@ -1,7 +1,9 @@
 node_modules
-.yarn
 .claude/worktrees
 .context
+
+# pnpm owns lockfile formatting.
+pnpm-lock.yaml
 
 # Coverage reports
 coverage/
@@ -60,6 +62,9 @@ apps/prairielearn/src/sprocs/*.sql
 # exampleCourse and testCourse contain question.html files that are actually Mustache files, ignore
 exampleCourse/**/*.html
 testCourse/**/*.html
+
+# Preserve generated formatting in exact-output fixtures.
+packages/question-conversion/src/emitters/fixtures/**/question.html
 
 # JSON files in tests are formatted explicitly to check for loading behaviour, so should not be formatted automatically
 apps/prairielearn/src/tests/*/**/*.json

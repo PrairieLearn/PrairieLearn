@@ -9,6 +9,7 @@ import { flash } from '@prairielearn/flash';
 import * as sqldb from '@prairielearn/postgres';
 import { Hydrate } from '@prairielearn/react/server';
 import { run } from '@prairielearn/run';
+import { JsonFromStringSchema, parseRequestBody } from '@prairielearn/zod';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
@@ -19,7 +20,7 @@ import { getPaths } from '../../lib/instructorFiles.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 
-import { AssessmentSetsPage } from './components/AssessmentSetsTable.js';
+import { AssessmentSetsPage } from './components/AssessmentSetsPage.js';
 import {
   InstructorCourseAdminSetFormRowSchema,
   InstructorCourseAdminSetRowSchema,
@@ -92,15 +93,16 @@ router.post(
         await fs.readFile(path.join(res.locals.course.path, 'infoCourse.json'), 'utf8'),
       );
 
-      const body = z
-        .object({
+      const body = parseRequestBody(
+        req,
+        z.object({
           __action: z.literal('save_assessment_sets'),
           orig_hash: z.string(),
-          assessment_sets: z
-            .string()
-            .transform((s) => z.array(InstructorCourseAdminSetFormRowSchema).parse(JSON.parse(s))),
-        })
-        .parse(req.body);
+          assessment_sets: JsonFromStringSchema.pipe(
+            z.array(InstructorCourseAdminSetFormRowSchema),
+          ),
+        }),
+      );
 
       const origHash = body.orig_hash;
       const resolveAssessmentSets = body.assessment_sets
@@ -175,14 +177,7 @@ router.post(
         }
 
         return new MultiEditor({ locals: res.locals, description: 'Update assessment sets' }, [
-          ...renames.map(
-            (r) =>
-              new AssessmentSetRenameEditor({
-                locals: res.locals,
-                oldName: r.oldName,
-                newName: r.newName,
-              }),
-          ),
+          new AssessmentSetRenameEditor({ locals: res.locals, renames }),
           fileModifyEditor,
         ]);
       });

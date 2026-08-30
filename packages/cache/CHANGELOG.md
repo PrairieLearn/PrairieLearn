@@ -1,5 +1,31 @@
 # @prairielearn/cache
 
+## 2.1.16
+
+### Patch Changes
+
+- Updated dependencies [00945c2]
+- Updated dependencies [9757f58]
+  - @prairielearn/logger@4.0.0
+
+## 2.1.15
+
+### Patch Changes
+
+- df28e68: Bump dependencies
+
+## 2.1.14
+
+### Patch Changes
+
+- 4a0ee46: Bump dependencies
+
+## 2.1.13
+
+### Patch Changes
+
+- e253b31: Migrate package builds and executable links to pnpm.
+
 ## 2.1.12
 
 ### Patch Changes
