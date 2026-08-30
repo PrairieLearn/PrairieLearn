@@ -15,7 +15,12 @@ import type {
   InstanceQuestionAIGradingInfo,
 } from '../../../ee/lib/ai-grading/types.js';
 import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../../../lib/assets.js';
-import { StaffAssessmentQuestionSchema } from '../../../lib/client/safe-db-types.js';
+import {
+  StaffAssessmentQuestionSchema,
+  StaffInstanceQuestionGroupSchema,
+  StaffInstanceQuestionSchema,
+  StaffSubmissionSchema,
+} from '../../../lib/client/safe-db-types.js';
 import { getAssessmentManualGradingUrl } from '../../../lib/client/url.js';
 import { GradingJobSchema, type InstanceQuestionGroup, type User } from '../../../lib/db-types.js';
 import type { ResLocalsInstanceQuestionRender } from '../../../lib/question-render.types.js';
@@ -25,6 +30,7 @@ import {
   InstanceQuestionAiGrade,
   type InstanceQuestionAiGradeProps,
 } from './components/InstanceQuestionAiGrade.js';
+import { InstanceQuestionGradingPanel } from './components/InstanceQuestionGradingPanel.js';
 import { GradingPanel } from './gradingPanel.html.js';
 
 export const GradingJobDataSchema = GradingJobSchema.extend({
@@ -273,6 +279,27 @@ export function InstanceQuestion({
         </div>
 
         <div class="col-lg-4 col-12">
+          <div class="card mb-4">
+            <div class="card-header">Grading</div>
+            ${hydrateHtml(
+              <InstanceQuestionGradingPanel
+                context="main"
+                assessmentQuestion={StaffAssessmentQuestionSchema.parse(
+                  resLocals.assessment_question,
+                )}
+                instanceQuestion={StaffInstanceQuestionSchema.parse(resLocals.instance_question)}
+                submission={StaffSubmissionSchema.parse(resLocals.submission)}
+                showInstanceQuestionGroup={instanceQuestionGroupsExist && aiGradingMode}
+                instanceQuestionGroups={StaffInstanceQuestionGroupSchema.array().parse(
+                  instanceQuestionGroups,
+                )}
+                selectedInstanceQuestionGroup={StaffInstanceQuestionGroupSchema.parse(
+                  selectedInstanceQuestionGroup,
+                )}
+                csrfToken={resLocals.__csrf_token}
+              />,
+            )}
+          </div>
           <div class="card mb-4 border-info">
             <div class="card-header bg-info">Grading</div>
             <div class="js-main-grading-panel">
