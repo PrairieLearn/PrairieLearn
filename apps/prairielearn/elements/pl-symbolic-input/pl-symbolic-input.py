@@ -17,8 +17,8 @@ class DisplayType(Enum):
     BLOCK = "block"
 
 
-@dataclass(frozen=True, slots=True)
-class SymbolicInputRenderConfig:
+@dataclass(frozen=True, slots=True, kw_only=True)
+class RenderConfig:
     name: str
     label: str | None
     aria_label: str | None
@@ -39,6 +39,10 @@ class SymbolicInputRenderConfig:
     show_info: bool
     formula_editor: bool
     initial_value: str | None
+
+    @property
+    def allow_sets(self) -> bool:
+        return psu.allowed_sympy_types_include_sets(self.allowed_types)
 
 
 WEIGHT_DEFAULT = 1
@@ -264,7 +268,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     variables = psu.get_items_list(
         pl.get_string_attrib(element, "variables", VARIABLES_DEFAULT)
     )
-    config = SymbolicInputRenderConfig(
+    config = RenderConfig(
         name=name,
         label=pl.get_string_attrib(element, "label", LABEL_DEFAULT),
         aria_label=pl.get_string_attrib(element, "aria-label", ARIA_LABEL_DEFAULT),
@@ -309,48 +313,26 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     return render_with_config(config, data)
 
 
-def render_with_config(config: SymbolicInputRenderConfig, data: pl.QuestionData) -> str:
-    name = config.name
-    label = config.label
-    aria_label = config.aria_label
-    suffix = config.suffix
-    variables = config.variables
-    custom_functions = config.custom_functions
-    display = config.display
-    allow_complex = config.allow_complex
-    imaginary_unit = config.imaginary_unit
-    allow_trig = config.allow_trig
-    allowed_types = config.allowed_types
-    allow_sets = psu.allowed_sympy_types_include_sets(allowed_types)
-    simplify_expression = config.simplify_expression
-    display_log_as_ln = config.display_log_as_ln
-    size = config.size
-    placeholder = config.placeholder
-    show_score = config.show_score
-    show_info = config.show_info
-    formula_editor = config.formula_editor
-    initial_value = config.initial_value
-    constants_class = psu._Constants
-
+def render_with_config(config: RenderConfig, data: pl.QuestionData) -> str:
     operators: list[str] = list(psu.STANDARD_OPERATORS)
-    if allow_sets:
+    if config.allow_sets:
         operators.extend(psu.SET_NOTATION_OPERATORS)
-    operators.extend(custom_functions)
-    operators.extend(constants_class.functions.keys())
-    if allow_trig:
-        operators.extend(constants_class.trig_functions.keys())
-    if allow_sets:
-        operators.extend(constants_class.set_functions.keys())
+    operators.extend(config.custom_functions)
+    operators.extend(psu._Constants.functions.keys())
+    if config.allow_trig:
+        operators.extend(psu._Constants.trig_functions.keys())
+    if config.allow_sets:
+        operators.extend(psu._Constants.set_functions.keys())
 
-    constants = list(constants_class.variables.keys())
+    constants = list(psu._Constants.variables.keys())
 
     info_params = {
         "format": True,
-        "variables": variables,
+        "variables": config.variables,
         "operators": operators,
         "constants": constants,
-        "allow_complex": allow_complex,
-        "allow_sets": allow_sets,
+        "allow_complex": config.allow_complex,
+        "allow_sets": config.allow_sets,
     }
 
     with open(SYMBOLIC_INPUT_MUSTACHE_TEMPLATE_NAME, encoding="utf-8") as f:
@@ -358,12 +340,12 @@ def render_with_config(config: SymbolicInputRenderConfig, data: pl.QuestionData)
 
     info = chevron.render(template, info_params).strip()
 
-    parse_error: str | None = data["format_errors"].get(name)
+    parse_error: str | None = data["format_errors"].get(config.name)
     missing_input = False
     a_sub_converted = None
 
-    if parse_error is None and name in data["submitted_answers"]:
-        a_sub = data["submitted_answers"][name]
+    if parse_error is None and config.name in data["submitted_answers"]:
+        a_sub = data["submitted_answers"][config.name]
 
         if isinstance(a_sub, str) and a_sub.strip() == "":
             a_sub_parsed = ""
@@ -372,31 +354,31 @@ def render_with_config(config: SymbolicInputRenderConfig, data: pl.QuestionData)
             a_sub_parsed = _replace_imaginary_for_display(
                 psu.convert_string_to_sympy(
                     a_sub,
-                    variables,
-                    allow_complex=allow_complex,
-                    allow_sets=allow_sets,
-                    custom_functions=custom_functions,
-                    allow_trig_functions=allow_trig,
-                    simplify_expression=simplify_expression,
+                    config.variables,
+                    allow_complex=config.allow_complex,
+                    allow_sets=config.allow_sets,
+                    custom_functions=config.custom_functions,
+                    allow_trig_functions=config.allow_trig,
+                    simplify_expression=config.simplify_expression,
                 ),
-                imaginary_unit,
+                config.imaginary_unit,
             )
         else:
             a_sub_parsed = _replace_imaginary_for_display(
                 psu.json_to_sympy(
                     a_sub,
-                    allow_complex=allow_complex,
-                    allow_sets=allow_sets,
-                    allow_trig_functions=allow_trig,
-                    simplify_expression=simplify_expression,
+                    allow_complex=config.allow_complex,
+                    allow_sets=config.allow_sets,
+                    allow_trig_functions=config.allow_trig,
+                    simplify_expression=config.simplify_expression,
                 ),
-                imaginary_unit,
+                config.imaginary_unit,
             )
 
-        if display_log_as_ln and a_sub_parsed != "":
+        if config.display_log_as_ln and a_sub_parsed != "":
             a_sub_parsed = a_sub_parsed.replace(sympy.log, sympy.Function("ln"))
         a_sub_converted = "" if a_sub_parsed == "" else sympy.latex(a_sub_parsed)
-    elif name not in data["submitted_answers"]:
+    elif config.name not in data["submitted_answers"]:
         missing_input = True
         parse_error = None
     # Use the existing format text in the invalid popup and render it
@@ -406,98 +388,98 @@ def render_with_config(config: SymbolicInputRenderConfig, data: pl.QuestionData)
         ).strip()
 
     raw_submitted_answer_latex = data["raw_submitted_answers"].get(
-        name + "-latex", None
+        config.name + "-latex", None
     )
-    raw_submitted_answer = data["raw_submitted_answers"].get(name, None)
+    raw_submitted_answer = data["raw_submitted_answers"].get(config.name, None)
     if raw_submitted_answer is None:
-        raw_submitted_answer = initial_value
+        raw_submitted_answer = config.initial_value
     if (
         raw_submitted_answer_latex is None
-        and initial_value is not None
-        and initial_value.strip() != ""
-        and formula_editor
+        and config.initial_value is not None
+        and config.initial_value.strip() != ""
+        and config.formula_editor
     ):
         initial_parsed = _replace_imaginary_for_display(
             psu.convert_string_to_sympy(
-                initial_value,
+                config.initial_value,
                 config.initial_value_variables,
-                allow_complex=allow_complex,
-                allow_sets=allow_sets,
-                custom_functions=custom_functions,
-                allow_trig_functions=allow_trig,
-                simplify_expression=simplify_expression,
+                allow_complex=config.allow_complex,
+                allow_sets=config.allow_sets,
+                custom_functions=config.custom_functions,
+                allow_trig_functions=config.allow_trig,
+                simplify_expression=config.simplify_expression,
             ),
-            imaginary_unit,
+            config.imaginary_unit,
         )
-        if display_log_as_ln:
+        if config.display_log_as_ln:
             initial_parsed = initial_parsed.replace(sympy.log, sympy.Function("ln"))
         raw_submitted_answer_latex = sympy.latex(initial_parsed)
 
-    score = data["partial_scores"].get(name, {}).get("score")
+    score = data["partial_scores"].get(config.name, {}).get("score")
 
-    if data["panel"] == "question":
+    def render_question() -> str:
         editable = data["editable"]
 
         html_params = {
             "question": True,
-            "name": name,
-            "label": label,
-            "aria_label": aria_label,
-            "suffix": suffix,
+            "name": config.name,
+            "label": config.label,
+            "aria_label": config.aria_label,
+            "suffix": config.suffix,
             "editable": editable,
             "info": info,
-            "placeholder": placeholder,
-            "size": size,
-            "show_info": show_info,
+            "placeholder": config.placeholder,
+            "size": config.size,
+            "show_info": config.show_info,
             "uuid": pl.get_uuid(),
-            "allow_complex": allow_complex,
-            "allow_trig": allow_trig,
-            "allow_sets": allow_sets,
-            "imaginary_unit": imaginary_unit,
-            "log_as_ln": display_log_as_ln,
+            "allow_complex": config.allow_complex,
+            "allow_trig": config.allow_trig,
+            "allow_sets": config.allow_sets,
+            "imaginary_unit": config.imaginary_unit,
+            "log_as_ln": config.display_log_as_ln,
             "raw_submitted_answer": raw_submitted_answer,
             "raw_submitted_answer_latex": raw_submitted_answer_latex,
             "parse_error": parse_error,
-            display.value: True,
-            "formula_editor": formula_editor,
-            "custom_functions": ",".join(custom_functions),
+            config.display.value: True,
+            "formula_editor": config.formula_editor,
+            "custom_functions": ",".join(config.custom_functions),
         }
 
-        if show_score and score is not None:
+        if config.show_score and score is not None:
             score_type, score_value = pl.determine_score_params(score)
             html_params[score_type] = score_value
 
         return chevron.render(template, html_params).strip()
 
-    elif data["panel"] == "submission":
+    def render_submission() -> str:
         html_params = {
             "submission": True,
-            "label": label,
-            "suffix": suffix,
+            "label": config.label,
+            "suffix": config.suffix,
             "parse_error": parse_error,
             "uuid": pl.get_uuid(),
             "a_sub": a_sub_converted,
             "raw_submitted_answer": raw_submitted_answer,
             "raw_submitted_answer_latex": raw_submitted_answer_latex,
-            "formula_editor": formula_editor,
-            "custom_functions": ",".join(custom_functions),
-            "allow_trig": allow_trig,
-            "allow_sets": allow_sets,
-            "imaginary_unit": imaginary_unit,
-            "log_as_ln": display_log_as_ln,
-            display.value: True,
+            "formula_editor": config.formula_editor,
+            "custom_functions": ",".join(config.custom_functions),
+            "allow_trig": config.allow_trig,
+            "allow_sets": config.allow_sets,
+            "imaginary_unit": config.imaginary_unit,
+            "log_as_ln": config.display_log_as_ln,
+            config.display.value: True,
             "error": parse_error or missing_input,
             "missing_input": missing_input,
         }
 
-        if show_score and score is not None:
+        if config.show_score and score is not None:
             score_type, score_value = pl.determine_score_params(score)
             html_params[score_type] = score_value
 
         return chevron.render(template, html_params).strip()
 
-    elif data["panel"] == "answer":
-        a_tru = data["correct_answers"].get(name)
+    def render_answer() -> str:
+        a_tru = data["correct_answers"].get(config.name)
         if a_tru is None:
             return ""
 
@@ -507,40 +489,48 @@ def render_with_config(config: SymbolicInputRenderConfig, data: pl.QuestionData)
                 a_tru = _replace_imaginary_for_display(
                     psu.convert_string_to_sympy(
                         a_tru,
-                        variables,
-                        allow_complex=allow_complex,
-                        allow_sets=allow_sets,
-                        allow_trig_functions=allow_trig,
-                        custom_functions=custom_functions,
-                        simplify_expression=simplify_expression,
+                        config.variables,
+                        allow_complex=config.allow_complex,
+                        allow_sets=config.allow_sets,
+                        allow_trig_functions=config.allow_trig,
+                        custom_functions=config.custom_functions,
+                        simplify_expression=config.simplify_expression,
                     ),
-                    imaginary_unit,
+                    config.imaginary_unit,
                 )
         else:
             a_tru = _replace_imaginary_for_display(
                 psu.json_to_sympy(
                     a_tru,
-                    allow_complex=allow_complex,
-                    allow_sets=allow_sets,
-                    allow_trig_functions=allow_trig,
-                    simplify_expression=simplify_expression,
+                    allow_complex=config.allow_complex,
+                    allow_sets=config.allow_sets,
+                    allow_trig_functions=config.allow_trig,
+                    simplify_expression=config.simplify_expression,
                 ),
-                imaginary_unit,
+                config.imaginary_unit,
             )
 
-        if display_log_as_ln and a_tru != "":
+        if config.display_log_as_ln and a_tru != "":
             a_tru = a_tru.replace(sympy.log, sympy.Function("ln"))
 
         html_params = {
             "answer": True,
-            "label": label,
-            "suffix": suffix,
+            "label": config.label,
+            "suffix": config.suffix,
             "a_tru": sympy.latex(a_tru),
-            display.value: True,
+            config.display.value: True,
         }
         return chevron.render(template, html_params).strip()
 
-    assert_never(data["panel"])
+    match data["panel"]:
+        case "question":
+            return render_question()
+        case "submission":
+            return render_submission()
+        case "answer":
+            return render_answer()
+        case panel:  # type: ignore
+            assert_never(panel)
 
 
 def parse(element_html: str, data: pl.QuestionData) -> None:
