@@ -63,7 +63,7 @@ def render(
     if score is not None:
         view["partial_scores"] = dict(view["partial_scores"])
         view["partial_scores"][name] = {"score": score}
-    config = CONTROLLER.SymbolicInputRenderConfig(
+    config = CONTROLLER.RenderConfig(
         name=name,
         label=prefix,
         aria_label=aria_label,
