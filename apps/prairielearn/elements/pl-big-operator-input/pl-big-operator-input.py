@@ -339,7 +339,7 @@ def _infer_spec(
                         return operator, None, index
             try:
                 value = _decode(raw)
-            except Exception:  # noqa: BLE001 -- malformed author strings fail during normalization.
+            except Exception:
                 return operator, None, None
             return operator, _binder_limits(value), _binder_index(value)
 
@@ -348,7 +348,7 @@ def _infer_spec(
             limits = raw.get("limits")
             try:
                 index = _symbol_name(_decode(raw.get("index")))
-            except Exception:  # noqa: BLE001 -- malformed canonical answers fail later.
+            except Exception:
                 index = None
             if (
                 raw.get("_version") == 1
@@ -362,7 +362,7 @@ def _infer_spec(
         case {"_type": "sympy"}:
             try:
                 value = _decode(raw)
-            except Exception:  # noqa: BLE001 -- malformed author JSON can fail in several decoders.
+            except Exception:
                 return None, None, None
 
             for operator in ("sum", "product", "integral", "limit"):
@@ -378,7 +378,7 @@ def _infer_direction(raw: Any, operator: Operator) -> DirectionName | None:
     def _decode_limit_direction(raw) -> DirectionName | None:
         try:
             value = _decode(raw)
-        except Exception:  # noqa: BLE001 -- malformed author JSON is validated later.
+        except Exception:
             return None
         if isinstance(value, sympy.Limit):
             return DIRECTION_NAMES.get(str(value.args[3]))  # type: ignore
@@ -617,7 +617,7 @@ def _decode(value: Any, variables: tuple[str, ...] = ()) -> sympy.Expr:
             # relations are rejected by its expression allowlist.
             try:
                 return psu.json_to_sympy(cast(Any, value), allow_sets=True)
-            except Exception:  # noqa: BLE001 -- compatibility with the pinned PSU serializer.
+            except Exception:
                 # TODO(parser-migration.md, upstream PSU canonical decoder): remove this trusted-author-only
                 # fallback when json_to_sympy round-trips binders and relations emitted
                 # by sympy_to_json. Student answers never enter _decode.
@@ -1106,7 +1106,9 @@ def _question_mustache(config: Config, data: pl.QuestionData) -> str:
 
 def _tex(config: Config, raw: dict[str, Any] | None) -> str:
     raw = raw or {}
-    get = lambda c: raw.get(config.name(c), "?")
+
+    def get(c):
+        return raw.get(config.name(c), "?")
     index = sympy.latex(sympy.Symbol(config.index))
     op = config.operator_latex
     match config.operator:
@@ -1274,7 +1276,7 @@ def _parse_values(
                 continue
             result[component] = value
             data.get("format_errors", {}).pop(name, None)
-        except Exception as exc:  # noqa: BLE001 -- delegated JSON decoding can expose parser errors.
+        except Exception as exc:
             data.setdefault("format_errors", {})[name] = str(exc)
     return result if len(result) == len(config.components) else None
 
@@ -1444,7 +1446,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
                 ]
                 earned = sum(
                     w
-                    for c, w in zip(config.components, weights)
+                    for c, w in zip(config.components, weights, strict=False)
                     if _expressions_equivalent(submitted[c], correct[c])
                 )
                 if config.limits == "approach" and config.allow_direction_input:
