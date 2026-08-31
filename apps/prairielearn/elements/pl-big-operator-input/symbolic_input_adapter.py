@@ -3,7 +3,7 @@ from __future__ import annotations
 import importlib.util
 import sys
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any
 
 import lxml.html
 
@@ -13,8 +13,7 @@ if TYPE_CHECKING:
     import prairielearn as pl
 
 HERE = Path(__file__).parent
-VENDOR_DIR = HERE / "vendor" / "prairielearn" / "pl-symbolic-input"
-SOURCE_DIR = VENDOR_DIR if VENDOR_DIR.exists() else HERE.parent / "pl-symbolic-input"
+SOURCE_DIR = HERE.parent / "pl-symbolic-input"
 CONTROLLER_PATH = SOURCE_DIR / "pl-symbolic-input.py"
 TEMPLATE_PATH = SOURCE_DIR / "pl-symbolic-input.mustache"
 
@@ -73,7 +72,7 @@ def markup(
         attributes["suffix"] = suffix
     for key, value in attributes.items():
         element.set(key, value)
-    return cast(str, lxml.html.tostring(element, encoding="unicode"))
+    return str(lxml.html.tostring(element, encoding="unicode"))
 
 
 def _render_data_view(data: dict[str, Any] | pl.QuestionData) -> dict[str, Any]:
