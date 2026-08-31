@@ -398,9 +398,11 @@ class TestSympy:
                     sympy.Interval(2, 3, left_open=False, right_open=False),
                 ),
             ),
-            ("{ {0, 1}, {2, 3} }",),
-            {"finite-set"},
-            sympy.FiniteSet(sympy.FiniteSet(0, 1), sympy.FiniteSet(2, 3)),
+            (
+                "{ {0, 1}, {2, 3} }",
+                {"finite-set"},
+                sympy.FiniteSet(sympy.FiniteSet(0, 1), sympy.FiniteSet(2, 3)),
+            ),
         ],
     )
     def test_try_parse_string_as_sympy_accepts_non_singleton_allowed_types(
