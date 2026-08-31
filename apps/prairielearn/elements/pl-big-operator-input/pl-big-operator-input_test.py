@@ -1478,32 +1478,49 @@ def test_symbolic_input_width_defaults_preserve_existing_layout(
 def test_custom_widths_are_forwarded_to_rendered_symbolic_inputs(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    field_markup = []
+    fields: list[tuple[str, int]] = []
     original_render = big_operator_input.symbolic_input_adapter.render
 
     def capture_render(
-        markup: str,
         state: QuestionData,
         *,
+        name: str,
+        variables: tuple[str, ...],
+        custom_functions: tuple[str, ...],
         aria_label: str,
+        size: int,
+        allowed_types: set[str],
+        allow_complex: bool,
+        show_help_text: bool = False,
+        show_score: bool = False,
+        prefix: str | None = None,
+        suffix: str | None = None,
         score: float | None = None,
     ) -> str:
-        field_markup.append(markup)
-        return original_render(markup, state, aria_label=aria_label, score=score)
+        fields.append((name, size))
+        return original_render(
+            state,
+            name=name,
+            variables=variables,
+            custom_functions=custom_functions,
+            aria_label=aria_label,
+            size=size,
+            allowed_types=allowed_types,
+            allow_complex=allow_complex,
+            show_help_text=show_help_text,
+            show_score=show_score,
+            prefix=prefix,
+            suffix=suffix,
+            score=score,
+        )
 
     monkeypatch.setattr(
         big_operator_input.symbolic_input_adapter, "render", capture_render
     )
     markup = html(operator="sum", **{"body-size": "24", "limit-size": "9"})
     rendered = big_operator_input.render(markup, data())
-    sizes = {
-        element.get("answers-name"): element.get("size")
-        for element in map(
-            big_operator_input.lxml.html.fragment_fromstring, field_markup
-        )
-    }
 
-    assert sizes == {"op-start": "9", "op-end": "9", "op-body": "24"}
+    assert dict(fields) == {"op-start": 9, "op-end": 9, "op-body": 24}
     assert "--pl-big-operator-input-body-size: 24ch" in rendered
     assert "--pl-big-operator-input-limit-size: 9ch" in rendered
 
@@ -1523,33 +1540,47 @@ def test_allowed_types_are_forwarded_to_rendered_symbolic_inputs(
     operator: str,
     expected: dict[str, str],
 ) -> None:
-    field_markup = []
+    fields: list[tuple[str, set[str]]] = []
     original_render = big_operator_input.symbolic_input_adapter.render
 
     def capture_render(
-        markup: str,
         state: QuestionData,
         *,
+        name: str,
+        variables: tuple[str, ...],
+        custom_functions: tuple[str, ...],
         aria_label: str,
+        size: int,
+        allowed_types: set[str],
+        allow_complex: bool,
+        show_help_text: bool = False,
+        show_score: bool = False,
+        prefix: str | None = None,
+        suffix: str | None = None,
         score: float | None = None,
     ) -> str:
-        field_markup.append(markup)
-        return original_render(markup, state, aria_label=aria_label, score=score)
+        fields.append((name, allowed_types))
+        return original_render(
+            state,
+            name=name,
+            variables=variables,
+            custom_functions=custom_functions,
+            aria_label=aria_label,
+            size=size,
+            allowed_types=allowed_types,
+            allow_complex=allow_complex,
+            show_help_text=show_help_text,
+            show_score=show_score,
+            prefix=prefix,
+            suffix=suffix,
+            score=score,
+        )
 
     monkeypatch.setattr(
         big_operator_input.symbolic_input_adapter, "render", capture_render
     )
     big_operator_input.render(html(operator=operator), data())
-    allowed_types = {
-        element.get("answers-name"): element.get("allowed-types")
-        for element in map(lxml.html.fragment_fromstring, field_markup)
-    }
-
-    assert allowed_types == expected
-    assert all(
-        "allow-sets" not in element.attrib
-        for element in map(lxml.html.fragment_fromstring, field_markup)
-    )
+    assert {name: next(iter(allowed)) for name, allowed in fields} == expected
 
 
 @pytest.mark.parametrize("attribute", ["body-size", "limit-size"])
