@@ -946,7 +946,9 @@ def _field(
         custom_functions=config.custom_functions,
         label=label,
         size=size,
-        allow_sets=_requires_set(config, cast(Component, component)),
+        allowed_types=(
+            "all" if _requires_set(config, cast(Component, component)) else "expression"
+        ),
         allow_complex=config.allow_complex,
         show_help_text=component == "body" and config.show_help_text,
         show_score=config.grading == "component",
@@ -1255,7 +1257,7 @@ def _parse_values(
                 "body": "Operator body",
             }[component],
             size=config.body_size if component == "body" else config.limit_size,
-            allow_sets=_requires_set(config, component),
+            allowed_types="all" if _requires_set(config, component) else "expression",
             allow_complex=config.allow_complex,
         )
         symbolic_input_adapter.parse(field_markup, data)
