@@ -56,9 +56,6 @@ class OperatorMetadata:
     bounds_constructor: type[sympy.Basic]
     _domain_constructor: type[sympy.Basic] | None = None
 
-    def __post_init__(self):
-        assert self.default_limit in self.valid_limits
-
     @property
     def domain_constructor(self) -> type[sympy.Basic]:
         return self._domain_constructor or self.bounds_constructor
@@ -143,8 +140,8 @@ class _ParseError(ValueError):
         self._src = src
 
 
-@dataclass(frozen=True, slots=True)
-class Config:
+@dataclass(frozen=True, slots=True, kw_only=True)
+class RenderConfig:
     answer: str
     operator: Operator
     operator_latex: str
@@ -421,7 +418,7 @@ def _get_tuple_attrib[T](
     return tuple(filter(bool, map(str.strip, val.split(","))))
 
 
-def _config(html: str, data: pl.QuestionData | None = None) -> Config:
+def _config(html: str, data: pl.QuestionData | None = None) -> RenderConfig:
     element = lxml.html.fragment_fromstring(html)
     answer = pl.get_string_attrib(element, "answers-name", None)
     if answer is None or not answer.strip():
@@ -477,7 +474,7 @@ def _config(html: str, data: pl.QuestionData | None = None) -> Config:
         operator_latex = (
             custom_latex.strip() if custom_latex is not None else metadata.tex
         )
-    limits: LimitFormat | Literal["auto"] | str = (
+    limits: LimitFormat | str = (
         pl.get_string_attrib(element, "limits", "auto") or "auto"
     )
     if limits == "auto":
@@ -578,28 +575,32 @@ def _config(html: str, data: pl.QuestionData | None = None) -> Config:
         raise ValueError(
             'Custom operators with a correct answer require grading-method="exact" or "component".'
         )
-    return Config(
-        answer,
-        operator,
-        operator_latex,
-        limits,
-        index,
-        variables,
-        custom_functions,
-        direction,
-        allow_direction_input,
-        allowed_blank,
-        pl.get_boolean_attrib(element, "allow-complex", False),
-        pl.get_boolean_attrib(element, "show-help-text", True),
-        body_size,
-        limit_size,
-        grading,
-        body_weight,
-        pl.get_integer_attrib(element, "weight", 1),
-        correct_attribute,
-        tuple((component, supplied_components[component]) for component in components)
-        if supplied_components
-        else (),
+    return RenderConfig(
+        answer=answer,
+        operator=operator,
+        operator_latex=operator_latex,
+        limits=limits,
+        index=index,
+        variables=variables,
+        custom_functions=custom_functions,
+        direction=direction,
+        allow_direction_input=allow_direction_input,
+        allowed_blank=allowed_blank,
+        allow_complex=pl.get_boolean_attrib(element, "allow-complex", False),
+        show_help_text=pl.get_boolean_attrib(element, "show-help-text", True),
+        body_size=body_size,
+        limit_size=limit_size,
+        grading=grading,
+        body_weight=body_weight,
+        weight=pl.get_integer_attrib(element, "weight", 1),
+        correct_attribute=correct_attribute,
+        correct_components=(
+            tuple(
+                (component, supplied_components[component]) for component in components
+            )
+            if supplied_components
+            else ()
+        ),
     )
 
 
@@ -638,7 +639,7 @@ def _json(value: sympy.Basic) -> dict[str, Any]:
 
 
 def _canonical(
-    config: Config,
+    config: RenderConfig,
     values: dict[str, sympy.Basic],
     direction: str | None = None,
 ) -> dict[str, Any]:
@@ -657,7 +658,7 @@ def _canonical(
     return result
 
 
-def _structured(config: Config, value: dict[str, Any]) -> dict[str, Any]:
+def _structured(config: RenderConfig, value: dict[str, Any]) -> dict[str, Any]:
     keys = {"_type", "_version", "operator", "limits", "index", *config.components}
     if config.operator == "custom":
         keys.add("operator_latex")
@@ -700,7 +701,9 @@ def _structured(config: Config, value: dict[str, Any]) -> dict[str, Any]:
     return _canonical(config, cast(dict[str, sympy.Basic], values))
 
 
-def _validate_component_values(config: Config, values: dict[str, sympy.Basic]) -> None:
+def _validate_component_values(
+    config: RenderConfig, values: dict[str, sympy.Basic]
+) -> None:
     allowed = set(config.variables) | {config.index}
     for component, item in values.items():
         if _requires_set(config, cast(Component, component)) and not _is_set_input(
@@ -719,7 +722,9 @@ def _validate_component_values(config: Config, values: dict[str, sympy.Basic]) -
             )
 
 
-def _component_values(config: Config, value: dict[Component, Any]) -> dict[str, Any]:
+def _component_values(
+    config: RenderConfig, value: dict[Component, Any]
+) -> dict[str, Any]:
     values: dict[str, sympy.Basic] = {}
     for component in config.components:
         raw = value[component]
@@ -752,7 +757,7 @@ def _component_values(config: Config, value: dict[Component, Any]) -> dict[str, 
     return _canonical(config, values)
 
 
-def _binder(config: Config, value: Any) -> dict[str, Any] | None:
+def _binder(config: RenderConfig, value: Any) -> dict[str, Any] | None:
     index = sympy.Symbol(config.index)
     match config.operator:
         case "limit":
@@ -817,7 +822,7 @@ def _binder(config: Config, value: Any) -> dict[str, Any] | None:
             )
 
 
-def _formatted_answer(config: Config, source: str) -> dict[str, Any] | None:
+def _formatted_answer(config: RenderConfig, source: str) -> dict[str, Any] | None:
     formatted = _formatted_call(source, _operator_fn_name(config.operator))
     if formatted is None and config.operator == "limit":
         formatted = _legacy_limit_call(source)
@@ -892,7 +897,7 @@ def _formatted_answer(config: Config, source: str) -> dict[str, Any] | None:
     return _canonical(config, values)
 
 
-def _correct(config: Config, data: pl.QuestionData) -> dict[str, Any] | None:
+def _correct(config: RenderConfig, data: pl.QuestionData) -> dict[str, Any] | None:
     raw = _raw_correct_answer(
         config.answer,
         config.correct_attribute,
@@ -939,7 +944,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 
 
 def _field(
-    config: Config,
+    config: RenderConfig,
     component: str,
     label: str,
     size: int,
@@ -977,7 +982,7 @@ def _field(
     }
 
 
-def _component_scores(config: Config, data: pl.QuestionData) -> dict[str, float]:
+def _component_scores(config: RenderConfig, data: pl.QuestionData) -> dict[str, float]:
     if config.grading != "component" or config.answer not in data.get(
         "partial_scores", {}
     ):
@@ -1005,7 +1010,7 @@ def _component_scores(config: Config, data: pl.QuestionData) -> dict[str, float]
 
 
 def _direction_input(
-    config: Config, data: pl.QuestionData, score: float | None
+    config: RenderConfig, data: pl.QuestionData, score: float | None
 ) -> dict[str, Any]:
     name = config.name("direction")
     raw_value = str(data.get("raw_submitted_answers", {}).get(name, ""))
@@ -1042,7 +1047,7 @@ def _render_mustache(
     )
 
 
-def _question_mustache(config: Config, data: pl.QuestionData) -> str:
+def _question_mustache(config: RenderConfig, data: pl.QuestionData) -> str:
     index = sympy.latex(sympy.Symbol(config.index))
     component_scores = _component_scores(config, data)
     context: dict[str, Any] = {
@@ -1121,7 +1126,7 @@ def _question_mustache(config: Config, data: pl.QuestionData) -> str:
     return _render_mustache(context, template="main")
 
 
-def _tex(config: Config, raw: dict[str, Any] | None) -> str:
+def _tex(config: RenderConfig, raw: dict[str, Any] | None) -> str:
     raw = raw or {}
 
     def get_comp(c: Component):
@@ -1154,7 +1159,7 @@ def _tex(config: Config, raw: dict[str, Any] | None) -> str:
             return rf"{op}_{{{index}\to {get_comp('target')}{direction}}} {get_comp('body')}"
 
 
-def _structured_tex(config: Config, structured: dict[str, Any]) -> str:
+def _structured_tex(config: RenderConfig, structured: dict[str, Any]) -> str:
     values = _values(config, structured)
     raw = {config.name(key): sympy.latex(value) for key, value in values.items()}
     if config.limits == "approach" and config.allow_direction_input:
@@ -1162,7 +1167,7 @@ def _structured_tex(config: Config, structured: dict[str, Any]) -> str:
     return _tex(config, raw)
 
 
-def _submitted_tex(config: Config, data: pl.QuestionData) -> str:
+def _submitted_tex(config: RenderConfig, data: pl.QuestionData) -> str:
     structured = data.get("submitted_answers", {}).get(config.answer)
     if isinstance(structured, dict):
         try:
@@ -1222,7 +1227,7 @@ def _parse(
         raise _ParseError(exc) from None
 
 
-def _requires_set(config: Config, component: Component) -> bool:
+def _requires_set(config: RenderConfig, component: Component) -> bool:
     return component == "domain" or (
         component == "body"
         and config.operator in {"union", "intersection", "disjoint-union"}
@@ -1234,7 +1239,7 @@ def _is_set_input(value: sympy.Basic) -> bool:
     return isinstance(value, (sympy.Set, sympy.Symbol))
 
 
-def _component_allows_blank(config: Config, component: ResponseComponent) -> bool:
+def _component_allows_blank(config: RenderConfig, component: ResponseComponent) -> bool:
     return config.allowed_blank == "all" or (
         config.allowed_blank == "body"
         if component == "body"
@@ -1243,7 +1248,7 @@ def _component_allows_blank(config: Config, component: ResponseComponent) -> boo
 
 
 def _parse_values(
-    config: Config, data: pl.QuestionData
+    config: RenderConfig, data: pl.QuestionData
 ) -> dict[str, sympy.Basic] | None:
     submitted = data.setdefault("submitted_answers", {})
     result: dict[str, sympy.Basic] = {}
@@ -1329,7 +1334,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     )
 
 
-def _values(config: Config, structured: dict[str, Any]) -> dict[str, sympy.Basic]:
+def _values(config: RenderConfig, structured: dict[str, Any]) -> dict[str, sympy.Basic]:
     if not all(key in structured for key in config.components):
         raise ValueError("Operator expression is missing mathematical components.")
     return {
@@ -1347,7 +1352,7 @@ def _values(config: Config, structured: dict[str, Any]) -> dict[str, sympy.Basic
 
 
 def _construct(
-    config: Config,
+    config: RenderConfig,
     values: dict[str, sympy.Basic],
     direction: DirectionName | None = None,
 ) -> sympy.Basic:
@@ -1386,7 +1391,7 @@ def _construct(
 
 
 def _equivalent(
-    config: Config,
+    config: RenderConfig,
     left_values: dict[str, sympy.Basic],
     right_values: dict[str, sympy.Basic],
     left_direction: DirectionName | None = None,
