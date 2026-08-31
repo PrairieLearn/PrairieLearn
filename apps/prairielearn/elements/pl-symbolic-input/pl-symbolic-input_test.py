@@ -208,6 +208,28 @@ def test_prepare_accepts_allowed_correct_answer_type() -> None:
 
 
 @pytest.mark.parametrize(
+    ("allowed_types", "correct_answer"),
+    [
+        ("finite-set", "{1}"),
+        ("interval", "[1, 2]"),
+    ],
+)
+def test_incorrect_answer_uses_an_allowed_type(
+    allowed_types: str, correct_answer: str
+) -> None:
+    element_html = build_element_html(f'allowed-types="{allowed_types}"')
+    data = make_question_data(correct_answers={"test": correct_answer})
+    data["test_type"] = "incorrect"
+
+    symbolic_input.test(element_html, data)
+    data["submitted_answers"] = data["raw_submitted_answers"].copy()
+    symbolic_input.parse(element_html, data)
+
+    assert "test" not in data["format_errors"]
+    assert data["partial_scores"]["test"]["score"] == 0
+
+
+@pytest.mark.parametrize(
     "correct_answer",
     [
         "{1, 2}",
