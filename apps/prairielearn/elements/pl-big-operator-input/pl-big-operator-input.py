@@ -753,54 +753,67 @@ def _component_values(config: Config, value: dict[Component, Any]) -> dict[str, 
 
 
 def _binder(config: Config, value: Any) -> dict[str, Any] | None:
-    expected = {
-        "sum": sympy.Sum,
-        "product": sympy.Product,
-        "integral": sympy.Integral,
-        "limit": sympy.Limit,
-    }.get(config.operator)
-    if expected is None or not isinstance(value, expected):
-        return None
     index = sympy.Symbol(config.index)
-    match config.operator, config.limits:
-        case "limit", _:
+    match config.operator:
+        case "limit":
+            if not isinstance(value, sympy.Limit):
+                return None
+            if len(value.args) != 4:
+                raise ValueError("Correct answer Limit has an invalid structure.")
             body, variable, target, direction = value.args
             if variable != index:
                 raise ValueError("Correct answer index does not match index-variable.")
-            public = DIRECTION_NAMES.get(str(direction))  # type: ignore
+            match str(direction):
+                case "+-" | "-" | "+" as direction_symbol:
+                    public = DIRECTION_NAMES[direction_symbol]
+                case _:
+                    public = None
             if public != config.direction:
                 raise ValueError(
                     "Correct answer Limit direction does not match limit-direction."
                 )
             return _canonical(config, {"target": target, "body": body})
 
-        case _, limits_format:
-            expected_length = 3 if limits_format == "bounds" else 2
-    if len(value.limits) != 1 or len(value.limits[0]) != expected_length:
+        case "sum":
+            if not isinstance(value, sympy.Sum):
+                return None
+        case "product":
+            if not isinstance(value, sympy.Product):
+                return None
+        case "integral":
+            if not isinstance(value, sympy.Integral):
+                return None
+        case _:
+            return None
+
+    if len(value.args) != 2 or not isinstance(value.args[1], sympy.Tuple):
+        raise ValueError("Correct answer must have exactly one limits tuple.")
+    limit_values = value.args[1].args
+    expected_length = 3 if config.limits == "bounds" else 2
+    if len(limit_values) != expected_length:
         raise ValueError(
             f'Correct answer for limits="{config.limits}" must have exactly one '
             f"{expected_length}-item limits tuple."
         )
-    variable, *binder_values = value.limits[0]
+    variable = limit_values[0]
     if variable != index:
         raise ValueError("Correct answer index does not match index-variable.")
+    body = value.args[0]
     match config.limits:
         case "bounds":
             return _canonical(
                 config,
                 {
-                    "lower": binder_values[0],
-                    "upper": binder_values[1],
-                    "body": value.function,
+                    "lower": limit_values[1],
+                    "upper": limit_values[2],
+                    "body": body,
                 },
             )
         case "domain":
-            return _canonical(
-                config, {"domain": binder_values[0], "body": value.function}
-            )
+            return _canonical(config, {"domain": limit_values[1], "body": body})
         case "approach":
             raise ValueError(
-                f'Correct answer operator does not support limits="{config.limits}".'
+                f"Correct answer operator does not support limits={config.limits!r}."
             )
 
 
