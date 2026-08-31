@@ -1,14 +1,15 @@
 from __future__ import annotations
 
 import importlib.util
+import re
 import sys
 from pathlib import Path
 
 import pytest
 import sympy
-from helpers import RegressionTestSuite, SmokeTestSuite, UnitTestSuite
 
 HERE = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(HERE))
 SPEC = importlib.util.spec_from_file_location(
     "pl_big_operator_input", HERE / "pl-big-operator-input.py"
 )
@@ -325,12 +326,10 @@ def test_limit_infers_index_and_direction_from_whole_answer():
 
 
 def test_explicit_limit_direction_still_rejects_mismatch():
-    markup = html(
-        **{
-            "correct-answer": "Limit(k, (k, 0, '+'))",
-            "limit-direction": "from-left",
-        }
-    )
+    markup = html(**{
+        "correct-answer": "Limit(k, (k, 0, '+'))",
+        "limit-direction": "from-left",
+    })
     with pytest.raises(ValueError, match="does not match limit-direction"):
         mod.prepare(markup, data())
 
@@ -340,12 +339,10 @@ def test_explicit_limit_direction_still_rejects_mismatch():
     [("+", "from-right"), ("-", "from-left"), ("+-", "two-sided")],
 )
 def test_formatted_limit_accepts_documented_directions(direction, public_direction):
-    markup = html(
-        **{
-            "correct-answer": f"Limit(k**2, (k, 0, '{direction}'))",
-            "limit-direction": public_direction,
-        }
-    )
+    markup = html(**{
+        "correct-answer": f"Limit(k**2, (k, 0, '{direction}'))",
+        "limit-direction": public_direction,
+    })
     state = data()
 
     mod.prepare(markup, state)
@@ -457,13 +454,11 @@ def test_builtin_operator_accepts_custom_latex():
 
 
 def test_inferred_builtin_operator_accepts_custom_latex():
-    markup = html(
-        **{
-            "index-variable": None,
-            "correct-answer": "Sum(k, (k, 1, 2))",
-            "operator-latex": r"\Sigma",
-        }
-    )
+    markup = html(**{
+        "index-variable": None,
+        "correct-answer": "Sum(k, (k, 1, 2))",
+        "operator-latex": r"\Sigma",
+    })
 
     config = mod._config(markup, data())
 
@@ -875,12 +870,10 @@ def test_fixed_limit_direction_is_injected_without_raw_field():
 def test_student_limit_direction_participates_in_grading(
     grading, submitted_direction, expected
 ):
-    markup = html(
-        **{
-            "correct-answer": "Limit(1/k, (k, 0, '+'))",
-            "grading-method": grading,
-        }
-    )
+    markup = html(**{
+        "correct-answer": "Limit(1/k, (k, 0, '+'))",
+        "grading-method": grading,
+    })
     state = data(
         raw={
             "op-target": "0",
@@ -895,12 +888,10 @@ def test_student_limit_direction_participates_in_grading(
 
 
 def test_direction_component_feedback_is_rendered():
-    markup = html(
-        **{
-            "correct-answer": "Limit(1/k, (k, 0, '+'))",
-            "grading-method": "component",
-        }
-    )
+    markup = html(**{
+        "correct-answer": "Limit(1/k, (k, 0, '+'))",
+        "grading-method": "component",
+    })
     state = data(
         raw={
             "op-target": "0",
@@ -950,13 +941,11 @@ def test_canonical_custom_answer_infers_operator_and_limits():
     answer = canonical(operator="custom")
     answer["operator_latex"] = r"\star"
     state = data(answer)
-    markup = html(
-        **{
-            "index-variable": None,
-            "operator-latex": r"\star",
-            "grading-method": "component",
-        }
-    )
+    markup = html(**{
+        "index-variable": None,
+        "operator-latex": r"\star",
+        "grading-method": "component",
+    })
 
     mod.prepare(markup, state)
 
@@ -1597,12 +1586,10 @@ def _test_exact_and_equivalent_grading(grading):
 
 
 def _test_equivalent_grading_domain_sum():
-    markup = html(
-        **{
-            "index-variable": None,
-            "correct-answer": "Sum(k, (k, {1, 2}))",
-        }
-    )
+    markup = html(**{
+        "index-variable": None,
+        "correct-answer": "Sum(k, (k, {1, 2}))",
+    })
     state = data(raw={"op-domain": "{1, 2}", "op-body": "k"})
 
     mod.prepare(markup, state)
@@ -1613,14 +1600,12 @@ def _test_equivalent_grading_domain_sum():
 
 
 def test_symbolic_domain_named_like_sympy_function_renders_as_a_symbol():
-    markup = html(
-        **{
-            "index-variable": None,
-            "correct-answer": "Sum(k**-2, (k, N))",
-            "variables": "N",
-            "grading-method": "exact",
-        }
-    )
+    markup = html(**{
+        "index-variable": None,
+        "correct-answer": "Sum(k**-2, (k, N))",
+        "variables": "N",
+        "grading-method": "exact",
+    })
     state = data(raw={"op-domain": "N", "op-body": "k^-2"})
 
     mod.prepare(markup, state)
@@ -1902,13 +1887,11 @@ def test_schema_accepts_implied_custom_operator():
     [
         html(operator="limit", limits="bounds"),
         html(operator="custom", limits="bounds"),
-        html(
-            **{
-                "correct-answer-start": "1",
-                "correct-answer-end": "2",
-                "correct-answer-body": "k",
-            }
-        ),
+        html(**{
+            "correct-answer-start": "1",
+            "correct-answer-end": "2",
+            "correct-answer-body": "k",
+        }),
         html(
             operator="sum",
             **{
@@ -2101,7 +2084,7 @@ def test_annotated_operator_stack_has_vertical_offset(operator):
     )
 
 
-class TestCorrectAnswerRegressions(RegressionTestSuite):
+class TestCorrectAnswerRegressions:
     test_whole_set_correct_answer_enforces_set_fields = staticmethod(
         _test_whole_set_correct_answer_enforces_set_fields
     )
@@ -2113,7 +2096,7 @@ class TestCorrectAnswerRegressions(RegressionTestSuite):
     )
 
 
-class TestLifecycleRegressions(RegressionTestSuite):
+class TestLifecycleRegressions:
     test_component_parse_clears_stale_format_error_after_valid_reparse = staticmethod(
         _test_component_parse_clears_stale_format_error_after_valid_reparse
     )
@@ -2125,14 +2108,14 @@ class TestLifecycleRegressions(RegressionTestSuite):
     )
 
 
-class TestGradingSmoke(SmokeTestSuite):
+class TestGradingSmoke:
     test_exact_and_equivalent_grading = staticmethod(_test_exact_and_equivalent_grading)
     test_equivalent_grading_domain_sum = staticmethod(
         _test_equivalent_grading_domain_sum
     )
 
 
-class TestControllerUnits(UnitTestSuite):
+class TestControllerUnits:
     """Unit contracts retained from the original controller test module."""
 
 
@@ -2140,3 +2123,87 @@ class TestControllerUnits(UnitTestSuite):
 # exposing every unit contract to pytest through its marker-bearing suite class.
 for _test_name in [name for name in globals() if name.startswith("test_")]:
     setattr(TestControllerUnits, _test_name, staticmethod(globals().pop(_test_name)))
+
+
+class TestParserRegressions:
+    @pytest.mark.parametrize("token", ["k+1", "1", "a.b", "__import__", "'k'"])
+    def test_wrapper_index_is_lexically_validated(self, token: str):
+        assert mod._identifier(token) is None
+
+    def test_project_owned_code_has_no_direct_sympy_parse_calls(self):
+        root = Path(__file__).resolve().parents[3]
+        offenders = []
+        for path in root.rglob("*.py"):
+            if "vendor" in path.parts:
+                continue
+            source = path.read_text()
+            if "sympy." + "parse" in source:
+                offenders.append(str(path.relative_to(root)))
+        assert offenders == []
+
+    def test_partial_canonical_submission_falls_back_for_render_and_grades_zero(self):
+        markup = html(operator="sum", **{"correct-answer": "Sum(k, (k, 1, 2))"})
+        state = data(panel="submission")
+        mod.prepare(markup, state)
+        state["submitted_answers"] = {"op": {}}
+
+        assert mod.render(markup, state)
+        mod.grade(markup, state)
+
+        assert state["partial_scores"]["op"] == {"score": 0.0, "weight": 1}
+
+    def test_malformed_correct_answer_container_has_descriptive_error(self):
+        state = data()
+        state["correct_answers"] = None
+        with pytest.raises(TypeError, match="mapping"):
+            mod.prepare(html(operator="sum"), state)
+
+
+class TestParserUnits:
+    @pytest.mark.parametrize(
+        "value",
+        [
+            sympy.Symbol("x"),
+            sympy.Integer(2) * sympy.Symbol("x") + 1,  # type: ignore
+            sympy.FiniteSet(1, 2),
+            sympy.Interval(0, 1),
+        ],
+    )
+    def test_public_sympy_json_round_trip(self, value: sympy.Basic):
+        assert mod._decode(mod._json(value), ("x",)) == value
+
+
+README_EXAMPLES = re.findall(
+    r"^```(?:html|xml)\s*\n(.*?)^```\s*$",
+    (HERE / "README.md").read_text(),
+    flags=re.MULTILINE | re.DOTALL,
+)
+
+
+class TestReadmeExamples:
+    def test_readme_contains_markup_examples(self):
+        assert README_EXAMPLES
+
+    @pytest.mark.parametrize("example", README_EXAMPLES)
+    def test_readme_markup_examples_validate_prepare_and_render(self, example):
+        elements = [
+            fragment
+            for fragment in mod.lxml.html.fragments_fromstring(example)
+            if getattr(fragment, "tag", None) == "pl-big-operator-input"
+        ]
+        assert len(elements) == 1
+        markup = mod.lxml.html.tostring(elements[0], encoding="unicode")
+        state = {
+            "params": {},
+            "correct_answers": {},
+            "raw_submitted_answers": {},
+            "panel": "question",
+        }
+
+        mod.pl.validate_element(
+            elements[0],
+            HERE / "pl-big-operator-input.schema.json",
+        )
+        mod.prepare(markup, state)
+
+        assert mod.render(markup, state)
