@@ -372,6 +372,14 @@ class TestSympy:
             ("{0, 2} & {2, 4}", {"finite-set"}, sympy.FiniteSet(2)),
             ("{0, 2} U {2, 4}", {"finite-set"}, sympy.FiniteSet(0, 2, 4)),
             (
+                "{m} - {n}",
+                {"finite-set"},
+                sympy.Complement(
+                    sympy.FiniteSet(sympy.Symbol("m")),
+                    sympy.FiniteSet(sympy.Symbol("n")),
+                ),
+            ),
+            (
                 "{0, 2} U {2, 4} U {1, 3}",
                 {"finite-set"},
                 sympy.FiniteSet(0, 1, 2, 3, 4),
@@ -382,6 +390,17 @@ class TestSympy:
                 {"finite-set", "interval"},
                 sympy.Union(sympy.Interval(1, 2), sympy.FiniteSet(3, 4)),
             ),
+            (
+                "{ (0, 1), [2, 3] }",
+                {"finite-set", "interval"},
+                sympy.FiniteSet(
+                    sympy.Interval.open(0, 1),
+                    sympy.Interval(2, 3, left_open=False, right_open=False),
+                ),
+            ),
+            ("{ {0, 1}, {2, 3} }",),
+            {"finite-set"},
+            sympy.FiniteSet(sympy.FiniteSet(0, 1), sympy.FiniteSet(2, 3)),
         ],
     )
     def test_try_parse_string_as_sympy_accepts_non_singleton_allowed_types(
@@ -414,6 +433,7 @@ class TestSympy:
             ("[1, 4] & {2, 3}", {"interval"}, "finite-set"),
             ("[0, 1] U [1, 4] & {2, 3}", {"interval"}, "finite-set"),
             ("[1, 2] U {3, 4}", {"finite-set"}, "interval"),
+            ("{ [1, 2] }", {"finite-set"}, "interval"),
         ],
     )
     def test_try_parse_string_as_sympy_rejects_disallowed_types(

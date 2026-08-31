@@ -83,7 +83,7 @@ def _used_sympy_types(expr: sympy.Basic) -> set[AllowedSympyType | Literal["set-
         return set()
     if isinstance(expr, sympy.Interval):
         return {"interval"}
-    if isinstance(expr, sympy.FiniteSet):
+    if isinstance(expr, sympy.Set) and expr.is_finite_set:
         return {"finite-set"}
     if isinstance(expr, (sympy.Union, sympy.Intersection)):
         required_types: set[AllowedSympyType | Literal["set-base"]] = set()
@@ -116,7 +116,7 @@ def check_sympy_types(
         and len(missing_types) == 1
     ):
         value_type = missing_types.pop()
-    elif isinstance(expr, sympy.FiniteSet) or (
+    elif (isinstance(expr, sympy.Set) and expr.is_finite_set) or (
         expr is sympy.EmptySet and "interval" not in allowed_types
     ):
         value_type = "finite-set"
