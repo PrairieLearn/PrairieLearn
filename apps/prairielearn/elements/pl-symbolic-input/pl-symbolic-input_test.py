@@ -1,5 +1,4 @@
 import importlib
-import string
 from pathlib import Path
 from typing import Any
 
@@ -447,8 +446,6 @@ def test_formula_editor_deeply_nested_bare_arguments() -> None:
     data = make_question_data(submitted_answers={"test": submission})
     symbolic_input.parse(element_html, data)
     assert "syntax error" in data["format_errors"]["test"]
-
-
 def test_parse_without_variables_attribute_with_assumptions() -> None:
     """Test that parse works when no variables attribute is specified but correct answer has assumptions.
 

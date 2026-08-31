@@ -1,6 +1,5 @@
 import pathlib
 import random
-import re
 from enum import Enum
 from functools import lru_cache
 from sys import get_int_max_str_digits
@@ -97,10 +96,6 @@ def _get_allowed_types(element: lxml.html.HtmlElement) -> set[psu.AllowedSympyTy
     return {ALLOWED_TYPES_DEFAULT}
 
 
-def _allows_sets(allowed_types: set[psu.AllowedSympyType]) -> bool:
-    return not allowed_types.isdisjoint({"all", "set", "finite-set", "interval"})
-
-
 def prepare(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     pl.validate_element(element, SCHEMA_PATH)
@@ -120,7 +115,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         element, "allow-trig-functions", ALLOW_TRIG_FUNCTIONS_DEFAULT
     )
     allowed_types = _get_allowed_types(element)
-    allow_sets = _allows_sets(allowed_types)
+    allow_sets = psu.allowed_sympy_types_include_sets(allowed_types)
     simplify_expression = pl.get_boolean_attrib(
         element,
         "display-simplified-expression",
@@ -262,7 +257,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         element, "allow-trig-functions", ALLOW_TRIG_FUNCTIONS_DEFAULT
     )
     allowed_types = _get_allowed_types(element)
-    allow_sets = _allows_sets(allowed_types)
+    allow_sets = psu.allowed_sympy_types_include_sets(allowed_types)
     simplify_expression = pl.get_boolean_attrib(
         element, "display-simplified-expression", DISPLAY_SIMPLIFIED_EXPRESSION_DEFAULT
     )
@@ -515,54 +510,13 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         element, "allow-trig-functions", ALLOW_TRIG_FUNCTIONS_DEFAULT
     )
     allowed_types = _get_allowed_types(element)
-    allow_sets = _allows_sets(allowed_types)
     simplify_expression = pl.get_boolean_attrib(
         element, "display-simplified-expression", DISPLAY_SIMPLIFIED_EXPRESSION_DEFAULT
     )
     allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
     blank_value = pl.get_string_attrib(element, "blank-value", BLANK_VALUE_DEFAULT)
 
-    # Get submitted answer or return parse_error if it does not exist
     submitted_answer = data["submitted_answers"].get(name, None)
-
-    if formula_editor:
-        formatted_answer = format_formula_editor_submission_for_sympy(
-            submitted_answer,
-            allow_trig,
-            variables,
-            custom_functions,
-            latex=data["raw_submitted_answers"].get(name + "-latex"),
-        )
-        if submitted_answer is not None and formatted_answer is None:
-            data["format_errors"][name] = psu.SYMPY_PARSE_ERROR_WITHOUT_LOCATION
-            data["submitted_answers"][name] = None
-            return
-        submitted_answer = formatted_answer
-
-    # Pre-processing to make submission parseable by SymPy
-    a_sub, error_msg = format_submission_for_sympy(
-        submitted_answer, allow_sets=allow_sets
-    )
-    if error_msg is not None:
-        data["format_errors"][name] = error_msg
-        data["submitted_answers"][name] = None
-        return
-
-    if a_sub is None:
-        data["format_errors"][name] = "No submitted answer."
-        data["submitted_answers"][name] = None
-        return
-
-    if isinstance(a_sub, str) and a_sub.strip() == "":
-        if allow_blank:
-            a_sub = blank_value
-            if a_sub.strip() == "":  # Handle blank case
-                data["submitted_answers"][name] = ""
-                return
-        else:
-            data["format_errors"][name] = "No submitted answer."
-            data["submitted_answers"][name] = None
-            return
 
     # Retrieve variable assumptions encoded in correct answer
     assumptions_dict = None
@@ -570,12 +524,13 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     if isinstance(a_tru, dict):
         assumptions_dict = a_tru.get("_assumptions")
 
-    result = psu.try_parse_string_as_sympy(
-        a_sub,
+    result = psu.try_parse_symbolic_submission(
+        submitted_answer,
         variables,
-        allow_hidden=True,
+        formula_editor=formula_editor,
+        allow_blank=allow_blank,
+        blank_value=blank_value,
         allow_complex=allow_complex,
-        allow_sets=allow_sets,
         allow_trig_functions=allow_trig,
         imaginary_unit=imaginary_unit,
         custom_functions=custom_functions,
@@ -589,31 +544,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         data["submitted_answers"][name] = None
         return
 
-    a_sub_parsed = result.expr
-
-    # Make sure we can parse the json again
-    try:
-        a_sub_json = psu.sympy_to_json(
-            a_sub_parsed,
-            allow_complex=allow_complex,
-            allow_sets=allow_sets,
-        )
-
-        # Convert safely to sympy
-        psu.json_to_sympy(
-            a_sub_json,
-            allow_complex=allow_complex,
-            allow_sets=allow_sets,
-            simplify_expression=simplify_expression,
-        )
-
-        # Finally, store the result
-        data["submitted_answers"][name] = a_sub_json
-    except Exception:
-        data["format_errors"][name] = (
-            f"Your answer was simplified to this, which contains an invalid expression: $${sympy.latex(a_sub_parsed)}$$"
-        )
-        data["submitted_answers"][name] = None
+    data["submitted_answers"][name] = result.json
 
 
 _PLUS_MINUS_LATEX_PATTERN = re.compile(r"\\pm(?![a-zA-Z])|\+[{}]*-")
@@ -911,8 +842,6 @@ def _add_multiplication_spaces(text: str, protected_tokens: list[str]) -> str:
             result.append(" ")
 
     return "".join(result)
-
-
 @lru_cache(maxsize=128)
 def _bare_function_token_pattern(function_names: frozenset[str]) -> re.Pattern[str]:
     """
@@ -1049,7 +978,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
         element, "allow-complex", ALLOW_COMPLEX_DEFAULT
     )
     allowed_types = _get_allowed_types(element)
-    allow_sets = _allows_sets(allowed_types)
+    allow_sets = psu.allowed_sympy_types_include_sets(allowed_types)
     allow_trig = pl.get_boolean_attrib(
         element, "allow-trig-functions", ALLOW_TRIG_FUNCTIONS_DEFAULT
     )
@@ -1174,7 +1103,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
         element, "imaginary-unit-for-display", IMAGINARY_UNIT_FOR_DISPLAY_DEFAULT
     )
     allowed_types = _get_allowed_types(element)
-    allow_sets = _allows_sets(allowed_types)
+    allow_sets = psu.allowed_sympy_types_include_sets(allowed_types)
     allow_trig = pl.get_boolean_attrib(
         element, "allow-trig-functions", ALLOW_TRIG_FUNCTIONS_DEFAULT
     )
