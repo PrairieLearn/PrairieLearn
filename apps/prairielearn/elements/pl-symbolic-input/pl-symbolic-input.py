@@ -1044,12 +1044,17 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
         data["partial_scores"][name] = {"score": 1, "weight": weight}
 
     elif result == "incorrect":
-        if a_tru_str == "" or allow_sets:
-            data["raw_submitted_answers"][name] = f"{random.randint(1, 100):d}"
+        offset = random.randint(1, 100)
+        if not allow_sets and a_tru_str != "":
+            data["raw_submitted_answers"][name] = f"{a_tru_str} + {offset:d}"
+        elif "all" in allowed_types or "expression" in allowed_types:
+            data["raw_submitted_answers"][name] = f"{offset:d}"
+        elif "finite-set" in allowed_types:
+            data["raw_submitted_answers"][name] = f"{{{offset:d}}}"
+        elif "interval" in allowed_types:
+            data["raw_submitted_answers"][name] = f"({offset:d}, {offset + 1:d})"
         else:
-            data["raw_submitted_answers"][name] = (
-                f"{a_tru_str} + {random.randint(1, 100):d}"
-            )
+            raise AssertionError(f"Unexpected allowed types: {allowed_types}")
         data["partial_scores"][name] = {"score": 0, "weight": weight}
 
     elif result == "invalid":
