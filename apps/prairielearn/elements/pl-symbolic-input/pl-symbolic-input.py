@@ -146,20 +146,26 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         blank_value = pl.get_string_attrib(element, "blank-value", BLANK_VALUE_DEFAULT)
         # Validate that the answer can be parsed before storing
         if a_true.strip() != "":
-            result = psu.try_parse_string_as_sympy(
-                a_true,
-                variables,
-                allow_complex=allow_complex,
-                allow_sets=allow_sets,
-                allow_trig_functions=allow_trig,
-                custom_functions=custom_functions,
-                simplify_expression=simplify_expression,
-                allowed_types=allowed_types,
-            )
-            if isinstance(result, psu.SympyParseFailure):
+            try:
+                parsed_answer = psu.convert_string_to_sympy(
+                    a_true,
+                    variables,
+                    allow_complex=allow_complex,
+                    allow_sets=allow_sets,
+                    allow_trig_functions=allow_trig,
+                    custom_functions=custom_functions,
+                    simplify_expression=simplify_expression,
+                )
+            except psu.BaseSympyError as exc:
+                raise ValueError(
+                    f'Parsing correct answer "{a_true}" for "{name}" failed.'
+                ) from exc
+
+            type_failure = psu.check_sympy_types(parsed_answer, allowed_types)
+            if type_failure is not None:
                 raise ValueError(
                     f'Parsing correct answer "{a_true}" for "{name}" failed: '
-                    f"{result.error}"
+                    f"{type_failure.error}"
                 )
         elif allow_blank and blank_value == "":
             a_true = ""
@@ -244,7 +250,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     allow_trig = pl.get_boolean_attrib(
         element, "allow-trig-functions", ALLOW_TRIG_FUNCTIONS_DEFAULT
     )
-    allow_sets = _allows_sets(_get_allowed_types(element))
+    allowed_types = _get_allowed_types(element)
+    allow_sets = _allows_sets(allowed_types)
     simplify_expression = pl.get_boolean_attrib(
         element, "display-simplified-expression", DISPLAY_SIMPLIFIED_EXPRESSION_DEFAULT
     )
@@ -841,7 +848,8 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
     allow_complex = pl.get_boolean_attrib(
         element, "allow-complex", ALLOW_COMPLEX_DEFAULT
     )
-    allow_sets = _allows_sets(_get_allowed_types(element))
+    allowed_types = _get_allowed_types(element)
+    allow_sets = _allows_sets(allowed_types)
     allow_trig = pl.get_boolean_attrib(
         element, "allow-trig-functions", ALLOW_TRIG_FUNCTIONS_DEFAULT
     )
@@ -968,7 +976,8 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     imaginary_unit = pl.get_string_attrib(
         element, "imaginary-unit-for-display", IMAGINARY_UNIT_FOR_DISPLAY_DEFAULT
     )
-    allow_sets = _allows_sets(_get_allowed_types(element))
+    allowed_types = _get_allowed_types(element)
+    allow_sets = _allows_sets(allowed_types)
     allow_trig = pl.get_boolean_attrib(
         element, "allow-trig-functions", ALLOW_TRIG_FUNCTIONS_DEFAULT
     )
@@ -1005,6 +1014,14 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
                 allow_sets=allow_sets,
                 allow_trig_functions=allow_trig,
             )
+
+        if a_tru != "":
+            type_failure = psu.check_sympy_types(a_tru, allowed_types)
+            if type_failure is not None:
+                raise ValueError(
+                    f'Correct answer for "{name}" has an invalid type: '
+                    f"{type_failure.error}"
+                )
 
         if a_tru != "":
             # Substitute in imaginary unit symbol
