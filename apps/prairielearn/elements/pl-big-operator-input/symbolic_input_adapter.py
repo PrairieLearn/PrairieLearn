@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-import importlib.util
+import importlib
+import re
 import sys
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -14,22 +15,17 @@ if TYPE_CHECKING:
 
 HERE = Path(__file__).parent
 SOURCE_DIR = HERE.parent / "pl-symbolic-input"
-CONTROLLER_PATH = SOURCE_DIR / "pl-symbolic-input.py"
 TEMPLATE_PATH = SOURCE_DIR / "pl-symbolic-input.mustache"
 
 
 def _load_controller() -> ModuleType:
-    module_name = "pl_big_operator_input_vendored_symbolic_input"
-    if module_name in sys.modules:
-        return sys.modules[module_name]
-    spec = importlib.util.spec_from_file_location(module_name, CONTROLLER_PATH)
-    if spec is None or spec.loader is None:
-        raise RuntimeError(f"Could not load vendored controller at {CONTROLLER_PATH}")
-    module = importlib.util.module_from_spec(spec)
-    sys.modules[module_name] = module
-    spec.loader.exec_module(module)
-    # Upstream normally runs with the element directory as its working directory.
-    # Use an absolute template path so this adapter does not mutate process-global cwd.
+    sys.path.insert(0, str(SOURCE_DIR))
+    try:
+        module = importlib.import_module("pl-symbolic-input")
+    finally:
+        sys.path.remove(str(SOURCE_DIR))
+    # Element controllers normally run with their own directory as the working directory.
+    # This adapter invokes the controller from a different element, so use an absolute path.
     module.SYMBOLIC_INPUT_MUSTACHE_TEMPLATE_NAME = str(TEMPLATE_PATH)  # type: ignore
     return module
 
@@ -102,18 +98,14 @@ def render(
             view["partial_scores"] = dict(view["partial_scores"])
             view["partial_scores"][name] = {"score": score}
     rendered = CONTROLLER.render(field_markup, view)
-    # The pinned upstream formula-editor template does not apply its aria-label
-    # parameter to the math-field. Keep the vendored files pristine and bridge
-    # that accessibility gap in the adapter.
+    # The formula-editor template does not apply its aria-label parameter to the
+    # math-field, so bridge that accessibility gap in the adapter.
     rendered = rendered.replace(
         "<math-field", f'<math-field aria-label="{aria_label}"', 1
     )
     if score is not None:
-        # The wrapper's component badges are intentionally icon-only. Keep this
-        # adaptation here so the pinned upstream template remains untouched.
-        rendered = rendered.replace(" 100%</span>", "</span>")
-        rendered = rendered.replace(" 0%</span>", "</span>")
-        rendered = rendered.replace(f" {round(score * 100)}%</span>", "</span>")
+        # The wrapper's component badges are intentionally icon-only.
+        rendered = re.sub(r" \d+%</span>", "</span>", rendered)
     return rendered
 
 
@@ -123,12 +115,11 @@ def parse(field_markup: str, data: pl.QuestionData) -> None:
     data.setdefault("format_errors", {})
     data.setdefault("raw_submitted_answers", {})
     data.setdefault("submitted_answers", {})
-    view = data
     element = lxml.html.fragment_fromstring(field_markup)
     name = element.get("answers-name")
     if not name:
         raise ValueError("Delegated symbolic input is missing answers-name.")
-    view["submitted_answers"][name] = view["raw_submitted_answers"].get(name)
-    CONTROLLER.parse(field_markup, view)
-    if not had_format_errors and not view["format_errors"]:
-        view["format_errors"].clear()
+    data["submitted_answers"][name] = data["raw_submitted_answers"].get(name)
+    CONTROLLER.parse(field_markup, data)
+    if not had_format_errors and not data["format_errors"]:
+        data["format_errors"].clear()
