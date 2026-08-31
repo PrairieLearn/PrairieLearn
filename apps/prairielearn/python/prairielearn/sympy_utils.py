@@ -88,6 +88,15 @@ type _UsedSympyType = _SympyValueType | Literal["empty-set"]
 type AllowedSympyType = Literal["all"] | _SympyValueType
 
 
+@dataclass(frozen=True, slots=True)
+class SymbolicSubmissionParseSuccess:
+    expr: sympy.Expr | Literal[""]
+    json: SympyJson | Literal[""]
+
+
+type SymbolicSubmissionParseResult = SymbolicSubmissionParseSuccess | SympyParseFailure
+
+
 def _used_sympy_types(expr: sympy.Basic) -> set[_UsedSympyType]:
     if expr is sympy.EmptySet:
         return {"empty-set"}
@@ -1530,6 +1539,205 @@ def try_parse_string_as_sympy(
         return type_failure
 
     return SympyParseSuccess(expr_parsed)
+
+
+def format_submission_for_sympy(
+    submission: str, *, allow_sets: bool = False
+) -> tuple[str | None, str | None]:
+    """Replace absolute-value bars with syntax understood by the SymPy parser."""
+    original_submission = submission
+    pattern = re.compile(
+        r"(\|\s*[a-zA-Z0-9(+\-]([^|]*[a-zA-Z0-9!)])\s*\|)|(\|\s*[a-zA-Z0-9]\s*\|)"
+    )
+    search_from = 0
+    while True:
+        match = pattern.search(submission, search_from)
+        if not match:
+            break
+
+        content = match.group(0)[1:-1]
+        if allow_sets and "," in content:
+            search_from = match.start() + 1
+            continue
+
+        submission = (
+            submission[: match.start()] + f"abs({content})" + submission[match.end() :]
+        )
+        search_from = 0
+
+    if not allow_sets and "|" in submission:
+        error = f"The absolute value bars in your answer are mismatched or ambiguous: <code>{original_submission}</code>."
+        return (
+            None,
+            error,
+        )
+
+    return submission, None
+
+
+def format_formula_editor_submission_for_sympy(
+    submission: str,
+    variables: Sequence[str],
+    custom_functions: Sequence[str],
+    *,
+    allow_trig_functions: bool,
+) -> str:
+    """Normalize formula-editor output before parsing it with SymPy."""
+    text = submission.replace("{:", "").replace(":}", "")
+    known_tokens = _build_formula_editor_tokens(
+        variables,
+        custom_functions,
+        allow_trig_functions=allow_trig_functions,
+    )
+    text = "".join(_format_formula_editor_greek_character(char) for char in text)
+    text = _merge_formula_editor_tokens(text, known_tokens)
+    return _add_formula_editor_multiplication_spaces(text, known_tokens)
+
+
+def _build_formula_editor_tokens(
+    variables: Sequence[str],
+    custom_functions: Sequence[str],
+    *,
+    allow_trig_functions: bool,
+) -> list[str]:
+    tokens = (
+        list(STANDARD_OPERATORS)
+        + list(_Constants.functions.keys())
+        + list(custom_functions)
+        + list(variables)
+    )
+    if allow_trig_functions:
+        tokens += list(_Constants.trig_functions.keys())
+    tokens += [
+        greek_unicode_transform(token)
+        for token in tokens
+        if greek_unicode_transform(token) != token
+    ]
+    return [token for token in tokens if len(token) > 1]
+
+
+def _format_formula_editor_greek_character(character: str) -> str:
+    transformed = greek_unicode_transform(character)
+    return " " + " ".join(transformed) + " " if transformed != character else character
+
+
+def _merge_formula_editor_tokens(text: str, tokens: Sequence[str]) -> str:
+    result: list[str] = []
+    index = 0
+    spaced_tokens = sorted(
+        ((token, " ".join(token)) for token in tokens),
+        key=lambda item: -len(item[1]),
+    )
+    while index < len(text):
+        for token, spaced_token in spaced_tokens:
+            if text.startswith(spaced_token, index):
+                result.append(token)
+                index += len(spaced_token)
+                break
+        else:
+            result.append(text[index])
+            index += 1
+    return "".join(result)
+
+
+def _add_formula_editor_multiplication_spaces(
+    text: str, protected_tokens: Sequence[str]
+) -> str:
+    protected_positions: set[int] = set()
+    for token in protected_tokens:
+        if not re.search(r"\d", token):
+            continue
+        for match in re.finditer(re.escape(token), text):
+            protected_positions.update(range(match.start(), match.end()))
+
+    result: list[str] = []
+    for index, character in enumerate(text):
+        result.append(character)
+        if (
+            index + 1 < len(text)
+            and character.isalpha()
+            and text[index + 1].isdigit()
+            and index + 1 not in protected_positions
+        ):
+            result.append(" ")
+    return "".join(result)
+
+
+def try_parse_symbolic_submission(
+    submission: str | None,
+    variables: Iterable[str] | None,
+    *,
+    formula_editor: bool = False,
+    allow_blank: bool = False,
+    blank_value: str = "0",
+    allow_complex: bool = False,
+    allow_sets: bool = False,
+    allow_trig_functions: bool = True,
+    custom_functions: Sequence[str] = (),
+    imaginary_unit: str | None = None,
+    simplify_expression: bool = True,
+    assumptions: AssumptionsDictT | None = None,
+    allowed_types: set[AllowedSympyType] | None = None,
+) -> SymbolicSubmissionParseResult:
+    """Normalize, parse, and serialize a symbolic-input submission."""
+    variable_list = list(variables or ())
+    custom_function_list = list(custom_functions)
+    if formula_editor and submission is not None:
+        submission = format_formula_editor_submission_for_sympy(
+            submission,
+            variable_list,
+            custom_function_list,
+            allow_trig_functions=allow_trig_functions,
+        )
+    if submission is None:
+        return SympyParseFailure("No submitted answer.")
+    formatted_submission, error = format_submission_for_sympy(
+        submission, allow_sets=allow_sets
+    )
+    if error is not None:
+        return SympyParseFailure(error)
+    assert formatted_submission is not None
+    if not formatted_submission.strip():
+        if not allow_blank:
+            return SympyParseFailure("No submitted answer.")
+        formatted_submission = blank_value
+        if not formatted_submission.strip():
+            return SymbolicSubmissionParseSuccess("", "")
+
+    result = try_parse_string_as_sympy(
+        formatted_submission,
+        variable_list,
+        allow_hidden=True,
+        allow_complex=allow_complex,
+        allow_sets=allow_sets,
+        allow_trig_functions=allow_trig_functions,
+        imaginary_unit=imaginary_unit,
+        custom_functions=custom_function_list,
+        simplify_expression=simplify_expression,
+        assumptions=assumptions,
+        allowed_types=allowed_types,
+    )
+    if isinstance(result, SympyParseFailure):
+        return result
+
+    try:
+        submission_json = sympy_to_json(
+            result.expr,
+            allow_complex=allow_complex,
+            allow_sets=allow_sets,
+        )
+        json_to_sympy(
+            submission_json,
+            allow_complex=allow_complex,
+            allow_sets=allow_sets,
+            simplify_expression=simplify_expression,
+        )
+    except Exception:
+        return SympyParseFailure(
+            "Your answer was simplified to this, which contains an invalid expression: "
+            f"$${sympy.latex(result.expr)}$$"
+        )
+    return SymbolicSubmissionParseSuccess(result.expr, submission_json)
 
 
 def validate_string_as_sympy(
