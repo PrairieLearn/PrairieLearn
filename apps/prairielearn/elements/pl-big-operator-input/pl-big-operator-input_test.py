@@ -3,8 +3,9 @@ from __future__ import annotations
 import importlib
 import re
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Never
+from typing import TYPE_CHECKING, Any, Literal, Never
 
+import lxml.html
 import pytest
 import sympy
 
@@ -31,7 +32,7 @@ def html(**attrs: object) -> str:
 def data(
     correct: object | None = None,
     raw: dict[str, str] | None = None,
-    panel: str = "question",
+    panel: Literal["answer", "submission", "question"] = "question",
 ) -> dict[str, Any]:
     return {
         "params": {},
@@ -719,7 +720,7 @@ def test_limit_direction_input_rejects_invalid_boolean() -> None:
     markup = html(operator="limit", **{"allow-limit-direction-input": "sometimes"})
     with pytest.raises(ValueError):
         big_operator_input.pl.validate_element(
-            big_operator_input.lxml.html.fragment_fromstring(markup),
+            lxml.html.fragment_fromstring(markup),
             SCHEMA_PATH,
         )
     with pytest.raises(ValueError):
@@ -1505,6 +1506,50 @@ def test_custom_widths_are_forwarded_to_rendered_symbolic_inputs(
     assert sizes == {"op-start": "9", "op-end": "9", "op-body": "24"}
     assert "--pl-big-operator-input-body-size: 24ch" in rendered
     assert "--pl-big-operator-input-limit-size: 9ch" in rendered
+
+
+@pytest.mark.parametrize(
+    ("operator", "expected"),
+    [
+        (
+            "sum",
+            {"op-start": "expression", "op-end": "expression", "op-body": "expression"},
+        ),
+        ("union", {"op-domain": "all", "op-body": "all"}),
+    ],
+)
+def test_allowed_types_are_forwarded_to_rendered_symbolic_inputs(
+    monkeypatch: pytest.MonkeyPatch,
+    operator: str,
+    expected: dict[str, str],
+) -> None:
+    field_markup = []
+    original_render = big_operator_input.symbolic_input_adapter.render
+
+    def capture_render(
+        markup: str,
+        state: QuestionData,
+        *,
+        aria_label: str,
+        score: float | None = None,
+    ) -> str:
+        field_markup.append(markup)
+        return original_render(markup, state, aria_label=aria_label, score=score)
+
+    monkeypatch.setattr(
+        big_operator_input.symbolic_input_adapter, "render", capture_render
+    )
+    big_operator_input.render(html(operator=operator), data())
+    allowed_types = {
+        element.get("answers-name"): element.get("allowed-types")
+        for element in map(lxml.html.fragment_fromstring, field_markup)
+    }
+
+    assert allowed_types == expected
+    assert all(
+        "allow-sets" not in element.attrib
+        for element in map(lxml.html.fragment_fromstring, field_markup)
+    )
 
 
 def test_custom_widths_are_forwarded_when_parsing(
