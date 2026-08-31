@@ -954,24 +954,25 @@ def _field(
         if component == "body"
         else config.variables
     )
-    field_markup = symbolic_input_adapter.markup(
-        name=name,
-        variables=variables,
-        custom_functions=config.custom_functions,
-        label=label,
-        size=size,
-        allowed_types=(
-            "all" if _requires_set(config, cast(Component, component)) else "expression"
-        ),
-        allow_complex=config.allow_complex,
-        show_help_text=component == "body" and config.show_help_text,
-        show_score=config.grading == "component",
-        prefix=prefix,
-        suffix=suffix,
-    )
     return {
         "html": symbolic_input_adapter.render(
-            field_markup, data, aria_label=label, score=score
+            data,
+            name=name,
+            variables=variables,
+            custom_functions=config.custom_functions,
+            aria_label=label,
+            size=size,
+            allowed_types={
+                "all"
+                if _requires_set(config, cast(Component, component))
+                else "expression"
+            },
+            allow_complex=config.allow_complex,
+            show_help_text=component == "body" and config.show_help_text,
+            show_score=config.grading == "component",
+            prefix=prefix,
+            suffix=suffix,
+            score=score,
         ),
     }
 
