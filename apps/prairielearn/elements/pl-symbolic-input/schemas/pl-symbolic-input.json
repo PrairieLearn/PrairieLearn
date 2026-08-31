@@ -16,7 +16,9 @@
     },
     "allow-sets": {
       "type": "string",
-      "format": "boolean"
+      "format": "boolean",
+      "deprecated": true,
+      "description": "Use `allowed-types` instead."
     },
     "allowed-types": {
       "default": "expression",

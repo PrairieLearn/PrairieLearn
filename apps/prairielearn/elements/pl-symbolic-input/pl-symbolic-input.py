@@ -26,7 +26,6 @@ ARIA_LABEL_DEFAULT = None
 SUFFIX_DEFAULT = None
 DISPLAY_DEFAULT = DisplayType.INLINE
 ALLOW_COMPLEX_DEFAULT = False
-ALLOW_SETS_DEFAULT = False
 ALLOWED_TYPES_DEFAULT = "expression"
 DISPLAY_LOG_AS_LN_DEFAULT = False
 DISPLAY_SIMPLIFIED_EXPRESSION_DEFAULT = True
@@ -79,6 +78,29 @@ SYMPY_ADDITIONAL_SIMPLIFICATIONS = {
 }
 
 
+def _get_allowed_types(element: lxml.html.HtmlElement) -> set[psu.AllowedSympyType]:
+    if pl.has_attrib(element, "allow-sets") and pl.has_attrib(element, "allowed-types"):
+        raise ValueError(
+            "The deprecated 'allow-sets' attribute cannot be used with "
+            "'allowed-types'. Remove 'allow-sets' and use 'allowed-types' instead."
+        )
+
+    if pl.has_attrib(element, "allowed-types"):
+        return cast(
+            set[psu.AllowedSympyType],
+            set(psu.get_items_list(pl.get_string_attrib(element, "allowed-types"))),
+        )
+
+    if pl.get_boolean_attrib(element, "allow-sets", False):
+        return {"all"}
+
+    return {ALLOWED_TYPES_DEFAULT}
+
+
+def _allows_sets(allowed_types: set[psu.AllowedSympyType]) -> bool:
+    return not allowed_types.isdisjoint({"all", "finite-set", "interval"})
+
+
 def prepare(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     pl.validate_element(element, SCHEMA_PATH)
@@ -97,7 +119,8 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     allow_trig = pl.get_boolean_attrib(
         element, "allow-trig-functions", ALLOW_TRIG_FUNCTIONS_DEFAULT
     )
-    allow_sets = pl.get_boolean_attrib(element, "allow-sets", ALLOW_SETS_DEFAULT)
+    allowed_types = _get_allowed_types(element)
+    allow_sets = _allows_sets(allowed_types)
     simplify_expression = pl.get_boolean_attrib(
         element,
         "display-simplified-expression",
@@ -186,7 +209,8 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     )
     if allow_sets and additional_simplifications:
         raise ValueError(
-            "The 'additional-simplifications' attribute cannot be used when 'allow-sets' is true."
+            "The 'additional-simplifications' attribute cannot be used when "
+            "'allowed-types' permits sets or intervals."
         )
     # Note: it is an intentional decision to allow repeats in the list, as this might be (rarely) an
     # intended way to work around SymPy limitations
@@ -220,7 +244,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     allow_trig = pl.get_boolean_attrib(
         element, "allow-trig-functions", ALLOW_TRIG_FUNCTIONS_DEFAULT
     )
-    allow_sets = pl.get_boolean_attrib(element, "allow-sets", ALLOW_SETS_DEFAULT)
+    allow_sets = _allows_sets(_get_allowed_types(element))
     simplify_expression = pl.get_boolean_attrib(
         element, "display-simplified-expression", DISPLAY_SIMPLIFIED_EXPRESSION_DEFAULT
     )
@@ -472,7 +496,8 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     allow_trig = pl.get_boolean_attrib(
         element, "allow-trig-functions", ALLOW_TRIG_FUNCTIONS_DEFAULT
     )
-    allow_sets = pl.get_boolean_attrib(element, "allow-sets", ALLOW_SETS_DEFAULT)
+    allowed_types = _get_allowed_types(element)
+    allow_sets = _allows_sets(allowed_types)
     simplify_expression = pl.get_boolean_attrib(
         element, "display-simplified-expression", DISPLAY_SIMPLIFIED_EXPRESSION_DEFAULT
     )
@@ -538,18 +563,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         custom_functions=custom_functions,
         simplify_expression=simplify_expression,
         assumptions=assumptions_dict,
-        allowed_types=cast(
-            set[psu.AllowedSympyType],
-            set(
-                psu.get_items_list(
-                    pl.get_string_attrib(
-                        element,
-                        "allowed-types",
-                        "all" if allow_sets else ALLOWED_TYPES_DEFAULT,
-                    )
-                )
-            ),
-        ),
+        allowed_types=allowed_types,
     )
 
     if isinstance(result, psu.SympyParseFailure):
@@ -1016,7 +1030,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
     allow_complex = pl.get_boolean_attrib(
         element, "allow-complex", ALLOW_COMPLEX_DEFAULT
     )
-    allow_sets = pl.get_boolean_attrib(element, "allow-sets", ALLOW_SETS_DEFAULT)
+    allow_sets = _allows_sets(_get_allowed_types(element))
     allow_trig = pl.get_boolean_attrib(
         element, "allow-trig-functions", ALLOW_TRIG_FUNCTIONS_DEFAULT
     )
@@ -1140,7 +1154,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     imaginary_unit = pl.get_string_attrib(
         element, "imaginary-unit-for-display", IMAGINARY_UNIT_FOR_DISPLAY_DEFAULT
     )
-    allow_sets = pl.get_boolean_attrib(element, "allow-sets", ALLOW_SETS_DEFAULT)
+    allow_sets = _allows_sets(_get_allowed_types(element))
     allow_trig = pl.get_boolean_attrib(
         element, "allow-trig-functions", ALLOW_TRIG_FUNCTIONS_DEFAULT
     )
