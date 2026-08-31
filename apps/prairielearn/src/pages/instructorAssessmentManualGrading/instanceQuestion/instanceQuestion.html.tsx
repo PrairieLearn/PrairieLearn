@@ -20,6 +20,7 @@ import {
   StaffInstanceQuestionGroupSchema,
   StaffInstanceQuestionSchema,
   StaffSubmissionSchema,
+  StaffUserSchema,
 } from '../../../lib/client/safe-db-types.js';
 import { getAssessmentManualGradingUrl } from '../../../lib/client/url.js';
 import { GradingJobSchema, type InstanceQuestionGroup, type User } from '../../../lib/db-types.js';
@@ -60,7 +61,7 @@ export function InstanceQuestion({
 }: {
   resLocals: ResLocalsForPage<'instance-question'> & ResLocalsInstanceQuestionRender;
   conflict_grading_job: GradingJobData | null;
-  graders: User[] | null;
+  graders: User[];
   assignedGrader: User | null;
   lastGrader: User | null;
   lastHumanGraderName: string | null;
@@ -284,11 +285,13 @@ export function InstanceQuestion({
             ${hydrateHtml(
               <InstanceQuestionGradingPanel
                 context="main"
+                aiGradingMode={aiGradingMode}
                 assessmentQuestion={StaffAssessmentQuestionSchema.parse(
                   resLocals.assessment_question,
                 )}
                 instanceQuestion={StaffInstanceQuestionSchema.parse(resLocals.instance_question)}
                 submission={StaffSubmissionSchema.parse(resLocals.submission)}
+                graders={StaffUserSchema.array().parse(graders)}
                 showInstanceQuestionGroup={instanceQuestionGroupsExist && aiGradingMode}
                 instanceQuestionGroups={StaffInstanceQuestionGroupSchema.array().parse(
                   instanceQuestionGroups,
