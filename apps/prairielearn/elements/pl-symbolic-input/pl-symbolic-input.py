@@ -26,7 +26,7 @@ SUFFIX_DEFAULT = None
 DISPLAY_DEFAULT = DisplayType.INLINE
 ALLOW_COMPLEX_DEFAULT = False
 ALLOW_SETS_DEFAULT = False
-ALLOWED_VALUES_DEFAULT = "all"
+ALLOWED_TYPES_DEFAULT = "expression"
 DISPLAY_LOG_AS_LN_DEFAULT = False
 DISPLAY_SIMPLIFIED_EXPRESSION_DEFAULT = True
 IMAGINARY_UNIT_FOR_DISPLAY_DEFAULT = "i"
@@ -536,7 +536,9 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
             set(
                 psu.get_items_list(
                     pl.get_string_attrib(
-                        element, "allowed-values", ALLOWED_VALUES_DEFAULT
+                        element,
+                        "allowed-types",
+                        "all" if allow_sets else ALLOWED_TYPES_DEFAULT,
                     )
                 )
             ),

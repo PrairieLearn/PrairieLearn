@@ -105,7 +105,7 @@ def test_set_union_submission_parses_when_set_notation_is_enabled() -> None:
 
 
 @pytest.mark.parametrize(
-    ("allowed_values", "submission"),
+    ("allowed_types", "submission"),
     [
         ("expression", "x + 1"),
         ("set", "{1, 2}"),
@@ -119,13 +119,11 @@ def test_set_union_submission_parses_when_set_notation_is_enabled() -> None:
         ("all", "1"),
     ],
 )
-def test_parse_accepts_allowed_value_types(
-    allowed_values: str, submission: str
-) -> None:
+def test_parse_accepts_allowed_value_types(allowed_types: str, submission: str) -> None:
     element_html = build_element_html(
         'allow-sets="true"',
         'variables="x"',
-        f'allowed-values="{allowed_values}"',
+        f'allowed-types="{allowed_types}"',
     )
     data = make_question_data(submitted_answers={"test": submission})
 
@@ -136,7 +134,7 @@ def test_parse_accepts_allowed_value_types(
 
 
 @pytest.mark.parametrize(
-    ("allowed_values", "submission", "expected_type"),
+    ("allowed_types", "submission", "expected_type"),
     [
         ("expression", "{1, 2}", "set"),
         ("expression", "[1, 2]", "interval"),
@@ -148,12 +146,12 @@ def test_parse_accepts_allowed_value_types(
     ],
 )
 def test_parse_rejects_disallowed_value_types(
-    allowed_values: str, submission: str, expected_type: str
+    allowed_types: str, submission: str, expected_type: str
 ) -> None:
     element_html = build_element_html(
         'allow-sets="true"',
         'variables="x"',
-        f'allowed-values="{allowed_values}"',
+        f'allowed-types="{allowed_types}"',
     )
     data = make_question_data(submitted_answers={"test": submission})
 
@@ -162,7 +160,7 @@ def test_parse_rejects_disallowed_value_types(
     assert data["submitted_answers"]["test"] is None
     assert data["format_errors"]["test"] == (
         f"Your answer has type '{expected_type}', but this input only accepts: "
-        f"{allowed_values}."
+        f"{allowed_types}."
     )
 
 
