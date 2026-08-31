@@ -1,6 +1,5 @@
 import pathlib
 import random
-import re
 from enum import Enum
 from sys import get_int_max_str_digits
 from typing import assert_never, cast
@@ -96,10 +95,6 @@ def _get_allowed_types(element: lxml.html.HtmlElement) -> set[psu.AllowedSympyTy
     return {ALLOWED_TYPES_DEFAULT}
 
 
-def _allows_sets(allowed_types: set[psu.AllowedSympyType]) -> bool:
-    return not allowed_types.isdisjoint({"all", "set", "finite-set", "interval"})
-
-
 def prepare(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     pl.validate_element(element, SCHEMA_PATH)
@@ -119,7 +114,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         element, "allow-trig-functions", ALLOW_TRIG_FUNCTIONS_DEFAULT
     )
     allowed_types = _get_allowed_types(element)
-    allow_sets = _allows_sets(allowed_types)
+    allow_sets = psu.allowed_sympy_types_include_sets(allowed_types)
     simplify_expression = pl.get_boolean_attrib(
         element,
         "display-simplified-expression",
@@ -261,7 +256,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         element, "allow-trig-functions", ALLOW_TRIG_FUNCTIONS_DEFAULT
     )
     allowed_types = _get_allowed_types(element)
-    allow_sets = _allows_sets(allowed_types)
+    allow_sets = psu.allowed_sympy_types_include_sets(allowed_types)
     simplify_expression = pl.get_boolean_attrib(
         element, "display-simplified-expression", DISPLAY_SIMPLIFIED_EXPRESSION_DEFAULT
     )
@@ -514,48 +509,13 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         element, "allow-trig-functions", ALLOW_TRIG_FUNCTIONS_DEFAULT
     )
     allowed_types = _get_allowed_types(element)
-    allow_sets = _allows_sets(allowed_types)
     simplify_expression = pl.get_boolean_attrib(
         element, "display-simplified-expression", DISPLAY_SIMPLIFIED_EXPRESSION_DEFAULT
     )
     allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
     blank_value = pl.get_string_attrib(element, "blank-value", BLANK_VALUE_DEFAULT)
 
-    # Get submitted answer or return parse_error if it does not exist
     submitted_answer = data["submitted_answers"].get(name, None)
-
-    if formula_editor:
-        submitted_answer = format_formula_editor_submission_for_sympy(
-            submitted_answer,
-            allow_trig,
-            variables,
-            custom_functions,
-        )
-
-    # Pre-processing to make submission parseable by SymPy
-    a_sub, error_msg = format_submission_for_sympy(
-        submitted_answer, allow_sets=allow_sets
-    )
-    if error_msg is not None:
-        data["format_errors"][name] = error_msg
-        data["submitted_answers"][name] = None
-        return
-
-    if a_sub is None:
-        data["format_errors"][name] = "No submitted answer."
-        data["submitted_answers"][name] = None
-        return
-
-    if isinstance(a_sub, str) and a_sub.strip() == "":
-        if allow_blank:
-            a_sub = blank_value
-            if a_sub.strip() == "":  # Handle blank case
-                data["submitted_answers"][name] = ""
-                return
-        else:
-            data["format_errors"][name] = "No submitted answer."
-            data["submitted_answers"][name] = None
-            return
 
     # Retrieve variable assumptions encoded in correct answer
     assumptions_dict = None
@@ -563,12 +523,13 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     if isinstance(a_tru, dict):
         assumptions_dict = a_tru.get("_assumptions")
 
-    result = psu.try_parse_string_as_sympy(
-        a_sub,
+    result = psu.try_parse_symbolic_submission(
+        submitted_answer,
         variables,
-        allow_hidden=True,
+        formula_editor=formula_editor,
+        allow_blank=allow_blank,
+        blank_value=blank_value,
         allow_complex=allow_complex,
-        allow_sets=allow_sets,
         allow_trig_functions=allow_trig,
         imaginary_unit=imaginary_unit,
         custom_functions=custom_functions,
@@ -582,268 +543,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         data["submitted_answers"][name] = None
         return
 
-    a_sub_parsed = result.expr
-
-    # Make sure we can parse the json again
-    try:
-        a_sub_json = psu.sympy_to_json(
-            a_sub_parsed,
-            allow_complex=allow_complex,
-            allow_sets=allow_sets,
-        )
-
-        # Convert safely to sympy
-        psu.json_to_sympy(
-            a_sub_json,
-            allow_complex=allow_complex,
-            allow_sets=allow_sets,
-            simplify_expression=simplify_expression,
-        )
-
-        # Finally, store the result
-        data["submitted_answers"][name] = a_sub_json
-    except Exception:
-        data["format_errors"][name] = (
-            f"Your answer was simplified to this, which contains an invalid expression: $${sympy.latex(a_sub_parsed)}$$"
-        )
-        data["submitted_answers"][name] = None
-
-
-def format_submission_for_sympy(
-    sub: str | None, *, allow_sets: bool = False
-) -> tuple[str | None, str | None]:
-    """
-    Format submission to be compatible with SymPy.
-
-    Converts absolute value bars to abs() function calls, handling nested cases.
-
-    Examples:
-        "|x|" becomes "abs(x)"
-        "||x|+y|" becomes "abs(abs(x)+y)"
-
-    Args:
-        sub: The text submission to format
-        allow_sets: If true, leave any residual ``|`` characters in place
-            so the SymPy parser can interpret them as set-union operators.
-
-    Returns:
-        A tuple of (Formatted text with absolute value bars replaced by abs() calls, or None if input is None, and an error message if there is an error)
-    """
-    original_sub = sub
-    if sub is None:
-        return None, None
-
-    pattern = re.compile(
-        r"(\|\s*[a-zA-Z0-9(+\-]([^|]*[a-zA-Z0-9!)])\s*\|)|(\|\s*[a-zA-Z0-9]\s*\|)"
-    )
-    search_from = 0
-    while True:
-        # Find matches of |...| where:
-        # when ignoring spaces, it either:
-        # - starts with letter/number/opening paren/plus/minus and ends with letter/number/closing/exclamation mark paren
-        # - is a single leter/number
-        match = pattern.search(sub, search_from)
-        if not match:
-            break
-
-        content = match.group(0)[1:-1]  # Strip the bars
-        # When set notation is allowed, a comma inside the match means the
-        # pipes are a union operator pair around an interval or finite set
-        # (e.g. the middle pipes in ``[0,1] | (2,3) | [4,5]``), not an
-        # absolute value.
-        # TODO: This can skip min/max operators or other functions that contain commas.
-        if allow_sets and "," in content:
-            search_from = match.start() + 1
-            continue
-
-        sub = sub[: match.start()] + f"abs({content})" + sub[match.end() :]
-        search_from = 0
-
-    if not allow_sets and "|" in sub:
-        return (
-            None,
-            f"The absolute value bars in your answer are mismatched or ambiguous: <code>{original_sub}</code>.",
-        )
-
-    return sub, None
-
-
-def format_formula_editor_submission_for_sympy(
-    sub: str | None,
-    allow_trig: bool,
-    variables: list[str],
-    custom_functions: list[str],
-) -> str | None:
-    """
-    Format raw formula editor input to be compatible with SymPy.
-
-    The formula editor outputs text with several quirks that need correction:
-    1. Invisible "{:" and ":}" operators from LaTeX copy-paste
-    2. Multi-character names are space-separated: "s i n" instead of "sin"
-    3. Numbers after variables need spacing: "x2" should be "x 2" for multiplication
-
-    Args:
-        sub: Raw text from the formula editor
-        allow_trig: Whether trig functions (sin, cos, etc.) are available
-        variables: List of allowed variable names
-        custom_functions: List of custom function names
-
-    Returns:
-        Formatted text ready for SymPy parsing, or None if input is None
-    """
-    if sub is None:
-        return None
-
-    # Remove invisible LaTeX formatting operators
-    text = sub.replace("{:", "").replace(":}", "")
-
-    # Build list of all multi-character tokens that should be recognized as units
-    known_tokens = _build_known_tokens(allow_trig, variables, custom_functions)
-
-    # Replace Greek unicode letters with spaced ASCII for consistent handling further on
-    text = "".join(_greek_transform(char) for char in text)
-
-    # Merge space-separated characters into proper tokens (e.g., "s i n" -> "sin")
-    text = _merge_spaced_tokens(text, known_tokens)
-
-    # Add spaces between letters and numbers for implicit multiplication,
-    # but preserve tokens like "f2" that are custom function names
-    text = _add_multiplication_spaces(text, known_tokens)
-
-    return text
-
-
-def _build_known_tokens(
-    allow_trig: bool,
-    variables: list[str],
-    custom_functions: list[str],
-) -> list[str]:
-    """
-    Build a list of all multi-character tokens that should be recognized as single units.
-
-    Returns:
-        List of all multi-character tokens that should be recognized as single units.
-    """
-    constants_class = psu._Constants
-
-    # Include 1-letter tokens here since Greek letters might become multi-letter tokens when transformed
-    tokens = (
-        list(psu.STANDARD_OPERATORS)
-        + list(constants_class.functions.keys())
-        + custom_functions
-        + variables
-    )
-    if allow_trig:
-        tokens += list(constants_class.trig_functions.keys())
-
-    # Add transformed versions of Greek letters
-    tokens += [
-        psu.greek_unicode_transform(token)
-        for token in tokens
-        if psu.greek_unicode_transform(token) != token
-    ]
-
-    # Filter out single-letter tokens
-    tokens = [token for token in tokens if len(token) > 1]
-
-    return tokens
-
-
-def _greek_transform(text: str) -> str:
-    """
-    Replace Greek unicode letters with their English spelling and insert spaces around,
-    every letter so that they are handled equivalently to letters already spelled in English.
-
-    Example: "Α0x" becomes " A l p h a 0 x ", the same as if it was spelled out in the
-    submission (and the consecutive processing steps will correct the spacing)
-
-    Returns:
-        The string with Greek unicode letters replaced by spaced-out English spelling
-    """  # ruff:ignore[ambiguous-unicode-character-docstring]
-    transformed = psu.greek_unicode_transform(text)
-    return (" " + " ".join(transformed) + " ") if transformed != text else text
-
-
-def _merge_spaced_tokens(text: str, tokens: list[str]) -> str:
-    """
-    Replace space-separated versions of tokens with their unspaced form.
-
-    Example: "s i n ( x )" becomes "sin ( x )"
-
-    Returns:
-        The text with spaced tokens merged
-    """
-    result = []
-    i = 0
-    n = len(text)
-
-    # Precompute spaced forms and lengths
-    spaced = [(token, " ".join(token), len(" ".join(token))) for token in tokens]
-
-    # Sort by spaced_token length so longer tokens match first
-    # e.g. "acosh" must be checked before "acos" to avoid partial matches.
-    spaced.sort(key=lambda x: -x[2])
-
-    while i < n:
-        matched = False
-
-        # Try each spaced token
-        for token, spaced_token, length in spaced:
-            if text.startswith(spaced_token, i):
-                result.append(token)
-                i += length
-                matched = True
-                break
-
-        if not matched:
-            result.append(text[i])
-            i += 1
-
-    return "".join(result)
-
-
-def _add_multiplication_spaces(text: str, protected_tokens: list[str]) -> str:
-    """
-    Insert spaces between letter-digit pairs to indicate multiplication.
-
-    Example: "x2" becomes "x 2"
-
-    However, we preserve tokens that naturally contain digits (like "f2" for
-    a custom function) by marking their character positions as protected.
-
-    Returns:
-        The text with multiplication spaces added
-    """
-    # Find all positions that are part of tokens containing digits
-    protected_positions = set()
-    for token in protected_tokens:
-        if not re.search(r"\d", token):
-            continue
-        for match in re.finditer(re.escape(token), text):
-            protected_positions.update(range(match.start(), match.end()))
-
-    # Build result, inserting spaces where appropriate
-    result = []
-    for i, char in enumerate(text):
-        result.append(char)
-
-        # Check if we need a space after this character
-        has_next = i + 1 < len(text)
-        if not has_next:
-            continue
-
-        next_char = text[i + 1]
-        next_position = i + 1
-
-        # Insert space if: letter followed by digit, and next position is not protected
-        if (
-            char.isalpha()
-            and next_char.isdigit()
-            and next_position not in protected_positions
-        ):
-            result.append(" ")
-
-    return "".join(result)
+    data["submitted_answers"][name] = result.json
 
 
 def grade(element_html: str, data: pl.QuestionData) -> None:
@@ -859,7 +559,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
         element, "allow-complex", ALLOW_COMPLEX_DEFAULT
     )
     allowed_types = _get_allowed_types(element)
-    allow_sets = _allows_sets(allowed_types)
+    allow_sets = psu.allowed_sympy_types_include_sets(allowed_types)
     allow_trig = pl.get_boolean_attrib(
         element, "allow-trig-functions", ALLOW_TRIG_FUNCTIONS_DEFAULT
     )
@@ -987,7 +687,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
         element, "imaginary-unit-for-display", IMAGINARY_UNIT_FOR_DISPLAY_DEFAULT
     )
     allowed_types = _get_allowed_types(element)
-    allow_sets = _allows_sets(allowed_types)
+    allow_sets = psu.allowed_sympy_types_include_sets(allowed_types)
     allow_trig = pl.get_boolean_attrib(
         element, "allow-trig-functions", ALLOW_TRIG_FUNCTIONS_DEFAULT
     )

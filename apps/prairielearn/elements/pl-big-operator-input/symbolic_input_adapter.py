@@ -107,19 +107,3 @@ def render(
         # The wrapper's component badges are intentionally icon-only.
         rendered = re.sub(r" \d+%</span>", "</span>", rendered)
     return rendered
-
-
-def parse(field_markup: str, data: pl.QuestionData) -> None:
-    had_format_errors = "format_errors" in data
-    data.setdefault("correct_answers", {})
-    data.setdefault("format_errors", {})
-    data.setdefault("raw_submitted_answers", {})
-    data.setdefault("submitted_answers", {})
-    element = lxml.html.fragment_fromstring(field_markup)
-    name = element.get("answers-name")
-    if not name:
-        raise ValueError("Delegated symbolic input is missing answers-name.")
-    data["submitted_answers"][name] = data["raw_submitted_answers"].get(name)
-    CONTROLLER.parse(field_markup, data)
-    if not had_format_errors and not data["format_errors"]:
-        data["format_errors"].clear()

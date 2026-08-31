@@ -1,5 +1,4 @@
 import importlib
-import string
 from pathlib import Path
 from typing import Any
 
@@ -43,48 +42,6 @@ def make_question_data(
         "panel": panel,
         "editable": editable,
     }
-
-
-@pytest.mark.parametrize(
-    ("sub", "expected"),
-    [
-        ("|x|", "abs(x)"),
-        ("||x|+y|", "abs(abs(x)+y)"),
-        ("|a| + |b|", "abs(a) + abs(b)"),
-        ("|||x|||", "abs(abs(abs(x)))"),
-        ("x+y", "x+y"),
-        ("|x+2|", "abs(x+2)"),
-        ("|-x+2|", "abs(-x+2)"),
-        ("|x!|", "abs(x!)"),
-        ("|+4|", "abs(+4)"),
-        ("|x + |y||", "abs(x + abs(y))"),
-        ("|x+|-x+1+2+3+4||", "abs(x+abs(-x+1+2+3+4))"),
-        ("|x+|x+1+2+3+4 ||", "abs(x+abs(x+1+2+3+4 ))"),
-        ("", ""),
-    ],
-)
-def test_format_submission_for_sympy_absolute_value(sub: str, expected: str) -> None:
-    out, error_msg = symbolic_input.format_submission_for_sympy(sub)
-    assert (out, error_msg) == (expected, None)
-
-
-@pytest.mark.parametrize(
-    ("sub", "expected"),
-    [
-        ("{1} | {2}", "{1} | {2}"),
-        ("{1, 2} | {3}", "{1, 2} | {3}"),
-        ("[1, 2] | [3, 4]", "[1, 2] | [3, 4]"),
-        ("|x| | {1}", "abs(x) | {1}"),
-        ("[0,1] | (2,3) | [4,5]", "[0,1] | (2,3) | [4,5]"),
-        ("(0,1) | (2,3)", "(0,1) | (2,3)"),
-        ("{1} | (2,3) | [4,5]", "{1} | (2,3) | [4,5]"),
-    ],
-)
-def test_format_submission_for_sympy_preserves_set_union(
-    sub: str, expected: str
-) -> None:
-    out, error_msg = symbolic_input.format_submission_for_sympy(sub, allow_sets=True)
-    assert (out, error_msg) == (expected, None)
 
 
 def test_set_union_submission_parses_when_set_notation_is_enabled() -> None:
@@ -336,81 +293,6 @@ def test_prepare_rejects_disallowed_server_correct_answer_type(
         match=r"Parsing correct answer.*uses finite-set.*Allowed types: interval",
     ):
         symbolic_input.prepare(element_html, data)
-
-
-@pytest.mark.parametrize(
-    ("sub", "allow_trig", "variables", "custom_functions", "expected"),
-    [
-        # Greek letters
-        ("Α", False, ["Α"], [], " Alpha "),  # ruff:ignore[ambiguous-unicode-character-string]
-        ("ΑΑ0Α0ΑΑ", False, ["Α", "Α0"], [], " Alpha  Alpha0 Alpha0 Alpha  Alpha "),  # ruff:ignore[ambiguous-unicode-character-string]
-        (
-            "t h e t a s i n t h e t a c o s t h e t a",
-            True,
-            ["theta"],
-            [],
-            "theta sin theta cos theta",
-        ),
-        (
-            "a b a b l a b l a b l a a b l a",
-            False,
-            ["bla", "abla", "ab"],
-            [],
-            "ab abla bla bla abla",
-        ),
-        (  # Overlapping-match test
-            "a b a b",
-            False,
-            ["ab", "aba"],
-            [],
-            "aba b",
-        ),
-        (  # Longer-match test
-            "a b c a b d",
-            False,
-            ["ab", "abc"],
-            [],
-            "abc ab d",
-        ),
-        (  # Performance test
-            "a b " * 1000,
-            False,
-            ["ab", *list(string.ascii_lowercase)[2:]],
-            [],
-            "ab " * 1000,
-        ),
-        # Trig functions
-        ("s i n ( x )", True, ["x"], [], "sin ( x )"),
-        ("s i n h ( s i n x )", True, ["x"], [], "sinh ( sin x )"),
-        ("s i n ( x )", False, ["x"], [], "s i n ( x )"),
-        ("s i n ( Α )", False, ["Α"], [], "s i n (  Alpha  )"),  # ruff:ignore[ambiguous-unicode-character-string]
-        # Variables
-        ("t i m e + x", True, ["time", "x"], [], "time + x"),
-        # Prefix test
-        ("a c o s h ( a c o s ( x ) )", True, ["x"], [], "acosh ( acos ( x ) )"),
-        # Number spacing
-        ("x2+x10", False, ["x"], [], "x 2+x 10"),
-        ("e^x2", False, ["x"], [], "e^x 2"),
-        # Custom functions
-        ("m y f u n ( x )", False, ["x"], ["myfun"], "myfun ( x )"),
-        ("f2(x) + x2", False, ["x"], ["f2"], "f2(x) + x 2"),
-        ("Α(x) + x2", False, ["x"], ["Α"], " Alpha (x) + x 2"),  # ruff:ignore[ambiguous-unicode-character-string]
-        ("x2 + x2 + f2(x)", False, ["x"], ["f2"], "x 2 + x 2 + f2(x)"),
-        # Formatting operators
-        ("{:s i n ( x ):}", True, ["x"], [], "sin ( x )"),
-    ],
-)
-def test_format_formula_editor_submission_for_sympy(
-    sub: str,
-    allow_trig: bool,
-    variables: list[str],
-    custom_functions: list[str],
-    expected: str,
-) -> None:
-    out = symbolic_input.format_formula_editor_submission_for_sympy(
-        sub, allow_trig, variables, custom_functions
-    )
-    assert out == expected
 
 
 def test_parse_without_variables_attribute_with_assumptions() -> None:

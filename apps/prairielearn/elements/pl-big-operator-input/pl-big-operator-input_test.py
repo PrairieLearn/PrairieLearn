@@ -1552,33 +1552,6 @@ def test_allowed_types_are_forwarded_to_rendered_symbolic_inputs(
     )
 
 
-def test_custom_widths_are_forwarded_when_parsing(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    field_markup = []
-    original_parse = big_operator_input.symbolic_input_adapter.parse
-
-    def capture_parse(markup: str, state: QuestionData) -> None:
-        field_markup.append(markup)
-        original_parse(markup, state)
-
-    monkeypatch.setattr(
-        big_operator_input.symbolic_input_adapter, "parse", capture_parse
-    )
-    markup = html(operator="sum", **{"body-size": "24", "limit-size": "9"})
-    big_operator_input.parse(
-        markup, data(raw={"op-start": "1", "op-end": "4", "op-body": "k^2"})
-    )
-    sizes = {
-        element.get("answers-name"): element.get("size")
-        for element in map(
-            big_operator_input.lxml.html.fragment_fromstring, field_markup
-        )
-    }
-
-    assert sizes == {"op-start": "9", "op-end": "9", "op-body": "24"}
-
-
 @pytest.mark.parametrize("attribute", ["body-size", "limit-size"])
 def test_symbolic_input_width_schema_accepts_integers(attribute: str) -> None:
     markup = html(operator="sum", **{attribute: "12"})
