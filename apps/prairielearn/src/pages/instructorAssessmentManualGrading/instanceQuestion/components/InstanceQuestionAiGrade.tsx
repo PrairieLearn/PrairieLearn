@@ -92,9 +92,8 @@ function InstanceQuestionAiGradeInner({
     }
   }, [submissionStatus, courseInstanceId, assessmentId, instanceQuestionId]);
 
-  // Imperatively toggle the AI grade button's disabled state because the
-  // button lives in the server-rendered grading panel — making this
-  // declarative would require porting the entire grading panel to React.
+  // TODO: The AI controls and grading panel are separate React islands. Keep this DOM bridge until
+  // they share a root and can pass the in-progress state declaratively.
   useEffect(() => {
     const button = document.getElementById('ai-grade-button') as HTMLButtonElement | null;
     if (!button) return;

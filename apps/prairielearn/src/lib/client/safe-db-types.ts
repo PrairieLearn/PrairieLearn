@@ -45,7 +45,6 @@ import {
   RubricSchema as RawRubricSchema,
   SharingSetSchema as RawSharingSetSchema,
   StudentLabelSchema as RawStudentLabelSchema,
-  SubmissionSchema as RawSubmissionSchema,
   TagSchema as RawTagSchema,
   GroupSchema as RawTeamSchema,
   TopicSchema as RawTopicSchema,
@@ -600,11 +599,3 @@ export const RawStaffStudentLabelSchema = RawStudentLabelSchema.pick({
 });
 export const StaffStudentLabelSchema = RawStaffStudentLabelSchema.brand<'StaffStudentLabel'>();
 export type StaffStudentLabel = z.infer<typeof StaffStudentLabelSchema>;
-
-/** Submissions */
-export const RawStaffSubmissionSchema = RawSubmissionSchema.pick({
-  id: true,
-});
-export type RawStaffSubmission = z.infer<typeof RawStaffSubmissionSchema>;
-export const StaffSubmissionSchema = RawStaffSubmissionSchema.brand<'StaffSubmission'>();
-export type StaffSubmission = z.infer<typeof StaffSubmissionSchema>;
