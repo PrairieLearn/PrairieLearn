@@ -3,7 +3,7 @@ import { type RefObject, useId } from 'react';
 import Form from 'react-bootstrap/Form';
 import InputGroup from 'react-bootstrap/InputGroup';
 
-import type { RubricData } from '../../../../lib/manualGrading.types.js';
+import type { GradingPanelRubricData } from './InstanceQuestionGradingPanel.types.js';
 
 export function RubricInput({
   adjustmentInputRef,
@@ -36,7 +36,7 @@ export function RubricInput({
   onAdjustmentPointsChange: (value: string) => void;
   onRubricItemChange: (id: string, selected: boolean) => void;
   onShowAdjustment: () => void;
-  rubricData: RubricData;
+  rubricData: GradingPanelRubricData;
   selectedRubricItemIds: Set<string>;
   showAdjustment: boolean;
   showEditRubricButton: boolean;
@@ -84,13 +84,13 @@ export function RubricInput({
         )}
       </div>
 
-      {rubricData.rubric_items.map((item) => {
-        const id = item.rubric_item.id;
+      {rubricData.items.map((item) => {
+        const id = item.id;
         const selected = selectedRubricItemIds.has(id);
         const inputId = `${rubricItemBaseId}-${id}`;
         const aiSelected = aiSelectedRubricItemIds?.has(id);
-        const keyBinding = enableKeyboardShortcuts ? item.rubric_item.key_binding : null;
-        const itemPoints = item.rubric_item.points;
+        const keyBinding = enableKeyboardShortcuts ? item.keyBinding : null;
+        const itemPoints = item.points;
         const displayedPoints = usePercentage
           ? Math.round((itemPoints * 10000) / maxRubricPoints) / 100
           : Math.round(itemPoints * 100) / 100;
@@ -129,7 +129,7 @@ export function RubricInput({
                 onChange={(event) => onRubricItemChange(id, event.target.checked)}
               />
               {keyBinding && (
-                <kbd aria-hidden="true" className="pl-kbd kbd-semi-transparent">
+                <kbd aria-hidden="true" className="pl-kbd kbd-semi-transparent me-2">
                   {keyBinding}
                 </kbd>
               )}
@@ -147,19 +147,19 @@ export function RubricInput({
                 data-testid="rubric-item-description"
                 // The rendered fields come from the server's Markdown renderer.
                 // eslint-disable-next-line @eslint-react/dom-no-dangerously-set-innerhtml
-                dangerouslySetInnerHTML={{ __html: item.description_rendered ?? '' }}
+                dangerouslySetInnerHTML={{ __html: item.descriptionRendered }}
               />
               <div
                 className="small text-muted"
                 data-testid="rubric-item-explanation"
                 // eslint-disable-next-line @eslint-react/dom-no-dangerously-set-innerhtml
-                dangerouslySetInnerHTML={{ __html: item.explanation_rendered ?? '' }}
+                dangerouslySetInnerHTML={{ __html: item.explanationRendered }}
               />
               <div
                 className="small text-muted"
                 data-testid="rubric-item-grader-note"
                 // eslint-disable-next-line @eslint-react/dom-no-dangerously-set-innerhtml
-                dangerouslySetInnerHTML={{ __html: item.grader_note_rendered ?? '' }}
+                dangerouslySetInnerHTML={{ __html: item.graderNoteRendered }}
               />
             </label>
           </div>

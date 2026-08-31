@@ -18,7 +18,7 @@ import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../../../lib
 import { StaffAssessmentQuestionSchema } from '../../../lib/client/safe-db-types.js';
 import { getAssessmentManualGradingUrl } from '../../../lib/client/url.js';
 import { GradingJobSchema, type InstanceQuestionGroup, type User } from '../../../lib/db-types.js';
-import { type RubricData, RubricGradingDataSchema } from '../../../lib/manualGrading.types.js';
+import { RubricGradingDataSchema } from '../../../lib/manualGrading.types.js';
 import { safeMustacheRender } from '../../../lib/mustache.js';
 import type { ResLocalsInstanceQuestionRender } from '../../../lib/question-render.types.js';
 import type { ResLocalsForPage } from '../../../lib/res-locals.js';
@@ -27,10 +27,8 @@ import {
   InstanceQuestionAiGrade,
   type InstanceQuestionAiGradeProps,
 } from './components/InstanceQuestionAiGrade.js';
-import {
-  InstanceQuestionGradingPanel,
-  type InstanceQuestionGradingPanelProps,
-} from './components/InstanceQuestionGradingPanel.js';
+import { InstanceQuestionGradingPanel } from './components/InstanceQuestionGradingPanel.js';
+import type { InstanceQuestionGradingPanelProps } from './components/InstanceQuestionGradingPanel.types.js';
 
 export const GradingJobDataSchema = GradingJobSchema.extend({
   score_perc: z.number().nullable(),
@@ -45,7 +43,6 @@ export function buildInstanceQuestionGradingPanelProps({
   graders = [],
   disable = false,
   skipText = 'Next',
-  customPoints,
   customAutoPoints,
   customManualPoints,
   gradingJob,
@@ -64,7 +61,6 @@ export function buildInstanceQuestionGradingPanelProps({
   graders?: User[] | null;
   disable?: boolean;
   skipText?: string;
-  customPoints?: number;
   customAutoPoints?: number;
   customManualPoints?: number;
   gradingJob?: GradingJobData;
@@ -80,10 +76,10 @@ export function buildInstanceQuestionGradingPanelProps({
 }): InstanceQuestionGradingPanelProps {
   const submission = resLocals.submission;
   if (!submission) throw new Error('submission is missing');
-  const rubricData: RubricData | null = resLocals.rubric_data ?? null;
+  const rawRubricData = resLocals.rubric_data ?? null;
 
   const graderGuidelinesRendered = (() => {
-    const graderGuidelines = rubricData?.rubric.grader_guidelines;
+    const graderGuidelines = rawRubricData?.rubric.grader_guidelines;
     if (!graderGuidelines) return null;
     const { rendered, error } = safeMustacheRender(graderGuidelines, {
       correct_answers: submission.true_answer ?? {},
@@ -121,7 +117,6 @@ export function buildInstanceQuestionGradingPanelProps({
     disabled: disable || !resLocals.authz_data.has_course_instance_permission_edit,
     aiGradingMode,
     assessmentQuestion: {
-      id: resLocals.assessment_question.id,
       maxAutoPoints: resLocals.assessment_question.max_auto_points ?? 0,
       maxManualPoints: resLocals.assessment_question.max_manual_points ?? 0,
       maxPoints: resLocals.assessment_question.max_points ?? 0,
@@ -130,7 +125,6 @@ export function buildInstanceQuestionGradingPanelProps({
       autoPoints: customAutoPoints ?? resLocals.instance_question.auto_points ?? 0,
       manualPoints: customManualPoints ?? resLocals.instance_question.manual_points ?? 0,
       modifiedAt: resLocals.instance_question.modified_at.toISOString(),
-      points: customPoints ?? resLocals.instance_question.points ?? 0,
     },
     submission: {
       feedback: feedback?.toString() ?? '',
@@ -151,7 +145,22 @@ export function buildInstanceQuestionGradingPanelProps({
         }
       : null,
     openIssueIds: resLocals.issues.filter((issue) => issue.open).map((issue) => issue.id),
-    rubricData,
+    rubricData: rawRubricData
+      ? {
+          maxExtraPoints: rawRubricData.rubric.max_extra_points,
+          minPoints: rawRubricData.rubric.min_points,
+          replaceAutoPoints: rawRubricData.rubric.replace_auto_points,
+          startingPoints: rawRubricData.rubric.starting_points,
+          items: rawRubricData.rubric_items.map((item) => ({
+            descriptionRendered: item.description_rendered ?? '',
+            explanationRendered: item.explanation_rendered ?? '',
+            graderNoteRendered: item.grader_note_rendered ?? '',
+            id: item.rubric_item.id,
+            keyBinding: item.rubric_item.key_binding,
+            points: item.rubric_item.points,
+          })),
+        }
+      : null,
     showInstanceQuestionGroup,
     instanceQuestionGroups: instanceQuestionGroups.map((group) => ({
       description: group.instance_question_group_description,
@@ -258,6 +267,10 @@ export function InstanceQuestion({
           background-color: #c9d0d78f;
           color: inherit;
           border: 1px solid currentColor;
+        }
+
+        .js-selectable-rubric-item-label p {
+          margin-bottom: 0;
         }
       </style>
       ${resLocals.question.type !== 'Freeform'
@@ -541,9 +554,6 @@ function ConflictGradingJobModal({
                     <InstanceQuestionGradingPanel
                       data={buildInstanceQuestionGradingPanelProps({
                         resLocals,
-                        customPoints:
-                          (conflict_grading_job.score ?? 0) *
-                          (resLocals.assessment_question.max_points ?? 0),
                         customAutoPoints: conflict_grading_job.auto_points ?? 0,
                         customManualPoints: conflict_grading_job.manual_points ?? 0,
                         gradingJob: conflict_grading_job,

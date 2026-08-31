@@ -7,7 +7,7 @@ import { run } from '@prairielearn/run';
 
 import type { AiGradingGeneralStats } from '../ee/lib/ai-grading/types.js';
 import { b64EncodeUnicode } from '../lib/base64-util.js';
-import { INSTANCE_QUESTION_GRADING_PANEL_UPDATE_EVENT } from '../lib/client/manual-grading-events.js';
+import { dispatchInstanceQuestionGradingPanelUpdate } from '../lib/client/manual-grading-events.js';
 import { mathjaxTypeset } from '../lib/client/mathjax.js';
 import type { StaffAssessmentQuestion } from '../lib/client/safe-db-types.js';
 import type { RubricItem } from '../lib/db-types.js';
@@ -478,11 +478,10 @@ export function RubricSettings({
         if (data.gradingPanelProps) {
           // TODO: The instance-question grading panel is a separate React island. Keep this event
           // bridge until RubricSettings and the grading panel share a root.
-          document.dispatchEvent(
-            new CustomEvent(INSTANCE_QUESTION_GRADING_PANEL_UPDATE_EVENT, {
-              detail: { gradingPanelProps: data.gradingPanelProps, preserveValues: true },
-            }),
-          );
+          dispatchInstanceQuestionGradingPanelUpdate({
+            gradingPanelProps: data.gradingPanelProps,
+            preserveValues: true,
+          });
         }
 
         // Since we are preserving the temporary rubric item selection in the instance question page, the page is not refreshed

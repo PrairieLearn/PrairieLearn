@@ -1,3 +1,4 @@
+import { useRef } from 'react';
 import Form from 'react-bootstrap/Form';
 import InputGroup from 'react-bootstrap/InputGroup';
 
@@ -34,6 +35,7 @@ export function GradingPoints({
   type: 'auto' | 'manual';
   usePercentage: boolean;
 }) {
+  const inputRef = useRef<HTMLInputElement>(null);
   const inputVisible = showInput || editing;
   const inputId = `${type}-score-${usePercentage ? 'percentage' : 'points'}-${context}`;
 
@@ -57,7 +59,10 @@ export function GradingPoints({
                 type="button"
                 className="btn btn-sm btn-outline-secondary ms-2"
                 aria-label={`Edit ${label.toLowerCase()} points`}
-                onClick={onEnableEditing}
+                onClick={() => {
+                  onEnableEditing();
+                  requestAnimationFrame(() => inputRef.current?.focus());
+                }}
               >
                 <i className="bi bi-pencil" aria-hidden="true" />
               </button>
@@ -69,6 +74,7 @@ export function GradingPoints({
       {inputVisible && (
         <InputGroup className="mt-1">
           <Form.Control
+            ref={inputRef}
             key={`${type}-${usePercentage ? 'percentage' : 'points'}-input`}
             id={inputId}
             type="number"

@@ -1,8 +1,18 @@
 import { executeScripts, parseHTMLElement } from '@prairielearn/browser-utils';
 
-import { INSTANCE_QUESTION_GRADING_PANEL_UPDATE_EVENT } from '../../../../lib/client/manual-grading-events.js';
+import { dispatchInstanceQuestionGradingPanelUpdate } from '../../../../lib/client/manual-grading-events.js';
 import { mathjaxTypeset } from '../../../../lib/client/mathjax.js';
 import { getManualGradingInstanceQuestionRubricPanelsUrl } from '../../../../lib/client/url.js';
+
+import type { InstanceQuestionGradingPanelProps } from './InstanceQuestionGradingPanel.types.js';
+
+interface GradingPanelResponse {
+  aiGradingExplanation?: string;
+  aiGradingPrompt?: string;
+  gradingPanelProps?: InstanceQuestionGradingPanelProps;
+  submissionId?: string;
+  submissionPanel?: string;
+}
 
 function swapSlot(selector: string, html: string): HTMLElement | null {
   const slot = document.querySelector<HTMLElement>(selector);
@@ -35,7 +45,7 @@ export async function reloadGradingPanel({
     assessmentId,
     instanceQuestionId,
   });
-  let data: any;
+  let data: GradingPanelResponse;
   try {
     const res = await fetch(url, { headers: { Accept: 'application/json' } });
     if (!res.ok) {
@@ -47,16 +57,15 @@ export async function reloadGradingPanel({
     console.error('Failed to refresh grading panel:', err);
     return false;
   }
-  if (!data?.gradingPanelProps) {
+  if (!data.gradingPanelProps) {
     console.error('Failed to refresh grading panel: response missing gradingPanelProps');
     return false;
   }
 
-  document.dispatchEvent(
-    new CustomEvent(INSTANCE_QUESTION_GRADING_PANEL_UPDATE_EVENT, {
-      detail: { gradingPanelProps: data.gradingPanelProps, preserveValues: false },
-    }),
-  );
+  dispatchInstanceQuestionGradingPanelUpdate({
+    gradingPanelProps: data.gradingPanelProps,
+    preserveValues: false,
+  });
 
   const explanationSlot = swapSlot(
     '.js-ai-grading-explanation-slot',
