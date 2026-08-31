@@ -1109,7 +1109,7 @@ def _question_mustache(config: RenderConfig, data: pl.QuestionData) -> str:
             direction_suffix = (
                 None
                 if config.allow_direction_input
-                else {"two-sided": None, "from-left": "−", "from-right": "+"}[
+                else {"two-sided": None, "from-left": "-", "from-right": "+"}[
                     config.direction
                 ]
             )
