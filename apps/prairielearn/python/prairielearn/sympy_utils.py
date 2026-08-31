@@ -84,7 +84,12 @@ def _used_sympy_types(expr: sympy.Basic) -> set[AllowedSympyType | Literal["set-
     if isinstance(expr, sympy.Interval):
         return {"interval"}
     if isinstance(expr, sympy.Set) and expr.is_finite_set:
-        return {"finite-set"}
+        required_types: set[AllowedSympyType | Literal["set-base"]] = {"finite-set"}
+        if isinstance(expr, sympy.FiniteSet):
+            for arg in expr.args:
+                if isinstance(arg, sympy.Set):
+                    required_types.update(_used_sympy_types(arg))
+        return required_types
     if isinstance(expr, (sympy.Union, sympy.Intersection)):
         required_types: set[AllowedSympyType | Literal["set-base"]] = set()
         for arg in expr.args:
@@ -110,11 +115,7 @@ def check_sympy_types(
         return None
 
     missing_types = (used_types or set()) - allowed_types
-    if (
-        isinstance(expr, (sympy.Union, sympy.Intersection))
-        and len(used_types or set()) > 1
-        and len(missing_types) == 1
-    ):
+    if len(used_types or set()) > 1 and len(missing_types) == 1:
         value_type = missing_types.pop()
     elif (isinstance(expr, sympy.Set) and expr.is_finite_set) or (
         expr is sympy.EmptySet and "interval" not in allowed_types
@@ -251,10 +252,10 @@ class _SympyJsonStrPrinter(StrPrinter):
     Callers must deserialize with `allow_sets=True` or the literal forms will be rejected.
     """
 
-    def _print_EmptySet(self, expr: sympy.Set) -> str:  # ruff:ignore[unused-method-argument, invalid-function-name]
+    def _print_EmptySet(self, expr: sympy.Set) -> str:  # ruff: ignore[unused-method-argument, invalid-function-name]
         return r"{}"
 
-    def _print_Interval(self, i: sympy.Interval) -> str:  # ruff:ignore[invalid-function-name]
+    def _print_Interval(self, i: sympy.Interval) -> str:  # ruff: ignore[invalid-function-name]
         start, end = self._print(i.start), self._print(i.end)  # pyright: ignore[reportAttributeAccessIssue]
         left = "(" if i.left_open else "["
         right = ")" if i.right_open else "]"
