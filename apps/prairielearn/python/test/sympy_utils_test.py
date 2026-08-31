@@ -582,7 +582,7 @@ class TestSympy:
         fn_args: tuple[Any, ...],
     ) -> None:
         expr = sympy.Function(fn_name)(*fn_args)
-        assert isinstance(expr, sympy.Basic)
+        assert isinstance(expr, sympy.Expr)
 
         without_sets = psu.sympy_to_json(expr, allow_sets=False)
         with_sets = psu.sympy_to_json(expr, allow_sets=True)
@@ -592,8 +592,8 @@ class TestSympy:
 
     def test_sets_reserveds_are_custom_functions_by_default(self) -> None:
         x = sympy.Symbol("x")
-        union = sympy.Function("Union")
-        expr = union(x)
+        expr = sympy.Function("Union")(x)
+        assert isinstance(expr, sympy.Expr)
 
         assert psu.json_to_sympy(psu.sympy_to_json(expr)) == expr
 
