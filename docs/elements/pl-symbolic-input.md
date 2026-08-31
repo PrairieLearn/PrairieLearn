@@ -34,7 +34,7 @@ def generate(data):
 | `additional-simplifications`    | string                  | -                       | Simplifications that should be applied during grading before using SymPy's built-in equality checker. Using this attribute can prevent rare cases of non-convergence during grading. See [the non-convergence section](#non-convergence-in-grading) for more details before using this attribute.                                               |
 | `allow-blank`                   | boolean                 | false                   | Whether an empty input box is allowed. By default, an empty input box will not be graded (invalid format).                                                                                                                                                                                                                                      |
 | `allow-complex`                 | boolean                 | false                   | Whether complex numbers (expressions with `i` or `j` as the imaginary unit) are allowed.                                                                                                                                                                                                                                                        |
-| `allowed-types`                 | string                  | `expression`            | Comma-separated types accepted from a submitted answer: `expression`, `finite-set`, or `interval`. `finite-set` accepts only finite sets, including the empty set; `interval` accepts only intervals and the empty set. Use `all` to accept every type of submission.                                                                           |
+| `allowed-types`                 | string                  | `expression`            | Comma-separated types accepted from a submitted or correct answer: `expression`, `finite-set`, or `interval`. Use `all` to accept every type. [See below for classification details and examples](#allowed-answer-types).                                                                                                                       |
 | `allow-trig-functions`          | boolean                 | true                    | Whether trigonometric functions (`cos`, `atanh`, ...) are allowed.                                                                                                                                                                                                                                                                              |
 | `answers-name`                  | string                  | —                       | Variable name to store data in. Note that this attribute has to be unique within a question, i.e., no value for this attribute should be repeated within a question. If the correct answer is set in `server.py` as a complex object, you should use `import prairielearn as pl` and `data["correct_answers"][answers-name] = pl.to_json(ans)`. |
 | `aria-label`                    | string                  | —                       | An accessible label for the input.                                                                                                                                                                                                                                                                                                              |
@@ -76,7 +76,20 @@ If `allowed-types` includes `finite-set` or `interval`, or is set to `all`, the 
 - Common set operators: union (`U`, `cup`, `+`, or `|`),
   intersection (`cap` or `&`), and difference (`-`)
 
-The `allowed-types` attribute can further restrict which types of parsed values are accepted.
+### Allowed answer types
+
+The `allowed-types` attribute restricts submitted and correct answers based on their type after SymPy simplification:
+
+| Type         | Accepted values                                                              | Examples                                       |
+| ------------ | ---------------------------------------------------------------------------- | ---------------------------------------------- |
+| `expression` | Values that are not sets or intervals.                                       | `x + 1`, `sin(x)`, `2/3`                       |
+| `finite-set` | Finite sets and set operations that simplify to a finite set.                | `{1, 2}`, `{1, 2} U {3, 4}`, `{0, 2} & [2, 4]` |
+| `interval`   | Intervals and unions or intersections whose nested values are all intervals. | `[1, 2]`, `[1, 2] U [3, 4]`, `[0, 2] & [1, 4]` |
+| `all`        | Every supported value type.                                                  | `x + 1`, `{1, 2}`, `[1, 2]`                    |
+
+The empty set (`{}`) is accepted by both `finite-set` and `interval`. Multiple types can be combined as a comma-separated list. For example, `allowed-types="finite-set, interval"` accepts finite sets, intervals, and unions or intersections containing both.
+
+Classification happens after simplification. For example, `[0, 2] U {1}` simplifies to `[0, 2]` and is accepted by `interval`, while `[0, 2] & {1}` simplifies to `{1}` and is accepted by `finite-set`.
 
 ### Migrating from deprecated attributes
 
