@@ -208,6 +208,25 @@ def test_prepare_accepts_allowed_correct_answer_type() -> None:
 
 
 @pytest.mark.parametrize(
+    "correct_answer",
+    [
+        "{1, 2}",
+        psu.sympy_to_json(sympy.FiniteSet(1, 2), allow_sets=True),
+    ],
+)
+def test_rejects_disallowed_server_correct_answer_type(correct_answer: Any) -> None:
+    element_html = build_element_html('allowed-types="interval"')
+    data = make_question_data(correct_answers={"test": correct_answer})
+    data["test_type"] = "correct"
+
+    with pytest.raises(
+        ValueError,
+        match=r"Correct answer.*type 'finite-set'.*accepts: interval",
+    ):
+        symbolic_input.test(element_html, data)
+
+
+@pytest.mark.parametrize(
     ("sub", "allow_trig", "variables", "custom_functions", "expected"),
     [
         # Greek letters
