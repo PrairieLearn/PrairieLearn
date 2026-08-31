@@ -215,11 +215,11 @@ class _SympyJsonStrPrinter(StrPrinter):
     Callers must deserialize with `allow_sets=True` or the literal forms will be rejected.
     """
 
-    def _print_EmptySet(self, expr: sympy.Set) -> str:  # pyright: ignore[reportIncompatibleMethodOverride] # ruff:ignore[unused-method-argument, invalid-function-name]
-        return "{}"
+    def _print_EmptySet(self, expr: sympy.Set) -> str:  # ruff:ignore[unused-method-argument, invalid-function-name]
+        return r"{}"
 
     def _print_Interval(self, i: sympy.Interval) -> str:  # ruff:ignore[invalid-function-name]
-        start, end = self._print(i.start), self._print(i.end)
+        start, end = self._print(i.start), self._print(i.end)  # pyright: ignore[reportAttributeAccessIssue]
         left = "(" if i.left_open else "["
         right = ")" if i.right_open else "]"
         return f"{left}{start}, {end}{right}"
