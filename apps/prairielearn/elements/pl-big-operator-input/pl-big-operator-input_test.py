@@ -60,6 +60,11 @@ def test_auto_limits(operator: str, limits: str) -> None:
     assert big_operator_input._config(html(operator=operator)).limits == limits
 
 
+def test_operator_metadata_defaults_are_valid() -> None:
+    for metadata in big_operator_input.OP_METADATA.values():
+        assert metadata.default_limit in metadata.valid_limits
+
+
 @pytest.mark.parametrize(
     "operator",
     [
