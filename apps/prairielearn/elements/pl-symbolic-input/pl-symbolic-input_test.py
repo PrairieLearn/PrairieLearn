@@ -104,6 +104,18 @@ def test_set_union_submission_parses_when_set_notation_is_enabled() -> None:
     ) == sympy.FiniteSet(1, 2)
 
 
+def test_set_notation_is_rejected_by_default() -> None:
+    element_html = build_element_html()
+    data = make_question_data(submitted_answers={"test": "{1, 2}"})
+
+    symbolic_input.parse(element_html, data)
+
+    assert data["submitted_answers"]["test"] is None
+    assert data["format_errors"]["test"] == (
+        "Your answer contains set notation, but set notation is not allowed for this question."
+    )
+
+
 @pytest.mark.parametrize(
     ("allowed_types", "submission"),
     [
@@ -121,7 +133,6 @@ def test_set_union_submission_parses_when_set_notation_is_enabled() -> None:
 )
 def test_parse_accepts_allowed_value_types(allowed_types: str, submission: str) -> None:
     element_html = build_element_html(
-        'allow-sets="true"',
         'variables="x"',
         f'allowed-types="{allowed_types}"',
     )
@@ -136,8 +147,6 @@ def test_parse_accepts_allowed_value_types(allowed_types: str, submission: str) 
 @pytest.mark.parametrize(
     ("allowed_types", "submission", "expected_type"),
     [
-        ("expression", "{1, 2}", "finite-set"),
-        ("expression", "[1, 2]", "interval"),
         ("finite-set", "x + 1", "expression"),
         ("finite-set", "[1, 2]", "interval"),
         ("finite-set", "[1, 2] U [3, 4]", "non-finite set"),
@@ -149,7 +158,6 @@ def test_parse_rejects_disallowed_value_types(
     allowed_types: str, submission: str, expected_type: str
 ) -> None:
     element_html = build_element_html(
-        'allow-sets="true"',
         'variables="x"',
         f'allowed-types="{allowed_types}"',
     )
@@ -162,6 +170,16 @@ def test_parse_rejects_disallowed_value_types(
         f"Your answer has type '{expected_type}', but this input only accepts: "
         f"{allowed_types}."
     )
+
+
+def test_prepare_rejects_allow_sets_with_allowed_types() -> None:
+    element_html = build_element_html(
+        'allow-sets="true"',
+        'allowed-types="all"',
+    )
+
+    with pytest.raises(ValueError, match=r"'allow-sets'.*'allowed-types'"):
+        symbolic_input.prepare(element_html, make_question_data())
 
 
 @pytest.mark.parametrize(
@@ -459,6 +477,6 @@ def test_additional_simplifications_cannot_be_used_with_set_notation() -> None:
     data = make_question_data(submitted_answers={"test": "1"})
 
     with pytest.raises(
-        ValueError, match=(r"'additional-simplifications'.*'allow-sets'")
+        ValueError, match=(r"'additional-simplifications'.*'allowed-types'")
     ):
         symbolic_input.prepare(element_html, data)
