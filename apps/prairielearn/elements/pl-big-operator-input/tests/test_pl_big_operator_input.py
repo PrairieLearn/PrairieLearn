@@ -4,10 +4,14 @@ import importlib.util
 import re
 import sys
 from pathlib import Path
-from typing import Never
+from typing import TYPE_CHECKING, Any, Never
 
+import prairielearn as pl
 import pytest
 import sympy
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 HERE = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(HERE))
@@ -21,7 +25,7 @@ sys.modules[SPEC.name] = mod
 SPEC.loader.exec_module(mod)
 
 
-def html(**attrs) -> str:
+def html(**attrs: object) -> str:
     values = {"answers-name": "op", "index-variable": "k", **attrs}
     text = " ".join(
         f'{key}="{value}"' for key, value in values.items() if value is not None
@@ -29,16 +33,17 @@ def html(**attrs) -> str:
     return f"<pl-big-operator-input {text}></pl-big-operator-input>"
 
 
-def data(correct=None, raw=None, panel="question"):
-    result = {
+def data(
+    correct: object | None = None,
+    raw: dict[str, str] | None = None,
+    panel: str = "question",
+) -> dict[str, Any]:
+    return {
         "params": {},
-        "correct_answers": {},
+        "correct_answers": {} if correct is None else {"op": correct},
         "raw_submitted_answers": raw or {},
         "panel": panel,
     }
-    if correct is not None:
-        result["correct_answers"]["op"] = correct
-    return result
 
 
 @pytest.mark.parametrize(
@@ -55,7 +60,7 @@ def data(correct=None, raw=None, panel="question"):
         ("max", "domain"),
     ],
 )
-def test_auto_limits(operator, limits) -> None:
+def test_auto_limits(operator: str, limits: str) -> None:
     assert mod._config(html(operator=operator)).limits == limits
 
 
@@ -73,7 +78,7 @@ def test_auto_limits(operator, limits) -> None:
         "Max",
     ],
 )
-def test_operator_attribute_accepts_initial_capital(operator) -> None:
+def test_operator_attribute_accepts_initial_capital(operator: str) -> None:
     config = mod._config(html(operator=operator))
     assert config.operator == operator[:1].lower() + operator[1:]
 
@@ -91,13 +96,13 @@ def test_operator_attribute_rejects_other_capitalization() -> None:
 
 
 @pytest.mark.parametrize("operator", ["and", "or", "And", "Or"])
-def test_operator_attribute_rejects_boolean_operators(operator) -> None:
+def test_operator_attribute_rejects_boolean_operators(operator: str) -> None:
     with pytest.raises(ValueError, match="Unknown operator"):
         mod._config(html(operator=operator))
 
 
 @pytest.mark.parametrize("correct", ["And(k, (k, {1, 2}))", "Or(k, (k, {1, 2}))"])
-def test_whole_answers_do_not_infer_boolean_operators(correct) -> None:
+def test_whole_answers_do_not_infer_boolean_operators(correct: str) -> None:
     markup = html(**{"correct-answer": correct})
 
     with pytest.raises(ValueError, match='The "operator" attribute is required'):
@@ -118,7 +123,9 @@ def test_whole_answers_do_not_infer_boolean_operators(correct) -> None:
         ("max", "Max(k**2, (k, {1, 2}))", "domain"),
     ],
 )
-def test_infers_operator_from_whole_answer_strings(operator, correct, limits) -> None:
+def test_infers_operator_from_whole_answer_strings(
+    operator: str, correct: str, limits: str
+) -> None:
     markup = html(**{"correct-answer": correct, "index-variable": None})
     state = data()
     mod.prepare(markup, state)
@@ -143,7 +150,7 @@ def test_infers_operator_from_whole_answer_strings(operator, correct, limits) ->
         ("custom", "Custom"),
     ],
 )
-def test_sympy_string_forms_are_parseable(operator, function_name) -> None:
+def test_sympy_string_forms_are_parseable(operator: str, function_name: str) -> None:
     k = sympy.Symbol("k")
     if operator == "sum":
         correct = sympy.Sum(k**2, (k, 1, 4))
@@ -167,7 +174,7 @@ def test_sympy_string_forms_are_parseable(operator, function_name) -> None:
 
 def test_sympy_limit_string_form_is_parseable() -> None:
     k = sympy.Symbol("k")
-    correct = sympy.Limit(sympy.sin(k) / k, k, 0, dir="+")  # type: ignore
+    correct = sympy.Limit(sympy.sin(k) / k, k, 0, dir="+")
     state = data()
 
     mod.prepare(html(**{"correct-answer": str(correct), "index-variable": None}), state)
@@ -185,8 +192,10 @@ def test_parse_normalizes_prairielearn_parser_errors() -> None:
     assert isinstance(exc_info.value._src, mod.psu.BaseSympyError)
 
 
-def test_parse_does_not_normalize_unexpected_errors(monkeypatch) -> None:
-    def fail(*args, **kwargs) -> Never:
+def test_parse_does_not_normalize_unexpected_errors(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def fail(*args: object, **kwargs: object) -> Never:
         raise RuntimeError("unexpected parser failure")
 
     monkeypatch.setattr(mod.psu, "convert_string_to_sympy", fail)
@@ -213,7 +222,7 @@ def test_formatted_answer_normalizes_parse_errors() -> None:
         (
             "limit",
             sympy.Limit(
-                sympy.sin(sympy.Symbol("k")) / sympy.Symbol("k"),  # type: ignore
+                sympy.sin(sympy.Symbol("k")) / sympy.Symbol("k"),
                 sympy.Symbol("k"),
                 0,
                 dir="+-",
@@ -221,7 +230,7 @@ def test_formatted_answer_normalizes_parse_errors() -> None:
         ),
     ],
 )
-def test_infers_operator_from_sympy_json(operator, correct) -> None:
+def test_infers_operator_from_sympy_json(operator: str, correct: sympy.Basic) -> None:
     state = data(mod.psu.sympy_to_json(correct))
     mod.prepare(html(**{"index-variable": None}), state)
     assert state["correct_answers"]["op"]["operator"] == operator
@@ -275,7 +284,7 @@ def test_omitted_operator_requires_inferable_whole_answer() -> None:
         {"_type": "sympy", "_value": "k + 1"},
     ],
 )
-def test_uninferable_string_or_dictionary_requires_operator(correct) -> None:
+def test_uninferable_string_or_dictionary_requires_operator(correct: object) -> None:
     with pytest.raises(ValueError, match='"operator" attribute is required'):
         mod.prepare(html(), data(correct))
 
@@ -340,7 +349,9 @@ def test_explicit_limit_direction_still_rejects_mismatch() -> None:
     ("direction", "public_direction"),
     [("+", "from-right"), ("-", "from-left"), ("+-", "two-sided")],
 )
-def test_formatted_limit_accepts_documented_directions(direction, public_direction) -> None:
+def test_formatted_limit_accepts_documented_directions(
+    direction: str, public_direction: str
+) -> None:
     markup = html(**{
         "correct-answer": f"Limit(k**2, (k, 0, '{direction}'))",
         "limit-direction": public_direction,
@@ -359,7 +370,7 @@ def test_formatted_limit_accepts_documented_directions(direction, public_directi
         "Limit(k, k, 0, dir='sideways')",
     ],
 )
-def test_limit_rejects_unknown_direction_in_either_string_form(correct) -> None:
+def test_limit_rejects_unknown_direction_in_either_string_form(correct: str) -> None:
     with pytest.raises(ValueError):
         mod.prepare(html(**{"correct-answer": correct}), data())
 
@@ -426,7 +437,7 @@ def test_whole_domain_integral_matches_component_answer() -> None:
 
 
 @pytest.mark.parametrize("limits", ["bounds", "domain"])
-def test_custom_operator_requires_explicit_supported_limits(limits) -> None:
+def test_custom_operator_requires_explicit_supported_limits(limits: str | None) -> None:
     config = mod._config(
         html(operator="custom", limits=limits, **{"operator-latex": r"\mathbb{E}"})
     )
@@ -482,7 +493,7 @@ def test_inferred_builtin_operator_accepts_custom_latex() -> None:
     ],
 )
 @pytest.mark.parametrize("limits", ["bounds", "domain"])
-def test_flexible_operator_limit_forms(operator, limits) -> None:
+def test_flexible_operator_limit_forms(operator: str, limits: str) -> None:
     assert mod._config(html(operator=operator, limits=limits)).limits == limits
 
 
@@ -495,7 +506,7 @@ def test_flexible_operator_limit_forms(operator, limits) -> None:
         ("sum", "approach"),
     ],
 )
-def test_invalid_limit_forms(operator, limits) -> None:
+def test_invalid_limit_forms(operator: str, limits: str) -> None:
     with pytest.raises(ValueError, match="does not support"):
         mod.prepare(html(operator=operator, limits=limits), data())
 
@@ -508,7 +519,7 @@ def test_invalid_limit_forms(operator, limits) -> None:
         ("integral", sympy.Integral(sympy.Symbol("k"), (sympy.Symbol("k"), 0, 1))),
     ],
 )
-def test_prepare_normalizes_binders(operator, correct) -> None:
+def test_prepare_normalizes_binders(operator: str, correct: str) -> None:
     state = data(correct)
     mod.prepare(html(operator=operator), state)
     answer = state["correct_answers"]["op"]
@@ -557,7 +568,9 @@ def test_prepare_does_not_use_correct_answer_backup_from_params() -> None:
         ("integral", sympy.Integral(sympy.Symbol("k"), (sympy.Symbol("k"), 0, 1))),
     ],
 )
-def test_prepare_decodes_serialized_binders_without_interval_parsing(operator, correct) -> None:
+def test_prepare_decodes_serialized_binders_without_interval_parsing(
+    operator: str, correct: sympy.Basic
+) -> None:
     state = data(mod.psu.sympy_to_json(correct))
     mod.prepare(html(operator=operator), state)
     assert state["correct_answers"]["op"]["operator"] == operator
@@ -573,7 +586,9 @@ def test_prepare_decodes_serialized_binders_without_interval_parsing(operator, c
         ("max", "Max", "k**2"),
     ],
 )
-def test_prepare_normalizes_function_domain_binders(operator, function, body) -> None:
+def test_prepare_normalizes_function_domain_binders(
+    operator: str, function: str, body: str
+) -> None:
     state = data()
     markup = html(
         operator=operator,
@@ -613,9 +628,9 @@ def test_prepare_normalizes_function_bounds_binder() -> None:
     ("direction", "sympy_direction"),
     [("two-sided", "+-"), ("from-left", "-"), ("from-right", "+")],
 )
-def test_limit_directions(direction, sympy_direction) -> None:
+def test_limit_directions(direction: str, sympy_direction: str) -> None:
     k = sympy.Symbol("k")
-    state = data(sympy.Limit(sympy.sin(k) / k, k, 0, dir=sympy_direction))  # type: ignore
+    state = data(sympy.Limit(sympy.sin(k) / k, k, 0, dir=sympy_direction))
     mod.prepare(html(operator="limit", **{"limit-direction": direction}), state)
     assert state["correct_answers"]["op"]["direction"] == direction
     rendered = mod.render(
@@ -675,7 +690,7 @@ def test_fixed_two_sided_limit_has_no_target_suffix() -> None:
 
 
 @pytest.mark.parametrize("value", ["true", "false"])
-def test_limit_direction_input_schema_values_are_valid(value) -> None:
+def test_limit_direction_input_schema_values_are_valid(value: str) -> None:
     markup = html(operator="limit", **{"allow-limit-direction-input": value})
     mod.pl.validate_element(
         mod.lxml.html.fragment_fromstring(markup),
@@ -738,7 +753,7 @@ def test_limit_direction_input_is_a_red_single_character_monospace_control() -> 
     ],
 )
 def test_limit_direction_input_uses_binary_score_badge(
-    submitted_direction, badge_class, icon_class, label
+    submitted_direction: str, badge_class: str, icon_class: str, label: str
 ) -> None:
     markup = html(
         operator="limit",
@@ -771,7 +786,7 @@ def test_limit_direction_input_uses_binary_score_badge(
 
 
 @pytest.mark.parametrize("direction", ["two-sided", "from-left", "from-right"])
-def test_limit_direction_input_parses_into_canonical_answer(direction) -> None:
+def test_limit_direction_input_parses_into_canonical_answer(direction: str) -> None:
     state = data(
         raw={
             "op-target": "0",
@@ -785,7 +800,9 @@ def test_limit_direction_input_parses_into_canonical_answer(direction) -> None:
 
 
 @pytest.mark.parametrize("direction", ["", "sideways"])
-def test_limit_direction_input_rejects_missing_or_invalid_selection(direction) -> None:
+def test_limit_direction_input_rejects_missing_or_invalid_selection(
+    direction: str,
+) -> None:
     state = data(
         raw={
             "op-target": "0",
@@ -801,7 +818,9 @@ def test_limit_direction_input_rejects_missing_or_invalid_selection(direction) -
     assert "Select a valid limit direction." in rendered
 
 
-def test_limit_direction_input_clears_stale_format_error_after_valid_selection() -> None:
+def test_limit_direction_input_clears_stale_format_error_after_valid_selection() -> (
+    None
+):
     markup = html(operator="limit")
     state = data(
         raw={
@@ -872,7 +891,7 @@ def test_fixed_limit_direction_is_injected_without_raw_field() -> None:
     ],
 )
 def test_student_limit_direction_participates_in_grading(
-    grading, submitted_direction, expected
+    grading: str, submitted_direction: str, expected: float
 ) -> None:
     markup = html(**{
         "correct-answer": "Limit(1/k, (k, 0, '+'))",
@@ -928,7 +947,7 @@ def test_submission_and_answer_panels_use_their_own_limit_directions() -> None:
     assert r"0^+" in mod.render(markup, state)
 
 
-def canonical(operator="union", limits="domain"):
+def canonical(operator: str = "union", limits: str = "domain") -> dict[str, Any]:
     k = sympy.Symbol("k")
     return {
         "_type": "operator_expression",
@@ -1058,7 +1077,9 @@ def test_prepare_component_correct_answer_enforces_set_fields() -> None:
         ("Union({k}, (k, 1))", "domain"),
     ],
 )
-def _test_whole_set_correct_answer_enforces_set_fields(correct, component) -> None:
+def _test_whole_set_correct_answer_enforces_set_fields(
+    correct: str, component: str
+) -> None:
     with pytest.raises(ValueError, match=rf'component "{component}" must be a set'):
         mod.prepare(html(operator="union", **{"correct-answer": correct}), data())
 
@@ -1108,7 +1129,7 @@ def test_prepare_rejects_combined_whole_and_component_correct_answers() -> None:
 
 
 @pytest.mark.parametrize("operator", ["min", "max"])
-def test_min_max_correct_answer_rendering(operator) -> None:
+def test_min_max_correct_answer_rendering(operator: str) -> None:
     answer = canonical(operator=operator)
     answer["body"] = mod._json(sympy.Symbol("k") ** 2)
     state = data(answer, panel="answer")
@@ -1121,7 +1142,7 @@ def test_min_max_correct_answer_rendering(operator) -> None:
 
 
 @pytest.mark.parametrize("operator", ["min", "max"])
-def test_min_max_answer_rendering_uses_prepared_answer(operator) -> None:
+def test_min_max_answer_rendering_uses_prepared_answer(operator: str) -> None:
     answer = canonical(operator=operator)
     answer["body"] = mod._json(sympy.Symbol("k") ** 2)
     state = data(answer)
@@ -1137,7 +1158,9 @@ def test_min_max_answer_rendering_uses_prepared_answer(operator) -> None:
 
 
 @pytest.mark.parametrize("operator", ["min", "max"])
-def test_min_max_answer_panel_never_renders_question_mark_fallback(operator) -> None:
+def test_min_max_answer_panel_never_renders_question_mark_fallback(
+    operator: str,
+) -> None:
     rendered = mod.render(html(operator=operator), data(panel="answer"))
 
     assert "?" not in rendered
@@ -1146,7 +1169,7 @@ def test_min_max_answer_panel_never_renders_question_mark_fallback(operator) -> 
 @pytest.mark.parametrize(
     "operator", ["union", "intersection", "disjoint-union", "min", "max"]
 )
-def test_variadic_operators_require_structured_answers(operator) -> None:
+def test_variadic_operators_require_structured_answers(operator: str) -> None:
     with pytest.raises(TypeError, match="canonical structured"):
         mod.prepare(html(operator=operator), data(sympy.Integer(1)))
 
@@ -1161,7 +1184,9 @@ def test_variadic_operators_require_structured_answers(operator) -> None:
         lambda x: x.update(extra=1),
     ],
 )
-def test_rejects_malformed_structured_answers(mutation) -> None:
+def test_rejects_malformed_structured_answers(
+    mutation: Callable[[dict[str, Any]], None],
+) -> None:
     answer = canonical()
     mutation(answer)
     with pytest.raises(ValueError):
@@ -1228,7 +1253,7 @@ def _test_component_score_badge_uses_grading_equivalence() -> None:
 
 
 @pytest.mark.parametrize("operator", ["sum", "product", "integral", "union", "min"])
-def test_domain_fields_reject_non_sets_at_parse_time(operator) -> None:
+def test_domain_fields_reject_non_sets_at_parse_time(operator: str) -> None:
     state = data(raw={"op-domain": "1", "op-body": "FiniteSet(k)"})
     mod.parse(html(operator=operator, limits="domain"), state)
 
@@ -1237,7 +1262,7 @@ def test_domain_fields_reject_non_sets_at_parse_time(operator) -> None:
 
 
 @pytest.mark.parametrize("operator", ["union", "intersection", "disjoint-union"])
-def test_set_combinator_bodies_reject_non_sets_at_parse_time(operator) -> None:
+def test_set_combinator_bodies_reject_non_sets_at_parse_time(operator: str) -> None:
     state = data(raw={"op-domain": "FiniteSet(1, 2)", "op-body": "k + 1"})
     mod.parse(html(operator=operator), state)
 
@@ -1315,7 +1340,9 @@ def test_custom_functions_are_delegated_to_student_body_input() -> None:
     ("invalid_field", "valid_field"),
     [("op-domain", "op-body"), ("op-body", "op-domain")],
 )
-def test_parse_errors_are_rendered_with_their_fields(invalid_field, valid_field) -> None:
+def test_parse_errors_are_rendered_with_their_fields(
+    invalid_field: str, valid_field: str
+) -> None:
     raw = {"op-domain": "FiniteSet(1, 2)", "op-body": "FiniteSet(k)"}
     raw[invalid_field] = "1"
     state = data(raw=raw)
@@ -1399,7 +1426,7 @@ def test_question_fields_are_rendered_by_vendored_symbolic_input() -> None:
     [("sum", 7), ("union", 10), ("limit", 10)],
 )
 def test_symbolic_input_width_defaults_preserve_existing_layout(
-    operator, expected_limit_size
+    operator: str, expected_limit_size: int
 ) -> None:
     config = mod._config(html(operator=operator))
     rendered = mod.render(html(operator=operator), data())
@@ -1410,13 +1437,21 @@ def test_symbolic_input_width_defaults_preserve_existing_layout(
     assert f"--pl-big-operator-input-limit-size: {expected_limit_size}ch" in rendered
 
 
-def test_custom_widths_are_forwarded_to_rendered_symbolic_inputs(monkeypatch) -> None:
+def test_custom_widths_are_forwarded_to_rendered_symbolic_inputs(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     field_markup = []
     original_render = mod.symbolic_input_adapter.render
 
-    def capture_render(markup, *args, **kwargs):
+    def capture_render(
+        markup: str,
+        state: pl.QuestionData,
+        *,
+        aria_label: str,
+        score: float | None = None,
+    ) -> str:
         field_markup.append(markup)
-        return original_render(markup, *args, **kwargs)
+        return original_render(markup, state, aria_label=aria_label, score=score)
 
     monkeypatch.setattr(mod.symbolic_input_adapter, "render", capture_render)
     markup = html(operator="sum", **{"body-size": "24", "limit-size": "9"})
@@ -1431,13 +1466,15 @@ def test_custom_widths_are_forwarded_to_rendered_symbolic_inputs(monkeypatch) ->
     assert "--pl-big-operator-input-limit-size: 9ch" in rendered
 
 
-def test_custom_widths_are_forwarded_when_parsing(monkeypatch) -> None:
+def test_custom_widths_are_forwarded_when_parsing(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     field_markup = []
     original_parse = mod.symbolic_input_adapter.parse
 
-    def capture_parse(markup, *args, **kwargs):
+    def capture_parse(markup: str, state: pl.QuestionData) -> None:
         field_markup.append(markup)
-        return original_parse(markup, *args, **kwargs)
+        original_parse(markup, state)
 
     monkeypatch.setattr(mod.symbolic_input_adapter, "parse", capture_parse)
     markup = html(operator="sum", **{"body-size": "24", "limit-size": "9"})
@@ -1451,7 +1488,7 @@ def test_custom_widths_are_forwarded_when_parsing(monkeypatch) -> None:
 
 
 @pytest.mark.parametrize("attribute", ["body-size", "limit-size"])
-def test_symbolic_input_width_schema_accepts_integers(attribute) -> None:
+def test_symbolic_input_width_schema_accepts_integers(attribute: str) -> None:
     markup = html(operator="sum", **{attribute: "12"})
     mod.pl.validate_element(
         mod.lxml.html.fragment_fromstring(markup),
@@ -1460,7 +1497,7 @@ def test_symbolic_input_width_schema_accepts_integers(attribute) -> None:
 
 
 @pytest.mark.parametrize("attribute", ["body-size", "limit-size"])
-def test_symbolic_input_width_schema_rejects_non_integers(attribute) -> None:
+def test_symbolic_input_width_schema_rejects_non_integers(attribute: str) -> None:
     markup = html(operator="sum", **{attribute: "wide"})
     with pytest.raises(ValueError):
         mod.pl.validate_element(
@@ -1471,7 +1508,7 @@ def test_symbolic_input_width_schema_rejects_non_integers(attribute) -> None:
 
 @pytest.mark.parametrize("attribute", ["body-size", "limit-size"])
 @pytest.mark.parametrize("value", ["0", "-1"])
-def test_symbolic_input_widths_must_be_positive(attribute, value) -> None:
+def test_symbolic_input_widths_must_be_positive(attribute: str, value: str) -> None:
     with pytest.raises(ValueError, match=f'Attribute "{attribute}" must be positive'):
         mod._config(html(operator="sum", **{attribute: value}))
 
@@ -1504,7 +1541,7 @@ def test_body_right_edge_is_rounded_only_when_it_has_no_trailing_control() -> No
 
 
 def test_parse_does_not_add_render_or_grade_phase_data_keys() -> None:
-    state = {
+    state: dict[str, Any] = {
         "params": {},
         "correct_answers": {},
         "submitted_answers": {
@@ -1548,7 +1585,7 @@ def test_component_grading_weights_body() -> None:
 
 def test_component_grading_uses_equivalence_for_each_field() -> None:
     k = sympy.Symbol("k")
-    correct = sympy.Sum(2 * k, (k, 2, 4))  # type: ignore
+    correct = sympy.Sum(2 * k, (k, 2, 4))
     state = data(
         correct,
         {"op-start": "1 + 1", "op-end": "8 / 2", "op-body": "k + k"},
@@ -1582,7 +1619,7 @@ def test_component_grading_shows_icon_only_badges_on_symbolic_inputs() -> None:
 
 
 @pytest.mark.parametrize("grading", ["exact", "equivalent"])
-def _test_exact_and_equivalent_grading(grading) -> None:
+def _test_exact_and_equivalent_grading(grading: str) -> None:
     k = sympy.Symbol("k")
     state = data(
         sympy.Sum(k**2, (k, 1, 4)), {"op-start": "1", "op-end": "4", "op-body": "k^2"}
@@ -1634,18 +1671,10 @@ def test_allowed_blank_and_independent_parse_errors() -> None:
     assert blank["submitted_answers"]["op"] == ""
     broken = data(raw={"op-start": "1", "op-end": "@", "op-body": "k"})
     mod.parse(html(operator="sum"), broken)
-    assert (
-        "op-start" in broken["submitted_answers"]
-    )
-    assert (
-        "op-body" in broken["submitted_answers"]
-    )
-    assert (
-        "op-end" in broken["format_errors"]
-    )
-    assert (
-        broken["submitted_answers"]["op"] is None
-    )
+    assert "op-start" in broken["submitted_answers"]
+    assert "op-body" in broken["submitted_answers"]
+    assert "op-end" in broken["format_errors"]
+    assert broken["submitted_answers"]["op"] is None
 
 
 def test_allowed_blank_submission_is_gradable_as_incorrect() -> None:
@@ -1714,7 +1743,7 @@ def test_ungraded_blank_submission_still_requires_allowed_blank() -> None:
     ],
 )
 def test_allowed_blank_modes_accept_the_selected_fields(
-    allowed_blank, raw, blank_field
+    allowed_blank: str, raw: dict[str, str], blank_field: str
 ) -> None:
     state = data(raw=raw)
 
@@ -1734,7 +1763,7 @@ def test_allowed_blank_modes_accept_the_selected_fields(
     ],
 )
 def test_allowed_blank_modes_reject_unselected_fields(
-    allowed_blank, raw, required_field
+    allowed_blank: str, raw: dict[str, str], required_field: str
 ) -> None:
     state = data(raw=raw)
 
@@ -1764,7 +1793,9 @@ def test_invalid_allowed_blank_value_is_rejected() -> None:
         ),
     ],
 )
-def test_custom_operator_is_self_describing_ungraded_input(limits, raw, expected) -> None:
+def test_custom_operator_is_self_describing_ungraded_input(
+    limits: str, raw: dict[str, str], expected: str
+) -> None:
     markup = html(operator="custom", limits=limits, **{"operator-latex": r"\mathbb{E}"})
     state = data(raw=raw)
 
@@ -1916,7 +1947,7 @@ def test_schema_accepts_implied_custom_operator() -> None:
         ),
     ],
 )
-def test_schema_rejects_statically_invalid_configurations(markup) -> None:
+def test_schema_rejects_statically_invalid_configurations(markup: str) -> None:
     with pytest.raises(ValueError):
         mod.pl.validate_element(
             mod.lxml.html.fragment_fromstring(markup),
@@ -1991,7 +2022,9 @@ def test_integral_and_submission_reconstruct_complete_notation() -> None:
         (0, "text-bg-danger", "0%"),
     ],
 )
-def test_question_view_shows_score_badge(score, badge_class, label) -> None:
+def test_question_view_shows_score_badge(
+    score: float, badge_class: str, label: str
+) -> None:
     state = data()
     state["partial_scores"] = {"op": {"score": score}}
 
@@ -2042,7 +2075,9 @@ def test_bounds_upper_field_restores_left_border_radius() -> None:
     assert "border-bottom-left-radius: var(--bs-border-radius) !important" in css
 
 
-def test_domain_integral_renders_only_a_subscript_field_between_operator_and_body() -> None:
+def test_domain_integral_renders_only_a_subscript_field_between_operator_and_body() -> (
+    None
+):
     markup = html(operator="integral", limits="domain")
     rendered = mod.render(markup, data())
     operator_position = rendered.index('pl-big-operator-input__operator"')
@@ -2085,7 +2120,7 @@ def test_domain_integral_parses_and_reconstructs_notation() -> None:
 
 
 @pytest.mark.parametrize("operator", ["union", "limit"])
-def test_annotated_operator_stack_has_vertical_offset(operator) -> None:
+def test_annotated_operator_stack_has_vertical_offset(operator: str) -> None:
     rendered = mod.render(html(operator=operator), data())
     assert "pl-big-operator-input__operator-stack--annotated" in rendered
     css = (HERE / "pl-big-operator-input.css").read_text()
@@ -2154,7 +2189,9 @@ class TestParserRegressions:
                 offenders.append(str(path.relative_to(root)))
         assert offenders == []
 
-    def test_partial_canonical_submission_falls_back_for_render_and_grades_zero(self) -> None:
+    def test_partial_canonical_submission_falls_back_for_render_and_grades_zero(
+        self,
+    ) -> None:
         markup = html(operator="sum", **{"correct-answer": "Sum(k, (k, 1, 2))"})
         state = data(panel="submission")
         mod.prepare(markup, state)
@@ -2177,7 +2214,7 @@ class TestParserUnits:
         "value",
         [
             sympy.Symbol("x"),
-            sympy.Integer(2) * sympy.Symbol("x") + 1,  # type: ignore
+            sympy.Integer(2) * sympy.Symbol("x") + 1,
             sympy.FiniteSet(1, 2),
             sympy.Interval(0, 1),
         ],
@@ -2198,7 +2235,9 @@ class TestReadmeExamples:
         assert README_EXAMPLES
 
     @pytest.mark.parametrize("example", README_EXAMPLES)
-    def test_readme_markup_examples_validate_prepare_and_render(self, example) -> None:
+    def test_readme_markup_examples_validate_prepare_and_render(
+        self, example: str
+    ) -> None:
         elements = [
             fragment
             for fragment in mod.lxml.html.fragments_fromstring(example)
