@@ -21,7 +21,7 @@
     "allowed-types": {
       "default": "expression",
       "type": "string",
-      "pattern": "^\\s*(all|set|interval|expression)(\\s*,\\s*(all|set|interval|expression))*\\s*$"
+      "pattern": "^\\s*(all|finite-set|interval|expression)(\\s*,\\s*(all|finite-set|interval|expression))*\\s*$"
     },
     "allow-trig-functions": {
       "type": "string",
