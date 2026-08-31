@@ -3,11 +3,14 @@ from __future__ import annotations
 import importlib.util
 import sys
 from pathlib import Path
-from types import ModuleType
-from typing import Any, cast
+from typing import TYPE_CHECKING, Any, cast
 
 import lxml.html
-import prairielearn as pl
+
+if TYPE_CHECKING:
+    from types import ModuleType
+
+    import prairielearn as pl
 
 HERE = Path(__file__).parent
 VENDOR_DIR = HERE / "vendor" / "prairielearn" / "pl-symbolic-input"
