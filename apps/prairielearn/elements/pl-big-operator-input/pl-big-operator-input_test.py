@@ -1443,7 +1443,7 @@ def test_initial_latex_is_stored_outside_math_fields() -> None:
         assert latex_input.get("value") == r"\emptyset"
 
 
-def test_question_fields_are_rendered_by_vendored_symbolic_input() -> None:
+def test_question_fields_are_rendered_by_symbolic_input() -> None:
     rendered = big_operator_input.render(html(operator="sum"), data())
 
     assert rendered.count("pl-symbolic-input") >= 3
