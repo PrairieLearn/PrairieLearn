@@ -4,9 +4,7 @@ import importlib
 import re
 import sys
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Literal
-
-import lxml.html
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from types import ModuleType
@@ -33,44 +31,6 @@ def _load_controller() -> ModuleType:
 CONTROLLER = _load_controller()
 
 
-def markup(
-    *,
-    name: str,
-    variables: tuple[str, ...],
-    custom_functions: tuple[str, ...],
-    label: str,
-    size: int,
-    allowed_types: Literal["all", "expression"],
-    allow_complex: bool,
-    show_help_text: bool = False,
-    show_score: bool = False,
-    prefix: str | None = None,
-    suffix: str | None = None,
-) -> str:
-    element = lxml.html.Element("pl-symbolic-input")
-    attributes = {
-        "answers-name": name,
-        "variables": ",".join(variables),
-        "formula-editor": "true",
-        "show-help-text": str(show_help_text).lower(),
-        "show-score": str(show_score).lower(),
-        "placeholder": "",
-        "size": str(size),
-        "aria-label": label,
-        "allowed-types": allowed_types,
-        "allow-complex": str(allow_complex).lower(),
-    }
-    if custom_functions:
-        attributes["custom-functions"] = ",".join(custom_functions)
-    if prefix is not None:
-        attributes["label"] = prefix
-    if suffix is not None:
-        attributes["suffix"] = suffix
-    for key, value in attributes.items():
-        element.set(key, value)
-    return str(lxml.html.tostring(element, encoding="unicode"))
-
-
 def _render_data_view(data: dict[str, Any] | pl.QuestionData) -> dict[str, Any]:
     view = dict(data)
     view.setdefault("correct_answers", {})
@@ -84,20 +44,48 @@ def _render_data_view(data: dict[str, Any] | pl.QuestionData) -> dict[str, Any]:
 
 
 def render(
-    field_markup: str,
     data: pl.QuestionData,
     *,
+    name: str,
+    variables: tuple[str, ...],
+    custom_functions: tuple[str, ...],
     aria_label: str,
+    size: int,
+    allowed_types: set[str],
+    allow_complex: bool,
+    show_help_text: bool = False,
+    show_score: bool = False,
+    prefix: str | None = None,
+    suffix: str | None = None,
     score: float | None = None,
 ) -> str:
     view = _render_data_view(data)
     if score is not None:
-        element = lxml.html.fragment_fromstring(field_markup)
-        name = element.get("answers-name")
-        if name:
-            view["partial_scores"] = dict(view["partial_scores"])
-            view["partial_scores"][name] = {"score": score}
-    rendered = CONTROLLER.render(field_markup, view)
+        view["partial_scores"] = dict(view["partial_scores"])
+        view["partial_scores"][name] = {"score": score}
+    config = CONTROLLER.SymbolicInputRenderConfig(
+        name=name,
+        label=prefix,
+        aria_label=aria_label,
+        suffix=suffix,
+        variables=list(variables),
+        initial_value_variables=list(variables),
+        custom_functions=list(custom_functions),
+        display=CONTROLLER.DisplayType.INLINE,
+        allow_complex=allow_complex,
+        imaginary_unit="i",
+        allow_trig=True,
+        allowed_types=allowed_types,
+        simplify_expression=True,
+        display_log_as_ln=False,
+        size=size,
+        placeholder="",
+        show_score=show_score,
+        show_info=show_help_text,
+        formula_editor=True,
+        initial_value=None,
+    )
+    rendered = CONTROLLER.render_with_config(config, view)
     # The formula-editor template does not apply its aria-label parameter to the
     # math-field, so bridge that accessibility gap in the adapter.
     rendered = rendered.replace(

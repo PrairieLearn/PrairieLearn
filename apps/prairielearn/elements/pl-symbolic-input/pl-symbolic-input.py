@@ -1,5 +1,6 @@
 import pathlib
 import random
+from dataclasses import dataclass
 from enum import Enum
 from sys import get_int_max_str_digits
 from typing import assert_never, cast
@@ -14,6 +15,30 @@ import sympy
 class DisplayType(Enum):
     INLINE = "inline"
     BLOCK = "block"
+
+
+@dataclass(frozen=True, slots=True)
+class SymbolicInputRenderConfig:
+    name: str
+    label: str | None
+    aria_label: str | None
+    suffix: str | None
+    variables: list[str]
+    initial_value_variables: list[str]
+    custom_functions: list[str]
+    display: DisplayType
+    allow_complex: bool
+    imaginary_unit: str
+    allow_trig: bool
+    allowed_types: set[psu.AllowedSympyType]
+    simplify_expression: bool
+    display_log_as_ln: bool
+    size: int
+    placeholder: str
+    show_score: bool
+    show_info: bool
+    formula_editor: bool
+    initial_value: str | None
 
 
 WEIGHT_DEFAULT = 1
@@ -236,37 +261,75 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 def render(element_html: str, data: pl.QuestionData) -> str:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
-    label = pl.get_string_attrib(element, "label", LABEL_DEFAULT)
-    aria_label = pl.get_string_attrib(element, "aria-label", ARIA_LABEL_DEFAULT)
-    suffix = pl.get_string_attrib(element, "suffix", SUFFIX_DEFAULT)
     variables = psu.get_items_list(
         pl.get_string_attrib(element, "variables", VARIABLES_DEFAULT)
     )
-    custom_functions = psu.get_items_list(
-        pl.get_string_attrib(element, "custom-functions", CUSTOM_FUNCTIONS_DEFAULT)
+    config = SymbolicInputRenderConfig(
+        name=name,
+        label=pl.get_string_attrib(element, "label", LABEL_DEFAULT),
+        aria_label=pl.get_string_attrib(element, "aria-label", ARIA_LABEL_DEFAULT),
+        suffix=pl.get_string_attrib(element, "suffix", SUFFIX_DEFAULT),
+        variables=variables,
+        initial_value_variables=_get_variables_with_fallback(element, data, name),
+        custom_functions=psu.get_items_list(
+            pl.get_string_attrib(element, "custom-functions", CUSTOM_FUNCTIONS_DEFAULT)
+        ),
+        display=pl.get_enum_attrib(element, "display", DisplayType, DISPLAY_DEFAULT),
+        allow_complex=pl.get_boolean_attrib(
+            element, "allow-complex", ALLOW_COMPLEX_DEFAULT
+        ),
+        imaginary_unit=pl.get_string_attrib(
+            element, "imaginary-unit-for-display", IMAGINARY_UNIT_FOR_DISPLAY_DEFAULT
+        ),
+        allow_trig=pl.get_boolean_attrib(
+            element, "allow-trig-functions", ALLOW_TRIG_FUNCTIONS_DEFAULT
+        ),
+        allowed_types=_get_allowed_types(element),
+        simplify_expression=pl.get_boolean_attrib(
+            element,
+            "display-simplified-expression",
+            DISPLAY_SIMPLIFIED_EXPRESSION_DEFAULT,
+        ),
+        display_log_as_ln=pl.get_boolean_attrib(
+            element, "display-log-as-ln", DISPLAY_LOG_AS_LN_DEFAULT
+        ),
+        size=pl.get_integer_attrib(element, "size", SIZE_DEFAULT),
+        placeholder=pl.get_string_attrib(element, "placeholder", PLACEHOLDER_DEFAULT),
+        show_score=pl.get_boolean_attrib(element, "show-score", SHOW_SCORE_DEFAULT),
+        show_info=pl.get_boolean_attrib(
+            element, "show-help-text", SHOW_HELP_TEXT_DEFAULT
+        ),
+        formula_editor=pl.get_boolean_attrib(
+            element, "formula-editor", SHOW_FORMULA_EDITOR_DEFAULT
+        ),
+        initial_value=pl.get_string_attrib(
+            element, "initial-value", INITIAL_VALUE_DEFAULT
+        ),
     )
-    display = pl.get_enum_attrib(element, "display", DisplayType, DISPLAY_DEFAULT)
-    allow_complex = pl.get_boolean_attrib(
-        element, "allow-complex", ALLOW_COMPLEX_DEFAULT
-    )
-    imaginary_unit = pl.get_string_attrib(
-        element, "imaginary-unit-for-display", IMAGINARY_UNIT_FOR_DISPLAY_DEFAULT
-    )
-    allow_trig = pl.get_boolean_attrib(
-        element, "allow-trig-functions", ALLOW_TRIG_FUNCTIONS_DEFAULT
-    )
-    allowed_types = _get_allowed_types(element)
+    return render_with_config(config, data)
+
+
+def render_with_config(config: SymbolicInputRenderConfig, data: pl.QuestionData) -> str:
+    name = config.name
+    label = config.label
+    aria_label = config.aria_label
+    suffix = config.suffix
+    variables = config.variables
+    custom_functions = config.custom_functions
+    display = config.display
+    allow_complex = config.allow_complex
+    imaginary_unit = config.imaginary_unit
+    allow_trig = config.allow_trig
+    allowed_types = config.allowed_types
     allow_sets = psu.allowed_sympy_types_include_sets(allowed_types)
-    simplify_expression = pl.get_boolean_attrib(
-        element, "display-simplified-expression", DISPLAY_SIMPLIFIED_EXPRESSION_DEFAULT
-    )
-    display_log_as_ln = pl.get_boolean_attrib(
-        element, "display-log-as-ln", DISPLAY_LOG_AS_LN_DEFAULT
-    )
-    size = pl.get_integer_attrib(element, "size", SIZE_DEFAULT)
-    placeholder = pl.get_string_attrib(element, "placeholder", PLACEHOLDER_DEFAULT)
-    show_score = pl.get_boolean_attrib(element, "show-score", SHOW_SCORE_DEFAULT)
-    show_info = pl.get_boolean_attrib(element, "show-help-text", SHOW_HELP_TEXT_DEFAULT)
+    simplify_expression = config.simplify_expression
+    display_log_as_ln = config.display_log_as_ln
+    size = config.size
+    placeholder = config.placeholder
+    show_score = config.show_score
+    show_info = config.show_info
+    formula_editor = config.formula_editor
+    initial_value = config.initial_value
     constants_class = psu._Constants
 
     operators: list[str] = list(psu.STANDARD_OPERATORS)
@@ -342,13 +405,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             template, {"format_error": True, "format_string": info}
         ).strip()
 
-    # Next, get some attributes we will use in multiple places
-    formula_editor = pl.get_boolean_attrib(
-        element, "formula-editor", SHOW_FORMULA_EDITOR_DEFAULT
-    )
-    initial_value = pl.get_string_attrib(
-        element, "initial-value", INITIAL_VALUE_DEFAULT
-    )
     raw_submitted_answer_latex = data["raw_submitted_answers"].get(
         name + "-latex", None
     )
@@ -364,7 +420,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         initial_parsed = _replace_imaginary_for_display(
             psu.convert_string_to_sympy(
                 initial_value,
-                _get_variables_with_fallback(element, data, name),
+                config.initial_value_variables,
                 allow_complex=allow_complex,
                 allow_sets=allow_sets,
                 custom_functions=custom_functions,
