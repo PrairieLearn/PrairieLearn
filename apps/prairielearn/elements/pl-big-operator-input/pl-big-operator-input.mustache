@@ -13,17 +13,17 @@
       <div class="pl-big-operator-input__limits">
         {{#bounds}}
           <div class="pl-big-operator-input__lower">
-            {{#lower_field}}{{> bounds-math-field }}{{/lower_field}}
+            {{#lower_field}}{{{ html }}}{{/lower_field}}
           </div>
           <div class="pl-big-operator-input__upper">
-            {{#upper_field}}{{> bounds-math-field }}{{/upper_field}}
+            {{#upper_field}}{{{ html }}}{{/upper_field}}
           </div>
         {{/bounds}}
         {{#domain}}
           <div class="pl-big-operator-input__domain-spacer" aria-hidden="true">
           </div>
           <div class="pl-big-operator-input__lower pl-big-operator-input__annotation">
-            {{#annotation_field}}{{> bounds-math-field }}{{/annotation_field}}
+            {{#annotation_field}}{{{ html }}}{{/annotation_field}}
           </div>
         {{/domain}}
       </div>
@@ -37,7 +37,7 @@
         <div
           class="pl-big-operator-input__upper pl-big-operator-input__range-upper-bound"
         >
-          {{#upper_field}}{{> bounds-math-field }}{{/upper_field}}
+          {{#upper_field}}{{{ html }}}{{/upper_field}}
         </div>
       {{/bounds}}
       <div class="pl-big-operator-input__operator" aria-hidden="true">
@@ -45,17 +45,17 @@
       </div>
       {{#bounds}}
         <div class="pl-big-operator-input__lower">
-          {{#lower_field}}{{> bounds-math-field }}{{/lower_field}}
+          {{#lower_field}}{{{ html }}}{{/lower_field}}
         </div>
       {{/bounds}}
       {{#domain}}
         <div class="pl-big-operator-input__annotation">
-          {{#annotation_field}}{{> bounds-math-field }}{{/annotation_field}}
+          {{#annotation_field}}{{{ html }}}{{/annotation_field}}
         </div>
       {{/domain}}
       {{#approach}}
         <div class="pl-big-operator-input__annotation">
-          {{#annotation_field}}{{> bounds-math-field }}{{/annotation_field}}
+          {{#annotation_field}}{{{ html }}}{{/annotation_field}}
           {{#direction_input}}{{> direction-select }}{{/direction_input}}
         </div>
       {{/approach}}
@@ -63,7 +63,7 @@
   {{/integral}}
   {{#body_field}}
     <div class="pl-big-operator-input__body">
-      <span class="visually-hidden">{{ label }}</span>{{> body-math-field }}
+      <span class="visually-hidden">{{ label }}</span>{{{ html }}}
     </div>
   {{/body_field}}
   {{#integral}}

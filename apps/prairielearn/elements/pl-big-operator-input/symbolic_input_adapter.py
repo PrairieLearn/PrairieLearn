@@ -4,7 +4,7 @@ import importlib
 import re
 import sys
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Literal
 
 import lxml.html
 
@@ -40,7 +40,7 @@ def markup(
     custom_functions: tuple[str, ...],
     label: str,
     size: int,
-    allow_sets: bool,
+    allowed_types: Literal["all", "expression"],
     allow_complex: bool,
     show_help_text: bool = False,
     show_score: bool = False,
@@ -57,7 +57,7 @@ def markup(
         "placeholder": "",
         "size": str(size),
         "aria-label": label,
-        "allow-sets": str(allow_sets).lower(),
+        "allowed-types": allowed_types,
         "allow-complex": str(allow_complex).lower(),
     }
     if custom_functions:
