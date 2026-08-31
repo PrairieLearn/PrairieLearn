@@ -33,6 +33,7 @@ export const QuestionsPageDataSchema = QuestionSchema.pick({
   sync_warnings: QuestionSchema.shape.sync_warnings.optional(),
   // The queries coalesce null to false.
   single_variant: z.boolean(),
+  partial_credit: z.boolean(),
   // True if the question defines a non-empty `preferences` schema.
   has_preferences: z.boolean(),
   display_type: z.string(),
