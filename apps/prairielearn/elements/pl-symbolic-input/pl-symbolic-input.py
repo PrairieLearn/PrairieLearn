@@ -146,20 +146,21 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         blank_value = pl.get_string_attrib(element, "blank-value", BLANK_VALUE_DEFAULT)
         # Validate that the answer can be parsed before storing
         if a_true.strip() != "":
-            try:
-                psu.convert_string_to_sympy(
-                    a_true,
-                    variables,
-                    allow_complex=allow_complex,
-                    allow_sets=allow_sets,
-                    allow_trig_functions=allow_trig,
-                    custom_functions=custom_functions,
-                    simplify_expression=simplify_expression,
-                )
-            except psu.BaseSympyError as exc:
+            result = psu.try_parse_string_as_sympy(
+                a_true,
+                variables,
+                allow_complex=allow_complex,
+                allow_sets=allow_sets,
+                allow_trig_functions=allow_trig,
+                custom_functions=custom_functions,
+                simplify_expression=simplify_expression,
+                allowed_types=allowed_types,
+            )
+            if isinstance(result, psu.SympyParseFailure):
                 raise ValueError(
-                    f'Parsing correct answer "{a_true}" for "{name}" failed.'
-                ) from exc
+                    f'Parsing correct answer "{a_true}" for "{name}" failed: '
+                    f"{result.error}"
+                )
         elif allow_blank and blank_value == "":
             a_true = ""
         else:
