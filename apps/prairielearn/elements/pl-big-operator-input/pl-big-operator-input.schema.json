@@ -1,0 +1,241 @@
+{
+  "$schema": "http://json-schema.org/draft-06/schema#",
+  "properties": {
+    "answers-name": {
+      "description": "Name used to store the combined submitted answer and grading result.",
+      "type": "string"
+    },
+    "operator": {
+      "description": "Big operator to display and use when constructing the combined answer. When omitted, it must be inferable from a whole string or dictionary correct answer.",
+      "enum": [
+        "sum",
+        "product",
+        "integral",
+        "limit",
+        "union",
+        "intersection",
+        "disjoint-union",
+        "min",
+        "max",
+        "custom"
+      ]
+    },
+    "operator-latex": {
+      "description": "LaTeX used to display the operator. Supplying this without operator implies operator=custom; it is required for explicit custom operators and may override the display of built-in operators.",
+      "type": "string"
+    },
+    "limits": {
+      "description": "Layout of the operator limits. Auto infers the layout from a parseable whole correct answer when available, otherwise selects the built-in operator's default layout; custom operators without a whole answer require an explicit bounds, domain, or approach form.",
+      "default": "auto",
+      "enum": [
+        "auto",
+        "bounds",
+        "domain",
+        "approach"
+      ]
+    },
+    "index-variable": {
+      "description": "Bound variable used by the operator and automatically allowed in the body expression. When omitted, it must be inferable from a whole string or dictionary correct answer.",
+      "type": "string"
+    },
+    "variables": {
+      "description": "Comma-separated list of additional symbolic variables allowed in student input.",
+      "type": "string"
+    },
+    "custom-functions": {
+      "description": "Comma-separated list of additional symbolic function names allowed in correct answers and student input.",
+      "type": "string"
+    },
+    "limit-direction": {
+      "description": "Direction from which the index variable approaches the target for a limit operator.",
+      "default": "two-sided",
+      "enum": [
+        "two-sided",
+        "from-left",
+        "from-right"
+      ]
+    },
+    "allow-limit-direction-input": {
+      "description": "Whether students select the limit direction for approach limits. When false, the configured correct direction is displayed as fixed notation.",
+      "default": "true",
+      "enum": ["true", "false"]
+    },
+    "allowed-blank": {
+      "description": "Which portions of the response may be blank: none, limits, body, or all.",
+      "default": "none",
+      "enum": [
+        "none",
+        "limits",
+        "body",
+        "all"
+      ]
+    },
+    "allow-complex": {
+      "description": "Whether complex numbers and the imaginary unit are allowed in symbolic component inputs.",
+      "default": "false",
+      "enum": ["true", "false"]
+    },
+    "show-help-text": {
+      "description": "Whether to show symbolic-entry help beside the body input.",
+      "default": "true",
+      "enum": ["true", "false"]
+    },
+    "body-size": {
+      "description": "Positive character width of the body symbolic input.",
+      "type": "string",
+      "format": "integer"
+    },
+    "limit-size": {
+      "description": "Positive character width applied to every limit symbolic input. Defaults to 7 for bounds and 10 for domain or approach limits.",
+      "type": "string",
+      "format": "integer"
+    },
+    "grading-method": {
+      "description": "How the response is graded: exact compares canonical structure, component grades visible fields separately, and equivalent checks symbolic equivalence.",
+      "default": "equivalent",
+      "enum": [
+        "exact",
+        "component",
+        "equivalent"
+      ]
+    },
+    "body-relative-weight": {
+      "description": "Weight of the body relative to each limit field, whose weight is 1, when using component grading.",
+      "default": 3,
+      "minimum": 1,
+      "type": "integer"
+    },
+    "weight": {
+      "description": "Global question-score weight assigned to this element.",
+      "default": 1,
+      "type": "integer"
+    },
+    "correct-answer": {
+      "description": "Complete correct answer as a supported parseable expression, including Custom(body, limits) when operator-latex is supplied; cannot be combined with component correct-answer attributes.",
+      "type": "string",
+      "pattern": "^\\s*(?:Sum|Product|Integral|Limit|Union|Intersection|DisjointUnion|Min|Max|Custom)\\s*\\(.+\\)\\s*$"
+    },
+    "correct-answer-start": {
+      "description": "Correct lower-bound expression for the start field when using bounds limits.",
+      "type": "string"
+    },
+    "correct-answer-end": {
+      "description": "Correct upper-bound expression for the end field when using bounds limits.",
+      "type": "string"
+    },
+    "correct-answer-domain": {
+      "description": "Correct domain expression for the domain field when using domain limits.",
+      "type": "string"
+    },
+    "correct-answer-target": {
+      "description": "Correct target expression for the target field when using approach limits.",
+      "type": "string"
+    },
+    "correct-answer-body": {
+      "description": "Correct body expression when component correct-answer-... attributes are used.",
+      "type": "string"
+    }
+  },
+  "required": ["answers-name"],
+  "allOf": [
+    {
+      "anyOf": [
+        {
+          "not": {
+            "required": ["operator"]
+          }
+        },
+        {
+          "properties": {
+            "operator": {
+              "enum": [
+                "sum",
+                "product",
+                "integral",
+                "union",
+                "intersection",
+                "disjoint-union",
+                "min",
+                "max"
+              ]
+            },
+            "limits": {
+              "enum": [
+                "auto",
+                "bounds",
+                "domain"
+              ]
+            }
+          },
+          "required": ["operator"]
+        },
+        {
+          "properties": {
+            "operator": {
+              "const": "limit"
+            },
+            "limits": {
+              "enum": [
+                "auto",
+                "approach"
+              ]
+            }
+          },
+          "required": ["operator"]
+        },
+        {
+          "properties": {
+            "operator": {
+              "const": "custom"
+            }
+          },
+          "required": [
+            "operator",
+            "operator-latex"
+          ]
+        }
+      ]
+    },
+    {
+      "anyOf": [
+        {
+          "not": {
+            "anyOf": [
+              {
+                "required": [
+                  "correct-answer-start"
+                ]
+              },
+              {
+                "required": [
+                  "correct-answer-end"
+                ]
+              },
+              {
+                "required": [
+                  "correct-answer-domain"
+                ]
+              },
+              {
+                "required": [
+                  "correct-answer-target"
+                ]
+              },
+              {
+                "required": [
+                  "correct-answer-body"
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "required": [
+            "operator",
+            "index-variable"
+          ]
+        }
+      ]
+    }
+  ]
+}
