@@ -182,6 +182,31 @@ def test_prepare_rejects_allow_sets_with_allowed_types() -> None:
         symbolic_input.prepare(element_html, make_question_data())
 
 
+def test_prepare_rejects_disallowed_correct_answer_type() -> None:
+    element_html = build_element_html(
+        'allowed-types="interval"',
+        'correct-answer="{1, 2}"',
+    )
+
+    with pytest.raises(
+        ValueError,
+        match=r"Parsing correct answer.*type 'finite-set'.*accepts: interval",
+    ):
+        symbolic_input.prepare(element_html, make_question_data())
+
+
+def test_prepare_accepts_allowed_correct_answer_type() -> None:
+    element_html = build_element_html(
+        'allowed-types="interval"',
+        'correct-answer="[1, 2] U [3, 4]"',
+    )
+    data = make_question_data()
+
+    symbolic_input.prepare(element_html, data)
+
+    assert data["correct_answers"]["test"] == "[1, 2] U [3, 4]"
+
+
 @pytest.mark.parametrize(
     ("sub", "allow_trig", "variables", "custom_functions", "expected"),
     [
