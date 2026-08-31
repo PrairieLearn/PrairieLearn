@@ -75,7 +75,7 @@ class SympyParseFailure:
 
 
 type SympyParseResult = SympyParseSuccess | SympyParseFailure
-type AllowedSympyType = Literal["all", "expression", "interval", "set"]
+type AllowedSympyType = Literal["all", "expression", "finite-set", "interval"]
 
 
 def _used_sympy_types(expr: sympy.Basic) -> set[AllowedSympyType | Literal["set-base"]]:
@@ -84,7 +84,7 @@ def _used_sympy_types(expr: sympy.Basic) -> set[AllowedSympyType | Literal["set-
     if isinstance(expr, sympy.Interval):
         return {"interval"}
     if isinstance(expr, sympy.FiniteSet):
-        return {"set"}
+        return {"finite-set"}
     if isinstance(expr, (sympy.Union, sympy.Intersection)):
         required_types: set[AllowedSympyType | Literal["set-base"]] = set()
         for arg in expr.args:
@@ -1448,7 +1448,7 @@ def try_parse_string_as_sympy(
     matches_allowed_type = "all" in allowed_types or (
         used_types <= allowed_types
         if used_types
-        else bool({"interval", "set"} & allowed_types)
+        else bool({"finite-set", "interval"} & allowed_types)
     )
     if not matches_allowed_type:
         missing_types = (used_types or set()) - allowed_types
@@ -1461,7 +1461,7 @@ def try_parse_string_as_sympy(
         elif isinstance(expr_parsed, sympy.FiniteSet) or (
             expr_parsed is sympy.EmptySet and "interval" not in allowed_types
         ):
-            value_type = "set"
+            value_type = "finite-set"
         elif isinstance(expr_parsed, sympy.Interval) or (expr_parsed is sympy.EmptySet):
             value_type = "interval"
         elif isinstance(expr_parsed, sympy.Set):
