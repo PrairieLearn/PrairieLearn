@@ -153,6 +153,13 @@ def check_sympy_types(
     )
 
 
+def allowed_sympy_types_include_sets(
+    allowed_types: set[AllowedSympyType],
+) -> bool:
+    """Return whether an allowed-types policy permits set notation."""
+    return not allowed_types.isdisjoint({"all", "set", "finite-set", "interval"})
+
+
 def is_sympy_json(json: Any) -> TypeGuard[SympyJson]:
     """Check if the input is a valid SymPy JSON dict.
 
@@ -1671,7 +1678,6 @@ def try_parse_symbolic_submission(
     allow_blank: bool = False,
     blank_value: str = "0",
     allow_complex: bool = False,
-    allow_sets: bool = False,
     allow_trig_functions: bool = True,
     custom_functions: Sequence[str] = (),
     imaginary_unit: str | None = None,
@@ -1680,6 +1686,9 @@ def try_parse_symbolic_submission(
     allowed_types: set[AllowedSympyType] | None = None,
 ) -> SymbolicSubmissionParseResult:
     """Normalize, parse, and serialize a symbolic-input submission."""
+    if allowed_types is None:
+        allowed_types = {"all"}
+    allow_sets = allowed_sympy_types_include_sets(allowed_types)
     variable_list = list(variables or ())
     custom_function_list = list(custom_functions)
     if formula_editor and submission is not None:

@@ -1255,7 +1255,6 @@ def _parse_values(
             variables,
             formula_editor=True,
             custom_functions=config.custom_functions,
-            allow_sets=requires_set,
             allowed_types=allowed_types,
             allow_complex=config.allow_complex,
         )
