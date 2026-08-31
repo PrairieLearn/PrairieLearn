@@ -11,8 +11,9 @@ import prairielearn as pl
 
 HERE = Path(__file__).parent
 VENDOR_DIR = HERE / "vendor" / "prairielearn" / "pl-symbolic-input"
-CONTROLLER_PATH = VENDOR_DIR / "pl-symbolic-input.py"
-TEMPLATE_PATH = VENDOR_DIR / "pl-symbolic-input.mustache"
+SOURCE_DIR = VENDOR_DIR if VENDOR_DIR.exists() else HERE.parent / "pl-symbolic-input"
+CONTROLLER_PATH = SOURCE_DIR / "pl-symbolic-input.py"
+TEMPLATE_PATH = SOURCE_DIR / "pl-symbolic-input.mustache"
 
 
 def _load_controller() -> ModuleType:
