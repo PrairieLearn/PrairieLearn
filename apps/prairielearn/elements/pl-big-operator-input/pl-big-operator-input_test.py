@@ -11,7 +11,7 @@ import sympy
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-    import prairielearn as pl
+    from prairielearn import QuestionData
 
 HERE = Path(__file__).parent
 big_operator_input = importlib.import_module("pl-big-operator-input")
@@ -1479,7 +1479,7 @@ def test_custom_widths_are_forwarded_to_rendered_symbolic_inputs(
 
     def capture_render(
         markup: str,
-        state: pl.QuestionData,
+        state: QuestionData,
         *,
         aria_label: str,
         score: float | None = None,
@@ -1510,7 +1510,7 @@ def test_custom_widths_are_forwarded_when_parsing(
     field_markup = []
     original_parse = big_operator_input.symbolic_input_adapter.parse
 
-    def capture_parse(markup: str, state: pl.QuestionData) -> None:
+    def capture_parse(markup: str, state: QuestionData) -> None:
         field_markup.append(markup)
         original_parse(markup, state)
 
