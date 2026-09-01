@@ -142,7 +142,7 @@ class _ParseError(ValueError):
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class RenderConfig:
-    answer: str
+    answer_name: str
     operator: Operator
     operator_latex: str
     limits: LimitFormat
@@ -173,7 +173,7 @@ class RenderConfig:
         return tuple(self.components)
 
     def name(self, component: str) -> str:
-        return f"{self.answer}-{ {'lower': 'start', 'upper': 'end'}.get(component, component) }"
+        return f"{self.answer_name}-{ {'lower': 'start', 'upper': 'end'}.get(component, component) }"
 
 
 def _raw_correct_answer(
@@ -561,7 +561,7 @@ def _config(html: str, data: pl.QuestionData | None = None) -> RenderConfig:
             'Custom operators with a correct answer require grading-method="exact" or "component".'
         )
     return RenderConfig(
-        answer=answer,
+        answer_name=answer,
         operator=operator,
         operator_latex=operator_latex,
         limits=limits,
@@ -876,7 +876,7 @@ def _formatted_answer(config: RenderConfig, source: str) -> dict[str, Any] | Non
 
 def _correct(config: RenderConfig, data: pl.QuestionData) -> dict[str, Any] | None:
     raw = _raw_correct_answer(
-        config.answer,
+        config.answer_name,
         config.correct_attribute,
         dict(config.correct_components),
         data,
@@ -902,7 +902,7 @@ def _correct(config: RenderConfig, data: pl.QuestionData) -> dict[str, Any] | No
         if config.operator == "limit" and re.match(r"^\s*Limit\s*\(", raw):
             raise ValueError("The correct answer has an invalid Limit wrapper.")
         raise TypeError(
-            f'Correct answer "{config.answer}" must be a matching formatted object or canonical structured dictionary.'
+            f'Correct answer "{config.answer_name}" must be a matching formatted object or canonical structured dictionary.'
         )
     if (
         isinstance(raw, dict)
@@ -917,7 +917,7 @@ def _correct(config: RenderConfig, data: pl.QuestionData) -> dict[str, Any] | No
     if converted is not None:
         return converted
     raise TypeError(
-        f'Correct answer "{config.answer}" must be a matching formatted object or canonical structured dictionary.'
+        f'Correct answer "{config.answer_name}" must be a matching formatted object or canonical structured dictionary.'
     )
 
 
@@ -925,7 +925,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     config = _config(element_html, data)
     correct = _correct(config, data)
     if correct is not None:
-        data.setdefault("correct_answers", {})[config.answer] = correct
+        data.setdefault("correct_answers", {})[config.answer_name] = correct
 
 
 def _field(
@@ -968,11 +968,11 @@ def _field(
 
 
 def _component_scores(config: RenderConfig, data: pl.QuestionData) -> dict[str, float]:
-    if config.grading != "component" or config.answer not in data.get(
+    if config.grading != "component" or config.answer_name not in data.get(
         "partial_scores", {}
     ):
         return {}
-    submitted_json = data.get("submitted_answers", {}).get(config.answer)
+    submitted_json = data.get("submitted_answers", {}).get(config.answer_name)
     correct_json = _correct(config, data)
     if not isinstance(submitted_json, dict) or correct_json is None:
         return {}
@@ -1051,7 +1051,7 @@ def _question_mustache(config: RenderConfig, data: pl.QuestionData) -> str:
             score=component_scores.get("body"),
         ),
     }
-    partial_score = data.get("partial_scores", {}).get(config.answer)
+    partial_score = data.get("partial_scores", {}).get(config.answer_name)
     if partial_score is not None:
         context["score_badge"] = _score_badge(float(partial_score.get("score") or 0))
     match config.limits:
@@ -1153,7 +1153,7 @@ def _structured_tex(config: RenderConfig, structured: dict[str, Any]) -> str:
 
 
 def _submitted_tex(config: RenderConfig, data: pl.QuestionData) -> str:
-    structured = data.get("submitted_answers", {}).get(config.answer)
+    structured = data.get("submitted_answers", {}).get(config.answer_name)
     if isinstance(structured, dict):
         try:
             return _structured_tex(config, structured)
@@ -1185,7 +1185,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             )
         case "submission":
             context: dict[str, Any] = {"tex": _submitted_tex(config, data)}
-            partial_score = data.get("partial_scores", {}).get(config.answer)
+            partial_score = data.get("partial_scores", {}).get(config.answer_name)
             if partial_score is not None:
                 context.update(_score_badge(float(partial_score.get("score") or 0)))
             return _render_mustache(context, template="submission")
@@ -1298,7 +1298,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         has_component_error = any(
             config.name(component) in errors for component in config.response_components
         )
-        submitted[config.answer] = None if has_component_error else ""
+        submitted[config.answer_name] = None if has_component_error else ""
         return
     values = _parse_values(config, data)
     direction = config.direction
@@ -1310,11 +1310,11 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
                 "Select a valid limit direction."
             )
             submitted[direction_name] = None
-            submitted[config.answer] = None
+            submitted[config.answer_name] = None
             return
         submitted[direction_name] = direction
         data.get("format_errors", {}).pop(direction_name, None)
-    submitted[config.answer] = (
+    submitted[config.answer_name] = (
         _canonical(config, values, direction=direction) if values else None
     )
 
@@ -1414,12 +1414,12 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
     correct_json = _correct(config, data)
     if correct_json is None:
         return
-    if data.get("submitted_answers", {}).get(config.answer) == "":
+    if data.get("submitted_answers", {}).get(config.answer_name) == "":
         score = 0.0
     else:
-        submitted_json = data.get("submitted_answers", {}).get(config.answer)
+        submitted_json = data.get("submitted_answers", {}).get(config.answer_name)
         if not isinstance(submitted_json, dict):
-            data.setdefault("partial_scores", {})[config.answer] = {
+            data.setdefault("partial_scores", {})[config.answer_name] = {
                 "score": 0.0,
                 "weight": config.weight,
             }
@@ -1431,7 +1431,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
                 _values(config, correct_json),
             )
         except (KeyError, TypeError, ValueError):
-            data.setdefault("partial_scores", {})[config.answer] = {
+            data.setdefault("partial_scores", {})[config.answer_name] = {
                 "score": 0.0,
                 "weight": config.weight,
             }
@@ -1465,7 +1465,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
                         correct_json.get("direction"),
                     )
                 )
-    data.setdefault("partial_scores", {})[config.answer] = {
+    data.setdefault("partial_scores", {})[config.answer_name] = {
         "score": score,
         "weight": config.weight,
     }
