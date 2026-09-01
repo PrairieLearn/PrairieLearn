@@ -226,6 +226,10 @@
       "schema": "./apps/prairielearn/elements/pl-symbolic-input/schemas/pl-symbolic-input.json"
     },
     {
+      "name": "pl-big-operator-input",
+      "schema": "./apps/prairielearn/elements/pl-big-operator-input/schemas/pl-big-operator-input.json"
+    },
+    {
       "name": "pl-code",
       "display": "block",
       "languageAttribute": "language",
