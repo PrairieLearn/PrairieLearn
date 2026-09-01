@@ -35,6 +35,7 @@ WITH
       LEFT JOIN questions AS q ON (q.id = i.question_id)
       LEFT JOIN users AS u ON (u.id = i.user_id)
       LEFT JOIN assessments AS a ON (a.id = i.assessment_id)
+      LEFT JOIN course_instances AS ci ON (ci.id = i.course_instance_id)
     WHERE
       i.course_id = $course_id
       AND (
@@ -76,6 +77,14 @@ WITH
       AND (
         $filter_not_assessments::text[] IS NULL
         OR a.tid NOT ILIKE ANY ($filter_not_assessments::text[])
+      )
+      AND (
+        $filter_course_instances::text[] IS NULL
+        OR ci.short_name ILIKE ANY ($filter_course_instances::text[])
+      )
+      AND (
+        $filter_not_course_instances::text[] IS NULL
+        OR ci.short_name NOT ILIKE ANY ($filter_not_course_instances::text[])
       )
       AND (
         -- We only filter by course instance if the user filter has been set,

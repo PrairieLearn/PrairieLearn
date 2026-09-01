@@ -505,6 +505,20 @@ function FilterHelpModal() {
                   <tr>
                     <td>
                       <code>
+                        ci:<em>short_name</em>
+                      </code>
+                    </td>
+                    <td>
+                      Shows all issues associated with a course instance short name like{' '}
+                      <code>short_name</code>; supports <code>*</code> as a wildcard. For example,{' '}
+                      <code>ci:2025F</code> shows all issues associated with the course instance{' '}
+                      <code>2025F</code>, while <code>ci:2025*</code> shows all issues associated
+                      with any course instance that starts with <code>2025</code>.
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>
+                      <code>
                         qid:<em>QID</em>
                       </code>
                     </td>
