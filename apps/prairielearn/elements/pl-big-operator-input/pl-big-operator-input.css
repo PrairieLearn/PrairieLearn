@@ -109,6 +109,10 @@
   display: none;
 }
 
+.pl-big-operator-input math-field::part(menu-toggle) {
+  display: none;
+}
+
 .pl-big-operator-input__upper,
 .pl-big-operator-input__lower {
   display: flex;
