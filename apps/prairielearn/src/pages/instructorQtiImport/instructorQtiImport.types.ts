@@ -20,6 +20,8 @@ export interface SerializedQuestionOutput {
   clientFiles: Record<string, { size: number }>;
   /** Video files that were excluded from this question's assets. */
   skippedVideos: string[];
+  /** Number of unique client files created from external images. */
+  copiedExternalImageFileCount: number;
 }
 
 interface StoredSerializedQuestionOutput extends Omit<
@@ -156,7 +158,7 @@ export function deduplicateAssessmentZoneQuestions(zones: PLAssessmentZone[]): {
 
   return {
     zones: dedupedZones,
-    warnings: [...duplicateQuestionIds].map((questionId) => ({
+    warnings: Array.from(duplicateQuestionIds, (questionId) => ({
       questionId,
       message: DUPLICATE_ASSESSMENT_QUESTION_WARNING,
       level: 'warn',

@@ -40,6 +40,7 @@ function makeQuestions(directoryPrefix: string, questionSourceId: string, questi
           'image.png': 'aW1hZ2U=',
         },
         skippedVideos: [] as string[],
+        copiedExternalImageFileCount: 0,
       },
     ],
     warnings: [
@@ -131,6 +132,7 @@ function makeConversionResult({
     },
     questions: [],
     warnings: [],
+    reports: [],
   };
 }
 
@@ -240,6 +242,48 @@ describe('serializeConversionResult', () => {
 
     assert(result.sourceType === 'question-bank');
     expect(result.directoryName).toBe('unfiled-questions-2');
+  });
+
+  it('preserves the remote-image copy report without duplicating its warning', async () => {
+    const conversionResult = makeConversionResult({
+      sourceType: 'assessment',
+      directoryName: 'quiz',
+    });
+    conversionResult.questions.push({
+      directoryName: 'q1',
+      sourceId: 'source-q1',
+      infoJson: {
+        uuid: 'question-uuid',
+        title: 'Question',
+        topic: 'Imported',
+        tags: ['imported'],
+        type: 'v3',
+      },
+      questionHtml: '<img src="https://canvas.example/image?verifier=secret">',
+      clientFiles: new Map(),
+      skippedFiles: [],
+    });
+    conversionResult.warnings.push({
+      questionId: 'source-q1',
+      code: 'remote-image-copy-failed',
+      message: 'Some remote images could not be copied.',
+    });
+    conversionResult.reports.push({
+      type: 'remote-image-copy',
+      questionId: 'source-q1',
+      filesCreated: 1,
+    });
+
+    const { result } = await serializeConversionResult(conversionResult, 'quiz', '/nonexistent');
+
+    expect(result.questions[0].copiedExternalImageFileCount).toBe(1);
+    expect(result.warnings).toEqual([
+      {
+        questionId: 'source-q1',
+        code: 'remote-image-copy-failed',
+        message: 'Some remote images could not be copied.',
+      },
+    ]);
   });
 });
 

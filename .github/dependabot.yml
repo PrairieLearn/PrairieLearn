@@ -17,6 +17,9 @@ updates:
     schedule:
       interval: monthly
     rebase-strategy: disabled
+    groups:
+      docker-images:
+        group-by: dependency-name
 
   - package-ecosystem: github-actions
     directory: '/'

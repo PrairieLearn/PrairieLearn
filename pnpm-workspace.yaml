@@ -14,7 +14,6 @@ overrides:
   'linkinator>marked': ^18
   'markdownlint-cli2>smol-toml': ^1
   'notebookjs>jsdom': '*'
-  'typescript-cp>rimraf': ^6.1.3 # https://github.com/body-builder/typescript-cp/issues/22
 
 # Delay newly published npm packages for 3 days.
 minimumReleaseAge: 4320
@@ -43,4 +42,4 @@ supportedArchitectures:
     - gnu
 
 minimumReleaseAgeExclude:
-  - '@aws-sdk/core@3.977.6'
+  - 'typescript-cp@0.1.11'

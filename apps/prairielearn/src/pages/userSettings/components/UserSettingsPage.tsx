@@ -1,8 +1,15 @@
+import { QueryClient, useMutation } from '@tanstack/react-query';
+import clsx from 'clsx';
 import { useState } from 'react';
 
 import { formatDate } from '@prairielearn/formatter';
+import { getAppError } from '@prairielearn/trpc/client';
+import { AppErrorAlert, QueryClientProviderDebug } from '@prairielearn/trpc/react';
 
 import type { UserAccessToken } from '../../../lib/client/safe-db-types.js';
+import { createUserTrpcClient } from '../../../trpc/user/client.js';
+import { TRPCProvider, useTRPC } from '../../../trpc/user/context.js';
+import type { UserSettingsError } from '../../../trpc/user/user-settings.js';
 
 import { DeleteTokenModal } from './DeleteTokenModal.js';
 import { GenerateTokenModal } from './GenerateTokenModal.js';
@@ -23,6 +30,8 @@ interface UserSettingsPageProps {
   newAccessTokens: string[];
   isExamMode: boolean;
   csrfToken: string;
+  trpcCsrfToken: string;
+  initialEnableSingleKeyShortcuts: boolean;
 }
 
 export function UserSettingsPage({
@@ -33,26 +42,35 @@ export function UserSettingsPage({
   newAccessTokens,
   isExamMode,
   csrfToken,
+  trpcCsrfToken,
+  initialEnableSingleKeyShortcuts,
 }: UserSettingsPageProps) {
+  const [queryClient] = useState(() => new QueryClient());
+  const [trpcClient] = useState(() => createUserTrpcClient({ csrfToken: trpcCsrfToken }));
+
   return (
-    <>
-      <h1 className="mb-4">Settings</h1>
+    <QueryClientProviderDebug client={queryClient}>
+      <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
+        <h1 className="mb-4">Settings</h1>
 
-      <UserProfileCard
-        user={user}
-        institution={institution}
-        authnProviderName={authnProviderName}
-      />
+        <UserProfileCard
+          user={user}
+          institution={institution}
+          authnProviderName={authnProviderName}
+        />
 
-      <PersonalAccessTokensCard
-        accessTokens={accessTokens}
-        newAccessTokens={newAccessTokens}
-        isExamMode={isExamMode}
-        csrfToken={csrfToken}
-      />
+        <UserSettingsCard initialEnableSingleKeyShortcuts={initialEnableSingleKeyShortcuts} />
 
-      <BrowserConfigurationCard />
-    </>
+        <PersonalAccessTokensCard
+          accessTokens={accessTokens}
+          newAccessTokens={newAccessTokens}
+          isExamMode={isExamMode}
+          csrfToken={csrfToken}
+        />
+
+        <BrowserConfigurationCard />
+      </TRPCProvider>
+    </QueryClientProviderDebug>
   );
 }
 
@@ -269,6 +287,94 @@ function BrowserConfigurationCard() {
         <button type="button" className="btn btn-sm btn-primary" onClick={handleResetMathJax}>
           Reset MathJax menu settings
         </button>
+      </div>
+    </div>
+  );
+}
+
+function UserSettingsCard({
+  initialEnableSingleKeyShortcuts,
+}: {
+  initialEnableSingleKeyShortcuts: boolean;
+}) {
+  const trpc = useTRPC();
+  const [enableSingleKeyShortcuts, setEnableSingleKeyShortcuts] = useState(
+    initialEnableSingleKeyShortcuts,
+  );
+  const [savedEnableSingleKeyShortcuts, setSavedEnableSingleKeyShortcuts] = useState(
+    initialEnableSingleKeyShortcuts,
+  );
+  const updateMutation = useMutation({
+    ...trpc.settings.update.mutationOptions(),
+    onSuccess: ({ enableSingleKeyShortcuts: savedValue }) => {
+      setEnableSingleKeyShortcuts(savedValue);
+      setSavedEnableSingleKeyShortcuts(savedValue);
+    },
+  });
+  const appError = getAppError<UserSettingsError['Update']>(updateMutation.error);
+  const isDirty = enableSingleKeyShortcuts !== savedEnableSingleKeyShortcuts;
+
+  return (
+    <div className="card mb-4">
+      <div className="card-header bg-primary text-white d-flex align-items-center">
+        <h2>User settings</h2>
+      </div>
+      <div className="card-body">
+        <div className="form-check form-switch">
+          <input
+            id="enable-keyboard-shortcuts"
+            className="form-check-input"
+            type="checkbox"
+            role="switch"
+            aria-describedby="enable-keyboard-shortcuts-description"
+            checked={enableSingleKeyShortcuts}
+            disabled={updateMutation.isPending}
+            onChange={(event) => {
+              updateMutation.reset();
+              setEnableSingleKeyShortcuts(event.currentTarget.checked);
+            }}
+          />
+          <label className="form-check-label fw-semibold" htmlFor="enable-keyboard-shortcuts">
+            Enable single-key shortcuts
+          </label>
+          <div id="enable-keyboard-shortcuts-description" className="form-text mt-1">
+            Use single-character keyboard shortcuts where available, including manual grading.
+            Available shortcuts are shown next to supported controls.
+          </div>
+        </div>
+
+        <AppErrorAlert
+          error={appError}
+          className="mt-3 mb-0"
+          render={{ UNKNOWN: ({ message }) => message }}
+          onDismiss={() => updateMutation.reset()}
+        />
+
+        <div className="d-flex align-items-center gap-2 mt-3">
+          <button
+            type="button"
+            className="btn btn-primary"
+            disabled={!isDirty || updateMutation.isPending}
+            onClick={() => updateMutation.mutate({ enableSingleKeyShortcuts })}
+          >
+            {updateMutation.isPending && (
+              <span className="spinner-border spinner-border-sm me-2" aria-hidden="true" />
+            )}
+            {updateMutation.isPending ? 'Saving…' : 'Save settings'}
+          </button>
+          <span
+            className={clsx('small text-success', {
+              invisible: !updateMutation.isSuccess || isDirty,
+            })}
+            aria-hidden={!updateMutation.isSuccess || isDirty}
+          >
+            <i className="bi bi-check-circle-fill me-1" aria-hidden="true" />
+            Saved
+          </span>
+          <span className="visually-hidden" role="status" aria-live="polite">
+            {updateMutation.isSuccess && !isDirty ? 'Settings saved' : ''}
+          </span>
+        </div>
       </div>
     </div>
   );

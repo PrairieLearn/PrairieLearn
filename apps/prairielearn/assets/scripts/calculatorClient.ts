@@ -1,4 +1,5 @@
 import {
+  CancellationError,
   ComputeEngine,
   type Expression,
   type MathJsonExpression,
@@ -23,8 +24,12 @@ interface HistoryItem {
   angleMode: AngleMode;
 }
 
+type CalculatorDefinition =
+  | { name: string; value: string }
+  | { name: string; function: MathJsonExpression };
+
 interface CalculatorLocalData {
-  variable: { name: string; value: string }[];
+  variable: CalculatorDefinition[];
   history: HistoryItem[];
   temp_input: string | null;
   isOpen: boolean;
@@ -88,12 +93,18 @@ const INVERSE_TRIG_FUNCTIONS = new Set([
   'Acsch',
 ]);
 
+export function withCalculatorTimeLimit<T>(
+  ce: InstanceType<typeof ComputeEngine>,
+  callback: () => T extends Promise<unknown> ? never : T,
+): T {
+  return ce.withTimeLimit({ ms: 500, label: 'prairielearn:calculator' }, callback);
+}
+
 export function initCalculator(storageKey: string, { drawer, fab, fabClose }: DrawerElements) {
   showPanel('main', drawer);
   initColumnNavigation(drawer);
   initDrawerUI(drawer, fab, fabClose, storageKey);
   const ce = new ComputeEngine();
-  ce.timeLimit = 500;
   ce.pushScope();
   const calculatorInputElement = ensureElement(
     drawer.querySelector<MathfieldElement>('#calculator-input'),
@@ -190,9 +201,7 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
     for (const historyItem of data.history) {
       addHistoryItem(historyItem);
     }
-    for (const variable of data.variable) {
-      ce.assign(variable.name, ce.parse(variable.value));
-    }
+    restoreCalculatorDefinitions(data.variable);
 
     // Set ans to the last history item's result, or \bot if no history
     const items = Array.from(historyPanel.querySelectorAll<HTMLElement>('.history-item'));
@@ -228,19 +237,24 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
     const input = item.dataset.input!;
     const angleMode = item.dataset.angleMode! as AngleMode;
 
-    const savedAns = ce.expr('ans').evaluate();
+    let savedAns: Expression | undefined;
+    try {
+      savedAns = withCalculatorTimeLimit(ce, () => ce.expr('ans').evaluate());
 
-    // checking `{ans}` here because it could be \mathrm{ans} or \operatorname{ans}
-    if (input.includes('{ans}') && domIndex + 1 < items.length) {
-      const prevResult = resolveAnsAndEvaluate(items, domIndex + 1, displayMode);
-      if (prevResult) {
+      // checking `{ans}` here because it could be \mathrm{ans} or \operatorname{ans}
+      if (input.includes('{ans}') && domIndex + 1 < items.length) {
+        const prevResult = resolveAnsAndEvaluate(items, domIndex + 1, displayMode);
+        if (!prevResult) return null;
         ce.assign('ans', prevResult.evaluated);
       }
-    }
 
-    const result = evaluateExpression(input, angleMode, displayMode);
-    ce.assign('ans', savedAns);
-    return result;
+      return evaluateExpression(input, angleMode, displayMode);
+    } catch (e) {
+      if (e instanceof CancellationError) return null;
+      throw e;
+    } finally {
+      if (savedAns) ce.assign('ans', savedAns);
+    }
   }
 
   /**
@@ -289,26 +303,90 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
   ) {
     if (!input || input.length === 0) return null;
 
-    let parsed = ce.parse(input, { parseNumbers: 'rational' });
-
-    if (angleMode === 'deg') {
-      parsed = ce.expr(radianToDegree(parsed.json));
-    }
-
-    const json = parsed.json;
-    if (Array.isArray(json) && json[0] === 'Assign' && json[1] === 'InvisibleOperator') {
-      return null;
-    }
-
     try {
-      const evaluated = parsed.evaluate();
-      const numericValue = displayMode === 'symbolic' ? evaluated : evaluated.N();
-      const displayed = numericValue.toLatex(latexOptions);
+      return withCalculatorTimeLimit(ce, () => {
+        const savedVariables = getCalculatorDefinitions();
+        const savedAns = ce.symbol('ans', { autoDeclare: false }).valueDefinition?.value;
 
-      return { displayed, evaluated };
+        ce.pushScope();
+        try {
+          declareCalculatorDefinitions(savedVariables);
+          restoreCalculatorDefinitions(savedVariables);
+          if (savedAns) {
+            ce.declare('ans', 'unknown');
+            ce.assign('ans', savedAns);
+          }
+
+          let parsed = ce.parse(input, { parseNumbers: 'rational' });
+
+          if (angleMode === 'deg') {
+            parsed = ce.expr(radianToDegree(parsed.json));
+          }
+
+          const json = parsed.json;
+          if (Array.isArray(json) && json[0] === 'Assign' && json[1] === 'InvisibleOperator') {
+            return null;
+          }
+
+          const evaluated = parsed.evaluate();
+          const numericValue = displayMode === 'symbolic' ? evaluated : evaluated.N();
+          const displayed = numericValue.toLatex(latexOptions);
+
+          return { displayed, evaluated, variables: getCalculatorDefinitions() };
+        } finally {
+          ce.popScope();
+        }
+      });
     } catch (e) {
       console.error('Evaluation failed:', e);
       return null;
+    }
+  }
+
+  function getCalculatorDefinitions() {
+    return [...ce.context.lexicalScope.bindings.keys()].flatMap<CalculatorDefinition>((name) => {
+      if (name === 'ans') return [];
+      const symbol = ce.symbol(name, { autoDeclare: false });
+      const value = symbol.valueDefinition?.value;
+      if (value) {
+        return [
+          {
+            name,
+            value: value.toLatex({ notation: 'auto' }),
+          },
+        ];
+      }
+
+      const lambda = symbol.operatorDefinition?.lambda;
+      if (lambda) {
+        return [
+          {
+            name,
+            function: [
+              'Function',
+              lambda.body.json,
+              ...lambda.parameters.map((parameter) => parameter.name),
+            ] as MathJsonExpression,
+          },
+        ];
+      }
+      return [];
+    });
+  }
+
+  function declareCalculatorDefinitions(definitions: CalculatorDefinition[]) {
+    for (const definition of definitions) {
+      ce.declare(definition.name, 'value' in definition ? 'unknown' : 'function');
+    }
+  }
+
+  function restoreCalculatorDefinitions(definitions: CalculatorDefinition[]) {
+    for (const definition of definitions) {
+      if ('value' in definition) {
+        ce.assign(definition.name, ce.parse(definition.value));
+      } else {
+        ce.assign(definition.name, ce.expr(definition.function));
+      }
     }
   }
 
@@ -347,7 +425,7 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
       return;
     }
 
-    const { displayed, evaluated } = result;
+    const { displayed, evaluated, variables } = result;
 
     if (hasError(evaluated.json)) {
       showCalculationError();
@@ -361,23 +439,13 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
 
     // Add to history
     if (addToHistory) {
-      const parsed = ce.parse(input, { parseNumbers: 'rational' });
-      const parsedJson = parsed.json;
-      // FIXME: could be multiple assignments in one expression
-      if (Array.isArray(parsedJson) && parsedJson[0] === 'Assign') {
-        const varName = parsedJson[1] as string;
-        const varVal = ce.expr(parsedJson[2]).evaluate();
-        data.variable.push({
-          name: varName,
-          value: varVal.toLatex({ notation: 'auto' }),
-        });
-      }
-
       try {
+        data.variable = variables;
+        restoreCalculatorDefinitions(variables);
         ce.assign('ans', evaluated);
         shouldAutoInsertAns = true;
       } catch (e) {
-        console.error('Failed to assign ans:', e);
+        console.error('Failed to update calculator state:', e);
       }
 
       const historyItem: HistoryItem = {
@@ -642,27 +710,29 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
 
   function setupButtonEvents(actions: Record<string, string>) {
     for (const [buttonName, action] of Object.entries(actions)) {
-      drawer.querySelectorAll<HTMLElement>(`[name="${buttonName}"]`).forEach((button) => {
-        prepareButton(button);
-        button.addEventListener('click', () => {
-          if (
-            shouldAutoInsertAns &&
-            calculatorInputElement.value.length === 0 &&
-            autoAnsButtons.has(buttonName)
-          ) {
-            if (action.includes('#0')) {
-              calculatorInputElement.insert(action.replaceAll('#0', '\\operatorname{ans}'));
+      drawer
+        .querySelectorAll<HTMLElement>(`[name="${CSS.escape(buttonName)}"]`)
+        .forEach((button) => {
+          prepareButton(button);
+          button.addEventListener('click', () => {
+            if (
+              shouldAutoInsertAns &&
+              calculatorInputElement.value.length === 0 &&
+              autoAnsButtons.has(buttonName)
+            ) {
+              if (action.includes('#0')) {
+                calculatorInputElement.insert(action.replaceAll('#0', '\\operatorname{ans}'));
+              } else {
+                calculatorInputElement.insert('\\operatorname{ans}');
+                calculatorInputElement.insert(action);
+              }
             } else {
-              calculatorInputElement.insert('\\operatorname{ans}');
               calculatorInputElement.insert(action);
             }
-          } else {
-            calculatorInputElement.insert(action);
-          }
-          shouldAutoInsertAns = false;
-          calculatorInputElement.focus();
+            shouldAutoInsertAns = false;
+            calculatorInputElement.focus();
+          });
         });
-      });
     }
   }
 

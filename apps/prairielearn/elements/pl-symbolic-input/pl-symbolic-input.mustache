@@ -20,7 +20,7 @@
                 name="{{name}}-latex"
                 id="symbolic-input-latex-{{name}}"
                 type="hidden"
-                value=""
+                value="{{raw_submitted_answer_latex}}"
             />
             <math-field
                 id="symbolic-input-{{name}}"
@@ -35,7 +35,6 @@
                 {{#allow_sets}}allow-sets="allow-sets"{{/allow_sets}}
                 {{#suffix}}aria-describedby="pl-symbolic-input-{{uuid}}-suffix"{{/suffix}}
                 >
-                {{#raw_submitted_answer_latex}}{{raw_submitted_answer_latex}}{{/raw_submitted_answer_latex}}
             </math-field>
         {{/formula_editor}}
         {{^formula_editor}}

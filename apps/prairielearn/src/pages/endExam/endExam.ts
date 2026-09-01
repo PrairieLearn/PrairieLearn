@@ -132,14 +132,11 @@ router.post(
     // from PT).
     let ended = false;
     try {
-      const ptResponse = await fetch(
-        new URL('/pt/lockdown-browser/end-exam', config.ptHost).toString(),
-        {
-          method: 'POST',
-          body: new URLSearchParams({ jwt }),
-          signal: AbortSignal.timeout(PT_END_EXAM_TIMEOUT_MS),
-        },
-      );
+      const ptResponse = await fetch(new URL('/pt/lockdown-browser/end-exam', config.ptHost).href, {
+        method: 'POST',
+        body: new URLSearchParams({ jwt }),
+        signal: AbortSignal.timeout(PT_END_EXAM_TIMEOUT_MS),
+      });
       if (ptResponse.ok) {
         ended = true;
       } else {

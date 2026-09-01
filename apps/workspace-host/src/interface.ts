@@ -5,6 +5,7 @@ import * as http from 'node:http';
 import * as net from 'node:net';
 import * as os from 'node:os';
 import * as path from 'node:path';
+import { pipeline } from 'node:stream/promises';
 
 import { ECRClient } from '@aws-sdk/client-ecr';
 import { S3 } from '@aws-sdk/client-s3';
@@ -17,7 +18,6 @@ import debugfn from 'debug';
 import Docker from 'dockerode';
 import express, { type Response } from 'express';
 import asyncHandler from 'express-async-handler';
-import { type Entry } from 'fast-glob';
 import minimist from 'minimist';
 import * as shlex from 'shlex';
 import { z } from 'zod';
@@ -1159,49 +1159,28 @@ async function sendGradedFilesArchive(workspace_id: string | number, res: Respon
   const zipName = `${workspace.remote_name}-${timestamp}.zip`;
   const workspaceDir = path.join(config.workspaceHostHomeDirRoot, workspace.remote_name, 'current');
 
-  let gradedFiles: Entry[] | undefined;
-  try {
-    gradedFiles = await workspaceUtils.getWorkspaceGradedFiles(
-      workspaceDir,
-      workspace_graded_files,
-      {
-        maxFiles: config.workspaceMaxGradedFilesCount,
-        maxSize: config.workspaceMaxGradedFilesSize,
-      },
-    );
-  } catch (err: any) {
-    res.status(500).send(err.message);
-    return;
-  }
+  await using gradedFiles = await workspaceUtils
+    .openWorkspaceGradedFiles(workspaceDir, workspace_graded_files, {
+      maxFiles: config.workspaceMaxGradedFilesCount,
+      maxSize: config.workspaceMaxGradedFilesSize,
+    })
+    .catch((err: Error) => {
+      res.status(500).send(err.message);
+      return null;
+    });
+  if (gradedFiles == null) return;
 
   // Stream the archive back to the client as it's generated.
   res.attachment(zipName).status(200);
   const archive = new ZipArchive();
-  archive.pipe(res);
-
-  archive.on('error', (err) => {
-    logger.error('Error creating archive', err);
-    Sentry.captureException(err);
-
-    // Since we've probably already sent some data to the client, we can't do
-    // anything to gracefully let them know that we encountered an error.
-    // Instead, we'll just destroy the socket so that they pick up an error
-    // and handle that however they want.
-    res.socket?.destroy();
-  });
+  const archiveCompleted = pipeline(archive, res);
 
   for (const file of gradedFiles) {
-    try {
-      const filePath = path.join(workspaceDir, file.path);
-      archive.file(filePath, { name: file.path });
-      debug(`Sending ${file.path}`);
-    } catch {
-      logger.warn(`Graded file ${file.path} does not exist.`);
-      continue;
-    }
+    archive.append(file.createReadStream(), { name: file.path });
+    debug(`Sending ${file.path}`);
   }
 
-  await archive.finalize();
+  await Promise.all([archive.finalize(), archiveCompleted]);
 }
 
 async function sendLogs(workspaceId: string | number, res: Response) {

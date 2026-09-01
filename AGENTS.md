@@ -110,12 +110,22 @@ Course content repositories use JSON files like `infoCourse.json`, `infoCourseIn
 
 When working with assessment "groups" / "teams", see the [`groups-and-teams` skill](./.agents/skills/groups-and-teams/SKILL.md).
 
+### Models and libraries
+
+`apps/prairielearn/src/models/` and `apps/prairielearn/src/lib/` are organizational conventions for reusable application code, not strict dependency layers. Choose a location based on the helper's primary responsibility:
+
+- Model modules in `apps/prairielearn/src/models/` should map one-to-one to a primary database table and contain operations centered on that table's entity. Do not create a model without a corresponding primary table. A model may join or update related tables and contain entity-specific business rules, but those operations must remain centered on its primary table.
+- Put cross-entity workflows, orchestration, authorization or context helpers, analytics, and other reusable logic without a corresponding primary database table in `apps/prairielearn/src/lib/`. Library modules may execute SQL or call model functions.
+- Before adding a helper or query, extend an existing model or library module that already owns the responsibility when one exists.
+
 ### SQL query conventions
 
-- Always prefer existing model functions or library helpers over one-off raw SQL queries. Check `apps/prairielearn/src/models/` and existing lib functions before writing any database queries. Only write raw queries when no suitable abstraction exists.
+- Node is authoritative for operations that depend on rule-bearing IANA timezone data, such as parsing civil times, calculating DST-aware boundaries, and grouping or formatting in course or institution timezones. Fixed-UTC timestamp arithmetic, truncation, bucketing, and internal transport serialization may remain in PostgreSQL because UTC has no mutable timezone rules; do not move these operations to Node solely for timezone ownership, especially when doing so adds query round trips. Never rely on the PostgreSQL session timezone for UTC behavior; make UTC explicit.
+- Always prefer existing model functions or library helpers over one-off raw SQL queries. Check `apps/prairielearn/src/models/` and `apps/prairielearn/src/lib/` before writing any database queries. Only write raw queries when no suitable abstraction exists.
 - Use `to_jsonb(table.*)` if you need to select all columns from a table as JSON. This is preferred over explicit `jsonb_build_object` calls or returning columns explicitly in a SELECT statement because it automatically includes all columns and stays in sync with schema changes and Zod types.
 - When a query spans multiple tables, model it as a composite object with named canonical `db-types` entities plus any true computed fields, rather than flattening columns or embedding one entity inside another.
 - When writing SQL, get table and column names from `database/tables/` (the source of truth) or from nearby existing queries in the same feature area. Do NOT rely on names found in old migrations, as tables and columns may have been renamed since those migrations were written.
+- Many tables (e.g. `courses`, `course_instances`, `assessments`; see `deleted_at` in `database/tables/`) are soft-deleted: deleting only sets a `deleted_at` timestamp, and child rows are generally NOT cascade-deleted. When selecting from or joining these tables, filter with `deleted_at IS NULL` unless the row was already validated as live upstream (e.g. loaded by a middleware like `authzCourseOrInstance` and passed down by primary key) or deleted rows are intentionally needed (e.g. rendering historical submissions, sync code).
 - Never inline SQL strings in TypeScript code. Place SQL queries in a `.sql` file alongside the TypeScript file using `-- BLOCK query_name` delimiters, load them with `sqldb.loadSqlEquiv(import.meta.url)`, and reference them as `sql.query_name`.
 
 ## TypeScript guidance
@@ -124,6 +134,7 @@ When working with assessment "groups" / "teams", see the [`groups-and-teams` ski
 
 - Use `tRPC + @trpc/tanstack-react-query` for new client/server communication. When interacting with existing REST APIs, use `@tanstack/react-query`. See the [`trpc` skill](./.agents/skills/trpc/SKILL.md) for conventions on authorization scopes, file structure, and client-side patterns.
 - Use `react-hook-form` for form handling.
+- Use the [`express-request-validation` skill](./.agents/skills/express-request-validation/SKILL.md) when validating Express request parameters, query strings, or bodies with Zod.
 - Prefer `extractPageContext(res.locals, ...)` over accessing `res.locals` properties directly in route handlers. This provides better type safety and ensures consistent access patterns.
 - Use `nuqs` for URL query state in hydrated components. Use `NuqsAdapter` from `@prairielearn/ui` and pass the search string from the router. See `pages/home/` for an example.
 

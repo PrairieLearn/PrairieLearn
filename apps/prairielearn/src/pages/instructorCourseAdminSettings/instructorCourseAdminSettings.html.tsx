@@ -1,7 +1,8 @@
+import { type Timezone, formatTimezone } from '@prairielearn/utils/timezone';
+
 import { GitHubButton } from '../../components/GitHubButton.js';
 import type { PageAuthzData } from '../../lib/authz-data-lib.js';
 import type { Course, Institution } from '../../lib/db-types.js';
-import { type Timezone, formatTimezone } from '../../lib/timezone.shared.js';
 
 export function InstructorCourseAdminSettings({
   aiQuestionGenerationEnabled,
@@ -30,6 +31,8 @@ export function InstructorCourseAdminSettings({
   origHash: string;
   urlPrefix: string;
 }) {
+  const disabled =
+    !courseInfoExists || !authzData.has_course_permission_edit || course.example_course;
   return (
     <div className="card mb-4">
       <div className="card-header bg-primary text-white d-flex align-items-center justify-content-between">
@@ -60,13 +63,7 @@ export function InstructorCourseAdminSettings({
               id="short_name"
               name="short_name"
               defaultValue={course.short_name ?? ''}
-              disabled={
-                !(
-                  courseInfoExists &&
-                  authzData.has_course_permission_edit &&
-                  !course.example_course
-                )
-              }
+              disabled={disabled}
               required
             />
             <small className="form-text text-muted">
@@ -84,13 +81,7 @@ export function InstructorCourseAdminSettings({
               id="title"
               name="title"
               defaultValue={course.title ?? ''}
-              disabled={
-                !(
-                  courseInfoExists &&
-                  authzData.has_course_permission_edit &&
-                  !course.example_course
-                )
-              }
+              disabled={disabled}
               required
             />
             <small className="form-text text-muted">
@@ -106,13 +97,7 @@ export function InstructorCourseAdminSettings({
               id="display_timezone"
               name="display_timezone"
               defaultValue={course.display_timezone}
-              disabled={
-                !(
-                  courseInfoExists &&
-                  authzData.has_course_permission_edit &&
-                  !course.example_course
-                )
-              }
+              disabled={disabled}
             >
               {availableTimezones.map((tz) => (
                 <option key={tz.name} value={tz.name}>

@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { flash } from '@prairielearn/flash';
+import { throwAppError } from '@prairielearn/trpc/server';
 
 import {
   type QtiImportAssessmentData,
@@ -11,7 +12,6 @@ import { readQtiImportDraft } from '../../lib/qti-import-drafts.js';
 import { SHORT_NAME_REGEX } from '../../lib/short-name.js';
 import { AssessmentJsonSchema } from '../../schemas/infoAssessment.js';
 import { QuestionJsonSchema } from '../../schemas/infoQuestion.js';
-import { throwAppError } from '../app-errors.js';
 
 import { requireCoursePermissionEdit, t } from './init.js';
 
@@ -80,6 +80,8 @@ const StoredSerializedQuestionOutputSchema = z.object({
   serverPy: z.string().optional(),
   clientFiles: z.record(z.string(), z.string()),
   skippedVideos: z.array(z.string()),
+  // Drafts created before external image copying was added omit this field.
+  copiedExternalImageFileCount: z.number().int().nonnegative().default(0),
 });
 
 const StoredSerializedConversionResultForHydrationSchema = z.object({

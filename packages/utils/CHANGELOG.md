@@ -1,5 +1,17 @@
 # @prairielearn/utils
 
+## 3.3.0
+
+### Minor Changes
+
+- 9b99f72: Add shared timezone interpretation, formatting, local-calendar, and timezone-catalog utilities under `@prairielearn/utils/timezone`.
+
+## 3.2.3
+
+### Patch Changes
+
+- df28e68: Bump dependencies
+
 ## 3.2.2
 
 ### Patch Changes

@@ -4,11 +4,18 @@ import {
   HttpStatusError,
   addData,
   augmentError,
+  generateErrorId,
   make,
   makeWithData,
   makeWithInfo,
   newMessage,
 } from './index.js';
+
+describe('generateErrorId', () => {
+  it('generates a 12-character uppercase alphanumeric ID', () => {
+    assert.match(generateErrorId(), /^[0-9A-Z]{12}$/);
+  });
+});
 
 describe('make', () => {
   it('makes an error without data', () => {

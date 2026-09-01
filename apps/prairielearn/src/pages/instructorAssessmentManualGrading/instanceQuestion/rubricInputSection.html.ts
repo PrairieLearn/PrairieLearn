@@ -14,16 +14,18 @@ export function RubricInputSection({
   disable,
   aiGradingInfo,
   context,
+  enable_single_key_shortcuts,
 }: {
   resLocals: UntypedResLocals;
   disable: boolean;
   aiGradingInfo?: InstanceQuestionAIGradingInfo;
   context: 'main' | 'existing' | 'conflicting';
+  enable_single_key_shortcuts: boolean;
 }) {
   if (!resLocals.rubric_data) return '';
   const rubric_data: RubricData = resLocals.rubric_data;
   const rubric_grading: RubricGradingData | null = resLocals.submission.rubric_grading;
-  const enableKeyboardShortcuts = context === 'main' && !disable;
+  const enableKeyboardShortcuts = context === 'main' && !disable && enable_single_key_shortcuts;
 
   return html`
     <style>

@@ -5,9 +5,9 @@ import { useFormContext } from 'react-hook-form';
 import ReactMarkdown from 'react-markdown';
 
 import { OverlayTrigger } from '@prairielearn/ui';
+import { type Timezone, formatTimezone } from '@prairielearn/utils/timezone';
 
 import type { AdminInstitution } from '../lib/client/safe-db-types.js';
-import { type Timezone, formatTimezone } from '../lib/timezone.shared.js';
 import { useTRPC } from '../trpc/administrator/context.js';
 
 export interface CourseFormFieldValues {
@@ -433,16 +433,17 @@ export function AdministratorCourseFormFields({
               </ReactMarkdown>
               {suggestPrefixQuery.data.sources.length > 0 && (
                 <div className="mt-1">
-                  {[
-                    ...new Map(suggestPrefixQuery.data.sources.map((s) => [s.url, s])).values(),
-                  ].map((source, i) => (
-                    <span key={source.url}>
-                      {i > 0 && ' · '}
-                      <a href={source.url} target="_blank" rel="noreferrer">
-                        {source.title ?? source.url}
-                      </a>
-                    </span>
-                  ))}
+                  {Array.from(
+                    new Map(suggestPrefixQuery.data.sources.map((s) => [s.url, s])).values(),
+                    (source, i) => (
+                      <span key={source.url}>
+                        {i > 0 && ' · '}
+                        <a href={source.url} target="_blank" rel="noreferrer">
+                          {source.title ?? source.url}
+                        </a>
+                      </span>
+                    ),
+                  )}
                 </div>
               )}
             </div>

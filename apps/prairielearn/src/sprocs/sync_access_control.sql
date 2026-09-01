@@ -10,13 +10,7 @@ CREATE FUNCTION
     )
 RETURNS void
 AS $$
-DECLARE
-    ci_timezone text;
 BEGIN
-    -- Safe to read here because course instances are synced before assessments
-    -- in syncDiskToSqlWithLock.
-    SELECT display_timezone INTO ci_timezone FROM course_instances WHERE id = syncing_course_instance_id;
-
     -- Non-default rule identity is independent of order. Move existing
     -- non-default rules out of the positive number range before upserting so
     -- reorder operations cannot violate the number/type unique constraint
@@ -77,9 +71,9 @@ BEGIN
         NULL,
         (rule ->> 'before_release_listed')::boolean,
         (rule ->> 'target_type')::enum_assessment_access_control_target_type,
-        input_date(rule ->> 'date_control_release_date', ci_timezone),
+        (rule ->> 'date_control_release_date')::timestamptz,
         (rule ->> 'date_control_due_overridden')::boolean,
-        input_date(rule ->> 'date_control_due_date', ci_timezone),
+        (rule ->> 'date_control_due_date')::timestamptz,
         (rule ->> 'date_control_due_credit')::integer,
         (rule ->> 'date_control_early_deadlines_overridden')::boolean,
         (rule ->> 'date_control_late_deadlines_overridden')::boolean,
@@ -91,10 +85,10 @@ BEGIN
         (rule ->> 'date_control_password')::text,
 
         (rule ->> 'after_complete_questions_hidden')::boolean,
-        input_date(rule ->> 'after_complete_questions_visible_from_date', ci_timezone),
-        input_date(rule ->> 'after_complete_questions_visible_until_date', ci_timezone),
+        (rule ->> 'after_complete_questions_visible_from_date')::timestamptz,
+        (rule ->> 'after_complete_questions_visible_until_date')::timestamptz,
         (rule ->> 'after_complete_score_hidden')::boolean,
-        input_date(rule ->> 'after_complete_score_visible_from_date', ci_timezone)
+        (rule ->> 'after_complete_score_visible_from_date')::timestamptz
     FROM UNNEST(rules_data) AS rule
     WHERE (rule ->> 'target_type')::enum_assessment_access_control_target_type = 'none'
     ON CONFLICT (assessment_id, number, target_type) DO UPDATE SET
@@ -150,9 +144,9 @@ BEGIN
         (rule ->> 'uuid')::uuid,
         (rule ->> 'before_release_listed')::boolean,
         (rule ->> 'target_type')::enum_assessment_access_control_target_type,
-        input_date(rule ->> 'date_control_release_date', ci_timezone),
+        (rule ->> 'date_control_release_date')::timestamptz,
         (rule ->> 'date_control_due_overridden')::boolean,
-        input_date(rule ->> 'date_control_due_date', ci_timezone),
+        (rule ->> 'date_control_due_date')::timestamptz,
         (rule ->> 'date_control_due_credit')::integer,
         (rule ->> 'date_control_early_deadlines_overridden')::boolean,
         (rule ->> 'date_control_late_deadlines_overridden')::boolean,
@@ -164,10 +158,10 @@ BEGIN
         (rule ->> 'date_control_password')::text,
 
         (rule ->> 'after_complete_questions_hidden')::boolean,
-        input_date(rule ->> 'after_complete_questions_visible_from_date', ci_timezone),
-        input_date(rule ->> 'after_complete_questions_visible_until_date', ci_timezone),
+        (rule ->> 'after_complete_questions_visible_from_date')::timestamptz,
+        (rule ->> 'after_complete_questions_visible_until_date')::timestamptz,
         (rule ->> 'after_complete_score_hidden')::boolean,
-        input_date(rule ->> 'after_complete_score_visible_from_date', ci_timezone)
+        (rule ->> 'after_complete_score_visible_from_date')::timestamptz
     FROM UNNEST(rules_data) AS rule
     WHERE (rule ->> 'uuid') IS NOT NULL
     ON CONFLICT (assessment_id, uuid) WHERE uuid IS NOT NULL DO UPDATE SET
@@ -213,7 +207,7 @@ BEGIN
             (d ->> 0)::bigint AS assessment_id,
             (d ->> 1)::integer AS rule_number,
             (d ->> 2)::enum_assessment_access_control_target_type AS target_type,
-            input_date(d ->> 3, ci_timezone) AS date,
+            (d ->> 3)::timestamptz AS date,
             (d ->> 4)::integer AS credit
         FROM UNNEST(early_deadlines_data) AS d
     ) sub
@@ -233,7 +227,7 @@ BEGIN
             (d ->> 0)::bigint AS assessment_id,
             (d ->> 1)::integer AS rule_number,
             (d ->> 2)::enum_assessment_access_control_target_type AS target_type,
-            input_date(d ->> 3, ci_timezone) AS date,
+            (d ->> 3)::timestamptz AS date,
             (d ->> 4)::integer AS credit
         FROM UNNEST(late_deadlines_data) AS d
     ) sub
@@ -324,7 +318,7 @@ BEGIN
             WHERE (d ->> 0)::bigint = aacr.assessment_id
                 AND (d ->> 1)::integer = aacr.number
                 AND (d ->> 2)::enum_assessment_access_control_target_type = aacr.target_type
-                AND input_date(d ->> 3, ci_timezone) = aced.date
+                AND (d ->> 3)::timestamptz = aced.date
         );
 
     DELETE FROM assessment_access_control_late_deadlines acld
@@ -341,7 +335,7 @@ BEGIN
             WHERE (d ->> 0)::bigint = aacr.assessment_id
                 AND (d ->> 1)::integer = aacr.number
                 AND (d ->> 2)::enum_assessment_access_control_target_type = aacr.target_type
-                AND input_date(d ->> 3, ci_timezone) = acld.date
+                AND (d ->> 3)::timestamptz = acld.date
         );
 
     DELETE FROM assessment_access_control_prairietest_exams acpe

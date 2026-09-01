@@ -2,7 +2,6 @@ import { Hydrate } from '@prairielearn/react/server';
 
 import { type StaffInstitution } from '../../lib/client/safe-db-types.js';
 import { type NewsItem } from '../../lib/db-types.js';
-import { computeStatus } from '../../lib/publishing.js';
 
 import { HomeCards } from './components/HomeCards.js';
 import { NewsAlert } from './components/NewsAlert.js';
@@ -33,22 +32,6 @@ export function Home({
   blogUrl: string | null;
   now: Date;
 }) {
-  const listedStudentCourses = studentCourses.filter((ci) => {
-    if (ci.enrollment.status === 'joined') return true;
-    if (ci.enrollment.status === 'invited') {
-      if (!ci.course_instance.modern_publishing) {
-        return false;
-      }
-      return (
-        computeStatus(
-          ci.course_instance.publishing_start_date,
-          ci.course_instance.publishing_end_date,
-        ) === 'published'
-      );
-    }
-    return false;
-  });
-
   return (
     <div className="pt-5 mx-auto" style={{ maxWidth: 960 }}>
       <h1 className="visually-hidden">PrairieLearn Homepage</h1>
@@ -58,7 +41,7 @@ export function Home({
       <InstructorCoursesCard instructorCourses={instructorCourses} urlPrefix={urlPrefix} />
       <Hydrate>
         <HomeCards
-          studentCourses={listedStudentCourses}
+          studentCourses={studentCourses}
           hasInstructorCourses={instructorCourses.length > 0}
           canAddCourses={canAddCourses}
           csrfToken={csrfToken}
