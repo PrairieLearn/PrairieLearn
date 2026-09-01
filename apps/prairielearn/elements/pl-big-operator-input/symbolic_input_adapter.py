@@ -28,7 +28,7 @@ def _load_controller() -> ModuleType:
     return module
 
 
-CONTROLLER = _load_controller()
+pl_symbolic_input = _load_controller()
 
 
 def _render_data_view(data: dict[str, Any] | pl.QuestionData) -> dict[str, Any]:
@@ -63,7 +63,7 @@ def render(
     if score is not None:
         view["partial_scores"] = dict(view["partial_scores"])
         view["partial_scores"][name] = {"score": score}
-    config = CONTROLLER.RenderConfig(
+    config = pl_symbolic_input.RenderConfig(
         name=name,
         label=prefix,
         aria_label=aria_label,
@@ -71,7 +71,7 @@ def render(
         variables=list(variables),
         initial_value_variables=list(variables),
         custom_functions=list(custom_functions),
-        display=CONTROLLER.DisplayType.INLINE,
+        display=pl_symbolic_input.DisplayType.INLINE,
         allow_complex=allow_complex,
         imaginary_unit="i",
         allow_trig=True,
@@ -85,7 +85,7 @@ def render(
         formula_editor=True,
         initial_value=None,
     )
-    rendered = CONTROLLER.render_with_config(config, view)
+    rendered = pl_symbolic_input.render_with_config(config, view)
     # The formula-editor template does not apply its aria-label parameter to the
     # math-field, so bridge that accessibility gap in the adapter.
     rendered = rendered.replace(
