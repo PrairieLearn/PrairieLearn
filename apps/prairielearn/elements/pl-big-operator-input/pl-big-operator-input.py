@@ -368,9 +368,10 @@ def _infer_direction(raw: Any, operator: Operator) -> DirectionName | None:
         return None
 
     match raw:
-        case {"_type": "operator_expression"}:
-            direction = raw.get("direction")
-            return direction if direction in DIRECTION_SYMBOLS else None
+        case {"_type": "operator_expression", "direction": dir} if (
+            dir in DIRECTION_SYMBOLS
+        ):
+            return dir
 
         case {"_type": "sympy", "_value": str(source)}:
             return _infer_direction(source, operator)
@@ -383,8 +384,8 @@ def _infer_direction(raw: Any, operator: Operator) -> DirectionName | None:
                 case None:
                     return _decode_limit_direction(raw)
 
-                case _, limits if direction := _formatted_direction(limits):
-                    return DIRECTION_NAMES.get(direction)
+                case _, limits if dir := _formatted_direction(limits):
+                    return DIRECTION_NAMES.get(dir)
 
                 case _:
                     return None
