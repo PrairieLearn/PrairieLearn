@@ -358,16 +358,11 @@ def _infer_spec(
                 return operator, limits, index
             return None, None, None
 
-        case {"_type": "sympy"}:
-            try:
-                value = _decode(raw)
-            except Exception:
-                return None, None, None
-
-            for operator in ("sum", "product", "integral", "limit"):
-                if isinstance(value, OP_METADATA[operator].bounds_constructor):
-                    return operator, _binder_limits(value), _binder_index(value)
-            return None, None, None
+        case dict():
+            source = raw.get("_value")
+            return (
+                _infer_spec(source) if isinstance(source, str) else (None, None, None)
+            )
 
         case _:
             return None, None, None
@@ -389,7 +384,10 @@ def _infer_direction(raw: Any, operator: Operator) -> DirectionName | None:
             return direction if direction in DIRECTION_SYMBOLS else None
 
         case {"_type": "sympy"}:
-            return _decode_limit_direction(raw)
+            source = raw.get("_value")
+            return (
+                _infer_direction(source, operator) if isinstance(source, str) else None
+            )
 
         case str():
             formatted = _formatted_call(raw, _operator_fn_name(operator))
@@ -604,34 +602,27 @@ def _config(html: str, data: pl.QuestionData | None = None) -> RenderConfig:
     )
 
 
-def _decode(value: Any, variables: tuple[str, ...] = ()) -> sympy.Expr:
-    local_symbols = {name: sympy.Symbol(name) for name in variables}
-    locals = {
-        "_Exp1": sympy.E,
-        "_ImaginaryUnit": sympy.I,
-        **local_symbols,
-    }
+def _decode(value: Any) -> sympy.Expr:
     match value:
-        case {"_type": "sympy", "_value": str(source)}:
-            # Canonical leaves are trusted author answers. PrairieLearn's
-            # student-input parser cannot round-trip every value emitted by
-            # sympy_to_json: binder tuples look like intervals, and Boolean
-            # relations are rejected by its expression allowlist.
-            try:
-                return psu.json_to_sympy(value, allow_sets=True)
-            except Exception:
-                # TODO(parser-migration.md, upstream PSU canonical decoder): remove this trusted-author-only
-                # fallback when json_to_sympy round-trips binders and relations emitted
-                # by sympy_to_json. Student answers never enter _decode.
-                return sympy.sympify(source, locals=locals)
-
-        case str():
-            raise ValueError(
-                "Bare mathematical strings must use the PrairieLearn parser."
+        case {"_type": "sympy"}:
+            serialized_variables = value.get("_variables")
+            allow_complex = not (
+                isinstance(serialized_variables, list)
+                and any(name in {"i", "j"} for name in serialized_variables)
+            )
+            return psu.json_to_sympy(
+                cast(psu.SympyJson, value),
+                allow_sets=True,
+                allow_complex=allow_complex,
             )
 
-        case _:
+        case sympy.Expr():
             return value
+
+        case _:
+            raise TypeError(
+                "Mathematical values must be SymPy expressions or dictionaries."
+            )
 
 
 def _json(value: sympy.Basic) -> dict[str, Any]:
@@ -682,17 +673,9 @@ def _structured(config: RenderConfig, value: dict[str, Any]) -> dict[str, Any]:
         )
     if config.limits == "approach" and value["direction"] != config.direction:
         raise ValueError("Correct answer direction does not match limit-direction.")
-    if _decode(value["index"], (config.index,)) != sympy.Symbol(config.index):
+    if _decode(value["index"]) != sympy.Symbol(config.index):
         raise ValueError("Correct answer index does not match index-variable.")
-    values = {
-        key: _decode(
-            value[key],
-            tuple(dict.fromkeys((*config.variables, config.index)))
-            if key == "body"
-            else config.variables,
-        )
-        for key in config.components
-    }
+    values = {key: _decode(value[key]) for key in config.components}
     if not all(isinstance(item, sympy.Basic) for item in values.values()):
         raise ValueError(
             "Every mathematical component must be PrairieLearn SymPy JSON."
@@ -742,7 +725,7 @@ def _component_values(
                 ) from exc._src
         else:
             try:
-                parsed = _decode(raw, variables)
+                parsed = _decode(raw)
             except Exception as exc:
                 raise ValueError(
                     f'Decoding correct answer component "{component}" failed.'
@@ -927,7 +910,15 @@ def _correct(config: RenderConfig, data: pl.QuestionData) -> dict[str, Any] | No
         raise TypeError(
             f'Correct answer "{config.answer}" must be a matching formatted object or canonical structured dictionary.'
         )
-    value = _decode(raw, tuple(dict.fromkeys((*config.variables, config.index))))
+    if (
+        isinstance(raw, dict)
+        and raw.get("_type") == "sympy"
+        and isinstance(raw.get("_value"), str)
+    ):
+        converted = _formatted_answer(config, raw["_value"])
+        if converted is not None:
+            return converted
+    value = _decode(raw)
     converted = _binder(config, value)
     if converted is not None:
         return converted
@@ -1129,7 +1120,7 @@ def _question_mustache(config: RenderConfig, data: pl.QuestionData) -> str:
 def _tex(config: RenderConfig, raw: dict[str, Any] | None) -> str:
     raw = raw or {}
 
-    def get_comp(c: Component):
+    def get_comp(c: Component) -> Any:
         return raw.get(config.name(c), "?")
 
     index = sympy.latex(sympy.Symbol(config.index))
@@ -1340,12 +1331,7 @@ def _values(config: RenderConfig, structured: dict[str, Any]) -> dict[str, sympy
     return {
         key: cast(
             sympy.Basic,
-            _decode(
-                structured[key],
-                tuple(dict.fromkeys((*config.variables, config.index)))
-                if key == "body"
-                else config.variables,
-            ),
+            _decode(structured[key]),
         )
         for key in config.components
     }
