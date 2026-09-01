@@ -67,12 +67,13 @@ BLANK_VALUE_DEFAULT = "0"
 PLACEHOLDER_DEFAULT = "symbolic expression"
 SHOW_SCORE_DEFAULT = True
 INITIAL_VALUE_DEFAULT = None
-SYMBOLIC_INPUT_MUSTACHE_TEMPLATE_NAME = "pl-symbolic-input.mustache"
+# Do not use relative paths, it prevents importing this file and rendering properly
+SOURCE_DIR_PATH = pathlib.Path(__file__).resolve().parent
+SYMBOLIC_INPUT_MUSTACHE_TEMPLATE_PATH = SOURCE_DIR_PATH / "pl-symbolic-input.mustache"
+SCHEMA_PATH = SOURCE_DIR_PATH / "schemas" / "pl-symbolic-input.json"
 # This timeout is chosen to allow multiple sympy-based elements to grade on one page,
 # while not exceeding the global timeout enforced for Python execution.
 SYMPY_TIMEOUT = 3
-
-SCHEMA_PATH = pathlib.Path(__file__).parent / "schemas" / "pl-symbolic-input.json"
 
 
 def _get_variables_with_fallback(
@@ -335,8 +336,7 @@ def render_with_config(config: RenderConfig, data: pl.QuestionData) -> str:
         "allow_sets": config.allow_sets,
     }
 
-    with open(SYMBOLIC_INPUT_MUSTACHE_TEMPLATE_NAME, encoding="utf-8") as f:
-        template = f.read()
+    template = SYMBOLIC_INPUT_MUSTACHE_TEMPLATE_PATH.read_text(encoding="utf-8")
 
     info = chevron.render(template, info_params).strip()
 
