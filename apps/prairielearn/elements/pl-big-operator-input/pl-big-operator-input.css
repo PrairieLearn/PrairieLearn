@@ -55,7 +55,7 @@
   min-width: 1ch;
   padding: 0.25rem;
   color: var(--bs-danger);
-  font-family: ui-monospace, "SFMono-Regular", Menlo, Monaco, Consolas, monospace;
+  font-family: ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, monospace;
   text-align: center;
   background-image: none;
   appearance: none;
@@ -128,12 +128,12 @@
 
 .pl-big-operator-input__upper math-field,
 .pl-big-operator-input__lower math-field {
-  min-width: var(--pl-big-operator-input-limit-size);
+  min-width: var(--pl-big-operator-input-limit-size) !important;
   text-align: center;
 }
 
 .pl-big-operator-input__annotation math-field {
-  min-width: var(--pl-big-operator-input-limit-size);
+  min-width: var(--pl-big-operator-input-limit-size) !important;
 }
 
 /* Hidden formula-editor inputs make the visible math-field a non-first child. */
@@ -183,7 +183,7 @@
 .pl-big-operator-input__body math-field {
   border-top-left-radius: var(--bs-border-radius) !important;
   border-bottom-left-radius: var(--bs-border-radius) !important;
-  min-width: var(--pl-big-operator-input-body-size);
+  min-width: var(--pl-big-operator-input-body-size) !important;
 }
 
 .pl-big-operator-input__body .input-group > math-field:last-child {
