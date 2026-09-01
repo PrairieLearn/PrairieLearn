@@ -735,7 +735,7 @@ def _component_values(
         )
         if isinstance(raw, str):
             try:
-                parsed = _parse(raw, variables, config.custom_functions)
+                parsed = _unchecked_parse(raw, variables, config.custom_functions)
             except _ParseError as exc:
                 raise ValueError(
                     f'Parsing correct answer component "{component}" failed.'
@@ -840,7 +840,7 @@ def _formatted_answer(config: RenderConfig, source: str) -> dict[str, Any] | Non
             f"{expected_length}-item limits tuple."
         )
     try:
-        body = _parse(
+        body = _unchecked_parse(
             body_source,
             tuple(dict.fromkeys((*config.variables, config.index))),
             config.custom_functions,
@@ -867,24 +867,24 @@ def _formatted_answer(config: RenderConfig, source: str) -> dict[str, Any] | Non
                         "Correct answer direction does not match limit-direction."
                     )
                 values = {
-                    "target": _parse(
+                    "target": _unchecked_parse(
                         limits[1], config.variables, config.custom_functions
                     ),
                     "body": body,
                 }
             case "bounds":
                 values = {
-                    "lower": _parse(
+                    "lower": _unchecked_parse(
                         limits[1], config.variables, config.custom_functions
                     ),
-                    "upper": _parse(
+                    "upper": _unchecked_parse(
                         limits[2], config.variables, config.custom_functions
                     ),
                     "body": body,
                 }
             case "domain":
                 values = {
-                    "domain": _parse(
+                    "domain": _unchecked_parse(
                         limits[1], config.variables, config.custom_functions
                     ),
                     "body": body,
@@ -1206,7 +1206,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             return _render_mustache(context, template="submission")
 
 
-def _parse(
+def _unchecked_parse(
     source: str,
     variables: tuple[str, ...],
     custom_functions: tuple[str, ...] = (),

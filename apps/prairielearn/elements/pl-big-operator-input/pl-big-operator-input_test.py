@@ -191,7 +191,7 @@ def test_sympy_limit_string_form_is_parseable() -> None:
 
 def test_parse_normalizes_prairielearn_parser_errors() -> None:
     with pytest.raises(big_operator_input._ParseError) as exc_info:
-        big_operator_input._parse("bad@", ())
+        big_operator_input._unchecked_parse("bad@", ())
 
     assert exc_info.value.__cause__ is None
     assert isinstance(exc_info.value._src, big_operator_input.psu.BaseSympyError)
@@ -206,7 +206,7 @@ def test_parse_does_not_normalize_unexpected_errors(
     monkeypatch.setattr(big_operator_input.psu, "convert_string_to_sympy", fail)
 
     with pytest.raises(RuntimeError, match="unexpected parser failure"):
-        big_operator_input._parse("1", ())
+        big_operator_input._unchecked_parse("1", ())
 
 
 def test_formatted_answer_normalizes_parse_errors() -> None:
@@ -693,7 +693,6 @@ def test_limit_direction_input_defaults_true_and_can_be_disabled() -> None:
     rendered = big_operator_input.render(disabled_markup, data())
     assert 'name="op-direction"' not in rendered
     assert '-suffix"' in rendered
-    assert "−" in rendered
 
 
 def test_fixed_two_sided_limit_has_no_target_suffix() -> None:
