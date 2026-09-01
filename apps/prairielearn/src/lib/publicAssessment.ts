@@ -13,7 +13,7 @@ export async function setPublicAssessmentLocals(req: Request, res: Response) {
 
   if (
     !assessment?.share_source_publicly ||
-    assessment.course_instance_id !== res.locals.course_instance.id
+    assessment.course_instance_id !== res.locals.course_instance.id || assessment.deleted_at != null
   ) {
     throw new error.HttpStatusError(404, 'Not Found');
   }
