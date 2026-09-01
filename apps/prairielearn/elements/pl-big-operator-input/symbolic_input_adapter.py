@@ -13,19 +13,14 @@ if TYPE_CHECKING:
 
 HERE = Path(__file__).parent
 SOURCE_DIR = HERE.parent / "pl-symbolic-input"
-TEMPLATE_PATH = SOURCE_DIR / "pl-symbolic-input.mustache"
 
 
 def _load_controller() -> ModuleType:
     sys.path.insert(0, str(SOURCE_DIR))
     try:
-        module = importlib.import_module("pl-symbolic-input")
+        return importlib.import_module("pl-symbolic-input")
     finally:
         sys.path.remove(str(SOURCE_DIR))
-    # Element controllers normally run with their own directory as the working directory.
-    # This adapter invokes the controller from a different element, so use an absolute path.
-    module.SYMBOLIC_INPUT_MUSTACHE_TEMPLATE_NAME = str(TEMPLATE_PATH)  # type: ignore
-    return module
 
 
 pl_symbolic_input = _load_controller()
@@ -86,6 +81,7 @@ def render(
         initial_value=None,
     )
     rendered = pl_symbolic_input.render_with_config(config, view)
+    # TODO: make an issue
     # The formula-editor template does not apply its aria-label parameter to the
     # math-field, so bridge that accessibility gap in the adapter.
     rendered = rendered.replace(
@@ -93,5 +89,5 @@ def render(
     )
     if score is not None:
         # The wrapper's component badges are intentionally icon-only.
-        rendered = re.sub(r" \d+%</span>", "</span>", rendered)
+        rendered = re.sub(r" \d{1,3}%</span>", "</span>", rendered)
     return rendered
