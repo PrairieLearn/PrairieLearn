@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 ELEMENT_DIR = Path(__file__).parent
 CSS_PATH = ELEMENT_DIR / "pl-big-operator-input.css"
 README_PATH = ELEMENT_DIR / "README.md"
-SCHEMA_PATH = ELEMENT_DIR / "pl-big-operator-input.schema.json"
+SCHEMA_PATH = ELEMENT_DIR / "schemas" / "pl-big-operator-input.json"
 big_operator_input = importlib.import_module("pl-big-operator-input")
 
 
@@ -1699,6 +1699,22 @@ def test_component_grading_uses_equivalence_for_each_field() -> None:
     big_operator_input.grade(markup, state)
 
     assert state["partial_scores"]["op"] == {"score": 1.0, "weight": 1}
+
+
+def test_equivalent_grading_avoids_evaluating_structurally_equivalent_sums(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    k = sympy.Symbol("k")
+    expanded_body = sympy.expand((k + 1) ** 8)
+    submitted = sympy.Sum(expanded_body, (k, 1, 100))
+    correct = sympy.Sum((k + 1) ** 8, (k, 1, 100))
+
+    def unexpected_doit(self: sympy.Sum, **hints: Any) -> sympy.Basic:
+        raise AssertionError("equivalence should be established before calling doit()")
+
+    monkeypatch.setattr(sympy.Sum, "doit", unexpected_doit)
+
+    assert big_operator_input._expressions_equivalent(submitted, correct)
 
 
 def test_component_grading_shows_icon_only_badges_on_symbolic_inputs() -> None:
