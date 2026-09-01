@@ -1,29 +1,25 @@
 <div
   class="pl-big-operator-input flex-nowrap"
   aria-label="Big operator expression input"
-  style="--pl-big-operator-input-body-size: {{ body_size }}ch; --pl-big-operator-input-limit-size: {{ limit_size }}ch"
+  style="--pl-big-operator-input-body-size: {{body_size}}ch; --pl-big-operator-input-limit-size: {{limit_size}}ch"
 >
   {{#integral}}
     <div
       class="pl-big-operator-input__operator-stack pl-big-operator-input__operator-stack--integral"
     >
       <div class="pl-big-operator-input__operator" aria-hidden="true">
-        \(\displaystyle {{{ operator_latex }}}\)
+        \(\displaystyle {{{operator_latex}}}\)
       </div>
       <div class="pl-big-operator-input__limits">
         {{#bounds}}
-          <div class="pl-big-operator-input__lower">
-            {{#lower_field}}{{{ html }}}{{/lower_field}}
-          </div>
-          <div class="pl-big-operator-input__upper">
-            {{#upper_field}}{{{ html }}}{{/upper_field}}
-          </div>
+          <div class="pl-big-operator-input__lower">{{#lower_field}}{{{html}}}{{/lower_field}}</div>
+          <div class="pl-big-operator-input__upper">{{#upper_field}}{{{html}}}{{/upper_field}}</div>
         {{/bounds}}
         {{#domain}}
           <div class="pl-big-operator-input__domain-spacer" aria-hidden="true">
           </div>
           <div class="pl-big-operator-input__lower pl-big-operator-input__annotation">
-            {{#annotation_field}}{{{ html }}}{{/annotation_field}}
+            {{#annotation_field}}{{{html}}}{{/annotation_field}}
           </div>
         {{/domain}}
       </div>
@@ -34,44 +30,68 @@
       class="pl-big-operator-input__operator-stack{{#domain}} pl-big-operator-input__operator-stack--annotated{{/domain}}{{#approach}} pl-big-operator-input__operator-stack--annotated{{/approach}}"
     >
       {{#bounds}}
-        <div
-          class="pl-big-operator-input__upper pl-big-operator-input__range-upper-bound"
-        >
-          {{#upper_field}}{{{ html }}}{{/upper_field}}
+        <div class="pl-big-operator-input__upper pl-big-operator-input__range-upper-bound">
+          {{#upper_field}}{{{html}}}{{/upper_field}}
         </div>
       {{/bounds}}
       <div class="pl-big-operator-input__operator" aria-hidden="true">
-        \(\displaystyle {{{ operator_latex }}}\)
+        \(\displaystyle {{{operator_latex}}}\)
       </div>
       {{#bounds}}
-        <div class="pl-big-operator-input__lower">
-          {{#lower_field}}{{{ html }}}{{/lower_field}}
-        </div>
+        <div class="pl-big-operator-input__lower">{{#lower_field}}{{{html}}}{{/lower_field}}</div>
       {{/bounds}}
       {{#domain}}
         <div class="pl-big-operator-input__annotation">
-          {{#annotation_field}}{{{ html }}}{{/annotation_field}}
+          {{#annotation_field}}{{{html}}}{{/annotation_field}}
         </div>
       {{/domain}}
       {{#approach}}
         <div class="pl-big-operator-input__annotation">
-          {{#annotation_field}}{{{ html }}}{{/annotation_field}}
-          {{#direction_input}}{{> direction-select }}{{/direction_input}}
+          {{#annotation_field}}{{{html}}}{{/annotation_field}}
+          {{#direction_input}}
+            <div class="pl-big-operator-input__direction-input">
+              <label class="visually-hidden" for="{{name}}">Limit direction</label>
+              <select
+                class="form-select form-select-sm{{#invalid}} is-invalid{{/invalid}}"
+                id="{{name}}"
+                name="{{name}}"
+                aria-label="Limit direction"
+              >
+                <option value="">?</option>
+                {{#options}}
+                  <option value="{{value}}" {{#selected}} selected{{/selected}}>{{label}}</option>
+                {{/options}}
+              </select>
+              {{#feedback}}<span class="invalid-feedback d-block">{{feedback}}</span>{{/feedback}}
+              {{#score_badge}}
+                <span class="pl-big-operator-input__direction-score">
+                  {{#correct}}
+                    <span class="badge text-bg-success" aria-label="Correct">
+                      <i class="fas fa-check" aria-hidden="true"></i>
+                    </span>
+                  {{/correct}}
+                  {{#incorrect}}
+                    <span class="badge text-bg-danger" aria-label="Incorrect">
+                      <i class="fas fa-times" aria-hidden="true"></i>
+                    </span>
+                  {{/incorrect}}
+                </span>
+              {{/score_badge}}
+            </div>
+          {{/direction_input}}
         </div>
       {{/approach}}
     </div>
   {{/integral}}
   {{#body_field}}
     <div class="pl-big-operator-input__body">
-      <span class="visually-hidden">{{ label }}</span>{{{ html }}}
+      <span class="visually-hidden">{{label}}</span>{{{html}}}
     </div>
   {{/body_field}}
   {{#integral}}
-    <span class="pl-big-operator-input__differential">\(\mathrm d {{{ index_label }}}\)</span>
+    <span class="pl-big-operator-input__differential">\(\mathrm d {{{index_label}}}\)</span>
   {{/integral}}
   {{#score_badge}}
-    <span class="pl-big-operator-input__submission-score">
-      {{> score-badge }}
-    </span>
+    <span class="pl-big-operator-input__submission-score">{{>score-badge}}</span>
   {{/score_badge}}
 </div>

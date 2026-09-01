@@ -666,7 +666,7 @@ def test_limit_directions(direction: str, sympy_direction: str) -> None:
     tree = lxml.html.fragment_fromstring(rendered)
     options = tree.xpath('//select[@name="op-direction"]/option')
     select = tree.xpath('//select[@name="op-direction"]')[0]
-    assert [(option.get("value"), option.text) for option in options] == [
+    assert [(option.get("value"), option.text.strip()) for option in options] == [
         ("", "?"),
         ("two-sided", "±"),
         ("from-right", "+"),
