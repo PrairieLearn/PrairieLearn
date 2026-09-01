@@ -27,12 +27,7 @@
     "limits": {
       "description": "Layout of the operator limits. Auto infers the layout from a parseable whole correct answer when available, otherwise selects the built-in operator's default layout; custom operators without a whole answer require an explicit bounds, domain, or approach form.",
       "default": "auto",
-      "enum": [
-        "auto",
-        "bounds",
-        "domain",
-        "approach"
-      ]
+      "enum": ["auto", "bounds", "domain", "approach"]
     },
     "index-variable": {
       "description": "Bound variable used by the operator and automatically allowed in the body expression. When omitted, it must be inferable from a whole string or dictionary correct answer.",
@@ -49,11 +44,7 @@
     "limit-direction": {
       "description": "Direction from which the index variable approaches the target for a limit operator.",
       "default": "two-sided",
-      "enum": [
-        "two-sided",
-        "from-left",
-        "from-right"
-      ]
+      "enum": ["two-sided", "from-left", "from-right"]
     },
     "allow-limit-direction-input": {
       "description": "Whether students select the limit direction for approach limits. When false, the configured correct direction is displayed as fixed notation.",
@@ -63,12 +54,7 @@
     "allowed-blank": {
       "description": "Which portions of the response may be blank: none, limits, body, or all.",
       "default": "none",
-      "enum": [
-        "none",
-        "limits",
-        "body",
-        "all"
-      ]
+      "enum": ["none", "limits", "body", "all"]
     },
     "allow-complex": {
       "description": "Whether complex numbers and the imaginary unit are allowed in symbolic component inputs.",
@@ -93,11 +79,7 @@
     "grading-method": {
       "description": "How the response is graded: exact compares canonical structure, component grades visible fields separately, and equivalent checks symbolic equivalence.",
       "default": "equivalent",
-      "enum": [
-        "exact",
-        "component",
-        "equivalent"
-      ]
+      "enum": ["exact", "component", "equivalent"]
     },
     "body-relative-weight": {
       "description": "Weight of the body relative to each limit field, whose weight is 1, when using component grading.",
@@ -160,11 +142,7 @@
               ]
             },
             "limits": {
-              "enum": [
-                "auto",
-                "bounds",
-                "domain"
-              ]
+              "enum": ["auto", "bounds", "domain"]
             }
           },
           "required": ["operator"]
@@ -175,10 +153,7 @@
               "const": "limit"
             },
             "limits": {
-              "enum": [
-                "auto",
-                "approach"
-              ]
+              "enum": ["auto", "approach"]
             }
           },
           "required": ["operator"]
@@ -189,10 +164,7 @@
               "const": "custom"
             }
           },
-          "required": [
-            "operator",
-            "operator-latex"
-          ]
+          "required": ["operator", "operator-latex"]
         }
       ]
     },
@@ -202,38 +174,25 @@
           "not": {
             "anyOf": [
               {
-                "required": [
-                  "correct-answer-start"
-                ]
+                "required": ["correct-answer-start"]
               },
               {
-                "required": [
-                  "correct-answer-end"
-                ]
+                "required": ["correct-answer-end"]
               },
               {
-                "required": [
-                  "correct-answer-domain"
-                ]
+                "required": ["correct-answer-domain"]
               },
               {
-                "required": [
-                  "correct-answer-target"
-                ]
+                "required": ["correct-answer-target"]
               },
               {
-                "required": [
-                  "correct-answer-body"
-                ]
+                "required": ["correct-answer-body"]
               }
             ]
           }
         },
         {
-          "required": [
-            "operator",
-            "index-variable"
-          ]
+          "required": ["operator", "index-variable"]
         }
       ]
     }
