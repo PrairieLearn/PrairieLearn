@@ -60,7 +60,7 @@ WITH
       )
       AND (
         $filter_not_qids::text[] IS NULL
-        OR q.qid NOT ILIKE ANY ($filter_not_qids::text[])
+        OR q.qid NOT ILIKE ALL ($filter_not_qids::text[])
       )
       AND (
         $filter_users::text[] IS NULL
@@ -68,7 +68,7 @@ WITH
       )
       AND (
         $filter_not_users::text[] IS NULL
-        OR u.uid NOT ILIKE ANY ($filter_not_users::text[])
+        OR u.uid NOT ILIKE ALL ($filter_not_users::text[])
       )
       AND (
         $filter_assessments::text[] IS NULL
@@ -76,7 +76,8 @@ WITH
       )
       AND (
         $filter_not_assessments::text[] IS NULL
-        OR a.tid NOT ILIKE ANY ($filter_not_assessments::text[])
+        OR a.tid IS NULL
+        OR a.tid NOT ILIKE ALL ($filter_not_assessments::text[])
       )
       AND (
         $filter_course_instances::text[] IS NULL
@@ -84,7 +85,8 @@ WITH
       )
       AND (
         $filter_not_course_instances::text[] IS NULL
-        OR ci.short_name NOT ILIKE ANY ($filter_not_course_instances::text[])
+        OR ci.short_name IS NULL
+        OR ci.short_name NOT ILIKE ALL ($filter_not_course_instances::text[])
       )
       AND (
         -- We only filter by course instance if the user filter has been set,
