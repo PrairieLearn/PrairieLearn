@@ -2338,9 +2338,20 @@ class TestParserUnits:
         ],
     )
     def test_public_sympy_json_round_trip(self, value: sympy.Basic) -> None:
-        assert (
-            big_operator_input._decode(big_operator_input._json(value), ("x",)) == value
-        )
+        assert big_operator_input._decode(big_operator_input._json(value)) == value
+
+    def test_decode_accepts_sympy_expression(self) -> None:
+        value = sympy.Symbol("x") + 1
+
+        assert big_operator_input._decode(value) == value
+
+    @pytest.mark.parametrize("value", [None, 1, "x", [sympy.Symbol("x")]])
+    def test_decode_rejects_non_expression_values(self, value: Any) -> None:
+        with pytest.raises(
+            TypeError,
+            match="Mathematical values must be SymPy expressions or dictionaries",
+        ):
+            big_operator_input._decode(value)
 
 
 README_EXAMPLES = re.findall(
