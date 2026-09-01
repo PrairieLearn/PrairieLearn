@@ -68,6 +68,7 @@ WITH
       )
       AND (
         $filter_not_users::text[] IS NULL
+        OR u.uid IS NULL
         OR u.uid NOT ILIKE ALL ($filter_not_users::text[])
       )
       AND (

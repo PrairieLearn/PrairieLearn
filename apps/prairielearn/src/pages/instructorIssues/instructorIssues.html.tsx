@@ -334,7 +334,7 @@ function IssueRow({
               {formatDistance(issue.date, now, { addSuffix: true })}
             </span>
           )}{' '}
-          {issue.showUser && (
+          {issue.showUser && issue.user_id != null && (
             <>
               {issue.manually_reported ? 'by' : 'for'} {issue.user_name || '-'} (
               <a href={mailtoLink}>{issue.user_uid || '-'}</a>)
