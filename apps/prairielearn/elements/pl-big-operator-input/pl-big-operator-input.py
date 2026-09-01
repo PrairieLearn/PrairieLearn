@@ -1411,10 +1411,19 @@ def _expressions_equivalent(left: sympy.Basic, right: sympy.Basic) -> bool:
     try:
         if left == right:
             return True
-        left, right = left.doit(), right.doit()
+
+        difference = sympy.simplify(sympy.expand(left - right))  # type: ignore
+        if difference == 0 or difference.equals(0) is True:
+            return True
+
+        left = left.doit()
         if left == right:
             return True
-        difference = sympy.simplify(sympy.expand(cast(Any, left) - cast(Any, right)))
+        right = right.doit()
+        if left == right:
+            return True
+
+        difference = sympy.simplify(sympy.expand(left - right))  # type: ignore
         return difference == 0 or difference.equals(0) is True
     except (TypeError, ValueError, ZeroDivisionError):
         return False
