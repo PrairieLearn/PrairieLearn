@@ -663,7 +663,7 @@ def test_limit_directions(direction: str, sympy_direction: str) -> None:
     assert "Approach target" in rendered
     assert "Operator body" in rendered
     assert 'name="op-direction"' in rendered
-    tree = big_operator_input.lxml.html.fragment_fromstring(rendered)
+    tree = lxml.html.fragment_fromstring(rendered)
     options = tree.xpath('//select[@name="op-direction"]/option')
     select = tree.xpath('//select[@name="op-direction"]')[0]
     assert [(option.get("value"), option.text) for option in options] == [
@@ -714,7 +714,7 @@ def test_fixed_two_sided_limit_has_no_target_suffix() -> None:
 def test_limit_direction_input_schema_values_are_valid(value: str) -> None:
     markup = html(operator="limit", **{"allow-limit-direction-input": value})
     big_operator_input.pl.validate_element(
-        big_operator_input.lxml.html.fragment_fromstring(markup),
+        lxml.html.fragment_fromstring(markup),
         SCHEMA_PATH,
     )
     assert big_operator_input._config(markup).allow_direction_input is (value == "true")
@@ -742,14 +742,14 @@ def test_limit_direction_input_preserves_raw_selection() -> None:
     rendered = big_operator_input.render(
         html(operator="limit"), data(raw={"op-direction": "from-right"})
     )
-    tree = big_operator_input.lxml.html.fragment_fromstring(rendered)
+    tree = lxml.html.fragment_fromstring(rendered)
     selected = tree.xpath('//select[@name="op-direction"]/option[@selected]')
     assert [option.get("value") for option in selected] == ["from-right"]
 
 
 def test_limit_direction_input_two_sided_option_has_accessible_text() -> None:
     rendered = big_operator_input.render(html(operator="limit"), data())
-    tree = big_operator_input.lxml.html.fragment_fromstring(rendered)
+    tree = lxml.html.fragment_fromstring(rendered)
     options = tree.xpath('//select[@name="op-direction"]/option[@value="two-sided"]')
 
     assert len(options) == 1
@@ -797,7 +797,7 @@ def test_limit_direction_input_uses_binary_score_badge(
     big_operator_input.grade(markup, state)
 
     rendered = big_operator_input.render(markup, state)
-    tree = big_operator_input.lxml.html.fragment_fromstring(rendered)
+    tree = lxml.html.fragment_fromstring(rendered)
     badge = tree.xpath(
         '//span[contains(@class, "pl-big-operator-input__direction-score")]/span'
     )[0]
@@ -1353,7 +1353,7 @@ def test_custom_functions_are_used_to_parse_component_correct_answers() -> None:
     state = data()
 
     big_operator_input.pl.validate_element(
-        big_operator_input.lxml.html.fragment_fromstring(markup),
+        lxml.html.fragment_fromstring(markup),
         SCHEMA_PATH,
     )
     big_operator_input.prepare(markup, state)
@@ -1440,7 +1440,7 @@ def test_initial_latex_is_stored_outside_math_fields() -> None:
         }
     )
 
-    document = big_operator_input.lxml.html.fragment_fromstring(
+    document = lxml.html.fragment_fromstring(
         big_operator_input.render(html(operator="union"), state)
     )
 
@@ -1591,7 +1591,7 @@ def test_allowed_types_are_forwarded_to_rendered_symbolic_inputs(
 def test_symbolic_input_width_schema_accepts_integers(attribute: str) -> None:
     markup = html(operator="sum", **{attribute: "12"})
     big_operator_input.pl.validate_element(
-        big_operator_input.lxml.html.fragment_fromstring(markup),
+        lxml.html.fragment_fromstring(markup),
         SCHEMA_PATH,
     )
 
@@ -1601,7 +1601,7 @@ def test_symbolic_input_width_schema_rejects_non_integers(attribute: str) -> Non
     markup = html(operator="sum", **{attribute: "wide"})
     with pytest.raises(ValueError):
         big_operator_input.pl.validate_element(
-            big_operator_input.lxml.html.fragment_fromstring(markup),
+            lxml.html.fragment_fromstring(markup),
             SCHEMA_PATH,
         )
 
@@ -1627,7 +1627,7 @@ def test_body_help_text_can_be_disabled() -> None:
 
     assert 'title="Symbolic"' not in rendered
 
-    document = big_operator_input.lxml.html.fragment_fromstring(rendered)
+    document = lxml.html.fragment_fromstring(rendered)
     body = document.get_element_by_id("symbolic-input-op-body")
     assert body.getnext() is None
 
@@ -2048,7 +2048,7 @@ def test_schema_accepts_implied_custom_operator() -> None:
     )
 
     big_operator_input.pl.validate_element(
-        big_operator_input.lxml.html.fragment_fromstring(markup),
+        lxml.html.fragment_fromstring(markup),
         SCHEMA_PATH,
     )
 
@@ -2077,7 +2077,7 @@ def test_schema_accepts_implied_custom_operator() -> None:
 def test_schema_rejects_statically_invalid_configurations(markup: str) -> None:
     with pytest.raises(ValueError):
         big_operator_input.pl.validate_element(
-            big_operator_input.lxml.html.fragment_fromstring(markup),
+            lxml.html.fragment_fromstring(markup),
             SCHEMA_PATH,
         )
 
@@ -2360,11 +2360,11 @@ class TestReadmeExamples:
     ) -> None:
         elements = [
             fragment
-            for fragment in big_operator_input.lxml.html.fragments_fromstring(example)
+            for fragment in lxml.html.fragments_fromstring(example)
             if getattr(fragment, "tag", None) == "pl-big-operator-input"
         ]
         assert len(elements) == 1
-        markup = big_operator_input.lxml.html.tostring(elements[0], encoding="unicode")
+        markup = lxml.html.tostring(elements[0], encoding="unicode")  # type: ignore
         state = {
             "params": {},
             "correct_answers": {},
