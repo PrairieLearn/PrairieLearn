@@ -336,33 +336,25 @@ def _infer_spec(
                         )
                     case _:
                         return operator, None, index
-            try:
-                value = _decode(raw)
-            except Exception:
-                return operator, None, None
-            return operator, _binder_limits(value), _binder_index(value)
+            if value := _safe_decode(raw):
+                return operator, _binder_limits(value), _binder_index(value)
+            return operator, None, None
 
-        case {"_type": "operator_expression"}:
-            operator = raw.get("operator")
-            limits = raw.get("limits")
-            try:
-                index = _symbol_name(_decode(raw.get("index")))
-            except Exception:
-                index = None
-            if (
-                raw.get("_version") == 1
-                and (operator == "custom" or operator in OP_METADATA)
-                and limits in COMPONENTS_MAP
-                and index is not None
-            ):
-                return operator, limits, index
-            return None, None, None
+        case {
+            "_version": 1,
+            "_type": "operator_expression",
+            "operator": operator,
+            "limits": limits,
+            "index": index_var,
+        } if (
+            (index := _symbol_name(_safe_decode(index_var)))
+            and (operator == "custom" or operator in OP_METADATA)
+            and limits in COMPONENTS_MAP
+        ):
+            return operator, limits, index
 
-        case dict():
-            source = raw.get("_value")
-            return (
-                _infer_spec(source) if isinstance(source, str) else (None, None, None)
-            )
+        case {"_type": "sympy", "_value": str(source)}:
+            return _infer_spec(source)
 
         case _:
             return None, None, None
@@ -370,12 +362,9 @@ def _infer_spec(
 
 def _infer_direction(raw: Any, operator: Operator) -> DirectionName | None:
     def _decode_limit_direction(raw: dict | str) -> DirectionName | None:
-        try:
-            value = _decode(raw)
-        except Exception:
-            return None
-        if isinstance(value, sympy.Limit):
-            return DIRECTION_NAMES.get(str(value.args[3]))  # type: ignore
+        if (value := _safe_decode(raw)) is not None:  # ruff: ignore[collapsible-if]
+            if isinstance(value, sympy.Limit):
+                return DIRECTION_NAMES.get(str(value.args[3]))  # type: ignore
         return None
 
     match raw:
@@ -383,11 +372,8 @@ def _infer_direction(raw: Any, operator: Operator) -> DirectionName | None:
             direction = raw.get("direction")
             return direction if direction in DIRECTION_SYMBOLS else None
 
-        case {"_type": "sympy"}:
-            source = raw.get("_value")
-            return (
-                _infer_direction(source, operator) if isinstance(source, str) else None
-            )
+        case {"_type": "sympy", "_value": str(source)}:
+            return _infer_direction(source, operator)
 
         case str():
             formatted = _formatted_call(raw, _operator_fn_name(operator))
@@ -623,6 +609,13 @@ def _decode(value: Any) -> sympy.Expr:
             raise TypeError(
                 "Mathematical values must be SymPy expressions or dictionaries."
             )
+
+
+def _safe_decode(value: Any) -> sympy.Expr | None:
+    try:
+        return _decode(value)
+    except (TypeError, ValueError):
+        return None
 
 
 def _json(value: sympy.Basic) -> dict[str, Any]:

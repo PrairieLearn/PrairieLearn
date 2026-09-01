@@ -244,6 +244,22 @@ def test_infers_operator_from_sympy_json(operator: str, correct: sympy.Basic) ->
     )
 
 
+@pytest.mark.parametrize(
+    "correct",
+    [
+        {"_value": "Sum(k, (k, 1, 4))"},
+        {"_type": "not-sympy", "_value": "Sum(k, (k, 1, 4))"},
+        {"_type": "sympy"},
+        {"_type": "sympy", "_value": None},
+        {"_type": "sympy", "_value": 1},
+    ],
+)
+def test_does_not_infer_from_invalid_sympy_json_like_dictionary(
+    correct: dict[str, object],
+) -> None:
+    assert big_operator_input._infer_spec(correct) == (None, None, None)
+
+
 def test_infers_operator_from_canonical_dictionary() -> None:
     state = data(canonical())
     big_operator_input.prepare(html(**{"index-variable": None}), state)
