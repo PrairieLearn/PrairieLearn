@@ -58,8 +58,8 @@ interface TestIssueData {
   studentMessage: string;
   manuallyReported: boolean;
   open: boolean;
-  /** Which course instance (if any) the issue's variant should be associated with. */
-  courseInstance?: 'sp15' | 'public';
+  /** Which course instance (if any) the issue should be associated with. */
+  courseInstance?: 'Sp15' | 'public';
 }
 
 const BASE_TEST_ISSUES: TestIssueData[] = [
@@ -98,7 +98,7 @@ const BASE_TEST_ISSUES: TestIssueData[] = [
     studentMessage: 'Issue 6: addNumbers in Sp15 course instance',
     manuallyReported: true,
     open: true,
-    courseInstance: 'sp15',
+    courseInstance: 'Sp15',
   },
   {
     qid: 'addVectors',
@@ -111,12 +111,10 @@ const BASE_TEST_ISSUES: TestIssueData[] = [
 
 async function createTestIssues({
   courseId,
-  sp15CourseInstanceId,
-  publicCourseInstanceId,
+  courseInstanceIdMap,
 }: {
   courseId: string;
-  sp15CourseInstanceId: string;
-  publicCourseInstanceId: string;
+  courseInstanceIdMap: Record<NonNullable<TestIssueData['courseInstance']>, string>;
 }) {
   const user = await getOrCreateUser(TEST_USER);
 
@@ -126,11 +124,6 @@ async function createTestIssues({
   const questionMap: Record<string, { id: string }> = {
     addNumbers: addNumbersQuestion,
     addVectors: addVectorsQuestion,
-  };
-
-  const courseInstanceIdMap: Record<'sp15' | 'public', string> = {
-    sp15: sp15CourseInstanceId,
-    public: publicCourseInstanceId,
   };
 
   for (const issueData of BASE_TEST_ISSUES) {
@@ -181,8 +174,7 @@ test.describe('Instructor issues page', () => {
 
     await createTestIssues({
       courseId: courseInstance.course_id,
-      sp15CourseInstanceId: courseInstance.id,
-      publicCourseInstanceId: publicCourseInstance.id,
+      courseInstanceIdMap: { Sp15: courseInstance.id, public: publicCourseInstance.id },
     });
   });
 
