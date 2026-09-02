@@ -14,9 +14,13 @@ does not contact Cloudflare or a model provider.
 
 To exercise the Worker locally, set `courseAgentRuntime` to `cloudflare`, configure
 `courseAgentCapabilitySecret`, and run `pnpm dev-course-agent-worker`. The script uses Wrangler's
-local simulation and local state. Do not run `wrangler deploy` as part of local testing. The model
-credential is held by the Worker and inserted only by its outbound Anthropic handler; the sandbox
-receives the placeholder value `proxy-injected`.
+local simulation and local state. Before starting it, create an untracked
+`apps/course-agent-worker/.dev.vars` file containing `COURSE_AGENT_CAPABILITY_SECRET`,
+`ANTHROPIC_API_KEY`, and `COURSE_AGENT_GITHUB_PAT`. The capability secret must match
+`courseAgentCapabilitySecret` in PrairieLearn. `courseAgentGithubToken` does not populate the Worker
+secret; configure the same read-only GitHub token separately as `COURSE_AGENT_GITHUB_PAT`. Do not run
+`wrangler deploy` as part of local testing. The model credential is held by the Worker and inserted
+only by its outbound Anthropic handler; the sandbox receives the placeholder value `proxy-injected`.
 
 The GitHub PAT is also held by the Worker. The sandbox uses `proxy-read`, and the Worker replaces it
 only for `git-upload-pack` requests to the exact repository configured for that sandbox. Receive-pack,

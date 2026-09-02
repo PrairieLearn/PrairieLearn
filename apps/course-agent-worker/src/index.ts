@@ -34,6 +34,7 @@ interface ConversationState {
   response: string | null;
   error: string | null;
   events: CourseAgentEvent[];
+  checkout?: Pick<CourseAgentStartRunRequest['course'], 'repository' | 'branch'>;
 }
 
 export { ContainerProxy };
@@ -159,6 +160,16 @@ export class CourseAgentCoordinator {
       if (current?.activeRunId) {
         return Response.json({ error: 'A run is already active' }, { status: 409 });
       }
+      if (
+        current?.checkout &&
+        (current.checkout.repository !== body.course.repository ||
+          current.checkout.branch !== body.course.branch)
+      ) {
+        return Response.json(
+          { error: 'Sandbox checkout does not match the authorized repository and branch' },
+          { status: 409 },
+        );
+      }
       const next: ConversationState = {
         identity: capability,
         activeRunId: body.runId,
@@ -166,6 +177,10 @@ export class CourseAgentCoordinator {
         response: null,
         error: null,
         events: current?.events ?? [],
+        checkout: current?.checkout ?? {
+          repository: body.course.repository,
+          branch: body.course.branch,
+        },
       };
       await this.state.storage.put('conversation', next);
       this.state.waitUntil(this.run(body));
@@ -253,6 +268,39 @@ export class CourseAgentCoordinator {
           repository,
           branch: request.course.branch,
           sha,
+        });
+      } else {
+        const [origin, branch, head] = await Promise.all([
+          sandbox.exec('git remote get-url origin', { cwd: coursePath }),
+          sandbox.exec('git branch --show-current', { cwd: coursePath }),
+          sandbox.exec('git rev-parse HEAD', { cwd: coursePath }),
+        ]);
+        if (!origin.success || !branch.success || !head.success) {
+          throw new Error('Could not inspect the existing course checkout');
+        }
+        if (
+          origin.stdout.trim() !== githubReadUrl(request.course.repository) ||
+          branch.stdout.trim() !== request.course.branch
+        ) {
+          throw new Error('Existing course checkout does not match the authorized repository');
+        }
+        const sha = head.stdout.trim();
+        if (request.course.expectedSha && sha !== request.course.expectedSha) {
+          const containsExpectedRevision = await sandbox.exec(
+            `git merge-base --is-ancestor ${shellQuote(request.course.expectedSha)} HEAD`,
+            { cwd: coursePath },
+          );
+          if (!containsExpectedRevision.success) {
+            throw new Error(
+              `Existing course checkout does not contain PrairieLearn's expected revision ${request.course.expectedSha}; start a new conversation to use the updated course repository`,
+            );
+          }
+        }
+        await this.append('git.clone.completed', {
+          repository,
+          branch: request.course.branch,
+          sha,
+          reused: true,
         });
       }
       const gitConfig = await sandbox.exec(

@@ -73,6 +73,7 @@ export async function startEphemeralCourseAgentRun({
       promptDigest: promptDigest(prompt),
       repository: course.repository,
       branch: course.branch,
+      expectedSha: course.expectedSha,
       expiresAt: expiresAt(),
     },
     capabilitySecret(),
