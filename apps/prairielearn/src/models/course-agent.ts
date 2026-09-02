@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 import type {
   CourseAgentEvent,
-  CourseAgentPushApproval,
+  CourseAgentPushApproval as CourseAgentPushApprovalRequest,
   CourseAgentSnapshot,
 } from '@prairielearn/course-agent-protocol';
 import {
@@ -19,7 +19,7 @@ import {
   CourseAgentConversationSchema,
   CourseAgentEventSchema,
   CourseAgentMessageSchema,
-  CourseAgentPushApprovalRowSchema,
+  CourseAgentPushApprovalSchema,
   CourseAgentRunSchema,
   CourseAgentRunUsageSchema,
   CourseAgentWorkspaceBackupSchema,
@@ -189,7 +189,7 @@ export async function selectCourseAgentHistory(conversationId: string) {
     queryOptionalRow(
       sql.select_pending_push_approval,
       { conversation_id: conversationId },
-      CourseAgentPushApprovalRowSchema,
+      CourseAgentPushApprovalSchema,
     ),
   ]);
   return { messages, events, backup, pendingApproval };
@@ -216,7 +216,7 @@ export function upsertCourseAgentPushApproval({
   userId,
   repository,
 }: {
-  approval: CourseAgentPushApproval;
+  approval: CourseAgentPushApprovalRequest;
   conversationId: string;
   runId: string;
   courseId: string;
@@ -238,7 +238,7 @@ export function upsertCourseAgentPushApproval({
       diff_summary: approval.diffSummary,
       diff: approval.diff,
     },
-    CourseAgentPushApprovalRowSchema,
+    CourseAgentPushApprovalSchema,
   );
 }
 
@@ -254,7 +254,7 @@ export function selectOptionalCourseAgentPushApproval({
   return queryOptionalRow(
     sql.select_push_approval,
     { approval_id: approvalId, course_id: courseId, user_id: userId },
-    CourseAgentPushApprovalRowSchema,
+    CourseAgentPushApprovalSchema,
   );
 }
 
@@ -280,6 +280,6 @@ export function updateCourseAgentPushApproval({
       decided_by: decidedBy,
       result: result ? JSON.stringify(result) : null,
     },
-    CourseAgentPushApprovalRowSchema,
+    CourseAgentPushApprovalSchema,
   );
 }
