@@ -7,8 +7,10 @@ import {
   queryOptionalRow,
   queryOptionalScalar,
   queryRows,
+  queryScalars,
   runInTransactionAsync,
 } from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
 import {
   type CourseInstancePermission,
@@ -22,6 +24,7 @@ import {
   type User,
   UserSchema,
 } from '../lib/db-types.js';
+import { runWithSharedEnrollmentBarrier } from '../lib/enrollment/barrier.js';
 
 import { selectOrInsertUserByUid } from './user.js';
 
@@ -118,10 +121,25 @@ export async function deleteCoursePermissions({
   user_id: string | string[];
   authn_user_id: string;
 }): Promise<void> {
-  await execute(sql.delete_course_permissions, {
-    course_id,
-    user_ids: Array.isArray(user_id) ? user_id : [user_id],
-    authn_user_id,
+  await runInTransactionAsync(async () => {
+    const courseInstanceIds = await queryScalars(
+      sql.select_course_instance_ids_for_course,
+      { course_id },
+      IdSchema,
+    );
+
+    // The delete intentionally rechecks all instances in the course instead of
+    // filtering to this snapshot. A concurrently created instance can therefore
+    // have an enrollment deleted without its barrier, but filtering would leave
+    // stale enrollment after course permission removal. We accept that narrow
+    // race rather than add a course-wide creation mutex.
+    await runWithSharedEnrollmentBarrier(courseInstanceIds, async () => {
+      await execute(sql.delete_course_permissions, {
+        course_id,
+        user_ids: Array.isArray(user_id) ? user_id : [user_id],
+        authn_user_id,
+      });
+    });
   });
 }
 

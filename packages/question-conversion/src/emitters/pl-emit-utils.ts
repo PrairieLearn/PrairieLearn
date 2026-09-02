@@ -12,33 +12,13 @@ export function deduplicateChoices<T extends { html: string; correct: boolean }>
   return [...seen.values()];
 }
 
-/**
- * Append lines to a grade() body that push global correct/incorrect feedback onto `_messages`.
- * Both branches are independent — a question can show both if it somehow satisfies both.
- */
-export function appendGlobalFeedback(
-  lines: string[],
-  correct: string | undefined,
-  incorrect: string | undefined,
-): void {
-  if (correct && incorrect) {
-    lines.push(
-      '    if data["score"] >= 1.0:',
-      `        _messages.append(${JSON.stringify(correct)})`,
-      '    else:',
-      `        _messages.append(${JSON.stringify(incorrect)})`,
-    );
-  } else if (correct) {
-    lines.push(
-      '    if data["score"] >= 1.0:',
-      `        _messages.append(${JSON.stringify(correct)})`,
-    );
-  } else if (incorrect) {
-    lines.push(
-      '    if data["score"] < 1.0:',
-      `        _messages.append(${JSON.stringify(incorrect)})`,
-    );
-  }
+/** Escape Mustache delimiters so imported content remains literal during template rendering. */
+export function escapeMustacheDelimiters(html: string): string {
+  return html
+    .replaceAll('{{{', '&#123;&#123;&#123;')
+    .replaceAll('}}}', '&#125;&#125;&#125;')
+    .replaceAll('{{', '&#123;&#123;')
+    .replaceAll('}}', '&#125;&#125;');
 }
 
 /**
