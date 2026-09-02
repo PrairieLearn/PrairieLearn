@@ -500,7 +500,7 @@ describe('chunks', () => {
       const newHash = (await execa('git', ['rev-parse', 'HEAD'], { cwd: courseDir })).stdout;
       const { stdout: nameStatus } = await execa(
         'git',
-        ['diff', '--name-status', oldHash, newHash],
+        ['diff', '--name-status', '--find-renames=100%', oldHash, newHash],
         { cwd: courseDir },
       );
       assert.equal(nameStatus, 'R100\tquestions/addNumbers/helper.py\tserverFilesCourse/helper.py');
