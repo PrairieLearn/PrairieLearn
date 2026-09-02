@@ -7,10 +7,6 @@ apt-get update
 apt-get -y install graphviz graphviz-dev
 
 # Install all Python dependencies.
-# Disable binary wheels for pygraphviz to avoid issues with bundled Graphviz/font stack
-export PIP_NO_BINARY="pygraphviz"
-export CFLAGS="-I/usr/include/graphviz"
-export LDFLAGS="-L/usr/lib/graphviz"
 pip3 install -r /requirements.txt
 
 # Clear various caches to minimize the final image size.
