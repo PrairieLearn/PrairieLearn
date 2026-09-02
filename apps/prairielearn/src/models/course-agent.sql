@@ -71,6 +71,14 @@ VALUES
 RETURNING
   *;
 
+-- BLOCK create_run_usage
+INSERT INTO
+  course_agent_run_usages (run_id)
+VALUES
+  ($run_id)
+RETURNING
+  *;
+
 -- BLOCK persist_event
 INSERT INTO
   course_agent_events (
@@ -108,6 +116,100 @@ SET
 WHERE
   id = $run_id
   AND status = 'running';
+
+-- BLOCK upsert_run_usage
+INSERT INTO
+  course_agent_run_usages (
+    run_id,
+    provider,
+    model,
+    input_tokens,
+    cache_read_tokens,
+    cache_write_tokens,
+    output_tokens,
+    reasoning_tokens,
+    normalized_total_tokens,
+    provider_cost_milli_dollars,
+    estimated_cost_milli_dollars,
+    finalized_at
+  )
+VALUES
+  (
+    $run_id,
+    $provider,
+    $model,
+    $input_tokens,
+    $cache_read_tokens,
+    $cache_write_tokens,
+    $output_tokens,
+    $reasoning_tokens,
+    $normalized_total_tokens,
+    $provider_cost_milli_dollars,
+    $estimated_cost_milli_dollars,
+    $finalized_at
+  )
+ON CONFLICT (run_id) DO UPDATE
+SET
+  provider = EXCLUDED.provider,
+  model = EXCLUDED.model,
+  input_tokens = GREATEST(
+    course_agent_run_usages.input_tokens,
+    EXCLUDED.input_tokens
+  ),
+  cache_read_tokens = GREATEST(
+    course_agent_run_usages.cache_read_tokens,
+    EXCLUDED.cache_read_tokens
+  ),
+  cache_write_tokens = GREATEST(
+    course_agent_run_usages.cache_write_tokens,
+    EXCLUDED.cache_write_tokens
+  ),
+  output_tokens = GREATEST(
+    course_agent_run_usages.output_tokens,
+    EXCLUDED.output_tokens
+  ),
+  reasoning_tokens = CASE
+    WHEN EXCLUDED.reasoning_tokens IS NULL THEN course_agent_run_usages.reasoning_tokens
+    ELSE GREATEST(
+      COALESCE(course_agent_run_usages.reasoning_tokens, 0),
+      EXCLUDED.reasoning_tokens
+    )
+  END,
+  normalized_total_tokens = GREATEST(
+    course_agent_run_usages.normalized_total_tokens,
+    EXCLUDED.normalized_total_tokens
+  ),
+  provider_cost_milli_dollars = CASE
+    WHEN EXCLUDED.provider_cost_milli_dollars IS NULL THEN course_agent_run_usages.provider_cost_milli_dollars
+    ELSE GREATEST(
+      COALESCE(
+        course_agent_run_usages.provider_cost_milli_dollars,
+        0
+      ),
+      EXCLUDED.provider_cost_milli_dollars
+    )
+  END,
+  estimated_cost_milli_dollars = GREATEST(
+    course_agent_run_usages.estimated_cost_milli_dollars,
+    EXCLUDED.estimated_cost_milli_dollars
+  ),
+  finalized_at = COALESCE(
+    course_agent_run_usages.finalized_at,
+    EXCLUDED.finalized_at
+  ),
+  updated_at = NOW()
+RETURNING
+  *;
+
+-- BLOCK select_conversation_usage
+SELECT
+  COALESCE(SUM(u.normalized_total_tokens), 0)::BIGINT AS normalized_total_tokens,
+  COALESCE(SUM(u.estimated_cost_milli_dollars), 0)::BIGINT AS estimated_cost_milli_dollars
+FROM
+  course_agent_runs AS r
+  JOIN course_agent_run_usages AS u ON (u.run_id = r.id)
+WHERE
+  r.conversation_id = $conversation_id;
 
 -- BLOCK insert_assistant_message
 INSERT INTO

@@ -12,12 +12,14 @@ import {
   CourseAgentSnapshotRequestSchema,
   type CourseAgentStartRunRequest,
   CourseAgentStartRunRequestSchema,
+  type CourseAgentUsage,
   type CourseAgentWorkspaceBackup,
 } from '@prairielearn/course-agent-protocol';
 
 import { authorizeRun, authorizeSnapshot } from './auth.js';
 import { githubReadUrl, githubRepositoryPath, proxyCourseGithubRead } from './github.js';
 import { proxyAnthropicRequest } from './provider.js';
+import { type UsageRates, emptyUsage, finalizeUsage, updateUsageFromEvent } from './usage.js';
 
 interface Env {
   Sandbox: DurableObjectNamespace<Sandbox>;
@@ -30,6 +32,11 @@ interface Env {
   COURSE_AGENT_IDLE_TIMEOUT_SECONDS: string;
   COURSE_AGENT_BACKUP_TTL_SECONDS: string;
   COURSE_AGENT_LOCAL_DEVELOPMENT: string;
+  COURSE_AGENT_INPUT_MILLIDOLLARS_PER_MILLION: string;
+  COURSE_AGENT_CACHE_READ_MILLIDOLLARS_PER_MILLION: string;
+  COURSE_AGENT_CACHE_WRITE_MILLIDOLLARS_PER_MILLION: string;
+  COURSE_AGENT_OUTPUT_MILLIDOLLARS_PER_MILLION: string;
+  COURSE_AGENT_REASONING_MILLIDOLLARS_PER_MILLION: string;
   CLOUDFLARE_ACCOUNT_ID?: string;
   R2_ACCESS_KEY_ID?: string;
   R2_SECRET_ACCESS_KEY?: string;
@@ -50,6 +57,7 @@ interface ConversationState {
   workspaceBackup: CourseAgentWorkspaceBackup | null;
   course: CourseAgentStartRunRequest['course'];
   pendingApproval: CourseAgentPushApproval | null;
+  usage: CourseAgentUsage;
 }
 
 export { ContainerProxy };
@@ -202,6 +210,7 @@ export class CourseAgentCoordinator {
         workspaceBackup: current?.workspaceBackup ?? body.workspaceBackup,
         course: body.course,
         pendingApproval: current?.pendingApproval ?? null,
+        usage: emptyUsage(this.env.ANTHROPIC_MODEL),
       };
       await this.state.storage.put('conversation', next);
       this.state.waitUntil(this.run(body));
@@ -229,6 +238,7 @@ export class CourseAgentCoordinator {
           current.pendingApproval?.status === 'publishing'
             ? current.pendingApproval
             : null,
+        usage: current.usage,
       });
     }
     if (request.method === 'POST' && url.pathname === '/push-sync') {
@@ -429,6 +439,7 @@ export class CourseAgentCoordinator {
 
       let buffer = '';
       let eventChain = Promise.resolve();
+      const rates = this.usageRates();
       const command = [
         'claude --print --verbose --output-format stream-json',
         `--model ${shellQuote(this.env.ANTHROPIC_MODEL)}`,
@@ -454,6 +465,7 @@ export class CourseAgentCoordinator {
           for (const line of lines) {
             const event = parseLine(line);
             if (!event) continue;
+            eventChain = eventChain.then(() => this.recordUsage(event, rates));
             for (const toolEvent of toolEvents(event)) {
               eventChain = eventChain.then(() =>
                 this.append(toolEvent.type, { ...toolEvent.data }),
@@ -464,6 +476,7 @@ export class CourseAgentCoordinator {
       });
       await eventChain;
       if (!claude.success) throw new Error(claude.stderr || 'Agent process failed');
+      await this.finalizeRunUsage();
       const response = finalResponse(claude.stdout);
       await this.append('agent.completed', { response });
       await this.update({
@@ -477,6 +490,7 @@ export class CourseAgentCoordinator {
       );
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
+      await this.finalizeRunUsage();
       await this.append('run.failed', { message });
       await this.update({ activeRunId: null, status: 'failed', response: null, error: message });
     }
@@ -485,6 +499,39 @@ export class CourseAgentCoordinator {
   private async update(update: Partial<ConversationState>) {
     const current = await this.state.storage.get<ConversationState>('conversation');
     if (current) await this.state.storage.put('conversation', { ...current, ...update });
+  }
+
+  private usageRates(): UsageRates {
+    return {
+      input: Number(this.env.COURSE_AGENT_INPUT_MILLIDOLLARS_PER_MILLION),
+      cacheRead: Number(this.env.COURSE_AGENT_CACHE_READ_MILLIDOLLARS_PER_MILLION),
+      cacheWrite: Number(this.env.COURSE_AGENT_CACHE_WRITE_MILLIDOLLARS_PER_MILLION),
+      output: Number(this.env.COURSE_AGENT_OUTPUT_MILLIDOLLARS_PER_MILLION),
+      reasoning: Number(this.env.COURSE_AGENT_REASONING_MILLIDOLLARS_PER_MILLION),
+    };
+  }
+
+  private async recordUsage(event: Record<string, unknown>, rates: UsageRates) {
+    const current = await this.state.storage.get<ConversationState>('conversation');
+    if (!current) return;
+    const usage = updateUsageFromEvent(current.usage, event, rates);
+    if (JSON.stringify(usage) === JSON.stringify(current.usage)) return;
+    await this.update({ usage });
+    await this.append('usage.updated', {
+      normalizedTotalTokens: usage.normalizedTotalTokens,
+      estimatedCostMilliDollars: usage.estimatedCostMilliDollars,
+    });
+  }
+
+  private async finalizeRunUsage() {
+    const current = await this.state.storage.get<ConversationState>('conversation');
+    if (!current || current.usage.finalizedAt) return;
+    const usage = finalizeUsage(current.usage);
+    await this.update({ usage });
+    await this.append('usage.finalized', {
+      normalizedTotalTokens: usage.normalizedTotalTokens,
+      estimatedCostMilliDollars: usage.estimatedCostMilliDollars,
+    });
   }
 }
 

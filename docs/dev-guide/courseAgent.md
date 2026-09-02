@@ -3,8 +3,7 @@
 The course agent is experimental and guarded by the `course-agent` feature flag. The first MVP
 layer provides a temporary `/workspace`, a single Claude Code harness, live activity events, and a
 minimal instructor panel. The repository layer resolves the course's configured repository and
-branch, shallow-clones it into `/workspace/course`, and configures an identity for local commits. It
-does not track usage.
+branch, shallow-clones it into `/workspace/course`, and configures an identity for local commits.
 
 Conversation metadata, turns, messages, and normalized runtime events are persisted in PostgreSQL.
 The instructor panel lists those conversations so a browser refresh can reopen one. After ten idle
@@ -45,3 +44,17 @@ PrairieLearn never enables `git-receive-pack` or gives a push credential to the 
 Wrangler uses its local R2 simulation by default. Production R2 access requires a dedicated bucket
 and narrowly scoped R2 credentials supplied to the Worker; local tests do not create or pay for
 Cloudflare resources.
+
+## Usage accounting and guardrails
+
+Each run has a one-to-one PostgreSQL usage record. Worker snapshots report cumulative provider,
+model, token, provider-cost, and estimated-cost fields; PostgreSQL updates them with monotonic
+maximums so repeated snapshots do not double count. Completed and failed runs finalize the record,
+including a zero-usage record when the provider fails before reporting tokens. The instructor panel
+shows the active-run and conversation totals.
+
+`courseAgentUsageLimits` configures a rolling window and optional per-user, per-course, and global
+milli-dollar limits. Null limits are disabled, which keeps the fake runtime and local development
+independent of Redis by default. When configured, Redis holds only rolling guardrail counters;
+PostgreSQL remains the durable accounting source of truth. New turns fail with a clear message if a
+configured counter reaches its limit or the required Redis check cannot be completed.

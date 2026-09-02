@@ -617,6 +617,20 @@ export const ConfigSchema = z.object({
   courseAgentAnthropicApiKey: z.string().nullable().default(null),
   /** Dedicated GitHub token used only by the Worker's fixed read-only upload-pack broker. */
   courseAgentGithubToken: z.string().nullable().default(null),
+  /** Rolling closed-beta guardrails. Null disables a scope. Values are milli-dollars. */
+  courseAgentUsageLimits: z
+    .object({
+      windowSeconds: z.number().int().positive(),
+      perUserMilliDollars: z.number().int().positive().nullable(),
+      perCourseMilliDollars: z.number().int().positive().nullable(),
+      globalMilliDollars: z.number().int().positive().nullable(),
+    })
+    .default({
+      windowSeconds: 3600,
+      perUserMilliDollars: null,
+      perCourseMilliDollars: null,
+      globalMilliDollars: null,
+    }),
   /**
    * The hourly spending rate limit for AI grading, in US dollars.
    * This is applied per course instance.

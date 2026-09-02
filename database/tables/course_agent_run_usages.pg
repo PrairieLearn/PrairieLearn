@@ -1,0 +1,30 @@
+columns
+    cache_read_tokens: bigint not null default 0
+    cache_write_tokens: bigint not null default 0
+    estimated_cost_milli_dollars: bigint not null default 0
+    finalized_at: timestamp with time zone
+    input_tokens: bigint not null default 0
+    model: text not null default 'pending'::text
+    normalized_total_tokens: bigint not null default 0
+    output_tokens: bigint not null default 0
+    provider: text not null default 'pending'::text
+    provider_cost_milli_dollars: bigint
+    reasoning_tokens: bigint
+    run_id: uuid not null
+    updated_at: timestamp with time zone not null default now()
+
+indexes
+    course_agent_run_usages_pkey: PRIMARY KEY (run_id) USING btree (run_id)
+
+check constraints
+    course_agent_run_usages_cache_read_tokens_check: CHECK (cache_read_tokens >= 0)
+    course_agent_run_usages_cache_write_tokens_check: CHECK (cache_write_tokens >= 0)
+    course_agent_run_usages_estimated_cost_milli_dollars_check: CHECK (estimated_cost_milli_dollars >= 0)
+    course_agent_run_usages_input_tokens_check: CHECK (input_tokens >= 0)
+    course_agent_run_usages_normalized_total_tokens_check: CHECK (normalized_total_tokens >= 0)
+    course_agent_run_usages_output_tokens_check: CHECK (output_tokens >= 0)
+    course_agent_run_usages_provider_cost_milli_dollars_check: CHECK (provider_cost_milli_dollars >= 0)
+    course_agent_run_usages_reasoning_tokens_check: CHECK (reasoning_tokens >= 0)
+
+foreign-key constraints
+    course_agent_run_usages_run_id_fkey: FOREIGN KEY (run_id) REFERENCES course_agent_runs(id) ON UPDATE CASCADE ON DELETE CASCADE

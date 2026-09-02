@@ -4,6 +4,7 @@ import { Alert, Button, Form, Offcanvas, Spinner } from 'react-bootstrap';
 
 import { QueryClientProviderDebug } from '@prairielearn/trpc/react';
 
+import { formatMilliDollars } from '../../lib/ai-grading-credits.js';
 import { createCourseTrpcClient } from '../../trpc/course/client.js';
 import { TRPCProvider, useTRPC } from '../../trpc/course/context.js';
 
@@ -83,6 +84,17 @@ function CourseAgentPanelInner({ courseShortName }: { courseShortName: string })
               {message.content}
             </Alert>
           ))}
+          {snapshot.data && (
+            <div className="small text-muted border rounded p-2">
+              Active run: {snapshot.data.usage.normalizedTotalTokens.toLocaleString()} tokens ·{' '}
+              {formatMilliDollars(snapshot.data.usage.estimatedCostMilliDollars)} estimated
+              <br />
+              Conversation:{' '}
+              {snapshot.data.conversationUsage.normalized_total_tokens.toLocaleString()} tokens ·{' '}
+              {formatMilliDollars(snapshot.data.conversationUsage.estimated_cost_milli_dollars)}{' '}
+              estimated
+            </div>
+          )}
           {snapshot.data?.error && <Alert variant="danger">{snapshot.data.error}</Alert>}
           {start.error && <Alert variant="danger">{start.error.message}</Alert>}
           {approval.error && <Alert variant="danger">{approval.error.message}</Alert>}

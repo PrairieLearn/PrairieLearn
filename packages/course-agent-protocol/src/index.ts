@@ -27,6 +27,8 @@ export const CourseAgentEventTypeSchema = z.enum([
   'git.push.approval.denied',
   'git.push.completed',
   'sync.completed',
+  'usage.updated',
+  'usage.finalized',
 ]);
 export type CourseAgentEventType = z.infer<typeof CourseAgentEventTypeSchema>;
 
@@ -73,6 +75,21 @@ export const CourseAgentWorkspaceBackupSchema = z.object({
   expiresAt: z.iso.datetime(),
 });
 export type CourseAgentWorkspaceBackup = z.infer<typeof CourseAgentWorkspaceBackupSchema>;
+
+export const CourseAgentUsageSchema = z.object({
+  provider: z.string(),
+  model: z.string(),
+  inputTokens: z.number().int().nonnegative(),
+  cacheReadTokens: z.number().int().nonnegative(),
+  cacheWriteTokens: z.number().int().nonnegative(),
+  outputTokens: z.number().int().nonnegative(),
+  reasoningTokens: z.number().int().nonnegative().nullable(),
+  normalizedTotalTokens: z.number().int().nonnegative(),
+  providerCostMilliDollars: z.number().int().nonnegative().nullable(),
+  estimatedCostMilliDollars: z.number().int().nonnegative(),
+  finalizedAt: z.iso.datetime().nullable(),
+});
+export type CourseAgentUsage = z.infer<typeof CourseAgentUsageSchema>;
 
 export const CourseAgentPushPayloadSchema = z.object({
   baseSha: z.string().regex(/^[0-9a-f]{40}$/),
@@ -142,6 +159,7 @@ export const CourseAgentSnapshotSchema = z.object({
   events: z.array(CourseAgentEventSchema),
   workspaceBackup: CourseAgentWorkspaceBackupSchema.nullable().default(null),
   pendingApproval: CourseAgentPushApprovalSchema.nullable().default(null),
+  usage: CourseAgentUsageSchema,
 });
 export type CourseAgentSnapshot = z.infer<typeof CourseAgentSnapshotSchema>;
 

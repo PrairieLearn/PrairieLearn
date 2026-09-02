@@ -37,6 +37,22 @@ CREATE UNIQUE INDEX course_agent_runs_one_active_per_conversation_idx ON course_
 WHERE
   status = 'running';
 
+CREATE TABLE course_agent_run_usages (
+  run_id UUID PRIMARY KEY REFERENCES course_agent_runs (id) ON UPDATE CASCADE ON DELETE CASCADE,
+  provider TEXT NOT NULL DEFAULT 'pending',
+  model TEXT NOT NULL DEFAULT 'pending',
+  input_tokens BIGINT NOT NULL DEFAULT 0 CHECK (input_tokens >= 0),
+  cache_read_tokens BIGINT NOT NULL DEFAULT 0 CHECK (cache_read_tokens >= 0),
+  cache_write_tokens BIGINT NOT NULL DEFAULT 0 CHECK (cache_write_tokens >= 0),
+  output_tokens BIGINT NOT NULL DEFAULT 0 CHECK (output_tokens >= 0),
+  reasoning_tokens BIGINT CHECK (reasoning_tokens >= 0),
+  normalized_total_tokens BIGINT NOT NULL DEFAULT 0 CHECK (normalized_total_tokens >= 0),
+  provider_cost_milli_dollars BIGINT CHECK (provider_cost_milli_dollars >= 0),
+  estimated_cost_milli_dollars BIGINT NOT NULL DEFAULT 0 CHECK (estimated_cost_milli_dollars >= 0),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  finalized_at TIMESTAMPTZ
+);
+
 CREATE TABLE course_agent_messages (
   id BIGSERIAL PRIMARY KEY,
   conversation_id UUID NOT NULL REFERENCES course_agent_conversations (id) ON UPDATE CASCADE ON DELETE CASCADE,

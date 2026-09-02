@@ -23,6 +23,19 @@ describe('course-agent protocol', () => {
         response: 'Done',
         error: null,
         events: [],
+        usage: {
+          provider: 'fake',
+          model: 'fake',
+          inputTokens: 1,
+          cacheReadTokens: 0,
+          cacheWriteTokens: 0,
+          outputTokens: 1,
+          reasoningTokens: null,
+          normalizedTotalTokens: 2,
+          providerCostMilliDollars: null,
+          estimatedCostMilliDollars: 1,
+          finalizedAt: '2026-09-01T00:00:00.000Z',
+        },
       }).status,
     ).toBe('waiting_for_user');
   });
