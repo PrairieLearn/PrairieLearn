@@ -987,6 +987,25 @@ wheels = [
 ]
 
 [[package]]
+name = "pillow-heif"
+version = "1.6.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pillow" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/6e/15/f29791ccff3b99e0e040b84642774662b498e4cb9f031c2dca1545c04a15/pillow_heif-1.6.0.tar.gz", hash = "sha256:5fb08da332fc44521611b646a3aa2f3455c14556c968a23723b76ec2ce8ade21", size = 17116904, upload-time = "2026-08-31T13:00:27.801Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/a2/9d/53b59a17ec61f2036ee3552545f3e9f50c603468ea52b22df583408fdd67/pillow_heif-1.6.0-cp313-cp313-macosx_10_15_x86_64.whl", hash = "sha256:9a710ae1f4a95df50fe2d75ed24833cf6dffe498b41db0a0787d431d3114bd6f", size = 4750774, upload-time = "2026-08-31T12:59:08.86Z" },
+    { url = "https://files.pythonhosted.org/packages/72/4d/ce958d9b3e732d61511b2e8e6b68de73a42a9f2a790d7a8fa344776a31ba/pillow_heif-1.6.0-cp313-cp313-macosx_11_0_arm64.whl", hash = "sha256:c3379e03122986e8b1a0a5830c0831dc2fc57a5055b88dbd4dec326830d4c18f", size = 4272448, upload-time = "2026-08-31T12:59:10.41Z" },
+    { url = "https://files.pythonhosted.org/packages/aa/81/daa5ac9f3c447d8d39305fa5c33a5291d03766d0f9093290e196a947de23/pillow_heif-1.6.0-cp313-cp313-manylinux_2_26_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:b8f50007dc92e7027ac6decdf99a7960010343b39e9ff0a7e07cc1e995820455", size = 6357525, upload-time = "2026-08-31T12:59:12.062Z" },
+    { url = "https://files.pythonhosted.org/packages/1e/a9/1745661800c7bbfaea25f1c24e7c7f0785b1fbe517b083b295aeb2a5df57/pillow_heif-1.6.0-cp313-cp313-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:1629b5d5aaf484d5901297be024228abf8182c671e6c31dbbadf280faf1115c2", size = 5611198, upload-time = "2026-08-31T12:59:13.874Z" },
+    { url = "https://files.pythonhosted.org/packages/3c/6b/b30fd80beeb9c740872178a5ba687fb32e88d7d7c9be7b19d90043b472b0/pillow_heif-1.6.0-cp313-cp313-musllinux_1_2_aarch64.whl", hash = "sha256:fea53c682c99d21c252b03e5a8ff4ffb9f7a6c63a11addeecd0a0dc26c3b2fee", size = 7384815, upload-time = "2026-08-31T12:59:16.148Z" },
+    { url = "https://files.pythonhosted.org/packages/db/87/57e5b8513b646a477492a918894c2f115cb7093e8e0a636524d7383d6560/pillow_heif-1.6.0-cp313-cp313-musllinux_1_2_x86_64.whl", hash = "sha256:52c40715f36fa99fdd825f5207b3c531e49e0b5cc5884ee63a9f9ea8e46e4d05", size = 6643208, upload-time = "2026-08-31T12:59:18.176Z" },
+    { url = "https://files.pythonhosted.org/packages/ef/36/9761aa4e64a289ad183e5d9e91b1325c94f56486ded15c3f52fc04624f4c/pillow_heif-1.6.0-cp313-cp313-win_amd64.whl", hash = "sha256:ed1e176cb73d245f58a2134129e8673023aefba89ff566fd65467048e4390ad5", size = 6576609, upload-time = "2026-08-31T12:59:19.916Z" },
+    { url = "https://files.pythonhosted.org/packages/c0/ed/50628cc0340c13a3af4e9288cab3e0046f2968167a4dbf183ac31d859229/pillow_heif-1.6.0-cp313-cp313-win_arm64.whl", hash = "sha256:d3f57ad5c0c8f35c6d72edec55316fa8d832c1657428a92c9ef29c5e3a39b1a0", size = 3841784, upload-time = "2026-08-31T12:59:21.436Z" },
+]
+
+[[package]]
 name = "pint"
 version = "0.25.3"
 source = { registry = "https://pypi.org/simple" }
@@ -1039,6 +1058,7 @@ dependencies = [
     { name = "openpyxl" },
     { name = "pandas" },
     { name = "pillow" },
+    { name = "pillow-heif" },
     { name = "pint" },
     { name = "psutil" },
     { name = "pulp" },
@@ -1111,6 +1131,7 @@ requires-dist = [
     { name = "openpyxl", specifier = "==3.1.5" },
     { name = "pandas", specifier = "==2.3.3" },
     { name = "pillow", specifier = "==12.3.0" },
+    { name = "pillow-heif", specifier = "==1.6.0" },
     { name = "pint", specifier = "==0.25.3" },
     { name = "psutil", specifier = "==7.2.2" },
     { name = "pulp", specifier = "==3.3.2" },

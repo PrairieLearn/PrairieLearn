@@ -9,6 +9,11 @@ const MAX_ZOOM_SCALE = 5;
 /** Maximum side length for the captured image */
 const MAX_IMAGE_SIDE_LENGTH = 2000;
 
+const MANUAL_UPLOAD_MIME_TYPES = new Set(['image/jpeg', 'image/png', 'image/heic', 'image/heif']);
+const MANUAL_UPLOAD_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.heic', '.heif']);
+const HEIC_MIME_TYPES = new Set(['image/heic', 'image/heif']);
+const HEIC_EXTENSIONS = new Set(['.heic', '.heif']);
+
 (() => {
   class PLImageCapture {
     constructor(uuid) {
@@ -150,21 +155,134 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
         });
       }
 
-      manualUploadInput.addEventListener('change', (event) => {
+      manualUploadInput.addEventListener('change', async (event) => {
         const target = event.target;
         const file = target.files && target.files[0];
         if (!file) return;
 
-        const reader = new FileReader();
+        this.setManualUploadMessage();
 
-        reader.onload = () => {
-          this.loadCapturePreviewFromDataUrl({
-            dataUrl: reader.result,
+        if (!this.isSupportedManualUploadFile(file)) {
+          this.setManualUploadMessage(
+            'This file format is not supported. Upload a JPEG, PNG, HEIC, or HEIF image.',
+            'danger',
+          );
+          target.value = '';
+          return;
+        }
+
+        let dataUrl;
+        try {
+          dataUrl = await this.readFileAsDataUrl(file);
+        } catch {
+          this.setManualUploadMessage(
+            'The selected file could not be read. Try choosing it again or exporting it as a JPEG or PNG image.',
+            'danger',
+          );
+          target.value = '';
+          return;
+        }
+
+        target.value = '';
+
+        try {
+          const normalizedDataUrl = await this.normalizeImageDataUrl(dataUrl, {
+            forceJpeg: this.isHeicFile(file),
           });
-        };
+          await this.loadCapturePreviewFromDataUrl({
+            dataUrl: normalizedDataUrl,
+          });
+        } catch {
+          if (this.isHeicFile(file)) {
+            this.loadUnpreviewableHeicForSubmission(dataUrl);
+            return;
+          }
 
+          this.setManualUploadMessage(
+            'The selected file is not a valid image. Try exporting it as a JPEG or PNG image.',
+            'danger',
+          );
+        }
+      });
+    }
+
+    getFileExtension(file) {
+      const extensionStart = file.name.lastIndexOf('.');
+      return extensionStart === -1 ? '' : file.name.slice(extensionStart).toLowerCase();
+    }
+
+    isSupportedManualUploadFile(file) {
+      return (
+        MANUAL_UPLOAD_MIME_TYPES.has(file.type.toLowerCase()) ||
+        MANUAL_UPLOAD_EXTENSIONS.has(this.getFileExtension(file))
+      );
+    }
+
+    isHeicFile(file) {
+      return (
+        HEIC_MIME_TYPES.has(file.type.toLowerCase()) ||
+        HEIC_EXTENSIONS.has(this.getFileExtension(file))
+      );
+    }
+
+    readFileAsDataUrl(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.addEventListener('load', () => {
+          if (typeof reader.result === 'string') {
+            resolve(reader.result);
+          } else {
+            reject(new Error('FileReader did not return a data URL'));
+          }
+        });
+        reader.addEventListener('error', () => reject(reader.error));
         reader.readAsDataURL(file);
       });
+    }
+
+    setManualUploadMessage(message, variant = 'danger') {
+      const messageContainer = this.imageCaptureDiv.querySelector('.js-manual-upload-message');
+
+      if (!messageContainer) return;
+
+      messageContainer.classList.remove('alert-danger', 'alert-warning');
+      messageContainer.classList.toggle('d-none', !message);
+      messageContainer.textContent = message ?? '';
+
+      if (message) {
+        messageContainer.classList.add(`alert-${variant}`);
+      }
+    }
+
+    loadUnpreviewableHeicForSubmission(dataUrl) {
+      const hiddenCaptureInput = this.imageCaptureDiv.querySelector('.js-hidden-capture-input');
+      const uploadedImageContainer = this.imageCaptureDiv.querySelector(
+        '.js-uploaded-image-container',
+      );
+
+      this.ensureElementsExist({
+        hiddenCaptureInput,
+        uploadedImageContainer,
+      });
+
+      if (!hiddenCaptureInput.value) {
+        this.updateCaptureButtons(true);
+      }
+      hiddenCaptureInput.value = dataUrl;
+      uploadedImageContainer.innerHTML = this.createJsImagePlaceholderDivHtml(`
+        <span class="small text-muted text-center px-2">
+          HEIC image selected
+          <br/>
+          Preview unavailable in this browser
+        </span>
+      `);
+      this.originalImageCaptureDataUrl = null;
+      this.setShowCropRotateButton(false);
+      this.setShowDeletionButton(true);
+      this.setManualUploadMessage(
+        'This browser cannot preview the HEIC image, but PrairieLearn will convert it when you submit your answer.',
+        'warning',
+      );
     }
 
     createLocalCameraCaptureListeners() {
@@ -626,6 +744,44 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
       }
     }
 
+    async normalizeImageDataUrl(dataUrl, { forceJpeg = false } = {}) {
+      const image = new Image();
+      image.src = dataUrl;
+
+      try {
+        await image.decode();
+      } catch (error) {
+        throw new Error('Failed to decode image', { cause: error });
+      }
+
+      const imageScaleFactor = Math.min(
+        1,
+        MAX_IMAGE_SIDE_LENGTH / Math.max(image.width, image.height),
+      );
+      if (imageScaleFactor === 1 && !forceJpeg) {
+        return dataUrl;
+      }
+
+      const targetWidth = Math.round(image.width * imageScaleFactor);
+      const targetHeight = Math.round(image.height * imageScaleFactor);
+
+      if (!this.resizingCanvas) {
+        this.resizingCanvas = document.createElement('canvas');
+      }
+      if (!this.resizingCtx) {
+        this.resizingCtx = this.resizingCanvas.getContext('2d');
+        if (!this.resizingCtx) {
+          throw new Error('Failed to get canvas context');
+        }
+      }
+
+      this.resizingCanvas.width = targetWidth;
+      this.resizingCanvas.height = targetHeight;
+      this.resizingCtx.drawImage(image, 0, 0, targetWidth, targetHeight);
+
+      return this.resizingCanvas.toDataURL('image/jpeg');
+    }
+
     async setHiddenCaptureInputValue(dataUrl) {
       const hiddenCaptureInput = this.imageCaptureDiv.querySelector('.js-hidden-capture-input');
 
@@ -640,42 +796,7 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
       }
 
       if (dataUrl) {
-        // Perform scaling to ensure that captured images are not too large.
-        // The scale factor ensures that the width and height of the image do not exceed 2000px.
-        // If the image width and height are both less than 2000px, no scaling is applied.
-        const image = new Image();
-        image.src = dataUrl;
-
-        try {
-          await image.decode();
-        } catch (error) {
-          throw new Error('Failed to decode image', { cause: error });
-        }
-
-        const imageScaleFactor = MAX_IMAGE_SIDE_LENGTH / Math.max(image.width, image.height);
-        if (imageScaleFactor >= 1) {
-          // If we don't need to shrink the image, just use it directly.
-          hiddenCaptureInput.value = dataUrl;
-          return;
-        }
-        const targetWidth = Math.round(image.width * imageScaleFactor);
-        const targetHeight = Math.round(image.height * imageScaleFactor);
-
-        if (!this.resizingCanvas) {
-          this.resizingCanvas = document.createElement('canvas');
-        }
-        if (!this.resizingCtx) {
-          this.resizingCtx = this.resizingCanvas.getContext('2d');
-          if (!this.resizingCtx) {
-            throw new Error('Failed to get canvas context');
-          }
-        }
-
-        this.resizingCanvas.width = targetWidth;
-        this.resizingCanvas.height = targetHeight;
-        this.resizingCtx.drawImage(image, 0, 0, targetWidth, targetHeight);
-
-        hiddenCaptureInput.value = this.resizingCanvas.toDataURL('image/jpeg');
+        hiddenCaptureInput.value = await this.normalizeImageDataUrl(dataUrl);
       } else {
         hiddenCaptureInput.value = '';
       }
@@ -731,7 +852,7 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
       await this.setHiddenCaptureInputValue(capturePreviewImg ? capturePreviewImg.src : '');
     }
 
-    loadCapturePreviewFromDataUrl({ dataUrl, originalCapture = true }) {
+    async loadCapturePreviewFromDataUrl({ dataUrl, originalCapture = true }) {
       const uploadedImageContainer = this.imageCaptureDiv.querySelector(
         '.js-uploaded-image-container',
       );
@@ -739,6 +860,8 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
       this.ensureElementsExist({
         uploadedImageContainer,
       });
+
+      this.setManualUploadMessage();
 
       const capturePreview = document.createElement('img');
       capturePreview.className = 'pl-image-capture-preview img-fluid bg-body-secondary w-100';
@@ -884,7 +1007,7 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
       }
 
       if (this.editable) {
-        this.setHiddenCaptureInputValue(dataUrl);
+        await this.setHiddenCaptureInputValue(dataUrl);
 
         if (originalCapture) {
           if (dataUrl) {
