@@ -31,7 +31,7 @@ export const QuestionsPageDataSchema = QuestionSchema.pick({
   // The public questions query does not select these columns, so they must be optional.
   sync_errors: QuestionSchema.shape.sync_errors.optional(),
   sync_warnings: QuestionSchema.shape.sync_warnings.optional(),
-  // The queries coalesce null to false.
+  // The queries coalesce null to false. These columns are formally nullable in the schema but never null in practice.
   single_variant: z.boolean(),
   partial_credit: z.boolean(),
   // True if the question defines a non-empty `preferences` schema.
