@@ -17,6 +17,11 @@ export const CourseAgentEventTypeSchema = z.enum([
   'tool.failed',
   'agent.completed',
   'run.failed',
+  'workspace.backup.started',
+  'workspace.backup.completed',
+  'workspace.restore.started',
+  'workspace.restore.completed',
+  'sandbox.destroyed',
 ]);
 export type CourseAgentEventType = z.infer<typeof CourseAgentEventTypeSchema>;
 
@@ -32,6 +37,7 @@ export const CourseAgentRuntimeStatusSchema = z.enum([
   'starting',
   'running',
   'waiting_for_user',
+  'offline',
   'failed',
 ]);
 export type CourseAgentRuntimeStatus = z.infer<typeof CourseAgentRuntimeStatusSchema>;
@@ -52,6 +58,16 @@ export const CourseAgentRepositorySchema = z.object({
     .nullable(),
 });
 export type CourseAgentRepository = z.infer<typeof CourseAgentRepositorySchema>;
+
+export const CourseAgentWorkspaceBackupSchema = z.object({
+  handle: z.object({
+    id: z.string(),
+    dir: z.string(),
+    localBucket: z.boolean().optional(),
+  }),
+  expiresAt: z.iso.datetime(),
+});
+export type CourseAgentWorkspaceBackup = z.infer<typeof CourseAgentWorkspaceBackupSchema>;
 
 export const CourseAgentRunCapabilitySchema = CourseAgentIdentitySchema.extend({
   type: z.literal('course-agent-run'),
@@ -76,6 +92,7 @@ export const CourseAgentStartRunRequestSchema = z.object({
   sandboxId: z.string().min(1).max(120),
   prompt: z.string().trim().min(1).max(20_000),
   course: CourseAgentRepositorySchema,
+  workspaceBackup: CourseAgentWorkspaceBackupSchema.nullable().default(null),
 });
 export type CourseAgentStartRunRequest = z.infer<typeof CourseAgentStartRunRequestSchema>;
 
@@ -102,6 +119,7 @@ export const CourseAgentSnapshotSchema = z.object({
   response: z.string().nullable(),
   error: z.string().nullable(),
   events: z.array(CourseAgentEventSchema),
+  workspaceBackup: CourseAgentWorkspaceBackupSchema.nullable().default(null),
 });
 export type CourseAgentSnapshot = z.infer<typeof CourseAgentSnapshotSchema>;
 

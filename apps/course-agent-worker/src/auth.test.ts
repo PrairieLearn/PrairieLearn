@@ -54,6 +54,7 @@ async function makeRequest(): Promise<CourseAgentStartRunRequest> {
       branch: capability.branch,
       expectedSha: null,
     },
+    workspaceBackup: null,
   };
 }
 

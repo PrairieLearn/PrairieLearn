@@ -9,15 +9,28 @@
   },
   "vars": {
     "ANTHROPIC_MODEL": "sonnet",
-    "COURSE_AGENT_MAX_BUDGET_USD": "0.25"
+    "COURSE_AGENT_MAX_BUDGET_USD": "0.25",
+    "COURSE_AGENT_IDLE_TIMEOUT_SECONDS": "600",
+    "COURSE_AGENT_BACKUP_TTL_SECONDS": "604800",
+    "COURSE_AGENT_LOCAL_DEVELOPMENT": "true",
+    "BACKUP_BUCKET_NAME": "prairielearn-course-agent-workspaces"
   },
   "secrets": {
     "required": [
       "ANTHROPIC_API_KEY",
       "COURSE_AGENT_CAPABILITY_SECRET",
-      "COURSE_AGENT_GITHUB_PAT"
+      "COURSE_AGENT_GITHUB_PAT",
+      "R2_ACCESS_KEY_ID",
+      "R2_SECRET_ACCESS_KEY"
     ]
   },
+  "r2_buckets": [
+    {
+      "binding": "BACKUP_BUCKET",
+      "bucket_name": "prairielearn-course-agent-workspaces",
+      "preview_bucket_name": "prairielearn-course-agent-workspaces-local"
+    }
+  ],
   "containers": [
     {
       "class_name": "Sandbox",

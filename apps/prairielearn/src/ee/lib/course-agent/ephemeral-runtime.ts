@@ -4,6 +4,7 @@ import {
   type CourseAgentEvent,
   CourseAgentSnapshotSchema,
   CourseAgentStartRunResponseSchema,
+  type CourseAgentWorkspaceBackup,
   courseAgentSandboxId,
 } from '@prairielearn/course-agent-protocol';
 import { generateSignedToken } from '@prairielearn/signed-token';
@@ -47,19 +48,22 @@ export async function startEphemeralCourseAgentRun({
   courseId,
   userId,
   conversationId = randomUUID(),
+  runId = randomUUID(),
   prompt,
   course,
+  workspaceBackup = null,
 }: {
   courseId: string;
   userId: string;
   conversationId?: string;
+  runId?: string;
   prompt: string;
   course: { repository: string; branch: string; expectedSha: string | null };
+  workspaceBackup?: CourseAgentWorkspaceBackup | null;
 }) {
   if (config.courseAgentRuntime === 'disabled') {
     throw new Error('Course-agent runtime is disabled');
   }
-  const runId = randomUUID();
   const sandboxId = courseAgentSandboxId(conversationId);
   const identity = { userId, courseId, conversationId, sandboxId };
   if (config.courseAgentRuntime === 'fake') {
@@ -80,7 +84,15 @@ export async function startEphemeralCourseAgentRun({
   const response = await fetch(new URL('/v1/runs', config.courseAgentWorkerOrigin), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ capability, conversationId, runId, sandboxId, prompt, course }),
+    body: JSON.stringify({
+      capability,
+      conversationId,
+      runId,
+      sandboxId,
+      prompt,
+      course,
+      workspaceBackup,
+    }),
   });
   if (!response.ok) throw new Error(`Course-agent Worker rejected the run (${response.status})`);
   return CourseAgentStartRunResponseSchema.parse(await response.json());

@@ -15,11 +15,13 @@ function CourseAgentPanelInner({ courseShortName }: { courseShortName: string })
     conversationId: string;
     sandboxId: string;
   } | null>(null);
+  const conversations = useQuery(trpc.courseAgent.list.queryOptions());
   const start = useMutation(
     trpc.courseAgent.start.mutationOptions({
       onSuccess: (result) => {
         setConversation(result);
         setPrompt('');
+        void conversations.refetch();
       },
     }),
   );
@@ -55,7 +57,27 @@ function CourseAgentPanelInner({ courseShortName }: { courseShortName: string })
           <p className="text-muted small mb-0">
             Ephemeral authoring workspace for <strong>{courseShortName}</strong>
           </p>
-          {snapshot.data?.response && <Alert variant="light">{snapshot.data.response}</Alert>}
+          {conversations.data?.conversations.length ? (
+            <div className="list-group list-group-flush border rounded">
+              {conversations.data.conversations.map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  className="list-group-item list-group-item-action small"
+                  onClick={() =>
+                    setConversation({ conversationId: item.id, sandboxId: item.sandbox_id })
+                  }
+                >
+                  {item.title}
+                </button>
+              ))}
+            </div>
+          ) : null}
+          {snapshot.data?.messages.map((message) => (
+            <Alert key={message.id} variant={message.role === 'user' ? 'primary' : 'light'}>
+              {message.content}
+            </Alert>
+          ))}
           {snapshot.data?.error && <Alert variant="danger">{snapshot.data.error}</Alert>}
           {start.error && <Alert variant="danger">{start.error.message}</Alert>}
           {snapshot.data && (

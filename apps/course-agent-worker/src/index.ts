@@ -8,6 +8,7 @@ import {
   CourseAgentSnapshotRequestSchema,
   type CourseAgentStartRunRequest,
   CourseAgentStartRunRequestSchema,
+  type CourseAgentWorkspaceBackup,
 } from '@prairielearn/course-agent-protocol';
 
 import { authorizeRun, authorizeSnapshot } from './auth.js';
@@ -22,6 +23,14 @@ interface Env {
   ANTHROPIC_MODEL: string;
   COURSE_AGENT_MAX_BUDGET_USD: string;
   COURSE_AGENT_GITHUB_PAT: string;
+  COURSE_AGENT_IDLE_TIMEOUT_SECONDS: string;
+  COURSE_AGENT_BACKUP_TTL_SECONDS: string;
+  COURSE_AGENT_LOCAL_DEVELOPMENT: string;
+  CLOUDFLARE_ACCOUNT_ID?: string;
+  R2_ACCESS_KEY_ID?: string;
+  R2_SECRET_ACCESS_KEY?: string;
+  BACKUP_BUCKET_NAME: string;
+  BACKUP_BUCKET: R2Bucket;
 }
 
 interface ConversationState {
@@ -30,10 +39,11 @@ interface ConversationState {
     'userId' | 'courseId' | 'conversationId' | 'sandboxId'
   >;
   activeRunId: string | null;
-  status: 'starting' | 'running' | 'waiting_for_user' | 'failed';
+  status: 'starting' | 'running' | 'waiting_for_user' | 'offline' | 'failed';
   response: string | null;
   error: string | null;
   events: CourseAgentEvent[];
+  workspaceBackup: CourseAgentWorkspaceBackup | null;
 }
 
 export { ContainerProxy };
@@ -166,6 +176,7 @@ export class CourseAgentCoordinator {
         response: null,
         error: null,
         events: current?.events ?? [],
+        workspaceBackup: current?.workspaceBackup ?? body.workspaceBackup,
       };
       await this.state.storage.put('conversation', next);
       this.state.waitUntil(this.run(body));
@@ -187,9 +198,41 @@ export class CourseAgentCoordinator {
         response: current.response,
         error: current.error,
         events: current.events,
+        workspaceBackup: current.workspaceBackup,
       });
     }
     return new Response('Not found', { status: 404 });
+  }
+
+  async alarm() {
+    const current = await this.state.storage.get<ConversationState>('conversation');
+    if (!current) return;
+    if (current.activeRunId) {
+      await this.state.storage.setAlarm(Date.now() + 60_000);
+      return;
+    }
+    const sandbox = getSandbox(this.env.Sandbox, current.identity.sandboxId, {
+      normalizeId: true,
+      keepAlive: true,
+    });
+    try {
+      await this.append('workspace.backup.started');
+      const handle = await sandbox.createBackup({
+        dir: COURSE_AGENT_WORKSPACE_ROOT,
+        name: current.identity.conversationId,
+        ttl: Number(this.env.COURSE_AGENT_BACKUP_TTL_SECONDS),
+        localBucket: this.env.COURSE_AGENT_LOCAL_DEVELOPMENT === 'true',
+      });
+      const expiresAt = new Date(
+        Date.now() + Number(this.env.COURSE_AGENT_BACKUP_TTL_SECONDS) * 1000,
+      ).toISOString();
+      await this.update({ workspaceBackup: { handle, expiresAt } });
+      await this.append('workspace.backup.completed', { backupId: handle.id, expiresAt });
+    } finally {
+      await sandbox.destroy();
+      await this.update({ status: 'offline' });
+      await this.append('sandbox.destroyed', { reason: 'idle_timeout' });
+    }
   }
 
   private async append(type: CourseAgentEvent['type'], data: Record<string, unknown> = {}) {
@@ -207,6 +250,7 @@ export class CourseAgentCoordinator {
   private async run(request: CourseAgentStartRunRequest) {
     const sandbox = getSandbox(this.env.Sandbox, request.sandboxId, {
       normalizeId: true,
+      keepAlive: true,
       labels: { courseId: 'redacted', workload: 'course-agent' },
     });
     try {
@@ -222,6 +266,13 @@ export class CourseAgentCoordinator {
       );
       if (!result.success) throw new Error(result.stderr || 'Could not create workspace');
       await this.append('workspace.seeded', { path: COURSE_AGENT_SEED_FILE });
+      const stored = await this.state.storage.get<ConversationState>('conversation');
+      const backup = stored?.workspaceBackup ?? request.workspaceBackup;
+      if (backup) {
+        await this.append('workspace.restore.started', { backupId: backup.handle.id });
+        await sandbox.restoreBackup(backup.handle);
+        await this.append('workspace.restore.completed', { backupId: backup.handle.id });
+      }
       const repository = githubRepositoryPath(request.course.repository);
       const coursePath = `${COURSE_AGENT_WORKSPACE_ROOT}/course`;
       await sandbox.setOutboundByHost('github.com', 'courseGithubRead', {
@@ -312,6 +363,9 @@ export class CourseAgentCoordinator {
         response,
         error: null,
       });
+      await this.state.storage.setAlarm(
+        Date.now() + Number(this.env.COURSE_AGENT_IDLE_TIMEOUT_SECONDS) * 1000,
+      );
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       await this.append('run.failed', { message });

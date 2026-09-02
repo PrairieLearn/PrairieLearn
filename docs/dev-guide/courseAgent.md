@@ -4,7 +4,13 @@ The course agent is experimental and guarded by the `course-agent` feature flag.
 layer provides a temporary `/workspace`, a single Claude Code harness, live activity events, and a
 minimal instructor panel. The repository layer resolves the course's configured repository and
 branch, shallow-clones it into `/workspace/course`, and configures an identity for local commits. It
-does not persist conversations, publish changes, or track usage.
+does not publish changes or track usage.
+
+Conversation metadata, turns, messages, and normalized runtime events are persisted in PostgreSQL.
+The instructor panel lists those conversations so a browser refresh can reopen one. After ten idle
+minutes, the Worker checkpoints `/workspace` to the configured R2 bucket, destroys the sandbox, and
+stores the opaque backup handle in its coordinator state. The next snapshot records that handle in
+PostgreSQL, and a later run restores the same workspace before continuing.
 
 ## Free local testing
 
@@ -23,4 +29,6 @@ only for `git-upload-pack` requests to the exact repository configured for that 
 other repositories, and other GitHub operations are rejected. The PAT is therefore available for
 clone, fetch, and pull, but never for push.
 
-Cloud resources and credentials used by later stack layers are intentionally not configured here.
+Wrangler uses its local R2 simulation by default. Production R2 access requires a dedicated bucket
+and narrowly scoped R2 credentials supplied to the Worker; local tests do not create or pay for
+Cloudflare resources.
