@@ -1,9 +1,17 @@
 {{#show_widget}}
 <script>
-    $(async () => {
-        const module = await import("pl-excalidraw-js");
-        await module.initializeExcalidraw("{{uuid}}", "{{name}}", JSON.parse(atob("{{metadata}}")));
-    });
+    (() => {
+        const initialize = async () => {
+            const module = await import("pl-excalidraw-js");
+            await module.initializeExcalidraw("{{uuid}}", "{{name}}", JSON.parse(atob("{{metadata}}")));
+        };
+        if (window.PrairieLearnExamPrinting) {
+            const initializationPromise = new Promise((resolve) => $(resolve)).then(initialize);
+            window.PrairieLearnExamPrinting.waitUntil(initializationPromise);
+        } else {
+            $(initialize);
+        }
+    })();
 </script>
 {{/show_widget}}
 

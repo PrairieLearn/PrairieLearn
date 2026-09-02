@@ -173,6 +173,16 @@ export const ConfigSchema = z.object({
    * `https://us.prairielearn.com`.
    */
   serverCanonicalHost: z.string().nullable().default(null),
+  /**
+   * Optional Playwright browser-server endpoint used to render printable assessments. In
+   * development, the application launches a locally installed Chromium browser when this is unset;
+   * production PDF rendering requires this endpoint.
+   */
+  printingPlaywrightWsEndpoint: z
+    .url()
+    .regex(/^wss?:\/\//)
+    .nullable()
+    .default(null),
   runMigrations: z.boolean().default(true),
   runBatchedMigrations: z.boolean().default(true),
   /**

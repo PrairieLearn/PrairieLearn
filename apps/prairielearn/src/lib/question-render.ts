@@ -5,6 +5,7 @@ import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 import { generateSignedToken } from '@prairielearn/signed-token';
+import { assertNever } from '@prairielearn/utils';
 import { IdSchema } from '@prairielearn/zod';
 
 import { AssessmentScorePanel } from '../components/AssessmentScorePanel.js';
@@ -443,6 +444,8 @@ type GetAndRenderVariantInputLocals = {
 } & Partial<ResLocalsInstanceQuestionRenderAdded> &
   Partial<ResLocalsQuestionRenderAdded>;
 
+type VariantRenderMode = 'default' | 'blank' | 'answer-key';
+
 /**
  * Render all information needed for a question.
  *
@@ -462,6 +465,7 @@ export async function getAndRenderVariant(
     publicQuestionPreview = false,
     issuesLoadExtraData = config.devMode || locals.authz_data?.has_course_permission_view,
     questionRenderContext,
+    renderMode = 'default',
   }: {
     urlOverrides?: Partial<QuestionUrls>;
     publicQuestionPreview?: boolean;
@@ -481,6 +485,11 @@ export async function getAndRenderVariant(
      * Leave undefined for normal student/instructor rendering.
      */
     questionRenderContext?: QuestionRenderContext;
+    /**
+     * Controls whether submissions and correct answers are available while rendering. `blank`
+     * omits both, while `answer-key` omits submissions and forces correct-answer rendering.
+     */
+    renderMode?: VariantRenderMode;
   } = {},
 ): Promise<ResLocalsInstanceQuestionRender> {
   const question_course = await getQuestionCourse(locals.question, locals.course);
@@ -580,11 +589,14 @@ export async function getAndRenderVariant(
   // information for all submissions to this variant, and then we'll
   // load the full submission for only the submissions that we'll
   // actually render.
-  const basicSubmissions = await sqldb.queryRows(
-    sql.select_basic_submissions,
-    { variant_id: variant.id },
-    SubmissionBasicSchema,
-  );
+  const basicSubmissions =
+    renderMode === 'default'
+      ? await sqldb.queryRows(
+          sql.select_basic_submissions,
+          { variant_id: variant.id },
+          SubmissionBasicSchema,
+        )
+      : [];
   const submissionCount = basicSubmissions.length;
 
   const submissions = await run(async () => {
@@ -619,13 +631,22 @@ export async function getAndRenderVariant(
   const submission = submissions.at(0) ?? null;
 
   const showCorrectAnswer = run(() => {
-    if (!locals.assessment && locals.question.show_correct_answer && submissionCount > 0) {
-      // On instructor question pages, only show if true answer is allowed for this question and there is at least one submission.
-      return true;
+    switch (renderMode) {
+      case 'blank':
+        return false;
+      case 'answer-key':
+        return true;
+      case 'default':
+        if (!locals.assessment && locals.question.show_correct_answer && submissionCount > 0) {
+          // On instructor question pages, only show if true answer is allowed for this question and there is at least one submission.
+          return true;
+        }
+        // We don't want to unconditionally hide things in the "else" case here,
+        // there's other code elsewhere that could have set showCorrectAnswer to true, and we should respect that.
+        return newLocals.showCorrectAnswer;
+      default:
+        return assertNever(renderMode);
     }
-    // We don't want to unconditionally hide things in the "else" case here,
-    // there's other code elsewhere that could have set showCorrectAnswer to true, and we should respect that.
-    return newLocals.showCorrectAnswer;
   });
 
   Object.assign(locals, {

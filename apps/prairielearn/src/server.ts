@@ -1083,6 +1083,12 @@ export async function initExpress(): Promise<Express> {
   );
 
   app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment_instance/:assessment_instance_id(\\d+)/paper',
+    (await import('./pages/instructorAssessmentInstancePrint/instructorAssessmentInstancePrint.js'))
+      .default,
+  );
+
+  app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment_instance/:assessment_instance_id(\\d+)',
     [
       (await import('./middlewares/selectAndAuthzAssessmentInstance.js')).default,
