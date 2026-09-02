@@ -75,6 +75,10 @@ export const CourseAgentRunCapabilitySchema = CourseAgentIdentitySchema.extend({
   promptDigest: z.string().regex(/^[0-9a-f]{64}$/),
   repository: z.string(),
   branch: z.string(),
+  expectedSha: z
+    .string()
+    .regex(/^[0-9a-f]{40}$/)
+    .nullable(),
   expiresAt: z.iso.datetime(),
 });
 export type CourseAgentRunCapability = z.infer<typeof CourseAgentRunCapabilitySchema>;
