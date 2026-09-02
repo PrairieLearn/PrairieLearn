@@ -29,7 +29,7 @@ Test Categories:
 NAME = "test_check_dict"
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture(autouse=True)  # ruff: ignore[pytest-fixture-autouse]
 def setup_feedback() -> None:
     Feedback.set_name(NAME)
     Feedback.buffer = ""
