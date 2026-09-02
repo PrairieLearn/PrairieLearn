@@ -1562,6 +1562,65 @@
         }
       ]
     },
+    "courseAgentUsageLimits": {
+      "default": {
+        "windowSeconds": 3600,
+        "perUserMilliDollars": null,
+        "perCourseMilliDollars": null,
+        "globalMilliDollars": null
+      },
+      "type": "object",
+      "properties": {
+        "windowSeconds": {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "maximum": 9007199254740991
+        },
+        "perUserMilliDollars": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "maximum": 9007199254740991
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "perCourseMilliDollars": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "maximum": 9007199254740991
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "globalMilliDollars": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "maximum": 9007199254740991
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "windowSeconds",
+        "perUserMilliDollars",
+        "perCourseMilliDollars",
+        "globalMilliDollars"
+      ],
+      "additionalProperties": false
+    },
     "aiGradingRateLimitDollars": {
       "default": 10,
       "type": "number"
