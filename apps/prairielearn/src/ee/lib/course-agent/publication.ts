@@ -1,12 +1,12 @@
 import { execa } from 'execa';
 
 import type { AuthzData } from '../../../lib/authz-data-lib.js';
-import type { Course, CourseAgentPushApprovalRow, User } from '../../../lib/db-types.js';
+import type { Course, CourseAgentPushApproval, User } from '../../../lib/db-types.js';
 import { Editor } from '../../../lib/editors.js';
 import { getCourseCommitHash } from '../../../models/course.js';
 
 export function validateCourseAgentPublication(
-  approval: Pick<CourseAgentPushApprovalRow, 'repository' | 'branch' | 'base_sha' | 'diff'>,
+  approval: Pick<CourseAgentPushApproval, 'repository' | 'branch' | 'base_sha' | 'diff'>,
   course: Pick<Course, 'repository' | 'branch'>,
 ) {
   if (approval.repository !== course.repository || approval.branch !== course.branch) {
@@ -18,13 +18,13 @@ export function validateCourseAgentPublication(
 class CourseAgentDiffEditor extends Editor {
   constructor(params: {
     locals: { authz_data: AuthzData; course: Course; user: User };
-    approval: CourseAgentPushApprovalRow;
+    approval: CourseAgentPushApproval;
   }) {
     super({ locals: params.locals, description: 'Publish course-agent changes' });
     this.approval = params.approval;
   }
 
-  private approval: CourseAgentPushApprovalRow;
+  private approval: CourseAgentPushApproval;
 
   async write() {
     const head = (
@@ -56,7 +56,7 @@ export async function publishCourseAgentApproval({
   user,
   authzData,
 }: {
-  approval: CourseAgentPushApprovalRow;
+  approval: CourseAgentPushApproval;
   course: Course;
   user: User;
   authzData: AuthzData;

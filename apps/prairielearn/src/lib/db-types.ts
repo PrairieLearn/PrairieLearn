@@ -760,7 +760,7 @@ export const CourseAgentWorkspaceBackupSchema = z.object({
 });
 export type CourseAgentWorkspaceBackup = z.infer<typeof CourseAgentWorkspaceBackupSchema>;
 
-export const CourseAgentPushApprovalRowSchema = z.object({
+export const CourseAgentPushApprovalSchema = z.object({
   base_sha: z.string(),
   branch: z.string(),
   completed_at: DateFromISOString.nullable(),
@@ -779,7 +779,7 @@ export const CourseAgentPushApprovalRowSchema = z.object({
   run_id: z.uuid(),
   status: z.enum(['pending', 'publishing', 'denied', 'completed', 'failed']),
 });
-export type CourseAgentPushApprovalRow = z.infer<typeof CourseAgentPushApprovalRowSchema>;
+export type CourseAgentPushApproval = z.infer<typeof CourseAgentPushApprovalSchema>;
 
 export const CourseSchema = z.object({
   ai_grading_free_credit_redemptions_used: z.number(),
