@@ -11,8 +11,7 @@
   },
   "dependencies": {
     "@cloudflare/sandbox": "0.12.7",
-    "@prairielearn/course-agent-protocol": "workspace:^",
-    "zod": "^4.4.3"
+    "@prairielearn/course-agent-protocol": "workspace:^"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "5.20260820.1",

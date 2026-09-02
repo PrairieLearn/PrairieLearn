@@ -39,13 +39,6 @@ import {
   t,
 } from './init.js';
 
-export interface CourseAgentError {
-  Get: never;
-  List: never;
-  Start: never;
-  RespondToPushApproval: never;
-}
-
 const requireCourseAgentFeature = t.middleware(async (opts) => {
   if (!(await features.enabledFromLocals('course-agent', opts.ctx.locals))) {
     throw new TRPCError({ code: 'FORBIDDEN', message: 'Course agent is not enabled' });
@@ -214,8 +207,9 @@ const respondToPushApproval = courseAgentProcedure
         decidedBy: ctx.locals.authn_user.id,
         result: { message: 'The instructor denied publication' },
       });
-      if (!denied)
-        {throw new TRPCError({ code: 'CONFLICT', message: 'Approval is no longer pending' });}
+      if (!denied) {
+        throw new TRPCError({ code: 'CONFLICT', message: 'Approval is no longer pending' });
+      }
       await respondToCourseAgentPushApproval({
         ...identity,
         approvalId: approval.id,
