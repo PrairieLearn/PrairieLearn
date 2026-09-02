@@ -40,6 +40,8 @@ async function makeRequest(): Promise<CourseAgentStartRunRequest> {
     sandboxId: 'course-agent-test',
     promptDigest: [...digest].map((byte) => byte.toString(16).padStart(2, '0')).join(''),
     expiresAt: new Date(Date.now() + 60_000).toISOString(),
+    repository: 'https://github.com/PrairieLearn/test.git',
+    branch: 'master',
   };
   return {
     capability: await sign(capability),
@@ -47,6 +49,11 @@ async function makeRequest(): Promise<CourseAgentStartRunRequest> {
     runId: capability.runId,
     sandboxId: capability.sandboxId,
     prompt,
+    course: {
+      repository: capability.repository,
+      branch: capability.branch,
+      expectedSha: null,
+    },
   };
 }
 

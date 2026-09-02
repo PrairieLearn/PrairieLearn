@@ -12,7 +12,11 @@
     "COURSE_AGENT_MAX_BUDGET_USD": "0.25"
   },
   "secrets": {
-    "required": ["ANTHROPIC_API_KEY", "COURSE_AGENT_CAPABILITY_SECRET"]
+    "required": [
+      "ANTHROPIC_API_KEY",
+      "COURSE_AGENT_CAPABILITY_SECRET",
+      "COURSE_AGENT_GITHUB_PAT"
+    ]
   },
   "containers": [
     {

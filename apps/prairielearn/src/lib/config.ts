@@ -615,6 +615,8 @@ export const ConfigSchema = z.object({
   courseAgentWorkerOrigin: z.string().default('http://127.0.0.1:8787'),
   courseAgentCapabilitySecret: z.string().nullable().default(null),
   courseAgentAnthropicApiKey: z.string().nullable().default(null),
+  /** Dedicated GitHub token used only by the Worker's fixed read-only upload-pack broker. */
+  courseAgentGithubToken: z.string().nullable().default(null),
   /**
    * The hourly spending rate limit for AI grading, in US dollars.
    * This is applied per course instance.

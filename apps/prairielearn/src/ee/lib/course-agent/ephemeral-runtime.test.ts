@@ -17,12 +17,22 @@ describe('ephemeral course-agent runtime', () => {
         courseId: '1',
         userId: '2',
         prompt: 'Create a note',
+        course: {
+          repository: 'https://github.com/PrairieLearn/test.git',
+          branch: 'master',
+          expectedSha: null,
+        },
       });
       await startEphemeralCourseAgentRun({
         courseId: '1',
         userId: '2',
         conversationId: first.conversationId,
         prompt: 'Update the same note',
+        course: {
+          repository: 'https://github.com/PrairieLearn/test.git',
+          branch: 'master',
+          expectedSha: null,
+        },
       });
       const snapshot = await getEphemeralCourseAgentSnapshot({
         courseId: '1',

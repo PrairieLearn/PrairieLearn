@@ -48,11 +48,13 @@ export async function startEphemeralCourseAgentRun({
   userId,
   conversationId = randomUUID(),
   prompt,
+  course,
 }: {
   courseId: string;
   userId: string;
   conversationId?: string;
   prompt: string;
+  course: { repository: string; branch: string; expectedSha: string | null };
 }) {
   if (config.courseAgentRuntime === 'disabled') {
     throw new Error('Course-agent runtime is disabled');
@@ -69,6 +71,8 @@ export async function startEphemeralCourseAgentRun({
       ...identity,
       runId,
       promptDigest: promptDigest(prompt),
+      repository: course.repository,
+      branch: course.branch,
       expiresAt: expiresAt(),
     },
     capabilitySecret(),
@@ -76,7 +80,7 @@ export async function startEphemeralCourseAgentRun({
   const response = await fetch(new URL('/v1/runs', config.courseAgentWorkerOrigin), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ capability, conversationId, runId, sandboxId, prompt }),
+    body: JSON.stringify({ capability, conversationId, runId, sandboxId, prompt, course }),
   });
   if (!response.ok) throw new Error(`Course-agent Worker rejected the run (${response.status})`);
   return CourseAgentStartRunResponseSchema.parse(await response.json());
