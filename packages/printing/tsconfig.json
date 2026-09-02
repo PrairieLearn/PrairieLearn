@@ -1,0 +1,6 @@
+{
+  "extends": "@prairielearn/tsconfig/tsconfig.package-node.json",
+  "compilerOptions": {
+    "lib": ["ES2022", "DOM"]
+  }
+}
