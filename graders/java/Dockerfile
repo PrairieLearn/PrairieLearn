@@ -6,7 +6,7 @@ ARG CACHEBUST=2026-08-15-14-04-29
 COPY sandbox.c /sandbox.c
 RUN gcc -O2 -o /landlock_sandbox -Wall -Wextra -Werror /sandbox.c
 
-FROM ubuntu:24.04
+FROM ubuntu:24.10
 ARG CACHEBUST=2026-08-15-14-04-29
 
 LABEL maintainer="jonatan@yorku.ca"
