@@ -1,21 +1,21 @@
 $(function () {
-  var clients = {}; // Store one client per question-container div, indexed by the id of these divs.
+  var clients = new WeakMap(); // Store one client per question-container div.
 
   var initialize = function (questionContainer, callback) {
     var questionData = null;
-    questionContainer.find('.question-data').each(function (i, x) {
+    questionContainer.children('.question-data').each(function (i, x) {
       questionData = JSON.parse(decodeURIComponent(atob(x.innerHTML)));
     });
     var client = new document.questionClients[questionData.effectiveQuestionType]();
-    clients[questionContainer.attr('id')] = client;
+    clients.set(questionContainer.get(0), client);
     client.initialize(questionData, callback);
   };
 
   var render = function (questionContainer) {
-    var client = clients[questionContainer.attr('id')];
+    var client = clients.get(questionContainer.get(0));
 
     var questionData = null;
-    questionContainer.find('.question-data').each(function (i, x) {
+    questionContainer.children('.question-data').each(function (i, x) {
       questionData = JSON.parse(decodeURIComponent(atob(x.innerHTML)));
     });
 
@@ -32,10 +32,10 @@ $(function () {
 
   var submit = function (event, action) {
     var questionContainer = $(event.target).parents('.question-container');
-    var client = clients[questionContainer.attr('id')];
+    var client = clients.get(questionContainer.get(0));
 
     var questionData = null;
-    questionContainer.find('.question-data').each(function (i, x) {
+    questionContainer.children('.question-data').each(function (i, x) {
       questionData = JSON.parse(decodeURIComponent(atob(x.innerHTML)));
     });
 
@@ -60,12 +60,29 @@ $(function () {
     submit(event, 'save');
   };
 
-  $('.question-container').each(function (i, questionContainer) {
-    initialize($(questionContainer), function (err) {
-      if (err) return console.log(err);
-      render($(questionContainer));
-      $(questionContainer).find('.question-grade').click(grade);
-      $(questionContainer).find('.question-save').click(save);
+  $('.question-container > .question-data')
+    .parent()
+    .each(function (i, questionContainer) {
+      $(questionContainer).attr('data-legacy-question-render-status', 'pending');
+      try {
+        initialize($(questionContainer), function (err) {
+          if (err) {
+            $(questionContainer).attr('data-legacy-question-render-status', 'error');
+            return console.log(err);
+          }
+          try {
+            render($(questionContainer));
+            $(questionContainer).attr('data-legacy-question-render-status', 'complete');
+            $(questionContainer).find('.question-grade').click(grade);
+            $(questionContainer).find('.question-save').click(save);
+          } catch (renderError) {
+            $(questionContainer).attr('data-legacy-question-render-status', 'error');
+            throw renderError;
+          }
+        });
+      } catch (initializeError) {
+        $(questionContainer).attr('data-legacy-question-render-status', 'error');
+        throw initializeError;
+      }
     });
-  });
 });
