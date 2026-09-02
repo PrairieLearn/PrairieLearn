@@ -739,7 +739,7 @@ export const CourseAgentMessageSchema = z.object({
 });
 export type CourseAgentMessage = z.infer<typeof CourseAgentMessageSchema>;
 
-export const CourseAgentEventRowSchema = z.object({
+export const CourseAgentEventSchema = z.object({
   conversation_id: z.uuid(),
   created_at: DateFromISOString,
   data: z.record(z.string(), z.unknown()),
@@ -748,7 +748,7 @@ export const CourseAgentEventRowSchema = z.object({
   run_id: z.uuid().nullable(),
   sequence: IdSchema,
 });
-export type CourseAgentEventRow = z.infer<typeof CourseAgentEventRowSchema>;
+export type CourseAgentEvent = z.infer<typeof CourseAgentEventSchema>;
 
 export const CourseAgentWorkspaceBackupSchema = z.object({
   backup_handle: z.unknown(),
