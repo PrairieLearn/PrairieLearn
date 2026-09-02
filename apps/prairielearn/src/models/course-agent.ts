@@ -11,7 +11,7 @@ import {
 import {
   type CourseAgentConversation,
   CourseAgentConversationSchema,
-  CourseAgentEventRowSchema,
+  CourseAgentEventSchema,
   CourseAgentMessageSchema,
   CourseAgentRunSchema,
   CourseAgentWorkspaceBackupSchema,
@@ -153,7 +153,7 @@ async function persistEvent(conversationId: string, runId: string, event: Course
 export async function selectCourseAgentHistory(conversationId: string) {
   const [messages, events, backup] = await Promise.all([
     queryRows(sql.select_messages, { conversation_id: conversationId }, CourseAgentMessageSchema),
-    queryRows(sql.select_events, { conversation_id: conversationId }, CourseAgentEventRowSchema),
+    queryRows(sql.select_events, { conversation_id: conversationId }, CourseAgentEventSchema),
     queryOptionalRow(
       sql.select_latest_backup,
       { conversation_id: conversationId },

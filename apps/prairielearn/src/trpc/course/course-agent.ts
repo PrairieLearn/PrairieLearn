@@ -15,7 +15,7 @@ import {
 } from '../../ee/lib/course-agent/ephemeral-runtime.js';
 import {
   CourseAgentConversationSchema,
-  CourseAgentEventRowSchema,
+  CourseAgentEventSchema,
   CourseAgentMessageSchema,
 } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
@@ -127,7 +127,7 @@ const get = courseAgentProcedure
   .output(
     CourseAgentSnapshotSchema.extend({
       messages: z.array(CourseAgentMessageSchema),
-      persistedEvents: z.array(CourseAgentEventRowSchema),
+      persistedEvents: z.array(CourseAgentEventSchema),
     }),
   )
   .query(async ({ ctx, input }) => {
