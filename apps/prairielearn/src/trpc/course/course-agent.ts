@@ -16,11 +16,6 @@ import {
   t,
 } from './init.js';
 
-export interface CourseAgentError {
-  Get: never;
-  Start: never;
-}
-
 const requireCourseAgentFeature = t.middleware(async (opts) => {
   if (!(await features.enabledFromLocals('course-agent', opts.ctx.locals))) {
     throw new TRPCError({ code: 'FORBIDDEN', message: 'Course agent is not enabled' });

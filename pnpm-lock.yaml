@@ -335,9 +335,6 @@ importers:
       '@prairielearn/course-agent-protocol':
         specifier: workspace:^
         version: link:../../packages/course-agent-protocol
-      zod:
-        specifier: ^4.4.3
-        version: 4.4.3
     devDependencies:
       '@cloudflare/workers-types':
         specifier: 5.20260820.1
