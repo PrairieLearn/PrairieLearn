@@ -230,6 +230,33 @@ def test_incorrect_answer_uses_an_allowed_type(
 
 
 @pytest.mark.parametrize(
+    ("allowed_types", "correct_answer"),
+    [
+        ("all", "5"),
+        ("finite-set", "{5}"),
+        ("interval", "(5, 6)"),
+    ],
+)
+def test_incorrect_answer_avoids_correct_answer_collision(
+    monkeypatch: pytest.MonkeyPatch, allowed_types: str, correct_answer: str
+) -> None:
+    monkeypatch.setattr(symbolic_input.random, "randint", lambda _start, _end: 5)
+    element_html = build_element_html(f'allowed-types="{allowed_types}"')
+    data = make_question_data(correct_answers={"test": correct_answer})
+    data["test_type"] = "incorrect"
+
+    symbolic_input.test(element_html, data)
+    data["submitted_answers"] = data["raw_submitted_answers"].copy()
+    symbolic_input.parse(element_html, data)
+
+    submitted_answer = psu.json_to_sympy(
+        data["submitted_answers"]["test"], allow_sets=True
+    )
+    correct_answer_sympy = psu.convert_string_to_sympy(correct_answer, allow_sets=True)
+    assert submitted_answer != correct_answer_sympy
+
+
+@pytest.mark.parametrize(
     "correct_answer",
     [
         "{1, 2}",
