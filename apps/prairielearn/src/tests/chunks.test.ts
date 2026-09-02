@@ -500,6 +500,7 @@ describe('chunks', () => {
       const newHash = (await execa('git', ['rev-parse', 'HEAD'], { cwd: courseDir })).stdout;
       const { stdout: nameStatus } = await execa(
         'git',
+        // note: find-renames is necessary to override local git configs
         ['diff', '--name-status', '--find-renames=100%', oldHash, newHash],
         { cwd: courseDir },
       );
