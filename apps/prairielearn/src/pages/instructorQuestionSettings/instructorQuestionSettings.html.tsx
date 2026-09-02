@@ -593,7 +593,9 @@ export const InstructorQuestionSettingsForm = ({
               <div className="small text-muted">
                 If enabled, the question will award partial points for fractional scores. For
                 example, if only some elements on the page are correct, the student receives a
-                proportional score. When disabled, the question awards only 0% or 100%.
+                proportional score. When disabled, the question awards only 0% or 100%. Only
+                auto-graded points are affected by this setting; manual grading and AI grading are
+                not affected.
               </div>
             </div>
           </div>
