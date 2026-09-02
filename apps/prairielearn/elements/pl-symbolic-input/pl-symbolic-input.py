@@ -985,6 +985,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
         element, "display-simplified-expression", DISPLAY_SIMPLIFIED_EXPRESSION_DEFAULT
     )
     result = data["test_type"]
+    a_tru = ""
     a_tru_str = ""
 
     if result in ["correct", "incorrect"]:
@@ -1045,16 +1046,29 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
 
     elif result == "incorrect":
         offset = random.randint(1, 100)
-        if not allow_sets and a_tru_str != "":
-            data["raw_submitted_answers"][name] = f"{a_tru_str} + {offset:d}"
-        elif "all" in allowed_types or "expression" in allowed_types:
-            data["raw_submitted_answers"][name] = f"{offset:d}"
-        elif "finite-set" in allowed_types:
-            data["raw_submitted_answers"][name] = f"{{{offset:d}}}"
-        elif "interval" in allowed_types:
-            data["raw_submitted_answers"][name] = f"({offset:d}, {offset + 1:d})"
+        for _ in range(2):
+            if not allow_sets and a_tru_str != "":
+                candidate = f"{a_tru_str} + {offset:d}"
+                candidate_sympy = a_tru + sympy.Integer(offset)
+            elif "all" in allowed_types or "expression" in allowed_types:
+                candidate = f"{offset:d}"
+                candidate_sympy = sympy.Integer(offset)
+            elif "finite-set" in allowed_types:
+                candidate = f"{{{offset:d}}}"
+                candidate_sympy = sympy.FiniteSet(offset)
+            elif "interval" in allowed_types:
+                candidate = f"({offset:d}, {offset + 1:d})"
+                candidate_sympy = sympy.Interval.open(offset, offset + 1)
+            else:
+                raise AssertionError(f"Unexpected allowed types: {allowed_types}")
+
+            if candidate_sympy != a_tru:
+                break
+            offset += 1
         else:
-            raise AssertionError(f"Unexpected allowed types: {allowed_types}")
+            raise AssertionError("Failed to generate an incorrect answer")
+
+        data["raw_submitted_answers"][name] = candidate
         data["partial_scores"][name] = {"score": 0, "weight": weight}
 
     elif result == "invalid":
