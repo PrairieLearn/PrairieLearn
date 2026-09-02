@@ -1,11 +1,12 @@
 import { assert, describe, it } from 'vitest';
 
-import { resolveSamlAttributes } from './router.js';
+import { resolveSamlAttributes, validateSamlAttributes } from './router.js';
 
 function makeProvider(
-  overrides: Partial<Parameters<typeof resolveSamlAttributes>[0]> = {},
-): Parameters<typeof resolveSamlAttributes>[0] {
+  overrides: Partial<Parameters<typeof validateSamlAttributes>[0]> = {},
+): Parameters<typeof validateSamlAttributes>[0] {
   return {
+    allow_missing_name: false,
     uid_attribute: null,
     uin_attribute: null,
     name_attribute: null,
@@ -202,5 +203,59 @@ describe('resolveSamlAttributes', () => {
       assert.isNull(result.uid);
       assert.isNull(result.email);
     });
+  });
+});
+
+describe('validateSamlAttributes', () => {
+  const requiredMappings = {
+    uid_attribute: 'uid',
+    uin_attribute: 'uin',
+    name_attribute: 'displayName',
+  };
+
+  it('rejects a missing name by default', () => {
+    const provider = makeProvider(requiredMappings);
+    const resolved = resolveSamlAttributes(provider, { uid: 'user@example.com', uin: '123' });
+
+    assert.throws(
+      () => validateSamlAttributes(provider, resolved),
+      /Missing values for the following SAML attributes: name \(displayName\)/,
+    );
+  });
+
+  it('allows a missing name when configured', () => {
+    const provider = makeProvider({ ...requiredMappings, allow_missing_name: true });
+    const resolved = resolveSamlAttributes(provider, { uid: 'user@example.com', uin: '123' });
+
+    assert.deepEqual(validateSamlAttributes(provider, resolved), {
+      uid: 'user@example.com',
+      uin: '123',
+      name: null,
+      email: null,
+    });
+  });
+
+  it('still rejects missing UID and UIN values when names are optional', () => {
+    const provider = makeProvider({ ...requiredMappings, allow_missing_name: true });
+    const resolved = resolveSamlAttributes(provider, {});
+
+    assert.throws(
+      () => validateSamlAttributes(provider, resolved),
+      /Missing values for the following SAML attributes: uid \(uid\), uin \(uin\)/,
+    );
+  });
+
+  it('still requires a name mapping when names are optional', () => {
+    const provider = makeProvider({
+      uid_attribute: 'uid',
+      uin_attribute: 'uin',
+      allow_missing_name: true,
+    });
+    const resolved = resolveSamlAttributes(provider, { uid: 'user@example.com', uin: '123' });
+
+    assert.throws(
+      () => validateSamlAttributes(provider, resolved),
+      /Missing one or more SAML attribute mappings/,
+    );
   });
 });
