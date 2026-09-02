@@ -2,6 +2,7 @@ import { createHash, randomUUID } from 'node:crypto';
 
 import {
   type CourseAgentEvent,
+  CourseAgentPushDecisionRequestSchema,
   CourseAgentSnapshotSchema,
   CourseAgentStartRunResponseSchema,
   type CourseAgentWorkspaceBackup,
@@ -111,6 +112,39 @@ export async function getEphemeralCourseAgentSnapshot(identity: Identity) {
   });
   if (!response.ok) throw new Error(`Course-agent Worker snapshot failed (${response.status})`);
   return CourseAgentSnapshotSchema.parse(await response.json());
+}
+
+export async function respondToCourseAgentPushApproval({
+  approvalId,
+  decision,
+  result,
+  ...identity
+}: Identity & {
+  approvalId: string;
+  decision: 'publishing' | 'denied' | 'completed' | 'failed';
+  result?: Record<string, unknown> | null;
+}) {
+  if (config.courseAgentRuntime === 'fake') return { accepted: true as const };
+  const capability = generateSignedToken(
+    { type: 'course-agent-inspect', ...identity, expiresAt: expiresAt() },
+    capabilitySecret(),
+  );
+  const body = CourseAgentPushDecisionRequestSchema.parse({
+    capability,
+    ...identity,
+    approvalId,
+    decision,
+    result: result ?? null,
+  });
+  const response = await fetch(new URL('/v1/push-decisions', config.courseAgentWorkerOrigin), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (!response.ok) {
+    throw new Error(`Course-agent Worker rejected the push decision (${response.status})`);
+  }
+  return { accepted: true as const };
 }
 
 function startFakeRun({

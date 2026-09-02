@@ -37,6 +37,11 @@ function CourseAgentPanelInner({ courseShortName }: { courseShortName: string })
       },
     ),
   );
+  const approval = useMutation(
+    trpc.courseAgent.respondToPushApproval.mutationOptions({
+      onSuccess: () => void snapshot.refetch(),
+    }),
+  );
   const busy = start.isPending || ['starting', 'running'].includes(snapshot.data?.status ?? '');
 
   return (
@@ -80,6 +85,44 @@ function CourseAgentPanelInner({ courseShortName }: { courseShortName: string })
           ))}
           {snapshot.data?.error && <Alert variant="danger">{snapshot.data.error}</Alert>}
           {start.error && <Alert variant="danger">{start.error.message}</Alert>}
+          {approval.error && <Alert variant="danger">{approval.error.message}</Alert>}
+          {snapshot.data?.pendingApproval && (
+            <Alert variant="warning">
+              <Alert.Heading className="h6">Review course changes</Alert.Heading>
+              <p className="small mb-2">{snapshot.data.pendingApproval.diffSummary}</p>
+              <details>
+                <summary className="small">View full diff</summary>
+                <pre className="small overflow-auto mt-2">{snapshot.data.pendingApproval.diff}</pre>
+              </details>
+              <div className="d-flex gap-2 mt-3">
+                <Button
+                  size="sm"
+                  disabled={approval.isPending}
+                  onClick={() =>
+                    approval.mutate({
+                      approvalId: snapshot.data.pendingApproval!.id,
+                      decision: 'approve',
+                    })
+                  }
+                >
+                  Approve, push, and sync
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline-danger"
+                  disabled={approval.isPending}
+                  onClick={() =>
+                    approval.mutate({
+                      approvalId: snapshot.data.pendingApproval!.id,
+                      decision: 'deny',
+                    })
+                  }
+                >
+                  Deny
+                </Button>
+              </div>
+            </Alert>
+          )}
           {snapshot.data && (
             <details>
               <summary className="small">Activity ({snapshot.data.events.length})</summary>

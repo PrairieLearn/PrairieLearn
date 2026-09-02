@@ -4,7 +4,7 @@ The course agent is experimental and guarded by the `course-agent` feature flag.
 layer provides a temporary `/workspace`, a single Claude Code harness, live activity events, and a
 minimal instructor panel. The repository layer resolves the course's configured repository and
 branch, shallow-clones it into `/workspace/course`, and configures an identity for local commits. It
-does not publish changes or track usage.
+does not track usage.
 
 Conversation metadata, turns, messages, and normalized runtime events are persisted in PostgreSQL.
 The instructor panel lists those conversations so a browser refresh can reopen one. After ten idle
@@ -28,6 +28,19 @@ The GitHub PAT is also held by the Worker. The sandbox uses `proxy-read`, and th
 only for `git-upload-pack` requests to the exact repository configured for that sandbox. Receive-pack,
 other repositories, and other GitHub operations are rejected. The PAT is therefore available for
 clone, fetch, and pull, but never for push.
+
+## Approval-gated publication
+
+The sandbox cannot publish course changes. Its `push_sync` tool verifies that the workspace is
+clean, calculates the committed diff from the configured remote branch, and sends that diff to
+PrairieLearn. The tool waits while the instructor reviews the exact diff in the course-agent panel.
+
+On approval, the trusted PrairieLearn web process verifies that the configured repository, branch,
+and remote base SHA still match the request. It applies the approved diff to the normal course
+checkout and uses PrairieLearn's existing editor path to commit, push, and start Course Sync. The
+result is returned through the Worker to the waiting tool. Denial and publication errors are also
+returned to the agent. The sandbox's GitHub PAT proxy remains read-only throughout this flow;
+PrairieLearn never enables `git-receive-pack` or gives a push credential to the sandbox.
 
 Wrangler uses its local R2 simulation by default. Production R2 access requires a dedicated bucket
 and narrowly scoped R2 credentials supplied to the Worker; local tests do not create or pay for

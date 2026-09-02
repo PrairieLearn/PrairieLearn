@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "course_agent": {
+      "type": "stdio",
+      "command": "python3",
+      "args": ["/opt/prairielearn/course_agent_mcp.py"],
+      "env": { "PYTHONUNBUFFERED": "1" }
+    }
+  }
+}

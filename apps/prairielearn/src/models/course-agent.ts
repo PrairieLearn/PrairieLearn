@@ -1,4 +1,8 @@
-import type { CourseAgentEvent, CourseAgentSnapshot } from '@prairielearn/course-agent-protocol';
+import type {
+  CourseAgentEvent,
+  CourseAgentPushApproval,
+  CourseAgentSnapshot,
+} from '@prairielearn/course-agent-protocol';
 import {
   execute,
   loadSqlEquiv,
@@ -13,6 +17,7 @@ import {
   CourseAgentConversationSchema,
   CourseAgentEventRowSchema,
   CourseAgentMessageSchema,
+  CourseAgentPushApprovalRowSchema,
   CourseAgentRunSchema,
   CourseAgentWorkspaceBackupSchema,
 } from '../lib/db-types.js';
@@ -151,7 +156,7 @@ async function persistEvent(conversationId: string, runId: string, event: Course
 }
 
 export async function selectCourseAgentHistory(conversationId: string) {
-  const [messages, events, backup] = await Promise.all([
+  const [messages, events, backup, pendingApproval] = await Promise.all([
     queryRows(sql.select_messages, { conversation_id: conversationId }, CourseAgentMessageSchema),
     queryRows(sql.select_events, { conversation_id: conversationId }, CourseAgentEventRowSchema),
     queryOptionalRow(
@@ -159,6 +164,87 @@ export async function selectCourseAgentHistory(conversationId: string) {
       { conversation_id: conversationId },
       CourseAgentWorkspaceBackupSchema,
     ),
+    queryOptionalRow(
+      sql.select_pending_push_approval,
+      { conversation_id: conversationId },
+      CourseAgentPushApprovalRowSchema,
+    ),
   ]);
-  return { messages, events, backup };
+  return { messages, events, backup, pendingApproval };
+}
+
+export function upsertCourseAgentPushApproval({
+  approval,
+  conversationId,
+  runId,
+  courseId,
+  userId,
+  repository,
+}: {
+  approval: CourseAgentPushApproval;
+  conversationId: string;
+  runId: string;
+  courseId: string;
+  userId: string;
+  repository: string;
+}) {
+  return queryRow(
+    sql.upsert_push_approval,
+    {
+      approval_id: approval.id,
+      conversation_id: conversationId,
+      run_id: runId,
+      course_id: courseId,
+      user_id: userId,
+      repository,
+      branch: approval.branch,
+      base_sha: approval.baseSha,
+      proposed_sha: approval.proposedSha,
+      diff_summary: approval.diffSummary,
+      diff: approval.diff,
+    },
+    CourseAgentPushApprovalRowSchema,
+  );
+}
+
+export function selectOptionalCourseAgentPushApproval({
+  approvalId,
+  courseId,
+  userId,
+}: {
+  approvalId: string;
+  courseId: string;
+  userId: string;
+}) {
+  return queryOptionalRow(
+    sql.select_push_approval,
+    { approval_id: approvalId, course_id: courseId, user_id: userId },
+    CourseAgentPushApprovalRowSchema,
+  );
+}
+
+export function updateCourseAgentPushApproval({
+  approvalId,
+  status,
+  expectedStatuses,
+  decidedBy,
+  result,
+}: {
+  approvalId: string;
+  status: 'publishing' | 'denied' | 'completed' | 'failed';
+  expectedStatuses: string[];
+  decidedBy: string | null;
+  result: Record<string, unknown> | null;
+}) {
+  return queryOptionalRow(
+    sql.update_push_approval,
+    {
+      approval_id: approvalId,
+      status,
+      expected_statuses: expectedStatuses,
+      decided_by: decidedBy,
+      result: result ? JSON.stringify(result) : null,
+    },
+    CourseAgentPushApprovalRowSchema,
+  );
 }
