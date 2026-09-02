@@ -467,6 +467,7 @@ describe('chunks', () => {
 
       await fs.writeFile(questionFilePath, 'def get_value():\n    return 42\n');
       await execa('git', ['init'], { cwd: courseDir });
+      await execa('git', ['config', 'diff.renames', 'true'], { cwd: courseDir });
       await execa('git', ['config', 'user.email', 'test@example.com'], { cwd: courseDir });
       await execa('git', ['config', 'user.name', 'Test User'], { cwd: courseDir });
       await execa('git', ['add', '-A'], { cwd: courseDir });
@@ -500,7 +501,6 @@ describe('chunks', () => {
       const newHash = (await execa('git', ['rev-parse', 'HEAD'], { cwd: courseDir })).stdout;
       const { stdout: nameStatus } = await execa(
         'git',
-        // note: find-renames is necessary to override local git configs
         ['diff', '--name-status', '--find-renames=100%', oldHash, newHash],
         { cwd: courseDir },
       );
