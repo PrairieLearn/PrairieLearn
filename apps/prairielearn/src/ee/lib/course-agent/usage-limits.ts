@@ -8,7 +8,12 @@ import { config } from '../../../lib/config.js';
 
 export interface RollingUsageStore {
   read(scope: string): Promise<number>;
-  update(scope: string, runId: string, cumulativeMilliDollars: number): Promise<number>;
+  update(
+    scope: string,
+    runId: string,
+    cumulativeMilliDollars: number,
+    occurredAtMilliseconds: number,
+  ): Promise<number>;
 }
 
 const ROLLING_USAGE_SCRIPT = `
@@ -17,12 +22,12 @@ for _, run_id in ipairs(expired) do
   redis.call('HDEL', KEYS[2], run_id)
 end
 redis.call('ZREMRANGEBYSCORE', KEYS[1], '-inf', ARGV[1])
-if ARGV[3] ~= '' then
-  redis.call('ZADD', KEYS[1], ARGV[2], ARGV[3])
+if ARGV[3] ~= '' and tonumber(ARGV[5]) > tonumber(ARGV[1]) then
+  redis.call('ZADD', KEYS[1], ARGV[5], ARGV[3])
   redis.call('HSET', KEYS[2], ARGV[3], ARGV[4])
 end
-redis.call('EXPIRE', KEYS[1], ARGV[5])
-redis.call('EXPIRE', KEYS[2], ARGV[5])
+redis.call('EXPIRE', KEYS[1], ARGV[6])
+redis.call('EXPIRE', KEYS[2], ARGV[6])
 local total = 0
 for _, value in ipairs(redis.call('HVALS', KEYS[2])) do
   total = total + tonumber(value)
@@ -42,11 +47,21 @@ class RedisRollingUsageStore implements RollingUsageStore {
     return this.run(scope, '', 0);
   }
 
-  async update(scope: string, runId: string, cumulativeMilliDollars: number) {
-    return this.run(scope, runId, cumulativeMilliDollars);
+  async update(
+    scope: string,
+    runId: string,
+    cumulativeMilliDollars: number,
+    occurredAtMilliseconds: number,
+  ) {
+    return this.run(scope, runId, cumulativeMilliDollars, occurredAtMilliseconds);
   }
 
-  private async run(scope: string, runId: string, cumulativeMilliDollars: number) {
+  private async run(
+    scope: string,
+    runId: string,
+    cumulativeMilliDollars: number,
+    occurredAtMilliseconds = Date.now(),
+  ) {
     const redis = await this.getRedis();
     const now = Date.now();
     const windowMilliseconds = config.courseAgentUsageLimits.windowSeconds * 1000;
@@ -60,6 +75,7 @@ class RedisRollingUsageStore implements RollingUsageStore {
       now,
       runId,
       cumulativeMilliDollars,
+      occurredAtMilliseconds,
       config.courseAgentUsageLimits.windowSeconds + 60,
     );
     return z.coerce.number().int().nonnegative().parse(result);
@@ -111,17 +127,21 @@ export async function recordCourseAgentRollingUsage({
   courseId,
   runId,
   cumulativeMilliDollars,
+  occurredAtMilliseconds,
   store = defaultStore,
 }: {
   userId: string;
   courseId: string;
   runId: string;
   cumulativeMilliDollars: number;
+  occurredAtMilliseconds: number;
   store?: RollingUsageStore;
 }) {
   await Promise.all(
     scopes(userId, courseId)
       .filter((scope) => scope.limit !== null)
-      .map((scope) => store.update(scope.key, runId, cumulativeMilliDollars)),
+      .map((scope) =>
+        store.update(scope.key, runId, cumulativeMilliDollars, occurredAtMilliseconds),
+      ),
   );
 }

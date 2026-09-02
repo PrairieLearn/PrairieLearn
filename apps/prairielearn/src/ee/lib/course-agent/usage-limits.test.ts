@@ -16,7 +16,7 @@ class FakeStore implements RollingUsageStore {
     return [...(this.values.get(scope)?.values() ?? [])].reduce((total, value) => total + value, 0);
   }
 
-  async update(scope: string, runId: string, value: number) {
+  async update(scope: string, runId: string, value: number, _occurredAtMilliseconds: number) {
     const runs = this.values.get(scope) ?? new Map<string, number>();
     runs.set(runId, value);
     this.values.set(scope, runs);
@@ -37,7 +37,13 @@ describe('course-agent rolling usage limits', () => {
       },
       async () => {
         const store = new FakeStore();
-        const input = { userId: '1', courseId: '2', runId: 'run', store };
+        const input = {
+          userId: '1',
+          courseId: '2',
+          runId: 'run',
+          occurredAtMilliseconds: Date.now(),
+          store,
+        };
         await recordCourseAgentRollingUsage({ ...input, cumulativeMilliDollars: 10 });
         await recordCourseAgentRollingUsage({ ...input, cumulativeMilliDollars: 10 });
         await expect(assertCourseAgentWithinUsageLimits(input)).rejects.toBeInstanceOf(

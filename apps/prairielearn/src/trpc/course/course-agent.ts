@@ -191,6 +191,9 @@ const get = courseAgentProcedure
       courseId: ctx.course.id,
       runId,
       cumulativeMilliDollars: Number(runUsage.estimated_cost_milli_dollars),
+      occurredAtMilliseconds: snapshot.usage.finalizedAt
+        ? new Date(snapshot.usage.finalizedAt).getTime()
+        : Date.now(),
     });
     const [history, conversationUsage] = await Promise.all([
       selectCourseAgentHistory(conversation.id),
