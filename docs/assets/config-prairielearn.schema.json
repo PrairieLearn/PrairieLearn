@@ -1520,6 +1520,37 @@
         }
       ]
     },
+    "courseAgentRuntime": {
+      "default": "disabled",
+      "type": "string",
+      "enum": ["disabled", "fake", "cloudflare"]
+    },
+    "courseAgentWorkerOrigin": {
+      "default": "http://127.0.0.1:8787",
+      "type": "string"
+    },
+    "courseAgentCapabilitySecret": {
+      "default": null,
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "courseAgentAnthropicApiKey": {
+      "default": null,
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
     "aiGradingRateLimitDollars": {
       "default": 10,
       "type": "number"
