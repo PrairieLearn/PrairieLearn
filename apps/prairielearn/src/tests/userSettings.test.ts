@@ -9,17 +9,18 @@ import { selectUserSettings } from '../models/user-settings.js';
 import { createUserTrpcClient } from '../trpc/user/client.js';
 
 import * as helperServer from './helperServer.js';
+import { withConfig } from './utils/config.js';
 
 const siteUrl = `http://localhost:${config.serverPort}`;
-const originalTrustProxy = config.trustProxy;
 
 describe('User settings', { timeout: 60_000, concurrent: false }, () => {
   let trpcClient: ReturnType<typeof createUserTrpcClient>;
 
-  beforeAll(() => {
-    config.trustProxy = true;
+  beforeAll(async () => {
+    await withConfig({ trustProxy: true }, async () => {
+      await helperServer.before()();
+    });
   });
-  beforeAll(helperServer.before());
   beforeAll(() => {
     trpcClient = createUserTrpcClient({
       csrfToken: generatePrefixCsrfToken(
@@ -30,9 +31,6 @@ describe('User settings', { timeout: 60_000, concurrent: false }, () => {
     });
   });
   afterAll(helperServer.after);
-  afterAll(() => {
-    config.trustProxy = originalTrustProxy;
-  });
 
   test('shows the current IP address in the user profile', async () => {
     const response = await fetch(`${siteUrl}/pl/settings`, {
