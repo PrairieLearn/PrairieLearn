@@ -5,9 +5,13 @@ import { compiledScriptTag, compiledStylesheetTag } from '@prairielearn/compiled
 import { formatDateFriendly } from '@prairielearn/formatter';
 import { HtmlSafeString, html, unsafeHtml } from '@prairielearn/html';
 import { renderHtml } from '@prairielearn/react';
+import { Hydrate } from '@prairielearn/react/server';
 import { run } from '@prairielearn/run';
+import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 import { assertNever } from '@prairielearn/utils';
 
+import { getCourseTrpcUrl } from '../lib/client/url.js';
+import { config } from '../lib/config.js';
 import { getNavPageTabs } from '../lib/navPageTabs.js';
 import { computeStatus } from '../lib/publishing.js';
 import type { UntypedResLocals } from '../lib/res-locals.types.js';
@@ -28,6 +32,14 @@ function asHtmlSafe(
     return content;
   }
   return renderHtml(content);
+}
+
+function CourseAgentPanelHydrationStub(_props: {
+  trpcCsrfToken: string;
+  courseId: string;
+  courseShortName: string;
+}) {
+  return null;
 }
 
 function SyncErrorsAndWarningsForContext({
@@ -280,6 +292,30 @@ export function PageLayout({
   const sideNavExpanded =
     sideNavEnabled && (resolvedOptions.forcedInitialNavToggleState ?? resLocals.side_nav_expanded);
 
+  const courseAgentPanel = run(() => {
+    if (
+      navContext.type !== 'instructor' ||
+      !resLocals.course_agent_enabled ||
+      !resLocals.course ||
+      !resLocals.authn_user
+    ) {
+      return null;
+    }
+    const trpcUrl = getCourseTrpcUrl(resLocals.course.id);
+    return (
+      <Hydrate nameOverride="CourseAgentPanel">
+        <CourseAgentPanelHydrationStub
+          trpcCsrfToken={generatePrefixCsrfToken(
+            { url: trpcUrl, authn_user_id: resLocals.authn_user.id },
+            config.secretKey,
+          )}
+          courseId={resLocals.course.id}
+          courseShortName={resLocals.course.short_name}
+        />
+      </Hydrate>
+    );
+  });
+
   let showContextNavigation = [
     'instructor',
     'administrator_institution',
@@ -478,6 +514,7 @@ export function PageLayout({
           </div>
         </div>
         ${resolvedOptions.showFooter ? renderHtml(<PageFooter />) : ''}
+        ${courseAgentPanel ? renderHtml(courseAgentPanel) : ''}
       </body>
     </html>
   `.toString();

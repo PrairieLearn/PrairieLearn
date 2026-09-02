@@ -342,6 +342,7 @@ export interface ResLocalsCourse {
   user: ResLocalsCourseAuthz['user'];
   course_has_course_instances: boolean;
   question_sharing_enabled: boolean;
+  course_agent_enabled: boolean;
   is_administrator: boolean;
 }
 
@@ -701,6 +702,11 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
     'question-sharing',
     res.locals,
   );
+  res.locals.course_agent_enabled =
+    authnAuthzData.has_course_permission_own &&
+    effectiveAuthzData.has_course_permission_own &&
+    !authnCourse.example_course &&
+    (await features.enabledFromLocals('course-agent', res.locals));
 }
 
 export default asyncHandler(async (req, res, next) => {

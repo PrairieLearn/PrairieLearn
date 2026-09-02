@@ -610,6 +610,11 @@ export const ConfigSchema = z.object({
   aiQuestionGenerationOpenAiOrganization: z.string().nullable().default(null),
   aiGradingGoogleApiKey: z.string().nullable().default(null),
   aiGradingAnthropicApiKey: z.string().nullable().default(null),
+  /** Experimental course-agent runtime. The fake runtime never calls external services. */
+  courseAgentRuntime: z.enum(['disabled', 'fake', 'cloudflare']).default('disabled'),
+  courseAgentWorkerOrigin: z.string().default('http://127.0.0.1:8787'),
+  courseAgentCapabilitySecret: z.string().nullable().default(null),
+  courseAgentAnthropicApiKey: z.string().nullable().default(null),
   /**
    * The hourly spending rate limit for AI grading, in US dollars.
    * This is applied per course instance.
