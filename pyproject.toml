@@ -6,14 +6,14 @@ requires-python = ">=3.13,<3.14"
 classifiers = ["Private :: Do Not Upload"]
 
 dependencies = [
-  "ansi2html==1.9.2",
+  "ansi2html==1.9.3",
   "automata-lib==9.2.0",
   "chevron==0.14.0",
-  "coloraide==8.10",
-  "faker==40.36.0",
+  "coloraide==8.12.1",
+  "faker==40.37.0",
   "jinja2==3.1.6",
   "jsonschema==4.26.0",
-  "lxml==6.1.1",
+  "lxml==6.1.2",
   "matplotlib==3.11.1",
   "networkx==3.6.1",
   "nltk==3.10.3",
@@ -24,9 +24,9 @@ dependencies = [
   "pint==0.25.3",
   "psutil==7.2.2",
   "pulp==3.3.2",
-  "pyarrow==25.0.0",
+  "pyarrow==25.0.1",
   "pycryptodome==3.23.0",
-  "pygments==2.20.0",
+  "pygments==2.21.0",
   "pygments-ansi-color==0.3.0",
   "pygraphviz==1.14",
   "pyquaternion==0.9.9",
@@ -35,10 +35,10 @@ dependencies = [
   "rich==15.0.0",
   "schemdraw==0.23",
   "scikit-learn==1.9.0",
-  "scipy==1.18.0",
+  "scipy==1.18.1",
   "seaborn==0.13.2",
   "sketchresponse==0.1.4",
-  "statsmodels==0.14.6",
+  "statsmodels==0.15.0",
   "sympy==1.14.0",
   "text-unidecode==1.3",
   "typing-extensions==4.16.0",
@@ -52,13 +52,13 @@ dev = [
   "pytest-cov==7.1.0",
   "pytest-github-actions-annotate-failures==0.4.2",
   "pytest-repeat==0.9.4",
-  "ruff==0.16.2",
+  "ruff==0.16.5",
   "sqlfluff==4.3.0",
-  "squawk-cli==2.62.0",
+  "squawk-cli==2.63.0",
   "tomlkit==0.15.1",
   "types-chevron==0.14.2.20260408",
   "types-lxml==2026.2.16",
-  "types-pygments==2.20.0.20260728",
+  "types-pygments==2.21.0.20260819",
 ]
 
 docs = [
@@ -71,13 +71,13 @@ docs = [
   "mkdocs-literate-nav==0.6.3",
   "mkdocs-material==9.7.7",
   "mkdocstrings==1.0.6",
-  "mkdocstrings-python==2.0.5",
-  "pymdown-extensions==11.0.1",
+  "mkdocstrings-python==2.0.7",
+  "pymdown-extensions==11.0.2",
   # https://github.com/pygments/pygments/issues/3076
-  "pygments==2.20.0",
+  "pygments==2.21.0",
   # mkdocstrings-python will format the docstrings using ruff
   # https://mkdocstrings.github.io/python/usage/configuration/signatures/#line_length
-  "ruff==0.16.2",
+  "ruff==0.16.5",
 ]
 
 # We only use pyproject.toml for the Python dependencies, so we don't need to
