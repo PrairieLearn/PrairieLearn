@@ -1,3 +1,4 @@
+import * as cheerio from 'cheerio';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
@@ -10,10 +11,14 @@ import { createUserTrpcClient } from '../trpc/user/client.js';
 import * as helperServer from './helperServer.js';
 
 const siteUrl = `http://localhost:${config.serverPort}`;
+const originalTrustProxy = config.trustProxy;
 
 describe('User settings', { timeout: 60_000, concurrent: false }, () => {
   let trpcClient: ReturnType<typeof createUserTrpcClient>;
 
+  beforeAll(() => {
+    config.trustProxy = true;
+  });
   beforeAll(helperServer.before());
   beforeAll(() => {
     trpcClient = createUserTrpcClient({
@@ -25,6 +30,23 @@ describe('User settings', { timeout: 60_000, concurrent: false }, () => {
     });
   });
   afterAll(helperServer.after);
+  afterAll(() => {
+    config.trustProxy = originalTrustProxy;
+  });
+
+  test('shows the current IP address in the user profile', async () => {
+    const response = await fetch(`${siteUrl}/pl/settings`, {
+      headers: { 'X-Forwarded-For': '203.0.113.42' },
+    });
+    assert(response.ok);
+
+    const $ = cheerio.load(await response.text());
+    const ipAddressRow = $('table[aria-label="User profile information"] tr').filter(
+      (_, element) => $(element).find('th').text().trim() === 'IP address',
+    );
+    assert.lengthOf(ipAddressRow, 1);
+    assert.equal(ipAddressRow.find('td').text().trim(), '203.0.113.42');
+  });
 
   test('updates settings for the authenticated user', async () => {
     const updatedSettings = await trpcClient.settings.update.mutate({
