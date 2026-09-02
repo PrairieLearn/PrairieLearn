@@ -617,9 +617,11 @@ class TestSympy:
 
     @pytest.mark.parametrize(
         ("a_pair", "custom_functions"),
-        chain(
-            zip(EXPR_PAIRS, repeat(None)),
-            zip(CUSTOM_FUNCTION_PAIRS, repeat(FUNCTION_NAMES)),
+        list(
+            chain(
+                zip(EXPR_PAIRS, repeat(None)),
+                zip(CUSTOM_FUNCTION_PAIRS, repeat(FUNCTION_NAMES)),
+            )
         ),
     )
     @pytest.mark.parametrize("remove_assumptions", [True, False])
