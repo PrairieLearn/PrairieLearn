@@ -21,7 +21,7 @@ import {
 } from '../../ee/lib/course-agent/usage-limits.js';
 import {
   CourseAgentConversationSchema,
-  CourseAgentEventRowSchema,
+  CourseAgentEventSchema,
   CourseAgentMessageSchema,
 } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
@@ -43,13 +43,6 @@ import {
   requireNotExampleCourse,
   t,
 } from './init.js';
-
-export interface CourseAgentError {
-  Get: never;
-  List: never;
-  Start: never;
-  RespondToPushApproval: never;
-}
 
 const requireCourseAgentFeature = t.middleware(async (opts) => {
   if (!(await features.enabledFromLocals('course-agent', opts.ctx.locals))) {
@@ -142,7 +135,7 @@ const get = courseAgentProcedure
   .output(
     CourseAgentSnapshotSchema.extend({
       messages: z.array(CourseAgentMessageSchema),
-      persistedEvents: z.array(CourseAgentEventRowSchema),
+      persistedEvents: z.array(CourseAgentEventSchema),
       conversationUsage: z.object({
         normalized_total_tokens: z.number(),
         estimated_cost_milli_dollars: z.number(),
