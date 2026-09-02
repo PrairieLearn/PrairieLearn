@@ -1753,6 +1753,17 @@
         }
       ]
     },
+    "courseAgentGithubToken": {
+      "default": null,
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
     "aiGradingRateLimitDollars": {
       "default": 10,
       "type": "number"
