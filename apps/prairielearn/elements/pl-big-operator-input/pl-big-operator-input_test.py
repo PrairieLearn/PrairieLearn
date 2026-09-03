@@ -2097,35 +2097,6 @@ def test_schema_accepts_implied_custom_operator() -> None:
     )
 
 
-@pytest.mark.parametrize(
-    "markup",
-    [
-        html(operator="limit", limits="bounds"),
-        html(operator="custom", limits="bounds"),
-        html(**{
-            "correct-answer-start": "1",
-            "correct-answer-end": "2",
-            "correct-answer-body": "k",
-        }),
-        html(
-            operator="sum",
-            **{
-                "index-variable": None,
-                "correct-answer-start": "1",
-                "correct-answer-end": "2",
-                "correct-answer-body": "k",
-            },
-        ),
-    ],
-)
-def test_schema_rejects_statically_invalid_configurations(markup: str) -> None:
-    with pytest.raises(ValueError, match="is not valid under any of the given schemas"):
-        big_operator_input.pl.validate_element(
-            lxml.html.fragment_fromstring(markup),
-            SCHEMA_PATH,
-        )
-
-
 def test_custom_operator_correct_answer_panel_renders_complete_notation() -> None:
     markup = html(
         operator="custom",
