@@ -203,7 +203,7 @@ export interface UploadResponse {
   strippedAccessRules: StrippedAccessRules;
   /** Assessment set names defined in the course's infoCourse.json. */
   assessmentSetNames: string[];
-  /** Existing (set, number) pairs in this course instance, for deduplication. */
+  /** Existing (set, number) pairs in the target course instance, for deduplication. Empty without one. */
   existingAssessmentLabels: { set: string; number: string }[];
   /** Count of unique questions that appeared in more than one question bank and were deduplicated. */
   deduplicatedQuestionBankQuestionCount: number;

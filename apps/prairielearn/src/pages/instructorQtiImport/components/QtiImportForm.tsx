@@ -9,12 +9,9 @@ import {
 } from '@prairielearn/question-conversion/trimmer';
 import { getAppError } from '@prairielearn/trpc/client';
 
-import {
-  getCourseInstanceBaseUrl,
-  getCourseInstanceEditErrorUrl,
-} from '../../../lib/client/url.js';
-import { createCourseInstanceTrpcClient } from '../../../trpc/courseInstance/client.js';
-import type { QtiImportError } from '../../../trpc/courseInstance/qti-import.js';
+import { getCourseInstanceBaseUrl } from '../../../lib/client/url.js';
+import { createCourseTrpcClient } from '../../../trpc/course/client.js';
+import type { QtiImportError } from '../../../trpc/course/qti-import.js';
 import {
   type CourseInstanceOption,
   type ParseWarning,
@@ -270,23 +267,26 @@ function mergeEmbeddedSourceBanks(
 }
 
 export function QtiImportForm({
-  courseInstanceId: initialCourseInstanceId,
+  courseId,
+  urlPrefix,
   courseInstances,
-  csrfTokensByCourseInstance,
+  initialCourseInstanceId,
+  csrfTokens,
   returnTo,
 }: {
-  courseInstanceId: string;
+  courseId: string;
+  urlPrefix: string;
   courseInstances: CourseInstanceOption[];
-  csrfTokensByCourseInstance: Record<string, { upload: string; trpc: string }>;
+  /** Preselected import target; null when the course has no course instances. */
+  initialCourseInstanceId: string | null;
+  csrfTokens: { upload: string; trpc: string };
   returnTo: 'assessments' | 'questions';
 }) {
   const [selectedCourseInstanceId, setSelectedCourseInstanceId] = useState(initialCourseInstanceId);
-  const csrfTokens = csrfTokensByCourseInstance[selectedCourseInstanceId];
-  const [trpcClient, setTrpcClient] = useState(() =>
-    createCourseInstanceTrpcClient({
-      csrfToken: csrfTokens.trpc,
-      courseInstanceId: selectedCourseInstanceId,
-    }),
+  // Assessments live in a course instance, so without one only questions can be imported.
+  const canImportAssessments = selectedCourseInstanceId != null;
+  const [trpcClient] = useState(() =>
+    createCourseTrpcClient({ csrfToken: csrfTokens.trpc, courseId }),
   );
   const [step, setStep] = useState<ImportStep>('upload');
   const [results, setResults] = useState<SerializedConversionResult[]>([]);
@@ -333,9 +333,12 @@ export function QtiImportForm({
     });
     formData.set('file', trimmedFile);
 
+    if (selectedCourseInstanceId != null) {
+      formData.set('course_instance_id', selectedCourseInstanceId);
+    }
+
     setProcessingPhase('uploading');
-    const baseUrl = getCourseInstanceBaseUrl(selectedCourseInstanceId);
-    const response = await fetch(`${baseUrl}/instructor/instance_admin/qti_import/upload`, {
+    const response = await fetch(`${urlPrefix}/course_admin/qti_import/upload`, {
       method: 'POST',
       headers: {
         'X-CSRF-Token': csrfTokens.upload,
@@ -453,16 +456,19 @@ export function QtiImportForm({
         .filter(
           ({ result, override }) => override.included && getIncludedQuestionCount(result) > 0,
         );
-      const includedAssessments = includedResults.filter(
-        (
-          entry,
-        ): entry is typeof entry & {
-          result: Extract<SerializedConversionResult, { sourceType: 'assessment' }>;
-        } => entry.result.sourceType === 'assessment',
-      );
-      const includedQuestionBankResults = includedResults.filter(
-        ({ result }) => result.sourceType === 'question-bank',
-      );
+      const includedAssessments = canImportAssessments
+        ? includedResults.filter(
+            (
+              entry,
+            ): entry is typeof entry & {
+              result: Extract<SerializedConversionResult, { sourceType: 'assessment' }>;
+            } => entry.result.sourceType === 'assessment',
+          )
+        : [];
+      // Without a course instance, quiz questions are imported as standalone questions.
+      const standaloneQuestionResults = canImportAssessments
+        ? includedResults.filter(({ result }) => result.sourceType === 'question-bank')
+        : includedResults;
 
       // Deduplicate assessment directory names so two assessments with the
       // same title don't overwrite each other.
@@ -498,7 +504,7 @@ export function QtiImportForm({
         }
       }
 
-      const questionPayloads = includedQuestionBankResults.flatMap(({ result }) =>
+      const questionPayloads = standaloneQuestionResults.flatMap(({ result }) =>
         result.questions
           .filter((q) => questionOverrides.get(q.directoryName)?.included !== false)
           .map((q) => {
@@ -525,6 +531,7 @@ export function QtiImportForm({
       );
 
       const payload = {
+        courseInstanceId: selectedCourseInstanceId,
         questions: [...questionPayloadsByDirectoryName.values()],
         assessments: includedAssessments.map(({ result, override }) => {
           const includedQuestionDirs = new Set<string>();
@@ -594,12 +601,11 @@ export function QtiImportForm({
 
       await trpcClient.qtiImport.create.mutate(payload);
 
-      const baseUrl = getCourseInstanceBaseUrl(selectedCourseInstanceId);
       disableBeforeUnload();
       window.location.href =
-        returnTo === 'questions'
-          ? `${baseUrl}/instructor/course_admin/questions`
-          : `${baseUrl}/instructor/instance_admin/assessments`;
+        returnTo === 'assessments' && selectedCourseInstanceId != null
+          ? `${getCourseInstanceBaseUrl(selectedCourseInstanceId)}/instructor/instance_admin/assessments`
+          : `${urlPrefix}/course_admin/questions`;
     } catch (err) {
       const appError = getAppError<QtiImportError['Create']>(err);
       if (appError?.code === 'SYNC_JOB_FAILED') {
@@ -633,16 +639,19 @@ export function QtiImportForm({
     [],
   );
 
-  const includedAssessmentCount = results.filter(
-    (result, i) =>
-      overrides[i]?.included &&
-      result.sourceType === 'assessment' &&
-      getIncludedQuestionCount(result) > 0,
-  ).length;
+  const includedAssessmentCount = canImportAssessments
+    ? results.filter(
+        (result, i) =>
+          overrides[i]?.included &&
+          result.sourceType === 'assessment' &&
+          getIncludedQuestionCount(result) > 0,
+      ).length
+    : 0;
   const hasAssessmentResults = results.some((result) => result.sourceType === 'assessment');
   const includedQuestionDirs = new Set<string>();
   for (const [i, result] of results.entries()) {
-    if (!overrides[i]?.included || result.sourceType === 'assessment') continue;
+    if (!overrides[i]?.included) continue;
+    if (canImportAssessments && result.sourceType === 'assessment') continue;
     for (const question of result.questions) {
       if (questionOverrides.get(question.directoryName)?.included !== false) {
         includedQuestionDirs.add(question.directoryName);
@@ -652,7 +661,7 @@ export function QtiImportForm({
   const includedQuestionCount = includedQuestionDirs.size;
   const canImport = includedAssessmentCount > 0 || includedQuestionCount > 0;
   const labelParts: string[] = [];
-  if (includedAssessmentCount > 0 || hasAssessmentResults) {
+  if (canImportAssessments && hasAssessmentResults) {
     labelParts.push(
       `${includedAssessmentCount} assessment${includedAssessmentCount !== 1 ? 's' : ''}`,
     );
@@ -727,7 +736,7 @@ export function QtiImportForm({
       )}
       {overrides[i].included && result.questions.length > 0 && (
         <Card.Body>
-          {result.sourceType === 'assessment' && (
+          {canImportAssessments && result.sourceType === 'assessment' && (
             <div className="row g-3 mb-3">
               <div className="col-md-6">
                 <Form.Label htmlFor={`title-${i}`}>Title</Form.Label>
@@ -809,12 +818,7 @@ export function QtiImportForm({
             {error.jobSequenceId && (
               <>
                 {' '}
-                <Alert.Link
-                  href={getCourseInstanceEditErrorUrl(
-                    selectedCourseInstanceId,
-                    error.jobSequenceId,
-                  )}
-                >
+                <Alert.Link href={`${urlPrefix}/edit_error/${error.jobSequenceId}`}>
                   View sync errors
                 </Alert.Link>
               </>
@@ -836,18 +840,7 @@ export function QtiImportForm({
             courseInstances={courseInstances}
             selectedCourseInstanceId={selectedCourseInstanceId}
             onSubmit={handleUpload}
-            onCourseInstanceChange={(id) => {
-              setSelectedCourseInstanceId(id);
-              const tokens = csrfTokensByCourseInstance[id];
-              // The tRPC proxy is callable, so wrap it to prevent React from treating it
-              // as a functional state update.
-              setTrpcClient(() =>
-                createCourseInstanceTrpcClient({
-                  csrfToken: tokens.trpc,
-                  courseInstanceId: id,
-                }),
-              );
-            }}
+            onCourseInstanceChange={setSelectedCourseInstanceId}
           />
         )}
 
@@ -870,6 +863,7 @@ export function QtiImportForm({
               results={results}
               strippedAccessRules={strippedRules}
               parseWarnings={parseWarnings}
+              canImportAssessments={canImportAssessments}
             />
 
             <UnresolvedBankWarnings results={results} />
@@ -884,11 +878,18 @@ export function QtiImportForm({
                 <h2 id="qti-import-assessments-heading" className="h4 mb-1">
                   Assessments
                 </h2>
-                <p className="text-muted mb-3">
-                  Assessments are imported to PrairieLearn with their questions and basic quiz
-                  structure. After import, you can edit their settings, adjust question order and
-                  points, and assign them like any other assessment.
-                </p>
+                {canImportAssessments ? (
+                  <p className="text-muted mb-3">
+                    Assessments are imported to PrairieLearn with their questions and basic quiz
+                    structure. After import, you can edit their settings, adjust question order and
+                    points, and assign them like any other assessment.
+                  </p>
+                ) : (
+                  <p className="text-muted mb-3">
+                    This course has no course instances yet, so only the questions from these
+                    assessments will be imported.
+                  </p>
+                )}
                 {assessmentResults.map(renderResultCard)}
               </section>
             )}
