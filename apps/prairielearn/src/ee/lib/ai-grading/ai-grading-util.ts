@@ -814,13 +814,16 @@ async function rotateBase64Image(
  *
  * @param params
  * @param params.image - The base64-encoded image to correct.
+ * @param params.mediaType - The media type of the image.
  * @param params.model - The LLM to use for determining the correct orientation.
  */
 async function correctImageOrientation({
   image,
+  mediaType,
   model,
 }: {
   image: string;
+  mediaType: string;
   model: LanguageModel;
 }): Promise<{
   correctedImage: string;
@@ -846,7 +849,7 @@ async function correctImageOrientation({
       {
         type: 'file',
         data: images[i - 1],
-        mediaType: 'image/jpeg',
+        mediaType,
         providerOptions: {
           openai: {
             imageDetail: 'auto',
@@ -924,6 +927,7 @@ export async function correctImagesOrientation({
   for (const [filename, image] of Object.entries(submittedImages)) {
     const { correctedImage, degreesRotated, response } = await correctImageOrientation({
       image,
+      mediaType: getAiGradingFileMediaType(filename),
       model,
     });
 

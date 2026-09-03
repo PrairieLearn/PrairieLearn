@@ -1,5 +1,6 @@
 import { Output, generateText } from 'ai';
 import { MockLanguageModelV3 } from 'ai/test';
+import sharp from 'sharp';
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
 
@@ -8,6 +9,7 @@ import { sanitizeObject } from '@prairielearn/sanitize';
 import { type RubricItem } from '../../../lib/db-types.js';
 
 import {
+  correctImagesOrientation,
   extractAiGradingExplanationFromCompletion,
   extractSubmissionImages,
   generatePrompt,
@@ -282,6 +284,62 @@ describe('generateSubmissionContent', () => {
     });
 
     expect(result).toEqual({ 'solution.png': 'imagedata' });
+  });
+});
+
+describe('correctImagesOrientation', () => {
+  it('sends PNG and WebP images to the model with matching media types', async () => {
+    const png = await sharp({
+      create: { width: 2, height: 3, channels: 3, background: '#ff0000' },
+    })
+      .png()
+      .toBuffer();
+    const webp = await sharp({
+      create: { width: 2, height: 3, channels: 3, background: '#0000ff' },
+    })
+      .webp()
+      .toBuffer();
+    const model = new MockLanguageModelV3({
+      doGenerate: {
+        content: [{ type: 'text', text: JSON.stringify({ upright_image: '1' }) }],
+        finishReason: { unified: 'stop', raw: undefined },
+        usage: {
+          inputTokens: {
+            total: undefined,
+            noCache: undefined,
+            cacheRead: undefined,
+            cacheWrite: undefined,
+          },
+          outputTokens: { total: undefined, text: undefined, reasoning: undefined },
+        },
+        warnings: [],
+      },
+    });
+
+    await correctImagesOrientation({
+      submittedAnswer: {
+        _files: [
+          { name: 'solution.png', contents: png.toString('base64') },
+          { name: 'solution.webp', contents: webp.toString('base64') },
+        ],
+      },
+      submittedImages: {
+        'solution.png': png.toString('base64'),
+        'solution.webp': webp.toString('base64'),
+      },
+      model,
+    });
+
+    const mediaTypes = model.doGenerateCalls.map(({ prompt }) =>
+      prompt
+        .flatMap((message) => (message.role === 'user' ? message.content : []))
+        .filter((part) => part.type === 'file')
+        .map((part) => part.mediaType),
+    );
+    expect(mediaTypes).toEqual([
+      ['image/png', 'image/png', 'image/png', 'image/png'],
+      ['image/webp', 'image/webp', 'image/webp', 'image/webp'],
+    ]);
   });
 });
 
