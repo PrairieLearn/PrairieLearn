@@ -280,7 +280,7 @@ export class CourseAgentCoordinator {
       const prompt = `${SYSTEM_PROMPT}\n\nInstructor request:\n${request.prompt}`;
       const command = [
         'codex --search exec --json --ephemeral --ignore-user-config --skip-git-repo-check',
-        '--sandbox workspace-write --approve-for-me',
+        '--approve-for-me',
         `--model ${shellQuote(this.env.OPENAI_MODEL)}`,
         shellQuote(prompt),
       ].join(' ');
