@@ -2,8 +2,8 @@
 
 This element collects an indexed big-operator expression in separate limit and body fields while storing one lossless, JSON-safe combined answer.
 
-Its visible component fields are rendered and parsed by PrairieLearn's official `pl-symbolic-input` element.
-The wrapper is responsible for the operator layout, canonical aggregate answer, and grading; `pl-symbolic-input` owns the MathLive editor and symbolic-input parsing behavior.
+Its visible component fields use PrairieLearn's official `pl-symbolic-input` rendering and symbolic-submission parsing behavior.
+The wrapper is responsible for the operator layout, canonical aggregate answer, and grading.
 
 ## Sample element
 
@@ -231,6 +231,42 @@ Mathematical leaves use `sympy_to_json(..., allow_sets=True)`:
   PrairieLearn's reserved `sympy` leaf type.
 - Custom submissions use the same form-dependent components and add
   `"operator_latex"`; built-in answers do not include that key.
+
+### Accessing structured answers in `server.py`
+
+Use [`pl.decode_operator_expression()`][prairielearn.operator_expression.decode_operator_expression]
+to validate the aggregate answer and decode its mathematical fields to SymPy values.
+The `limits` field identifies the available layout-specific fields and supports
+type narrowing:
+
+```python title="server.py"
+import prairielearn as pl
+
+
+def grade(data):
+    submitted_json = data["submitted_answers"].get("total")
+    if not isinstance(submitted_json, dict):
+        return
+
+    submitted = pl.decode_operator_expression(submitted_json)
+    correct = pl.decode_operator_expression(data["correct_answers"]["total"])
+
+    if submitted["limits"] == "bounds" and correct["limits"] == "bounds":
+        submitted_body = submitted["body"]
+        correct_body = correct["body"]
+        submitted_lower = submitted["lower"]
+        correct_lower = correct["lower"]
+        # Apply custom grading logic to the decoded SymPy values.
+```
+
+After element processing, `correct_answers[answers-name]` contains the canonical
+structured correct answer. A processed submission at
+`submitted_answers[answers-name]` contains a structured dictionary when parsing
+succeeds, `""` for an allowed blank response, or `None` when parsing fails.
+Names such as `<answers-name>-body` and `<answers-name>-start` are internal form
+fields. They remain available in `raw_submitted_answers` and `format_errors` for
+rerendering and field-specific feedback, but they are not separate processed
+answers.
 
 ## Grading
 
