@@ -28,10 +28,14 @@ function CourseAgentPanelInner({
     conversationId: string;
     sandboxId: string;
   } | null>(null);
-  const [showDiagnostics, setShowDiagnostics] = useState(
-    () =>
-      diagnosticsEnabled && localStorage.getItem(`course-agent-diagnostics:${courseId}`) === '1',
-  );
+  const [showDiagnostics, setShowDiagnostics] = useState(false);
+
+  // Restore the browser-only diagnostics preference after hydration.
+  useEffect(() => {
+    if (diagnosticsEnabled) {
+      setShowDiagnostics(localStorage.getItem(`course-agent-diagnostics:${courseId}`) === '1');
+    }
+  }, [courseId, diagnosticsEnabled]);
   const snapshot = useQuery(
     trpc.courseAgent.get.queryOptions(
       conversation ?? { conversationId: '00000000-0000-0000-0000-000000000000', sandboxId: '' },

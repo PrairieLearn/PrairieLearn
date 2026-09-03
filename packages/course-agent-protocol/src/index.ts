@@ -91,7 +91,10 @@ export const CourseAgentStartRunRequestSchema = z.object({
   conversationId: z.uuid(),
   runId: z.uuid(),
   sandboxId: z.string().min(1).max(120),
-  prompt: z.string().trim().min(1).max(20_000),
+  prompt: z
+    .string()
+    .max(20_000)
+    .refine((prompt) => prompt.trim().length > 0, 'Prompt cannot be blank'),
   course: CourseAgentRepositorySchema,
   runtimeSettings: CourseAgentRuntimeSettingsSchema,
 });
