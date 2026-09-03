@@ -396,7 +396,9 @@ def test_formatted_limit_accepts_documented_directions(
     ],
 )
 def test_limit_rejects_unknown_direction_in_either_string_form(correct: str) -> None:
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError, match=r"Limit direction must be|invalid Limit wrapper"
+    ):
         big_operator_input.prepare(html(**{"correct-answer": correct}), data())
 
 
@@ -738,12 +740,12 @@ def test_limit_direction_input_schema_values_are_valid(value: str) -> None:
 
 def test_limit_direction_input_rejects_invalid_boolean() -> None:
     markup = html(operator="limit", **{"allow-limit-direction-input": "sometimes"})
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match='Attribute "allow-limit-direction-input"'):
         big_operator_input.pl.validate_element(
             lxml.html.fragment_fromstring(markup),
             SCHEMA_PATH,
         )
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="must be a boolean value"):
         big_operator_input._config(markup)
 
 
@@ -1238,7 +1240,7 @@ def test_rejects_malformed_structured_answers(
 ) -> None:
     answer = canonical()
     mutation(answer)
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match=r"well-formed|does not match"):
         big_operator_input.prepare(html(operator="union"), data(answer))
 
 
@@ -1615,7 +1617,7 @@ def test_symbolic_input_width_schema_accepts_integers(attribute: str) -> None:
 @pytest.mark.parametrize("attribute", ["body-size", "limit-size"])
 def test_symbolic_input_width_schema_rejects_non_integers(attribute: str) -> None:
     markup = html(operator="sum", **{attribute: "wide"})
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match=f'Attribute "{attribute}".*integer'):
         big_operator_input.pl.validate_element(
             lxml.html.fragment_fromstring(markup),
             SCHEMA_PATH,
@@ -2117,7 +2119,7 @@ def test_schema_accepts_implied_custom_operator() -> None:
     ],
 )
 def test_schema_rejects_statically_invalid_configurations(markup: str) -> None:
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="is not valid under any of the given schemas"):
         big_operator_input.pl.validate_element(
             lxml.html.fragment_fromstring(markup),
             SCHEMA_PATH,
