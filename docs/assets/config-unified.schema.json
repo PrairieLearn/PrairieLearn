@@ -1993,6 +1993,12 @@
           "cacheWrite": 0,
           "output": 15
         },
+        "gpt-5.6-luna": {
+          "input": 0.2,
+          "cachedInput": 0.02,
+          "cacheWrite": 0.25,
+          "output": 1.2
+        },
         "gpt-5.6-terra": {
           "input": 2,
           "cachedInput": 0.2,
@@ -2155,6 +2161,29 @@
           "additionalProperties": false
         },
         "gpt-5.4-2026-03-05": {
+          "type": "object",
+          "properties": {
+            "input": {
+              "type": "number",
+              "minimum": 0
+            },
+            "cachedInput": {
+              "type": "number",
+              "minimum": 0
+            },
+            "cacheWrite": {
+              "type": "number",
+              "minimum": 0
+            },
+            "output": {
+              "type": "number",
+              "minimum": 0
+            }
+          },
+          "required": ["input", "cachedInput", "cacheWrite", "output"],
+          "additionalProperties": false
+        },
+        "gpt-5.6-luna": {
           "type": "object",
           "properties": {
             "input": {
@@ -2437,6 +2466,7 @@
         "gpt-5.2-2025-12-11",
         "gpt-5.4-mini-2026-03-17",
         "gpt-5.4-2026-03-05",
+        "gpt-5.6-luna",
         "gpt-5.6-terra",
         "gpt-5.6-sol",
         "gemini-3.7-flash",

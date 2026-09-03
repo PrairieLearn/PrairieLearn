@@ -44,6 +44,13 @@ export function computeAiGradingRelativeCosts(
 export const AI_GRADING_MODELS = [
   {
     provider: 'openai',
+    modelId: 'gpt-5.6-luna',
+    name: 'GPT 5.6 Luna',
+    sublabel: 'Best for large-scale grading',
+    recommended: true,
+  },
+  {
+    provider: 'openai',
     modelId: 'gpt-5.6-terra',
     name: 'GPT 5.6 Terra',
     sublabel: 'Balanced general-purpose grading',
@@ -100,6 +107,7 @@ export const AI_GRADING_MODEL_IDS: AiGradingModelId[] = AI_GRADING_MODELS.map(
 );
 
 export const AI_GRADING_MODEL_PROVIDERS = {
+  'gpt-5.6-luna': 'openai',
   'gpt-5.6-terra': 'openai',
   'gpt-5.6-sol': 'openai',
   'gemini-3.7-flash': 'google',

@@ -683,6 +683,7 @@ export const ConfigSchema = z.object({
       'gpt-5.2-2025-12-11': TokenPricingSchema,
       'gpt-5.4-mini-2026-03-17': TokenPricingSchema,
       'gpt-5.4-2026-03-05': TokenPricingSchema,
+      'gpt-5.6-luna': TokenPricingSchema,
       'gpt-5.6-terra': TokenPricingSchema,
       'gpt-5.6-sol': TokenPricingSchema,
       'gemini-3.7-flash': TokenPricingSchema,
@@ -696,13 +697,14 @@ export const ConfigSchema = z.object({
       'claude-opus-4-7': TokenPricingSchema,
     })
     .default({
-      // Prices current as of 2026-08-26. Values obtained from
+      // Prices current as of 2026-09-03. Values obtained from
       // https://developers.openai.com/api/docs/pricing
       'gpt-4o-2024-11-20': { input: 2.5, cachedInput: 1.25, cacheWrite: 0, output: 10 },
       'gpt-5-2025-08-07': { input: 1.25, cachedInput: 0.125, cacheWrite: 0, output: 10 },
       'gpt-5.2-2025-12-11': { input: 1.75, cachedInput: 0.175, cacheWrite: 0, output: 14 },
       'gpt-5.4-mini-2026-03-17': { input: 0.75, cachedInput: 0.075, cacheWrite: 0, output: 4.5 },
       'gpt-5.4-2026-03-05': { input: 2.5, cachedInput: 0.25, cacheWrite: 0, output: 15 },
+      'gpt-5.6-luna': { input: 0.2, cachedInput: 0.02, cacheWrite: 0.25, output: 1.2 },
       'gpt-5.6-terra': { input: 2, cachedInput: 0.2, cacheWrite: 2.5, output: 12 },
       'gpt-5.6-sol': { input: 4, cachedInput: 0.4, cacheWrite: 5, output: 20 },
 
