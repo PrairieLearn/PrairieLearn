@@ -10,6 +10,7 @@ import {
   QUESTION_BLOCK_SIZES,
   type QuestionBlockSize,
   QuestionBlockSizeOverflowError,
+  renderUrlToDocx,
   renderUrlToPdf,
 } from '@prairielearn/printing';
 import { parseRequestQuery } from '@prairielearn/zod';
@@ -27,6 +28,9 @@ import { assessmentFilenamePrefix, sanitizeString } from '../../lib/sanitize-nam
 import selectAndAuthzAssessmentInstance from '../../middlewares/selectAndAuthzAssessmentInstance.js';
 
 import { InstructorAssessmentInstancePrint } from './instructorAssessmentInstancePrint.html.js';
+import { buildPrintableCover, getPrintFooterLabel } from './printCover.js';
+
+const DOCX_CONTENT_TYPE = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
 
 const QuestionBlockSizeSchema = z.enum(QUESTION_BLOCK_SIZES);
 const IdentityFieldSchema = z.string().trim().min(1).max(40);
@@ -106,14 +110,28 @@ router.get(
       throw new HttpStatusError(400, 'Only exam assessment instances can be printed');
     }
 
-    const responseType = req.accepts(['text/html', 'application/pdf']);
+    const responseType = req.accepts(['text/html', 'application/pdf', DOCX_CONTENT_TYPE]);
     if (!responseType) throw new HttpStatusError(406, 'Not Acceptable');
     res.vary('Accept');
     res.setHeader('Cache-Control', 'private, no-store');
 
-    if (responseType === 'application/pdf') {
+    const assessmentTextHtml = renderAssessmentText(res.locals.assessment, res.locals.urlPrefix);
+    const honorCodeHtml =
+      res.locals.assessment.require_honor_code && res.locals.assessment.honor_code
+        ? markdownToHtml(
+            mustache.render(res.locals.assessment.honor_code, {
+              user_name: '____________________________',
+            }),
+            { allowHtml: false, interpretMath: false },
+          )
+        : null;
+
+    if (responseType === 'application/pdf' || responseType === DOCX_CONTENT_TYPE) {
       if (!config.devMode && config.printingPlaywrightWsEndpoint === null) {
-        throw new HttpStatusError(503, 'PDF printing is not configured on this server');
+        throw new HttpStatusError(
+          503,
+          'Printable document rendering is not configured on this server',
+        );
       }
 
       await validateQuestionBlockSizeOverridesForPrinting(
@@ -125,13 +143,36 @@ router.get(
         req.originalUrl,
         `${config.serverType}://localhost:${config.serverPort}`,
       );
-      let pdf: Buffer;
+      const renderOptions = {
+        url: internalUrl.href,
+        cookieHeader: req.get('cookie'),
+        browserWSEndpoint: config.printingPlaywrightWsEndpoint ?? undefined,
+      };
+      const isPdf = responseType === 'application/pdf';
+      let output: Buffer;
       try {
-        pdf = await renderUrlToPdf({
-          url: internalUrl.href,
-          cookieHeader: req.get('cookie'),
-          browserWSEndpoint: config.printingPlaywrightWsEndpoint ?? undefined,
-        });
+        output = isPdf
+          ? await renderUrlToPdf(renderOptions)
+          : await renderUrlToDocx({
+              ...renderOptions,
+              // The question count and points are only known once the page has rendered and
+              // omitted any broken questions, so the cover reads them back from the page.
+              cover: (pageDataset) =>
+                buildPrintableCover({
+                  resLocals: res.locals,
+                  document: res.locals.printDocument,
+                  paperSize: res.locals.paperSize,
+                  identityFields: res.locals.identityFields,
+                  questionCount: Number(pageDataset.printQuestionCount),
+                  maxPoints: Number(pageDataset.printMaxPoints),
+                  assessmentTextHtml,
+                  honorCodeHtml,
+                }),
+              footerLabel: getPrintFooterLabel({
+                document: res.locals.printDocument,
+                formId: res.locals.assessment_instance.id,
+              }),
+            });
       } catch (error) {
         if (error instanceof QuestionBlockSizeOverflowError) {
           throw new HttpStatusError(422, error.message, { cause: error });
@@ -150,10 +191,13 @@ router.get(
             res.locals.printDocument === 'answer_key' ? '_answer_key' : ''
           }`,
         ) +
-        '.pdf';
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
-      res.send(pdf);
+        (isPdf ? '.pdf' : '.docx');
+      res.setHeader('Content-Type', responseType);
+      res.setHeader(
+        'Content-Disposition',
+        `${isPdf ? 'inline' : 'attachment'}; filename="${filename}"`,
+      );
+      res.send(output);
       return;
     }
 
@@ -162,16 +206,6 @@ router.get(
       questionBlockSizeOverrides: res.locals.questionBlockSizeOverrides,
       document: res.locals.printDocument,
     });
-    const assessmentTextHtml = renderAssessmentText(res.locals.assessment, res.locals.urlPrefix);
-    const honorCodeHtml =
-      res.locals.assessment.require_honor_code && res.locals.assessment.honor_code
-        ? markdownToHtml(
-            mustache.render(res.locals.assessment.honor_code, {
-              user_name: '____________________________',
-            }),
-            { allowHtml: false, interpretMath: false },
-          )
-        : null;
 
     res.send(
       InstructorAssessmentInstancePrint({
