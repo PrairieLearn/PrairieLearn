@@ -1,91 +1,247 @@
 import { QueryClient, useMutation, useQuery } from '@tanstack/react-query';
-import { useState } from 'react';
-import { Alert, Button, Form, Offcanvas, Spinner } from 'react-bootstrap';
+import { type ReactNode, useEffect, useState } from 'react';
+import { Alert, Dropdown, Form, Spinner } from 'react-bootstrap';
 
+import type { CourseAgentEvent } from '@prairielearn/course-agent-protocol';
 import { QueryClientProviderDebug } from '@prairielearn/trpc/react';
+import { OverlayTrigger } from '@prairielearn/ui';
 
 import { formatMilliDollars } from '../../lib/ai-grading-credits.js';
 import { createCourseTrpcClient } from '../../trpc/course/client.js';
 import { TRPCProvider, useTRPC } from '../../trpc/course/context.js';
 
-function CourseAgentPanelInner({ courseShortName }: { courseShortName: string }) {
+function CourseAgentPanelInner({
+  courseId,
+  courseShortName,
+  diagnosticsEnabled,
+}: {
+  courseId: string;
+  courseShortName: string;
+  diagnosticsEnabled: boolean;
+}) {
   const trpc = useTRPC();
-  const [show, setShow] = useState(false);
+  const [open, setOpen] = useState(true);
   const [prompt, setPrompt] = useState('');
+  const [events, setEvents] = useState<CourseAgentEvent[]>([]);
+  const [streamOffset, setStreamOffset] = useState(0);
+  const [streamRunId, setStreamRunId] = useState<string | null>(null);
   const [conversation, setConversation] = useState<{
     conversationId: string;
     sandboxId: string;
   } | null>(null);
+  const [showDiagnostics, setShowDiagnostics] = useState(
+    () =>
+      diagnosticsEnabled && localStorage.getItem(`course-agent-diagnostics:${courseId}`) === '1',
+  );
   const conversations = useQuery(trpc.courseAgent.list.queryOptions());
+  const latestConversation = conversations.data?.conversations[0];
+  const selectedConversation =
+    conversation ??
+    (latestConversation
+      ? { conversationId: latestConversation.id, sandboxId: latestConversation.sandbox_id }
+      : null);
+  const snapshot = useQuery(
+    trpc.courseAgent.get.queryOptions(
+      selectedConversation ?? {
+        conversationId: '00000000-0000-0000-0000-000000000000',
+        sandboxId: '',
+      },
+      { enabled: selectedConversation !== null && streamRunId === null },
+    ),
+  );
+  const refetchSnapshot = snapshot.refetch;
+  const activeStreamRunId = streamRunId ?? snapshot.data?.activeRunId ?? null;
   const start = useMutation(
     trpc.courseAgent.start.mutationOptions({
       onSuccess: (result) => {
         setConversation(result);
         setPrompt('');
+        setStreamOffset(0);
+        setStreamRunId(result.runId);
         void conversations.refetch();
       },
     }),
   );
-  const snapshot = useQuery(
-    trpc.courseAgent.get.queryOptions(
-      conversation ?? { conversationId: '00000000-0000-0000-0000-000000000000', sandboxId: '' },
-      {
-        enabled: conversation !== null,
-        refetchInterval: (query) => {
-          const status = query.state.data?.status;
-          return status === 'starting' || status === 'running' ? 750 : false;
-        },
-      },
-    ),
+
+  // Keep the transcript attached to the resumable SSE relay while a run is active.
+  useEffect(() => {
+    if (!activeStreamRunId) return;
+    const abortController = new AbortController();
+    let offset = 0;
+
+    void (async () => {
+      try {
+        const response = await fetch(
+          `/pl/course/${courseId}/course_agent/stream?runId=${activeStreamRunId}&offset=${offset}`,
+          { signal: abortController.signal },
+        );
+        if (response.status !== 204 && response.body) {
+          if (!response.ok) throw new Error(`Stream failed (${response.status})`);
+          const reader = response.body.pipeThrough(new TextDecoderStream()).getReader();
+          let buffer = '';
+          while (true) {
+            const { done, value = '' } = await reader.read();
+            if (done) break;
+            offset += value.length;
+            setStreamOffset(offset);
+            buffer += value;
+            const frames = buffer.split('\n\n');
+            buffer = frames.pop() ?? '';
+            for (const frame of frames) {
+              const data = frame
+                .split('\n')
+                .find((line) => line.startsWith('data: '))
+                ?.slice(6);
+              if (!data) continue;
+              const event = JSON.parse(data) as CourseAgentEvent;
+              setEvents((current) => {
+                const next = current.filter((existing) => existing.sequence !== event.sequence);
+                return [...next, event].sort((left, right) => left.sequence - right.sequence);
+              });
+              if (event.type === 'git.push.approval.requested') void refetchSnapshot();
+            }
+          }
+        }
+        const result = await refetchSnapshot();
+        if (result.data) setEvents(result.data.events);
+      } catch (error) {
+        if (!abortController.signal.aborted) {
+          setStreamRunId(null);
+          setEvents((current) => [
+            ...current,
+            {
+              sequence: current.length,
+              type: 'run.failed',
+              occurredAt: new Date().toISOString(),
+              data: { message: error instanceof Error ? error.message : String(error) },
+            },
+          ]);
+        }
+      } finally {
+        if (!abortController.signal.aborted) setStreamRunId(null);
+      }
+    })();
+
+    return () => abortController.abort();
+  }, [activeStreamRunId, courseId, refetchSnapshot]);
+
+  const displayedEvents = events.length > 0 ? events : (snapshot.data?.events ?? []);
+  const busy = start.isPending || activeStreamRunId !== null;
+  const toolEvents = displayedEvents.filter((event) => event.type.startsWith('tool.'));
+  const messages = displayedEvents.filter(
+    (event) => event.type === 'user.message' || event.type === 'assistant.delta',
   );
   const approval = useMutation(
     trpc.courseAgent.respondToPushApproval.mutationOptions({
       onSuccess: () => void snapshot.refetch(),
     }),
   );
-  const busy = start.isPending || ['starting', 'running'].includes(snapshot.data?.status ?? '');
+  const failure = findLastEvent(displayedEvents, 'run.failed');
 
   return (
-    <>
-      <Button
-        type="button"
-        className="position-fixed bottom-0 end-0 m-4 rounded-pill shadow"
-        style={{ zIndex: 1020 }}
-        onClick={() => setShow(true)}
-      >
-        Course agent
-      </Button>
-      <Offcanvas show={show} placement="end" onHide={() => setShow(false)}>
-        <Offcanvas.Header closeButton>
-          <Offcanvas.Title>Course agent</Offcanvas.Title>
-        </Offcanvas.Header>
-        <Offcanvas.Body className="d-flex flex-column gap-3">
-          <p className="text-muted small mb-0">
-            Ephemeral authoring workspace for <strong>{courseShortName}</strong>
-          </p>
-          {conversations.data?.conversations.length ? (
-            <div className="list-group list-group-flush border rounded">
-              {conversations.data.conversations.map((item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  className="list-group-item list-group-item-action small"
-                  onClick={() =>
-                    setConversation({ conversationId: item.id, sandboxId: item.sandbox_id })
-                  }
+    <aside
+      className={`course-agent-panel ${open ? 'course-agent-panel-open' : 'course-agent-panel-collapsed'}`}
+      aria-label="Course agent panel"
+    >
+      <div className="course-agent-panel-rail border-start bg-light">
+        <OverlayTrigger
+          placement="left"
+          tooltip={{ body: 'Expand course agent', props: { id: 'course-agent-expand-tooltip' } }}
+        >
+          <button
+            type="button"
+            className="btn btn-link text-primary p-2"
+            aria-label="Expand course agent"
+            onClick={() => setOpen(true)}
+          >
+            <i className="bi bi-stars fs-5" aria-hidden="true" />
+          </button>
+        </OverlayTrigger>
+      </div>
+
+      <div className="course-agent-panel-content border-start bg-light">
+        <header className="course-agent-header border-bottom bg-white px-3 py-3">
+          <div className="d-flex align-items-center gap-2">
+            <OverlayTrigger
+              placement="bottom"
+              tooltip={{ body: 'Collapse', props: { id: 'course-agent-collapse-tooltip' } }}
+            >
+              <button
+                type="button"
+                className="btn btn-sm btn-light"
+                aria-label="Collapse course agent"
+                onClick={() => setOpen(false)}
+              >
+                <i className="bi bi-arrow-bar-right" />
+              </button>
+            </OverlayTrigger>
+            <strong className="d-flex align-items-center gap-2">
+              <i className="bi bi-stars text-primary" aria-hidden="true" /> Course agent
+            </strong>
+            {conversations.data?.conversations.length ? (
+              <Dropdown className="min-width-0 ms-auto">
+                <Dropdown.Toggle
+                  size="sm"
+                  variant="light"
+                  className="course-agent-conversation-picker border bg-white text-truncate"
                 >
-                  {item.title}
-                </button>
-              ))}
+                  {selectedConversation
+                    ? (conversations.data.conversations.find(
+                        (item) => item.id === selectedConversation.conversationId,
+                      )?.title ?? courseShortName)
+                    : courseShortName}
+                </Dropdown.Toggle>
+                <Dropdown.Menu align="end">
+                  {conversations.data.conversations.map((item) => (
+                    <Dropdown.Item
+                      key={item.id}
+                      active={item.id === selectedConversation?.conversationId}
+                      onClick={() => {
+                        setEvents([]);
+                        setConversation({ conversationId: item.id, sandboxId: item.sandbox_id });
+                      }}
+                    >
+                      {item.title}
+                    </Dropdown.Item>
+                  ))}
+                </Dropdown.Menu>
+              </Dropdown>
+            ) : (
+              <span className="text-muted small text-truncate ms-auto">{courseShortName}</span>
+            )}
+          </div>
+        </header>
+
+        <div className="course-agent-transcript px-4 py-4" aria-live="polite">
+          {messages.length === 0 && (
+            <div className="course-agent-empty text-center text-muted px-3 py-5">
+              <i className="bi bi-stars fs-2 text-primary" aria-hidden="true" />
+              <p className="fw-semibold text-body mt-3 mb-1">What would you like to build?</p>
+              <p className="small mb-0">
+                Ask the agent to create or improve PrairieLearn course content.
+              </p>
             </div>
-          ) : null}
-          {snapshot.data?.messages.map((message) => (
-            <Alert key={message.id} variant={message.role === 'user' ? 'primary' : 'light'}>
-              {message.content}
+          )}
+          {messages.map((event) =>
+            event.type === 'user.message' ? (
+              <UserMessage key={event.sequence}>{String(event.data.text ?? '')}</UserMessage>
+            ) : (
+              <AgentMessage key={event.sequence}>{String(event.data.text ?? '')}</AgentMessage>
+            ),
+          )}
+          {toolEvents.length > 0 && <ToolCallGroup events={toolEvents} busy={busy} />}
+          {busy && (
+            <div className="d-flex align-items-center gap-2 small text-muted mb-3">
+              <Spinner size="sm" /> Course agent is working…
+            </div>
+          )}
+          {(snapshot.data?.error || failure) && (
+            <Alert variant="danger">
+              {snapshot.data?.error ?? String(failure?.data.message ?? 'The run failed.')}
             </Alert>
-          ))}
+          )}
           {snapshot.data && (
-            <div className="small text-muted border rounded p-2">
+            <div className="small text-muted border rounded bg-white p-2 mb-3">
               Active run: {snapshot.data.usage.normalizedTotalTokens.toLocaleString()} tokens ·{' '}
               {formatMilliDollars(snapshot.data.usage.estimatedCostMilliDollars)} estimated
               <br />
@@ -95,20 +251,27 @@ function CourseAgentPanelInner({ courseShortName }: { courseShortName: string })
               estimated
             </div>
           )}
-          {snapshot.data?.error && <Alert variant="danger">{snapshot.data.error}</Alert>}
           {start.error && <Alert variant="danger">{start.error.message}</Alert>}
           {approval.error && <Alert variant="danger">{approval.error.message}</Alert>}
           {snapshot.data?.pendingApproval && (
-            <Alert variant="warning">
-              <Alert.Heading className="h6">Review course changes</Alert.Heading>
-              <p className="small mb-2">{snapshot.data.pendingApproval.diffSummary}</p>
+            <div className="course-agent-approval border rounded bg-white overflow-hidden mb-4">
+              <div className="border-bottom px-3 py-2">
+                <div className="d-flex align-items-center gap-2 fw-semibold">
+                  <i className="bi bi-shield-check text-warning" aria-hidden="true" /> Approval
+                  required
+                </div>
+                <p className="small mb-0 mt-1">{snapshot.data.pendingApproval.diffSummary}</p>
+              </div>
               <details>
-                <summary className="small">View full diff</summary>
-                <pre className="small overflow-auto mt-2">{snapshot.data.pendingApproval.diff}</pre>
+                <summary className="small px-3 py-2">View full diff</summary>
+                <pre className="course-agent-diff-body small overflow-auto border-top p-3 mb-0">
+                  {snapshot.data.pendingApproval.diff}
+                </pre>
               </details>
-              <div className="d-flex gap-2 mt-3">
-                <Button
-                  size="sm"
+              <div className="d-flex justify-content-end gap-2 border-top px-2 py-2">
+                <button
+                  type="button"
+                  className="btn btn-sm btn-primary"
                   disabled={approval.isPending}
                   onClick={() =>
                     approval.mutate({
@@ -118,10 +281,10 @@ function CourseAgentPanelInner({ courseShortName }: { courseShortName: string })
                   }
                 >
                   Approve, push, and sync
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline-danger"
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-sm btn-outline-danger"
                   disabled={approval.isPending}
                   onClick={() =>
                     approval.mutate({
@@ -131,56 +294,201 @@ function CourseAgentPanelInner({ courseShortName }: { courseShortName: string })
                   }
                 >
                   Deny
-                </Button>
+                </button>
               </div>
-            </Alert>
+            </div>
           )}
-          {snapshot.data && (
-            <details>
-              <summary className="small">Activity ({snapshot.data.events.length})</summary>
-              <ol className="small mt-2">
-                {snapshot.data.events.map((event) => (
-                  <li key={event.sequence}>{event.type}</li>
-                ))}
-              </ol>
-            </details>
+          {diagnosticsEnabled && (
+            <div className="border-top pt-3 mt-3">
+              <Form.Check
+                type="switch"
+                id="course-agent-diagnostics"
+                label="Diagnostic mode"
+                checked={showDiagnostics}
+                onChange={(event) => {
+                  const checked = event.currentTarget.checked;
+                  setShowDiagnostics(checked);
+                  localStorage.setItem(`course-agent-diagnostics:${courseId}`, checked ? '1' : '0');
+                }}
+              />
+              {showDiagnostics && (
+                <Diagnostics
+                  conversation={selectedConversation}
+                  runId={activeStreamRunId}
+                  offset={streamOffset}
+                  events={displayedEvents}
+                  status={snapshot.data?.status ?? (busy ? 'running' : 'offline')}
+                />
+              )}
+            </div>
           )}
+        </div>
+
+        <footer className="course-agent-footer border-top bg-white p-3">
           <Form
-            className="mt-auto"
             onSubmit={(event) => {
               event.preventDefault();
-              start.mutate({ conversationId: conversation?.conversationId, prompt });
+              start.mutate({ conversationId: selectedConversation?.conversationId, prompt });
             }}
           >
-            <Form.Group controlId="course-agent-prompt">
-              <Form.Label>Message</Form.Label>
-              <Form.Control
-                as="textarea"
-                rows={4}
-                value={prompt}
-                disabled={busy}
-                onChange={(event) => setPrompt(event.target.value)}
-              />
-            </Form.Group>
-            <Button type="submit" className="mt-2" disabled={busy || !prompt.trim()}>
-              {busy && <Spinner size="sm" className="me-2" />}
-              Send
-            </Button>
+            <Form.Control
+              as="textarea"
+              rows={3}
+              className="course-agent-chat-input shadow-none"
+              aria-label="Message course agent"
+              placeholder="Ask anything about your course…"
+              value={prompt}
+              disabled={busy}
+              onChange={(event) => setPrompt(event.target.value)}
+            />
+            <div className="d-flex align-items-center mt-2">
+              <span className="small text-muted">Codex</span>
+              <button
+                type="submit"
+                className="btn btn-sm btn-primary ms-auto"
+                aria-label="Send message"
+                disabled={busy || !prompt.trim()}
+              >
+                {busy ? <Spinner size="sm" /> : <i className="bi bi-send-fill" />}
+              </button>
+            </div>
           </Form>
-        </Offcanvas.Body>
-      </Offcanvas>
-    </>
+        </footer>
+      </div>
+    </aside>
   );
+}
+
+function UserMessage({ children }: { children: ReactNode }) {
+  return (
+    <div
+      className="d-flex flex-column align-items-end mb-4"
+      role="article"
+      aria-label="Message from you"
+    >
+      <div className="course-agent-user-message rounded bg-secondary-subtle p-3">{children}</div>
+    </div>
+  );
+}
+
+function AgentMessage({ children }: { children: ReactNode }) {
+  return (
+    <div
+      className="course-agent-agent-message mb-4"
+      role="article"
+      aria-label="Message from PrairieLearn"
+    >
+      {children}
+    </div>
+  );
+}
+
+function ToolCallGroup({ events, busy }: { events: CourseAgentEvent[]; busy: boolean }) {
+  const [expanded, setExpanded] = useState(true);
+  const starts = events.filter((event) => event.type === 'tool.started');
+  return (
+    <div className="course-agent-tool-group mb-4">
+      <button
+        type="button"
+        className="course-agent-tool-group-toggle btn btn-sm d-flex align-items-center gap-2 border-0 px-0 py-1 text-muted"
+        aria-expanded={expanded}
+        onClick={() => setExpanded(!expanded)}
+      >
+        <span className="flex-grow-1 text-start">
+          {busy
+            ? 'Working'
+            : `Made ${starts.length} tool ${starts.length === 1 ? 'call' : 'calls'}`}
+        </span>
+        <i className={`bi bi-chevron-${expanded ? 'down' : 'up'}`} aria-hidden="true" />
+      </button>
+      {expanded && (
+        <div className="d-flex flex-column gap-1 border-start ms-2 mt-1 ps-3 py-1">
+          {starts.map((event) => {
+            const completed = events.find(
+              (candidate) =>
+                candidate.data.operationId === event.data.operationId &&
+                ['tool.completed', 'tool.failed'].includes(candidate.type),
+            );
+            return (
+              <div key={event.sequence} className="small text-muted">
+                <i
+                  className={`bi bi-fw me-1 ${completed ? (completed.type === 'tool.failed' ? 'bi-x-lg text-danger' : 'bi-check-lg text-success') : 'bi-three-dots'}`}
+                  aria-hidden="true"
+                />
+                {String(event.data.tool ?? 'Use tool')}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Diagnostics({
+  conversation,
+  runId,
+  offset,
+  events,
+  status,
+}: {
+  conversation: { conversationId: string; sandboxId: string } | null;
+  runId: string | null;
+  offset: number;
+  events: CourseAgentEvent[];
+  status: string;
+}) {
+  const agentStarted = findLastEvent(events, 'agent.started');
+  const usage = findLastEvent(events, 'usage.updated');
+  const docs = findLastEvent(events, 'docs.mounted') ?? findLastEvent(events, 'docs.unavailable');
+  const validation =
+    findLastEvent(events, 'validation.completed') ?? findLastEvent(events, 'validation.failed');
+  return (
+    <details className="small mt-2" open>
+      <summary>Live conversation state</summary>
+      <dl className="course-agent-diagnostics mt-2 mb-0">
+        <dt>Status</dt>
+        <dd>{status}</dd>
+        <dt>Conversation</dt>
+        <dd>{conversation?.conversationId ?? 'Not started'}</dd>
+        <dt>Sandbox</dt>
+        <dd>{conversation?.sandboxId ?? 'Not started'}</dd>
+        <dt>Run</dt>
+        <dd>{runId ?? 'Idle'}</dd>
+        <dt>Codex thread</dt>
+        <dd>{String(agentStarted?.data.threadId ?? 'Pending')}</dd>
+        <dt>Stream cursor</dt>
+        <dd>{offset}</dd>
+        <dt>Events</dt>
+        <dd>{events.length}</dd>
+        <dt>Documentation</dt>
+        <dd>{docs?.type ?? 'Pending'}</dd>
+        <dt>Validation</dt>
+        <dd>{validation?.type ?? 'Pending'}</dd>
+        <dt>Usage</dt>
+        <dd>{usage ? JSON.stringify(usage.data) : 'Pending'}</dd>
+      </dl>
+    </details>
+  );
+}
+
+function findLastEvent(events: CourseAgentEvent[], type: CourseAgentEvent['type']) {
+  for (let index = events.length - 1; index >= 0; index--) {
+    if (events[index].type === type) return events[index];
+  }
+  return undefined;
 }
 
 export function CourseAgentPanel({
   trpcCsrfToken,
   courseId,
   courseShortName,
+  diagnosticsEnabled,
 }: {
   trpcCsrfToken: string;
   courseId: string;
   courseShortName: string;
+  diagnosticsEnabled: boolean;
 }) {
   const [queryClient] = useState(() => new QueryClient());
   const [trpcClient] = useState(() =>
@@ -189,7 +497,11 @@ export function CourseAgentPanel({
   return (
     <QueryClientProviderDebug client={queryClient}>
       <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
-        <CourseAgentPanelInner courseShortName={courseShortName} />
+        <CourseAgentPanelInner
+          courseId={courseId}
+          courseShortName={courseShortName}
+          diagnosticsEnabled={diagnosticsEnabled}
+        />
       </TRPCProvider>
     </QueryClientProviderDebug>
   );

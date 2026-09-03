@@ -10,7 +10,7 @@ export interface UsageRates {
 
 export function emptyUsage(model: string): CourseAgentUsage {
   return {
-    provider: 'anthropic',
+    provider: 'openai',
     model,
     inputTokens: 0,
     cacheReadTokens: 0,
@@ -33,37 +33,31 @@ export function updateUsageFromEvent(
   event: Record<string, unknown>,
   rates: UsageRates,
 ): CourseAgentUsage {
-  const message =
-    typeof event.message === 'object' && event.message !== null
-      ? (event.message as Record<string, unknown>)
-      : {};
   const raw =
     typeof event.usage === 'object' && event.usage !== null
       ? (event.usage as Record<string, unknown>)
-      : typeof message.usage === 'object' && message.usage !== null
-        ? (message.usage as Record<string, unknown>)
-        : {};
-  const reasoning = Math.max(
-    current.reasoningTokens ?? 0,
-    nonnegativeInteger(raw.reasoning_tokens),
+      : {};
+  const outputDetails =
+    typeof raw.output_tokens_details === 'object' && raw.output_tokens_details !== null
+      ? (raw.output_tokens_details as Record<string, unknown>)
+      : {};
+  const totalInput = nonnegativeInteger(raw.input_tokens);
+  const cachedInput = Math.min(totalInput, nonnegativeInteger(raw.cached_input_tokens));
+  const totalOutput = nonnegativeInteger(raw.output_tokens);
+  const eventReasoning = Math.min(
+    totalOutput,
+    Math.max(
+      nonnegativeInteger(raw.reasoning_tokens),
+      nonnegativeInteger(outputDetails.reasoning_tokens),
+    ),
   );
+  const reasoning = Math.max(current.reasoningTokens ?? 0, eventReasoning);
   const next = {
     ...current,
-    inputTokens: Math.max(current.inputTokens, nonnegativeInteger(raw.input_tokens)),
-    cacheReadTokens: Math.max(
-      current.cacheReadTokens,
-      nonnegativeInteger(raw.cache_read_input_tokens),
-    ),
-    cacheWriteTokens: Math.max(
-      current.cacheWriteTokens,
-      nonnegativeInteger(raw.cache_creation_input_tokens),
-    ),
-    outputTokens: Math.max(current.outputTokens, nonnegativeInteger(raw.output_tokens)),
+    inputTokens: Math.max(current.inputTokens, totalInput - cachedInput),
+    cacheReadTokens: Math.max(current.cacheReadTokens, cachedInput),
+    outputTokens: Math.max(current.outputTokens, totalOutput - eventReasoning),
     reasoningTokens: reasoning > 0 ? reasoning : current.reasoningTokens,
-    providerCostMilliDollars:
-      typeof event.total_cost_usd === 'number' && event.total_cost_usd >= 0
-        ? Math.max(current.providerCostMilliDollars ?? 0, Math.ceil(event.total_cost_usd * 1000))
-        : current.providerCostMilliDollars,
   };
   next.normalizedTotalTokens =
     next.inputTokens +

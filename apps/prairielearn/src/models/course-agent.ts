@@ -235,6 +235,7 @@ export function upsertCourseAgentPushApproval({
       branch: approval.branch,
       base_sha: approval.baseSha,
       proposed_sha: approval.proposedSha,
+      commit_message: approval.commitMessage,
       diff_summary: approval.diffSummary,
       diff: approval.diff,
     },

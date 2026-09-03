@@ -38,6 +38,7 @@ function CourseAgentPanelHydrationStub(_props: {
   trpcCsrfToken: string;
   courseId: string;
   courseShortName: string;
+  diagnosticsEnabled: boolean;
 }) {
   return null;
 }
@@ -311,6 +312,7 @@ export function PageLayout({
           )}
           courseId={resLocals.course.id}
           courseShortName={resLocals.course.short_name}
+          diagnosticsEnabled={resLocals.course_agent_diagnostics_enabled ?? false}
         />
       </Hydrate>
     );
@@ -366,8 +368,9 @@ export function PageLayout({
           pageTitle,
           pageNote: resolvedOptions.pageNote,
         })}
-        ${compiledStylesheetTag('pageLayout.css')} ${headContentString}
-        ${sideNavEnabled ? compiledScriptTag('pageLayoutClient.ts') : ''}
+        ${compiledStylesheetTag('pageLayout.css')}
+        ${courseAgentPanel ? compiledStylesheetTag('courseAgentPanel.css') : ''}
+        ${headContentString} ${sideNavEnabled ? compiledScriptTag('pageLayoutClient.ts') : ''}
       </head>
       <body
         class="${clsx({

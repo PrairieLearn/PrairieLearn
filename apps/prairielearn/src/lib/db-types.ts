@@ -782,6 +782,7 @@ export type CourseAgentWorkspaceBackup = z.infer<typeof CourseAgentWorkspaceBack
 export const CourseAgentPushApprovalSchema = z.object({
   base_sha: z.string(),
   branch: z.string(),
+  commit_message: z.string(),
   completed_at: DateFromISOString.nullable(),
   conversation_id: z.uuid(),
   course_id: IdSchema,

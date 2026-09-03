@@ -8,32 +8,27 @@
     "enabled": true
   },
   "vars": {
-    "ANTHROPIC_MODEL": "sonnet",
-    "COURSE_AGENT_MAX_BUDGET_USD": "0.25",
-    "COURSE_AGENT_IDLE_TIMEOUT_SECONDS": "600",
-    "COURSE_AGENT_BACKUP_TTL_SECONDS": "604800",
-    "COURSE_AGENT_LOCAL_DEVELOPMENT": "true",
-    "COURSE_AGENT_INPUT_MILLIDOLLARS_PER_MILLION": "3000",
-    "COURSE_AGENT_CACHE_READ_MILLIDOLLARS_PER_MILLION": "300",
-    "COURSE_AGENT_CACHE_WRITE_MILLIDOLLARS_PER_MILLION": "3750",
-    "COURSE_AGENT_OUTPUT_MILLIDOLLARS_PER_MILLION": "15000",
-    "COURSE_AGENT_REASONING_MILLIDOLLARS_PER_MILLION": "15000",
+    "OPENAI_MODEL": "gpt-5.4-mini",
+    // https://developers.openai.com/api/docs/models/gpt-5.4-mini
+    "COURSE_AGENT_INPUT_MILLIDOLLARS_PER_MILLION": "750",
+    "COURSE_AGENT_CACHE_READ_MILLIDOLLARS_PER_MILLION": "75",
+    "COURSE_AGENT_CACHE_WRITE_MILLIDOLLARS_PER_MILLION": "0",
+    "COURSE_AGENT_OUTPUT_MILLIDOLLARS_PER_MILLION": "4500",
+    "COURSE_AGENT_REASONING_MILLIDOLLARS_PER_MILLION": "4500",
     "BACKUP_BUCKET_NAME": "prairielearn-course-agent-workspaces"
   },
   "secrets": {
-    "required": [
-      "ANTHROPIC_API_KEY",
-      "COURSE_AGENT_CAPABILITY_SECRET",
-      "COURSE_AGENT_GITHUB_PAT",
-      "R2_ACCESS_KEY_ID",
-      "R2_SECRET_ACCESS_KEY"
-    ]
+    "required": ["OPENAI_API_KEY", "COURSE_AGENT_CAPABILITY_SECRET", "COURSE_AGENT_GITHUB_PAT"]
   },
   "r2_buckets": [
     {
       "binding": "BACKUP_BUCKET",
       "bucket_name": "prairielearn-course-agent-workspaces",
       "preview_bucket_name": "prairielearn-course-agent-workspaces-local"
+    },
+    {
+      "binding": "COURSE_AGENT_DOCS",
+      "bucket_name": "prairielearn-course-agent-docs"
     }
   ],
   "containers": [

@@ -108,6 +108,7 @@ CREATE TABLE course_agent_push_approvals (
   branch TEXT NOT NULL,
   base_sha TEXT NOT NULL,
   proposed_sha TEXT NOT NULL,
+  commit_message TEXT NOT NULL,
   diff_summary TEXT NOT NULL,
   diff TEXT NOT NULL,
   status TEXT NOT NULL DEFAULT 'pending' CHECK (

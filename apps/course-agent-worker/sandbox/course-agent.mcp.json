@@ -1,9 +1,0 @@
-{
-  "mcpServers": {
-    "course_agent": {
-      "type": "stdio",
-      "command": "node",
-      "args": ["/opt/prairielearn/course_agent_mcp.mjs"]
-    }
-  }
-}

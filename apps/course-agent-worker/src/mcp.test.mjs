@@ -1,11 +1,13 @@
 import { spawn } from 'node:child_process';
 import { once } from 'node:events';
+import { fileURLToPath } from 'node:url';
 
 import { describe, expect, it } from 'vitest';
 
 describe('course-agent MCP bridge', () => {
-  it('advertises the push_sync tool', async () => {
-    const child = spawn(process.execPath, ['sandbox/course_agent_mcp.mjs'], {
+  it('advertises validation, rendering, and publication tools', async () => {
+    const bridgePath = fileURLToPath(new URL('../sandbox/course_agent_mcp.py', import.meta.url));
+    const child = spawn('python3', [bridgePath], {
       stdio: ['pipe', 'pipe', 'inherit'],
     });
     child.stdin.write(
@@ -25,6 +27,10 @@ describe('course-agent MCP bridge', () => {
       .split('\n')
       .map((line) => JSON.parse(line));
     expect(responses[0].result.serverInfo.name).toBe('prairielearn-course-agent');
-    expect(responses[1].result.tools.map((tool) => tool.name)).toEqual(['push_sync']);
+    expect(responses[1].result.tools.map((tool) => tool.name)).toEqual([
+      'validate_course',
+      'render_question_variant',
+      'push_sync',
+    ]);
   });
 });

@@ -1,6 +1,7 @@
 columns
     base_sha: text not null
     branch: text not null
+    commit_message: text not null
     completed_at: timestamp with time zone
     conversation_id: uuid not null
     course_id: bigint not null

@@ -4,18 +4,24 @@ export const COURSE_AGENT_WORKSPACE_ROOT = '/workspace';
 export const COURSE_AGENT_SEED_FILE = `${COURSE_AGENT_WORKSPACE_ROOT}/README.md`;
 
 export const CourseAgentEventTypeSchema = z.enum([
+  'user.message',
   'sandbox.starting',
   'sandbox.ready',
   'workspace.seeded',
+  'docs.mounted',
+  'docs.unavailable',
   'git.clone.started',
   'git.clone.completed',
   'git.configured',
+  'validation.completed',
+  'validation.failed',
   'agent.started',
   'assistant.delta',
   'tool.started',
   'tool.completed',
   'tool.failed',
   'agent.completed',
+  'usage.updated',
   'run.failed',
   'workspace.backup.started',
   'workspace.backup.completed',
@@ -27,7 +33,6 @@ export const CourseAgentEventTypeSchema = z.enum([
   'git.push.approval.denied',
   'git.push.completed',
   'sync.completed',
-  'usage.updated',
   'usage.finalized',
 ]);
 export type CourseAgentEventType = z.infer<typeof CourseAgentEventTypeSchema>;
@@ -95,8 +100,10 @@ export const CourseAgentPushPayloadSchema = z.object({
   baseSha: z.string().regex(/^[0-9a-f]{40}$/),
   proposedSha: z.string().regex(/^[0-9a-f]{40}$/),
   branch: z.string().min(1).max(255),
+  commitMessage: z.string().min(1).max(20_000),
   diffSummary: z.string().max(20_000),
   diff: z.string().max(500_000),
+  treeSha: z.string().regex(/^[0-9a-f]{40}$/),
 });
 export type CourseAgentPushPayload = z.infer<typeof CourseAgentPushPayloadSchema>;
 
@@ -106,6 +113,13 @@ export const CourseAgentPushApprovalSchema = CourseAgentPushPayloadSchema.extend
   result: z.record(z.string(), z.unknown()).nullable(),
 });
 export type CourseAgentPushApproval = z.infer<typeof CourseAgentPushApprovalSchema>;
+
+export const CourseAgentRuntimeSettingsSchema = z.object({
+  idleTimeoutSeconds: z.number().int().min(60).max(86_400),
+  backupTtlSeconds: z.number().int().min(60).max(2_592_000),
+  turnTimeoutSeconds: z.number().int().min(60).max(3_600),
+});
+export type CourseAgentRuntimeSettings = z.infer<typeof CourseAgentRuntimeSettingsSchema>;
 
 export const CourseAgentRunCapabilitySchema = CourseAgentIdentitySchema.extend({
   type: z.literal('course-agent-run'),
@@ -117,6 +131,7 @@ export const CourseAgentRunCapabilitySchema = CourseAgentIdentitySchema.extend({
     .string()
     .regex(/^[0-9a-f]{40}$/)
     .nullable(),
+  runtimeSettings: CourseAgentRuntimeSettingsSchema,
   expiresAt: z.iso.datetime(),
 });
 export type CourseAgentRunCapability = z.infer<typeof CourseAgentRunCapabilitySchema>;
@@ -135,6 +150,7 @@ export const CourseAgentStartRunRequestSchema = z.object({
   prompt: z.string().trim().min(1).max(20_000),
   course: CourseAgentRepositorySchema,
   workspaceBackup: CourseAgentWorkspaceBackupSchema.nullable().default(null),
+  runtimeSettings: CourseAgentRuntimeSettingsSchema,
 });
 export type CourseAgentStartRunRequest = z.infer<typeof CourseAgentStartRunRequestSchema>;
 
