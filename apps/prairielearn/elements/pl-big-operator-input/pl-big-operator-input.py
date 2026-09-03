@@ -384,8 +384,8 @@ def _infer_direction(raw: Any, operator: Operator) -> DirectionName | None:
                 case None:
                     return _decode_limit_direction(raw)
 
-                case _, limits if dir := _formatted_direction(limits):
-                    return DIRECTION_NAMES.get(dir)
+                case _, limits if direction := _formatted_direction(limits):
+                    return DIRECTION_NAMES.get(direction)
 
                 case _:
                     return None
