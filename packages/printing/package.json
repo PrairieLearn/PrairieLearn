@@ -20,6 +20,7 @@
   "dependencies": {
     "cheerio": "^1.2.0",
     "css-tree": "^3.2.1",
+    "docx": "^9.7.1",
     "playwright": "^1.62.1"
   },
   "devDependencies": {
@@ -28,6 +29,7 @@
     "@types/node": "^24.13.3",
     "@typescript/native-preview": "beta",
     "@vitest/coverage-v8": "^4.1.10",
+    "jszip": "^3.10.1",
     "vitest": "^4.1.10"
   }
 }

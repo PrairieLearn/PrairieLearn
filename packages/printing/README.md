@@ -136,6 +136,24 @@ This sets a half-page default and allows Question 3 to size itself automatically
 ?paper_size=A4&block_size=half&question_block_size=3:auto
 ```
 
+## Rendering Word documents
+
+`renderUrlToDocx` opens the same paginated page as `renderUrlToPdf` and produces a `.docx`
+buffer. The cover page and the running footer are native Word content built from the caller's
+`PrintableCover` and `footerLabel`; every `.printing-question` element inside a `.pagedjs_page`
+becomes one image captured at twice the CSS resolution, and a page break starts each subsequent
+printed page so the document paginates like the PDF. Instructors can edit the cover, reorder
+questions, and add space between them, but question content itself is not editable text. The
+sheet size and margins are measured from the paginated page, so they follow the page's CSS.
+
+`cover` may be a function; it receives the page's root `data-*` attributes so that values which
+are only known after rendering, such as the number of questions that rendered successfully, can be
+placed on the cover. `htmlToTextBlocks` reduces author-provided HTML (for example assessment
+instructions) to headings, paragraphs, and flat lists for the cover.
+
+PDF and DOCX renders share the same browser concurrency limits, queue, deadline, and network
+restrictions.
+
 ## Combining question fragments
 
 Questions are normally rendered in separate documents, so author- and element-generated IDs can
