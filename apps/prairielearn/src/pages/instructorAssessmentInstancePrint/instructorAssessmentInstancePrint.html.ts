@@ -158,6 +158,15 @@ export function InstructorAssessmentInstancePrint({
             }
           }
         </style>
+        ${unsafeHtml(extraHeadersHtml)}
+        <!--
+          RequireJS must load after every question's own headers. Unlike the per-question pages,
+          this document combines legacy and Freeform questions, so element dependencies such as
+          sylvester, socket.io, and cropper share the page with the legacy AMD loader. Those
+          libraries are UMD: once "define" exists they register as anonymous modules instead of
+          assigning their globals, which both breaks the elements that expect the global and
+          leaves RequireJS unable to resolve the legacy client modules.
+        -->
         ${hasLegacyQuestions
           ? html`
               <script src="${nodeModulesAssetPath('lodash/lodash.min.js')}"></script>
@@ -166,7 +175,7 @@ export function InstructorAssessmentInstancePrint({
               <script src="${assetPath('localscripts/questionCalculation.js')}"></script>
             `
           : ''}
-        ${unsafeHtml(extraHeadersHtml)} ${compiledStylesheetTag('examPrinting.css')}
+        ${compiledStylesheetTag('examPrinting.css')}
         <style>
           @page {
             @bottom-right {
