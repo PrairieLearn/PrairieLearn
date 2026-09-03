@@ -15,6 +15,7 @@ import { config } from '../lib/config.js';
 import { getNavPageTabs } from '../lib/navPageTabs.js';
 import { computeStatus } from '../lib/publishing.js';
 import type { UntypedResLocals } from '../lib/res-locals.types.js';
+import { CourseAgentPanel } from '../ee/components/CourseAgentPanel.js';
 
 import { AssessmentNavigation, AssessmentNavigationModal } from './AssessmentNavigation.js';
 import { HeadContents } from './HeadContents.js';
@@ -32,15 +33,6 @@ function asHtmlSafe(
     return content;
   }
   return renderHtml(content);
-}
-
-function CourseAgentPanelHydrationStub(_props: {
-  trpcCsrfToken: string;
-  courseId: string;
-  courseShortName: string;
-  diagnosticsEnabled: boolean;
-}) {
-  return null;
 }
 
 function SyncErrorsAndWarningsForContext({
@@ -304,8 +296,8 @@ export function PageLayout({
     }
     const trpcUrl = getCourseTrpcUrl(resLocals.course.id);
     return (
-      <Hydrate nameOverride="CourseAgentPanel">
-        <CourseAgentPanelHydrationStub
+      <Hydrate>
+        <CourseAgentPanel
           trpcCsrfToken={generatePrefixCsrfToken(
             { url: trpcUrl, authn_user_id: resLocals.authn_user.id },
             config.secretKey,

@@ -612,7 +612,16 @@ export const ConfigSchema = z.object({
   aiGradingAnthropicApiKey: z.string().nullable().default(null),
   /** Experimental course-agent runtime. The fake runtime never calls external services. */
   courseAgentRuntime: z.enum(['disabled', 'fake', 'cloudflare']).default('disabled'),
-  courseAgentWorkerOrigin: z.string().default('http://127.0.0.1:8787'),
+  courseAgentWorkerOrigin: z
+    .url()
+    .refine((value) => {
+      const url = new URL(value);
+      return (
+        url.protocol === 'https:' ||
+        (url.protocol === 'http:' && ['127.0.0.1', 'localhost', '[::1]'].includes(url.hostname))
+      );
+    }, 'Course-agent Worker origin must use HTTPS unless it is a loopback development URL')
+    .default('http://127.0.0.1:8787'),
   courseAgentCapabilitySecret: z.string().nullable().default(null),
   courseAgentSandbox: z
     .object({

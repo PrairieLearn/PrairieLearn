@@ -42,4 +42,17 @@ describe('ephemeral course-agent runtime', () => {
       ).rejects.toThrow('not found');
     });
   });
+
+  it('rejects snapshot requests when the runtime is disabled', async () => {
+    await withConfig({ courseAgentRuntime: 'disabled' }, async () => {
+      await expect(() =>
+        getEphemeralCourseAgentSnapshot({
+          courseId: '1',
+          userId: '2',
+          conversationId: '9a6d8f44-d55b-4e73-8b9b-547dd00fb400',
+          sandboxId: 'course-agent-test',
+        }),
+      ).rejects.toThrow('Course-agent runtime is disabled');
+    });
+  });
 });

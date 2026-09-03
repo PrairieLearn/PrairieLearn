@@ -122,6 +122,9 @@ async function startCourseAgentEventRelay(identity: Identity & { runId: string }
 }
 
 export async function getEphemeralCourseAgentSnapshot(identity: Identity) {
+  if (config.courseAgentRuntime === 'disabled') {
+    throw new Error('Course-agent runtime is disabled');
+  }
   if (config.courseAgentRuntime === 'fake') return getFakeSnapshot(identity);
   const capability = generateSignedToken(
     { type: 'course-agent-inspect', ...identity, expiresAt: expiresAt() },
