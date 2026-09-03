@@ -88,7 +88,7 @@ def test_decode_approach_operator_expression() -> None:
 
 def test_decode_custom_operator_expression() -> None:
     k = sympy.Symbol("k", positive=True)
-    f: sympy.Expr = sympy.Function("f")(k)  # type: ignore
+    f = sympy.Function("f")(k)
     answer = bounds_answer(
         operator="custom",
         operator_latex=r"\mathbb{E}",
