@@ -59,7 +59,10 @@ export async function authorizeRun(request: CourseAgentStartRunRequest, secret: 
     capability.promptDigest !== (await sha256Hex(request.prompt)) ||
     capability.repository !== request.course.repository ||
     capability.branch !== request.course.branch ||
-    capability.expectedSha !== request.course.expectedSha
+    capability.expectedSha !== request.course.expectedSha ||
+    capability.runtimeSettings.idleTimeoutSeconds !== request.runtimeSettings.idleTimeoutSeconds ||
+    capability.runtimeSettings.backupTtlSeconds !== request.runtimeSettings.backupTtlSeconds ||
+    capability.runtimeSettings.turnTimeoutSeconds !== request.runtimeSettings.turnTimeoutSeconds
   ) {
     throw new Error('Run capability does not authorize this request');
   }
