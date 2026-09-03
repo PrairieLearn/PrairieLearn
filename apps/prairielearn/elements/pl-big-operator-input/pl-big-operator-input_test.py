@@ -101,10 +101,10 @@ def test_operator_attribute_rejects_boolean_operators(operator: str) -> None:
 
 
 @pytest.mark.parametrize("correct", ["And(k, (k, {1, 2}))", "Or(k, (k, {1, 2}))"])
-def test_whole_answers_do_not_infer_boolean_operators(correct: str) -> None:
+def test_whole_answers_reject_boolean_operators(correct: str) -> None:
     markup = html(**{"correct-answer": correct})
 
-    with pytest.raises(ValueError, match='The "operator" attribute is required'):
+    with pytest.raises(ValueError, match="must match pattern"):
         big_operator_input.prepare(markup, data())
 
 
@@ -270,32 +270,11 @@ def test_infers_operator_from_canonical_dictionary() -> None:
 def test_omitted_index_requires_inferable_whole_answer() -> None:
     with pytest.raises(ValueError, match='"index-variable" attribute is required'):
         big_operator_input._config(html(operator="sum", **{"index-variable": None}))
-    with pytest.raises(ValueError, match='"index-variable" attribute is required'):
-        big_operator_input._config(
-            html(
-                operator="sum",
-                **{
-                    "index-variable": None,
-                    "correct-answer-start": "1",
-                    "correct-answer-end": "4",
-                    "correct-answer-body": "k",
-                },
-            )
-        )
 
 
 def test_omitted_operator_requires_inferable_whole_answer() -> None:
     with pytest.raises(ValueError, match='"operator" attribute is required'):
         big_operator_input._config(html())
-    markup = html(
-        **{
-            "correct-answer-start": "1",
-            "correct-answer-end": "4",
-            "correct-answer-body": "k",
-        },
-    )
-    with pytest.raises(ValueError, match='"operator" attribute is required'):
-        big_operator_input._config(markup)
 
 
 @pytest.mark.parametrize(
@@ -438,31 +417,6 @@ def test_infers_bounds_from_three_item_variadic_binder() -> None:
 
     assert state["correct_answers"]["op"]["operator"] == "max"
     assert state["correct_answers"]["op"]["limits"] == "bounds"
-
-
-def test_whole_domain_integral_matches_component_answer() -> None:
-    whole_markup = html(
-        variables="Gamma",
-        **{"correct-answer": "Integral(z, (z, Gamma))", "index-variable": "z"},
-    )
-    component_markup = html(
-        operator="integral",
-        limits="domain",
-        variables="Gamma",
-        **{
-            "index-variable": "z",
-            "correct-answer-domain": "Gamma",
-            "correct-answer-body": "z",
-        },
-    )
-    whole_state, component_state = data(), data()
-
-    big_operator_input.prepare(whole_markup, whole_state)
-    big_operator_input.prepare(component_markup, component_state)
-
-    assert (
-        whole_state["correct_answers"]["op"] == component_state["correct_answers"]["op"]
-    )
 
 
 @pytest.mark.parametrize("limits", ["bounds", "domain"])
@@ -1031,16 +985,11 @@ def test_domain_structured_answer_and_rendering() -> None:
     assert "Big operator expression input" in rendered
 
 
-def test_prepare_parses_basic_component_correct_answer_strings() -> None:
+def test_prepare_parses_whole_correct_answer_strings() -> None:
     state = data()
     markup = html(
-        operator="sum",
         variables="n",
-        **{
-            "correct-answer-start": "1",
-            "correct-answer-end": "n",
-            "correct-answer-body": "k^2 + sin(n)",
-        },
+        **{"correct-answer": "Sum(k^2 + sin(n), (k, 1, n))"},
     )
 
     big_operator_input.prepare(markup, state)
@@ -1051,12 +1000,9 @@ def test_prepare_parses_basic_component_correct_answer_strings() -> None:
     assert values == {"lower": 1, "upper": n, "body": k**2 + sympy.sin(n)}
 
 
-def test_prepare_parses_set_component_correct_answer_strings() -> None:
+def test_prepare_parses_set_whole_correct_answer_strings() -> None:
     state = data()
-    markup = html(
-        operator="union",
-        **{"correct-answer-domain": "{1, 2}", "correct-answer-body": "{k}"},
-    )
+    markup = html(**{"correct-answer": "Union({k}, (k, {1, 2}))"})
 
     big_operator_input.prepare(markup, state)
 
@@ -1072,10 +1018,8 @@ def test_prepare_parses_set_component_correct_answer_strings() -> None:
 def test_prepare_accepts_symbolic_integral_domain() -> None:
     state = data(panel="answer")
     markup = html(
-        operator="integral",
-        limits="domain",
         variables="Gamma",
-        **{"correct-answer-domain": "Gamma", "correct-answer-body": "k"},
+        **{"correct-answer": "Integral(k, (k, Gamma))"},
     )
 
     big_operator_input.prepare(markup, state)
@@ -1089,28 +1033,6 @@ def test_prepare_accepts_symbolic_integral_domain() -> None:
         "body": sympy.Symbol("k"),
     }
     assert r"\Gamma" in rendered
-
-
-def test_prepare_component_correct_answer_requires_every_visible_attribute() -> None:
-    with pytest.raises(ValueError, match="missing correct-answer-end"):
-        big_operator_input.prepare(
-            html(
-                operator="sum",
-                **{"correct-answer-start": "1", "correct-answer-body": "k"},
-            ),
-            data(),
-        )
-
-
-def test_prepare_component_correct_answer_enforces_set_fields() -> None:
-    with pytest.raises(ValueError, match='component "domain" must be a set'):
-        big_operator_input.prepare(
-            html(
-                operator="union",
-                **{"correct-answer-domain": "1", "correct-answer-body": "{k}"},
-            ),
-            data(),
-        )
 
 
 @pytest.mark.parametrize(
@@ -1152,29 +1074,6 @@ def _test_structured_correct_answer_rejects_undeclared_symbol() -> None:
     )
     with pytest.raises(ValueError, match="undeclared"):
         big_operator_input.prepare(html(operator="sum"), data(answer))
-
-
-def test_prepare_rejects_irrelevant_component_correct_answer_attribute() -> None:
-    with pytest.raises(ValueError, match="cannot be used"):
-        big_operator_input.prepare(
-            html(operator="sum", **{"correct-answer-domain": "{1}"}), data()
-        )
-
-
-def test_prepare_rejects_combined_whole_and_component_correct_answers() -> None:
-    with pytest.raises(ValueError, match="either"):
-        big_operator_input.prepare(
-            html(
-                operator="sum",
-                **{
-                    "correct-answer": "Sum(k, (k, 1, 2))",
-                    "correct-answer-start": "1",
-                    "correct-answer-end": "2",
-                    "correct-answer-body": "k",
-                },
-            ),
-            data(),
-        )
 
 
 @pytest.mark.parametrize("operator", ["min", "max"])
@@ -1287,9 +1186,7 @@ def _test_component_score_badge_uses_grading_equivalence() -> None:
         operator="sum",
         **{
             "grading-method": "component",
-            "correct-answer-start": "1",
-            "correct-answer-end": "2",
-            "correct-answer-body": "(k+1)^2",
+            "correct-answer": "Sum((k+1)^2, (k, 1, 2))",
         },
     )
     state = data(raw={"op-start": "1", "op-end": "2", "op-body": "k^2+2*k+1"})
@@ -1354,16 +1251,13 @@ def test_allow_complex_is_delegated_to_symbolic_inputs() -> None:
     assert big_operator_input._config(markup).allow_complex is False
 
 
-def test_custom_functions_are_used_to_parse_component_correct_answers() -> None:
+def test_custom_functions_are_used_to_parse_whole_correct_answers() -> None:
     markup = html(
-        operator="custom",
-        limits="approach",
         **{
             "operator-latex": r"\operatorname{eval}",
             "custom-functions": "f",
             "grading-method": "component",
-            "correct-answer-target": "0",
-            "correct-answer-body": "f(k)",
+            "correct-answer": "Custom(f(k), (k, 0, '+-'))",
         },
     )
     state = data()
@@ -1979,14 +1873,10 @@ def test_custom_operator_is_self_describing_ungraded_input(
 
 def test_custom_operator_exact_grading() -> None:
     markup = html(
-        operator="custom",
-        limits="bounds",
         **{
             "operator-latex": r"\mathbb{E}",
             "grading-method": "exact",
-            "correct-answer-start": "1",
-            "correct-answer-end": "4",
-            "correct-answer-body": "k^2",
+            "correct-answer": "Custom(k^2, (k, 1, 4))",
         },
     )
     state = data(raw={"op-start": "1", "op-end": "4", "op-body": "k^2"})
@@ -2001,15 +1891,11 @@ def test_custom_operator_exact_grading() -> None:
 
 def test_custom_operator_component_grading() -> None:
     markup = html(
-        operator="custom",
-        limits="bounds",
         **{
             "operator-latex": r"\mathbb{E}",
             "grading-method": "component",
             "body-relative-weight": "2",
-            "correct-answer-start": "1",
-            "correct-answer-end": "4",
-            "correct-answer-body": "k^2",
+            "correct-answer": "Custom(k^2, (k, 1, 4))",
         },
     )
     state = data(raw={"op-start": "1", "op-end": "5", "op-body": "k^2"})
@@ -2097,14 +1983,10 @@ def test_schema_accepts_implied_custom_operator() -> None:
 
 def test_custom_operator_correct_answer_panel_renders_complete_notation() -> None:
     markup = html(
-        operator="custom",
-        limits="bounds",
         **{
             "operator-latex": r"\bigoplus",
             "grading-method": "exact",
-            "correct-answer-start": "1",
-            "correct-answer-end": "4",
-            "correct-answer-body": "k^2",
+            "correct-answer": "Custom(k^2, (k, 1, 4))",
         },
     )
     state = data(panel="answer")
@@ -2121,14 +2003,10 @@ def test_custom_operator_correct_answer_rejects_equivalent_grading() -> None:
     with pytest.raises(ValueError, match='"exact" or "component"'):
         big_operator_input.prepare(
             html(
-                operator="custom",
-                limits="bounds",
                 **{
                     "operator-latex": r"\star",
                     "grading-method": "equivalent",
-                    "correct-answer-start": "1",
-                    "correct-answer-end": "4",
-                    "correct-answer-body": "k^2",
+                    "correct-answer": "Custom(k^2, (k, 1, 4))",
                 },
             ),
             data(),
