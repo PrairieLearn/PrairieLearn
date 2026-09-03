@@ -30,7 +30,7 @@ for (const file of files) {
   if (file.endsWith('.json')) {
     try {
       const value = JSON.parse(readFileSync(absolutePath, 'utf8'));
-      if (file.endsWith('/infoQuestion.json')) {
+      if (/^questions\/[^/]+\/info\.json$/u.test(file)) {
         if (
           !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu.test(
             value.uuid ?? '',
@@ -62,7 +62,7 @@ for (const file of files) {
 }
 
 if (!files.includes('infoCourse.json')) errors.push('infoCourse.json is missing');
-if (!files.some((file) => file.endsWith('/infoQuestion.json'))) {
+if (!files.some((file) => /^questions\/[^/]+\/info\.json$/u.test(file))) {
   warnings.push('No questions were found');
 }
 
