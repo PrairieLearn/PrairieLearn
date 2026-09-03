@@ -19,6 +19,7 @@ import {
 
 import { authorizeRun, authorizeSnapshot } from './auth.js';
 import { githubReadUrl, githubRepositoryPath, proxyCourseGithubRead } from './github.js';
+import { activeRunExpired } from './lifecycle.js';
 import { proxyOpenAiRequest } from './provider.js';
 import { type UsageRates, emptyUsage, finalizeUsage, updateUsageFromEvent } from './usage.js';
 
@@ -48,6 +49,7 @@ interface ConversationState {
     'userId' | 'courseId' | 'conversationId' | 'sandboxId'
   >;
   activeRunId: string | null;
+  activeRunExpiresAt?: string | null;
   status: 'starting' | 'running' | 'waiting_for_user' | 'offline' | 'failed';
   response: string | null;
   error: string | null;
@@ -224,7 +226,7 @@ export class CourseAgentCoordinator {
     if (request.method === 'POST' && url.pathname === '/run') {
       const body = CourseAgentStartRunRequestSchema.parse(await request.json());
       const capability = await authorizeRun(body, this.env.COURSE_AGENT_CAPABILITY_SECRET);
-      const current = await this.state.storage.get<ConversationState>('conversation');
+      const current = await this.getConversationState();
       if (current && !sameIdentity(current.identity, capability)) {
         return Response.json({ error: 'Sandbox identity mismatch' }, { status: 403 });
       }
@@ -244,6 +246,9 @@ export class CourseAgentCoordinator {
       const next: ConversationState = {
         identity: capability,
         activeRunId: body.runId,
+        activeRunExpiresAt: new Date(
+          Date.now() + body.runtimeSettings.turnTimeoutSeconds * 1000 + 60_000,
+        ).toISOString(),
         status: 'starting',
         response: null,
         error: null,
@@ -261,7 +266,7 @@ export class CourseAgentCoordinator {
     if (request.method === 'POST' && url.pathname === '/snapshot') {
       const body = CourseAgentSnapshotRequestSchema.parse(await request.json());
       const capability = await authorizeSnapshot(body, this.env.COURSE_AGENT_CAPABILITY_SECRET);
-      const current = await this.state.storage.get<ConversationState>('conversation');
+      const current = await this.getConversationState();
       if (!current) return Response.json({ error: 'Conversation not found' }, { status: 404 });
       if (!sameIdentity(current.identity, capability)) {
         return Response.json({ error: 'Sandbox identity mismatch' }, { status: 403 });
@@ -313,7 +318,7 @@ export class CourseAgentCoordinator {
     if (request.method === 'POST' && url.pathname === '/stream') {
       const body = CourseAgentSnapshotRequestSchema.parse(await request.json());
       const capability = await authorizeSnapshot(body, this.env.COURSE_AGENT_CAPABILITY_SECRET);
-      const current = await this.state.storage.get<ConversationState>('conversation');
+      const current = await this.getConversationState();
       if (!current) return Response.json({ error: 'Conversation not found' }, { status: 404 });
       if (!sameIdentity(current.identity, capability)) {
         return Response.json({ error: 'Sandbox identity mismatch' }, { status: 403 });
@@ -671,6 +676,7 @@ export class CourseAgentCoordinator {
       await this.append('agent.completed', { response });
       await this.update({
         activeRunId: null,
+        activeRunExpiresAt: null,
         status: 'waiting_for_user',
         response,
         error: null,
@@ -683,9 +689,42 @@ export class CourseAgentCoordinator {
       const message = error instanceof Error ? error.message : String(error);
       await this.finalizeRunUsage();
       await this.append('run.failed', { message });
-      await this.update({ activeRunId: null, status: 'failed', response: null, error: message });
+      await this.update({
+        activeRunId: null,
+        activeRunExpiresAt: null,
+        status: 'failed',
+        response: null,
+        error: message,
+      });
       this.closeStreams();
     }
+  }
+
+  private async getConversationState() {
+    const current = await this.state.storage.get<ConversationState>('conversation');
+    if (!current?.activeRunId || !activeRunExpired(current.activeRunExpiresAt)) return current;
+
+    const message = 'The course-agent run expired before it completed';
+    const expired: ConversationState = {
+      ...current,
+      activeRunId: null,
+      activeRunExpiresAt: null,
+      status: 'failed',
+      response: null,
+      error: message,
+      events: [
+        ...current.events,
+        {
+          sequence: current.events.length,
+          type: 'run.failed',
+          occurredAt: new Date().toISOString(),
+          data: { message },
+        },
+      ],
+    };
+    await this.state.storage.put('conversation', expired);
+    this.closeStreams();
+    return expired;
   }
 
   private async update(update: Partial<ConversationState>) {
