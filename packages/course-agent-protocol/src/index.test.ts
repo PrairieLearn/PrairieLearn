@@ -41,7 +41,11 @@ describe('course-agent protocol', () => {
         branch: 'master',
         expectedSha: null,
       },
-      runtimeSettings: { idleTimeoutSeconds: 600, turnTimeoutSeconds: 900 },
+      runtimeSettings: {
+        idleTimeoutSeconds: 600,
+        backupTtlSeconds: 604_800,
+        turnTimeoutSeconds: 900,
+      },
     });
     expect(request.prompt).toBe(prompt);
     expect(() => CourseAgentStartRunRequestSchema.parse({ ...request, prompt: '   ' })).toThrow();
