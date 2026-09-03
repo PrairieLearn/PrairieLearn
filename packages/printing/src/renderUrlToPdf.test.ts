@@ -10,7 +10,8 @@ vi.mock('playwright', () => ({
   chromium: { connect: playwrightMocks.connect, launch: playwrightMocks.launch },
 }));
 
-import { QuestionBlockSizeOverflowError, renderUrlToPdf } from './renderUrlToPdf.js';
+import { QuestionBlockSizeOverflowError } from './printablePage.js';
+import { renderUrlToPdf } from './renderUrlToPdf.js';
 
 const EXPECTED_MAX_CONCURRENT_PDF_RENDERS = 2;
 const EXPECTED_MAX_QUEUED_PDF_RENDERS = 4;
@@ -361,7 +362,7 @@ describe('renderUrlToPdf', () => {
     try {
       await expect(
         renderUrlToPdf({ url: 'http://localhost:3000/print/overloaded', timeoutMs: 0 }),
-      ).rejects.toThrow('Too many PDF renders are already waiting');
+      ).rejects.toThrow('Too many print renders are already waiting');
     } finally {
       releaseRenders();
       await Promise.all(acceptedRenders);

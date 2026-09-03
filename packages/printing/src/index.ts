@@ -25,5 +25,17 @@ export type {
   RenderAssessmentInstanceQuestionsOptions,
   RenderAssessmentQuestionsOptions,
 } from './renderAssessmentQuestions.js';
-export { PAPER_SIZES, QuestionBlockSizeOverflowError, renderUrlToPdf } from './renderUrlToPdf.js';
+export { htmlToTextBlocks } from './printableCover.js';
+export type {
+  PrintableCover,
+  PrintableCoverField,
+  PrintableCoverSection,
+  PrintableCoverSummaryItem,
+  PrintableTextBlock,
+} from './printableCover.js';
+export { QuestionBlockSizeOverflowError } from './printablePage.js';
+export type { RenderPrintablePageOptions } from './printablePage.js';
+export { renderUrlToDocx } from './renderUrlToDocx.js';
+export type { RenderUrlToDocxOptions } from './renderUrlToDocx.js';
+export { PAPER_SIZES, renderUrlToPdf } from './renderUrlToPdf.js';
 export type { PaperSize, RenderUrlToPdfOptions } from './renderUrlToPdf.js';
