@@ -314,8 +314,10 @@ async function identifyChangedFiles(
   );
   const topLevel = topLevelStdout.trim();
 
+  // Both sides of a rename may belong to independently invalidated chunks. NUL
+  // delimiters keep filenames unambiguous.
   const { stdout: diffStdout } = await util.promisify(child_process.exec)(
-    `git diff --name-only ${oldHash}..${newHash}`,
+    `git diff --no-renames --name-only -z ${oldHash}..${newHash}`,
     {
       cwd: coursePath,
       // This defaults to 1MB of output, however, we've observed in the past that
@@ -326,7 +328,7 @@ async function identifyChangedFiles(
       maxBuffer: 10 * 1024 * 1024,
     },
   );
-  const changedFiles = diffStdout.trim().split('\n');
+  const changedFiles = diffStdout.split('\0').filter((changedFile) => changedFile.length > 0);
 
   // Construct absolute path to all changed files.
   const absoluteChangedFiles = changedFiles.map((changedFile) => path.join(topLevel, changedFile));
