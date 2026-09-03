@@ -2,7 +2,7 @@
 
 The course agent is experimental and guarded by the `course-agent` feature flag. The first MVP
 layer provides a temporary `/workspace`, a Codex harness with web search, Redis-backed resumable
-SSE activity, a basic instructor panel, and optional diagnostics. It does not clone a course
+SSE activity, a basic instructor panel, and live diagnostics. It does not clone a course
 repository, persist conversations, publish changes, or track usage.
 
 ## Free local testing
@@ -31,8 +31,9 @@ Sandbox lifetime settings are non-secret and can be configured in `config.json`:
 }
 ```
 
-Enable the separate `course-agent-diagnostics` feature for a course to expose a user-controlled
-diagnostic mode. It shows live runtime identifiers, state, stream position, tool activity, and
-usage, but never credentials or model reasoning.
+The panel always includes a collapsed **Live conversation state** accordion. It shows runtime
+identifiers, state, stream position, and usage, but never credentials or model reasoning. Activity
+is grouped by instructor turn, and assistant responses support Markdown. Enter sends a message;
+Shift+Enter adds a newline. The sandbox image includes `python` and `python3`.
 
 Cloud resources and credentials used by later stack layers are intentionally not configured here.
