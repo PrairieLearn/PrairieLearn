@@ -1,12 +1,17 @@
 import { executeScripts, parseHTMLElement } from '@prairielearn/browser-utils';
 
+import { dispatchInstanceQuestionGradingPanelUpdate } from '../../../../lib/client/manual-grading-events.js';
+import { mathjaxTypeset } from '../../../../lib/client/mathjax.js';
 import { getManualGradingInstanceQuestionRubricPanelsUrl } from '../../../../lib/client/url.js';
 
-declare global {
-  interface Window {
-    resetInstructorGradingPanel: () => any;
-    mathjaxTypeset: (elements?: Element[]) => Promise<any>;
-  }
+import type { InstanceQuestionGradingPanelProps } from './InstanceQuestionGradingPanel.types.js';
+
+interface GradingPanelResponse {
+  aiGradingExplanation?: string;
+  aiGradingPrompt?: string;
+  gradingPanelProps?: InstanceQuestionGradingPanelProps;
+  submissionId?: string;
+  submissionPanel?: string;
 }
 
 function swapSlot(selector: string, html: string): HTMLElement | null {
@@ -18,10 +23,9 @@ function swapSlot(selector: string, html: string): HTMLElement | null {
 
 /**
  * Refreshes the grading panel, AI explanation/prompt slots, and submission
- * panel in place after AI grading completes. Done imperatively (innerHTML
- * swaps + `window.resetInstructorGradingPanel`) because the grading panel is
- * server-rendered HTML; a declarative React version would require porting the
- * entire panel (and its many imperative `js-*` handlers) to React.
+ * panel in place after AI grading completes. The grading panel is updated via
+ * a custom event because it is a separate React island; the other slots still
+ * use their existing imperative interop.
  *
  * Returns `true` on success, `false` on any failure. The UI only surfaces a
  * generic "failed to refresh" alert, so the specific error isn't threaded back
@@ -41,7 +45,7 @@ export async function reloadGradingPanel({
     assessmentId,
     instanceQuestionId,
   });
-  let data: any;
+  let data: GradingPanelResponse;
   try {
     const res = await fetch(url, { headers: { Accept: 'application/json' } });
     if (!res.ok) {
@@ -53,34 +57,15 @@ export async function reloadGradingPanel({
     console.error('Failed to refresh grading panel:', err);
     return false;
   }
-  if (!data?.gradingPanel) {
-    console.error('Failed to refresh grading panel: response missing gradingPanel');
+  if (!data.gradingPanelProps) {
+    console.error('Failed to refresh grading panel: response missing gradingPanelProps');
     return false;
   }
 
-  const gradingPanel = document.querySelector<HTMLElement>('.js-main-grading-panel');
-  if (!gradingPanel) {
-    console.error('Failed to refresh grading panel: .js-main-grading-panel not found');
-    return false;
-  }
-
-  // The CSRF token returned by /grading_rubric_panels is issued for that URL,
-  // not for the main form's POST URL, so preserve the existing one. Scope both
-  // the read and the write to the manual-grading form so any future sibling
-  // form (e.g., nested action) keeps its own token.
-  const manualGradingForm = gradingPanel.querySelector<HTMLFormElement>(
-    'form[name="manual-grading-form"]',
-  );
-  const oldCsrfToken =
-    manualGradingForm?.querySelector<HTMLInputElement>('[name=__csrf_token]')?.value ?? '';
-
-  gradingPanel.innerHTML = data.gradingPanel;
-
-  gradingPanel
-    .querySelectorAll<HTMLInputElement>('form[name="manual-grading-form"] input[name=__csrf_token]')
-    .forEach((input) => {
-      input.value = oldCsrfToken;
-    });
+  dispatchInstanceQuestionGradingPanelUpdate({
+    gradingPanelProps: data.gradingPanelProps,
+    preserveValues: false,
+  });
 
   const explanationSlot = swapSlot(
     '.js-ai-grading-explanation-slot',
@@ -88,7 +73,7 @@ export async function reloadGradingPanel({
   );
   const promptSlot = swapSlot('.js-ai-grading-prompt-slot', data.aiGradingPrompt ?? '');
 
-  const typesetTargets: HTMLElement[] = [gradingPanel, explanationSlot, promptSlot].filter(
+  const typesetTargets: HTMLElement[] = [explanationSlot, promptSlot].filter(
     (el): el is HTMLElement => el != null,
   );
 
@@ -102,7 +87,6 @@ export async function reloadGradingPanel({
     }
   }
 
-  window.resetInstructorGradingPanel();
-  await window.mathjaxTypeset(typesetTargets);
+  await mathjaxTypeset(typesetTargets);
   return true;
 }
