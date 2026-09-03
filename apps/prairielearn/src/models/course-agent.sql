@@ -51,6 +51,15 @@ VALUES
 RETURNING
   *;
 
+-- BLOCK select_running_run
+SELECT
+  *
+FROM
+  course_agent_runs
+WHERE
+  conversation_id = $conversation_id
+  AND status = 'running';
+
 -- BLOCK insert_user_message
 INSERT INTO
   course_agent_messages (

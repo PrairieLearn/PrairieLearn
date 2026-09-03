@@ -51,6 +51,14 @@ export function selectCourseAgentConversations(courseId: string, userId: string)
   );
 }
 
+export function selectOptionalRunningCourseAgentRun(conversationId: string) {
+  return queryOptionalRow(
+    sql.select_running_run,
+    { conversation_id: conversationId },
+    CourseAgentRunSchema,
+  );
+}
+
 export async function createCourseAgentTurn({
   conversation,
   runId,

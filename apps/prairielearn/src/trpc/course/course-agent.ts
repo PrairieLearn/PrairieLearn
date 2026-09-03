@@ -33,6 +33,7 @@ import {
   selectCourseAgentHistory,
   selectOptionalCourseAgentConversation,
   selectOptionalCourseAgentPushApproval,
+  selectOptionalRunningCourseAgentRun,
   updateCourseAgentPushApproval,
   upsertCourseAgentPushApproval,
 } from '../../models/course-agent.js';
@@ -91,6 +92,22 @@ const start = courseAgentProcedure
       });
       if (!existing) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Course-agent conversation not found' });
+      }
+      const snapshot = await getEphemeralCourseAgentSnapshot({
+        userId: ctx.locals.authn_user.id,
+        courseId: ctx.course.id,
+        conversationId,
+        sandboxId,
+      });
+      if (snapshot.activeRunId) {
+        throw new TRPCError({
+          code: 'CONFLICT',
+          message: 'A course-agent run is already active',
+        });
+      }
+      const runningRun = await selectOptionalRunningCourseAgentRun(conversationId);
+      if (runningRun) {
+        await persistCourseAgentSnapshot({ snapshot, runId: runningRun.id });
       }
     }
     const history = input.conversationId
