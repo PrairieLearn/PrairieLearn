@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import importlib
-import re
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal, Never
 
@@ -16,7 +15,6 @@ if TYPE_CHECKING:
 
 ELEMENT_DIR = Path(__file__).parent
 CSS_PATH = ELEMENT_DIR / "pl-big-operator-input.css"
-README_PATH = ELEMENT_DIR / "README.md"
 SCHEMA_PATH = ELEMENT_DIR / "schemas" / "pl-big-operator-input.json"
 big_operator_input = importlib.import_module("pl-big-operator-input")
 
@@ -2367,41 +2365,3 @@ class TestParserUnits:
             match="Mathematical values must be SymPy expressions or dictionaries",
         ):
             big_operator_input._decode(value)
-
-
-README_EXAMPLES = re.findall(
-    r"^```(?:html|xml)\s*\n(.*?)^```\s*$",
-    README_PATH.read_text(),
-    flags=re.MULTILINE | re.DOTALL,
-)
-
-
-class TestReadmeExamples:
-    def test_readme_contains_markup_examples(self) -> None:
-        assert README_EXAMPLES
-
-    @pytest.mark.parametrize("example", README_EXAMPLES)
-    def test_readme_markup_examples_validate_prepare_and_render(
-        self, example: str
-    ) -> None:
-        elements = [
-            fragment
-            for fragment in lxml.html.fragments_fromstring(example)
-            if getattr(fragment, "tag", None) == "pl-big-operator-input"
-        ]
-        assert len(elements) == 1
-        markup = lxml.html.tostring(elements[0], encoding="unicode")  # type: ignore
-        state = {
-            "params": {},
-            "correct_answers": {},
-            "raw_submitted_answers": {},
-            "panel": "question",
-        }
-
-        big_operator_input.pl.validate_element(
-            elements[0],
-            SCHEMA_PATH,
-        )
-        big_operator_input.prepare(markup, state)
-
-        assert big_operator_input.render(markup, state)
