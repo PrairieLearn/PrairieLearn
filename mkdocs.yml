@@ -232,6 +232,7 @@ nav:
           - elements/index.md
           - '<span class="muted">pl-</span>answer-panel': 'elements/pl-answer-panel.md'
           - '<span class="muted">pl-</span>big-o-input': 'elements/pl-big-o-input.md'
+          - '<span class="muted">pl-</span>big-operator-input': 'elements/pl-big-operator-input.md'
           - '<span class="muted">pl-</span>card': 'elements/pl-card.md'
           - '<span class="muted">pl-</span>checkbox': 'elements/pl-checkbox.md'
           - '<span class="muted">pl-</span>code': 'elements/pl-code.md'

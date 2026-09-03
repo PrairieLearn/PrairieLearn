@@ -50,6 +50,7 @@ When the response is a string, an essay, or a math expression.
 - [`pl-file-editor`](pl-file-editor.md): Provide an in-browser editor for longer-form code or raw text (also listed under [Code and files](#code-and-files)).
 - [`pl-symbolic-input`](pl-symbolic-input.md): Fill in a symbolic expression such as `x^2`, `sin(z)`, `mc^2`, and so on.
 - [`pl-big-o-input`](pl-big-o-input.md): Fill in a symbolic value representing asymptotic complexity.
+- [`pl-big-operator-input`](pl-big-operator-input.md): Fill in an indexed big-operator expression such as a sum, product, integral, or limit.
 
 ??? note "Decision flowchart"
 
@@ -152,6 +153,7 @@ For showing what the student submitted and the results that come back from gradi
 | ----------------------------------------------------------------- | -------------- | --------------------------------------------- |
 | [`pl-answer-panel`](pl-answer-panel.md)                           | Panel          | Show only in the answer panel.                |
 | [`pl-big-o-input`](pl-big-o-input.md)                             | Submission     | Asymptotic complexity expression.             |
+| [`pl-big-operator-input`](pl-big-operator-input.md)               | Submission     | Indexed big-operator expression.              |
 | [`pl-card`](pl-card.md)                                           | Display        | Card-styled content wrapper.                  |
 | [`pl-checkbox`](pl-checkbox.md)                                   | Submission     | Select multiple options from a list/dropdown. |
 | [`pl-code`](pl-code.md)                                           | Display        | Syntax-highlighted code.                      |
@@ -213,6 +215,7 @@ For showing what the student submitted and the results that come back from gradi
   const redirects = {
     'pl-answer-panel-element': 'pl-answer-panel/',
     'pl-big-o-input-element': 'pl-big-o-input/',
+    'pl-big-operator-input-element': 'pl-big-operator-input/',
     'pl-card-element': 'pl-card/',
     'pl-checkbox-element': 'pl-checkbox/',
     'pl-code-element': 'pl-code/',
