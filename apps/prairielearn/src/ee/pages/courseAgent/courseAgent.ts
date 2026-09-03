@@ -1,7 +1,4 @@
-import { Readable } from 'node:stream';
-import { pipeline } from 'node:stream/promises';
-import type { ReadableStream as NodeReadableStream } from 'node:stream/web';
-
+import { JsonToSseTransformStream } from 'ai';
 import { Router } from 'express';
 import { z } from 'zod';
 
@@ -10,13 +7,18 @@ import { parseRequestQuery } from '@prairielearn/zod';
 
 import { typedAsyncHandler } from '../../../lib/res-locals.js';
 import { getChatStreamContext } from '../../lib/chat/resumable-stream.js';
+import { pipeUiMessageStream } from '../../lib/chat/sse.js';
+import { getEphemeralCourseAgentSnapshot } from '../../lib/course-agent/ephemeral-runtime.js';
+import { publicCourseAgentEvent } from '../../lib/course-agent/public-events.js';
 import { getCourseAgentStreamId } from '../../lib/course-agent/redis.js';
+import { courseAgentUIStream } from '../../lib/course-agent/ui-stream.js';
 
 const router = Router({ mergeParams: true });
 
 const StreamQuerySchema = z.object({
   runId: z.uuid(),
-  offset: z.coerce.number().int().nonnegative().default(0),
+  conversationId: z.uuid(),
+  sandboxId: z.string().min(1),
 });
 
 router.get(
@@ -25,26 +27,36 @@ router.get(
     if (!res.locals.course_agent_enabled) {
       throw new error.HttpStatusError(403, 'Course agent is not enabled');
     }
-    const { runId, offset } = parseRequestQuery(req, StreamQuerySchema);
+    const { runId, conversationId, sandboxId } = parseRequestQuery(req, StreamQuerySchema);
     const streamContext = await getChatStreamContext();
-    const stream = await streamContext.resumeExistingStream(
+    let stream = await streamContext.resumeExistingStream(
       getCourseAgentStreamId({
         courseId: res.locals.course.id,
         userId: res.locals.authn_user.id,
         runId,
       }),
-      offset,
+      0,
     );
     if (!stream) {
-      res.status(204).send();
-      return;
+      const snapshot = await getEphemeralCourseAgentSnapshot({
+        courseId: res.locals.course.id,
+        userId: res.locals.authn_user.id,
+        conversationId,
+        sandboxId,
+      });
+      stream = new ReadableStream({
+        start(controller) {
+          for (const event of snapshot.events) {
+            const projected = publicCourseAgentEvent(event);
+            if (projected) controller.enqueue(projected);
+          }
+          controller.close();
+        },
+      })
+        .pipeThrough(courseAgentUIStream(runId))
+        .pipeThrough(new JsonToSseTransformStream());
     }
-    res.set({
-      'Cache-Control': 'no-cache, no-transform',
-      'Content-Type': 'text/event-stream',
-      'X-Accel-Buffering': 'no',
-    });
-    await pipeline(Readable.fromWeb(stream as unknown as NodeReadableStream<string>), res);
+    await pipeUiMessageStream(stream, res);
   }),
 );
 

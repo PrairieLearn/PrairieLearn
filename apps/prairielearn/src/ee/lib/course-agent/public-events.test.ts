@@ -48,9 +48,16 @@ describe('public course-agent transcript', () => {
         controller.close();
       },
     }).pipeThrough(publicCourseAgentStream());
-    const output = await new Response(stream.pipeThrough(new TextEncoderStream())).text();
-    expect(output).toContain('Héllo');
-    expect(output).not.toContain('private-thread');
+    const reader = stream.getReader();
+    const output = [];
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      output.push(value);
+    }
+    const serialized = JSON.stringify(output);
+    expect(serialized).toContain('Héllo');
+    expect(serialized).not.toContain('private-thread');
     expect(output).not.toContain('agent.started');
   });
 });

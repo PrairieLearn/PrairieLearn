@@ -2,7 +2,7 @@ import { type CourseAgentEvent, CourseAgentEventSchema } from '@prairielearn/cou
 
 export function publicCourseAgentEvent(event: CourseAgentEvent): CourseAgentEvent | null {
   const fields: Partial<Record<CourseAgentEvent['type'], string[]>> = {
-    'user.message': ['text'],
+    'user.message': ['text', 'runId'],
     'assistant.delta': ['text', 'replace'],
     'tool.started': ['operationId', 'label'],
     'tool.completed': ['operationId', 'label'],
@@ -25,7 +25,7 @@ export function publicCourseAgentEvent(event: CourseAgentEvent): CourseAgentEven
 
 export function publicCourseAgentStream() {
   let buffer = '';
-  return new TransformStream<string, string>({
+  return new TransformStream<string, CourseAgentEvent>({
     transform(chunk, controller) {
       buffer += chunk;
       let end: number;
@@ -39,9 +39,7 @@ export function publicCourseAgentStream() {
         if (!data) continue;
         const event = publicCourseAgentEvent(CourseAgentEventSchema.parse(JSON.parse(data)));
         if (event) {
-          controller.enqueue(
-            `id: ${event.sequence}\nevent: course-agent\ndata: ${JSON.stringify(event)}\n\n`,
-          );
+          controller.enqueue(event);
         }
       }
     },

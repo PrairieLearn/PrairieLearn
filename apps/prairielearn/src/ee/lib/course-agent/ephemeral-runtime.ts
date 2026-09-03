@@ -1,5 +1,7 @@
 import { createHash, randomUUID } from 'node:crypto';
 
+import { JsonToSseTransformStream } from 'ai';
+
 import {
   type CourseAgentEvent,
   CourseAgentSnapshotSchema,
@@ -13,6 +15,7 @@ import { getChatStreamContext } from '../chat/resumable-stream.js';
 
 import { publicCourseAgentStream } from './public-events.js';
 import { getCourseAgentStreamId } from './redis.js';
+import { courseAgentUIStream } from './ui-stream.js';
 
 interface Identity {
   userId: string;
@@ -133,7 +136,11 @@ async function startCourseAgentEventRelay(identity: Identity & { runId: string }
   }
   const streamContext = await getChatStreamContext();
   await streamContext.createNewResumableStream(getCourseAgentStreamId(identity), () =>
-    body.pipeThrough(new TextDecoderStream()).pipeThrough(publicCourseAgentStream()),
+    body
+      .pipeThrough(new TextDecoderStream())
+      .pipeThrough(publicCourseAgentStream())
+      .pipeThrough(courseAgentUIStream(identity.runId))
+      .pipeThrough(new JsonToSseTransformStream()),
   );
 }
 
@@ -168,7 +175,7 @@ function startFakeRun({
   const append = (type: CourseAgentEvent['type'], data: Record<string, unknown> = {}) => {
     events.push({ sequence: events.length, type, occurredAt: new Date().toISOString(), data });
   };
-  append('user.message', { text: prompt });
+  append('user.message', { text: prompt, runId });
   if (!existing) {
     append('sandbox.starting', { restoring: false });
     append('workspace.seeded', { path: '/workspace/README.md' });

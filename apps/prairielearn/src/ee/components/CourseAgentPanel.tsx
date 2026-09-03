@@ -1,7 +1,8 @@
-import { QueryClient, useMutation, useQuery } from '@tanstack/react-query';
+import { useChat } from '@ai-sdk/react';
+import { QueryClient, useQuery } from '@tanstack/react-query';
 import clsx from 'clsx';
-import { Fragment, useEffect, useId, useState } from 'react';
-import { Alert, Collapse, Spinner } from 'react-bootstrap';
+import { Fragment, useState } from 'react';
+import { Alert, Button, Spinner } from 'react-bootstrap';
 import type { Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useStickToBottom } from 'use-stick-to-bottom';
@@ -12,18 +13,14 @@ import { OverlayTrigger } from '@prairielearn/ui';
 
 import { createCourseTrpcClient } from '../../trpc/course/client.js';
 import { TRPCProvider, useTRPC } from '../../trpc/course/context.js';
+import type { CourseAgentMessage } from '../lib/course-agent/ui-stream.js';
 
 import { ChatComposer } from './chat/ChatComposer.js';
 import { AssistantMessage, MessageMetadata, UserMessage } from './chat/ChatMessage.js';
 import { ChatMessageParts } from './chat/ChatMessageParts.js';
 import { ToolCallStatus } from './chat/ChatProgressStatus.js';
 import { ScrollToBottomButton } from './chat/ChatScrollToBottom.js';
-import {
-  getCourseAgentActivity,
-  getCourseAgentDuration,
-  getCourseAgentResponse,
-  groupCourseAgentTurns,
-} from './courseAgentEvents.js';
+import { type CourseAgentRun, CourseAgentTransport } from './courseAgentTransport.js';
 
 const markdownPlugins = [remarkGfm];
 export const workspaceMarkdownComponents: Components = {
@@ -42,10 +39,12 @@ function CourseAgentPanelInner({
   courseId,
   userName,
   showDiagnostics,
+  trpcClient,
 }: {
   courseId: string;
   userName: string;
   showDiagnostics: boolean;
+  trpcClient: ReturnType<typeof createCourseTrpcClient>;
 }) {
   const trpc = useTRPC();
   const [open, setOpen] = useState(true);
@@ -60,107 +59,29 @@ function CourseAgentPanelInner({
     }
   }
   const [prompt, setPrompt] = useState('');
-  const [events, setEvents] = useState<CourseAgentEvent[]>([]);
-  const [streamOffset, setStreamOffset] = useState(0);
-  const [streamRunId, setStreamRunId] = useState<string | null>(null);
-  const [conversation, setConversation] = useState<{
-    conversationId: string;
-    sandboxId: string;
-  } | null>(null);
-  const snapshot = useQuery(
-    trpc.courseAgent.get.queryOptions(
-      conversation ?? { conversationId: '00000000-0000-0000-0000-000000000000', sandboxId: '' },
-      { enabled: false },
-    ),
+  const [conversation, setConversation] = useState<CourseAgentRun | null>(null);
+  const [transport] = useState(
+    () =>
+      new CourseAgentTransport(
+        (input) => trpcClient.courseAgent.start.mutate(input),
+        courseId,
+        setConversation,
+      ),
   );
-  const refetchSnapshot = snapshot.refetch;
-  const start = useMutation(
-    trpc.courseAgent.start.mutationOptions({
-      onSuccess: (result) => {
-        setConversation(result);
-        setPrompt('');
-        setStreamOffset(0);
-        setStreamRunId(result.runId);
+  const { messages, sendMessage, status, error, resumeStream, setMessages } =
+    useChat<CourseAgentMessage>({
+      transport,
+      onFinish: () => {
+        if (showDiagnostics) void diagnostics.refetch();
       },
-    }),
-  );
-
-  // Keep the transcript attached to the resumable SSE relay while a run is active.
-  useEffect(() => {
-    if (!streamRunId) return;
-    const abortController = new AbortController();
-    let offset = 0;
-
-    void (async () => {
-      try {
-        const response = await fetch(
-          `/pl/course/${courseId}/course_agent/stream?runId=${streamRunId}&offset=${offset}`,
-          { signal: abortController.signal },
-        );
-        if (response.status !== 204 && response.body) {
-          if (!response.ok) throw new Error(`Stream failed (${response.status})`);
-          const reader = response.body.pipeThrough(new TextDecoderStream()).getReader();
-          let buffer = '';
-          while (true) {
-            const { done, value = '' } = await reader.read();
-            if (done) break;
-            offset += value.length;
-            setStreamOffset(offset);
-            buffer += value;
-            const frames = buffer.split('\n\n');
-            buffer = frames.pop() ?? '';
-            for (const frame of frames) {
-              const data = frame
-                .split('\n')
-                .find((line) => line.startsWith('data: '))
-                ?.slice(6);
-              if (!data) continue;
-              const event = JSON.parse(data) as CourseAgentEvent;
-              setEvents((current) => {
-                const next = current.filter((existing) => existing.sequence !== event.sequence);
-                return [...next, event].sort((left, right) => left.sequence - right.sequence);
-              });
-            }
-          }
-        }
-        const result = await refetchSnapshot();
-        if (result.data) setEvents(result.data.events);
-      } catch (error) {
-        if (!abortController.signal.aborted) {
-          setStreamRunId(null);
-          setEvents((current) => [
-            ...current,
-            {
-              sequence: current.length,
-              type: 'run.failed',
-              occurredAt: new Date().toISOString(),
-              data: { message: error instanceof Error ? error.message : String(error) },
-            },
-          ]);
-        }
-      } finally {
-        if (!abortController.signal.aborted) setStreamRunId(null);
-      }
-    })();
-
-    return () => abortController.abort();
-  }, [courseId, refetchSnapshot, streamRunId]);
-
-  const busy = start.isPending || streamRunId !== null;
+    });
+  const busy = status === 'submitted' || status === 'streaming';
   const diagnostics = useQuery(
     trpc.courseAgent.diagnostics.queryOptions(
       conversation ?? { conversationId: '00000000-0000-0000-0000-000000000000', sandboxId: '' },
       { enabled: showDiagnostics && conversation !== null, refetchInterval: busy ? 1000 : false },
     ),
   );
-  const turns = groupCourseAgentTurns(events);
-  const lastFailure = findLastEvent(events, 'run.failed');
-  const lastCompletion = findLastEvent(events, 'agent.completed');
-  const failure =
-    !busy && lastFailure && (!lastCompletion || lastFailure.sequence > lastCompletion.sequence)
-      ? lastFailure
-      : undefined;
-  const snapshotError = !busy && snapshot.data?.status === 'failed' ? snapshot.data.error : null;
 
   return (
     <aside
@@ -227,7 +148,7 @@ function CourseAgentPanelInner({
             aria-live="polite"
           >
             <div ref={stickToBottom.contentRef} className="px-4 py-4">
-              {turns.length === 0 && (
+              {messages.length === 0 && (
                 <div className="course-agent-empty text-center text-muted px-3 py-5">
                   <i className="bi bi-stars fs-2 text-primary" aria-hidden="true" />
                   <p className="fw-semibold text-body mt-3 mb-1">What would you like to build?</p>
@@ -236,67 +157,92 @@ function CourseAgentPanelInner({
                   </p>
                 </div>
               )}
-              {turns.map((turn, index) => {
-                const active = busy && index === turns.length - 1;
-                const response = getCourseAgentResponse(turn.events);
-                const turnFailure = findLastEvent(turn.events, 'run.failed');
-                return (
-                  <div key={turn.userMessage.sequence} className="course-agent-turn">
-                    <UserMessage userName={userName} createdAt={turn.userMessage.occurredAt}>
-                      {String(turn.userMessage.data.text ?? '')}
-                    </UserMessage>
-                    <AssistantMessage>
-                      <ToolCallGroup
-                        events={turn.events}
-                        startedAt={turn.userMessage.occurredAt}
-                        busy={active}
+              {messages.map((message) =>
+                message.role === 'user' ? (
+                  <UserMessage
+                    key={message.id}
+                    userName={userName}
+                    createdAt={message.metadata?.createdAt}
+                  >
+                    {message.parts
+                      .filter((part) => part.type === 'text')
+                      .map((part) => part.text)
+                      .join('')}
+                  </UserMessage>
+                ) : (
+                  <AssistantMessage key={message.id}>
+                    <ChatMessageParts<CourseAgentMessage>
+                      parts={message.parts}
+                      renderTool={(part) => {
+                        if (
+                          part.type !== 'tool-activity' ||
+                          part.state === 'approval-requested' ||
+                          part.state === 'approval-responded' ||
+                          part.state === 'output-denied'
+                        ) {
+                          return null;
+                        }
+                        return (
+                          <ToolCallStatus
+                            state={part.state}
+                            statusText={
+                              part.state === 'output-available'
+                                ? part.output.label
+                                : part.state === 'output-error'
+                                  ? part.errorText
+                                  : (part.input?.label ?? 'Working…')
+                            }
+                          />
+                        );
+                      }}
+                      markdownOptions={{
+                        components: workspaceMarkdownComponents,
+                        remarkPlugins: markdownPlugins,
+                      }}
+                    />
+                    {message.metadata?.failure && (
+                      <Alert variant="danger">{message.metadata.failure}</Alert>
+                    )}
+                    {(!busy || message.id !== messages.at(-1)?.id) && (
+                      <MessageMetadata
+                        author="PrairieLearn"
+                        createdAt={message.metadata?.createdAt}
                       />
-                      {response && (
-                        <ChatMessageParts
-                          parts={[{ type: 'text', text: response }]}
-                          renderTool={() => null}
-                          markdownOptions={{
-                            components: workspaceMarkdownComponents,
-                            remarkPlugins: markdownPlugins,
-                          }}
-                        />
-                      )}
-                      {turnFailure && (
-                        <Alert variant="danger" className="mb-0">
-                          {String(
-                            turnFailure.data.message ?? 'The request could not be completed.',
-                          )}
-                        </Alert>
-                      )}
-                      {!active && (response || turnFailure) && (
-                        <MessageMetadata
-                          author="PrairieLearn"
-                          createdAt={
-                            findLastEvent(turn.events, 'agent.completed')?.occurredAt ??
-                            turnFailure?.occurredAt ??
-                            turn.userMessage.occurredAt
-                          }
-                        />
-                      )}
-                    </AssistantMessage>
-                  </div>
-                );
-              })}
-              {busy && turns.length === 0 && (
+                    )}
+                  </AssistantMessage>
+                ),
+              )}
+              {status === 'submitted' && (
                 <div className="d-flex align-items-center gap-2 small text-muted mb-3">
-                  <Spinner size="sm" /> Starting agent…
+                  <Spinner size="sm" /> Working…
                 </div>
               )}
-              {snapshotError && !failure && <Alert variant="danger">{snapshotError}</Alert>}
-              {start.error && <Alert variant="danger">{start.error.message}</Alert>}
+              {error && (
+                <Alert variant="danger">
+                  {error.message}
+                  {conversation && (
+                    <Button
+                      variant="link"
+                      onClick={() => {
+                        // Redis replays the complete run. Rebuild its message instead of appending it twice.
+                        setMessages((current) =>
+                          current.filter((message) => message.id !== conversation.runId),
+                        );
+                        void resumeStream();
+                      }}
+                    >
+                      Reconnect
+                    </Button>
+                  )}
+                </Alert>
+              )}
               <div className="pt-3 mt-3">
                 {showDiagnostics && (
                   <Diagnostics
                     conversation={conversation}
-                    runId={streamRunId}
-                    offset={streamOffset}
-                    events={diagnostics.data?.events ?? events}
-                    status={busy ? 'running' : (snapshot.data?.status ?? 'offline')}
+                    runId={busy ? (conversation?.runId ?? null) : null}
+                    events={diagnostics.data?.events ?? []}
+                    status={busy ? 'running' : (diagnostics.data?.status ?? 'offline')}
                   />
                 )}
               </div>
@@ -321,7 +267,8 @@ function CourseAgentPanelInner({
             onChange={setPrompt}
             onSubmit={(text) => {
               void stickToBottom.scrollToBottom();
-              start.mutate({ conversationId: conversation?.conversationId, prompt: text });
+              setPrompt('');
+              void sendMessage({ text, metadata: { createdAt: new Date().toISOString() } });
             }}
           />
         </footer>
@@ -330,91 +277,14 @@ function CourseAgentPanelInner({
   );
 }
 
-export function ToolCallGroup({
-  events,
-  startedAt,
-  busy,
-}: {
-  events: CourseAgentEvent[];
-  startedAt: string;
-  busy: boolean;
-}) {
-  const [expanded, setExpanded] = useState(false);
-  const id = useId();
-  const [now, setNow] = useState(Date.now);
-  // Update elapsed time while the agent is working; completed turns use their recorded end time.
-  useEffect(() => {
-    if (!busy) return;
-    const timer = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(timer);
-  }, [busy]);
-  const activity = getCourseAgentActivity(events);
-  const visible = expanded;
-  const seconds = getCourseAgentDuration(startedAt, events, now);
-  if (activity.length === 0) return busy ? <div className="small text-muted">Working…</div> : null;
-  return (
-    <div className="course-agent-tool-group">
-      <button
-        type="button"
-        className="course-agent-tool-group-toggle btn btn-sm d-flex align-items-center gap-2 border-0 px-0 py-1 text-muted"
-        aria-expanded={visible}
-        aria-controls={id}
-        onClick={() => setExpanded(!expanded)}
-      >
-        <span className="text-start">
-          {busy ? `Working for ${seconds}s` : `Worked for ${seconds}s`}
-        </span>
-        {busy ? (
-          <Spinner size="sm" />
-        ) : (
-          <i
-            className={clsx(
-              'bi course-agent-tool-chevron',
-              visible ? 'bi-chevron-down' : 'bi-chevron-right',
-            )}
-            aria-hidden="true"
-          />
-        )}
-      </button>
-      <Collapse in={visible}>
-        <div id={id}>
-          <div className="d-flex flex-column gap-1 border-start ms-2 mt-1 ps-3 py-1">
-            {activity.map((item) => (
-              <div key={item.key} className="small text-muted d-flex align-items-start gap-1">
-                <ToolCallStatus
-                  state={
-                    item.status === 'pending'
-                      ? 'input-available'
-                      : item.status === 'failed'
-                        ? 'output-error'
-                        : 'output-available'
-                  }
-                  statusText={
-                    <span className="text-break">
-                      {item.label}
-                      {item.status === 'pending' ? '…' : ''}
-                    </span>
-                  }
-                />
-              </div>
-            ))}
-          </div>
-        </div>
-      </Collapse>
-    </div>
-  );
-}
-
 function Diagnostics({
   conversation,
   runId,
-  offset,
   events,
   status,
 }: {
   conversation: { conversationId: string; sandboxId: string } | null;
   runId: string | null;
-  offset: number;
   events: CourseAgentEvent[];
   status: string;
 }) {
@@ -445,7 +315,7 @@ function Diagnostics({
     <details className="course-agent-diagnostic-card small text-muted">
       <summary className="d-flex align-items-center gap-2 py-2">
         <i className="bi bi-activity text-muted" aria-hidden="true" />
-        <span>Conversation diagnostics (only visible to administrators)</span>
+        <span>Conversation info (only visible to administrators)</span>
         <i className="course-agent-diagnostic-chevron bi bi-chevron-down" aria-hidden="true" />
       </summary>
       <div className="pt-2">
@@ -463,9 +333,6 @@ function Diagnostics({
         <div className="d-flex flex-wrap gap-2 text-muted mb-3">
           <span className="rounded bg-light px-2 py-1">
             {events.length.toLocaleString('en-US')} events
-          </span>
-          <span className="rounded bg-light px-2 py-1">
-            Stream cursor: {offset.toLocaleString('en-US')}
           </span>
         </div>
         <div className="fw-medium mb-2">Token usage</div>
@@ -515,6 +382,7 @@ export function CourseAgentPanel({
     <QueryClientProviderDebug client={queryClient}>
       <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
         <CourseAgentPanelInner
+          trpcClient={trpcClient}
           courseId={courseId}
           userName={userName}
           showDiagnostics={showDiagnostics}

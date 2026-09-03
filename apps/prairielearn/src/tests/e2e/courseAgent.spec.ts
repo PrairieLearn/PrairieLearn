@@ -5,6 +5,42 @@ import { createTest, expect } from './fixtures.js';
 
 const test = createTest({ courseAgentRuntime: 'fake', features: { 'course-agent': true } });
 
+test('reconnects an interrupted response without duplicating the turn or starting a new run', async ({
+  page,
+  courseInstance,
+}) => {
+  let streamRequests = 0;
+  let startRequests = 0;
+  page.on('request', (request) => {
+    if (request.url().includes('courseAgent.start')) startRequests++;
+  });
+  await page.route('**/course_agent/stream?*', async (route) => {
+    streamRequests++;
+    if (streamRequests !== 1) return route.continue();
+    const response = await route.fetch();
+    const body = (await response.text())
+      .split('\n\n')
+      .filter((frame) => !frame.includes('"type":"finish"') && !frame.includes('[DONE]'))
+      .join('\n\n');
+    await route.fulfill({ response, body });
+  });
+  await page.goto(`/pl/course/${courseInstance.course_id}/course_admin/instances`);
+  const panel = page.getByRole('complementary', { name: 'Course agent panel' });
+  await panel.getByRole('textbox', { name: 'Message course agent' }).fill('Reconnect test');
+  await panel.getByRole('button', { name: 'Send message', exact: true }).click();
+  await expect(panel.getByRole('alert')).toContainText('connection was interrupted');
+  await panel.getByRole('button', { name: 'Reconnect', exact: true }).click();
+  await expect(panel.getByRole('alert')).toHaveCount(0);
+  const reply = panel.getByRole('article', { name: 'Message from PrairieLearn' });
+  await expect(reply).toHaveCount(1);
+  await expect(reply.getByText('Edited README.md', { exact: true })).toHaveCount(1);
+  await expect(
+    reply.getByText('Updated /workspace/README.md for: Reconnect test', { exact: true }),
+  ).toBeVisible();
+  expect(startRequests).toBe(1);
+  expect(streamRequests).toBe(2);
+});
+
 test('hides diagnostics and rejects direct requests without active administrator access', async ({
   page,
   courseInstance,
@@ -26,7 +62,7 @@ test('hides diagnostics and rejects direct requests without active administrator
   const panel = page.getByRole('complementary', { name: 'Course agent panel' });
   await expect(panel).toBeVisible();
   await expect(
-    panel.getByText('Conversation diagnostics (only visible to administrators)', { exact: true }),
+    panel.getByText('Conversation info (only visible to administrators)', { exact: true }),
   ).toHaveCount(0);
   const input = encodeURIComponent(
     JSON.stringify({
@@ -45,14 +81,14 @@ test('hides diagnostics and rejects direct requests without active administrator
 test('sends with Enter and keeps formatted responses and activity within each turn', async ({
   page,
   courseInstance,
-}) => {
+}, testInfo) => {
   await page.goto(`/pl/course/${courseInstance.course_id}/course_admin/instances`);
   const panel = page.getByRole('complementary', { name: 'Course agent panel' });
   const input = panel.getByRole('textbox', { name: 'Message course agent' });
 
   await expect(panel.getByRole('switch')).toHaveCount(0);
   await expect(
-    panel.getByText('Conversation diagnostics (only visible to administrators)', { exact: true }),
+    panel.getByText('Conversation info (only visible to administrators)', { exact: true }),
   ).toBeVisible();
   await input.fill('First `inline`');
   await input.press('Enter');
@@ -62,7 +98,7 @@ test('sends with Enter and keeps formatted responses and activity within each tu
       .getByRole('article', { name: 'Message from PrairieLearn' })
       .getByText('inline', { exact: true }),
   ).toBeVisible();
-  await expect(panel.getByRole('button', { name: /Worked for \d+s/ })).toHaveCount(1);
+  await expect(panel.getByText('Edited README.md', { exact: true })).toHaveCount(1);
   await expect(
     panel
       .getByRole('article', { name: 'Message from Dev User' })
@@ -82,34 +118,20 @@ test('sends with Enter and keeps formatted responses and activity within each tu
   await expect(input).toHaveValue('Second\n');
   await input.press('Enter');
   await expect(panel.getByRole('article', { name: 'Message from Dev User' })).toHaveCount(2);
-  await expect(panel.getByRole('button', { name: /Worked for \d+s/ })).toHaveCount(2);
-  await expect(panel.getByText('Edited README.md', { exact: true }).first()).toBeHidden();
-  await expect(panel.getByRole('button', { name: /Worked for \d+s/ }).first()).toHaveAttribute(
-    'aria-expanded',
-    'false',
-  );
-  await expect(panel.getByRole('button', { name: /Worked for \d+s/ }).last()).toHaveAttribute(
-    'aria-expanded',
-    'false',
-  );
-  await panel
-    .getByRole('button', { name: /Worked for \d+s/ })
-    .first()
-    .click();
-  await expect(panel.getByText('Edited README.md', { exact: true }).first()).toBeVisible();
-  await expect(panel.getByText('Edited README.md', { exact: true }).last()).toBeHidden();
+  await expect(panel.getByText('Edited README.md', { exact: true })).toHaveCount(2);
+  const replies = panel.getByRole('article', { name: 'Message from PrairieLearn' });
+  await expect(replies.first().getByText('Edited README.md', { exact: true })).toBeVisible();
+  await expect(replies.last().getByText('Edited README.md', { exact: true })).toBeVisible();
+  await expect(replies.first().getByText('Started agent', { exact: true })).toBeVisible();
+  await expect(replies.last().getByText('Started agent', { exact: true })).toHaveCount(0);
   await expect(panel.getByText('Set up course', { exact: true })).toHaveCount(0);
-  await expect(panel.getByText('Started agent', { exact: true })).toBeVisible();
+  await expect(panel.getByRole('button', { name: /Worked for/ })).toHaveCount(0);
   await panel
-    .getByRole('button', { name: /Worked for \d+s/ })
-    .first()
-    .click();
-  await expect(panel.getByText('Started agent', { exact: true })).toBeHidden();
-  await panel
-    .getByText('Conversation diagnostics (only visible to administrators)', { exact: true })
+    .getByText('Conversation info (only visible to administrators)', { exact: true })
     .click();
   await expect(panel.getByText('Token usage', { exact: true })).toBeVisible();
   await expect(panel.getByText('Status: Ready', { exact: true })).toBeVisible();
+  await page.screenshot({ path: testInfo.outputPath('course-chat-tools.png') });
 });
 
 test('reserves desktop space for the panel and fills the mobile viewport', async ({
@@ -149,6 +171,8 @@ test('reserves desktop space for the panel and fills the mobile viewport', async
   expect(mobileBox).toMatchObject({ x: 0, y: 0, width: 390, height: 844 });
   await expect(panel.getByRole('button', { name: 'Close course agent' })).toBeVisible();
   await expect(panel.getByRole('textbox', { name: 'Message course agent' })).toBeVisible();
+  await expect(panel.locator('.course-agent-panel-content')).toHaveCSS('opacity', '1');
+  await page.screenshot({ path: testInfo.outputPath('course-chat-mobile.png') });
 });
 
 test('scrolls to the latest turn on send after the instructor scrolls up', async ({
@@ -162,13 +186,13 @@ test('scrolls to the latest turn on send after the instructor scrolls up', async
   const transcript = panel.getByRole('log', { name: 'Conversation messages' });
   await input.fill('A long test message.\n'.repeat(50));
   await input.press('Enter');
-  await expect(panel.getByRole('button', { name: /Worked for \d+s/ })).toHaveCount(1);
+  await expect(panel.getByText('Edited README.md', { exact: true })).toHaveCount(1);
   await transcript.hover();
   await page.mouse.wheel(0, -10000);
   await expect.poll(() => transcript.evaluate((element) => element.scrollTop)).toBeLessThan(100);
   await input.fill('Latest message');
   await input.press('Enter');
-  await expect(panel.getByRole('button', { name: /Worked for \d+s/ })).toHaveCount(2);
+  await expect(panel.getByText('Edited README.md', { exact: true })).toHaveCount(2);
   await expect
     .poll(() =>
       transcript.evaluate(

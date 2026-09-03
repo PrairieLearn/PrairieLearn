@@ -285,7 +285,11 @@ export class CourseAgentCoordinator {
       );
       await this.update({ sandboxExpiresAt: deadline }, request.runId);
       await this.state.storage.setAlarm(deadline);
-      await this.append('user.message', { text: request.prompt }, request.runId);
+      await this.append(
+        'user.message',
+        { text: request.prompt, runId: request.runId },
+        request.runId,
+      );
       if (starting) await this.append('sandbox.starting', { restoring: false }, request.runId);
       const seed = [
         '# PrairieLearn course-agent workspace',

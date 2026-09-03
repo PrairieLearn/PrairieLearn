@@ -42,11 +42,20 @@ down the sandbox at the deadline, including during an active turn. Temporary fil
 this base PR; the next message starts a fresh workspace. Configuration changes apply to newly
 created sandboxes. The existing `idleTimeoutSeconds` separately controls Cloudflare's idle sleep.
 
-Administrators see a collapsed **Conversation diagnostics (only visible to administrators)**
+Administrators see a collapsed **Conversation info (only visible to administrators)**
 accordion. The diagnostic endpoint also requires administrator access; the ordinary transcript
 omits internal telemetry. The accordion shows runtime
-identifiers, state, stream position, and usage, but never credentials or model reasoning. Activity
-is grouped by instructor turn, and assistant responses support Markdown. Enter sends a message;
+identifiers, state, and usage, but never credentials or model reasoning. Activity
+appears inline within each assistant response using the same tool-status components as question
+generation, and assistant responses support Markdown. Enter sends a message;
 Shift+Enter adds a newline. The sandbox image includes `python` and `python3`.
+
+The panel uses the AI SDK's `useChat`. A small transport starts runs through tRPC and reads standard
+UI-message SSE. PrairieLearn translates Worker events into UI-message chunks before buffering them
+in Redis; each run has a stable assistant-message ID, and earlier turns in the Worker's replay are
+excluded. Reconnecting rebuilds that run's message from the beginning without submitting another
+model request. If Redis no longer has the completed stream, the same adapter reconstructs it from
+the authorized workspace snapshot. This does not persist the browser conversation across reloads;
+conversation persistence belongs to the later persistence PR.
 
 Cloud resources and credentials used by later stack layers are intentionally not configured here.
