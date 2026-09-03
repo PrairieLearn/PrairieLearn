@@ -58,6 +58,7 @@ const HIDDEN_BY_DEFAULT = new Set([
   'external_grading_image',
   'workspace_image',
   'single_variant',
+  'partial_credit',
   'has_preferences',
 ]);
 
@@ -388,6 +389,7 @@ export function QuestionsTable<TQueryKey extends readonly unknown[]>({
             },
             { name: 'Workspace image', value: row.workspace_image },
             { name: 'Single variant', value: row.single_variant ? 'Yes' : 'No' },
+            { name: 'Partial credit', value: row.partial_credit ? 'Yes' : 'No' },
             { name: 'Has preferences', value: row.has_preferences ? 'Yes' : 'No' },
           ],
           mapRowToJsonData: (row: SafeQuestionsPageData) => ({
@@ -400,6 +402,7 @@ export function QuestionsTable<TQueryKey extends readonly unknown[]>({
             external_grading_image: row.external_grading_image,
             workspace_image: row.workspace_image,
             single_variant: row.single_variant,
+            partial_credit: row.partial_credit,
             has_preferences: row.has_preferences,
           }),
         }}
