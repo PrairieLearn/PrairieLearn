@@ -33,4 +33,20 @@ describe('model-provider credential broker', () => {
     expect(response.status).toBe(403);
     expect(fetchImplementation).not.toHaveBeenCalled();
   });
+
+  it('rejects an allowed request when the Worker credential is missing', async () => {
+    const fetchImplementation = vi.fn<typeof fetch>();
+    const response = await proxyOpenAiRequest(
+      new Request('https://api.openai.com/v1/responses', {
+        method: 'POST',
+        headers: { authorization: 'Bearer proxy-injected' },
+        body: '{}',
+      }),
+      {},
+      fetchImplementation,
+    );
+    expect(response.status).toBe(503);
+    expect(await response.text()).toBe('Model-provider credential is not configured.');
+    expect(fetchImplementation).not.toHaveBeenCalled();
+  });
 });
