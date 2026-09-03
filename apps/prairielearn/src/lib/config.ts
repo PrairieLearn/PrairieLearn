@@ -628,6 +628,7 @@ export const ConfigSchema = z.object({
   courseAgentSandbox: z
     .object({
       idleTimeoutSeconds: z.number().int().min(60).max(86_400).default(600),
+      maxLifetimeSeconds: z.number().int().min(1).max(86_400).default(600),
       backupTtlSeconds: z.number().int().min(60).max(2_592_000).default(604_800),
       turnTimeoutSeconds: z.number().int().min(60).max(3_600).default(900),
     })

@@ -1,5 +1,7 @@
 import { createHash, randomUUID } from 'node:crypto';
 
+import { JsonToSseTransformStream } from 'ai';
+
 import {
   type CourseAgentEvent,
   CourseAgentSnapshotSchema,
@@ -9,8 +11,11 @@ import {
 import { generateSignedToken } from '@prairielearn/signed-token';
 
 import { config } from '../../../lib/config.js';
+import { getChatStreamContext } from '../chat/resumable-stream.js';
 
-import { getCourseAgentStreamContext, getCourseAgentStreamId } from './redis.js';
+import { publicCourseAgentStream } from './public-events.js';
+import { getCourseAgentStreamId } from './redis.js';
+import { courseAgentUIStream } from './ui-stream.js';
 
 interface Identity {
   userId: string;
@@ -30,6 +35,19 @@ interface FakeConversation extends Identity {
 
 const fakeConversations = new Map<string, FakeConversation>();
 
+async function fetchWorker(path: string, init: RequestInit) {
+  try {
+    return await fetch(new URL(path, config.courseAgentWorkerOrigin), init);
+  } catch (error) {
+    throw new Error(
+      config.devMode
+        ? 'The course-agent Worker is not reachable. Start it in a separate terminal with pnpm dev-course-agent-worker, then try again.'
+        : 'The course agent is temporarily unavailable. Please try again later.',
+      { cause: error },
+    );
+  }
+}
+
 function capabilitySecret() {
   if (!config.courseAgentCapabilitySecret) {
     throw new Error('Course-agent capability secret is not configured');
@@ -48,6 +66,7 @@ function expiresAt() {
 function runtimeSettings() {
   return {
     idleTimeoutSeconds: config.courseAgentSandbox.idleTimeoutSeconds,
+    maxLifetimeSeconds: config.courseAgentSandbox.maxLifetimeSeconds,
     turnTimeoutSeconds: config.courseAgentSandbox.turnTimeoutSeconds,
   };
 }
@@ -88,7 +107,7 @@ export async function startEphemeralCourseAgentRun({
     },
     capabilitySecret(),
   );
-  const response = await fetch(new URL('/v1/runs', config.courseAgentWorkerOrigin), {
+  const response = await fetchWorker('/v1/runs', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -112,7 +131,7 @@ async function startCourseAgentEventRelay(identity: Identity & { runId: string }
     { type: 'course-agent-inspect', ...identity, expiresAt: expiresAt() },
     capabilitySecret(),
   );
-  const response = await fetch(new URL('/v1/stream', config.courseAgentWorkerOrigin), {
+  const response = await fetchWorker('/v1/stream', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ capability, ...identity }),
@@ -121,9 +140,13 @@ async function startCourseAgentEventRelay(identity: Identity & { runId: string }
   if (!response.ok || !body) {
     throw new Error(`Course-agent Worker stream failed (${response.status})`);
   }
-  const streamContext = await getCourseAgentStreamContext();
+  const streamContext = await getChatStreamContext();
   await streamContext.createNewResumableStream(getCourseAgentStreamId(identity), () =>
-    body.pipeThrough(new TextDecoderStream()),
+    body
+      .pipeThrough(new TextDecoderStream())
+      .pipeThrough(publicCourseAgentStream())
+      .pipeThrough(courseAgentUIStream(identity.runId))
+      .pipeThrough(new JsonToSseTransformStream()),
   );
 }
 
@@ -136,7 +159,7 @@ export async function getEphemeralCourseAgentSnapshot(identity: Identity) {
     { type: 'course-agent-inspect', ...identity, expiresAt: expiresAt() },
     capabilitySecret(),
   );
-  const response = await fetch(new URL('/v1/snapshot', config.courseAgentWorkerOrigin), {
+  const response = await fetchWorker('/v1/snapshot', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ capability, ...identity }),
@@ -158,7 +181,7 @@ function startFakeRun({
   const append = (type: CourseAgentEvent['type'], data: Record<string, unknown> = {}) => {
     events.push({ sequence: events.length, type, occurredAt: new Date().toISOString(), data });
   };
-  append('user.message', { text: prompt });
+  append('user.message', { text: prompt, runId });
   if (!existing) {
     append('sandbox.starting', { restoring: false });
     append('workspace.seeded', { path: '/workspace/README.md' });

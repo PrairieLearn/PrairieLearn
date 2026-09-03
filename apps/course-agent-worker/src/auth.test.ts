@@ -39,7 +39,7 @@ async function makeRequest(): Promise<CourseAgentStartRunRequest> {
     runId: '5416e1c9-616a-45f7-b859-4e0b236ce290',
     sandboxId: 'course-agent-test',
     promptDigest: [...digest].map((byte) => byte.toString(16).padStart(2, '0')).join(''),
-    runtimeSettings: { idleTimeoutSeconds: 600, turnTimeoutSeconds: 900 },
+    runtimeSettings: { idleTimeoutSeconds: 600, maxLifetimeSeconds: 600, turnTimeoutSeconds: 900 },
     expiresAt: new Date(Date.now() + 60_000).toISOString(),
     repository: 'https://github.com/PrairieLearn/test.git',
     branch: 'master',
@@ -77,5 +77,11 @@ describe('course-agent Worker authorization', () => {
       ),
     ).rejects.toThrow('does not authorize');
     await expect(decodeAndVerifyToken(`${request.capability}x`, secret)).resolves.toBeNull();
+    await expect(
+      authorizeRun(
+        { ...request, runtimeSettings: { ...request.runtimeSettings, maxLifetimeSeconds: 1200 } },
+        secret,
+      ),
+    ).rejects.toThrow('does not authorize');
   });
 });

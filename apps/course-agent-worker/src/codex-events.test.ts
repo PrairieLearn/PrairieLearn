@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { finalResponse, toolEvents } from './codex-events.js';
+import { toolEvents } from './codex-events.js';
 
 describe('toolEvents', () => {
   it.each([
@@ -59,22 +59,5 @@ describe('toolEvents', () => {
         item: { id: 'item-4', type: 'agent_message', text: 'I will inspect the workspace.' },
       }),
     ).toEqual([]);
-  });
-});
-
-describe('finalResponse', () => {
-  it('returns only the final agent message', () => {
-    const stdout = [
-      JSON.stringify({
-        type: 'item.completed',
-        item: { type: 'agent_message', text: 'I will inspect the workspace.' },
-      }),
-      JSON.stringify({
-        type: 'item.completed',
-        item: { type: 'agent_message', text: 'The question is ready.' },
-      }),
-    ].join('\n');
-
-    expect(finalResponse(stdout)).toBe('The question is ready.');
   });
 });

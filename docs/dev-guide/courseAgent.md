@@ -26,21 +26,35 @@ replaces it only for Git upload-pack requests to the exact authorized repository
 other repositories, and other GitHub operations are rejected, so the credential can clone, fetch,
 and pull but cannot push.
 
+`make dev` never starts Wrangler. If the Worker is unavailable when you send a message, the panel
+shows an error with the separate startup command.
+
 Sandbox lifetime settings are non-secret and can be configured in `config.json`:
 
 ```json
 {
   "courseAgentSandbox": {
     "idleTimeoutSeconds": 600,
+    "maxLifetimeSeconds": 600,
     "backupTtlSeconds": 604800,
     "turnTimeoutSeconds": 900
   }
 }
 ```
 
-The panel always includes a collapsed **Live conversation state** accordion. It shows runtime
-identifiers, state, stream position, and usage, but never credentials or model reasoning. Activity
-is grouped by instructor turn, and assistant responses support Markdown. Enter sends a message;
+`maxLifetimeSeconds` is an absolute limit starting when the sandbox is created, not an idle timer.
+It defaults to 600 seconds and accepts values from 1 to 86,400 seconds (for example, 10 for local
+expiry testing). New messages do not extend an existing sandbox's deadline. A durable alarm shuts
+down the sandbox at the deadline, including during an active turn. Temporary files are lost in
+this base PR; the next message starts a fresh workspace. Configuration changes apply to newly
+created sandboxes. The existing `idleTimeoutSeconds` separately controls Cloudflare's idle sleep.
+
+Administrators see a collapsed **Conversation info (only visible to administrators)**
+accordion. The diagnostic endpoint also requires administrator access; the ordinary transcript
+omits internal telemetry. The accordion shows runtime
+identifiers, state, and usage, but never credentials or model reasoning. Activity
+appears inline within each assistant response using the same tool-status components as question
+generation, and assistant responses support Markdown. Enter sends a message;
 Shift+Enter adds a newline. The sandbox image includes `python` and `python3`.
 
 The Worker mounts the `COURSE_AGENT_DOCS` R2 binding read-only at
@@ -49,5 +63,20 @@ back to web search when documentation is unavailable. `validate-course .` perfor
 post-turn static checks for JSON and Python syntax, question UUIDs and required files, merge
 conflicts, and Git whitespace errors. Codex is instructed to run it before completing every content
 change.
+
+The panel uses the AI SDK's `useChat`. A small transport starts runs through tRPC and reads standard
+UI-message SSE. PrairieLearn translates Worker events into UI-message chunks before buffering them
+in Redis; each run has a stable assistant-message ID, and earlier turns in the Worker's replay are
+excluded. Reconnecting rebuilds that run's message from the beginning without submitting another
+model request. If Redis no longer has the completed stream, the same adapter reconstructs it from
+the authorized workspace snapshot. This does not persist the browser conversation across reloads;
+conversation persistence belongs to the later persistence PR.
+
+The sandbox runs Codex app-server over stdio to forward final-answer text deltas as they arrive.
+Commentary and reasoning are not displayed. Rebuild/restart the local Worker after changing its
+Dockerfile or runner script. The Docker build context excludes local configuration and credentials.
+To verify the runner against the pinned Codex binary without paid requests, set
+`COURSE_AGENT_TEST_CODEX` to that binary's absolute path when running the Worker tests; its provider
+is replaced by a localhost-only mock with a fake key.
 
 Cloud resources and credentials used by later stack layers are intentionally not configured here.

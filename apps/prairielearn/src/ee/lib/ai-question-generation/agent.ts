@@ -54,6 +54,7 @@ import {
   addCompletionCostToIntervalUsage,
   checkRender,
 } from '../aiQuestionGeneration.js';
+import { getChatStreamContext } from '../chat/resumable-stream.js';
 import {
   type DocumentChunk,
   buildContextForSingleElementDoc,
@@ -66,7 +67,6 @@ import {
 import { SUPPORTED_ELEMENTS, validateHTML } from '../validateHTML.js';
 
 import { trimContextIfNeeded } from './context.js';
-import { getAiQuestionGenerationStreamContext } from './redis.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -627,7 +627,7 @@ export async function editQuestionWithAgent({
   const sseStream = new JsonToSseTransformStream();
 
   // Create new resumable stream - the caller will need this.
-  const streamContext = await getAiQuestionGenerationStreamContext();
+  const streamContext = await getChatStreamContext();
   await streamContext.createNewResumableStream(messageRow.id, () => sseStream.readable);
 
   const args = await run(async () => {

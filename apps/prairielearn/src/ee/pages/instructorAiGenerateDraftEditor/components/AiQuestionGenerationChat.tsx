@@ -1,98 +1,32 @@
 import { useChat } from '@ai-sdk/react';
 import {
   DefaultChatTransport,
-  type ReasoningUIPart,
   type TextUIPart,
   type ToolUIPart,
   type UIMessage,
   type UIToolInvocation,
 } from 'ai';
 import clsx from 'clsx';
-import { type ReactNode, useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { Modal } from 'react-bootstrap';
 import { useStickToBottom } from 'use-stick-to-bottom';
 
 import { run } from '@prairielearn/run';
 import { useResizeHandle } from '@prairielearn/ui';
-import { assertNever } from '@prairielearn/utils';
 
+import { AssistantMessage, UserMessage } from '../../../components/chat/ChatMessage.js';
+import { ChatMessageParts } from '../../../components/chat/ChatMessageParts.js';
+import { ProgressStatus, ToolCallStatus } from '../../../components/chat/ChatProgressStatus.js';
+import { ScrollToBottomButton } from '../../../components/chat/ChatScrollToBottom.js';
 import type {
   QuestionGenerationToolUIPart,
   QuestionGenerationUIMessage,
 } from '../../../lib/ai-question-generation/agent.js';
 
-import { MemoizedMarkdown } from './MemoizedMarkdown.js';
 import { PromptInput } from './PromptInput.js';
 
 function isToolPart(part: UIMessage['parts'][0]): part is ToolUIPart {
   return part.type.startsWith('tool-');
-}
-
-function ProgressStatus({
-  state,
-  statusText,
-  showSpinner,
-}: {
-  state: 'streaming' | 'success' | 'error';
-  statusText: ReactNode;
-  showSpinner?: boolean;
-}) {
-  return (
-    // Screen-reader announcements are handled centrally by the persistent live
-    // region in AiQuestionGenerationChat. These per-instance elements
-    // mount/unmount per tool call, so a fresh live region here would not
-    // announce reliably.
-    <div className="d-flex flex-row align-items-center gap-1 small text-muted">
-      {run(() => {
-        if (state === 'streaming' || showSpinner) {
-          return <div className="spinner-border spinner-border-text" aria-hidden="true" />;
-        } else if (state === 'success') {
-          return <i className="bi bi-fw bi-check-lg text-success" aria-hidden="true" />;
-        } else {
-          return <i className="bi bi-fw bi-x text-danger" aria-hidden="true" />;
-        }
-      })}
-      <span>{statusText}</span>
-    </div>
-  );
-}
-
-function ToolCallStatus({
-  state,
-  statusText,
-  showSpinner,
-  children,
-}: {
-  state: Exclude<
-    ToolUIPart['state'],
-    'approval-requested' | 'approval-responded' | 'output-denied' | undefined
-  >;
-  statusText: ReactNode;
-  showSpinner?: boolean;
-  children?: ReactNode;
-}) {
-  return (
-    <div>
-      <ProgressStatus
-        state={run(() => {
-          switch (state) {
-            case 'input-streaming':
-            case 'input-available':
-              return 'streaming';
-            case 'output-available':
-              return 'success';
-            case 'output-error':
-              return 'error';
-            default:
-              assertNever(state);
-          }
-        })}
-        statusText={statusText}
-        showSpinner={showSpinner}
-      />
-      <div>{children}</div>
-    </div>
-  );
 }
 
 function getStatusForState(
@@ -204,148 +138,6 @@ function ToolCall({ part }: { part: QuestionGenerationToolUIPart }) {
   return <ToolCallStatus state={part.state} statusText={statusText} />;
 }
 
-function ReasoningBlock({ part }: { part: ReasoningUIPart }) {
-  // Track whether the user has explicitly interacted with the expand/collapse
-  const [userControlled, setUserControlled] = useState(false);
-  const [userExpanded, setUserExpanded] = useState(false);
-
-  const isStreaming = part.state === 'streaming';
-
-  // If user has taken control, use their preference. Otherwise, expand while streaming, collapse when done.
-  const isExpanded = userControlled ? userExpanded : isStreaming;
-
-  if (!part.text) return null;
-
-  const toggleExpanded = () => {
-    setUserControlled(true);
-    setUserExpanded(!isExpanded);
-  };
-
-  return (
-    <div className="d-flex flex-column gap-1 border rounded p-1 small">
-      <button
-        type="button"
-        className="d-flex flex-row gap-2 align-items-center btn btn-link text-decoration-none p-0 text-start"
-        aria-expanded={isExpanded}
-        onClick={toggleExpanded}
-      >
-        <i
-          className={clsx('bi small text-muted', {
-            'bi-chevron-right': !isExpanded,
-            'bi-chevron-down': isExpanded,
-          })}
-          aria-hidden="true"
-        />
-        <span className="small text-muted">{isStreaming ? 'Thinking...' : 'Thinking'}</span>
-      </button>
-
-      {isExpanded && (
-        <div className="markdown-body reasoning-body p-1 pt-0">
-          <MemoizedMarkdown content={part.text} />
-        </div>
-      )}
-    </div>
-  );
-}
-
-function TextPart({ part }: { part: TextUIPart }) {
-  return (
-    <div className="markdown-body">
-      <MemoizedMarkdown content={part.text} />
-    </div>
-  );
-}
-
-function MessageParts({ parts }: { parts: QuestionGenerationUIMessage['parts'] }) {
-  return parts.map((part, index) => {
-    const key = `part-${index}`;
-    if (isToolPart(part)) {
-      return <ToolCall key={key} part={part} />;
-    } else if (part.type === 'text') {
-      return <TextPart key={key} part={part} />;
-    } else if (part.type === 'reasoning') {
-      return <ReasoningBlock key={key} part={part} />;
-    } else if (['step-start'].includes(part.type)) {
-      return '';
-    } else {
-      return (
-        <pre key={key}>
-          <code>{JSON.stringify(part, null, 2)}</code>
-        </pre>
-      );
-    }
-  });
-}
-
-function ScrollToBottomButton({
-  isAtBottom,
-  scrollToBottom,
-}: {
-  isAtBottom?: boolean;
-  scrollToBottom: () => void;
-}) {
-  return (
-    !isAtBottom && (
-      <button
-        type="button"
-        className={clsx(
-          'position-absolute',
-          'bottom-0',
-          'start-50',
-          'translate-middle',
-          'rounded-circle',
-          'bg-primary',
-          'text-white',
-          'p-2',
-          'd-flex',
-          'align-items-center',
-          'justify-content-center',
-          'border-0',
-          'fs-3',
-        )}
-        style={{ aspectRatio: '1 / 1' }}
-        aria-label="Scroll to bottom"
-        onClick={() => scrollToBottom()}
-      >
-        <i className="bi bi-arrow-down-circle-fill lh-1" aria-hidden="true" />
-      </button>
-    )
-  );
-}
-
-const noopSubscribe = () => () => {};
-
-/**
- * Renders a message's timestamp in the viewer's local timezone, with a leading
- * separator. The server can't know the viewer's timezone, so we render nothing
- * during SSR and the initial hydration pass, then render once on the client.
- * This avoids a hydration mismatch without an effect, and keeps the separator
- * from dangling while the timestamp is absent.
- */
-function MessageTimestamp({ createdAt }: { createdAt: string }) {
-  const isClient = useSyncExternalStore(
-    noopSubscribe,
-    () => true,
-    () => false,
-  );
-
-  if (!isClient) return null;
-
-  const formatted = new Intl.DateTimeFormat(undefined, {
-    month: 'short',
-    day: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-  }).format(new Date(createdAt));
-
-  return (
-    <>
-      <span aria-hidden="true">&middot;</span>
-      <span style={{ fontVariantNumeric: 'tabular-nums' }}>{formatted}</span>
-    </>
-  );
-}
-
 function Message({
   message,
   isLastMessage,
@@ -369,24 +161,9 @@ function Message({
     const createdAt = message.metadata?.created_at;
 
     return (
-      // role="article" + label lets screen-reader users navigate message to
-      // message (e.g. with the "article" quick-nav key).
-      <div
-        className="d-flex flex-column align-items-end mb-3"
-        role="article"
-        aria-label={`Message from ${userName ?? 'you'}`}
-      >
-        <div
-          className="d-flex flex-column gap-2 p-3 rounded bg-secondary-subtle"
-          style={{ maxWidth: '90%', whiteSpace: 'pre-wrap' }}
-        >
-          {textContent}
-        </div>
-        <div className="d-flex align-items-center gap-2 small text-muted mb-1 px-1">
-          <span className="fw-medium">{userName ?? 'Unknown user'}</span>
-          {createdAt && <MessageTimestamp createdAt={createdAt} />}
-        </div>
-      </div>
+      <UserMessage userName={userName} createdAt={createdAt}>
+        {textContent}
+      </UserMessage>
     );
   }
 
@@ -400,12 +177,11 @@ function Message({
   });
 
   return (
-    <div
-      className="d-flex flex-column gap-2 mb-3"
-      role="article"
-      aria-label="Message from PrairieLearn"
-    >
-      <MessageParts parts={message.parts} />
+    <AssistantMessage>
+      <ChatMessageParts<QuestionGenerationUIMessage>
+        parts={message.parts}
+        renderTool={(part) => (isToolPart(part) ? <ToolCall part={part} /> : null)}
+      />
       {message.metadata?.status === 'canceled' && (
         <div className="small text-muted fst-italic">
           <i className="bi bi-stop-circle me-1" aria-hidden="true" />
@@ -418,7 +194,7 @@ function Message({
           View job logs (link only visible to administrators)
         </a>
       )}
-    </div>
+    </AssistantMessage>
   );
 }
 

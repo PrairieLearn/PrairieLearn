@@ -1,4 +1,4 @@
-import { afterEach, assert, describe, expect, it } from 'vitest';
+import { afterEach, assert, describe, expect, it, vi } from 'vitest';
 
 import { withConfig } from '../../../tests/utils/config.js';
 
@@ -10,6 +10,32 @@ import {
 
 describe('ephemeral course-agent runtime', () => {
   afterEach(resetFakeCourseAgentRuntime);
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('explains how to start the separately managed Worker when it is unreachable', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('fetch failed')));
+    await withConfig(
+      {
+        devMode: true,
+        courseAgentRuntime: 'cloudflare',
+        courseAgentCapabilitySecret: 'local-test-secret',
+      },
+      async () => {
+        await expect(
+          startEphemeralCourseAgentRun({
+            courseId: '1',
+            userId: '2',
+            prompt: 'Hello',
+            course: {
+              repository: 'https://github.com/PrairieLearn/test.git',
+              branch: 'master',
+              expectedSha: null,
+            },
+          }),
+        ).rejects.toThrow('pnpm dev-course-agent-worker');
+      },
+    );
+  });
 
   it('reuses one fake workspace within a conversation and scopes access', async () => {
     await withConfig({ courseAgentRuntime: 'fake' }, async () => {
