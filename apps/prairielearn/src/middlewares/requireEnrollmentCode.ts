@@ -1,9 +1,8 @@
-import asyncHandler from 'express-async-handler';
-
 import { extractPageContext } from '../lib/client/page-context.js';
-import { selectOptionalEnrollmentByUserId } from '../models/enrollment.js';
+import { selectEnrollmentAccessDecision } from '../lib/enrollment/admission.js';
+import { typedAsyncHandler } from '../lib/res-locals.js';
 
-export default asyncHandler(async (req, res, next) => {
+export default typedAsyncHandler<'course-instance'>(async (req, res, next) => {
   // The user will already be denied access if they are impersonating another user that is not enrolled in the course instance.
 
   // Check if the user needs an enrollment code to access the course instance.
@@ -28,26 +27,6 @@ export default asyncHandler(async (req, res, next) => {
     return;
   }
 
-  // Check if self-enrollment is enabled and requires an enrollment code
-  if (
-    !courseInstance.self_enrollment_enabled ||
-    !courseInstance.self_enrollment_use_enrollment_code
-  ) {
-    next();
-    return;
-  }
-
-  // Check if self-enrollment is still allowed (before the cutoff date)
-  const selfEnrollmentAllowed =
-    courseInstance.self_enrollment_enabled_before_date == null ||
-    new Date() < courseInstance.self_enrollment_enabled_before_date;
-
-  if (!selfEnrollmentAllowed) {
-    // TODO: Show nice error page
-    next();
-    return;
-  }
-
   // Check if user has student access (they should be able to enroll)
   // This checks if access rules would allow them to enroll.
   if (!res.locals.authz_data.authn_has_student_access) {
@@ -55,24 +34,18 @@ export default asyncHandler(async (req, res, next) => {
     return;
   }
 
-  // Check if user is already enrolled or blocked
-  const existingEnrollment = await selectOptionalEnrollmentByUserId({
-    userId: res.locals.authn_user.id,
-    requiredRole: ['Student'],
-    authzData: res.locals.authz_data,
-    courseInstance,
-  });
-
-  // If user is enrolled and joined/invited/rejected, let them through.
-  // Removed users need to re-enter the enrollment code.
-  if (existingEnrollment && ['joined', 'invited', 'rejected'].includes(existingEnrollment.status)) {
+  if (!courseInstance.self_enrollment_use_enrollment_code) {
     next();
     return;
   }
 
-  // If user is blocked, don't redirect them to enrollment code page
-  if (existingEnrollment?.status === 'blocked') {
-    // TODO: Show nice error page
+  const decision = await selectEnrollmentAccessDecision({
+    course: res.locals.course,
+    courseInstance,
+    user: res.locals.authn_user,
+  });
+
+  if (decision.allowed || decision.reason !== 'enrollment_code_required') {
     next();
     return;
   }

@@ -1,5 +1,11 @@
 # @prairielearn/signed-token
 
+## 4.0.0
+
+### Major Changes
+
+- 5734fd1: Allow prefix-based CSRF tokens to authenticate against caller-defined claims.
+
 ## 3.2.1
 
 ### Patch Changes

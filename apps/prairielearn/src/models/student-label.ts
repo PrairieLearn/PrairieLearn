@@ -21,6 +21,7 @@ import {
   StudentLabelEnrollmentSchema,
   StudentLabelSchema,
 } from '../lib/db-types.js';
+import { lockEnrollments } from '../lib/enrollment/lock.js';
 import type { ColorJson } from '../schemas/infoCourse.js';
 
 import { insertAuditEvent } from './audit-event.js';
@@ -177,6 +178,8 @@ export async function addLabelToEnrollments({
   }
 
   return await runInTransactionAsync(async () => {
+    await lockEnrollments(enrollments.map((enrollment) => enrollment.id));
+
     const results = await queryRows(
       sql.add_label_to_enrollments,
       { enrollment_ids: enrollments.map((e) => e.id), student_label_id: label.id },
@@ -228,6 +231,8 @@ export async function removeLabelFromEnrollments({
   }
 
   return await runInTransactionAsync(async () => {
+    await lockEnrollments(enrollments.map((enrollment) => enrollment.id));
+
     const deletedRows = await queryRows(
       sql.remove_label_from_enrollments,
       { enrollment_ids: enrollments.map((e) => e.id), student_label_id: label.id },
@@ -255,6 +260,38 @@ export async function removeLabelFromEnrollments({
     }
 
     return deletedRows;
+  });
+}
+
+export async function updateStudentLabelEnrollments({
+  enrollmentsToAdd,
+  enrollmentsToRemove,
+  label,
+  authzData,
+}: {
+  enrollmentsToAdd: Enrollment[];
+  enrollmentsToRemove: Enrollment[];
+  label: StudentLabel;
+  authzData: AuthzData;
+}): Promise<void> {
+  const affectedEnrollments = [...enrollmentsToAdd, ...enrollmentsToRemove];
+  for (const enrollment of affectedEnrollments) {
+    assertEnrollmentMatchesLabel(enrollment, label);
+  }
+
+  await runInTransactionAsync(async () => {
+    await lockEnrollments(affectedEnrollments.map((enrollment) => enrollment.id));
+
+    await addLabelToEnrollments({
+      enrollments: enrollmentsToAdd,
+      label,
+      authzData,
+    });
+    await removeLabelFromEnrollments({
+      enrollments: enrollmentsToRemove,
+      label,
+      authzData,
+    });
   });
 }
 

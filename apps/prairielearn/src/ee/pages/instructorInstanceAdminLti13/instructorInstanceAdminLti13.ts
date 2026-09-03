@@ -5,13 +5,7 @@ import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import { html } from '@prairielearn/html';
 import { logger } from '@prairielearn/logger';
-import {
-  execute,
-  loadSqlEquiv,
-  queryRow,
-  queryRows,
-  runInTransactionAsync,
-} from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 
 import { InsufficientCoursePermissionsCardPage } from '../../../components/InsufficientCoursePermissionsCard.js';
 import { getCourseOwners } from '../../../lib/course.js';
@@ -21,6 +15,7 @@ import {
   Lti13CourseInstanceSchema,
   Lti13InstanceSchema,
 } from '../../../lib/db-types.js';
+import { runWithSharedEnrollmentBarrier } from '../../../lib/enrollment/barrier.js';
 import { typedAsyncHandler } from '../../../lib/res-locals.js';
 import { createServerJob } from '../../../lib/server-jobs.js';
 import { getCanonicalHost } from '../../../lib/url.js';
@@ -176,7 +171,9 @@ router.post(
     };
 
     if (req.body.__action === 'delete_lti13_course_instance') {
-      await runInTransactionAsync(async () => {
+      // Deleting the LTI course instance cascades through
+      // `enrollments.pending_lti13_course_instance_id`, so it must take the enrollment barrier.
+      await runWithSharedEnrollmentBarrier(res.locals.course_instance.id, async () => {
         const deleted_lti13_course_instance = await queryRow(
           sql.delete_lti13_course_instance,
           {
