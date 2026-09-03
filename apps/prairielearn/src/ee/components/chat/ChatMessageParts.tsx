@@ -15,14 +15,16 @@ export function ChatMessageParts<T extends UIMessage>({
 }) {
   return parts.map((part, index) => {
     const key = `part-${index}`;
-    if (part.type.startsWith('tool-') || part.type === 'dynamic-tool')
+    if (part.type.startsWith('tool-') || part.type === 'dynamic-tool') {
       return <div key={key}>{renderTool(part)}</div>;
-    if (part.type === 'text')
+    }
+    if (part.type === 'text') {
       return (
         <div key={key} className="markdown-body">
           <ChatMarkdown content={part.text} {...markdownOptions} />
         </div>
       );
+    }
     if (part.type === 'reasoning') return <ReasoningBlock key={key} part={part} />;
     if (part.type === 'step-start') return null;
     return (

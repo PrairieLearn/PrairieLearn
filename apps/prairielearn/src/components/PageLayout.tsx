@@ -304,9 +304,7 @@ export function PageLayout({
           )}
           courseId={resLocals.course.id}
           userName={resLocals.authn_user.name ?? 'Instructor'}
-          timezone={
-            resLocals.course_instance?.display_timezone ?? resLocals.course.display_timezone
-          }
+          showDiagnostics={resLocals.is_administrator}
         />
       </Hydrate>
     );

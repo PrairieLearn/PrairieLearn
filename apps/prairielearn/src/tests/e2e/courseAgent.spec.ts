@@ -1,6 +1,46 @@
+import { insertCoursePermissionsByUserUid } from '../../models/course-permissions.js';
+import { selectUserByUid } from '../../models/user.js';
+
 import { createTest, expect } from './fixtures.js';
 
 const test = createTest({ courseAgentRuntime: 'fake', features: { 'course-agent': true } });
+
+test('hides diagnostics and rejects direct requests without active administrator access', async ({
+  page,
+  courseInstance,
+  context,
+  baseURL,
+}) => {
+  await page.goto(`/pl/course/${courseInstance.course_id}/course_admin/instances`);
+  const user = await selectUserByUid('dev@example.com');
+  await insertCoursePermissionsByUserUid({
+    course_id: courseInstance.course_id,
+    uid: user.uid,
+    course_role: 'Owner',
+    authn_user_id: user.id,
+  });
+  await context.addCookies([
+    { name: 'pl2_access_as_administrator', value: 'inactive', url: baseURL },
+  ]);
+  await page.reload();
+  const panel = page.getByRole('complementary', { name: 'Course agent panel' });
+  await expect(panel).toBeVisible();
+  await expect(
+    panel.getByText('Conversation diagnostics (only visible to administrators)', { exact: true }),
+  ).toHaveCount(0);
+  const input = encodeURIComponent(
+    JSON.stringify({
+      json: {
+        conversationId: '00000000-0000-4000-8000-000000000000',
+        sandboxId: 'course-agent-test',
+      },
+    }),
+  );
+  const response = await page.request.get(
+    `/pl/course/${courseInstance.course_id}/trpc/courseAgent.diagnostics?input=${input}`,
+  );
+  expect(response.status()).toBe(403);
+});
 
 test('sends with Enter and keeps formatted responses and activity within each turn', async ({
   page,
@@ -11,7 +51,9 @@ test('sends with Enter and keeps formatted responses and activity within each tu
   const input = panel.getByRole('textbox', { name: 'Message course agent' });
 
   await expect(panel.getByRole('switch')).toHaveCount(0);
-  await expect(panel.getByText('Conversation diagnostics', { exact: true })).toBeVisible();
+  await expect(
+    panel.getByText('Conversation diagnostics (only visible to administrators)', { exact: true }),
+  ).toBeVisible();
   await input.fill('First `inline`');
   await input.press('Enter');
   await expect(panel.getByRole('article', { name: 'Message from PrairieLearn' })).toHaveCount(1);
@@ -22,7 +64,9 @@ test('sends with Enter and keeps formatted responses and activity within each tu
   ).toBeVisible();
   await expect(panel.getByRole('button', { name: /Worked for \d+s/ })).toHaveCount(1);
   await expect(
-    panel.getByRole('article', { name: 'Message from you' }).getByText('Dev User', { exact: true }),
+    panel
+      .getByRole('article', { name: 'Message from Dev User' })
+      .getByText('Dev User', { exact: true }),
   ).toBeVisible();
   await expect(
     panel
@@ -30,14 +74,14 @@ test('sends with Enter and keeps formatted responses and activity within each tu
       .getByText('PrairieLearn', { exact: true }),
   ).toBeVisible();
   await expect(
-    panel.getByRole('article', { name: 'Message from you' }).locator('time'),
+    panel.getByRole('article', { name: 'Message from Dev User' }).locator('time'),
   ).toHaveAttribute('datetime', /T/);
 
   await input.fill('Second');
   await input.press('Shift+Enter');
   await expect(input).toHaveValue('Second\n');
   await input.press('Enter');
-  await expect(panel.getByRole('article', { name: 'Message from you' })).toHaveCount(2);
+  await expect(panel.getByRole('article', { name: 'Message from Dev User' })).toHaveCount(2);
   await expect(panel.getByRole('button', { name: /Worked for \d+s/ })).toHaveCount(2);
   await expect(panel.getByText('Edited README.md', { exact: true }).first()).toBeHidden();
   await expect(panel.getByRole('button', { name: /Worked for \d+s/ }).first()).toHaveAttribute(
@@ -61,7 +105,9 @@ test('sends with Enter and keeps formatted responses and activity within each tu
     .first()
     .click();
   await expect(panel.getByText('Started agent', { exact: true })).toBeHidden();
-  await panel.getByText('Conversation diagnostics', { exact: true }).click();
+  await panel
+    .getByText('Conversation diagnostics (only visible to administrators)', { exact: true })
+    .click();
   await expect(panel.getByText('Token usage', { exact: true })).toBeVisible();
   await expect(panel.getByText('Status: Ready', { exact: true })).toBeVisible();
 });
@@ -69,7 +115,7 @@ test('sends with Enter and keeps formatted responses and activity within each tu
 test('reserves desktop space for the panel and fills the mobile viewport', async ({
   page,
   courseInstance,
-}) => {
+}, testInfo) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto(`/pl/course/${courseInstance.course_id}/course_admin/instances`);
   const panel = page.getByRole('complementary', { name: 'Course agent panel' });
@@ -84,6 +130,7 @@ test('reserves desktop space for the panel and fills the mobile viewport', async
     .boundingBox();
   expect(collapseBox!.x - panelBox!.x).toBeLessThan(40);
   await expect(panel.getByText('QA 101', { exact: true })).toHaveCount(0);
+  await page.screenshot({ path: testInfo.outputPath('course-chat-desktop.png') });
 
   await panel.getByRole('button', { name: 'Collapse course agent' }).click();
   await expect(panel.getByRole('button', { name: 'Expand course agent' })).toBeVisible();

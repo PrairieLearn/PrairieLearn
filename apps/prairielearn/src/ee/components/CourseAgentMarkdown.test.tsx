@@ -1,15 +1,16 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 
-import { CourseAgentMarkdown } from './CourseAgentMarkdown.js';
+import { workspaceMarkdownComponents } from './CourseAgentPanel.js';
+import { ChatMarkdown } from './chat/ChatMarkdown.js';
 
 describe('CourseAgentMarkdown', () => {
   it('keeps file references non-clickable but permits public documentation links', () => {
     const output = renderToStaticMarkup(
-      <CourseAgentMarkdown>
-        [file](server.py) [workspace](/workspace/server.py) [local](file:///workspace/server.py)
-        [docs](https://docs.prairielearn.com)
-      </CourseAgentMarkdown>,
+      <ChatMarkdown
+        components={workspaceMarkdownComponents}
+        content="[file](server.py) [workspace](/workspace/server.py) [local](file:///workspace/server.py) [docs](https://docs.prairielearn.com)"
+      />,
     );
     expect(output).not.toContain('href="server.py"');
     expect(output).not.toContain('href="/workspace');
@@ -18,9 +19,12 @@ describe('CourseAgentMarkdown', () => {
   });
   it('renders common Markdown while dropping raw HTML', () => {
     const output = renderToStaticMarkup(
-      <CourseAgentMarkdown>
-        {'Use `x`:\n\n- one\n- two\n\n```python\nprint("hi")\n```\n\n<script>alert(1)</script>'}
-      </CourseAgentMarkdown>,
+      <ChatMarkdown
+        components={workspaceMarkdownComponents}
+        content={
+          'Use `x`:\n\n- one\n- two\n\n```python\nprint("hi")\n```\n\n<script>alert(1)</script>'
+        }
+      />,
     );
 
     expect(output).toContain('<code>x</code>');

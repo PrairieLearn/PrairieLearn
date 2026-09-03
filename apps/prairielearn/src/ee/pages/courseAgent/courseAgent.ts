@@ -9,10 +9,8 @@ import * as error from '@prairielearn/error';
 import { parseRequestQuery } from '@prairielearn/zod';
 
 import { typedAsyncHandler } from '../../../lib/res-locals.js';
-import {
-  getCourseAgentStreamContext,
-  getCourseAgentStreamId,
-} from '../../lib/course-agent/redis.js';
+import { getChatStreamContext } from '../../lib/chat/resumable-stream.js';
+import { getCourseAgentStreamId } from '../../lib/course-agent/redis.js';
 
 const router = Router({ mergeParams: true });
 
@@ -28,7 +26,7 @@ router.get(
       throw new error.HttpStatusError(403, 'Course agent is not enabled');
     }
     const { runId, offset } = parseRequestQuery(req, StreamQuerySchema);
-    const streamContext = await getCourseAgentStreamContext();
+    const streamContext = await getChatStreamContext();
     const stream = await streamContext.resumeExistingStream(
       getCourseAgentStreamId({
         courseId: res.locals.course.id,

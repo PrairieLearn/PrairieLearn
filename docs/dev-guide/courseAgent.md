@@ -19,6 +19,9 @@ with `pnpm dev-course-agent-worker`; Wrangler uses local simulation and local st
 held by the Worker and inserted only by its outbound OpenAI handler; the sandbox receives the
 placeholder value `proxy-injected`.
 
+`make dev` never starts Wrangler. If the Worker is unavailable when you send a message, the panel
+shows an error with the separate startup command.
+
 Sandbox lifetime settings are non-secret and can be configured in `config.json`:
 
 ```json
@@ -39,7 +42,9 @@ down the sandbox at the deadline, including during an active turn. Temporary fil
 this base PR; the next message starts a fresh workspace. Configuration changes apply to newly
 created sandboxes. The existing `idleTimeoutSeconds` separately controls Cloudflare's idle sleep.
 
-The panel always includes a collapsed **Conversation diagnostics** accordion. It shows runtime
+Administrators see a collapsed **Conversation diagnostics (only visible to administrators)**
+accordion. The diagnostic endpoint also requires administrator access; the ordinary transcript
+omits internal telemetry. The accordion shows runtime
 identifiers, state, stream position, and usage, but never credentials or model reasoning. Activity
 is grouped by instructor turn, and assistant responses support Markdown. Enter sends a message;
 Shift+Enter adds a newline. The sandbox image includes `python` and `python3`.

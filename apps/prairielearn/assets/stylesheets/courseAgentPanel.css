@@ -72,42 +72,38 @@
   visibility: visible;
   pointer-events: auto;
 }
+.course-agent-history {
+  min-height: 0;
+}
 .course-agent-transcript {
   min-height: 0;
   overflow-y: auto;
 }
-.course-agent-user-message {
-  max-width: 90%;
-  white-space: pre-wrap;
-}
-.course-agent-agent-message {
-  min-width: 0;
-}
-.course-agent-markdown {
+.course-agent-transcript .markdown-body {
   overflow-wrap: anywhere;
 }
-.course-agent-markdown > :last-child {
+.course-agent-transcript .markdown-body > :last-child {
   margin-bottom: 0;
 }
-.course-agent-markdown pre {
+.course-agent-transcript .markdown-body pre {
   padding: 0.75rem;
   overflow-x: auto;
   border: 1px solid var(--bs-border-color);
   border-radius: var(--bs-border-radius);
   background: var(--bs-tertiary-bg);
 }
-.course-agent-markdown pre code {
+.course-agent-transcript .markdown-body pre code {
   color: inherit;
   white-space: pre;
 }
-.course-agent-markdown table {
+.course-agent-transcript .markdown-body table {
   display: block;
   max-width: 100%;
   overflow-x: auto;
   margin-bottom: 1rem;
 }
-.course-agent-markdown th,
-.course-agent-markdown td {
+.course-agent-transcript .markdown-body th,
+.course-agent-transcript .markdown-body td {
   padding: 0.25rem 0.5rem;
   border: 1px solid var(--bs-border-color);
 }

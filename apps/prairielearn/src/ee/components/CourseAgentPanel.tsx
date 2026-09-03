@@ -1,18 +1,23 @@
 import { QueryClient, useMutation, useQuery } from '@tanstack/react-query';
 import clsx from 'clsx';
-import { Fragment, type ReactNode, useEffect, useId, useState } from 'react';
-import { Alert, Collapse, Form, Spinner } from 'react-bootstrap';
+import { Fragment, useEffect, useId, useState } from 'react';
+import { Alert, Collapse, Spinner } from 'react-bootstrap';
+import type { Components } from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { useStickToBottom } from 'use-stick-to-bottom';
 
 import type { CourseAgentEvent } from '@prairielearn/course-agent-protocol';
-import { formatDate, formatDateFriendly } from '@prairielearn/formatter';
 import { QueryClientProviderDebug } from '@prairielearn/trpc/react';
 import { OverlayTrigger } from '@prairielearn/ui';
 
 import { createCourseTrpcClient } from '../../trpc/course/client.js';
 import { TRPCProvider, useTRPC } from '../../trpc/course/context.js';
 
-import { CourseAgentMarkdown } from './CourseAgentMarkdown.js';
+import { ChatComposer } from './chat/ChatComposer.js';
+import { AssistantMessage, MessageMetadata, UserMessage } from './chat/ChatMessage.js';
+import { ChatMessageParts } from './chat/ChatMessageParts.js';
+import { ToolCallStatus } from './chat/ChatProgressStatus.js';
+import { ScrollToBottomButton } from './chat/ChatScrollToBottom.js';
 import {
   getCourseAgentActivity,
   getCourseAgentDuration,
@@ -20,14 +25,27 @@ import {
   groupCourseAgentTurns,
 } from './courseAgentEvents.js';
 
+const markdownPlugins = [remarkGfm];
+export const workspaceMarkdownComponents: Components = {
+  a: ({ href, children }) =>
+    /^https?:\/\//i.test(href ?? '') ? (
+      <a href={href} target="_blank" rel="noopener noreferrer">
+        {children}
+      </a>
+    ) : (
+      <>{children}</>
+    ),
+  img: ({ alt }) => <span>{alt}</span>,
+};
+
 function CourseAgentPanelInner({
   courseId,
   userName,
-  timezone,
+  showDiagnostics,
 }: {
   courseId: string;
   userName: string;
-  timezone: string;
+  showDiagnostics: boolean;
 }) {
   const trpc = useTRPC();
   const [open, setOpen] = useState(true);
@@ -129,6 +147,12 @@ function CourseAgentPanelInner({
   }, [courseId, refetchSnapshot, streamRunId]);
 
   const busy = start.isPending || streamRunId !== null;
+  const diagnostics = useQuery(
+    trpc.courseAgent.diagnostics.queryOptions(
+      conversation ?? { conversationId: '00000000-0000-0000-0000-000000000000', sandboxId: '' },
+      { enabled: showDiagnostics && conversation !== null, refetchInterval: busy ? 1000 : false },
+    ),
+  );
   const turns = groupCourseAgentTurns(events);
   const lastFailure = findLastEvent(events, 'run.failed');
   const lastCompletion = findLastEvent(events, 'agent.completed');
@@ -194,182 +218,115 @@ function CourseAgentPanelInner({
           </div>
         </header>
 
-        <div
-          ref={stickToBottom.scrollRef}
-          className="course-agent-transcript"
-          aria-label="Conversation messages"
-          role="log"
-          aria-live="polite"
-        >
-          <div ref={stickToBottom.contentRef} className="px-4 py-4">
-            {turns.length === 0 && (
-              <div className="course-agent-empty text-center text-muted px-3 py-5">
-                <i className="bi bi-stars fs-2 text-primary" aria-hidden="true" />
-                <p className="fw-semibold text-body mt-3 mb-1">What would you like to build?</p>
-                <p className="small mb-0">
-                  Ask the agent to create or improve PrairieLearn course content.
-                </p>
-              </div>
-            )}
-            {turns.map((turn, index) => {
-              const active = busy && index === turns.length - 1;
-              const response = getCourseAgentResponse(turn.events);
-              const turnFailure = findLastEvent(turn.events, 'run.failed');
-              return (
-                <div key={turn.userMessage.sequence} className="course-agent-turn">
-                  <UserMessage
-                    userName={userName}
-                    createdAt={turn.userMessage.occurredAt}
-                    timezone={timezone}
-                  >
-                    {String(turn.userMessage.data.text ?? '')}
-                  </UserMessage>
-                  <AgentMessage>
-                    <ToolCallGroup
-                      events={turn.events}
-                      startedAt={turn.userMessage.occurredAt}
-                      busy={active}
-                    />
-                    {response && <CourseAgentMarkdown>{response}</CourseAgentMarkdown>}
-                    {turnFailure && (
-                      <Alert variant="danger" className="mb-0">
-                        {String(turnFailure.data.message ?? 'The request could not be completed.')}
-                      </Alert>
-                    )}
-                    {!active && (response || turnFailure) && (
-                      <MessageMetadata
-                        author="PrairieLearn"
-                        createdAt={
-                          findLastEvent(turn.events, 'agent.completed')?.occurredAt ??
-                          turnFailure?.occurredAt ??
-                          turn.userMessage.occurredAt
-                        }
-                        timezone={timezone}
-                      />
-                    )}
-                  </AgentMessage>
+        <div className="course-agent-history position-relative">
+          <div
+            ref={stickToBottom.scrollRef}
+            className="course-agent-transcript h-100"
+            aria-label="Conversation messages"
+            role="log"
+            aria-live="polite"
+          >
+            <div ref={stickToBottom.contentRef} className="px-4 py-4">
+              {turns.length === 0 && (
+                <div className="course-agent-empty text-center text-muted px-3 py-5">
+                  <i className="bi bi-stars fs-2 text-primary" aria-hidden="true" />
+                  <p className="fw-semibold text-body mt-3 mb-1">What would you like to build?</p>
+                  <p className="small mb-0">
+                    Ask the agent to create or improve PrairieLearn course content.
+                  </p>
                 </div>
-              );
-            })}
-            {busy && turns.length === 0 && (
-              <div className="d-flex align-items-center gap-2 small text-muted mb-3">
-                <Spinner size="sm" /> Starting agent…
+              )}
+              {turns.map((turn, index) => {
+                const active = busy && index === turns.length - 1;
+                const response = getCourseAgentResponse(turn.events);
+                const turnFailure = findLastEvent(turn.events, 'run.failed');
+                return (
+                  <div key={turn.userMessage.sequence} className="course-agent-turn">
+                    <UserMessage userName={userName} createdAt={turn.userMessage.occurredAt}>
+                      {String(turn.userMessage.data.text ?? '')}
+                    </UserMessage>
+                    <AssistantMessage>
+                      <ToolCallGroup
+                        events={turn.events}
+                        startedAt={turn.userMessage.occurredAt}
+                        busy={active}
+                      />
+                      {response && (
+                        <ChatMessageParts
+                          parts={[{ type: 'text', text: response }]}
+                          renderTool={() => null}
+                          markdownOptions={{
+                            components: workspaceMarkdownComponents,
+                            remarkPlugins: markdownPlugins,
+                          }}
+                        />
+                      )}
+                      {turnFailure && (
+                        <Alert variant="danger" className="mb-0">
+                          {String(
+                            turnFailure.data.message ?? 'The request could not be completed.',
+                          )}
+                        </Alert>
+                      )}
+                      {!active && (response || turnFailure) && (
+                        <MessageMetadata
+                          author="PrairieLearn"
+                          createdAt={
+                            findLastEvent(turn.events, 'agent.completed')?.occurredAt ??
+                            turnFailure?.occurredAt ??
+                            turn.userMessage.occurredAt
+                          }
+                        />
+                      )}
+                    </AssistantMessage>
+                  </div>
+                );
+              })}
+              {busy && turns.length === 0 && (
+                <div className="d-flex align-items-center gap-2 small text-muted mb-3">
+                  <Spinner size="sm" /> Starting agent…
+                </div>
+              )}
+              {snapshotError && !failure && <Alert variant="danger">{snapshotError}</Alert>}
+              {start.error && <Alert variant="danger">{start.error.message}</Alert>}
+              <div className="pt-3 mt-3">
+                {showDiagnostics && (
+                  <Diagnostics
+                    conversation={conversation}
+                    runId={streamRunId}
+                    offset={streamOffset}
+                    events={diagnostics.data?.events ?? events}
+                    status={busy ? 'running' : (snapshot.data?.status ?? 'offline')}
+                  />
+                )}
               </div>
-            )}
-            {snapshotError && !failure && <Alert variant="danger">{snapshotError}</Alert>}
-            {start.error && <Alert variant="danger">{start.error.message}</Alert>}
-            <div className="pt-3 mt-3">
-              <Diagnostics
-                conversation={conversation}
-                runId={streamRunId}
-                offset={streamOffset}
-                events={events}
-                status={busy ? 'running' : (snapshot.data?.status ?? 'offline')}
-              />
             </div>
           </div>
-        </div>
 
+          <ScrollToBottomButton
+            isAtBottom={stickToBottom.isAtBottom}
+            scrollToBottom={() => void stickToBottom.scrollToBottom()}
+          />
+        </div>
         <footer className="course-agent-footer border-top bg-white p-3">
-          <Form
-            onSubmit={(event) => {
-              event.preventDefault();
-              if (busy || !prompt.trim()) return;
+          <ChatComposer
+            value={prompt}
+            disabled={busy}
+            isGenerating={busy}
+            label="Message course agent"
+            sendLabel="Send message"
+            placeholder="Ask anything about your course…"
+            textareaClassName="form-control course-agent-chat-input shadow-none mb-2"
+            footer={<span className="small text-muted">Codex</span>}
+            onChange={setPrompt}
+            onSubmit={(text) => {
               void stickToBottom.scrollToBottom();
-              start.mutate({ conversationId: conversation?.conversationId, prompt });
+              start.mutate({ conversationId: conversation?.conversationId, prompt: text });
             }}
-          >
-            <Form.Control
-              as="textarea"
-              rows={2}
-              className="course-agent-chat-input shadow-none"
-              aria-label="Message course agent"
-              placeholder="Ask anything about your course…"
-              value={prompt}
-              disabled={busy}
-              onChange={(event) => setPrompt(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) {
-                  event.preventDefault();
-                  event.currentTarget.form?.requestSubmit();
-                }
-              }}
-            />
-            <div className="d-flex align-items-center mt-2">
-              <span className="small text-muted">Codex</span>
-              <button
-                type="submit"
-                className="btn btn-sm btn-primary ms-auto"
-                aria-label="Send message"
-                disabled={busy || !prompt.trim()}
-              >
-                {busy ? <Spinner size="sm" /> : <i className="bi bi-send-fill" />}
-              </button>
-            </div>
-          </Form>
+          />
         </footer>
       </div>
     </aside>
-  );
-}
-
-function UserMessage({
-  children,
-  userName,
-  createdAt,
-  timezone,
-}: {
-  children: ReactNode;
-  userName: string;
-  createdAt: string;
-  timezone: string;
-}) {
-  return (
-    <div
-      className="d-flex flex-column align-items-end mb-4"
-      role="article"
-      aria-label="Message from you"
-    >
-      <div className="course-agent-user-message rounded bg-secondary-subtle p-3">{children}</div>
-      <MessageMetadata author={userName} createdAt={createdAt} timezone={timezone} />
-    </div>
-  );
-}
-
-function MessageMetadata({
-  author,
-  createdAt,
-  timezone,
-}: {
-  author: string;
-  createdAt: string;
-  timezone: string;
-}) {
-  const date = new Date(createdAt);
-  return (
-    <div className="small text-muted mt-1 d-flex align-items-center gap-2">
-      <span>{author}</span>
-      <span aria-hidden="true">·</span>
-      <time dateTime={createdAt} title={formatDate(date, timezone)}>
-        {formatDateFriendly(date, timezone, {
-          includeTz: false,
-          maxPrecision: 'minute',
-          minPrecision: 'minute',
-        })}
-      </time>
-    </div>
-  );
-}
-
-function AgentMessage({ children }: { children: ReactNode }) {
-  return (
-    <div
-      className="course-agent-agent-message d-flex flex-column gap-2 mb-4"
-      role="article"
-      aria-label="Message from PrairieLearn"
-    >
-      {children}
-    </div>
   );
 }
 
@@ -424,18 +381,21 @@ export function ToolCallGroup({
           <div className="d-flex flex-column gap-1 border-start ms-2 mt-1 ps-3 py-1">
             {activity.map((item) => (
               <div key={item.key} className="small text-muted d-flex align-items-start gap-1">
-                <i
-                  className={clsx('bi bi-fw flex-shrink-0', {
-                    'bi-x-lg text-danger': item.status === 'failed',
-                    'bi-check-lg text-success': item.status === 'completed',
-                    'bi-three-dots': item.status === 'pending',
-                  })}
-                  aria-hidden="true"
+                <ToolCallStatus
+                  state={
+                    item.status === 'pending'
+                      ? 'input-available'
+                      : item.status === 'failed'
+                        ? 'output-error'
+                        : 'output-available'
+                  }
+                  statusText={
+                    <span className="text-break">
+                      {item.label}
+                      {item.status === 'pending' ? '…' : ''}
+                    </span>
+                  }
                 />
-                <span className="text-break">
-                  {item.label}
-                  {item.status === 'pending' ? '…' : ''}
-                </span>
               </div>
             ))}
           </div>
@@ -485,7 +445,7 @@ function Diagnostics({
     <details className="course-agent-diagnostic-card small text-muted">
       <summary className="d-flex align-items-center gap-2 py-2">
         <i className="bi bi-activity text-muted" aria-hidden="true" />
-        <span>Conversation diagnostics</span>
+        <span>Conversation diagnostics (only visible to administrators)</span>
         <i className="course-agent-diagnostic-chevron bi bi-chevron-down" aria-hidden="true" />
       </summary>
       <div className="pt-2">
@@ -540,12 +500,12 @@ export function CourseAgentPanel({
   trpcCsrfToken,
   courseId,
   userName,
-  timezone,
+  showDiagnostics,
 }: {
   trpcCsrfToken: string;
   courseId: string;
   userName: string;
-  timezone: string;
+  showDiagnostics: boolean;
 }) {
   const [queryClient] = useState(() => new QueryClient());
   const [trpcClient] = useState(() =>
@@ -554,7 +514,11 @@ export function CourseAgentPanel({
   return (
     <QueryClientProviderDebug client={queryClient}>
       <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
-        <CourseAgentPanelInner courseId={courseId} userName={userName} timezone={timezone} />
+        <CourseAgentPanelInner
+          courseId={courseId}
+          userName={userName}
+          showDiagnostics={showDiagnostics}
+        />
       </TRPCProvider>
     </QueryClientProviderDebug>
   );

@@ -7,6 +7,7 @@ import {
   getEphemeralCourseAgentSnapshot,
   startEphemeralCourseAgentRun,
 } from '../../ee/lib/course-agent/ephemeral-runtime.js';
+import { publicCourseAgentEvent } from '../../ee/lib/course-agent/public-events.js';
 import { features } from '../../lib/features/index.js';
 
 import {
@@ -54,11 +55,34 @@ const get = courseAgentProcedure
   .input(z.object({ conversationId: z.uuid(), sandboxId: z.string() }))
   .output(CourseAgentSnapshotSchema)
   .query(async ({ ctx, input }) => {
-    return getEphemeralCourseAgentSnapshot({
+    const snapshot = await getEphemeralCourseAgentSnapshot({
       userId: ctx.locals.authn_user.id,
       courseId: ctx.course.id,
       ...input,
     });
+    return {
+      ...snapshot,
+      events: snapshot.events.flatMap((event) => publicCourseAgentEvent(event) ?? []),
+    };
   });
 
-export const courseAgentRouter = t.router({ get, start });
+const diagnostics = courseAgentProcedure
+  .use(
+    t.middleware(async (opts) => {
+      if (!opts.ctx.locals.is_administrator) {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Administrator access required' });
+      }
+      return opts.next();
+    }),
+  )
+  .input(z.object({ conversationId: z.uuid(), sandboxId: z.string() }))
+  .output(CourseAgentSnapshotSchema)
+  .query(({ ctx, input }) =>
+    getEphemeralCourseAgentSnapshot({
+      userId: ctx.locals.authn_user.id,
+      courseId: ctx.course.id,
+      ...input,
+    }),
+  );
+
+export const courseAgentRouter = t.router({ get, start, diagnostics });
