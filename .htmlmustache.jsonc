@@ -170,6 +170,10 @@
   ],
   "customTags": [
     {
+      "name": "pl-big-operator-input",
+      "schema": "./apps/prairielearn/elements/pl-big-operator-input/schemas/pl-big-operator-input.json"
+    },
+    {
       "name": "pl-checkbox",
       "schema": "./apps/prairielearn/elements/pl-checkbox/schemas/pl-checkbox.json",
       "children": [
@@ -224,10 +228,6 @@
     {
       "name": "pl-symbolic-input",
       "schema": "./apps/prairielearn/elements/pl-symbolic-input/schemas/pl-symbolic-input.json"
-    },
-    {
-      "name": "pl-big-operator-input",
-      "schema": "./apps/prairielearn/elements/pl-big-operator-input/schemas/pl-big-operator-input.json"
     },
     {
       "name": "pl-code",
