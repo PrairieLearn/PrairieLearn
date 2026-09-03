@@ -42,9 +42,16 @@ PrairieLearn. The tool waits while the instructor reviews the exact diff in the 
 On approval, the trusted PrairieLearn web process verifies that the configured repository, branch,
 and remote base SHA still match the request. It applies the approved diff to the normal course
 checkout and uses PrairieLearn's existing editor path to commit, push, and start Course Sync. The
-result is returned through the Worker to the waiting tool. Denial and publication errors are also
-returned to the agent. The sandbox's GitHub PAT proxy remains read-only throughout this flow;
-PrairieLearn never enables `git-receive-pack` or gives a push credential to the sandbox.
+remote branch is verified after the editor completes, and the result is returned through the Worker
+to the waiting tool. Denial and publication errors are also returned to the agent. The sandbox's
+GitHub PAT proxy remains read-only throughout this flow; PrairieLearn never enables
+`git-receive-pack` or gives a push credential to the sandbox.
+
+Live local testing of approval-gated publication requires `fileEditorUseGit: true` and Git push
+credentials for the PrairieLearn process. This setting affects all local file-editor operations, so
+only enable it while testing against a disposable course repository. Without it, course-agent
+publication fails before applying the approved diff instead of reporting a local-only edit as a
+successful push.
 
 Wrangler uses its local R2 simulation by default. Production R2 access requires a dedicated bucket
 and narrowly scoped R2 credentials supplied to the Worker; local tests do not create or pay for
