@@ -2,10 +2,7 @@
   "controller": "pl-big-operator-input.py",
   "dependencies": {
     "nodeModulesScripts": ["mathlive/mathlive.min.js"],
-    "elementScripts": ["vendor/prairielearn/pl-symbolic-input/pl-symbolic-input.js"],
-    "elementStyles": [
-      "vendor/prairielearn/pl-symbolic-input/pl-symbolic-input.css",
-      "pl-big-operator-input.css"
-    ]
+    "elementScripts": ["../pl-symbolic-input/pl-symbolic-input.js"],
+    "elementStyles": ["../pl-symbolic-input/pl-symbolic-input.css", "pl-big-operator-input.css"]
   }
 }
