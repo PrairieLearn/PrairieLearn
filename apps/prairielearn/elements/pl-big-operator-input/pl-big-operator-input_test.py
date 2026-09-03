@@ -1717,6 +1717,32 @@ def test_component_grading_uses_equivalence_for_each_field() -> None:
     assert state["partial_scores"]["op"] == {"score": 1.0, "weight": 1}
 
 
+def test_correct_element_test_submission_round_trips_through_grading() -> None:
+    markup = html(
+        operator="sum",
+        **{"correct-answer": "Sum(k**2, (k, 1, 4))"},
+    )
+    state = data()
+    big_operator_input.prepare(markup, state)
+    state.update(
+        test_type="correct",
+        raw_submitted_answers={},
+        partial_scores={},
+        format_errors={},
+    )
+
+    big_operator_input.test(markup, state)
+    big_operator_input.parse(markup, state)
+    big_operator_input.grade(markup, state)
+
+    assert state["raw_submitted_answers"] == {
+        "op-start": "1",
+        "op-end": "4",
+        "op-body": "k**2",
+    }
+    assert state["partial_scores"]["op"] == {"score": 1.0, "weight": 1}
+
+
 def test_equivalent_grading_avoids_evaluating_structurally_equivalent_sums(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
