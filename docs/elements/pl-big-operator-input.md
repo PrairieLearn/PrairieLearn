@@ -15,9 +15,7 @@ The wrapper is responsible for the operator layout, canonical aggregate answer, 
 ></pl-big-operator-input>
 ```
 
-The whole `correct-answer` form is the preferred authoring interface.
-It lets the element infer the operator and limits layout while keeping the complete mathematical expression together.
-Component correct-answer attributes remain available as a secondary option when constructing a whole answer is inconvenient.
+The `correct-answer` attribute keeps the complete mathematical expression together and lets the element infer the operator and limits layout.
 
 ## Customizations
 
@@ -30,11 +28,6 @@ Component correct-answer attributes remain available as a secondary option when 
 | `body-relative-weight`        | integer                                                                                                                         | 3              | Body weight when using component grading. Every limit component has a weight of 1.                                                                                                       |
 | `body-size`                   | integer                                                                                                                         | 16             | Positive character width of the body input.                                                                                                                                              |
 | `correct-answer`              | string                                                                                                                          | —              | Correct answer as a parseable whole expression. The operator, index variable, limits form, and limit direction are inferred when possible.                                               |
-| `correct-answer-body`         | string                                                                                                                          | —              | Alternative correct answer for the body field. Supply it together with every component required by the resolved limits form.                                                             |
-| `correct-answer-domain`       | string                                                                                                                          | —              | Alternative correct answer for the domain field when using domain limits.                                                                                                                |
-| `correct-answer-end`          | string                                                                                                                          | —              | Alternative correct answer for the upper-bound field when using bounds.                                                                                                                  |
-| `correct-answer-start`        | string                                                                                                                          | —              | Alternative correct answer for the lower-bound field when using bounds.                                                                                                                  |
-| `correct-answer-target`       | string                                                                                                                          | —              | Alternative correct answer for the target field when using approach limits.                                                                                                              |
 | `custom-functions`            | string                                                                                                                          | —              | Comma-separated symbolic function names allowed in correct answers and student input, e.g. `"f,g"`.                                                                                      |
 | `grading-method`              | `"exact"`, `"component"`, or `"equivalent"`                                                                                     | `"equivalent"` | How to grade the combined answer.                                                                                                                                                        |
 | `index-variable`              | string                                                                                                                          | —              | Bound symbol, which is automatically allowed in the body. Required when it cannot be inferred from `correct-answer`.                                                                     |
@@ -87,17 +80,17 @@ Here are some examples of the custom operator in use:
 ```html
 <pl-big-operator-input
   answers-name="evaluation"
-  operator="custom"
   operator-latex="\operatorname{eval}"
-  limits="approach"
-  index-variable="x"
   custom-functions="f"
-  correct-answer-target="0"
-  limit-direction="two-sided"
-  correct-answer-body="f(x)"
+  correct-answer="Custom(f(x), (x, 0, '+-'))"
   grading-method="component"
 ></pl-big-operator-input>
 ```
+
+A custom correct answer uses `Custom(body, (index, lower, upper))` for bounds,
+`Custom(body, (index, domain))` for a domain, or
+`Custom(body, (index, target, direction))` for an approach.
+Valid approach directions are `"+"`, `"-"`, and `"+-"`.
 
 To supply the sidedness instead of asking the student for it:
 
@@ -132,7 +125,7 @@ Consequently:
 
 ## Correct answers
 
-### Parsable `correct-answer` (preferred)
+### Parsable `correct-answer`
 
 When `operator` is omitted, a correct answer supplied as a string or JSON-safe dictionary identifies the built-in operator, index-string, and limits.
 Supported strings begin with `Sum`, `Product`, `Integral`, `Limit`, `Union`, `Intersection`, `DisjointUnion`, `Min`, `Max`, or `Custom`.
@@ -184,7 +177,7 @@ data["correct_answers"]["total"] = str(ans)
 A canonical structured dictionary, in the format below, is another inferable answer source because it includes `"operator"` and `"index"`.
 Whole answer strings and SymPy JSON also identify their bound symbol, so `index-variable` can be omitted for these parseable forms.
 Explicit HTML `operator` and `index-variable` values always take precedence and are checked against the answer.
-Component `correct-answer-...` attributes and raw SymPy objects do not trigger inference, so they require an explicit `operator` and `index-variable`.
+Raw SymPy objects do not trigger inference, so they require an explicit `operator` and `index-variable`.
 Ungraded, malformed, or otherwise unrecognized answers likewise require explicit configuration.
 
 Answers assigned in `server.py` must be JSON-serializable.
@@ -207,29 +200,6 @@ The variadic operators accept a parseable whole-answer syntax that preserves the
 
 The same form supports `Intersection`, `DisjointUnion`, `Min`, and `Max`.
 These strings normalize to the canonical answer without evaluating away the index and limits.
-
-### Component attributes (alternative)
-
-Authors may instead provide each visible component as an attribute.
-This is the secondary interface; each value is accepted by the same basic parser used for student input:
-
-```html
-<!-- component repr of Sum(k ** 2, (k, 1, n)) -->
-<pl-big-operator-input
-  answers-name="total"
-  correct-answer-body="k^2"
-  correct-answer-end="n"
-  correct-answer-start="1"
-  index-variable="k"
-  operator="sum"
-  variables="n"
-></pl-big-operator-input>
-```
-
-The required attributes depend on the resolved limits form: bounds use `start`, `end`, and `body`; domain forms use `domain` and `body`; approach forms use `target` and `body`.
-Supplying an irrelevant component, omitting a component, or combining these attributes with `correct-answer` is an error.
-The element supplies the operator, limits form, index, and limit direction and normalizes the values to the canonical representation during `prepare()`.
-The index variable is automatically available when parsing the body; other symbols must be listed in `variables`.
 
 ### Canonical representation
 
@@ -269,7 +239,7 @@ There are three grading modes:
 - `exact` requires an identical canonical operator, form, direction, index, and exact SymPy components.
 - `equivalent` constructs formal SymPy expressions and tests their equivalence, first by structural equality then using `a - b =? 0`.
   - Domain equivalence expands only a concrete `FiniteSet`; symbolic or infinite domains fail explicitly rather than being expanded eagerly.
-- `component` checks corresponding visible components using equivalent grading.
+- `component` checks corresponding visible components using equivalent grading. This grading method does not change how the correct answer is authored.
 
 If no correct answer is supplied through an attribute or `data["correct_answers"]`, the element is ungraded.
 It still parses and stores the combined canonical response, but it does not create a partial score.

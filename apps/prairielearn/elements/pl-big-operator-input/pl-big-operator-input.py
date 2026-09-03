@@ -15,6 +15,7 @@ import sympy
 import sympy.sets
 
 HERE = Path(__file__).parent
+SCHEMA_PATH = HERE / "schemas" / "pl-big-operator-input.json"
 
 BODY_SIZE_DEFAULT = 16
 BOUNDS_LIMIT_SIZE_DEFAULT = 7
@@ -115,13 +116,6 @@ COMPONENTS_MAP: dict[LimitFormat, Sequence[Component]] = {
     "domain": ("domain", "body"),
     "approach": ("target", "body"),
 }
-CORRECT_COMPONENT_ATTRIBUTES: dict[Component, str] = {
-    "lower": "correct-answer-start",
-    "upper": "correct-answer-end",
-    "domain": "correct-answer-domain",
-    "target": "correct-answer-target",
-    "body": "correct-answer-body",
-}
 type GradingMethod = Literal["equivalent", "component", "exact"]
 GRADING_METHODS: frozenset[GradingMethod] = frozenset((
     "equivalent",
@@ -160,7 +154,6 @@ class RenderConfig:
     body_weight: int
     weight: int
     correct_attribute: str | None
-    correct_components: tuple[tuple[Component, str], ...]
 
     @property
     def components(self) -> Sequence[Component]:
@@ -179,11 +172,8 @@ class RenderConfig:
 def _raw_correct_answer(
     answer: str,
     correct_attribute: str | None,
-    correct_components: dict[Component, str],
     data: Any | None,
 ) -> Any:
-    if correct_components:
-        return correct_components
     if correct_attribute is not None:
         return correct_attribute
     if data is None:
@@ -416,16 +406,9 @@ def _config(html: str, data: pl.QuestionData | None = None) -> RenderConfig:
         explicit_operator = explicit_operator[:1].lower() + explicit_operator[1:]
     custom_latex = pl.get_string_attrib(element, "operator-latex", None)
     correct_attribute = pl.get_string_attrib(element, "correct-answer", None)
-    supplied_components: dict[Component, str] = {
-        component: value
-        for component, attribute in CORRECT_COMPONENT_ATTRIBUTES.items()
-        if (value := pl.get_string_attrib(element, attribute, None)) is not None
-    }
-    raw_correct = _raw_correct_answer(
-        answer, correct_attribute, supplied_components, data
-    )
+    raw_correct = _raw_correct_answer(answer, correct_attribute, data)
     inferred_operator, inferred_limits, inferred_index = None, None, None
-    if not supplied_components and isinstance(raw_correct, (str, dict)):
+    if isinstance(raw_correct, (str, dict)):
         inferred_operator, inferred_limits, inferred_index = _infer_spec(raw_correct)
     index = explicit_index or inferred_index
     if index is None:
@@ -504,11 +487,7 @@ def _config(html: str, data: pl.QuestionData | None = None) -> RenderConfig:
     direction_attribute = pl.get_string_attrib(element, "limit-direction", None)
     direction = (
         direction_attribute
-        or (
-            _infer_direction(raw_correct, operator)
-            if limits == "approach" and not supplied_components
-            else None
-        )
+        or (_infer_direction(raw_correct, operator) if limits == "approach" else None)
         or "two-sided"
     )
     if direction not in DIRECTION_SYMBOLS:
@@ -530,31 +509,9 @@ def _config(html: str, data: pl.QuestionData | None = None) -> RenderConfig:
         raise ValueError(
             'Attribute "allowed-blank" must be none, limits, body, or all.'
         )
-    components = COMPONENTS_MAP[limits]
-    irrelevant = set(supplied_components) - set(components)
-    if irrelevant:
-        attributes = ", ".join(
-            CORRECT_COMPONENT_ATTRIBUTES[component] for component in irrelevant
-        )
-        raise ValueError(
-            f'Correct-answer attribute(s) {attributes} cannot be used with limits="{limits}".'
-        )
-    if supplied_components and set(supplied_components) != set(components):
-        missing = ", ".join(
-            CORRECT_COMPONENT_ATTRIBUTES[component]
-            for component in components
-            if component not in supplied_components
-        )
-        raise ValueError(
-            f"Component correct answers must supply every visible field; missing {missing}."
-        )
-    if correct_attribute is not None and supplied_components:
-        raise ValueError(
-            'Use either "correct-answer" or component correct-answer attributes, not both.'
-        )
     if (
         operator == "custom"
-        and (correct_attribute is not None or supplied_components)
+        and correct_attribute is not None
         and grading not in {"exact", "component"}
     ):
         raise ValueError(
@@ -579,13 +536,6 @@ def _config(html: str, data: pl.QuestionData | None = None) -> RenderConfig:
         body_weight=body_weight,
         weight=pl.get_integer_attrib(element, "weight", 1),
         correct_attribute=correct_attribute,
-        correct_components=(
-            tuple(
-                (component, supplied_components[component]) for component in components
-            )
-            if supplied_components
-            else ()
-        ),
     )
 
 
@@ -697,41 +647,6 @@ def _validate_component_values(
             raise ValueError(
                 "Correct answer contains a complex value, but complex values are disabled."
             )
-
-
-def _component_values(
-    config: RenderConfig, value: dict[Component, Any]
-) -> dict[str, Any]:
-    values: dict[str, sympy.Basic] = {}
-    for component in config.components:
-        raw = value[component]
-        variables = (
-            tuple(dict.fromkeys((*config.variables, config.index)))
-            if component == "body"
-            else config.variables
-        )
-        if isinstance(raw, str):
-            try:
-                parsed = _unchecked_parse(raw, variables, config.custom_functions)
-            except _ParseError as exc:
-                raise ValueError(
-                    f'Parsing correct answer component "{component}" failed.'
-                ) from exc._src
-        else:
-            try:
-                parsed = _decode(raw)
-            except Exception as exc:
-                raise ValueError(
-                    f'Decoding correct answer component "{component}" failed.'
-                ) from exc
-        if not isinstance(parsed, sympy.Basic):
-            raise TypeError(
-                f'Correct answer component "{component}" must be a SymPy value or parseable string.'
-            )
-        if _requires_set(config, component) and not _is_set_input(parsed):
-            raise ValueError(f'Correct answer component "{component}" must be a set.')
-        values[component] = parsed
-    return _canonical(config, values)
 
 
 def _binder(config: RenderConfig, value: Any) -> dict[str, Any] | None:
@@ -875,12 +790,7 @@ def _formatted_answer(config: RenderConfig, source: str) -> dict[str, Any] | Non
 
 
 def _correct(config: RenderConfig, data: pl.QuestionData) -> dict[str, Any] | None:
-    raw = _raw_correct_answer(
-        config.answer_name,
-        config.correct_attribute,
-        dict(config.correct_components),
-        data,
-    )
+    raw = _raw_correct_answer(config.answer_name, config.correct_attribute, data)
     if (
         config.operator == "custom"
         and raw is not None
@@ -893,8 +803,6 @@ def _correct(config: RenderConfig, data: pl.QuestionData) -> dict[str, Any] | No
         return None
     if isinstance(raw, dict) and raw.get("_type") == "operator_expression":
         return _structured(config, raw)
-    if config.correct_components:
-        return _component_values(config, cast(dict[Component, Any], raw))
     if isinstance(raw, str):
         converted = _formatted_answer(config, raw)
         if converted is not None:
@@ -922,6 +830,8 @@ def _correct(config: RenderConfig, data: pl.QuestionData) -> dict[str, Any] | No
 
 
 def prepare(element_html: str, data: pl.QuestionData) -> None:
+    element = lxml.html.fragment_fromstring(element_html)
+    pl.validate_element(element, SCHEMA_PATH)
     config = _config(element_html, data)
     correct = _correct(config, data)
     if correct is not None:
