@@ -36,6 +36,11 @@ describe('course-agent protocol', () => {
       runId: '40cff9bd-6931-4405-a8e6-57f93a190d4b',
       sandboxId: 'course-agent-test',
       prompt,
+      course: {
+        repository: 'PrairieLearn/PrairieLearn',
+        branch: 'master',
+        expectedSha: null,
+      },
       runtimeSettings: { idleTimeoutSeconds: 600, turnTimeoutSeconds: 900 },
     });
     expect(request.prompt).toBe(prompt);
