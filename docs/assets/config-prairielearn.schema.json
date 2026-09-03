@@ -1540,17 +1540,6 @@
         }
       ]
     },
-    "courseAgentAnthropicApiKey": {
-      "default": null,
-      "anyOf": [
-        {
-          "type": "string"
-        },
-        {
-          "type": "null"
-        }
-      ]
-    },
     "courseAgentGithubToken": {
       "default": null,
       "anyOf": [
@@ -1561,6 +1550,31 @@
           "type": "null"
         }
       ]
+    },
+    "courseAgentSandbox": {
+      "default": {},
+      "type": "object",
+      "properties": {
+        "idleTimeoutSeconds": {
+          "default": 600,
+          "type": "integer",
+          "minimum": 60,
+          "maximum": 86400
+        },
+        "backupTtlSeconds": {
+          "default": 604800,
+          "type": "integer",
+          "minimum": 60,
+          "maximum": 2592000
+        },
+        "turnTimeoutSeconds": {
+          "default": 900,
+          "type": "integer",
+          "minimum": 60,
+          "maximum": 3600
+        }
+      },
+      "additionalProperties": false
     },
     "aiGradingRateLimitDollars": {
       "default": 10,

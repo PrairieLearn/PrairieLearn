@@ -12,6 +12,8 @@ import { generateSignedToken } from '@prairielearn/signed-token';
 
 import { config } from '../../../lib/config.js';
 
+import { getCourseAgentStreamContext, getCourseAgentStreamId } from './redis.js';
+
 interface Identity {
   userId: string;
   courseId: string;
@@ -43,6 +45,14 @@ function promptDigest(prompt: string) {
 
 function expiresAt() {
   return new Date(Date.now() + 5 * 60_000).toISOString();
+}
+
+function runtimeSettings() {
+  return {
+    idleTimeoutSeconds: config.courseAgentSandbox.idleTimeoutSeconds,
+    backupTtlSeconds: config.courseAgentSandbox.backupTtlSeconds,
+    turnTimeoutSeconds: config.courseAgentSandbox.turnTimeoutSeconds,
+  };
 }
 
 export async function startEphemeralCourseAgentRun({
@@ -79,6 +89,7 @@ export async function startEphemeralCourseAgentRun({
       repository: course.repository,
       branch: course.branch,
       expectedSha: course.expectedSha,
+      runtimeSettings: runtimeSettings(),
       expiresAt: expiresAt(),
     },
     capabilitySecret(),
@@ -94,10 +105,33 @@ export async function startEphemeralCourseAgentRun({
       prompt,
       course,
       workspaceBackup,
+      runtimeSettings: runtimeSettings(),
     }),
   });
   if (!response.ok) throw new Error(`Course-agent Worker rejected the run (${response.status})`);
-  return CourseAgentStartRunResponseSchema.parse(await response.json());
+  const result = CourseAgentStartRunResponseSchema.parse(await response.json());
+  await startCourseAgentEventRelay({ ...identity, runId });
+  return result;
+}
+
+async function startCourseAgentEventRelay(identity: Identity & { runId: string }) {
+  const capability = generateSignedToken(
+    { type: 'course-agent-inspect', ...identity, expiresAt: expiresAt() },
+    capabilitySecret(),
+  );
+  const response = await fetch(new URL('/v1/stream', config.courseAgentWorkerOrigin), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ capability, ...identity }),
+  });
+  const body = response.body;
+  if (!response.ok || !body) {
+    throw new Error(`Course-agent Worker stream failed (${response.status})`);
+  }
+  const streamContext = await getCourseAgentStreamContext();
+  await streamContext.createNewResumableStream(getCourseAgentStreamId(identity), () =>
+    body.pipeThrough(new TextDecoderStream()),
+  );
 }
 
 export async function getEphemeralCourseAgentSnapshot(identity: Identity) {
@@ -166,10 +200,12 @@ function startFakeRun({
     append('workspace.seeded', { path: '/workspace/README.md' });
     append('sandbox.ready', { workspacePath: '/workspace' });
   }
+  append('user.message', { text: prompt });
   append('agent.started', { model: 'fake' });
   append('tool.started', { operationId: runId, tool: 'Edit' });
   append('tool.completed', { operationId: runId });
   const response = `Updated /workspace/README.md for: ${prompt}`;
+  append('assistant.delta', { text: response });
   append('agent.completed', { response });
   fakeConversations.set(identity.conversationId, {
     ...identity,

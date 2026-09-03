@@ -45,7 +45,7 @@ class CourseAgentDiffEditor extends Editor {
     });
     return {
       pathsToAdd: ['-A'],
-      commitMessage: `Apply course-agent changes (${this.approval.id})`,
+      commitMessage: this.approval.commit_message,
     };
   }
 }
