@@ -10,6 +10,14 @@ import {
 } from '../../lib/assets.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
 
+import {
+  DEFAULT_EXAM_INSTRUCTIONS,
+  answerKeyDescription,
+  getDefaultHonorCodePledge,
+  getPrintCoverFields,
+  getPrintFooterLabel,
+} from './printCover.js';
+
 export function InstructorAssessmentInstancePrint({
   resLocals,
   document,
@@ -35,7 +43,7 @@ export function InstructorAssessmentInstancePrint({
 }) {
   const isAnswerKey = document === 'answer_key';
   const documentLabel = isAnswerKey ? 'Answer key' : 'Exam';
-  const pageFooterPrefix = isAnswerKey ? 'Answer key  |  ' : '';
+  const footerLabel = getPrintFooterLabel({ document, formId: resLocals.assessment_instance.id });
 
   return html`<!doctype html>
     <html
@@ -43,6 +51,8 @@ export function InstructorAssessmentInstancePrint({
       data-print-document="${document}"
       data-print-paper-size="${paperSize}"
       data-print-status="loading"
+      data-print-question-count="${questionHtmls.length}"
+      data-print-max-points="${maxPoints}"
     >
       <head>
         ${HeadContents({
@@ -180,8 +190,7 @@ export function InstructorAssessmentInstancePrint({
           @page {
             @bottom-right {
               color: #555;
-              content: '${pageFooterPrefix}Form ID ${resLocals.assessment_instance.id}  |  Page '
-                counter(page) ' of ' counter(pages);
+              content: '${footerLabel}  |  Page ' counter(page) ' of ' counter(pages);
               font-family: system-ui, sans-serif;
               font-size: 8pt;
             }
@@ -190,8 +199,7 @@ export function InstructorAssessmentInstancePrint({
           @page exam-cover {
             @bottom-right {
               color: #555;
-              content: '${pageFooterPrefix}Form ID ${resLocals.assessment_instance.id}  |  Page '
-                counter(page) ' of ' counter(pages);
+              content: '${footerLabel}  |  Page ' counter(page) ' of ' counter(pages);
               font-family: system-ui, sans-serif;
               font-size: 8pt;
             }
@@ -226,24 +234,16 @@ export function InstructorAssessmentInstancePrint({
               ? ''
               : html`
                   <div class="exam-cover-fields">
-                    <div class="exam-cover-field exam-cover-field-wide"><span>Name</span></div>
-                    ${identityFields.map(
-                      (identityField) => html`
-                        <div class="exam-cover-field"><span>${identityField}</span></div>
+                    ${getPrintCoverFields({
+                      identityFields,
+                      teamWork: resLocals.assessment.team_work,
+                    }).map(
+                      (field) => html`
+                        <div class="exam-cover-field${field.wide ? ' exam-cover-field-wide' : ''}">
+                          <span>${field.label}</span>
+                        </div>
                       `,
                     )}
-                    ${resLocals.assessment.team_work
-                      ? html`
-                          <div class="exam-cover-field"><span>Team</span></div>
-                          <div class="exam-cover-field"><span>Date</span></div>
-                        `
-                      : html`<div
-                          class="exam-cover-field${identityFields.length === 0
-                            ? ' exam-cover-field-wide'
-                            : ''}"
-                        >
-                          <span>Date</span>
-                        </div>`}
                   </div>
                 `}
 
@@ -271,16 +271,9 @@ export function InstructorAssessmentInstancePrint({
                 ${isAnswerKey ? 'About this answer key' : 'Instructions'}
               </h2>
               ${isAnswerKey
-                ? html`<p>
-                    Correct answers are shown with the questions for assessment Form ID
-                    ${resLocals.assessment_instance.id}.
-                  </p>`
+                ? html`<p>${answerKeyDescription(resLocals.assessment_instance.id)}</p>`
                 : html`<ol>
-                    <li>Write your name and identifying information clearly above.</li>
-                    <li>Show your work and place each final answer in the space provided.</li>
-                    <li>
-                      If you need more room, identify the question number on any additional page.
-                    </li>
+                    ${DEFAULT_EXAM_INSTRUCTIONS.map((instruction) => html`<li>${instruction}</li>`)}
                   </ol>`}
               ${assessmentTextHtml
                 ? html`<div class="exam-cover-custom-instructions">
@@ -296,18 +289,9 @@ export function InstructorAssessmentInstancePrint({
                     ${honorCodeHtml
                       ? unsafeHtml(honorCodeHtml)
                       : html`<ul>
-                          <li>
-                            I certify that I am ____________________________ and
-                            ${resLocals.assessment.team_work ? 'our group is' : 'I am'} allowed to
-                            take this assessment.
-                          </li>
-                          <li>
-                            ${resLocals.assessment.team_work ? 'We' : 'I'} pledge on
-                            ${resLocals.assessment.team_work ? 'our' : 'my'} honor that
-                            ${resLocals.assessment.team_work ? 'we' : 'I'} will not give or receive
-                            any unauthorized assistance on this assessment and that all work will be
-                            ${resLocals.assessment.team_work ? 'our' : 'my'} own.
-                          </li>
+                          ${getDefaultHonorCodePledge(resLocals.assessment.team_work).map(
+                            (item) => html`<li>${item}</li>`,
+                          )}
                         </ul>`}
                     <div class="exam-cover-signature"><span>Signature</span></div>
                   </section>
