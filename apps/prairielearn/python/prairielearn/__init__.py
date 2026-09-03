@@ -7,6 +7,7 @@ from prairielearn.extension_utils import *  # ruff:ignore[undefined-local-with-i
 from prairielearn.grading_utils import *  # ruff:ignore[undefined-local-with-import-star]
 from prairielearn.html_utils import *  # ruff:ignore[undefined-local-with-import-star]
 from prairielearn.misc_utils import *  # ruff:ignore[undefined-local-with-import-star]
+from prairielearn.operator_expression import *  # ruff:ignore[undefined-local-with-import-star]
 from prairielearn.question_utils import *  # ruff:ignore[undefined-local-with-import-star]
 
 # TODO: Update this in a future PR

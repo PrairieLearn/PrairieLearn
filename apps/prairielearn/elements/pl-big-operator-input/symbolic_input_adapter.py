@@ -55,6 +55,9 @@ def render(
     score: float | None = None,
 ) -> str:
     view = _render_data_view(data)
+    view["submitted_answers"] = dict(view["submitted_answers"])
+    if name in view["format_errors"]:
+        view["submitted_answers"][name] = None
     if score is not None:
         view["partial_scores"] = dict(view["partial_scores"])
         view["partial_scores"][name] = {"score": score}
