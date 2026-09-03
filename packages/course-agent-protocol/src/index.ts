@@ -4,6 +4,7 @@ export const COURSE_AGENT_WORKSPACE_ROOT = '/workspace';
 export const COURSE_AGENT_SEED_FILE = `${COURSE_AGENT_WORKSPACE_ROOT}/README.md`;
 
 export const CourseAgentEventTypeSchema = z.enum([
+  'user.message',
   'sandbox.starting',
   'sandbox.ready',
   'workspace.seeded',
@@ -13,6 +14,7 @@ export const CourseAgentEventTypeSchema = z.enum([
   'tool.completed',
   'tool.failed',
   'agent.completed',
+  'usage.updated',
   'run.failed',
 ]);
 export type CourseAgentEventType = z.infer<typeof CourseAgentEventTypeSchema>;
@@ -40,10 +42,17 @@ const CourseAgentIdentitySchema = z.object({
   sandboxId: z.string().min(1).max(120),
 });
 
+export const CourseAgentRuntimeSettingsSchema = z.object({
+  idleTimeoutSeconds: z.number().int().min(60).max(86_400),
+  turnTimeoutSeconds: z.number().int().min(60).max(3_600),
+});
+export type CourseAgentRuntimeSettings = z.infer<typeof CourseAgentRuntimeSettingsSchema>;
+
 export const CourseAgentRunCapabilitySchema = CourseAgentIdentitySchema.extend({
   type: z.literal('course-agent-run'),
   runId: z.uuid(),
   promptDigest: z.string().regex(/^[0-9a-f]{64}$/),
+  runtimeSettings: CourseAgentRuntimeSettingsSchema,
   expiresAt: z.iso.datetime(),
 });
 export type CourseAgentRunCapability = z.infer<typeof CourseAgentRunCapabilitySchema>;
@@ -60,6 +69,7 @@ export const CourseAgentStartRunRequestSchema = z.object({
   runId: z.uuid(),
   sandboxId: z.string().min(1).max(120),
   prompt: z.string().trim().min(1).max(20_000),
+  runtimeSettings: CourseAgentRuntimeSettingsSchema,
 });
 export type CourseAgentStartRunRequest = z.infer<typeof CourseAgentStartRunRequestSchema>;
 

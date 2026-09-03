@@ -614,7 +614,13 @@ export const ConfigSchema = z.object({
   courseAgentRuntime: z.enum(['disabled', 'fake', 'cloudflare']).default('disabled'),
   courseAgentWorkerOrigin: z.string().default('http://127.0.0.1:8787'),
   courseAgentCapabilitySecret: z.string().nullable().default(null),
-  courseAgentAnthropicApiKey: z.string().nullable().default(null),
+  courseAgentSandbox: z
+    .object({
+      idleTimeoutSeconds: z.number().int().min(60).max(86_400).default(600),
+      backupTtlSeconds: z.number().int().min(60).max(2_592_000).default(604_800),
+      turnTimeoutSeconds: z.number().int().min(60).max(3_600).default(900),
+    })
+    .prefault({}),
   /**
    * The hourly spending rate limit for AI grading, in US dollars.
    * This is applied per course instance.

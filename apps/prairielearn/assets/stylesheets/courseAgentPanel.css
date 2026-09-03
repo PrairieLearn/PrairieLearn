@@ -1,0 +1,124 @@
+:root {
+  --course-agent-panel-width: clamp(28rem, 38vw, 40rem);
+  --course-agent-panel-rail-width: 3.5rem;
+}
+
+.app-main-container:has(.course-agent-panel-open) {
+  margin-right: var(--course-agent-panel-width);
+}
+.app-main-container:has(.course-agent-panel-collapsed) {
+  margin-right: var(--course-agent-panel-rail-width);
+}
+.app-main-container:has(.course-agent-panel) {
+  transition: margin-right 200ms ease;
+}
+
+.course-agent-panel {
+  position: fixed;
+  z-index: 1030;
+  top: var(--navbar-height);
+  right: 0;
+  bottom: 0;
+  width: var(--course-agent-panel-width);
+  overflow: hidden;
+  color: var(--bs-body-color);
+  transition: width 200ms ease;
+}
+
+.course-agent-panel-collapsed {
+  width: var(--course-agent-panel-rail-width);
+}
+.course-agent-panel-content,
+.course-agent-panel-rail {
+  position: absolute;
+  inset: 0;
+  transition:
+    opacity 120ms ease,
+    visibility 120ms ease;
+}
+.course-agent-panel-content {
+  display: grid;
+  grid-template-rows: min-content minmax(0, 1fr) min-content;
+  width: var(--course-agent-panel-width);
+  height: 100%;
+}
+.course-agent-panel-rail {
+  display: flex;
+  width: var(--course-agent-panel-rail-width);
+  justify-content: center;
+  padding-top: 0.5rem;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+.course-agent-panel-collapsed .course-agent-panel-content {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+.course-agent-panel-collapsed .course-agent-panel-rail {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+.course-agent-transcript {
+  min-height: 0;
+  overflow-y: auto;
+}
+.course-agent-user-message {
+  max-width: 90%;
+  white-space: pre-wrap;
+}
+.course-agent-agent-message {
+  white-space: pre-wrap;
+}
+.course-agent-tool-group-toggle {
+  width: 100%;
+  border-radius: var(--bs-border-radius);
+  background: transparent;
+}
+.course-agent-tool-group-toggle:hover,
+.course-agent-tool-group-toggle:focus-visible {
+  background: var(--bs-tertiary-bg);
+}
+.course-agent-chat-input:focus {
+  border-color: rgba(var(--bs-primary-rgb), 0.65);
+  box-shadow: 0 0 0 0.2rem rgba(var(--bs-primary-rgb), 0.12) !important;
+}
+.course-agent-diagnostics {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 0.25rem 0.75rem;
+}
+.course-agent-diagnostics dd {
+  overflow-wrap: anywhere;
+  font-family: var(--bs-font-monospace);
+}
+
+@media (max-width: 991.98px) {
+  .app-main-container:has(.course-agent-panel) {
+    margin-right: 0;
+  }
+  .course-agent-panel {
+    z-index: 1050;
+    top: 0;
+    width: min(100vw, 34rem);
+  }
+  .course-agent-panel-collapsed {
+    top: auto;
+    right: 1rem;
+    bottom: 1rem;
+    width: 3rem;
+    height: 3rem;
+    border-radius: 50%;
+  }
+  .course-agent-panel-collapsed .course-agent-panel-rail {
+    width: 3rem;
+    height: 3rem;
+    padding: 0;
+    align-items: center;
+    border: 0 !important;
+    border-radius: 50%;
+    background: var(--bs-body-bg) !important;
+  }
+}
