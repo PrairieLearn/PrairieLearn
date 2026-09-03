@@ -17,6 +17,7 @@ const featureNames = [
   // Can be applied to any context.
   'ai-question-generation',
   'course-agent',
+  'course-agent-diagnostics',
   'rich-text-editor',
 
   // LTI 1.1. Deprecated so keep scope to course instance, where possible.
