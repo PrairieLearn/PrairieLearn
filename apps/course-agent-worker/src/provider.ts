@@ -1,5 +1,5 @@
 export interface ProviderEnv {
-  OPENAI_API_KEY: string;
+  OPENAI_API_KEY?: string;
 }
 
 export async function proxyOpenAiRequest(
@@ -16,6 +16,10 @@ export async function proxyOpenAiRequest(
     request.headers.get('authorization') !== 'Bearer proxy-injected'
   ) {
     return new Response('Model-provider request is not permitted.', { status: 403 });
+  }
+
+  if (!env.OPENAI_API_KEY) {
+    return new Response('Model-provider credential is not configured.', { status: 503 });
   }
 
   const headers = new Headers(request.headers);
