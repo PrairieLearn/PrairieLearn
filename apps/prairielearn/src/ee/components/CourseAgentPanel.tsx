@@ -5,6 +5,7 @@ import { Alert, Collapse, Form, Spinner } from 'react-bootstrap';
 import { useStickToBottom } from 'use-stick-to-bottom';
 
 import type { CourseAgentEvent } from '@prairielearn/course-agent-protocol';
+import { formatDate, formatDateFriendly } from '@prairielearn/formatter';
 import { QueryClientProviderDebug } from '@prairielearn/trpc/react';
 import { OverlayTrigger } from '@prairielearn/ui';
 
@@ -19,7 +20,15 @@ import {
   groupCourseAgentTurns,
 } from './courseAgentEvents.js';
 
-function CourseAgentPanelInner({ courseId }: { courseId: string }) {
+function CourseAgentPanelInner({
+  courseId,
+  userName,
+  timezone,
+}: {
+  courseId: string;
+  userName: string;
+  timezone: string;
+}) {
   const trpc = useTRPC();
   const [open, setOpen] = useState(true);
   const [closing, setClosing] = useState(false);
@@ -208,7 +217,13 @@ function CourseAgentPanelInner({ courseId }: { courseId: string }) {
               const turnFailure = findLastEvent(turn.events, 'run.failed');
               return (
                 <div key={turn.userMessage.sequence} className="course-agent-turn">
-                  <UserMessage>{String(turn.userMessage.data.text ?? '')}</UserMessage>
+                  <UserMessage
+                    userName={userName}
+                    createdAt={turn.userMessage.occurredAt}
+                    timezone={timezone}
+                  >
+                    {String(turn.userMessage.data.text ?? '')}
+                  </UserMessage>
                   <AgentMessage>
                     <ToolCallGroup
                       events={turn.events}
@@ -220,6 +235,17 @@ function CourseAgentPanelInner({ courseId }: { courseId: string }) {
                       <Alert variant="danger" className="mb-0">
                         {String(turnFailure.data.message ?? 'The request could not be completed.')}
                       </Alert>
+                    )}
+                    {!active && (response || turnFailure) && (
+                      <MessageMetadata
+                        author="PrairieLearn"
+                        createdAt={
+                          findLastEvent(turn.events, 'agent.completed')?.occurredAt ??
+                          turnFailure?.occurredAt ??
+                          turn.userMessage.occurredAt
+                        }
+                        timezone={timezone}
+                      />
                     )}
                   </AgentMessage>
                 </div>
@@ -287,7 +313,17 @@ function CourseAgentPanelInner({ courseId }: { courseId: string }) {
   );
 }
 
-function UserMessage({ children }: { children: ReactNode }) {
+function UserMessage({
+  children,
+  userName,
+  createdAt,
+  timezone,
+}: {
+  children: ReactNode;
+  userName: string;
+  createdAt: string;
+  timezone: string;
+}) {
   return (
     <div
       className="d-flex flex-column align-items-end mb-4"
@@ -295,6 +331,32 @@ function UserMessage({ children }: { children: ReactNode }) {
       aria-label="Message from you"
     >
       <div className="course-agent-user-message rounded bg-secondary-subtle p-3">{children}</div>
+      <MessageMetadata author={userName} createdAt={createdAt} timezone={timezone} />
+    </div>
+  );
+}
+
+function MessageMetadata({
+  author,
+  createdAt,
+  timezone,
+}: {
+  author: string;
+  createdAt: string;
+  timezone: string;
+}) {
+  const date = new Date(createdAt);
+  return (
+    <div className="small text-muted mt-1 d-flex align-items-center gap-2">
+      <span>{author}</span>
+      <span aria-hidden="true">·</span>
+      <time dateTime={createdAt} title={formatDate(date, timezone)}>
+        {formatDateFriendly(date, timezone, {
+          includeTz: false,
+          maxPrecision: 'minute',
+          minPrecision: 'minute',
+        })}
+      </time>
     </div>
   );
 }
@@ -311,7 +373,7 @@ function AgentMessage({ children }: { children: ReactNode }) {
   );
 }
 
-function ToolCallGroup({
+export function ToolCallGroup({
   events,
   startedAt,
   busy,
@@ -332,6 +394,7 @@ function ToolCallGroup({
   const activity = getCourseAgentActivity(events);
   const visible = expanded;
   const seconds = getCourseAgentDuration(startedAt, events, now);
+  if (activity.length === 0) return busy ? <div className="small text-muted">Working…</div> : null;
   return (
     <div className="course-agent-tool-group">
       <button
@@ -359,7 +422,6 @@ function ToolCallGroup({
       <Collapse in={visible}>
         <div id={id}>
           <div className="d-flex flex-column gap-1 border-start ms-2 mt-1 ps-3 py-1">
-            {activity.length === 0 && <span className="small text-muted">No tools used.</span>}
             {activity.map((item) => (
               <div key={item.key} className="small text-muted d-flex align-items-start gap-1">
                 <i
@@ -477,9 +539,13 @@ function findLastEvent(events: CourseAgentEvent[], type: CourseAgentEvent['type'
 export function CourseAgentPanel({
   trpcCsrfToken,
   courseId,
+  userName,
+  timezone,
 }: {
   trpcCsrfToken: string;
   courseId: string;
+  userName: string;
+  timezone: string;
 }) {
   const [queryClient] = useState(() => new QueryClient());
   const [trpcClient] = useState(() =>
@@ -488,7 +554,7 @@ export function CourseAgentPanel({
   return (
     <QueryClientProviderDebug client={queryClient}>
       <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
-        <CourseAgentPanelInner courseId={courseId} />
+        <CourseAgentPanelInner courseId={courseId} userName={userName} timezone={timezone} />
       </TRPCProvider>
     </QueryClientProviderDebug>
   );

@@ -21,6 +21,17 @@ test('sends with Enter and keeps formatted responses and activity within each tu
       .getByText('inline', { exact: true }),
   ).toBeVisible();
   await expect(panel.getByRole('button', { name: /Worked for \d+s/ })).toHaveCount(1);
+  await expect(
+    panel.getByRole('article', { name: 'Message from you' }).getByText('Dev User', { exact: true }),
+  ).toBeVisible();
+  await expect(
+    panel
+      .getByRole('article', { name: 'Message from PrairieLearn' })
+      .getByText('PrairieLearn', { exact: true }),
+  ).toBeVisible();
+  await expect(
+    panel.getByRole('article', { name: 'Message from you' }).locator('time'),
+  ).toHaveAttribute('datetime', /T/);
 
   await input.fill('Second');
   await input.press('Shift+Enter');

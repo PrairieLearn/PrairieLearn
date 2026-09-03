@@ -13,7 +13,7 @@ import {
 import { authorizeRun, authorizeSnapshot } from './auth.js';
 import { finalResponse, parseCodexLine, toolEvents } from './codex-events.js';
 import { codexFailureMessage } from './codex-output.js';
-import { activeRunExpired } from './lifecycle.js';
+import { activeRunExpired, sandboxDeadline } from './lifecycle.js';
 import { proxyOpenAiRequest } from './provider.js';
 
 interface Env {
@@ -31,7 +31,8 @@ interface ConversationState {
   >;
   activeRunId: string | null;
   activeRunExpiresAt?: string | null;
-  status: 'starting' | 'running' | 'waiting_for_user' | 'failed';
+  status: 'starting' | 'running' | 'waiting_for_user' | 'failed' | 'offline';
+  sandboxExpiresAt?: number | null;
   response: string | null;
   error: string | null;
   events: CourseAgentEvent[];
@@ -108,10 +109,12 @@ export class CourseAgentCoordinator {
     if (request.method === 'POST' && url.pathname === '/run') {
       const body = CourseAgentStartRunRequestSchema.parse(await request.json());
       const capability = await authorizeRun(body, this.env.COURSE_AGENT_CAPABILITY_SECRET);
-      const current = await this.getConversationState();
+      let current = await this.getConversationState();
       if (current && !sameIdentity(current.identity, capability)) {
         return Response.json({ error: 'Sandbox identity mismatch' }, { status: 403 });
       }
+      await this.alarm();
+      current = await this.getConversationState();
       if (current?.activeRunId) {
         return Response.json({ error: 'A run is already active' }, { status: 409 });
       }
@@ -125,6 +128,7 @@ export class CourseAgentCoordinator {
         response: null,
         error: null,
         events: current?.events ?? [],
+        sandboxExpiresAt: current?.sandboxExpiresAt,
       };
       await this.state.storage.put('conversation', next);
       this.state.waitUntil(this.run(body));
@@ -161,19 +165,73 @@ export class CourseAgentCoordinator {
     return new Response('Not found', { status: 404 });
   }
 
-  private async append(type: CourseAgentEvent['type'], data: Record<string, unknown> = {}) {
-    const current = await this.state.storage.get<ConversationState>('conversation');
-    if (!current) return;
-    const event = {
-      sequence: current.events.length,
-      type,
-      occurredAt: new Date().toISOString(),
-      data,
-    } satisfies CourseAgentEvent;
-    current.events.push(event);
-    await this.state.storage.put('conversation', current);
-    const chunk = eventChunk(event);
-    for (const listener of this.listeners) listener.enqueue(chunk);
+  async alarm() {
+    await this.state.blockConcurrencyWhile(async () => {
+      const current = await this.state.storage.get<ConversationState>('conversation');
+      if (current?.sandboxExpiresAt == null) return;
+      if (current.sandboxExpiresAt > Date.now()) {
+        await this.state.storage.setAlarm(current.sandboxExpiresAt);
+        return;
+      }
+      const message =
+        'The agent workspace reached its lifetime limit. Send another message to start a fresh workspace; temporary files are no longer available.';
+      const events = [...current.events];
+      if (current.activeRunId) {
+        events.push({
+          sequence: events.length,
+          type: 'run.failed',
+          occurredAt: new Date().toISOString(),
+          data: { message },
+        });
+      }
+      events.push({
+        sequence: events.length,
+        type: 'sandbox.destroyed',
+        occurredAt: new Date().toISOString(),
+        data: { reason: 'max_lifetime' },
+      });
+      // Invalidate the run before destroying its container so late output cannot revive it.
+      const expired: ConversationState = {
+        ...current,
+        activeRunId: null,
+        activeRunExpiresAt: null,
+        status: 'offline',
+        error: current.activeRunId ? message : null,
+        events,
+      };
+      await this.state.storage.put('conversation', expired);
+      const sandbox = getSandbox(this.env.Sandbox, current.identity.sandboxId, {
+        normalizeId: true,
+      });
+      await sandbox.destroy();
+      await this.state.storage.put('conversation', { ...expired, sandboxExpiresAt: null });
+      await this.state.storage.deleteAlarm();
+      for (const event of events.slice(current.events.length)) {
+        for (const listener of this.listeners) listener.enqueue(eventChunk(event));
+      }
+      this.closeStreams();
+    });
+  }
+
+  private async append(
+    type: CourseAgentEvent['type'],
+    data: Record<string, unknown> = {},
+    runId?: string,
+  ) {
+    await this.state.blockConcurrencyWhile(async () => {
+      const current = await this.state.storage.get<ConversationState>('conversation');
+      if (!current || (runId && current.activeRunId !== runId)) return;
+      const event = {
+        sequence: current.events.length,
+        type,
+        occurredAt: new Date().toISOString(),
+        data,
+      } satisfies CourseAgentEvent;
+      current.events.push(event);
+      await this.state.storage.put('conversation', current);
+      const chunk = eventChunk(event);
+      for (const listener of this.listeners) listener.enqueue(chunk);
+    });
   }
 
   private closeStreams() {
@@ -188,7 +246,7 @@ export class CourseAgentCoordinator {
       new ReadableStream<string>({
         start(controller) {
           for (const event of current.events) controller.enqueue(eventChunk(event));
-          if (!current.activeRunId && ['waiting_for_user', 'failed'].includes(current.status)) {
+          if (!current.activeRunId) {
             controller.close();
             return;
           }
@@ -218,8 +276,17 @@ export class CourseAgentCoordinator {
     try {
       const sandboxState = await sandbox.getState();
       const starting = !['running', 'healthy'].includes(sandboxState.status);
-      await this.append('user.message', { text: request.prompt });
-      if (starting) await this.append('sandbox.starting', { restoring: false });
+      const current = await this.state.storage.get<ConversationState>('conversation');
+      if (current?.activeRunId !== request.runId) return;
+      const deadline = sandboxDeadline(
+        current.sandboxExpiresAt,
+        starting,
+        request.runtimeSettings.maxLifetimeSeconds,
+      );
+      await this.update({ sandboxExpiresAt: deadline }, request.runId);
+      await this.state.storage.setAlarm(deadline);
+      await this.append('user.message', { text: request.prompt }, request.runId);
+      if (starting) await this.append('sandbox.starting', { restoring: false }, request.runId);
       const seed = [
         '# PrairieLearn course-agent workspace',
         '',
@@ -230,10 +297,19 @@ export class CourseAgentCoordinator {
         `mkdir -p ${shellQuote(COURSE_AGENT_WORKSPACE_ROOT)} && test -f ${shellQuote(COURSE_AGENT_SEED_FILE)} || printf %s ${shellQuote(seed)} > ${shellQuote(COURSE_AGENT_SEED_FILE)}`,
       );
       if (!result.success) throw new Error(result.stderr || 'Could not create workspace');
-      if (starting)
-        await this.append('sandbox.ready', { workspacePath: COURSE_AGENT_WORKSPACE_ROOT });
-      await this.update({ status: 'running' });
-      await this.append('agent.started', { model: this.env.OPENAI_MODEL, harness: 'codex' });
+      if (starting) {
+        await this.append(
+          'sandbox.ready',
+          { workspacePath: COURSE_AGENT_WORKSPACE_ROOT },
+          request.runId,
+        );
+      }
+      if (!(await this.update({ status: 'running' }, request.runId))) return;
+      await this.append(
+        'agent.started',
+        { model: this.env.OPENAI_MODEL, harness: 'codex' },
+        request.runId,
+      );
 
       let buffer = '';
       let eventChain = Promise.resolve();
@@ -265,17 +341,17 @@ export class CourseAgentCoordinator {
             if (!event) continue;
             if (event.type === 'thread.started' && typeof event.thread_id === 'string') {
               eventChain = eventChain.then(() =>
-                this.append('agent.started', { threadId: event.thread_id }),
+                this.append('agent.started', { threadId: event.thread_id }, request.runId),
               );
             }
             for (const toolEvent of toolEvents(event)) {
               eventChain = eventChain.then(() =>
-                this.append(toolEvent.type, { ...toolEvent.data }),
+                this.append(toolEvent.type, { ...toolEvent.data }, request.runId),
               );
             }
             if (event.type === 'turn.completed' && typeof event.usage === 'object' && event.usage) {
               eventChain = eventChain.then(() =>
-                this.append('usage.updated', event.usage as Record<string, unknown>),
+                this.append('usage.updated', event.usage as Record<string, unknown>, request.runId),
               );
             }
           }
@@ -284,60 +360,72 @@ export class CourseAgentCoordinator {
       await eventChain;
       if (!codex.success) throw new Error(codexFailureMessage(codex.stdout, codex.stderr));
       const response = finalResponse(codex.stdout);
-      await this.append('assistant.delta', { text: response });
-      await this.append('agent.completed', { response });
-      await this.update({
-        activeRunId: null,
-        activeRunExpiresAt: null,
-        status: 'waiting_for_user',
-        response,
-        error: null,
-      });
-      this.closeStreams();
+      await this.append('assistant.delta', { text: response }, request.runId);
+      await this.append('agent.completed', { response }, request.runId);
+      const finished = await this.update(
+        {
+          activeRunId: null,
+          activeRunExpiresAt: null,
+          status: 'waiting_for_user',
+          response,
+          error: null,
+        },
+        request.runId,
+      );
+      if (finished) this.closeStreams();
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      await this.append('run.failed', { message });
-      await this.update({
+      await this.append('run.failed', { message }, request.runId);
+      const finished = await this.update(
+        {
+          activeRunId: null,
+          activeRunExpiresAt: null,
+          status: 'failed',
+          response: null,
+          error: message,
+        },
+        request.runId,
+      );
+      if (finished) this.closeStreams();
+    }
+  }
+
+  private async getConversationState() {
+    return this.state.blockConcurrencyWhile(async () => {
+      const current = await this.state.storage.get<ConversationState>('conversation');
+      if (!current?.activeRunId || !activeRunExpired(current.activeRunExpiresAt)) return current;
+
+      const message = 'The course-agent run expired before it completed';
+      const expired: ConversationState = {
+        ...current,
         activeRunId: null,
         activeRunExpiresAt: null,
         status: 'failed',
         response: null,
         error: message,
-      });
+        events: [
+          ...current.events,
+          {
+            sequence: current.events.length,
+            type: 'run.failed',
+            occurredAt: new Date().toISOString(),
+            data: { message },
+          },
+        ],
+      };
+      await this.state.storage.put('conversation', expired);
       this.closeStreams();
-    }
+      return expired;
+    });
   }
 
-  private async getConversationState() {
-    const current = await this.state.storage.get<ConversationState>('conversation');
-    if (!current?.activeRunId || !activeRunExpired(current.activeRunExpiresAt)) return current;
-
-    const message = 'The course-agent run expired before it completed';
-    const expired: ConversationState = {
-      ...current,
-      activeRunId: null,
-      activeRunExpiresAt: null,
-      status: 'failed',
-      response: null,
-      error: message,
-      events: [
-        ...current.events,
-        {
-          sequence: current.events.length,
-          type: 'run.failed',
-          occurredAt: new Date().toISOString(),
-          data: { message },
-        },
-      ],
-    };
-    await this.state.storage.put('conversation', expired);
-    this.closeStreams();
-    return expired;
-  }
-
-  private async update(update: Partial<ConversationState>) {
-    const current = await this.state.storage.get<ConversationState>('conversation');
-    if (current) await this.state.storage.put('conversation', { ...current, ...update });
+  private async update(update: Partial<ConversationState>, runId?: string) {
+    return this.state.blockConcurrencyWhile(async () => {
+      const current = await this.state.storage.get<ConversationState>('conversation');
+      if (!current || (runId && current.activeRunId !== runId)) return false;
+      await this.state.storage.put('conversation', { ...current, ...update });
+      return true;
+    });
   }
 }
 

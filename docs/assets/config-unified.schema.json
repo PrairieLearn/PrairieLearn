@@ -1729,7 +1729,8 @@
     },
     "courseAgentWorkerOrigin": {
       "default": "http://127.0.0.1:8787",
-      "type": "string"
+      "type": "string",
+      "format": "uri"
     },
     "courseAgentCapabilitySecret": {
       "default": null,
@@ -1750,6 +1751,12 @@
           "default": 600,
           "type": "integer",
           "minimum": 60,
+          "maximum": 86400
+        },
+        "maxLifetimeSeconds": {
+          "default": 600,
+          "type": "integer",
+          "minimum": 1,
           "maximum": 86400
         },
         "backupTtlSeconds": {

@@ -7,6 +7,7 @@ export const CourseAgentEventTypeSchema = z.enum([
   'user.message',
   'sandbox.starting',
   'sandbox.ready',
+  'sandbox.destroyed',
   'workspace.seeded',
   'agent.started',
   'assistant.delta',
@@ -28,6 +29,7 @@ export const CourseAgentEventSchema = z.object({
 export type CourseAgentEvent = z.infer<typeof CourseAgentEventSchema>;
 
 export const CourseAgentRuntimeStatusSchema = z.enum([
+  'offline',
   'starting',
   'running',
   'waiting_for_user',
@@ -44,6 +46,7 @@ const CourseAgentIdentitySchema = z.object({
 
 export const CourseAgentRuntimeSettingsSchema = z.object({
   idleTimeoutSeconds: z.number().int().min(60).max(86_400),
+  maxLifetimeSeconds: z.number().int().min(1).max(86_400).default(600),
   turnTimeoutSeconds: z.number().int().min(60).max(3_600),
 });
 export type CourseAgentRuntimeSettings = z.infer<typeof CourseAgentRuntimeSettingsSchema>;

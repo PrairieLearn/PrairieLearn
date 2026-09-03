@@ -25,13 +25,21 @@ Sandbox lifetime settings are non-secret and can be configured in `config.json`:
 {
   "courseAgentSandbox": {
     "idleTimeoutSeconds": 600,
+    "maxLifetimeSeconds": 600,
     "backupTtlSeconds": 604800,
     "turnTimeoutSeconds": 900
   }
 }
 ```
 
-The panel always includes a collapsed **Live conversation state** accordion. It shows runtime
+`maxLifetimeSeconds` is an absolute limit starting when the sandbox is created, not an idle timer.
+It defaults to 600 seconds and accepts values from 1 to 86,400 seconds (for example, 10 for local
+expiry testing). New messages do not extend an existing sandbox's deadline. A durable alarm shuts
+down the sandbox at the deadline, including during an active turn. Temporary files are lost in
+this base PR; the next message starts a fresh workspace. Configuration changes apply to newly
+created sandboxes. The existing `idleTimeoutSeconds` separately controls Cloudflare's idle sleep.
+
+The panel always includes a collapsed **Conversation diagnostics** accordion. It shows runtime
 identifiers, state, stream position, and usage, but never credentials or model reasoning. Activity
 is grouped by instructor turn, and assistant responses support Markdown. Enter sends a message;
 Shift+Enter adds a newline. The sandbox image includes `python` and `python3`.
