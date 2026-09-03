@@ -5,7 +5,7 @@ import { createTest, expect } from './fixtures.js';
 
 const test = createTest({ courseAgentRuntime: 'fake', features: { 'course-agent': true } });
 
-test('keeps compact working indicators visible and renders text before turn completion', async ({
+test('shows only the active progress indicator and renders text before turn completion', async ({
   page,
   courseInstance,
 }, testInfo) => {
@@ -41,6 +41,34 @@ test('keeps compact working indicators visible and renders text before turn comp
   await panel.getByRole('button', { name: 'Send message', exact: true }).click();
   const reply = panel.getByRole('article', { name: 'Message from PrairieLearn' });
   await expect(reply).toHaveCount(1);
+  const working = panel.getByRole('status');
+  await expect(working).toHaveText('Working…');
+  await page.evaluate(() =>
+    window.dispatchEvent(
+      new CustomEvent('test-course-chunk', {
+        detail: {
+          type: 'tool-input-available',
+          toolCallId: 'startup',
+          toolName: 'activity',
+          input: { label: 'Starting agent' },
+        },
+      }),
+    ),
+  );
+  await expect(reply.getByText('Starting agent', { exact: true })).toBeVisible();
+  await expect(working).toHaveCount(0);
+  await page.evaluate(() =>
+    window.dispatchEvent(
+      new CustomEvent('test-course-chunk', {
+        detail: {
+          type: 'tool-output-available',
+          toolCallId: 'startup',
+          output: { label: 'Started agent' },
+        },
+      }),
+    ),
+  );
+  await expect(working).toHaveText('Working…');
   await page.evaluate(() =>
     window.dispatchEvent(
       new CustomEvent('test-course-chunk', {
@@ -54,12 +82,10 @@ test('keeps compact working indicators visible and renders text before turn comp
     ),
   );
   await expect(reply.getByText('Reading README.md', { exact: true })).toBeVisible();
-  const working = panel.getByRole('status');
-  await expect(working).toHaveText('Working…');
+  await expect(working).toHaveCount(0);
   const spinner = reply.locator('.spinner-border');
   await expect(spinner).toHaveCSS('width', '16px');
   await expect(spinner).toHaveCSS('height', '16px');
-  expect((await working.boundingBox())!.y).toBeGreaterThan((await reply.boundingBox())!.y);
   await page.screenshot({ path: testInfo.outputPath('course-chat-working.png') });
   await page.evaluate(() => {
     for (const chunk of [

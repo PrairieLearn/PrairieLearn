@@ -76,6 +76,14 @@ function CourseAgentPanelInner({
       },
     });
   const busy = status === 'submitted' || status === 'streaming';
+  const lastMessage = messages.at(-1);
+  const hasActiveTool =
+    lastMessage?.role === 'assistant' &&
+    lastMessage.parts.some(
+      (part) =>
+        part.type === 'tool-activity' &&
+        (part.state === 'input-streaming' || part.state === 'input-available'),
+    );
   const diagnostics = useQuery(
     trpc.courseAgent.diagnostics.queryOptions(
       conversation ?? { conversationId: '00000000-0000-0000-0000-000000000000', sandboxId: '' },
@@ -212,7 +220,7 @@ function CourseAgentPanelInner({
                   </AssistantMessage>
                 ),
               )}
-              {busy && (
+              {busy && !hasActiveTool && (
                 <div
                   role="status"
                   className="d-flex align-items-center gap-2 small text-muted mb-3"
