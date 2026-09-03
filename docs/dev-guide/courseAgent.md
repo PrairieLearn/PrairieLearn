@@ -13,8 +13,9 @@ Set `courseAgentRuntime` to `fake` in your existing PrairieLearn configuration a
 does not contact Cloudflare or a model provider.
 
 To exercise the Worker locally, set `courseAgentRuntime` to `cloudflare`, configure
-`courseAgentCapabilitySecret`, and run `pnpm dev-course-agent-worker`. The script uses Wrangler's
-local simulation and local state. Before starting it, create an untracked
+`courseAgentCapabilitySecret`, and run `make dev`. This starts PrairieLearn and the course-agent
+Worker together; run `pnpm dev-course-agent-worker` to start only the Worker. Wrangler uses local
+simulation and local state. Before starting it, create an untracked
 `apps/course-agent-worker/.dev.vars` file containing `COURSE_AGENT_CAPABILITY_SECRET`,
 `ANTHROPIC_API_KEY`, and `COURSE_AGENT_GITHUB_PAT`. The capability secret must match
 `courseAgentCapabilitySecret` in PrairieLearn. `courseAgentGithubToken` does not populate the Worker
