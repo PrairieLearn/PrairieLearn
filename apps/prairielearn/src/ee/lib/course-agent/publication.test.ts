@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
-import { validateCourseAgentPublication } from './publication.js';
+import {
+  validateCourseAgentGitPublication,
+  validateCourseAgentPublication,
+} from './publication.js';
 
 describe('course-agent publication validation', () => {
   const course = {
@@ -26,5 +29,10 @@ describe('course-agent publication validation', () => {
         course,
       ),
     ).toThrow('empty');
+  });
+
+  it('requires Git-backed file editing', () => {
+    expect(() => validateCourseAgentGitPublication(false)).toThrow('fileEditorUseGit');
+    expect(() => validateCourseAgentGitPublication(true)).not.toThrow();
   });
 });

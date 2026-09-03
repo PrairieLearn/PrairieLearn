@@ -21,6 +21,9 @@ validation and verifies the proposed commit and Git tree before it creates an ap
 applies the approved diff to its trusted checkout, pushes and syncs it, and returns the resulting
 status to the waiting tool call. Denial returns control without publishing.
 
+The fifth layer records normalized Codex usage for every run and enforces optional rolling per-user,
+per-course, and global cost limits before starting a new turn.
+
 ## Free local testing
 
 Set `courseAgentRuntime` to `fake` in your existing PrairieLearn configuration and enable the
@@ -62,8 +65,34 @@ post-turn static checks for JSON and Python syntax, question UUIDs and required 
 conflicts, and Git whitespace errors. Codex is instructed to run it before completing every content
 change.
 
-For local backup testing, Wrangler uses its local `BACKUP_BUCKET` binding and does not require R2
-access keys. A deployed Worker may receive `R2_ACCESS_KEY_ID` and `R2_SECRET_ACCESS_KEY` as optional
-secrets when its backup implementation uses remote S3-compatible access.
+On approval, the trusted PrairieLearn web process verifies that the configured repository, branch,
+and remote base SHA still match the request. It applies the approved diff to the normal course
+checkout and uses PrairieLearn's existing editor path to commit, push, and start Course Sync. The
+remote branch is verified after the editor completes, and the result is returned through the Worker
+to the waiting tool. Denial and publication errors are also returned to the agent. The sandbox's
+GitHub PAT proxy remains read-only throughout this flow; PrairieLearn never enables
+`git-receive-pack` or gives a push credential to the sandbox.
 
-Cloud resources and credentials used by later stack layers are intentionally not configured here.
+Live local testing of approval-gated publication requires `fileEditorUseGit: true` and Git push
+credentials for the PrairieLearn process. This setting affects all local file-editor operations, so
+only enable it while testing against a disposable course repository. Without it, course-agent
+publication fails before applying the approved diff instead of reporting a local-only edit as a
+successful push.
+
+Wrangler uses its local R2 simulation by default. Production R2 access requires a dedicated bucket
+and narrowly scoped R2 credentials supplied to the Worker; local tests do not create or pay for
+Cloudflare resources.
+
+## Usage accounting and guardrails
+
+Each run has a one-to-one PostgreSQL usage record. Worker snapshots report cumulative provider,
+model, token, and estimated-cost fields; PostgreSQL updates them with monotonic
+maximums so repeated snapshots do not double count. Completed and failed runs finalize the record,
+including a zero-usage record when the provider fails before reporting tokens. The instructor panel
+shows the active-run and conversation totals.
+
+`courseAgentUsageLimits` configures a rolling window and optional per-user, per-course, and global
+milli-dollar limits. Null limits are disabled, which keeps the fake runtime and local development
+independent of Redis by default. When configured, Redis holds only rolling guardrail counters;
+PostgreSQL remains the durable accounting source of truth. New turns fail with a clear message if a
+configured counter reaches its limit or the required Redis check cannot be completed.

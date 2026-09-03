@@ -623,6 +623,20 @@ export const ConfigSchema = z.object({
       turnTimeoutSeconds: z.number().int().min(60).max(3_600).default(900),
     })
     .prefault({}),
+  /** Rolling closed-beta guardrails. Null disables a scope. Values are milli-dollars. */
+  courseAgentUsageLimits: z
+    .object({
+      windowSeconds: z.number().int().positive(),
+      perUserMilliDollars: z.number().int().positive().nullable(),
+      perCourseMilliDollars: z.number().int().positive().nullable(),
+      globalMilliDollars: z.number().int().positive().nullable(),
+    })
+    .default({
+      windowSeconds: 3600,
+      perUserMilliDollars: null,
+      perCourseMilliDollars: null,
+      globalMilliDollars: null,
+    }),
   /**
    * The hourly spending rate limit for AI grading, in US dollars.
    * This is applied per course instance.

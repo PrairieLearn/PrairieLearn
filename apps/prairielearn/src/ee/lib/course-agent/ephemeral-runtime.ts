@@ -5,6 +5,7 @@ import {
   CourseAgentPushDecisionRequestSchema,
   CourseAgentSnapshotSchema,
   CourseAgentStartRunResponseSchema,
+  type CourseAgentUsage,
   type CourseAgentWorkspaceBackup,
   courseAgentSandboxId,
 } from '@prairielearn/course-agent-protocol';
@@ -28,6 +29,7 @@ interface FakeConversation extends Identity {
   error: string | null;
   events: CourseAgentEvent[];
   workspaceReadme: string;
+  usage: CourseAgentUsage;
 }
 
 const fakeConversations = new Map<string, FakeConversation>();
@@ -215,6 +217,19 @@ function startFakeRun({
     error: null,
     events,
     workspaceReadme,
+    usage: {
+      provider: 'fake',
+      model: 'fake',
+      inputTokens: 80,
+      cacheReadTokens: 0,
+      cacheWriteTokens: 0,
+      outputTokens: 40,
+      reasoningTokens: null,
+      normalizedTotalTokens: 120,
+      providerCostMilliDollars: null,
+      estimatedCostMilliDollars: 1,
+      finalizedAt: new Date().toISOString(),
+    },
   });
   return { accepted: true as const, ...identity, runId };
 }
@@ -232,6 +247,7 @@ function getFakeSnapshot(identity: Identity) {
     response: conversation.response,
     error: conversation.error,
     events: conversation.events,
+    usage: conversation.usage,
   });
 }
 

@@ -1,6 +1,7 @@
 import { execa } from 'execa';
 
 import type { AuthzData } from '../../../lib/authz-data-lib.js';
+import { config } from '../../../lib/config.js';
 import type { Course, CourseAgentPushApproval, User } from '../../../lib/db-types.js';
 import { Editor } from '../../../lib/editors.js';
 import { getCourseCommitHash } from '../../../models/course.js';
@@ -13,6 +14,20 @@ export function validateCourseAgentPublication(
     throw new Error('The approved repository or branch no longer matches the course');
   }
   if (!approval.diff.trim()) throw new Error('The approved diff is empty');
+}
+
+export function validateCourseAgentGitPublication(enabled: boolean) {
+  if (!enabled) {
+    throw new Error(
+      'Course-agent push and sync requires fileEditorUseGit to be enabled in PrairieLearn configuration',
+    );
+  }
+}
+
+async function getRemoteBranchSha(repository: string, branch: string) {
+  return (await execa('git', ['ls-remote', repository, `refs/heads/${branch}`])).stdout
+    .trim()
+    .split(/\s+/, 1)[0];
 }
 
 class CourseAgentDiffEditor extends Editor {
@@ -62,11 +77,8 @@ export async function publishCourseAgentApproval({
   authzData: AuthzData;
 }) {
   validateCourseAgentPublication(approval, course);
-  const remote = (
-    await execa('git', ['ls-remote', approval.repository, `refs/heads/${approval.branch}`])
-  ).stdout
-    .trim()
-    .split(/\s+/, 1)[0];
+  validateCourseAgentGitPublication(config.fileEditorUseGit);
+  const remote = await getRemoteBranchSha(approval.repository, approval.branch);
   if (remote !== approval.base_sha) {
     throw new Error(
       `The remote branch changed after approval (expected ${approval.base_sha}, found ${remote || 'missing'})`,
@@ -78,8 +90,15 @@ export async function publishCourseAgentApproval({
   });
   const job = await editor.prepareServerJob();
   await editor.executeWithServerJob(job);
+  const commitSha = await getCourseCommitHash(course.path);
+  const publishedRemote = await getRemoteBranchSha(approval.repository, approval.branch);
+  if (publishedRemote !== commitSha) {
+    throw new Error(
+      `The remote branch does not contain the published commit (expected ${commitSha}, found ${publishedRemote || 'missing'})`,
+    );
+  }
   return {
     jobSequenceId: job.jobSequenceId,
-    commitSha: await getCourseCommitHash(course.path),
+    commitSha,
   };
 }

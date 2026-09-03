@@ -1,3 +1,5 @@
+import { z } from 'zod';
+
 import type {
   CourseAgentEvent,
   CourseAgentPushApproval as CourseAgentPushApprovalRequest,
@@ -19,6 +21,7 @@ import {
   CourseAgentMessageSchema,
   CourseAgentPushApprovalSchema,
   CourseAgentRunSchema,
+  CourseAgentRunUsageSchema,
   CourseAgentWorkspaceBackupSchema,
 } from '../lib/db-types.js';
 
@@ -94,6 +97,7 @@ export async function createCourseAgentTurn({
       { run_id: runId, conversation_id: conversation.id, prompt_digest: promptDigest },
       CourseAgentRunSchema,
     );
+    await queryRow(sql.create_run_usage, { run_id: runId }, CourseAgentRunUsageSchema);
     const message = await queryRow(
       sql.insert_user_message,
       {
@@ -115,7 +119,7 @@ export async function persistCourseAgentSnapshot({
   snapshot: CourseAgentSnapshot;
   runId: string;
 }) {
-  await runInTransactionAsync(async () => {
+  return runInTransactionAsync(async () => {
     for (const event of snapshot.events) {
       await persistEvent(snapshot.conversationId, runId, event);
     }
@@ -150,6 +154,24 @@ export async function persistCourseAgentSnapshot({
         CourseAgentWorkspaceBackupSchema,
       );
     }
+    return queryRow(
+      sql.upsert_run_usage,
+      {
+        run_id: runId,
+        provider: snapshot.usage.provider,
+        model: snapshot.usage.model,
+        input_tokens: snapshot.usage.inputTokens,
+        cache_read_tokens: snapshot.usage.cacheReadTokens,
+        cache_write_tokens: snapshot.usage.cacheWriteTokens,
+        output_tokens: snapshot.usage.outputTokens,
+        reasoning_tokens: snapshot.usage.reasoningTokens,
+        normalized_total_tokens: snapshot.usage.normalizedTotalTokens,
+        provider_cost_milli_dollars: snapshot.usage.providerCostMilliDollars,
+        estimated_cost_milli_dollars: snapshot.usage.estimatedCostMilliDollars,
+        finalized_at: snapshot.usage.finalizedAt,
+      },
+      CourseAgentRunUsageSchema,
+    );
   });
 }
 
@@ -179,6 +201,19 @@ export async function selectCourseAgentHistory(conversationId: string) {
     ),
   ]);
   return { messages, events, backup, pendingApproval };
+}
+
+const CourseAgentConversationUsageSchema = z.object({
+  estimated_cost_milli_dollars: z.coerce.number(),
+  normalized_total_tokens: z.coerce.number(),
+});
+
+export function selectCourseAgentConversationUsage(conversationId: string) {
+  return queryRow(
+    sql.select_conversation_usage,
+    { conversation_id: conversationId },
+    CourseAgentConversationUsageSchema,
+  );
 }
 
 export function upsertCourseAgentPushApproval({

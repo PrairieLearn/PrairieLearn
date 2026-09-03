@@ -6,6 +6,7 @@ import type { CourseAgentEvent } from '@prairielearn/course-agent-protocol';
 import { QueryClientProviderDebug } from '@prairielearn/trpc/react';
 import { OverlayTrigger } from '@prairielearn/ui';
 
+import { formatMilliDollars } from '../../lib/ai-grading-credits.js';
 import { createCourseTrpcClient } from '../../trpc/course/client.js';
 import { TRPCProvider, useTRPC } from '../../trpc/course/context.js';
 
@@ -272,6 +273,17 @@ function CourseAgentPanelInner({
             <Alert variant="danger">
               {snapshotError ?? String(failure?.data.message ?? 'The run failed.')}
             </Alert>
+          )}
+          {snapshot.data && (
+            <div className="small text-muted border rounded bg-white p-2 mb-3">
+              Active run: {snapshot.data.usage.normalizedTotalTokens.toLocaleString()} tokens ·{' '}
+              {formatMilliDollars(snapshot.data.usage.estimatedCostMilliDollars)} estimated
+              <br />
+              Conversation:{' '}
+              {snapshot.data.conversationUsage.normalized_total_tokens.toLocaleString()} tokens ·{' '}
+              {formatMilliDollars(snapshot.data.conversationUsage.estimated_cost_milli_dollars)}{' '}
+              estimated
+            </div>
           )}
           {start.error && <Alert variant="danger">{start.error.message}</Alert>}
           {approval.error && <Alert variant="danger">{approval.error.message}</Alert>}

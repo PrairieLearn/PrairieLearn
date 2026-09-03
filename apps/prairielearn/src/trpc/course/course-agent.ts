@@ -16,6 +16,10 @@ import {
 } from '../../ee/lib/course-agent/ephemeral-runtime.js';
 import { publishCourseAgentApproval } from '../../ee/lib/course-agent/publication.js';
 import {
+  assertCourseAgentWithinUsageLimits,
+  recordCourseAgentRollingUsage,
+} from '../../ee/lib/course-agent/usage-limits.js';
+import {
   CourseAgentConversationSchema,
   CourseAgentEventSchema,
   CourseAgentMessageSchema,
@@ -24,6 +28,7 @@ import { features } from '../../lib/features/index.js';
 import {
   createCourseAgentTurn,
   persistCourseAgentSnapshot,
+  selectCourseAgentConversationUsage,
   selectCourseAgentConversations,
   selectCourseAgentHistory,
   selectOptionalCourseAgentConversation,
@@ -72,6 +77,10 @@ const start = courseAgentProcedure
         message: 'Configure a Git repository for this course before starting the course agent',
       });
     }
+    await assertCourseAgentWithinUsageLimits({
+      userId: ctx.locals.authn_user.id,
+      courseId: ctx.course.id,
+    });
     const conversationId = input.conversationId ?? randomUUID();
     const runId = randomUUID();
     const sandboxId = courseAgentSandboxId(conversationId);
@@ -144,6 +153,10 @@ const get = courseAgentProcedure
     CourseAgentSnapshotSchema.extend({
       messages: z.array(CourseAgentMessageSchema),
       persistedEvents: z.array(CourseAgentEventSchema),
+      conversationUsage: z.object({
+        normalized_total_tokens: z.number(),
+        estimated_cost_milli_dollars: z.number(),
+      }),
     }),
   )
   .query(async ({ ctx, input }) => {
@@ -182,9 +195,26 @@ const get = courseAgentProcedure
         repository: ctx.course.repository,
       });
     }
-    await persistCourseAgentSnapshot({ snapshot, runId });
-    const history = await selectCourseAgentHistory(conversation.id);
-    return { ...snapshot, messages: history.messages, persistedEvents: history.events };
+    const runUsage = await persistCourseAgentSnapshot({ snapshot, runId });
+    await recordCourseAgentRollingUsage({
+      userId: ctx.locals.authn_user.id,
+      courseId: ctx.course.id,
+      runId,
+      cumulativeMilliDollars: Number(runUsage.estimated_cost_milli_dollars),
+      occurredAtMilliseconds: snapshot.usage.finalizedAt
+        ? new Date(snapshot.usage.finalizedAt).getTime()
+        : Date.now(),
+    });
+    const [history, conversationUsage] = await Promise.all([
+      selectCourseAgentHistory(conversation.id),
+      selectCourseAgentConversationUsage(conversation.id),
+    ]);
+    return {
+      ...snapshot,
+      messages: history.messages,
+      persistedEvents: history.events,
+      conversationUsage,
+    };
   });
 
 const list = courseAgentProcedure

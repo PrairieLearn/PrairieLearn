@@ -9,6 +9,12 @@
   },
   "vars": {
     "OPENAI_MODEL": "gpt-5.4-mini",
+    // https://developers.openai.com/api/docs/models/gpt-5.4-mini
+    "COURSE_AGENT_INPUT_MILLIDOLLARS_PER_MILLION": "750",
+    "COURSE_AGENT_CACHE_READ_MILLIDOLLARS_PER_MILLION": "75",
+    "COURSE_AGENT_CACHE_WRITE_MILLIDOLLARS_PER_MILLION": "0",
+    "COURSE_AGENT_OUTPUT_MILLIDOLLARS_PER_MILLION": "4500",
+    "COURSE_AGENT_REASONING_MILLIDOLLARS_PER_MILLION": "4500",
     "BACKUP_BUCKET_NAME": "prairielearn-course-agent-workspaces"
   },
   "secrets": {

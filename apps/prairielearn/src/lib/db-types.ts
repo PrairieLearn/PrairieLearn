@@ -728,6 +728,25 @@ export const CourseAgentRunSchema = z.object({
 });
 export type CourseAgentRun = z.infer<typeof CourseAgentRunSchema>;
 
+const CourseAgentNonnegativeIntegerSchema = z.coerce.number().int().nonnegative();
+
+export const CourseAgentRunUsageSchema = z.object({
+  cache_read_tokens: CourseAgentNonnegativeIntegerSchema,
+  cache_write_tokens: CourseAgentNonnegativeIntegerSchema,
+  estimated_cost_milli_dollars: CourseAgentNonnegativeIntegerSchema,
+  finalized_at: DateFromISOString.nullable(),
+  input_tokens: CourseAgentNonnegativeIntegerSchema,
+  model: z.string(),
+  normalized_total_tokens: CourseAgentNonnegativeIntegerSchema,
+  output_tokens: CourseAgentNonnegativeIntegerSchema,
+  provider: z.string(),
+  provider_cost_milli_dollars: CourseAgentNonnegativeIntegerSchema.nullable(),
+  reasoning_tokens: CourseAgentNonnegativeIntegerSchema.nullable(),
+  run_id: z.uuid(),
+  updated_at: DateFromISOString,
+});
+export type CourseAgentRunUsage = z.infer<typeof CourseAgentRunUsageSchema>;
+
 export const CourseAgentMessageSchema = z.object({
   authn_user_id: IdSchema.nullable(),
   content: z.string(),
@@ -746,7 +765,7 @@ export const CourseAgentEventSchema = z.object({
   event_type: z.string(),
   id: IdSchema,
   run_id: z.uuid().nullable(),
-  sequence: IdSchema,
+  sequence: CourseAgentNonnegativeIntegerSchema,
 });
 export type CourseAgentEvent = z.infer<typeof CourseAgentEventSchema>;
 
@@ -1884,6 +1903,7 @@ export const TableNames = [
   'course_agent_messages',
   'course_agent_push_approvals',
   'course_agent_runs',
+  'course_agent_run_usages',
   'course_agent_workspace_backups',
   'course_instance_access_rules',
   'course_instance_ai_grading_credentials',

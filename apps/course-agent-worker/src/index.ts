@@ -1,4 +1,5 @@
 import { Sandbox as BaseSandbox, ContainerProxy, getSandbox } from '@cloudflare/sandbox';
+import { z } from 'zod';
 
 import {
   COURSE_AGENT_SEED_FILE,
@@ -12,6 +13,7 @@ import {
   CourseAgentSnapshotRequestSchema,
   type CourseAgentStartRunRequest,
   CourseAgentStartRunRequestSchema,
+  type CourseAgentUsage,
   type CourseAgentWorkspaceBackup,
 } from '@prairielearn/course-agent-protocol';
 
@@ -20,6 +22,7 @@ import { codexFailureMessage } from './codex-output.js';
 import { githubReadUrl, githubRepositoryPath, proxyCourseGithubRead } from './github.js';
 import { activeRunExpired } from './lifecycle.js';
 import { proxyOpenAiRequest } from './provider.js';
+import { type UsageRates, emptyUsage, finalizeUsage, updateUsageFromEvent } from './usage.js';
 
 interface Env {
   Sandbox: DurableObjectNamespace<Sandbox>;
@@ -27,6 +30,11 @@ interface Env {
   OPENAI_API_KEY: string;
   COURSE_AGENT_CAPABILITY_SECRET: string;
   COURSE_AGENT_GITHUB_PAT: string;
+  COURSE_AGENT_INPUT_MILLIDOLLARS_PER_MILLION: string;
+  COURSE_AGENT_CACHE_READ_MILLIDOLLARS_PER_MILLION: string;
+  COURSE_AGENT_CACHE_WRITE_MILLIDOLLARS_PER_MILLION: string;
+  COURSE_AGENT_OUTPUT_MILLIDOLLARS_PER_MILLION: string;
+  COURSE_AGENT_REASONING_MILLIDOLLARS_PER_MILLION: string;
   CLOUDFLARE_ACCOUNT_ID?: string;
   R2_ACCESS_KEY_ID?: string;
   R2_SECRET_ACCESS_KEY?: string;
@@ -50,8 +58,14 @@ interface ConversationState {
   workspaceBackup: CourseAgentWorkspaceBackup | null;
   course: CourseAgentStartRunRequest['course'];
   pendingApproval: CourseAgentPushApproval | null;
-  runtimeSettings: CourseAgentStartRunRequest['runtimeSettings'];
+  usage?: CourseAgentUsage;
+  runtimeSettings?: CourseAgentStartRunRequest['runtimeSettings'];
 }
+
+const PushSyncOutboundParamsSchema = z.object({
+  containerId: z.string(),
+  sandboxId: z.string(),
+});
 
 export { ContainerProxy };
 
@@ -77,6 +91,20 @@ export class Sandbox extends BaseSandbox<Env> {
     'fc00::/7',
     'fe80::/10',
   ];
+
+  async configureCourseGithubRead(repository: string) {
+    await this.setOutboundByHost('github.com', 'courseGithubRead', {
+      containerId: this.ctx.id.toString(),
+      repository,
+    });
+  }
+
+  async configurePushSync(sandboxId: string) {
+    await this.setOutboundByHost('course-agent.internal', 'pushSync', {
+      containerId: this.ctx.id.toString(),
+      sandboxId,
+    });
+  }
 }
 
 Sandbox.outbound = async (request: Request) => {
@@ -99,7 +127,11 @@ Sandbox.outboundHandlers = {
     proxyCourseGithubRead(request, env, context),
   pushSync: async (request: Request, env: Env, context) => {
     if (request.method !== 'POST') return new Response('Method not allowed', { status: 405 });
-    const id = env.COURSE_AGENT_COORDINATOR.idFromName(context.containerId.toLowerCase());
+    const params = PushSyncOutboundParamsSchema.parse(context.params);
+    if (context.containerId !== params.containerId) {
+      return new Response('Push and sync is not permitted.', { status: 403 });
+    }
+    const id = env.COURSE_AGENT_COORDINATOR.idFromName(params.sandboxId.toLowerCase());
     return env.COURSE_AGENT_COORDINATOR.get(id).fetch(
       new Request('https://coordinator/push-sync', {
         method: 'POST',
@@ -225,6 +257,7 @@ export class CourseAgentCoordinator {
         workspaceBackup: current?.workspaceBackup ?? body.workspaceBackup,
         course: current?.course ?? body.course,
         pendingApproval: current?.pendingApproval ?? null,
+        usage: emptyUsage(this.env.OPENAI_MODEL),
         runtimeSettings: body.runtimeSettings,
       };
       await this.state.storage.put('conversation', next);
@@ -253,6 +286,7 @@ export class CourseAgentCoordinator {
           current.pendingApproval?.status === 'publishing'
             ? current.pendingApproval
             : null,
+        usage: current.usage ?? emptyUsage(this.env.OPENAI_MODEL),
       });
     }
     if (request.method === 'POST' && url.pathname === '/push-sync') {
@@ -387,17 +421,16 @@ export class CourseAgentCoordinator {
       normalizeId: true,
       keepAlive: true,
     });
+    const backupTtlSeconds = current.runtimeSettings?.backupTtlSeconds ?? 604_800;
     try {
       await this.append('workspace.backup.started');
       const handle = await sandbox.createBackup({
         dir: COURSE_AGENT_WORKSPACE_ROOT,
         name: current.identity.conversationId,
-        ttl: current.runtimeSettings.backupTtlSeconds,
+        ttl: backupTtlSeconds,
         localBucket: !this.env.R2_ACCESS_KEY_ID || !this.env.R2_SECRET_ACCESS_KEY,
       });
-      const expiresAt = new Date(
-        Date.now() + current.runtimeSettings.backupTtlSeconds * 1000,
-      ).toISOString();
+      const expiresAt = new Date(Date.now() + backupTtlSeconds * 1000).toISOString();
       await this.update({ workspaceBackup: { handle, expiresAt } });
       await this.append('workspace.backup.completed', { backupId: handle.id, expiresAt });
     } finally {
@@ -512,11 +545,8 @@ export class CourseAgentCoordinator {
       }
       const repository = githubRepositoryPath(request.course.repository);
       const coursePath = `${COURSE_AGENT_WORKSPACE_ROOT}/course`;
-      await sandbox.setOutboundByHost('github.com', 'courseGithubRead', {
-        containerId: request.sandboxId,
-        repository,
-      });
-      await sandbox.setOutboundByHost('course-agent.internal', 'pushSync');
+      await sandbox.configureCourseGithubRead(repository);
+      await sandbox.configurePushSync(request.sandboxId);
       const checkout = await sandbox.exec(
         `test -d ${shellQuote(`${coursePath}/.git`)} && echo yes`,
       );
@@ -598,6 +628,7 @@ export class CourseAgentCoordinator {
 
       let buffer = '';
       let eventChain = Promise.resolve();
+      const rates = this.usageRates();
       const prompt = `${SYSTEM_PROMPT}\n\nInstructor request:\n${request.prompt}`;
       const command = [
         'codex --search exec --json --ephemeral --ignore-user-config --skip-git-repo-check',
@@ -626,6 +657,7 @@ export class CourseAgentCoordinator {
           for (const line of lines) {
             const event = parseLine(line);
             if (!event) continue;
+            eventChain = eventChain.then(() => this.recordUsage(event, rates));
             if (event.type === 'thread.started' && typeof event.thread_id === 'string') {
               eventChain = eventChain.then(() =>
                 this.append('agent.started', { threadId: event.thread_id }),
@@ -636,16 +668,12 @@ export class CourseAgentCoordinator {
                 this.append(toolEvent.type, { ...toolEvent.data }),
               );
             }
-            if (event.type === 'turn.completed' && typeof event.usage === 'object' && event.usage) {
-              eventChain = eventChain.then(() =>
-                this.append('usage.updated', event.usage as Record<string, unknown>),
-              );
-            }
           }
         },
       });
       await eventChain;
       if (!codex.success) throw new Error(codexFailureMessage(codex.stdout, codex.stderr));
+      await this.finalizeRunUsage();
       const response = finalResponse(codex.stdout);
       const validation = await sandbox.exec('validate-course .', { cwd: coursePath });
       await this.append(validation.success ? 'validation.completed' : 'validation.failed', {
@@ -666,6 +694,7 @@ export class CourseAgentCoordinator {
       this.closeStreams();
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
+      await this.finalizeRunUsage();
       await this.append('run.failed', { message });
       await this.update({
         activeRunId: null,
@@ -708,6 +737,40 @@ export class CourseAgentCoordinator {
   private async update(update: Partial<ConversationState>) {
     const current = await this.state.storage.get<ConversationState>('conversation');
     if (current) await this.state.storage.put('conversation', { ...current, ...update });
+  }
+
+  private usageRates(): UsageRates {
+    return {
+      input: Number(this.env.COURSE_AGENT_INPUT_MILLIDOLLARS_PER_MILLION),
+      cacheRead: Number(this.env.COURSE_AGENT_CACHE_READ_MILLIDOLLARS_PER_MILLION),
+      cacheWrite: Number(this.env.COURSE_AGENT_CACHE_WRITE_MILLIDOLLARS_PER_MILLION),
+      output: Number(this.env.COURSE_AGENT_OUTPUT_MILLIDOLLARS_PER_MILLION),
+      reasoning: Number(this.env.COURSE_AGENT_REASONING_MILLIDOLLARS_PER_MILLION),
+    };
+  }
+
+  private async recordUsage(event: Record<string, unknown>, rates: UsageRates) {
+    const current = await this.state.storage.get<ConversationState>('conversation');
+    if (!current) return;
+    const previous = current.usage ?? emptyUsage(this.env.OPENAI_MODEL);
+    const usage = updateUsageFromEvent(previous, event, rates);
+    if (JSON.stringify(usage) === JSON.stringify(previous)) return;
+    await this.update({ usage });
+    await this.append('usage.updated', {
+      normalizedTotalTokens: usage.normalizedTotalTokens,
+      estimatedCostMilliDollars: usage.estimatedCostMilliDollars,
+    });
+  }
+
+  private async finalizeRunUsage() {
+    const current = await this.state.storage.get<ConversationState>('conversation');
+    if (!current || current.usage?.finalizedAt) return;
+    const usage = finalizeUsage(current.usage ?? emptyUsage(this.env.OPENAI_MODEL));
+    await this.update({ usage });
+    await this.append('usage.finalized', {
+      normalizedTotalTokens: usage.normalizedTotalTokens,
+      estimatedCostMilliDollars: usage.estimatedCostMilliDollars,
+    });
   }
 }
 
