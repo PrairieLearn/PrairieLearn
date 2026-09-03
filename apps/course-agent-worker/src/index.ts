@@ -55,8 +55,8 @@ interface ConversationState {
   workspaceBackup: CourseAgentWorkspaceBackup | null;
   course: CourseAgentStartRunRequest['course'];
   pendingApproval: CourseAgentPushApproval | null;
-  usage: CourseAgentUsage;
-  runtimeSettings: CourseAgentStartRunRequest['runtimeSettings'];
+  usage?: CourseAgentUsage;
+  runtimeSettings?: CourseAgentStartRunRequest['runtimeSettings'];
 }
 
 const PushSyncOutboundParamsSchema = z.object({
@@ -280,7 +280,7 @@ export class CourseAgentCoordinator {
           current.pendingApproval?.status === 'publishing'
             ? current.pendingApproval
             : null,
-        usage: current.usage,
+        usage: current.usage ?? emptyUsage(this.env.OPENAI_MODEL),
       });
     }
     if (request.method === 'POST' && url.pathname === '/push-sync') {
@@ -415,17 +415,16 @@ export class CourseAgentCoordinator {
       normalizeId: true,
       keepAlive: true,
     });
+    const backupTtlSeconds = current.runtimeSettings?.backupTtlSeconds ?? 604_800;
     try {
       await this.append('workspace.backup.started');
       const handle = await sandbox.createBackup({
         dir: COURSE_AGENT_WORKSPACE_ROOT,
         name: current.identity.conversationId,
-        ttl: current.runtimeSettings.backupTtlSeconds,
+        ttl: backupTtlSeconds,
         localBucket: !this.env.R2_ACCESS_KEY_ID || !this.env.R2_SECRET_ACCESS_KEY,
       });
-      const expiresAt = new Date(
-        Date.now() + current.runtimeSettings.backupTtlSeconds * 1000,
-      ).toISOString();
+      const expiresAt = new Date(Date.now() + backupTtlSeconds * 1000).toISOString();
       await this.update({ workspaceBackup: { handle, expiresAt } });
       await this.append('workspace.backup.completed', { backupId: handle.id, expiresAt });
     } finally {
@@ -707,8 +706,9 @@ export class CourseAgentCoordinator {
   private async recordUsage(event: Record<string, unknown>, rates: UsageRates) {
     const current = await this.state.storage.get<ConversationState>('conversation');
     if (!current) return;
-    const usage = updateUsageFromEvent(current.usage, event, rates);
-    if (JSON.stringify(usage) === JSON.stringify(current.usage)) return;
+    const previous = current.usage ?? emptyUsage(this.env.OPENAI_MODEL);
+    const usage = updateUsageFromEvent(previous, event, rates);
+    if (JSON.stringify(usage) === JSON.stringify(previous)) return;
     await this.update({ usage });
     await this.append('usage.updated', {
       normalizedTotalTokens: usage.normalizedTotalTokens,
@@ -718,8 +718,8 @@ export class CourseAgentCoordinator {
 
   private async finalizeRunUsage() {
     const current = await this.state.storage.get<ConversationState>('conversation');
-    if (!current || current.usage.finalizedAt) return;
-    const usage = finalizeUsage(current.usage);
+    if (!current || current.usage?.finalizedAt) return;
+    const usage = finalizeUsage(current.usage ?? emptyUsage(this.env.OPENAI_MODEL));
     await this.update({ usage });
     await this.append('usage.finalized', {
       normalizedTotalTokens: usage.normalizedTotalTokens,
