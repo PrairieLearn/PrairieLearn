@@ -406,8 +406,12 @@ export async function initExpress(): Promise<Express> {
     const assetPath = req.url.slice(1);
     try {
       res.redirect(assets.nodeModulesAssetPath(assetPath));
-    } catch {
-      next(new HttpStatusError(404, 'Not Found'));
+    } catch (err) {
+      if (err instanceof Error && 'code' in err && err.code === 'MODULE_NOT_FOUND') {
+        next(new HttpStatusError(404, 'Not Found'));
+      } else {
+        next(err);
+      }
     }
   });
 
