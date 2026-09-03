@@ -18,6 +18,7 @@ import {
 } from '@prairielearn/course-agent-protocol';
 
 import { authorizeRun, authorizeSnapshot } from './auth.js';
+import { codexFailureMessage } from './codex-output.js';
 import { githubReadUrl, githubRepositoryPath, proxyCourseGithubRead } from './github.js';
 import { activeRunExpired } from './lifecycle.js';
 import { proxyOpenAiRequest } from './provider.js';
@@ -671,7 +672,7 @@ export class CourseAgentCoordinator {
         },
       });
       await eventChain;
-      if (!codex.success) throw new Error(codex.stderr || 'Agent process failed');
+      if (!codex.success) throw new Error(codexFailureMessage(codex.stdout, codex.stderr));
       await this.finalizeRunUsage();
       const response = finalResponse(codex.stdout);
       const validation = await sandbox.exec('validate-course .', { cwd: coursePath });
