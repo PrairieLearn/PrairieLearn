@@ -44,20 +44,25 @@ export async function proxyCourseGithubRead(
   const params = ParamsSchema.parse(context.params);
   const url = new URL(request.url);
   const authorization = request.headers.get('authorization');
+  if (!authorization) {
+    return new Response('GitHub authentication required.', {
+      status: 401,
+      headers: { 'WWW-Authenticate': 'Basic realm="GitHub"' },
+    });
+  }
   let credentials = '';
   try {
-    credentials = authorization?.startsWith('Basic ')
+    credentials = authorization.startsWith('Basic ')
       ? atob(authorization.slice('Basic '.length))
       : '';
   } catch {
     return new Response('GitHub operation is not permitted.', { status: 403 });
   }
-  if (
-    context.containerId !== params.containerId ||
-    requestRepository(url.pathname) !== params.repository ||
-    credentials !== 'x-access-token:proxy-read' ||
-    !isUploadPack(request, url)
-  ) {
+  const containerMatches = context.containerId === params.containerId;
+  const repositoryMatches = requestRepository(url.pathname) === params.repository;
+  const credentialsMatch = credentials === 'x-access-token:proxy-read';
+  const uploadPack = isUploadPack(request, url);
+  if (!containerMatches || !repositoryMatches || !credentialsMatch || !uploadPack) {
     return new Response('GitHub operation is not permitted.', { status: 403 });
   }
   const headers = new Headers(request.headers);

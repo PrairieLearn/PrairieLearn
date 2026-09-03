@@ -62,6 +62,22 @@ describe('CourseAgentRunUsageSchema', () => {
   });
 });
 
+describe('CourseAgentEventSchema', () => {
+  it('accepts a zero sequence returned by PostgreSQL', () => {
+    const event = DbSchemas.CourseAgentEventSchema.parse({
+      conversation_id: '00000000-0000-4000-8000-000000000000',
+      created_at: new Date(),
+      data: {},
+      event_type: 'sandbox.starting',
+      id: '1',
+      run_id: '00000000-0000-4000-8000-000000000001',
+      sequence: '0',
+    });
+
+    expect(event.sequence).toBe(0);
+  });
+});
+
 function tableNameToSchemaName(tableName: string) {
   if (tableName in schemaNameOverrides) {
     return schemaNameOverrides[tableName];

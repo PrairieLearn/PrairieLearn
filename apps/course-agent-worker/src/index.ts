@@ -1,4 +1,5 @@
 import { Sandbox as BaseSandbox, ContainerProxy, getSandbox } from '@cloudflare/sandbox';
+import { z } from 'zod';
 
 import {
   COURSE_AGENT_SEED_FILE,
@@ -60,6 +61,11 @@ interface ConversationState {
   usage: CourseAgentUsage;
 }
 
+const PushSyncOutboundParamsSchema = z.object({
+  containerId: z.string(),
+  sandboxId: z.string(),
+});
+
 export { ContainerProxy };
 
 export class Sandbox extends BaseSandbox<Env> {
@@ -84,6 +90,20 @@ export class Sandbox extends BaseSandbox<Env> {
     'fc00::/7',
     'fe80::/10',
   ];
+
+  async configureCourseGithubRead(repository: string) {
+    await this.setOutboundByHost('github.com', 'courseGithubRead', {
+      containerId: this.ctx.id.toString(),
+      repository,
+    });
+  }
+
+  async configurePushSync(sandboxId: string) {
+    await this.setOutboundByHost('course-agent.internal', 'pushSync', {
+      containerId: this.ctx.id.toString(),
+      sandboxId,
+    });
+  }
 }
 
 Sandbox.outbound = async (request: Request) => {
@@ -106,7 +126,11 @@ Sandbox.outboundHandlers = {
     proxyCourseGithubRead(request, env, context),
   pushSync: async (request: Request, env: Env, context) => {
     if (request.method !== 'POST') return new Response('Method not allowed', { status: 405 });
-    const id = env.COURSE_AGENT_COORDINATOR.idFromName(context.containerId.toLowerCase());
+    const params = PushSyncOutboundParamsSchema.parse(context.params);
+    if (context.containerId !== params.containerId) {
+      return new Response('Push and sync is not permitted.', { status: 403 });
+    }
+    const id = env.COURSE_AGENT_COORDINATOR.idFromName(params.sandboxId.toLowerCase());
     return env.COURSE_AGENT_COORDINATOR.get(id).fetch(
       new Request('https://coordinator/push-sync', {
         method: 'POST',
@@ -402,11 +426,8 @@ export class CourseAgentCoordinator {
       }
       const repository = githubRepositoryPath(request.course.repository);
       const coursePath = `${COURSE_AGENT_WORKSPACE_ROOT}/course`;
-      await sandbox.setOutboundByHost('github.com', 'courseGithubRead', {
-        containerId: request.sandboxId,
-        repository,
-      });
-      await sandbox.setOutboundByHost('course-agent.internal', 'pushSync');
+      await sandbox.configureCourseGithubRead(repository);
+      await sandbox.configurePushSync(request.sandboxId);
       const checkout = await sandbox.exec(
         `test -d ${shellQuote(`${coursePath}/.git`)} && echo yes`,
       );

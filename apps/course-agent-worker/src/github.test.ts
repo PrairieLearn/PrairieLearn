@@ -12,6 +12,14 @@ describe('course repository credential broker', () => {
       containerId: 'sandbox-1',
       params: { containerId: 'sandbox-1', repository: 'PrairieLearn/course' },
     };
+    const challenge = await proxyCourseGithubRead(
+      new Request('https://github.com/PrairieLearn/course.git/info/refs?service=git-upload-pack'),
+      { COURSE_AGENT_GITHUB_PAT: 'real-secret' },
+      context,
+      fetchImplementation,
+    );
+    expect(challenge.status).toBe(401);
+    expect(challenge.headers.get('www-authenticate')).toBe('Basic realm="GitHub"');
     const response = await proxyCourseGithubRead(
       new Request('https://github.com/PrairieLearn/course.git/info/refs?service=git-upload-pack', {
         headers: { authorization: `Basic ${btoa('x-access-token:proxy-read')}` },
