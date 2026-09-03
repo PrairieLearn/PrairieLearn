@@ -139,7 +139,13 @@ function CourseAgentPanelInner({
       onSuccess: () => void snapshot.refetch(),
     }),
   );
-  const failure = findLastEvent(displayedEvents, 'run.failed');
+  const lastFailure = findLastEvent(displayedEvents, 'run.failed');
+  const lastCompletion = findLastEvent(displayedEvents, 'agent.completed');
+  const failure =
+    !busy && lastFailure && (!lastCompletion || lastFailure.sequence > lastCompletion.sequence)
+      ? lastFailure
+      : undefined;
+  const snapshotError = !busy && snapshot.data?.status === 'failed' ? snapshot.data.error : null;
 
   return (
     <aside
@@ -263,9 +269,9 @@ function CourseAgentPanelInner({
               <Spinner size="sm" /> Course agent is working…
             </div>
           )}
-          {(snapshot.data?.error || failure) && (
+          {(snapshotError || failure) && (
             <Alert variant="danger">
-              {snapshot.data?.error ?? String(failure?.data.message ?? 'The run failed.')}
+              {snapshotError ?? String(failure?.data.message ?? 'The run failed.')}
             </Alert>
           )}
           {snapshot.data && (
