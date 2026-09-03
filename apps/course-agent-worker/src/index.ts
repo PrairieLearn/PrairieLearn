@@ -13,7 +13,12 @@ import {
 import { authorizeRun, authorizeSnapshot } from './auth.js';
 import { finalResponse, parseCodexLine, toolEvents } from './codex-events.js';
 import { codexFailureMessage } from './codex-output.js';
-import { githubReadUrl, githubRepositoryPath, proxyCourseGithubRead } from './github.js';
+import {
+  courseGithubReadParams,
+  githubReadUrl,
+  githubRepositoryPath,
+  proxyCourseGithubRead,
+} from './github.js';
 import { activeRunExpired } from './lifecycle.js';
 import { proxyOpenAiRequest } from './provider.js';
 
@@ -285,10 +290,11 @@ export class CourseAgentCoordinator {
       await this.append('workspace.seeded', { path: COURSE_AGENT_SEED_FILE });
       const repository = githubRepositoryPath(request.course.repository);
       const coursePath = `${COURSE_AGENT_WORKSPACE_ROOT}/course`;
-      await sandbox.setOutboundByHost('github.com', 'courseGithubRead', {
-        containerId: request.sandboxId,
-        repository,
-      });
+      await sandbox.setOutboundByHost(
+        'github.com',
+        'courseGithubRead',
+        courseGithubReadParams(this.env.Sandbox, request.sandboxId, repository),
+      );
       const checkout = await sandbox.exec(
         `test -d ${shellQuote(`${coursePath}/.git`)} && echo yes`,
       );

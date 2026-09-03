@@ -9,6 +9,15 @@ export interface GitHubEnv {
   COURSE_AGENT_GITHUB_PAT: string;
 }
 
+export function courseGithubReadParams(
+  namespace: { idFromName: (name: string) => { toString: () => string } },
+  sandboxId: string,
+  repository: string,
+) {
+  // Outbound context uses the Durable Object ID, not the application sandbox name.
+  return { containerId: namespace.idFromName(sandboxId).toString(), repository };
+}
+
 export function githubRepositoryPath(repository: string) {
   const ssh = /^git@github\.com:(.+?)(?:\.git)?$/.exec(repository);
   const sshUrl = /^ssh:\/\/git@github\.com\/(.+?)(?:\.git)?$/.exec(repository);
@@ -30,8 +39,10 @@ function requestRepository(pathname: string) {
 
 function isUploadPack(request: Request, url: URL) {
   return (
-    (request.method === 'GET' && url.searchParams.get('service') === 'git-upload-pack') ||
-    (request.method === 'POST' && url.pathname.endsWith('/git-upload-pack'))
+    (request.method === 'GET' &&
+      /^\/[^/]+\/[^/]+\.git\/info\/refs$/.test(url.pathname) &&
+      url.searchParams.get('service') === 'git-upload-pack') ||
+    (request.method === 'POST' && /^\/[^/]+\/[^/]+\.git\/git-upload-pack$/.test(url.pathname))
   );
 }
 
@@ -43,7 +54,20 @@ export async function proxyCourseGithubRead(
 ) {
   const params = ParamsSchema.parse(context.params);
   const url = new URL(request.url);
+  if (
+    context.containerId !== params.containerId ||
+    requestRepository(url.pathname) !== params.repository ||
+    !isUploadPack(request, url)
+  ) {
+    return new Response('GitHub operation is not permitted.', { status: 403 });
+  }
   const authorization = request.headers.get('authorization');
+  if (!authorization) {
+    return new Response('Git authentication required.', {
+      status: 401,
+      headers: { 'WWW-Authenticate': 'Basic realm="Course repository"' },
+    });
+  }
   let credentials = '';
   try {
     credentials = authorization?.startsWith('Basic ')
@@ -52,12 +76,7 @@ export async function proxyCourseGithubRead(
   } catch {
     return new Response('GitHub operation is not permitted.', { status: 403 });
   }
-  if (
-    context.containerId !== params.containerId ||
-    requestRepository(url.pathname) !== params.repository ||
-    credentials !== 'x-access-token:proxy-read' ||
-    !isUploadPack(request, url)
-  ) {
+  if (credentials !== 'x-access-token:proxy-read') {
     return new Response('GitHub operation is not permitted.', { status: 403 });
   }
   const headers = new Headers(request.headers);
