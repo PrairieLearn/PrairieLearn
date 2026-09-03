@@ -104,6 +104,7 @@ function CourseAgentPanelInner({
                 const next = current.filter((existing) => existing.sequence !== event.sequence);
                 return [...next, event].sort((left, right) => left.sequence - right.sequence);
               });
+              if (event.type === 'git.push.approval.requested') void refetchSnapshot();
             }
           }
         }
@@ -135,6 +136,11 @@ function CourseAgentPanelInner({
   const toolEvents = displayedEvents.filter((event) => event.type.startsWith('tool.'));
   const messages = displayedEvents.filter(
     (event) => event.type === 'user.message' || event.type === 'assistant.delta',
+  );
+  const approval = useMutation(
+    trpc.courseAgent.respondToPushApproval.mutationOptions({
+      onSuccess: () => void snapshot.refetch(),
+    }),
   );
   const lastFailure = findLastEvent(displayedEvents, 'run.failed');
   const lastCompletion = findLastEvent(displayedEvents, 'agent.completed');
@@ -272,6 +278,52 @@ function CourseAgentPanelInner({
             </Alert>
           )}
           {start.error && <Alert variant="danger">{start.error.message}</Alert>}
+          {approval.error && <Alert variant="danger">{approval.error.message}</Alert>}
+          {snapshot.data?.pendingApproval && (
+            <div className="course-agent-approval border rounded bg-white overflow-hidden mb-4">
+              <div className="border-bottom px-3 py-2">
+                <div className="d-flex align-items-center gap-2 fw-semibold">
+                  <i className="bi bi-shield-check text-warning" aria-hidden="true" /> Approval
+                  required
+                </div>
+                <p className="small mb-0 mt-1">{snapshot.data.pendingApproval.diffSummary}</p>
+              </div>
+              <details>
+                <summary className="small px-3 py-2">View full diff</summary>
+                <pre className="course-agent-diff-body small overflow-auto border-top p-3 mb-0">
+                  {snapshot.data.pendingApproval.diff}
+                </pre>
+              </details>
+              <div className="d-flex justify-content-end gap-2 border-top px-2 py-2">
+                <button
+                  type="button"
+                  className="btn btn-sm btn-primary"
+                  disabled={approval.isPending}
+                  onClick={() =>
+                    approval.mutate({
+                      approvalId: snapshot.data.pendingApproval!.id,
+                      decision: 'approve',
+                    })
+                  }
+                >
+                  Approve, push, and sync
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-sm btn-outline-danger"
+                  disabled={approval.isPending}
+                  onClick={() =>
+                    approval.mutate({
+                      approvalId: snapshot.data.pendingApproval!.id,
+                      decision: 'deny',
+                    })
+                  }
+                >
+                  Deny
+                </button>
+              </div>
+            </div>
+          )}
           {diagnosticsEnabled && (
             <div className="border-top pt-3 mt-3">
               <Form.Check

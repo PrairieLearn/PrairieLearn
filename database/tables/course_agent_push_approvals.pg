@@ -1,0 +1,33 @@
+columns
+    base_sha: text not null
+    branch: text not null
+    commit_message: text not null
+    completed_at: timestamp with time zone
+    conversation_id: uuid not null
+    course_id: bigint not null
+    created_at: timestamp with time zone not null default now()
+    decided_at: timestamp with time zone
+    decided_by: bigint
+    diff: text not null
+    diff_summary: text not null
+    id: uuid not null
+    proposed_sha: text not null
+    repository: text not null
+    requested_by: bigint not null
+    result: jsonb
+    run_id: uuid not null
+    status: text not null default 'pending'::text
+
+indexes
+    course_agent_push_approvals_pkey: PRIMARY KEY (id) USING btree (id)
+    course_agent_push_approvals_one_active_idx: UNIQUE USING btree (conversation_id) WHERE status = ANY (ARRAY['pending'::text, 'publishing'::text])
+
+check constraints
+    course_agent_push_approvals_status_check: CHECK (status = ANY (ARRAY['pending'::text, 'publishing'::text, 'denied'::text, 'completed'::text, 'failed'::text]))
+
+foreign-key constraints
+    course_agent_push_approvals_conversation_id_fkey: FOREIGN KEY (conversation_id) REFERENCES course_agent_conversations(id) ON UPDATE CASCADE ON DELETE CASCADE
+    course_agent_push_approvals_course_id_fkey: FOREIGN KEY (course_id) REFERENCES courses(id) ON UPDATE CASCADE ON DELETE CASCADE
+    course_agent_push_approvals_decided_by_fkey: FOREIGN KEY (decided_by) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL
+    course_agent_push_approvals_requested_by_fkey: FOREIGN KEY (requested_by) REFERENCES users(id) ON UPDATE CASCADE ON DELETE RESTRICT
+    course_agent_push_approvals_run_id_fkey: FOREIGN KEY (run_id) REFERENCES course_agent_runs(id) ON UPDATE CASCADE ON DELETE CASCADE

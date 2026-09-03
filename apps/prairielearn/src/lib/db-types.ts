@@ -760,6 +760,28 @@ export const CourseAgentWorkspaceBackupSchema = z.object({
 });
 export type CourseAgentWorkspaceBackup = z.infer<typeof CourseAgentWorkspaceBackupSchema>;
 
+export const CourseAgentPushApprovalSchema = z.object({
+  base_sha: z.string(),
+  branch: z.string(),
+  commit_message: z.string(),
+  completed_at: DateFromISOString.nullable(),
+  conversation_id: z.uuid(),
+  course_id: IdSchema,
+  created_at: DateFromISOString,
+  decided_at: DateFromISOString.nullable(),
+  decided_by: IdSchema.nullable(),
+  diff: z.string(),
+  diff_summary: z.string(),
+  id: z.uuid(),
+  proposed_sha: z.string(),
+  repository: z.string(),
+  requested_by: IdSchema,
+  result: z.record(z.string(), z.unknown()).nullable(),
+  run_id: z.uuid(),
+  status: z.enum(['pending', 'publishing', 'denied', 'completed', 'failed']),
+});
+export type CourseAgentPushApproval = z.infer<typeof CourseAgentPushApprovalSchema>;
+
 export const CourseSchema = z.object({
   ai_grading_free_credit_redemptions_used: z.number(),
   announcement_color: z.string().nullable(),
@@ -1860,6 +1882,7 @@ export const TableNames = [
   'course_agent_conversations',
   'course_agent_events',
   'course_agent_messages',
+  'course_agent_push_approvals',
   'course_agent_runs',
   'course_agent_workspace_backups',
   'course_instance_access_rules',

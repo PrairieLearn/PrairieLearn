@@ -198,3 +198,87 @@ ORDER BY
   id DESC
 LIMIT
   1;
+
+-- BLOCK upsert_push_approval
+INSERT INTO
+  course_agent_push_approvals (
+    id,
+    conversation_id,
+    run_id,
+    course_id,
+    requested_by,
+    repository,
+    branch,
+    base_sha,
+    proposed_sha,
+    commit_message,
+    diff_summary,
+    diff
+  )
+VALUES
+  (
+    $approval_id,
+    $conversation_id,
+    $run_id,
+    $course_id,
+    $user_id,
+    $repository,
+    $branch,
+    $base_sha,
+    $proposed_sha,
+    $commit_message,
+    $diff_summary,
+    $diff
+  )
+ON CONFLICT (id) DO UPDATE
+SET
+  commit_message = EXCLUDED.commit_message,
+  diff_summary = EXCLUDED.diff_summary,
+  diff = EXCLUDED.diff
+RETURNING
+  *;
+
+-- BLOCK select_push_approval
+SELECT
+  a.*
+FROM
+  course_agent_push_approvals AS a
+  JOIN course_agent_conversations AS c ON (c.id = a.conversation_id)
+WHERE
+  a.id = $approval_id
+  AND c.course_id = $course_id
+  AND c.user_id = $user_id
+  AND c.deleted_at IS NULL;
+
+-- BLOCK select_pending_push_approval
+SELECT
+  *
+FROM
+  course_agent_push_approvals
+WHERE
+  conversation_id = $conversation_id
+  AND status IN ('pending', 'publishing')
+ORDER BY
+  created_at DESC
+LIMIT
+  1;
+
+-- BLOCK update_push_approval
+UPDATE course_agent_push_approvals
+SET
+  status = $status,
+  decided_by = COALESCE($decided_by, decided_by),
+  decided_at = CASE
+    WHEN $status IN ('publishing', 'denied') THEN NOW()
+    ELSE decided_at
+  END,
+  completed_at = CASE
+    WHEN $status IN ('completed', 'failed') THEN NOW()
+    ELSE completed_at
+  END,
+  result = $result
+WHERE
+  id = $approval_id
+  AND status = ANY ($expected_statuses::TEXT[])
+RETURNING
+  *;
