@@ -2,7 +2,12 @@ import { describe, expect, it } from 'vitest';
 
 import type { CourseAgentEvent } from '@prairielearn/course-agent-protocol';
 
-import { getCourseAgentActivity, groupCourseAgentTurns } from './courseAgentEvents.js';
+import {
+  getCourseAgentActivity,
+  getCourseAgentDuration,
+  getCourseAgentResponse,
+  groupCourseAgentTurns,
+} from './courseAgentEvents.js';
 
 function event(
   sequence: number,
@@ -82,13 +87,6 @@ describe('getCourseAgentActivity', () => {
         kind: 'lifecycle',
       },
       {
-        key: 'workspace-2',
-        sequence: 2,
-        label: 'Set up course',
-        status: 'completed',
-        kind: 'lifecycle',
-      },
-      {
         key: 'tool-one',
         sequence: 4,
         label: 'Edited questions/example/question.html',
@@ -96,5 +94,36 @@ describe('getCourseAgentActivity', () => {
         kind: 'tool',
       },
     ]);
+  });
+});
+
+describe('streamed responses and elapsed time', () => {
+  it('joins text chunks before rendering Markdown and accepts the canonical final answer', () => {
+    const events = [
+      event(1, 'assistant.delta', { text: 'Use `py' }),
+      event(2, 'assistant.delta', { text: 'thon`.' }),
+    ];
+    expect(getCourseAgentResponse(events)).toBe('Use `python`.');
+    expect(
+      getCourseAgentResponse([
+        ...events,
+        event(3, 'assistant.delta', { text: 'Use `python`.', replace: true }),
+      ]),
+    ).toBe('Use `python`.');
+  });
+
+  it('stops elapsed time at completion, including failures', () => {
+    const start = '2026-09-03T11:59:48.000Z';
+    expect(
+      getCourseAgentDuration(
+        start,
+        [event(1, 'agent.completed')],
+        Date.parse('2026-09-03T12:05:00Z'),
+      ),
+    ).toBe(12);
+    expect(
+      getCourseAgentDuration(start, [event(1, 'run.failed')], Date.parse('2026-09-03T12:05:00Z')),
+    ).toBe(12);
+    expect(getCourseAgentDuration(start, [], Date.parse('2026-09-03T11:59:50Z'))).toBe(2);
   });
 });

@@ -1,7 +1,8 @@
 import { QueryClient, useMutation, useQuery } from '@tanstack/react-query';
 import clsx from 'clsx';
-import { Fragment, type ReactNode, useEffect, useState } from 'react';
-import { Alert, Badge, Form, Spinner } from 'react-bootstrap';
+import { Fragment, type ReactNode, useEffect, useId, useState } from 'react';
+import { Alert, Collapse, Form, Spinner } from 'react-bootstrap';
+import { useStickToBottom } from 'use-stick-to-bottom';
 
 import type { CourseAgentEvent } from '@prairielearn/course-agent-protocol';
 import { QueryClientProviderDebug } from '@prairielearn/trpc/react';
@@ -11,17 +12,26 @@ import { createCourseTrpcClient } from '../../trpc/course/client.js';
 import { TRPCProvider, useTRPC } from '../../trpc/course/context.js';
 
 import { CourseAgentMarkdown } from './CourseAgentMarkdown.js';
-import { getCourseAgentActivity, groupCourseAgentTurns } from './courseAgentEvents.js';
+import {
+  getCourseAgentActivity,
+  getCourseAgentDuration,
+  getCourseAgentResponse,
+  groupCourseAgentTurns,
+} from './courseAgentEvents.js';
 
-function CourseAgentPanelInner({
-  courseId,
-  courseShortName,
-}: {
-  courseId: string;
-  courseShortName: string;
-}) {
+function CourseAgentPanelInner({ courseId }: { courseId: string }) {
   const trpc = useTRPC();
   const [open, setOpen] = useState(true);
+  const [closing, setClosing] = useState(false);
+  const stickToBottom = useStickToBottom({ initial: 'smooth', resize: 'smooth' });
+
+  function closePanel() {
+    if (window.matchMedia('(min-width: 1200px), (prefers-reduced-motion: reduce)').matches) {
+      setOpen(false);
+    } else {
+      setClosing(true);
+    }
+  }
   const [prompt, setPrompt] = useState('');
   const [events, setEvents] = useState<CourseAgentEvent[]>([]);
   const [streamOffset, setStreamOffset] = useState(0);
@@ -124,6 +134,7 @@ function CourseAgentPanelInner({
       className={clsx('course-agent-panel', {
         'course-agent-panel-open': open,
         'course-agent-panel-collapsed': !open,
+        'course-agent-panel-closing': closing,
       })}
       aria-label="Course agent panel"
     >
@@ -143,78 +154,93 @@ function CourseAgentPanelInner({
         </OverlayTrigger>
       </div>
 
-      <div className="course-agent-panel-content border-start bg-light">
+      <div
+        className="course-agent-panel-content border-start bg-light"
+        onTransitionEnd={(event) => {
+          if (closing && event.target === event.currentTarget && event.propertyName === 'opacity') {
+            setOpen(false);
+            setClosing(false);
+          }
+        }}
+      >
         <header className="course-agent-header border-bottom bg-white px-3 py-3">
           <div className="d-flex align-items-center gap-2">
-            <strong className="d-flex align-items-center gap-2">
-              <i className="bi bi-stars text-primary" aria-hidden="true" /> Course agent
-            </strong>
-            <span className="text-muted small text-truncate ms-auto">{courseShortName}</span>
             <button
               type="button"
-              className="btn btn-sm btn-light ms-2 d-none d-xl-inline-flex"
+              className="btn btn-sm btn-light me-1 d-none d-xl-inline-flex"
               aria-label="Collapse course agent"
-              onClick={() => setOpen(false)}
+              onClick={closePanel}
             >
               <i className="bi bi-arrow-bar-right" aria-hidden="true" />
             </button>
+            <strong className="d-flex align-items-center gap-2">
+              <i className="bi bi-stars text-primary" aria-hidden="true" /> Course agent
+            </strong>
             <button
               type="button"
-              className="btn-close ms-2 d-xl-none"
+              className="btn-close ms-auto d-xl-none"
               aria-label="Close course agent"
-              onClick={() => setOpen(false)}
+              onClick={closePanel}
             />
           </div>
         </header>
 
-        <div className="course-agent-transcript px-4 py-4" aria-live="polite">
-          {turns.length === 0 && (
-            <div className="course-agent-empty text-center text-muted px-3 py-5">
-              <i className="bi bi-stars fs-2 text-primary" aria-hidden="true" />
-              <p className="fw-semibold text-body mt-3 mb-1">What would you like to build?</p>
-              <p className="small mb-0">
-                Ask the agent to create or improve PrairieLearn course content.
-              </p>
-            </div>
-          )}
-          {turns.map((turn, index) => {
-            const active = busy && index === turns.length - 1;
-            const messages = turn.events.filter((event) => event.type === 'assistant.delta');
-            const turnFailure = findLastEvent(turn.events, 'run.failed');
-            return (
-              <div key={turn.userMessage.sequence} className="course-agent-turn">
-                <UserMessage>{String(turn.userMessage.data.text ?? '')}</UserMessage>
-                <AgentMessage>
-                  <ToolCallGroup events={turn.events} busy={active} />
-                  {messages.map((event) => (
-                    <CourseAgentMarkdown key={event.sequence}>
-                      {String(event.data.text ?? '')}
-                    </CourseAgentMarkdown>
-                  ))}
-                  {turnFailure && (
-                    <Alert variant="danger" className="mb-0">
-                      {String(turnFailure.data.message ?? 'The request could not be completed.')}
-                    </Alert>
-                  )}
-                </AgentMessage>
+        <div
+          ref={stickToBottom.scrollRef}
+          className="course-agent-transcript"
+          aria-label="Conversation messages"
+          role="log"
+          aria-live="polite"
+        >
+          <div ref={stickToBottom.contentRef} className="px-4 py-4">
+            {turns.length === 0 && (
+              <div className="course-agent-empty text-center text-muted px-3 py-5">
+                <i className="bi bi-stars fs-2 text-primary" aria-hidden="true" />
+                <p className="fw-semibold text-body mt-3 mb-1">What would you like to build?</p>
+                <p className="small mb-0">
+                  Ask the agent to create or improve PrairieLearn course content.
+                </p>
               </div>
-            );
-          })}
-          {busy && turns.length === 0 && (
-            <div className="d-flex align-items-center gap-2 small text-muted mb-3">
-              <Spinner size="sm" /> Starting agent…
+            )}
+            {turns.map((turn, index) => {
+              const active = busy && index === turns.length - 1;
+              const response = getCourseAgentResponse(turn.events);
+              const turnFailure = findLastEvent(turn.events, 'run.failed');
+              return (
+                <div key={turn.userMessage.sequence} className="course-agent-turn">
+                  <UserMessage>{String(turn.userMessage.data.text ?? '')}</UserMessage>
+                  <AgentMessage>
+                    <ToolCallGroup
+                      events={turn.events}
+                      startedAt={turn.userMessage.occurredAt}
+                      busy={active}
+                    />
+                    {response && <CourseAgentMarkdown>{response}</CourseAgentMarkdown>}
+                    {turnFailure && (
+                      <Alert variant="danger" className="mb-0">
+                        {String(turnFailure.data.message ?? 'The request could not be completed.')}
+                      </Alert>
+                    )}
+                  </AgentMessage>
+                </div>
+              );
+            })}
+            {busy && turns.length === 0 && (
+              <div className="d-flex align-items-center gap-2 small text-muted mb-3">
+                <Spinner size="sm" /> Starting agent…
+              </div>
+            )}
+            {snapshotError && !failure && <Alert variant="danger">{snapshotError}</Alert>}
+            {start.error && <Alert variant="danger">{start.error.message}</Alert>}
+            <div className="pt-3 mt-3">
+              <Diagnostics
+                conversation={conversation}
+                runId={streamRunId}
+                offset={streamOffset}
+                events={events}
+                status={busy ? 'running' : (snapshot.data?.status ?? 'offline')}
+              />
             </div>
-          )}
-          {snapshotError && !failure && <Alert variant="danger">{snapshotError}</Alert>}
-          {start.error && <Alert variant="danger">{start.error.message}</Alert>}
-          <div className="border-top pt-3 mt-3">
-            <Diagnostics
-              conversation={conversation}
-              runId={streamRunId}
-              offset={streamOffset}
-              events={events}
-              status={busy ? 'running' : (snapshot.data?.status ?? 'offline')}
-            />
           </div>
         </div>
 
@@ -223,6 +249,7 @@ function CourseAgentPanelInner({
             onSubmit={(event) => {
               event.preventDefault();
               if (busy || !prompt.trim()) return;
+              void stickToBottom.scrollToBottom();
               start.mutate({ conversationId: conversation?.conversationId, prompt });
             }}
           >
@@ -284,56 +311,74 @@ function AgentMessage({ children }: { children: ReactNode }) {
   );
 }
 
-function ToolCallGroup({ events, busy }: { events: CourseAgentEvent[]; busy: boolean }) {
+function ToolCallGroup({
+  events,
+  startedAt,
+  busy,
+}: {
+  events: CourseAgentEvent[];
+  startedAt: string;
+  busy: boolean;
+}) {
   const [expanded, setExpanded] = useState(false);
+  const id = useId();
+  const [now, setNow] = useState(Date.now);
+  // Update elapsed time while the agent is working; completed turns use their recorded end time.
+  useEffect(() => {
+    if (!busy) return;
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, [busy]);
   const activity = getCourseAgentActivity(events);
-  const toolCount = activity.filter((item) => item.kind === 'tool').length;
   const visible = expanded;
-  if (activity.length === 0 && !busy) return null;
+  const seconds = getCourseAgentDuration(startedAt, events, now);
   return (
     <div className="course-agent-tool-group">
       <button
         type="button"
         className="course-agent-tool-group-toggle btn btn-sm d-flex align-items-center gap-2 border-0 px-0 py-1 text-muted"
         aria-expanded={visible}
+        aria-controls={id}
         onClick={() => setExpanded(!expanded)}
       >
-        <span className="flex-grow-1 text-start">
-          {busy
-            ? 'Working'
-            : toolCount > 0
-              ? `Made ${toolCount} tool ${toolCount === 1 ? 'call' : 'calls'}`
-              : 'Set up agent'}
+        <span className="text-start">
+          {busy ? `Working for ${seconds}s` : `Worked for ${seconds}s`}
         </span>
         {busy ? (
           <Spinner size="sm" />
         ) : (
           <i
-            className={clsx('bi', visible ? 'bi-chevron-up' : 'bi-chevron-down')}
+            className={clsx(
+              'bi course-agent-tool-chevron',
+              visible ? 'bi-chevron-down' : 'bi-chevron-right',
+            )}
             aria-hidden="true"
           />
         )}
       </button>
-      {visible && (
-        <div className="d-flex flex-column gap-1 border-start ms-2 mt-1 ps-3 py-1">
-          {activity.map((item) => (
-            <div key={item.key} className="small text-muted d-flex align-items-start gap-1">
-              <i
-                className={clsx('bi bi-fw flex-shrink-0', {
-                  'bi-x-lg text-danger': item.status === 'failed',
-                  'bi-check-lg text-success': item.status === 'completed',
-                  'bi-three-dots': item.status === 'pending',
-                })}
-                aria-hidden="true"
-              />
-              <span className="text-break">
-                {item.label}
-                {item.status === 'pending' ? '…' : ''}
-              </span>
-            </div>
-          ))}
+      <Collapse in={visible}>
+        <div id={id}>
+          <div className="d-flex flex-column gap-1 border-start ms-2 mt-1 ps-3 py-1">
+            {activity.length === 0 && <span className="small text-muted">No tools used.</span>}
+            {activity.map((item) => (
+              <div key={item.key} className="small text-muted d-flex align-items-start gap-1">
+                <i
+                  className={clsx('bi bi-fw flex-shrink-0', {
+                    'bi-x-lg text-danger': item.status === 'failed',
+                    'bi-check-lg text-success': item.status === 'completed',
+                    'bi-three-dots': item.status === 'pending',
+                  })}
+                  aria-hidden="true"
+                />
+                <span className="text-break">
+                  {item.label}
+                  {item.status === 'pending' ? '…' : ''}
+                </span>
+              </div>
+            ))}
+          </div>
         </div>
-      )}
+      </Collapse>
     </div>
   );
 }
@@ -375,19 +420,14 @@ function Diagnostics({
     ['reasoning_output_tokens', 'Reasoning'],
   ];
   return (
-    <details className="course-agent-diagnostic-card small border rounded bg-white">
-      <summary className="d-flex align-items-center gap-2 p-3">
+    <details className="course-agent-diagnostic-card small text-muted">
+      <summary className="d-flex align-items-center gap-2 py-2">
         <i className="bi bi-activity text-muted" aria-hidden="true" />
-        <span className="fw-medium">Live conversation state</span>
-        <Badge
-          bg={status === 'failed' ? 'danger' : status === 'running' ? 'primary' : 'secondary'}
-          className="ms-auto"
-        >
-          {statusLabel}
-        </Badge>
+        <span>Conversation diagnostics</span>
         <i className="course-agent-diagnostic-chevron bi bi-chevron-down" aria-hidden="true" />
       </summary>
-      <div className="border-top p-3">
+      <div className="pt-2">
+        <div className="mb-3">Status: {statusLabel}</div>
         <dl className="course-agent-diagnostics mb-3">
           {identifiers.map(([label, value]) => (
             <Fragment key={label}>
@@ -437,11 +477,9 @@ function findLastEvent(events: CourseAgentEvent[], type: CourseAgentEvent['type'
 export function CourseAgentPanel({
   trpcCsrfToken,
   courseId,
-  courseShortName,
 }: {
   trpcCsrfToken: string;
   courseId: string;
-  courseShortName: string;
 }) {
   const [queryClient] = useState(() => new QueryClient());
   const [trpcClient] = useState(() =>
@@ -450,7 +488,7 @@ export function CourseAgentPanel({
   return (
     <QueryClientProviderDebug client={queryClient}>
       <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
-        <CourseAgentPanelInner courseId={courseId} courseShortName={courseShortName} />
+        <CourseAgentPanelInner courseId={courseId} />
       </TRPCProvider>
     </QueryClientProviderDebug>
   );

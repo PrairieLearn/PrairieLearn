@@ -4,6 +4,18 @@ import { describe, expect, it } from 'vitest';
 import { CourseAgentMarkdown } from './CourseAgentMarkdown.js';
 
 describe('CourseAgentMarkdown', () => {
+  it('keeps file references non-clickable but permits public documentation links', () => {
+    const output = renderToStaticMarkup(
+      <CourseAgentMarkdown>
+        [file](server.py) [workspace](/workspace/server.py) [local](file:///workspace/server.py)
+        [docs](https://docs.prairielearn.com)
+      </CourseAgentMarkdown>,
+    );
+    expect(output).not.toContain('href="server.py"');
+    expect(output).not.toContain('href="/workspace');
+    expect(output).not.toContain('href="file:');
+    expect(output).toContain('href="https://docs.prairielearn.com"');
+  });
   it('renders common Markdown while dropping raw HTML', () => {
     const output = renderToStaticMarkup(
       <CourseAgentMarkdown>

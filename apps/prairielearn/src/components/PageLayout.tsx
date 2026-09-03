@@ -303,7 +303,6 @@ export function PageLayout({
             config.secretKey,
           )}
           courseId={resLocals.course.id}
-          courseShortName={resLocals.course.short_name}
         />
       </Hydrate>
     );

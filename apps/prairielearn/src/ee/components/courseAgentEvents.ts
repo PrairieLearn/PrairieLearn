@@ -56,17 +56,6 @@ export function getCourseAgentActivity(events: CourseAgentEvent[]) {
     });
   }
 
-  const workspace = events.find((event) => event.type === 'workspace.seeded');
-  if (workspace) {
-    items.push({
-      key: `workspace-${workspace.sequence}`,
-      sequence: workspace.sequence,
-      label: 'Set up course',
-      status: 'completed',
-      kind: 'lifecycle',
-    });
-  }
-
   const operations = new Map<string, CourseAgentActivityItem>();
   for (const event of events) {
     if (!event.type.startsWith('tool.')) continue;
@@ -90,4 +79,22 @@ export function getCourseAgentActivity(events: CourseAgentEvent[]) {
   }
 
   return [...items, ...operations.values()].sort((left, right) => left.sequence - right.sequence);
+}
+
+export function getCourseAgentResponse(events: CourseAgentEvent[]) {
+  let response = '';
+  for (const event of events) {
+    if (event.type !== 'assistant.delta') continue;
+    const text = String(event.data.text ?? '');
+    response = event.data.replace ? text : response + text;
+  }
+  return response;
+}
+
+export function getCourseAgentDuration(startedAt: string, events: CourseAgentEvent[], now: number) {
+  const end = events.find((event) => ['agent.completed', 'run.failed'].includes(event.type));
+  return Math.max(
+    0,
+    Math.round(((end ? Date.parse(end.occurredAt) : now) - Date.parse(startedAt)) / 1000),
+  );
 }
