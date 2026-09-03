@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal, Never
 
 import lxml.html
+import prairielearn as pl
 import pytest
 import sympy
 
@@ -507,10 +508,13 @@ def test_invalid_limit_forms(operator: str, limits: str) -> None:
         ("integral", sympy.Integral(sympy.Symbol("k"), (sympy.Symbol("k"), 0, 1))),
     ],
 )
-def test_prepare_normalizes_binders(operator: str, correct: str) -> None:
+def test_prepare_normalizes_binders(operator: str, correct: sympy.Basic) -> None:
     state = data(correct)
     big_operator_input.prepare(html(operator=operator), state)
     answer = state["correct_answers"]["op"]
+    decoded = pl.decode_operator_expression(answer)
+    assert decoded["body"] == correct.args[0]
+    assert set(state["correct_answers"]) == {"op"}
     assert answer["_type"] == "operator_expression"
     assert answer["_version"] == 1
     assert answer["operator"] == operator
@@ -789,7 +793,7 @@ def test_limit_direction_input_parses_into_canonical_answer(direction: str) -> N
     )
     big_operator_input.parse(html(operator="limit"), state)
     assert state["submitted_answers"]["op"]["direction"] == direction
-    assert state["submitted_answers"]["op-direction"] == direction
+    assert "op-direction" not in state["submitted_answers"]
 
 
 @pytest.mark.parametrize("direction", ["", "sideways"])
@@ -851,13 +855,14 @@ def test_limit_direction_input_clears_stale_submission_when_blank_is_allowed() -
         }
     )
     big_operator_input.parse(markup, state)
-    assert state["submitted_answers"]["op-direction"] == "from-right"
+    assert state["submitted_answers"]["op"]["direction"] == "from-right"
+    assert "op-direction" not in state["submitted_answers"]
 
     state["raw_submitted_answers"]["op-direction"] = ""
     big_operator_input.parse(markup, state)
 
     assert state["submitted_answers"]["op"] == ""
-    assert state["submitted_answers"]["op-direction"] == ""
+    assert "op-direction" not in state["submitted_answers"]
 
 
 def test_fixed_limit_direction_is_injected_without_raw_field() -> None:
@@ -1137,7 +1142,7 @@ def test_rejects_malformed_structured_answers(
 ) -> None:
     answer = canonical()
     mutation(answer)
-    with pytest.raises(ValueError, match=r"well-formed|does not match"):
+    with pytest.raises(ValueError, match=r"Operator expression|does not match|field"):
         big_operator_input.prepare(html(operator="union"), data(answer))
 
 
@@ -1282,10 +1287,9 @@ def test_custom_functions_are_delegated_to_student_body_input() -> None:
     big_operator_input.parse(markup, state)
 
     answer = state["submitted_answers"]["op"]
+    decoded = pl.decode_operator_expression(answer)
     assert not state.get("format_errors")
-    assert big_operator_input._decode(answer["body"]) == sympy.Function("f")(
-        sympy.Symbol("k")
-    )
+    assert decoded["body"] == sympy.Function("f")(sympy.Symbol("k"))
 
 
 @pytest.mark.parametrize(
@@ -1307,6 +1311,7 @@ def test_parse_errors_are_rendered_with_their_fields(
     assert "Invalid" in rendered
     assert "More info…" in rendered
     assert "This field must be a set." in rendered
+    assert set(state["submitted_answers"]) == {"op"}
     valid_field_markup = rendered[
         rendered.index(f'id="symbolic-input-{valid_field}"') :
     ]
@@ -1577,6 +1582,7 @@ def test_parse_does_not_add_render_or_grade_phase_data_keys() -> None:
     big_operator_input.parse(html(operator="sum"), state)
 
     assert state["submitted_answers"]["op"]["_type"] == "operator_expression"
+    assert set(state["submitted_answers"]) == {"op"}
     assert "partial_scores" not in state
     assert "panel" not in state
 
@@ -1725,8 +1731,7 @@ def test_allowed_blank_and_independent_parse_errors() -> None:
     assert blank["submitted_answers"]["op"] == ""
     broken = data(raw={"op-start": "1", "op-end": "@", "op-body": "k"})
     big_operator_input.parse(html(operator="sum"), broken)
-    assert "op-start" in broken["submitted_answers"]
-    assert "op-body" in broken["submitted_answers"]
+    assert set(broken["submitted_answers"]) == {"op"}
     assert "op-end" in broken["format_errors"]
     assert broken["submitted_answers"]["op"] is None
 
@@ -1806,7 +1811,8 @@ def test_allowed_blank_modes_accept_the_selected_fields(
     )
 
     assert state["submitted_answers"]["op"] == ""
-    assert state["submitted_answers"][blank_field] == ""
+    assert blank_field not in state["submitted_answers"]
+    assert set(state["submitted_answers"]) == {"op"}
     assert not state.get("format_errors")
 
 

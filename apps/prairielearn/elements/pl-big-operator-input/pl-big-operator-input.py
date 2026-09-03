@@ -9,6 +9,7 @@ from typing import Any, Literal, cast
 import chevron
 import lxml.html
 import prairielearn as pl
+import prairielearn.operator_expression as poe
 import prairielearn.sympy_utils as psu
 import symbolic_input_adapter
 import sympy
@@ -32,7 +33,7 @@ type BuiltinOperator = Literal[
     "min",
     "max",
 ]
-type Operator = Literal["custom"] | BuiltinOperator
+type Operator = poe.OperatorExpressionOperator
 type BuiltinOperatorFn = Literal[
     "Sum",
     "Product",
@@ -45,7 +46,7 @@ type BuiltinOperatorFn = Literal[
     "Max",
 ]
 type OperatorFn = Literal["Custom"] | BuiltinOperatorFn
-type LimitFormat = Literal["bounds", "domain", "approach"]
+type LimitFormat = poe.OperatorExpressionLimit
 
 
 @dataclass(frozen=True, slots=True)
@@ -98,7 +99,7 @@ def _operator_fn_name(operator: Operator) -> OperatorFn:
     return "Custom" if operator == "custom" else OP_METADATA[operator].fn_name
 
 
-type DirectionName = Literal["two-sided", "from-left", "from-right"]
+type DirectionName = poe.OperatorExpressionDirection
 type DirectionSymbol = Literal["+-", "-", "+"]
 DIRECTION_SYMBOLS: dict[DirectionName, DirectionSymbol] = {
     "two-sided": "+-",
@@ -594,38 +595,47 @@ def _canonical(
 
 
 def _structured(config: RenderConfig, value: dict[str, Any]) -> dict[str, Any]:
-    keys = {"_type", "_version", "operator", "limits", "index", *config.components}
-    if config.operator == "custom":
-        keys.add("operator_latex")
-    if config.limits == "approach":
-        keys.add("direction")
-    if (
-        set(value) != keys
-        or value.get("_type") != "operator_expression"
-        or value.get("_version") != 1
-    ):
-        raise ValueError(
-            "Correct answer is not a well-formed version 1 operator expression."
-        )
-    if value["operator"] != config.operator or value["limits"] != config.limits:
+    decoded = poe.decode_operator_expression(value)
+    if decoded["operator"] != config.operator or decoded["limits"] != config.limits:
         raise ValueError(
             "Correct answer operator or limits form does not match the element."
         )
-    if config.operator == "custom" and value["operator_latex"] != config.operator_latex:
+    if (
+        config.operator == "custom"
+        and decoded.get("operator_latex") != config.operator_latex
+    ):
         raise ValueError(
             "Correct answer custom operator does not match operator-latex."
         )
-    if config.limits == "approach" and value["direction"] != config.direction:
+    if config.limits == "approach" and decoded.get("direction") != config.direction:
         raise ValueError("Correct answer direction does not match limit-direction.")
-    if _decode(value["index"]) != sympy.Symbol(config.index):
+    if decoded["index"] != sympy.Symbol(config.index):
         raise ValueError("Correct answer index does not match index-variable.")
-    values = {key: _decode(value[key]) for key in config.components}
-    if not all(isinstance(item, sympy.Basic) for item in values.values()):
-        raise ValueError(
-            "Every mathematical component must be PrairieLearn SymPy JSON."
-        )
-    _validate_component_values(config, cast(dict[str, sympy.Basic], values))
-    return _canonical(config, cast(dict[str, sympy.Basic], values))
+    values = _decoded_values(config, decoded)
+    _validate_component_values(config, values)
+    return _canonical(config, values)
+
+
+def _decoded_values(
+    config: RenderConfig, decoded: poe.OperatorExpression
+) -> dict[str, sympy.Basic]:
+    match config.limits:
+        case "bounds":
+            if decoded["limits"] != "bounds":
+                raise ValueError("Operator expression limits do not match the element.")
+            return {
+                "lower": decoded["lower"],
+                "upper": decoded["upper"],
+                "body": decoded["body"],
+            }
+        case "domain":
+            if decoded["limits"] != "domain":
+                raise ValueError("Operator expression limits do not match the element.")
+            return {"domain": decoded["domain"], "body": decoded["body"]}
+        case "approach":
+            if decoded["limits"] != "approach":
+                raise ValueError("Operator expression limits do not match the element.")
+            return {"target": decoded["target"], "body": decoded["body"]}
 
 
 def _validate_component_values(
@@ -1145,7 +1155,6 @@ def _component_allows_blank(config: RenderConfig, component: ResponseComponent) 
 def _parse_values(
     config: RenderConfig, data: pl.QuestionData
 ) -> dict[str, sympy.Basic] | None:
-    submitted = data.setdefault("submitted_answers", {})
     result: dict[str, sympy.Basic] = {}
     raw_answers = data.get("raw_submitted_answers", {})
     for component in config.components:
@@ -1153,7 +1162,6 @@ def _parse_values(
         if not str(raw_answers.get(name, "")).strip() and _component_allows_blank(
             config, component
         ):
-            submitted[name] = ""
             continue
         variables = (
             tuple(dict.fromkeys((*config.variables, config.index)))
@@ -1174,11 +1182,9 @@ def _parse_values(
         )
         if isinstance(parsed, psu.SympyParseFailure):
             data.setdefault("format_errors", {})[name] = parsed.error
-            submitted[name] = None
             continue
         if parsed.expr == "":
             raise AssertionError("Component parsing does not allow blank values.")
-        submitted[name] = parsed.json
         if requires_set and not _is_set_input(parsed.expr):
             data.setdefault("format_errors", {})[name] = "This field must be a set."
             continue
@@ -1191,54 +1197,47 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     config = _config(element_html, data)
     submitted = data.setdefault("submitted_answers", {})
     raw = data.get("raw_submitted_answers", {})
-    blank_components: list[ResponseComponent] = [
-        component
-        for component in config.response_components
-        if not str(raw.get(config.name(component), "")).strip()
-    ]
-    if blank_components and all(
-        _component_allows_blank(config, component) for component in blank_components
-    ):
-        _parse_values(config, data)
-        if "direction" in blank_components:
-            direction_name = config.name("direction")
-            submitted[direction_name] = ""
-            data.get("format_errors", {}).pop(direction_name, None)
-        errors = data.get("format_errors", {})
-        has_component_error = any(
-            config.name(component) in errors for component in config.response_components
-        )
-        submitted[config.answer_name] = None if has_component_error else ""
-        return
-    values = _parse_values(config, data)
-    direction = config.direction
-    if config.limits == "approach" and config.allow_direction_input:
-        direction_name = config.name("direction")
-        direction = str(raw.get(direction_name, "")).strip()
-        if direction not in DIRECTION_SYMBOLS:
-            data.setdefault("format_errors", {})[direction_name] = (
-                "Select a valid limit direction."
+    try:
+        blank_components: list[ResponseComponent] = [
+            component
+            for component in config.response_components
+            if not str(raw.get(config.name(component), "")).strip()
+        ]
+        if blank_components and all(
+            _component_allows_blank(config, component) for component in blank_components
+        ):
+            _parse_values(config, data)
+            if "direction" in blank_components:
+                data.get("format_errors", {}).pop(config.name("direction"), None)
+            errors = data.get("format_errors", {})
+            has_component_error = any(
+                config.name(component) in errors
+                for component in config.response_components
             )
-            submitted[direction_name] = None
-            submitted[config.answer_name] = None
+            submitted[config.answer_name] = None if has_component_error else ""
             return
-        submitted[direction_name] = direction
-        data.get("format_errors", {}).pop(direction_name, None)
-    submitted[config.answer_name] = (
-        _canonical(config, values, direction=direction) if values else None
-    )
+        values = _parse_values(config, data)
+        direction = config.direction
+        if config.limits == "approach" and config.allow_direction_input:
+            direction_name = config.name("direction")
+            direction = str(raw.get(direction_name, "")).strip()
+            if direction not in DIRECTION_SYMBOLS:
+                data.setdefault("format_errors", {})[direction_name] = (
+                    "Select a valid limit direction."
+                )
+                submitted[config.answer_name] = None
+                return
+            data.get("format_errors", {}).pop(direction_name, None)
+        submitted[config.answer_name] = (
+            _canonical(config, values, direction=direction) if values else None
+        )
+    finally:
+        for component in config.response_components:
+            submitted.pop(config.name(component), None)
 
 
 def _values(config: RenderConfig, structured: dict[str, Any]) -> dict[str, sympy.Basic]:
-    if not all(key in structured for key in config.components):
-        raise ValueError("Operator expression is missing mathematical components.")
-    return {
-        key: cast(
-            sympy.Basic,
-            _decode(structured[key]),
-        )
-        for key in config.components
-    }
+    return _decoded_values(config, poe.decode_operator_expression(structured))
 
 
 def _construct(
