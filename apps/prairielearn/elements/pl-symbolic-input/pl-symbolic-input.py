@@ -529,8 +529,6 @@ def render_with_config(config: RenderConfig, data: pl.QuestionData) -> str:
             return render_submission()
         case "answer":
             return render_answer()
-        case panel:  # type: ignore
-            assert_never(panel)
 
 
 def parse(element_html: str, data: pl.QuestionData) -> None:
@@ -776,67 +774,69 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
             # Substitute in imaginary unit symbol
             a_tru_str = str(_replace_imaginary_for_display(a_tru, imaginary_unit))
 
-    if result == "correct":
-        if a_tru_str == "":
-            data["raw_submitted_answers"][name] = ""
-        else:
-            correct_answers = [a_tru_str]
-            # Arithmetic-style variants below don't apply to sets/intervals.
-            if not allow_sets:
-                correct_answers.append(f"{a_tru_str} + 0")
-                if allow_complex:
-                    correct_answers.append(f"2j + {a_tru_str} - 3j + j")
-                if allow_trig:
-                    correct_answers.append(f"cos(0) * ( {a_tru_str} )")
-
-            data["raw_submitted_answers"][name] = random.choice(correct_answers)
-        data["partial_scores"][name] = {"score": 1, "weight": weight}
-
-    elif result == "incorrect":
-        offset = random.randint(1, 100)
-        for _ in range(2):
-            if not allow_sets and a_tru_str != "":
-                candidate = f"{a_tru_str} + {offset:d}"
-                candidate_sympy = a_tru + sympy.Integer(offset)
-            elif "all" in allowed_types or "expression" in allowed_types:
-                candidate = f"{offset:d}"
-                candidate_sympy = sympy.Integer(offset)
-            elif "set" in allowed_types or "finite-set" in allowed_types:
-                candidate = f"{{{offset:d}}}"
-                candidate_sympy = sympy.FiniteSet(offset)
-            elif "interval" in allowed_types:
-                candidate = f"({offset:d}, {offset + 1:d})"
-                candidate_sympy = sympy.Interval.open(offset, offset + 1)
+    match result:
+        case "correct":
+            if a_tru_str == "":
+                data["raw_submitted_answers"][name] = ""
             else:
-                raise AssertionError(f"Unexpected allowed types: {allowed_types}")
+                correct_answers = [a_tru_str]
+                # Arithmetic-style variants below don't apply to sets/intervals.
+                if not allow_sets:
+                    correct_answers.append(f"{a_tru_str} + 0")
+                    if allow_complex:
+                        correct_answers.append(f"2j + {a_tru_str} - 3j + j")
+                    if allow_trig:
+                        correct_answers.append(f"cos(0) * ( {a_tru_str} )")
 
-            if candidate_sympy != a_tru:
-                break
-            offset += 1
-        else:
-            raise AssertionError("Failed to generate an incorrect answer")
+                data["raw_submitted_answers"][name] = random.choice(correct_answers)
+            data["partial_scores"][name] = {"score": 1, "weight": weight}
 
-        data["raw_submitted_answers"][name] = candidate
-        data["partial_scores"][name] = {"score": 0, "weight": weight}
+        case "incorrect":
+            offset = random.randint(1, 100)
+            for _ in range(2):
+                if not allow_sets and a_tru_str != "":
+                    candidate = f"{a_tru_str} + {offset:d}"
+                    candidate_sympy = a_tru + sympy.Integer(offset)
+                elif "all" in allowed_types or "expression" in allowed_types:
+                    candidate = f"{offset:d}"
+                    candidate_sympy = sympy.Integer(offset)
+                elif "set" in allowed_types or "finite-set" in allowed_types:
+                    candidate = f"{{{offset:d}}}"
+                    candidate_sympy = sympy.FiniteSet(offset)
+                elif "interval" in allowed_types:
+                    candidate = f"({offset:d}, {offset + 1:d})"
+                    candidate_sympy = sympy.Interval.open(offset, offset + 1)
+                else:
+                    raise AssertionError(f"Unexpected allowed types: {allowed_types}")
 
-    elif result == "invalid":
-        invalid_answers = [
-            "n + 1.234",
-            "x + (1+2j)",
-            "1 and 0",
-            "aatan(n)",
-            "x + y",
-            "x +* 1",
-            "x + 1\\n",
-            "x # some text",
-        ]
-        if not allow_complex:
-            invalid_answers.append("3j")
-        if not allow_trig:
-            invalid_answers.append("cos(2)")
+                if candidate_sympy != a_tru:
+                    break
+                offset += 1
+            else:
+                raise AssertionError("Failed to generate an incorrect answer")
 
-        # TODO add back detailed format errors if this gets checked in the future
-        data["raw_submitted_answers"][name] = random.choice(invalid_answers)
-        data["format_errors"][name] = ""
-    else:
-        assert_never(result)
+            data["raw_submitted_answers"][name] = candidate
+            data["partial_scores"][name] = {"score": 0, "weight": weight}
+
+        case "invalid":
+            invalid_answers = [
+                "n + 1.234",
+                "x + (1+2j)",
+                "1 and 0",
+                "aatan(n)",
+                "x + y",
+                "x +* 1",
+                "x + 1\\n",
+                "x # some text",
+            ]
+            if not allow_complex:
+                invalid_answers.append("3j")
+            if not allow_trig:
+                invalid_answers.append("cos(2)")
+
+            # TODO add back detailed format errors if this gets checked in the future
+            data["raw_submitted_answers"][name] = random.choice(invalid_answers)
+            data["format_errors"][name] = ""
+
+        case _:
+            assert_never(result)
