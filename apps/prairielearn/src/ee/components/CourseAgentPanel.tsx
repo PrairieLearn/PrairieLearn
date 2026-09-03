@@ -1,6 +1,7 @@
 import { QueryClient, useMutation, useQuery } from '@tanstack/react-query';
-import { type ReactNode, useEffect, useState } from 'react';
-import { Alert, Form, Spinner } from 'react-bootstrap';
+import clsx from 'clsx';
+import { Fragment, type ReactNode, useEffect, useState } from 'react';
+import { Alert, Badge, Form, Spinner } from 'react-bootstrap';
 
 import type { CourseAgentEvent } from '@prairielearn/course-agent-protocol';
 import { QueryClientProviderDebug } from '@prairielearn/trpc/react';
@@ -9,14 +10,15 @@ import { OverlayTrigger } from '@prairielearn/ui';
 import { createCourseTrpcClient } from '../../trpc/course/client.js';
 import { TRPCProvider, useTRPC } from '../../trpc/course/context.js';
 
+import { CourseAgentMarkdown } from './CourseAgentMarkdown.js';
+import { getCourseAgentActivity, groupCourseAgentTurns } from './courseAgentEvents.js';
+
 function CourseAgentPanelInner({
   courseId,
   courseShortName,
-  diagnosticsEnabled,
 }: {
   courseId: string;
   courseShortName: string;
-  diagnosticsEnabled: boolean;
 }) {
   const trpc = useTRPC();
   const [open, setOpen] = useState(true);
@@ -28,14 +30,6 @@ function CourseAgentPanelInner({
     conversationId: string;
     sandboxId: string;
   } | null>(null);
-  const [showDiagnostics, setShowDiagnostics] = useState(false);
-
-  // Restore the browser-only diagnostics preference after hydration.
-  useEffect(() => {
-    if (diagnosticsEnabled) {
-      setShowDiagnostics(localStorage.getItem(`course-agent-diagnostics:${courseId}`) === '1');
-    }
-  }, [courseId, diagnosticsEnabled]);
   const snapshot = useQuery(
     trpc.courseAgent.get.queryOptions(
       conversation ?? { conversationId: '00000000-0000-0000-0000-000000000000', sandboxId: '' },
@@ -116,10 +110,7 @@ function CourseAgentPanelInner({
   }, [courseId, refetchSnapshot, streamRunId]);
 
   const busy = start.isPending || streamRunId !== null;
-  const toolEvents = events.filter((event) => event.type.startsWith('tool.'));
-  const messages = events.filter(
-    (event) => event.type === 'user.message' || event.type === 'assistant.delta',
-  );
+  const turns = groupCourseAgentTurns(events);
   const lastFailure = findLastEvent(events, 'run.failed');
   const lastCompletion = findLastEvent(events, 'agent.completed');
   const failure =
@@ -130,7 +121,10 @@ function CourseAgentPanelInner({
 
   return (
     <aside
-      className={`course-agent-panel ${open ? 'course-agent-panel-open' : 'course-agent-panel-collapsed'}`}
+      className={clsx('course-agent-panel', {
+        'course-agent-panel-open': open,
+        'course-agent-panel-collapsed': !open,
+      })}
       aria-label="Course agent panel"
     >
       <div className="course-agent-panel-rail border-start bg-light">
@@ -140,7 +134,7 @@ function CourseAgentPanelInner({
         >
           <button
             type="button"
-            className="btn btn-link text-primary p-2"
+            className="course-agent-launcher btn bg-primary-subtle text-primary border border-primary-subtle rounded-circle shadow-sm p-2"
             aria-label="Expand course agent"
             onClick={() => setOpen(true)}
           >
@@ -152,28 +146,29 @@ function CourseAgentPanelInner({
       <div className="course-agent-panel-content border-start bg-light">
         <header className="course-agent-header border-bottom bg-white px-3 py-3">
           <div className="d-flex align-items-center gap-2">
-            <OverlayTrigger
-              placement="bottom"
-              tooltip={{ body: 'Collapse', props: { id: 'course-agent-collapse-tooltip' } }}
-            >
-              <button
-                type="button"
-                className="btn btn-sm btn-light"
-                aria-label="Collapse course agent"
-                onClick={() => setOpen(false)}
-              >
-                <i className="bi bi-arrow-bar-right" />
-              </button>
-            </OverlayTrigger>
             <strong className="d-flex align-items-center gap-2">
               <i className="bi bi-stars text-primary" aria-hidden="true" /> Course agent
             </strong>
             <span className="text-muted small text-truncate ms-auto">{courseShortName}</span>
+            <button
+              type="button"
+              className="btn btn-sm btn-light ms-2 d-none d-xl-inline-flex"
+              aria-label="Collapse course agent"
+              onClick={() => setOpen(false)}
+            >
+              <i className="bi bi-arrow-bar-right" aria-hidden="true" />
+            </button>
+            <button
+              type="button"
+              className="btn-close ms-2 d-xl-none"
+              aria-label="Close course agent"
+              onClick={() => setOpen(false)}
+            />
           </div>
         </header>
 
         <div className="course-agent-transcript px-4 py-4" aria-live="polite">
-          {messages.length === 0 && (
+          {turns.length === 0 && (
             <div className="course-agent-empty text-center text-muted px-3 py-5">
               <i className="bi bi-stars fs-2 text-primary" aria-hidden="true" />
               <p className="fw-semibold text-body mt-3 mb-1">What would you like to build?</p>
@@ -182,67 +177,70 @@ function CourseAgentPanelInner({
               </p>
             </div>
           )}
-          {messages.map((event) =>
-            event.type === 'user.message' ? (
-              <UserMessage key={event.sequence}>{String(event.data.text ?? '')}</UserMessage>
-            ) : (
-              <AgentMessage key={event.sequence}>{String(event.data.text ?? '')}</AgentMessage>
-            ),
-          )}
-          {toolEvents.length > 0 && <ToolCallGroup events={toolEvents} busy={busy} />}
-          {busy && (
+          {turns.map((turn, index) => {
+            const active = busy && index === turns.length - 1;
+            const messages = turn.events.filter((event) => event.type === 'assistant.delta');
+            const turnFailure = findLastEvent(turn.events, 'run.failed');
+            return (
+              <div key={turn.userMessage.sequence} className="course-agent-turn">
+                <UserMessage>{String(turn.userMessage.data.text ?? '')}</UserMessage>
+                <AgentMessage>
+                  <ToolCallGroup events={turn.events} busy={active} />
+                  {messages.map((event) => (
+                    <CourseAgentMarkdown key={event.sequence}>
+                      {String(event.data.text ?? '')}
+                    </CourseAgentMarkdown>
+                  ))}
+                  {turnFailure && (
+                    <Alert variant="danger" className="mb-0">
+                      {String(turnFailure.data.message ?? 'The request could not be completed.')}
+                    </Alert>
+                  )}
+                </AgentMessage>
+              </div>
+            );
+          })}
+          {busy && turns.length === 0 && (
             <div className="d-flex align-items-center gap-2 small text-muted mb-3">
-              <Spinner size="sm" /> Course agent is working…
+              <Spinner size="sm" /> Starting agent…
             </div>
           )}
-          {(snapshotError || failure) && (
-            <Alert variant="danger">
-              {snapshotError ?? String(failure?.data.message ?? 'The run failed.')}
-            </Alert>
-          )}
+          {snapshotError && !failure && <Alert variant="danger">{snapshotError}</Alert>}
           {start.error && <Alert variant="danger">{start.error.message}</Alert>}
-          {diagnosticsEnabled && (
-            <div className="border-top pt-3 mt-3">
-              <Form.Check
-                type="switch"
-                id="course-agent-diagnostics"
-                label="Diagnostic mode"
-                checked={showDiagnostics}
-                onChange={(event) => {
-                  const checked = event.currentTarget.checked;
-                  setShowDiagnostics(checked);
-                  localStorage.setItem(`course-agent-diagnostics:${courseId}`, checked ? '1' : '0');
-                }}
-              />
-              {showDiagnostics && (
-                <Diagnostics
-                  conversation={conversation}
-                  runId={streamRunId}
-                  offset={streamOffset}
-                  events={events}
-                  status={snapshot.data?.status ?? (busy ? 'running' : 'offline')}
-                />
-              )}
-            </div>
-          )}
+          <div className="border-top pt-3 mt-3">
+            <Diagnostics
+              conversation={conversation}
+              runId={streamRunId}
+              offset={streamOffset}
+              events={events}
+              status={busy ? 'running' : (snapshot.data?.status ?? 'offline')}
+            />
+          </div>
         </div>
 
         <footer className="course-agent-footer border-top bg-white p-3">
           <Form
             onSubmit={(event) => {
               event.preventDefault();
+              if (busy || !prompt.trim()) return;
               start.mutate({ conversationId: conversation?.conversationId, prompt });
             }}
           >
             <Form.Control
               as="textarea"
-              rows={3}
+              rows={2}
               className="course-agent-chat-input shadow-none"
               aria-label="Message course agent"
               placeholder="Ask anything about your course…"
               value={prompt}
               disabled={busy}
               onChange={(event) => setPrompt(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) {
+                  event.preventDefault();
+                  event.currentTarget.form?.requestSubmit();
+                }
+              }}
             />
             <div className="d-flex align-items-center mt-2">
               <span className="small text-muted">Codex</span>
@@ -277,7 +275,7 @@ function UserMessage({ children }: { children: ReactNode }) {
 function AgentMessage({ children }: { children: ReactNode }) {
   return (
     <div
-      className="course-agent-agent-message mb-4"
+      className="course-agent-agent-message d-flex flex-column gap-2 mb-4"
       role="article"
       aria-label="Message from PrairieLearn"
     >
@@ -287,41 +285,53 @@ function AgentMessage({ children }: { children: ReactNode }) {
 }
 
 function ToolCallGroup({ events, busy }: { events: CourseAgentEvent[]; busy: boolean }) {
-  const [expanded, setExpanded] = useState(true);
-  const starts = events.filter((event) => event.type === 'tool.started');
+  const [expanded, setExpanded] = useState(false);
+  const activity = getCourseAgentActivity(events);
+  const toolCount = activity.filter((item) => item.kind === 'tool').length;
+  const visible = expanded;
+  if (activity.length === 0 && !busy) return null;
   return (
-    <div className="course-agent-tool-group mb-4">
+    <div className="course-agent-tool-group">
       <button
         type="button"
         className="course-agent-tool-group-toggle btn btn-sm d-flex align-items-center gap-2 border-0 px-0 py-1 text-muted"
-        aria-expanded={expanded}
+        aria-expanded={visible}
         onClick={() => setExpanded(!expanded)}
       >
         <span className="flex-grow-1 text-start">
           {busy
             ? 'Working'
-            : `Made ${starts.length} tool ${starts.length === 1 ? 'call' : 'calls'}`}
+            : toolCount > 0
+              ? `Made ${toolCount} tool ${toolCount === 1 ? 'call' : 'calls'}`
+              : 'Set up agent'}
         </span>
-        <i className={`bi bi-chevron-${expanded ? 'down' : 'up'}`} aria-hidden="true" />
+        {busy ? (
+          <Spinner size="sm" />
+        ) : (
+          <i
+            className={clsx('bi', visible ? 'bi-chevron-up' : 'bi-chevron-down')}
+            aria-hidden="true"
+          />
+        )}
       </button>
-      {expanded && (
+      {visible && (
         <div className="d-flex flex-column gap-1 border-start ms-2 mt-1 ps-3 py-1">
-          {starts.map((event) => {
-            const completed = events.find(
-              (candidate) =>
-                candidate.data.operationId === event.data.operationId &&
-                ['tool.completed', 'tool.failed'].includes(candidate.type),
-            );
-            return (
-              <div key={event.sequence} className="small text-muted">
-                <i
-                  className={`bi bi-fw me-1 ${completed ? (completed.type === 'tool.failed' ? 'bi-x-lg text-danger' : 'bi-check-lg text-success') : 'bi-three-dots'}`}
-                  aria-hidden="true"
-                />
-                {String(event.data.tool ?? 'Use tool')}
-              </div>
-            );
-          })}
+          {activity.map((item) => (
+            <div key={item.key} className="small text-muted d-flex align-items-start gap-1">
+              <i
+                className={clsx('bi bi-fw flex-shrink-0', {
+                  'bi-x-lg text-danger': item.status === 'failed',
+                  'bi-check-lg text-success': item.status === 'completed',
+                  'bi-three-dots': item.status === 'pending',
+                })}
+                aria-hidden="true"
+              />
+              <span className="text-break">
+                {item.label}
+                {item.status === 'pending' ? '…' : ''}
+              </span>
+            </div>
+          ))}
         </div>
       )}
     </div>
@@ -343,41 +353,90 @@ function Diagnostics({
 }) {
   const agentStarted = findLastEvent(events, 'agent.started');
   const usage = findLastEvent(events, 'usage.updated');
-  const docs = findLastEvent(events, 'docs.mounted') ?? findLastEvent(events, 'docs.unavailable');
-  const validation =
-    findLastEvent(events, 'validation.completed') ?? findLastEvent(events, 'validation.failed');
+  const docs = findLastEvent(events, 'docs.mounted', 'docs.unavailable');
+  const validation = findLastEvent(events, 'validation.completed', 'validation.failed');
+  const statusLabel =
+    {
+      offline: 'Not started',
+      starting: 'Starting',
+      running: 'Working',
+      waiting_for_user: 'Ready',
+      failed: 'Needs attention',
+    }[status] ?? status;
+  const identifiers = [
+    ['Conversation', conversation?.conversationId ?? 'Not started'],
+    ['Sandbox', conversation?.sandboxId ?? 'Not started'],
+    ['Run', runId ?? 'Idle'],
+    ['Codex thread', String(agentStarted?.data.threadId ?? 'Pending')],
+    ['Documentation', docs?.type === 'docs.mounted' ? 'Mounted' : docs ? 'Web search' : 'Pending'],
+    [
+      'Validation',
+      validation?.type === 'validation.completed' ? 'Passed' : validation ? 'Failed' : 'Pending',
+    ],
+  ];
+  const tokenFields = [
+    ['input_tokens', 'Input'],
+    ['cached_input_tokens', 'Cached input'],
+    ['cache_write_input_tokens', 'Cache writes'],
+    ['output_tokens', 'Output'],
+    ['reasoning_output_tokens', 'Reasoning'],
+  ];
   return (
-    <details className="small mt-2" open>
-      <summary>Live conversation state</summary>
-      <dl className="course-agent-diagnostics mt-2 mb-0">
-        <dt>Status</dt>
-        <dd>{status}</dd>
-        <dt>Conversation</dt>
-        <dd>{conversation?.conversationId ?? 'Not started'}</dd>
-        <dt>Sandbox</dt>
-        <dd>{conversation?.sandboxId ?? 'Not started'}</dd>
-        <dt>Run</dt>
-        <dd>{runId ?? 'Idle'}</dd>
-        <dt>Codex thread</dt>
-        <dd>{String(agentStarted?.data.threadId ?? 'Pending')}</dd>
-        <dt>Stream cursor</dt>
-        <dd>{offset}</dd>
-        <dt>Events</dt>
-        <dd>{events.length}</dd>
-        <dt>Documentation</dt>
-        <dd>{docs?.type ?? 'Pending'}</dd>
-        <dt>Validation</dt>
-        <dd>{validation?.type ?? 'Pending'}</dd>
-        <dt>Usage</dt>
-        <dd>{usage ? JSON.stringify(usage.data) : 'Pending'}</dd>
-      </dl>
+    <details className="course-agent-diagnostic-card small border rounded bg-white">
+      <summary className="d-flex align-items-center gap-2 p-3">
+        <i className="bi bi-activity text-muted" aria-hidden="true" />
+        <span className="fw-medium">Live conversation state</span>
+        <Badge
+          bg={status === 'failed' ? 'danger' : status === 'running' ? 'primary' : 'secondary'}
+          className="ms-auto"
+        >
+          {statusLabel}
+        </Badge>
+        <i className="course-agent-diagnostic-chevron bi bi-chevron-down" aria-hidden="true" />
+      </summary>
+      <div className="border-top p-3">
+        <dl className="course-agent-diagnostics mb-3">
+          {identifiers.map(([label, value]) => (
+            <Fragment key={label}>
+              <dt>{label}</dt>
+              <dd>
+                <code className="text-body">{value}</code>
+              </dd>
+            </Fragment>
+          ))}
+        </dl>
+        <div className="d-flex flex-wrap gap-2 text-muted mb-3">
+          <span className="rounded bg-light px-2 py-1">
+            {events.length.toLocaleString('en-US')} events
+          </span>
+          <span className="rounded bg-light px-2 py-1">
+            Stream cursor: {offset.toLocaleString('en-US')}
+          </span>
+        </div>
+        <div className="fw-medium mb-2">Token usage</div>
+        {usage ? (
+          <dl className="course-agent-token-usage mb-0">
+            {tokenFields.map(([key, label]) => {
+              const value = usage.data[key];
+              return typeof value === 'number' ? (
+                <div key={key} className="d-flex justify-content-between gap-3 py-1">
+                  <dt className="text-muted fw-normal">{label}</dt>
+                  <dd className="mb-0 font-monospace">{value.toLocaleString('en-US')}</dd>
+                </div>
+              ) : null;
+            })}
+          </dl>
+        ) : (
+          <p className="text-muted mb-0">Available after the agent responds.</p>
+        )}
+      </div>
     </details>
   );
 }
 
-function findLastEvent(events: CourseAgentEvent[], type: CourseAgentEvent['type']) {
+function findLastEvent(events: CourseAgentEvent[], ...types: CourseAgentEvent['type'][]) {
   for (let index = events.length - 1; index >= 0; index--) {
-    if (events[index].type === type) return events[index];
+    if (types.includes(events[index].type)) return events[index];
   }
   return undefined;
 }
@@ -386,12 +445,10 @@ export function CourseAgentPanel({
   trpcCsrfToken,
   courseId,
   courseShortName,
-  diagnosticsEnabled,
 }: {
   trpcCsrfToken: string;
   courseId: string;
   courseShortName: string;
-  diagnosticsEnabled: boolean;
 }) {
   const [queryClient] = useState(() => new QueryClient());
   const [trpcClient] = useState(() =>
@@ -400,11 +457,7 @@ export function CourseAgentPanel({
   return (
     <QueryClientProviderDebug client={queryClient}>
       <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
-        <CourseAgentPanelInner
-          courseId={courseId}
-          courseShortName={courseShortName}
-          diagnosticsEnabled={diagnosticsEnabled}
-        />
+        <CourseAgentPanelInner courseId={courseId} courseShortName={courseShortName} />
       </TRPCProvider>
     </QueryClientProviderDebug>
   );
