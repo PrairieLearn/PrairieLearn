@@ -1,5 +1,6 @@
 <div
   class="pl-big-operator-input flex-nowrap"
+  role="group"
   aria-label="Big operator expression input"
   style="--pl-big-operator-input-body-size: {{body_size}}ch; --pl-big-operator-input-limit-size: {{limit_size}}ch"
 >
@@ -55,7 +56,6 @@
                 class="form-select form-select-sm{{#invalid}} is-invalid{{/invalid}}"
                 id="{{name}}"
                 name="{{name}}"
-                aria-label="Limit direction"
               >
                 <option value="">?</option>
                 {{#options}}
