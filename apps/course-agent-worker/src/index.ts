@@ -630,7 +630,7 @@ export class CourseAgentCoordinator {
       const rates = this.usageRates();
       const prompt = `${SYSTEM_PROMPT}\n\nInstructor request:\n${request.prompt}`;
       const command = [
-        'codex exec --json --ephemeral --ignore-user-config --skip-git-repo-check --search',
+        'codex --search exec --json --ephemeral --ignore-user-config --skip-git-repo-check',
         '--sandbox workspace-write --approve-for-me',
         `--config ${shellQuote('mcp_servers.course_agent.command="python3"')}`,
         `--config ${shellQuote('mcp_servers.course_agent.args=["/opt/prairielearn/course_agent_mcp.py"]')}`,
