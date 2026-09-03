@@ -1,6 +1,5 @@
-.wrangler
-node_modules
-src
-.dev.vars*
-.env*
-config.json
+*
+!Dockerfile
+!scripts/
+scripts/*
+!scripts/run-codex.mjs

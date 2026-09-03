@@ -58,4 +58,11 @@ model request. If Redis no longer has the completed stream, the same adapter rec
 the authorized workspace snapshot. This does not persist the browser conversation across reloads;
 conversation persistence belongs to the later persistence PR.
 
+The sandbox runs Codex app-server over stdio to forward final-answer text deltas as they arrive.
+Commentary and reasoning are not displayed. Rebuild/restart the local Worker after changing its
+Dockerfile or runner script. The Docker build context excludes local configuration and credentials.
+To verify the runner against the pinned Codex binary without paid requests, set
+`COURSE_AGENT_TEST_CODEX` to that binary's absolute path when running the Worker tests; its provider
+is replaced by a localhost-only mock with a fake key.
+
 Cloud resources and credentials used by later stack layers are intentionally not configured here.

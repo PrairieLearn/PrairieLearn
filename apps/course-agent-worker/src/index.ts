@@ -11,8 +11,9 @@ import {
 } from '@prairielearn/course-agent-protocol';
 
 import { authorizeRun, authorizeSnapshot } from './auth.js';
-import { finalResponse, parseCodexLine, toolEvents } from './codex-events.js';
+import { parseCodexLine } from './codex-events.js';
 import { codexFailureMessage } from './codex-output.js';
+import { CodexStream } from './codex-stream.js';
 import { activeRunExpired, sandboxDeadline } from './lifecycle.js';
 import { proxyOpenAiRequest } from './provider.js';
 
@@ -318,16 +319,19 @@ export class CourseAgentCoordinator {
       let buffer = '';
       let eventChain = Promise.resolve();
       const prompt = `${SYSTEM_PROMPT}\n\nInstructor request:\n${request.prompt}`;
+      const stream = new CodexStream();
+      const consumeLine = (line: string) => {
+        const event = parseCodexLine(line);
+        if (!event) return;
+        for (const emitted of stream.consume(event)) {
+          eventChain = eventChain.then(() =>
+            this.append(emitted.type, emitted.data, request.runId),
+          );
+        }
+      };
       const command = [
-        'codex --search exec --json --ephemeral --ignore-user-config --skip-git-repo-check',
-        '--approve-for-me',
-        `--config ${shellQuote('model_provider="course_agent"')}`,
-        `--config ${shellQuote('model_providers.course_agent.name="OpenAI"')}`,
-        `--config ${shellQuote('model_providers.course_agent.base_url="https://api.openai.com/v1"')}`,
-        `--config ${shellQuote('model_providers.course_agent.env_key="OPENAI_API_KEY"')}`,
-        `--config ${shellQuote('model_providers.course_agent.wire_api="responses"')}`,
-        `--config ${shellQuote('model_providers.course_agent.supports_websockets=false')}`,
-        `--model ${shellQuote(this.env.OPENAI_MODEL)}`,
+        'node /opt/course-agent/run-codex.mjs',
+        shellQuote(this.env.OPENAI_MODEL),
         shellQuote(prompt),
       ].join(' ');
       const codex = await sandbox.exec(command, {
@@ -340,31 +344,13 @@ export class CourseAgentCoordinator {
           buffer += data;
           const lines = buffer.split('\n');
           buffer = lines.pop() ?? '';
-          for (const line of lines) {
-            const event = parseCodexLine(line);
-            if (!event) continue;
-            if (event.type === 'thread.started' && typeof event.thread_id === 'string') {
-              eventChain = eventChain.then(() =>
-                this.append('agent.started', { threadId: event.thread_id }, request.runId),
-              );
-            }
-            for (const toolEvent of toolEvents(event)) {
-              eventChain = eventChain.then(() =>
-                this.append(toolEvent.type, { ...toolEvent.data }, request.runId),
-              );
-            }
-            if (event.type === 'turn.completed' && typeof event.usage === 'object' && event.usage) {
-              eventChain = eventChain.then(() =>
-                this.append('usage.updated', event.usage as Record<string, unknown>, request.runId),
-              );
-            }
-          }
+          for (const line of lines) consumeLine(line);
         },
       });
+      if (buffer.trim()) consumeLine(buffer);
       await eventChain;
       if (!codex.success) throw new Error(codexFailureMessage(codex.stdout, codex.stderr));
-      const response = finalResponse(codex.stdout);
-      await this.append('assistant.delta', { text: response }, request.runId);
+      const response = stream.response || 'Done.';
       await this.append('agent.completed', { response }, request.runId);
       const finished = await this.update(
         {

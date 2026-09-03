@@ -5,5 +5,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends python3 python-
 
 RUN npm install -g @openai/codex@0.153.0-alpha.5
 
+COPY scripts/run-codex.mjs /opt/course-agent/run-codex.mjs
+
 ENV COMMAND_TIMEOUT_MS=900000
 EXPOSE 3000

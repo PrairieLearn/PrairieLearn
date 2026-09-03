@@ -212,8 +212,11 @@ function CourseAgentPanelInner({
                   </AssistantMessage>
                 ),
               )}
-              {status === 'submitted' && (
-                <div className="d-flex align-items-center gap-2 small text-muted mb-3">
+              {busy && (
+                <div
+                  role="status"
+                  className="d-flex align-items-center gap-2 small text-muted mb-3"
+                >
                   <Spinner size="sm" /> Working…
                 </div>
               )}

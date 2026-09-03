@@ -5,6 +5,88 @@ import { createTest, expect } from './fixtures.js';
 
 const test = createTest({ courseAgentRuntime: 'fake', features: { 'course-agent': true } });
 
+test('keeps compact working indicators visible and renders text before turn completion', async ({
+  page,
+  courseInstance,
+}, testInfo) => {
+  await page.addInitScript(() => {
+    const originalFetch = window.fetch.bind(window);
+    window.fetch = async (input, init) => {
+      const url = input instanceof Request ? input.url : String(input);
+      if (!url.includes('/course_agent/stream?')) return originalFetch(input, init);
+      const encoder = new TextEncoder();
+      const stream = new ReadableStream<Uint8Array>({
+        start(controller) {
+          controller.enqueue(
+            encoder.encode(
+              `data: ${JSON.stringify({
+                type: 'start',
+                messageId: new URL(url, location.origin).searchParams.get('runId'),
+              })}\n\n`,
+            ),
+          );
+          window.addEventListener('test-course-chunk', (event) => {
+            const chunk = (event as CustomEvent).detail;
+            if (chunk === null) controller.close();
+            else controller.enqueue(encoder.encode(`data: ${JSON.stringify(chunk)}\n\n`));
+          });
+        },
+      });
+      return new Response(stream, { headers: { 'content-type': 'text/event-stream' } });
+    };
+  });
+  await page.goto(`/pl/course/${courseInstance.course_id}/course_admin/instances`);
+  const panel = page.getByRole('complementary', { name: 'Course agent panel' });
+  await panel.getByRole('textbox', { name: 'Message course agent' }).fill('Stream a response');
+  await panel.getByRole('button', { name: 'Send message', exact: true }).click();
+  const reply = panel.getByRole('article', { name: 'Message from PrairieLearn' });
+  await expect(reply).toHaveCount(1);
+  await page.evaluate(() =>
+    window.dispatchEvent(
+      new CustomEvent('test-course-chunk', {
+        detail: {
+          type: 'tool-input-available',
+          toolCallId: 'read',
+          toolName: 'activity',
+          input: { label: 'Reading README.md' },
+        },
+      }),
+    ),
+  );
+  await expect(reply.getByText('Reading README.md', { exact: true })).toBeVisible();
+  const working = panel.getByRole('status');
+  await expect(working).toHaveText('Working…');
+  const spinner = reply.locator('.spinner-border');
+  await expect(spinner).toHaveCSS('width', '16px');
+  await expect(spinner).toHaveCSS('height', '16px');
+  expect((await working.boundingBox())!.y).toBeGreaterThan((await reply.boundingBox())!.y);
+  await page.screenshot({ path: testInfo.outputPath('course-chat-working.png') });
+  await page.evaluate(() => {
+    for (const chunk of [
+      { type: 'tool-output-available', toolCallId: 'read', output: { label: 'Read README.md' } },
+      { type: 'text-start', id: 'text' },
+      { type: 'text-delta', id: 'text', delta: 'First words' },
+    ]) {
+      window.dispatchEvent(new CustomEvent('test-course-chunk', { detail: chunk }));
+    }
+  });
+  await expect(reply.getByText('First words', { exact: true })).toBeVisible();
+  await expect(working).toBeVisible();
+  await expect(panel.getByRole('button', { name: 'Send message', exact: true })).toBeDisabled();
+  await page.evaluate(() => {
+    for (const chunk of [
+      { type: 'text-delta', id: 'text', delta: ', then the rest.' },
+      { type: 'text-end', id: 'text' },
+      { type: 'finish' },
+      null,
+    ]) {
+      window.dispatchEvent(new CustomEvent('test-course-chunk', { detail: chunk }));
+    }
+  });
+  await expect(reply.getByText('First words, then the rest.', { exact: true })).toBeVisible();
+  await expect(working).toHaveCount(0);
+});
+
 test('reconnects an interrupted response without duplicating the turn or starting a new run', async ({
   page,
   courseInstance,

@@ -21,7 +21,9 @@ export function ProgressStatus({
     <div className="d-flex flex-row align-items-center gap-1 small text-muted">
       {run(() => {
         if (state === 'streaming' || showSpinner) {
-          return <div className="spinner-border spinner-border-text" aria-hidden="true" />;
+          return (
+            <div className="spinner-border spinner-border-sm flex-shrink-0" aria-hidden="true" />
+          );
         } else if (state === 'success') {
           return <i className="bi bi-fw bi-check-lg text-success" aria-hidden="true" />;
         } else {
