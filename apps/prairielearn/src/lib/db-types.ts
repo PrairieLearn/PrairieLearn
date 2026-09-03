@@ -728,18 +728,20 @@ export const CourseAgentRunSchema = z.object({
 });
 export type CourseAgentRun = z.infer<typeof CourseAgentRunSchema>;
 
+const CourseAgentUsageCounterSchema = z.coerce.number().int().nonnegative();
+
 export const CourseAgentRunUsageSchema = z.object({
-  cache_read_tokens: IdSchema,
-  cache_write_tokens: IdSchema,
-  estimated_cost_milli_dollars: IdSchema,
+  cache_read_tokens: CourseAgentUsageCounterSchema,
+  cache_write_tokens: CourseAgentUsageCounterSchema,
+  estimated_cost_milli_dollars: CourseAgentUsageCounterSchema,
   finalized_at: DateFromISOString.nullable(),
-  input_tokens: IdSchema,
+  input_tokens: CourseAgentUsageCounterSchema,
   model: z.string(),
-  normalized_total_tokens: IdSchema,
-  output_tokens: IdSchema,
+  normalized_total_tokens: CourseAgentUsageCounterSchema,
+  output_tokens: CourseAgentUsageCounterSchema,
   provider: z.string(),
-  provider_cost_milli_dollars: IdSchema.nullable(),
-  reasoning_tokens: IdSchema.nullable(),
+  provider_cost_milli_dollars: CourseAgentUsageCounterSchema.nullable(),
+  reasoning_tokens: CourseAgentUsageCounterSchema.nullable(),
   run_id: z.uuid(),
   updated_at: DateFromISOString,
 });

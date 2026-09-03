@@ -1,5 +1,5 @@
 import { difference } from 'es-toolkit';
-import { afterAll, beforeAll, describe, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type z from 'zod';
 
 import { describeDatabase } from '@prairielearn/postgres-tools';
@@ -38,6 +38,29 @@ const unusedSchemas = new Set([
   'GroupUserRoleSchema',
   'GroupLogSchema',
 ]);
+
+describe('CourseAgentRunUsageSchema', () => {
+  it('accepts zero-valued usage counters returned by PostgreSQL', () => {
+    const usage = DbSchemas.CourseAgentRunUsageSchema.parse({
+      cache_read_tokens: '0',
+      cache_write_tokens: '0',
+      estimated_cost_milli_dollars: '0',
+      finalized_at: null,
+      input_tokens: '0',
+      model: 'pending',
+      normalized_total_tokens: '0',
+      output_tokens: '0',
+      provider: 'pending',
+      provider_cost_milli_dollars: null,
+      reasoning_tokens: null,
+      run_id: '00000000-0000-4000-8000-000000000000',
+      updated_at: new Date(),
+    });
+
+    expect(usage.input_tokens).toBe(0);
+    expect(usage.estimated_cost_milli_dollars).toBe(0);
+  });
+});
 
 function tableNameToSchemaName(tableName: string) {
   if (tableName in schemaNameOverrides) {
