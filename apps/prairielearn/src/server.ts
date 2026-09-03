@@ -749,9 +749,7 @@ export async function initExpress(): Promise<Express> {
   app.use('/pl/course/:course_id(\\d+)/trpc', courseTrpcRouter);
   app.use(
     '/pl/course/:course_id(\\d+)/course_agent',
-    await enterpriseOnly(
-      async () => (await import('./ee/pages/courseAgent/courseAgent.js')).default,
-    ),
+    (await import('./ee/pages/courseAgent/courseAgent.js')).default,
   );
 
   // Serve element statics. As with core PrairieLearn assets and files served
