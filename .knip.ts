@@ -183,6 +183,11 @@ const config: KnipConfig = {
       // Tell knip not to flag these as unused.
       ignoreDependencies: [...autoDetectedDeps, ...EXTERNAL_ELEMENT_DEPS, ...DEPS_OF_DEAD_CODE],
     },
+    'apps/course-agent-worker': {
+      // This executable is copied directly into the sandbox container image.
+      entry: ['bin/*.mjs'],
+      project: ['**/*.{ts,mjs}'],
+    },
     'apps/workspace-host': {
       project: ['**/*.{ts,cts,mts,tsx}'],
     },
