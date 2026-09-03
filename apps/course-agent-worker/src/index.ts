@@ -601,6 +601,12 @@ export class CourseAgentCoordinator {
       const command = [
         'codex --search exec --json --ephemeral --ignore-user-config --skip-git-repo-check',
         '--approve-for-me',
+        `--config ${shellQuote('model_provider="course_agent"')}`,
+        `--config ${shellQuote('model_providers.course_agent.name="OpenAI"')}`,
+        `--config ${shellQuote('model_providers.course_agent.base_url="https://api.openai.com/v1"')}`,
+        `--config ${shellQuote('model_providers.course_agent.env_key="OPENAI_API_KEY"')}`,
+        `--config ${shellQuote('model_providers.course_agent.wire_api="responses"')}`,
+        `--config ${shellQuote('model_providers.course_agent.supports_websockets=false')}`,
         `--config ${shellQuote('mcp_servers.course_agent.command="python3"')}`,
         `--config ${shellQuote('mcp_servers.course_agent.args=["/opt/prairielearn/course_agent_mcp.py"]')}`,
         `--model ${shellQuote(this.env.OPENAI_MODEL)}`,
