@@ -24,6 +24,7 @@ function CourseAgentPanelInner({
   const [events, setEvents] = useState<CourseAgentEvent[]>([]);
   const [streamOffset, setStreamOffset] = useState(0);
   const [streamRunId, setStreamRunId] = useState<string | null>(null);
+  const [startingNewConversation, setStartingNewConversation] = useState(false);
   const [conversation, setConversation] = useState<{
     conversationId: string;
     sandboxId: string;
@@ -34,11 +35,12 @@ function CourseAgentPanelInner({
   );
   const conversations = useQuery(trpc.courseAgent.list.queryOptions());
   const latestConversation = conversations.data?.conversations[0];
-  const selectedConversation =
-    conversation ??
-    (latestConversation
-      ? { conversationId: latestConversation.id, sandboxId: latestConversation.sandbox_id }
-      : null);
+  const selectedConversation = startingNewConversation
+    ? null
+    : (conversation ??
+      (latestConversation
+        ? { conversationId: latestConversation.id, sandboxId: latestConversation.sandbox_id }
+        : null));
   const snapshot = useQuery(
     trpc.courseAgent.get.queryOptions(
       selectedConversation ?? {
@@ -54,6 +56,7 @@ function CourseAgentPanelInner({
     trpc.courseAgent.start.mutationOptions({
       onSuccess: (result) => {
         setConversation(result);
+        setStartingNewConversation(false);
         setPrompt('');
         setStreamOffset(0);
         setStreamRunId(result.runId);
@@ -172,33 +175,58 @@ function CourseAgentPanelInner({
               <i className="bi bi-stars text-primary" aria-hidden="true" /> Course agent
             </strong>
             {conversations.data?.conversations.length ? (
-              <Dropdown className="min-width-0 ms-auto">
-                <Dropdown.Toggle
-                  size="sm"
-                  variant="light"
-                  className="course-agent-conversation-picker border bg-white text-truncate"
+              <div className="d-flex align-items-center gap-1 min-width-0 ms-auto">
+                <OverlayTrigger
+                  placement="bottom"
+                  tooltip={{
+                    body: 'New conversation',
+                    props: { id: 'course-agent-new-conversation-tooltip' },
+                  }}
                 >
-                  {selectedConversation
-                    ? (conversations.data.conversations.find(
-                        (item) => item.id === selectedConversation.conversationId,
-                      )?.title ?? courseShortName)
-                    : courseShortName}
-                </Dropdown.Toggle>
-                <Dropdown.Menu align="end">
-                  {conversations.data.conversations.map((item) => (
-                    <Dropdown.Item
-                      key={item.id}
-                      active={item.id === selectedConversation?.conversationId}
-                      onClick={() => {
-                        setEvents([]);
-                        setConversation({ conversationId: item.id, sandboxId: item.sandbox_id });
-                      }}
-                    >
-                      {item.title}
-                    </Dropdown.Item>
-                  ))}
-                </Dropdown.Menu>
-              </Dropdown>
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-light"
+                    aria-label="New course-agent conversation"
+                    onClick={() => {
+                      setEvents([]);
+                      setConversation(null);
+                      setStartingNewConversation(true);
+                    }}
+                  >
+                    <i className="bi bi-plus-lg" aria-hidden="true" />
+                  </button>
+                </OverlayTrigger>
+                <Dropdown className="min-width-0">
+                  <Dropdown.Toggle
+                    size="sm"
+                    variant="light"
+                    className="course-agent-conversation-picker border bg-white text-truncate"
+                  >
+                    {startingNewConversation
+                      ? 'New conversation'
+                      : selectedConversation
+                        ? (conversations.data.conversations.find(
+                            (item) => item.id === selectedConversation.conversationId,
+                          )?.title ?? courseShortName)
+                        : courseShortName}
+                  </Dropdown.Toggle>
+                  <Dropdown.Menu align="end">
+                    {conversations.data.conversations.map((item) => (
+                      <Dropdown.Item
+                        key={item.id}
+                        active={item.id === selectedConversation?.conversationId}
+                        onClick={() => {
+                          setEvents([]);
+                          setConversation({ conversationId: item.id, sandboxId: item.sandbox_id });
+                          setStartingNewConversation(false);
+                        }}
+                      >
+                        {item.title}
+                      </Dropdown.Item>
+                    ))}
+                  </Dropdown.Menu>
+                </Dropdown>
+              </div>
             ) : (
               <span className="text-muted small text-truncate ms-auto">{courseShortName}</span>
             )}
