@@ -1470,3 +1470,44 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
         "weight": config.weight,
     }
     pl.set_weighted_score_data(data)
+
+
+def test(element_html: str, data: pl.ElementTestData) -> None:
+    config = _config(element_html, data)
+    correct_json = _correct(config, data)
+    if correct_json is None:
+        return
+
+    correct = _values(config, correct_json)
+    match data["test_type"]:
+        case "correct":
+            for component, value in correct.items():
+                data["raw_submitted_answers"][config.name(component)] = str(value)
+            if config.limits == "approach" and config.allow_direction_input:
+                data["raw_submitted_answers"][config.name("direction")] = str(
+                    correct_json["direction"]
+                )
+            data["partial_scores"][config.answer_name] = {
+                "score": 1,
+                "weight": config.weight,
+            }
+        case "incorrect":
+            for component, value in correct.items():
+                raw_value = (
+                    r"{999999}"
+                    if _requires_set(config, cast(Component, component))
+                    else f"({value}) + 1"
+                )
+                data["raw_submitted_answers"][config.name(component)] = raw_value
+            if config.limits == "approach" and config.allow_direction_input:
+                data["raw_submitted_answers"][config.name("direction")] = str(
+                    correct_json["direction"]
+                )
+            data["partial_scores"][config.answer_name] = {
+                "score": 0,
+                "weight": config.weight,
+            }
+        case "invalid":
+            name = config.name(config.components[0])
+            data["raw_submitted_answers"][name] = "INVALID"
+            data["format_errors"][name] = "Invalid test input"
