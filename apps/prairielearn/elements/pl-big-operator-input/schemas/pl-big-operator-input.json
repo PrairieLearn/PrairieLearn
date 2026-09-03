@@ -33,21 +33,6 @@
       "type": "string",
       "pattern": "^\\s*(?:Sum|Product|Integral|Limit|Union|Intersection|DisjointUnion|Min|Max|Custom)\\s*\\(.+\\)\\s*$"
     },
-    "correct-answer-body": {
-      "type": "string"
-    },
-    "correct-answer-domain": {
-      "type": "string"
-    },
-    "correct-answer-end": {
-      "type": "string"
-    },
-    "correct-answer-start": {
-      "type": "string"
-    },
-    "correct-answer-target": {
-      "type": "string"
-    },
     "custom-functions": {
       "type": "string"
     },
