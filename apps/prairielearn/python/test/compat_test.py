@@ -7,7 +7,18 @@ def test_external_exports():
     """Checks that no exports have been moved. As time goes on, this list may not be exhaustive."""
     try:
         from prairielearn import (
+            ApproachOperatorExpression,
+            ApproachOperatorExpressionJson,
+            BoundsOperatorExpression,
+            BoundsOperatorExpressionJson,
+            DomainOperatorExpression,
+            DomainOperatorExpressionJson,
             ElementTestData,
+            OperatorExpression,
+            OperatorExpressionDirection,
+            OperatorExpressionJson,
+            OperatorExpressionLimit,
+            OperatorExpressionOperator,
             PartialScore,
             QuestionData,
             add_files_format_error,
@@ -16,6 +27,7 @@ def test_external_exports():
             check_answers_names,
             check_attribs,
             clean_identifier_name,
+            decode_operator_expression,
             determine_score_params,
             escape_invalid_string,
             escape_unicode_string,
