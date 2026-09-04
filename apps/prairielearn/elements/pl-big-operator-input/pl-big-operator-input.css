@@ -142,15 +142,15 @@
   border-bottom-left-radius: var(--bs-border-radius) !important;
 }
 
-.pl-big-operator-input__bounds > .pl-big-operator-input__upper {
+.pl-big-operator-input__operator-stack--bounds > .pl-big-operator-input__upper {
   order: 1;
 }
 
-.pl-big-operator-input__bounds > .pl-big-operator-input__operator {
+.pl-big-operator-input__operator-stack--bounds > .pl-big-operator-input__operator {
   order: 2;
 }
 
-.pl-big-operator-input__bounds > .pl-big-operator-input__lower {
+.pl-big-operator-input__operator-stack--bounds > .pl-big-operator-input__lower {
   order: 3;
 }
 
