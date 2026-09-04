@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib
+import re
 from typing import Any, Literal
 
 import prairielearn as pl
@@ -711,3 +712,24 @@ class TestLifecycleRegressions:
     @pytest.mark.parametrize("token", ["k+1", "1", "a.b", "__import__", "'k'"])
     def test_wrapper_index_is_lexically_validated(self, token: str) -> None:
         assert big_operator_input._identifier(token) is None
+
+
+class TestAdapterRegressions:
+    def test_score_badges_do_not_show_percent(self) -> None:
+        data = question_data(raw_submitted_answers={"op": "x"}, panel="submission")
+        data["submitted_answers"] = {"op": "x"}
+        adapter = big_operator_input.symbolic_input_adapter
+        s = adapter.render(
+            data,
+            name="op",
+            variables=("x",),
+            custom_functions=(),
+            aria_label="Operator body",
+            size=20,
+            allowed_types={"expression"},
+            allow_complex=False,
+            show_score=True,
+            score=0.5,
+        )
+        assert "text-bg-warning" in s
+        assert re.search(r"\d+(?:\.\d+)?%", s) is None
