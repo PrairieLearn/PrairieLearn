@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import importlib
-import re
 import sys
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -26,15 +25,26 @@ def _load_controller() -> ModuleType:
 pl_symbolic_input = _load_controller()
 
 
-def _render_data_view(data: dict[str, Any] | pl.QuestionData) -> dict[str, Any]:
-    view = dict(data)
+def _create_render_data_view(
+    base: dict[str, Any] | pl.QuestionData, name: str, score: float | None
+) -> dict[str, Any]:
+    view: dict[str, Any] = dict(base)
     view.setdefault("correct_answers", {})
     view.setdefault("format_errors", {})
     view.setdefault("partial_scores", {})
     view.setdefault("raw_submitted_answers", {})
-    view.setdefault("submitted_answers", {})
     view.setdefault("panel", "question")
     view.setdefault("editable", view["panel"] == "question")
+
+    view["submitted_answers"] = dict(view.get("submitted_answers", {}))
+
+    if name in view["format_errors"]:
+        view["submitted_answers"][name] = None
+
+    if score is not None:
+        view["partial_scores"] = dict(view["partial_scores"])
+        view["partial_scores"][name] = {"score": score}
+
     return view
 
 
@@ -54,13 +64,6 @@ def render(
     suffix: str | None = None,
     score: float | None = None,
 ) -> str:
-    view = _render_data_view(data)
-    view["submitted_answers"] = dict(view["submitted_answers"])
-    if name in view["format_errors"]:
-        view["submitted_answers"][name] = None
-    if score is not None:
-        view["partial_scores"] = dict(view["partial_scores"])
-        view["partial_scores"][name] = {"score": score}
     config = pl_symbolic_input.RenderConfig(
         name=name,
         label=prefix,
@@ -81,16 +84,8 @@ def render(
         show_score=show_score,
         show_info=show_help_text,
         formula_editor=True,
+        show_score_percent=False,
         initial_value=None,
     )
-    rendered = pl_symbolic_input.render_with_config(config, view)
-    # TODO: make an issue
-    # The formula-editor template does not apply its aria-label parameter to the
-    # math-field, so bridge that accessibility gap in the adapter.
-    rendered = rendered.replace(
-        "<math-field", f'<math-field aria-label="{aria_label}"', 1
-    )
-    if score is not None:
-        # The wrapper's component badges are intentionally icon-only.
-        rendered = re.sub(r" \d{1,3}%</span>", "</span>", rendered)
-    return rendered
+    view = _create_render_data_view(data, name, score)
+    return pl_symbolic_input.render_with_config(config, view)

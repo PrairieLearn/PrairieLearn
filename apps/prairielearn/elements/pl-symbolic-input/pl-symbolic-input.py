@@ -39,6 +39,7 @@ class RenderConfig:
     show_info: bool
     formula_editor: bool
     initial_value: str | None
+    show_score_percent: bool = True
 
     @property
     def allow_sets(self) -> bool:
@@ -470,6 +471,7 @@ def render_with_config(config: RenderConfig, data: pl.QuestionData) -> str:
             config.display.value: True,
             "error": parse_error or missing_input,
             "missing_input": missing_input,
+            "show_score_percent": config.show_score_percent,
         }
 
         if config.show_score and score is not None:
