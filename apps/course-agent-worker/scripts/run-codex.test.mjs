@@ -1,4 +1,4 @@
-import { mkdtemp, rm } from 'node:fs/promises';
+import { cp, mkdtemp, rm } from 'node:fs/promises';
 import { createServer } from 'node:http';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -16,6 +16,7 @@ it.skipIf(!process.env.COURSE_AGENT_TEST_CODEX)(
     vi.stubEnv('OPENAI_API_KEY', 'local-mock-key');
     const cwd = await mkdtemp(join(tmpdir(), 'pl-course-agent-test-'));
     const notifications = [];
+    const requests = [];
     let complete;
     const server = createServer((request, response) => {
       if (!request.url.endsWith('/responses')) {
@@ -23,6 +24,13 @@ it.skipIf(!process.env.COURSE_AGENT_TEST_CODEX)(
         return;
       }
       expect(request.headers.authorization).toBe('Bearer local-mock-key');
+      let body = '';
+      request.on('data', (chunk) => {
+        body += chunk;
+      });
+      request.on('end', () => {
+        requests.push(JSON.parse(body));
+      });
       response.writeHead(200, { 'content-type': 'text/event-stream' });
       const send = (event) =>
         response.write(`event: ${event.type}\ndata: ${JSON.stringify(event)}\n\n`);
@@ -127,6 +135,43 @@ it.skipIf(!process.env.COURSE_AGENT_TEST_CODEX)(
         }),
       );
       expect(notifications.at(-1).method).toBe('turn/completed');
+      const threadId = notifications.find((event) => event.method === 'thread/started').params
+        .thread.id;
+      // Simulate losing the container but restoring its native session files from a checkpoint.
+      const backup = join(cwd, 'session-backup');
+      const codexHome = join(cwd, '.course-agent/codex');
+      await cp(codexHome, backup, { recursive: true });
+      await rm(codexHome, { recursive: true });
+      await cp(backup, codexHome, { recursive: true });
+      const resumed = [];
+      const next = runCodex({
+        command: process.env.COURSE_AGENT_TEST_CODEX,
+        cwd,
+        model: 'gpt-5.4',
+        prompt: 'Now say goodbye.',
+        baseUrl: `http://127.0.0.1:${server.address().port}/v1`,
+        emit: (event) => resumed.push(event),
+      });
+      void next.catch((error) => {
+        failure = error;
+      });
+      await vi.waitFor(
+        () => {
+          if (failure) throw failure;
+          expect(complete).toBeTypeOf('function');
+        },
+        { timeout: 15000 },
+      );
+      complete();
+      complete = undefined;
+      await next;
+      expect(resumed.find((event) => event.method === 'thread/started').params.thread.id).toBe(
+        threadId,
+      );
+      const replay = JSON.stringify(requests.at(-1).input);
+      expect(replay).toContain('Say hello.');
+      expect(replay).toContain('Hello world');
+      expect(replay).toContain('Now say goodbye.');
     } finally {
       complete?.();
       server.closeAllConnections();
