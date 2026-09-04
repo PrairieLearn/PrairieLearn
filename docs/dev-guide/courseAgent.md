@@ -1,5 +1,23 @@
 # Course agent development
 
+## Codex thread state
+
+Each conversation keeps one native Codex thread in `/workspace/.course-agent/codex`, outside the
+course Git checkout. The runner records its thread ID and resumes it on subsequent turns; restarting
+the app-server process does not reset the thread. Codex retains its model-visible history, tool
+results, and any native compaction state. A failed resume reports an error rather than silently
+replacing the session.
+
+If no saved thread exists (including after a sandbox is lost in this base layer), the runner creates
+a thread and supplies all available user/assistant messages from the conversation's Worker events.
+This is a recovery fallback, not native-session restoration: it cannot recover tool results or
+unpublished files. It has no 20-message/20,000-character truncation. A recovery transcript that exceeds
+the model's context window can fail; automatic compaction is not unlimited input ingestion.
+
+The base layer retains native state only for the sandbox's lifetime. The persistence layer adds
+workspace backups containing these session files and PostgreSQL copies of messages and activity
+for the UI. PostgreSQL chat history does not replace Codex's native session state.
+
 The course agent is experimental and guarded by the `course-agent` feature flag. The first MVP
 layer provides a temporary `/workspace`, a Codex harness with web search, Redis-backed resumable
 SSE activity, a basic instructor panel, and live diagnostics. It does not clone a course

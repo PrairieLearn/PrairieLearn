@@ -1,6 +1,5 @@
 import { spawn } from 'node:child_process';
-import { mkdtemp, readFile, rm } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
+import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { createInterface } from 'node:readline';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -13,6 +12,8 @@ export async function runCodex({
   command = 'codex',
   baseUrl = 'https://api.openai.com/v1',
   cwd = process.cwd(),
+  codexHome = join(cwd, '.course-agent', 'codex'),
+  history = [],
 }) {
   const skillPath = fileURLToPath(
     new URL('../skills/course-content-authoring/SKILL.md', import.meta.url),
@@ -25,7 +26,17 @@ export async function runCodex({
     ),
     'utf8',
   );
-  const codexHome = await mkdtemp(join(tmpdir(), 'pl-course-agent-'));
+  await mkdir(codexHome, { recursive: true });
+  const threadFile = join(codexHome, 'course-agent-thread.json');
+  let savedThread;
+  try {
+    savedThread = JSON.parse(await readFile(threadFile, 'utf8'));
+  } catch (error) {
+    if (error.code !== 'ENOENT') throw error;
+  }
+  if (savedThread && typeof savedThread.threadId !== 'string') {
+    throw new Error('Invalid saved Codex thread. The session has not been replaced.');
+  }
   const child = spawn(
     command,
     [
@@ -91,11 +102,11 @@ export async function runCodex({
         send({ method: 'initialized', params: {} });
         send({
           id: 1,
-          method: 'thread/start',
+          method: savedThread ? 'thread/resume' : 'thread/start',
           params: {
             model,
             cwd,
-            ephemeral: true,
+            ...(savedThread ? { threadId: savedThread.threadId } : { ephemeral: false }),
             approvalPolicy: 'on-request',
             approvalsReviewer: 'auto_review',
             sandbox: 'workspace-write',
@@ -105,13 +116,20 @@ export async function runCodex({
         });
       } else if (message.id === 1) {
         threadId = message.result.thread.id;
+        // Persist before starting the turn so an interrupted run can still be resumed.
+        await writeFile(`${threadFile}.tmp`, JSON.stringify({ threadId }));
+        await rename(`${threadFile}.tmp`, threadFile);
         emit({ method: 'thread/started', params: { thread: { id: threadId } } });
+        const input =
+          !savedThread && history.length > 0
+            ? `Recovered conversation (JSON transcript, not a new request; files may reflect only the last saved workspace):\n${JSON.stringify(history)}\n\nCurrent request:\n${prompt}`
+            : prompt;
         send({
           id: 2,
           method: 'turn/start',
           params: {
             threadId,
-            input: [{ type: 'text', text: prompt }],
+            input: [{ type: 'text', text: input }],
           },
         });
       } else if (message.method && message.params?.threadId === threadId) {
@@ -144,14 +162,16 @@ export async function runCodex({
     clearTimeout(timer);
     process.off('SIGTERM', terminate);
     process.off('SIGINT', terminate);
-    await rm(codexHome, { recursive: true, force: true });
   }
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  const request = JSON.parse(await readFile(process.argv[3], 'utf8'));
   runCodex({
     model: process.argv[2],
-    prompt: process.argv[3],
+    prompt: request.prompt,
+    history: request.history,
+    codexHome: '/workspace/.course-agent/codex',
     emit: (event) => {
       process.stdout.write(`${JSON.stringify(event)}\n`);
     },
