@@ -52,7 +52,7 @@ export function UserMessage({
     >
       <div
         className="d-flex flex-column gap-2 p-3 rounded bg-secondary-subtle"
-        style={{ maxWidth: '90%', whiteSpace: 'pre-wrap' }}
+        style={{ maxWidth: '90%', whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}
       >
         {children}
       </div>
@@ -62,7 +62,7 @@ export function UserMessage({
 }
 export function MessageMetadata({ author, createdAt }: { author: string; createdAt?: string }) {
   return (
-    <div className="d-flex align-items-center gap-2 small text-muted mb-1 px-1">
+    <div className="d-flex flex-wrap align-items-center gap-2 small text-muted mb-1 px-1">
       <span className="fw-medium">{author}</span>
       {createdAt && <MessageTimestamp createdAt={createdAt} />}
     </div>

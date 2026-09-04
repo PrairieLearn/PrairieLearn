@@ -294,6 +294,72 @@ test('reserves desktop space for the panel and fills the mobile viewport', async
   await page.screenshot({ path: testInfo.outputPath('course-chat-mobile.png') });
 });
 
+test('contains long messages and tool paths without widening the panel', async ({
+  page,
+  courseInstance,
+}, testInfo) => {
+  const path = `/workspace/course/questions/${'veryLongQuestionDirectory'.repeat(12)}/question.html`;
+  const code = `const path = "${path}";`;
+  await page.route('**/course_agent/stream?*', async (route) => {
+    const events = [
+      { type: 'start', messageId: 'overflow-test' },
+      {
+        type: 'tool-input-available',
+        toolCallId: 'read',
+        toolName: 'activity',
+        input: { label: `Reading ${path}` },
+      },
+      { type: 'tool-output-available', toolCallId: 'read', output: { label: `Read ${path}` } },
+      { type: 'text-start', id: 'text' },
+      {
+        type: 'text-delta',
+        id: 'text',
+        delta: `Created \`${path}\`.\n\n\`\`\`js\n${code}\n\`\`\``,
+      },
+      { type: 'text-end', id: 'text' },
+      { type: 'finish' },
+    ];
+    await route.fulfill({
+      status: 200,
+      headers: { 'content-type': 'text/event-stream', 'x-vercel-ai-ui-message-stream': 'v1' },
+      body:
+        events.map((event) => `data: ${JSON.stringify(event)}\n\n`).join('') + 'data: [DONE]\n\n',
+    });
+  });
+  await page.goto(`/pl/course/${courseInstance.course_id}/course_admin/instances`);
+  const panel = page.getByRole('complementary', { name: 'Course agent panel' });
+  const input = panel.getByRole('textbox', { name: 'Message course agent' });
+  await input.fill(path);
+  await input.press('Enter');
+  const reply = panel.getByRole('article', { name: 'Message from PrairieLearn' });
+  const tool = reply.getByText(`Read ${path}`, { exact: true });
+  await expect(tool).toBeVisible();
+  const transcript = panel.getByRole('log', { name: 'Conversation messages' });
+  for (const width of [1440, 1200, 1000, 390]) {
+    await page.setViewportSize({ width, height: 900 });
+    await expect
+      .poll(() => transcript.evaluate((element) => element.scrollWidth - element.clientWidth))
+      .toBeLessThanOrEqual(1);
+    const panelBox = (await panel.boundingBox())!;
+    expect(panelBox.x + panelBox.width).toBeLessThanOrEqual(width + 1);
+    for (const element of [
+      tool,
+      input,
+      panel.getByRole('article', { name: 'Message from Dev User' }),
+    ]) {
+      const box = (await element.boundingBox())!;
+      expect(box.x).toBeGreaterThanOrEqual(panelBox.x);
+      expect(box.x + box.width).toBeLessThanOrEqual(panelBox.x + panelBox.width);
+    }
+    expect(await tool.evaluate((element) => element.clientHeight)).toBeGreaterThan(30);
+    const codeBlock = reply.locator('pre');
+    expect(await codeBlock.evaluate((element) => element.scrollWidth)).toBeGreaterThan(
+      await codeBlock.evaluate((element) => element.clientWidth),
+    );
+    await page.screenshot({ path: testInfo.outputPath(`course-chat-long-path-${width}.png`) });
+  }
+});
+
 test('scrolls to the latest turn on send after the instructor scrolls up', async ({
   page,
   courseInstance,
