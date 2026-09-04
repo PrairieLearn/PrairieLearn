@@ -4,6 +4,11 @@
   aria-label="Big operator expression input"
   style="--pl-big-operator-input-body-size: {{body_size}}ch; --pl-big-operator-input-limit-size: {{limit_size}}ch"
 >
+  {{#prefix_latex}}
+    <span class="pl-big-operator-input__affix pl-big-operator-input__affix--prefix">
+      \(\displaystyle {{{prefix_latex}}}\)
+    </span>
+  {{/prefix_latex}}
   {{#integral}}
     <div
       class="pl-big-operator-input__operator-stack pl-big-operator-input__operator-stack--integral"
@@ -89,7 +94,16 @@
     </div>
   {{/body_field}}
   {{#integral}}
-    <span class="pl-big-operator-input__differential">\(\mathrm d {{{index_label}}}\)</span>
+    <span class="pl-big-operator-input__integral-tail">
+      \(\displaystyle \mathrm d {{{index_label}}}{{#suffix_latex}} {{{suffix_latex}}}{{/suffix_latex}}\)
+    </span>
+  {{/integral}}
+  {{^integral}}
+    {{#suffix_latex}}
+      <span class="pl-big-operator-input__affix pl-big-operator-input__affix--suffix">
+        \(\displaystyle {{{suffix_latex}}}\)
+      </span>
+    {{/suffix_latex}}
   {{/integral}}
   {{#score_badge}}
     <span class="pl-big-operator-input__submission-score">{{>score-badge}}</span>

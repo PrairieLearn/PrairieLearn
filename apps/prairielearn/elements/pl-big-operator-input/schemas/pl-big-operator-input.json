@@ -76,10 +76,16 @@
     "operator-latex": {
       "type": "string"
     },
+    "prefix-latex": {
+      "type": "string"
+    },
     "show-help-text": {
       "default": "true",
       "type": "string",
       "format": "boolean"
+    },
+    "suffix-latex": {
+      "type": "string"
     },
     "variables": {
       "type": "string"

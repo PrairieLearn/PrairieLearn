@@ -571,6 +571,23 @@ class TestRenderUnits:
         assert expected_tex in rendered
         assert "badge" not in rendered
 
+    @pytest.mark.parametrize("panel", ["question", "answer", "submission"])
+    def test_prefix_and_suffix_latex_render_in_every_panel(
+        self, panel: Literal["question", "answer", "submission"]
+    ) -> None:
+        markup = html(**{
+            "correct-answer": "Integral(k, (k, 0, 1))",
+            "prefix-latex": r"\Gamma(z) =",
+            "suffix-latex": r", \quad \operatorname{Re}(z) > 0",
+        })
+        data = question_data(panel=panel)
+        big_operator_input.prepare(markup, data)
+
+        rendered = big_operator_input.render(markup, data)
+
+        assert r"\Gamma(z) =" in rendered
+        assert r", \quad \operatorname{Re}(z) > 0" in rendered
+
     def test_component_grading_renders_per_field_feedback(self) -> None:
         markup = html(
             operator="sum",

@@ -76,6 +76,24 @@
         </td>
       </tr>
       <tr>
+        <td colspan="2">Gamma function with prefix/suffix<small></small></td>
+      </tr>
+      <tr>
+        <td>
+          $\displaystyle \Gamma(z) = \int_{0}^{\infty} t^{z-1} e^{-t}\,dt, \operatorname{Re}(z) \gt 0$
+        </td>
+        <td>
+          <pl-big-operator-input
+            answers-name="gamma-function"
+            correct-answer="Integral(t**(z - 1) * exp(-t), (t, 0, oo))"
+            variables="z"
+            prefix-latex="\Gamma(z) ="
+            suffix-latex=", \operatorname{Re}(z) > 0"
+            allowed-blank="all"
+          ></pl-big-operator-input>
+        </td>
+      </tr>
+      <tr>
         <td colspan="2">
           Contour integral using custom operator latex
           <small> <code>grading-method="component" operator-latex="\oint"</code></small>
