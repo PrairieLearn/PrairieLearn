@@ -12,6 +12,7 @@ import { type Timezone, formatTimezone } from '@prairielearn/utils/timezone';
 import { GitHubButton } from '../../components/GitHubButton.js';
 import { ShareSourcePubliclyCard } from '../../components/ShareSourcePubliclyCard.js';
 import { CourseInstanceShortNameDescription } from '../../components/ShortNameDescriptions.js';
+import type { EnrollmentCapacity } from '../../ee/models/enrollment.js';
 import type { PageContext } from '../../lib/client/page-context.js';
 import { getAssessmentSettingsUrl } from '../../lib/client/url.js';
 import { validateShortName } from '../../lib/short-name.js';
@@ -40,6 +41,7 @@ interface InstructorInstanceAdminSettingsProps {
   nonPublicAssessmentsInCourseInstance: { id: string; tid: string }[];
   questionSharingEnabled: boolean;
   accessControlMigrationNeeded: boolean;
+  enrollmentCapacity: EnrollmentCapacity | null;
 }
 
 export function InstructorInstanceAdminSettings({
@@ -83,6 +85,7 @@ function InstructorInstanceAdminSettingsInner({
   nonPublicAssessmentsInCourseInstance,
   questionSharingEnabled,
   accessControlMigrationNeeded,
+  enrollmentCapacity,
 }: Omit<InstructorInstanceAdminSettingsProps, 'trpcCsrfToken'>) {
   const [showCopyModal, setShowCopyModal] = useState(false);
 
@@ -268,6 +271,32 @@ function InstructorInstanceAdminSettingsInner({
               </div>
             </div>
           </div>
+
+          {enrollmentCapacity && (
+            <div className="card" aria-labelledby="enrollment-capacity-heading">
+              <div className="card-body">
+                <h2 id="enrollment-capacity-heading" className="h5 card-title mb-3">
+                  Enrollment capacity
+                </h2>
+                <p className="mb-2">
+                  {enrollmentCapacity.used.toLocaleString('en-US')} of{' '}
+                  {enrollmentCapacity.limit.toLocaleString('en-US')} free enrollments used
+                  {' · '}
+                  <strong>{enrollmentCapacity.remaining.toLocaleString('en-US')} remaining</strong>
+                </p>
+                {enrollmentCapacity.annualLimitSource && (
+                  <p className="mb-2">
+                    Remaining capacity is limited by the{' '}
+                    {enrollmentCapacity.annualLimitSource === 'course' ? 'course' : 'institution'}
+                    's shared enrollment limit over the past year.
+                  </p>
+                )}
+                <p className="small text-muted mb-0">
+                  Paid enrollments do not count toward these limits.
+                </p>
+              </div>
+            </div>
+          )}
 
           <div className="card">
             <div className="card-body">

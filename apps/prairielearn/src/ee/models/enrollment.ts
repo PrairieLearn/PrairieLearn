@@ -96,6 +96,69 @@ export async function getEnrollmentCountsForCourseInstance(
   };
 }
 
+interface EnrollmentContext {
+  institution: Institution;
+  course: Course;
+  courseInstance: CourseInstance;
+}
+
+export interface EnrollmentCapacity {
+  limit: number;
+  used: number;
+  remaining: number;
+  annualLimitSource: 'course' | 'institution' | null;
+}
+
+export function getCourseInstanceEnrollmentLimit({
+  institution,
+  course,
+  courseInstance,
+}: EnrollmentContext): number {
+  return (
+    courseInstance.enrollment_limit ??
+    course.course_instance_enrollment_limit ??
+    institution.course_instance_enrollment_limit
+  );
+}
+
+/** Returns free enrollment capacity, including shared limits over the past year. */
+export async function getEnrollmentCapacity({
+  institution,
+  course,
+  courseInstance,
+}: EnrollmentContext): Promise<EnrollmentCapacity> {
+  const institutionEnrollmentCounts = await getEnrollmentCountsForInstitution({
+    institution_id: institution.id,
+    created_since: '1 year',
+  });
+  const courseEnrollmentCounts = await getEnrollmentCountsForCourse({
+    course_id: course.id,
+    created_since: '1 year',
+  });
+  const courseInstanceEnrollmentCounts = await getEnrollmentCountsForCourseInstance(
+    courseInstance.id,
+  );
+
+  const limit = getCourseInstanceEnrollmentLimit({ institution, course, courseInstance });
+  const used = courseInstanceEnrollmentCounts.free;
+  const instanceRemaining = limit - used;
+  const institutionRemaining =
+    institution.yearly_enrollment_limit - institutionEnrollmentCounts.free;
+  // The institution's annual limit always applies, even with a course override.
+  const courseRemaining =
+    (course.yearly_enrollment_limit ?? institution.yearly_enrollment_limit) -
+    courseEnrollmentCounts.free;
+  const remaining = Math.max(0, Math.min(instanceRemaining, institutionRemaining, courseRemaining));
+  const annualLimitSource =
+    Math.min(institutionRemaining, courseRemaining) < instanceRemaining
+      ? institutionRemaining <= courseRemaining
+        ? 'institution'
+        : 'course'
+      : null;
+
+  return { limit, used, remaining, annualLimitSource };
+}
+
 export enum PotentialEnrollmentStatus {
   ALLOWED = 'allowed',
   LIMIT_EXCEEDED = 'limit_exceeded',
@@ -161,44 +224,8 @@ export async function checkPotentialEnterpriseEnrollment({
   // exceeded by one or two users. Future enrollments will still be blocked,
   // which will prompt course/institution staff to seek an increase in their
   // enrollment limit.
-  const institutionEnrollmentCounts = await getEnrollmentCountsForInstitution({
-    institution_id: institution.id,
-    created_since: '1 year',
-  });
-  const courseEnrollmentCounts = await getEnrollmentCountsForCourse({
-    course_id: courseInstance.course_id,
-    created_since: '1 year',
-  });
-  const courseInstanceEnrollmentCounts = await getEnrollmentCountsForCourseInstance(
-    courseInstance.id,
-  );
-
-  const freeInstitutionEnrollmentCount = institutionEnrollmentCounts.free;
-  const freeCourseEnrollmentCount = courseEnrollmentCounts.free;
-  const freeCourseInstanceEnrollmentCount = courseInstanceEnrollmentCounts.free;
-
-  // If both an institutional and course yearly enrollment limit are defined, we'll
-  // always enforce both of them. That is, the institutional yearly enrollment limit
-  // always applies, and the course yearly enrollment can only serve as a tighter
-  // bound on that.
-  //
-  // If a course yearly enrollment limit is not defined, we'll use the institutional
-  // enrollment limit as the upper bound, as the number of enrollments in the course
-  // must by definition be less than or equal to the number of enrollments in the
-  // institution as a whole.
-  const institutionYearlyEnrollmentLimit = institution.yearly_enrollment_limit;
-  const courseYearlyEnrollmentLimit =
-    course.yearly_enrollment_limit ?? institutionYearlyEnrollmentLimit;
-  const courseInstanceEnrollmentLimit =
-    courseInstance.enrollment_limit ??
-    course.course_instance_enrollment_limit ??
-    institution.course_instance_enrollment_limit;
-
-  if (
-    freeInstitutionEnrollmentCount + 1 > institutionYearlyEnrollmentLimit ||
-    freeCourseEnrollmentCount + 1 > courseYearlyEnrollmentLimit ||
-    freeCourseInstanceEnrollmentCount + 1 > courseInstanceEnrollmentLimit
-  ) {
+  const capacity = await getEnrollmentCapacity({ institution, course, courseInstance });
+  if (capacity.remaining === 0) {
     return PotentialEnrollmentStatus.LIMIT_EXCEEDED;
   }
 

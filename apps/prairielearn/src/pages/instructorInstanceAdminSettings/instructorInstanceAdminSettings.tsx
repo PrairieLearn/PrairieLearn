@@ -15,6 +15,10 @@ import { parseRequestBody } from '@prairielearn/zod';
 
 import { DeleteCourseInstanceModal } from '../../components/DeleteCourseInstanceModal.js';
 import { PageLayout } from '../../components/PageLayout.js';
+import {
+  getCourseInstanceEnrollmentLimit,
+  getEnrollmentCapacity,
+} from '../../ee/models/enrollment.js';
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
 import {
@@ -36,6 +40,7 @@ import {
 } from '../../lib/editors.js';
 import { courseRepoContentUrl } from '../../lib/github.js';
 import { getPaths } from '../../lib/instructorFiles.js';
+import { isEnterprise } from '../../lib/license.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import {
@@ -80,6 +85,17 @@ router.get(
       { course_instance_id: courseInstance.id },
       z.number(),
     );
+    // Annual limits are server-only fields omitted from the client page context.
+    const enrollmentContext = {
+      institution: res.locals.institution,
+      course: res.locals.course,
+      courseInstance,
+    };
+    // Large limits are operational defaults, so only show capacity for smaller limits.
+    const enrollmentCapacity =
+      isEnterprise() && getCourseInstanceEnrollmentLimit(enrollmentContext) < 10_000
+        ? await getEnrollmentCapacity(enrollmentContext)
+        : null;
     const host = getCanonicalHost(req);
     const studentLink = new URL(`/pl/course_instance/${courseInstance.id}`, host).href;
     const publicLink = new URL(`/pl/public/course_instance/${courseInstance.id}/assessments`, host)
@@ -170,6 +186,7 @@ router.get(
                 nonPublicAssessmentsInCourseInstance={nonPublicAssessmentsInCourseInstance}
                 questionSharingEnabled={questionSharingEnabled}
                 accessControlMigrationNeeded={accessControlMigrationNeeded}
+                enrollmentCapacity={enrollmentCapacity}
               />
             </Hydrate>
             <Hydrate>
