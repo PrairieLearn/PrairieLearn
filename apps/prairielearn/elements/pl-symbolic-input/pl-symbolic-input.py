@@ -144,9 +144,21 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 
         allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
         blank_value = pl.get_string_attrib(element, "blank-value", BLANK_VALUE_DEFAULT)
-        # Validate that the answer can be parsed before storing
-        if a_true.strip() != "":
-            try:
+        if a_true.strip() == "" and allow_blank and blank_value == "":
+            a_true = ""
+        elif a_true.strip() == "":
+            raise ValueError(
+                "Correct answer cannot be blank unless 'allow-blank' is true and 'blank-value' is empty."
+            )
+
+        data["correct_answers"][name] = a_true
+
+    variables = _get_variables_with_fallback(element, data, name)
+
+    a_true = data["correct_answers"].get(name)
+    if a_true is not None and a_true != "":
+        try:
+            if isinstance(a_true, str):
                 parsed_answer = psu.convert_string_to_sympy(
                     a_true,
                     variables,
@@ -156,27 +168,25 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
                     custom_functions=custom_functions,
                     simplify_expression=simplify_expression,
                 )
-            except psu.BaseSympyError as exc:
-                raise ValueError(
-                    f'Parsing correct answer "{a_true}" for "{name}" failed.'
-                ) from exc
-
-            type_failure = psu.check_sympy_types(parsed_answer, allowed_types)
-            if type_failure is not None:
-                raise ValueError(
-                    f'Parsing correct answer "{a_true}" for "{name}" failed: '
-                    f"{type_failure.error}"
+            else:
+                parsed_answer = psu.json_to_sympy(
+                    a_true,
+                    allow_complex=allow_complex,
+                    allow_sets=allow_sets,
+                    allow_trig_functions=allow_trig,
+                    simplify_expression=simplify_expression,
                 )
-        elif allow_blank and blank_value == "":
-            a_true = ""
-        else:
+        except psu.BaseSympyError as exc:
             raise ValueError(
-                "Correct answer cannot be blank unless 'allow-blank' is true and 'blank-value' is empty."
+                f"Parsing correct answer {a_true!r} for {name!r} failed."
+            ) from exc
+
+        type_failure = psu.check_sympy_types(parsed_answer, allowed_types)
+        if type_failure is not None:
+            raise ValueError(
+                f"Parsing correct answer {a_true!r} for {name!r} failed: "
+                f"{type_failure.error}"
             )
-
-        data["correct_answers"][name] = a_true
-
-    variables = _get_variables_with_fallback(element, data, name)
 
     formula_editor = pl.get_boolean_attrib(
         element, "formula-editor", SHOW_FORMULA_EDITOR_DEFAULT
@@ -1015,14 +1025,6 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
                 allow_sets=allow_sets,
                 allow_trig_functions=allow_trig,
             )
-
-        if a_tru != "":
-            type_failure = psu.check_sympy_types(a_tru, allowed_types)
-            if type_failure is not None:
-                raise ValueError(
-                    f'Correct answer for "{name}" has an invalid type: '
-                    f"{type_failure.error}"
-                )
 
         if a_tru != "":
             # Substitute in imaginary unit symbol
