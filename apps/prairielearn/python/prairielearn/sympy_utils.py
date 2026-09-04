@@ -106,14 +106,7 @@ def _used_sympy_types(expr: sympy.Basic) -> set[_UsedSympyType]:
             arg_types = _used_sympy_types(arg)
             required_types.update(arg_types)
         return required_types
-    if isinstance(expr, sympy.Add) and any(
-        isinstance(symbol, sympy.Symbol) and symbol.name in _SET_DOMAIN_NAMES
-        for symbol in expr.free_symbols
-    ):
-        return {"set"}
-    if isinstance(expr, sympy.Set) or (
-        isinstance(expr, sympy.Symbol) and expr.name in _SET_DOMAIN_NAMES
-    ):
+    if isinstance(expr, sympy.Set):
         return {"set"}
     return {"expression"}
 
@@ -580,7 +573,7 @@ class CheckAST(ast.NodeVisitor):
                 raise FunctionNameWithoutArgumentsError(
                     err_node.col_offset, err_node.id
                 )
-            if node.id in _SET_DOMAIN_NAMES:
+            if self.allow_sets and node.id in _SET_DOMAIN_NAMES:
                 raise HasInvalidSymbolError(node.id)
             return self._set_type(node, None)
 
@@ -953,6 +946,9 @@ def evaluate_with_source(
         for inner_dict in locals_for_eval.values()
         for k, v in cast(SympyMapT, inner_dict).items()
     }
+    if allow_extra_symbols and not allow_sets:
+        for domain_name in _SET_DOMAIN_NAMES:
+            local_dict.setdefault(domain_name, sympy.Symbol(domain_name))
 
     # Based on code here:
     # https://github.com/sympy/sympy/blob/26f7bdbe3f860e7b4492e102edec2d6b429b5aaf/sympy/parsing/sympy_parser.py#L1086
