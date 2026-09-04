@@ -117,11 +117,12 @@ COMPONENTS_MAP: dict[LimitFormat, Sequence[Component]] = {
     "domain": ("domain", "body"),
     "approach": ("target", "body"),
 }
-type GradingMethod = Literal["equivalent", "component", "exact"]
+type GradingMethod = Literal["equivalent", "component", "exact", "none"]
 GRADING_METHODS: frozenset[GradingMethod] = frozenset((
     "equivalent",
     "component",
     "exact",
+    "none",
 ))
 type AllowedBlank = Literal["none", "limits", "body", "all"]
 ALLOWED_BLANKS: frozenset[AllowedBlank] = frozenset(("none", "limits", "body", "all"))
@@ -482,7 +483,7 @@ def _config(html: str, data: pl.QuestionData | None = None) -> RenderConfig:
     )
     if grading not in GRADING_METHODS:
         raise ValueError(
-            'Attribute "grading-method" must be exact, component, or equivalent.'
+            'Attribute "grading-method" must be exact, component, equivalent, or none.'
         )
     body_weight = pl.get_integer_attrib(element, "body-relative-weight", 3)
     if body_weight < 1:
@@ -515,10 +516,10 @@ def _config(html: str, data: pl.QuestionData | None = None) -> RenderConfig:
     if (
         operator == "custom"
         and correct_attribute is not None
-        and grading not in {"exact", "component"}
+        and grading == "equivalent"
     ):
         raise ValueError(
-            'Custom operators with a correct answer require grading-method="exact" or "component".'
+            'Custom operators with a correct answer do not support grading-method="equivalent".'
         )
     return RenderConfig(
         answer_name=answer,
@@ -808,10 +809,10 @@ def _correct(config: RenderConfig, data: pl.QuestionData) -> dict[str, Any] | No
     if (
         config.operator == "custom"
         and raw is not None
-        and config.grading not in {"exact", "component"}
+        and config.grading == "equivalent"
     ):
         raise ValueError(
-            'Custom operators with a correct answer require grading-method="exact" or "component".'
+            'Custom operators with a correct answer do not support grading-method="equivalent".'
         )
     if raw is None:
         return None
@@ -1335,6 +1336,8 @@ def _expressions_equivalent(left: sympy.Basic, right: sympy.Basic) -> bool:
 
 def grade(element_html: str, data: pl.QuestionData) -> None:
     config = _config(element_html, data)
+    if config.grading == "none":
+        return
     correct_json = _correct(config, data)
     if correct_json is None:
         return
@@ -1411,10 +1414,11 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
                 data["raw_submitted_answers"][config.name("direction")] = str(
                     correct_json["direction"]
                 )
-            data["partial_scores"][config.answer_name] = {
-                "score": 1,
-                "weight": config.weight,
-            }
+            if config.grading != "none":
+                data["partial_scores"][config.answer_name] = {
+                    "score": 1,
+                    "weight": config.weight,
+                }
         case "incorrect":
             for component, value in correct.items():
                 raw_value = (
@@ -1427,10 +1431,11 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
                 data["raw_submitted_answers"][config.name("direction")] = str(
                     correct_json["direction"]
                 )
-            data["partial_scores"][config.answer_name] = {
-                "score": 0,
-                "weight": config.weight,
-            }
+            if config.grading != "none":
+                data["partial_scores"][config.answer_name] = {
+                    "score": 0,
+                    "weight": config.weight,
+                }
         case "invalid":
             name = config.name(config.components[0])
             data["raw_submitted_answers"][name] = "INVALID"

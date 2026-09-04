@@ -30,7 +30,7 @@ Because `correct-answer` contains the complete expression, the element can infer
 | `body-size`                   | integer                                                                                                                         | 16             | Positive character width of the body field.                                                                                                                                  |
 | `correct-answer`              | string                                                                                                                          | —              | Correct answer as a complete, parseable expression. When possible, the element infers the operator, index variable, limits layout, and limit direction from this expression. |
 | `custom-functions`            | string                                                                                                                          | —              | Comma-separated list of symbolic function names allowed in correct answers and student answers, such as `"f,g"`.                                                             |
-| `grading-method`              | `"exact"`, `"component"`, or `"equivalent"`                                                                                     | `"equivalent"` | How to compare the student answer with the correct answer. See [Grading](#grading).                                                                                          |
+| `grading-method`              | `"exact"`, `"component"`, `"equivalent"`, or `"none"`                                                                           | `"equivalent"` | How to compare the student answer with the correct answer. See [Grading](#grading).                                                                                          |
 | `index-variable`              | string                                                                                                                          | —              | Bound variable, which is automatically allowed in the body. Required when the element cannot infer it from `correct-answer`.                                                 |
 | `limit-direction`             | `"two-sided"`, `"from-left"`, or `"from-right"`                                                                                 | `"two-sided"`  | Direction of an approach limit. When possible, the element infers this value from `correct-answer`.                                                                          |
 | `limit-size`                  | integer                                                                                                                         | 7 or 10        | Positive character width of each limit field. The default is 7 for bounds and 10 for domain or approach limits.                                                              |
@@ -119,7 +119,7 @@ Valid approach directions are `"+"`, `"-"`, and `"+-"`.
 
 Custom operators change the displayed symbol and use the standard input layouts. They do not define a new SymPy operation. As a result:
 
-- Custom operators do not support `grading-method="equivalent"`. Use `exact` or `component` grading instead.
+- Custom operators do not support `grading-method="equivalent"`. Use `exact` or `component` grading instead, or `none` to display the correct answer without grading.
 - `limits="auto"` requires a parseable `Custom(...)` correct answer from which the element can infer the layout. Otherwise, set `limits` to `bounds`, `domain`, or `approach`.
 - `operator-latex` is required. It controls presentation only; it does not define parsing or mathematical behavior.
 - Without a correct answer, the element records submissions but does not grade them. This behavior is the same for custom and built-in operators.
@@ -264,13 +264,14 @@ After element processing:
 
 ## Grading
 
-The `grading-method` attribute supports three modes:
+The `grading-method` attribute supports four modes:
 
 | Method       | Behavior                                                                                                                                                                 |
 | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `exact`      | Requires the operator, layout, direction, index, and every SymPy component to match exactly.                                                                             |
 | `equivalent` | Builds complete SymPy expressions and checks whether they are mathematically equivalent. It first checks structural equality, then tests whether the difference is zero. |
 | `component`  | Checks each visible field separately for mathematical equivalence. This method does not change how the correct answer is specified.                                      |
+| `none`       | Accepts any input without assigning a score. The configured correct answer is still displayed in the answer panel.                                                       |
 
 For domain equivalence, the element expands only a concrete `FiniteSet`. A symbolic or infinite domain fails with an explicit error instead of being expanded.
 
