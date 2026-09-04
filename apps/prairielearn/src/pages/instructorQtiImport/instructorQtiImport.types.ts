@@ -114,6 +114,15 @@ export interface QuestionOverrides {
   collisionStrategy: CollisionStrategy;
 }
 
+/** Reviewer edits to a conversion result, indexed in parallel with the results array. */
+export interface AssessmentOverrides {
+  title: string;
+  type: 'Homework' | 'Exam';
+  set: string;
+  number: string;
+  included: boolean;
+}
+
 export const DUPLICATE_ASSESSMENT_QUESTION_WARNING =
   'This question appears multiple times on the assessment. Only the first occurrence of the question will be imported.';
 

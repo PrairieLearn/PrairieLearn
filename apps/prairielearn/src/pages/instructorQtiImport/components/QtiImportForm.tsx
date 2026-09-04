@@ -12,7 +12,9 @@ import { getAppError } from '@prairielearn/trpc/client';
 import { getCourseInstanceBaseUrl } from '../../../lib/client/url.js';
 import { createCourseTrpcClient } from '../../../trpc/course/client.js';
 import type { QtiImportError } from '../../../trpc/course/qti-import.js';
+import { buildImportPayload, getIncludedQuestionCount } from '../instructorQtiImport.payload.js';
 import {
+  type AssessmentOverrides,
   type CourseInstanceOption,
   type ParseWarning,
   QTI_IMPORT_MAX_UPLOAD_BYTES,
@@ -23,7 +25,6 @@ import {
   deduplicateAssessmentZoneQuestions,
   getUnresolvedSourceBankRefs,
   hasCanvasUnresolvedSourceBankRefs,
-  resolveRenamedDir,
 } from '../instructorQtiImport.types.js';
 
 import {
@@ -75,14 +76,6 @@ function useBeforeUnload(enabled: boolean): () => void {
   return () => {
     disabledRef.current = true;
   };
-}
-
-interface AssessmentOverrides {
-  title: string;
-  type: 'Homework' | 'Exam';
-  set: string;
-  number: string;
-  included: boolean;
 }
 
 function deduplicateAssessmentNumbers(
@@ -442,152 +435,18 @@ export function QtiImportForm({
     });
   };
 
-  const getIncludedQuestionCount = (result: SerializedConversionResult) =>
-    result.questions.filter((q) => questionOverrides.get(q.directoryName)?.included !== false)
-      .length;
-
   const handleCreate = async () => {
     setError(null);
     setStep('creating');
 
     try {
-      const includedResults = results
-        .map((result, i) => ({ result, override: overrides[i] }))
-        .filter(
-          ({ result, override }) => override.included && getIncludedQuestionCount(result) > 0,
-        );
-      const includedAssessments = canImportAssessments
-        ? includedResults.filter(
-            (
-              entry,
-            ): entry is typeof entry & {
-              result: Extract<SerializedConversionResult, { sourceType: 'assessment' }>;
-            } => entry.result.sourceType === 'assessment',
-          )
-        : [];
-      // Without a course instance, quiz questions are imported as standalone questions.
-      const standaloneQuestionResults = canImportAssessments
-        ? includedResults.filter(({ result }) => result.sourceType === 'question-bank')
-        : includedResults;
-
-      // Deduplicate assessment directory names so two assessments with the
-      // same title don't overwrite each other.
-      const allocatedAssessmentDirs = new Set<string>();
-      const resolvedAssessmentDirNames = new Map<string, string>();
-      for (const { result } of includedAssessments) {
-        let dirName = result.assessment.directoryName;
-        if (allocatedAssessmentDirs.has(dirName)) {
-          let n = 2;
-          while (allocatedAssessmentDirs.has(`${dirName}-${n}`)) n++;
-          dirName = `${dirName}-${n}`;
-        }
-        allocatedAssessmentDirs.add(dirName);
-        resolvedAssessmentDirNames.set(result.assessment.directoryName, dirName);
-      }
-
-      // Pre-compute final directory names for all renamed questions so that
-      // the same question shared across multiple assessments gets a single
-      // consistent name rather than re-resolving per assessment.
-      const allocatedDirs = new Set(existingDirs);
-      const resolvedDirNames = new Map<string, string>();
-      for (const { result } of includedResults) {
-        for (const q of result.questions) {
-          if (resolvedDirNames.has(q.directoryName)) continue;
-          const qOverride = questionOverrides.get(q.directoryName);
-          if (qOverride?.included === false) continue;
-          let dirName = q.directoryName;
-          if (qOverride?.collides && qOverride.collisionStrategy === 'rename') {
-            dirName = resolveRenamedDir(qOverride.originalDirName, allocatedDirs);
-          }
-          allocatedDirs.add(dirName);
-          resolvedDirNames.set(q.directoryName, dirName);
-        }
-      }
-
-      const questionPayloads = standaloneQuestionResults.flatMap(({ result }) =>
-        result.questions
-          .filter((q) => questionOverrides.get(q.directoryName)?.included !== false)
-          .map((q) => {
-            const qOverride = questionOverrides.get(q.directoryName);
-            const dirName = resolvedDirNames.get(q.directoryName) ?? q.directoryName;
-            return {
-              draftId: q.draftId,
-              originalDirectoryName: q.originalDirectoryName,
-              directoryName: dirName,
-              infoJson: {
-                ...q.infoJson,
-                ...(qOverride && {
-                  title: qOverride.title,
-                  topic: qOverride.topic,
-                  tags: qOverride.tags,
-                }),
-              },
-              overwrite: qOverride?.collides && qOverride.collisionStrategy === 'overwrite',
-            };
-          }),
-      );
-      const questionPayloadsByDirectoryName = new Map(
-        questionPayloads.map((question) => [question.directoryName, question]),
-      );
-
-      const payload = {
+      const payload = buildImportPayload({
+        results,
+        overrides,
+        questionOverrides,
+        existingDirs,
         courseInstanceId: selectedCourseInstanceId,
-        questions: [...questionPayloadsByDirectoryName.values()],
-        assessments: includedAssessments.map(({ result, override }) => {
-          const includedQuestionDirs = new Set<string>();
-
-          const questions = result.questions
-            .filter((q) => questionOverrides.get(q.directoryName)?.included !== false)
-            .map((q) => {
-              const qOverride = questionOverrides.get(q.directoryName);
-              const dirName = resolvedDirNames.get(q.directoryName) ?? q.directoryName;
-              includedQuestionDirs.add(dirName);
-              return {
-                draftId: q.draftId,
-                originalDirectoryName: q.originalDirectoryName,
-                directoryName: dirName,
-                infoJson: {
-                  ...q.infoJson,
-                  ...(qOverride && {
-                    title: qOverride.title,
-                    topic: qOverride.topic,
-                    tags: qOverride.tags,
-                  }),
-                },
-                overwrite: qOverride?.collides && qOverride.collisionStrategy === 'overwrite',
-              };
-            });
-
-          // Rewrite assessment zones to reference the final directory names
-          // and filter out excluded questions.
-          const zones = result.assessment.infoJson.zones
-            .map((zone) => ({
-              ...zone,
-              questions: zone.questions
-                .map((zq) => {
-                  const id = resolvedDirNames.get(zq.id) ?? zq.id;
-                  return includedQuestionDirs.has(id) ? { ...zq, id } : null;
-                })
-                .filter((zq): zq is NonNullable<typeof zq> => zq !== null),
-            }))
-            .filter((zone) => zone.questions.length > 0);
-
-          return {
-            directoryName:
-              resolvedAssessmentDirNames.get(result.assessment.directoryName) ??
-              result.assessment.directoryName,
-            infoJson: {
-              ...result.assessment.infoJson,
-              title: override.title,
-              type: override.type,
-              set: override.set,
-              number: override.number,
-              zones,
-            },
-            questions,
-          };
-        }),
-      };
+      });
 
       const payloadJson = JSON.stringify(payload);
       const payloadBytes = new TextEncoder().encode(payloadJson).length;
@@ -644,7 +503,7 @@ export function QtiImportForm({
         (result, i) =>
           overrides[i]?.included &&
           result.sourceType === 'assessment' &&
-          getIncludedQuestionCount(result) > 0,
+          getIncludedQuestionCount(result, questionOverrides) > 0,
       ).length
     : 0;
   const hasAssessmentResults = results.some((result) => result.sourceType === 'assessment');
