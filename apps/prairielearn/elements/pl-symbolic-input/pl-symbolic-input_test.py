@@ -145,17 +145,17 @@ def test_parse_accepts_allowed_value_types(allowed_types: str, submission: str) 
 
 
 @pytest.mark.parametrize(
-    ("allowed_types", "submission", "expected_type"),
+    ("allowed_types", "submission", "missing_types"),
     [
         ("finite-set", "x + 1", "expression"),
         ("finite-set", "[1, 2]", "interval"),
-        ("finite-set", "[1, 2] U [3, 4]", "non-finite set"),
+        ("finite-set", "[1, 2] U [3, 4]", "interval"),
         ("interval", "{1, 2}", "finite-set"),
         ("interval", "x + 1", "expression"),
     ],
 )
 def test_parse_rejects_disallowed_value_types(
-    allowed_types: str, submission: str, expected_type: str
+    allowed_types: str, submission: str, missing_types: str
 ) -> None:
     element_html = build_element_html(
         'variables="x"',
@@ -167,8 +167,8 @@ def test_parse_rejects_disallowed_value_types(
 
     assert data["submitted_answers"]["test"] is None
     assert data["format_errors"]["test"] == (
-        f"Your answer has type '{expected_type}', but this input only accepts: "
-        f"{allowed_types}."
+        f"Your answer uses {missing_types}, which this input does not accept. "
+        f"Allowed types: {allowed_types}."
     )
 
 
@@ -190,7 +190,7 @@ def test_prepare_rejects_disallowed_correct_answer_type() -> None:
 
     with pytest.raises(
         ValueError,
-        match=r"Parsing correct answer.*type 'finite-set'.*accepts: interval",
+        match=r"Parsing correct answer.*uses finite-set.*Allowed types: interval",
     ):
         symbolic_input.prepare(element_html, make_question_data())
 
@@ -270,7 +270,7 @@ def test_rejects_disallowed_server_correct_answer_type(correct_answer: Any) -> N
 
     with pytest.raises(
         ValueError,
-        match=r"Correct answer.*type 'finite-set'.*accepts: interval",
+        match=r"Correct answer.*uses finite-set.*Allowed types: interval",
     ):
         symbolic_input.test(element_html, data)
 

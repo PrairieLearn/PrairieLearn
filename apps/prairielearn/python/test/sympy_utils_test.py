@@ -421,13 +421,13 @@ class TestSympy:
         assert result == psu.SympyParseSuccess(expected)
 
     @pytest.mark.parametrize(
-        ("text", "allowed_types", "expected_type"),
+        ("text", "allowed_types", "missing_types"),
         [
             ("m + 1", {"finite-set"}, "expression"),
-            ("{}", {"expression"}, "finite-set"),
+            ("{}", {"expression"}, "finite-set, interval"),
             ("{1, 2}", {"expression"}, "finite-set"),
             ("[1, 2]", {"finite-set"}, "interval"),
-            ("[1, 2] U [3, 4]", {"finite-set"}, "non-finite set"),
+            ("[1, 2] U [3, 4]", {"finite-set"}, "interval"),
             ("m + 1", {"finite-set", "interval"}, "expression"),
             ("{1, 2}", {"expression", "interval"}, "finite-set"),
             ("[1, 2]", {"expression", "finite-set"}, "interval"),
@@ -442,7 +442,7 @@ class TestSympy:
         self,
         text: str,
         allowed_types: set[psu.AllowedSympyType],
-        expected_type: str,
+        missing_types: str,
     ) -> None:
         result = psu.try_parse_string_as_sympy(
             text,
@@ -452,8 +452,8 @@ class TestSympy:
         )
 
         assert result == psu.SympyParseFailure(
-            f"Your answer has type '{expected_type}', but this input only accepts: "
-            f"{', '.join(sorted(allowed_types))}."
+            f"Your answer uses {missing_types}, which this input does not accept. "
+            f"Allowed types: {', '.join(sorted(allowed_types))}."
         )
 
     @pytest.mark.parametrize(
