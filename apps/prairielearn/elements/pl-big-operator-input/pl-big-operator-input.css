@@ -1,7 +1,9 @@
 .pl-big-operator-input {
+  --pl-big-operator-input-gap: 0.8rem;
+
   display: inline-flex;
   align-items: center;
-  gap: 0.8rem;
+  gap: var(--pl-big-operator-input-gap);
   vertical-align: middle;
   margin: 0.25rem 0;
 }
@@ -168,16 +170,37 @@
   justify-content: flex-start;
 }
 
-.pl-big-operator-input__operator {
-  font-size: 2rem;
+.pl-big-operator-input__operator,
+.pl-big-operator-input__affix {
   line-height: 0.9;
   font-weight: 400;
   margin: 0.15rem 0;
 }
 
+.pl-big-operator-input__affix--prefix {
+  margin-inline-end: calc(-1 * var(--pl-big-operator-input-gap));
+}
+
+.pl-big-operator-input__affix--suffix {
+  margin-inline-start: calc(-1 * var(--pl-big-operator-input-gap));
+}
+
+.pl-big-operator-input__operator,
+.pl-big-operator-input__affix {
+  font-size: 2rem;
+}
+
+.pl-big-operator-input__integral-tail {
+  font-size: 1.5rem;
+}
+
 .pl-big-operator-input__body {
   display: inline-flex;
   align-items: center;
+}
+
+.pl-big-operator-input__body .input-group {
+  flex-wrap: nowrap;
 }
 
 .pl-big-operator-input__body math-field {
@@ -189,10 +212,6 @@
 .pl-big-operator-input__body .input-group > math-field:last-child {
   border-top-right-radius: var(--bs-border-radius) !important;
   border-bottom-right-radius: var(--bs-border-radius) !important;
-}
-
-.pl-big-operator-input__differential {
-  font-size: 1.5rem;
 }
 
 .pl-big-operator-input__label.visually-hidden {
@@ -209,18 +228,19 @@
 
 @media (max-width: 640px) {
   .pl-big-operator-input {
-    gap: 0.6rem;
+    --pl-big-operator-input-gap: 0.6rem;
   }
 
   .pl-big-operator-input__body {
     min-width: 10rem;
   }
 
-  .pl-big-operator-input__operator {
+  .pl-big-operator-input__operator,
+  .pl-big-operator-input__affix {
     font-size: 2.9rem;
   }
 
-  .pl-big-operator-input__differential {
+  .pl-big-operator-input__integral-tail {
     font-size: 2rem;
   }
 

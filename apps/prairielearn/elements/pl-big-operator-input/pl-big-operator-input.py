@@ -140,6 +140,8 @@ class RenderConfig:
     answer_name: str
     operator: Operator
     operator_latex: str
+    prefix_latex: str | None
+    suffix_latex: str | None
     limits: LimitFormat
     index: str
     variables: tuple[str, ...]
@@ -522,6 +524,8 @@ def _config(html: str, data: pl.QuestionData | None = None) -> RenderConfig:
         answer_name=answer,
         operator=operator,
         operator_latex=operator_latex,
+        prefix_latex=pl.get_string_attrib(element, "prefix-latex", None),
+        suffix_latex=pl.get_string_attrib(element, "suffix-latex", None),
         limits=limits,
         index=index,
         variables=variables,
@@ -959,6 +963,8 @@ def _question_mustache(config: RenderConfig, data: pl.QuestionData) -> str:
         config.limits: True,
         "integral": config.operator == "integral",
         "operator_latex": config.operator_latex,
+        "prefix_latex": config.prefix_latex,
+        "suffix_latex": config.suffix_latex,
         "index_label": index,
         "body_size": config.body_size,
         "limit_size": config.limit_size,
@@ -1101,10 +1107,19 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             if correct is None:
                 return ""
             return _render_mustache(
-                {"tex": _structured_tex(config, correct)}, template="submission"
+                {
+                    "tex": _structured_tex(config, correct),
+                    "prefix_latex": config.prefix_latex,
+                    "suffix_latex": config.suffix_latex,
+                },
+                template="submission",
             )
         case "submission":
-            context: dict[str, Any] = {"tex": _submitted_tex(config, data)}
+            context: dict[str, Any] = {
+                "tex": _submitted_tex(config, data),
+                "prefix_latex": config.prefix_latex,
+                "suffix_latex": config.suffix_latex,
+            }
             partial_score = data.get("partial_scores", {}).get(config.answer_name)
             if partial_score is not None:
                 context.update(_score_badge(float(partial_score.get("score") or 0)))
