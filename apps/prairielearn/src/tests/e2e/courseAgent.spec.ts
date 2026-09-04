@@ -1,9 +1,20 @@
 import { insertCoursePermissionsByUserUid } from '../../models/course-permissions.js';
+import { updateCourseColumn } from '../../models/course.js';
 import { selectUserByUid } from '../../models/user.js';
+import { getConfiguredUser } from '../utils/auth.js';
 
 import { createTest, expect } from './fixtures.js';
 
 const test = createTest({ courseAgentRuntime: 'fake', features: { 'course-agent': true } });
+
+test.beforeEach(async ({ courseInstance }) => {
+  await updateCourseColumn({
+    courseId: courseInstance.course_id,
+    columnName: 'repository',
+    value: 'https://github.com/PrairieLearn/test.git',
+    authnUserId: (await getConfiguredUser()).id,
+  });
+});
 
 test('shows only the active progress indicator and renders text before turn completion', async ({
   page,

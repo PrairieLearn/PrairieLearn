@@ -57,6 +57,9 @@ export async function authorizeRun(request: CourseAgentStartRunRequest, secret: 
     capability.runId !== request.runId ||
     capability.sandboxId !== request.sandboxId ||
     capability.promptDigest !== (await sha256Hex(request.prompt)) ||
+    capability.repository !== request.course.repository ||
+    capability.branch !== request.course.branch ||
+    capability.expectedSha !== request.course.expectedSha ||
     capability.runtimeSettings.idleTimeoutSeconds !== request.runtimeSettings.idleTimeoutSeconds ||
     capability.runtimeSettings.maxLifetimeSeconds !== request.runtimeSettings.maxLifetimeSeconds ||
     capability.runtimeSettings.turnTimeoutSeconds !== request.runtimeSettings.turnTimeoutSeconds

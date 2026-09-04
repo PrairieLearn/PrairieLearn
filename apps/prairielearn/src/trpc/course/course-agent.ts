@@ -43,11 +43,22 @@ const start = courseAgentProcedure
     }),
   )
   .mutation(async ({ ctx, input }) => {
+    if (!ctx.course.repository) {
+      throw new TRPCError({
+        code: 'PRECONDITION_FAILED',
+        message: 'Configure a Git repository for this course before starting the course agent',
+      });
+    }
     return startEphemeralCourseAgentRun({
       courseId: ctx.course.id,
       userId: ctx.locals.authn_user.id,
       conversationId: input.conversationId,
       prompt: input.prompt,
+      course: {
+        repository: ctx.course.repository,
+        branch: ctx.course.branch,
+        expectedSha: ctx.course.commit_hash,
+      },
     });
   });
 

@@ -301,6 +301,7 @@ function Diagnostics({
 }) {
   const agentStarted = findLastEvent(events, 'agent.started');
   const usage = findLastEvent(events, 'usage.updated');
+  const docs = findLastEvent(events, 'docs.mounted', 'docs.unavailable');
   const statusLabel =
     {
       offline: 'Not started',
@@ -314,6 +315,10 @@ function Diagnostics({
     ['Sandbox', conversation?.sandboxId ?? 'Not started'],
     ['Run', runId ?? 'Idle'],
     ['Codex thread', String(agentStarted?.data.threadId ?? 'Pending')],
+    [
+      'Documentation',
+      docs?.type === 'docs.mounted' ? 'Mounted' : docs ? 'Bundled skill only' : 'Pending',
+    ],
   ];
   const tokenFields = [
     ['input_tokens', 'Input'],
@@ -367,9 +372,9 @@ function Diagnostics({
   );
 }
 
-function findLastEvent(events: CourseAgentEvent[], type: CourseAgentEvent['type']) {
+function findLastEvent(events: CourseAgentEvent[], ...types: CourseAgentEvent['type'][]) {
   for (let index = events.length - 1; index >= 0; index--) {
-    if (events[index].type === type) return events[index];
+    if (types.includes(events[index].type)) return events[index];
   }
   return undefined;
 }

@@ -21,7 +21,10 @@ for the UI. PostgreSQL chat history does not replace Codex's native session stat
 The course agent is experimental and guarded by the `course-agent` feature flag. The first MVP
 layer provides a temporary `/workspace`, a Codex harness with web search, Redis-backed resumable
 SSE activity, a basic instructor panel, and live diagnostics. It does not clone a course
-repository, persist conversations, publish changes, or track usage.
+repository, persist conversations, publish changes, or track usage. The next stacked layer resolves
+the course's configured GitHub repository and branch, shallow-clones it into `/workspace/course`,
+and gives Codex a bundled content-authoring skill. At that point the agent can create and edit questions,
+assessments, and other course content locally, but still cannot push.
 
 ## Free local testing
 
@@ -35,7 +38,11 @@ with `pnpm dev-course-agent-worker`; Wrangler uses local simulation and local st
 `wrangler deploy` as part of local testing. Put `OPENAI_API_KEY` and the matching
 `COURSE_AGENT_CAPABILITY_SECRET` in `apps/course-agent-worker/.dev.vars`. The model credential is
 held by the Worker and inserted only by its outbound OpenAI handler; the sandbox receives the
-placeholder value `proxy-injected`.
+placeholder value `proxy-injected`. Repository-enabled builds also require a read-only
+`COURSE_AGENT_GITHUB_PAT` in the same Worker-only file. The sandbox sees `proxy-read`; the Worker
+replaces it only for Git upload-pack requests to the exact authorized repository. Receive-pack,
+other repositories, and other GitHub operations are rejected, so the credential can clone, fetch,
+and pull but cannot push.
 
 `make dev` never starts Wrangler. If the Worker is unavailable when you send a message, the panel
 shows an error with the separate startup command.
@@ -67,6 +74,29 @@ identifiers, state, and usage, but never credentials or model reasoning. Activit
 appears inline within each assistant response using the same tool-status components as question
 generation, and assistant responses support Markdown. Enter sends a message;
 Shift+Enter adds a newline. The sandbox image includes `python` and `python3`.
+
+The Worker mounts the `COURSE_AGENT_DOCS` R2 binding read-only at
+`/opt/prairielearn-docs`. Local development can use Wrangler's empty local R2 bucket; Codex falls
+back to the bundled skill when documentation is unavailable. The skill lives at
+`apps/course-agent-worker/skills/course-content-authoring` and is packaged under
+`/opt/course-agent/skills/course-content-authoring`. The runner reads its entrypoint into Codex's
+developer instructions on every turn, so the model does not need to discover or search for `SKILL.md`.
+It contains basic
+course layout, targeted documentation pointers, fixed-choice and randomized numeric question
+examples, and Homework/Exam assessment examples. These are available without R2 or web access.
+References are read only when relevant; normal greetings require no repository inspection.
+
+A compact Homework example is included in the starting instructions, so a basic assessment does
+not require a separate template read. The skill encourages batched inspection, editing, and
+review, and defaults to three complementary questions when no count is requested. It preserves
+requested subject depth. No automatic course inventory or eval runner is included.
+
+There is no standalone validator or `question_render` tool in the repository-setup PR. The later
+push/sync PR should return PL sync errors through `push_sync` and add `question_render` for a
+selected question variant before requesting publication. Rendering should use isolated proposed
+content, not mutate the live course; return rendered output and actionable generation/render
+errors to the agent. Sync success alone does not establish that every variant renders or grades.
+Until those tools exist, the agent reports local edits without claiming successful rendering or sync.
 
 The panel uses the AI SDK's `useChat`. A small transport starts runs through tRPC and reads standard
 UI-message SSE. PrairieLearn translates Worker events into UI-message chunks before buffering them

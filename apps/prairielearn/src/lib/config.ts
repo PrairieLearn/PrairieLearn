@@ -623,6 +623,8 @@ export const ConfigSchema = z.object({
     }, 'Course-agent Worker origin must use HTTPS unless it is a loopback development URL')
     .default('http://127.0.0.1:8787'),
   courseAgentCapabilitySecret: z.string().nullable().default(null),
+  /** Dedicated GitHub token used only by the Worker's fixed read-only upload-pack broker. */
+  courseAgentGithubToken: z.string().nullable().default(null),
   courseAgentSandbox: z
     .object({
       idleTimeoutSeconds: z.number().int().min(60).max(86_400).default(600),

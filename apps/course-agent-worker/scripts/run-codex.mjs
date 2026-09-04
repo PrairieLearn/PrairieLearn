@@ -2,7 +2,7 @@ import { spawn } from 'node:child_process';
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { createInterface } from 'node:readline';
-import { pathToFileURL } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 // App-server, unlike exec --json, exposes incremental agent-message text.
 export async function runCodex({
@@ -15,6 +15,17 @@ export async function runCodex({
   codexHome = join(cwd, '.course-agent', 'codex'),
   history = [],
 }) {
+  const skillPath = fileURLToPath(
+    new URL('../skills/course-content-authoring/SKILL.md', import.meta.url),
+  );
+  const skill = await readFile(skillPath, 'utf8');
+  const assessmentExample = await readFile(
+    new URL(
+      '../skills/course-content-authoring/assets/assessments/dynamicProgrammingHomework/infoAssessment.json',
+      import.meta.url,
+    ),
+    'utf8',
+  );
   await mkdir(codexHome, { recursive: true });
   const threadFile = join(codexHome, 'course-agent-thread.json');
   let savedThread;
@@ -99,6 +110,8 @@ export async function runCodex({
             approvalPolicy: 'on-request',
             approvalsReviewer: 'auto_review',
             sandbox: 'workspace-write',
+            // Load the entrypoint explicitly; discovery does not include this image-owned directory.
+            developerInstructions: `Use the bundled course-content-authoring skill below for applicable requests. Its file is ${skillPath}; resolve its relative references from that directory.\n\n${skill}\n\nBasic Homework example (adapt the UUID, title, number and question IDs; not a request to create this exact assessment):\n${assessmentExample}`,
           },
         });
       } else if (message.id === 1) {
