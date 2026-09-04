@@ -525,6 +525,29 @@ class TestRenderUnits:
             assert f'name="{field}"' not in rendered
 
     @pytest.mark.parametrize(
+        ("operator", "limits", "field_names"),
+        [
+            ("sum", "bounds", ("op-start", "op-end", "op-body")),
+            ("integral", "bounds", ("op-start", "op-end", "op-body")),
+            ("integral", "domain", ("op-domain", "op-body")),
+            ("union", "domain", ("op-domain", "op-body")),
+            ("limit", "approach", ("op-target", "op-direction", "op-body")),
+        ],
+    )
+    def test_question_panel_fields_follow_tab_order(
+        self, operator: str, limits: str, field_names: tuple[str, ...]
+    ) -> None:
+        rendered = big_operator_input.render(
+            html(operator=operator, limits=limits), question_data()
+        )
+
+        operator_position = rendered.index('class="pl-big-operator-input__operator"')
+        field_positions = [rendered.index(f'name="{name}"') for name in field_names]
+
+        assert operator_position < field_positions[0]
+        assert field_positions == sorted(field_positions)
+
+    @pytest.mark.parametrize(
         ("correct_answer", "expected_tex"),
         [
             ("Sum(k**2, (k, 1, 4))", r"\sum_{k=1}^{4} k^{2}"),
