@@ -76,18 +76,6 @@ If `allowed-types` includes `set`, `finite-set`, or `interval`, or is set to `al
 - Common set operators: union (`U`, `cup`, `+`, or `|`),
   intersection (`cap` or `&`), and difference (`-`)
 
-The following names can represent symbolic infinite sets: `Complexes`, `Integers`, `Naturals`, `Naturals0`, `Rationals`, and `Reals`. These names are not implicit constants. Each name used in an answer must be declared in the element's `variables` attribute, and `allowed-types` must include `set` (or be `all`). For example:
-
-```html
-<pl-symbolic-input
-  answers-name="domain"
-  variables="Reals, Naturals"
-  allowed-types="set"
-></pl-symbolic-input>
-```
-
-This input accepts set operations such as `Reals - Naturals`, `Reals U Naturals`, and `Reals & Naturals`. An undeclared special domain name is rejected as an invalid symbol.
-
 ### Allowed answer types
 
 The `allowed-types` attribute restricts submitted and correct answers based on their type after SymPy simplification:
@@ -95,7 +83,7 @@ The `allowed-types` attribute restricts submitted and correct answers based on t
 | Type         | Accepted values                                                              | Examples                                       |
 | ------------ | ---------------------------------------------------------------------------- | ---------------------------------------------- |
 | `expression` | Values that are not sets or intervals.                                       | `x + 1`, `sin(x)`, `2/3`                       |
-| `set`        | Any set, including finite sets, intervals, and set operations.               | `{1, 2}`, `[1, 2]`, `Reals - Naturals`         |
+| `set`        | Any set, including finite sets, intervals, and set operations.               | `{1, 2}`, `[1, 2]`, `[1, 2] - {2}`             |
 | `finite-set` | Finite sets and set operations that simplify to a finite set.                | `{1, 2}`, `{1, 2} U {3, 4}`, `{0, 2} & [2, 4]` |
 | `interval`   | Intervals and unions or intersections whose nested values are all intervals. | `[1, 2]`, `[1, 2] U [3, 4]`, `[0, 2] & [1, 4]` |
 | `all`        | Every supported value type.                                                  | `x + 1`, `{1, 2}`, `[1, 2]`                    |
