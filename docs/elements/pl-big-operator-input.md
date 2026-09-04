@@ -84,7 +84,7 @@ For approach limits, students choose the direction by default. The initial red `
 ></pl-big-operator-input>
 ```
 
-For an integral with `limits="domain"`, the domain appears as the only subscript, without an `index-variable \in` prefix. For example, the element renders `\int_\Gamma z\,\mathrm{d}z`. Use `grading-method="exact"` or `grading-method="component"` for this layout because SymPy does not have a lossless indexed representation for the notation.
+For an integral with `limits="domain"`, the domain appears as the only subscript, without an `index-variable \in` prefix. For example, the element renders `\int_\Gamma z\,\mathrm{d}z`. Because SymPy does not have a lossless indexed representation for this notation, use `grading-method="exact"` or `grading-method="component"` when grading it, or `grading-method="none"` to display a correct answer without grading.
 
 ### Custom operators
 
