@@ -6,6 +6,8 @@ The fields accept the same symbolic syntax as [`pl-symbolic-input`](pl-symbolic-
 
 ## Sample element
 
+![Screenshot of the pl-big-operator-input element showing an empty bounded sum](pl-big-operator-input-bounded-sum.png)
+
 ```html title="question.html"
 <pl-big-operator-input
   answers-name="total"
@@ -64,7 +66,15 @@ With `limits="auto"`, the element first tries to infer the layout from `correct-
 | `max`            | $\max$                | `domain`       | `bounds`, `domain`             |
 | `custom`         | From `operator-latex` | inferred       | `bounds`, `domain`, `approach` |
 
+![Empty domain-indexed summation input with a domain field labeled k in below the summation symbol and a body field to its right](pl-big-operator-input-sum.png)
+
+The `prefix-latex` and `suffix-latex` attributes place additional notation immediately before and after the operator expression. For example, they can present an input as part of a larger equation:
+
+![Empty bounded integral input prefixed by Gamma of z equals, with lower and upper limit fields, a body field, and a differential t suffix](pl-big-operator-input-integral.png)
+
 For approach limits, students choose the direction by default. The initial red `?` asks them to select `±` (two-sided), `−` (from the left), or `+` (from the right); it does not reveal the correct direction. To display a fixed direction instead, set `allow-limit-direction-input="false"`.
+
+![Empty approach-limit input with a target field labeled x approaches, an unanswered direction selector, and a body field](pl-big-operator-input-limit.png)
 
 ```html
 <pl-big-operator-input
@@ -86,11 +96,13 @@ Provide `operator-latex` to use a symbol that is not built in. Either set `opera
 
 Valid approach directions are `"+"`, `"-"`, and `"+-"`.
 
+![Empty custom star-operator input with lower and upper bound fields labeled j equals and a body field](pl-big-operator-input-custom.png)
+
 ```html
 <pl-big-operator-input
-  answers-name="expectation"
-  correct-answer="Custom(k**2, (k, {1, 2}))"
-  operator-latex="\mathbb{E}"
+  answers-name="example-custom"
+  correct-answer="Custom(j**2, (j, 1, 10))"
+  operator-latex="\displaystyle{\Huge\bigstar{}}"
   grading-method="component"
 ></pl-big-operator-input>
 ```
