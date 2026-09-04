@@ -73,6 +73,38 @@ export async function closePrintRenderer(): Promise<void> {
   await renderer?.close();
 }
 
+/** In production, rendering needs a private Playwright browser server; development launches Chromium. */
+export function isBrowserRenderingAvailable(): boolean {
+  return config.devMode || config.printingPlaywrightWsEndpoint !== null;
+}
+
+export interface OmittedQuestionWarning {
+  code: typeof BROKEN_QUESTION_FAILURE_CODE;
+  question_number: string;
+  qid: string | null;
+  message: string;
+}
+
+/** Describes the questions that were left out of a printable document, for the instructor. */
+export function describeOmittedQuestions(
+  questionResults: PrintingQuestionResult[],
+): OmittedQuestionWarning[] {
+  return questionResults.flatMap((result) => {
+    if (result.status !== 'failed') return [];
+    const label = result.qid
+      ? `Question ${result.questionNumber} (${result.qid})`
+      : `Question ${result.questionNumber}`;
+    return [
+      {
+        code: result.code,
+        question_number: result.questionNumber,
+        qid: result.qid,
+        message: `${label} could not be rendered due to an error in question code and is omitted from the printable documents.`,
+      },
+    ];
+  });
+}
+
 class BrokenQuestionForPrintingError extends Error {
   constructor(
     readonly variantId: string,
