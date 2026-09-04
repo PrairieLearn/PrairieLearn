@@ -11,8 +11,8 @@ vi.mock('playwright', () => ({
   chromium: { connect: playwrightMocks.connect, launch: playwrightMocks.launch },
 }));
 
+import { PrintRenderer } from './printRenderer.js';
 import type { PrintableCover } from './printableCover.js';
-import { renderUrlToDocx } from './renderUrlToDocx.js';
 
 const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
 // A US Letter sheet at 96 CSS pixels per inch with 0.55in top and side margins and a 0.68in
@@ -88,10 +88,12 @@ function createBrowserHarness({
     route: vi.fn(async () => undefined),
     routeWebSocket: vi.fn(async () => undefined),
     newPage: vi.fn(async () => page),
+    close: vi.fn(async () => undefined),
   } as unknown as BrowserContext;
   const browser = {
     newContext: vi.fn(async () => context),
     close: vi.fn(async () => undefined),
+    on: vi.fn(),
   } as unknown as Browser;
   playwrightMocks.launch.mockResolvedValue(browser);
   return { browser, context, page, questions };
@@ -111,7 +113,7 @@ async function readDocx(buffer: Buffer) {
   };
 }
 
-describe('renderUrlToDocx', () => {
+describe('renderDocx', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -119,7 +121,7 @@ describe('renderUrlToDocx', () => {
   it('renders the cover natively and every printed question as an image on its PDF page', async () => {
     const harness = createBrowserHarness();
 
-    const docx = await renderUrlToDocx({
+    const docx = await new PrintRenderer().renderDocx({
       url: 'https://localhost:3000/print',
       cover,
       footerLabel: 'Form ID 13',
@@ -172,7 +174,7 @@ describe('renderUrlToDocx', () => {
       }),
     );
 
-    const docx = await renderUrlToDocx({
+    const docx = await new PrintRenderer().renderDocx({
       url: 'https://localhost:3000/print',
       cover: buildCover,
       footerLabel: 'Answer key  |  Form ID 13',
@@ -187,7 +189,7 @@ describe('renderUrlToDocx', () => {
   it('scales images wider than the printable area down to fit', async () => {
     createBrowserHarness({ questions: [createQuestionLocator(1, 1420.8, 200)] });
 
-    const docx = await renderUrlToDocx({
+    const docx = await new PrintRenderer().renderDocx({
       url: 'https://localhost:3000/print',
       cover,
       footerLabel: 'Form ID 13',
@@ -201,7 +203,11 @@ describe('renderUrlToDocx', () => {
     createBrowserHarness({ questions: [createQuestionLocator(-1, 710.4, 200)] });
 
     await expect(
-      renderUrlToDocx({ url: 'https://localhost:3000/print', cover, footerLabel: 'Form ID 13' }),
+      new PrintRenderer().renderDocx({
+        url: 'https://localhost:3000/print',
+        cover,
+        footerLabel: 'Form ID 13',
+      }),
     ).rejects.toThrow('A printed question is not on a paginated page');
   });
 });

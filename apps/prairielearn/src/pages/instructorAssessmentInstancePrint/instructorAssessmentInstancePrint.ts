@@ -10,8 +10,6 @@ import {
   QUESTION_BLOCK_SIZES,
   type QuestionBlockSize,
   QuestionBlockSizeOverflowError,
-  renderUrlToDocx,
-  renderUrlToPdf,
 } from '@prairielearn/printing';
 import { parseRequestQuery } from '@prairielearn/zod';
 
@@ -20,6 +18,7 @@ import { config } from '../../lib/config.js';
 import {
   PRINT_DOCUMENTS,
   type PrintDocument,
+  getPrintRenderer,
   renderAssessmentInstanceQuestionsForPrinting,
   validateQuestionBlockSizeOverridesForPrinting,
 } from '../../lib/printing.js';
@@ -143,17 +142,14 @@ router.get(
         req.originalUrl,
         `${config.serverType}://localhost:${config.serverPort}`,
       );
-      const renderOptions = {
-        url: internalUrl.href,
-        cookieHeader: req.get('cookie'),
-        browserWSEndpoint: config.printingPlaywrightWsEndpoint ?? undefined,
-      };
+      const renderOptions = { url: internalUrl.href, cookieHeader: req.get('cookie') };
+      const renderer = getPrintRenderer();
       const isPdf = responseType === 'application/pdf';
       let output: Buffer;
       try {
         output = isPdf
-          ? await renderUrlToPdf(renderOptions)
-          : await renderUrlToDocx({
+          ? await renderer.renderPdf(renderOptions)
+          : await renderer.renderDocx({
               ...renderOptions,
               // The question count and points are only known once the page has rendered and
               // omitted any broken questions, so the cover reads them back from the page.
