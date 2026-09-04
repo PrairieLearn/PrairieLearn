@@ -325,16 +325,17 @@ def test_incorrect_answer_avoids_correct_answer_collision(
         psu.sympy_to_json(sympy.FiniteSet(1, 2), allow_sets=True),
     ],
 )
-def test_rejects_disallowed_server_correct_answer_type(correct_answer: Any) -> None:
+def test_prepare_rejects_disallowed_server_correct_answer_type(
+    correct_answer: Any,
+) -> None:
     element_html = build_element_html('allowed-types="interval"')
     data = make_question_data(correct_answers={"test": correct_answer})
-    data["test_type"] = "correct"
 
     with pytest.raises(
         ValueError,
-        match=r"Correct answer.*uses finite-set.*Allowed types: interval",
+        match=r"Parsing correct answer.*uses finite-set.*Allowed types: interval",
     ):
-        symbolic_input.test(element_html, data)
+        symbolic_input.prepare(element_html, data)
 
 
 @pytest.mark.parametrize(
