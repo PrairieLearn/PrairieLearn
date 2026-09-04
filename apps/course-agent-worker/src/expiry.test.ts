@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 const sandbox = vi.hoisted(() => ({
+  writeFile: vi.fn(async () => ({})),
   destroy: vi.fn(async () => {}),
   createBackup: vi.fn(async () => ({ id: 'checkpoint', dir: '/workspace', localBucket: true })),
   restoreBackup: vi.fn(async () => {}),

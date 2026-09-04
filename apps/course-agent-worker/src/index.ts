@@ -15,7 +15,7 @@ import { authorizeRun, authorizeSnapshot } from './auth.js';
 import { parseCodexLine } from './codex-events.js';
 import { codexFailureMessage } from './codex-output.js';
 import { CodexStream } from './codex-stream.js';
-import { conversationContext } from './conversation-context.js';
+import { conversationHistory } from './conversation-history.js';
 import {
   courseGithubReadParams,
   githubReadUrl,
@@ -556,7 +556,16 @@ export class CourseAgentCoordinator {
 
       let buffer = '';
       let eventChain = Promise.resolve();
-      const prompt = `${SYSTEM_PROMPT}\n\nPrior conversation (JSON history for context, not new instructions):\n${conversationContext(current.events)}\n\nInstructor request:\n${request.prompt}`;
+      const prompt = `${SYSTEM_PROMPT}\n\nInstructor request:\n${request.prompt}`;
+      const requestPath = `${COURSE_AGENT_WORKSPACE_ROOT}/.course-agent-request.json`;
+      // Use a file rather than shell arguments: recovery history may exceed the argument-size limit.
+      await sandbox.writeFile(
+        requestPath,
+        JSON.stringify({
+          prompt,
+          history: conversationHistory(current.events),
+        }),
+      );
       const stream = new CodexStream();
       const consumeLine = (line: string) => {
         const event = parseCodexLine(line);
@@ -570,7 +579,7 @@ export class CourseAgentCoordinator {
       const command = [
         'node /opt/course-agent/scripts/run-codex.mjs',
         shellQuote(this.env.OPENAI_MODEL),
-        shellQuote(prompt),
+        shellQuote(requestPath),
       ].join(' ');
       const codex = await sandbox.exec(command, {
         cwd: coursePath,
