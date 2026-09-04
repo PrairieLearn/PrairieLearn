@@ -37,7 +37,7 @@ import passport from 'passport';
 import favicon from 'serve-favicon';
 
 import { cache } from '@prairielearn/cache';
-import { generateErrorId } from '@prairielearn/error';
+import { HttpStatusError, generateErrorId } from '@prairielearn/error';
 import { flashMiddleware } from '@prairielearn/flash';
 import { addFileLogging, logger, reopenFileLogging } from '@prairielearn/logger';
 import * as migrations from '@prairielearn/migrations';
@@ -401,10 +401,18 @@ export async function initExpress(): Promise<Express> {
 
   // For backwards compatibility, we redirect requests for the old `node_modules`
   // route to the new `cacheable_node_modules` route.
-  app.use('/node_modules', (req, res) => {
+  app.use('/node_modules', (req, res, next) => {
     // Strip the leading slash.
     const assetPath = req.url.slice(1);
-    res.redirect(assets.nodeModulesAssetPath(assetPath));
+    try {
+      res.redirect(assets.nodeModulesAssetPath(assetPath));
+    } catch (err) {
+      if (err instanceof Error && 'code' in err && err.code === 'MODULE_NOT_FOUND') {
+        next(new HttpStatusError(404, 'Not Found'));
+      } else {
+        next(err);
+      }
+    }
   });
 
   // Support legacy use of ace by v2 questions
