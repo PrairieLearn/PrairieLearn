@@ -15,6 +15,7 @@ export class QuestionBlockSizeOverflowError extends Error {
 const DEFAULT_RENDER_TIMEOUT_MS = 120_000;
 const DEFAULT_MAX_QUEUED_RENDERS = 16;
 const DEFAULT_CONTEXT_CLOSE_GRACE_MS = 5_000;
+const SOCKET_IO_PATH = '/socket.io/';
 
 interface SemaphoreWaiter {
   queuedAt: number;
@@ -256,10 +257,18 @@ export class PrintRenderer {
         ...(cookieHeader ? { extraHTTPHeaders: { cookie: cookieHeader } } : {}),
       });
 
-      // Only same-origin GET requests may use the forwarded cookie.
+      // Only same-origin GET requests may use the forwarded cookie. Realtime traffic is refused
+      // outright: with WebSockets closed, socket.io would otherwise fall back to HTTP long-polling,
+      // and a handful of open polls can occupy every HTTP/1.1 connection to the server and starve
+      // the page's own script and image loads.
       await context.route('**/*', async (route) => {
         const request = route.request();
-        if (request.method() !== 'GET' || new URL(request.url()).origin !== renderOrigin) {
+        const requestUrl = new URL(request.url());
+        if (
+          request.method() !== 'GET' ||
+          requestUrl.origin !== renderOrigin ||
+          requestUrl.pathname.startsWith(SOCKET_IO_PATH)
+        ) {
           await route.abort('blockedbyclient');
           return;
         }

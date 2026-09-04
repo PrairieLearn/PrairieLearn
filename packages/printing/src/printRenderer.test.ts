@@ -177,6 +177,8 @@ describe('PrintRenderer', () => {
     for (const request of [
       { method: 'POST', url: 'http://localhost:3000/pl/mutate' },
       { method: 'GET', url: 'https://example.com/exfiltrate' },
+      // socket.io polling would otherwise hold HTTP connections open for the whole render.
+      { method: 'GET', url: 'http://localhost:3000/socket.io/?EIO=4&transport=polling' },
     ]) {
       const abort = vi.fn(async () => undefined);
       await routeHandler!({
