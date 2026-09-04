@@ -459,6 +459,27 @@ class TestGradeUnits:
 
         assert data["correct_answers"]["op"]["operator"] == "custom"
 
+    def test_none_grading_generates_unscored_test_input(self) -> None:
+        markup = html(**{
+            "correct-answer": "Sum(k**2, (k, 1, 4))",
+            "grading-method": "none",
+        })
+        data = question_data()
+        big_operator_input.prepare(markup, data)
+        data.update(
+            test_type="correct",
+            raw_submitted_answers={},
+            partial_scores={},
+            format_errors={},
+        )
+
+        big_operator_input.test(markup, data)
+        big_operator_input.parse(markup, data)
+        big_operator_input.grade(markup, data)
+
+        assert data["submitted_answers"]["op"] is not None
+        assert data["partial_scores"] == {}
+
     def test_component_grading_uses_equivalence_and_body_weight(self) -> None:
         markup = html(
             operator="sum",
