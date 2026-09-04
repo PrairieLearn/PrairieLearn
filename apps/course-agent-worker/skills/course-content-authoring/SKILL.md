@@ -22,8 +22,9 @@ Creating question files alone does not add them to an assessment.
 
 - For questions, read [question patterns](references/questions.md). Adapt the fixed-choice or
   randomized-number example under `assets/questions/`.
-- For assessments, read [assessment patterns](references/assessments.md) and the relevant example
-  under `assets/assessments/`. Both examples reference the bundled dynamic-programming questions.
+- For a basic Homework, use the example already supplied in the starting instructions; do not
+  reread its file. For Exam-specific scoring or details not shown, read
+  [assessment patterns](references/assessments.md) and the relevant example under `assets/assessments/`.
 - For unfamiliar elements or advanced behavior, use the [documentation map](references/docs.md).
   Read only the relevant page or section, not all documentation.
 
@@ -37,6 +38,15 @@ covering complementary skills: identifying a recurrence, tracing a table, or rea
 complexity. Prefer built-in graded elements over custom graders. Use the requested assessment type;
 if unspecified, a practice `Homework` is a reasonable default. Use an existing instance when
 unambiguous. If several are plausible, ask which one rather than creating a term or changing all.
+Unless a question count is specified, start with three complementary questions; expand only if
+the requested learning objectives need more. Preserve requested technical depth, including a
+four-dimensional state space when requested, rather than simplifying the subject to save time.
+
+Use a compact read → edit → review workflow. Batch the relevant reference and existing-file reads
+into one command where practical. Make the related question and assessment edits together, then
+review the changed files together. Do not reread unchanged files or browse additional examples
+once you have enough information to implement the request. Revisit a file only to resolve a
+specific uncertainty or check a subsequent edit; do not skip correctness checks just to save calls.
 
 Generate fresh UUIDs for new questions and assessments, e.g. with Python's `uuid.uuid4()`.
 Preserve UUIDs when editing existing content. Adapt example titles, QIDs, topics, and numbering.

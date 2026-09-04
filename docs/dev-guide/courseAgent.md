@@ -68,6 +68,11 @@ course layout, targeted documentation pointers, fixed-choice and randomized nume
 examples, and Homework/Exam assessment examples. These are available without R2 or web access.
 References are read only when relevant; normal greetings require no repository inspection.
 
+A compact Homework example is included in the starting instructions, so a basic assessment does
+not require a separate template read. The skill encourages batched inspection, editing, and
+review, and defaults to three complementary questions when no count is requested. It preserves
+requested subject depth. No automatic course inventory or eval runner is included.
+
 There is no standalone validator or `question_render` tool in the repository-setup PR. The later
 push/sync PR should return PL sync errors through `push_sync` and add `question_render` for a
 selected question variant before requesting publication. Rendering should use isolated proposed
