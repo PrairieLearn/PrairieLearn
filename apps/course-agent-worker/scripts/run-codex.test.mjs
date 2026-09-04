@@ -11,7 +11,7 @@ afterEach(() => vi.unstubAllEnvs());
 
 // Opt in with the same binary version pinned in Dockerfile. Only localhost receives requests.
 it.skipIf(!process.env.COURSE_AGENT_TEST_CODEX)(
-  'loads the bundled authoring skill and streams real Codex deltas before the mocked model finishes',
+  'loads the bundled skill and assessment template and streams real Codex deltas',
   async () => {
     vi.stubEnv('OPENAI_API_KEY', 'local-mock-key');
     const cwd = await mkdtemp(join(tmpdir(), 'pl-course-agent-test-'));
@@ -19,6 +19,13 @@ it.skipIf(!process.env.COURSE_AGENT_TEST_CODEX)(
     const requests = [];
     const skill = await readFile(
       new URL('../skills/course-content-authoring/SKILL.md', import.meta.url),
+      'utf8',
+    );
+    const example = await readFile(
+      new URL(
+        '../skills/course-content-authoring/assets/assessments/dynamicProgrammingHomework/infoAssessment.json',
+        import.meta.url,
+      ),
       'utf8',
     );
     let complete;
@@ -134,6 +141,14 @@ it.skipIf(!process.env.COURSE_AGENT_TEST_CODEX)(
         expect.objectContaining({
           type: 'input_text',
           text: expect.stringContaining(skill.trim()),
+        }),
+      );
+      expect(
+        requests.flatMap((request) => request.input).flatMap((item) => item.content ?? []),
+      ).toContainEqual(
+        expect.objectContaining({
+          type: 'input_text',
+          text: expect.stringContaining(example.trim()),
         }),
       );
       expect(notifications).toContainEqual(

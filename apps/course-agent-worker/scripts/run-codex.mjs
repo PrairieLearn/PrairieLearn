@@ -18,6 +18,13 @@ export async function runCodex({
     new URL('../skills/course-content-authoring/SKILL.md', import.meta.url),
   );
   const skill = await readFile(skillPath, 'utf8');
+  const assessmentExample = await readFile(
+    new URL(
+      '../skills/course-content-authoring/assets/assessments/dynamicProgrammingHomework/infoAssessment.json',
+      import.meta.url,
+    ),
+    'utf8',
+  );
   const codexHome = await mkdtemp(join(tmpdir(), 'pl-course-agent-'));
   const child = spawn(
     command,
@@ -93,7 +100,7 @@ export async function runCodex({
             approvalsReviewer: 'auto_review',
             sandbox: 'workspace-write',
             // Load the entrypoint explicitly; discovery does not include this image-owned directory.
-            developerInstructions: `Use the bundled course-content-authoring skill below for applicable requests. Its file is ${skillPath}; resolve its relative references from that directory.\n\n${skill}`,
+            developerInstructions: `Use the bundled course-content-authoring skill below for applicable requests. Its file is ${skillPath}; resolve its relative references from that directory.\n\n${skill}\n\nBasic Homework example (adapt the UUID, title, number and question IDs; not a request to create this exact assessment):\n${assessmentExample}`,
           },
         });
       } else if (message.id === 1) {
