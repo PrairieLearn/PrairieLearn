@@ -21,7 +21,6 @@ import bodyParser from 'body-parser';
 import cookie from 'cookie';
 import cookieParser from 'cookie-parser';
 import esMain from 'es-main';
-import { sampleSize } from 'es-toolkit';
 import express, {
   type Express,
   type NextFunction,
@@ -38,6 +37,7 @@ import passport from 'passport';
 import favicon from 'serve-favicon';
 
 import { cache } from '@prairielearn/cache';
+import { HttpStatusError, generateErrorId } from '@prairielearn/error';
 import { flashMiddleware } from '@prairielearn/flash';
 import { addFileLogging, logger, reopenFileLogging } from '@prairielearn/logger';
 import * as migrations from '@prairielearn/migrations';
@@ -53,6 +53,7 @@ import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 import { createSessionMiddleware } from '@prairielearn/session';
 import { getCheckedSignedTokenData } from '@prairielearn/signed-token';
+import { isMultipartRequest } from '@prairielearn/trpc/express';
 import { assertNever } from '@prairielearn/utils';
 
 import * as cron from './cron/index.js';
@@ -95,6 +96,7 @@ import { assessmentTrpcRouter } from './trpc/assessment/trpc.js';
 import { assessmentQuestionTrpcRouter } from './trpc/assessmentQuestion/trpc.js';
 import { courseTrpcRouter } from './trpc/course/trpc.js';
 import { courseInstanceTrpcRouter } from './trpc/courseInstance/trpc.js';
+import { userTrpcRouter } from './trpc/user/trpc.js';
 
 process.on('warning', (e) => console.warn(e));
 
@@ -372,21 +374,11 @@ export async function initExpress(): Promise<Express> {
     publicQuestionEndpoint: true,
   });
 
-  /**
-   * `multipart/form-data` bodies are consumed by multer (file-upload routes) or
-   * read as a raw stream by tRPC (`FormData` inputs). The JSON/urlencoded body
-   * parsers don't parse multipart, but they still set `req.body = {}`, which
-   * makes tRPC's Express adapter stringify that empty object instead of reading
-   * the multipart stream. We skip them so the raw body reaches its real consumer.
-   */
-  function isMultipartRequest(req: Request) {
-    return (req.headers['content-type'] ?? '').startsWith('multipart/form-data');
-  }
-
   app.use((req, res, next) => {
     // Stripe webhook signature verification requires the raw body, so we avoid
     // using the body parser for that route.
     if (req.path === '/pl/webhooks/stripe') return next();
+    // Leave multipart bodies untouched for multer routes and tRPC FormData inputs.
     if (isMultipartRequest(req)) return next();
 
     // Limit to 5MB of JSON
@@ -409,10 +401,18 @@ export async function initExpress(): Promise<Express> {
 
   // For backwards compatibility, we redirect requests for the old `node_modules`
   // route to the new `cacheable_node_modules` route.
-  app.use('/node_modules', (req, res) => {
+  app.use('/node_modules', (req, res, next) => {
     // Strip the leading slash.
     const assetPath = req.url.slice(1);
-    res.redirect(assets.nodeModulesAssetPath(assetPath));
+    try {
+      res.redirect(assets.nodeModulesAssetPath(assetPath));
+    } catch (err) {
+      if (err instanceof Error && 'code' in err && err.code === 'MODULE_NOT_FOUND') {
+        next(new HttpStatusError(404, 'Not Found'));
+      } else {
+        next(err);
+      }
+    }
   });
 
   // Support legacy use of ace by v2 questions
@@ -558,6 +558,7 @@ export async function initExpress(): Promise<Express> {
   // some pages don't need authorization
   app.use('/', (await import('./pages/home/home.js')).default);
   app.use('/pl', (await import('./pages/home/home.js')).default);
+  app.use('/pl/user/trpc', userTrpcRouter);
   app.use('/pl/settings', (await import('./pages/userSettings/userSettings.js')).default);
   app.use('/pl/enroll', (await import('./pages/enroll/enroll.js')).default);
   app.use('/pl/password', (await import('./pages/authPassword/authPassword.js')).default);
@@ -2058,7 +2059,7 @@ export async function initExpress(): Promise<Express> {
   // This should come first so that both Sentry and our own error page can
   // read the error ID and any status code.
   app.use((err: any, req: Request, res: Response, next: NextFunction) => {
-    res.locals.error_id = sampleSize([...'0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'], 12).join('');
+    res.locals.error_id ??= generateErrorId();
 
     err.status = err.status ?? maybeGetStatusCodeFromSqlError(err) ?? 500;
 

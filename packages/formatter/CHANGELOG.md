@@ -1,5 +1,11 @@
 # @prairielearn/formatter
 
+## 2.4.6
+
+### Patch Changes
+
+- e2ed7cd: Apply additional eslint unicorn rules
+
 ## 2.4.5
 
 ### Patch Changes

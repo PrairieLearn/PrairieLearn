@@ -1,9 +1,13 @@
 import { Router } from 'express';
 import { z } from 'zod';
 
-import * as error from '@prairielearn/error';
 import { loadSqlEquiv, queryRow, queryRows, runInTransactionAsync } from '@prairielearn/postgres';
-import { parseRequestBody } from '@prairielearn/zod';
+import {
+  IdSchema,
+  IntegerFromStringOrEmptySchema,
+  parseRequest,
+  parseRequestParams,
+} from '@prairielearn/zod';
 
 import { CourseSchema } from '../../../lib/db-types.js';
 import { typedAsyncHandler } from '../../../lib/res-locals.js';
@@ -18,15 +22,30 @@ import {
 const sql = loadSqlEquiv(import.meta.url);
 const router = Router({ mergeParams: true });
 
+const ParamsSchema = z.object({
+  institution_id: IdSchema,
+  course_id: IdSchema,
+});
+
+const PostRequestSchemas = {
+  params: ParamsSchema,
+  body: z.object({
+    yearly_enrollment_limit: IntegerFromStringOrEmptySchema,
+    course_instance_enrollment_limit: IntegerFromStringOrEmptySchema,
+  }),
+};
+
 router.get(
   '/',
   typedAsyncHandler<'plain'>(async (req, res) => {
-    const institution = await getInstitution(req.params.institution_id);
+    const params = parseRequestParams(req, ParamsSchema);
+
+    const institution = await getInstitution(params.institution_id);
     const course = await queryRow(
       sql.select_course,
       {
-        institution_id: req.params.institution_id,
-        course_id: req.params.course_id,
+        institution_id: params.institution_id,
+        course_id: params.course_id,
       },
       CourseSchema,
     );
@@ -49,56 +68,39 @@ router.get(
 router.post(
   '/',
   typedAsyncHandler<'plain'>(async (req, res) => {
+    const { params, body } = parseRequest(req, PostRequestSchemas);
     const course = await queryRow(
       sql.select_course,
       {
-        institution_id: req.params.institution_id,
-        course_id: req.params.course_id,
+        institution_id: params.institution_id,
+        course_id: params.course_id,
       },
       CourseSchema,
     );
 
-    if (req.body.__action === 'update_enrollment_limits') {
-      const body = parseRequestBody(
-        req,
-        z.object({
-          __action: z.literal('update_enrollment_limits'),
-          yearly_enrollment_limit: z.union([
-            z.literal('').transform(() => null),
-            z.coerce.number().int(),
-          ]),
-          course_instance_enrollment_limit: z.union([
-            z.literal('').transform(() => null),
-            z.coerce.number().int(),
-          ]),
-        }),
+    await runInTransactionAsync(async () => {
+      const updatedCourse = await queryRow(
+        sql.update_enrollment_limits,
+        {
+          course_id: course.id,
+          yearly_enrollment_limit: body.yearly_enrollment_limit,
+          course_instance_enrollment_limit: body.course_instance_enrollment_limit,
+        },
+        CourseSchema,
       );
-      await runInTransactionAsync(async () => {
-        const updatedCourse = await queryRow(
-          sql.update_enrollment_limits,
-          {
-            course_id: course.id,
-            yearly_enrollment_limit: body.yearly_enrollment_limit,
-            course_instance_enrollment_limit: body.course_instance_enrollment_limit,
-          },
-          CourseSchema,
-        );
-        // eslint-disable-next-line @typescript-eslint/no-deprecated
-        await insertAuditLog({
-          authn_user_id: res.locals.authn_user.id,
-          table_name: 'courses',
-          action: 'update',
-          institution_id: req.params.institution_id,
-          course_id: req.params.course_id,
-          old_state: course,
-          new_state: updatedCourse,
-          row_id: req.params.course_id,
-        });
+      // eslint-disable-next-line @typescript-eslint/no-deprecated
+      await insertAuditLog({
+        authn_user_id: res.locals.authn_user.id,
+        table_name: 'courses',
+        action: 'update',
+        institution_id: params.institution_id,
+        course_id: params.course_id,
+        old_state: course,
+        new_state: updatedCourse,
+        row_id: params.course_id,
       });
-      res.redirect(req.originalUrl);
-    } else {
-      throw new error.HttpStatusError(400, `Unknown action: ${req.body.__action}`);
-    }
+    });
+    res.redirect(req.originalUrl);
   }),
 );
 

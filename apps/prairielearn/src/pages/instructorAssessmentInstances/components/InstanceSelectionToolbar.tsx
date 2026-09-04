@@ -2,7 +2,9 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Button, Dropdown, Modal, Spinner } from 'react-bootstrap';
 
-import { AppErrorAlert, getAppError } from '../../../lib/client/errors.js';
+import { getAppError } from '@prairielearn/trpc/client';
+import { AppErrorAlert } from '@prairielearn/trpc/react';
+
 import { getAssessmentLogsUrl, getCourseInstanceJobSequenceUrl } from '../../../lib/client/url.js';
 import type { AssessmentInstancesError } from '../../../trpc/assessment/assessment-instances.js';
 import { useTRPC } from '../../../trpc/assessment/context.js';

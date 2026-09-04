@@ -16,7 +16,7 @@ dependencies = [
   "lxml==6.1.1",
   "matplotlib==3.11.1",
   "networkx==3.6.1",
-  "nltk==3.10.1",
+  "nltk==3.10.3",
   "numpy==2.4.6",
   "openpyxl==3.1.5",
   "pandas==2.3.3",
@@ -52,9 +52,9 @@ dev = [
   "pytest-cov==7.1.0",
   "pytest-github-actions-annotate-failures==0.4.2",
   "pytest-repeat==0.9.4",
-  "ruff==0.16.1",
-  "sqlfluff==4.2.2",
-  "squawk-cli==2.61.0",
+  "ruff==0.16.2",
+  "sqlfluff==4.3.0",
+  "squawk-cli==2.62.0",
   "tomlkit==0.15.1",
   "types-chevron==0.14.2.20260408",
   "types-lxml==2026.2.16",
@@ -77,7 +77,7 @@ docs = [
   "pygments==2.20.0",
   # mkdocstrings-python will format the docstrings using ruff
   # https://mkdocstrings.github.io/python/usage/configuration/signatures/#line_length
-  "ruff==0.16.1",
+  "ruff==0.16.2",
 ]
 
 # We only use pyproject.toml for the Python dependencies, so we don't need to
@@ -237,6 +237,8 @@ convention = "google"
 "apps/prairielearn/elements/pl-drawing/**/*.py" = ["ANN"]
 "apps/prairielearn/elements/pl-prairiedraw-figure/**/*.py" = ["ANN"]
 "apps/prairielearn/elements/pl-checkbox/**/*.py" = ["ANN"]
+# These are exact-output fixtures, not repository Python source.
+"packages/question-conversion/src/emitters/fixtures/**/server.py" = ["ALL"]
 # Issues rebuilding workspace
 "workspaces/jupyterlab-base/jupyter_server_config.py" = ["PLW1508"]
 

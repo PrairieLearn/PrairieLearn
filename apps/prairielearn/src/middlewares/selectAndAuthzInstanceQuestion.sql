@@ -87,13 +87,7 @@ FROM
     AND g.deleted_at IS NULL
   )
   LEFT JOIN users AS u ON (u.id = ai.user_id)
-  JOIN LATERAL authz_assessment_instance (
-    ai.id,
-    $authz_data,
-    $req_date,
-    ci.display_timezone,
-    a.team_work
-  ) AS aai ON TRUE
+  JOIN LATERAL authz_assessment_instance (ai.id, $authz_data, $req_date, a.team_work) AS aai ON TRUE
   CROSS JOIN file_list AS fl
 WHERE
   iq.id = $instance_question_id

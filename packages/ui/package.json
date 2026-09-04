@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/ui",
-  "version": "3.8.2",
+  "version": "4.0.0",
   "type": "module",
   "repository": {
     "type": "git",
@@ -23,13 +23,12 @@
     "@prairielearn/browser-utils": "workspace:^",
     "@prairielearn/run": "workspace:^",
     "@tanstack/match-sorter-utils": "^8.19.4",
-    "@tanstack/react-table": "^8.21.3",
+    "@tanstack/react-table": "^9.1.2",
     "@tanstack/react-virtual": "^3.14.9",
-    "@tanstack/table-core": "^8.21.3",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.4",
     "clsx": "^2.1.1",
-    "nuqs": "^2.9.4",
+    "nuqs": "^2.9.5",
     "react": "^19.2.8",
     "react-aria": "^3.51.0",
     "react-aria-components": "^1.20.0",

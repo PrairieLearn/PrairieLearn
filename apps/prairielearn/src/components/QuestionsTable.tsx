@@ -2,38 +2,35 @@ import { type QueryFunction, useQuery } from '@tanstack/react-query';
 import {
   type ColumnPinningState,
   type ColumnSizingState,
-  type FilterFn,
   type RowSelectionState,
   type SortingState,
-  type Table,
-  createColumnHelper,
-  getCoreRowModel,
-  getFilteredRowModel,
-  getSortedRowModel,
-  useReactTable,
 } from '@tanstack/react-table';
 import { parseAsString, useQueryState } from 'nuqs';
 import { type ReactNode, useMemo, useState } from 'react';
 import { ButtonGroup, Dropdown, DropdownButton } from 'react-bootstrap';
 
 import { run } from '@prairielearn/run';
+import { getAppError } from '@prairielearn/trpc/client';
+import { AppErrorAlert } from '@prairielearn/trpc/react';
 import {
   type ColumnFilterEntry,
   IndeterminateCheckbox,
   type MultiSelectFilterValue,
   TanstackTableCard,
+  type TanstackTableCoreInstance,
   type TanstackTableCsvCell,
   TanstackTableEmptyState,
+  type TanstackTableFilterFn,
+  createTanstackTableColumnHelper,
   extractLeafColumnIds,
   parseAsColumnPinningState,
   parseAsColumnVisibilityStateWithColumns,
   parseAsMultiSelectFilter,
   parseAsSortingState,
   useColumnFilters,
-  useShiftClickCheckbox,
+  useTanstackTable,
 } from '@prairielearn/ui';
 
-import { AppErrorAlert, getAppError } from '../lib/client/errors.js';
 import type { PublicCourseInstance } from '../lib/client/safe-db-types.js';
 import { rankSearchText } from '../lib/client/search.js';
 import {
@@ -49,33 +46,33 @@ import {
   createQuestionsTableFilters,
 } from './questionsTableColumns.js';
 
-const fuzzyFilter: FilterFn<SafeQuestionsPageData> = (row, columnId, value, addMeta) => {
-  const itemRank = rankSearchText(row.getValue(columnId), value);
-  addMeta({ itemRank });
-  return itemRank.passed;
+const fuzzyFilter: TanstackTableFilterFn<SafeQuestionsPageData> = (row, columnId, value) => {
+  return rankSearchText(row.getValue(columnId), value).passed;
 };
 
 const DEFAULT_SORT: SortingState = [];
-const DEFAULT_PINNING: ColumnPinningState = { left: ['qid'], right: [] };
+const DEFAULT_PINNING: ColumnPinningState = { start: ['qid'], end: [] };
 const HIDDEN_BY_DEFAULT = new Set([
   'display_type',
   'grading_method',
   'external_grading_image',
   'workspace_image',
   'single_variant',
+  'partial_credit',
   'has_preferences',
 ]);
 
 const EMPTY_FILTER: MultiSelectFilterValue = { values: [], mode: 'include' };
-const columnHelper = createColumnHelper<SafeQuestionsPageData>();
+const columnHelper = createTanstackTableColumnHelper<SafeQuestionsPageData>();
 
-function SelectAllCheckbox({ table }: { table: Table<SafeQuestionsPageData> }) {
+function SelectAllCheckbox({ table }: { table: TanstackTableCoreInstance<SafeQuestionsPageData> }) {
+  const allSelected = table.getIsAllPageRowsSelected();
   return (
     <IndeterminateCheckbox
-      checked={table.getIsAllPageRowsSelected()}
-      indeterminate={table.getIsSomePageRowsSelected()}
+      checked={allSelected}
+      indeterminate={table.getIsSomePageRowsSelected() && !allSelected}
       aria-label="Select all questions"
-      onChange={() => table.toggleAllPageRowsSelected()}
+      onChange={table.getToggleAllPageRowsSelectedHandler()}
     />
   );
 }
@@ -127,8 +124,8 @@ export function QuestionsTable<TQueryKey extends readonly unknown[]>({
     parseAsSortingState.withDefault(DEFAULT_SORT),
   );
   const defaultPinning: ColumnPinningState = {
-    left: rowSelectionEnabled ? ['select', 'qid'] : DEFAULT_PINNING.left,
-    right: DEFAULT_PINNING.right,
+    start: rowSelectionEnabled ? ['select', 'qid'] : DEFAULT_PINNING.start,
+    end: DEFAULT_PINNING.end,
   };
   const [columnPinning, setColumnPinning] = useQueryState(
     'frozen',
@@ -159,7 +156,6 @@ export function QuestionsTable<TQueryKey extends readonly unknown[]>({
 
   const [columnSizing, setColumnSizing] = useState<ColumnSizingState>({});
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
-  const { createCheckboxProps } = useShiftClickCheckbox<SafeQuestionsPageData>();
 
   const { data: questions = initialQuestions, error: questionsError } = useQuery({
     ...questionsQueryOptions,
@@ -185,11 +181,13 @@ export function QuestionsTable<TQueryKey extends readonly unknown[]>({
     const selectionColumn = columnHelper.display({
       id: 'select',
       header: ({ table }) => <SelectAllCheckbox table={table} />,
-      cell: ({ row, table }) => (
+      cell: ({ row }) => (
         <input
           type="checkbox"
           aria-label={`Select ${displayQid(row.original, qidPrefix)}`}
-          {...createCheckboxProps(row, table)}
+          checked={row.getIsSelected()}
+          disabled={!row.getCanSelect()}
+          onChange={row.getToggleSelectedHandler()}
         />
       ),
       size: 40,
@@ -199,7 +197,7 @@ export function QuestionsTable<TQueryKey extends readonly unknown[]>({
       enableHiding: false,
       enablePinning: true,
     });
-    return [selectionColumn, ...questionColumns];
+    return columnHelper.columns([selectionColumn, ...questionColumns]);
   }, [
     courseInstances,
     qidPrefix,
@@ -208,7 +206,6 @@ export function QuestionsTable<TQueryKey extends readonly unknown[]>({
     currentCourseInstanceId,
     isPublic,
     rowSelectionEnabled,
-    createCheckboxProps,
   ]);
 
   const allColumnIds = useMemo(() => extractLeafColumnIds(columns), [columns]);
@@ -248,7 +245,7 @@ export function QuestionsTable<TQueryKey extends readonly unknown[]>({
     [questions, courseInstances],
   );
 
-  const table = useReactTable({
+  const table = useTanstackTable({
     data: questions,
     columns,
     columnResizeMode: 'onChange',
@@ -275,9 +272,6 @@ export function QuestionsTable<TQueryKey extends readonly unknown[]>({
     onColumnVisibilityChange: setColumnVisibility,
     onColumnPinningChange: setColumnPinning,
     onRowSelectionChange: setRowSelection,
-    getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
     defaultColumn: {
       minSize: 80,
       size: 150,
@@ -395,6 +389,7 @@ export function QuestionsTable<TQueryKey extends readonly unknown[]>({
             },
             { name: 'Workspace image', value: row.workspace_image },
             { name: 'Single variant', value: row.single_variant ? 'Yes' : 'No' },
+            { name: 'Partial credit', value: row.partial_credit ? 'Yes' : 'No' },
             { name: 'Has preferences', value: row.has_preferences ? 'Yes' : 'No' },
           ],
           mapRowToJsonData: (row: SafeQuestionsPageData) => ({
@@ -407,6 +402,7 @@ export function QuestionsTable<TQueryKey extends readonly unknown[]>({
             external_grading_image: row.external_grading_image,
             workspace_image: row.workspace_image,
             single_variant: row.single_variant,
+            partial_credit: row.partial_credit,
             has_preferences: row.has_preferences,
           }),
         }}

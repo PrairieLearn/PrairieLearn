@@ -4,17 +4,17 @@ import { memo, useState } from 'react';
 import { Alert, Modal } from 'react-bootstrap';
 import { FormProvider, useForm } from 'react-hook-form';
 
+import { getAppError } from '@prairielearn/trpc/client';
+import { QueryClientProviderDebug } from '@prairielearn/trpc/react';
 import { OverlayTrigger } from '@prairielearn/ui';
+import type { Timezone } from '@prairielearn/utils/timezone';
 
 import {
   AdministratorCourseFormFields,
   type CourseFormFieldValues,
   useInstitutionPrefix,
 } from '../../components/AdminstratorCourseFormFields.js';
-import { getAppError } from '../../lib/client/errors.js';
 import type { AdminInstitution } from '../../lib/client/safe-db-types.js';
-import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
-import type { Timezone } from '../../lib/timezone.shared.js';
 import { createAdministratorTrpcClient } from '../../trpc/administrator/client.js';
 import { TRPCProvider, useTRPC } from '../../trpc/administrator/context.js';
 import type { AdminCourseError } from '../../trpc/administrator/courses.js';

@@ -1,6 +1,7 @@
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
+import { throwAppError } from '@prairielearn/trpc/server';
 import { IdSchema } from '@prairielearn/zod';
 
 import { validateAccessControlRules } from '../../lib/assessment-access-control/validation.js';
@@ -28,7 +29,6 @@ import {
   MAX_ENROLLMENT_ACCESS_CONTROL_RULES,
 } from '../../schemas/accessControl.js';
 import type { AssessmentJsonInput } from '../../schemas/infoAssessment.js';
-import { throwAppError } from '../app-errors.js';
 
 import {
   requireCourseInstancePermissionView,

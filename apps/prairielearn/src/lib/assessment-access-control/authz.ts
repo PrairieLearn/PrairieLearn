@@ -6,12 +6,11 @@ import type {
   EnumCourseInstanceRole,
   EnumCourseRole,
   EnumMode,
-  SprocAuthzAssessment,
-  SprocAuthzAssessmentInstance,
 } from '../db-types.js';
 import { getGroupId } from '../groups.js';
 import { idsEqual } from '../id.js';
 
+import type { AssessmentAuthzResult, AssessmentInstanceAuthzResult } from './authz-result.js';
 import {
   selectAccessControlRulesForAssessment,
   selectAccessControlRulesForCourseInstance,
@@ -54,12 +53,12 @@ function resolveAuthorization(
   }
 }
 
-function resolverResultToAuthzAssessment(
+function resolverResultToAssessmentAuthzResult(
   result: AccessControlResolverResult,
   authzMode: EnumMode,
   displayTimezone: string,
   hasCompletedInstance: boolean,
-): SprocAuthzAssessment {
+): AssessmentAuthzResult {
   return {
     authorized: resolveAuthorization(result.authorization, hasCompletedInstance),
     credit: result.credit,
@@ -110,9 +109,9 @@ async function resolveModernAssessmentAccessResult({
 
 export async function resolveModernAssessmentAccess(
   input: ModernAssessmentAccessInput,
-): Promise<SprocAuthzAssessment> {
+): Promise<AssessmentAuthzResult> {
   const result = await resolveModernAssessmentAccessResult(input);
-  return resolverResultToAuthzAssessment(
+  return resolverResultToAssessmentAuthzResult(
     result,
     input.authzData.mode,
     input.courseInstance.display_timezone,
@@ -136,11 +135,11 @@ export function applyInstanceAccess({
   timeLimitExpired,
   hasCourseInstancePermissionView,
 }: {
-  assessmentResult: SprocAuthzAssessment;
+  assessmentResult: AssessmentAuthzResult;
   ownsInstance: boolean;
   timeLimitExpired: boolean;
   hasCourseInstancePermissionView: boolean;
-}): SprocAuthzAssessmentInstance {
+}): AssessmentInstanceAuthzResult {
   let authorizedEdit = assessmentResult.authorized && ownsInstance;
 
   if (!ownsInstance) {
@@ -165,11 +164,11 @@ export function applyInstanceAccess({
 export async function resolveModernAssessmentInstanceAccess({
   assessmentInstance,
   ...assessmentInput
-}: ModernAssessmentInstanceAccessInput): Promise<SprocAuthzAssessmentInstance> {
+}: ModernAssessmentInstanceAccessInput): Promise<AssessmentInstanceAuthzResult> {
   const { assessment, authzData, reqDate } = assessmentInput;
 
   const result = await resolveModernAssessmentAccessResult(assessmentInput);
-  const assessmentResult = resolverResultToAuthzAssessmentForInstance({
+  const assessmentResult = resolverResultToAssessmentAuthzResultForInstance({
     result,
     authzMode: authzData.mode,
     displayTimezone: assessmentInput.courseInstance.display_timezone,
@@ -237,7 +236,7 @@ export async function resolveModernAssessmentAccessResultsBatch({
   return results;
 }
 
-export function resolverResultToAuthzAssessmentForInstance({
+export function resolverResultToAssessmentAuthzResultForInstance({
   result,
   authzMode,
   displayTimezone,
@@ -249,7 +248,7 @@ export function resolverResultToAuthzAssessmentForInstance({
   displayTimezone: string;
   assessmentInstance: { open: boolean | null; date_limit: Date | null } | null;
   reqDate: Date;
-}): SprocAuthzAssessment {
+}): AssessmentAuthzResult {
   const timeLimitExpired =
     assessmentInstance?.date_limit != null && assessmentInstance.date_limit <= reqDate;
   const hasCompletedInstance =
@@ -273,7 +272,7 @@ export function resolverResultToAuthzAssessmentForInstance({
     };
   });
 
-  return resolverResultToAuthzAssessment(
+  return resolverResultToAssessmentAuthzResult(
     resultForInstance,
     authzMode,
     displayTimezone,

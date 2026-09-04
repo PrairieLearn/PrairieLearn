@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
+import { throwAppError } from '@prairielearn/trpc/server';
 
 import {
   StaffCourseSchema,
@@ -10,7 +11,6 @@ import {
 } from '../../lib/client/safe-db-types.js';
 import { selectQuestionsForCourse } from '../../models/questions.js';
 import type { CourseQuestionForPicker } from '../../pages/instructorAssessmentQuestions/types.js';
-import { throwAppError } from '../app-errors.js';
 
 import { requireCoursePermissionPreview, t } from './init.js';
 

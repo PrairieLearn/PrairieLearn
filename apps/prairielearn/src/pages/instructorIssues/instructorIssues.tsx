@@ -11,7 +11,6 @@ import {
   queryScalar,
   queryScalars,
 } from '@prairielearn/postgres';
-import { run } from '@prairielearn/run';
 import { IdSchema } from '@prairielearn/zod';
 
 import { PageLayout } from '../../components/PageLayout.js';
@@ -50,6 +49,8 @@ function parseRawQuery(str: string) {
     filter_not_users: null as string[] | null,
     filter_assessments: null as string[] | null,
     filter_not_assessments: null as string[] | null,
+    filter_course_instances: null as string[] | null,
+    filter_not_course_instances: null as string[] | null,
   };
 
   const queryText = parsedQuery.getAllText();
@@ -85,14 +86,6 @@ function parseRawQuery(str: string) {
         }
         break;
       case 'user':
-        // The filter by user applies even if the current user does not have
-        // permission to view the user data. Ideally we would not allow
-        // filtering by user in this case, but we still want to allow
-        // instructors to filter by user within the context of their own course
-        // instance, even if they do not have permission to view the user data
-        // in other course instances. While this is not ideal, it is a
-        // reasonable compromise. Future implementations may refine this
-        // further.
         if (!option.negated) {
           filters.filter_users = filters.filter_users || [];
           filters.filter_users.push(formatForLikeClause(option.value));
@@ -108,6 +101,15 @@ function parseRawQuery(str: string) {
         } else {
           filters.filter_not_assessments = filters.filter_not_assessments || [];
           filters.filter_not_assessments.push(formatForLikeClause(option.value));
+        }
+        break;
+      case 'ci':
+        if (!option.negated) {
+          filters.filter_course_instances = filters.filter_course_instances || [];
+          filters.filter_course_instances.push(formatForLikeClause(option.value));
+        } else {
+          filters.filter_not_course_instances = filters.filter_not_course_instances || [];
+          filters.filter_not_course_instances.push(formatForLikeClause(option.value));
         }
         break;
     }
@@ -156,12 +158,60 @@ router.get(
       z.number(),
     );
 
+    // Compute the IDs of the course instances to which the effective user has access.
+    const course_instances = await selectCourseInstancesWithStaffAccess({
+      course,
+      authzData,
+    });
+    const linkableCourseInstanceIds = new Set(course_instances.map((ci) => ci.id));
+
+    // There are three situations in which the issue need not be anonymized.
+    //
+    // 1. For issues associated with a course instance other than the one
+    //    through which we are accessing this page, we check if the user has
+    //    student data view access in that course instance.
+    const courseInstancesShowUserInfo: (string | null)[] = course_instances
+      .filter(
+        (ci) =>
+          !(res.locals.course_instance && idsEqual(res.locals.course_instance.id, ci.id)) &&
+          ci.has_course_instance_permission_view,
+      )
+      .map((ci) => ci.id);
+    // 2. For issues associated with the course instance through which we are
+    //    accessing this page: we use the permissions from authz_data. This is
+    //    distinguished from situation 1 above to ensure effective user roles
+    //    are taken into account.
+    if (
+      res.locals.course_instance &&
+      'has_course_instance_permission_view' in res.locals.authz_data &&
+      res.locals.authz_data.has_course_instance_permission_view
+    ) {
+      courseInstancesShowUserInfo.push(res.locals.course_instance.id);
+    }
+    // 3. For issues not associated with a course instance: the only way for a
+    //    user to generate an issue that is not associated with a course
+    //    instance is if they are an instructor. In this case, the user data is
+    //    other instructors, so we only need to check that the effective user
+    //    has course preview access, which is required to view the question
+    //    preview in the first place.
+    if (authzData.has_course_permission_preview) {
+      courseInstancesShowUserInfo.push(null);
+    }
+
     const queryPageNumber = Number(req.query.page);
     const filters = parseRawQuery(filterQuery);
-    const offset = Number.isInteger(queryPageNumber) ? (queryPageNumber - 1) * PAGE_SIZE : 0;
+    const offset = Number.isInteger(queryPageNumber)
+      ? Math.max(0, (queryPageNumber - 1) * PAGE_SIZE)
+      : 0;
     const issueRows = await queryRows(
       sql.select_issues,
-      { course_id: course.id, offset, limit: PAGE_SIZE, ...filters },
+      {
+        course_id: course.id,
+        offset,
+        limit: PAGE_SIZE,
+        course_instances_show_user_info: courseInstancesShowUserInfo,
+        ...filters,
+      },
       IssueRowSchema,
     );
     // If the offset is not zero and there are no returned issues, this
@@ -172,14 +222,6 @@ router.get(
       res.redirect(`${getUrl(req).pathname}?q=${encodeURIComponent(filterQuery)}`);
       return;
     }
-
-    // Compute the IDs of the course instances to which the effective user has access.
-
-    const course_instances = await selectCourseInstancesWithStaffAccess({
-      course,
-      authzData,
-    });
-    const linkableCourseInstanceIds = new Set(course_instances.map((ci) => ci.id));
 
     const issues = issueRows.map((row) => ({
       ...row,
@@ -194,47 +236,7 @@ router.get(
       hideAssessmentLink:
         row.course_instance_id != null && !linkableCourseInstanceIds.has(row.course_instance_id),
 
-      // There are three situations in which the issue need not be anonymized:
-      //
-      //  1) The issue is not associated with a course instance. The only way
-      //     for a user to generate an issue that is not associated with a
-      //     course instance is if they are an instructor. In this case, the
-      //     user data is other instructors, so we only need to check that the
-      //     effective user has course preview access, which is required to view
-      //     the question preview in the first place.
-      //
-      //  2) We are accessing this page through a course instance, the issue is
-      //     associated with the same course instance, and the user has student
-      //     data view access.
-      //
-      //  3) We are not accessing this page through the course instance
-      //     associated to the issue (i.e., we are accessing it through the
-      //     course or through a different course instance), and the user has
-      //     student data view access in the course instance associated to the
-      //     issue. This is distinguished from situation 2 above to ensure
-      //     effective user roles are taken into account.
-      //
-      // Otherwise, all issues must be anonymized.
-      showUser: run(() => {
-        if (row.course_instance_id == null) {
-          return authzData.has_course_permission_preview;
-        }
-
-        // Use request-scoped authorization for the current course instance so
-        // that effective-user role overrides are respected. The model results
-        // below reflect stored roles instead.
-        if (
-          res.locals.course_instance &&
-          'course_instance_role' in res.locals.authz_data &&
-          idsEqual(res.locals.course_instance.id, row.course_instance_id)
-        ) {
-          return res.locals.authz_data.has_course_instance_permission_view;
-        }
-
-        return course_instances.some(
-          (ci) => ci.id === row.course_instance_id && ci.has_course_instance_permission_view,
-        );
-      }),
+      showUser: courseInstancesShowUserInfo.includes(row.course_instance_id),
     }));
 
     const openFilteredIssuesCount = issueRows.reduce((acc, row) => (row.open ? acc + 1 : acc), 0);
