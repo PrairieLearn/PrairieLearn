@@ -338,6 +338,7 @@ export function UploadStep({
   processingPhase,
   onSubmit,
   courseInstances,
+  courseInstancesUrl,
   selectedCourseInstanceId,
   onCourseInstanceChange,
 }: {
@@ -345,6 +346,8 @@ export function UploadStep({
   processingPhase: ProcessingPhase;
   onSubmit: (e: SubmitEvent<HTMLFormElement>) => void;
   courseInstances: CourseInstanceOption[];
+  /** Where to send users who need to create a course instance before importing quizzes. */
+  courseInstancesUrl: string;
   selectedCourseInstanceId: string | null;
   onCourseInstanceChange: (id: string) => void;
 }) {
@@ -361,7 +364,8 @@ export function UploadStep({
         <Alert variant="info" className="mb-3">
           This course doesn't have any course instances yet, so quizzes can't be imported as
           assessments. Their questions will be imported as standalone questions that you can add to
-          assessments after you create a course instance.
+          assessments after you{' '}
+          <Alert.Link href={courseInstancesUrl}>create a course instance</Alert.Link>.
         </Alert>
       )}
       {courseInstances.length === 1 && (

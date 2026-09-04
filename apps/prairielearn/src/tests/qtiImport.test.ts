@@ -162,10 +162,12 @@ describe('QTI import into a course without course instances', { timeout: 60_000 
     );
   });
 
-  it('renders the importer page', async () => {
+  it('renders the importer page with a link to create a course instance', async () => {
     const res = await fetch(`${siteUrl}${importUrl}`);
     assert.equal(res.status, 200);
-    assert.include(await res.text(), 'Import QTI content');
+    const html = await res.text();
+    assert.include(html, 'Import QTI content');
+    assert.include(html, `/pl/course/${COURSE_ID}/course_admin/instances`);
   });
 
   it('rejects an upload that targets an unknown course instance', async () => {

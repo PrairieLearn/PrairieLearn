@@ -704,6 +704,7 @@ export function QtiImportForm({
             uploading={uploading}
             processingPhase={processingPhase}
             courseInstances={courseInstances}
+            courseInstancesUrl={`${urlPrefix}/course_admin/instances`}
             selectedCourseInstanceId={selectedCourseInstanceId}
             onSubmit={handleUpload}
             onCourseInstanceChange={setSelectedCourseInstanceId}

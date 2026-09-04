@@ -195,6 +195,7 @@ describe('UploadStep', () => {
         uploading={false}
         processingPhase="idle"
         courseInstances={instances}
+        courseInstancesUrl="/pl/course/1/course_admin/instances"
         selectedCourseInstanceId={instances[0]?.id ?? null}
         onSubmit={() => {}}
         onCourseInstanceChange={() => {}}
@@ -206,6 +207,7 @@ describe('UploadStep', () => {
     const html = render([]);
 
     expect(html).toContain('have any course instances yet');
+    expect(html).toContain('href="/pl/course/1/course_admin/instances"');
     expect(html).not.toContain('Target course instance');
   });
 
