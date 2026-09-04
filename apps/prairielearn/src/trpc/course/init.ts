@@ -38,6 +38,16 @@ export const requireCoursePermissionOwn = t.middleware(async (opts) => {
   return opts.next();
 });
 
+export const requireAuthnCoursePermissionOwn = t.middleware(async (opts) => {
+  if (!opts.ctx.authz_data.authn_has_course_permission_own) {
+    throw new TRPCError({
+      code: 'FORBIDDEN',
+      message: 'Access denied (authenticated user must be a course owner)',
+    });
+  }
+  return opts.next();
+});
+
 export const requireCoursePermissionPreview = t.middleware(async (opts) => {
   if (!opts.ctx.authz_data.has_course_permission_preview) {
     throw new TRPCError({

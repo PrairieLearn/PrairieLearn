@@ -5,9 +5,14 @@ import { compiledScriptTag, compiledStylesheetTag } from '@prairielearn/compiled
 import { formatDateFriendly } from '@prairielearn/formatter';
 import { HtmlSafeString, html, unsafeHtml } from '@prairielearn/html';
 import { renderHtml } from '@prairielearn/react';
+import { Hydrate } from '@prairielearn/react/server';
 import { run } from '@prairielearn/run';
+import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 import { assertNever } from '@prairielearn/utils';
 
+import { CourseAgentPanel } from '../ee/components/CourseAgentPanel.js';
+import { getCourseTrpcUrl } from '../lib/client/url.js';
+import { config } from '../lib/config.js';
 import { getNavPageTabs } from '../lib/navPageTabs.js';
 import { computeStatus } from '../lib/publishing.js';
 import type { UntypedResLocals } from '../lib/res-locals.types.js';
@@ -280,6 +285,31 @@ export function PageLayout({
   const sideNavExpanded =
     sideNavEnabled && (resolvedOptions.forcedInitialNavToggleState ?? resLocals.side_nav_expanded);
 
+  const courseAgentPanel = run(() => {
+    if (
+      navContext.type !== 'instructor' ||
+      !resLocals.course_agent_enabled ||
+      !resLocals.course ||
+      !resLocals.authn_user
+    ) {
+      return null;
+    }
+    const trpcUrl = getCourseTrpcUrl(resLocals.course.id);
+    return (
+      <Hydrate className="course-agent-panel-container">
+        <CourseAgentPanel
+          trpcCsrfToken={generatePrefixCsrfToken(
+            { url: trpcUrl, authn_user_id: resLocals.authn_user.id },
+            config.secretKey,
+          )}
+          courseId={resLocals.course.id}
+          userName={resLocals.authn_user.name ?? 'Instructor'}
+          showDiagnostics={resLocals.is_administrator}
+        />
+      </Hydrate>
+    );
+  });
+
   let showContextNavigation = [
     'instructor',
     'administrator_institution',
@@ -330,8 +360,9 @@ export function PageLayout({
           pageTitle,
           pageNote: resolvedOptions.pageNote,
         })}
-        ${compiledStylesheetTag('pageLayout.css')} ${headContentString}
-        ${sideNavEnabled ? compiledScriptTag('pageLayoutClient.ts') : ''}
+        ${compiledStylesheetTag('pageLayout.css')}
+        ${courseAgentPanel ? compiledStylesheetTag('courseAgentPanel.css') : ''}
+        ${headContentString} ${sideNavEnabled ? compiledScriptTag('pageLayoutClient.ts') : ''}
       </head>
       <body
         class="${clsx({
@@ -476,6 +507,7 @@ export function PageLayout({
               ${postContentString}
             </div>
           </div>
+          ${courseAgentPanel ? renderHtml(courseAgentPanel) : ''}
         </div>
         ${resolvedOptions.showFooter ? renderHtml(<PageFooter />) : ''}
       </body>

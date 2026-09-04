@@ -18,17 +18,21 @@ export function ProgressStatus({
     // region in AiQuestionGenerationChat. These per-instance elements
     // mount/unmount per tool call, so a fresh live region here would not
     // announce reliably.
-    <div className="d-flex flex-row align-items-center gap-1 small text-muted">
+    <div className="d-flex flex-row align-items-start gap-1 small text-muted">
       {run(() => {
         if (state === 'streaming' || showSpinner) {
-          return <div className="spinner-border spinner-border-text" aria-hidden="true" />;
+          return (
+            <div className="spinner-border spinner-border-sm flex-shrink-0" aria-hidden="true" />
+          );
         } else if (state === 'success') {
-          return <i className="bi bi-fw bi-check-lg text-success" aria-hidden="true" />;
+          return (
+            <i className="bi bi-fw bi-check-lg text-success flex-shrink-0" aria-hidden="true" />
+          );
         } else {
-          return <i className="bi bi-fw bi-x text-danger" aria-hidden="true" />;
+          return <i className="bi bi-fw bi-x text-danger flex-shrink-0" aria-hidden="true" />;
         }
       })}
-      <span>{statusText}</span>
+      <span style={{ minWidth: 0, overflowWrap: 'anywhere' }}>{statusText}</span>
     </div>
   );
 }
