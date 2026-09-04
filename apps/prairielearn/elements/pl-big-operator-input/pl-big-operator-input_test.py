@@ -547,6 +547,14 @@ class TestRenderUnits:
         assert operator_position < field_positions[0]
         assert field_positions == sorted(field_positions)
 
+    @pytest.mark.parametrize("operator", ["integral", "sum"])
+    def test_question_panel_operator_is_accessibility_exposed(
+        self, operator: str
+    ) -> None:
+        rendered = big_operator_input.render(html(operator=operator), question_data())
+
+        assert '<div class="pl-big-operator-input__operator">' in rendered
+
     @pytest.mark.parametrize(
         ("correct_answer", "expected_tex"),
         [
