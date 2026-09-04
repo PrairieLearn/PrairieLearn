@@ -504,6 +504,9 @@ function materializePrintableShadowRootStyles(source: HTMLElement): void {
 async function waitForImages(source: HTMLElement): Promise<void> {
   await Promise.all(
     [...source.querySelectorAll('img')].map(async (image) => {
+      // Elements such as image capture ship placeholder images that only receive a source once a
+      // student acts, so an image without one has nothing to load and cannot block printing.
+      if (!image.getAttribute('src')) return;
       if (!image.complete) {
         await new Promise<void>((resolve, reject) => {
           image.addEventListener('load', () => resolve(), { once: true });
