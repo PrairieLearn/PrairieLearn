@@ -1,270 +1,252 @@
 <pl-question-panel>
-  <h2><code>pl-big-operator-input</code> examples</h2>
-
   <p>
-    <i>
-      Note: every problem has <code>allowed-blank="all"</code> so that you can test one at a time.
-    </i>
+    The examples below showcase the different features of <code>pl-big-operator-input</code>. Every
+    example has <code>allowed-blank="all"</code> so that you can test one at a time.
   </p>
 </pl-question-panel>
 
-<div class="table-responsive">
-  <table class="table table-bordered align-middle">
-    <thead>
-      <tr class="sticky-top bg-white">
-        <th scope="col">Correct answer</th>
-        <th scope="col">Input field</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr class="table-secondary">
-        <th colspan="2" scope="colgroup">Aggregates</th>
-      </tr>
-      <tr>
-        <td colspan="2">Bounded sum <small></small></td>
-      </tr>
-      <tr>
-        <td>$\displaystyle \sum_{k=1}^{n} k^2$</td>
-        <td>
-          <pl-big-operator-input
-            answers-name="sum"
-            correct-answer="Sum(k**2, (k, 1, n))"
-            variables="n"
-            allowed-blank="all"
-          ></pl-big-operator-input>
-        </td>
-      </tr>
-      <tr>
-        <td colspan="2">Domain-indexed sum <small> <code>grading-method="exact"</code></small></td>
-      </tr>
-      <tr>
-        <td>$\displaystyle \sum_{k\in N} \frac1{k^2}$</td>
-        <td>
-          <pl-big-operator-input
-            answers-name="domain-sum"
-            correct-answer="Sum(k**-2, (k, N))"
-            variables="N"
-            grading-method="exact"
-            allowed-blank="all"
-          ></pl-big-operator-input>
-        </td>
-      </tr>
-      <tr>
-        <td colspan="2">Bounded product <small></small></td>
-      </tr>
-      <tr>
-        <td>$\displaystyle \prod_{k=1}^{4} k$</td>
-        <td>
-          <pl-big-operator-input
-            answers-name="product"
-            correct-answer="Product(k, (k, 1, 4))"
-            allowed-blank="all"
-          ></pl-big-operator-input>
-        </td>
-      </tr>
-      <tr>
-        <td colspan="2">Range integral <small></small></td>
-      </tr>
-      <tr>
-        <td>$\displaystyle \int_{0}^{1} x^2\,dx$</td>
-        <td>
-          <pl-big-operator-input
-            answers-name="integral"
-            correct-answer="Integral(x**2, (x, 0, 1))"
-            allowed-blank="all"
-          ></pl-big-operator-input>
-        </td>
-      </tr>
-      <tr>
-        <td colspan="2">Gamma function with prefix/suffix<small></small></td>
-      </tr>
-      <tr>
-        <td>
-          $\displaystyle \Gamma(z) = \int_{0}^{\infty} t^{z-1} e^{-t}\,dt, \operatorname{Re}(z) \gt 0$
-        </td>
-        <td>
-          <pl-big-operator-input
-            answers-name="gamma-function"
-            correct-answer="Integral(t**(z - 1) * exp(-t), (t, 0, oo))"
-            variables="z"
-            prefix-latex="\Gamma(z) ="
-            suffix-latex=", \operatorname{Re}(z) > 0"
-            allowed-blank="all"
-          ></pl-big-operator-input>
-        </td>
-      </tr>
-      <tr>
-        <td colspan="2">
-          Contour integral using custom operator latex
-          <small> <code>grading-method="component" operator-latex="\oint"</code></small>
-        </td>
-      </tr>
-      <tr>
-        <td>$\displaystyle \oint_{\gamma} \frac1z\,dz$</td>
-        <td>
-          <pl-big-operator-input
-            answers-name="contour"
-            operator-latex="\oint"
-            correct-answer="Integral(1/z, (z, gamma))"
-            variables="gamma"
-            grading-method="component"
-            allowed-blank="all"
-          ></pl-big-operator-input>
-        </td>
-      </tr>
-      <tr>
-        <td colspan="2">
-          Trigonometric integral with LaTeX Greek index
-          <small> <code>grading-method="component"</code></small>
-        </td>
-      </tr>
-      <tr>
-        <td>$\displaystyle \int_{0}^{\pi} \sin(\theta)\,d\theta$</td>
-        <td>
-          <pl-big-operator-input
-            answers-name="trig-integral"
-            correct-answer="Integral(sin(theta), (theta, 0, pi))"
-            grading-method="component"
-            allowed-blank="all"
-          ></pl-big-operator-input>
-        </td>
-      </tr>
-      <tr class="table-secondary">
-        <th colspan="2" scope="colgroup">Suprema</th>
-      </tr>
-      <tr>
-        <td colspan="2">Domain-indexed minimum <small></small></td>
-      </tr>
-      <tr>
-        <td>$\displaystyle \min_{x \in \{-2, 1\}} x^2$</td>
-        <td>
-          <pl-big-operator-input
-            answers-name="min"
-            correct-answer="Min(x**2, (x, {-2, 1}))"
-            allowed-blank="all"
-          ></pl-big-operator-input>
-        </td>
-      </tr>
-      <tr>
-        <td colspan="2">Domain-indexed maximum <small></small></td>
-      </tr>
-      <tr>
-        <td>$\displaystyle \max_{x \in \{-2, 1\}} x^2$</td>
-        <td>
-          <pl-big-operator-input
-            answers-name="max"
-            correct-answer="Max(x**2, (x, {-2, 1}))"
-            allowed-blank="all"
-          ></pl-big-operator-input>
-        </td>
-      </tr>
-      <tr class="table-secondary">
-        <th colspan="2" scope="colgroup">Sets</th>
-      </tr>
-      <tr>
-        <td colspan="2">
-          Domain-indexed union <small> <code>grading-method="exact"</code></small>
-        </td>
-      </tr>
-      <tr>
-        <td>$\displaystyle \bigcup_{k \in \{1,2\}} \{\cos(\pi k)\}$</td>
-        <td>
-          <pl-big-operator-input
-            answers-name="union"
-            correct-answer="Union({cos(pi k)}, (k, {1, 2}))"
-            grading-method="exact"
-            allowed-blank="all"
-          ></pl-big-operator-input>
-        </td>
-      </tr>
-      <tr>
-        <td colspan="2">
-          Domain-indexed intersection <small> <code>grading-method="exact"</code></small>
-        </td>
-      </tr>
-      <tr>
-        <td>$\displaystyle \bigcap_{k \in \{1,2\}} \{k\}$</td>
-        <td>
-          <pl-big-operator-input
-            answers-name="intersection"
-            correct-answer="Intersection({k}, (k, {1, 2}))"
-            grading-method="exact"
-            allowed-blank="all"
-          ></pl-big-operator-input>
-        </td>
-      </tr>
-      <tr>
-        <td colspan="2">
-          Domain-indexed disjoint union <small> <code>grading-method="exact"</code></small>
-        </td>
-      </tr>
-      <tr>
-        <td>$\displaystyle \bigsqcup_{k \in \{1,2\}} \{k+1\}$</td>
-        <td>
-          <pl-big-operator-input
-            answers-name="disjoint-union"
-            correct-answer="DisjointUnion({k+1}, (k, {1, 2}))"
-            grading-method="exact"
-            allowed-blank="all"
-          ></pl-big-operator-input>
-        </td>
-      </tr>
-      <tr class="table-secondary">
-        <th colspan="2" scope="colgroup">Limits</th>
-      </tr>
-      <tr>
-        <td colspan="2">Right-hand limit <small></small></td>
-      </tr>
-      <tr>
-        <td>$\displaystyle \lim_{x \to 0^+} \frac{\sin x}{x}$</td>
-        <td>
-          <pl-big-operator-input
-            answers-name="limit"
-            correct-answer="Limit(sin(x) / x, (x, 0, '+'))"
-            allowed-blank="all"
-          ></pl-big-operator-input>
-        </td>
-      </tr>
-      <tr class="table-secondary">
-        <th colspan="2" scope="colgroup">Custom</th>
-      </tr>
-      <tr>
-        <td colspan="2">
-          Custom direct sum <small> <code>grading-method="component"</code></small>
-        </td>
-      </tr>
-      <tr>
-        <td>$\displaystyle \mathop{ \Huge\bigstar{} }\limits_{j=1}^{4} j^2$</td>
-        <td>
-          <pl-big-operator-input
-            answers-name="custom-direct-sum"
-            correct-answer="Custom(j**2, (j, 1, 4))"
-            operator-latex="{ \Huge\bigstar{} }"
-            grading-method="component"
-            allowed-blank="all"
-          ></pl-big-operator-input>
-        </td>
-      </tr>
-      <tr>
-        <td colspan="2">
-          Custom two-sided approach without student direction input
-          <small> <code>allow-limit-direction-input="false"</code> <code>grading-method="component"</code></small>
-        </td>
-      </tr>
-      <tr>
-        <td>$\displaystyle \mathop{ \operatorname{eval} }\limits_{x \to 0} f(x)$</td>
-        <td>
-          <pl-big-operator-input
-            answers-name="custom-approach"
-            correct-answer="Custom(f(x), (x, 0, '+-'))"
-            operator-latex="\operatorname{eval}"
-            custom-functions="f"
-            allow-limit-direction-input="false"
-            grading-method="component"
-            allowed-blank="all"
-          ></pl-big-operator-input>
-        </td>
-      </tr>
-    </tbody>
-  </table>
-</div>
+<h2>Sums and Products</h2>
+
+<pl-card header="An example with a bounded sum">
+  <pl-question-panel>
+    <p>Submit $\displaystyle \sum_{k=1}^{n} k^2$.</p>
+  </pl-question-panel>
+  <pl-big-operator-input
+    answers-name="sum"
+    correct-answer="Sum(k**2, (k, 1, n))"
+    variables="n"
+    allowed-blank="all"
+  ></pl-big-operator-input>
+</pl-card>
+
+<pl-card
+  header="An example with a domain-indexed sum (&lt;code&gt;grading-method=&quot;exact&quot;&lt;/code&gt;)"
+>
+  <pl-question-panel>
+    <p>Submit $\displaystyle \sum_{k\in N} \frac1{k^2}$.</p>
+  </pl-question-panel>
+  <pl-big-operator-input
+    answers-name="domain-sum"
+    correct-answer="Sum(k**-2, (k, N))"
+    variables="N"
+    grading-method="exact"
+    allowed-blank="all"
+  ></pl-big-operator-input>
+</pl-card>
+
+<pl-card header="An example with a bounded product">
+  <pl-question-panel>
+    <p>Submit $\displaystyle \prod_{k=1}^{4} k$.</p>
+  </pl-question-panel>
+  <pl-big-operator-input
+    answers-name="product"
+    correct-answer="Product(k, (k, 1, 4))"
+    allowed-blank="all"
+  ></pl-big-operator-input>
+</pl-card>
+
+<h2>Integrals</h2>
+
+<pl-card header="An example with a range integral">
+  <pl-question-panel>
+    <p>Submit $\displaystyle \int_{0}^{1} x^2\,dx$.</p>
+  </pl-question-panel>
+  <pl-big-operator-input
+    answers-name="integral"
+    correct-answer="Integral(x**2, (x, 0, 1))"
+    allowed-blank="all"
+  ></pl-big-operator-input>
+</pl-card>
+
+<pl-card
+  header="An example with a prefix and suffix (&lt;code&gt;prefix-latex&lt;/code&gt; and &lt;code&gt;suffix-latex&lt;/code&gt;)"
+>
+  <pl-question-panel>
+    <p>
+      Submit the integral in
+      $\displaystyle \Gamma(z) = \int_{0}^{\infty} t^{z-1} e^{-t}\,dt, \operatorname{Re}(z) \gt 0$.
+    </p>
+  </pl-question-panel>
+  <pl-big-operator-input
+    answers-name="gamma-function"
+    correct-answer="Integral(t**(z - 1) * exp(-t), (t, 0, oo))"
+    variables="z"
+    prefix-latex="\Gamma(z) ="
+    suffix-latex=", \operatorname{Re}(z) > 0"
+    allowed-blank="all"
+  ></pl-big-operator-input>
+</pl-card>
+
+<pl-card
+  header="An example with custom operator LaTeX (&lt;code&gt;operator-latex=&quot;\oint&quot;&lt;/code&gt;)"
+>
+  <pl-question-panel>
+    <p>Submit $\displaystyle \oint_{\gamma} \frac1z\,dz$.</p>
+  </pl-question-panel>
+  <pl-big-operator-input
+    answers-name="contour"
+    operator-latex="\oint"
+    correct-answer="Integral(1/z, (z, gamma))"
+    variables="gamma"
+    grading-method="component"
+    allowed-blank="all"
+  ></pl-big-operator-input>
+</pl-card>
+
+<pl-card
+  header="An example with a LaTeX Greek index (&lt;code&gt;grading-method=&quot;component&quot;&lt;/code&gt;)"
+>
+  <pl-question-panel>
+    <p>Submit $\displaystyle \int_{0}^{\pi} \sin(\theta)\,d\theta$.</p>
+  </pl-question-panel>
+  <pl-big-operator-input
+    answers-name="trig-integral"
+    correct-answer="Integral(sin(theta), (theta, 0, pi))"
+    grading-method="component"
+    allowed-blank="all"
+  ></pl-big-operator-input>
+</pl-card>
+
+<h2>Suprema</h2>
+
+<pl-card header="An example with a domain-indexed minimum">
+  <pl-question-panel>
+    <p>Submit $\displaystyle \min_{x \in \{-2, 1\} } x^2$.</p>
+  </pl-question-panel>
+  <pl-big-operator-input
+    answers-name="min"
+    correct-answer="Min(x**2, (x, {-2, 1}))"
+    allowed-blank="all"
+  ></pl-big-operator-input>
+</pl-card>
+
+<pl-card header="An example with a domain-indexed maximum">
+  <pl-question-panel>
+    <p>Submit $\displaystyle \max_{x \in \{-2, 1\} } x^2$.</p>
+  </pl-question-panel>
+  <pl-big-operator-input
+    answers-name="max"
+    correct-answer="Max(x**2, (x, {-2, 1}))"
+    allowed-blank="all"
+  ></pl-big-operator-input>
+</pl-card>
+
+<h2>Sets</h2>
+
+<pl-card
+  header="An example with a domain-indexed union (&lt;code&gt;grading-method=&quot;exact&quot;&lt;/code&gt;)"
+>
+  <pl-question-panel>
+    <p>Submit $\displaystyle \bigcup_{k \in \{1,2\} } \{\cos(\pi k)\}$.</p>
+  </pl-question-panel>
+  <pl-big-operator-input
+    answers-name="union"
+    correct-answer="Union({cos(pi k)}, (k, {1, 2}))"
+    grading-method="exact"
+    allowed-blank="all"
+  ></pl-big-operator-input>
+</pl-card>
+
+<pl-card
+  header="An example with a domain-indexed intersection (&lt;code&gt;grading-method=&quot;exact&quot;&lt;/code&gt;)"
+>
+  <pl-question-panel>
+    <p>Submit $\displaystyle \bigcap_{k \in \{1,2\} } \{k\}$.</p>
+  </pl-question-panel>
+  <pl-big-operator-input
+    answers-name="intersection"
+    correct-answer="Intersection({k}, (k, {1, 2}))"
+    grading-method="exact"
+    allowed-blank="all"
+  ></pl-big-operator-input>
+</pl-card>
+
+<pl-card
+  header="An example with a domain-indexed disjoint union (&lt;code&gt;grading-method=&quot;exact&quot;&lt;/code&gt;)"
+>
+  <pl-question-panel>
+    <p>Submit $\displaystyle \bigsqcup_{k \in \{1,2\} } \{k+1\}$.</p>
+  </pl-question-panel>
+  <pl-big-operator-input
+    answers-name="disjoint-union"
+    correct-answer="DisjointUnion({k+1}, (k, {1, 2}))"
+    grading-method="exact"
+    allowed-blank="all"
+  ></pl-big-operator-input>
+</pl-card>
+
+<h2>Limits</h2>
+
+<pl-card header="An example with a right-hand limit">
+  <pl-question-panel>
+    <p>Submit $\displaystyle \lim_{x \to 0^+} \frac{\sin x}{x}$.</p>
+  </pl-question-panel>
+  <pl-big-operator-input
+    answers-name="limit"
+    correct-answer="Limit(sin(x) / x, (x, 0, '+'))"
+    allowed-blank="all"
+  ></pl-big-operator-input>
+</pl-card>
+
+<pl-card
+  header="An example with fixed limit sidedness (&lt;code&gt;allow-limit-direction-input=&quot;false&quot;&lt;/code&gt;)"
+>
+  <pl-question-panel>
+    <p>Submit $\displaystyle \lim_{x \to 0} \cos(x)$.</p>
+  </pl-question-panel>
+  <pl-big-operator-input
+    answers-name="fixed-limit-direction"
+    correct-answer="Limit(cos(x), (x, 0, '+-'))"
+    allow-limit-direction-input="false"
+    allowed-blank="all"
+  ></pl-big-operator-input>
+</pl-card>
+
+<pl-card
+  header="An example with fixed left-hand sidedness and no direction input (&lt;code&gt;limit-direction=&quot;from-left&quot;&lt;/code&gt;)"
+>
+  <pl-question-panel>
+    <p>Submit $\displaystyle \lim_{x \to 0^-} \frac{1}{x}$.</p>
+  </pl-question-panel>
+  <pl-big-operator-input
+    answers-name="fixed-left-limit"
+    correct-answer="Limit(1/x, (x, 0, '-'))"
+    limit-direction="from-left"
+    allow-limit-direction-input="false"
+    allowed-blank="all"
+  ></pl-big-operator-input>
+</pl-card>
+
+<h2>Custom</h2>
+
+<pl-card
+  header="An example with a custom operator (&lt;code&gt;grading-method=&quot;component&quot;&lt;/code&gt;)"
+>
+  <pl-question-panel>
+    <p>Submit $\displaystyle \mathop{ \Huge\bigstar{} }\limits_{j=1}^{4} j^2$.</p>
+  </pl-question-panel>
+  <pl-big-operator-input
+    answers-name="custom-direct-sum"
+    correct-answer="Custom(j**2, (j, 1, 4))"
+    operator-latex="{ \Huge\bigstar{} }"
+    grading-method="component"
+    allowed-blank="all"
+  ></pl-big-operator-input>
+</pl-card>
+
+<pl-card
+  header="An example without limit-direction input (&lt;code&gt;allow-limit-direction-input=&quot;false&quot;&lt;/code&gt;)"
+>
+  <pl-question-panel>
+    <p>Submit $\displaystyle \mathop{ \operatorname{eval} }\limits_{x \to 0} f(x)$.</p>
+  </pl-question-panel>
+  <pl-big-operator-input
+    answers-name="custom-approach"
+    correct-answer="Custom(f(x), (x, 0, '+-'))"
+    operator-latex="\operatorname{eval}"
+    custom-functions="f"
+    allow-limit-direction-input="false"
+    grading-method="component"
+    allowed-blank="all"
+  ></pl-big-operator-input>
+</pl-card>
