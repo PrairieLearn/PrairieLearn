@@ -90,7 +90,7 @@ def _used_sympy_types(expr: sympy.Basic) -> set[AllowedSympyType | Literal["set-
                 if isinstance(arg, sympy.Set):
                     required_types.update(_used_sympy_types(arg))
         return required_types
-    if isinstance(expr, (sympy.Union, sympy.Intersection)):
+    if isinstance(expr, (sympy.Union, sympy.Intersection, sympy.Complement)):
         required_types: set[AllowedSympyType | Literal["set-base"]] = set()
         for arg in expr.args:
             arg_types = _used_sympy_types(arg)
@@ -211,6 +211,7 @@ class _Constants:
     })
 
     set_functions: Final[_FrozenSympyFunctionMapT] = FrozenDict({
+        "Complement": sympy.Complement,
         "Interval": sympy.Interval,
         "FiniteSet": sympy.FiniteSet,
         "Union": sympy.Union,

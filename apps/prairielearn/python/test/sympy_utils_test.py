@@ -391,6 +391,13 @@ class TestSympy:
                 sympy.Union(sympy.Interval(1, 2), sympy.FiniteSet(3, 4)),
             ),
             (
+                "[0, 5] - {m}",
+                {"finite-set", "interval"},
+                sympy.Complement(
+                    sympy.Interval(0, 5), sympy.FiniteSet(sympy.Symbol("m"))
+                ),
+            ),
+            (
                 "{ (0, 1), [2, 3] }",
                 {"finite-set", "interval"},
                 sympy.FiniteSet(
@@ -436,6 +443,8 @@ class TestSympy:
             ("[0, 1] U [1, 4] & {2, 3}", {"interval"}, "finite-set"),
             ("[1, 2] U {3, 4}", {"finite-set"}, "interval"),
             ("{ [1, 2] }", {"finite-set"}, "interval"),
+            ("[0, 5] - {m}", {"finite-set"}, "interval"),
+            ("[0, 5] - {m}", {"interval"}, "finite-set"),
         ],
     )
     def test_try_parse_string_as_sympy_rejects_disallowed_types(
