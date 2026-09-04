@@ -114,22 +114,10 @@ def check_sympy_types(
     if matches_allowed_type:
         return None
 
-    missing_types = (used_types or set()) - allowed_types
-    if len(used_types or set()) > 1 and len(missing_types) == 1:
-        value_type = missing_types.pop()
-    elif (isinstance(expr, sympy.Set) and expr.is_finite_set) or (
-        expr is sympy.EmptySet and "interval" not in allowed_types
-    ):
-        value_type = "finite-set"
-    elif isinstance(expr, sympy.Interval) or (expr is sympy.EmptySet):
-        value_type = "interval"
-    elif isinstance(expr, sympy.Set):
-        value_type = "non-finite set"
-    else:
-        value_type = "expression"
+    disallowed_types = (used_types or {"finite-set", "interval"}) - allowed_types
     return SympyParseFailure(
-        f"Your answer has type '{value_type}', but this input only accepts: "
-        f"{', '.join(sorted(allowed_types))}."
+        f"Your answer uses {', '.join(sorted(disallowed_types))}, which this input "
+        f"does not accept. Allowed types: {', '.join(sorted(allowed_types))}."
     )
 
 
