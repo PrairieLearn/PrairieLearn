@@ -356,6 +356,7 @@
       const renderFileListEntry = (fileName, isOptional = false, isWildcard = false) => {
         const isExpanded = expandedFiles.includes(fileName);
         const fileData = this.getSubmittedFileContents(fileName);
+        let shouldExpandPreview = false;
 
         const $file = $(
           `<li class="list-group-item" data-file="${escapeFileName(fileName)}"></li>`,
@@ -478,7 +479,7 @@
               }
               $codePreview.removeClass('d-none');
             }
-            this.expandPreviewForFile(fileName);
+            shouldExpandPreview = true;
           } catch {
             const url = this.b64ToBlobUrl(fileData);
             $imgPreview
@@ -505,6 +506,9 @@
         }
 
         $fileList.append($file);
+        if (shouldExpandPreview) {
+          this.expandPreviewForFile(fileName);
+        }
         index++;
       };
 
