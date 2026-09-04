@@ -126,7 +126,9 @@ def test_set_notation_is_rejected_by_default() -> None:
         ("interval", "{}"),
         ("finite-set, expression", "{1, 2}"),
         ("finite-set, expression", "x + 1"),
-        ("finite-set, interval", "[0, 5] - {x}"),
+        ("set", "{1, 2}"),
+        ("set", "[1, 2]"),
+        ("set", "[0, 5] - {x}"),
         ("all", "{1, 2}"),
         ("all", "[1, 2]"),
         ("all", "1"),
@@ -143,6 +145,64 @@ def test_parse_accepts_allowed_value_types(allowed_types: str, submission: str) 
 
     assert "test" not in data["format_errors"]
     assert isinstance(data["submitted_answers"]["test"], dict)
+
+
+@pytest.mark.parametrize("attributes", ['allow-sets="true"', 'allowed-types="set"'])
+@pytest.mark.parametrize(
+    "submission",
+    ["Complexes", "Integers", "Naturals", "Naturals0", "Rationals", "Reals"],
+)
+def test_parse_rejects_undeclared_set_domains(attributes: str, submission: str) -> None:
+    element_html = build_element_html(attributes)
+    data = make_question_data(submitted_answers={"test": submission})
+
+    symbolic_input.parse(element_html, data)
+
+    assert data["submitted_answers"]["test"] is None
+    assert f'invalid symbol "{submission}"' in data["format_errors"]["test"]
+
+
+@pytest.mark.parametrize(
+    "submission",
+    [
+        "Reals - Naturals",
+        "Reals U Naturals",
+        "Reals & Naturals",
+        "Complement(Reals, Naturals)",
+        "Union(Reals, Naturals)",
+        "Intersection(Reals, Naturals)",
+    ],
+)
+@pytest.mark.parametrize(
+    ("variables", "allowed_types", "expected_error"),
+    [
+        ("Reals,Naturals", "set", None),
+        ("Reals,Naturals", "all", None),
+        ("Reals,Naturals", "finite-set, interval", "uses set"),
+        ("Reals", "set", 'invalid symbol "Naturals"'),
+        ("Naturals", "set", 'invalid symbol "Reals"'),
+    ],
+)
+def test_parse_infinite_set_operations_require_declared_names_and_set_type(
+    submission: str,
+    variables: str,
+    allowed_types: str,
+    expected_error: str | None,
+) -> None:
+    element_html = build_element_html(
+        f'variables="{variables}"',
+        f'allowed-types="{allowed_types}"',
+    )
+    data = make_question_data(submitted_answers={"test": submission})
+
+    symbolic_input.parse(element_html, data)
+
+    if expected_error is None:
+        assert "test" not in data["format_errors"]
+        assert isinstance(data["submitted_answers"]["test"], dict)
+    else:
+        assert data["submitted_answers"]["test"] is None
+        assert expected_error in data["format_errors"]["test"]
 
 
 @pytest.mark.parametrize(
@@ -213,6 +273,7 @@ def test_prepare_accepts_allowed_correct_answer_type() -> None:
     [
         ("finite-set", "{1}"),
         ("interval", "[1, 2]"),
+        ("set", "{1}"),
     ],
 )
 def test_incorrect_answer_uses_an_allowed_type(
