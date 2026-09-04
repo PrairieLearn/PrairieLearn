@@ -70,7 +70,7 @@ export function buildImportPayload({
   // Deduplicate assessment directory names so two assessments with the
   // same title don't overwrite each other.
   const allocatedAssessmentDirs = new Set<string>();
-  const resolvedAssessmentDirNames = new Map<string, string>();
+  const resolvedAssessmentDirNames = new Map<AssessmentConversionResult, string>();
   for (const { result } of includedAssessments) {
     let dirName = result.assessment.directoryName;
     if (allocatedAssessmentDirs.has(dirName)) {
@@ -79,7 +79,7 @@ export function buildImportPayload({
       dirName = `${dirName}-${n}`;
     }
     allocatedAssessmentDirs.add(dirName);
-    resolvedAssessmentDirNames.set(result.assessment.directoryName, dirName);
+    resolvedAssessmentDirNames.set(result, dirName);
   }
 
   // Pre-compute final directory names for all renamed questions so that
@@ -150,9 +150,7 @@ export function buildImportPayload({
         .filter((zone) => zone.questions.length > 0);
 
       return {
-        directoryName:
-          resolvedAssessmentDirNames.get(result.assessment.directoryName) ??
-          result.assessment.directoryName,
+        directoryName: resolvedAssessmentDirNames.get(result) ?? result.assessment.directoryName,
         infoJson: {
           ...result.assessment.infoJson,
           title: override.title,
