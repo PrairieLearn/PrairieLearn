@@ -126,6 +126,7 @@ def test_set_notation_is_rejected_by_default() -> None:
         ("interval", "{}"),
         ("finite-set, expression", "{1, 2}"),
         ("finite-set, expression", "x + 1"),
+        ("finite-set, interval", "[0, 5] - {x}"),
         ("all", "{1, 2}"),
         ("all", "[1, 2]"),
         ("all", "1"),
