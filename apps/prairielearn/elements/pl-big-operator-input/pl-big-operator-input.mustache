@@ -28,13 +28,8 @@
   {{/integral}}
   {{^integral}}
     <div
-      class="pl-big-operator-input__operator-stack{{#domain}} pl-big-operator-input__operator-stack--annotated{{/domain}}{{#approach}} pl-big-operator-input__operator-stack--annotated{{/approach}}"
+      class="pl-big-operator-input__operator-stack{{#bounds}} pl-big-operator-input__operator-stack--bounds{{/bounds}}{{#domain}} pl-big-operator-input__operator-stack--annotated{{/domain}}{{#approach}} pl-big-operator-input__operator-stack--annotated{{/approach}}"
     >
-      {{#bounds}}
-        <div class="pl-big-operator-input__upper pl-big-operator-input__range-upper-bound">
-          {{#upper_field}}{{{html}}}{{/upper_field}}
-        </div>
-      {{/bounds}}
       <div class="pl-big-operator-input__operator" aria-hidden="true">
         \(\displaystyle {{{operator_latex}}}\)
       </div>
@@ -81,6 +76,11 @@
           {{/direction_input}}
         </div>
       {{/approach}}
+      {{#bounds}}
+        <div class="pl-big-operator-input__upper pl-big-operator-input__range-upper-bound">
+          {{#upper_field}}{{{html}}}{{/upper_field}}
+        </div>
+      {{/bounds}}
     </div>
   {{/integral}}
   {{#body_field}}
