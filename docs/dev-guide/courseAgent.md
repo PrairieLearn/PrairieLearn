@@ -28,6 +28,11 @@ assessments, and other course content locally, but still cannot push.
 
 The third stack layer stores conversations, turns, messages, and runtime events in PostgreSQL. The
 panel reopens the most recent conversation and resumes an active Redis stream after navigation.
+Use the conversation picker to reopen another conversation, or the plus button to start a new one.
+Conversations are scoped to the authenticated instructor and course, with separate sandboxes and
+Codex threads. Switching disconnects the browser stream, not a running server-side task; returning
+loads saved messages and reconnects if that task is still active. A new conversation is saved when
+its first message is sent. Unsent drafts are not saved when switching.
 Each successful turn checkpoints `/workspace` to the Worker's R2 backup binding. When the configured
 idle period expires, the Worker checkpoints again and destroys the sandbox. The next turn restores
 the checkpoint only if it needs a new sandbox; a live workspace is never overwritten by an older

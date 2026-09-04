@@ -203,7 +203,11 @@ const get = courseAgentProcedure
   });
 
 const list = courseAgentProcedure
-  .output(z.object({ conversations: z.array(CourseAgentConversationSchema) }))
+  .output(
+    z.object({
+      conversations: z.array(CourseAgentConversationSchema.pick({ id: true, title: true })),
+    }),
+  )
   .query(async ({ ctx }) => ({
     conversations: await selectCourseAgentConversations(ctx.course.id, ctx.locals.authn_user.id),
   }));
@@ -227,30 +231,49 @@ const diagnostics = courseAgentProcedure
     }),
   );
 
-const history = courseAgentProcedure.query(async ({ ctx }) => {
-  const latest = (await selectCourseAgentConversations(ctx.course.id, ctx.locals.authn_user.id)).at(
-    0,
-  );
-  if (!latest) return { run: null, activeRunId: null, messages: [], warning: null };
-  let saved = await selectCourseAgentHistory(latest.id);
-  const runId = saved.messages.filter((message) => message.role === 'user').at(-1)?.run_id;
-  if (!runId) return { run: null, activeRunId: null, messages: [], warning: null };
-  const run = { conversationId: latest.id, sandboxId: latest.sandbox_id, runId };
-  let activeRunId: string | null = null;
-  let warning: string | null = null;
-  try {
-    const snapshot = await getEphemeralCourseAgentSnapshot({
-      ...run,
-      courseId: ctx.course.id,
-      userId: ctx.locals.authn_user.id,
-    });
-    await persistCourseAgentSnapshot({ snapshot, runId });
-    activeRunId = snapshot.activeRunId;
-    saved = await selectCourseAgentHistory(latest.id);
-  } catch {
-    warning = 'Saved conversation loaded. The agent workspace is currently unavailable.';
-  }
-  return { run, activeRunId, messages: await restoreCourseAgentMessages(saved), warning };
-});
+const history = courseAgentProcedure
+  .input(z.object({ conversationId: z.uuid().optional() }).optional())
+  .query(async ({ ctx, input }) => {
+    const conversation = input?.conversationId
+      ? await selectOptionalCourseAgentConversation({
+          conversationId: input.conversationId,
+          courseId: ctx.course.id,
+          userId: ctx.locals.authn_user.id,
+        })
+      : (await selectCourseAgentConversations(ctx.course.id, ctx.locals.authn_user.id)).at(0);
+    if (!conversation) {
+      if (input?.conversationId) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Course-agent conversation not found' });
+      }
+      return { run: null, activeRunId: null, messages: [], warning: null };
+    }
+    let saved = await selectCourseAgentHistory(conversation.id);
+    const runId = saved.messages.filter((message) => message.role === 'user').at(-1)?.run_id;
+    if (!runId) return { run: null, activeRunId: null, messages: [], warning: null };
+    const run = { conversationId: conversation.id, sandboxId: conversation.sandbox_id, runId };
+    let activeRunId: string | null = null;
+    let warning: string | null = null;
+    try {
+      const snapshot = await getEphemeralCourseAgentSnapshot({
+        ...run,
+        courseId: ctx.course.id,
+        userId: ctx.locals.authn_user.id,
+      });
+      await persistCourseAgentSnapshot({ snapshot, runId });
+      activeRunId = snapshot.activeRunId;
+      saved = await selectCourseAgentHistory(conversation.id);
+    } catch {
+      warning = 'Saved conversation loaded. The agent workspace is currently unavailable.';
+    }
+    return { run, activeRunId, messages: await restoreCourseAgentMessages(saved), warning };
+  });
 
 export const courseAgentRouter = t.router({ get, list, start, diagnostics, history });
+
+export interface CourseAgentError {
+  Get: never;
+  List: never;
+  Start: never;
+  Diagnostics: never;
+  History: never;
+}

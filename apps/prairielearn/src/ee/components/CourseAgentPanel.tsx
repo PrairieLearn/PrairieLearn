@@ -1,18 +1,20 @@
 import { useChat } from '@ai-sdk/react';
-import { QueryClient, useQuery } from '@tanstack/react-query';
+import { QueryClient, useQuery, useQueryClient } from '@tanstack/react-query';
 import clsx from 'clsx';
 import { Fragment, useEffect, useRef, useState } from 'react';
-import { Alert, Button, Spinner } from 'react-bootstrap';
+import { Alert, Button, Form, Spinner } from 'react-bootstrap';
 import type { Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useStickToBottom } from 'use-stick-to-bottom';
 
 import type { CourseAgentEvent } from '@prairielearn/course-agent-protocol';
-import { QueryClientProviderDebug } from '@prairielearn/trpc/react';
+import { getAppError } from '@prairielearn/trpc/client';
+import { AppErrorAlert, QueryClientProviderDebug } from '@prairielearn/trpc/react';
 import { OverlayTrigger } from '@prairielearn/ui';
 
 import { createCourseTrpcClient } from '../../trpc/course/client.js';
 import { TRPCProvider, useTRPC } from '../../trpc/course/context.js';
+import type { CourseAgentError } from '../../trpc/course/course-agent.js';
 import type { CourseAgentMessage } from '../lib/course-agent/ui-stream.js';
 
 import { ChatComposer } from './chat/ChatComposer.js';
@@ -42,10 +44,56 @@ function CourseAgentPanelInner(props: {
   trpcClient: ReturnType<typeof createCourseTrpcClient>;
 }) {
   const trpc = useTRPC();
-  const history = useQuery(trpc.courseAgent.history.queryOptions());
-  if (history.isPending) return <div role="status">Loading conversation…</div>;
-  if (history.isError) return <Alert variant="danger">{history.error.message}</Alert>;
-  return <CourseAgentConversationPanel {...props} initialHistory={history.data} />;
+  const [selection, setSelection] = useState<{ id?: string; version: number }>({ version: 0 });
+  const conversations = useQuery(trpc.courseAgent.list.queryOptions());
+  const history = useQuery(
+    trpc.courseAgent.history.queryOptions(
+      { conversationId: selection.id === 'new' ? undefined : selection.id },
+      {
+        enabled: selection.id !== 'new',
+        refetchOnWindowFocus: false,
+        refetchOnReconnect: false,
+        staleTime: 0,
+      },
+    ),
+  );
+  const newConversation = selection.id === 'new';
+  if (!newConversation && (history.isPending || history.isFetching)) {
+    return <div role="status">Loading conversation…</div>;
+  }
+  if (!newConversation && history.isError) {
+    return (
+      <div>
+        <AppErrorAlert
+          error={getAppError<CourseAgentError['History']>(history.error)}
+          render={{ UNKNOWN: ({ message }) => message }}
+        />
+        <Button variant="link" onClick={() => void history.refetch()}>
+          Try again
+        </Button>
+        <Button
+          variant="link"
+          onClick={() => setSelection({ id: 'new', version: selection.version + 1 })}
+        >
+          New conversation
+        </Button>
+      </div>
+    );
+  }
+  return (
+    <CourseAgentConversationPanel
+      key={selection.version}
+      {...props}
+      initialHistory={
+        newConversation
+          ? { run: null, activeRunId: null, messages: [], warning: null }
+          : history.data!
+      }
+      conversations={conversations.data?.conversations ?? []}
+      listError={getAppError<CourseAgentError['List']>(conversations.error)}
+      onSelect={(id) => setSelection({ id, version: selection.version + 1 })}
+    />
+  );
 }
 
 function CourseAgentConversationPanel({
@@ -54,6 +102,9 @@ function CourseAgentConversationPanel({
   showDiagnostics,
   trpcClient,
   initialHistory,
+  conversations,
+  listError,
+  onSelect,
 }: {
   courseId: string;
   userName: string;
@@ -62,8 +113,12 @@ function CourseAgentConversationPanel({
   initialHistory: Awaited<
     ReturnType<ReturnType<typeof createCourseTrpcClient>['courseAgent']['history']['query']>
   >;
+  conversations: { id: string; title: string }[];
+  listError: ReturnType<typeof getAppError<CourseAgentError['List']>>;
+  onSelect: (id: string) => void;
 }) {
   const trpc = useTRPC();
+  const queryClient = useQueryClient();
   const [open, setOpen] = useState(true);
   const [closing, setClosing] = useState(false);
   const stickToBottom = useStickToBottom({ initial: 'smooth', resize: 'smooth' });
@@ -82,16 +137,23 @@ function CourseAgentConversationPanel({
       new CourseAgentTransport(
         (input) => trpcClient.courseAgent.start.mutate(input),
         courseId,
-        setConversation,
+        (run) => {
+          // Keep the conversation selected while the next run is being submitted.
+          if (run) {
+            setConversation(run);
+            void queryClient.invalidateQueries(trpc.courseAgent.list.queryFilter());
+          }
+        },
         initialHistory.run,
       ),
   );
-  const { messages, sendMessage, status, error, resumeStream, setMessages } =
+  const { messages, sendMessage, status, error, resumeStream, setMessages, stop } =
     useChat<CourseAgentMessage>({
       transport,
       messages: initialHistory.messages,
       onFinish: () => {
         if (showDiagnostics) void diagnostics.refetch();
+        void queryClient.invalidateQueries(trpc.courseAgent.list.queryFilter());
       },
     });
   const resumedRef = useRef(false);
@@ -103,6 +165,13 @@ function CourseAgentConversationPanel({
       void resumeStream();
     }
   }, [runToResume, resumeStream]);
+  // Switching conversations disconnects this browser stream, not the server-side agent run.
+  useEffect(
+    () => () => {
+      void stop();
+    },
+    [stop],
+  );
   const busy = status === 'submitted' || status === 'streaming';
   const lastMessage = messages.at(-1);
   const hasActiveTool =
@@ -173,6 +242,39 @@ function CourseAgentConversationPanel({
               onClick={closePanel}
             />
           </div>
+          <div className="d-flex align-items-center gap-2 mt-2">
+            <Form.Select
+              size="sm"
+              aria-label="Conversation"
+              value={conversation?.conversationId ?? 'new'}
+              disabled={status === 'submitted'}
+              style={{ minWidth: 0 }}
+              onChange={(event) => onSelect(event.currentTarget.value)}
+            >
+              {!conversation && <option value="new">New conversation</option>}
+              {conversation &&
+                !conversations.some((item) => item.id === conversation.conversationId) && (
+                  <option value={conversation.conversationId}>Current conversation</option>
+                )}
+              {conversations.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.title}
+                </option>
+              ))}
+            </Form.Select>
+            <Button
+              size="sm"
+              variant="light"
+              className="flex-shrink-0"
+              aria-label="New conversation"
+              title="New conversation"
+              disabled={status === 'submitted'}
+              onClick={() => onSelect('new')}
+            >
+              <i className="bi bi-plus-lg" aria-hidden="true" />
+            </Button>
+          </div>
+          <AppErrorAlert error={listError} render={{ UNKNOWN: ({ message }) => message }} />
         </header>
 
         <div className="course-agent-history position-relative">
