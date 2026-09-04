@@ -1386,7 +1386,7 @@ def try_parse_string_as_sympy(
             print(result.expr)
     """
     if allowed_types is None:
-        allowed_types = {"all"}
+        allowed_types = {"expression"}
 
     try:
         expr_parsed = convert_string_to_sympy(
@@ -1544,6 +1544,7 @@ def validate_string_as_sympy(
     imaginary_unit: str | None = None,
     simplify_expression: bool = True,
     assumptions: AssumptionsDictT | None = None,
+    allowed_types: set[AllowedSympyType] | None = None,
 ) -> str | None:
     """Try to parse expr as a SymPy expression.
 
@@ -1561,6 +1562,7 @@ def validate_string_as_sympy(
         imaginary_unit=imaginary_unit,
         simplify_expression=simplify_expression,
         assumptions=assumptions,
+        allowed_types=allowed_types,
     )
 
     if isinstance(result, SympyParseFailure):
