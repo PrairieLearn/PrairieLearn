@@ -494,6 +494,26 @@ class TestSympy:
         ) == sympy.Set(sympy.Symbol(domain_name))
 
     @pytest.mark.parametrize(
+        "domain_name",
+        ["Complexes", "Integers", "Naturals", "Naturals0", "Rationals", "Reals"],
+    )
+    def test_set_domain_names_are_scalar_variables_when_sets_are_disabled(
+        self, domain_name: str
+    ) -> None:
+        symbol = sympy.Symbol(domain_name)
+
+        assert psu.try_parse_string_as_sympy(
+            domain_name,
+            [domain_name],
+            allowed_types={"expression"},
+        ) == psu.SympyParseSuccess(symbol)
+        assert psu.try_parse_string_as_sympy(
+            f"{domain_name} + 1",
+            [domain_name],
+            allowed_types={"expression"},
+        ) == psu.SympyParseSuccess(symbol + 1)
+
+    @pytest.mark.parametrize(
         ("operation", "expected_type"),
         [
             ("Reals - Naturals", sympy.Complement),
@@ -808,6 +828,7 @@ class TestAllowExtraSymbols:
         [
             ("n*log(n) + m", None, {"m", "n"}),
             ("x + y", ["x"], {"x", "y"}),
+            ("Reals + x", ["x"], {"Reals", "x"}),
             # Builtin constants are resolved, not treated as free symbols.
             ("2*e + n", None, {"n"}),
             # Greek letters are normalized to their spelled-out names.
