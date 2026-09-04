@@ -1,0 +1,29 @@
+columns
+    course_id: bigint not null
+    created_at: timestamp with time zone not null default now()
+    deleted_at: timestamp with time zone
+    id: uuid not null
+    last_error: text
+    runtime_status: text not null default 'offline'::text
+    sandbox_id: text not null
+    title: text not null default 'New chat'::text
+    updated_at: timestamp with time zone not null default now()
+    user_id: bigint not null
+
+indexes
+    course_agent_conversations_pkey: PRIMARY KEY (id) USING btree (id)
+    course_agent_conversations_sandbox_id_key: UNIQUE (sandbox_id) USING btree (sandbox_id)
+    course_agent_conversations_course_user_idx: USING btree (course_id, user_id, updated_at DESC) WHERE deleted_at IS NULL
+
+check constraints
+    course_agent_conversations_runtime_status_check: CHECK (runtime_status = ANY (ARRAY['starting'::text, 'running'::text, 'waiting_for_user'::text, 'offline'::text, 'failed'::text]))
+
+foreign-key constraints
+    course_agent_conversations_course_id_fkey: FOREIGN KEY (course_id) REFERENCES courses(id) ON UPDATE CASCADE ON DELETE CASCADE
+    course_agent_conversations_user_id_fkey: FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE RESTRICT
+
+referenced by
+    course_agent_events: FOREIGN KEY (conversation_id) REFERENCES course_agent_conversations(id) ON UPDATE CASCADE ON DELETE CASCADE
+    course_agent_messages: FOREIGN KEY (conversation_id) REFERENCES course_agent_conversations(id) ON UPDATE CASCADE ON DELETE CASCADE
+    course_agent_runs: FOREIGN KEY (conversation_id) REFERENCES course_agent_conversations(id) ON UPDATE CASCADE ON DELETE CASCADE
+    course_agent_workspace_backups: FOREIGN KEY (conversation_id) REFERENCES course_agent_conversations(id) ON UPDATE CASCADE ON DELETE CASCADE

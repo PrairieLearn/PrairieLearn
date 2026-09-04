@@ -12,7 +12,7 @@ export type CourseAgentMessage = UIMessage<
 export function courseAgentUIStream(runId: string) {
   let active = false;
   let finished = false;
-  let sequence = -1;
+  let sequence = -Infinity;
   let text = '';
   let textStarted = false;
   let restoring = false;

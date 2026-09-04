@@ -8,6 +8,7 @@ import {
   CourseAgentSnapshotRequestSchema,
   type CourseAgentStartRunRequest,
   CourseAgentStartRunRequestSchema,
+  type CourseAgentWorkspaceBackup,
 } from '@prairielearn/course-agent-protocol';
 
 import { authorizeRun, authorizeSnapshot } from './auth.js';
@@ -30,6 +31,11 @@ interface Env {
   OPENAI_API_KEY: string;
   COURSE_AGENT_CAPABILITY_SECRET: string;
   COURSE_AGENT_GITHUB_PAT: string;
+  CLOUDFLARE_ACCOUNT_ID?: string;
+  R2_ACCESS_KEY_ID?: string;
+  R2_SECRET_ACCESS_KEY?: string;
+  BACKUP_BUCKET_NAME: string;
+  BACKUP_BUCKET: R2Bucket;
   OPENAI_MODEL: string;
   COURSE_AGENT_DOCS?: R2Bucket;
 }
@@ -43,9 +49,12 @@ interface ConversationState {
   activeRunExpiresAt?: string | null;
   status: 'starting' | 'running' | 'waiting_for_user' | 'failed' | 'offline';
   sandboxExpiresAt?: number | null;
+  idleExpiresAt?: number | null;
   response: string | null;
   error: string | null;
   events: CourseAgentEvent[];
+  workspaceBackup: CourseAgentWorkspaceBackup | null;
+  runtimeSettings: CourseAgentStartRunRequest['runtimeSettings'];
   checkout?: Pick<CourseAgentStartRunRequest['course'], 'repository' | 'branch'>;
 }
 
@@ -120,12 +129,15 @@ PrairieLearn cannot open or download these files in this version; do not imply o
 export class CourseAgentCoordinator {
   private listeners = new Set<ReadableStreamDefaultController<string>>();
 
+  private shutdown: Promise<void> | null = null;
+
   constructor(
     private state: DurableObjectState,
     private env: Env,
   ) {}
 
   async fetch(request: Request) {
+    if (this.shutdown) await this.shutdown;
     const url = new URL(request.url);
     if (request.method === 'POST' && url.pathname === '/run') {
       const body = CourseAgentStartRunRequestSchema.parse(await request.json());
@@ -159,11 +171,14 @@ export class CourseAgentCoordinator {
         response: null,
         error: null,
         events: current?.events ?? [],
+        workspaceBackup: current?.workspaceBackup ?? body.workspaceBackup,
+        runtimeSettings: body.runtimeSettings,
         checkout: current?.checkout ?? {
           repository: body.course.repository,
           branch: body.course.branch,
         },
         sandboxExpiresAt: current?.sandboxExpiresAt,
+        idleExpiresAt: null,
       };
       await this.state.storage.put('conversation', next);
       this.state.waitUntil(this.run(body));
@@ -185,6 +200,7 @@ export class CourseAgentCoordinator {
         response: current.response,
         error: current.error,
         events: current.events,
+        workspaceBackup: current.workspaceBackup,
       });
     }
     if (request.method === 'POST' && url.pathname === '/stream') {
@@ -201,51 +217,88 @@ export class CourseAgentCoordinator {
   }
 
   async alarm() {
-    await this.state.blockConcurrencyWhile(async () => {
-      const current = await this.state.storage.get<ConversationState>('conversation');
-      if (current?.sandboxExpiresAt == null) return;
-      if (current.sandboxExpiresAt > Date.now()) {
-        await this.state.storage.setAlarm(current.sandboxExpiresAt);
-        return;
-      }
-      const message =
-        'The agent workspace reached its lifetime limit. Send another message to start a fresh workspace; temporary files are no longer available.';
-      const events = [...current.events];
-      if (current.activeRunId) {
-        events.push({
-          sequence: events.length,
-          type: 'run.failed',
-          occurredAt: new Date().toISOString(),
-          data: { message },
-        });
-      }
-      events.push({
-        sequence: events.length,
-        type: 'sandbox.destroyed',
-        occurredAt: new Date().toISOString(),
-        data: { reason: 'max_lifetime' },
-      });
-      // Invalidate the run before destroying its container so late output cannot revive it.
-      const expired: ConversationState = {
-        ...current,
-        activeRunId: null,
-        activeRunExpiresAt: null,
-        status: 'offline',
-        error: current.activeRunId ? message : null,
-        events,
-      };
-      await this.state.storage.put('conversation', expired);
-      const sandbox = getSandbox(this.env.Sandbox, current.identity.sandboxId, {
-        normalizeId: true,
-      });
-      await sandbox.destroy();
-      await this.state.storage.put('conversation', { ...expired, sandboxExpiresAt: null });
-      await this.state.storage.deleteAlarm();
-      for (const event of events.slice(current.events.length)) {
-        for (const listener of this.listeners) listener.enqueue(eventChunk(event));
-      }
-      this.closeStreams();
+    this.shutdown ??= this.expireWorkspace().finally(() => {
+      this.shutdown = null;
     });
+    await this.shutdown;
+  }
+
+  private async expireWorkspace() {
+    const current = await this.state.storage.get<ConversationState>('conversation');
+    if (current?.sandboxExpiresAt == null) return;
+    const deadline = Math.min(current.sandboxExpiresAt, current.idleExpiresAt ?? Infinity);
+    if (deadline > Date.now()) {
+      await this.state.storage.setAlarm(deadline);
+      return;
+    }
+    const active = current.activeRunId;
+    const reason = current.sandboxExpiresAt <= Date.now() ? 'max_lifetime' : 'idle_timeout';
+    const message =
+      'The agent workspace reached its lifetime limit. Send another message to restore the last completed backup; changes from the interrupted turn may be lost.';
+    if (active) {
+      await this.append('run.failed', { message }, active);
+      await this.update({ activeRunId: null, activeRunExpiresAt: null, error: message }, active);
+    }
+    const sandbox = getSandbox(this.env.Sandbox, current.identity.sandboxId, {
+      normalizeId: true,
+      keepAlive: true,
+    });
+    // An active writer cannot produce a consistent checkpoint. Retain the last completed turn's backup.
+    if (!active) {
+      try {
+        await this.backupWorkspace(sandbox);
+      } catch (error) {
+        await this.append('workspace.backup.failed', {
+          message: error instanceof Error ? error.message : String(error),
+        });
+        // Keep idle workspaces available for a retry until their absolute lifetime expires.
+        if (reason === 'idle_timeout') {
+          const retryAt = Math.min(Date.now() + 60_000, current.sandboxExpiresAt);
+          await this.update({ idleExpiresAt: retryAt });
+          await this.state.storage.setAlarm(retryAt);
+          return;
+        }
+      }
+    }
+    await sandbox.destroy();
+    await this.update({ status: 'offline', sandboxExpiresAt: null, idleExpiresAt: null });
+    await this.append('sandbox.destroyed', { reason });
+    await this.state.storage.deleteAlarm();
+    this.closeStreams();
+  }
+
+  private async backupWorkspace(sandbox: ReturnType<typeof getSandbox<Sandbox>>, runId?: string) {
+    const current = await this.state.storage.get<ConversationState>('conversation');
+    if (!current || (runId && current.activeRunId !== runId)) return;
+    await this.append('workspace.backup.started', {}, runId);
+    const handle = await sandbox.createBackup({
+      dir: COURSE_AGENT_WORKSPACE_ROOT,
+      name: current.identity.conversationId,
+      ttl: current.runtimeSettings.backupTtlSeconds,
+      localBucket: !this.env.R2_ACCESS_KEY_ID || !this.env.R2_SECRET_ACCESS_KEY,
+    });
+    const expiresAt = new Date(
+      Date.now() + current.runtimeSettings.backupTtlSeconds * 1000,
+    ).toISOString();
+    if (await this.update({ workspaceBackup: { handle, expiresAt } }, runId)) {
+      await this.append('workspace.backup.completed', { backupId: handle.id, expiresAt }, runId);
+    }
+  }
+
+  private async scheduleIdle(runId: string) {
+    const current = await this.state.storage.get<ConversationState>('conversation');
+    const latestUser = current?.events.findLast((event) => event.type === 'user.message');
+    if (
+      !current ||
+      current.activeRunId ||
+      latestUser?.data.runId !== runId ||
+      current.sandboxExpiresAt == null
+    ) {
+      return;
+    }
+    const idleExpiresAt = Date.now() + current.runtimeSettings.idleTimeoutSeconds * 1000;
+    await this.update({ idleExpiresAt });
+    await this.state.storage.setAlarm(Math.min(idleExpiresAt, current.sandboxExpiresAt));
   }
 
   private async append(
@@ -305,6 +358,7 @@ export class CourseAgentCoordinator {
   private async run(request: CourseAgentStartRunRequest) {
     const sandbox = getSandbox(this.env.Sandbox, request.sandboxId, {
       normalizeId: true,
+      keepAlive: true,
       labels: { courseId: 'redacted', workload: 'course-agent' },
       sleepAfter: request.runtimeSettings.idleTimeoutSeconds,
     });
@@ -325,7 +379,13 @@ export class CourseAgentCoordinator {
         { text: request.prompt, runId: request.runId },
         request.runId,
       );
-      if (starting) await this.append('sandbox.starting', { restoring: false }, request.runId);
+      if (starting) {
+        await this.append(
+          'sandbox.starting',
+          { restoring: !!current.workspaceBackup },
+          request.runId,
+        );
+      }
       const docsMount = await sandbox.exec('mountpoint -q /opt/prairielearn-docs');
       if (this.env.COURSE_AGENT_DOCS && !docsMount.success) {
         try {
@@ -376,6 +436,25 @@ export class CourseAgentCoordinator {
         `mkdir -p ${shellQuote(COURSE_AGENT_WORKSPACE_ROOT)} && test -f ${shellQuote(COURSE_AGENT_SEED_FILE)} || printf %s ${shellQuote(seed)} > ${shellQuote(COURSE_AGENT_SEED_FILE)}`,
       );
       if (!result.success) throw new Error(result.stderr || 'Could not create workspace');
+      if (starting && current.workspaceBackup) {
+        const backup = current.workspaceBackup;
+        if (Date.parse(backup.expiresAt) <= Date.now()) {
+          throw new Error(
+            'The workspace backup expired. Unpublished changes can no longer be restored.',
+          );
+        }
+        await this.append(
+          'workspace.restore.started',
+          { backupId: backup.handle.id },
+          request.runId,
+        );
+        await sandbox.restoreBackup(backup.handle);
+        await this.append(
+          'workspace.restore.completed',
+          { backupId: backup.handle.id },
+          request.runId,
+        );
+      }
       const repository = githubRepositoryPath(request.course.repository);
       const coursePath = `${COURSE_AGENT_WORKSPACE_ROOT}/course`;
       await sandbox.setOutboundByHost(
@@ -519,6 +598,7 @@ export class CourseAgentCoordinator {
       await eventChain;
       if (!codex.success) throw new Error(codexFailureMessage(codex.stdout, codex.stderr));
       const response = stream.response || 'Done.';
+      await this.backupWorkspace(sandbox, request.runId);
       await this.append('agent.completed', { response }, request.runId);
       const finished = await this.update(
         {
@@ -530,7 +610,10 @@ export class CourseAgentCoordinator {
         },
         request.runId,
       );
-      if (finished) this.closeStreams();
+      if (finished) {
+        await this.scheduleIdle(request.runId);
+        this.closeStreams();
+      }
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       await this.append('run.failed', { message }, request.runId);
@@ -544,7 +627,10 @@ export class CourseAgentCoordinator {
         },
         request.runId,
       );
-      if (finished) this.closeStreams();
+      if (finished) {
+        await this.scheduleIdle(request.runId);
+        this.closeStreams();
+      }
     }
   }
 

@@ -1,0 +1,14 @@
+columns
+    backup_handle: jsonb not null
+    conversation_id: uuid not null
+    created_at: timestamp with time zone not null default now()
+    expires_at: timestamp with time zone
+    id: bigint not null default nextval('course_agent_workspace_backups_id_seq'::regclass)
+    sandbox_id: text not null
+
+indexes
+    course_agent_workspace_backups_pkey: PRIMARY KEY (id) USING btree (id)
+    course_agent_workspace_backups_conversation_id_idx: USING btree (conversation_id, id DESC)
+
+foreign-key constraints
+    course_agent_workspace_backups_conversation_id_fkey: FOREIGN KEY (conversation_id) REFERENCES course_agent_conversations(id) ON UPDATE CASCADE ON DELETE CASCADE

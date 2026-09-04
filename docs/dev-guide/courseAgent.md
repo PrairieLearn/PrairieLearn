@@ -26,6 +26,23 @@ the course's configured GitHub repository and branch, shallow-clones it into `/w
 and gives Codex a bundled content-authoring skill. At that point the agent can create and edit questions,
 assessments, and other course content locally, but still cannot push.
 
+The third stack layer stores conversations, turns, messages, and runtime events in PostgreSQL. The
+panel reopens the most recent conversation and resumes an active Redis stream after navigation.
+Use the conversation picker to reopen another conversation, or the plus button to start a new one.
+Conversations are scoped to the authenticated instructor and course, with separate sandboxes and
+Codex threads. Switching disconnects the browser stream, not a running server-side task; returning
+loads saved messages and reconnects if that task is still active. A new conversation is saved when
+its first message is sent. Unsent drafts are not saved when switching.
+Each successful turn checkpoints `/workspace` to the Worker's R2 backup binding. When the configured
+idle period expires, the Worker checkpoints again and destroys the sandbox. The next turn restores
+the checkpoint only if it needs a new sandbox; a live workspace is never overwritten by an older
+backup. The backup TTL comes from `courseAgentSandbox.backupTtlSeconds`. Completed text and tool
+history are persisted independently of whether the browser remains connected. The checkpoint includes
+`/workspace/.course-agent/codex`, so returning to a restored sandbox resumes the same native Codex
+thread, including tool context and compaction state. PostgreSQL retains the instructor transcript
+separately. If no native session exists, all available user/assistant messages from the Worker's
+durable events are supplied once as recovery context; this does not reconstruct native tool history.
+
 ## Free local testing
 
 Set `courseAgentRuntime` to `fake` in your existing PrairieLearn configuration and enable the
@@ -63,9 +80,12 @@ Sandbox lifetime settings are non-secret and can be configured in `config.json`:
 `maxLifetimeSeconds` is an absolute limit starting when the sandbox is created, not an idle timer.
 It defaults to 600 seconds and accepts values from 1 to 86,400 seconds (for example, 10 for local
 expiry testing). New messages do not extend an existing sandbox's deadline. A durable alarm shuts
-down the sandbox at the deadline, including during an active turn. Temporary files are lost in
-this base PR; the next message starts a fresh workspace. Configuration changes apply to newly
-created sandboxes. The existing `idleTimeoutSeconds` separately controls Cloudflare's idle sleep.
+down the sandbox at the deadline, including during an active turn. In this persistence layer, the
+next message restores the last completed checkpoint. Changes from an interrupted turn may be lost.
+An idle backup failure retains the sandbox for a retry until the absolute deadline. An expired
+backup is reported instead of silently claiming unpublished edits were restored. The lifetime applies
+from sandbox creation; new messages do not reset it. `idleTimeoutSeconds` controls the separate
+durable idle timer after a turn finishes. With both defaults at 600 seconds, the absolute limit wins.
 
 Administrators see a collapsed **Conversation info (only visible to administrators)**
 accordion. The diagnostic endpoint also requires administrator access; the ordinary transcript
@@ -103,8 +123,10 @@ UI-message SSE. PrairieLearn translates Worker events into UI-message chunks bef
 in Redis; each run has a stable assistant-message ID, and earlier turns in the Worker's replay are
 excluded. Reconnecting rebuilds that run's message from the beginning without submitting another
 model request. If Redis no longer has the completed stream, the same adapter reconstructs it from
-the authorized workspace snapshot. This does not persist the browser conversation across reloads;
-conversation persistence belongs to the later persistence PR.
+the authorized workspace snapshot. On page reload, PostgreSQL history is rebuilt with the same
+UI-message adapter, including each turn's tool calls. An active run reconnects without another model
+request. Saved history remains readable if the Worker is temporarily unavailable. Internal telemetry
+and backup handles are omitted from this ordinary history response.
 
 The sandbox runs Codex app-server over stdio to forward final-answer text deltas as they arrive.
 Commentary and reasoning are not displayed. Rebuild/restart the local Worker after changing its
@@ -112,5 +134,9 @@ Dockerfile or runner script. The Docker build context excludes local configurati
 To verify the runner against the pinned Codex binary without paid requests, set
 `COURSE_AGENT_TEST_CODEX` to that binary's absolute path when running the Worker tests; its provider
 is replaced by a localhost-only mock with a fake key.
+
+For local backup testing, Wrangler uses its local `BACKUP_BUCKET` binding and does not require R2
+access keys. A deployed Worker may receive `R2_ACCESS_KEY_ID` and `R2_SECRET_ACCESS_KEY` as optional
+secrets when its backup implementation uses remote S3-compatible access.
 
 Cloud resources and credentials used by later stack layers are intentionally not configured here.

@@ -57,10 +57,13 @@ export async function authorizeRun(request: CourseAgentStartRunRequest, secret: 
     capability.runId !== request.runId ||
     capability.sandboxId !== request.sandboxId ||
     capability.promptDigest !== (await sha256Hex(request.prompt)) ||
+    JSON.stringify(capability.workspaceBackup) !==
+      JSON.stringify(request.workspaceBackup ?? null) ||
     capability.repository !== request.course.repository ||
     capability.branch !== request.course.branch ||
     capability.expectedSha !== request.course.expectedSha ||
     capability.runtimeSettings.idleTimeoutSeconds !== request.runtimeSettings.idleTimeoutSeconds ||
+    capability.runtimeSettings.backupTtlSeconds !== request.runtimeSettings.backupTtlSeconds ||
     capability.runtimeSettings.maxLifetimeSeconds !== request.runtimeSettings.maxLifetimeSeconds ||
     capability.runtimeSettings.turnTimeoutSeconds !== request.runtimeSettings.turnTimeoutSeconds
   ) {
