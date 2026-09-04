@@ -7,6 +7,8 @@ import { ZipArchive } from 'archiver';
 
 import { getCourseAdminQtiImportUrl, getCourseAdminQuestionsUrl } from '../../lib/client/url.js';
 import { deleteQtiImportDraft } from '../../lib/qti-import-drafts.js';
+import { selectCourseInstanceByShortName } from '../../models/course-instances.js';
+import { selectCourseByShortName } from '../../models/course.js';
 import type { UploadResponse } from '../../pages/instructorQtiImport/instructorQtiImport.types.js';
 
 import { expect, test } from './fixtures.js';
@@ -777,6 +779,45 @@ test.describe('QTI Import', () => {
         },
       ],
     });
+  });
+
+  test('returns to the questions page of the selected course instance', async ({
+    page,
+    courseInstance,
+    testCoursePath,
+  }) => {
+    const zipPath = path.join(testCoursePath, 'qti-target-fixture.zip');
+    await buildQtiZip(zipPath);
+    const course = await selectCourseByShortName('QA 101');
+    const target = await selectCourseInstanceByShortName({ course, shortName: 'public' });
+    const targetQuestionsUrl = getCourseAdminQuestionsUrl({ courseInstanceId: target.id });
+
+    // Start from one instance's questions page but target a different instance.
+    await page.goto(
+      getCourseAdminQtiImportUrl({ courseInstanceId: courseInstance.id, returnTo: 'questions' }),
+    );
+    await page.waitForSelector('.js-hydrated-component');
+    await page.getByLabel('Target course instance').selectOption(target.id);
+    await page.getByLabel('Export file').setInputFiles(zipPath);
+    await page.getByRole('button', { name: 'Import content' }).click();
+    await expect(page.getByRole('button', { name: 'Import 1 assessment' })).toBeEnabled({
+      timeout: 15000,
+    });
+
+    await page.getByRole('button', { name: 'Import 1 assessment' }).click();
+    await page.waitForURL((url) => url.pathname === targetQuestionsUrl, { timeout: 30000 });
+    await expect(page.getByText('1 assessment imported successfully.')).toBeVisible();
+
+    const assessmentInfo = JSON.parse(
+      await readFile(
+        path.join(
+          testCoursePath,
+          'courseInstances/public/assessments/e2e-import-quiz/infoAssessment.json',
+        ),
+        'utf8',
+      ),
+    );
+    expect(assessmentInfo.title).toBe('E2E Import Quiz');
   });
 
   test('shows a clear error when review draft files have expired', async ({

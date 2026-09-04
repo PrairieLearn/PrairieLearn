@@ -9,7 +9,7 @@ import {
 } from '@prairielearn/question-conversion/trimmer';
 import { getAppError } from '@prairielearn/trpc/client';
 
-import { getCourseInstanceBaseUrl } from '../../../lib/client/url.js';
+import { getCourseAdminQuestionsUrl, getCourseInstanceBaseUrl } from '../../../lib/client/url.js';
 import { createCourseTrpcClient } from '../../../trpc/course/client.js';
 import type { QtiImportError } from '../../../trpc/course/qti-import.js';
 import { buildImportPayload, getIncludedQuestionCount } from '../instructorQtiImport.payload.js';
@@ -461,10 +461,16 @@ export function QtiImportForm({
       await trpcClient.qtiImport.create.mutate(payload);
 
       disableBeforeUnload();
+      // Return to the import target, not the page the user arrived from, so the
+      // questions table shows usage for the instance that just received content.
       window.location.href =
         returnTo === 'assessments' && selectedCourseInstanceId != null
           ? `${getCourseInstanceBaseUrl(selectedCourseInstanceId)}/instructor/instance_admin/assessments`
-          : `${urlPrefix}/course_admin/questions`;
+          : getCourseAdminQuestionsUrl(
+              selectedCourseInstanceId != null
+                ? { courseInstanceId: selectedCourseInstanceId }
+                : { courseId },
+            );
     } catch (err) {
       const appError = getAppError<QtiImportError['Create']>(err);
       if (appError?.code === 'SYNC_JOB_FAILED') {
