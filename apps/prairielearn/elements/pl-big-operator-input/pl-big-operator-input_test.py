@@ -421,6 +421,44 @@ class TestGradeUnits:
 
         assert data["partial_scores"]["op"] == {"score": 1.0, "weight": 1}
 
+    def test_none_grading_displays_correct_answer_without_scoring(self) -> None:
+        markup = html(
+            operator="sum",
+            **{
+                "correct-answer": "Sum(k**2, (k, 1, 4))",
+                "grading-method": "none",
+            },
+        )
+        data = question_data(
+            raw_submitted_answers={
+                "op-start": "10",
+                "op-end": "20",
+                "op-body": "k + 1",
+            }
+        )
+
+        prepare_parse_grade(markup, data)
+
+        assert data["submitted_answers"]["op"] is not None
+        assert "op" not in data.get("partial_scores", {})
+
+        data["panel"] = "answer"
+        rendered = big_operator_input.render(markup, data)
+        assert r"\sum_{k=1}^{4} k^{2}" in rendered
+        assert "badge" not in rendered
+
+    def test_none_grading_supports_custom_operators(self) -> None:
+        markup = html(**{
+            "correct-answer": "Custom(k**2, (k, 1, 4))",
+            "operator-latex": r"\bigstar",
+            "grading-method": "none",
+        })
+        data = question_data()
+
+        big_operator_input.prepare(markup, data)
+
+        assert data["correct_answers"]["op"]["operator"] == "custom"
+
     def test_component_grading_uses_equivalence_and_body_weight(self) -> None:
         markup = html(
             operator="sum",
