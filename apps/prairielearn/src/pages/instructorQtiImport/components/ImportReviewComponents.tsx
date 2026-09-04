@@ -364,6 +364,18 @@ export function UploadStep({
           assessments after you create a course instance.
         </Alert>
       )}
+      {courseInstances.length === 1 && (
+        <div className="mb-3">
+          <Form.Label htmlFor="course-instance-target">Target course instance</Form.Label>
+          <Form.Control
+            id="course-instance-target"
+            defaultValue={`${courseInstances[0].shortName}: ${courseInstances[0].longName}`}
+            plaintext
+            readOnly
+          />
+          <Form.Text>Assessments will be created in this course instance.</Form.Text>
+        </div>
+      )}
       {courseInstances.length > 1 && (
         <div className="mb-3">
           <Form.Label htmlFor="course-instance-select">Target course instance</Form.Label>

@@ -278,6 +278,7 @@ export function QtiImportForm({
   const [selectedCourseInstanceId, setSelectedCourseInstanceId] = useState(initialCourseInstanceId);
   // Assessments live in a course instance, so without one only questions can be imported.
   const canImportAssessments = selectedCourseInstanceId != null;
+  const selectedCourseInstance = courseInstances.find((ci) => ci.id === selectedCourseInstanceId);
   const [trpcClient] = useState(() =>
     createCourseTrpcClient({ csrfToken: csrfTokens.trpc, courseId }),
   );
@@ -743,11 +744,15 @@ export function QtiImportForm({
                 <h2 id="qti-import-assessments-heading" className="h4 mb-1">
                   Assessments
                 </h2>
-                {canImportAssessments ? (
+                {selectedCourseInstance ? (
                   <p className="text-muted mb-3">
-                    Assessments are imported to PrairieLearn with their questions and basic quiz
-                    structure. After import, you can edit their settings, adjust question order and
-                    points, and assign them like any other assessment.
+                    Assessments are imported into{' '}
+                    <strong>
+                      {selectedCourseInstance.shortName}: {selectedCourseInstance.longName}
+                    </strong>{' '}
+                    with their questions and basic quiz structure. After import, you can edit their
+                    settings, adjust question order and points, and assign them like any other
+                    assessment.
                   </p>
                 ) : (
                   <p className="text-muted mb-3">
