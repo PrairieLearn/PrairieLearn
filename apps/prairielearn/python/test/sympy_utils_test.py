@@ -356,6 +356,8 @@ class TestSympy:
         ("text", "allowed_types", "expected"),
         [
             ("m + 1", {"expression", "finite-set"}, sympy.Symbol("m") + 1),
+            ("{1, 2}", {"set"}, sympy.FiniteSet(1, 2)),
+            ("[1, 2]", {"set"}, sympy.Interval(1, 2)),
             ("{}", {"finite-set"}, sympy.EmptySet),
             ("{}", {"interval"}, sympy.EmptySet),
             ("{}", {"all"}, sympy.EmptySet),
@@ -392,7 +394,7 @@ class TestSympy:
             ),
             (
                 "[0, 5] - {m}",
-                {"finite-set", "interval"},
+                {"set"},
                 sympy.Complement(
                     sympy.Interval(0, 5), sympy.FiniteSet(sympy.Symbol("m"))
                 ),
@@ -431,7 +433,8 @@ class TestSympy:
         ("text", "allowed_types", "missing_types"),
         [
             ("m + 1", {"finite-set"}, "expression"),
-            ("{}", {"expression"}, "finite-set, interval"),
+            ("m + 1", {"set"}, "expression"),
+            ("{}", {"expression"}, "set"),
             ("{1, 2}", {"expression"}, "finite-set"),
             ("[1, 2]", {"finite-set"}, "interval"),
             ("[1, 2] U [3, 4]", {"finite-set"}, "interval"),
@@ -464,6 +467,72 @@ class TestSympy:
             f"Your answer uses {missing_types}, which this input does not accept. "
             f"Allowed types: {', '.join(sorted(allowed_types))}."
         )
+
+    @pytest.mark.parametrize(
+        "domain_name",
+        ["Complexes", "Integers", "Naturals", "Naturals0", "Rationals", "Reals"],
+    )
+    def test_set_domains_must_be_declared_as_variables(self, domain_name: str) -> None:
+        result = psu.try_parse_string_as_sympy(
+            domain_name,
+            None,
+            allow_sets=True,
+            allowed_types={"set"},
+        )
+
+        assert isinstance(result, psu.SympyParseFailure)
+        assert f'invalid symbol "{domain_name}"' in result.error
+
+        assert psu.convert_string_to_sympy(
+            domain_name, [domain_name], allow_sets=True
+        ) == sympy.Set(sympy.Symbol(domain_name))
+
+    @pytest.mark.parametrize(
+        ("operation", "expected_type"),
+        [
+            ("Reals - Naturals", sympy.Complement),
+            ("Reals U Naturals", sympy.Union),
+            ("Reals & Naturals", sympy.Intersection),
+            ("Complement(Reals, Naturals)", sympy.Complement),
+            ("Union(Reals, Naturals)", sympy.Union),
+            ("Intersection(Reals, Naturals)", sympy.Intersection),
+        ],
+    )
+    @pytest.mark.parametrize(
+        ("variables", "allowed_types", "expected_error"),
+        [
+            (("Reals", "Naturals"), {"set"}, None),
+            (("Reals", "Naturals"), {"all"}, None),
+            (("Reals", "Naturals"), {"finite-set", "interval"}, "uses set"),
+            (("Reals",), {"set"}, 'invalid symbol "Naturals"'),
+            (("Naturals",), {"set"}, 'invalid symbol "Reals"'),
+        ],
+    )
+    def test_infinite_set_operations_require_declared_names_and_set_type(
+        self,
+        operation: str,
+        expected_type: type[sympy.Basic],
+        variables: tuple[str, ...],
+        allowed_types: set[psu.AllowedSympyType],
+        expected_error: str | None,
+    ) -> None:
+        result = psu.try_parse_string_as_sympy(
+            operation,
+            variables,
+            allow_sets=True,
+            allowed_types=allowed_types,
+        )
+
+        if expected_error is None:
+            assert isinstance(result, psu.SympyParseSuccess)
+            assert isinstance(result.expr, expected_type)
+            assert {str(symbol) for symbol in result.expr.free_symbols} == {
+                "Reals",
+                "Naturals",
+            }
+        else:
+            assert isinstance(result, psu.SympyParseFailure)
+            assert expected_error in result.error
 
     @pytest.mark.parametrize(
         ("a_sub", "sympy_ref"),

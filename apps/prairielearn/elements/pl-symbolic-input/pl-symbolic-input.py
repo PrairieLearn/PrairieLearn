@@ -97,7 +97,7 @@ def _get_allowed_types(element: lxml.html.HtmlElement) -> set[psu.AllowedSympyTy
 
 
 def _allows_sets(allowed_types: set[psu.AllowedSympyType]) -> bool:
-    return not allowed_types.isdisjoint({"all", "finite-set", "interval"})
+    return not allowed_types.isdisjoint({"all", "set", "finite-set", "interval"})
 
 
 def prepare(element_html: str, data: pl.QuestionData) -> None:
@@ -1053,7 +1053,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
             elif "all" in allowed_types or "expression" in allowed_types:
                 candidate = f"{offset:d}"
                 candidate_sympy = sympy.Integer(offset)
-            elif "finite-set" in allowed_types:
+            elif "set" in allowed_types or "finite-set" in allowed_types:
                 candidate = f"{{{offset:d}}}"
                 candidate_sympy = sympy.FiniteSet(offset)
             elif "interval" in allowed_types:
