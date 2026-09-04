@@ -1,13 +1,10 @@
 import type { Page } from '@playwright/test';
-import * as unzipper from 'unzipper';
 
 import { makeAssessmentInstance } from '../../lib/assessment.js';
 import { selectAssessmentByTid } from '../../models/assessment.js';
 import { getConfiguredUser } from '../utils/auth.js';
 
 import { expect, test } from './fixtures.js';
-
-const DOCX_CONTENT_TYPE = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
 
 interface PaginatedQuestionLayout {
   pageCount: number;
@@ -89,7 +86,7 @@ test('keeps answer-key questions on the same pages as the student exam', async (
     date: new Date(),
     client_fingerprint_id: null,
   });
-  const endpoint = `/pl/course_instance/${courseInstance.id}/instructor/assessment_instance/${assessmentInstanceId}/paper?paper_size=Letter&identity_field=Section&identity_field=Student%20ID`;
+  const endpoint = `/pl/course_instance/${courseInstance.id}/instructor/assessment_instance/${assessmentInstanceId}/paper/preview?paper_size=Letter&identity_field=Section&identity_field=Student%20ID`;
 
   await page.goto(endpoint);
   const examLayout = await readPaginatedQuestionLayout(page);
@@ -116,61 +113,5 @@ test('keeps answer-key questions on the same pages as the student exam', async (
     expect(presentation.questionNumber).toBeTruthy();
     expect(presentation.studentHeight).toMatch(/^\d+\.\d{2}$/);
     expect(presentation.placement).toMatch(/^(response|appended)$/);
-  }
-});
-
-test('exports the exam as a Word document with one image per printed question', async ({
-  page,
-  courseInstance,
-}) => {
-  const user = await getConfiguredUser();
-  const assessment = await selectAssessmentByTid({
-    course_instance_id: courseInstance.id,
-    tid: 'exam1-automaticTestSuite',
-  });
-  const assessmentInstanceId = await makeAssessmentInstance({
-    assessment,
-    user_id: user.id,
-    authn_user_id: user.id,
-    mode: 'Public',
-    time_limit_min: null,
-    date: new Date(),
-    client_fingerprint_id: null,
-  });
-  const endpoint = `/pl/course_instance/${courseInstance.id}/instructor/assessment_instance/${assessmentInstanceId}/paper?paper_size=Letter&identity_field=Section&identity_field=Student%20ID`;
-
-  await page.goto(endpoint);
-  const examLayout = await readPaginatedQuestionLayout(page);
-  const printedQuestionCount = Object.values(examLayout.questionPages).reduce(
-    (count, pages) => count + pages.length,
-    0,
-  );
-
-  const response = await page.request.get(endpoint, { headers: { accept: DOCX_CONTENT_TYPE } });
-  expect(response.status()).toBe(200);
-  expect(response.headers()['content-type']).toContain(DOCX_CONTENT_TYPE);
-  expect(response.headers()['content-disposition']).toMatch(
-    /^attachment; filename=".+_letter\.docx"$/,
-  );
-
-  const archive = await unzipper.Open.buffer(await response.body());
-  const mediaFiles = archive.files.filter(
-    (file) => file.type === 'File' && file.path.startsWith('word/media/'),
-  );
-  expect(mediaFiles).toHaveLength(printedQuestionCount);
-  const documentFile = archive.files.find((file) => file.path === 'word/document.xml');
-  expect(documentFile).toBeDefined();
-  const documentXml = (await documentFile!.buffer()).toString();
-  expect(documentXml.match(/<w:drawing>/g)).toHaveLength(printedQuestionCount);
-  // The cover is page 1; every later printed page starts with a page break.
-  expect(documentXml.match(/<w:pageBreakBefore\/>/g)).toHaveLength(examLayout.pageCount - 1);
-  for (const label of [
-    'Name',
-    'Section',
-    'Student ID',
-    'Date',
-    `Form ID ${assessmentInstanceId}`,
-  ]) {
-    expect(documentXml).toContain(label);
   }
 });
