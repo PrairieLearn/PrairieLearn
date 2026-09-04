@@ -121,14 +121,7 @@ def _used_sympy_types(expr: sympy.Basic) -> set[_UsedSympyType]:
             arg_types = _used_sympy_types(arg)
             required_types.update(arg_types)
         return required_types
-    if isinstance(expr, sympy.Add) and any(
-        isinstance(symbol, sympy.Symbol) and symbol.name in _SET_DOMAIN_NAMES
-        for symbol in expr.free_symbols
-    ):
-        return {"set"}
-    if isinstance(expr, sympy.Set) or (
-        isinstance(expr, sympy.Symbol) and expr.name in _SET_DOMAIN_NAMES
-    ):
+    if isinstance(expr, sympy.Set):
         return {"set"}
     return {"expression"}
 
@@ -1168,6 +1161,9 @@ def _evaluate_with_source(
         for inner_dict in locals_for_eval.values()
         for k, v in cast(SympyMapT, inner_dict).items()
     }
+    if allow_extra_symbols and not allow_sets:
+        for domain_name in _SET_DOMAIN_NAMES:
+            local_dict.setdefault(domain_name, sympy.Symbol(domain_name))
 
     # Keep mutations made during one parse from affecting later parses.
     global_dict = dict(_SYMPY_GLOBALS)
