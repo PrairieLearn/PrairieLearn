@@ -168,7 +168,8 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 
 
 def render(element_html: str, data: pl.QuestionData) -> str:
-    if data["panel"] == "answer":
+    expected_panel = "submission" if data["ai_grading"] else "question"
+    if data["panel"] != expected_panel:
         return ""
 
     element = lxml.html.fragment_fromstring(element_html)
@@ -239,18 +240,12 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     )
 
     if data["ai_grading"]:
-        if data["panel"] != "submission":
-            return ""
-
         # This marker is internal to PrairieLearn's AI grading implementation.
         return "\n".join(
             f'<div data-ai-grading-file-name="{stdlib_html.escape(file_name, quote=True)}">'
             f"{stdlib_html.escape(file_name)}</div>"
             for file_name in sorted(accepted_file_names)
         )
-
-    if data["panel"] != "question":
-        return ""
 
     submitted_file_names_json = json.dumps(accepted_file_names, allow_nan=False)
 

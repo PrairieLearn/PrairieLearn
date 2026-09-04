@@ -211,14 +211,16 @@ def test_render_ai_grading_submission_with_matching_files() -> None:
     )
 
 
-def test_render_ai_grading_question_is_empty() -> None:
+@pytest.mark.parametrize(
+    ("ai_grading", "panel"),
+    [(True, "question"), (True, "answer"), (False, "submission"), (False, "answer")],
+)
+def test_render_other_panels_are_empty(ai_grading: bool, panel: str) -> None:
     output = file_upload.render(
         '<pl-file-upload file-patterns="*.pdf"></pl-file-upload>',
         {
-            "panel": "question",
-            "ai_grading": True,
-            "format_errors": {},
-            "submitted_answers": {"_files": []},
+            "panel": panel,
+            "ai_grading": ai_grading,
         },
     )
 

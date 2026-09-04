@@ -219,14 +219,14 @@ export async function generatePrompt({
 }
 
 function getAiGradingFileName($: cheerio.CheerioAPI, el: AnyNode): string | undefined {
-  const fileName = $(el).attr('data-ai-grading-file-name')?.trim();
-  if (fileName) return fileName;
+  const fileName = $(el).attr('data-ai-grading-file-name');
+  if (fileName?.trim()) return fileName;
 
-  const legacyFileUploadName = $(el).attr('data-file-upload-file-name')?.trim();
-  if (legacyFileUploadName) return legacyFileUploadName;
+  const legacyFileUploadName = $(el).attr('data-file-upload-file-name');
+  if (legacyFileUploadName?.trim()) return legacyFileUploadName;
 
-  const legacyImageCaptureName = $(el).attr('data-file-name')?.trim();
-  if (legacyImageCaptureName) return legacyImageCaptureName;
+  const legacyImageCaptureName = $(el).attr('data-file-name');
+  if (legacyImageCaptureName?.trim()) return legacyImageCaptureName;
 
   const options = $(el).data('options') as Record<string, string> | null;
   return options?.submitted_file_name;

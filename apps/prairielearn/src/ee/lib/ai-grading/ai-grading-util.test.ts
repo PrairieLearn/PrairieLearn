@@ -177,6 +177,37 @@ describe('parseSubmission', () => {
     ]);
   });
 
+  it.each([
+    'data-ai-grading-file-name',
+    'data-file-upload-file-name',
+    'data-image-capture-uuid="capture" data-file-name',
+  ])('preserves distinct filenames with surrounding whitespace in %s', (attribute) => {
+    const files = [
+      { name: ' answer.pdf', contents: 'leading' },
+      { name: 'answer.pdf', contents: 'plain' },
+      { name: 'answer.pdf ', contents: 'trailing' },
+    ];
+    const markers = files.map((file) => `<div ${attribute}="${file.name}"></div>`);
+    const result = parseSubmission({
+      submission_text: [...markers, markers[0]].join(''),
+      submitted_answer: { _files: files },
+    });
+
+    expect(result).toEqual(
+      files.map((file) => ({ type: 'file', fileName: file.name, fileData: file.contents })),
+    );
+  });
+
+  it('falls back to legacy filenames when the current marker is blank', () => {
+    expect(
+      parseSubmission({
+        submission_text:
+          '<div data-ai-grading-file-name="  " data-file-upload-file-name=" answer.pdf"></div>',
+        submitted_answer: { _files: [{ name: ' answer.pdf', contents: 'pdfdata' }] },
+      }),
+    ).toEqual([{ type: 'file', fileName: ' answer.pdf', fileData: 'pdfdata' }]);
+  });
+
   it('should handle old-style data-options attribute for file name', () => {
     const options = JSON.stringify({ submitted_file_name: 'old.jpg' });
     const result = parseSubmission({

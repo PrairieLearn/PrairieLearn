@@ -2,7 +2,7 @@ import assert from 'node:assert';
 
 import { createAnthropic } from '@ai-sdk/anthropic';
 import { createGoogle } from '@ai-sdk/google';
-import { type OpenAIResponsesProviderOptions, createOpenAI } from '@ai-sdk/openai';
+import { type OpenAIResponsesProviderOptions } from '@ai-sdk/openai';
 import { type GenerateTextResult, type ModelMessage, Output, generateText } from 'ai';
 import * as async from 'async';
 import { z } from 'zod';
@@ -49,6 +49,7 @@ import * as questionServers from '../../../question-servers/index.js';
 
 import { resolveAiGradingKeys } from './ai-grading-credentials.js';
 import { AI_GRADING_MODEL_PROVIDERS, type AiGradingModelId } from './ai-grading-models.shared.js';
+import { createAiGradingOpenAI } from './ai-grading-openai-provider.js';
 import { selectGradingJobsInfo } from './ai-grading-stats.js';
 import {
   type AiGradingPrompt,
@@ -64,7 +65,6 @@ import {
   selectInstanceQuestionsForAssessmentQuestion,
   selectLastVariantAndSubmission,
 } from './ai-grading-util.js';
-import { withOpenAiHighPdfDetail } from './openai-pdf-detail.js';
 import {
   type AIGradingLog,
   type AIGradingLogger,
@@ -347,10 +347,9 @@ export async function aiGrade({
       if (!resolvedKeys.openai) {
         throw new error.HttpStatusError(403, 'Model not available (OpenAI API key not provided)');
       }
-      return createOpenAI({
+      return createAiGradingOpenAI({
         apiKey: resolvedKeys.openai.apiKey,
         organization: resolvedKeys.openai.organization ?? undefined,
-        fetch: withOpenAiHighPdfDetail(fetch),
       })(model_id);
     } else if (provider === 'google') {
       if (!resolvedKeys.google) {
