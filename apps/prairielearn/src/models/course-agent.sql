@@ -87,7 +87,8 @@ INSERT INTO
     run_id,
     sequence,
     event_type,
-    data
+    data,
+    created_at
   )
 VALUES
   (
@@ -95,7 +96,8 @@ VALUES
     $run_id,
     $sequence,
     $event_type,
-    $data
+    $data,
+    $created_at
   )
 ON CONFLICT (conversation_id, sequence) DO NOTHING;
 

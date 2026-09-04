@@ -111,18 +111,25 @@ export async function persistCourseAgentSnapshot({
   runId: string;
 }) {
   await runInTransactionAsync(async () => {
+    let eventRunId = runId;
     for (const event of snapshot.events) {
-      await persistEvent(snapshot.conversationId, runId, event);
+      if (event.type === 'user.message' && typeof event.data.runId === 'string') {
+        eventRunId = event.data.runId;
+      }
+      await persistEvent(snapshot.conversationId, eventRunId, event);
     }
     await execute(sql.update_runtime, {
       conversation_id: snapshot.conversationId,
       runtime_status: snapshot.status,
       last_error: snapshot.error,
     });
-    if (!snapshot.activeRunId && ['waiting_for_user', 'failed'].includes(snapshot.status)) {
+    if (
+      !snapshot.activeRunId &&
+      ['waiting_for_user', 'failed', 'offline'].includes(snapshot.status)
+    ) {
       await execute(sql.complete_run, {
         run_id: runId,
-        status: snapshot.status === 'failed' ? 'failed' : 'completed',
+        status: snapshot.error ? 'failed' : 'completed',
         error_message: snapshot.error,
       });
       if (snapshot.response) {
@@ -155,6 +162,7 @@ async function persistEvent(conversationId: string, runId: string, event: Course
     sequence: event.sequence,
     event_type: event.type,
     data: JSON.stringify(event.data),
+    created_at: event.occurredAt,
   });
 }
 

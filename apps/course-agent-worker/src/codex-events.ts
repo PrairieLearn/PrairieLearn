@@ -11,16 +11,6 @@ export function parseCodexLine(line: string) {
   }
 }
 
-export function finalResponse(stdout: string) {
-  for (const event of stdout.split('\n').map(parseCodexLine).toReversed()) {
-    if (event?.type !== 'item.completed' || !isRecord(event.item)) continue;
-    if (event.item.type === 'agent_message' && typeof event.item.text === 'string') {
-      return event.item.text;
-    }
-  }
-  return 'Done.';
-}
-
 export function toolEvents(event: Record<string, unknown>): EmittedEvent[] {
   if (!['item.started', 'item.completed'].includes(String(event.type)) || !isRecord(event.item)) {
     return [];

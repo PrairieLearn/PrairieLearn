@@ -7,14 +7,13 @@ export const CourseAgentEventTypeSchema = z.enum([
   'user.message',
   'sandbox.starting',
   'sandbox.ready',
+  'sandbox.destroyed',
   'workspace.seeded',
   'docs.mounted',
   'docs.unavailable',
   'git.clone.started',
   'git.clone.completed',
   'git.configured',
-  'validation.completed',
-  'validation.failed',
   'agent.started',
   'assistant.delta',
   'tool.started',
@@ -25,9 +24,9 @@ export const CourseAgentEventTypeSchema = z.enum([
   'run.failed',
   'workspace.backup.started',
   'workspace.backup.completed',
+  'workspace.backup.failed',
   'workspace.restore.started',
   'workspace.restore.completed',
-  'sandbox.destroyed',
 ]);
 export type CourseAgentEventType = z.infer<typeof CourseAgentEventTypeSchema>;
 
@@ -40,10 +39,10 @@ export const CourseAgentEventSchema = z.object({
 export type CourseAgentEvent = z.infer<typeof CourseAgentEventSchema>;
 
 export const CourseAgentRuntimeStatusSchema = z.enum([
+  'offline',
   'starting',
   'running',
   'waiting_for_user',
-  'offline',
   'failed',
 ]);
 export type CourseAgentRuntimeStatus = z.infer<typeof CourseAgentRuntimeStatusSchema>;
@@ -77,7 +76,8 @@ export type CourseAgentWorkspaceBackup = z.infer<typeof CourseAgentWorkspaceBack
 
 export const CourseAgentRuntimeSettingsSchema = z.object({
   idleTimeoutSeconds: z.number().int().min(60).max(86_400),
-  backupTtlSeconds: z.number().int().min(60).max(2_592_000),
+  backupTtlSeconds: z.number().int().min(60).max(2_592_000).default(604800),
+  maxLifetimeSeconds: z.number().int().min(1).max(86_400).default(600),
   turnTimeoutSeconds: z.number().int().min(60).max(3_600),
 });
 export type CourseAgentRuntimeSettings = z.infer<typeof CourseAgentRuntimeSettingsSchema>;
@@ -86,6 +86,7 @@ export const CourseAgentRunCapabilitySchema = CourseAgentIdentitySchema.extend({
   type: z.literal('course-agent-run'),
   runId: z.uuid(),
   promptDigest: z.string().regex(/^[0-9a-f]{64}$/),
+  workspaceBackup: CourseAgentWorkspaceBackupSchema.nullable().default(null),
   repository: z.string(),
   branch: z.string(),
   expectedSha: z

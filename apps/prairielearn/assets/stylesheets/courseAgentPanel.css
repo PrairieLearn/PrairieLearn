@@ -1,5 +1,5 @@
 :root {
-  --course-agent-panel-width: clamp(28rem, 38vw, 40rem);
+  --course-agent-panel-width: clamp(22rem, 30vw, 30rem);
   --course-agent-panel-rail-width: 3.5rem;
 }
 
@@ -39,8 +39,8 @@
   position: absolute;
   inset: 0;
   transition:
-    opacity 120ms ease,
-    visibility 120ms ease;
+    opacity 180ms ease,
+    visibility 180ms ease;
 }
 .course-agent-panel-content {
   display: grid;
@@ -63,58 +63,56 @@
   visibility: hidden;
   pointer-events: none;
 }
+.course-agent-panel-closing .course-agent-panel-content {
+  opacity: 0;
+  pointer-events: none;
+}
 .course-agent-panel-collapsed .course-agent-panel-rail {
   opacity: 1;
   visibility: visible;
   pointer-events: auto;
 }
+.course-agent-history {
+  min-height: 0;
+}
 .course-agent-transcript {
   min-height: 0;
   overflow-y: auto;
 }
-.course-agent-user-message {
-  max-width: 90%;
-  white-space: pre-wrap;
-}
-.course-agent-agent-message {
-  min-width: 0;
-}
-.course-agent-markdown {
+.course-agent-transcript .markdown-body {
   overflow-wrap: anywhere;
 }
-.course-agent-markdown > :last-child {
+.course-agent-transcript .markdown-body > :last-child {
   margin-bottom: 0;
 }
-.course-agent-markdown pre {
+.course-agent-transcript .markdown-body pre {
   padding: 0.75rem;
   overflow-x: auto;
   border: 1px solid var(--bs-border-color);
   border-radius: var(--bs-border-radius);
   background: var(--bs-tertiary-bg);
 }
-.course-agent-markdown pre code {
+.course-agent-transcript .markdown-body pre code {
   color: inherit;
   white-space: pre;
 }
-.course-agent-markdown table {
+.course-agent-transcript .markdown-body table {
   display: block;
   max-width: 100%;
   overflow-x: auto;
   margin-bottom: 1rem;
 }
-.course-agent-markdown th,
-.course-agent-markdown td {
+.course-agent-transcript .markdown-body th,
+.course-agent-transcript .markdown-body td {
   padding: 0.25rem 0.5rem;
   border: 1px solid var(--bs-border-color);
 }
-.course-agent-tool-group-toggle {
-  width: 100%;
-  border-radius: var(--bs-border-radius);
-  background: transparent;
-}
-.course-agent-tool-group-toggle:hover,
-.course-agent-tool-group-toggle:focus-visible {
-  background: var(--bs-tertiary-bg);
+
+@media (prefers-reduced-motion: reduce) {
+  .course-agent-panel-content,
+  .course-agent-panel-rail {
+    transition: none;
+  }
 }
 .course-agent-chat-input:focus {
   border-color: rgba(var(--bs-primary-rgb), 0.65);

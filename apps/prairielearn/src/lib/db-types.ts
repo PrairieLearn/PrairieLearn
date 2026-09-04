@@ -746,7 +746,7 @@ export const CourseAgentEventSchema = z.object({
   event_type: z.string(),
   id: IdSchema,
   run_id: z.uuid().nullable(),
-  sequence: IdSchema,
+  sequence: z.coerce.number().int().nonnegative(),
 });
 export type CourseAgentEvent = z.infer<typeof CourseAgentEventSchema>;
 

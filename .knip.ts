@@ -185,7 +185,7 @@ const config: KnipConfig = {
     },
     'apps/course-agent-worker': {
       // This executable is copied directly into the sandbox container image.
-      entry: ['bin/*.mjs'],
+      entry: ['scripts/*.mjs'],
       project: ['**/*.{ts,mjs}'],
     },
     'apps/workspace-host': {

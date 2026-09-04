@@ -1,0 +1,17 @@
+{
+  "uuid": "3ef52ec2-64c9-443e-9aa2-354fffc430b0",
+  "type": "Homework",
+  "title": "Dynamic programming practice",
+  "set": "Homework",
+  "number": "1",
+  "zones": [
+    {
+      "title": "Core ideas",
+      "questions": [{ "id": "dynamicProgramming/overlappingSubproblems", "autoPoints": 2 }]
+    },
+    {
+      "title": "Apply a recurrence",
+      "questions": [{ "id": "dynamicProgramming/staircase", "autoPoints": 3 }]
+    }
+  ]
+}

@@ -32,6 +32,7 @@ async function makeRequest(): Promise<CourseAgentStartRunRequest> {
     await crypto.subtle.digest('SHA-256', new TextEncoder().encode(prompt)),
   );
   const capability: CourseAgentRunCapability = {
+    workspaceBackup: null,
     type: 'course-agent-run',
     userId: '1',
     courseId: '2',
@@ -41,6 +42,7 @@ async function makeRequest(): Promise<CourseAgentStartRunRequest> {
     promptDigest: [...digest].map((byte) => byte.toString(16).padStart(2, '0')).join(''),
     runtimeSettings: {
       idleTimeoutSeconds: 600,
+      maxLifetimeSeconds: 600,
       backupTtlSeconds: 604_800,
       turnTimeoutSeconds: 900,
     },
@@ -82,5 +84,23 @@ describe('course-agent Worker authorization', () => {
       ),
     ).rejects.toThrow('does not authorize');
     await expect(decodeAndVerifyToken(`${request.capability}x`, secret)).resolves.toBeNull();
+    await expect(
+      authorizeRun(
+        {
+          ...request,
+          workspaceBackup: {
+            handle: { id: 'another-course', dir: '/workspace' },
+            expiresAt: '2099-01-01T00:00:00Z',
+          },
+        },
+        secret,
+      ),
+    ).rejects.toThrow('does not authorize');
+    await expect(
+      authorizeRun(
+        { ...request, runtimeSettings: { ...request.runtimeSettings, maxLifetimeSeconds: 1200 } },
+        secret,
+      ),
+    ).rejects.toThrow('does not authorize');
   });
 });

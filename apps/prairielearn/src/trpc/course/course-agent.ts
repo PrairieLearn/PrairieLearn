@@ -13,6 +13,9 @@ import {
   getEphemeralCourseAgentSnapshot,
   startEphemeralCourseAgentRun,
 } from '../../ee/lib/course-agent/ephemeral-runtime.js';
+import { restoreCourseAgentMessages } from '../../ee/lib/course-agent/history.js';
+import { publicCourseAgentEvent } from '../../ee/lib/course-agent/public-events.js';
+import { config } from '../../lib/config.js';
 import {
   CourseAgentConversationSchema,
   CourseAgentEventSchema,
@@ -118,19 +121,46 @@ const start = courseAgentProcedure
       prompt: input.prompt,
       promptDigest: createHash('sha256').update(input.prompt).digest('hex'),
     });
-    return startEphemeralCourseAgentRun({
-      courseId: ctx.course.id,
-      userId: ctx.locals.authn_user.id,
-      conversationId,
-      runId,
-      prompt: input.prompt,
-      course: {
-        repository: ctx.course.repository,
-        branch: ctx.course.branch,
-        expectedSha: ctx.course.commit_hash,
-      },
-      workspaceBackup: parsedBackup?.success ? parsedBackup.data : null,
-    });
+    try {
+      const result = await startEphemeralCourseAgentRun({
+        courseId: ctx.course.id,
+        userId: ctx.locals.authn_user.id,
+        conversationId,
+        runId,
+        prompt: input.prompt,
+        course: {
+          repository: ctx.course.repository,
+          branch: ctx.course.branch,
+          expectedSha: ctx.course.commit_hash,
+        },
+        workspaceBackup: parsedBackup?.success ? parsedBackup.data : null,
+      });
+      if (config.courseAgentRuntime === 'fake') {
+        const snapshot = await getEphemeralCourseAgentSnapshot({
+          courseId: ctx.course.id,
+          userId: ctx.locals.authn_user.id,
+          conversationId,
+          sandboxId,
+        });
+        await persistCourseAgentSnapshot({ snapshot, runId });
+      }
+      return result;
+    } catch (error) {
+      await persistCourseAgentSnapshot({
+        runId,
+        snapshot: {
+          conversationId,
+          sandboxId,
+          activeRunId: null,
+          status: 'failed',
+          response: null,
+          error: error instanceof Error ? error.message : String(error),
+          events: [],
+          workspaceBackup: null,
+        },
+      });
+      throw error;
+    }
   });
 
 const get = courseAgentProcedure
@@ -163,7 +193,13 @@ const get = courseAgentProcedure
     });
     await persistCourseAgentSnapshot({ snapshot, runId });
     const history = await selectCourseAgentHistory(conversation.id);
-    return { ...snapshot, messages: history.messages, persistedEvents: history.events };
+    return {
+      ...snapshot,
+      workspaceBackup: null,
+      events: snapshot.events.flatMap((event) => publicCourseAgentEvent(event) ?? []),
+      messages: history.messages,
+      persistedEvents: [],
+    };
   });
 
 const list = courseAgentProcedure
@@ -172,4 +208,49 @@ const list = courseAgentProcedure
     conversations: await selectCourseAgentConversations(ctx.course.id, ctx.locals.authn_user.id),
   }));
 
-export const courseAgentRouter = t.router({ get, list, start });
+const diagnostics = courseAgentProcedure
+  .use(
+    t.middleware(async (opts) => {
+      if (!opts.ctx.locals.is_administrator) {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Administrator access required' });
+      }
+      return opts.next();
+    }),
+  )
+  .input(z.object({ conversationId: z.uuid(), sandboxId: z.string() }))
+  .output(CourseAgentSnapshotSchema)
+  .query(({ ctx, input }) =>
+    getEphemeralCourseAgentSnapshot({
+      userId: ctx.locals.authn_user.id,
+      courseId: ctx.course.id,
+      ...input,
+    }),
+  );
+
+const history = courseAgentProcedure.query(async ({ ctx }) => {
+  const latest = (await selectCourseAgentConversations(ctx.course.id, ctx.locals.authn_user.id)).at(
+    0,
+  );
+  if (!latest) return { run: null, activeRunId: null, messages: [], warning: null };
+  let saved = await selectCourseAgentHistory(latest.id);
+  const runId = saved.messages.filter((message) => message.role === 'user').at(-1)?.run_id;
+  if (!runId) return { run: null, activeRunId: null, messages: [], warning: null };
+  const run = { conversationId: latest.id, sandboxId: latest.sandbox_id, runId };
+  let activeRunId: string | null = null;
+  let warning: string | null = null;
+  try {
+    const snapshot = await getEphemeralCourseAgentSnapshot({
+      ...run,
+      courseId: ctx.course.id,
+      userId: ctx.locals.authn_user.id,
+    });
+    await persistCourseAgentSnapshot({ snapshot, runId });
+    activeRunId = snapshot.activeRunId;
+    saved = await selectCourseAgentHistory(latest.id);
+  } catch {
+    warning = 'Saved conversation loaded. The agent workspace is currently unavailable.';
+  }
+  return { run, activeRunId, messages: await restoreCourseAgentMessages(saved), warning };
+});
+
+export const courseAgentRouter = t.router({ get, list, start, diagnostics, history });
