@@ -39,7 +39,9 @@ const plBigOperatorInputAttributesSchema = z
       ])
       .optional(),
     'operator-latex': z.string().optional(),
+    'prefix-latex': z.string().optional(),
     'show-help-text': booleanFormat().default('true').optional(),
+    'suffix-latex': z.string().optional(),
     variables: z.string().optional(),
     weight: integerFormat().default('1').optional(),
   })
