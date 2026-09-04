@@ -87,7 +87,7 @@ The `allowed-types` attribute restricts submitted and correct answers based on t
 | `interval`   | Intervals and unions or intersections whose nested values are all intervals. | `[1, 2]`, `[1, 2] U [3, 4]`, `[0, 2] & [1, 4]` |
 | `all`        | Every supported value type.                                                  | `x + 1`, `{1, 2}`, `[1, 2]`                    |
 
-The empty set (`{}`) is accepted by both `finite-set` and `interval`. Multiple types can be combined as a comma-separated list. For example, `allowed-types="finite-set, interval"` accepts finite sets, intervals, and unions or intersections containing both.
+The empty set (`{}`) is accepted by both `finite-set` and `interval`. Multiple types can be combined as a comma-separated list. For example, `allowed-types="finite-set, interval"` accepts finite sets, intervals, and set operations such as unions, intersections, and differences containing both.
 
 Classification happens after simplification. For example, `[0, 2] U {1}` simplifies to `[0, 2]` and is accepted by `interval`, while `[0, 2] & {1}` simplifies to `{1}` and is accepted by `finite-set`.
 
