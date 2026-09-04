@@ -29,6 +29,7 @@
                 {{^editable}}contentEditable="false"{{/editable}}
                 data-placeholder-text = "{{placeholder}}"
                 custom-functions="{{custom_functions}}"
+                {{#aria_label}}aria-label="{{aria_label}}"{{/aria_label}}
                 {{#log_as_ln}}log-as-ln="log-as-ln"{{/log_as_ln}}
                 {{#imaginary_unit}}imaginary-unit="{{imaginary_unit}}"{{/imaginary_unit}}
                 {{#allow_trig}}allow-trig="allow-trig"{{/allow_trig}}
@@ -64,17 +65,17 @@
         {{/show_info}}
         {{#correct}}
             <span class="input-group-text">
-                <span class="badge text-bg-success"><i class="fas fa-check" aria-hidden="true"></i> 100%</span>
+                <span class="badge text-bg-success"><i class="fas fa-check" aria-hidden="true"></i>{{#show_score_percent}} 100%{{/show_score_percent}}</span>
             </span>
         {{/correct}}
         {{#partial}}
             <span class="input-group-text">
-                <span class="badge text-bg-warning"><i class="far fa-circle" aria-hidden="true"></i> {{partial}}%</span>
+                <span class="badge text-bg-warning"><i class="far fa-circle" aria-hidden="true"></i>{{#show_score_percent}} {{partial}}%{{/show_score_percent}}</span>
             </span>
         {{/partial}}
         {{#incorrect}}
             <span class="input-group-text">
-                <span class="badge text-bg-danger"><i class="fas fa-times" aria-hidden="true"></i> 0%</span>
+                <span class="badge text-bg-danger"><i class="fas fa-times" aria-hidden="true"></i>{{#show_score_percent}} 0%{{/show_score_percent}}</span>
             </span>
         {{/incorrect}}
     </span>
@@ -211,9 +212,9 @@ ${{a_sub}}$
 
 {{#suffix}}<span>{{suffix}}</span>{{/suffix}}
 
-{{#correct}}<span class="badge text-bg-success"><i class="fas fa-check" aria-hidden="true"></i> 100%</span>{{/correct}}
-{{#partial}}<span class="badge text-bg-warning"><i class="far fa-circle" aria-hidden="true"></i> {{partial}}%</span>{{/partial}}
-{{#incorrect}}<span class="badge text-bg-danger"><i class="fas fa-times" aria-hidden="true"></i> 0%</span>{{/incorrect}}
+{{#correct}}<span class="badge text-bg-success"><i class="fas fa-check" aria-hidden="true"></i>{{#show_score_percent}} 100%{{/show_score_percent}}</span>{{/correct}}
+{{#partial}}<span class="badge text-bg-warning"><i class="far fa-circle" aria-hidden="true"></i>{{#show_score_percent}} {{partial}}%{{/show_score_percent}}</span>{{/partial}}
+{{#incorrect}}<span class="badge text-bg-danger"><i class="fas fa-times" aria-hidden="true"></i>{{#show_score_percent}} 0%{{/show_score_percent}}</span>{{/incorrect}}
 {{/error}}
 {{#inline}}</span>{{/inline}}{{#block}}</div>{{/block}}
 {{/submission}}
