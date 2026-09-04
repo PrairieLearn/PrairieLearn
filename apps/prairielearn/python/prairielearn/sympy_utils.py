@@ -84,23 +84,24 @@ class SympyParseFailure:
 
 type SympyParseResult = SympyParseSuccess | SympyParseFailure
 type _SympyValueType = Literal["expression", "set", "finite-set", "interval"]
+type _UsedSympyType = _SympyValueType | Literal["empty-set"]
 type AllowedSympyType = Literal["all"] | _SympyValueType
 
 
-def _used_sympy_types(expr: sympy.Basic) -> set[_SympyValueType]:
+def _used_sympy_types(expr: sympy.Basic) -> set[_UsedSympyType]:
     if expr is sympy.EmptySet:
-        return {"set"}
+        return {"empty-set"}
     if isinstance(expr, sympy.Interval):
         return {"interval"}
     if isinstance(expr, sympy.Set) and expr.is_finite_set:
-        required_types: set[_SympyValueType] = {"finite-set"}
+        required_types: set[_UsedSympyType] = {"finite-set"}
         if isinstance(expr, sympy.FiniteSet):
             for arg in expr.args:
                 if isinstance(arg, sympy.Set):
                     required_types.update(_used_sympy_types(arg))
         return required_types
     if isinstance(expr, (sympy.Union, sympy.Intersection, sympy.Complement)):
-        required_types: set[_SympyValueType] = set()
+        required_types: set[_UsedSympyType] = set()
         for arg in expr.args:
             arg_types = _used_sympy_types(arg)
             required_types.update(arg_types)
@@ -125,16 +126,25 @@ def check_sympy_types(
     matches_allowed_type = (
         "all" in allowed_types
         or (isinstance(expr, sympy.Set) and "set" in allowed_types)
-        or (
-            expr is sympy.EmptySet
-            and not {"finite-set", "interval"}.isdisjoint(allowed_types)
+        or all(
+            not {"set", "finite-set", "interval"}.isdisjoint(allowed_types)
+            if used_type == "empty-set"
+            else used_type in allowed_types
+            for used_type in used_types
         )
-        or used_types <= allowed_types
     )
     if matches_allowed_type:
         return None
 
-    disallowed_types = used_types - allowed_types
+    disallowed_types = {
+        "set" if used_type == "empty-set" else used_type
+        for used_type in used_types
+        if (
+            {"set", "finite-set", "interval"}.isdisjoint(allowed_types)
+            if used_type == "empty-set"
+            else used_type not in allowed_types
+        )
+    }
     return SympyParseFailure(
         f"Your answer uses {', '.join(sorted(disallowed_types))}, which this input "
         f"does not accept. Allowed types: {', '.join(sorted(allowed_types))}."
