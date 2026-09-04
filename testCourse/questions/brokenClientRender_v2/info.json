@@ -1,0 +1,8 @@
+{
+  "uuid": "1e26c766-c771-4c16-a12b-b9bc5f06868c",
+  "title": "Broken client render (v2)",
+  "topic": "Test",
+  "tags": ["v2"],
+  "clientFiles": ["client.js"],
+  "type": "Calculation"
+}
