@@ -19,10 +19,10 @@ import {
 } from 'docx';
 import type { Page } from 'playwright';
 
+import type { PrintablePageOutput } from './printRenderer.js';
 import type { PrintableCover, PrintableCoverField, PrintableTextBlock } from './printableCover.js';
-import { type RenderPrintablePageOptions, renderPrintablePage } from './printablePage.js';
 
-export interface RenderUrlToDocxOptions extends RenderPrintablePageOptions {
+export interface DocxOutputOptions {
   /**
    * The cover page content. A function receives the paginated page's root `data-*` attributes,
    * which lets callers include values that are only known after the page has rendered.
@@ -66,14 +66,16 @@ const NO_BORDER = { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' };
 const RULE_BORDER = { style: BorderStyle.SINGLE, size: 8, color: '111111' };
 
 /**
- * Renders a paginated printable page to a Word document. The cover and running footer are
+ * Builds a Word document from a paginated printable page. The cover and running footer are
  * native, editable Word content; every printed question becomes one image so that the question
  * looks exactly as it does in the PDF, and page breaks reproduce the PDF's pagination.
  */
-export function renderUrlToDocx(options: RenderUrlToDocxOptions): Promise<Buffer> {
-  const { cover, footerLabel, ...pageOptions } = options;
-  return renderPrintablePage(pageOptions, {
-    outputLabel: 'DOCX',
+export function createDocxOutput({
+  cover,
+  footerLabel,
+}: DocxOutputOptions): PrintablePageOutput<Buffer> {
+  return {
+    label: 'DOCX',
     deviceScaleFactor: IMAGE_DEVICE_SCALE_FACTOR,
     produce: async (page) => {
       const pageDataset = await page.evaluate(() => ({ ...document.documentElement.dataset }));
@@ -86,7 +88,7 @@ export function renderUrlToDocx(options: RenderUrlToDocxOptions): Promise<Buffer
         questionImages,
       });
     },
-  });
+  };
 }
 
 async function readPrintedPageGeometry(page: Page): Promise<PrintedPageGeometry> {

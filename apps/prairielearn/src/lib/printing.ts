@@ -5,6 +5,7 @@ import { html, unsafeHtml } from '@prairielearn/html';
 import * as sqldb from '@prairielearn/postgres';
 import {
   type AssessmentInstancePrintingAdapter,
+  PrintRenderer,
   type QuestionBlockSize,
   type QuestionTransformer,
   namespaceQuestionHtmls,
@@ -13,6 +14,7 @@ import {
 
 import { QuestionContainer } from '../components/QuestionContainer.js';
 
+import { config } from './config.js';
 import {
   type Assessment,
   type AssessmentInstance,
@@ -51,6 +53,25 @@ const BROKEN_QUESTION_FAILURE_MESSAGE =
 
 export const PRINT_DOCUMENTS = ['exam', 'answer_key'] as const;
 export type PrintDocument = (typeof PRINT_DOCUMENTS)[number];
+
+let printRenderer: PrintRenderer | null = null;
+
+/**
+ * The process-wide renderer. It keeps a single Chromium open and renders one document at a time,
+ * so concurrent print requests queue instead of multiplying browser memory.
+ */
+export function getPrintRenderer(): PrintRenderer {
+  printRenderer ??= new PrintRenderer({
+    browserWSEndpoint: config.printingPlaywrightWsEndpoint ?? undefined,
+  });
+  return printRenderer;
+}
+
+export async function closePrintRenderer(): Promise<void> {
+  const renderer = printRenderer;
+  printRenderer = null;
+  await renderer?.close();
+}
 
 class BrokenQuestionForPrintingError extends Error {
   constructor(

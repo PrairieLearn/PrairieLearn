@@ -1,5 +1,22 @@
 export { namespaceQuestionHtmls } from './namespaceQuestionHtmls.js';
 export type { QuestionHtmlToNamespace } from './namespaceQuestionHtmls.js';
+export { PAPER_SIZES } from './pdfOutput.js';
+export type { PaperSize } from './pdfOutput.js';
+export { htmlToTextBlocks } from './printableCover.js';
+export type {
+  PrintableCover,
+  PrintableCoverField,
+  PrintableCoverSection,
+  PrintableCoverSummaryItem,
+  PrintableTextBlock,
+} from './printableCover.js';
+export { PrintRenderer, QuestionBlockSizeOverflowError } from './printRenderer.js';
+export type {
+  PrintablePageOutput,
+  PrintRendererOptions,
+  RenderDocxOptions,
+  RenderPageOptions,
+} from './printRenderer.js';
 export { QUESTION_BLOCK_SIZES } from './questionBlockSize.js';
 export type { QuestionBlockSize } from './questionBlockSize.js';
 export {
@@ -25,17 +42,3 @@ export type {
   RenderAssessmentInstanceQuestionsOptions,
   RenderAssessmentQuestionsOptions,
 } from './renderAssessmentQuestions.js';
-export { htmlToTextBlocks } from './printableCover.js';
-export type {
-  PrintableCover,
-  PrintableCoverField,
-  PrintableCoverSection,
-  PrintableCoverSummaryItem,
-  PrintableTextBlock,
-} from './printableCover.js';
-export { QuestionBlockSizeOverflowError } from './printablePage.js';
-export type { RenderPrintablePageOptions } from './printablePage.js';
-export { renderUrlToDocx } from './renderUrlToDocx.js';
-export type { RenderUrlToDocxOptions } from './renderUrlToDocx.js';
-export { PAPER_SIZES, renderUrlToPdf } from './renderUrlToPdf.js';
-export type { PaperSize, RenderUrlToPdfOptions } from './renderUrlToPdf.js';

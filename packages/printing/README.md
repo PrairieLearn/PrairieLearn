@@ -84,34 +84,66 @@ the eventual response in their classified metadata. The existing `renderAssessme
 `renderAssessmentInstanceQuestions` HTML-array helpers remain fail-fast even if their adapter has a
 classifier.
 
-## Rendering PDFs
+## Rendering PDFs and Word documents
 
-`renderUrlToPdf` uses Playwright's headless Chromium, waits for the page to report that its Paged.js
-layout is ready, and returns the resulting PDF buffer. The page's CSS `@page` rule is authoritative
-for the physical paper size; `PAPER_SIZES` contains the `Letter` and `A4` values accepted by the
-PrairieLearn endpoint. By default the helper launches Chromium locally. Set `browserWSEndpoint` to
-connect to a Playwright browser server instead; the server and package Playwright versions must
-match. Remote endpoints should be private and accessible only to the PrairieLearn application
-because they grant browser-control access. The remote connection exposes the caller's loopback
-interface so that an application-local print URL remains reachable from a browser running in
-another container.
+`PrintRenderer` turns a paginated printable page into a PDF (`renderPdf`) or a Word document
+(`renderDocx`). Create one renderer per process and keep it for the life of the process:
+
+```ts
+import { PrintRenderer } from '@prairielearn/printing';
+
+const renderer = new PrintRenderer({ browserWSEndpoint: config.printingPlaywrightWsEndpoint });
+const pdf = await renderer.renderPdf({ url: previewUrl, cookieHeader: req.get('cookie') });
+const docx = await renderer.renderDocx({ url: previewUrl, cookieHeader, cover, footerLabel });
+await renderer.close(); // during shutdown
+```
+
+The renderer launches one headless Chromium on first use and reuses it for every later render, so
+browser memory stays roughly constant no matter how many people print at once. Renders run one at a
+time; additional requests wait in a bounded queue (`maxQueuedRenders`, default 16) and fail
+immediately once it is full. Each render gets its own short-lived browser context so cookies never
+leak between requests. One deadline (`timeoutMs`, default 120 seconds) covers queueing, page
+preparation, pagination, and output; a timed-out render has its context closed in the background,
+and a context that does not close within `contextCloseGraceMs` takes the whole browser with it. A
+browser that crashes or disconnects is relaunched on the next render, and `close()` rejects queued
+renders and shuts the browser down.
+
+Set `browserWSEndpoint` to connect to a Playwright browser server instead of launching Chromium
+locally; the server and package Playwright versions must match. Remote endpoints should be private
+and accessible only to the PrairieLearn application because they grant browser-control access. The
+remote connection exposes the caller's loopback interface so that an application-local print URL
+remains reachable from a browser running in another container. Without an endpoint, a
+Playwright-compatible Chromium executable must be installed locally (for example, with
+`pnpm playwright install chromium`).
 
 The browser permits only same-origin `GET` requests during rendering; mutating, cross-origin,
 service worker, and WebSocket traffic is blocked. This prevents external requests from receiving
 the forwarded cookie, but it is not a security boundary for course-authored code: same-origin
 `GET` requests still use the rendering session. Cross-origin question assets must be served through
-PrairieLearn to appear in the PDF.
-
-Each application process runs at most two PDF renders concurrently and queues at most four more.
-Additional renders fail immediately. Queue time counts against the caller's timeout, which also
-bounds browser startup, page preparation, and PDF generation. A timed-out render closes its browser
-so that the next queued render can proceed.
+PrairieLearn to appear in the output.
 
 The caller owns the paginated HTML page. It must set
 `document.documentElement.dataset.printStatus` to `ready` after Paged.js finishes, or to `error`
-with a `data-print-error` message if pagination fails. A Playwright-compatible Chromium executable
-must be installed locally (for example, with `pnpm playwright install chromium`) unless
-`browserWSEndpoint` is set.
+with a `data-print-error` message if pagination fails. The page's CSS `@page` rule is authoritative
+for the physical paper size; `PAPER_SIZES` contains the `Letter` and `A4` values accepted by the
+PrairieLearn endpoint.
+
+### Word output
+
+The Word document keeps the cover page and the running footer as native content built from the
+caller's `PrintableCover` and `footerLabel`. Every `.printing-question` element inside a
+`.pagedjs_page` becomes one image captured at twice the CSS resolution, and a page break starts
+each subsequent printed page so the document paginates like the PDF. Instructors can edit the
+cover, reorder questions, and add space between them, but question content itself is not editable
+text. The sheet size and margins are measured from the paginated page, so they follow the page's
+CSS.
+
+`cover` may be a function; it receives the page's root `data-*` attributes so that values which
+are only known after rendering, such as the number of questions that rendered successfully, can be
+placed on the cover. `htmlToTextBlocks` reduces author-provided HTML (for example assessment
+instructions) to headings, paragraphs, and flat lists for the cover.
+
+### PrairieLearn endpoint parameters
 
 The PrairieLearn print endpoint accepts layout choices as query parameters. `block_size` sets the
 default for every question to `auto`, `third`, `half`, or `full`; it defaults to `auto` when
@@ -135,24 +167,6 @@ This sets a half-page default and allows Question 3 to size itself automatically
 ```text
 ?paper_size=A4&block_size=half&question_block_size=3:auto
 ```
-
-## Rendering Word documents
-
-`renderUrlToDocx` opens the same paginated page as `renderUrlToPdf` and produces a `.docx`
-buffer. The cover page and the running footer are native Word content built from the caller's
-`PrintableCover` and `footerLabel`; every `.printing-question` element inside a `.pagedjs_page`
-becomes one image captured at twice the CSS resolution, and a page break starts each subsequent
-printed page so the document paginates like the PDF. Instructors can edit the cover, reorder
-questions, and add space between them, but question content itself is not editable text. The
-sheet size and margins are measured from the paginated page, so they follow the page's CSS.
-
-`cover` may be a function; it receives the page's root `data-*` attributes so that values which
-are only known after rendering, such as the number of questions that rendered successfully, can be
-placed on the cover. `htmlToTextBlocks` reduces author-provided HTML (for example assessment
-instructions) to headings, paragraphs, and flat lists for the cover.
-
-PDF and DOCX renders share the same browser concurrency limits, queue, deadline, and network
-restrictions.
 
 ## Combining question fragments
 
