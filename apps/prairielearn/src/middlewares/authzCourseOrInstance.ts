@@ -707,9 +707,6 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
     effectiveAuthzData.has_course_permission_own &&
     !authnCourse.example_course &&
     (await features.enabledFromLocals('course-agent', res.locals));
-  res.locals.course_agent_diagnostics_enabled =
-    res.locals.course_agent_enabled &&
-    (await features.enabledFromLocals('course-agent-diagnostics', res.locals));
 }
 
 export default asyncHandler(async (req, res, next) => {

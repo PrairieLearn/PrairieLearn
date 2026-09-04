@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest';
 
 import {
   COURSE_AGENT_SEED_FILE,
-  CourseAgentStartRunRequestSchema,
   CourseAgentSnapshotSchema,
+  CourseAgentStartRunRequestSchema,
   courseAgentSandboxId,
 } from './index.js';
 

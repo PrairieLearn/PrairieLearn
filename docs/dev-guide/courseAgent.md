@@ -2,7 +2,7 @@
 
 The course agent is experimental and guarded by the `course-agent` feature flag. The first MVP
 layer provides a temporary `/workspace`, a Codex harness with web search, Redis-backed resumable
-SSE activity, a basic instructor panel, and optional diagnostics. It does not clone a course
+SSE activity, a basic instructor panel, and live diagnostics. It does not clone a course
 repository, persist conversations, publish changes, or track usage. The next stacked layer resolves
 the course's configured GitHub repository and branch, shallow-clones it into `/workspace/course`,
 and gives Codex a course validator. At that point the agent can create and edit questions,
@@ -44,9 +44,10 @@ Sandbox lifetime settings are non-secret and can be configured in `config.json`:
 }
 ```
 
-Enable the separate `course-agent-diagnostics` feature for a course to expose a user-controlled
-diagnostic mode. It shows live runtime identifiers, state, stream position, tool activity, and
-usage, but never credentials or model reasoning.
+The panel always includes a collapsed **Live conversation state** accordion. It shows runtime
+identifiers, state, stream position, and usage, but never credentials or model reasoning. Activity
+is grouped by instructor turn, and assistant responses support Markdown. Enter sends a message;
+Shift+Enter adds a newline. The sandbox image includes `python` and `python3`.
 
 The Worker mounts the `COURSE_AGENT_DOCS` R2 binding read-only at
 `/opt/prairielearn-docs`. Local development can use Wrangler's empty local R2 bucket; Codex falls

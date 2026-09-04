@@ -164,15 +164,15 @@ function startFakeRun({
   const append = (type: CourseAgentEvent['type'], data: Record<string, unknown> = {}) => {
     events.push({ sequence: events.length, type, occurredAt: new Date().toISOString(), data });
   };
+  append('user.message', { text: prompt });
   if (!existing) {
-    append('sandbox.starting', { sandboxId: identity.sandboxId });
+    append('sandbox.starting', { restoring: false });
     append('workspace.seeded', { path: '/workspace/README.md' });
     append('sandbox.ready', { workspacePath: '/workspace' });
   }
-  append('user.message', { text: prompt });
   append('agent.started', { model: 'fake' });
-  append('tool.started', { operationId: runId, tool: 'Edit' });
-  append('tool.completed', { operationId: runId });
+  append('tool.started', { operationId: runId, label: 'Edited README.md' });
+  append('tool.completed', { operationId: runId, label: 'Edited README.md' });
   const response = `Updated /workspace/README.md for: ${prompt}`;
   append('assistant.delta', { text: response });
   append('agent.completed', { response });

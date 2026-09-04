@@ -10,12 +10,12 @@ import { run } from '@prairielearn/run';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 import { assertNever } from '@prairielearn/utils';
 
+import { CourseAgentPanel } from '../ee/components/CourseAgentPanel.js';
 import { getCourseTrpcUrl } from '../lib/client/url.js';
 import { config } from '../lib/config.js';
 import { getNavPageTabs } from '../lib/navPageTabs.js';
 import { computeStatus } from '../lib/publishing.js';
 import type { UntypedResLocals } from '../lib/res-locals.types.js';
-import { CourseAgentPanel } from '../ee/components/CourseAgentPanel.js';
 
 import { AssessmentNavigation, AssessmentNavigationModal } from './AssessmentNavigation.js';
 import { HeadContents } from './HeadContents.js';
@@ -296,7 +296,7 @@ export function PageLayout({
     }
     const trpcUrl = getCourseTrpcUrl(resLocals.course.id);
     return (
-      <Hydrate>
+      <Hydrate className="course-agent-panel-container">
         <CourseAgentPanel
           trpcCsrfToken={generatePrefixCsrfToken(
             { url: trpcUrl, authn_user_id: resLocals.authn_user.id },
@@ -304,7 +304,6 @@ export function PageLayout({
           )}
           courseId={resLocals.course.id}
           courseShortName={resLocals.course.short_name}
-          diagnosticsEnabled={resLocals.course_agent_diagnostics_enabled ?? false}
         />
       </Hydrate>
     );
@@ -507,9 +506,9 @@ export function PageLayout({
               ${postContentString}
             </div>
           </div>
+          ${courseAgentPanel ? renderHtml(courseAgentPanel) : ''}
         </div>
         ${resolvedOptions.showFooter ? renderHtml(<PageFooter />) : ''}
-        ${courseAgentPanel ? renderHtml(courseAgentPanel) : ''}
       </body>
     </html>
   `.toString();
