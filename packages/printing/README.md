@@ -117,7 +117,10 @@ Playwright-compatible Chromium executable must be installed locally (for example
 `pnpm playwright install chromium`).
 
 The browser permits only same-origin `GET` requests during rendering; mutating, cross-origin,
-service worker, and WebSocket traffic is blocked. This prevents external requests from receiving
+service worker, and WebSocket traffic is blocked, and socket.io polling requests are refused as
+well. Refusing them matters: with WebSockets closed, socket.io would otherwise fall back to HTTP
+long-polling, and a few open polls can occupy every HTTP/1.1 connection to the server and starve
+the page's own script and image loads. This prevents external requests from receiving
 the forwarded cookie, but it is not a security boundary for course-authored code: same-origin
 `GET` requests still use the rendering session. Cross-origin question assets must be served through
 PrairieLearn to appear in the output.
