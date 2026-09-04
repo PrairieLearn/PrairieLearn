@@ -86,7 +86,7 @@ The `allowed-types` attribute restricts submitted and correct answers based on t
 | Type         | Accepted values                                                              | Examples                                       |
 | ------------ | ---------------------------------------------------------------------------- | ---------------------------------------------- |
 | `expression` | Values that are not sets or intervals.                                       | `x + 1`, `sin(x)`, `2/3`                       |
-| `set`        | Any set, including finite sets, intervals, and set operations.               | `{1, 2}`, `[1, 2]`, `Reals - Naturals`         |
+| `set`        | Any set, including finite sets, intervals, and set operations.               | `{1, 2}`, `[1, 2]`, `[1, 2] - {2}`             |
 | `finite-set` | Finite sets and set operations that simplify to a finite set.                | `{1, 2}`, `{1, 2} U {3, 4}`, `{0, 2} & [2, 4]` |
 | `interval`   | Intervals and unions or intersections whose nested values are all intervals. | `[1, 2]`, `[1, 2] U [3, 4]`, `[0, 2] & [1, 4]` |
 | `all`        | Every supported value type.                                                  | `x + 1`, `{1, 2}`, `[1, 2]`                    |
