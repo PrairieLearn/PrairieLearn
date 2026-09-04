@@ -1,0 +1,260 @@
+{
+  "uuid": "855256bb-f531-48a4-b842-7eebb7047d3f",
+  "type": "Exam",
+  "title": "Printable exam coverage",
+  "set": "Exam",
+  "number": "23",
+  "comment": "Every question in the test course, in a fixed order, for exercising the printable-exam renderer.",
+  "shuffleQuestions": false,
+  "autoClose": false,
+  "accessControl": [
+    {
+      "dateControl": {
+        "release": {
+          "date": "2000-01-01T00:00:00"
+        }
+      }
+    }
+  ],
+  "text": "This exam exists to exercise the printable-exam renderer. It contains every question in the test course in a fixed order, grouped into zones by the print behavior each one exercises.",
+  "honorCode": "## Academic integrity pledge\n\nI, {{user_name}}, pledge that the work on this printed exam is my own.",
+  "zones": [
+    {
+      "comment": "Baseline inputs: number, integer, string, units, and big-O responses.",
+      "questions": [
+        {
+          "id": "addNumbers",
+          "autoPoints": [5]
+        },
+        {
+          "id": "internalGrade/addingNumbers",
+          "autoPoints": [5]
+        },
+        {
+          "id": "internalGrade/addingNumbers2",
+          "autoPoints": [5]
+        },
+        {
+          "id": "partialCredit1",
+          "autoPoints": [5]
+        },
+        {
+          "id": "partialCredit2",
+          "autoPoints": [5]
+        },
+        {
+          "id": "partialCredit3",
+          "autoPoints": [5]
+        },
+        {
+          "id": "partialCredit6_no_partial",
+          "autoPoints": [5]
+        },
+        {
+          "id": "questionPreferences",
+          "autoPoints": [5]
+        },
+        {
+          "id": "displayBlockTest",
+          "autoPoints": [5]
+        },
+        {
+          "id": "blankAnswers",
+          "autoPoints": [5]
+        }
+      ]
+    },
+    {
+      "comment": "Legacy v2 questions: Calculation, MultipleChoice, and Checkbox render paths. partialCredit4_v2 and partialCredit5_v2_partial are excluded: their templates begin with a mustache lint directive, which rivets treats as a data binding, so they cannot render in a browser.",
+      "questions": [
+        {
+          "id": "addVectors",
+          "autoPoints": [5]
+        },
+        {
+          "id": "fossilFuelsRadio",
+          "autoPoints": [5]
+        },
+        {
+          "id": "v2checkbox",
+          "autoPoints": [5]
+        }
+      ]
+    },
+    {
+      "comment": "Choice and ordering controls that need paper representations.",
+      "questions": [
+        {
+          "id": "demo/demoNewton-page1",
+          "autoPoints": [5]
+        },
+        {
+          "id": "positionTimeGraph",
+          "autoPoints": [5]
+        },
+        {
+          "id": "externalLinks",
+          "autoPoints": [5]
+        },
+        {
+          "id": "orderBlocks",
+          "autoPoints": [5]
+        }
+      ]
+    },
+    {
+      "comment": "Symbolic and matrix inputs, which reuse DOM IDs derived from input names.",
+      "questions": [
+        {
+          "id": "differentiatePolynomial",
+          "autoPoints": [5]
+        },
+        {
+          "id": "symbolicInputEditor",
+          "autoPoints": [5]
+        },
+        {
+          "id": "symbolicInputEmptySet",
+          "autoPoints": [5]
+        },
+        {
+          "id": "additionalNames",
+          "autoPoints": [5]
+        },
+        {
+          "id": "brokenSubmission",
+          "autoPoints": [5]
+        }
+      ]
+    },
+    {
+      "comment": "Drawing, sketch, and figure questions that render to canvas.",
+      "questions": [
+        {
+          "id": "sketchTest",
+          "autoPoints": [5]
+        },
+        {
+          "id": "demo/demoNewton-page2",
+          "autoPoints": [5]
+        },
+        {
+          "id": "prairieDrawFigure",
+          "autoPoints": [5]
+        }
+      ]
+    },
+    {
+      "comment": "File, code, and workspace responses that become ruled response areas.",
+      "questions": [
+        {
+          "id": "downloadFile",
+          "autoPoints": [5]
+        },
+        {
+          "id": "manualGrade/codeUpload",
+          "manualPoints": 5
+        },
+        {
+          "id": "externalGrade/alpine",
+          "autoPoints": [5]
+        },
+        {
+          "id": "externalGrade/entrypointArgs",
+          "autoPoints": [5]
+        },
+        {
+          "id": "workspace",
+          "autoPoints": [5]
+        },
+        {
+          "id": "workspaceVSCode",
+          "autoPoints": [5]
+        },
+        {
+          "id": "workspaceCustomHome",
+          "autoPoints": [5]
+        },
+        {
+          "id": "workspaceInvalidDynamicFiles",
+          "autoPoints": [5]
+        },
+        {
+          "id": "variantAccess",
+          "autoPoints": [5]
+        }
+      ]
+    },
+    {
+      "comment": "Manually graded and image-capture questions, which exercise the answer-key fallback.",
+      "questions": [
+        {
+          "id": "manualGrade/shortAnswer",
+          "manualPoints": 5
+        },
+        {
+          "id": "manualGrade/addingNumbers2",
+          "manualPoints": 5
+        },
+        {
+          "id": "aiGradingRubrics",
+          "manualPoints": 5
+        },
+        {
+          "id": "aiGradingSingleImageCapture",
+          "manualPoints": 5
+        },
+        {
+          "id": "aiGradingMultiImageCapture",
+          "manualPoints": 5
+        },
+        {
+          "id": "demo/imageCapture",
+          "manualPoints": 5
+        }
+      ]
+    },
+    {
+      "comment": "Content edge cases: empty answer panels, custom elements, and nested QIDs.",
+      "questions": [
+        {
+          "id": "correctAnswerShown",
+          "autoPoints": [5]
+        },
+        {
+          "id": "stdlibImport",
+          "autoPoints": [5]
+        },
+        {
+          "id": "customElement",
+          "autoPoints": [5]
+        },
+        {
+          "id": "userInfo",
+          "autoPoints": [5]
+        },
+        {
+          "id": "subfolder/nestedQuestion",
+          "autoPoints": [5]
+        }
+      ]
+    },
+    {
+      "comment": "Questions whose variants are deliberately broken.",
+      "questions": [
+        {
+          "id": "brokenGeneration",
+          "autoPoints": [5]
+        },
+        {
+          "id": "brokenPrepare",
+          "autoPoints": [5]
+        },
+        {
+          "id": "brokenGrading",
+          "autoPoints": [5]
+        }
+      ]
+    }
+  ]
+}

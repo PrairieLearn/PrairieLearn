@@ -58,13 +58,18 @@ async function waitForLegacyQuestions(source: HTMLElement): Promise<void> {
     containers.find((container) => container.dataset.legacyQuestionRenderStatus === 'error');
   const isReady = () =>
     containers.every((container) => container.dataset.legacyQuestionRenderStatus === 'complete');
-  const initialRenderError = getRenderError();
-  if (initialRenderError) {
+  const describeRenderError = (container: HTMLElement) => {
     const questionLabel =
-      initialRenderError.closest('.printing-question')?.getAttribute('aria-label') ??
-      'A legacy question';
-    throw new Error(`${questionLabel} could not be rendered for paper`);
-  }
+      container.closest('.printing-question')?.getAttribute('aria-label') ?? 'A legacy question';
+    const detail = container.dataset.legacyQuestionRenderError;
+    return new Error(
+      detail
+        ? `${questionLabel} could not be rendered for paper: ${detail}`
+        : `${questionLabel} could not be rendered for paper`,
+    );
+  };
+  const initialRenderError = getRenderError();
+  if (initialRenderError) throw describeRenderError(initialRenderError);
 
   if (!isReady()) {
     await new Promise<void>((resolve, reject) => {
@@ -73,10 +78,7 @@ async function waitForLegacyQuestions(source: HTMLElement): Promise<void> {
         if (renderError) {
           window.clearTimeout(timeout);
           observer.disconnect();
-          const questionLabel =
-            renderError.closest('.printing-question')?.getAttribute('aria-label') ??
-            'A legacy question';
-          reject(new Error(`${questionLabel} could not be rendered for paper`));
+          reject(describeRenderError(renderError));
           return;
         }
         if (!isReady()) return;

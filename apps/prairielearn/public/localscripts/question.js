@@ -60,6 +60,16 @@ $(function () {
     submit(event, 'save');
   };
 
+  // The error detail is recorded before the status flips so that observers of the status
+  // attribute can read both together.
+  var recordRenderError = function (questionContainer, err) {
+    questionContainer.attr(
+      'data-legacy-question-render-error',
+      String(err && err.message ? err.message : err),
+    );
+    questionContainer.attr('data-legacy-question-render-status', 'error');
+  };
+
   $('.question-container > .question-data')
     .parent()
     .each(function (i, questionContainer) {
@@ -67,7 +77,7 @@ $(function () {
       try {
         initialize($(questionContainer), function (err) {
           if (err) {
-            $(questionContainer).attr('data-legacy-question-render-status', 'error');
+            recordRenderError($(questionContainer), err);
             return console.log(err);
           }
           try {
@@ -76,12 +86,12 @@ $(function () {
             $(questionContainer).find('.question-grade').click(grade);
             $(questionContainer).find('.question-save').click(save);
           } catch (renderError) {
-            $(questionContainer).attr('data-legacy-question-render-status', 'error');
+            recordRenderError($(questionContainer), renderError);
             throw renderError;
           }
         });
       } catch (initializeError) {
-        $(questionContainer).attr('data-legacy-question-render-status', 'error');
+        recordRenderError($(questionContainer), initializeError);
         throw initializeError;
       }
     });
