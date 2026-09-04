@@ -4,6 +4,6 @@
 scripts/*
 !scripts/run-codex.mjs
 
-!bin/
-bin/*
-!bin/validate-course.mjs
+!skills/
+skills/*
+!skills/course-content-authoring/

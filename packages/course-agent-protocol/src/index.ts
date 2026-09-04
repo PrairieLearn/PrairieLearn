@@ -14,8 +14,6 @@ export const CourseAgentEventTypeSchema = z.enum([
   'git.clone.started',
   'git.clone.completed',
   'git.configured',
-  'validation.completed',
-  'validation.failed',
   'agent.started',
   'assistant.delta',
   'tool.started',

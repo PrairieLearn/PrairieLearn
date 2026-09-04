@@ -302,7 +302,6 @@ function Diagnostics({
   const agentStarted = findLastEvent(events, 'agent.started');
   const usage = findLastEvent(events, 'usage.updated');
   const docs = findLastEvent(events, 'docs.mounted', 'docs.unavailable');
-  const validation = findLastEvent(events, 'validation.completed', 'validation.failed');
   const statusLabel =
     {
       offline: 'Not started',
@@ -316,10 +315,9 @@ function Diagnostics({
     ['Sandbox', conversation?.sandboxId ?? 'Not started'],
     ['Run', runId ?? 'Idle'],
     ['Codex thread', String(agentStarted?.data.threadId ?? 'Pending')],
-    ['Documentation', docs?.type === 'docs.mounted' ? 'Mounted' : docs ? 'Web search' : 'Pending'],
     [
-      'Validation',
-      validation?.type === 'validation.completed' ? 'Passed' : validation ? 'Failed' : 'Pending',
+      'Documentation',
+      docs?.type === 'docs.mounted' ? 'Mounted' : docs ? 'Bundled skill only' : 'Pending',
     ],
   ];
   const tokenFields = [

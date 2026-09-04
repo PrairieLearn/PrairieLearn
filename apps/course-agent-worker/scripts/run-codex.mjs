@@ -1,9 +1,9 @@
 import { spawn } from 'node:child_process';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createInterface } from 'node:readline';
-import { pathToFileURL } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 // App-server, unlike exec --json, exposes incremental agent-message text.
 export async function runCodex({
@@ -14,6 +14,10 @@ export async function runCodex({
   baseUrl = 'https://api.openai.com/v1',
   cwd = process.cwd(),
 }) {
+  const skillPath = fileURLToPath(
+    new URL('../skills/course-content-authoring/SKILL.md', import.meta.url),
+  );
+  const skill = await readFile(skillPath, 'utf8');
   const codexHome = await mkdtemp(join(tmpdir(), 'pl-course-agent-'));
   const child = spawn(
     command,
@@ -88,6 +92,8 @@ export async function runCodex({
             approvalPolicy: 'on-request',
             approvalsReviewer: 'auto_review',
             sandbox: 'workspace-write',
+            // Load the entrypoint explicitly; discovery does not include this image-owned directory.
+            developerInstructions: `Use the bundled course-content-authoring skill below for applicable requests. Its file is ${skillPath}; resolve its relative references from that directory.\n\n${skill}`,
           },
         });
       } else if (message.id === 1) {
