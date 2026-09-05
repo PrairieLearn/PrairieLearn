@@ -56,6 +56,50 @@ export function resolveSamlAttributes(
   return { uid, uin, name, givenName, familyName, email, hasNameMapping };
 }
 
+export function validateSamlAttributes(
+  provider: Pick<
+    SamlProvider,
+    | 'allow_missing_name'
+    | 'uid_attribute'
+    | 'uin_attribute'
+    | 'name_attribute'
+    | 'given_name_attribute'
+    | 'family_name_attribute'
+  >,
+  resolved: ReturnType<typeof resolveSamlAttributes>,
+): {
+  uid: string;
+  uin: string;
+  name: string | null;
+  email: string | null;
+} {
+  if (!provider.uid_attribute || !provider.uin_attribute || !resolved.hasNameMapping) {
+    throw new Error('Missing one or more SAML attribute mappings');
+  }
+
+  const { uid, uin, name, email } = resolved;
+
+  // Email is intentionally optional because some IdPs omit it for some users even when an email
+  // attribute is configured.
+  if (!uid || !uin || (!name && !provider.allow_missing_name)) {
+    const nameAttributeDescription =
+      provider.name_attribute ||
+      `${provider.given_name_attribute} + ${provider.family_name_attribute}`;
+
+    const missingAttributes = [
+      ...(!uid ? [`uid (${provider.uid_attribute})`] : []),
+      ...(!uin ? [`uin (${provider.uin_attribute})`] : []),
+      ...(!name && !provider.allow_missing_name ? [`name (${nameAttributeDescription})`] : []),
+    ];
+
+    throw new Error(
+      `Missing values for the following SAML attributes: ${missingAttributes.join(', ')}`,
+    );
+  }
+
+  return { uid, uin, name, email };
+}
+
 const router = Router({ mergeParams: true });
 
 router.get('/login', (req, res, next) => {
@@ -138,32 +182,7 @@ router.post(
     }
 
     // Only perform validation if we aren't rendering the above test page.
-    //
-    // We cannot safely require emails for users. For some categories of users,
-    // such as FERPA-suppressed students, an IdP may not pass an email address.
-    // So even if an email attribute is configured and we get it for the vast
-    // majority of users, there may be some for which it is not present.
-    if (
-      !institutionSamlProvider.uid_attribute ||
-      !institutionSamlProvider.uin_attribute ||
-      !resolved.hasNameMapping
-    ) {
-      throw new Error('Missing one or more SAML attribute mappings');
-    }
-    const { uid, uin, name, email } = resolved;
-    if (!uid || !uin || !name) {
-      const nameAttributeDescription =
-        institutionSamlProvider.name_attribute ||
-        `${institutionSamlProvider.given_name_attribute} + ${institutionSamlProvider.family_name_attribute}`;
-      const missingAttributes = [
-        ...(!uid ? [`uid (${institutionSamlProvider.uid_attribute})`] : []),
-        ...(!uin ? [`uin (${institutionSamlProvider.uin_attribute})`] : []),
-        ...(!name ? [`name (${nameAttributeDescription})`] : []),
-      ];
-      throw new Error(
-        `Missing values for the following SAML attributes: ${missingAttributes.join(', ')}`,
-      );
-    }
+    const { uid, uin, name, email } = validateSamlAttributes(institutionSamlProvider, resolved);
 
     const authnParams = {
       uid,

@@ -131,6 +131,7 @@ router.post(
           name_attribute: req.body.name_attribute || null,
           given_name_attribute: req.body.given_name_attribute || null,
           family_name_attribute: req.body.family_name_attribute || null,
+          allow_missing_name: req.body.allow_missing_name === '1',
           email_attribute: req.body.email_attribute || null,
           // The upsert query is configured to ignore these values if they're null.
           public_key: publicKey,
