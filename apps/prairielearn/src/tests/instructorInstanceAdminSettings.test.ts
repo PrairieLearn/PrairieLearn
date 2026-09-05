@@ -5,6 +5,11 @@ import { afterAll, afterEach, assert, beforeAll, beforeEach, describe, test } fr
 
 import { execute, loadSqlEquiv } from '@prairielearn/postgres';
 
+import {
+  reconcilePlanGrantsForCourseInstance,
+  reconcilePlanGrantsForInstitution,
+  updateRequiredPlansForCourseInstance,
+} from '../ee/lib/billing/plans.js';
 import { ensurePlanGrant } from '../ee/models/plan-grants.js';
 import { enableEnterpriseEdition, withoutEnterpriseEdition } from '../ee/tests/ee-helpers.js';
 import { config } from '../lib/config.js';
@@ -178,7 +183,7 @@ describe('Updating a course instance ID', { concurrent: false }, () => {
   });
 });
 
-describe('Course instance enrollment capacity', () => {
+describe('Course instance enrollment and billing', () => {
   enableEnterpriseEdition();
   beforeEach(helperServer.before());
   afterEach(helperServer.after);
@@ -205,13 +210,18 @@ describe('Course instance enrollment capacity', () => {
   }
 
   test.each([10_000, 10_001])(
-    'hides capacity for a limit of %i after enrollment',
+    'shows payment status without an allowance for a limit of %i',
     async (limit) => {
       await setLimits({ institutionLimit: limit });
       await enrollRandomUsers('1', 1);
       const { $, status } = await fetchCheerio(pageUrl);
       assert.equal(status, 200);
-      assert.lengthOf($('#enrollment-capacity-heading'), 0);
+      assert.lengthOf($('#enrollment-and-billing-heading'), 1);
+      const summary = $('[aria-labelledby="enrollment-and-billing-heading"]').text();
+      assert.include(summary, 'Student payment not required');
+      assert.include(summary, 'Students can enroll without paying for course access.');
+      assert.notInclude(summary, 'Enrollment allowance');
+      assert.notInclude(summary, 'remaining');
     },
   );
 
@@ -225,8 +235,8 @@ describe('Course instance enrollment capacity', () => {
     await enrollRandomUsers('1', 2);
     const { $, status } = await fetchCheerio(pageUrl);
     assert.equal(status, 200);
-    const summary = $('[aria-labelledby="enrollment-capacity-heading"]').text();
-    assert.include(summary, `2 of ${expected.toLocaleString('en-US')} free enrollments used`);
+    const summary = $('[aria-labelledby="enrollment-and-billing-heading"]').text();
+    assert.include(summary, `2 of ${expected.toLocaleString('en-US')} enrollments used`);
     assert.include(summary, `${(expected - 2).toLocaleString('en-US')} remaining`);
     assert.notInclude(summary, 'shared enrollment limit');
   });
@@ -236,7 +246,7 @@ describe('Course instance enrollment capacity', () => {
     await withoutEnterpriseEdition(async () => {
       const { $, status } = await fetchCheerio(pageUrl);
       assert.equal(status, 200);
-      assert.lengthOf($('#enrollment-capacity-heading'), 0);
+      assert.lengthOf($('#enrollment-and-billing-heading'), 0);
     });
   });
 
@@ -245,9 +255,13 @@ describe('Course instance enrollment capacity', () => {
     await setLimits({ instanceLimit: limit });
     const { $, status } = await fetchCheerio(pageUrl);
     assert.equal(status, 200);
-    const summary = $('[aria-labelledby="enrollment-capacity-heading"]').text();
-    assert.include(summary, `2 of ${limit} free enrollments used`);
+    const summary = $('[aria-labelledby="enrollment-and-billing-heading"]').text();
+    assert.include(summary, `2 of ${limit} enrollments used`);
     assert.include(summary, '0 remaining');
+    assert.include(
+      summary,
+      'The enrollment allowance has been reached. Contact support to increase it.',
+    );
   });
 
   test.each([
@@ -258,8 +272,8 @@ describe('Course instance enrollment capacity', () => {
     await setLimits({ instanceLimit: 20, ...limits });
     const { $, status } = await fetchCheerio(pageUrl);
     assert.equal(status, 200);
-    const summary = $('[aria-labelledby="enrollment-capacity-heading"]').text();
-    assert.include(summary, '2 of 20 free enrollments used');
+    const summary = $('[aria-labelledby="enrollment-and-billing-heading"]').text();
+    assert.include(summary, '2 of 20 enrollments used');
     assert.include(summary, '1 remaining');
     assert.include(summary, `${source}'s shared enrollment limit over the past year`);
   });
@@ -285,8 +299,12 @@ describe('Course instance enrollment capacity', () => {
     await setLimits({ instanceLimit: 20, institutionYearlyLimit: 2 });
     const { $, status } = await fetchCheerio(pageUrl);
     assert.equal(status, 200);
-    const summary = $('[aria-labelledby="enrollment-capacity-heading"]').text();
-    assert.include(summary, '1 of 20 free enrollments used');
+    const summary = $('[aria-labelledby="enrollment-and-billing-heading"]').text();
+    assert.include(summary, '1 of 20 enrollments used');
+    assert.include(
+      summary,
+      'Students with individually purchased or sponsored course access do not use this allowance.',
+    );
     assert.include(summary, '1 remaining');
   });
 
@@ -296,8 +314,85 @@ describe('Course instance enrollment capacity', () => {
     await setLimits({ instanceLimit: 20, institutionYearlyLimit: 3 });
     const { $, status } = await fetchCheerio(pageUrl);
     assert.equal(status, 200);
-    const summary = $('[aria-labelledby="enrollment-capacity-heading"]').text();
-    assert.include(summary, '2 of 20 free enrollments used');
+    const summary = $('[aria-labelledby="enrollment-and-billing-heading"]').text();
+    assert.include(summary, '2 of 20 enrollments used');
     assert.include(summary, '3 remaining');
   });
+
+  test.each([false, true])(
+    'shows student billing instead of an allowance (compute: %s)',
+    async (compute) => {
+      await enrollRandomUsers('1', 2);
+      await setLimits({ instanceLimit: 0, institutionYearlyLimit: 0, courseYearlyLimit: 0 });
+      await updateRequiredPlansForCourseInstance(
+        '1',
+        compute ? ['basic', 'compute'] : ['basic'],
+        '1',
+      );
+      const { $, status } = await fetchCheerio(pageUrl);
+      assert.equal(status, 200);
+      const summary = $('[aria-labelledby="enrollment-and-billing-heading"]').text();
+      assert.include(summary, 'Student billing enabled');
+      assert.include(summary, 'Students pay for access to this course instance.');
+      assert.include(summary, '2 enrollments');
+      assert.equal(summary.includes('Students pay for external grading and workspaces.'), compute);
+      assert.notInclude(summary, 'Enrollment allowance');
+      assert.notInclude(summary, 'remaining');
+      assert.notInclude(summary, 'Contact support');
+      assert.notInclude(summary, 'Student payment not required');
+    },
+  );
+
+  test('keeps the enrollment allowance when students pay only for compute', async () => {
+    await enrollRandomUsers('1', 2);
+    await setLimits({ instanceLimit: 20 });
+    await updateRequiredPlansForCourseInstance('1', ['compute'], '1');
+    const { $, status } = await fetchCheerio(pageUrl);
+    assert.equal(status, 200);
+    const summary = $('[aria-labelledby="enrollment-and-billing-heading"]').text();
+    assert.include(summary, 'Student billing for compute features');
+    assert.include(summary, 'Students pay for external grading and workspaces.');
+    assert.include(summary, '2 of 20 enrollments used');
+    assert.include(summary, '18 remaining');
+    assert.notInclude(summary, 'Student payment not required');
+  });
+
+  test.each(['institution', 'course instance'])(
+    'does not advertise student payment for compute covered by the %s',
+    async (source) => {
+      await setLimits({ instanceLimit: 20 });
+      await updateRequiredPlansForCourseInstance('1', ['compute'], '1');
+      const reconcile =
+        source === 'institution'
+          ? reconcilePlanGrantsForInstitution
+          : reconcilePlanGrantsForCourseInstance;
+      await reconcile('1', [{ plan: 'everything', grantType: 'invoice' }], '1');
+      const { $, status } = await fetchCheerio(pageUrl);
+      assert.equal(status, 200);
+      const summary = $('[aria-labelledby="enrollment-and-billing-heading"]').text();
+      assert.include(summary, 'Student payment not required');
+      assert.include(summary, '0 of 20 enrollments used');
+      assert.notInclude(summary, 'Students pay for external grading and workspaces.');
+    },
+  );
+
+  test.each(['course', 'institution'])(
+    'shows a support warning when a shared %s limit blocks a large-cap instance',
+    async (source) => {
+      await enrollRandomUsers('1', 2);
+      await setLimits(
+        source === 'course' ? { courseYearlyLimit: 2 } : { institutionYearlyLimit: 2 },
+      );
+      const { $, status } = await fetchCheerio(pageUrl);
+      assert.equal(status, 200);
+      const summary = $('[aria-labelledby="enrollment-and-billing-heading"]').text();
+      assert.include(
+        summary,
+        'An enrollment limit has been reached. Contact support to enable additional enrollments.',
+      );
+      assert.notInclude(summary, 'Enrollment allowance');
+      assert.notInclude(summary, '10,000');
+      assert.notInclude(summary, 'remaining');
+    },
+  );
 });
