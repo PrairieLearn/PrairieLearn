@@ -15,6 +15,13 @@ export const SHORT_NAME_REGEX =
  */
 export const SHORT_NAME_PATTERN = SHORT_NAME_REGEX.source;
 
+export function suggestShortName(title: string): string {
+  return title
+    .toLowerCase()
+    .replaceAll(/[^a-z0-9]+/g, '-')
+    .replaceAll(/^-+|-+$/g, '');
+}
+
 interface ShortNameValidationSuccess {
   valid: true;
 }

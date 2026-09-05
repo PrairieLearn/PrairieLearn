@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
-import { SHORT_NAME_PATTERN, SHORT_NAME_REGEX, validateShortName } from './short-name.js';
+import {
+  SHORT_NAME_PATTERN,
+  SHORT_NAME_REGEX,
+  suggestShortName,
+  validateShortName,
+} from './short-name.js';
 
 describe('validateShortName', () => {
   describe('valid short names', () => {
@@ -155,5 +160,15 @@ describe('SHORT_NAME_PATTERN derivation', () => {
     expect(htmlPatternRegex.test('my question')).toBe(false);
     expect(htmlPatternRegex.test('.hidden')).toBe(false);
     expect(htmlPatternRegex.test('folder/.hidden')).toBe(false);
+  });
+});
+
+describe('suggestShortName', () => {
+  it.each([
+    ['Foo bar', 'foo-bar'],
+    ['  Midterm 1: Functions & derivatives!  ', 'midterm-1-functions-derivatives'],
+    ['---', ''],
+  ])('converts %j to %j', (title, expected) => {
+    expect(suggestShortName(title)).toBe(expected);
   });
 });
