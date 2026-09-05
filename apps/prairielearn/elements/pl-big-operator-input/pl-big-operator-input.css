@@ -1,0 +1,250 @@
+.pl-big-operator-input {
+  --pl-big-operator-input-gap: 0.8rem;
+
+  display: inline-flex;
+  align-items: center;
+  gap: var(--pl-big-operator-input-gap);
+  vertical-align: middle;
+  margin: 0.25rem 0;
+}
+
+.pl-big-operator-input__submission {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.pl-big-operator-input__submission-score {
+  display: inline-flex;
+  align-items: center;
+}
+
+.pl-big-operator-input input {
+  font-family: KaTeX_Main;
+}
+
+.pl-big-operator-input__operator-stack {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  gap: 5px;
+}
+
+.pl-big-operator-input__operator-stack--annotated {
+  /* Balance the annotation below the operator so the glyph aligns with the body. */
+  margin-top: 1.5rem;
+}
+
+.pl-big-operator-input__annotation {
+  display: inline-flex;
+  align-items: flex-start;
+  flex-wrap: nowrap;
+}
+
+.pl-big-operator-input__direction-input {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  margin-left: 0.25rem;
+}
+
+.pl-big-operator-input__direction-input .form-select {
+  box-sizing: content-box;
+  width: 1ch;
+  min-width: 1ch;
+  padding: 0.25rem;
+  color: var(--bs-danger);
+  font-family: ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, monospace;
+  text-align: center;
+  background-image: none;
+  appearance: none;
+}
+
+.pl-big-operator-input__direction-input .form-select:valid {
+  color: var(--bs-body-color);
+}
+
+.pl-big-operator-input__direction-input .form-select option {
+  color: var(--bs-body-color);
+}
+
+.pl-big-operator-input__direction-score {
+  display: inline-flex;
+}
+
+.pl-big-operator-input__operator-stack--integral {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.pl-big-operator-input__limits {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  line-height: 1;
+  gap: 1rem;
+}
+
+.pl-big-operator-input__domain-spacer {
+  min-width: 10ch;
+  height: calc(1.5rem + 0.75rem + 2px);
+  visibility: hidden;
+}
+
+.pl-big-operator-input__bounds .pl-big-operator-input__upper input {
+  text-align: center;
+}
+
+/* Layout overrides for delegated pl-symbolic-input fields. */
+.pl-big-operator-input .d-inline-block {
+  margin: 0 !important;
+}
+
+.pl-big-operator-input__upper math-field::part(virtual-keyboard-toggle),
+.pl-big-operator-input__lower math-field::part(virtual-keyboard-toggle),
+.pl-big-operator-input__annotation math-field::part(virtual-keyboard-toggle) {
+  display: none;
+}
+
+.pl-big-operator-input math-field::part(menu-toggle) {
+  display: none;
+}
+
+.pl-big-operator-input__upper,
+.pl-big-operator-input__lower {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  font-size: 15pt;
+}
+
+.pl-big-operator-input__upper > .d-inline-block,
+.pl-big-operator-input__lower > .d-inline-block {
+  width: auto;
+}
+
+.pl-big-operator-input__upper math-field,
+.pl-big-operator-input__lower math-field {
+  min-width: var(--pl-big-operator-input-limit-size) !important;
+  text-align: center;
+}
+
+.pl-big-operator-input__annotation math-field {
+  min-width: var(--pl-big-operator-input-limit-size) !important;
+}
+
+/* Hidden formula-editor inputs make the visible math-field a non-first child. */
+.pl-big-operator-input__range-upper-bound .input-group > math-field {
+  border-top-left-radius: var(--bs-border-radius) !important;
+  border-bottom-left-radius: var(--bs-border-radius) !important;
+}
+
+.pl-big-operator-input__operator-stack--bounds > .pl-big-operator-input__upper {
+  order: 1;
+}
+
+.pl-big-operator-input__operator-stack--bounds > .pl-big-operator-input__operator {
+  order: 2;
+}
+
+.pl-big-operator-input__operator-stack--bounds > .pl-big-operator-input__lower {
+  order: 3;
+}
+
+.pl-big-operator-input__limits > .pl-big-operator-input__upper {
+  order: 1;
+}
+
+.pl-big-operator-input__limits > .pl-big-operator-input__lower {
+  order: 2;
+}
+
+.pl-big-operator-input__operator-stack--integral .pl-big-operator-input__upper,
+.pl-big-operator-input__operator-stack--integral .pl-big-operator-input__lower {
+  width: auto;
+  justify-content: flex-start;
+}
+
+.pl-big-operator-input__operator,
+.pl-big-operator-input__affix {
+  line-height: 0.9;
+  font-weight: 400;
+  margin: 0.15rem 0;
+}
+
+.pl-big-operator-input__affix--prefix {
+  margin-inline-end: calc(-1 * var(--pl-big-operator-input-gap));
+}
+
+.pl-big-operator-input__affix--suffix {
+  margin-inline-start: calc(-1 * var(--pl-big-operator-input-gap));
+}
+
+.pl-big-operator-input__operator,
+.pl-big-operator-input__affix {
+  font-size: 2rem;
+}
+
+.pl-big-operator-input__integral-tail {
+  font-size: 1.5rem;
+}
+
+.pl-big-operator-input__body {
+  display: inline-flex;
+  align-items: center;
+}
+
+.pl-big-operator-input__body .input-group {
+  flex-wrap: nowrap;
+}
+
+.pl-big-operator-input__body math-field {
+  border-top-left-radius: var(--bs-border-radius) !important;
+  border-bottom-left-radius: var(--bs-border-radius) !important;
+  min-width: var(--pl-big-operator-input-body-size) !important;
+}
+
+.pl-big-operator-input__body .input-group > math-field:last-child {
+  border-top-right-radius: var(--bs-border-radius) !important;
+  border-bottom-right-radius: var(--bs-border-radius) !important;
+}
+
+.pl-big-operator-input__label.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (max-width: 640px) {
+  .pl-big-operator-input {
+    --pl-big-operator-input-gap: 0.6rem;
+  }
+
+  .pl-big-operator-input__body {
+    min-width: 10rem;
+  }
+
+  .pl-big-operator-input__operator,
+  .pl-big-operator-input__affix {
+    font-size: 2.9rem;
+  }
+
+  .pl-big-operator-input__integral-tail {
+    font-size: 2rem;
+  }
+
+  .pl-big-operator-input__operator-stack--integral {
+    gap: 0.25rem;
+  }
+}

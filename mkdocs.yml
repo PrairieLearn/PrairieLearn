@@ -232,6 +232,7 @@ nav:
           - elements/index.md
           - '<span class="muted">pl-</span>answer-panel': 'elements/pl-answer-panel.md'
           - '<span class="muted">pl-</span>big-o-input': 'elements/pl-big-o-input.md'
+          - '<span class="muted">pl-</span>big-operator-input': 'elements/pl-big-operator-input.md'
           - '<span class="muted">pl-</span>card': 'elements/pl-card.md'
           - '<span class="muted">pl-</span>checkbox': 'elements/pl-checkbox.md'
           - '<span class="muted">pl-</span>code': 'elements/pl-code.md'
@@ -289,6 +290,7 @@ nav:
           - 'Element extensions': python-reference/prairielearn/extension_utils.md
           - 'Grading': python-reference/prairielearn/grading_utils.md
           - 'Questions': python-reference/prairielearn/question_utils.md
+          - 'Operator expressions': python-reference/prairielearn/operator_expression.md
           - 'Numerical precision': python-reference/prairielearn/to_precision.md
           - 'Other': python-reference/prairielearn/misc_utils.md
           - 'Schema': python-reference/prairielearn/element_schemas.md

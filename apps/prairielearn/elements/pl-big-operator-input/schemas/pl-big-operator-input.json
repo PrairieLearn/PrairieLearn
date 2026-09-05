@@ -1,0 +1,101 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "allow-complex": {
+      "default": "false",
+      "type": "string",
+      "format": "boolean"
+    },
+    "allow-limit-direction-input": {
+      "default": "true",
+      "type": "string",
+      "format": "boolean"
+    },
+    "allowed-blank": {
+      "default": "none",
+      "type": "string",
+      "enum": ["none", "limits", "body", "all"]
+    },
+    "answers-name": {
+      "type": "string"
+    },
+    "body-relative-weight": {
+      "default": "3",
+      "type": "string",
+      "format": "integer"
+    },
+    "body-size": {
+      "type": "string",
+      "format": "integer"
+    },
+    "correct-answer": {
+      "type": "string",
+      "pattern": "^\\s*(?:Sum|Product|Integral|Limit|Union|Intersection|DisjointUnion|Min|Max|Custom)\\s*\\(.+\\)\\s*$"
+    },
+    "custom-functions": {
+      "type": "string"
+    },
+    "grading-method": {
+      "default": "equivalent",
+      "type": "string",
+      "enum": ["exact", "component", "equivalent", "none"]
+    },
+    "index-variable": {
+      "type": "string"
+    },
+    "limit-direction": {
+      "default": "two-sided",
+      "type": "string",
+      "enum": ["two-sided", "from-left", "from-right"]
+    },
+    "limit-size": {
+      "type": "string",
+      "format": "integer"
+    },
+    "limits": {
+      "default": "auto",
+      "type": "string",
+      "enum": ["auto", "bounds", "domain", "approach"]
+    },
+    "operator": {
+      "type": "string",
+      "enum": [
+        "sum",
+        "product",
+        "integral",
+        "limit",
+        "union",
+        "intersection",
+        "disjoint-union",
+        "min",
+        "max",
+        "custom"
+      ]
+    },
+    "operator-latex": {
+      "type": "string"
+    },
+    "prefix-latex": {
+      "type": "string"
+    },
+    "show-help-text": {
+      "default": "true",
+      "type": "string",
+      "format": "boolean"
+    },
+    "suffix-latex": {
+      "type": "string"
+    },
+    "variables": {
+      "type": "string"
+    },
+    "weight": {
+      "default": "1",
+      "type": "string",
+      "format": "integer"
+    }
+  },
+  "required": ["answers-name"],
+  "additionalProperties": false
+}
