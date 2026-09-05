@@ -9,13 +9,12 @@ import {
 } from '@prairielearn/question-conversion/trimmer';
 import { getAppError } from '@prairielearn/trpc/client';
 
+import { getCourseAdminQuestionsUrl, getCourseInstanceBaseUrl } from '../../../lib/client/url.js';
+import { createCourseTrpcClient } from '../../../trpc/course/client.js';
+import type { QtiImportError } from '../../../trpc/course/qti-import.js';
+import { buildImportPayload, getIncludedQuestionCount } from '../instructorQtiImport.payload.js';
 import {
-  getCourseInstanceBaseUrl,
-  getCourseInstanceEditErrorUrl,
-} from '../../../lib/client/url.js';
-import { createCourseInstanceTrpcClient } from '../../../trpc/courseInstance/client.js';
-import type { QtiImportError } from '../../../trpc/courseInstance/qti-import.js';
-import {
+  type AssessmentOverrides,
   type CourseInstanceOption,
   type ParseWarning,
   QTI_IMPORT_MAX_UPLOAD_BYTES,
@@ -26,7 +25,6 @@ import {
   deduplicateAssessmentZoneQuestions,
   getUnresolvedSourceBankRefs,
   hasCanvasUnresolvedSourceBankRefs,
-  resolveRenamedDir,
 } from '../instructorQtiImport.types.js';
 
 import {
@@ -78,14 +76,6 @@ function useBeforeUnload(enabled: boolean): () => void {
   return () => {
     disabledRef.current = true;
   };
-}
-
-interface AssessmentOverrides {
-  title: string;
-  type: 'Homework' | 'Exam';
-  set: string;
-  number: string;
-  included: boolean;
 }
 
 function deduplicateAssessmentNumbers(
@@ -270,23 +260,27 @@ function mergeEmbeddedSourceBanks(
 }
 
 export function QtiImportForm({
-  courseInstanceId: initialCourseInstanceId,
+  courseId,
+  urlPrefix,
   courseInstances,
-  csrfTokensByCourseInstance,
+  initialCourseInstanceId,
+  csrfTokens,
   returnTo,
 }: {
-  courseInstanceId: string;
+  courseId: string;
+  urlPrefix: string;
   courseInstances: CourseInstanceOption[];
-  csrfTokensByCourseInstance: Record<string, { upload: string; trpc: string }>;
+  /** Preselected import target; null when the course has no course instances. */
+  initialCourseInstanceId: string | null;
+  csrfTokens: { upload: string; trpc: string };
   returnTo: 'assessments' | 'questions';
 }) {
   const [selectedCourseInstanceId, setSelectedCourseInstanceId] = useState(initialCourseInstanceId);
-  const csrfTokens = csrfTokensByCourseInstance[selectedCourseInstanceId];
-  const [trpcClient, setTrpcClient] = useState(() =>
-    createCourseInstanceTrpcClient({
-      csrfToken: csrfTokens.trpc,
-      courseInstanceId: selectedCourseInstanceId,
-    }),
+  // Assessments live in a course instance, so without one only questions can be imported.
+  const canImportAssessments = selectedCourseInstanceId != null;
+  const selectedCourseInstance = courseInstances.find((ci) => ci.id === selectedCourseInstanceId);
+  const [trpcClient] = useState(() =>
+    createCourseTrpcClient({ csrfToken: csrfTokens.trpc, courseId }),
   );
   const [step, setStep] = useState<ImportStep>('upload');
   const [results, setResults] = useState<SerializedConversionResult[]>([]);
@@ -333,9 +327,12 @@ export function QtiImportForm({
     });
     formData.set('file', trimmedFile);
 
+    if (selectedCourseInstanceId != null) {
+      formData.set('course_instance_id', selectedCourseInstanceId);
+    }
+
     setProcessingPhase('uploading');
-    const baseUrl = getCourseInstanceBaseUrl(selectedCourseInstanceId);
-    const response = await fetch(`${baseUrl}/instructor/instance_admin/qti_import/upload`, {
+    const response = await fetch(`${urlPrefix}/course_admin/qti_import/upload`, {
       method: 'POST',
       headers: {
         'X-CSRF-Token': csrfTokens.upload,
@@ -439,148 +436,18 @@ export function QtiImportForm({
     });
   };
 
-  const getIncludedQuestionCount = (result: SerializedConversionResult) =>
-    result.questions.filter((q) => questionOverrides.get(q.directoryName)?.included !== false)
-      .length;
-
   const handleCreate = async () => {
     setError(null);
     setStep('creating');
 
     try {
-      const includedResults = results
-        .map((result, i) => ({ result, override: overrides[i] }))
-        .filter(
-          ({ result, override }) => override.included && getIncludedQuestionCount(result) > 0,
-        );
-      const includedAssessments = includedResults.filter(
-        (
-          entry,
-        ): entry is typeof entry & {
-          result: Extract<SerializedConversionResult, { sourceType: 'assessment' }>;
-        } => entry.result.sourceType === 'assessment',
-      );
-      const includedQuestionBankResults = includedResults.filter(
-        ({ result }) => result.sourceType === 'question-bank',
-      );
-
-      // Deduplicate assessment directory names so two assessments with the
-      // same title don't overwrite each other.
-      const allocatedAssessmentDirs = new Set<string>();
-      const resolvedAssessmentDirNames = new Map<string, string>();
-      for (const { result } of includedAssessments) {
-        let dirName = result.assessment.directoryName;
-        if (allocatedAssessmentDirs.has(dirName)) {
-          let n = 2;
-          while (allocatedAssessmentDirs.has(`${dirName}-${n}`)) n++;
-          dirName = `${dirName}-${n}`;
-        }
-        allocatedAssessmentDirs.add(dirName);
-        resolvedAssessmentDirNames.set(result.assessment.directoryName, dirName);
-      }
-
-      // Pre-compute final directory names for all renamed questions so that
-      // the same question shared across multiple assessments gets a single
-      // consistent name rather than re-resolving per assessment.
-      const allocatedDirs = new Set(existingDirs);
-      const resolvedDirNames = new Map<string, string>();
-      for (const { result } of includedResults) {
-        for (const q of result.questions) {
-          if (resolvedDirNames.has(q.directoryName)) continue;
-          const qOverride = questionOverrides.get(q.directoryName);
-          if (qOverride?.included === false) continue;
-          let dirName = q.directoryName;
-          if (qOverride?.collides && qOverride.collisionStrategy === 'rename') {
-            dirName = resolveRenamedDir(qOverride.originalDirName, allocatedDirs);
-          }
-          allocatedDirs.add(dirName);
-          resolvedDirNames.set(q.directoryName, dirName);
-        }
-      }
-
-      const questionPayloads = includedQuestionBankResults.flatMap(({ result }) =>
-        result.questions
-          .filter((q) => questionOverrides.get(q.directoryName)?.included !== false)
-          .map((q) => {
-            const qOverride = questionOverrides.get(q.directoryName);
-            const dirName = resolvedDirNames.get(q.directoryName) ?? q.directoryName;
-            return {
-              draftId: q.draftId,
-              originalDirectoryName: q.originalDirectoryName,
-              directoryName: dirName,
-              infoJson: {
-                ...q.infoJson,
-                ...(qOverride && {
-                  title: qOverride.title,
-                  topic: qOverride.topic,
-                  tags: qOverride.tags,
-                }),
-              },
-              overwrite: qOverride?.collides && qOverride.collisionStrategy === 'overwrite',
-            };
-          }),
-      );
-      const questionPayloadsByDirectoryName = new Map(
-        questionPayloads.map((question) => [question.directoryName, question]),
-      );
-
-      const payload = {
-        questions: [...questionPayloadsByDirectoryName.values()],
-        assessments: includedAssessments.map(({ result, override }) => {
-          const includedQuestionDirs = new Set<string>();
-
-          const questions = result.questions
-            .filter((q) => questionOverrides.get(q.directoryName)?.included !== false)
-            .map((q) => {
-              const qOverride = questionOverrides.get(q.directoryName);
-              const dirName = resolvedDirNames.get(q.directoryName) ?? q.directoryName;
-              includedQuestionDirs.add(dirName);
-              return {
-                draftId: q.draftId,
-                originalDirectoryName: q.originalDirectoryName,
-                directoryName: dirName,
-                infoJson: {
-                  ...q.infoJson,
-                  ...(qOverride && {
-                    title: qOverride.title,
-                    topic: qOverride.topic,
-                    tags: qOverride.tags,
-                  }),
-                },
-                overwrite: qOverride?.collides && qOverride.collisionStrategy === 'overwrite',
-              };
-            });
-
-          // Rewrite assessment zones to reference the final directory names
-          // and filter out excluded questions.
-          const zones = result.assessment.infoJson.zones
-            .map((zone) => ({
-              ...zone,
-              questions: zone.questions
-                .map((zq) => {
-                  const id = resolvedDirNames.get(zq.id) ?? zq.id;
-                  return includedQuestionDirs.has(id) ? { ...zq, id } : null;
-                })
-                .filter((zq): zq is NonNullable<typeof zq> => zq !== null),
-            }))
-            .filter((zone) => zone.questions.length > 0);
-
-          return {
-            directoryName:
-              resolvedAssessmentDirNames.get(result.assessment.directoryName) ??
-              result.assessment.directoryName,
-            infoJson: {
-              ...result.assessment.infoJson,
-              title: override.title,
-              type: override.type,
-              set: override.set,
-              number: override.number,
-              zones,
-            },
-            questions,
-          };
-        }),
-      };
+      const payload = buildImportPayload({
+        results,
+        overrides,
+        questionOverrides,
+        existingDirs,
+        courseInstanceId: selectedCourseInstanceId,
+      });
 
       const payloadJson = JSON.stringify(payload);
       const payloadBytes = new TextEncoder().encode(payloadJson).length;
@@ -594,12 +461,17 @@ export function QtiImportForm({
 
       await trpcClient.qtiImport.create.mutate(payload);
 
-      const baseUrl = getCourseInstanceBaseUrl(selectedCourseInstanceId);
       disableBeforeUnload();
+      // Return to the import target, not the page the user arrived from, so the
+      // questions table shows usage for the instance that just received content.
       window.location.href =
-        returnTo === 'questions'
-          ? `${baseUrl}/instructor/course_admin/questions`
-          : `${baseUrl}/instructor/instance_admin/assessments`;
+        returnTo === 'assessments' && selectedCourseInstanceId != null
+          ? `${getCourseInstanceBaseUrl(selectedCourseInstanceId)}/instructor/instance_admin/assessments`
+          : getCourseAdminQuestionsUrl(
+              selectedCourseInstanceId != null
+                ? { courseInstanceId: selectedCourseInstanceId }
+                : { courseId },
+            );
     } catch (err) {
       const appError = getAppError<QtiImportError['Create']>(err);
       if (appError?.code === 'SYNC_JOB_FAILED') {
@@ -633,16 +505,19 @@ export function QtiImportForm({
     [],
   );
 
-  const includedAssessmentCount = results.filter(
-    (result, i) =>
-      overrides[i]?.included &&
-      result.sourceType === 'assessment' &&
-      getIncludedQuestionCount(result) > 0,
-  ).length;
+  const includedAssessmentCount = canImportAssessments
+    ? results.filter(
+        (result, i) =>
+          overrides[i]?.included &&
+          result.sourceType === 'assessment' &&
+          getIncludedQuestionCount(result, questionOverrides) > 0,
+      ).length
+    : 0;
   const hasAssessmentResults = results.some((result) => result.sourceType === 'assessment');
   const includedQuestionDirs = new Set<string>();
   for (const [i, result] of results.entries()) {
-    if (!overrides[i]?.included || result.sourceType === 'assessment') continue;
+    if (!overrides[i]?.included) continue;
+    if (canImportAssessments && result.sourceType === 'assessment') continue;
     for (const question of result.questions) {
       if (questionOverrides.get(question.directoryName)?.included !== false) {
         includedQuestionDirs.add(question.directoryName);
@@ -652,7 +527,7 @@ export function QtiImportForm({
   const includedQuestionCount = includedQuestionDirs.size;
   const canImport = includedAssessmentCount > 0 || includedQuestionCount > 0;
   const labelParts: string[] = [];
-  if (includedAssessmentCount > 0 || hasAssessmentResults) {
+  if (canImportAssessments && hasAssessmentResults) {
     labelParts.push(
       `${includedAssessmentCount} assessment${includedAssessmentCount !== 1 ? 's' : ''}`,
     );
@@ -727,7 +602,7 @@ export function QtiImportForm({
       )}
       {overrides[i].included && result.questions.length > 0 && (
         <Card.Body>
-          {result.sourceType === 'assessment' && (
+          {canImportAssessments && result.sourceType === 'assessment' && (
             <div className="row g-3 mb-3">
               <div className="col-md-6">
                 <Form.Label htmlFor={`title-${i}`}>Title</Form.Label>
@@ -809,12 +684,7 @@ export function QtiImportForm({
             {error.jobSequenceId && (
               <>
                 {' '}
-                <Alert.Link
-                  href={getCourseInstanceEditErrorUrl(
-                    selectedCourseInstanceId,
-                    error.jobSequenceId,
-                  )}
-                >
+                <Alert.Link href={`${urlPrefix}/edit_error/${error.jobSequenceId}`}>
                   View sync errors
                 </Alert.Link>
               </>
@@ -834,20 +704,10 @@ export function QtiImportForm({
             uploading={uploading}
             processingPhase={processingPhase}
             courseInstances={courseInstances}
+            courseInstancesUrl={`${urlPrefix}/course_admin/instances`}
             selectedCourseInstanceId={selectedCourseInstanceId}
             onSubmit={handleUpload}
-            onCourseInstanceChange={(id) => {
-              setSelectedCourseInstanceId(id);
-              const tokens = csrfTokensByCourseInstance[id];
-              // The tRPC proxy is callable, so wrap it to prevent React from treating it
-              // as a functional state update.
-              setTrpcClient(() =>
-                createCourseInstanceTrpcClient({
-                  csrfToken: tokens.trpc,
-                  courseInstanceId: id,
-                }),
-              );
-            }}
+            onCourseInstanceChange={setSelectedCourseInstanceId}
           />
         )}
 
@@ -870,6 +730,7 @@ export function QtiImportForm({
               results={results}
               strippedAccessRules={strippedRules}
               parseWarnings={parseWarnings}
+              canImportAssessments={canImportAssessments}
             />
 
             <UnresolvedBankWarnings results={results} />
@@ -884,11 +745,22 @@ export function QtiImportForm({
                 <h2 id="qti-import-assessments-heading" className="h4 mb-1">
                   Assessments
                 </h2>
-                <p className="text-muted mb-3">
-                  Assessments are imported to PrairieLearn with their questions and basic quiz
-                  structure. After import, you can edit their settings, adjust question order and
-                  points, and assign them like any other assessment.
-                </p>
+                {selectedCourseInstance ? (
+                  <p className="text-muted mb-3">
+                    Assessments are imported into{' '}
+                    <strong>
+                      {selectedCourseInstance.shortName}: {selectedCourseInstance.longName}
+                    </strong>{' '}
+                    with their questions and basic quiz structure. After import, you can edit their
+                    settings, adjust question order and points, and assign them like any other
+                    assessment.
+                  </p>
+                ) : (
+                  <p className="text-muted mb-3">
+                    This course has no course instances yet, so only the questions from these
+                    assessments will be imported.
+                  </p>
+                )}
                 {assessmentResults.map(renderResultCard)}
               </section>
             )}

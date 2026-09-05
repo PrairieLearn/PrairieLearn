@@ -207,10 +207,12 @@ export function ImportSummary({
   results,
   strippedAccessRules,
   parseWarnings,
+  canImportAssessments,
 }: {
   results: SerializedConversionResult[];
   strippedAccessRules: StrippedAccessRules | null;
   parseWarnings: ParseWarning[];
+  canImportAssessments: boolean;
 }) {
   const totalAssessments = results.filter((r) => r.sourceType === 'assessment').length;
   const totalQuestionBanks = results.filter((r) => r.sourceType === 'question-bank').length;
@@ -239,6 +241,11 @@ export function ImportSummary({
   const uniqueUnsupported = [...new Set(unsupportedTypes)];
 
   const notImportedItems: string[] = [];
+  if (!canImportAssessments && totalAssessments > 0) {
+    notImportedItems.push(
+      `${totalAssessments} assessment${totalAssessments !== 1 ? 's' : ''} (create a course instance to import them; their questions will still be imported)`,
+    );
+  }
   if (hasRubricIssues) notImportedItems.push('Rubrics (not supported in QTI quiz exports)');
   if (strippedAccessRules?.hasTimeLimits) notImportedItems.push('Time limits');
   if (strippedAccessRules?.hasPasswords) notImportedItems.push('Access passwords');
@@ -265,7 +272,7 @@ export function ImportSummary({
               What can be imported
             </h2>
             <ul className="mb-0">
-              {totalAssessments > 0 && (
+              {canImportAssessments && totalAssessments > 0 && (
                 <li>
                   <strong>{totalAssessments}</strong> assessment
                   {totalAssessments !== 1 ? 's' : ''}
@@ -331,6 +338,7 @@ export function UploadStep({
   processingPhase,
   onSubmit,
   courseInstances,
+  courseInstancesUrl,
   selectedCourseInstanceId,
   onCourseInstanceChange,
 }: {
@@ -338,7 +346,9 @@ export function UploadStep({
   processingPhase: ProcessingPhase;
   onSubmit: (e: SubmitEvent<HTMLFormElement>) => void;
   courseInstances: CourseInstanceOption[];
-  selectedCourseInstanceId: string;
+  /** Where to send users who need to create a course instance before importing quizzes. */
+  courseInstancesUrl: string;
+  selectedCourseInstanceId: string | null;
   onCourseInstanceChange: (id: string) => void;
 }) {
   return (
@@ -350,12 +360,32 @@ export function UploadStep({
           Learn more about importing content into PrairieLearn
         </a>
       </p>
+      {courseInstances.length === 0 && (
+        <Alert variant="info" className="mb-3">
+          This course doesn't have any course instances yet, so quizzes can't be imported as
+          assessments. Their questions will be imported as standalone questions that you can add to
+          assessments after you{' '}
+          <Alert.Link href={courseInstancesUrl}>create a course instance</Alert.Link>.
+        </Alert>
+      )}
+      {courseInstances.length === 1 && (
+        <div className="mb-3">
+          <Form.Label htmlFor="course-instance-target">Target course instance</Form.Label>
+          <Form.Control
+            id="course-instance-target"
+            defaultValue={`${courseInstances[0].shortName}: ${courseInstances[0].longName}`}
+            plaintext
+            readOnly
+          />
+          <Form.Text>Assessments will be created in this course instance.</Form.Text>
+        </div>
+      )}
       {courseInstances.length > 1 && (
         <div className="mb-3">
           <Form.Label htmlFor="course-instance-select">Target course instance</Form.Label>
           <Form.Select
             id="course-instance-select"
-            value={selectedCourseInstanceId}
+            value={selectedCourseInstanceId ?? ''}
             disabled={uploading}
             onChange={(e) => onCourseInstanceChange(e.target.value)}
           >
