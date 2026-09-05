@@ -186,3 +186,42 @@ def test_get_answer_name_parts() -> None:
     outputs = {output1, output2, output3, output4}
 
     assert len(outputs) == 4
+
+
+def test_render_ai_grading_submission_with_matching_files() -> None:
+    output = file_upload.render(
+        '<pl-file-upload file-patterns="*.pdf" optional-file-names="notes.png"></pl-file-upload>',
+        {
+            "panel": "submission",
+            "ai_grading": True,
+            "format_errors": {},
+            "submitted_answers": {
+                "_files": [
+                    {"name": "solution.pdf", "contents": "pdfdata"},
+                    {"name": "notes.png", "contents": "imagedata"},
+                    {"name": "ignored.txt", "contents": "textdata"},
+                ]
+            },
+        },
+    )
+
+    assert output == (
+        '<div data-ai-grading-file-name="notes.png">notes.png</div>\n'
+        '<div data-ai-grading-file-name="solution.pdf">solution.pdf</div>'
+    )
+
+
+@pytest.mark.parametrize(
+    ("ai_grading", "panel"),
+    [(True, "question"), (True, "answer"), (False, "submission"), (False, "answer")],
+)
+def test_render_other_panels_are_empty(ai_grading: bool, panel: str) -> None:
+    output = file_upload.render(
+        '<pl-file-upload file-patterns="*.pdf"></pl-file-upload>',
+        {
+            "panel": panel,
+            "ai_grading": ai_grading,
+        },
+    )
+
+    assert output == ""
