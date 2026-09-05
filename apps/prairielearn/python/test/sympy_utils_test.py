@@ -310,6 +310,7 @@ class TestSympy:
                 self.SYMBOL_NAMES,
                 allow_sets=True,
                 custom_functions=list(self.FUNCTION_NAMES),
+                allowed_types={"all"},
             )
             is None
         )
@@ -342,6 +343,19 @@ class TestSympy:
             self.SYMBOL_NAMES,
             allow_sets=True,
             custom_functions=list(self.FUNCTION_NAMES),
+            allowed_types={"all"},
+        )
+
+    def test_try_parse_string_as_sympy_defaults_to_expression_type(self) -> None:
+        result = psu.try_parse_string_as_sympy(
+            "{1, 2}",
+            self.SYMBOL_NAMES,
+            allow_sets=True,
+        )
+
+        assert result == psu.SympyParseFailure(
+            "Your answer uses finite-set, which this input does not accept. "
+            "Allowed types: expression."
         )
 
     def test_try_parse_string_as_sympy_returns_failure(self) -> None:
@@ -351,6 +365,214 @@ class TestSympy:
             result.error == "Your answer contains the floating-point number 0.1. "
             "All numbers must be expressed as integers (or ratios of integers)."
         )
+
+    @pytest.mark.parametrize(
+        ("text", "allowed_types", "expected"),
+        [
+            ("m + 1", {"expression", "finite-set"}, sympy.Symbol("m") + 1),
+            ("{1, 2}", {"set"}, sympy.FiniteSet(1, 2)),
+            ("[1, 2]", {"set"}, sympy.Interval(1, 2)),
+            ("{}", {"set"}, sympy.EmptySet),
+            ("{}", {"finite-set"}, sympy.EmptySet),
+            ("{}", {"interval"}, sympy.EmptySet),
+            ("{}", {"all"}, sympy.EmptySet),
+            (
+                "{ {}, { {} } }",
+                {"finite-set"},
+                sympy.FiniteSet(sympy.EmptySet, sympy.FiniteSet(sympy.EmptySet)),
+            ),
+            ("{1, 2}", {"finite-set", "interval"}, sympy.FiniteSet(1, 2)),
+            ("{1, 2} U {3, 4}", {"finite-set"}, sympy.FiniteSet(1, 2, 3, 4)),
+            ("[1, 2]", {"expression", "interval"}, sympy.Interval(1, 2)),
+            (
+                "[1, 2] U [3, 4]",
+                {"interval"},
+                sympy.Union(sympy.Interval(1, 2), sympy.Interval(3, 4)),
+            ),
+            ("[0, 2] U {1}", {"interval"}, sympy.Interval(0, 2)),
+            ("[0, 2] & [1, 4]", {"interval"}, sympy.Interval(1, 2)),
+            ("{0, 2} & {2, 4}", {"finite-set"}, sympy.FiniteSet(2)),
+            ("{0, 2} U {2, 4}", {"finite-set"}, sympy.FiniteSet(0, 2, 4)),
+            (
+                "{m} - {n}",
+                {"finite-set"},
+                sympy.Complement(
+                    sympy.FiniteSet(sympy.Symbol("m")),
+                    sympy.FiniteSet(sympy.Symbol("n")),
+                ),
+            ),
+            (
+                "{0, 2} U {2, 4} U {1, 3}",
+                {"finite-set"},
+                sympy.FiniteSet(0, 1, 2, 3, 4),
+            ),
+            ("{0, 2} & [2, 4]", {"finite-set"}, sympy.FiniteSet(2)),
+            (
+                "[1, 2] U {3, 4}",
+                {"finite-set", "interval"},
+                sympy.Union(sympy.Interval(1, 2), sympy.FiniteSet(3, 4)),
+            ),
+            (
+                "[0, 5] - {m}",
+                {"set"},
+                sympy.Complement(
+                    sympy.Interval(0, 5), sympy.FiniteSet(sympy.Symbol("m"))
+                ),
+            ),
+            (
+                "{ (0, 1), [2, 3] }",
+                {"finite-set", "interval"},
+                sympy.FiniteSet(
+                    sympy.Interval.open(0, 1),
+                    sympy.Interval(2, 3, left_open=False, right_open=False),
+                ),
+            ),
+            (
+                "{ {0, 1}, {2, 3} }",
+                {"finite-set"},
+                sympy.FiniteSet(sympy.FiniteSet(0, 1), sympy.FiniteSet(2, 3)),
+            ),
+        ],
+    )
+    def test_try_parse_string_as_sympy_accepts_non_singleton_allowed_types(
+        self,
+        text: str,
+        allowed_types: set[psu.AllowedSympyType],
+        expected: sympy.Expr,
+    ) -> None:
+        result = psu.try_parse_string_as_sympy(
+            text,
+            self.SYMBOL_NAMES,
+            allow_sets=True,
+            allowed_types=allowed_types,
+        )
+
+        assert result == psu.SympyParseSuccess(expected)
+
+    @pytest.mark.parametrize(
+        ("text", "allowed_types", "missing_types"),
+        [
+            ("m + 1", {"finite-set"}, "expression"),
+            ("m + 1", {"set"}, "expression"),
+            ("{}", {"expression"}, "set"),
+            ("{1, 2}", {"expression"}, "finite-set"),
+            ("[1, 2]", {"finite-set"}, "interval"),
+            ("[1, 2] U [3, 4]", {"finite-set"}, "interval"),
+            ("m + 1", {"finite-set", "interval"}, "expression"),
+            ("{1, 2}", {"expression", "interval"}, "finite-set"),
+            ("[1, 2]", {"expression", "finite-set"}, "interval"),
+            ("[1, 2] U {2, 3}", {"interval"}, "finite-set"),
+            ("[1, 4] & {2, 3}", {"interval"}, "finite-set"),
+            ("[0, 1] U [1, 4] & {2, 3}", {"interval"}, "finite-set"),
+            ("[1, 2] U {3, 4}", {"finite-set"}, "interval"),
+            ("{ [1, 2] }", {"finite-set"}, "interval"),
+            ("[0, 5] - {m}", {"finite-set"}, "interval"),
+            ("[0, 5] - {m}", {"interval"}, "finite-set"),
+        ],
+    )
+    def test_try_parse_string_as_sympy_rejects_disallowed_types(
+        self,
+        text: str,
+        allowed_types: set[psu.AllowedSympyType],
+        missing_types: str,
+    ) -> None:
+        result = psu.try_parse_string_as_sympy(
+            text,
+            self.SYMBOL_NAMES,
+            allow_sets=True,
+            allowed_types=allowed_types,
+        )
+
+        assert result == psu.SympyParseFailure(
+            f"Your answer uses {missing_types}, which this input does not accept. "
+            f"Allowed types: {', '.join(sorted(allowed_types))}."
+        )
+
+    @pytest.mark.parametrize(
+        "domain_name",
+        ["Complexes", "Integers", "Naturals", "Naturals0", "Rationals", "Reals"],
+    )
+    def test_set_domains_must_be_declared_as_variables(self, domain_name: str) -> None:
+        result = psu.try_parse_string_as_sympy(
+            domain_name,
+            None,
+            allow_sets=True,
+            allowed_types={"set"},
+        )
+
+        assert isinstance(result, psu.SympyParseFailure)
+        assert f'invalid symbol "{domain_name}"' in result.error
+
+        assert psu.convert_string_to_sympy(
+            domain_name, [domain_name], allow_sets=True
+        ) == sympy.Set(sympy.Symbol(domain_name))
+
+    @pytest.mark.parametrize(
+        "domain_name",
+        ["Complexes", "Integers", "Naturals", "Naturals0", "Rationals", "Reals"],
+    )
+    def test_set_domain_names_are_scalar_variables_when_sets_are_disabled(
+        self, domain_name: str
+    ) -> None:
+        symbol = sympy.Symbol(domain_name)
+
+        assert psu.try_parse_string_as_sympy(
+            domain_name,
+            [domain_name],
+            allowed_types={"expression"},
+        ) == psu.SympyParseSuccess(symbol)
+        assert psu.try_parse_string_as_sympy(
+            f"{domain_name} + 1",
+            [domain_name],
+            allowed_types={"expression"},
+        ) == psu.SympyParseSuccess(symbol + 1)
+
+    @pytest.mark.parametrize(
+        ("operation", "expected_type"),
+        [
+            ("Reals - Naturals", sympy.Complement),
+            ("Reals U Naturals", sympy.Union),
+            ("Reals & Naturals", sympy.Intersection),
+            ("Complement(Reals, Naturals)", sympy.Complement),
+            ("Union(Reals, Naturals)", sympy.Union),
+            ("Intersection(Reals, Naturals)", sympy.Intersection),
+        ],
+    )
+    @pytest.mark.parametrize(
+        ("variables", "allowed_types", "expected_error"),
+        [
+            (("Reals", "Naturals"), {"set"}, None),
+            (("Reals", "Naturals"), {"all"}, None),
+            (("Reals", "Naturals"), {"finite-set", "interval"}, "uses set"),
+            (("Reals",), {"set"}, 'invalid symbol "Naturals"'),
+            (("Naturals",), {"set"}, 'invalid symbol "Reals"'),
+        ],
+    )
+    def test_infinite_set_operations_require_declared_names_and_set_type(
+        self,
+        operation: str,
+        expected_type: type[sympy.Basic],
+        variables: tuple[str, ...],
+        allowed_types: set[psu.AllowedSympyType],
+        expected_error: str | None,
+    ) -> None:
+        result = psu.try_parse_string_as_sympy(
+            operation,
+            variables,
+            allow_sets=True,
+            allowed_types=allowed_types,
+        )
+
+        if expected_error is None:
+            assert isinstance(result, psu.SympyParseSuccess)
+            assert isinstance(result.expr, expected_type)
+            assert {str(symbol) for symbol in result.expr.free_symbols} == {
+                "Reals",
+                "Naturals",
+            }
+        else:
+            assert isinstance(result, psu.SympyParseFailure)
+            assert expected_error in result.error
 
     @pytest.mark.parametrize(
         ("a_sub", "sympy_ref"),
@@ -478,7 +700,7 @@ class TestSympy:
         fn_args: tuple[Any, ...],
     ) -> None:
         expr = sympy.Function(fn_name)(*fn_args)
-        assert isinstance(expr, sympy.Basic)
+        assert isinstance(expr, sympy.Expr)
 
         without_sets = psu.sympy_to_json(expr, allow_sets=False)
         with_sets = psu.sympy_to_json(expr, allow_sets=True)
@@ -488,8 +710,8 @@ class TestSympy:
 
     def test_sets_reserveds_are_custom_functions_by_default(self) -> None:
         x = sympy.Symbol("x")
-        union = sympy.Function("Union")
-        expr = union(x)
+        expr = sympy.Function("Union")(x)
+        assert isinstance(expr, sympy.Expr)
 
         assert psu.json_to_sympy(psu.sympy_to_json(expr)) == expr
 
@@ -513,9 +735,11 @@ class TestSympy:
 
     @pytest.mark.parametrize(
         ("a_pair", "custom_functions"),
-        chain(
-            zip(EXPR_PAIRS, repeat(None)),
-            zip(CUSTOM_FUNCTION_PAIRS, repeat(FUNCTION_NAMES)),
+        list(
+            chain(
+                zip(EXPR_PAIRS, repeat(None)),
+                zip(CUSTOM_FUNCTION_PAIRS, repeat(FUNCTION_NAMES)),
+            )
         ),
     )
     @pytest.mark.parametrize("remove_assumptions", [True, False])
@@ -618,6 +842,7 @@ class TestAllowExtraSymbols:
         [
             ("n*log(n) + m", None, {"m", "n"}),
             ("x + y", ["x"], {"x", "y"}),
+            ("Reals + x", ["x"], {"Reals", "x"}),
             # Builtin constants are resolved, not treated as free symbols.
             ("2*e + n", None, {"n"}),
             # Greek letters are normalized to their spelled-out names.
