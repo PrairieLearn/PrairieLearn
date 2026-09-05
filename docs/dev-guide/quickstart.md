@@ -28,37 +28,24 @@ make start
 
 ## Workspaces
 
-If you need support for [workspaces](../workspaces/index.md), ensure Docker is installed and running, and then in a separate terminal run:
+If you need support for [workspaces](../workspaces/index.md), you will need to run both the main PrairieLearn server and the workspace host. You may do so by running the following command:
 
 ```sh
-sudo make dev-workspace-host # or sudo make start-workspace-host
-# Make sure to run PrairieLearn as root
-sudo make dev
+make dev-all
 ```
 
-On a macOS native installation, you should set the following in your `config.json`:
+Alternatively, if you would prefer to have separate terminals for the main PrairieLearn server and the workspace host, you can run the following commands in separate terminals:
 
-```json title="config.json"
-{
-  "workspaceDevContainerHostname": "localhost",
-  "workspaceJobsDirectoryOwnerUid": 1001,
-  "workspaceJobsDirectoryOwnerGid": 1001
-}
+```sh
+make dev
+make dev-workspace-host
 ```
 
-More information can be found in the [config.json](configJson.md#running-workspaces-external-graders-natively-on-macos) documentation.
+You may also need to change your configuration to settings that vary depending on your environment. More information can be found in the [config.json](configJson.md#workspaces-and-external-graders) documentation.
 
 ??? note "Troubleshooting workspaces"
 
-    You can list the active hosts with:
-
-    ```sql
-    SELECT * FROM workspace_hosts;
-    ```
-
-    If you see no hosts, the workspace host is not running. If the `ready_at` column is an older date, the workspace host may also not be running.
-
-    Since PrairieLearn manages the workspace files, you need to also run PrairieLearn as root.
+    You can list the active hosts by opening, in a browser, the URL `http://localhost:3000/pl/administrator/workspaces` (or the equivalent URL for your PrairieLearn server). If you see no hosts, the workspace host is not running or not properly configured.
 
 ## Documentation
 
