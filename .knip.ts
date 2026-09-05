@@ -36,6 +36,7 @@ import type { KnipConfig } from 'knip';
  * flag them if those imports go away.
  */
 const AUTO_DETECTED_BUT_ALSO_IMPORTED = [
+  '@cortex-js/compute-engine',
   'd3',
   'he',
   'marked',
