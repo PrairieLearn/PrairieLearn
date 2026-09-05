@@ -1924,6 +1924,7 @@ export async function initExpress(): Promise<Express> {
   app.use('/pl/public/course_instance/:course_instance_id(\\d+)', [
     function (req: Request, res: Response, next: NextFunction) {
       res.locals.navbarType = 'public';
+      res.locals.urlPrefix = '/pl/public/course_instance/' + req.params.course_instance_id;
       next();
     },
     (await import('./middlewares/resolvePublicCourseOrInstance.js')).resolvePublicCourseInstance,
@@ -1935,9 +1936,23 @@ export async function initExpress(): Promise<Express> {
   app.use(/^(\/pl\/public\/course_instance\/[0-9]+\/assessment\/[0-9]+)\/?$/, (req, res, _next) => {
     res.redirect(`${req.params[0]}/questions`);
   });
+  app.use('/pl/public/course_instance/:course_instance_id(\\d+)/assessment/:assessment_id(\\d+)', [
+    function (req: Request, res: Response, next: NextFunction) {
+      res.locals.navPage = 'public_assessment';
+      next();
+    },
+  ]);
   app.use(
     '/pl/public/course_instance/:course_instance_id(\\d+)/assessment/:assessment_id(\\d+)/questions',
     (await import('./pages/publicAssessmentQuestions/publicAssessmentQuestions.js')).default,
+  );
+  app.use(
+    '/pl/public/course_instance/:course_instance_id(\\d+)/assessment/:assessment_id(\\d+)/file_view',
+    (await import('./pages/publicAssessmentFileBrowser/publicAssessmentFileBrowser.js')).default,
+  );
+  app.use(
+    '/pl/public/course_instance/:course_instance_id(\\d+)/assessment/:assessment_id(\\d+)/file_download',
+    (await import('./pages/publicAssessmentFileDownload/publicAssessmentFileDownload.js')).default,
   );
 
   //////////////////////////////////////////////////////////////////////
