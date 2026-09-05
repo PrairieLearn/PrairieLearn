@@ -15,6 +15,12 @@ import { parseRequestBody } from '@prairielearn/zod';
 
 import { DeleteCourseInstanceModal } from '../../components/DeleteCourseInstanceModal.js';
 import { PageLayout } from '../../components/PageLayout.js';
+import {
+  getPlanGrantsForPartialContexts,
+  getRequiredPlansForCourseInstance,
+  planGrantsMatchFeatures,
+} from '../../ee/lib/billing/plans.js';
+import { getEnrollmentCapacity } from '../../ee/models/enrollment.js';
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
 import {
@@ -36,6 +42,7 @@ import {
 } from '../../lib/editors.js';
 import { courseRepoContentUrl } from '../../lib/github.js';
 import { getPaths } from '../../lib/instructorFiles.js';
+import { isEnterprise } from '../../lib/license.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import {
@@ -49,6 +56,7 @@ import { insertCourseInstancePermissions } from '../../models/course-permissions
 import type { CourseInstanceJsonInput } from '../../schemas/index.js';
 import { uniqueEnrollmentCode } from '../../sync/fromDisk/courseInstances.js';
 
+import type { EnrollmentAndBillingCardProps } from './components/EnrollmentAndBillingCard.js';
 import { InstructorInstanceAdminSettings } from './instructorInstanceAdminSettings.html.js';
 import { SettingsFormBodySchema } from './instructorInstanceAdminSettings.types.js';
 
@@ -80,6 +88,34 @@ router.get(
       { course_instance_id: courseInstance.id },
       z.number(),
     );
+    let enrollmentAndBilling: EnrollmentAndBillingCardProps | null = null;
+    if (isEnterprise()) {
+      const requiredPlans = await getRequiredPlansForCourseInstance(courseInstance.id);
+      const studentBillingEnabled = requiredPlans.includes('basic');
+      const studentComputeBillingEnabled =
+        requiredPlans.includes('compute') &&
+        !planGrantsMatchFeatures(
+          await getPlanGrantsForPartialContexts({
+            institution_id: institution.id,
+            course_instance_id: courseInstance.id,
+          }),
+          ['external-grading', 'workspaces'],
+        );
+      // Annual limits are server-only fields omitted from the client page context.
+      const capacity = studentBillingEnabled
+        ? null
+        : await getEnrollmentCapacity({
+            institution: res.locals.institution,
+            course: res.locals.course,
+            courseInstance,
+          });
+      enrollmentAndBilling = {
+        studentBillingEnabled,
+        studentComputeBillingEnabled,
+        enrollmentCount,
+        capacity,
+      };
+    }
     const host = getCanonicalHost(req);
     const studentLink = new URL(`/pl/course_instance/${courseInstance.id}`, host).href;
     const publicLink = new URL(`/pl/public/course_instance/${courseInstance.id}/assessments`, host)
@@ -170,6 +206,7 @@ router.get(
                 nonPublicAssessmentsInCourseInstance={nonPublicAssessmentsInCourseInstance}
                 questionSharingEnabled={questionSharingEnabled}
                 accessControlMigrationNeeded={accessControlMigrationNeeded}
+                enrollmentAndBilling={enrollmentAndBilling}
               />
             </Hydrate>
             <Hydrate>
