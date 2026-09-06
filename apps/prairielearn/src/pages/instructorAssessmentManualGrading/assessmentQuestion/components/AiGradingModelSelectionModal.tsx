@@ -40,10 +40,10 @@ function getSelection(state: AiGradingModelSelectionModalState): 'all' | 'human_
 }
 
 /**
- * Returns the preferred model if available, otherwise falls back to the default
- * model and then the first model whose provider is in the available list. A
- * previously preferred model might not be available (e.g. if the user switched
- * from PrairieLearn-managed to custom API keys).
+ * Returns the preferred model if available, otherwise falls back to the first
+ * model whose provider is in the available list. A previously preferred model
+ * might not be available (e.g. if the user switched from PrairieLearn-managed
+ * to custom API keys).
  */
 function getDefaultModel(
   aiGradingLastSelectedModel: string | null,
@@ -52,10 +52,6 @@ function getDefaultModel(
   const preferred = AI_GRADING_MODELS.find((m) => m.modelId === aiGradingLastSelectedModel);
   if (preferred && availableProviders.includes(preferred.provider)) {
     return preferred.modelId;
-  }
-  const defaultModel = AI_GRADING_MODELS.find((m) => m.modelId === DEFAULT_AI_GRADING_MODEL);
-  if (defaultModel && availableProviders.includes(defaultModel.provider)) {
-    return defaultModel.modelId;
   }
   const firstAvailable = AI_GRADING_MODELS.find((m) => availableProviders.includes(m.provider));
   if (firstAvailable) {
@@ -146,7 +142,8 @@ function ModelList({
 }) {
   const recommended = AI_GRADING_MODELS.filter((m) => m.recommended);
   const other = AI_GRADING_MODELS.filter((m) => !m.recommended);
-  const [otherExpanded, setOtherExpanded] = useState(false);
+  const hasOtherSelected = other.some((m) => m.modelId === selectedModel);
+  const [otherExpanded, setOtherExpanded] = useState(hasOtherSelected);
 
   return (
     <div className="d-flex flex-column gap-4">
