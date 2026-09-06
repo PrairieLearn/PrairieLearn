@@ -196,12 +196,14 @@ export class CourseAgentCoordinator {
     if (request.method === 'POST' && url.pathname === '/stream') {
       const body = CourseAgentSnapshotRequestSchema.parse(await request.json());
       const capability = await authorizeSnapshot(body, this.env.COURSE_AGENT_CAPABILITY_SECRET);
-      const current = await this.getConversationState();
-      if (!current) return Response.json({ error: 'Conversation not found' }, { status: 404 });
-      if (!sameIdentity(current.identity, capability)) {
-        return Response.json({ error: 'Sandbox identity mismatch' }, { status: 403 });
-      }
-      return this.stream(current, await this.getEvents());
+      return this.state.blockConcurrencyWhile(async () => {
+        const current = await this.readConversationState();
+        if (!current) return Response.json({ error: 'Conversation not found' }, { status: 404 });
+        if (!sameIdentity(current.identity, capability)) {
+          return Response.json({ error: 'Sandbox identity mismatch' }, { status: 403 });
+        }
+        return this.stream(current, await this.getEvents());
+      });
     }
     return new Response('Not found', { status: 404 });
   }
@@ -563,30 +565,32 @@ export class CourseAgentCoordinator {
   }
 
   private async getConversationState() {
-    return this.state.blockConcurrencyWhile(async () => {
-      const current = await this.state.storage.get<ConversationState>('conversation');
-      if (!current?.activeRunId || !activeRunExpired(current.activeRunExpiresAt)) return current;
+    return this.state.blockConcurrencyWhile(() => this.readConversationState());
+  }
 
-      const message = 'The course-agent run expired before it completed';
-      const event = {
-        sequence: current.nextSequence,
-        type: 'run.failed',
-        occurredAt: new Date().toISOString(),
-        data: { message },
-      } satisfies CourseAgentEvent;
-      const expired: ConversationState = {
-        ...current,
-        activeRunId: null,
-        activeRunExpiresAt: null,
-        status: 'failed',
-        response: null,
-        error: message,
-        nextSequence: current.nextSequence + 1,
-      };
-      await this.putStateAndEvents(expired, [event]);
-      this.closeStreams();
-      return expired;
-    });
+  private async readConversationState() {
+    const current = await this.state.storage.get<ConversationState>('conversation');
+    if (!current?.activeRunId || !activeRunExpired(current.activeRunExpiresAt)) return current;
+
+    const message = 'The course-agent run expired before it completed';
+    const event = {
+      sequence: current.nextSequence,
+      type: 'run.failed',
+      occurredAt: new Date().toISOString(),
+      data: { message },
+    } satisfies CourseAgentEvent;
+    const expired: ConversationState = {
+      ...current,
+      activeRunId: null,
+      activeRunExpiresAt: null,
+      status: 'failed',
+      response: null,
+      error: message,
+      nextSequence: current.nextSequence + 1,
+    };
+    await this.putStateAndEvents(expired, [event]);
+    this.closeStreams();
+    return expired;
   }
 
   private async update(update: Partial<ConversationState>, runId?: string) {
