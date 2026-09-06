@@ -8,6 +8,12 @@ import {
   updateCourseAgentTitle,
 } from '../../../models/course-agent.js';
 
+const defaultDependencies = {
+  claimCourseAgentTitle,
+  selectCourseAgentHistory,
+  updateCourseAgentTitle,
+};
+
 export function isGreeting(prompt: string) {
   return /^(hi|hello|hey|hey there|hi there|hello there|yo|yo wassup|sup|howdy|good morning|good afternoon|good evening|thanks|thank you|ok|okay|test|testing)[\s!.?]*$/i.test(
     prompt.trim(),
@@ -19,8 +25,11 @@ export function fallbackConversationTitle(prompt: string) {
   return title === 'New conversation' ? 'Course authoring conversation' : title;
 }
 
-export async function nameCourseAgentConversation(conversationId: string) {
-  const history = await selectCourseAgentHistory(conversationId);
+export async function nameCourseAgentConversation(
+  conversationId: string,
+  dependencies: typeof defaultDependencies = defaultDependencies,
+) {
+  const history = await dependencies.selectCourseAgentHistory(conversationId);
   const prompt = history.messages.find(
     (message) =>
       message.role === 'user' &&
@@ -36,7 +45,7 @@ export async function nameCourseAgentConversation(conversationId: string) {
   const fallback = fallbackConversationTitle(prompt.content);
   // Claim once across relay completion, reloads, and multiple PL processes. If naming fails,
   // the persisted fallback remains useful and we do not repeatedly charge for retries.
-  const conversation = await claimCourseAgentTitle(conversationId, fallback);
+  const conversation = await dependencies.claimCourseAgentTitle(conversationId, fallback);
   if (!conversation || config.courseAgentRuntime !== 'cloudflare') return;
   if (!config.courseAgentCapabilitySecret) {
     throw new Error('Course-agent capability secret is not configured');
@@ -61,5 +70,5 @@ export async function nameCourseAgentConversation(conversationId: string) {
   });
   if (!response.ok) throw new Error(`Conversation title request failed (${response.status})`);
   const { title } = CourseAgentTitleResponseSchema.parse(await response.json());
-  await updateCourseAgentTitle(conversationId, fallback, title);
+  await dependencies.updateCourseAgentTitle(conversationId, fallback, title);
 }

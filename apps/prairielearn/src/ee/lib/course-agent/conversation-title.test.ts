@@ -8,12 +8,11 @@ import {
   nameCourseAgentConversation,
 } from './conversation-title.js';
 
-const model = vi.hoisted(() => ({
+const model = {
   selectCourseAgentHistory: vi.fn(),
   claimCourseAgentTitle: vi.fn(),
   updateCourseAgentTitle: vi.fn(),
-}));
-vi.mock('../../../models/course-agent.js', () => model);
+};
 
 const conversationId = '11111111-1111-4111-8111-111111111111';
 const testConfig = {
@@ -39,7 +38,7 @@ afterEach(() => vi.unstubAllGlobals());
 
 it('defers greetings without claiming a title or calling the model', async () => {
   model.selectCourseAgentHistory.mockResolvedValue({ messages: exchange('Hi!') });
-  await withConfig(testConfig, () => nameCourseAgentConversation(conversationId));
+  await withConfig(testConfig, () => nameCourseAgentConversation(conversationId, model));
   expect(model.claimCourseAgentTitle).not.toHaveBeenCalled();
   expect(fetchMock).not.toHaveBeenCalled();
   expect(isGreeting('Hi, create an assessment')).toBe(false);
@@ -53,7 +52,7 @@ it('waits for a reply and uses the first substantive completed exchange only', a
       ...exchange('Add five more questions'),
     ],
   });
-  await withConfig(testConfig, () => nameCourseAgentConversation(conversationId));
+  await withConfig(testConfig, () => nameCourseAgentConversation(conversationId, model));
   const body = JSON.parse(fetchMock.mock.calls[0][1].body);
   const capability = JSON.parse(Buffer.from(body.capability.split('.')[2], 'base64url').toString());
   expect(capability).toMatchObject({
@@ -70,7 +69,7 @@ it('waits for a reply and uses the first substantive completed exchange only', a
   model.selectCourseAgentHistory.mockResolvedValue({
     messages: [{ role: 'user', run_id: 'pending', content: 'Create an exam' }],
   });
-  await withConfig(testConfig, () => nameCourseAgentConversation(conversationId));
+  await withConfig(testConfig, () => nameCourseAgentConversation(conversationId, model));
   expect(fetchMock).toHaveBeenCalledTimes(1);
 });
 
@@ -80,8 +79,8 @@ it('claims naming only once across simultaneous completion and reload requests',
     .mockResolvedValueOnce({ user_id: '1', course_id: '2' });
   await withConfig(testConfig, () =>
     Promise.all([
-      nameCourseAgentConversation(conversationId),
-      nameCourseAgentConversation(conversationId),
+      nameCourseAgentConversation(conversationId, model),
+      nameCourseAgentConversation(conversationId, model),
     ]),
   );
   expect(fetchMock).toHaveBeenCalledTimes(1);
@@ -91,7 +90,7 @@ it('claims naming only once across simultaneous completion and reload requests',
 it('leaves the saved fallback in place if the Worker rejects naming', async () => {
   fetchMock.mockResolvedValue(new Response(null, { status: 503 }));
   await withConfig(testConfig, async () => {
-    await expect(nameCourseAgentConversation(conversationId)).rejects.toThrow('503');
+    await expect(nameCourseAgentConversation(conversationId, model)).rejects.toThrow('503');
   });
   expect(model.claimCourseAgentTitle).toHaveBeenCalledWith(
     conversationId,
@@ -104,7 +103,7 @@ it('bounds title inputs and never calls a model in fake mode', async () => {
   model.selectCourseAgentHistory.mockResolvedValue({
     messages: exchange('a'.repeat(20000), 'b'.repeat(20000)),
   });
-  await withConfig(testConfig, () => nameCourseAgentConversation(conversationId));
+  await withConfig(testConfig, () => nameCourseAgentConversation(conversationId, model));
   const body = JSON.parse(fetchMock.mock.calls[0][1].body);
   const capability = JSON.parse(Buffer.from(body.capability.split('.')[2], 'base64url').toString());
   expect(capability.prompt).toHaveLength(4000);
@@ -113,7 +112,7 @@ it('bounds title inputs and never calls a model in fake mode', async () => {
   expect(fallbackConversationTitle('New conversation')).not.toBe('New conversation');
   fetchMock.mockClear();
   await withConfig({ courseAgentRuntime: 'fake' }, () =>
-    nameCourseAgentConversation(conversationId),
+    nameCourseAgentConversation(conversationId, model),
   );
   expect(fetchMock).not.toHaveBeenCalled();
 });
