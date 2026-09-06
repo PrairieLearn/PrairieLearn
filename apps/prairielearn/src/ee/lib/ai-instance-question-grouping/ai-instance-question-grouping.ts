@@ -85,7 +85,7 @@ async function aiEvaluateStudentResponse({
   const answer_text = render_submission_results.data.answerHtml;
   const submission_text = render_submission_results.data.submissionHtmls[0];
 
-  const submissionContent = generateSubmissionContent({
+  const submissionContent = await generateSubmissionContent({
     submission_text,
     submitted_answer: submission.submitted_answer,
   });

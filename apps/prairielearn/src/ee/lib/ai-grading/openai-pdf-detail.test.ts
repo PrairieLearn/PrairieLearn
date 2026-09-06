@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { withOpenAiHighPdfDetail } from './openai-pdf-detail.js';
 
@@ -48,5 +48,23 @@ describe('withOpenAiHighPdfDetail', () => {
         },
       ],
     });
+  });
+
+  it('forwards bodies without input files unchanged', async () => {
+    const fetchFunction = vi.fn<typeof fetch>(async () => new Response());
+    const init = { method: 'POST', body: 'not JSON' };
+
+    await withOpenAiHighPdfDetail(fetchFunction)('https://api.openai.com/v1/responses', init);
+
+    expect(fetchFunction).toHaveBeenCalledWith('https://api.openai.com/v1/responses', init);
+  });
+
+  it('forwards non-JSON input file bodies unchanged', async () => {
+    const fetchFunction = vi.fn<typeof fetch>(async () => new Response());
+    const init = { method: 'POST', body: 'not JSON with an "input_file" token' };
+
+    await withOpenAiHighPdfDetail(fetchFunction)('https://api.openai.com/v1/responses', init);
+
+    expect(fetchFunction).toHaveBeenCalledWith('https://api.openai.com/v1/responses', init);
   });
 });

@@ -6,6 +6,8 @@ import { generateSubmissionContent } from './ai-grading-util.js';
 
 describe('createAiGradingOpenAI', () => {
   it('sends submission PDFs with high detail through the OpenAI provider', async () => {
+    const pdfData = Buffer.from('%PDF-1.7\n').toString('base64');
+    const pngData = Buffer.from('89504e470d0a1a0a0000000d49484452', 'hex').toString('base64');
     const fetchFunction = vi.fn<typeof fetch>(async () =>
       Response.json({
         id: 'resp_test',
@@ -34,13 +36,13 @@ describe('createAiGradingOpenAI', () => {
       messages: [
         {
           role: 'user',
-          content: generateSubmissionContent({
+          content: await generateSubmissionContent({
             submission_text:
               '<div data-ai-grading-file-name="answer.pdf"></div><div data-ai-grading-file-name="answer.png"></div>',
             submitted_answer: {
               _files: [
-                { name: 'answer.pdf', contents: 'cGRm' },
-                { name: 'answer.png', contents: 'aW1hZ2U=' },
+                { name: 'answer.pdf', contents: pdfData },
+                { name: 'answer.png', contents: pngData },
               ],
             },
           }),
@@ -65,11 +67,15 @@ describe('createAiGradingOpenAI', () => {
             {
               type: 'input_file',
               filename: 'answer.pdf',
-              file_data: 'data:application/pdf;base64,cGRm',
+              file_data: `data:application/pdf;base64,${pdfData}`,
               detail: 'high',
             },
             { type: 'input_text', text: 'Submitted file: answer.png' },
-            { type: 'input_image', image_url: 'data:image/png;base64,aW1hZ2U=', detail: 'auto' },
+            {
+              type: 'input_image',
+              image_url: `data:image/png;base64,${pngData}`,
+              detail: 'auto',
+            },
           ],
         },
       ],

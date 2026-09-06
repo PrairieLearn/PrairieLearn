@@ -44,9 +44,16 @@ function setOpenAiPdfDetail(value: unknown): boolean {
  */
 export function withOpenAiHighPdfDetail(fetchFunction: typeof fetch): typeof fetch {
   return async (input, init) => {
-    if (typeof init?.body !== 'string') return fetchFunction(input, init);
+    if (typeof init?.body !== 'string' || !init.body.includes('"input_file"')) {
+      return fetchFunction(input, init);
+    }
 
-    const body = JSON.parse(init.body) as unknown;
+    let body: unknown;
+    try {
+      body = JSON.parse(init.body) as unknown;
+    } catch {
+      return fetchFunction(input, init);
+    }
     if (!setOpenAiPdfDetail(body)) return fetchFunction(input, init);
 
     return fetchFunction(input, { ...init, body: JSON.stringify(body) });
