@@ -10,7 +10,6 @@ import {
 } from 'ai';
 import * as cheerio from 'cheerio';
 import { type AnyNode } from 'domhandler';
-import { fileTypeFromBuffer } from 'file-type';
 import { Redis } from 'ioredis';
 import mime from 'mime';
 import sharp from 'sharp';
@@ -203,10 +202,10 @@ export async function generatePrompt({
       type: 'text',
       text: '## Student submission',
     },
-    ...(await generateSubmissionContent({
+    ...generateSubmissionContent({
       submission_text,
       submitted_answer,
-    })),
+    }),
     {
       type: 'text',
       text: '## Task\n\nGrade the student submission using the grading context above.',
@@ -251,24 +250,11 @@ function containsSubmissionImage(submission_text: string): boolean {
 
 function getAiGradingFileMediaType(fileName: string): string {
   const mediaType = mime.getType(fileName);
-  if (!mediaType || !SUPPORTED_AI_GRADING_FILE_MEDIA_TYPES.has(mediaType)) {
-    throw new Error(
-      `AI grading only supports PDF, JPEG, PNG, and WebP files; found "${fileName}".`,
-    );
+  if (mediaType && SUPPORTED_AI_GRADING_FILE_MEDIA_TYPES.has(mediaType)) {
+    return mediaType;
   }
 
-  return mediaType;
-}
-
-async function validateAiGradingFileMediaType(fileName: string, fileData: string): Promise<string> {
-  const mediaType = getAiGradingFileMediaType(fileName);
-
-  const detectedFileType = await fileTypeFromBuffer(Buffer.from(fileData, 'base64'));
-  if (detectedFileType?.mime !== mediaType) {
-    throw new Error(`AI grading file "${fileName}" does not contain ${mediaType} data.`);
-  }
-
-  return mediaType;
+  throw new Error(`AI grading only supports PDF, JPEG, PNG, and WebP files; found "${fileName}".`);
 }
 
 /**
@@ -278,35 +264,34 @@ async function validateAiGradingFileMediaType(fileName: string, fileData: string
  * @param options.submission_text - The rendered HTML content of the student's submission.
  * @param options.submitted_answer - The student-submitted answer, potentially containing text and files.
  */
-export async function generateSubmissionContent({
+export function generateSubmissionContent({
   submission_text,
   submitted_answer,
 }: {
   submission_text: string;
   submitted_answer: Record<string, any> | null;
-}): Promise<UserContentParts> {
+}): UserContentParts {
   const segments = parseSubmission({
     submission_text,
     submitted_answer,
   });
 
-  const content: UserContentParts = [];
-  for (const segment of segments) {
+  const content: UserContentParts = segments.flatMap((segment): UserContentParts => {
     switch (segment.type) {
       case 'text':
-        content.push(segment);
-        break;
+        return [segment];
       case 'file': {
         if (!segment.fileData) {
-          content.push({
-            type: 'text',
-            text: `Submitted file ${segment.fileName} was not found.`,
-          });
-          break;
+          return [
+            {
+              type: 'text',
+              text: `Submitted file ${segment.fileName} was not found.`,
+            },
+          ];
         }
 
-        const mediaType = await validateAiGradingFileMediaType(segment.fileName, segment.fileData);
-        content.push(
+        const mediaType = getAiGradingFileMediaType(segment.fileName);
+        return [
           {
             type: 'text',
             text: `Submitted file: ${segment.fileName}`,
@@ -326,13 +311,12 @@ export async function generateSubmissionContent({
                 }
               : {}),
           },
-        );
-        break;
+        ];
       }
       default:
         assertNever(segment);
     }
-  }
+  });
 
   return content;
 }

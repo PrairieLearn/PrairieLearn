@@ -276,12 +276,11 @@ describe('parseSubmission', () => {
 });
 
 describe('generateSubmissionContent', () => {
-  it('generates named PDF file parts', async () => {
-    const pdfData = Buffer.from('%PDF-1.7\n').toString('base64');
-    const result = await generateSubmissionContent({
+  it('generates named PDF file parts', () => {
+    const result = generateSubmissionContent({
       submission_text: '<div data-ai-grading-file-name="solution.pdf">solution.pdf</div>',
       submitted_answer: {
-        _files: [{ name: 'solution.pdf', contents: pdfData }],
+        _files: [{ name: 'solution.pdf', contents: 'pdfdata' }],
       },
     });
 
@@ -289,35 +288,22 @@ describe('generateSubmissionContent', () => {
       { type: 'text', text: 'Submitted file: solution.pdf' },
       {
         type: 'file',
-        data: pdfData,
+        data: 'pdfdata',
         filename: 'solution.pdf',
         mediaType: 'application/pdf',
       },
     ]);
   });
 
-  it('rejects uploaded file types that are not portable across grading providers', async () => {
-    await expect(
+  it('rejects uploaded file types that are not portable across grading providers', () => {
+    expect(() =>
       generateSubmissionContent({
         submission_text: '<div data-ai-grading-file-name="solution.zip">solution.zip</div>',
         submitted_answer: {
           _files: [{ name: 'solution.zip', contents: 'zipdata' }],
         },
       }),
-    ).rejects.toThrow('AI grading only supports PDF, JPEG, PNG, and WebP files');
-  });
-
-  it('rejects files whose contents do not match their extension', async () => {
-    const jpegData = Buffer.from('ffd8ffe000104a4649460001', 'hex').toString('base64');
-
-    await expect(
-      generateSubmissionContent({
-        submission_text: '<div data-ai-grading-file-name="solution.png">solution.png</div>',
-        submitted_answer: {
-          _files: [{ name: 'solution.png', contents: jpegData }],
-        },
-      }),
-    ).rejects.toThrow('AI grading file "solution.png" does not contain image/png data');
+    ).toThrow('AI grading only supports PDF, JPEG, PNG, and WebP files');
   });
 
   it('includes uploaded images in orientation correction', () => {
