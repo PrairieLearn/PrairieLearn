@@ -74,14 +74,14 @@ export const AI_GRADING_MODELS = [
     provider: 'google',
     modelId: 'gemini-3.8-flash',
     name: 'Gemini 3.8 Flash',
-    sublabel: 'Fast handwriting and image grading',
+    sublabel: 'Best handwriting and image grading',
     recommended: true,
   },
   {
     provider: 'google',
     modelId: 'gemini-3.1-pro-preview',
     name: 'Gemini 3.1 Pro',
-    sublabel: 'Deeper reasoning for handwriting and image grading',
+    sublabel: 'Advanced reasoning for complex handwriting and image grading',
     recommended: false,
   },
   {
