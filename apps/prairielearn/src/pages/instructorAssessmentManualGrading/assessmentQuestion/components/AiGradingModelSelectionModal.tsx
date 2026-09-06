@@ -40,10 +40,10 @@ function getSelection(state: AiGradingModelSelectionModalState): 'all' | 'human_
 }
 
 /**
- * Returns the preferred model if available, otherwise falls back to the first
- * model whose provider is in the available list. A previously preferred model
- * might not be available (e.g. if the user switched from PrairieLearn-managed
- * to custom API keys).
+ * Returns the preferred model if available, otherwise falls back to the default
+ * model and then the first model whose provider is in the available list. A
+ * previously preferred model might not be available (e.g. if the user switched
+ * from PrairieLearn-managed to custom API keys).
  */
 function getDefaultModel(
   aiGradingLastSelectedModel: string | null,
@@ -52,6 +52,10 @@ function getDefaultModel(
   const preferred = AI_GRADING_MODELS.find((m) => m.modelId === aiGradingLastSelectedModel);
   if (preferred && availableProviders.includes(preferred.provider)) {
     return preferred.modelId;
+  }
+  const defaultModel = AI_GRADING_MODELS.find((m) => m.modelId === DEFAULT_AI_GRADING_MODEL);
+  if (defaultModel && availableProviders.includes(defaultModel.provider)) {
+    return defaultModel.modelId;
   }
   const firstAvailable = AI_GRADING_MODELS.find((m) => availableProviders.includes(m.provider));
   if (firstAvailable) {
@@ -155,7 +159,7 @@ function ModelList({
               placement="top"
               tooltip={{
                 props: { id: 'cost-tooltip' },
-                body: 'Relative cost compared to the default model, based on standard token usage.',
+                body: 'Relative cost compared to GPT 5.6 Terra, based on standard token usage.',
               }}
             >
               <i className="bi bi-question-circle" aria-hidden="true" />

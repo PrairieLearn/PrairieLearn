@@ -81,7 +81,7 @@ export const AI_GRADING_MODELS = [
     provider: 'google',
     modelId: 'gemini-3.1-pro-preview',
     name: 'Gemini 3.1 Pro',
-    sublabel: 'Advanced reasoning for complex handwriting and image grading',
+    sublabel: 'Advanced handwriting and image grading',
     recommended: false,
   },
   {
