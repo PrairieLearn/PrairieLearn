@@ -4,7 +4,7 @@ import type { ReactNode } from 'react';
 import { run } from '@prairielearn/run';
 import { assertNever } from '@prairielearn/utils';
 
-export function ProgressStatus({
+function ProgressStatus({
   state,
   statusText,
   showSpinner,
