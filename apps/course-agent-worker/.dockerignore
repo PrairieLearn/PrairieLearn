@@ -7,3 +7,11 @@ scripts/*
 !skills/
 skills/*
 !skills/course-content-authoring/
+
+!bin/
+bin/*
+!bin/validate-course.mjs
+
+!sandbox/
+sandbox/*
+!sandbox/course_agent_mcp.py
