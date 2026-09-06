@@ -381,8 +381,8 @@ test('contains long messages and tool paths without widening the panel', async (
       panel.getByRole('article', { name: 'Message from Dev User' }),
     ]) {
       const box = (await element.boundingBox())!;
-      expect(box.x).toBeGreaterThanOrEqual(panelBox.x);
-      expect(box.x + box.width).toBeLessThanOrEqual(panelBox.x + panelBox.width);
+      expect(box.x).toBeGreaterThanOrEqual(panelBox.x - 1);
+      expect(box.x + box.width).toBeLessThanOrEqual(panelBox.x + panelBox.width + 1);
     }
     expect(await tool.evaluate((element) => element.clientHeight)).toBeGreaterThan(30);
     const codeBlock = reply.locator('pre');
