@@ -63,6 +63,13 @@ If naming fails or PL exits after claiming it, the shortened user message remain
 there are no automatic paid retries. Existing conversation titles are left unchanged.
 The fake runtime uses the shortened message and makes no model requests.
 
+The fourth layer adds the approval-gated `push_sync` tool. Codex must statically validate the full
+course, smoke-test changed question variants, commit a clean workspace with a descriptive message
+and PrairieLearn Agent co-author trailer, and then call the tool. The Worker independently reruns
+validation and verifies the proposed commit and Git tree before it creates an approval. PrairieLearn
+applies the approved diff to its trusted checkout, pushes and syncs it, and returns the resulting
+status to the waiting tool call. Denial returns control without publishing.
+
 ## Free local testing
 
 Set `courseAgentRuntime` to `fake` in your existing PrairieLearn configuration and enable the

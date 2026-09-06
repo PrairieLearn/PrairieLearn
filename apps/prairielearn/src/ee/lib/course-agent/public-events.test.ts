@@ -20,6 +20,13 @@ describe('public course-agent transcript', () => {
     expect(
       publicCourseAgentEvent({
         ...base,
+        type: 'git.push.approval.requested',
+        data: { approvalId: 'approval-id', diff: 'private diff' },
+      })?.data,
+    ).toEqual({ approvalId: 'approval-id' });
+    expect(
+      publicCourseAgentEvent({
+        ...base,
         type: 'tool.completed',
         data: { operationId: 'tool-1', label: 'Read question.html', rawOutput: 'internal' },
       })?.data,

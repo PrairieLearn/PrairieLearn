@@ -32,6 +32,28 @@ async function render(input: CourseAgentEvent[]) {
 }
 
 describe('course-agent UI-message adapter', () => {
+  it('emits a transient signal when a push needs instructor approval', async () => {
+    const stream = new ReadableStream<CourseAgentEvent>({
+      start(controller) {
+        for (const event of events([
+          ['user.message', { runId: 'current' }],
+          ['git.push.approval.requested', { approvalId: 'approval-id' }],
+          ['agent.completed', { response: 'Done.' }],
+        ])) {
+          controller.enqueue(event);
+        }
+        controller.close();
+      },
+    }).pipeThrough(courseAgentUIStream('current'));
+    const output = [];
+    for await (const chunk of stream) output.push(chunk);
+    expect(output).toContainEqual({
+      type: 'data-approvalRequested',
+      data: { approvalId: 'approval-id' },
+      transient: true,
+    });
+  });
+
   it('streams text and inline tool updates without replaying earlier turns or duplicate events', async () => {
     const input = events([
       ['user.message', { runId: 'old', text: 'Earlier' }],

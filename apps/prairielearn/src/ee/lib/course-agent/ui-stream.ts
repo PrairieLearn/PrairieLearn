@@ -4,7 +4,7 @@ import type { CourseAgentEvent } from '@prairielearn/course-agent-protocol';
 
 export type CourseAgentMessage = UIMessage<
   { createdAt: string; failure?: string },
-  never,
+  { approvalRequested: { approvalId: string } },
   { activity: { input: { label: string }; output: { label: string } } }
 >;
 
@@ -91,6 +91,13 @@ export function courseAgentUIStream(runId: string) {
           else endTool(id, label, event.type === 'tool.failed');
           break;
         }
+        case 'git.push.approval.requested':
+          controller.enqueue({
+            type: 'data-approvalRequested',
+            data: { approvalId: String(event.data.approvalId) },
+            transient: true,
+          });
+          break;
         case 'assistant.delta':
           appendText(
             event.data.replace

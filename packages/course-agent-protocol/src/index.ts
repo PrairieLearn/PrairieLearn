@@ -26,6 +26,8 @@ export const CourseAgentEventTypeSchema = z.enum([
   'git.clone.started',
   'git.clone.completed',
   'git.configured',
+  'validation.completed',
+  'validation.failed',
   'agent.started',
   'assistant.delta',
   'tool.started',
@@ -39,6 +41,11 @@ export const CourseAgentEventTypeSchema = z.enum([
   'workspace.backup.failed',
   'workspace.restore.started',
   'workspace.restore.completed',
+  'git.push.approval.requested',
+  'git.push.approval.approved',
+  'git.push.approval.denied',
+  'git.push.completed',
+  'sync.completed',
 ]);
 export type CourseAgentEventType = z.infer<typeof CourseAgentEventTypeSchema>;
 
@@ -85,6 +92,24 @@ export const CourseAgentWorkspaceBackupSchema = z.object({
   expiresAt: z.iso.datetime(),
 });
 export type CourseAgentWorkspaceBackup = z.infer<typeof CourseAgentWorkspaceBackupSchema>;
+
+export const CourseAgentPushPayloadSchema = z.object({
+  baseSha: z.string().regex(/^[0-9a-f]{40}$/),
+  proposedSha: z.string().regex(/^[0-9a-f]{40}$/),
+  branch: z.string().min(1).max(255),
+  commitMessage: z.string().min(1).max(20_000),
+  diffSummary: z.string().max(20_000),
+  diff: z.string().max(500_000),
+  treeSha: z.string().regex(/^[0-9a-f]{40}$/),
+});
+export type CourseAgentPushPayload = z.infer<typeof CourseAgentPushPayloadSchema>;
+
+export const CourseAgentPushApprovalSchema = CourseAgentPushPayloadSchema.extend({
+  id: z.uuid(),
+  status: z.enum(['pending', 'denied', 'publishing', 'completed', 'failed']),
+  result: z.record(z.string(), z.unknown()).nullable(),
+});
+export type CourseAgentPushApproval = z.infer<typeof CourseAgentPushApprovalSchema>;
 
 export const CourseAgentRuntimeSettingsSchema = z.object({
   idleTimeoutSeconds: z.number().int().min(60).max(86_400),
@@ -155,8 +180,18 @@ export const CourseAgentSnapshotSchema = z.object({
   error: z.string().nullable(),
   events: z.array(CourseAgentEventSchema),
   workspaceBackup: CourseAgentWorkspaceBackupSchema.nullable().default(null),
+  pendingApproval: CourseAgentPushApprovalSchema.nullable().default(null),
 });
 export type CourseAgentSnapshot = z.infer<typeof CourseAgentSnapshotSchema>;
+
+export const CourseAgentPushDecisionRequestSchema = z.object({
+  capability: z.string(),
+  conversationId: z.uuid(),
+  sandboxId: z.string(),
+  approvalId: z.uuid(),
+  decision: z.enum(['publishing', 'denied', 'completed', 'failed']),
+  result: z.record(z.string(), z.unknown()).nullable().default(null),
+});
 
 export function courseAgentSandboxId(conversationId: string) {
   return `course-agent-${z.uuid().parse(conversationId)}`;

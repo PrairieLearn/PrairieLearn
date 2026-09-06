@@ -57,6 +57,10 @@ export async function runCodex({
       'model_providers.course_agent.supports_websockets=false',
       '-c',
       'web_search="live"',
+      '-c',
+      'mcp_servers.course_agent.command="python3"',
+      '-c',
+      'mcp_servers.course_agent.args=["/opt/prairielearn/course_agent_mcp.py"]',
     ],
     {
       stdio: ['pipe', 'pipe', 'inherit'],

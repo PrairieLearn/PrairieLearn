@@ -12,11 +12,13 @@ import { formatDateFriendly } from '@prairielearn/formatter';
 
 import {
   getEphemeralCourseAgentSnapshot,
+  respondToCourseAgentPushApproval,
   startEphemeralCourseAgentRun,
 } from '../../ee/lib/course-agent/ephemeral-runtime.js';
 import { restoreCourseAgentMessages } from '../../ee/lib/course-agent/history.js';
 import { persistCourseAgentSnapshot } from '../../ee/lib/course-agent/persistence.js';
 import { publicCourseAgentEvent } from '../../ee/lib/course-agent/public-events.js';
+import { publishCourseAgentApproval } from '../../ee/lib/course-agent/publication.js';
 import { config } from '../../lib/config.js';
 import {
   CourseAgentConversationSchema,
@@ -29,7 +31,10 @@ import {
   selectCourseAgentConversations,
   selectCourseAgentHistory,
   selectOptionalCourseAgentConversation,
+  selectOptionalCourseAgentPushApproval,
   selectOptionalRunningCourseAgentRun,
+  updateCourseAgentPushApproval,
+  upsertCourseAgentPushApproval,
 } from '../../models/course-agent.js';
 
 import {
@@ -158,6 +163,7 @@ const start = courseAgentProcedure
           error: error instanceof Error ? error.message : String(error),
           events: [],
           workspaceBackup: null,
+          pendingApproval: null,
         },
       });
       throw error;
@@ -192,6 +198,22 @@ const get = courseAgentProcedure
       courseId: ctx.course.id,
       ...input,
     });
+    if (snapshot.pendingApproval) {
+      if (!ctx.course.repository) {
+        throw new TRPCError({
+          code: 'PRECONDITION_FAILED',
+          message: 'Course repository is missing',
+        });
+      }
+      await upsertCourseAgentPushApproval({
+        approval: snapshot.pendingApproval,
+        conversationId: conversation.id,
+        runId,
+        courseId: ctx.course.id,
+        userId: ctx.locals.authn_user.id,
+        repository: ctx.course.repository,
+      });
+    }
     await persistCourseAgentSnapshot({ snapshot, runId });
     const history = await selectCourseAgentHistory(conversation.id);
     return {
@@ -290,7 +312,114 @@ const settings = courseAgentProcedure
     ctx.session.course_agent_expanded = input.expanded;
   });
 
-export const courseAgentRouter = t.router({ get, list, start, diagnostics, history, settings });
+const respondToPushApproval = courseAgentProcedure
+  .input(
+    z.object({
+      approvalId: z.uuid(),
+      decision: z.enum(['approve', 'deny']),
+    }),
+  )
+  .output(z.object({ status: z.enum(['denied', 'completed', 'failed']), message: z.string() }))
+  .mutation(async ({ ctx, input }) => {
+    const approval = await selectOptionalCourseAgentPushApproval({
+      approvalId: input.approvalId,
+      courseId: ctx.course.id,
+      userId: ctx.locals.authn_user.id,
+    });
+    if (!approval) {
+      throw new TRPCError({ code: 'NOT_FOUND', message: 'Push approval not found' });
+    }
+    const identity = {
+      userId: ctx.locals.authn_user.id,
+      courseId: ctx.course.id,
+      conversationId: approval.conversation_id,
+      sandboxId: courseAgentSandboxId(approval.conversation_id),
+    };
+    if (input.decision === 'deny') {
+      const denied = await updateCourseAgentPushApproval({
+        approvalId: approval.id,
+        status: 'denied',
+        expectedStatuses: ['pending'],
+        decidedBy: ctx.locals.authn_user.id,
+        result: { message: 'The instructor denied publication' },
+      });
+      if (!denied) {
+        throw new TRPCError({ code: 'CONFLICT', message: 'Approval is no longer pending' });
+      }
+      await respondToCourseAgentPushApproval({
+        ...identity,
+        approvalId: approval.id,
+        decision: 'denied',
+        result: denied.result,
+      });
+      return { status: 'denied', message: 'Publication denied' };
+    }
+
+    const publishing = await updateCourseAgentPushApproval({
+      approvalId: approval.id,
+      status: 'publishing',
+      expectedStatuses: ['pending'],
+      decidedBy: ctx.locals.authn_user.id,
+      result: null,
+    });
+    if (!publishing) {
+      throw new TRPCError({ code: 'CONFLICT', message: 'Approval is no longer pending' });
+    }
+    await respondToCourseAgentPushApproval({
+      ...identity,
+      approvalId: approval.id,
+      decision: 'publishing',
+    });
+    try {
+      const result = await publishCourseAgentApproval({
+        approval: publishing,
+        course: ctx.locals.course,
+        user: ctx.locals.user,
+        authzData: ctx.locals.authz_data,
+      });
+      await updateCourseAgentPushApproval({
+        approvalId: approval.id,
+        status: 'completed',
+        expectedStatuses: ['publishing'],
+        decidedBy: ctx.locals.authn_user.id,
+        result,
+      });
+      await respondToCourseAgentPushApproval({
+        ...identity,
+        approvalId: approval.id,
+        decision: 'completed',
+        result,
+      });
+      return { status: 'completed', message: 'Changes pushed and course sync started' };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      const result = { message };
+      await updateCourseAgentPushApproval({
+        approvalId: approval.id,
+        status: 'failed',
+        expectedStatuses: ['publishing'],
+        decidedBy: ctx.locals.authn_user.id,
+        result,
+      });
+      await respondToCourseAgentPushApproval({
+        ...identity,
+        approvalId: approval.id,
+        decision: 'failed',
+        result,
+      });
+      return { status: 'failed', message };
+    }
+  });
+
+export const courseAgentRouter = t.router({
+  get,
+  list,
+  start,
+  diagnostics,
+  history,
+  settings,
+  respondToPushApproval,
+});
 
 export interface CourseAgentError {
   Get: never;
@@ -299,4 +428,5 @@ export interface CourseAgentError {
   Diagnostics: never;
   History: never;
   Settings: never;
+  RespondToPushApproval: never;
 }

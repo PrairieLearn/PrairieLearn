@@ -1,5 +1,5 @@
 import { useChat } from '@ai-sdk/react';
-import { QueryClient, useQuery, useQueryClient } from '@tanstack/react-query';
+import { QueryClient, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Fragment, useEffect, useRef, useState } from 'react';
 import { Alert, Button, Spinner } from 'react-bootstrap';
 import type { Components } from 'react-markdown';
@@ -151,10 +151,17 @@ function CourseAgentConversationPanel({
         initialHistory.run,
       ),
   );
+  const snapshot = useQuery(
+    trpc.courseAgent.get.queryOptions(
+      conversation ?? { conversationId: '00000000-0000-0000-0000-000000000000', sandboxId: '' },
+      { enabled: conversation !== null, retry: false },
+    ),
+  );
   const { messages, sendMessage, status, error, resumeStream, setMessages, stop } =
     useChat<CourseAgentMessage>({
       transport,
       messages: initialHistory.messages,
+      onData: () => void snapshot.refetch(),
       onFinish: () => {
         if (showDiagnostics) void diagnostics.refetch();
         void queryClient.invalidateQueries(trpc.courseAgent.list.queryFilter());
@@ -191,6 +198,12 @@ function CourseAgentConversationPanel({
       { enabled: showDiagnostics && conversation !== null, refetchInterval: busy ? 1000 : false },
     ),
   );
+  const approval = useMutation(
+    trpc.courseAgent.respondToPushApproval.mutationOptions({
+      onSuccess: () => void snapshot.refetch(),
+    }),
+  );
+  const approvalError = getAppError<CourseAgentError['RespondToPushApproval']>(approval.error);
 
   return (
     <div className="course-agent-conversation">
@@ -301,6 +314,60 @@ function CourseAgentConversationPanel({
                   </Button>
                 )}
               </Alert>
+            )}
+            <AppErrorAlert
+              error={approvalError}
+              render={{ UNKNOWN: ({ message }) => message }}
+              onDismiss={() => approval.reset()}
+            />
+            {approval.data?.status === 'failed' && (
+              <Alert variant="danger">{approval.data.message}</Alert>
+            )}
+            {snapshot.data?.pendingApproval && (
+              <div className="course-agent-approval border rounded bg-white overflow-hidden mb-4">
+                <div className="border-bottom px-3 py-2">
+                  <div className="d-flex align-items-center gap-2 fw-semibold">
+                    <i className="bi bi-shield-check text-warning" aria-hidden="true" />
+                    Approval required
+                  </div>
+                  <p className="small text-break mb-0 mt-1">
+                    {snapshot.data.pendingApproval.diffSummary}
+                  </p>
+                </div>
+                <details>
+                  <summary className="small px-3 py-2">View full diff</summary>
+                  <pre className="course-agent-diff-body small overflow-auto border-top p-3 mb-0">
+                    {snapshot.data.pendingApproval.diff}
+                  </pre>
+                </details>
+                <div className="d-flex justify-content-end gap-2 border-top px-2 py-2">
+                  <Button
+                    size="sm"
+                    disabled={approval.isPending}
+                    onClick={() =>
+                      approval.mutate({
+                        approvalId: snapshot.data.pendingApproval!.id,
+                        decision: 'approve',
+                      })
+                    }
+                  >
+                    Approve, push, and sync
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline-danger"
+                    disabled={approval.isPending}
+                    onClick={() =>
+                      approval.mutate({
+                        approvalId: snapshot.data.pendingApproval!.id,
+                        decision: 'deny',
+                      })
+                    }
+                  >
+                    Deny
+                  </Button>
+                </div>
+              </div>
             )}
             <div className="pt-3 mt-3">
               {showDiagnostics && (
