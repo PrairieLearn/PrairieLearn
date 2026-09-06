@@ -30,7 +30,9 @@ export function CourseAgentConversationPicker({
           data-conversation-id={selectedId}
           disabled={disabled}
         >
-          <span className="text-truncate">{selected?.title ?? 'New conversation'}</span>
+          <span className="flex-grow-1 text-start text-break">
+            {selected?.title ?? 'New conversation'}
+          </span>
         </Dropdown.Toggle>
         <Dropdown.Menu className="course-agent-conversation-menu w-100 shadow-sm" role="menu">
           {conversations.length === 0 && (
@@ -46,8 +48,8 @@ export function CourseAgentConversationPicker({
               className="d-flex align-items-center gap-2 py-2"
               onClick={() => onSelect(item.id)}
             >
-              <span className="d-flex flex-column text-start" style={{ minWidth: 0 }}>
-                <span className="text-truncate">{item.title}</span>
+              <span className="d-flex flex-column flex-grow-1 text-start" style={{ minWidth: 0 }}>
+                <span className="text-break">{item.title}</span>
                 <time className="small opacity-75" dateTime={item.created_at.toISOString()}>
                   {item.startedAtLabel}
                 </time>

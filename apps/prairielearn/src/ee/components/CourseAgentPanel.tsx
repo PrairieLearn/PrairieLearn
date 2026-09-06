@@ -41,6 +41,7 @@ function CourseAgentPanelInner(props: {
   initialOpen: boolean;
   courseId: string;
   userName: string;
+  timeZone: string;
   showDiagnostics: boolean;
   trpcClient: ReturnType<typeof createCourseTrpcClient>;
 }) {
@@ -110,6 +111,7 @@ function CourseAgentPanelInner(props: {
 function CourseAgentConversationPanel({
   courseId,
   userName,
+  timeZone,
   showDiagnostics,
   trpcClient,
   initialHistory,
@@ -119,6 +121,7 @@ function CourseAgentConversationPanel({
 }: {
   courseId: string;
   userName: string;
+  timeZone: string;
   showDiagnostics: boolean;
   trpcClient: ReturnType<typeof createCourseTrpcClient>;
   initialHistory: Awaited<
@@ -242,6 +245,7 @@ function CourseAgentConversationPanel({
                   key={message.id}
                   userName={userName}
                   createdAt={message.metadata?.createdAt}
+                  timeZone={timeZone}
                 >
                   {message.parts
                     .filter((part) => part.type === 'text')
@@ -286,6 +290,7 @@ function CourseAgentConversationPanel({
                     <MessageMetadata
                       author="PrairieLearn"
                       createdAt={message.metadata?.createdAt}
+                      timeZone={timeZone}
                     />
                   )}
                 </AssistantMessage>
@@ -505,12 +510,14 @@ export function CourseAgentPanel({
   trpcCsrfToken,
   courseId,
   userName,
+  timeZone,
   showDiagnostics,
 }: {
   initialOpen: boolean;
   trpcCsrfToken: string;
   courseId: string;
   userName: string;
+  timeZone: string;
   showDiagnostics: boolean;
 }) {
   const [queryClient] = useState(() => new QueryClient());
@@ -525,6 +532,7 @@ export function CourseAgentPanel({
           trpcClient={trpcClient}
           courseId={courseId}
           userName={userName}
+          timeZone={timeZone}
           showDiagnostics={showDiagnostics}
         />
       </TRPCProvider>

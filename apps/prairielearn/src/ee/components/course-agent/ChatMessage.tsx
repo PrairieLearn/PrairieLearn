@@ -1,15 +1,11 @@
 import { type ReactNode, useSyncExternalStore } from 'react';
 
+import { formatDateFriendly } from '@prairielearn/formatter';
+
 const noopSubscribe = () => () => {};
 
-/**
- * Renders a message's timestamp in the viewer's local timezone, with a leading
- * separator. The server can't know the viewer's timezone, so we render nothing
- * during SSR and the initial hydration pass, then render once on the client.
- * This avoids a hydration mismatch without an effect, and keeps the separator
- * from dangling while the timestamp is absent.
- */
-function MessageTimestamp({ createdAt }: { createdAt: string }) {
+/** Render after hydration so relative date labels cannot mismatch across the SSR boundary. */
+function MessageTimestamp({ createdAt, timeZone }: { createdAt: string; timeZone: string }) {
   const isClient = useSyncExternalStore(
     noopSubscribe,
     () => true,
@@ -18,12 +14,10 @@ function MessageTimestamp({ createdAt }: { createdAt: string }) {
 
   if (!isClient) return null;
 
-  const formatted = new Intl.DateTimeFormat(undefined, {
-    month: 'short',
-    day: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-  }).format(new Date(createdAt));
+  const formatted = formatDateFriendly(new Date(createdAt), timeZone, {
+    maxPrecision: 'minute',
+    minPrecision: 'minute',
+  });
 
   return (
     <>
@@ -39,10 +33,12 @@ export function UserMessage({
   children,
   userName,
   createdAt,
+  timeZone,
 }: {
   children: ReactNode;
   userName?: string | null;
   createdAt?: string;
+  timeZone: string;
 }) {
   return (
     <div
@@ -56,15 +52,27 @@ export function UserMessage({
       >
         {children}
       </div>
-      <MessageMetadata author={userName ?? 'Unknown user'} createdAt={createdAt} />
+      <MessageMetadata
+        author={userName ?? 'Unknown user'}
+        createdAt={createdAt}
+        timeZone={timeZone}
+      />
     </div>
   );
 }
-export function MessageMetadata({ author, createdAt }: { author: string; createdAt?: string }) {
+export function MessageMetadata({
+  author,
+  createdAt,
+  timeZone,
+}: {
+  author: string;
+  createdAt?: string;
+  timeZone: string;
+}) {
   return (
     <div className="d-flex flex-wrap align-items-center gap-2 small text-muted mb-1 px-1">
       <span className="fw-medium">{author}</span>
-      {createdAt && <MessageTimestamp createdAt={createdAt} />}
+      {createdAt && <MessageTimestamp createdAt={createdAt} timeZone={timeZone} />}
     </div>
   );
 }
