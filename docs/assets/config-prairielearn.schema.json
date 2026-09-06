@@ -1541,17 +1541,6 @@
         }
       ]
     },
-    "courseAgentGithubToken": {
-      "default": null,
-      "anyOf": [
-        {
-          "type": "string"
-        },
-        {
-          "type": "null"
-        }
-      ]
-    },
     "courseAgentSandbox": {
       "default": {},
       "type": "object",
