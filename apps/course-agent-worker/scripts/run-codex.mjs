@@ -4,6 +4,8 @@ import { join } from 'node:path';
 import { createInterface } from 'node:readline';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
+const THREAD_CONFIGURATION_VERSION = 1;
+
 // App-server, unlike exec --json, exposes incremental agent-message text.
 export async function runCodex({
   model,
@@ -37,6 +39,8 @@ export async function runCodex({
   if (savedThread && typeof savedThread.threadId !== 'string') {
     throw new Error('Invalid saved Codex thread. The session has not been replaced.');
   }
+  const compatibleSavedThread =
+    savedThread?.configurationVersion === THREAD_CONFIGURATION_VERSION ? savedThread : undefined;
   const child = spawn(
     command,
     [
@@ -106,11 +110,13 @@ export async function runCodex({
         send({ method: 'initialized', params: {} });
         send({
           id: 1,
-          method: savedThread ? 'thread/resume' : 'thread/start',
+          method: compatibleSavedThread ? 'thread/resume' : 'thread/start',
           params: {
             model,
             cwd,
-            ...(savedThread ? { threadId: savedThread.threadId } : { ephemeral: false }),
+            ...(compatibleSavedThread
+              ? { threadId: compatibleSavedThread.threadId }
+              : { ephemeral: false }),
             approvalPolicy: 'on-request',
             approvalsReviewer: 'auto_review',
             sandbox: 'workspace-write',
@@ -121,11 +127,14 @@ export async function runCodex({
       } else if (message.id === 1) {
         threadId = message.result.thread.id;
         // Persist before starting the turn so an interrupted run can still be resumed.
-        await writeFile(`${threadFile}.tmp`, JSON.stringify({ threadId }));
+        await writeFile(
+          `${threadFile}.tmp`,
+          JSON.stringify({ threadId, configurationVersion: THREAD_CONFIGURATION_VERSION }),
+        );
         await rename(`${threadFile}.tmp`, threadFile);
         emit({ method: 'thread/started', params: { thread: { id: threadId } } });
         const input =
-          !savedThread && history.length > 0
+          !compatibleSavedThread && history.length > 0
             ? `Recovered conversation (JSON transcript, not a new request; files may reflect only the last saved workspace):\n${JSON.stringify(history)}\n\nCurrent request:\n${prompt}`
             : prompt;
         send({

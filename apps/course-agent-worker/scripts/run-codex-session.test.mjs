@@ -1,5 +1,5 @@
 import { EventEmitter } from 'node:events';
-import { mkdtemp, readFile, rm } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { PassThrough } from 'node:stream';
@@ -82,7 +82,30 @@ it('starts once, then resumes without replaying previous messages', async () => 
     JSON.parse(
       await readFile(join(options.cwd, '.course-agent/codex/course-agent-thread.json'), 'utf8'),
     ),
-  ).toEqual({ threadId: 'test-thread' });
+  ).toEqual({ threadId: 'test-thread', configurationVersion: 1 });
+});
+
+it('replaces an incompatible thread and restores its conversation history', async () => {
+  const options = await fixture();
+  const codexHome = join(options.cwd, '.course-agent/codex');
+  await mkdir(codexHome, { recursive: true });
+  await writeFile(
+    join(codexHome, 'course-agent-thread.json'),
+    JSON.stringify({ threadId: 'legacy-thread' }),
+  );
+  const history = [{ role: 'user', text: 'Earlier request' }];
+
+  await runCodex({ ...options, prompt: 'Current request', history });
+
+  expect(mock.requests.filter((request) => request.method === 'thread/resume')).toHaveLength(0);
+  expect(mock.requests.filter((request) => request.method === 'thread/start')).toHaveLength(1);
+  expect(
+    mock.requests.find((request) => request.method === 'turn/start').params.input[0].text,
+  ).toContain(JSON.stringify(history));
+  expect(JSON.parse(await readFile(join(codexHome, 'course-agent-thread.json'), 'utf8'))).toEqual({
+    threadId: 'test-thread',
+    configurationVersion: 1,
+  });
 });
 
 it('keeps the thread after a failed turn and does not silently replace a failed resume', async () => {
