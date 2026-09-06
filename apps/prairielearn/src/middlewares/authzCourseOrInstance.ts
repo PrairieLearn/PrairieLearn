@@ -691,12 +691,11 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
     res.locals.course_instance = authnCourseInstance;
   }
 
-  // The session middleware does not run for API requests.
-
-  res.locals.side_nav_expanded = req.session?.side_nav_expanded ?? true; // The side nav is expanded by default.
-  // The session middleware does not run for API requests.
-
-  res.locals.course_agent_expanded = req.session?.course_agent_expanded ?? true;
+  // The session middleware does not run for API requests, although the Express
+  // type declaration treats the session as always present.
+  const session = req.session as typeof req.session | undefined;
+  res.locals.side_nav_expanded = session?.side_nav_expanded ?? true; // The side nav is expanded by default.
+  res.locals.course_agent_expanded = session?.course_agent_expanded ?? true;
 
   res.locals.course_has_course_instances = await selectCourseHasCourseInstances({
     course: res.locals.course,
