@@ -1722,6 +1722,58 @@
         }
       ]
     },
+    "courseAgentRuntime": {
+      "default": "disabled",
+      "type": "string",
+      "enum": ["disabled", "fake", "cloudflare"]
+    },
+    "courseAgentWorkerOrigin": {
+      "default": "http://127.0.0.1:8787",
+      "type": "string",
+      "format": "uri"
+    },
+    "courseAgentCapabilitySecret": {
+      "default": null,
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "courseAgentSandbox": {
+      "default": {},
+      "type": "object",
+      "properties": {
+        "idleTimeoutSeconds": {
+          "default": 600,
+          "type": "integer",
+          "minimum": 60,
+          "maximum": 86400
+        },
+        "maxLifetimeSeconds": {
+          "default": 600,
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 86400
+        },
+        "backupTtlSeconds": {
+          "default": 604800,
+          "type": "integer",
+          "minimum": 60,
+          "maximum": 2592000
+        },
+        "turnTimeoutSeconds": {
+          "default": 900,
+          "type": "integer",
+          "minimum": 60,
+          "maximum": 3600
+        }
+      },
+      "additionalProperties": false
+    },
     "aiGradingRateLimitDollars": {
       "default": 10,
       "type": "number"

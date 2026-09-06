@@ -1,0 +1,42 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "prairielearn-course-agent",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-09-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": {
+    "enabled": true
+  },
+  "vars": {
+    "OPENAI_MODEL": "gpt-5.4-mini"
+  },
+  "secrets": {
+    "required": ["OPENAI_API_KEY", "COURSE_AGENT_CAPABILITY_SECRET"]
+  },
+  "containers": [
+    {
+      "class_name": "Sandbox",
+      "image": "./Dockerfile",
+      "instance_type": "basic",
+      "max_instances": 10
+    }
+  ],
+  "durable_objects": {
+    "bindings": [
+      {
+        "class_name": "Sandbox",
+        "name": "Sandbox"
+      },
+      {
+        "class_name": "CourseAgentCoordinator",
+        "name": "COURSE_AGENT_COORDINATOR"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "new_sqlite_classes": ["Sandbox", "CourseAgentCoordinator"],
+      "tag": "v1"
+    }
+  ]
+}

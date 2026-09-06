@@ -414,6 +414,9 @@ const SKIP_ROUTES = [
   // API routes.
   '/pl/course_instance/lookup',
   '/pl/course_instance/:course_instance_id/instructor/instance_admin/publishing/extension/check',
+
+  // Server-sent event streams are not HTML pages.
+  '/pl/course/:course_id/course_agent/stream',
 ];
 
 function shouldSkipPath(path: string) {
