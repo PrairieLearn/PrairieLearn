@@ -1,0 +1,15 @@
+{
+  "uuid": "0a5a28e1-f41c-4b15-8bc2-1b2e13932efc",
+  "type": "Exam",
+  "title": "Dynamic programming quiz",
+  "set": "Quiz",
+  "number": "1",
+  "zones": [
+    {
+      "questions": [
+        { "id": "dynamicProgramming/overlappingSubproblems", "autoPoints": [2, 1] },
+        { "id": "dynamicProgramming/staircase", "autoPoints": [3, 1] }
+      ]
+    }
+  ]
+}

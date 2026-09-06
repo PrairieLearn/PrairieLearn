@@ -1,4 +1,4 @@
-import { cp, mkdtemp, rm } from 'node:fs/promises';
+import { cp, mkdtemp, readFile, rm } from 'node:fs/promises';
 import { createServer } from 'node:http';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -11,26 +11,33 @@ afterEach(() => vi.unstubAllEnvs());
 
 // Opt in with the same binary version pinned in Dockerfile. Only localhost receives requests.
 it.skipIf(!process.env.COURSE_AGENT_TEST_CODEX)(
-  'streams real Codex app-server deltas before the mocked model finishes',
+  'loads the bundled skill and assessment template and streams real Codex deltas',
   async () => {
     vi.stubEnv('OPENAI_API_KEY', 'local-mock-key');
     const cwd = await mkdtemp(join(tmpdir(), 'pl-course-agent-test-'));
     const notifications = [];
     const requests = [];
+    const skill = await readFile(
+      new URL('../skills/course-content-authoring/SKILL.md', import.meta.url),
+      'utf8',
+    );
+    const example = await readFile(
+      new URL(
+        '../skills/course-content-authoring/assets/assessments/dynamicProgrammingHomework/infoAssessment.json',
+        import.meta.url,
+      ),
+      'utf8',
+    );
     let complete;
-    const server = createServer((request, response) => {
+    const server = createServer(async (request, response) => {
       if (!request.url.endsWith('/responses')) {
         response.writeHead(404).end();
         return;
       }
       expect(request.headers.authorization).toBe('Bearer local-mock-key');
-      let body = '';
-      request.on('data', (chunk) => {
-        body += chunk;
-      });
-      request.on('end', () => {
-        requests.push(JSON.parse(body));
-      });
+      const chunks = [];
+      for await (const chunk of request) chunks.push(chunk);
+      requests.push(JSON.parse(Buffer.concat(chunks).toString()));
       response.writeHead(200, { 'content-type': 'text/event-stream' });
       const send = (event) =>
         response.write(`event: ${event.type}\ndata: ${JSON.stringify(event)}\n\n`);
@@ -128,6 +135,22 @@ it.skipIf(!process.env.COURSE_AGENT_TEST_CODEX)(
       complete();
       complete = undefined;
       await running;
+      expect(
+        requests.flatMap((request) => request.input).flatMap((item) => item.content ?? []),
+      ).toContainEqual(
+        expect.objectContaining({
+          type: 'input_text',
+          text: expect.stringContaining(skill.trim()),
+        }),
+      );
+      expect(
+        requests.flatMap((request) => request.input).flatMap((item) => item.content ?? []),
+      ).toContainEqual(
+        expect.objectContaining({
+          type: 'input_text',
+          text: expect.stringContaining(example.trim()),
+        }),
+      );
       expect(notifications).toContainEqual(
         expect.objectContaining({
           method: 'item/agentMessage/delta',

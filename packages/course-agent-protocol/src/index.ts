@@ -9,6 +9,11 @@ export const CourseAgentEventTypeSchema = z.enum([
   'sandbox.ready',
   'sandbox.destroyed',
   'workspace.seeded',
+  'docs.mounted',
+  'docs.unavailable',
+  'git.clone.started',
+  'git.clone.completed',
+  'git.configured',
   'agent.started',
   'assistant.delta',
   'tool.started',
@@ -44,6 +49,16 @@ const CourseAgentIdentitySchema = z.object({
   sandboxId: z.string().min(1).max(120),
 });
 
+export const CourseAgentRepositorySchema = z.object({
+  repository: z.string().min(1),
+  branch: z.string().min(1).max(255),
+  expectedSha: z
+    .string()
+    .regex(/^[0-9a-f]{40}$/)
+    .nullable(),
+});
+export type CourseAgentRepository = z.infer<typeof CourseAgentRepositorySchema>;
+
 export const CourseAgentRuntimeSettingsSchema = z.object({
   idleTimeoutSeconds: z.number().int().min(60).max(86_400),
   maxLifetimeSeconds: z.number().int().min(1).max(86_400).default(600),
@@ -55,6 +70,12 @@ export const CourseAgentRunCapabilitySchema = CourseAgentIdentitySchema.extend({
   type: z.literal('course-agent-run'),
   runId: z.uuid(),
   promptDigest: z.string().regex(/^[0-9a-f]{64}$/),
+  repository: z.string(),
+  branch: z.string(),
+  expectedSha: z
+    .string()
+    .regex(/^[0-9a-f]{40}$/)
+    .nullable(),
   runtimeSettings: CourseAgentRuntimeSettingsSchema,
   expiresAt: z.iso.datetime(),
 });
@@ -75,6 +96,7 @@ export const CourseAgentStartRunRequestSchema = z.object({
     .string()
     .max(20_000)
     .refine((prompt) => prompt.trim().length > 0, 'Prompt cannot be blank'),
+  course: CourseAgentRepositorySchema,
   runtimeSettings: CourseAgentRuntimeSettingsSchema,
 });
 export type CourseAgentStartRunRequest = z.infer<typeof CourseAgentStartRunRequestSchema>;

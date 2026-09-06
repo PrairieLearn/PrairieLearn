@@ -75,11 +75,13 @@ export async function startEphemeralCourseAgentRun({
   userId,
   conversationId = randomUUID(),
   prompt,
+  course,
 }: {
   courseId: string;
   userId: string;
   conversationId?: string;
   prompt: string;
+  course: { repository: string; branch: string; expectedSha: string | null };
 }) {
   if (config.courseAgentRuntime === 'disabled') {
     throw new Error('Course-agent runtime is disabled');
@@ -96,6 +98,9 @@ export async function startEphemeralCourseAgentRun({
       ...identity,
       runId,
       promptDigest: promptDigest(prompt),
+      repository: course.repository,
+      branch: course.branch,
+      expectedSha: course.expectedSha,
       runtimeSettings: runtimeSettings(),
       expiresAt: expiresAt(),
     },
@@ -110,6 +115,7 @@ export async function startEphemeralCourseAgentRun({
       runId,
       sandboxId,
       prompt,
+      course,
       runtimeSettings: runtimeSettings(),
     }),
   });
