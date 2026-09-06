@@ -59,10 +59,15 @@ specific missing fact after checking the documentation map. Do not repeat search
 schema or continue researching after the needed information is available. If an advanced feature
 cannot be confirmed, use a supported simpler pattern or ask a focused question.
 
-## Finish honestly
+## Finish and request approval
 
-Review changed files, QID references, correct answers, and UUIDs. This version has no
-`validate-course`, `question_render`, or `push_sync` tool. Do not invent or repeatedly search for
-those commands. Editing files does not prove that PL rendered or graded them successfully.
-Do not push. Report what you created in one to three sentences, including any unresolved choice
-and that changes are local/not yet synced. Use inline code for file paths, not download links.
+Review changed files, QID references, correct answers, and UUIDs. The course agent provides the
+`validate_course`, `render_question_variant`, and `push_sync` tools. Invoke these as tools; never
+type their names into a shell command or search the repository for them.
+
+Use `render_question_variant` to smoke-test a changed question when applicable. Commit the intended
+changes with a concise descriptive message and the required PrairieLearn Agent co-author trailer,
+then call `push_sync`. That tool validates the course and requests the instructor's approval; it
+does not authorize bypassing approval or pushing directly. Report what you created in one to three
+sentences, including any unresolved choice and whether approval or sync is still pending. Use
+inline code for file paths, not download links.

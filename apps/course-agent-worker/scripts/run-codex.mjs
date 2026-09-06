@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { createInterface } from 'node:readline';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
-const THREAD_CONFIGURATION_VERSION = 1;
+const THREAD_CONFIGURATION_VERSION = 2;
 
 // App-server, unlike exec --json, exposes incremental agent-message text.
 export async function runCodex({

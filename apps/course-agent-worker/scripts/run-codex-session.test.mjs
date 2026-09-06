@@ -82,7 +82,7 @@ it('starts once, then resumes without replaying previous messages', async () => 
     JSON.parse(
       await readFile(join(options.cwd, '.course-agent/codex/course-agent-thread.json'), 'utf8'),
     ),
-  ).toEqual({ threadId: 'test-thread', configurationVersion: 1 });
+  ).toEqual({ threadId: 'test-thread', configurationVersion: 2 });
 });
 
 it('replaces an incompatible thread and restores its conversation history', async () => {
@@ -104,8 +104,20 @@ it('replaces an incompatible thread and restores its conversation history', asyn
   ).toContain(JSON.stringify(history));
   expect(JSON.parse(await readFile(join(codexHome, 'course-agent-thread.json'), 'utf8'))).toEqual({
     threadId: 'test-thread',
-    configurationVersion: 1,
+    configurationVersion: 2,
   });
+});
+
+it('tells Codex to invoke course-agent tools instead of shell commands', async () => {
+  const options = await fixture();
+
+  await runCodex({ ...options, prompt: 'Request push approval' });
+
+  const instructions = mock.requests.find((request) => request.method === 'thread/start').params
+    .developerInstructions;
+  expect(instructions).toContain('`push_sync` tools');
+  expect(instructions).toContain('Invoke these as tools; never');
+  expect(instructions).not.toContain('This version has no');
 });
 
 it('keeps the thread after a failed turn and does not silently replace a failed resume', async () => {

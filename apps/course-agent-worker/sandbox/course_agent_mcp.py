@@ -7,6 +7,7 @@ import json
 import pathlib
 import subprocess
 import sys
+import urllib.error
 import urllib.request
 from typing import Any
 
@@ -98,8 +99,18 @@ def _push_sync() -> dict[str, Any]:
         headers={"Content-Type": "application/json"},
         method="POST",
     )
-    with urllib.request.urlopen(request) as response:
-        return json.load(response)
+    try:
+        with urllib.request.urlopen(request) as response:
+            return json.load(response)
+    except urllib.error.HTTPError as error:
+        body = error.read().decode()
+        try:
+            detail = json.loads(body).get("error", body)
+        except json.JSONDecodeError:
+            detail = body
+        raise RuntimeError(
+            f"Push approval request failed ({error.code}): {detail}"
+        ) from error
 
 
 def _rpc_result(request_id: Any, result: Any) -> dict[str, Any]:
