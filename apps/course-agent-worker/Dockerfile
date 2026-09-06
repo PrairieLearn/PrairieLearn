@@ -14,5 +14,5 @@ RUN chmod 0555 /usr/local/bin/validate-course
 RUN mkdir -p /opt/prairielearn
 COPY sandbox/course_agent_mcp.py /opt/prairielearn/course_agent_mcp.py
 
-ENV COMMAND_TIMEOUT_MS=900000
+ENV COMMAND_TIMEOUT_MS=540000
 EXPOSE 3000

@@ -613,14 +613,15 @@ export const ConfigSchema = z.object({
   /** Experimental course-agent runtime. The fake runtime never calls external services. */
   courseAgentRuntime: z.enum(['disabled', 'fake', 'cloudflare']).default('disabled'),
   courseAgentWorkerOrigin: z
-    .url()
-    .refine((value) => {
-      const url = new URL(value);
-      return (
-        url.protocol === 'https:' ||
-        (url.protocol === 'http:' && ['127.0.0.1', 'localhost', '[::1]'].includes(url.hostname))
-      );
-    }, 'Course-agent Worker origin must use HTTPS unless it is a loopback development URL')
+    .intersection(
+      z.url(),
+      z
+        .string()
+        .regex(
+          /^(?:https:\/\/|http:\/\/(?:127\.0\.0\.1|localhost|\[::1\])(?::\d+)?(?:[/?#]|$))/,
+          'Course-agent Worker origin must use HTTPS unless it is a loopback development URL',
+        ),
+    )
     .default('http://127.0.0.1:8787'),
   courseAgentCapabilitySecret: z.string().nullable().default(null),
   courseAgentSandbox: z
@@ -628,7 +629,7 @@ export const ConfigSchema = z.object({
       idleTimeoutSeconds: z.number().int().min(60).max(86_400).default(600),
       maxLifetimeSeconds: z.number().int().min(1).max(86_400).default(600),
       backupTtlSeconds: z.number().int().min(60).max(2_592_000).default(604_800),
-      turnTimeoutSeconds: z.number().int().min(60).max(3_600).default(900),
+      turnTimeoutSeconds: z.number().int().min(60).max(3_600).default(540),
     })
     .prefault({}),
   /**
