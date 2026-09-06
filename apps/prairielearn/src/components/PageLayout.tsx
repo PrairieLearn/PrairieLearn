@@ -10,7 +10,7 @@ import { run } from '@prairielearn/run';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 import { assertNever } from '@prairielearn/utils';
 
-import { CourseAgentPanel } from '../ee/components/CourseAgentPanel.js';
+import { CourseAgentPanelServer } from '../ee/components/CourseAgentPanelServer.js';
 import { getCourseTrpcUrl } from '../lib/client/url.js';
 import { config } from '../lib/config.js';
 import { getNavPageTabs } from '../lib/navPageTabs.js';
@@ -297,7 +297,7 @@ export function PageLayout({
     const trpcUrl = getCourseTrpcUrl(resLocals.course.id);
     return (
       <Hydrate className="course-agent-panel-container">
-        <CourseAgentPanel
+        <CourseAgentPanelServer
           trpcCsrfToken={generatePrefixCsrfToken(
             { url: trpcUrl, authn_user_id: resLocals.authn_user.id },
             config.secretKey,
