@@ -47,7 +47,16 @@ describe('ephemeral course-agent runtime', () => {
       },
       async () => {
         await expect(
-          startEphemeralCourseAgentRun({ courseId: '1', userId: '2', prompt: 'Hello' }),
+          startEphemeralCourseAgentRun({
+            courseId: '1',
+            userId: '2',
+            prompt: 'Hello',
+            course: {
+              repository: 'https://github.com/PrairieLearn/test.git',
+              branch: 'master',
+              expectedSha: null,
+            },
+          }),
         ).rejects.toThrow('rejected the run');
       },
     );
