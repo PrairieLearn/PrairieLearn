@@ -142,8 +142,7 @@ function ModelList({
 }) {
   const recommended = AI_GRADING_MODELS.filter((m) => m.recommended);
   const other = AI_GRADING_MODELS.filter((m) => !m.recommended);
-  const hasOtherSelected = other.some((m) => m.modelId === selectedModel);
-  const [otherExpanded, setOtherExpanded] = useState(hasOtherSelected);
+  const [otherExpanded, setOtherExpanded] = useState(false);
 
   return (
     <div className="d-flex flex-column gap-4">
