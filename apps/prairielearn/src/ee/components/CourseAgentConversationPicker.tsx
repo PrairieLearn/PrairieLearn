@@ -30,7 +30,7 @@ export function CourseAgentConversationPicker({
           data-conversation-id={selectedId}
           disabled={disabled}
         >
-          <span className="flex-grow-1 text-start text-break">
+          <span className="flex-grow-1 text-start text-wrap text-break">
             {selected?.title ?? 'New conversation'}
           </span>
         </Dropdown.Toggle>
@@ -49,7 +49,7 @@ export function CourseAgentConversationPicker({
               onClick={() => onSelect(item.id)}
             >
               <span className="d-flex flex-column flex-grow-1 text-start" style={{ minWidth: 0 }}>
-                <span className="text-break">{item.title}</span>
+                <span className="text-wrap text-break">{item.title}</span>
                 <time className="small opacity-75" dateTime={item.created_at.toISOString()}>
                   {item.startedAtLabel}
                 </time>
