@@ -115,6 +115,7 @@ it.skipIf(!process.env.COURSE_AGENT_TEST_CODEX)(
     });
     // Attach immediately so an initialization failure is reported by the test, not as an unhandled rejection.
     let failure;
+    let next;
     void running.catch((error) => {
       failure = error;
     });
@@ -167,7 +168,7 @@ it.skipIf(!process.env.COURSE_AGENT_TEST_CODEX)(
       await rm(codexHome, { recursive: true });
       await cp(backup, codexHome, { recursive: true });
       const resumed = [];
-      const next = runCodex({
+      next = runCodex({
         command: process.env.COURSE_AGENT_TEST_CODEX,
         cwd,
         model: 'gpt-5.4',
@@ -200,6 +201,7 @@ it.skipIf(!process.env.COURSE_AGENT_TEST_CODEX)(
       server.closeAllConnections();
       await new Promise((resolve) => server.close(resolve));
       await running.catch(() => {});
+      await next?.catch(() => {});
       await rm(cwd, { recursive: true, force: true });
     }
   },

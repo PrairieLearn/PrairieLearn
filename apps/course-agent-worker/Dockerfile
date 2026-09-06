@@ -8,5 +8,5 @@ RUN npm install -g @openai/codex@0.153.0-alpha.5
 COPY scripts/run-codex.mjs /opt/course-agent/scripts/run-codex.mjs
 COPY skills/course-content-authoring /opt/course-agent/skills/course-content-authoring
 
-ENV COMMAND_TIMEOUT_MS=900000
+ENV COMMAND_TIMEOUT_MS=540000
 EXPOSE 3000
