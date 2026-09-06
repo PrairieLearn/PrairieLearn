@@ -212,7 +212,7 @@ export async function respondToCourseAgentPushApproval({
     decision,
     result: result ?? null,
   });
-  const response = await fetch(new URL('/v1/push-decisions', config.courseAgentWorkerOrigin), {
+  const response = await fetchWorker('/v1/push-decisions', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
