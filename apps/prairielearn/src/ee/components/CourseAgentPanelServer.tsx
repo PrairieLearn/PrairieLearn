@@ -7,6 +7,7 @@ export function CourseAgentPanelServer({
   trpcCsrfToken: string;
   courseId: string;
   userName: string;
+  timeZone: string;
   showDiagnostics: boolean;
 }) {
   return (
