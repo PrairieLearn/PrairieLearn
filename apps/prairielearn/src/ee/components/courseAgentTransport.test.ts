@@ -81,4 +81,34 @@ describe('course-agent useChat transport', () => {
     expect(chat.messages.at(-1)?.parts).toMatchObject([{ type: 'text', text: 'Recovered' }]);
     expect(start).toHaveBeenCalledTimes(1);
   });
+
+  it('does not reconnect to a stale run after starting the next run fails', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValue(
+          new Response(
+            ['start', 'finish']
+              .map((type) => `data: ${JSON.stringify({ type, messageId: run.runId })}\n\n`)
+              .join(''),
+          ),
+        ),
+    );
+    const start = vi
+      .fn()
+      .mockResolvedValueOnce(run)
+      .mockRejectedValueOnce(new Error('Could not start the next run'));
+    const chat = new Chat<CourseAgentMessage>({
+      transport: new CourseAgentTransport(start, '1', vi.fn()),
+    });
+
+    await chat.sendMessage({ text: 'First' });
+    await chat.sendMessage({ text: 'Second' });
+    expect(chat.status).toBe('error');
+    expect(fetch).toHaveBeenCalledTimes(1);
+
+    await chat.resumeStream();
+    expect(fetch).toHaveBeenCalledTimes(1);
+  });
 });

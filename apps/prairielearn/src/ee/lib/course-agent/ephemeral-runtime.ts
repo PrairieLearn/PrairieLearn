@@ -36,7 +36,10 @@ const fakeConversations = new Map<string, FakeConversation>();
 
 async function fetchWorker(path: string, init: RequestInit) {
   try {
-    return await fetch(new URL(path, config.courseAgentWorkerOrigin), init);
+    return await fetch(new URL(path, config.courseAgentWorkerOrigin), {
+      ...init,
+      redirect: 'error',
+    });
   } catch (error) {
     throw new Error(
       config.devMode

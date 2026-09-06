@@ -9,6 +9,7 @@ export async function pipeCourseAgentUIStream(stream: ReadableStream<string>, re
   Object.entries(UI_MESSAGE_STREAM_HEADERS).forEach(([key, value]) => {
     res.setHeader(key, value);
   });
+  res.setHeader('Cache-Control', 'no-store');
 
   await pipeline(Readable.fromWeb(stream as unknown as NodeReadableStream<string>), res);
 }

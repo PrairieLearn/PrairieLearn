@@ -55,10 +55,13 @@ Sandbox lifetime settings are non-secret and can be configured in `config.json`:
     "idleTimeoutSeconds": 600,
     "maxLifetimeSeconds": 600,
     "backupTtlSeconds": 604800,
-    "turnTimeoutSeconds": 900
+    "turnTimeoutSeconds": 540
   }
 }
 ```
+
+The Worker caps each turn at the remaining absolute sandbox lifetime, so a turn cannot outlive its
+workspace.
 
 `maxLifetimeSeconds` is an absolute limit starting when the sandbox is created, not an idle timer.
 It defaults to 600 seconds and accepts values from 1 to 86,400 seconds (for example, 10 for local
