@@ -85,6 +85,9 @@
   min-height: 0;
   min-width: 0;
 }
+.course-agent-panel-content:has(> .course-agent-conversation) .course-agent-header {
+  border-bottom: 0 !important;
+}
 .course-agent-conversation-menu {
   max-height: min(24rem, 60dvh);
   overflow-y: auto;
