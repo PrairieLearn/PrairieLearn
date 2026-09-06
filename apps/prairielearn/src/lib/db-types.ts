@@ -703,6 +703,63 @@ export const ClientFingerprintSchema = z.object({
 });
 export type ClientFingerprint = z.infer<typeof ClientFingerprintSchema>;
 
+export const CourseAgentConversationSchema = z.object({
+  course_id: IdSchema,
+  created_at: DateFromISOString,
+  deleted_at: DateFromISOString.nullable(),
+  id: z.uuid(),
+  last_error: z.string().nullable(),
+  runtime_status: z.enum(['starting', 'running', 'waiting_for_user', 'offline', 'failed']),
+  sandbox_id: z.string(),
+  title: z.string(),
+  updated_at: DateFromISOString,
+  user_id: IdSchema,
+});
+export type CourseAgentConversation = z.infer<typeof CourseAgentConversationSchema>;
+
+export const CourseAgentRunSchema = z.object({
+  completed_at: DateFromISOString.nullable(),
+  conversation_id: z.uuid(),
+  created_at: DateFromISOString,
+  error_message: z.string().nullable(),
+  id: z.uuid(),
+  prompt_digest: z.string(),
+  status: z.enum(['running', 'completed', 'failed']),
+});
+export type CourseAgentRun = z.infer<typeof CourseAgentRunSchema>;
+
+export const CourseAgentMessageSchema = z.object({
+  authn_user_id: IdSchema.nullable(),
+  content: z.string(),
+  conversation_id: z.uuid(),
+  created_at: DateFromISOString,
+  id: IdSchema,
+  role: z.enum(['user', 'assistant']),
+  run_id: z.uuid().nullable(),
+});
+export type CourseAgentMessage = z.infer<typeof CourseAgentMessageSchema>;
+
+export const CourseAgentEventSchema = z.object({
+  conversation_id: z.uuid(),
+  created_at: DateFromISOString,
+  data: z.record(z.string(), z.unknown()),
+  event_type: z.string(),
+  id: IdSchema,
+  run_id: z.uuid().nullable(),
+  sequence: z.coerce.number().int().nonnegative(),
+});
+export type CourseAgentEvent = z.infer<typeof CourseAgentEventSchema>;
+
+export const CourseAgentWorkspaceBackupSchema = z.object({
+  backup_handle: z.unknown(),
+  conversation_id: z.uuid(),
+  created_at: DateFromISOString,
+  expires_at: DateFromISOString.nullable(),
+  id: IdSchema,
+  sandbox_id: z.string(),
+});
+export type CourseAgentWorkspaceBackup = z.infer<typeof CourseAgentWorkspaceBackupSchema>;
+
 export const CourseSchema = z.object({
   ai_grading_free_credit_redemptions_used: z.number(),
   announcement_color: z.string().nullable(),
@@ -1800,6 +1857,11 @@ export const TableNames = [
   'batched_migrations',
   'chunks',
   'client_fingerprints',
+  'course_agent_conversations',
+  'course_agent_events',
+  'course_agent_messages',
+  'course_agent_runs',
+  'course_agent_workspace_backups',
   'course_instance_access_rules',
   'course_instance_ai_grading_credentials',
   'course_instance_permissions',

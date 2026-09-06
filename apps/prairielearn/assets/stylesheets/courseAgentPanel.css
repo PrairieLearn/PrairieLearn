@@ -77,6 +77,18 @@
   min-width: 0;
   min-height: 0;
 }
+.course-agent-conversation {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: min-content minmax(0, 1fr) min-content;
+  grid-row: 2 / 4;
+  min-height: 0;
+  min-width: 0;
+}
+.course-agent-conversation-menu {
+  max-height: min(24rem, 60dvh);
+  overflow-y: auto;
+}
 .course-agent-transcript {
   min-width: 0;
   min-height: 0;

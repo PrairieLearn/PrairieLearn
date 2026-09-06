@@ -1,19 +1,275 @@
+import { randomUUID } from 'node:crypto';
+
+import { execute, loadSqlEquiv } from '@prairielearn/postgres';
+
+import { createCourseAgentTurn } from '../../models/course-agent.js';
 import { insertCoursePermissionsByUserUid } from '../../models/course-permissions.js';
 import { updateCourseColumn } from '../../models/course.js';
-import { selectUserByUid } from '../../models/user.js';
+import { generateUser, selectUserByUid } from '../../models/user.js';
 import { getConfiguredUser } from '../utils/auth.js';
 
 import { createTest, expect } from './fixtures.js';
 
 const test = createTest({ courseAgentRuntime: 'fake', features: { 'course-agent': true } });
+const sql = loadSqlEquiv(import.meta.url);
 
 test.beforeEach(async ({ courseInstance }) => {
+  await execute(sql.archive_conversations, { course_id: courseInstance.course_id });
   await updateCourseColumn({
     courseId: courseInstance.course_id,
     columnName: 'repository',
     value: 'https://github.com/PrairieLearn/test.git',
     authnUserId: (await getConfiguredUser()).id,
   });
+});
+
+test('shows loading in the open panel and collapsed launcher while history is pending', async ({
+  page,
+  courseInstance,
+}, testInfo) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  let releaseHistory!: () => void;
+  const pending = new Promise<void>((resolve) => {
+    releaseHistory = resolve;
+  });
+  await page.route('**/trpc/*', async (route) => {
+    if (route.request().url().includes('courseAgent.history')) await pending;
+    await route.continue();
+  });
+  await page.goto(`/pl/course/${courseInstance.course_id}/course_admin/instances`);
+  const panel = page.getByRole('complementary', { name: 'Course agent panel' });
+  await expect(panel.getByRole('status')).toHaveText('Loading conversation…');
+  await expect(panel.getByRole('button', { name: 'Collapse course agent' })).toBeEnabled();
+  const width = (await panel.boundingBox())!.width;
+  await panel.getByRole('button', { name: 'Collapse course agent' }).click();
+  const launcher = panel.getByRole('button', { name: 'Expand course agent' });
+  await expect(launcher.getByLabel('Loading course agent')).toBeVisible();
+  await page.screenshot({ path: testInfo.outputPath('course-conversation-loading-rail.png') });
+  releaseHistory();
+  await expect(launcher.getByLabel('Loading course agent')).toHaveCount(0);
+  await launcher.click();
+  await expect(panel.getByRole('textbox', { name: 'Message course agent' })).toBeVisible();
+  await expect.poll(async () => (await panel.boundingBox())!.width).toBe(width);
+});
+
+test('updates activity badges for other conversations and preserves their start time', async ({
+  page,
+  courseInstance,
+}, testInfo) => {
+  await page.goto(`/pl/course/${courseInstance.course_id}/course_admin/instances`);
+  const panel = page.getByRole('complementary', { name: 'Course agent panel' });
+  const input = panel.getByRole('textbox', { name: 'Message course agent' });
+  const picker = panel.getByRole('button', { name: 'Conversation', exact: true });
+  await input.fill('Build a numerical methods assessment');
+  await input.press('Enter');
+  await expect(picker).toContainText('Build a numerical methods assessment');
+  const first = (await picker.getAttribute('data-conversation-id'))!;
+  await picker.click();
+  const item = panel.getByRole('menuitemradio', { name: /Build a numerical methods assessment/ });
+  const startedAt = await item.locator('time').getAttribute('datetime');
+  await picker.click();
+  await panel.getByRole('button', { name: 'New conversation', exact: true }).click();
+  await execute(sql.set_activity, { conversation_id: first, status: 'starting' });
+  await picker.click();
+  await expect(item.getByLabel('Conversation in progress')).toBeVisible({ timeout: 10000 });
+  await expect(item.locator('time')).toHaveAttribute('datetime', startedAt!);
+  await page.screenshot({ path: testInfo.outputPath('course-conversation-active-menu.png') });
+  await execute(sql.set_activity, { conversation_id: first, status: 'waiting_for_user' });
+  await expect(item.getByLabel('Conversation in progress')).toHaveCount(0, { timeout: 10000 });
+});
+
+test('restores both turns and their tool history after a page reload', async ({
+  page,
+  courseInstance,
+}) => {
+  let starts = 0;
+  page.on('request', (request) => {
+    if (request.url().includes('courseAgent.start')) starts++;
+  });
+  await page.goto(`/pl/course/${courseInstance.course_id}/course_admin/instances`);
+  const panel = page.getByRole('complementary', { name: 'Course agent panel' });
+  for (const prompt of ['First persisted turn', 'Second persisted turn']) {
+    await panel.getByRole('textbox', { name: 'Message course agent' }).fill(prompt);
+    await panel.getByRole('button', { name: 'Send message', exact: true }).click();
+    await expect(panel.getByRole('textbox', { name: 'Message course agent' })).toBeEnabled();
+    await expect(
+      panel.getByRole('article', { name: 'Message from PrairieLearn' }).last(),
+    ).toContainText(prompt);
+  }
+  const transcript = await panel.getByRole('article').allTextContents();
+  await page.reload();
+  await expect(panel.getByRole('article', { name: 'Message from PrairieLearn' })).toHaveCount(2);
+  await expect(panel.getByRole('article')).toHaveText(transcript);
+  expect(starts).toBe(2);
+});
+
+test('switches between isolated conversations and continues the selected conversation', async ({
+  page,
+  courseInstance,
+}, testInfo) => {
+  let starts = 0;
+  page.on('request', (request) => {
+    if (request.url().includes('courseAgent.start')) starts++;
+  });
+  await page.goto(`/pl/course/${courseInstance.course_id}/course_admin/instances`);
+  const panel = page.getByRole('complementary', { name: 'Course agent panel' });
+  const input = panel.getByRole('textbox', { name: 'Message course agent' });
+  const picker = panel.getByRole('button', { name: 'Conversation', exact: true });
+  await input.fill('Build a hashmap assessment');
+  await input.press('Enter');
+  await expect(panel.getByText('Edited README.md', { exact: true })).toHaveCount(1);
+  const first = (await picker.getAttribute('data-conversation-id'))!;
+  const firstTranscript = await panel.getByRole('article').allTextContents();
+  await panel.getByRole('button', { name: 'New conversation', exact: true }).click();
+  await expect(panel.getByRole('article')).toHaveCount(0);
+  await input.fill('Build a sorting assessment');
+  await input.press('Enter');
+  await expect(panel.getByText('Edited README.md', { exact: true })).toHaveCount(1);
+  const second = (await picker.getAttribute('data-conversation-id'))!;
+  expect(second).not.toBe(first);
+  await picker.click();
+  await panel.getByRole('menuitemradio', { name: /Build a hashmap assessment/ }).click();
+  await expect(panel.getByRole('article')).toHaveText(firstTranscript);
+  await input.fill('Add one more hashmap question');
+  await input.press('Enter');
+  await expect(panel.getByText('Edited README.md', { exact: true })).toHaveCount(2);
+  await picker.click();
+  await panel.getByRole('menuitemradio', { name: /Build a sorting assessment/ }).click();
+  await expect(panel.getByRole('article', { name: 'Message from Dev User' })).toHaveCount(1);
+  await expect(panel.getByRole('log')).toContainText('Build a sorting assessment');
+  await expect(panel.getByRole('log')).not.toContainText('hashmap');
+  await page.reload();
+  await expect(picker).toHaveAttribute('data-conversation-id', second);
+  await expect(panel.getByRole('log')).toContainText('Build a sorting assessment');
+  expect(starts).toBe(3);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(picker).toBeVisible();
+  await picker.click();
+  await expect(
+    panel.getByRole('menuitemradio', { name: /Build a sorting assessment/ }),
+  ).toHaveAttribute('aria-checked', 'true');
+  await expect(panel.getByRole('menuitemradio').first().locator('time')).toHaveAttribute(
+    'datetime',
+    /T/,
+  );
+  await page.screenshot({ path: testInfo.outputPath('course-conversation-picker-mobile.png') });
+});
+
+test('switches away from an open stream without mixing conversations', async ({
+  page,
+  courseInstance,
+}) => {
+  await page.addInitScript(() => {
+    const fetch = window.fetch.bind(window);
+    window.fetch = async (input, init) => {
+      const url = new URL(input instanceof Request ? input.url : String(input), location.origin);
+      if (
+        !url.pathname.endsWith('/course_agent/stream') ||
+        url.searchParams.get('conversationId') !== document.documentElement.dataset.holdCourseStream
+      ) {
+        return fetch(input, init);
+      }
+      const encoder = new TextEncoder();
+      return new Response(
+        new ReadableStream({
+          start(controller) {
+            for (const chunk of [
+              { type: 'start', messageId: url.searchParams.get('runId') },
+              { type: 'text-start', id: 'text' },
+              {
+                type: 'text-delta',
+                id: 'text',
+                delta: 'Partial response from the first conversation',
+              },
+            ]) {
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify(chunk)}\n\n`));
+            }
+            init?.signal?.addEventListener(
+              'abort',
+              () => controller.error(new DOMException('Aborted', 'AbortError')),
+              { once: true },
+            );
+          },
+        }),
+        { headers: { 'content-type': 'text/event-stream' } },
+      );
+    };
+  });
+  let starts = 0;
+  page.on('request', (request) => {
+    if (request.url().includes('courseAgent.start')) starts++;
+  });
+  await page.goto(`/pl/course/${courseInstance.course_id}/course_admin/instances`);
+  const panel = page.getByRole('complementary', { name: 'Course agent panel' });
+  const input = panel.getByRole('textbox', { name: 'Message course agent' });
+  const picker = panel.getByRole('button', { name: 'Conversation', exact: true });
+  await input.fill('First conversation');
+  await input.press('Enter');
+  await expect(panel.getByText('Edited README.md', { exact: true })).toHaveCount(1);
+  const first = (await picker.getAttribute('data-conversation-id'))!;
+  await panel.getByRole('button', { name: 'New conversation', exact: true }).click();
+  await input.fill('Second conversation');
+  await input.press('Enter');
+  await expect(panel.getByText('Edited README.md', { exact: true })).toHaveCount(1);
+  await picker.click();
+  await panel.getByRole('menuitemradio', { name: /First conversation/ }).click();
+  await expect(picker).toHaveAttribute('data-conversation-id', first);
+  await page.evaluate((id) => {
+    document.documentElement.dataset.holdCourseStream = id;
+  }, first);
+  await input.fill('Continue the first conversation');
+  await input.press('Enter');
+  await expect(
+    panel.getByText('Partial response from the first conversation', { exact: true }),
+  ).toBeVisible();
+  await picker.click();
+  await panel.getByRole('menuitemradio', { name: /Second conversation/ }).click();
+  await expect(panel.getByRole('log')).toContainText('Second conversation');
+  await expect(panel.getByRole('log')).not.toContainText('Partial response');
+  await expect(input).toBeEnabled();
+  await page.evaluate(() => {
+    delete document.documentElement.dataset.holdCourseStream;
+  });
+  await picker.click();
+  await panel.getByRole('menuitemradio', { name: /First conversation/ }).click();
+  await expect(panel.getByRole('article', { name: 'Message from PrairieLearn' })).toHaveCount(2);
+  await expect(panel.getByRole('log')).toContainText('Continue the first conversation');
+  await expect(panel.getByRole('log')).not.toContainText('Second conversation');
+  expect(starts).toBe(3);
+});
+
+test('does not expose another instructors conversation in the picker or history endpoint', async ({
+  page,
+  courseInstance,
+}) => {
+  const otherUser = await generateUser();
+  const conversationId = randomUUID();
+  await createCourseAgentTurn({
+    conversation: {
+      id: conversationId,
+      user_id: otherUser.id,
+      course_id: courseInstance.course_id,
+      title: 'Private conversation',
+      sandbox_id: `course-agent-${conversationId}`,
+      runtime_status: 'starting',
+    },
+    runId: randomUUID(),
+    prompt: 'Private prompt',
+    promptDigest: 'test',
+  });
+  await page.goto(`/pl/course/${courseInstance.course_id}/course_admin/instances`);
+  const picker = page.getByRole('button', { name: 'Conversation', exact: true });
+  await expect(picker).toHaveAttribute('data-conversation-id', 'new');
+  await picker.click();
+  await expect(page.getByRole('menuitemradio', { name: 'Private conversation' })).toHaveCount(0);
+  for (const id of [conversationId, randomUUID()]) {
+    const input = encodeURIComponent(JSON.stringify({ json: { conversationId: id } }));
+    const response = await page.request.get(
+      `/pl/course/${courseInstance.course_id}/trpc/courseAgent.history?input=${input}`,
+    );
+    expect(response.status()).toBe(404);
+    expect(await response.text()).not.toContain('Private prompt');
+  }
 });
 
 test('persists panel width across navigation and renders a loading shell before hydration', async ({

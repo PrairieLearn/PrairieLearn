@@ -31,7 +31,8 @@ export async function decodeAndVerifyToken(token: string, secret: string) {
       .replaceAll('-', '+')
       .replaceAll('_', '/')
       .padEnd(Math.ceil(encodedData.length / 4) * 4, '=');
-    return JSON.parse(atob(paddedData)) as unknown;
+    const data = Uint8Array.from(atob(paddedData), (character) => character.charCodeAt(0));
+    return JSON.parse(new TextDecoder().decode(data)) as unknown;
   } catch {
     return null;
   }
@@ -57,10 +58,13 @@ export async function authorizeRun(request: CourseAgentStartRunRequest, secret: 
     capability.runId !== request.runId ||
     capability.sandboxId !== request.sandboxId ||
     capability.promptDigest !== (await sha256Hex(request.prompt)) ||
+    JSON.stringify(capability.workspaceBackup) !==
+      JSON.stringify(request.workspaceBackup ?? null) ||
     capability.repository !== request.course.repository ||
     capability.branch !== request.course.branch ||
     capability.expectedSha !== request.course.expectedSha ||
     capability.runtimeSettings.idleTimeoutSeconds !== request.runtimeSettings.idleTimeoutSeconds ||
+    capability.runtimeSettings.backupTtlSeconds !== request.runtimeSettings.backupTtlSeconds ||
     capability.runtimeSettings.maxLifetimeSeconds !== request.runtimeSettings.maxLifetimeSeconds ||
     capability.runtimeSettings.turnTimeoutSeconds !== request.runtimeSettings.turnTimeoutSeconds
   ) {

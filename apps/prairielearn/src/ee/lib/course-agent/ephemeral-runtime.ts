@@ -6,12 +6,14 @@ import {
   type CourseAgentEvent,
   CourseAgentSnapshotSchema,
   CourseAgentStartRunResponseSchema,
+  type CourseAgentWorkspaceBackup,
   courseAgentSandboxId,
 } from '@prairielearn/course-agent-protocol';
 import { generateSignedToken } from '@prairielearn/signed-token';
 
 import { config } from '../../../lib/config.js';
 
+import { persistCourseAgentSnapshot } from './persistence.js';
 import { publicCourseAgentStream } from './public-events.js';
 import { getCourseAgentStreamContext, getCourseAgentStreamId } from './redis.js';
 import { courseAgentUIStream } from './ui-stream.js';
@@ -65,6 +67,7 @@ function expiresAt() {
 function runtimeSettings() {
   return {
     idleTimeoutSeconds: config.courseAgentSandbox.idleTimeoutSeconds,
+    backupTtlSeconds: config.courseAgentSandbox.backupTtlSeconds,
     maxLifetimeSeconds: config.courseAgentSandbox.maxLifetimeSeconds,
     turnTimeoutSeconds: config.courseAgentSandbox.turnTimeoutSeconds,
   };
@@ -74,19 +77,22 @@ export async function startEphemeralCourseAgentRun({
   courseId,
   userId,
   conversationId = randomUUID(),
+  runId = randomUUID(),
   prompt,
   course,
+  workspaceBackup = null,
 }: {
   courseId: string;
   userId: string;
   conversationId?: string;
+  runId?: string;
   prompt: string;
   course: { repository: string; branch: string; expectedSha: string | null };
+  workspaceBackup?: CourseAgentWorkspaceBackup | null;
 }) {
   if (config.courseAgentRuntime === 'disabled') {
     throw new Error('Course-agent runtime is disabled');
   }
-  const runId = randomUUID();
   const sandboxId = courseAgentSandboxId(conversationId);
   const identity = { userId, courseId, conversationId, sandboxId };
   if (config.courseAgentRuntime === 'fake') {
@@ -98,6 +104,7 @@ export async function startEphemeralCourseAgentRun({
       ...identity,
       runId,
       promptDigest: promptDigest(prompt),
+      workspaceBackup,
       repository: course.repository,
       branch: course.branch,
       expectedSha: course.expectedSha,
@@ -116,6 +123,7 @@ export async function startEphemeralCourseAgentRun({
       sandboxId,
       prompt,
       course,
+      workspaceBackup,
       runtimeSettings: runtimeSettings(),
     }),
   });
@@ -145,7 +153,18 @@ async function startCourseAgentEventRelay(identity: Identity & { runId: string }
       .pipeThrough(new TextDecoderStream())
       .pipeThrough(publicCourseAgentStream())
       .pipeThrough(courseAgentUIStream(identity.runId))
-      .pipeThrough(new JsonToSseTransformStream()),
+      .pipeThrough(new JsonToSseTransformStream())
+      .pipeThrough(
+        new TransformStream<string, string>({
+          transform(chunk, controller) {
+            controller.enqueue(chunk);
+          },
+          async flush() {
+            const snapshot = await getEphemeralCourseAgentSnapshot(identity);
+            await persistCourseAgentSnapshot({ snapshot, runId: identity.runId });
+          },
+        }),
+      ),
   );
 }
 
