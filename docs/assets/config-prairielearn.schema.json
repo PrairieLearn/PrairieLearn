@@ -1527,8 +1527,16 @@
     },
     "courseAgentWorkerOrigin": {
       "default": "http://127.0.0.1:8787",
-      "type": "string",
-      "format": "uri"
+      "allOf": [
+        {
+          "type": "string",
+          "format": "uri"
+        },
+        {
+          "type": "string",
+          "pattern": "^(?:https:\\/\\/|http:\\/\\/(?:127\\.0\\.0\\.1|localhost|\\[::1\\])(?::\\d+)?(?:[/?#]|$))"
+        }
+      ]
     },
     "courseAgentCapabilitySecret": {
       "default": null,
@@ -1564,7 +1572,7 @@
           "maximum": 2592000
         },
         "turnTimeoutSeconds": {
-          "default": 900,
+          "default": 540,
           "type": "integer",
           "minimum": 60,
           "maximum": 3600

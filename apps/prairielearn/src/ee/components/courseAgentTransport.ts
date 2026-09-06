@@ -38,6 +38,7 @@ export class CourseAgentTransport extends DefaultChatTransport<CourseAgentMessag
       throw new Error('Send a new message to the course agent.');
     }
     const conversationId = this.run?.conversationId;
+    this.run = null;
     this.onRun(null);
     this.run = await this.startRun({
       conversationId,

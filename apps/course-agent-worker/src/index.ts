@@ -37,7 +37,13 @@ interface ConversationState {
   sandboxExpiresAt?: number | null;
   response: string | null;
   error: string | null;
-  events: CourseAgentEvent[];
+  nextSequence: number;
+}
+
+const EVENT_KEY_PREFIX = 'event:';
+
+function eventKey(sequence: number) {
+  return `${EVENT_KEY_PREFIX}${sequence.toString().padStart(12, '0')}`;
 }
 
 export { ContainerProxy };
@@ -129,7 +135,7 @@ export class CourseAgentCoordinator {
         status: 'starting',
         response: null,
         error: null,
-        events: current?.events ?? [],
+        nextSequence: current?.nextSequence ?? 0,
         sandboxExpiresAt: current?.sandboxExpiresAt,
       };
       await this.state.storage.put('conversation', next);
@@ -151,7 +157,7 @@ export class CourseAgentCoordinator {
         status: current.status,
         response: current.response,
         error: current.error,
-        events: current.events,
+        events: await this.getEvents(),
       });
     }
     if (request.method === 'POST' && url.pathname === '/stream') {
@@ -162,7 +168,7 @@ export class CourseAgentCoordinator {
       if (!sameIdentity(current.identity, capability)) {
         return Response.json({ error: 'Sandbox identity mismatch' }, { status: 403 });
       }
-      return this.stream(current);
+      return this.stream(current, await this.getEvents());
     }
     return new Response('Not found', { status: 404 });
   }
@@ -177,17 +183,18 @@ export class CourseAgentCoordinator {
       }
       const message =
         'The agent workspace reached its lifetime limit. Send another message to start a fresh workspace; temporary files are no longer available.';
-      const events = [...current.events];
+      const events: CourseAgentEvent[] = [];
+      let nextSequence = current.nextSequence;
       if (current.activeRunId) {
         events.push({
-          sequence: events.length,
+          sequence: nextSequence++,
           type: 'run.failed',
           occurredAt: new Date().toISOString(),
           data: { message },
         });
       }
       events.push({
-        sequence: events.length,
+        sequence: nextSequence++,
         type: 'sandbox.destroyed',
         occurredAt: new Date().toISOString(),
         data: { reason: 'max_lifetime' },
@@ -199,16 +206,16 @@ export class CourseAgentCoordinator {
         activeRunExpiresAt: null,
         status: 'offline',
         error: current.activeRunId ? message : null,
-        events,
+        nextSequence,
       };
-      await this.state.storage.put('conversation', expired);
+      await this.putStateAndEvents(expired, events);
       const sandbox = getSandbox(this.env.Sandbox, current.identity.sandboxId, {
         normalizeId: true,
       });
       await sandbox.destroy();
       await this.state.storage.put('conversation', { ...expired, sandboxExpiresAt: null });
       await this.state.storage.deleteAlarm();
-      for (const event of events.slice(current.events.length)) {
+      for (const event of events) {
         for (const listener of this.listeners) listener.enqueue(eventChunk(event));
       }
       this.closeStreams();
@@ -224,13 +231,13 @@ export class CourseAgentCoordinator {
       const current = await this.state.storage.get<ConversationState>('conversation');
       if (!current || (runId && current.activeRunId !== runId)) return;
       const event = {
-        sequence: current.events.length,
+        sequence: current.nextSequence,
         type,
         occurredAt: new Date().toISOString(),
         data,
       } satisfies CourseAgentEvent;
-      current.events.push(event);
-      await this.state.storage.put('conversation', current);
+      current.nextSequence++;
+      await this.putStateAndEvents(current, [event]);
       const chunk = eventChunk(event);
       for (const listener of this.listeners) listener.enqueue(chunk);
     });
@@ -241,13 +248,13 @@ export class CourseAgentCoordinator {
     this.listeners.clear();
   }
 
-  private stream(current: ConversationState) {
+  private stream(current: ConversationState, events: CourseAgentEvent[]) {
     const listeners = this.listeners;
     let activeController: ReadableStreamDefaultController<string> | null = null;
     return new Response(
       new ReadableStream<string>({
         start(controller) {
-          for (const event of current.events) controller.enqueue(eventChunk(event));
+          for (const event of events) controller.enqueue(eventChunk(event));
           if (!current.activeRunId) {
             controller.close();
             return;
@@ -280,6 +287,7 @@ export class CourseAgentCoordinator {
       const starting = !['running', 'healthy'].includes(sandboxState.status);
       const current = await this.state.storage.get<ConversationState>('conversation');
       if (current?.activeRunId !== request.runId) return;
+      const previousEvents = await this.getEvents();
       const deadline = sandboxDeadline(
         current.sandboxExpiresAt,
         starting,
@@ -326,7 +334,7 @@ export class CourseAgentCoordinator {
         requestPath,
         JSON.stringify({
           prompt,
-          history: conversationHistory(current.events),
+          history: conversationHistory(previousEvents),
         }),
       );
       const stream = new CodexStream();
@@ -346,7 +354,10 @@ export class CourseAgentCoordinator {
       ].join(' ');
       const codex = await sandbox.exec(command, {
         cwd: COURSE_AGENT_WORKSPACE_ROOT,
-        timeout: request.runtimeSettings.turnTimeoutSeconds * 1_000,
+        timeout: Math.min(
+          request.runtimeSettings.turnTimeoutSeconds * 1_000,
+          Math.max(1_000, deadline - Date.now() - 1_000),
+        ),
         stream: true,
         env: { OPENAI_API_KEY: 'proxy-injected', IS_SANDBOX: '1' },
         onOutput: (stream, data) => {
@@ -372,7 +383,10 @@ export class CourseAgentCoordinator {
         },
         request.runId,
       );
-      if (finished) this.closeStreams();
+      if (finished) {
+        this.closeStreams();
+        await this.pruneCompletedDeltas(request.runId);
+      }
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       await this.append('run.failed', { message }, request.runId);
@@ -396,6 +410,12 @@ export class CourseAgentCoordinator {
       if (!current?.activeRunId || !activeRunExpired(current.activeRunExpiresAt)) return current;
 
       const message = 'The course-agent run expired before it completed';
+      const event = {
+        sequence: current.nextSequence,
+        type: 'run.failed',
+        occurredAt: new Date().toISOString(),
+        data: { message },
+      } satisfies CourseAgentEvent;
       const expired: ConversationState = {
         ...current,
         activeRunId: null,
@@ -403,17 +423,9 @@ export class CourseAgentCoordinator {
         status: 'failed',
         response: null,
         error: message,
-        events: [
-          ...current.events,
-          {
-            sequence: current.events.length,
-            type: 'run.failed',
-            occurredAt: new Date().toISOString(),
-            data: { message },
-          },
-        ],
+        nextSequence: current.nextSequence + 1,
       };
-      await this.state.storage.put('conversation', expired);
+      await this.putStateAndEvents(expired, [event]);
       this.closeStreams();
       return expired;
     });
@@ -426,6 +438,40 @@ export class CourseAgentCoordinator {
       await this.state.storage.put('conversation', { ...current, ...update });
       return true;
     });
+  }
+
+  private async getEvents() {
+    const events = await this.state.storage.list<CourseAgentEvent>({ prefix: EVENT_KEY_PREFIX });
+    return [...events.values()].sort((left, right) => left.sequence - right.sequence);
+  }
+
+  private async putStateAndEvents(state: ConversationState, events: CourseAgentEvent[]) {
+    await this.state.storage.put({
+      conversation: state,
+      ...Object.fromEntries(events.map((event) => [eventKey(event.sequence), event])),
+    });
+  }
+
+  private async pruneCompletedDeltas(runId: string) {
+    const events = await this.state.storage.list<CourseAgentEvent>({ prefix: EVENT_KEY_PREFIX });
+    const runEvents = [...events];
+    const startSequence = runEvents.find(
+      ([, event]) => event.type === 'user.message' && event.data.runId === runId,
+    )?.[1].sequence;
+    const endSequence = runEvents.find(
+      ([, event]) =>
+        event.type === 'agent.completed' && startSequence != null && event.sequence > startSequence,
+    )?.[1].sequence;
+    if (startSequence == null || endSequence == null) return;
+    const deltaKeys = runEvents
+      .filter(
+        ([, event]) =>
+          event.type === 'assistant.delta' &&
+          event.sequence > startSequence &&
+          event.sequence < endSequence,
+      )
+      .map(([key]) => key);
+    if (deltaKeys.length > 0) await this.state.storage.delete(deltaKeys);
   }
 }
 

@@ -28,6 +28,26 @@ describe('ephemeral course-agent runtime', () => {
     );
   });
 
+  it('rejects Worker redirects without forwarding its capability', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 400 }));
+    vi.stubGlobal('fetch', fetchMock);
+    await withConfig(
+      {
+        courseAgentRuntime: 'cloudflare',
+        courseAgentCapabilitySecret: 'local-test-secret',
+      },
+      async () => {
+        await expect(
+          startEphemeralCourseAgentRun({ courseId: '1', userId: '2', prompt: 'Hello' }),
+        ).rejects.toThrow('rejected the run');
+      },
+    );
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.any(URL),
+      expect.objectContaining({ redirect: 'error' }),
+    );
+  });
+
   it('reuses one fake workspace within a conversation and scopes access', async () => {
     await withConfig({ courseAgentRuntime: 'fake' }, async () => {
       const first = await startEphemeralCourseAgentRun({

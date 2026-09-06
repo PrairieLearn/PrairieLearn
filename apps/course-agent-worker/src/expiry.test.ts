@@ -18,13 +18,27 @@ function fixture(activeRunId: string | null, expiresAt: number) {
     status: activeRunId ? 'running' : 'waiting_for_user',
     response: null,
     error: null,
-    events: [],
+    nextSequence: 0,
   };
   const values = new Map<string, unknown>([['conversation', initial]]);
   const storage = {
     get: vi.fn(async (key: string) => structuredClone(values.get(key))),
-    put: vi.fn(async (key: string, value: unknown) => {
-      values.set(key, structuredClone(value));
+    put: vi.fn(async (keyOrEntries: string | Record<string, unknown>, value?: unknown) => {
+      if (typeof keyOrEntries === 'string') {
+        values.set(keyOrEntries, structuredClone(value));
+        return;
+      }
+      for (const [key, entry] of Object.entries(keyOrEntries)) {
+        values.set(key, structuredClone(entry));
+      }
+    }),
+    list: vi.fn(async ({ prefix }: { prefix: string }) => {
+      return new Map(
+        [...values].filter(([key]) => key.startsWith(prefix)).map(([key, value]) => [key, value]),
+      );
+    }),
+    delete: vi.fn(async (keys: string | string[]) => {
+      for (const key of typeof keys === 'string' ? [keys] : keys) values.delete(key);
     }),
     setAlarm: vi.fn(async () => {}),
     deleteAlarm: vi.fn(async () => {}),
@@ -37,7 +51,7 @@ function fixture(activeRunId: string | null, expiresAt: number) {
     state as unknown as DurableObjectState,
     {} as ConstructorParameters<typeof CourseAgentCoordinator>[1],
   );
-  return { coordinator, storage };
+  return { coordinator, storage, values };
 }
 
 afterEach(() => {
@@ -80,5 +94,29 @@ describe('sandbox expiry alarm', () => {
     await coordinator['append']('assistant.delta', { text: 'Late response' }, 'old-run');
     expect(await coordinator['update']({ status: 'waiting_for_user' }, 'old-run')).toBe(false);
     expect(await storage.get('conversation')).toEqual(expired);
+  });
+
+  it('stores stream events separately and prunes deltas after completion', async () => {
+    const { coordinator, storage, values } = fixture(null, 5000);
+    await coordinator['append']('user.message', { text: 'First', runId: 'run-1' });
+    await coordinator['append']('assistant.delta', { text: 'Hello' });
+    await coordinator['append']('agent.completed', { response: 'Hello' });
+    await coordinator['append']('user.message', { text: 'Second', runId: 'run-2' });
+    await coordinator['append']('assistant.delta', { text: 'Still running' });
+
+    expect(await storage.get('conversation')).toMatchObject({ nextSequence: 5 });
+    expect(values.get('event:000000000001')).toMatchObject({
+      sequence: 1,
+      type: 'assistant.delta',
+    });
+    expect(values.get('event:000000000002')).toMatchObject({
+      sequence: 2,
+      type: 'agent.completed',
+    });
+
+    await coordinator['pruneCompletedDeltas']('run-1');
+    expect(values.has('event:000000000001')).toBe(false);
+    expect(values.has('event:000000000002')).toBe(true);
+    expect(values.has('event:000000000004')).toBe(true);
   });
 });
