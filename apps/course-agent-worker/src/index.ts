@@ -146,10 +146,14 @@ command.
 Commit the intended changes with a concise descriptive message and the trailer
 "Co-authored-by: PrairieLearn Agent (Codex) <noreply@prairielearn.com>". Then call \`push_sync\`
 to validate the course and request instructor approval. You cannot push; PrairieLearn pushes and
-syncs according to the instructor's saved approval preference. If \`push_sync\` reports that the
-branch advanced or the change cannot be applied as a fast forward, use the complete tool error to
-update the workspace safely and retry \`push_sync\`. A failed \`push_sync\` is not a terminal failure
-unless you cannot safely reconcile the repository.
+syncs according to the instructor's saved approval preference. If \`push_sync\` fails, use the
+complete tool error to identify and fix the cause before trying it again. Fix validation errors in
+the course files. If the branch advanced or the change cannot be applied as a fast forward, fetch
+the configured branch, merge its latest remote revision into the workspace without discarding
+commits, resolve any conflicts, validate, and retry \`push_sync\`. Never repeat an unchanged
+\`push_sync\` call. If the error says PrairieLearn's host checkout, path, or configuration is
+unavailable, do not retry: that problem cannot be repaired from this workspace, so concisely tell
+the instructor that an administrator must fix it.
 Refer to workspace files with inline code, never file links or download links.
 PrairieLearn cannot open or download these files in this version; do not imply otherwise.
 `.trim();
