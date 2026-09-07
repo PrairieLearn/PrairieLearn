@@ -185,7 +185,8 @@ jobs:
 
       - name: Install additional dependencies
         run: |-
-          sudo curl -fsSL https://d2lang.com/install.sh | sh -s --
+          # D2 0.9.0 emits SVG namespace attributes that HTMLHint cannot parse.
+          sudo curl -fsSL https://d2lang.com/install.sh | sh -s -- --version v0.8.2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Set up Python
