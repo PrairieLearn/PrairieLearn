@@ -53,6 +53,9 @@ describe('course-agent protocol', () => {
         branch: 'master',
         expectedSha: null,
       },
+      authoringContext: {
+        courseInstance: { id: '91', shortName: 'Fa26', longName: 'Fall 2026' },
+      },
       runtimeSettings: {
         idleTimeoutSeconds: 600,
         backupTtlSeconds: 604_800,
@@ -60,6 +63,7 @@ describe('course-agent protocol', () => {
       },
     });
     expect(request.prompt).toBe(prompt);
+    expect(request.authoringContext.courseInstance?.shortName).toBe('Fa26');
     expect(() => CourseAgentStartRunRequestSchema.parse({ ...request, prompt: '   ' })).toThrow();
   });
 });

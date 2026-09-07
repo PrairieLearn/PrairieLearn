@@ -50,6 +50,9 @@ async function makeRequest(): Promise<CourseAgentStartRunRequest> {
     repository: 'https://github.com/PrairieLearn/test.git',
     branch: 'master',
     expectedSha: '0123456789abcdef0123456789abcdef01234567',
+    authoringContext: {
+      courseInstance: { id: '91', shortName: 'Fa26', longName: 'Fall 2026' },
+    },
   };
   return {
     capability: await sign(capability),
@@ -63,6 +66,7 @@ async function makeRequest(): Promise<CourseAgentStartRunRequest> {
       expectedSha: capability.expectedSha,
     },
     workspaceBackup: null,
+    authoringContext: capability.authoringContext,
     runtimeSettings: capability.runtimeSettings,
   };
 }
@@ -76,6 +80,17 @@ describe('course-agent Worker authorization', () => {
     ).rejects.toThrow('does not authorize');
     await expect(
       authorizeRun({ ...request, course: { ...request.course, expectedSha: null } }, secret),
+    ).rejects.toThrow('does not authorize');
+    await expect(
+      authorizeRun(
+        {
+          ...request,
+          authoringContext: {
+            courseInstance: { ...request.authoringContext.courseInstance!, shortName: 'Sp27' },
+          },
+        },
+        secret,
+      ),
     ).rejects.toThrow('does not authorize');
     await expect(
       authorizeRun(

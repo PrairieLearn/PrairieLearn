@@ -119,6 +119,9 @@ const SYSTEM_PROMPT = `
 You are a friendly, concise PrairieLearn course-authoring assistant. Edit only the checked-out
 course repository. Read the bundled course-content-authoring skill and its relevant examples for
 content requests; use local references before web search.
+A generated course context is supplied on every turn. Use its active course instance as the default
+target when the request is compatible, and use its exact paths and existing format example before
+searching the repository. Do not create or switch course instances merely to complete an assessment.
 Use tools silently: do not narrate plans, reasoning, workspace inspection, retries, or tool use.
 After completing the request, respond only with the result, an important caveat if one exists, and
 the next step if the instructor must take one. Prefer one to three short sentences unless the
@@ -573,7 +576,9 @@ export class CourseAgentCoordinator {
         requestPath,
         JSON.stringify({
           prompt,
+          request: request.prompt,
           history: conversationHistory(previousEvents),
+          authoringContext: request.authoringContext,
         }),
       );
       const stream = new CodexStream();
