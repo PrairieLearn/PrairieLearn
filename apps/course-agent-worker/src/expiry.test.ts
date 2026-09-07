@@ -7,6 +7,14 @@ const sandbox = vi.hoisted(() => ({
   restoreBackup: vi.fn(async () => {}),
   getState: vi.fn(async () => ({ status: 'running' })),
   setOutboundByHost: vi.fn(async () => {}),
+  startProcess: vi.fn(async () => ({
+    id: 'codex',
+    getStatus: vi.fn(async () => 'completed'),
+    getLogs: vi.fn(async () => ({ stdout: '', stderr: '' })),
+    kill: vi.fn(async () => {}),
+  })),
+  getProcess: vi.fn(async () => ({ exitCode: 0 })),
+  cleanupCompletedProcesses: vi.fn(async () => {}),
   exec: vi.fn(async (command: string) => ({
     success: true,
     stdout:
