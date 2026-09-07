@@ -52,7 +52,12 @@ function toolLabel(item: Record<string, unknown>, completed: boolean) {
           : typeof item.name === 'string'
             ? item.name
             : null;
-      if (name?.endsWith('push_sync')) return completed ? 'Proposed changes' : 'Proposing changes';
+      if (name?.endsWith('push_sync')) {
+        if (!completed) return 'Proposing changes';
+        return item.status === 'failed'
+          ? 'Could not publish proposed changes'
+          : 'Published and synced changes';
+      }
       return name ? `Used ${humanize(name)}` : 'Used a PrairieLearn tool';
     }
     default:

@@ -419,7 +419,7 @@ async function resolvePushApproval({
       decision: 'completed',
       result,
     });
-    return { status: 'completed' as const, message: 'Changes pushed and course sync started' };
+    return { status: 'completed' as const, message: 'Changes published and course sync completed' };
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     const result = { message };

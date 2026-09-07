@@ -61,7 +61,7 @@ describe('toolEvents', () => {
     ).toEqual([]);
   });
 
-  it('describes push sync as a proposed change workflow', () => {
+  it('describes each push sync outcome', () => {
     expect(
       toolEvents({
         type: 'item.started',
@@ -81,7 +81,18 @@ describe('toolEvents', () => {
     ).toEqual([
       {
         type: 'tool.completed',
-        data: { operationId: 'item-5', label: 'Proposed changes' },
+        data: { operationId: 'item-5', label: 'Published and synced changes' },
+      },
+    ]);
+    expect(
+      toolEvents({
+        type: 'item.completed',
+        item: { id: 'item-6', type: 'mcp_tool_call', tool: 'push_sync', status: 'failed' },
+      }),
+    ).toEqual([
+      {
+        type: 'tool.failed',
+        data: { operationId: 'item-6', label: 'Could not publish proposed changes' },
       },
     ]);
   });

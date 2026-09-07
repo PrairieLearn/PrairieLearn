@@ -1,8 +1,10 @@
 import { execa } from 'execa';
+import stripAnsi from 'strip-ansi';
 
 import type { AuthzData } from '../../../lib/authz-data-lib.js';
 import type { Course, CourseAgentPushApproval, User } from '../../../lib/db-types.js';
 import { Editor } from '../../../lib/editors.js';
+import { selectJobsByJobSequenceId } from '../../../lib/server-jobs.js';
 import { getCourseCommitHash } from '../../../models/course.js';
 
 export function validateCourseAgentPublication(
@@ -79,9 +81,22 @@ export async function publishCourseAgentApproval({
     approval,
   });
   const job = await editor.prepareServerJob();
-  await editor.executeWithServerJob(job);
+  try {
+    await editor.executeWithServerJob(job);
+  } catch (error) {
+    const jobs = await selectJobsByJobSequenceId(job.jobSequenceId);
+    const output = stripAnsi(
+      jobs
+        .map((job) => job.output)
+        .filter((output): output is string => output != null)
+        .join('\n'),
+    ).trim();
+    const message = error instanceof Error ? error.message : String(error);
+    throw new Error(output ? `${message}\n\nServer job log:\n${output}` : message, { cause: error });
+  }
   return {
     jobSequenceId: job.jobSequenceId,
     commitSha: await getCourseCommitHash(course.path),
+    message: 'The proposed changes were approved, pushed, and synced successfully.',
   };
 }
