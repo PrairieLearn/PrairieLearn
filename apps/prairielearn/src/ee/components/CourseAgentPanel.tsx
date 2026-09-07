@@ -523,29 +523,13 @@ function ApprovalModePicker({
         {loading ? 'Loading approval setting' : label}
       </Dropdown.Toggle>
       <Dropdown.Menu>
-        <Dropdown.Header>Approval behavior</Dropdown.Header>
+        <Dropdown.Header>Approvals for course editing</Dropdown.Header>
         <Dropdown.Item active={mode === 'ask'} onClick={() => onSelect('ask')}>
-          <div className="d-flex align-items-center gap-2">
-            <i
-              className={`bi bi-check-lg ${mode === 'ask' ? '' : 'invisible'}`}
-              aria-hidden="true"
-            />
-            <span>Ask for approval</span>
-          </div>
+          Ask for approval
         </Dropdown.Item>
         <Dropdown.Item active={mode === 'always'} onClick={() => onSelect('always')}>
-          <div className="d-flex align-items-center gap-2">
-            <i
-              className={`bi bi-check-lg ${mode === 'always' ? '' : 'invisible'}`}
-              aria-hidden="true"
-            />
-            <span>Always approve</span>
-          </div>
+          Always approve
         </Dropdown.Item>
-        <Dropdown.Divider />
-        <Dropdown.ItemText className="small text-muted" style={{ maxWidth: '18rem' }}>
-          Always approve still checks the repository and proposed changes before publishing.
-        </Dropdown.ItemText>
       </Dropdown.Menu>
     </Dropdown>
   );
