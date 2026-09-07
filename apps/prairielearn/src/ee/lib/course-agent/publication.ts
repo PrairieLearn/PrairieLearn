@@ -92,7 +92,9 @@ export async function publishCourseAgentApproval({
         .join('\n'),
     ).trim();
     const message = error instanceof Error ? error.message : String(error);
-    throw new Error(output ? `${message}\n\nServer job log:\n${output}` : message, { cause: error });
+    throw new Error(output ? `${message}\n\nServer job log:\n${output}` : message, {
+      cause: error,
+    });
   }
   return {
     jobSequenceId: job.jobSequenceId,
