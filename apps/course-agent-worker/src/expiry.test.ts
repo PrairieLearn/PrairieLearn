@@ -190,6 +190,7 @@ describe('sandbox expiry alarm', () => {
           branch: 'master',
           expectedSha: null,
         },
+        authoringContext: { courseInstance: null },
         workspaceBackup: backup,
         runtimeSettings: {
           idleTimeoutSeconds: 600,
