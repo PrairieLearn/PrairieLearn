@@ -6,6 +6,7 @@ export function CourseAgentPanelServer({
   initialOpen: boolean;
   trpcCsrfToken: string;
   courseId: string;
+  courseInstanceId: string | null;
   userName: string;
   showDiagnostics: boolean;
 }) {

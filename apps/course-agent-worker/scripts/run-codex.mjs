@@ -4,6 +4,8 @@ import { join } from 'node:path';
 import { createInterface } from 'node:readline';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
+import { buildCourseManifest, formatCourseContext } from './course-context.mjs';
+
 // App-server, unlike exec --json, exposes incremental agent-message text.
 export async function runCodex({
   model,
@@ -14,6 +16,8 @@ export async function runCodex({
   cwd = process.cwd(),
   codexHome = join(cwd, '.course-agent', 'codex'),
   history = [],
+  authoringContext = { courseInstance: null },
+  request = prompt,
 }) {
   const skillPath = fileURLToPath(
     new URL('../skills/course-content-authoring/SKILL.md', import.meta.url),
@@ -26,6 +30,10 @@ export async function runCodex({
     ),
     'utf8',
   );
+  const courseContext = formatCourseContext(
+    await buildCourseManifest({ courseRoot: cwd, authoringContext, request }),
+  );
+  const contextualPrompt = `${prompt}\n\n${courseContext}`;
   await mkdir(codexHome, { recursive: true });
   const threadFile = join(codexHome, 'course-agent-thread.json');
   let savedThread;
@@ -122,8 +130,8 @@ export async function runCodex({
         emit({ method: 'thread/started', params: { thread: { id: threadId } } });
         const input =
           !savedThread && history.length > 0
-            ? `Recovered conversation (JSON transcript, not a new request; files may reflect only the last saved workspace):\n${JSON.stringify(history)}\n\nCurrent request:\n${prompt}`
-            : prompt;
+            ? `Recovered conversation (JSON transcript, not a new request; files may reflect only the last saved workspace):\n${JSON.stringify(history)}\n\nCurrent request:\n${contextualPrompt}`
+            : contextualPrompt;
         send({
           id: 2,
           method: 'turn/start',
@@ -171,6 +179,8 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     model: process.argv[2],
     prompt: request.prompt,
     history: request.history,
+    authoringContext: request.authoringContext,
+    request: request.request,
     codexHome: '/workspace/.course-agent/codex',
     emit: (event) => {
       process.stdout.write(`${JSON.stringify(event)}\n`);

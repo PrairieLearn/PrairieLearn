@@ -48,6 +48,20 @@ function assertNotExpired(expiresAt: string) {
   if (new Date(expiresAt) <= new Date()) throw new Error('Course-agent capability has expired');
 }
 
+function sameAuthoringContext(
+  capability: CourseAgentStartRunRequest['authoringContext'],
+  request: CourseAgentStartRunRequest['authoringContext'],
+) {
+  if (!capability.courseInstance || !request.courseInstance) {
+    return capability.courseInstance === request.courseInstance;
+  }
+  return (
+    capability.courseInstance.id === request.courseInstance.id &&
+    capability.courseInstance.shortName === request.courseInstance.shortName &&
+    capability.courseInstance.longName === request.courseInstance.longName
+  );
+}
+
 export async function authorizeRun(request: CourseAgentStartRunRequest, secret: string) {
   const capability = CourseAgentRunCapabilitySchema.parse(
     await decodeAndVerifyToken(request.capability, secret),
@@ -60,6 +74,7 @@ export async function authorizeRun(request: CourseAgentStartRunRequest, secret: 
     capability.repository !== request.course.repository ||
     capability.branch !== request.course.branch ||
     capability.expectedSha !== request.course.expectedSha ||
+    !sameAuthoringContext(capability.authoringContext, request.authoringContext) ||
     capability.runtimeSettings.idleTimeoutSeconds !== request.runtimeSettings.idleTimeoutSeconds ||
     capability.runtimeSettings.maxLifetimeSeconds !== request.runtimeSettings.maxLifetimeSeconds ||
     capability.runtimeSettings.turnTimeoutSeconds !== request.runtimeSettings.turnTimeoutSeconds

@@ -36,11 +36,13 @@ export const workspaceMarkdownComponents: Components = {
 
 function CourseAgentPanelInner({
   courseId,
+  courseInstanceId,
   userName,
   showDiagnostics,
   trpcClient,
 }: {
   courseId: string;
+  courseInstanceId: string | null;
   userName: string;
   showDiagnostics: boolean;
   trpcClient: ReturnType<typeof createCourseTrpcClient>;
@@ -55,6 +57,7 @@ function CourseAgentPanelInner({
       new CourseAgentTransport(
         (input) => trpcClient.courseAgent.start.mutate(input),
         courseId,
+        courseInstanceId,
         setConversation,
       ),
   );
@@ -315,12 +318,14 @@ export function CourseAgentPanel({
   initialOpen,
   trpcCsrfToken,
   courseId,
+  courseInstanceId,
   userName,
   showDiagnostics,
 }: {
   initialOpen: boolean;
   trpcCsrfToken: string;
   courseId: string;
+  courseInstanceId: string | null;
   userName: string;
   showDiagnostics: boolean;
 }) {
@@ -335,6 +340,7 @@ export function CourseAgentPanel({
           <CourseAgentPanelInner
             trpcClient={trpcClient}
             courseId={courseId}
+            courseInstanceId={courseInstanceId}
             userName={userName}
             showDiagnostics={showDiagnostics}
           />

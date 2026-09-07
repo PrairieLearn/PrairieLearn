@@ -3,6 +3,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import { JsonToSseTransformStream } from 'ai';
 
 import {
+  type CourseAgentAuthoringContext,
   type CourseAgentEvent,
   CourseAgentSnapshotSchema,
   CourseAgentStartRunResponseSchema,
@@ -79,12 +80,14 @@ export async function startEphemeralCourseAgentRun({
   conversationId = randomUUID(),
   prompt,
   course,
+  authoringContext,
 }: {
   courseId: string;
   userId: string;
   conversationId?: string;
   prompt: string;
   course: { repository: string; branch: string; expectedSha: string | null };
+  authoringContext: CourseAgentAuthoringContext;
 }) {
   if (config.courseAgentRuntime === 'disabled') {
     throw new Error('Course-agent runtime is disabled');
@@ -104,6 +107,7 @@ export async function startEphemeralCourseAgentRun({
       repository: course.repository,
       branch: course.branch,
       expectedSha: course.expectedSha,
+      authoringContext,
       runtimeSettings: runtimeSettings(),
       expiresAt: expiresAt(),
     },
@@ -119,6 +123,7 @@ export async function startEphemeralCourseAgentRun({
       sandboxId,
       prompt,
       course,
+      authoringContext,
       runtimeSettings: runtimeSettings(),
     }),
   });

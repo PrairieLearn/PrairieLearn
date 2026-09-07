@@ -2,6 +2,7 @@ import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
 import { CourseAgentSnapshotSchema } from '@prairielearn/course-agent-protocol';
+import { IdSchema } from '@prairielearn/zod';
 
 import {
   getEphemeralCourseAgentSnapshot,
@@ -9,6 +10,8 @@ import {
 } from '../../ee/lib/course-agent/ephemeral-runtime.js';
 import { publicCourseAgentEvent } from '../../ee/lib/course-agent/public-events.js';
 import { features } from '../../lib/features/index.js';
+import { idsEqual } from '../../lib/id.js';
+import { selectOptionalCourseInstanceById } from '../../models/course-instances.js';
 
 import {
   requireAuthnCoursePermissionOwn,
@@ -32,7 +35,11 @@ const courseAgentProcedure = t.procedure
 
 const start = courseAgentProcedure
   .input(
-    z.object({ conversationId: z.uuid().optional(), prompt: z.string().trim().min(1).max(20_000) }),
+    z.object({
+      conversationId: z.uuid().optional(),
+      courseInstanceId: IdSchema.nullable(),
+      prompt: z.string().trim().min(1).max(20_000),
+    }),
   )
   .output(
     z.object({
@@ -49,11 +56,34 @@ const start = courseAgentProcedure
         message: 'Configure a Git repository for this course before starting the course agent',
       });
     }
+    const courseInstance = input.courseInstanceId
+      ? await selectOptionalCourseInstanceById(input.courseInstanceId)
+      : null;
+    if (
+      input.courseInstanceId &&
+      (!courseInstance ||
+        courseInstance.deleted_at ||
+        !idsEqual(courseInstance.course_id, ctx.course.id))
+    ) {
+      throw new TRPCError({
+        code: 'BAD_REQUEST',
+        message: 'The active course instance does not belong to this course',
+      });
+    }
     return startEphemeralCourseAgentRun({
       courseId: ctx.course.id,
       userId: ctx.locals.authn_user.id,
       conversationId: input.conversationId,
       prompt: input.prompt,
+      authoringContext: {
+        courseInstance: courseInstance
+          ? {
+              id: courseInstance.id,
+              shortName: courseInstance.short_name,
+              longName: courseInstance.long_name,
+            }
+          : null,
+      },
       course: {
         repository: ctx.course.repository,
         branch: ctx.course.branch,
