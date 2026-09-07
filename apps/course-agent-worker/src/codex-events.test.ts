@@ -60,4 +60,29 @@ describe('toolEvents', () => {
       }),
     ).toEqual([]);
   });
+
+  it('describes push sync as a proposed change workflow', () => {
+    expect(
+      toolEvents({
+        type: 'item.started',
+        item: { id: 'item-5', type: 'mcp_tool_call', tool: 'push_sync' },
+      }),
+    ).toEqual([
+      {
+        type: 'tool.started',
+        data: { operationId: 'item-5', label: 'Proposing changes' },
+      },
+    ]);
+    expect(
+      toolEvents({
+        type: 'item.completed',
+        item: { id: 'item-5', type: 'mcp_tool_call', tool: 'push_sync', status: 'completed' },
+      }),
+    ).toEqual([
+      {
+        type: 'tool.completed',
+        data: { operationId: 'item-5', label: 'Proposed changes' },
+      },
+    ]);
+  });
 });

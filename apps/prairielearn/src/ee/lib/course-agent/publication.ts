@@ -10,7 +10,9 @@ export function validateCourseAgentPublication(
   course: Pick<Course, 'repository' | 'branch'>,
 ) {
   if (approval.repository !== course.repository || approval.branch !== course.branch) {
-    throw new Error('The approved repository or branch no longer matches the course');
+    throw new Error(
+      'The course repository or branch changed while the proposed changes were awaiting approval. Inspect the current course state, then call push_sync again.',
+    );
   }
   if (!approval.diff.trim()) throw new Error('The approved diff is empty');
 }
@@ -32,7 +34,7 @@ class CourseAgentDiffEditor extends Editor {
     ).stdout.trim();
     if (head !== this.approval.base_sha) {
       throw new Error(
-        `The course branch changed after approval (expected ${this.approval.base_sha}, found ${head})`,
+        `PrairieLearn's course checkout advanced while the proposed changes were awaiting approval (expected ${this.approval.base_sha}, found ${head}). Update the workspace to the latest course revision, then call push_sync again.`,
       );
     }
     await execa('git', ['apply', '--check', '--binary', '-'], {
@@ -69,7 +71,7 @@ export async function publishCourseAgentApproval({
     .split(/\s+/, 1)[0];
   if (remote !== approval.base_sha) {
     throw new Error(
-      `The remote branch changed after approval (expected ${approval.base_sha}, found ${remote || 'missing'})`,
+      `The remote branch advanced while the proposed changes were awaiting approval (expected ${approval.base_sha}, found ${remote || 'missing'}). Update the workspace to the latest remote revision, then call push_sync again.`,
     );
   }
   const editor = new CourseAgentDiffEditor({

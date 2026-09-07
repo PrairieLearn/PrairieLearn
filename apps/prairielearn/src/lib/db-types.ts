@@ -1735,6 +1735,7 @@ export const UserSessionSchema = z.object({
 export type UserSession = z.infer<typeof UserSessionSchema>;
 
 export const UserSettingsSchema = z.object({
+  course_agent_approval_mode: z.enum(['ask', 'always']),
   enable_single_key_shortcuts: z.boolean(),
   user_id: IdSchema,
 });

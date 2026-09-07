@@ -30,7 +30,10 @@ export function CourseAgentConversationPicker({
           data-conversation-id={selectedId}
           disabled={disabled}
         >
-          <span className="flex-grow-1 text-start text-wrap text-break">
+          <span
+            className="course-agent-conversation-selected flex-grow-1 text-start text-truncate"
+            title={selected?.title ?? 'New conversation'}
+          >
             {selected?.title ?? 'New conversation'}
           </span>
         </Dropdown.Toggle>

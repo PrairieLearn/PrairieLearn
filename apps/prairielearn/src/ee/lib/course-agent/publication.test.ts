@@ -14,7 +14,7 @@ describe('course-agent publication validation', () => {
         { repository: course.repository, branch: 'other', base_sha: 'a'.repeat(40), diff: 'x' },
         course,
       ),
-    ).toThrow('no longer matches');
+    ).toThrow('changed while');
     expect(() =>
       validateCourseAgentPublication(
         {

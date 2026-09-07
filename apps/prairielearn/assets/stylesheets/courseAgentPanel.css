@@ -92,6 +92,10 @@
   max-height: min(24rem, 60dvh);
   overflow-y: auto;
 }
+.course-agent-conversation-selected {
+  min-width: 0;
+  white-space: nowrap;
+}
 .course-agent-transcript {
   min-width: 0;
   min-height: 0;
@@ -124,6 +128,36 @@
 .course-agent-transcript .markdown-body td {
   padding: 0.25rem 0.5rem;
   border: 1px solid var(--bs-border-color);
+}
+.course-agent-diff-file {
+  background: var(--bs-tertiary-bg);
+}
+.course-agent-diff-lines {
+  max-height: 24rem;
+  background: var(--bs-body-bg);
+}
+.course-agent-diff-line {
+  display: block;
+  width: max-content;
+  min-width: 100%;
+  padding-inline: 0.75rem;
+  color: var(--bs-body-color);
+  white-space: pre;
+}
+.course-agent-diff-addition {
+  color: var(--bs-success-text-emphasis);
+  background: var(--bs-success-bg-subtle);
+}
+.course-agent-diff-deletion {
+  color: var(--bs-danger-text-emphasis);
+  background: var(--bs-danger-bg-subtle);
+}
+.course-agent-diff-hunk {
+  color: var(--bs-info-text-emphasis);
+  background: var(--bs-info-bg-subtle);
+}
+.course-agent-diff-metadata {
+  color: var(--bs-secondary-color);
 }
 
 @media (prefers-reduced-motion: reduce) {

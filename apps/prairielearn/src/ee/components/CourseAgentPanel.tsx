@@ -1,7 +1,7 @@
 import { useChat } from '@ai-sdk/react';
 import { QueryClient, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Fragment, useEffect, useRef, useState } from 'react';
-import { Alert, Button, Spinner } from 'react-bootstrap';
+import { Alert, Button, Dropdown, Spinner } from 'react-bootstrap';
 import type { Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useStickToBottom } from 'use-stick-to-bottom';
@@ -22,6 +22,7 @@ import { AssistantMessage, MessageMetadata, UserMessage } from './course-agent/C
 import { ChatMessageParts } from './course-agent/ChatMessageParts.js';
 import { ToolCallStatus } from './course-agent/ChatProgressStatus.js';
 import { ScrollToBottomButton } from './course-agent/ChatScrollToBottom.js';
+import { CourseAgentDiff } from './course-agent/CourseAgentDiff.js';
 import { type CourseAgentRun, CourseAgentTransport } from './courseAgentTransport.js';
 
 const markdownPlugins = [remarkGfm];
@@ -138,6 +139,10 @@ function CourseAgentConversationPanel({
   const stickToBottom = useStickToBottom({ initial: 'smooth', resize: 'smooth' });
 
   const [prompt, setPrompt] = useState('');
+  const [queuedPrompts, setQueuedPrompts] = useState<
+    { id: string; text: string; createdAt: string }[]
+  >([]);
+  const queuedPromptsRef = useRef(queuedPrompts);
   const [conversation, setConversation] = useState<CourseAgentRun | null>(initialHistory.run);
   const [transport] = useState(
     () =>
@@ -168,6 +173,18 @@ function CourseAgentConversationPanel({
       onFinish: () => {
         if (showDiagnostics) void diagnostics.refetch();
         void queryClient.invalidateQueries(trpc.courseAgent.list.queryFilter());
+        const next = queuedPromptsRef.current.at(0);
+        if (next) {
+          const remaining = queuedPromptsRef.current.slice(1);
+          queuedPromptsRef.current = remaining;
+          setQueuedPrompts(remaining);
+          queueMicrotask(() => {
+            void sendMessage({
+              text: next.text,
+              metadata: { createdAt: next.createdAt },
+            });
+          });
+        }
       },
     });
   const resumedRef = useRef(false);
@@ -206,7 +223,17 @@ function CourseAgentConversationPanel({
       onSuccess: () => void snapshot.refetch(),
     }),
   );
+  const approvalMode = useQuery(trpc.courseAgent.getApprovalMode.queryOptions());
+  const setApprovalMode = useMutation(
+    trpc.courseAgent.setApprovalMode.mutationOptions({
+      onSuccess: async () => {
+        await queryClient.invalidateQueries(trpc.courseAgent.getApprovalMode.queryFilter());
+        if (snapshot.data?.pendingApproval) await snapshot.refetch();
+      },
+    }),
+  );
   const approvalError = getAppError<CourseAgentError['RespondToPushApproval']>(approval.error);
+  const approvalModeError = getAppError<CourseAgentError['SetApprovalMode']>(setApprovalMode.error);
 
   return (
     <div className="course-agent-conversation">
@@ -265,6 +292,29 @@ function CourseAgentConversationPanel({
                       ) {
                         return null;
                       }
+                      const waitingForApproval =
+                        snapshot.data?.pendingApproval &&
+                        (part.state === 'input-streaming' || part.state === 'input-available') &&
+                        ['Proposing changes', 'Used push sync'].includes(part.input?.label ?? '');
+                      if (waitingForApproval) {
+                        if (approvalMode.data?.mode === 'always') {
+                          return (
+                            <ToolCallStatus
+                              state={part.state}
+                              statusText="Publishing proposed changes"
+                            />
+                          );
+                        }
+                        return (
+                          <div
+                            role="status"
+                            className="d-flex align-items-start gap-1 small text-warning-emphasis"
+                          >
+                            <i className="bi bi-person-check flex-shrink-0" aria-hidden="true" />
+                            <span>Waiting for your approval</span>
+                          </div>
+                        );
+                      }
                       return (
                         <ToolCallStatus
                           state={part.state}
@@ -296,7 +346,21 @@ function CourseAgentConversationPanel({
                 </AssistantMessage>
               ),
             )}
-            {busy && !hasActiveTool && (
+            {queuedPrompts.map((message) => (
+              <UserMessage
+                key={message.id}
+                userName={userName}
+                createdAt={message.createdAt}
+                timeZone={timeZone}
+              >
+                <span>{message.text}</span>
+                <span className="small text-muted">
+                  <i className="bi bi-clock me-1" aria-hidden="true" />
+                  Queued
+                </span>
+              </UserMessage>
+            ))}
+            {busy && !hasActiveTool && !snapshot.data?.pendingApproval && (
               <div role="status" className="d-flex align-items-center gap-2 small text-muted mb-3">
                 <Spinner size="sm" /> Working…
               </div>
@@ -325,25 +389,28 @@ function CourseAgentConversationPanel({
               render={{ UNKNOWN: ({ message }) => message }}
               onDismiss={() => approval.reset()}
             />
-            {approval.data?.status === 'failed' && (
-              <Alert variant="danger">{approval.data.message}</Alert>
-            )}
-            {snapshot.data?.pendingApproval && (
+            <AppErrorAlert
+              error={approvalModeError}
+              render={{ UNKNOWN: ({ message }) => message }}
+              onDismiss={() => setApprovalMode.reset()}
+            />
+            {snapshot.data?.pendingApproval && approvalMode.data?.mode !== 'always' && (
               <div className="course-agent-approval border rounded bg-white overflow-hidden mb-4">
                 <div className="border-bottom px-3 py-2">
                   <div className="d-flex align-items-center gap-2 fw-semibold">
                     <i className="bi bi-shield-check text-warning" aria-hidden="true" />
-                    Approval required
+                    Proposed changes
                   </div>
-                  <p className="small text-break mb-0 mt-1">
+                  <p className="small text-muted mb-1 mt-1">
+                    Review the proposed changes and provide your approval.
+                  </p>
+                  <p className="small text-break mb-0">
                     {snapshot.data.pendingApproval.diffSummary}
                   </p>
                 </div>
                 <details>
                   <summary className="small px-3 py-2">View full diff</summary>
-                  <pre className="course-agent-diff-body small overflow-auto border-top p-3 mb-0">
-                    {snapshot.data.pendingApproval.diff}
-                  </pre>
+                  <CourseAgentDiff diff={snapshot.data.pendingApproval.diff} />
                 </details>
                 <div className="d-flex justify-content-end gap-2 border-top px-2 py-2">
                   <Button
@@ -356,7 +423,7 @@ function CourseAgentConversationPanel({
                       })
                     }
                   >
-                    Approve, push, and sync
+                    Approve
                   </Button>
                   <Button
                     size="sm"
@@ -395,22 +462,92 @@ function CourseAgentConversationPanel({
       <footer className="course-agent-footer border-top bg-white p-3">
         <ChatComposer
           value={prompt}
-          disabled={busy}
+          disabled={false}
           isGenerating={busy}
           label="Message course agent"
           sendLabel="Send message"
           placeholder="Ask anything about your course…"
           textareaClassName="form-control course-agent-chat-input shadow-none mb-2"
-          footer={<span className="small text-muted">Codex</span>}
+          footer={
+            <ApprovalModePicker
+              mode={approvalMode.data?.mode ?? 'ask'}
+              loading={approvalMode.isPending}
+              disabled={setApprovalMode.isPending}
+              onSelect={(mode) => setApprovalMode.mutate({ mode })}
+            />
+          }
+          allowSubmitWhileGenerating
           onChange={setPrompt}
           onSubmit={(text) => {
             void stickToBottom.scrollToBottom();
             setPrompt('');
-            void sendMessage({ text, metadata: { createdAt: new Date().toISOString() } });
+            const createdAt = new Date().toISOString();
+            if (busy) {
+              const queued = { id: crypto.randomUUID(), text, createdAt };
+              setQueuedPrompts((current) => {
+                const next = [...current, queued];
+                queuedPromptsRef.current = next;
+                return next;
+              });
+            } else {
+              void sendMessage({ text, metadata: { createdAt } });
+            }
           }}
         />
       </footer>
     </div>
+  );
+}
+
+function ApprovalModePicker({
+  mode,
+  loading,
+  disabled,
+  onSelect,
+}: {
+  mode: 'ask' | 'always';
+  loading: boolean;
+  disabled: boolean;
+  onSelect: (mode: 'ask' | 'always') => void;
+}) {
+  const label = mode === 'always' ? 'Always approve' : 'Ask for approval';
+  return (
+    <Dropdown>
+      <Dropdown.Toggle
+        size="sm"
+        variant="light"
+        className="border-0 px-1 text-muted"
+        disabled={loading || disabled}
+      >
+        {loading && <Spinner size="sm" className="me-2" aria-hidden="true" />}
+        {loading ? 'Loading approval setting' : label}
+      </Dropdown.Toggle>
+      <Dropdown.Menu>
+        <Dropdown.Header>Approval behavior</Dropdown.Header>
+        <Dropdown.Item active={mode === 'ask'} onClick={() => onSelect('ask')}>
+          <div className="d-flex align-items-center gap-2">
+            <i
+              className={`bi bi-check-lg ${mode === 'ask' ? '' : 'invisible'}`}
+              aria-hidden="true"
+            />
+            <span>Ask for approval</span>
+          </div>
+        </Dropdown.Item>
+        <Dropdown.Item active={mode === 'always'} onClick={() => onSelect('always')}>
+          <div className="d-flex align-items-center gap-2">
+            <i
+              className={`bi bi-check-lg ${mode === 'always' ? '' : 'invisible'}`}
+              aria-hidden="true"
+            />
+            <span>Always approve</span>
+          </div>
+        </Dropdown.Item>
+        <Dropdown.Divider />
+        <Dropdown.ItemText className="small text-muted" style={{ maxWidth: '18rem' }}>
+          Always approve still checks the repository and proposed changes before publishing.
+        </Dropdown.ItemText>
+      </Dropdown.Menu>
+    </Dropdown>
   );
 }
 

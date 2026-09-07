@@ -146,7 +146,10 @@ command.
 Commit the intended changes with a concise descriptive message and the trailer
 "Co-authored-by: PrairieLearn Agent (Codex) <noreply@prairielearn.com>". Then call \`push_sync\`
 to validate the course and request instructor approval. You cannot push; PrairieLearn pushes and
-syncs only after the instructor explicitly approves the exact diff.
+syncs according to the instructor's saved approval preference. If \`push_sync\` reports that the
+branch advanced or the change cannot be applied as a fast forward, use the complete tool error to
+update the workspace safely and retry \`push_sync\`. A failed \`push_sync\` is not a terminal failure
+unless you cannot safely reconcile the repository.
 Refer to workspace files with inline code, never file links or download links.
 PrairieLearn cannot open or download these files in this version; do not imply otherwise.
 `.trim();
@@ -300,13 +303,14 @@ export class CourseAgentCoordinator {
     });
     const coursePath = `${COURSE_AGENT_WORKSPACE_ROOT}/course`;
     const validation = await sandbox.exec('validate-course .', { cwd: coursePath });
+    const validationOutput = `${validation.stdout}\n${validation.stderr}`.trim().slice(-8_000);
     await this.append(validation.success ? 'validation.completed' : 'validation.failed', {
       phase: 'approval',
-      output: `${validation.stdout}\n${validation.stderr}`.trim().slice(-8_000),
+      output: validationOutput,
     });
     if (!validation.success) {
       return Response.json(
-        { error: 'Course validation must pass before requesting approval' },
+        { error: `Course validation failed before approval:\n${validationOutput}` },
         { status: 422 },
       );
     }
@@ -355,7 +359,11 @@ export class CourseAgentCoordinator {
       await this.append('sync.completed', { approvalId: pending.id, ...pending.result });
       return Response.json({ ok: true, ...pending.result });
     }
-    return Response.json({ ok: false, ...pending.result }, { status: 409 });
+    const message =
+      pending.result && typeof pending.result.message === 'string'
+        ? pending.result.message
+        : 'The proposed changes could not be published';
+    return Response.json({ error: message, details: pending.result }, { status: 409 });
   }
 
   async alarm() {

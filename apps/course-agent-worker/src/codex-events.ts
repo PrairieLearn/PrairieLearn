@@ -19,7 +19,7 @@ export function toolEvents(event: Record<string, unknown>): EmittedEvent[] {
   const item = event.item;
   if (item.type === 'agent_message') return [];
 
-  const label = toolLabel(item);
+  const label = toolLabel(item, event.type === 'item.completed');
   if (!label) return [];
 
   const operationId = typeof item.id === 'string' ? item.id : crypto.randomUUID();
@@ -35,7 +35,7 @@ export function toolEvents(event: Record<string, unknown>): EmittedEvent[] {
   ];
 }
 
-function toolLabel(item: Record<string, unknown>) {
+function toolLabel(item: Record<string, unknown>, completed: boolean) {
   switch (item.type) {
     case 'command_execution':
       return commandLabel(typeof item.command === 'string' ? item.command : '');
@@ -52,6 +52,7 @@ function toolLabel(item: Record<string, unknown>) {
           : typeof item.name === 'string'
             ? item.name
             : null;
+      if (name?.endsWith('push_sync')) return completed ? 'Proposed changes' : 'Proposing changes';
       return name ? `Used ${humanize(name)}` : 'Used a PrairieLearn tool';
     }
     default:

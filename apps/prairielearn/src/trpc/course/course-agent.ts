@@ -36,8 +36,10 @@ import {
   updateCourseAgentPushApproval,
   upsertCourseAgentPushApproval,
 } from '../../models/course-agent.js';
+import { selectUserSettings, updateCourseAgentApprovalMode } from '../../models/user-settings.js';
 
 import {
+  type TRPCContext,
   requireAuthnCoursePermissionOwn,
   requireCoursePermissionOwn,
   requireNotExampleCourse,
@@ -193,7 +195,7 @@ const get = courseAgentProcedure
       if (message.run_id) runId = message.run_id;
     }
     if (!runId) throw new TRPCError({ code: 'NOT_FOUND', message: 'Course-agent run not found' });
-    const snapshot = await getEphemeralCourseAgentSnapshot({
+    let snapshot = await getEphemeralCourseAgentSnapshot({
       userId: ctx.locals.authn_user.id,
       courseId: ctx.course.id,
       ...input,
@@ -205,7 +207,7 @@ const get = courseAgentProcedure
           message: 'Course repository is missing',
         });
       }
-      await upsertCourseAgentPushApproval({
+      const approval = await upsertCourseAgentPushApproval({
         approval: snapshot.pendingApproval,
         conversationId: conversation.id,
         runId,
@@ -213,6 +215,15 @@ const get = courseAgentProcedure
         userId: ctx.locals.authn_user.id,
         repository: ctx.course.repository,
       });
+      const userSettings = await selectUserSettings({ user_id: ctx.locals.authn_user.id });
+      if (userSettings.course_agent_approval_mode === 'always' && approval.status === 'pending') {
+        await resolvePushApproval({ ctx, approvalId: approval.id, decision: 'approve' });
+        snapshot = await getEphemeralCourseAgentSnapshot({
+          userId: ctx.locals.authn_user.id,
+          courseId: ctx.course.id,
+          ...input,
+        });
+      }
     }
     await persistCourseAgentSnapshot({ snapshot, runId });
     const history = await selectCourseAgentHistory(conversation.id);
@@ -312,6 +323,123 @@ const settings = courseAgentProcedure
     ctx.session.course_agent_expanded = input.expanded;
   });
 
+const getApprovalMode = courseAgentProcedure
+  .output(z.object({ mode: z.enum(['ask', 'always']) }))
+  .query(async ({ ctx }) => {
+    const settings = await selectUserSettings({ user_id: ctx.locals.authn_user.id });
+    return { mode: settings.course_agent_approval_mode };
+  });
+
+const setApprovalMode = courseAgentProcedure
+  .input(z.object({ mode: z.enum(['ask', 'always']) }))
+  .output(z.object({ mode: z.enum(['ask', 'always']) }))
+  .mutation(async ({ ctx, input }) => {
+    const settings = await updateCourseAgentApprovalMode({
+      user_id: ctx.locals.authn_user.id,
+      course_agent_approval_mode: input.mode,
+    });
+    return { mode: settings.course_agent_approval_mode };
+  });
+
+async function resolvePushApproval({
+  ctx,
+  approvalId,
+  decision,
+}: {
+  ctx: TRPCContext;
+  approvalId: string;
+  decision: 'approve' | 'deny';
+}) {
+  const approval = await selectOptionalCourseAgentPushApproval({
+    approvalId,
+    courseId: ctx.course.id,
+    userId: ctx.locals.authn_user.id,
+  });
+  if (!approval) {
+    throw new TRPCError({ code: 'NOT_FOUND', message: 'Push approval not found' });
+  }
+  const identity = {
+    userId: ctx.locals.authn_user.id,
+    courseId: ctx.course.id,
+    conversationId: approval.conversation_id,
+    sandboxId: courseAgentSandboxId(approval.conversation_id),
+  };
+  if (decision === 'deny') {
+    const denied = await updateCourseAgentPushApproval({
+      approvalId: approval.id,
+      status: 'denied',
+      expectedStatuses: ['pending'],
+      decidedBy: ctx.locals.authn_user.id,
+      result: { message: 'The instructor denied publication' },
+    });
+    if (!denied) {
+      throw new TRPCError({ code: 'CONFLICT', message: 'Approval is no longer pending' });
+    }
+    await respondToCourseAgentPushApproval({
+      ...identity,
+      approvalId: approval.id,
+      decision: 'denied',
+      result: denied.result,
+    });
+    return { status: 'denied' as const, message: 'Publication denied' };
+  }
+
+  const publishing = await updateCourseAgentPushApproval({
+    approvalId: approval.id,
+    status: 'publishing',
+    expectedStatuses: ['pending'],
+    decidedBy: ctx.locals.authn_user.id,
+    result: null,
+  });
+  if (!publishing) {
+    throw new TRPCError({ code: 'CONFLICT', message: 'Approval is no longer pending' });
+  }
+  await respondToCourseAgentPushApproval({
+    ...identity,
+    approvalId: approval.id,
+    decision: 'publishing',
+  });
+  try {
+    const result = await publishCourseAgentApproval({
+      approval: publishing,
+      course: ctx.locals.course,
+      user: ctx.locals.user,
+      authzData: ctx.locals.authz_data,
+    });
+    await updateCourseAgentPushApproval({
+      approvalId: approval.id,
+      status: 'completed',
+      expectedStatuses: ['publishing'],
+      decidedBy: ctx.locals.authn_user.id,
+      result,
+    });
+    await respondToCourseAgentPushApproval({
+      ...identity,
+      approvalId: approval.id,
+      decision: 'completed',
+      result,
+    });
+    return { status: 'completed' as const, message: 'Changes pushed and course sync started' };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    const result = { message };
+    await updateCourseAgentPushApproval({
+      approvalId: approval.id,
+      status: 'failed',
+      expectedStatuses: ['publishing'],
+      decidedBy: ctx.locals.authn_user.id,
+      result,
+    });
+    await respondToCourseAgentPushApproval({
+      ...identity,
+      approvalId: approval.id,
+      decision: 'failed',
+      result,
+    });
+    return { status: 'failed' as const, message };
+  }
+}
+
 const respondToPushApproval = courseAgentProcedure
   .input(
     z.object({
@@ -320,96 +448,7 @@ const respondToPushApproval = courseAgentProcedure
     }),
   )
   .output(z.object({ status: z.enum(['denied', 'completed', 'failed']), message: z.string() }))
-  .mutation(async ({ ctx, input }) => {
-    const approval = await selectOptionalCourseAgentPushApproval({
-      approvalId: input.approvalId,
-      courseId: ctx.course.id,
-      userId: ctx.locals.authn_user.id,
-    });
-    if (!approval) {
-      throw new TRPCError({ code: 'NOT_FOUND', message: 'Push approval not found' });
-    }
-    const identity = {
-      userId: ctx.locals.authn_user.id,
-      courseId: ctx.course.id,
-      conversationId: approval.conversation_id,
-      sandboxId: courseAgentSandboxId(approval.conversation_id),
-    };
-    if (input.decision === 'deny') {
-      const denied = await updateCourseAgentPushApproval({
-        approvalId: approval.id,
-        status: 'denied',
-        expectedStatuses: ['pending'],
-        decidedBy: ctx.locals.authn_user.id,
-        result: { message: 'The instructor denied publication' },
-      });
-      if (!denied) {
-        throw new TRPCError({ code: 'CONFLICT', message: 'Approval is no longer pending' });
-      }
-      await respondToCourseAgentPushApproval({
-        ...identity,
-        approvalId: approval.id,
-        decision: 'denied',
-        result: denied.result,
-      });
-      return { status: 'denied', message: 'Publication denied' };
-    }
-
-    const publishing = await updateCourseAgentPushApproval({
-      approvalId: approval.id,
-      status: 'publishing',
-      expectedStatuses: ['pending'],
-      decidedBy: ctx.locals.authn_user.id,
-      result: null,
-    });
-    if (!publishing) {
-      throw new TRPCError({ code: 'CONFLICT', message: 'Approval is no longer pending' });
-    }
-    await respondToCourseAgentPushApproval({
-      ...identity,
-      approvalId: approval.id,
-      decision: 'publishing',
-    });
-    try {
-      const result = await publishCourseAgentApproval({
-        approval: publishing,
-        course: ctx.locals.course,
-        user: ctx.locals.user,
-        authzData: ctx.locals.authz_data,
-      });
-      await updateCourseAgentPushApproval({
-        approvalId: approval.id,
-        status: 'completed',
-        expectedStatuses: ['publishing'],
-        decidedBy: ctx.locals.authn_user.id,
-        result,
-      });
-      await respondToCourseAgentPushApproval({
-        ...identity,
-        approvalId: approval.id,
-        decision: 'completed',
-        result,
-      });
-      return { status: 'completed', message: 'Changes pushed and course sync started' };
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      const result = { message };
-      await updateCourseAgentPushApproval({
-        approvalId: approval.id,
-        status: 'failed',
-        expectedStatuses: ['publishing'],
-        decidedBy: ctx.locals.authn_user.id,
-        result,
-      });
-      await respondToCourseAgentPushApproval({
-        ...identity,
-        approvalId: approval.id,
-        decision: 'failed',
-        result,
-      });
-      return { status: 'failed', message };
-    }
-  });
+  .mutation(({ ctx, input }) => resolvePushApproval({ ctx, ...input }));
 
 export const courseAgentRouter = t.router({
   get,
@@ -418,6 +457,8 @@ export const courseAgentRouter = t.router({
   diagnostics,
   history,
   settings,
+  getApprovalMode,
+  setApprovalMode,
   respondToPushApproval,
 });
 
@@ -428,5 +469,7 @@ export interface CourseAgentError {
   Diagnostics: never;
   History: never;
   Settings: never;
+  GetApprovalMode: never;
+  SetApprovalMode: never;
   RespondToPushApproval: never;
 }

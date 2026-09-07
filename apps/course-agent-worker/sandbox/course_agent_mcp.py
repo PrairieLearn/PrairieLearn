@@ -79,9 +79,19 @@ def _push_sync() -> dict[str, Any]:
     proposed_sha = _git("rev-parse", "HEAD")
     base_sha = _git("rev-parse", f"origin/{branch}")
     commit_message = _git_raw("log", "-1", "--pretty=%B").strip()
-    subprocess.run(
-        ["git", "merge-base", "--is-ancestor", base_sha, proposed_sha], check=True
+    fast_forward = subprocess.run(
+        ["git", "merge-base", "--is-ancestor", base_sha, proposed_sha],
+        text=True,
+        capture_output=True,
+        check=False,
     )
+    if fast_forward.returncode != 0:
+        detail = f"{fast_forward.stdout}\n{fast_forward.stderr}".strip()
+        raise RuntimeError(
+            "The proposed commit cannot be fast-forwarded from the workspace's "
+            f"remote base {base_sha}. Fetch and reconcile the branch, then call "
+            f"push_sync again.{f' Git reported: {detail}' if detail else ''}"
+        )
     payload = {
         "branch": branch,
         "baseSha": base_sha,
