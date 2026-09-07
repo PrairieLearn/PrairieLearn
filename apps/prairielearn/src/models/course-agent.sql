@@ -33,15 +33,29 @@ WHERE
 
 -- BLOCK select_owned_conversations
 SELECT
-  *
+  c.*,
+  coalesce(last_message.created_at, c.created_at) AS last_message_at
 FROM
-  course_agent_conversations
+  course_agent_conversations AS c
+  LEFT JOIN LATERAL (
+    SELECT
+      m.created_at
+    FROM
+      course_agent_messages AS m
+    WHERE
+      m.conversation_id = c.id
+    ORDER BY
+      m.id DESC
+    LIMIT
+      1
+  ) AS last_message ON TRUE
 WHERE
-  course_id = $course_id
-  AND user_id = $user_id
-  AND deleted_at IS NULL
+  c.course_id = $course_id
+  AND c.user_id = $user_id
+  AND c.deleted_at IS NULL
 ORDER BY
-  updated_at DESC;
+  last_message_at DESC,
+  c.created_at DESC;
 
 -- BLOCK mark_starting
 UPDATE course_agent_conversations

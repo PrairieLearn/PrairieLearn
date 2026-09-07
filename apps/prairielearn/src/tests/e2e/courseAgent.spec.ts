@@ -52,7 +52,7 @@ test('shows loading in the open panel and collapsed launcher while history is pe
   await expect.poll(async () => (await panel.boundingBox())!.width).toBe(width);
 });
 
-test('updates activity badges for other conversations and preserves their start time', async ({
+test('updates activity badges without changing the last-message time', async ({
   page,
   courseInstance,
 }, testInfo) => {
@@ -70,13 +70,13 @@ test('updates activity badges for other conversations and preserves their start 
   const first = (await picker.getAttribute('data-conversation-id'))!;
   await picker.click();
   const item = panel.getByRole('menuitemradio', { name: /Build a numerical methods assessment/ });
-  const startedAt = await item.locator('time').getAttribute('datetime');
+  const lastMessageAt = await item.locator('time').getAttribute('datetime');
   await picker.click();
   await panel.getByRole('button', { name: 'New conversation', exact: true }).click();
   await execute(sql.set_activity, { conversation_id: first, status: 'starting' });
   await picker.click();
   await expect(item.getByLabel('Conversation in progress')).toBeVisible({ timeout: 10000 });
-  await expect(item.locator('time')).toHaveAttribute('datetime', startedAt!);
+  await expect(item.locator('time')).toHaveAttribute('datetime', lastMessageAt!);
   await page.screenshot({ path: testInfo.outputPath('course-conversation-active-menu.png') });
   await execute(sql.set_activity, { conversation_id: first, status: 'waiting_for_user' });
   await expect(item.getByLabel('Conversation in progress')).toHaveCount(0, { timeout: 10000 });
@@ -153,13 +153,31 @@ test('switches between isolated conversations and continues the selected convers
   const second = (await picker.getAttribute('data-conversation-id'))!;
   expect(second).not.toBe(first);
   await picker.click();
-  await panel.getByRole('menuitemradio', { name: /Build a hashmap assessment/ }).click();
+  const conversations = panel.getByRole('menuitemradio');
+  await expect(conversations.first()).toContainText('Build a sorting assessment');
+  const firstConversation = panel.getByRole('menuitemradio', {
+    name: /Build a hashmap assessment/,
+  });
+  const firstLastMessageAt = await firstConversation.locator('time').getAttribute('datetime');
+  await firstConversation.click();
   await expect(panel.getByRole('article')).toHaveText(firstTranscript);
+  await picker.click();
+  await expect(conversations.first()).toContainText('Build a sorting assessment');
+  await picker.click();
   await input.fill('Add one more hashmap question');
   await input.press('Enter');
   await expect(panel.getByText('Edited README.md', { exact: true })).toHaveCount(2);
   await picker.click();
+  await expect(conversations.first()).toContainText('Build a hashmap assessment');
+  await expect(firstConversation.locator('time')).not.toHaveAttribute(
+    'datetime',
+    firstLastMessageAt!,
+  );
+  const selected = page.waitForResponse(
+    (response) => response.url().includes('courseAgent.selectConversation') && response.ok(),
+  );
   await panel.getByRole('menuitemradio', { name: /Build a sorting assessment/ }).click();
+  await selected;
   await expect(panel.getByRole('article', { name: 'Message from Dev User' })).toHaveCount(1);
   await expect(panel.getByRole('log')).toContainText('Build a sorting assessment');
   await expect(panel.getByRole('log')).not.toContainText('hashmap');

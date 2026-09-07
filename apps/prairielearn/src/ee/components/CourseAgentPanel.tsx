@@ -48,6 +48,7 @@ function CourseAgentPanelInner(props: {
 }) {
   const trpc = useTRPC();
   const [selection, setSelection] = useState<{ id?: string; version: number }>({ version: 0 });
+  const selectConversation = useMutation(trpc.courseAgent.selectConversation.mutationOptions());
   const conversations = useQuery(
     trpc.courseAgent.list.queryOptions(undefined, { refetchInterval: 3000 }),
   );
@@ -103,7 +104,10 @@ function CourseAgentPanelInner(props: {
         }
         conversations={conversations.data?.conversations ?? []}
         listError={getAppError<CourseAgentError['List']>(conversations.error)}
-        onSelect={(id) => setSelection({ id, version: selection.version + 1 })}
+        onSelect={(id) => {
+          setSelection({ id, version: selection.version + 1 });
+          selectConversation.mutate({ conversationId: id === 'new' ? null : id });
+        }}
       />
     </CourseAgentPanelShell>
   );

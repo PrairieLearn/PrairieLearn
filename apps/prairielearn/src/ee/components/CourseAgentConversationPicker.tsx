@@ -53,8 +53,8 @@ export function CourseAgentConversationPicker({
             >
               <span className="d-flex flex-column flex-grow-1 text-start" style={{ minWidth: 0 }}>
                 <span className="text-wrap text-break">{item.title}</span>
-                <time className="small opacity-75" dateTime={item.created_at.toISOString()}>
-                  {item.startedAtLabel}
+                <time className="small opacity-75" dateTime={item.last_message_at.toISOString()}>
+                  {item.lastMessageAtLabel}
                 </time>
               </span>
               {(item.id === selectedId
