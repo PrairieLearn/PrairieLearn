@@ -66,8 +66,23 @@ it('starts once, then resumes without replaying previous messages', async () => 
     { role: 'user', text: 'a'.repeat(25_000) },
     { role: 'assistant', text: 'Earlier answer' },
   ];
-  await runCodex({ ...options, prompt: 'First request', history });
-  await runCodex({ ...options, prompt: 'Next request', history });
+  const authoringContext = {
+    courseInstance: { id: '91', shortName: 'Fa26', longName: 'Fall 2026' },
+  };
+  await runCodex({
+    ...options,
+    prompt: 'First request',
+    request: 'First request',
+    history,
+    authoringContext,
+  });
+  await runCodex({
+    ...options,
+    prompt: 'Next request',
+    request: 'Next request',
+    history,
+    authoringContext,
+  });
   expect(mock.requests.filter((request) => request.method === 'thread/start')).toHaveLength(1);
   expect(mock.requests.find((request) => request.method === 'thread/start').params.ephemeral).toBe(
     false,
@@ -77,7 +92,10 @@ it('starts once, then resumes without replaying previous messages', async () => 
   );
   const turns = mock.requests.filter((request) => request.method === 'turn/start');
   expect(turns[0].params.input[0].text).toContain(JSON.stringify(history));
-  expect(turns[1].params.input[0].text).toBe('Next request');
+  expect(turns[0].params.input[0].text).toContain('Current course context');
+  expect(turns[0].params.input[0].text).toContain('"directory":"Fa26"');
+  expect(turns[1].params.input[0].text).toContain('Next request');
+  expect(turns[1].params.input[0].text).toContain('Current course context');
   expect(
     JSON.parse(
       await readFile(join(options.cwd, '.course-agent/codex/course-agent-thread.json'), 'utf8'),

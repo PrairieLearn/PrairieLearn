@@ -30,7 +30,7 @@ describe('course-agent useChat transport', () => {
     );
     const start = vi.fn().mockResolvedValue(run);
     const chat = new Chat<CourseAgentMessage>({
-      transport: new CourseAgentTransport(start, '1', vi.fn()),
+      transport: new CourseAgentTransport(start, '1', '91', vi.fn()),
     });
     const sending = chat.sendMessage({ text: 'Hello' });
     controller.enqueue({ type: 'start', messageId: run.runId });
@@ -47,7 +47,11 @@ describe('course-agent useChat transport', () => {
     await sending;
     expect(chat.status).toBe('ready');
     expect(chat.messages.at(-1)?.parts).toMatchObject([{ type: 'text', text: 'First second' }]);
-    expect(start).toHaveBeenCalledExactlyOnceWith({ prompt: 'Hello', conversationId: undefined });
+    expect(start).toHaveBeenCalledExactlyOnceWith({
+      prompt: 'Hello',
+      conversationId: undefined,
+      courseInstanceId: '91',
+    });
   });
 
   it('reports truncated streams and replays without submitting another model request', async () => {
@@ -69,7 +73,7 @@ describe('course-agent useChat transport', () => {
     );
     const start = vi.fn().mockResolvedValue(run);
     const chat = new Chat<CourseAgentMessage>({
-      transport: new CourseAgentTransport(start, '1', vi.fn()),
+      transport: new CourseAgentTransport(start, '1', null, vi.fn()),
     });
     await chat.sendMessage({ text: 'Hello' });
     expect(chat.status).toBe('error');
@@ -100,7 +104,7 @@ describe('course-agent useChat transport', () => {
       .mockResolvedValueOnce(run)
       .mockRejectedValueOnce(new Error('Could not start the next run'));
     const chat = new Chat<CourseAgentMessage>({
-      transport: new CourseAgentTransport(start, '1', vi.fn()),
+      transport: new CourseAgentTransport(start, '1', null, vi.fn()),
     });
 
     await chat.sendMessage({ text: 'First' });

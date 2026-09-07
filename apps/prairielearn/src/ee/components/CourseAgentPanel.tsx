@@ -41,6 +41,7 @@ export const workspaceMarkdownComponents: Components = {
 function CourseAgentPanelInner(props: {
   initialOpen: boolean;
   courseId: string;
+  courseInstanceId: string | null;
   userName: string;
   timeZone: string;
   showDiagnostics: boolean;
@@ -115,6 +116,7 @@ function CourseAgentPanelInner(props: {
 
 function CourseAgentConversationPanel({
   courseId,
+  courseInstanceId,
   userName,
   timeZone,
   showDiagnostics,
@@ -125,6 +127,7 @@ function CourseAgentConversationPanel({
   onSelect,
 }: {
   courseId: string;
+  courseInstanceId: string | null;
   userName: string;
   timeZone: string;
   showDiagnostics: boolean;
@@ -153,6 +156,7 @@ function CourseAgentConversationPanel({
       new CourseAgentTransport(
         (input) => trpcClient.courseAgent.start.mutate(input),
         courseId,
+        courseInstanceId,
         (run) => {
           // Keep the conversation selected while the next run is being submitted.
           if (run) {
@@ -642,6 +646,7 @@ export function CourseAgentPanel({
   initialOpen,
   trpcCsrfToken,
   courseId,
+  courseInstanceId,
   userName,
   timeZone,
   showDiagnostics,
@@ -649,6 +654,7 @@ export function CourseAgentPanel({
   initialOpen: boolean;
   trpcCsrfToken: string;
   courseId: string;
+  courseInstanceId: string | null;
   userName: string;
   timeZone: string;
   showDiagnostics: boolean;
@@ -664,6 +670,7 @@ export function CourseAgentPanel({
           initialOpen={initialOpen}
           trpcClient={trpcClient}
           courseId={courseId}
+          courseInstanceId={courseInstanceId}
           userName={userName}
           timeZone={timeZone}
           showDiagnostics={showDiagnostics}

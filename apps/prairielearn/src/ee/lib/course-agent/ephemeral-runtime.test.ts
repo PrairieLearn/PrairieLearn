@@ -27,6 +27,7 @@ describe('ephemeral course-agent runtime', () => {
             courseId: '1',
             userId: '2',
             prompt: 'Hello',
+            authoringContext: { courseInstance: null },
             course: {
               repository: 'https://github.com/PrairieLearn/test.git',
               branch: 'master',
@@ -52,6 +53,7 @@ describe('ephemeral course-agent runtime', () => {
             courseId: '1',
             userId: '2',
             prompt: 'Hello',
+            authoringContext: { courseInstance: null },
             course: {
               repository: 'https://github.com/PrairieLearn/test.git',
               branch: 'master',
@@ -98,6 +100,7 @@ describe('ephemeral course-agent runtime', () => {
         courseId: '1',
         userId: '2',
         prompt: 'Create a note',
+        authoringContext: { courseInstance: null },
         course: {
           repository: 'https://github.com/PrairieLearn/test.git',
           branch: 'master',
@@ -109,6 +112,7 @@ describe('ephemeral course-agent runtime', () => {
         userId: '2',
         conversationId: first.conversationId,
         prompt: 'Update the same note',
+        authoringContext: { courseInstance: null },
         course: {
           repository: 'https://github.com/PrairieLearn/test.git',
           branch: 'master',

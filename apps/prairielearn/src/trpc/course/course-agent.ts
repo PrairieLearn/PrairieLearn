@@ -9,6 +9,7 @@ import {
   courseAgentSandboxId,
 } from '@prairielearn/course-agent-protocol';
 import { formatDateFriendly } from '@prairielearn/formatter';
+import { IdSchema } from '@prairielearn/zod';
 
 import {
   getEphemeralCourseAgentSnapshot,
@@ -26,6 +27,7 @@ import {
   CourseAgentMessageSchema,
 } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
+import { idsEqual } from '../../lib/id.js';
 import {
   createCourseAgentTurn,
   selectCourseAgentConversations,
@@ -36,6 +38,7 @@ import {
   updateCourseAgentPushApproval,
   upsertCourseAgentPushApproval,
 } from '../../models/course-agent.js';
+import { selectOptionalCourseInstanceById } from '../../models/course-instances.js';
 import { selectUserSettings, updateCourseAgentApprovalMode } from '../../models/user-settings.js';
 
 import {
@@ -61,7 +64,11 @@ const courseAgentProcedure = t.procedure
 
 const start = courseAgentProcedure
   .input(
-    z.object({ conversationId: z.uuid().optional(), prompt: z.string().trim().min(1).max(20_000) }),
+    z.object({
+      conversationId: z.uuid().optional(),
+      courseInstanceId: IdSchema.nullable(),
+      prompt: z.string().trim().min(1).max(20_000),
+    }),
   )
   .output(
     z.object({
@@ -78,6 +85,29 @@ const start = courseAgentProcedure
         message: 'Configure a Git repository for this course before starting the course agent',
       });
     }
+    const courseInstance = input.courseInstanceId
+      ? await selectOptionalCourseInstanceById(input.courseInstanceId)
+      : null;
+    if (
+      input.courseInstanceId &&
+      (!courseInstance ||
+        courseInstance.deleted_at ||
+        !idsEqual(courseInstance.course_id, ctx.course.id))
+    ) {
+      throw new TRPCError({
+        code: 'BAD_REQUEST',
+        message: 'The active course instance does not belong to this course',
+      });
+    }
+    const authoringContext = {
+      courseInstance: courseInstance
+        ? {
+            id: courseInstance.id,
+            shortName: courseInstance.short_name,
+            longName: courseInstance.long_name,
+          }
+        : null,
+    };
     const conversationId = input.conversationId ?? randomUUID();
     const runId = randomUUID();
     const sandboxId = courseAgentSandboxId(conversationId);
@@ -141,6 +171,7 @@ const start = courseAgentProcedure
           branch: ctx.course.branch,
           expectedSha: ctx.course.commit_hash,
         },
+        authoringContext,
         workspaceBackup: parsedBackup?.success ? parsedBackup.data : null,
       });
       if (config.courseAgentRuntime === 'fake') {

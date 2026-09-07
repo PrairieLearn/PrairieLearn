@@ -111,6 +111,17 @@ export const CourseAgentPushApprovalSchema = CourseAgentPushPayloadSchema.extend
 });
 export type CourseAgentPushApproval = z.infer<typeof CourseAgentPushApprovalSchema>;
 
+export const CourseAgentAuthoringContextSchema = z.object({
+  courseInstance: z
+    .object({
+      id: z.string().min(1),
+      shortName: z.string().min(1),
+      longName: z.string().nullable(),
+    })
+    .nullable(),
+});
+export type CourseAgentAuthoringContext = z.infer<typeof CourseAgentAuthoringContextSchema>;
+
 export const CourseAgentRuntimeSettingsSchema = z.object({
   idleTimeoutSeconds: z.number().int().min(60).max(86_400),
   backupTtlSeconds: z.number().int().min(60).max(2_592_000).default(604800),
@@ -130,6 +141,7 @@ export const CourseAgentRunCapabilitySchema = CourseAgentIdentitySchema.extend({
     .string()
     .regex(/^[0-9a-f]{40}$/)
     .nullable(),
+  authoringContext: CourseAgentAuthoringContextSchema,
   runtimeSettings: CourseAgentRuntimeSettingsSchema,
   expiresAt: z.iso.datetime(),
 });
@@ -152,6 +164,7 @@ export const CourseAgentStartRunRequestSchema = z.object({
     .refine((prompt) => prompt.trim().length > 0, 'Prompt cannot be blank'),
   course: CourseAgentRepositorySchema,
   workspaceBackup: CourseAgentWorkspaceBackupSchema.nullable().default(null),
+  authoringContext: CourseAgentAuthoringContextSchema,
   runtimeSettings: CourseAgentRuntimeSettingsSchema,
 });
 export type CourseAgentStartRunRequest = z.infer<typeof CourseAgentStartRunRequestSchema>;
