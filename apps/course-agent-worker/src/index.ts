@@ -741,25 +741,47 @@ export class CourseAgentCoordinator {
         shellQuote(this.env.OPENAI_MODEL),
         shellQuote(requestPath),
       ].join(' ');
-      const codex = await sandbox.exec(command, {
+      const codex = await sandbox.startProcess(command, {
         cwd: coursePath,
-        timeout: Math.min(
+        autoCleanup: false,
+        processId: `course-agent-${request.runId}`,
+        env: { OPENAI_API_KEY: 'proxy-injected', IS_SANDBOX: '1' },
+      });
+      const processDeadline =
+        Date.now() +
+        Math.min(
           request.runtimeSettings.turnTimeoutSeconds * 1_000,
           Math.max(1_000, deadline - Date.now() - 1_000),
-        ),
-        stream: true,
-        env: { OPENAI_API_KEY: 'proxy-injected', IS_SANDBOX: '1' },
-        onOutput: (stream, data) => {
-          if (stream !== 'stdout') return;
-          buffer += data;
-          const lines = buffer.split('\n');
-          buffer = lines.pop() ?? '';
-          for (const line of lines) consumeLine(line);
-        },
-      });
+        );
+      let stdoutLength = 0;
+      let logs = { stdout: '', stderr: '' };
+      let processStatus = await codex.getStatus();
+      let timedOut = false;
+      while (!['completed', 'failed', 'killed', 'error'].includes(processStatus)) {
+        logs = await codex.getLogs();
+        buffer += logs.stdout.slice(stdoutLength);
+        stdoutLength = logs.stdout.length;
+        const lines = buffer.split('\n');
+        buffer = lines.pop() ?? '';
+        for (const line of lines) consumeLine(line);
+        if (Date.now() >= processDeadline) {
+          await codex.kill();
+          timedOut = true;
+          break;
+        }
+        await wait(1_000);
+        processStatus = await codex.getStatus();
+      }
+      logs = await codex.getLogs();
+      buffer += logs.stdout.slice(stdoutLength);
       if (buffer.trim()) consumeLine(buffer);
       await eventChain;
-      if (!codex.success) throw new Error(codexFailureMessage(codex.stdout, codex.stderr));
+      const finishedProcess = await sandbox.getProcess(codex.id);
+      await sandbox.cleanupCompletedProcesses();
+      if (timedOut) throw new Error('The course-agent turn timed out before it completed');
+      if (processStatus !== 'completed' || finishedProcess?.exitCode !== 0) {
+        throw new Error(codexFailureMessage(logs.stdout, logs.stderr));
+      }
       const response = stream.response || 'Done.';
       await this.backupWorkspace(sandbox, request.runId);
       await this.append('agent.completed', { response }, request.runId);

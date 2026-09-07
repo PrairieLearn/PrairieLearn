@@ -393,6 +393,14 @@ function CourseAgentConversationPanel({
               render={{ UNKNOWN: ({ message }) => message }}
               onDismiss={() => approval.reset()}
             />
+            {approval.data?.status === 'failed' && (
+              <Alert variant="danger" dismissible onClose={() => approval.reset()}>
+                <Alert.Heading className="h6">Proposed changes were not published</Alert.Heading>
+                <div className="small" style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>
+                  {approval.data.message}
+                </div>
+              </Alert>
+            )}
             <AppErrorAlert
               error={approvalModeError}
               render={{ UNKNOWN: ({ message }) => message }}
