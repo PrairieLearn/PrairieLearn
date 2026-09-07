@@ -210,9 +210,11 @@ const list = courseAgentProcedure
         CourseAgentConversationSchema.pick({
           id: true,
           title: true,
-          created_at: true,
           runtime_status: true,
-        }).extend({ startedAtLabel: z.string() }),
+        }).extend({
+          last_message_at: z.date(),
+          lastMessageAtLabel: z.string(),
+        }),
       ),
     }),
   )
@@ -221,10 +223,14 @@ const list = courseAgentProcedure
       await selectCourseAgentConversations(ctx.course.id, ctx.locals.authn_user.id)
     ).map((conversation) => ({
       ...conversation,
-      startedAtLabel: formatDateFriendly(conversation.created_at, ctx.course.display_timezone, {
-        maxPrecision: 'minute',
-        minPrecision: 'minute',
-      }),
+      lastMessageAtLabel: formatDateFriendly(
+        conversation.last_message_at,
+        ctx.course.display_timezone,
+        {
+          maxPrecision: 'minute',
+          minPrecision: 'minute',
+        },
+      ),
     })),
   }));
 
@@ -250,13 +256,18 @@ const diagnostics = courseAgentProcedure
 const history = courseAgentProcedure
   .input(z.object({ conversationId: z.uuid().optional() }).optional())
   .query(async ({ ctx, input }) => {
-    const conversation = input?.conversationId
+    const selectedConversationId =
+      input?.conversationId ?? ctx.session.course_agent_conversation_id;
+    const selectedConversation = selectedConversationId
       ? await selectOptionalCourseAgentConversation({
-          conversationId: input.conversationId,
+          conversationId: selectedConversationId,
           courseId: ctx.course.id,
           userId: ctx.locals.authn_user.id,
         })
-      : (await selectCourseAgentConversations(ctx.course.id, ctx.locals.authn_user.id)).at(0);
+      : null;
+    const conversation =
+      selectedConversation ??
+      (await selectCourseAgentConversations(ctx.course.id, ctx.locals.authn_user.id)).at(0);
     if (!conversation) {
       if (input?.conversationId) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Course-agent conversation not found' });
@@ -284,13 +295,37 @@ const history = courseAgentProcedure
     return { run, activeRunId, messages: await restoreCourseAgentMessages(saved), warning };
   });
 
+const selectConversation = courseAgentProcedure
+  .input(z.object({ conversationId: z.uuid().nullable() }))
+  .mutation(async ({ ctx, input }) => {
+    if (input.conversationId) {
+      const conversation = await selectOptionalCourseAgentConversation({
+        conversationId: input.conversationId,
+        courseId: ctx.course.id,
+        userId: ctx.locals.authn_user.id,
+      });
+      if (!conversation) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Course-agent conversation not found' });
+      }
+    }
+    ctx.session.course_agent_conversation_id = input.conversationId;
+  });
+
 const settings = courseAgentProcedure
   .input(z.object({ expanded: z.boolean() }))
   .mutation(({ ctx, input }) => {
     ctx.session.course_agent_expanded = input.expanded;
   });
 
-export const courseAgentRouter = t.router({ get, list, start, diagnostics, history, settings });
+export const courseAgentRouter = t.router({
+  get,
+  list,
+  start,
+  diagnostics,
+  history,
+  selectConversation,
+  settings,
+});
 
 export interface CourseAgentError {
   Get: never;
@@ -298,5 +333,6 @@ export interface CourseAgentError {
   Start: never;
   Diagnostics: never;
   History: never;
+  SelectConversation: never;
   Settings: never;
 }

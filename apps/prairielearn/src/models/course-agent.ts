@@ -7,6 +7,7 @@ import {
   queryRows,
   runInTransactionAsync,
 } from '@prairielearn/postgres';
+import { DateFromISOString } from '@prairielearn/zod';
 
 import {
   type CourseAgentConversation,
@@ -18,6 +19,9 @@ import {
 } from '../lib/db-types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
+const CourseAgentConversationListItemSchema = CourseAgentConversationSchema.extend({
+  last_message_at: DateFromISOString,
+});
 
 export function claimCourseAgentTitle(conversationId: string, fallback: string) {
   return queryOptionalRow(
@@ -55,7 +59,7 @@ export function selectCourseAgentConversations(courseId: string, userId: string)
   return queryRows(
     sql.select_owned_conversations,
     { course_id: courseId, user_id: userId },
-    CourseAgentConversationSchema,
+    CourseAgentConversationListItemSchema,
   );
 }
 

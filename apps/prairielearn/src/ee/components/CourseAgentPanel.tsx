@@ -1,5 +1,5 @@
 import { useChat } from '@ai-sdk/react';
-import { QueryClient, useQuery, useQueryClient } from '@tanstack/react-query';
+import { QueryClient, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Fragment, useEffect, useRef, useState } from 'react';
 import { Alert, Button, Spinner } from 'react-bootstrap';
 import type { Components } from 'react-markdown';
@@ -47,6 +47,7 @@ function CourseAgentPanelInner(props: {
 }) {
   const trpc = useTRPC();
   const [selection, setSelection] = useState<{ id?: string; version: number }>({ version: 0 });
+  const selectConversation = useMutation(trpc.courseAgent.selectConversation.mutationOptions());
   const conversations = useQuery(
     trpc.courseAgent.list.queryOptions(undefined, { refetchInterval: 3000 }),
   );
@@ -102,7 +103,10 @@ function CourseAgentPanelInner(props: {
         }
         conversations={conversations.data?.conversations ?? []}
         listError={getAppError<CourseAgentError['List']>(conversations.error)}
-        onSelect={(id) => setSelection({ id, version: selection.version + 1 })}
+        onSelect={(id) => {
+          setSelection({ id, version: selection.version + 1 });
+          selectConversation.mutate({ conversationId: id === 'new' ? null : id });
+        }}
       />
     </CourseAgentPanelShell>
   );
