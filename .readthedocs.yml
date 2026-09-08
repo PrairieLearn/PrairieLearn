@@ -15,7 +15,9 @@ build:
     install:
       - UV_PROJECT_ENVIRONMENT=$READTHEDOCS_VIRTUALENV_PATH uv sync --frozen --group docs
     pre_build:
-      - curl -fsSL https://d2lang.com/install.sh | sh -s --
+      # We use the explicit d2 version 0.8.2 because the latest version of d2 (0.9.0)
+      # has a bug that causes our lint to fail.
+      - curl -fsSL https://d2lang.com/install.sh | sh -s -- --version 0.8.2
       - cp $HOME/.local/bin/d2 $READTHEDOCS_VIRTUALENV_PATH/bin/d2
 
 mkdocs:
