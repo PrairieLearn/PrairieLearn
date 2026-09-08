@@ -329,6 +329,26 @@ ${samlProvider?.certificate ?? '-----BEGIN CERTIFICATE-----\n-----END CERTIFICAT
           </small>
         </div>
 
+        <div class="mb-3 form-check">
+          <input
+            type="checkbox"
+            class="form-check-input"
+            id="allow_missing_name"
+            name="allow_missing_name"
+            value="1"
+            ${samlProvider?.allow_missing_name ? 'checked' : ''}
+            aria-describedby="allowMissingNameHelp"
+          />
+          <label class="form-check-label" for="allow_missing_name">
+            Allow login without a name
+          </label>
+          <div id="allowMissingNameHelp" class="small text-muted">
+            Allow users to log in when the configured name attributes are missing from their SAML
+            response. Existing names will be preserved; users without a stored name will be shown
+            using their UID until a name becomes available.
+          </div>
+        </div>
+
         <div class="mb-3">
           <label class="form-label" for="uid_attribute">UID attribute</label>
           <input
