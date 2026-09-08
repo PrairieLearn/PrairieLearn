@@ -13,7 +13,11 @@ big_operator_input = importlib.import_module("pl-big-operator-input")
 
 
 def html(**attributes: object) -> str:
-    values = {"answers-name": "op", "index-variable": "k", **attributes}
+    values = {
+        "answers-name": "op",
+        **({"index-variable": "k"} if attributes.get("operator") is not None else {}),
+        **attributes,
+    }
     serialized = " ".join(
         f'{name}="{value}"' for name, value in values.items() if value is not None
     )
@@ -300,6 +304,26 @@ class TestPrepareUnits:
         with pytest.raises(ValueError, match='"operator" must be omitted'):
             big_operator_input.prepare(
                 html(operator="sum", **{"correct-answer": correct_attribute}),
+                question_data(correct_answer),
+            )
+
+    @pytest.mark.parametrize(
+        ("correct_attribute", "correct_answer"),
+        [
+            ("Sum(k**2, (k, 1, 4))", None),
+            (None, "Sum(k**2, (k, 1, 4))"),
+        ],
+        ids=("attribute", "server-data"),
+    )
+    def test_correct_answer_and_index_variable_are_mutually_exclusive(
+        self, correct_attribute: str | None, correct_answer: str | None
+    ) -> None:
+        with pytest.raises(ValueError, match='"index-variable" must be omitted'):
+            big_operator_input.prepare(
+                html(**{
+                    "correct-answer": correct_attribute,
+                    "index-variable": "k",
+                }),
                 question_data(correct_answer),
             )
 
