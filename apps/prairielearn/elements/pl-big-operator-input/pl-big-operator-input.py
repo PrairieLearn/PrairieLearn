@@ -417,6 +417,11 @@ def _config(html: str, data: pl.QuestionData | None = None) -> RenderConfig:
                 'Attribute "operator" must be omitted when a correct answer is supplied; '
                 "the operator is inferred from the complete correct answer."
             )
+        if explicit_index is not None:
+            raise ValueError(
+                'Attribute "index-variable" must be omitted when a correct answer is '
+                "supplied; the index is inferred from the complete correct answer."
+            )
         inferred_operator, inferred_limits, inferred_index = _infer_spec(raw_correct)
         if (
             inferred_operator is None
@@ -428,7 +433,7 @@ def _config(html: str, data: pl.QuestionData | None = None) -> RenderConfig:
                 "which the operator, index variable, and limits layout can be inferred."
             )
         operator = inferred_operator
-        index = explicit_index or inferred_index
+        index = inferred_index
     else:
         inferred_operator, inferred_limits = None, None
         if explicit_operator is None:
