@@ -411,28 +411,37 @@ def _config(html: str, data: pl.QuestionData | None = None) -> RenderConfig:
     custom_latex = pl.get_string_attrib(element, "operator-latex", None)
     correct_attribute = pl.get_string_attrib(element, "correct-answer", None)
     raw_correct = _raw_correct_answer(answer, correct_attribute, data)
-    inferred_operator, inferred_limits, inferred_index = None, None, None
-    if isinstance(raw_correct, (str, dict)):
+    if raw_correct is not None:
+        if explicit_operator is not None:
+            raise ValueError(
+                'Attribute "operator" must be omitted when a correct answer is supplied; '
+                "the operator is inferred from the complete correct answer."
+            )
         inferred_operator, inferred_limits, inferred_index = _infer_spec(raw_correct)
-    index = explicit_index or inferred_index
-    if index is None:
-        raise ValueError(
-            'The "index-variable" attribute is required; it cannot be inferred from the provided correct-answer.'
-        )
-    if explicit_operator is None and custom_latex is None and inferred_operator is None:
-        raise ValueError(
-            'The "operator" attribute is required; it cannot be inferred from the provided correct-answer.'
-        )
-    if (
-        operator := (
-            explicit_operator
-            or inferred_operator
-            or ("custom" if custom_latex is not None else None)
-        )
-    ) is None:
-        raise ValueError(
-            'The "operator" attribute is required; it cannot be inferred from the provided correct-answer.'
-        )
+        if (
+            inferred_operator is None
+            or inferred_limits is None
+            or inferred_index is None
+        ):
+            raise ValueError(
+                f'Correct answer "{answer}" must be a supported complete answer from '
+                "which the operator, index variable, and limits layout can be inferred."
+            )
+        operator = inferred_operator
+        index = explicit_index or inferred_index
+    else:
+        inferred_operator, inferred_limits = None, None
+        if explicit_operator is None:
+            raise ValueError(
+                'Attribute "operator" is required when no correct answer is supplied; '
+                '"operator-latex" does not select an operator.'
+            )
+        operator = explicit_operator
+        if explicit_index is None:
+            raise ValueError(
+                'Attribute "index-variable" is required when no correct answer is supplied.'
+            )
+        index = explicit_index
     if operator != "custom" and operator not in OP_METADATA:
         raise ValueError(f'Unknown operator "{operator}".')
     if operator == "custom":
@@ -450,11 +459,12 @@ def _config(html: str, data: pl.QuestionData | None = None) -> RenderConfig:
         pl.get_string_attrib(element, "limits", "auto") or "auto"
     )
     if limits == "auto":
-        if inferred_operator == operator and inferred_limits:
+        if inferred_limits is not None:
             limits = inferred_limits
         elif operator == "custom":
             raise ValueError(
-                'Custom operators require a parseable whole correct answer or explicit limits="bounds", limits="domain", or limits="approach".'
+                'An answerless custom operator requires explicit limits="bounds", '
+                'limits="domain", or limits="approach".'
             )
         else:
             limits = OP_METADATA[operator].default_limit
@@ -513,11 +523,7 @@ def _config(html: str, data: pl.QuestionData | None = None) -> RenderConfig:
         raise ValueError(
             'Attribute "allowed-blank" must be none, limits, body, or all.'
         )
-    if (
-        operator == "custom"
-        and correct_attribute is not None
-        and grading == "equivalent"
-    ):
+    if operator == "custom" and raw_correct is not None and grading == "equivalent":
         raise ValueError(
             'Custom operators with a correct answer do not support grading-method="equivalent".'
         )
