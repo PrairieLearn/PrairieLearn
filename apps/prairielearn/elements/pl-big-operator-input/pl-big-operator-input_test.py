@@ -333,6 +333,62 @@ class TestPrepareUnits:
                 question_data(),
             )
 
+    @pytest.mark.parametrize(
+        ("representation", "component"),
+        [
+            ("formatted-lower", "lower"),
+            ("canonical-upper", "upper"),
+            ("sympy-json-target", "target"),
+            ("formatted-body", "body"),
+        ],
+    )
+    def test_expression_components_reject_sets(
+        self, representation: str, component: str
+    ) -> None:
+        index = sympy.Symbol("k")
+        match representation:
+            case "formatted-lower":
+                correct_answer: object = "Sum(k, (k, {1}, 2))"
+            case "canonical-upper":
+                config = big_operator_input._config(html(operator="sum"))
+                correct_answer = big_operator_input._canonical(
+                    config,
+                    {
+                        "lower": sympy.Integer(1),
+                        "upper": sympy.FiniteSet(2),
+                        "body": index,
+                    },
+                )
+            case "sympy-json-target":
+                correct_answer = psu.sympy_to_json(
+                    sympy.Limit(index, index, sympy.FiniteSet(0), dir="+"),
+                    allow_sets=True,
+                )
+            case "formatted-body":
+                correct_answer = "Sum({k}, (k, 1, 2))"
+            case _:
+                raise AssertionError("Unhandled test representation")
+
+        with pytest.raises(
+            ValueError, match=rf'component "{component}" must be an expression'
+        ):
+            big_operator_input.prepare(html(), question_data(correct_answer))
+
+    def test_set_components_accept_declared_bare_symbols(self) -> None:
+        markup = html(**{
+            "correct-answer": "Union(A, (k, D))",
+            "variables": "A,D",
+            "grading-method": "exact",
+        })
+        data = question_data()
+
+        big_operator_input.prepare(markup, data)
+
+        answer = pl.decode_operator_expression(data["correct_answers"]["op"])
+        assert answer["limits"] == "domain"
+        assert answer["domain"] == sympy.Symbol("D")
+        assert answer["body"] == sympy.Symbol("A")
+
 
 class TestParseUnits:
     @pytest.mark.parametrize(
@@ -399,6 +455,70 @@ class TestParseUnits:
 
         assert data["submitted_answers"]["op"] is None
         assert data["format_errors"][field] == "This field must be a set."
+
+    @pytest.mark.parametrize(
+        ("operator", "limits", "raw", "field"),
+        [
+            (
+                "sum",
+                "bounds",
+                {"op-start": "{1}", "op-end": "2", "op-body": "k"},
+                "op-start",
+            ),
+            (
+                "sum",
+                "bounds",
+                {"op-start": "1", "op-end": "{2}", "op-body": "k"},
+                "op-end",
+            ),
+            (
+                "limit",
+                "approach",
+                {
+                    "op-target": "{0}",
+                    "op-body": "k",
+                    "op-direction": "from-right",
+                },
+                "op-target",
+            ),
+            (
+                "sum",
+                "bounds",
+                {"op-start": "1", "op-end": "2", "op-body": "{k}"},
+                "op-body",
+            ),
+        ],
+    )
+    def test_expression_fields_reject_sets(
+        self,
+        operator: str,
+        limits: str,
+        raw: dict[str, str],
+        field: str,
+    ) -> None:
+        data = question_data(raw_submitted_answers=raw)
+
+        big_operator_input.parse(html(operator=operator, limits=limits), data)
+
+        assert data["submitted_answers"]["op"] is None
+        assert "set notation is not allowed" in data["format_errors"][field]
+
+    def test_set_fields_accept_declared_bare_symbols(self) -> None:
+        data = question_data(raw_submitted_answers={"op-domain": "D", "op-body": "A"})
+
+        big_operator_input.parse(
+            html(
+                operator="union",
+                limits="domain",
+                variables="A,D",
+            ),
+            data,
+        )
+
+        answer = pl.decode_operator_expression(data["submitted_answers"]["op"])
+        assert answer["limits"] == "domain"
+        assert answer["domain"] == sympy.Symbol("D")
+        assert answer["body"] == sympy.Symbol("A")
 
     @pytest.mark.parametrize(
         ("allowed_blank", "raw"),

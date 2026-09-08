@@ -73,6 +73,20 @@ With a correct answer, the element infers the layout from that answer. Without a
 | `max`            | $\max$                | `domain`      | `bounds`, `domain`             |
 | `custom`         | From `operator-latex` | —             | `bounds`, `domain`, `approach` |
 
+### Field types
+
+The element infers each field's accepted type from the limits layout and operator. The same policy applies to correct-answer components and student submissions:
+
+| Field           | Accepted type                                                                                      |
+| --------------- | -------------------------------------------------------------------------------------------------- |
+| Lower bound     | Expression                                                                                         |
+| Upper bound     | Expression                                                                                         |
+| Approach target | Expression                                                                                         |
+| Domain          | Set, or a bare symbol representing a set                                                           |
+| Operator body   | Set-valued for union, intersection, and disjoint union; expression-valued for every other operator |
+
+Set-valued fields accept set notation, such as `{1, 2}` or `[0, 1]`, and bare symbols whose members are not known at parse time. Declare non-index symbols with `variables`. Unlike `pl-symbolic-input`, this element does not have an `allowed-types` attribute; authors cannot override the inferred policy on the parent element.
+
 ![Empty domain-indexed summation input with a domain field labeled k in below the summation symbol and a body field to its right](pl-big-operator-input-sum.png)
 
 The `prefix-latex` and `suffix-latex` attributes place additional notation immediately before and after the operator expression. For example, they can present an input as part of a larger equation:

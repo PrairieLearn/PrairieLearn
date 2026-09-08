@@ -623,7 +623,6 @@ def _structured(config: RenderConfig, value: dict[str, Any]) -> dict[str, Any]:
     if decoded["index"] != sympy.Symbol(config.index):
         raise ValueError("Correct answer index does not match index-variable.")
     values = _decoded_values(config, decoded)
-    _validate_component_values(config, values)
     return _canonical(config, values)
 
 
@@ -654,9 +653,15 @@ def _validate_component_values(
 ) -> None:
     allowed = set(config.variables) | {config.index}
     for component, item in values.items():
-        if _requires_set(config, cast(Component, component)) and not _is_set_input(
-            item
-        ):
+        typed_component = cast(Component, component)
+        type_failure = psu.check_sympy_types(
+            item, _component_allowed_types(config, typed_component)
+        )
+        if type_failure is not None:
+            raise ValueError(
+                f'Correct answer component "{component}" must be an expression.'
+            )
+        if _requires_set(config, typed_component) and not _is_set_input(item):
             raise ValueError(f'Correct answer component "{component}" must be a set.')
         undeclared = {str(symbol) for symbol in item.free_symbols} - allowed
         if undeclared:
@@ -806,8 +811,13 @@ def _formatted_answer(config: RenderConfig, source: str) -> dict[str, Any] | Non
         raise ValueError(
             "The correct answer contains invalid SymPy data."
         ) from exc._src
-    _validate_component_values(config, values)
     return _canonical(config, values)
+
+
+def _validate_correct(config: RenderConfig, correct: dict[str, Any]) -> dict[str, Any]:
+    decoded = poe.decode_operator_expression(correct)
+    _validate_component_values(config, _decoded_values(config, decoded))
+    return correct
 
 
 def _correct(config: RenderConfig, data: pl.QuestionData) -> dict[str, Any] | None:
@@ -823,11 +833,11 @@ def _correct(config: RenderConfig, data: pl.QuestionData) -> dict[str, Any] | No
     if raw is None:
         return None
     if isinstance(raw, dict) and raw.get("_type") == "operator_expression":
-        return _structured(config, raw)
+        return _validate_correct(config, _structured(config, raw))
     if isinstance(raw, str):
         converted = _formatted_answer(config, raw)
         if converted is not None:
-            return converted
+            return _validate_correct(config, converted)
         if config.operator == "limit" and re.match(r"^\s*Limit\s*\(", raw):
             raise ValueError("The correct answer has an invalid Limit wrapper.")
         raise TypeError(
@@ -840,11 +850,11 @@ def _correct(config: RenderConfig, data: pl.QuestionData) -> dict[str, Any] | No
     ):
         converted = _formatted_answer(config, raw["_value"])
         if converted is not None:
-            return converted
+            return _validate_correct(config, converted)
     value = _decode(raw)
     converted = _binder(config, value)
     if converted is not None:
-        return converted
+        return _validate_correct(config, converted)
     raise TypeError(
         f'Correct answer "{config.answer_name}" must be a matching formatted object or canonical structured dictionary.'
     )
@@ -883,11 +893,7 @@ def _field(
             custom_functions=config.custom_functions,
             aria_label=label,
             size=size,
-            allowed_types={
-                "all"
-                if _requires_set(config, cast(Component, component))
-                else "expression"
-            },
+            allowed_types=_component_allowed_types(config, cast(Component, component)),
             allow_complex=config.allow_complex,
             show_help_text=component == "body" and config.show_help_text,
             show_score=config.grading == "component",
@@ -1161,6 +1167,12 @@ def _requires_set(config: RenderConfig, component: Component) -> bool:
     )
 
 
+def _component_allowed_types(
+    config: RenderConfig, component: Component
+) -> set[psu.AllowedSympyType]:
+    return {"all" if _requires_set(config, component) else "expression"}
+
+
 def _is_set_input(value: sympy.Basic) -> bool:
     # A bare symbol may denote a set whose members are not known at parse time.
     return isinstance(value, (sympy.Set, sympy.Symbol))
@@ -1191,15 +1203,12 @@ def _parse_values(
             else config.variables
         )
         requires_set = _requires_set(config, component)
-        allowed_types: set[psu.AllowedSympyType] = {
-            "all" if requires_set else "expression"
-        }
         parsed = psu.try_parse_symbolic_submission(
             cast(str | None, raw_answers.get(name)),
             variables,
             formula_editor=True,
             custom_functions=config.custom_functions,
-            allowed_types=allowed_types,
+            allowed_types=_component_allowed_types(config, component),
             allow_complex=config.allow_complex,
         )
         if isinstance(parsed, psu.SympyParseFailure):
