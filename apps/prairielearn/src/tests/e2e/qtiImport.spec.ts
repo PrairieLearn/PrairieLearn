@@ -19,13 +19,22 @@ import { expect, test } from './fixtures.js';
  */
 async function buildQtiZip(
   destPath: string,
-  options?: { includeManifest?: boolean; resourceType?: string },
+  options?: {
+    assessmentId?: string;
+    assessmentTitle?: string;
+    includeManifest?: boolean;
+    questionId?: string;
+    resourceType?: string;
+  },
 ): Promise<void> {
+  const assessmentId = options?.assessmentId ?? 'test_assess_1';
+  const assessmentTitle = options?.assessmentTitle ?? 'E2E Import Quiz';
+  const questionId = options?.questionId ?? 'q_mc_1';
   const qtiXml = `<?xml version="1.0" encoding="UTF-8"?>
 <questestinterop xmlns="http://www.imsglobal.org/xsd/ims_qtiasiv1p2">
-  <assessment ident="test_assess_1" title="E2E Import Quiz">
+  <assessment ident="${assessmentId}" title="${assessmentTitle}">
     <section ident="root_section">
-      <item ident="q_mc_1" title="Sample MC Question">
+      <item ident="${questionId}" title="Sample MC Question">
         <itemmetadata>
           <qtimetadata>
             <qtimetadatafield>
@@ -72,8 +81,8 @@ async function buildQtiZip(
   const manifest = `<?xml version="1.0" encoding="UTF-8"?>
 <manifest identifier="test_manifest" xmlns="http://www.imsglobal.org/xsd/imsccv1p1/imscp_v1p1">
   <resources>
-    <resource identifier="test_assess_1" type="${options?.resourceType ?? 'imsqti_xmlv1p2/imscc_xmlv1p1/assessment'}">
-      <file href="test_assess_1/test_assess_1.xml"/>
+    <resource identifier="${assessmentId}" type="${options?.resourceType ?? 'imsqti_xmlv1p2/imscc_xmlv1p1/assessment'}">
+      <file href="${assessmentId}/${assessmentId}.xml"/>
     </resource>
   </resources>
 </manifest>`;
@@ -82,9 +91,9 @@ async function buildQtiZip(
   const output = createWriteStream(destPath);
   if (options?.includeManifest !== false) {
     archive.append(manifest, { name: 'imsmanifest.xml' });
-    archive.append(qtiXml, { name: 'test_assess_1/test_assess_1.xml' });
+    archive.append(qtiXml, { name: `${assessmentId}/${assessmentId}.xml` });
   } else {
-    archive.append(qtiXml, { name: 'test_assess_1.xml' });
+    archive.append(qtiXml, { name: `${assessmentId}.xml` });
   }
   void archive.finalize();
   await pipeline(archive, output);
@@ -787,7 +796,11 @@ test.describe('QTI Import', () => {
     testCoursePath,
   }) => {
     const zipPath = path.join(testCoursePath, 'qti-target-fixture.zip');
-    await buildQtiZip(zipPath);
+    await buildQtiZip(zipPath, {
+      assessmentId: 'target_assess_1',
+      assessmentTitle: 'E2E Target Quiz',
+      questionId: 'target_q_mc_1',
+    });
     const course = await selectCourseByShortName('QA 101');
     const target = await selectCourseInstanceByShortName({ course, shortName: 'public' });
     const targetQuestionsUrl = getCourseAdminQuestionsUrl({ courseInstanceId: target.id });
@@ -812,12 +825,12 @@ test.describe('QTI Import', () => {
       await readFile(
         path.join(
           testCoursePath,
-          'courseInstances/public/assessments/e2e-import-quiz/infoAssessment.json',
+          'courseInstances/public/assessments/e2e-target-quiz/infoAssessment.json',
         ),
         'utf8',
       ),
     );
-    expect(assessmentInfo.title).toBe('E2E Import Quiz');
+    expect(assessmentInfo.title).toBe('E2E Target Quiz');
   });
 
   test('shows a clear error when review draft files have expired', async ({
