@@ -9,6 +9,7 @@ if TYPE_CHECKING:
     from types import ModuleType
 
     import prairielearn as pl
+    import prairielearn.sympy_utils as psu
 
 HERE = Path(__file__).parent
 SOURCE_DIR = HERE.parent / "pl-symbolic-input"
@@ -56,7 +57,7 @@ def render(
     custom_functions: tuple[str, ...],
     aria_label: str,
     size: int,
-    allowed_types: set[str],
+    allowed_types: set[psu.AllowedSympyType],
     allow_complex: bool,
     show_help_text: bool = False,
     show_score: bool = False,
