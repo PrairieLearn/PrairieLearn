@@ -18,30 +18,37 @@ The fields accept the same symbolic syntax as [`pl-symbolic-input`](pl-symbolic-
 
 Because `correct-answer` contains the complete expression, the element can infer the operator, index variable, and limits layout.
 
+The element has two structural configuration states:
+
+| Correct answer | Operator configuration                                                                                                                                            |
+| -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Present        | Omit `operator`. The complete answer must supply an inferable operator, index variable, and limits layout. A `Custom(...)` answer also requires `operator-latex`. |
+| Absent         | Supply `operator` and `index-variable`. An answerless custom operator also requires `operator-latex` and an explicit `limits` value.                              |
+
 ## Customizations
 
-| Attribute                     | Type                                                                                                                            | Default        | Description                                                                                                                                                                  |
-| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------- | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `allow-complex`               | boolean                                                                                                                         | false          | Whether to allow complex numbers. Students may use `i` or `j` as the imaginary unit.                                                                                         |
-| `allow-limit-direction-input` | boolean                                                                                                                         | true           | Whether students choose the direction of an approach limit. When `false`, the configured `limit-direction` is fixed. This attribute is only valid with approach limits.      |
-| `allowed-blank`               | `"none"`, `"limits"`, `"body"`, or `"all"`                                                                                      | `"none"`       | Which parts of the answer students may leave blank.                                                                                                                          |
-| `answers-name`                | string                                                                                                                          | —              | Name used to store the combined answer. This value must be unique within a question.                                                                                         |
-| `body-relative-weight`        | integer                                                                                                                         | 3              | Weight of the body when `grading-method="component"`. Each limit field has a weight of 1.                                                                                    |
-| `body-size`                   | integer                                                                                                                         | 16             | Positive character width of the body field.                                                                                                                                  |
-| `correct-answer`              | string                                                                                                                          | —              | Correct answer as a complete, parseable expression. When possible, the element infers the operator, index variable, limits layout, and limit direction from this expression. |
-| `custom-functions`            | string                                                                                                                          | —              | Comma-separated list of symbolic function names allowed in correct answers and student answers, such as `"f,g"`.                                                             |
-| `grading-method`              | `"exact"`, `"component"`, `"equivalent"`, or `"none"`                                                                           | `"equivalent"` | How to compare the student answer with the correct answer. See [Grading](#grading).                                                                                          |
-| `index-variable`              | string                                                                                                                          | —              | Bound variable, which is automatically allowed in the body. Required when the element cannot infer it from `correct-answer`.                                                 |
-| `limit-direction`             | `"two-sided"`, `"from-left"`, or `"from-right"`                                                                                 | `"two-sided"`  | Direction of an approach limit. When possible, the element infers this value from `correct-answer`.                                                                          |
-| `limit-size`                  | integer                                                                                                                         | 7 or 10        | Positive character width of each limit field. The default is 7 for bounds and 10 for domain or approach limits.                                                              |
-| `limits`                      | `"auto"`, `"bounds"`, `"domain"`, or `"approach"`                                                                               | `"auto"`       | Limits layout to display. `auto` first tries to infer the layout from `correct-answer`, then uses the operator's default layout shown below.                                 |
-| `operator`                    | `"sum"`, `"product"`, `"integral"`, `"limit"`, `"union"`, `"intersection"`, `"disjoint-union"`, `"min"`, `"max"`, or `"custom"` | —              | Operator to display and grade. Required when the element cannot infer it from `correct-answer`. Use `custom` for a custom LaTeX operator.                                    |
-| `operator-latex`              | string                                                                                                                          | —              | LaTeX used to display the operator. Required for custom operators; overrides the default symbol for built-in operators.                                                      |
-| `prefix-latex`                | string                                                                                                                          | —              | LaTeX displayed immediately before the operator expression.                                                                                                                  |
-| `show-help-text`              | boolean                                                                                                                         | true           | Whether to show symbolic-input help beside the body field.                                                                                                                   |
-| `suffix-latex`                | string                                                                                                                          | —              | LaTeX displayed immediately after the operator expression.                                                                                                                   |
-| `variables`                   | string                                                                                                                          | —              | Comma-separated list of allowed symbols in addition to the index variable, such as `"Gamma,k,N"`.                                                                            |
-| `weight`                      | integer                                                                                                                         | 1              | Weight used when computing a weighted average score across elements.                                                                                                         |
+| Attribute                     | Type                                                                                                                            | Default        | Description                                                                                                                                                                              |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------- | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `allow-complex`               | boolean                                                                                                                         | false          | Whether to allow complex numbers. Students may use `i` or `j` as the imaginary unit.                                                                                                     |
+| `allow-limit-direction-input` | boolean                                                                                                                         | true           | Whether students choose the direction of an approach limit. When `false`, the configured `limit-direction` is fixed. This attribute is only valid with approach limits.                  |
+| `allowed-blank`               | `"none"`, `"limits"`, `"body"`, or `"all"`                                                                                      | `"none"`       | Which parts of the answer students may leave blank.                                                                                                                                      |
+| `answers-name`                | string                                                                                                                          | —              | Name used to store the combined answer. This value must be unique within a question.                                                                                                     |
+| `body-relative-weight`        | integer                                                                                                                         | 3              | Weight of the body when `grading-method="component"`. Each limit field has a weight of 1.                                                                                                |
+| `body-size`                   | integer                                                                                                                         | 16             | Positive character width of the body field.                                                                                                                                              |
+| `correct-answer`              | string                                                                                                                          | —              | Correct answer as a supported complete, inferable expression. It supplies the operator, index variable, limits layout, and limit direction, and cannot be combined with `operator`.      |
+| `custom-functions`            | string                                                                                                                          | —              | Comma-separated list of symbolic function names allowed in correct answers and student answers, such as `"f,g"`.                                                                         |
+| `grading-method`              | `"exact"`, `"component"`, `"equivalent"`, or `"none"`                                                                           | `"equivalent"` | How to compare the student answer with the correct answer. See [Grading](#grading).                                                                                                      |
+| `index-variable`              | string                                                                                                                          | —              | Bound variable, which is automatically allowed in the body. Required without a correct answer; otherwise inferred from the complete answer.                                              |
+| `limit-direction`             | `"two-sided"`, `"from-left"`, or `"from-right"`                                                                                 | `"two-sided"`  | Direction of an approach limit. When possible, the element infers this value from `correct-answer`.                                                                                      |
+| `limit-size`                  | integer                                                                                                                         | 7 or 10        | Positive character width of each limit field. The default is 7 for bounds and 10 for domain or approach limits.                                                                          |
+| `limits`                      | `"auto"`, `"bounds"`, `"domain"`, or `"approach"`                                                                               | `"auto"`       | Limits layout to display. A complete answer supplies the layout. Without an answer, `auto` uses a built-in operator's default; an answerless custom operator requires an explicit value. |
+| `operator`                    | `"sum"`, `"product"`, `"integral"`, `"limit"`, `"union"`, `"intersection"`, `"disjoint-union"`, `"min"`, `"max"`, or `"custom"` | —              | Operator to display and grade. Required without a correct answer and forbidden when a correct answer is supplied. Use `custom` for an answerless custom operator.                        |
+| `operator-latex`              | string                                                                                                                          | —              | Independent display override. It supplies a custom operator's required glyph or overrides an inferred or explicit built-in symbol; by itself it does not select custom semantics.        |
+| `prefix-latex`                | string                                                                                                                          | —              | LaTeX displayed immediately before the operator expression.                                                                                                                              |
+| `show-help-text`              | boolean                                                                                                                         | true           | Whether to show symbolic-input help beside the body field.                                                                                                                               |
+| `suffix-latex`                | string                                                                                                                          | —              | LaTeX displayed immediately after the operator expression.                                                                                                                               |
+| `variables`                   | string                                                                                                                          | —              | Comma-separated list of allowed symbols in addition to the index variable, such as `"Gamma,k,N"`.                                                                                        |
+| `weight`                      | integer                                                                                                                         | 1              | Weight used when computing a weighted average score across elements.                                                                                                                     |
 
 ## Operators and limits
 
@@ -51,20 +58,20 @@ The `limits` attribute controls which fields appear:
 - `domain` displays a domain and a body.
 - `approach` displays a target value and a body.
 
-With `limits="auto"`, the element first tries to infer the layout from `correct-answer`. If it cannot, the element uses the default in the following table.
+With a correct answer, the element infers the layout from that answer. Without a correct answer, `limits="auto"` uses the built-in operator default in the following table. An answerless custom operator must instead set `limits` explicitly.
 
-| `operator` value | Default symbol        | Default limits | Allowed limits                 |
-| ---------------- | --------------------- | -------------- | ------------------------------ |
-| `sum`            | $\sum$                | `bounds`       | `bounds`, `domain`             |
-| `product`        | $\prod$               | `bounds`       | `bounds`, `domain`             |
-| `integral`       | $\int$                | `bounds`       | `bounds`, `domain`             |
-| `limit`          | $\lim$                | `approach`     | `approach`                     |
-| `union`          | $\bigcup$             | `domain`       | `bounds`, `domain`             |
-| `intersection`   | $\bigcap$             | `domain`       | `bounds`, `domain`             |
-| `disjoint-union` | $\bigsqcup$           | `domain`       | `bounds`, `domain`             |
-| `min`            | $\min$                | `domain`       | `bounds`, `domain`             |
-| `max`            | $\max$                | `domain`       | `bounds`, `domain`             |
-| `custom`         | From `operator-latex` | inferred       | `bounds`, `domain`, `approach` |
+| `operator` value | Default symbol        | `auto` limits | Allowed limits                 |
+| ---------------- | --------------------- | ------------- | ------------------------------ |
+| `sum`            | $\sum$                | `bounds`      | `bounds`, `domain`             |
+| `product`        | $\prod$               | `bounds`      | `bounds`, `domain`             |
+| `integral`       | $\int$                | `bounds`      | `bounds`, `domain`             |
+| `limit`          | $\lim$                | `approach`    | `approach`                     |
+| `union`          | $\bigcup$             | `domain`      | `bounds`, `domain`             |
+| `intersection`   | $\bigcap$             | `domain`      | `bounds`, `domain`             |
+| `disjoint-union` | $\bigsqcup$           | `domain`      | `bounds`, `domain`             |
+| `min`            | $\min$                | `domain`      | `bounds`, `domain`             |
+| `max`            | $\max$                | `domain`      | `bounds`, `domain`             |
+| `custom`         | From `operator-latex` | —             | `bounds`, `domain`, `approach` |
 
 ![Empty domain-indexed summation input with a domain field labeled k in below the summation symbol and a body field to its right](pl-big-operator-input-sum.png)
 
@@ -88,7 +95,12 @@ For an integral with `limits="domain"`, the domain appears as the only subscript
 
 ### Custom operators
 
-Provide `operator-latex` to use a symbol that is not built in. Either set `operator="custom"` or supply a complete `Custom(...)` correct answer so that the element can infer the operator. A custom correct answer uses one of these forms:
+Provide `operator-latex` to use a symbol that is not built in. There are two custom-operator forms:
+
+- With a correct answer, supply a complete `Custom(...)` answer and `operator-latex`, and omit `operator`.
+- Without a correct answer, supply `operator="custom"`, `operator-latex`, `index-variable`, and an explicit `limits` value.
+
+A custom correct answer uses one of these forms:
 
 - Bounds: `Custom(body, (index, lower, upper))`
 - Domain: `Custom(body, (index, domain))`
@@ -119,16 +131,16 @@ Valid approach directions are `"+"`, `"-"`, and `"+-"`.
 
 Custom operators change the displayed symbol and use the standard input layouts. They do not define a new SymPy operation. As a result:
 
-- Custom operators do not support `grading-method="equivalent"`. Use `exact` or `component` grading instead, or `none` to display the correct answer without grading.
-- `limits="auto"` requires a parseable `Custom(...)` correct answer from which the element can infer the layout. Otherwise, set `limits` to `bounds`, `domain`, or `approach`.
-- `operator-latex` is required. It controls presentation only; it does not define parsing or mathematical behavior.
+- A custom operator with a correct answer does not support `grading-method="equivalent"`. Use `exact` or `component` grading instead, or `none` to display the correct answer without grading. Without a correct answer, every grading method is accepted but inert because the input is ungraded.
+- `limits="auto"` is valid with a parseable `Custom(...)` correct answer because the answer supplies the layout. An answerless custom input must set `limits` to `bounds`, `domain`, or `approach`.
+- `operator-latex` is required. It controls presentation only; it does not define parsing or mathematical behavior, and it does not independently select `operator="custom"` for an answerless input.
 - Without a correct answer, the element records submissions but does not grade them. This behavior is the same for custom and built-in operators.
 
 ## Correct answers
 
 ### Complete expressions
 
-A complete, parseable `correct-answer` can provide the operator, index variable, limits layout, and limit direction. Supported strings begin with `Sum`, `Product`, `Integral`, `Limit`, `Union`, `Intersection`, `DisjointUnion`, `Min`, `Max`, or `Custom`.
+A correct answer must be a complete, inferable representation that supplies the operator, index variable, limits layout, and limit direction. The `operator` attribute must be omitted whenever a correct answer is supplied, including through `data["correct_answers"]`. Supported strings begin with `Sum`, `Product`, `Integral`, `Limit`, `Union`, `Intersection`, `DisjointUnion`, `Min`, `Max`, or `Custom`.
 
 The operator and limits tuple determine the layout:
 
@@ -171,9 +183,9 @@ In this example, the element infers the operator, approach layout, and two-sided
 ></pl-big-operator-input>
 ```
 
-Explicit `operator`, `index-variable`, `limits`, and `limit-direction` attributes take precedence over inferred values and must agree with the correct answer.
+The correct answer determines the operator. If `index-variable`, `limits`, or `limit-direction` is also supplied, it must agree with the value inferred from the answer. There is no corresponding assertion or override form for `operator`; combining it with any correct answer is invalid.
 
-The complete expression may also be a canonical dictionary or a PrairieLearn SymPy JSON dictionary. A canonical dictionary identifies its operator and index with the `operator` and `index` fields. SymPy JSON supports `Sum`, `Product`, `Integral`, and `Limit` expressions. Raw SymPy objects, malformed answers, and unrecognized answer formats do not support inference; specify `operator` and `index-variable` explicitly in those cases.
+The complete expression may also be a canonical `operator_expression` dictionary or a supported PrairieLearn SymPy JSON dictionary. A canonical dictionary identifies its operator and index with the `operator` and `index` fields. SymPy JSON supports `Sum`, `Product`, `Integral`, and `Limit` expressions. Raw SymPy objects are not supported because values in `data["correct_answers"]` must be JSON-serializable. Malformed and unrecognized representations are also rejected; explicit attributes cannot rescue a non-inferable correct answer.
 
 ### Setting the correct answer in `server.py`
 
