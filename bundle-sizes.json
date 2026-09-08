@@ -205,9 +205,9 @@
     "brotli": 233598
   },
   "scripts/esm-bundles/hydrated-components/TagsTopicsTable.ts": {
-    "raw": 1401681,
-    "gzip": 390921,
-    "brotli": 316014
+    "raw": 1401712,
+    "gzip": 390932,
+    "brotli": 316028
   },
   "scripts/esm-bundles/hydrated-components/UserSettingsPage.ts": {
     "raw": 1030447,
@@ -220,24 +220,24 @@
     "brotli": 17956
   },
   "scripts/esm-bundles/hydrated-components/InstructorQuestionsTable.ts": {
-    "raw": 1526976,
-    "gzip": 430503,
-    "brotli": 351476
+    "raw": 1527007,
+    "gzip": 430515,
+    "brotli": 351485
   },
   "scripts/esm-bundles/hydrated-components/InstructorStudentDetail.ts": {
-    "raw": 1604647,
-    "gzip": 451630,
-    "brotli": 368634
+    "raw": 1604686,
+    "gzip": 451647,
+    "brotli": 368651
   },
   "scripts/esm-bundles/hydrated-components/InstructorStudents.ts": {
-    "raw": 1502091,
-    "gzip": 422845,
-    "brotli": 362562
+    "raw": 1502122,
+    "gzip": 422852,
+    "brotli": 362550
   },
   "scripts/esm-bundles/hydrated-components/InstructorStudentsLabels.ts": {
-    "raw": 1328487,
-    "gzip": 371631,
-    "brotli": 318408
+    "raw": 1328518,
+    "gzip": 371640,
+    "brotli": 318417
   },
   "scripts/esm-bundles/hydrated-components/JobSequenceResults.ts": {
     "raw": 463395,
@@ -275,9 +275,9 @@
     "brotli": 245003
   },
   "scripts/esm-bundles/hydrated-components/InstructorGradebookTable.ts": {
-    "raw": 1342098,
-    "gzip": 371959,
-    "brotli": 318648
+    "raw": 1342129,
+    "gzip": 371972,
+    "brotli": 318673
   },
   "scripts/esm-bundles/hydrated-components/InstructorInstanceAdminAiGrading.ts": {
     "raw": 2382085,
@@ -295,9 +295,9 @@
     "brotli": 300547
   },
   "scripts/esm-bundles/hydrated-components/InstructorQuestionSettingsForm.ts": {
-    "raw": 1544334,
-    "gzip": 436792,
-    "brotli": 357135
+    "raw": 1544365,
+    "gzip": 436804,
+    "brotli": 357156
   },
   "scripts/esm-bundles/hydrated-components/DeleteCourseInstanceModal.ts": {
     "raw": 256261,
@@ -330,9 +330,9 @@
     "brotli": 97681
   },
   "scripts/esm-bundles/hydrated-components/InstructorAssessmentGroups.ts": {
-    "raw": 1367106,
-    "gzip": 380245,
-    "brotli": 325971
+    "raw": 1367137,
+    "gzip": 380258,
+    "brotli": 325953
   },
   "scripts/esm-bundles/hydrated-components/InstructorAssessmentInstances.ts": {
     "raw": 1253119,
@@ -345,14 +345,14 @@
     "brotli": 316822
   },
   "scripts/esm-bundles/hydrated-components/AssessmentQuestionManualGrading.ts": {
-    "raw": 1604432,
-    "gzip": 451369,
-    "brotli": 370152
+    "raw": 1604463,
+    "gzip": 451380,
+    "brotli": 370142
   },
   "scripts/esm-bundles/hydrated-components/AssessmentQuestionsEditor.ts": {
-    "raw": 1703457,
-    "gzip": 480597,
-    "brotli": 395362
+    "raw": 1703488,
+    "gzip": 480607,
+    "brotli": 395367
   },
   "scripts/esm-bundles/hydrated-components/AssessmentSetsPage.ts": {
     "raw": 1216261,
@@ -365,14 +365,14 @@
     "brotli": 70268
   },
   "scripts/esm-bundles/hydrated-components/CopyCourseInstanceModal.ts": {
-    "raw": 986887,
-    "gzip": 268640,
-    "brotli": 231547
+    "raw": 986918,
+    "gzip": 268651,
+    "brotli": 231565
   },
   "scripts/esm-bundles/hydrated-components/CourseInstancePublishing.ts": {
-    "raw": 1493236,
-    "gzip": 418478,
-    "brotli": 358714
+    "raw": 1493267,
+    "gzip": 418491,
+    "brotli": 358728
   },
   "scripts/esm-bundles/hydrated-components/CreateQuestionForm.ts": {
     "raw": 395149,
@@ -385,9 +385,9 @@
     "brotli": 595662
   },
   "scripts/esm-bundles/hydrated-components/AdministratorCourseRequests.ts": {
-    "raw": 1622952,
-    "gzip": 458141,
-    "brotli": 394052
+    "raw": 1622983,
+    "gzip": 458153,
+    "brotli": 394056
   },
   "scripts/esm-bundles/hydrated-components/AdministratorCourses.ts": {
     "raw": 1193341,
@@ -415,8 +415,8 @@
     "brotli": 384845
   },
   "scripts/esm-bundles/hydrated-components/AssessmentLogsTable.ts": {
-    "raw": 1374018,
-    "gzip": 380530,
-    "brotli": 324549
+    "raw": 1374049,
+    "gzip": 380540,
+    "brotli": 324561
   }
 }
