@@ -353,6 +353,13 @@ export function getCourseAdminQuestionsUrl(
   return `${baseUrl}?${searchParams.toString()}`;
 }
 
+export function getCourseAdminQtiImportUrl(
+  parts: CourseAdminUrlParts & { returnTo?: 'questions' | 'assessments' },
+): string {
+  const baseUrl = `${getCourseAdminUrl(parts)}/qti_import`;
+  return parts.returnTo === 'questions' ? `${baseUrl}?return_to=questions` : baseUrl;
+}
+
 export function getQuestionUrl({
   courseInstanceId,
   courseId,

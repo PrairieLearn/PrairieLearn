@@ -36,7 +36,7 @@ import { rankSearchText } from '../lib/client/search.js';
 import {
   QUESTION_TABLE_FILTER_URL_KEYS,
   getAiQuestionGenerationDraftsUrl,
-  getCourseInstanceBaseUrl,
+  getCourseAdminQtiImportUrl,
 } from '../lib/client/url.js';
 import type { QuestionsError } from '../trpc/course/questions.js';
 
@@ -283,10 +283,13 @@ export function QuestionsTable<TQueryKey extends readonly unknown[]>({
   });
 
   const aiGenerateUrl = getAiQuestionGenerationDraftsUrl({ urlPrefix });
-  const importQuestionsUrl =
-    addQuestionUrl && courseInstances.length > 0
-      ? `${getCourseInstanceBaseUrl(currentCourseInstanceId ?? courseInstances[0].id)}/instructor/instance_admin/qti_import?return_to=questions`
-      : undefined;
+  const importQuestionsUrl = addQuestionUrl
+    ? getCourseAdminQtiImportUrl({
+        courseId,
+        courseInstanceId: currentCourseInstanceId,
+        returnTo: 'questions',
+      })
+    : undefined;
 
   const selectedQuestions = table.getFilteredSelectedRowModel().rows.map((row) => row.original);
   const displayedCount = table.getRowModel().rows.length;

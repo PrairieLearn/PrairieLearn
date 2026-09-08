@@ -23,7 +23,7 @@ async function getUserParams(user_id: string | null) {
 }
 
 async function usersSelectOrInsert(
-  user: { uid: string; name: string; uin?: string | null; email?: string | null },
+  user: { uid: string; name: string | null; uin?: string | null; email?: string | null },
   authn_provider_name: string | null = null,
   institution_id: string | null = null,
 ) {
@@ -73,6 +73,14 @@ describe('sproc users_select_or_insert tests', { concurrent: false }, () => {
 
     const fromdb = await getUserParams(user_id);
     assert.deepEqual(user, fromdb);
+  });
+
+  test('user 1 preserves name when login omits it', async () => {
+    const { user_id } = await usersSelectOrInsert({ ...baseUser, name: null });
+    assert.equal(user_id, '1');
+
+    const fromdb = await getUserParams(user_id);
+    assert.deepEqual({ ...baseUser, name: 'J.R. User' }, fromdb);
   });
 
   test('add an institution for host.com', async () => {
