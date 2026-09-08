@@ -296,26 +296,17 @@ window.PLFileEditor.prototype.syncFileToHiddenInput = function () {
 };
 
 window.PLFileEditor.prototype.b64DecodeUnicode = function (str) {
-  // Going backwards: from bytestream, to percent-encoding, to original string.
-  return decodeURIComponent(
-    atob(str)
-      .split('')
-      .map(function (c) {
-        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-      })
-      .join(''),
-  );
+  return new TextDecoder().decode(Uint8Array.from(atob(str), (c) => c.charCodeAt(0)));
 };
 
 window.PLFileEditor.prototype.b64EncodeUnicode = function (str) {
-  // first we use encodeURIComponent to get percent-encoded UTF-8,
-  // then we convert the percent encodings into raw bytes which
-  // can be fed into btoa.
-  return btoa(
-    encodeURIComponent(str).replaceAll(/%([0-9A-F]{2})/g, function toSolidBytes(match, p1) {
-      return String.fromCharCode('0x' + p1);
-    }),
-  );
+  const bytes = new TextEncoder().encode(str);
+  let binaryString = '';
+  const CHUNK_SIZE = 0x8000;
+  for (let i = 0; i < bytes.length; i += CHUNK_SIZE) {
+    binaryString += String.fromCodePoint(...bytes.subarray(i, i + CHUNK_SIZE));
+  }
+  return btoa(binaryString);
 };
 
 window.PLFileEditor.prototype.preview = {
