@@ -183,6 +183,7 @@ A domain integral can also omit both `operator` and `limits`:
   answers-name="contour"
   correct-answer="Integral(z**2, (z, Gamma))"
   variables="Gamma"
+  grading-method="component"
 ></pl-big-operator-input>
 ```
 
