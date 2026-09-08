@@ -322,6 +322,7 @@ export const QUESTION_TABLE_FILTER_URL_KEYS = {
   external_grading_image: 'extImage',
   workspace_image: 'wsImage',
   single_variant: 'singleVariant',
+  partial_credit: 'partialCredit',
   has_preferences: 'preferences',
 } as const;
 

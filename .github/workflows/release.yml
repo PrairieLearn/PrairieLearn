@@ -48,7 +48,7 @@ jobs:
           permission-pull-requests: write
 
       - name: Create release pull request or publish to npm
-        uses: changesets/action@22ccf9aa43179fe9e27dc62e575971d28cce197c # v2.0.0
+        uses: changesets/action@8488615a623b1b9c987934bb89eae8af6a946ac1 # v2.1.1
         with:
           # Updating versions must be followed by an install to update pnpm-lock.yaml.
           version-script: pnpm run version
