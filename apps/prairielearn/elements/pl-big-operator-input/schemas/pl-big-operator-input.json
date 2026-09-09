@@ -37,7 +37,6 @@
       "type": "string"
     },
     "grading-method": {
-      "default": "equivalent",
       "type": "string",
       "enum": ["exact", "component", "equivalent", "none"]
     },

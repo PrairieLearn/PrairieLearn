@@ -634,10 +634,10 @@ class TestGradeUnits:
         ids=("built-in", "custom"),
     )
     @pytest.mark.parametrize(
-        "grading_method", ["exact", "equivalent", "component", "none"]
+        "grading_method", [None, "none"], ids=("default", "explicit")
     )
-    def test_answerless_input_is_ungraded_for_every_grading_method(
-        self, configuration: dict[str, str], grading_method: str
+    def test_answerless_input_uses_none_grading(
+        self, configuration: dict[str, str], grading_method: str | None
     ) -> None:
         markup = html(**configuration, **{"grading-method": grading_method})
         data = question_data(
@@ -648,10 +648,33 @@ class TestGradeUnits:
             }
         )
 
+        assert big_operator_input._config(markup, data).grading == "none"
         prepare_parse_grade(markup, data)
 
         assert data["submitted_answers"]["op"] is not None
         assert "op" not in data.get("partial_scores", {})
+
+    @pytest.mark.parametrize(
+        "configuration",
+        [
+            {"operator": "sum"},
+            {
+                "operator": "custom",
+                "operator-latex": r"\mathbb{E}",
+                "limits": "bounds",
+            },
+        ],
+        ids=("built-in", "custom"),
+    )
+    @pytest.mark.parametrize("grading_method", ["exact", "equivalent", "component"])
+    def test_answerless_input_rejects_scored_grading_methods(
+        self, configuration: dict[str, str], grading_method: str
+    ) -> None:
+        with pytest.raises(ValueError, match='"grading-method" must be "none"'):
+            big_operator_input.prepare(
+                html(**configuration, **{"grading-method": grading_method}),
+                question_data(),
+            )
 
     def test_none_grading_displays_correct_answer_without_scoring(self) -> None:
         markup = html(**{
