@@ -493,12 +493,18 @@ def _config(html: str, data: pl.QuestionData | None = None) -> RenderConfig:
     limit_size = pl.get_integer_attrib(element, "limit-size", default_limit_size)
     if limit_size < 1:
         raise ValueError('Attribute "limit-size" must be positive.')
-    grading: GradingMethod | str = (
-        pl.get_string_attrib(element, "grading-method", "equivalent") or "equivalent"
+    grading_attribute = pl.get_string_attrib(element, "grading-method", None)
+    grading: GradingMethod | str = grading_attribute or (
+        "equivalent" if raw_correct is not None else "none"
     )
     if grading not in GRADING_METHODS:
         raise ValueError(
             'Attribute "grading-method" must be exact, component, equivalent, or none.'
+        )
+    if raw_correct is None and grading != "none":
+        raise ValueError(
+            'Attribute "grading-method" must be "none" when no correct answer is '
+            "supplied."
         )
     body_weight = pl.get_integer_attrib(element, "body-relative-weight", 3)
     if body_weight < 1:

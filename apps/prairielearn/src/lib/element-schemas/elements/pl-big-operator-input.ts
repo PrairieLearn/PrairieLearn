@@ -16,10 +16,7 @@ const plBigOperatorInputAttributesSchema = z
     'body-size': integerFormat().optional(),
     'correct-answer': z.string().regex(correctAnswerPattern).optional(),
     'custom-functions': z.string().optional(),
-    'grading-method': z
-      .enum(['exact', 'component', 'equivalent', 'none'])
-      .default('equivalent')
-      .optional(),
+    'grading-method': z.enum(['exact', 'component', 'equivalent', 'none']).optional(),
     'index-variable': z.string().optional(),
     'limit-direction': z
       .enum(['two-sided', 'from-left', 'from-right'])
