@@ -200,9 +200,9 @@
     "brotli": 82027
   },
   "scripts/esm-bundles/hydrated-components/StaffTable.ts": {
-    "raw": 878171,
-    "gzip": 271563,
-    "brotli": 233732
+    "raw": 878389,
+    "gzip": 271667,
+    "brotli": 233827
   },
   "scripts/esm-bundles/hydrated-components/TagsTopicsTable.ts": {
     "raw": 1401823,
