@@ -4,7 +4,6 @@ import { loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
 
 import { type Course, type CourseInstance, type Institution } from '../../lib/db-types.js';
 import { checkPlanGrants } from '../lib/billing/plan-grants.js';
-import { planGrantsMatchPlanFeatures } from '../lib/billing/plans-types.js';
 import { getPlanGrantsForContext, getPlanNamesFromPlanGrants } from '../lib/billing/plans.js';
 
 const sql = loadSqlEquiv(import.meta.url);
@@ -150,7 +149,7 @@ export async function checkPotentialEnterpriseEnrollment({
     user_id: authzData.user.id,
   });
   const planNames = getPlanNamesFromPlanGrants(planGrants);
-  if (planGrantsMatchPlanFeatures(planNames, ['basic'])) {
+  if (planNames.includes('basic')) {
     return PotentialEnrollmentStatus.ALLOWED;
   }
 
