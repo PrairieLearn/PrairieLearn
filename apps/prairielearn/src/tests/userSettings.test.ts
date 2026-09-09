@@ -34,6 +34,7 @@ describe('User settings', { timeout: 60_000, concurrent: false }, () => {
 
   test.each([
     { forwardedIp: '::ffff:203.0.113.42', displayedIp: '203.0.113.42' },
+    { forwardedIp: '::FFFF:203.0.113.42', displayedIp: '203.0.113.42' },
     { forwardedIp: '2001:db8::1', displayedIp: '2001:db8::1' },
   ])(
     'shows $forwardedIp as $displayedIp in the user profile',
