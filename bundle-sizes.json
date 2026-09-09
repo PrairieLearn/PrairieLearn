@@ -210,8 +210,8 @@
     "brotli": 316056
   },
   "scripts/esm-bundles/hydrated-components/UserSettingsPage.ts": {
-    "raw": 1030558,
-    "gzip": 316250,
+    "raw": 1030731,
+    "gzip": 316283,
     "brotli": 272227
   },
   "../../../node_modules/.pnpm/@zip.js+zip.js@2.8.51/node_modules/@zip.js/zip.js/lib/core/zip-reader.js": {
