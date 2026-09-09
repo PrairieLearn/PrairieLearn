@@ -32,19 +32,25 @@ describe('User settings', { timeout: 60_000, concurrent: false }, () => {
   });
   afterAll(helperServer.after);
 
-  test('shows the current IP address in the user profile', async () => {
-    const response = await fetch(`${siteUrl}/pl/settings`, {
-      headers: { 'X-Forwarded-For': '203.0.113.42' },
-    });
-    assert(response.ok);
+  test.each([
+    { forwardedIp: '::ffff:203.0.113.42', displayedIp: '203.0.113.42' },
+    { forwardedIp: '2001:db8::1', displayedIp: '2001:db8::1' },
+  ])(
+    'shows $forwardedIp as $displayedIp in the user profile',
+    async ({ forwardedIp, displayedIp }) => {
+      const response = await fetch(`${siteUrl}/pl/settings`, {
+        headers: { 'X-Forwarded-For': forwardedIp },
+      });
+      assert(response.ok);
 
-    const $ = cheerio.load(await response.text());
-    const ipAddressRow = $('table[aria-label="User profile information"] tr').filter(
-      (_, element) => $(element).find('th').text().trim() === 'IP address',
-    );
-    assert.lengthOf(ipAddressRow, 1);
-    assert.equal(ipAddressRow.find('td').text().trim(), '203.0.113.42');
-  });
+      const $ = cheerio.load(await response.text());
+      const ipAddressRow = $('table[aria-label="User profile information"] tr').filter(
+        (_, element) => $(element).find('th').text().trim() === 'IP address',
+      );
+      assert.lengthOf(ipAddressRow, 1);
+      assert.equal(ipAddressRow.find('td').text().trim(), displayedIp);
+    },
+  );
 
   test('updates settings for the authenticated user', async () => {
     const updatedSettings = await trpcClient.settings.update.mutate({
