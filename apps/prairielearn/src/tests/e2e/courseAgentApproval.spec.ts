@@ -111,7 +111,7 @@ test('waits for the final streamed reply before showing refresh and clears it on
   await expect(refresh).toHaveCount(0);
 });
 
-test('reviews a full-screen diff and hides historical refresh after reloading', async ({
+test('reviews wrapped diffs in one scrolling modal and hides historical refresh after reloading', async ({
   page,
   courseInstance,
 }, testInfo) => {
@@ -125,6 +125,8 @@ test('reviews a full-screen diff and hides historical refresh after reloading', 
   const pending = new Promise<void>((resolve) => {
     releaseApproval = resolve;
   });
+  const longLine = `+<p>${'An explanation that needs to wrap. '.repeat(20)}${'x'.repeat(300)}</p>`;
+  const addedLines = [longLine, ...Array.from({ length: 80 }, (_, i) => `+<p>Step ${i + 1}</p>`)];
   const diff = [
     'diff --git a/questions/example/info.json b/questions/example/info.json',
     'index 1234567..7654321 100644',
@@ -133,6 +135,12 @@ test('reviews a full-screen diff and hides historical refresh after reloading', 
     '@@ -1 +1 @@',
     '-{"title": "Old title"}',
     '+{"title": "Updated title"}',
+    'diff --git a/questions/example/question.html b/questions/example/question.html',
+    'new file mode 100644',
+    '--- /dev/null',
+    '+++ b/questions/example/question.html',
+    `@@ -0,0 +1,${addedLines.length} @@`,
+    ...addedLines,
     '',
   ].join('\n');
   await page.route('**/trpc/courseAgent.*', async (route) => {
@@ -215,8 +223,10 @@ test('reviews a full-screen diff and hides historical refresh after reloading', 
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto(`/pl/course/${courseInstance.course_id}/course_admin/instances`);
   const panel = page.getByRole('complementary', { name: 'Course agent panel' });
-  await expect(panel.getByLabel('1 additions, 1 deletions', { exact: true })).toBeVisible();
-  await expect(panel.getByText('1 file changed', { exact: false })).toBeVisible();
+  await expect(panel.getByLabel('Total: 82 additions, 1 deletions', { exact: true })).toBeVisible();
+  await expect(panel.getByText('2 files changed', { exact: false })).toBeVisible();
+  await expect(panel.getByText('questions/example/info.json', { exact: true })).toHaveCount(0);
+  await expect(panel.getByText('questions/example/question.html', { exact: true })).toHaveCount(0);
   await expect(
     panel.getByRole('region', { name: 'Changes to questions/example/info.json' }),
   ).toHaveCount(0);
@@ -230,24 +240,47 @@ test('reviews a full-screen diff and hides historical refresh after reloading', 
     '0px',
   );
   await expect(review.getByRole('heading', { name: 'Proposed changes' })).toBeVisible();
-  await expect.poll(async () => (await review.boundingBox())!.width).toBe(1440);
   await expect(review).toHaveCSS('opacity', '1');
+  await expect(review.getByRole('navigation', { name: 'Changed files' })).toHaveCount(0);
+  await expect(review.getByText('Close', { exact: true })).toHaveCount(0);
+  await expect(review.getByRole('button', { name: 'Close', exact: true })).toBeVisible();
+  await expect(page.locator('.modal-backdrop')).toHaveCSS('background-color', 'rgb(0, 0, 0)');
+  await expect(page.locator('.modal-backdrop')).toHaveCSS('opacity', '0.5');
+  const body = review.getByLabel('Proposed changes diff');
+  const content = review.locator('.modal-content');
+  await expect.poll(async () => (await content.boundingBox())!.width).toBeLessThan(1440);
+  await expect.poll(async () => (await content.boundingBox())!.x).toBeGreaterThan(0);
+  await expect.poll(() => body.evaluate((el) => el.scrollHeight > el.clientHeight)).toBe(true);
   await page.screenshot({
     path: testInfo.outputPath('course-agent-approval.png'),
     animations: 'disabled',
   });
   await page.setViewportSize({ width: 390, height: 844 });
-  await expect.poll(async () => (await review.boundingBox())!.width).toBe(390);
+  await expect.poll(async () => (await content.boundingBox())!.width).toBeLessThan(390);
+  await expect.poll(() => body.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true);
+  await expect
+    .poll(() =>
+      body
+        .locator('.course-agent-diff-lines, pre')
+        .evaluateAll((elements) =>
+          elements.every(
+            (el) => el.scrollHeight <= el.clientHeight && el.scrollWidth <= el.clientWidth,
+          ),
+        ),
+    )
+    .toBe(true);
+  await expect(body.getByText(longLine, { exact: true })).toHaveCSS('white-space', 'pre-wrap');
+  await expect(body.getByText(longLine, { exact: true })).toHaveCSS('overflow-wrap', 'anywhere');
   await expect(review.getByRole('button', { name: 'Approve', exact: true })).toBeVisible();
   await page.screenshot({
     path: testInfo.outputPath('course-agent-approval-mobile.png'),
     animations: 'disabled',
   });
+  await body.getByText('+<p>Step 80</p>', { exact: true }).scrollIntoViewIfNeeded();
+  await expect(body.getByText('+<p>Step 80</p>', { exact: true })).toBeInViewport();
+  await expect(review.getByRole('heading', { name: 'Proposed changes' })).toBeInViewport();
+  await expect(review.getByRole('button', { name: 'Approve', exact: true })).toBeInViewport();
   await page.setViewportSize({ width: 1440, height: 1000 });
-  await review
-    .getByRole('navigation', { name: 'Changed files' })
-    .getByRole('button', { name: 'questions/example/info.json' })
-    .click();
   await review.getByRole('button', { name: 'Approve', exact: true }).click();
   await expect(review.getByRole('button', { name: 'Publishing…', exact: true })).toBeDisabled();
   await expect(review.getByRole('button', { name: 'Deny', exact: true })).toBeDisabled();

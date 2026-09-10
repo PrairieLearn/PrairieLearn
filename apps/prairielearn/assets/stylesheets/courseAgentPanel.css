@@ -133,28 +133,19 @@
   background: var(--bs-tertiary-bg);
 }
 
-.course-agent-review-files {
-  flex: 0 0 auto;
-  max-height: 25vh;
-}
-
-@media (min-width: 768px) {
-  .course-agent-review-files {
-    width: 320px;
-    max-height: none;
-  }
-}
 .course-agent-diff-lines {
-  max-height: 24rem;
   background: var(--bs-body-bg);
+}
+.course-agent-diff-lines pre {
+  overflow: visible;
+  white-space: pre-wrap;
 }
 .course-agent-diff-line {
   display: block;
-  width: max-content;
-  min-width: 100%;
   padding-inline: 0.75rem;
   color: var(--bs-body-color);
-  white-space: pre;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
   border-radius: 0;
   font: inherit;
   line-height: 1.5;

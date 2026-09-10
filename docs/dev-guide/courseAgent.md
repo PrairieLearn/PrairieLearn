@@ -232,8 +232,9 @@ The runner enables live web search through the Responses API; it does not requir
 API key. The localhost mock test verifies model selection on new and resumed threads, search-tool
 availability, search activity notifications, and streamed response text.
 
-Proposed changes appear as file paths with per-file and total added/deleted line counts. Review opens
-a full-screen diff with file navigation and approval controls. The conversation offers refresh only
+Proposed changes show the total number of files changed and added/deleted lines. Review opens a modal
+with a dimmed backdrop and approval controls. All file diffs share one scrolling body, with long lines
+wrapped and no file-navigation sidebar. The conversation offers refresh only
 after a completed reply reports a successful course sync newer than the displayed page, and only
 when its revision is not already displayed. Reloading clears the refresh prompt and immediately
 positions saved history at the bottom.

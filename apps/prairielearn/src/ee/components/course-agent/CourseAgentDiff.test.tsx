@@ -64,13 +64,13 @@ describe('course-agent diff review', () => {
     ]);
   });
 
-  it('shows aggregate and per-file counts without including the diff contents in the card', () => {
+  it('shows only aggregate counts without file paths or diff contents in the card', () => {
     const second = diff.replaceAll('example/question.html', 'second/question.html');
     const html = renderToStaticMarkup(<CourseAgentDiffSummary diff={`${diff}\n${second}`} />);
     expect(html).toContain('2 files changed');
     expect(html).toContain('Total: 2 additions, 2 deletions');
-    expect(html).toContain('questions/example/question.html');
-    expect(html).toContain('questions/second/question.html');
+    expect(html).not.toContain('questions/example/question.html');
+    expect(html).not.toContain('questions/second/question.html');
     expect(html).not.toContain('old text');
     expect(html).not.toContain('added text resembling a header');
   });
