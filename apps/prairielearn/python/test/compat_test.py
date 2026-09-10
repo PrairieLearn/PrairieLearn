@@ -29,6 +29,7 @@ def test_external_exports():
             clean_identifier_name,
             decode_operator_expression,
             determine_score_params,
+            encode_operator_expression,
             escape_invalid_string,
             escape_unicode_string,
             from_json,
