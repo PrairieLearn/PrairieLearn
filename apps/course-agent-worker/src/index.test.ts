@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { activeRunExpired, sandboxDeadline } from './lifecycle.js';
+import { activeRunExpired, idleDeadline } from './lifecycle.js';
 
 describe('activeRunExpired', () => {
   it('treats legacy state without an expiration as stale', () => {
@@ -20,10 +20,9 @@ describe('activeRunExpired', () => {
   });
 });
 
-describe('absolute sandbox lifetime', () => {
-  it('starts a new deadline in seconds and preserves it across turns', () => {
-    expect(sandboxDeadline(null, true, 600, 1000)).toBe(601000);
-    expect(sandboxDeadline(601000, false, 600, 300000)).toBe(601000);
-    expect(sandboxDeadline(601000, true, 10, 700000)).toBe(710000);
+describe('idle deadline', () => {
+  it('starts a full idle interval each time the agent yields to the user', () => {
+    expect(idleDeadline(600, 1000)).toBe(601000);
+    expect(idleDeadline(600, 300000)).toBe(900000);
   });
 });

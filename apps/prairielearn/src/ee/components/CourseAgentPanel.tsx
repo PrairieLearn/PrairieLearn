@@ -6,7 +6,7 @@ import type { Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useStickToBottom } from 'use-stick-to-bottom';
 
-import type { CourseAgentEvent } from '@prairielearn/course-agent-protocol';
+import type { CourseAgentEvent, CourseAgentSnapshot } from '@prairielearn/course-agent-protocol';
 import { QueryClientProviderDebug } from '@prairielearn/trpc/react';
 
 import { createCourseTrpcClient } from '../../trpc/course/client.js';
@@ -80,7 +80,7 @@ function CourseAgentPanelInner({
   const diagnostics = useQuery(
     trpc.courseAgent.diagnostics.queryOptions(
       conversation ?? { conversationId: '00000000-0000-0000-0000-000000000000', sandboxId: '' },
-      { enabled: showDiagnostics && conversation !== null, refetchInterval: busy ? 1000 : false },
+      { enabled: showDiagnostics && conversation !== null, refetchInterval: busy ? 1000 : 5000 },
     ),
   );
 
@@ -189,7 +189,8 @@ function CourseAgentPanelInner({
                   conversation={conversation}
                   runId={busy ? (conversation?.runId ?? null) : null}
                   events={diagnostics.data?.events ?? []}
-                  status={busy ? 'running' : (diagnostics.data?.status ?? 'offline')}
+                  status={diagnostics.data?.status ?? null}
+                  lifecycle={diagnostics.data}
                 />
               )}
             </div>
@@ -228,32 +229,30 @@ function Diagnostics({
   runId,
   events,
   status,
+  lifecycle,
 }: {
   conversation: { conversationId: string; sandboxId: string } | null;
   runId: string | null;
   events: CourseAgentEvent[];
-  status: string;
+  status: string | null;
+  lifecycle?: CourseAgentSnapshot;
 }) {
   const agentStarted = findLastEvent(events, 'agent.started');
   const usage = findLastEvent(events, 'usage.updated');
   const docs = findLastEvent(events, 'docs.mounted', 'docs.unavailable');
-  const statusLabel =
-    {
-      offline: 'Not started',
-      starting: 'Starting',
-      running: 'Working',
-      waiting_for_user: 'Ready',
-      failed: 'Needs attention',
-    }[status] ?? status;
   const identifiers = [
-    ['Conversation', conversation?.conversationId ?? 'Not started'],
-    ['Sandbox', conversation?.sandboxId ?? 'Not started'],
-    ['Run', runId ?? 'Idle'],
-    ['Codex thread', String(agentStarted?.data.threadId ?? 'Pending')],
-    [
-      'Documentation',
-      docs?.type === 'docs.mounted' ? 'Mounted' : docs ? 'Bundled skill only' : 'Pending',
-    ],
+    ['Conversation', String(conversation?.conversationId ?? null)],
+    ['Sandbox', String(conversation?.sandboxId ?? null)],
+    ['Run', String(runId)],
+    ['Codex thread', String(agentStarted?.data.threadId ?? null)],
+    ['conversationState (Worker)', String(lifecycle?.conversationState ?? null)],
+    ['sandboxState (Worker)', String(lifecycle?.sandboxState ?? null)],
+    ['revision (Worker)', String(lifecycle?.revision ?? null)],
+    ['sandboxGeneration (Worker)', String(lifecycle?.sandboxGeneration ?? null)],
+    ['idleExpiresAt (Worker)', String(lifecycle?.idleExpiresAt ?? null)],
+    ['activeRunExpiresAt (Worker)', String(lifecycle?.activeRunExpiresAt ?? null)],
+    ['processId (Worker)', String(lifecycle?.processId ?? null)],
+    ['Documentation event', String(docs?.type ?? null)],
   ];
   const tokenFields = [
     ['input_tokens', 'Input'],
@@ -270,7 +269,9 @@ function Diagnostics({
         <i className="course-agent-diagnostic-chevron bi bi-chevron-down" aria-hidden="true" />
       </summary>
       <div className="pt-2">
-        <div className="mb-3">Status: {statusLabel}</div>
+        <div className="mb-3">
+          Worker status: <code className="text-body">{String(status)}</code>
+        </div>
         <dl className="course-agent-diagnostics mb-3">
           {identifiers.map(([label, value]) => (
             <Fragment key={label}>
