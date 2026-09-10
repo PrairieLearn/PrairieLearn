@@ -5,6 +5,7 @@ import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 
 import { HttpStatusError } from '@prairielearn/error';
+import { contains } from '@prairielearn/path-utils';
 
 import { getPaths } from '../../lib/instructorFiles.js';
 
@@ -18,18 +19,28 @@ router.get(
     }
     const paths = getPaths(req.params[0], res.locals);
     try {
-      // Check resolved paths too so symlinks cannot bypass the file browser's boundaries.
-      const [coursePath, workingPath] = await Promise.all([
+      // Resolve the boundaries too: a context can itself live beneath a symlink.
+      const [coursePath, rootPath, workingPath, invalidRootPaths] = await Promise.all([
         realpath(paths.coursePath),
+        realpath(paths.rootPath),
         realpath(paths.workingPath),
+        Promise.all(
+          paths.invalidRootPaths.map(async (invalidRootPath) => {
+            try {
+              return await realpath(invalidRootPath);
+            } catch (err) {
+              if (err instanceof Error && 'code' in err && err.code === 'ENOENT') return null;
+              throw err;
+            }
+          }),
+        ),
       ]);
-      const resolvedPaths = getPaths(path.relative(coursePath, workingPath), {
-        ...res.locals,
-        course: { ...res.locals.course, path: coursePath },
-      });
-      // The file browser hides .git directories, including nested repositories.
       if (
-        [paths.workingPathRelativeToCourse, resolvedPaths.workingPathRelativeToCourse].some((p) =>
+        !contains(coursePath, workingPath) ||
+        !contains(rootPath, workingPath) ||
+        invalidRootPaths.some((p) => p !== null && contains(p, workingPath)) ||
+        // The file browser hides .git directories, including nested repositories.
+        [paths.workingPathRelativeToCourse, path.relative(coursePath, workingPath)].some((p) =>
           p.split(path.sep).includes('.git'),
         )
       ) {
@@ -40,8 +51,8 @@ router.get(
       if (req.query.attachment) res.attachment(req.query.attachment.toString());
       await new Promise<void>((resolve, reject) => {
         res.sendFile(
-          path.relative(resolvedPaths.rootPath, resolvedPaths.workingPath) || '.',
-          { root: resolvedPaths.rootPath, dotfiles: 'allow' },
+          path.relative(rootPath, workingPath) || '.',
+          { root: rootPath, dotfiles: 'allow' },
           (err?: Error) => (err ? reject(err) : resolve()),
         );
       });
