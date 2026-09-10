@@ -2,35 +2,31 @@ import { CourseAgentTitleResponseSchema } from '@prairielearn/course-agent-proto
 import { generateSignedToken } from '@prairielearn/signed-token';
 
 import { config } from '../../../lib/config.js';
-import {
-  claimCourseAgentTitle,
-  selectCourseAgentHistory,
-  updateCourseAgentTitle,
-} from '../../../models/course-agent.js';
+import { updateCourseAgentTitle } from '../../../models/course-agent.js';
 
 const defaultDependencies = {
-  claimCourseAgentTitle,
-  selectCourseAgentHistory,
   updateCourseAgentTitle,
 };
 
-export function fallbackConversationTitle(prompt: string) {
-  const title = prompt.replaceAll(/\s+/g, ' ').trim().slice(0, 80);
-  return title === 'New conversation' ? 'Course authoring conversation' : title;
-}
-
 export async function nameCourseAgentConversation(
-  conversationId: string,
+  {
+    conversationId,
+    userId,
+    courseId,
+    prompt,
+  }: {
+    conversationId: string;
+    userId: string;
+    courseId: string;
+    prompt: string;
+  },
   dependencies: typeof defaultDependencies = defaultDependencies,
 ) {
-  const history = await dependencies.selectCourseAgentHistory(conversationId);
-  const prompt = history.messages.find((message) => message.role === 'user');
-  if (!prompt) return;
-  const fallback = fallbackConversationTitle(prompt.content);
-  // Claim once across message submissions and multiple PL processes. If naming fails,
-  // the persisted fallback remains useful and we do not repeatedly charge for retries.
-  const conversation = await dependencies.claimCourseAgentTitle(conversationId, fallback);
-  if (!conversation || config.courseAgentRuntime !== 'cloudflare') return;
+  if (config.courseAgentRuntime === 'fake') {
+    await dependencies.updateCourseAgentTitle(conversationId, prompt.trim().slice(0, 80));
+    return;
+  }
+  if (config.courseAgentRuntime !== 'cloudflare') return;
   if (!config.courseAgentCapabilitySecret) {
     throw new Error('Course-agent capability secret is not configured');
   }
@@ -38,9 +34,9 @@ export async function nameCourseAgentConversation(
     {
       type: 'course-agent-title',
       conversationId,
-      userId: conversation.user_id,
-      courseId: conversation.course_id,
-      prompt: prompt.content.slice(0, 4000),
+      userId,
+      courseId,
+      prompt: prompt.slice(0, 4000),
       expiresAt: new Date(Date.now() + 60000).toISOString(),
     },
     config.courseAgentCapabilitySecret,
@@ -53,5 +49,5 @@ export async function nameCourseAgentConversation(
   });
   if (!response.ok) throw new Error(`Conversation title request failed (${response.status})`);
   const { title } = CourseAgentTitleResponseSchema.parse(await response.json());
-  await dependencies.updateCourseAgentTitle(conversationId, fallback, title);
+  await dependencies.updateCourseAgentTitle(conversationId, title);
 }

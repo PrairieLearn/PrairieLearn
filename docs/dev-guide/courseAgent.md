@@ -59,9 +59,9 @@ the Vercel AI SDK with the Worker's existing `OPENAI_API_KEY`.
 This does not start a sandbox or add messages to the Codex thread.
 Only the first user message is sent (at most 4,000 characters),
 with a 64-token output limit, reasoning disabled, and provider storage disabled.
-An atomic PostgreSQL claim prevents duplicate naming requests across reloads or PL processes.
-If naming fails or PL exits after claiming it, the shortened user message remains as the title;
-there are no automatic paid retries. Existing conversation titles are left unchanged.
+Only the request creating the conversation starts naming, so later messages and reloads do not
+generate duplicate requests. The title stays "New conversation" until generation succeeds,
+including if naming fails. There are no automatic paid retries. Existing titles are left unchanged.
 The fake runtime uses the shortened message and makes no model requests.
 
 ## Free local testing

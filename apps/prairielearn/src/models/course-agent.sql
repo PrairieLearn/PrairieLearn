@@ -223,17 +223,6 @@ ORDER BY
 LIMIT
   1;
 
--- BLOCK claim_title
-UPDATE course_agent_conversations
-SET
-  title = $fallback
-WHERE
-  id = $conversation_id
-  AND deleted_at IS NULL
-  AND title = 'New conversation'
-RETURNING
-  *;
-
 -- BLOCK update_title
 UPDATE course_agent_conversations
 SET
@@ -241,4 +230,4 @@ SET
 WHERE
   id = $conversation_id
   AND deleted_at IS NULL
-  AND title = $fallback;
+  AND title = 'New conversation';

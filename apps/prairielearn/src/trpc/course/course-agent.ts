@@ -154,12 +154,19 @@ const start = courseAgentProcedure
       prompt: input.prompt,
       promptDigest: createHash('sha256').update(input.prompt).digest('hex'),
     });
-    // Naming runs independently so it does not delay the agent's response.
-    void nameCourseAgentConversation(conversationId).catch(() => {
-      logger.warn('Course-agent title generation failed; keeping the fallback title', {
+    // Only the request creating this conversation starts naming; subsequent messages do not retry it.
+    if (!input.conversationId) {
+      void nameCourseAgentConversation({
         conversationId,
+        userId: ctx.locals.authn_user.id,
+        courseId: ctx.course.id,
+        prompt: input.prompt,
+      }).catch(() => {
+        logger.warn('Course-agent title generation failed; keeping New conversation', {
+          conversationId,
+        });
       });
-    });
+    }
     try {
       const result = await startEphemeralCourseAgentRun({
         courseId: ctx.course.id,
