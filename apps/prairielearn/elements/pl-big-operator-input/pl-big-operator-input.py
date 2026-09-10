@@ -53,7 +53,6 @@ type LimitFormat = poe.OperatorExpressionLimit
 class OperatorMetadata:
     fn_name: BuiltinOperatorFn
     tex: str
-    default_limit: LimitFormat
     valid_limits: frozenset[LimitFormat]
     bounds_constructor: type[sympy.Basic]
     _domain_constructor: type[sympy.Basic] | None = None
@@ -65,33 +64,24 @@ class OperatorMetadata:
 
 _BOUNDS_DOMAIN = frozenset(("bounds", "domain"))
 OP_METADATA: dict[BuiltinOperator, OperatorMetadata] = {
-    "sum": OperatorMetadata(
-        "Sum", r"\sum", "bounds", _BOUNDS_DOMAIN, sympy.Sum, sympy.Add
-    ),
+    "sum": OperatorMetadata("Sum", r"\sum", _BOUNDS_DOMAIN, sympy.Sum, sympy.Add),
     "product": OperatorMetadata(
-        "Product", r"\prod", "bounds", _BOUNDS_DOMAIN, sympy.Product, sympy.Mul
+        "Product", r"\prod", _BOUNDS_DOMAIN, sympy.Product, sympy.Mul
     ),
-    "integral": OperatorMetadata(
-        "Integral", r"\int", "bounds", _BOUNDS_DOMAIN, sympy.Integral
-    ),
-    "limit": OperatorMetadata(
-        "Limit", r"\lim", "approach", frozenset(("approach",)), sympy.Limit
-    ),
-    "union": OperatorMetadata(
-        "Union", r"\bigcup", "domain", _BOUNDS_DOMAIN, sympy.Union
-    ),
+    "integral": OperatorMetadata("Integral", r"\int", _BOUNDS_DOMAIN, sympy.Integral),
+    "limit": OperatorMetadata("Limit", r"\lim", frozenset(("approach",)), sympy.Limit),
+    "union": OperatorMetadata("Union", r"\bigcup", _BOUNDS_DOMAIN, sympy.Union),
     "intersection": OperatorMetadata(
-        "Intersection", r"\bigcap", "domain", _BOUNDS_DOMAIN, sympy.Intersection
+        "Intersection", r"\bigcap", _BOUNDS_DOMAIN, sympy.Intersection
     ),
     "disjoint-union": OperatorMetadata(
         "DisjointUnion",
         r"\bigsqcup",
-        "domain",
         _BOUNDS_DOMAIN,
         sympy.sets.DisjointUnion,
     ),
-    "min": OperatorMetadata("Min", r"\min", "domain", _BOUNDS_DOMAIN, sympy.Min),
-    "max": OperatorMetadata("Max", r"\max", "domain", _BOUNDS_DOMAIN, sympy.Max),
+    "min": OperatorMetadata("Min", r"\min", _BOUNDS_DOMAIN, sympy.Min),
+    "max": OperatorMetadata("Max", r"\max", _BOUNDS_DOMAIN, sympy.Max),
 }
 
 
@@ -403,52 +393,19 @@ def _config(html: str, data: pl.QuestionData | None = None) -> RenderConfig:
     if answer is None or not answer.strip():
         raise ValueError('Required attribute "answers-name" missing')
     answer = answer.strip()
-    explicit_index = pl.get_string_attrib(element, "index-variable", None)
-    explicit_index = explicit_index.strip() if explicit_index else None
-    explicit_operator = pl.get_string_attrib(element, "operator", None)
-    if explicit_operator is not None:
-        explicit_operator = explicit_operator[:1].lower() + explicit_operator[1:]
     custom_latex = pl.get_string_attrib(element, "operator-latex", None)
     correct_attribute = pl.get_string_attrib(element, "correct-answer", None)
     raw_correct = _raw_correct_answer(answer, correct_attribute, data)
-    if raw_correct is not None:
-        if explicit_operator is not None:
-            raise ValueError(
-                'Attribute "operator" must be omitted when a correct answer is supplied; '
-                "the operator is inferred from the complete correct answer."
-            )
-        if explicit_index is not None:
-            raise ValueError(
-                'Attribute "index-variable" must be omitted when a correct answer is '
-                "supplied; the index is inferred from the complete correct answer."
-            )
-        inferred_operator, inferred_limits, inferred_index = _infer_spec(raw_correct)
-        if (
-            inferred_operator is None
-            or inferred_limits is None
-            or inferred_index is None
-        ):
-            raise ValueError(
-                f'Correct answer "{answer}" must be a supported complete answer from '
-                "which the operator, index variable, and limits layout can be inferred."
-            )
-        operator = inferred_operator
-        index = inferred_index
-    else:
-        inferred_operator, inferred_limits = None, None
-        if explicit_operator is None:
-            raise ValueError(
-                'Attribute "operator" is required when no correct answer is supplied; '
-                '"operator-latex" does not select an operator.'
-            )
-        operator = explicit_operator
-        if explicit_index is None:
-            raise ValueError(
-                'Attribute "index-variable" is required when no correct answer is supplied.'
-            )
-        index = explicit_index
-    if operator != "custom" and operator not in OP_METADATA:
-        raise ValueError(f'Unknown operator "{operator}".')
+    if raw_correct is None:
+        raise ValueError(
+            f'Correct answer "{answer}" is required to configure the operator expression.'
+        )
+    operator, limits, index = _infer_spec(raw_correct)
+    if operator is None or limits is None or index is None:
+        raise ValueError(
+            f'Correct answer "{answer}" must be a supported complete answer from '
+            "which the operator, index variable, and limits layout can be inferred."
+        )
     if operator == "custom":
         if custom_latex is None or not custom_latex.strip():
             raise ValueError(
@@ -460,19 +417,6 @@ def _config(html: str, data: pl.QuestionData | None = None) -> RenderConfig:
         operator_latex = (
             custom_latex.strip() if custom_latex is not None else metadata.tex
         )
-    limits: LimitFormat | str = (
-        pl.get_string_attrib(element, "limits", "auto") or "auto"
-    )
-    if limits == "auto":
-        if inferred_limits is not None:
-            limits = inferred_limits
-        elif operator == "custom":
-            raise ValueError(
-                'An answerless custom operator requires explicit limits="bounds", '
-                'limits="domain", or limits="approach".'
-            )
-        else:
-            limits = OP_METADATA[operator].default_limit
     allowed = (
         frozenset(("bounds", "domain", "approach"))
         if operator == "custom"
@@ -493,30 +437,23 @@ def _config(html: str, data: pl.QuestionData | None = None) -> RenderConfig:
     limit_size = pl.get_integer_attrib(element, "limit-size", default_limit_size)
     if limit_size < 1:
         raise ValueError('Attribute "limit-size" must be positive.')
-    grading_attribute = pl.get_string_attrib(element, "grading-method", None)
-    grading: GradingMethod | str = grading_attribute or (
-        "equivalent" if raw_correct is not None else "none"
+    grading: GradingMethod | str = (
+        pl.get_string_attrib(element, "grading-method", "equivalent") or "equivalent"
     )
     if grading not in GRADING_METHODS:
         raise ValueError(
             'Attribute "grading-method" must be exact, component, equivalent, or none.'
         )
-    if raw_correct is None and grading != "none":
-        raise ValueError(
-            'Attribute "grading-method" must be "none" when no correct answer is '
-            "supplied."
-        )
     body_weight = pl.get_integer_attrib(element, "body-relative-weight", 3)
     if body_weight < 1:
         raise ValueError('Attribute "body-relative-weight" must be positive.')
-    direction_attribute = pl.get_string_attrib(element, "limit-direction", None)
     direction = (
-        direction_attribute
-        or (_infer_direction(raw_correct, operator) if limits == "approach" else None)
-        or "two-sided"
+        _infer_direction(raw_correct, operator) if limits == "approach" else "two-sided"
     )
-    if direction not in DIRECTION_SYMBOLS:
-        raise ValueError(f'Unknown limit-direction "{direction}".')
+    if direction is None:
+        raise ValueError(
+            "Correct answer approach limit must include a valid direction."
+        )
     direction_input_attribute = "allow-limit-direction-input" in element.attrib
     if direction_input_attribute and limits != "approach":
         raise ValueError(
@@ -534,7 +471,7 @@ def _config(html: str, data: pl.QuestionData | None = None) -> RenderConfig:
         raise ValueError(
             'Attribute "allowed-blank" must be none, limits, body, or all.'
         )
-    if operator == "custom" and raw_correct is not None and grading == "equivalent":
+    if operator == "custom" and grading == "equivalent":
         raise ValueError(
             'Custom operators with a correct answer do not support grading-method="equivalent".'
         )
@@ -618,10 +555,6 @@ def _canonical(
 
 def _structured(config: RenderConfig, value: dict[str, Any]) -> dict[str, Any]:
     decoded = poe.decode_operator_expression(value)
-    if decoded["operator"] != config.operator or decoded["limits"] != config.limits:
-        raise ValueError(
-            "Correct answer operator or limits form does not match the element."
-        )
     if (
         config.operator == "custom"
         and decoded.get("operator_latex") != config.operator_latex
@@ -629,10 +562,6 @@ def _structured(config: RenderConfig, value: dict[str, Any]) -> dict[str, Any]:
         raise ValueError(
             "Correct answer custom operator does not match operator-latex."
         )
-    if config.limits == "approach" and decoded.get("direction") != config.direction:
-        raise ValueError("Correct answer direction does not match limit-direction.")
-    if decoded["index"] != sympy.Symbol(config.index):
-        raise ValueError("Correct answer index does not match index-variable.")
     values = _decoded_values(config, decoded)
     return _canonical(config, values)
 
@@ -687,25 +616,13 @@ def _validate_component_values(
 
 
 def _binder(config: RenderConfig, value: Any) -> dict[str, Any] | None:
-    index = sympy.Symbol(config.index)
     match config.operator:
         case "limit":
             if not isinstance(value, sympy.Limit):
                 return None
             if len(value.args) != 4:
                 raise ValueError("Correct answer Limit has an invalid structure.")
-            body, variable, target, direction = value.args
-            if variable != index:
-                raise ValueError("Correct answer index does not match index-variable.")
-            match str(direction):
-                case "+-" | "-" | "+" as direction_symbol:
-                    public = DIRECTION_NAMES[direction_symbol]
-                case _:
-                    public = None
-            if public != config.direction:
-                raise ValueError(
-                    "Correct answer Limit direction does not match limit-direction."
-                )
+            body, _, target, _ = value.args
             return _canonical(config, {"target": target, "body": body})
 
         case "sum":
@@ -729,9 +646,6 @@ def _binder(config: RenderConfig, value: Any) -> dict[str, Any] | None:
             f'Correct answer for limits="{config.limits}" must have exactly one '
             f"{expected_length}-item limits tuple."
         )
-    variable = limit_values[0]
-    if variable != index:
-        raise ValueError("Correct answer index does not match index-variable.")
     body = value.args[0]
     match config.limits:
         case "bounds":
@@ -778,23 +692,12 @@ def _formatted_answer(config: RenderConfig, source: str) -> dict[str, Any] | Non
         raise ValueError(
             "The correct answer contains invalid SymPy data."
         ) from exc._src
-    index_name = _identifier(limits[0])
-    if index_name != config.index:
-        raise ValueError("Correct answer index does not match index-variable.")
-
     try:
         match config.limits:
             case "approach":
                 direction = _formatted_direction(limits)
-                if direction is None:
+                if direction not in DIRECTION_NAMES:
                     raise ValueError('Limit direction must be "+", "-", or "+-".')
-                public_direction = DIRECTION_NAMES.get(direction)
-                if public_direction is None:
-                    raise ValueError('Limit direction must be "+", "-", or "+-".')
-                if public_direction != config.direction:
-                    raise ValueError(
-                        "Correct answer direction does not match limit-direction."
-                    )
                 values = {
                     "target": _unchecked_parse(
                         limits[1], config.variables, config.custom_functions
@@ -831,18 +734,16 @@ def _validate_correct(config: RenderConfig, correct: dict[str, Any]) -> dict[str
     return correct
 
 
-def _correct(config: RenderConfig, data: pl.QuestionData) -> dict[str, Any] | None:
+def _correct(config: RenderConfig, data: pl.QuestionData) -> dict[str, Any]:
     raw = _raw_correct_answer(config.answer_name, config.correct_attribute, data)
-    if (
-        config.operator == "custom"
-        and raw is not None
-        and config.grading == "equivalent"
-    ):
+    if config.operator == "custom" and config.grading == "equivalent":
         raise ValueError(
             'Custom operators with a correct answer do not support grading-method="equivalent".'
         )
     if raw is None:
-        return None
+        raise ValueError(
+            f'Correct answer "{config.answer_name}" is required to configure the operator expression.'
+        )
     if isinstance(raw, dict) and raw.get("_type") == "operator_expression":
         return _validate_correct(config, _structured(config, raw))
     if isinstance(raw, str):
@@ -876,8 +777,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     pl.validate_element(element, SCHEMA_PATH)
     config = _config(element_html, data)
     correct = _correct(config, data)
-    if correct is not None:
-        data.setdefault("correct_answers", {})[config.answer_name] = correct
+    data.setdefault("correct_answers", {})[config.answer_name] = correct
 
 
 def _field(
@@ -922,7 +822,7 @@ def _component_scores(config: RenderConfig, data: pl.QuestionData) -> dict[str, 
         return {}
     submitted_json = data.get("submitted_answers", {}).get(config.answer_name)
     correct_json = _correct(config, data)
-    if not isinstance(submitted_json, dict) or correct_json is None:
+    if not isinstance(submitted_json, dict):
         return {}
     try:
         submitted = _values(config, submitted_json)
@@ -1128,8 +1028,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             return _question_mustache(config, data)
         case "answer":
             correct = _correct(config, data)
-            if correct is None:
-                return ""
             return _render_mustache(
                 {
                     "tex": _structured_tex(config, correct),
@@ -1365,8 +1263,6 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
     if config.grading == "none":
         return
     correct_json = _correct(config, data)
-    if correct_json is None:
-        return
     if data.get("submitted_answers", {}).get(config.answer_name) == "":
         score = 0.0
     else:
@@ -1428,8 +1324,6 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
 def test(element_html: str, data: pl.ElementTestData) -> None:
     config = _config(element_html, data)
     correct_json = _correct(config, data)
-    if correct_json is None:
-        return
 
     correct = _values(config, correct_json)
     match data["test_type"]:
