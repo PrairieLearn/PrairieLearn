@@ -9,8 +9,11 @@ import pytest
 import sympy
 from prairielearn.operator_expression import (
     ApproachOperatorExpression,
+    ApproachOperatorExpressionJson,
     BoundsOperatorExpression,
+    BoundsOperatorExpressionJson,
     DomainOperatorExpression,
+    DomainOperatorExpressionJson,
 )
 
 
@@ -88,7 +91,7 @@ def test_decode_approach_operator_expression() -> None:
 
 def test_decode_custom_operator_expression() -> None:
     k = sympy.Symbol("k", positive=True)
-    f = sympy.Function("f")(k)
+    f: sympy.Expr = sympy.Function("f")(k)  # type: ignore
     answer = bounds_answer(
         operator="custom",
         operator_latex=r"\mathbb{E}",
@@ -99,9 +102,105 @@ def test_decode_custom_operator_expression() -> None:
     decoded = pl.decode_operator_expression(answer)
 
     assert "operator_latex" in decoded
-    assert decoded["operator_latex"] == r"\mathbb{E}"
+    assert decoded.get("operator_latex") == r"\mathbb{E}"
     assert getattr(decoded["index"], "is_positive", None) is True
     assert decoded["body"] == f
+
+
+def test_encode_custom_bounds_operator_expression() -> None:
+    k = sympy.Symbol("k", positive=True)
+    body: sympy.Expr = sympy.Function("f")(k)  # type: ignore
+
+    encoded = pl.encode_operator_expression(
+        operator="custom",
+        operator_latex=r"\mathbb{E}",
+        limits="bounds",
+        index=k,
+        lower=sympy.Integer(1),
+        upper=sympy.Integer(4),
+        body=body,
+    )
+
+    assert_type(encoded, BoundsOperatorExpressionJson)
+    decoded = pl.decode_operator_expression(encoded)
+    assert decoded["operator"] == "custom"
+    assert decoded.get("operator_latex") == r"\mathbb{E}"
+    assert decoded["index"] == k
+    assert decoded["body"] == body
+
+
+def test_encode_operator_expression_accepts_strings() -> None:
+    encoded = pl.encode_operator_expression(
+        operator="sum",
+        limits="bounds",
+        index="k",
+        lower="1",
+        upper="n",
+        body="k ** 2",
+    )
+
+    assert_type(encoded, BoundsOperatorExpressionJson)
+    decoded = pl.decode_operator_expression(encoded)
+    assert decoded["limits"] == "bounds"
+    assert decoded["index"] == sympy.Symbol("k")
+    assert decoded["lower"] == 1
+    assert decoded["upper"] == sympy.Symbol("n")
+    assert decoded["body"] == sympy.Symbol("k") ** 2
+
+
+def test_encode_domain_operator_expression() -> None:
+    k = sympy.Symbol("k")
+    encoded = pl.encode_operator_expression(
+        operator="union",
+        limits="domain",
+        index=k,
+        domain=sympy.FiniteSet(1, 2),
+        body=sympy.FiniteSet(k),
+    )
+
+    assert_type(encoded, DomainOperatorExpressionJson)
+    decoded = pl.decode_operator_expression(encoded)
+    assert decoded["limits"] == "domain"
+    assert decoded["domain"] == sympy.FiniteSet(1, 2)
+
+
+def test_encode_approach_operator_expression() -> None:
+    x = sympy.Symbol("x")
+    encoded = pl.encode_operator_expression(
+        operator="limit",
+        limits="approach",
+        index=x,
+        target=sympy.Integer(0),
+        direction="from-right",
+        body=1 / x,
+    )
+
+    assert_type(encoded, ApproachOperatorExpressionJson)
+    decoded = pl.decode_operator_expression(encoded)
+    assert decoded["limits"] == "approach"
+    assert decoded["direction"] == "from-right"
+
+
+@pytest.mark.parametrize(
+    ("kwargs", "match"),
+    [
+        ({"operator": "custom"}, "operator_latex"),
+        ({"operator": "sum", "operator_latex": r"\sum"}, "Built-in"),
+        ({"operator": "sum", "upper": None}, '"upper"'),
+        ({"operator": "sum", "domain": sympy.FiniteSet(1)}, "only accept"),
+    ],
+)
+def test_encode_rejects_inconsistent_fields(kwargs: dict[str, Any], match: str) -> None:
+    with pytest.raises(ValueError, match=match):
+        cast(Any, pl.encode_operator_expression)(**{
+            "operator": "sum",
+            "limits": "bounds",
+            "index": sympy.Symbol("k"),
+            "lower": sympy.Integer(1),
+            "upper": sympy.Integer(2),
+            "body": sympy.Symbol("k"),
+            **kwargs,
+        })
 
 
 @pytest.mark.parametrize("value", [sympy.Symbol("i"), sympy.Symbol("j"), sympy.I])
