@@ -48,9 +48,18 @@ describe('course-agent protocol', () => {
       runId: '40cff9bd-6931-4405-a8e6-57f93a190d4b',
       sandboxId: 'course-agent-test',
       prompt,
+      course: {
+        repository: 'PrairieLearn/PrairieLearn',
+        branch: 'master',
+        expectedSha: null,
+      },
+      authoringContext: {
+        courseInstance: { id: '91', shortName: 'Fa26', longName: 'Fall 2026' },
+      },
       runtimeSettings: { idleTimeoutSeconds: 600, turnTimeoutSeconds: 900 },
     });
     expect(request.prompt).toBe(prompt);
+    expect(request.authoringContext.courseInstance?.shortName).toBe('Fa26');
     expect(() => CourseAgentStartRunRequestSchema.parse({ ...request, prompt: '   ' })).toThrow();
   });
 });

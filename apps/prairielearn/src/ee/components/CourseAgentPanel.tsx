@@ -36,11 +36,13 @@ export const workspaceMarkdownComponents: Components = {
 
 function CourseAgentPanelInner({
   courseId,
+  courseInstanceId,
   userName,
   showDiagnostics,
   trpcClient,
 }: {
   courseId: string;
+  courseInstanceId: string | null;
   userName: string;
   showDiagnostics: boolean;
   trpcClient: ReturnType<typeof createCourseTrpcClient>;
@@ -55,6 +57,7 @@ function CourseAgentPanelInner({
       new CourseAgentTransport(
         (input) => trpcClient.courseAgent.start.mutate(input),
         courseId,
+        courseInstanceId,
         setConversation,
       ),
   );
@@ -236,6 +239,7 @@ function Diagnostics({
 }) {
   const agentStarted = findLastEvent(events, 'agent.started');
   const usage = findLastEvent(events, 'usage.updated');
+  const docs = findLastEvent(events, 'docs.mounted', 'docs.unavailable');
   const identifiers = [
     ['Conversation', String(conversation?.conversationId ?? null)],
     ['Sandbox', String(conversation?.sandboxId ?? null)],
@@ -248,6 +252,7 @@ function Diagnostics({
     ['idleExpiresAt (Worker)', String(lifecycle?.idleExpiresAt ?? null)],
     ['activeRunExpiresAt (Worker)', String(lifecycle?.activeRunExpiresAt ?? null)],
     ['processId (Worker)', String(lifecycle?.processId ?? null)],
+    ['Documentation event', String(docs?.type ?? null)],
   ];
   const tokenFields = [
     ['input_tokens', 'Input'],
@@ -303,9 +308,9 @@ function Diagnostics({
   );
 }
 
-function findLastEvent(events: CourseAgentEvent[], type: CourseAgentEvent['type']) {
+function findLastEvent(events: CourseAgentEvent[], ...types: CourseAgentEvent['type'][]) {
   for (let index = events.length - 1; index >= 0; index--) {
-    if (events[index].type === type) return events[index];
+    if (types.includes(events[index].type)) return events[index];
   }
   return undefined;
 }
@@ -314,12 +319,14 @@ export function CourseAgentPanel({
   initialOpen,
   trpcCsrfToken,
   courseId,
+  courseInstanceId,
   userName,
   showDiagnostics,
 }: {
   initialOpen: boolean;
   trpcCsrfToken: string;
   courseId: string;
+  courseInstanceId: string | null;
   userName: string;
   showDiagnostics: boolean;
 }) {
@@ -334,6 +341,7 @@ export function CourseAgentPanel({
           <CourseAgentPanelInner
             trpcClient={trpcClient}
             courseId={courseId}
+            courseInstanceId={courseInstanceId}
             userName={userName}
             showDiagnostics={showDiagnostics}
           />

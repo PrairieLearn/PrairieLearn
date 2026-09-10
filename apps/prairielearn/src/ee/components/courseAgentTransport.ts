@@ -14,9 +14,11 @@ export class CourseAgentTransport extends DefaultChatTransport<CourseAgentMessag
   constructor(
     private readonly startRun: (input: {
       conversationId?: string;
+      courseInstanceId: string | null;
       prompt: string;
     }) => Promise<CourseAgentRun>,
     courseId: string,
+    private readonly courseInstanceId: string | null,
     private readonly onRun: (run: CourseAgentRun | null) => void,
   ) {
     super({
@@ -42,6 +44,7 @@ export class CourseAgentTransport extends DefaultChatTransport<CourseAgentMessag
     this.onRun(null);
     this.run = await this.startRun({
       conversationId,
+      courseInstanceId: this.courseInstanceId,
       prompt: message.parts
         .filter((part) => part.type === 'text')
         .map((part) => part.text)

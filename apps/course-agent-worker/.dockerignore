@@ -3,3 +3,8 @@
 !scripts/
 scripts/*
 !scripts/run-codex.mjs
+!scripts/course-context.mjs
+
+!skills/
+skills/*
+!skills/course-content-authoring/

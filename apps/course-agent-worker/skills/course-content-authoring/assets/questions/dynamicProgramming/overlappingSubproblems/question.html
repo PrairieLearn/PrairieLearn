@@ -1,0 +1,23 @@
+<pl-question-panel>
+  <p>
+    A recursive algorithm computes the same subproblem many times. What does memoization do to avoid
+    this repeated work?
+  </p>
+</pl-question-panel>
+
+<pl-multiple-choice answers-name="memoization">
+  <pl-answer correct="true"
+    >Stores each computed result and reuses it when that subproblem occurs again.</pl-answer
+  >
+  <pl-answer correct="false"
+    >Always selects the locally best choice without considering alternatives.</pl-answer
+  >
+  <pl-answer correct="false">Recomputes each subproblem using a different random seed.</pl-answer>
+  <pl-answer correct="false"
+    >Removes every recursive call without storing intermediate results.</pl-answer
+  >
+</pl-multiple-choice>
+
+<pl-answer-panel>
+  <p>Memoization caches results by subproblem, so repeated calls can reuse an existing answer.</p>
+</pl-answer-panel>
