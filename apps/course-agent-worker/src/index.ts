@@ -287,7 +287,11 @@ export class CourseAgentCoordinator {
         await this.state.storage.setAlarm(current.idleExpiresAt);
         return null;
       }
-      const next: ConversationState = { ...current, sandboxState: 'suspending' };
+      const next: ConversationState = {
+        ...current,
+        sandboxState: 'suspending',
+        revision: (current.revision ?? 0) + 1,
+      };
       await this.state.storage.put('conversation', next);
       return next;
     });
@@ -648,19 +652,20 @@ export class CourseAgentCoordinator {
       sleepAfter: current.runtimeSettings?.sleepAfterSeconds ?? SANDBOX_SLEEP_AFTER_SECONDS,
     });
     try {
-      if (activeRunExpired(current.activeRunExpiresAt)) {
+      const process = current.processId ? await sandbox.getProcess(current.processId) : null;
+      const finished =
+        !!process && ['completed', 'failed', 'killed', 'error'].includes(process.status);
+      if (activeRunExpired(current.activeRunExpiresAt) && !finished) {
         if (current.processId) await sandbox.killProcess(current.processId);
         await this.failRun(runId, new Error('The course-agent active execution limit was reached'));
         return;
       }
       if (!current.processId) return;
-      const process = await sandbox.getProcess(current.processId);
       if (!process) {
         if ((current.processStartingUntil ?? 0) > Date.now()) return;
         await this.failRun(runId, new Error('The course-agent process is no longer available'));
         return;
       }
-      const finished = ['completed', 'failed', 'killed', 'error'].includes(process.status);
       const logs = await sandbox.getProcessLogs(current.processId);
       const previousCursor = current.logCursor ?? 0;
       if (logs.stdout.length < previousCursor) throw new Error('Codex process logs were truncated');
