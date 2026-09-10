@@ -203,7 +203,7 @@
 </pl-card>
 
 <pl-card
-  header="An example with fixed left-hand sidedness and no direction input (&lt;code&gt;limit-direction=&quot;from-left&quot;&lt;/code&gt;)"
+  header="An example with fixed left-hand sidedness inferred from &lt;code&gt;correct-answer&lt;/code&gt;"
 >
   <pl-question-panel>
     <p>Submit $\displaystyle \lim_{x \to 0^-} \frac{1}{x}$.</p>
@@ -211,7 +211,6 @@
   <pl-big-operator-input
     answers-name="fixed-left-limit"
     correct-answer="Limit(1/x, (x, 0, '-'))"
-    limit-direction="from-left"
     allow-limit-direction-input="false"
     allowed-blank="all"
   ></pl-big-operator-input>
