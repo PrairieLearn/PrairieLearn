@@ -49,7 +49,9 @@ The overlay element allows existing PrairieLearn and HTML elements to be layered
 
 ## `pl-background` Customizations
 
-The `pl-background` child tag does not have any extra attributes that need to be set. All relevant positioning and sizing information is obtained from the tag's contents.
+| Attribute     | Type    | Default | Description                                                                                      |
+| ------------- | ------- | ------- | ------------------------------------------------------------------------------------------------ |
+| `aria-hidden` | boolean | false   | If true, hides the background from assistive technologies. Only use this for decorative content. |
 
 ## Details
 
