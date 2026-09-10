@@ -2,9 +2,18 @@ import type { UIMessage, UIMessageChunk } from 'ai';
 
 import type { CourseAgentEvent } from '@prairielearn/course-agent-protocol';
 
+interface CourseSync {
+  approvalId: string;
+  commitSha: string | null;
+  syncedAt: string;
+}
+
 export type CourseAgentMessage = UIMessage<
   { createdAt: string; failure?: string },
-  { approvalRequested: { approvalId: string }; courseSynced: { approvalId: string } },
+  {
+    approvalRequested: { approvalId: string };
+    courseSynced: CourseSync;
+  },
   { activity: { input: { label: string }; output: { label: string } } }
 >;
 
@@ -17,6 +26,7 @@ export function courseAgentUIStream(runId: string) {
   let textStarted = false;
   let restoring = false;
   const pendingTools = new Set<string>();
+  const pendingSyncs = new Map<string, CourseSync>();
   const textId = `${runId}:text`;
 
   return new TransformStream<CourseAgentEvent, UIMessageChunk>({
@@ -106,10 +116,10 @@ export function courseAgentUIStream(runId: string) {
           );
           break;
         case 'sync.completed':
-          controller.enqueue({
-            type: 'data-courseSynced',
-            id: String(event.data.approvalId),
-            data: { approvalId: String(event.data.approvalId) },
+          pendingSyncs.set(String(event.data.approvalId), {
+            approvalId: String(event.data.approvalId),
+            commitSha: typeof event.data.commitSha === 'string' ? event.data.commitSha : null,
+            syncedAt: event.occurredAt,
           });
           break;
         case 'agent.completed':
@@ -123,6 +133,10 @@ export function courseAgentUIStream(runId: string) {
               : undefined;
           for (const id of pendingTools) endTool(id, 'Interrupted', true);
           if (textStarted) controller.enqueue({ type: 'text-end', id: textId });
+          // Publishing may happen before the final reply. Offer refresh only once the turn ends.
+          for (const [id, data] of pendingSyncs) {
+            controller.enqueue({ type: 'data-courseSynced', id, data });
+          }
           controller.enqueue({
             type: 'finish',
             finishReason: failure ? 'error' : 'stop',

@@ -12,12 +12,17 @@ const sandbox = vi.hoisted(() => ({
     getStatus: vi.fn(async () => 'completed'),
     getLogs: vi.fn(async () => ({
       stdout:
-        JSON.stringify({
-          method: 'item/completed',
-          params: {
-            item: { type: 'agentMessage', id: 'answer', phase: 'final_answer', text: 'Hello.' },
+        [
+          {
+            method: 'item/completed',
+            params: {
+              item: { type: 'agentMessage', id: 'answer', phase: 'final_answer', text: 'Hello.' },
+            },
           },
-        }) + '\n',
+          { method: 'turn/completed', params: { turn: { status: 'completed' } } },
+        ]
+          .map((event) => JSON.stringify(event))
+          .join('\n') + '\n',
       stderr: '',
     })),
     kill: vi.fn(async () => {}),
@@ -222,6 +227,7 @@ describe('sandbox expiry alarm', () => {
       expect(await storage.get('conversation')).toMatchObject({
         status: 'waiting_for_user',
         error: null,
+        response: 'Hello.',
         workspaceBackup: { handle: { id: 'checkpoint' } },
       });
       expect(sandbox.createBackup).toHaveBeenCalledOnce();

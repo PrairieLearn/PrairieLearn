@@ -168,6 +168,22 @@ request. Saved history remains readable if the Worker is temporarily unavailable
 and backup handles are omitted from this ordinary history response.
 
 The sandbox runs Codex app-server over stdio to forward final-answer text deltas as they arrive.
+The Worker reads cumulative process logs, preserving partial JSON lines between polls and draining
+every remaining line after process exit. It waits for those events to be persisted before publishing
+the final response. Malformed output or a missing `turn/completed` notification is reported as a
+stream failure rather than silently accepting a partial answer.
+
+The default coding model is `gpt-6-astra`, configured by the Worker's `OPENAI_MODEL` variable.
+The runner enables live web search through the Responses API; it does not require a separate search
+API key. The localhost mock test verifies model selection on new and resumed threads, search-tool
+availability, search activity notifications, and streamed response text.
+
+Proposed changes appear as file paths with per-file and total added/deleted line counts. Review opens
+a full-screen diff with file navigation and approval controls. The conversation offers refresh only
+after a completed reply reports a successful course sync newer than the displayed page, and only
+when its revision is not already displayed. Reloading clears the refresh prompt and immediately
+positions saved history at the bottom.
+
 Commentary and reasoning are not displayed. Rebuild/restart the local Worker after changing its
 Dockerfile or runner script. The Docker build context excludes local configuration and credentials.
 To verify the runner against the pinned Codex binary without paid requests, set

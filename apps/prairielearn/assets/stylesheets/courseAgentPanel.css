@@ -132,6 +132,18 @@
 .course-agent-diff-file {
   background: var(--bs-tertiary-bg);
 }
+
+.course-agent-review-files {
+  flex: 0 0 auto;
+  max-height: 25vh;
+}
+
+@media (min-width: 768px) {
+  .course-agent-review-files {
+    width: 320px;
+    max-height: none;
+  }
+}
 .course-agent-diff-lines {
   max-height: 24rem;
   background: var(--bs-body-bg);

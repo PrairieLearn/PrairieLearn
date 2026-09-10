@@ -6,6 +6,7 @@ type EmittedEvent = Pick<CourseAgentEvent, 'type' | 'data'>;
 
 export class CodexStream {
   response = '';
+  completed = false;
   private messages = new Map<string, string>();
   private commentary = new Map<string, string>();
 
@@ -15,9 +16,10 @@ export class CodexStream {
     if (
       event.method === 'turn/completed' &&
       isRecord(params.turn) &&
-      params.turn.status === 'completed' &&
-      !this.response.trim()
+      params.turn.status === 'completed'
     ) {
+      this.completed = true;
+      if (this.response.trim()) return [];
       // Some turns end with a user-visible commentary message instead of a final-answer item.
       return this.append([...this.commentary.values()].findLast((text) => text.trim()) ?? '');
     }

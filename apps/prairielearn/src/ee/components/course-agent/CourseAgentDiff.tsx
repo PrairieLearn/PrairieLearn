@@ -46,30 +46,68 @@ function diffLineClass(line: string) {
   return '';
 }
 
-export function CourseAgentDiffSummary({ diff }: { diff: string }) {
+export function CourseAgentDiffSummary({
+  diff,
+  onSelectFile,
+}: {
+  diff: string;
+  onSelectFile?: (path: string) => void;
+}) {
+  const files = parseCourseAgentDiff(diff);
+  const additions = files.reduce((sum, file) => sum + file.additions, 0);
+  const deletions = files.reduce((sum, file) => sum + file.deletions, 0);
   return (
-    <ul className="list-unstyled small mb-0">
-      {parseCourseAgentDiff(diff).map((file) => (
-        <li key={file.path} className="d-flex align-items-start gap-2">
-          <span className="text-break flex-grow-1">{file.path}</span>
-          <span
-            className="text-nowrap"
-            aria-label={`${file.additions} additions, ${file.deletions} deletions`}
-          >
-            <span className="text-success">+{file.additions}</span>{' '}
-            <span className="text-danger">−{file.deletions}</span>
-          </span>
-        </li>
-      ))}
-    </ul>
+    <>
+      <p className="small text-muted my-2">
+        {files.length} {files.length === 1 ? 'file' : 'files'} changed ·{' '}
+        <span aria-label={`Total: ${additions} additions, ${deletions} deletions`}>
+          <span className="text-success">+{additions}</span>{' '}
+          <span className="text-danger">−{deletions}</span> lines
+        </span>
+      </p>
+      <ul className="list-unstyled small mb-0">
+        {files.map((file) => (
+          <li key={file.path} className="d-flex align-items-start gap-2">
+            {onSelectFile ? (
+              <Button
+                variant="link"
+                className="p-0 small text-start text-break flex-grow-1"
+                onClick={() => onSelectFile(file.path)}
+              >
+                {file.path}
+              </Button>
+            ) : (
+              <span className="text-break flex-grow-1">{file.path}</span>
+            )}
+            <span
+              className="text-nowrap"
+              aria-label={`${file.additions} additions, ${file.deletions} deletions`}
+            >
+              <span className="text-success">+{file.additions}</span>{' '}
+              <span className="text-danger">−{file.deletions}</span>
+            </span>
+          </li>
+        ))}
+      </ul>
+    </>
   );
 }
 
-export function CourseAgentDiff({ diff }: { diff: string }) {
+export function CourseAgentDiff({
+  diff,
+  onFileRef,
+}: {
+  diff: string;
+  onFileRef?: (path: string, element: HTMLElement | null) => void;
+}) {
   return (
     <div className="course-agent-diff border-top">
       {parseCourseAgentDiff(diff).map((file) => (
-        <section key={file.path} aria-label={`Changes to ${file.path}`}>
+        <section
+          key={file.path}
+          ref={(element) => onFileRef?.(file.path, element)}
+          aria-label={`Changes to ${file.path}`}
+        >
           <div className="course-agent-diff-file border-bottom px-3 py-2 font-monospace small fw-semibold text-break">
             {file.path}
           </div>
@@ -94,3 +132,56 @@ export function CourseAgentDiff({ diff }: { diff: string }) {
     </div>
   );
 }
+
+export function CourseAgentDiffReview({
+  diff,
+  show,
+  onHide,
+  children,
+}: {
+  diff: string;
+  show: boolean;
+  onHide: () => void;
+  children: ReactNode;
+}) {
+  const filesRef = useRef(new Map<string, HTMLElement>());
+  return (
+    <Modal show={show} aria-labelledby="course-agent-review-title" fullscreen onHide={onHide}>
+      <Modal.Header closeButton>
+        <Modal.Title as="h2" className="h5" id="course-agent-review-title">
+          Proposed changes
+        </Modal.Title>
+      </Modal.Header>
+      <Modal.Body className="p-0 d-flex flex-column flex-md-row overflow-hidden">
+        <nav
+          aria-label="Changed files"
+          className="course-agent-review-files border-end p-3 overflow-auto"
+        >
+          <CourseAgentDiffSummary
+            diff={diff}
+            onSelectFile={(path) =>
+              filesRef.current.get(path)?.scrollIntoView({ behavior: 'instant', block: 'start' })
+            }
+          />
+        </nav>
+        <div className="flex-grow-1 overflow-auto" style={{ minWidth: 0 }}>
+          <CourseAgentDiff
+            diff={diff}
+            onFileRef={(path, element) => {
+              if (element) filesRef.current.set(path, element);
+              else filesRef.current.delete(path);
+            }}
+          />
+        </div>
+      </Modal.Body>
+      <Modal.Footer>
+        <Button variant="secondary" onClick={onHide}>
+          Close
+        </Button>
+        {children}
+      </Modal.Footer>
+    </Modal>
+  );
+}
+import { type ReactNode, useRef } from 'react';
+import { Button, Modal } from 'react-bootstrap';

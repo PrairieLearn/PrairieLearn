@@ -1,7 +1,7 @@
 import { useChat } from '@ai-sdk/react';
 import { QueryClient, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Fragment, useEffect, useRef, useState } from 'react';
-import { Alert, Button, Dropdown, Modal, Spinner } from 'react-bootstrap';
+import { Alert, Button, Dropdown, Spinner } from 'react-bootstrap';
 import type { Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useStickToBottom } from 'use-stick-to-bottom';
@@ -22,7 +22,8 @@ import { AssistantMessage, MessageMetadata, UserMessage } from './course-agent/C
 import { ChatMessageParts } from './course-agent/ChatMessageParts.js';
 import { ToolCallStatus } from './course-agent/ChatProgressStatus.js';
 import { ScrollToBottomButton } from './course-agent/ChatScrollToBottom.js';
-import { CourseAgentDiff, CourseAgentDiffSummary } from './course-agent/CourseAgentDiff.js';
+import { CourseAgentDiffReview, CourseAgentDiffSummary } from './course-agent/CourseAgentDiff.js';
+import { courseRefreshMessageId } from './course-agent/course-refresh.js';
 import { type CourseAgentRun, CourseAgentTransport } from './courseAgentTransport.js';
 
 const markdownPlugins = [remarkGfm];
@@ -41,6 +42,8 @@ export const workspaceMarkdownComponents: Components = {
 function CourseAgentPanelInner(props: {
   initialOpen: boolean;
   courseId: string;
+  courseCommitSha: string | null;
+  pageRenderedAt: string;
   courseInstanceId: string | null;
   userName: string;
   timeZone: string;
@@ -116,6 +119,8 @@ function CourseAgentPanelInner(props: {
 
 function CourseAgentConversationPanel({
   courseId,
+  courseCommitSha,
+  pageRenderedAt,
   courseInstanceId,
   userName,
   timeZone,
@@ -127,6 +132,8 @@ function CourseAgentConversationPanel({
   onSelect,
 }: {
   courseId: string;
+  courseCommitSha: string | null;
+  pageRenderedAt: string;
   courseInstanceId: string | null;
   userName: string;
   timeZone: string;
@@ -143,7 +150,7 @@ function CourseAgentConversationPanel({
 }) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
-  const stickToBottom = useStickToBottom({ initial: 'smooth', resize: 'smooth' });
+  const stickToBottom = useStickToBottom({ initial: 'instant', resize: 'smooth' });
 
   const [prompt, setPrompt] = useState('');
   const [reviewOpen, setReviewOpen] = useState(false);
@@ -213,6 +220,12 @@ function CourseAgentConversationPanel({
     [stop],
   );
   const busy = status === 'submitted' || status === 'streaming';
+  const refreshMessageId = courseRefreshMessageId({
+    messages,
+    busy,
+    pageRenderedAt,
+    courseCommitSha,
+  });
   const lastMessage = messages.at(-1);
   const hasActiveTool =
     lastMessage?.role === 'assistant' &&
@@ -229,7 +242,11 @@ function CourseAgentConversationPanel({
   );
   const approval = useMutation(
     trpc.courseAgent.respondToPushApproval.mutationOptions({
-      onSuccess: () => void snapshot.refetch(),
+      onSuccess: () => {
+        setReviewOpen(false);
+        void snapshot.refetch();
+      },
+      onError: () => setReviewOpen(false),
     }),
   );
   const approvalMode = useQuery(trpc.courseAgent.getApprovalMode.queryOptions());
@@ -360,12 +377,11 @@ function CourseAgentConversationPanel({
                   {message.metadata?.failure && (
                     <Alert variant="danger">{message.metadata.failure}</Alert>
                   )}
-                  {message.parts.some((part) => part.type === 'data-courseSynced') && (
+                  {message.id === refreshMessageId && (
                     <Button
                       size="sm"
                       variant="outline-secondary"
                       className="mb-2"
-                      disabled={busy}
                       onClick={() => window.location.reload()}
                     >
                       <i className="bi bi-arrow-clockwise me-1" aria-hidden="true" />
@@ -454,29 +470,16 @@ function CourseAgentConversationPanel({
                   </p>
                   <CourseAgentDiffSummary diff={snapshot.data.pendingApproval.diff} />
                 </div>
-                <details>
-                  <summary className="small px-3 py-2">View full diff</summary>
-                  <CourseAgentDiff diff={snapshot.data.pendingApproval.diff} />
-                </details>
-                <Button size="sm" variant="link" onClick={() => setReviewOpen(true)}>
-                  Expand diff
-                </Button>
-                <Modal show={reviewOpen} size="xl" scrollable onHide={() => setReviewOpen(false)}>
-                  <Modal.Header closeButton>
-                    <Modal.Title as="h2" className="h5">
-                      Proposed changes
-                    </Modal.Title>
-                  </Modal.Header>
-                  <Modal.Body className="p-0">
-                    <CourseAgentDiff diff={snapshot.data.pendingApproval.diff} />
-                  </Modal.Body>
-                  <Modal.Footer>
-                    <Button variant="secondary" onClick={() => setReviewOpen(false)}>
-                      Close
-                    </Button>
-                  </Modal.Footer>
-                </Modal>
-                <div className="d-flex justify-content-end gap-2 border-top px-2 py-2">
+                <div className="px-3 py-2">
+                  <Button size="sm" variant="outline-primary" onClick={() => setReviewOpen(true)}>
+                    Review changes
+                  </Button>
+                </div>
+                <CourseAgentDiffReview
+                  diff={snapshot.data.pendingApproval.diff}
+                  show={reviewOpen}
+                  onHide={() => setReviewOpen(false)}
+                >
                   <Button
                     size="sm"
                     disabled={
@@ -516,7 +519,7 @@ function CourseAgentConversationPanel({
                       ? 'Denying…'
                       : 'Deny'}
                   </Button>
-                </div>
+                </CourseAgentDiffReview>
               </div>
             )}
             <div className="pt-3 mt-3">
@@ -708,6 +711,8 @@ export function CourseAgentPanel({
   initialOpen,
   trpcCsrfToken,
   courseId,
+  courseCommitSha,
+  pageRenderedAt,
   courseInstanceId,
   userName,
   timeZone,
@@ -716,6 +721,8 @@ export function CourseAgentPanel({
   initialOpen: boolean;
   trpcCsrfToken: string;
   courseId: string;
+  courseCommitSha: string | null;
+  pageRenderedAt: string;
   courseInstanceId: string | null;
   userName: string;
   timeZone: string;
@@ -732,6 +739,8 @@ export function CourseAgentPanel({
           initialOpen={initialOpen}
           trpcClient={trpcClient}
           courseId={courseId}
+          courseCommitSha={courseCommitSha}
+          pageRenderedAt={pageRenderedAt}
           courseInstanceId={courseInstanceId}
           userName={userName}
           timeZone={timeZone}

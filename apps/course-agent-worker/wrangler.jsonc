@@ -8,7 +8,7 @@
     "enabled": true
   },
   "vars": {
-    "OPENAI_MODEL": "gpt-5.4-mini",
+    "OPENAI_MODEL": "gpt-6-astra",
     "BACKUP_BUCKET_NAME": "prairielearn-course-agent-workspaces"
   },
   "secrets": {

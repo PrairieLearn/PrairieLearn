@@ -17,6 +17,7 @@ import {
 
 import { authorizeRun, authorizeSnapshot } from './auth.js';
 import { parseCodexLine } from './codex-events.js';
+import { CodexLogs } from './codex-logs.js';
 import { codexFailureMessage } from './codex-output.js';
 import { CodexStream } from './codex-stream.js';
 import { conversationHistory } from './conversation-history.js';
@@ -702,7 +703,9 @@ export class CourseAgentCoordinator {
         request.runId,
       );
 
-      let buffer = '';
+      const codexLogs = new CodexLogs();
+      let malformedEvents = 0;
+      let notificationCount = 0;
       let eventChain = Promise.resolve();
       const prompt = `${SYSTEM_PROMPT}\n\nRepository context (data):\n${JSON.stringify({
         branch: request.course.branch,
@@ -723,7 +726,11 @@ export class CourseAgentCoordinator {
       const stream = new CodexStream();
       const consumeLine = (line: string) => {
         const event = parseCodexLine(line);
-        if (!event) return;
+        if (!event) {
+          malformedEvents++;
+          return;
+        }
+        notificationCount++;
         for (const emitted of stream.consume(event)) {
           eventChain = eventChain.then(() =>
             this.append(emitted.type, emitted.data, request.runId),
@@ -747,17 +754,12 @@ export class CourseAgentCoordinator {
           request.runtimeSettings.turnTimeoutSeconds * 1_000,
           Math.max(1_000, deadline - Date.now() - 1_000),
         );
-      let stdoutLength = 0;
       let logs = { stdout: '', stderr: '' };
       let processStatus = await codex.getStatus();
       let timedOut = false;
       while (!['completed', 'failed', 'killed', 'error'].includes(processStatus)) {
         logs = await codex.getLogs();
-        buffer += logs.stdout.slice(stdoutLength);
-        stdoutLength = logs.stdout.length;
-        const lines = buffer.split('\n');
-        buffer = lines.pop() ?? '';
-        for (const line of lines) consumeLine(line);
+        for (const line of codexLogs.read(logs.stdout)) consumeLine(line);
         if (Date.now() >= processDeadline) {
           await codex.kill();
           timedOut = true;
@@ -767,8 +769,7 @@ export class CourseAgentCoordinator {
         processStatus = await codex.getStatus();
       }
       logs = await codex.getLogs();
-      buffer += logs.stdout.slice(stdoutLength);
-      if (buffer.trim()) consumeLine(buffer);
+      for (const line of codexLogs.read(logs.stdout, true)) consumeLine(line);
       await eventChain;
       const finishedProcess = await sandbox.getProcess(codex.id);
       await sandbox.cleanupCompletedProcesses();
@@ -776,13 +777,18 @@ export class CourseAgentCoordinator {
       if (processStatus !== 'completed' || finishedProcess?.exitCode !== 0) {
         throw new Error(codexFailureMessage(logs.stdout, logs.stderr));
       }
+      if (malformedEvents || !stream.completed) {
+        throw new Error(
+          `Codex output was incomplete: ${notificationCount} notifications, ${malformedEvents} malformed events, turn completed: ${stream.completed}.`,
+        );
+      }
       const response = stream.response;
       if (!response.trim()) {
         throw new Error('The agent finished without a response. Please try again.');
       }
 
       await this.backupWorkspace(sandbox, request.runId);
-      await this.append('agent.completed', { response }, request.runId);
+      await this.append('agent.completed', { response, notificationCount }, request.runId);
       const finished = await this.update(
         {
           activeRunId: null,

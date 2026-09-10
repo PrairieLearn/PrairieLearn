@@ -695,7 +695,7 @@ test('contains long messages and tool paths without widening the panel', async (
   }
 });
 
-test('scrolls to the latest turn on send after the instructor scrolls up', async ({
+test('scrolls on send and jumps to the latest turn after reload', async ({
   page,
   courseInstance,
 }) => {
@@ -720,4 +720,31 @@ test('scrolls to the latest turn on send after the instructor scrolls up', async
       ),
     )
     .toBeLessThan(5);
+  await page.addInitScript(() => {
+    const offsets: number[] = [];
+    document.addEventListener(
+      'scroll',
+      (event) => {
+        const element = event.target;
+        if (!(element instanceof HTMLElement) || element.getAttribute('role') !== 'log') return;
+        offsets.push(element.scrollHeight - element.clientHeight - element.scrollTop);
+        document.documentElement.dataset.courseAgentScrollOffsets = JSON.stringify(offsets);
+      },
+      { capture: true },
+    );
+  });
+  await page.reload();
+  await expect(panel.getByText('Edited README.md', { exact: true })).toHaveCount(2);
+  await expect
+    .poll(() =>
+      transcript.evaluate(
+        (element) => element.scrollHeight - element.clientHeight - element.scrollTop,
+      ),
+    )
+    .toBeLessThan(5);
+  const offsets = await page.evaluate(() =>
+    JSON.parse(document.documentElement.dataset.courseAgentScrollOffsets!),
+  );
+  expect(offsets.length).toBeGreaterThan(0);
+  expect(offsets.every((offset: number) => offset < 5)).toBe(true);
 });

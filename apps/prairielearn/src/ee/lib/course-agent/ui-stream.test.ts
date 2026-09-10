@@ -37,15 +37,27 @@ describe('course-agent UI-message adapter', () => {
       events([
         ['user.message', { runId: 'current' }],
         ['git.push.completed', { approvalId: 'approval-id' }],
-        ['sync.completed', { approvalId: 'approval-id' }],
+        ['sync.completed', { approvalId: 'approval-id', commitSha: 'abc' }],
         ['agent.completed', { response: 'Published the update.' }],
       ]),
     );
     expect(messages.at(-1)?.parts).toContainEqual({
       type: 'data-courseSynced',
       id: 'approval-id',
-      data: { approvalId: 'approval-id' },
+      data: { approvalId: 'approval-id', commitSha: 'abc', syncedAt: '2026-09-03T12:00:00Z' },
     });
+    expect(
+      messages
+        .filter((message) => message.parts.some((part) => part.type === 'data-courseSynced'))
+        .every((message) =>
+          message.parts.some(
+            (part) =>
+              part.type === 'text' &&
+              part.text === 'Published the update.' &&
+              part.state === 'done',
+          ),
+        ),
+    ).toBe(true);
     const failed = await render(
       events([
         ['user.message', { runId: 'current' }],
