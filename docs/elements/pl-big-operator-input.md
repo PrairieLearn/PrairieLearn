@@ -132,7 +132,7 @@ Valid approach directions are `"+"`, `"-"`, and `"+-"`.
 Custom operators change the displayed symbol and use the standard input layouts. They do not define a new SymPy operation. As a result:
 
 - A custom operator does not support `grading-method="equivalent"`. Use `exact` or `component` grading instead, or `none` to display the correct answer without grading.
-- `operator-latex` is required. It controls presentation only; it does not define parsing or mathematical behavior.
+- `operator-latex` is required. It is rendered as `\mathop{...}\limits` and controls presentation only; it does not define parsing or mathematical behavior.
 
 ## Correct answers
 
