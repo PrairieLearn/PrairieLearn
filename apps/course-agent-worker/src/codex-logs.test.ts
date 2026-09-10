@@ -48,4 +48,12 @@ describe('Codex process log drain', () => {
     logs.read('one\ntwo\n');
     expect(() => logs.read('two\n', true)).toThrow('logs were truncated');
   });
+
+  it('restores partial framing after the coordinator restarts', () => {
+    const logs = new CodexLogs();
+    expect(logs.read('one\ntw')).toEqual(['one']);
+    const restored = new CodexLogs(logs.snapshot());
+    expect(restored.read('one\ntwo\nthree', true)).toEqual(['two', 'three']);
+    expect(restored.read('one\ntwo\nthree', true)).toEqual([]);
+  });
 });

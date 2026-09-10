@@ -1,3 +1,5 @@
+import { z } from 'zod';
+
 import type {
   CourseAgentEvent,
   CourseAgentPushApproval as CourseAgentPushApprovalRequest,
@@ -21,6 +23,7 @@ import {
   CourseAgentPushApprovalSchema,
   CourseAgentRunSchema,
   CourseAgentWorkspaceBackupSchema,
+  CourseSchema,
 } from '../lib/db-types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
@@ -56,6 +59,18 @@ export function selectCourseAgentConversations(courseId: string, userId: string)
   );
 }
 
+export function selectCourseAgentConversationsToReconcile() {
+  return queryRows(
+    sql.select_conversations_to_reconcile,
+    {},
+    z.object({
+      conversation: CourseAgentConversationSchema,
+      run: CourseAgentRunSchema,
+      course: CourseSchema,
+    }),
+  );
+}
+
 export function selectOptionalRunningCourseAgentRun(conversationId: string) {
   return queryOptionalRow(
     sql.select_running_run,
@@ -70,9 +85,9 @@ export async function createCourseAgentTurn({
   prompt,
   promptDigest,
 }: {
-  conversation: Omit<
+  conversation: Pick<
     CourseAgentConversation,
-    'created_at' | 'deleted_at' | 'last_error' | 'updated_at'
+    'id' | 'course_id' | 'user_id' | 'title' | 'sandbox_id' | 'runtime_status'
   >;
   runId: string;
   prompt: string;
@@ -132,11 +147,23 @@ export async function persistCourseAgentSnapshot({
       }
       await persistEvent(snapshot.conversationId, eventRunId, event);
     }
-    await execute(sql.update_runtime, {
-      conversation_id: snapshot.conversationId,
-      runtime_status: snapshot.status,
-      last_error: snapshot.error,
-    });
+    const updated = await queryOptionalRow(
+      sql.update_runtime,
+      {
+        conversation_id: snapshot.conversationId,
+        runtime_status: snapshot.status,
+        last_error: snapshot.error,
+        conversation_state: snapshot.conversationState,
+        sandbox_state: snapshot.sandboxState,
+        lifecycle_revision: snapshot.revision,
+        sandbox_generation: snapshot.sandboxGeneration,
+        idle_expires_at: snapshot.idleExpiresAt == null ? null : new Date(snapshot.idleExpiresAt),
+        active_run_expires_at: snapshot.activeRunExpiresAt,
+        process_id: snapshot.processId,
+      },
+      CourseAgentConversationSchema,
+    );
+    if (!updated) return;
     if (
       !snapshot.activeRunId &&
       ['waiting_for_user', 'failed', 'offline'].includes(snapshot.status)

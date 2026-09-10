@@ -80,7 +80,7 @@ export async function authorizeRun(request: CourseAgentStartRunRequest, secret: 
     !sameAuthoringContext(capability.authoringContext, request.authoringContext) ||
     capability.runtimeSettings.idleTimeoutSeconds !== request.runtimeSettings.idleTimeoutSeconds ||
     capability.runtimeSettings.backupTtlSeconds !== request.runtimeSettings.backupTtlSeconds ||
-    capability.runtimeSettings.maxLifetimeSeconds !== request.runtimeSettings.maxLifetimeSeconds ||
+    capability.runtimeSettings.sleepAfterSeconds !== request.runtimeSettings.sleepAfterSeconds ||
     capability.runtimeSettings.turnTimeoutSeconds !== request.runtimeSettings.turnTimeoutSeconds
   ) {
     throw new Error('Run capability does not authorize this request');

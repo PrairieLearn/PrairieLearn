@@ -9,15 +9,15 @@ import {
 } from './index.js';
 
 describe('course-agent protocol', () => {
-  it('defaults the absolute lifetime to 600 seconds and permits short testing lifetimes', () => {
+  it('defaults the platform failsafe to six hours without an absolute sandbox lifetime', () => {
     const settings = { idleTimeoutSeconds: 600, turnTimeoutSeconds: 900 };
-    expect(CourseAgentRuntimeSettingsSchema.parse(settings).maxLifetimeSeconds).toBe(600);
+    expect(CourseAgentRuntimeSettingsSchema.parse(settings).sleepAfterSeconds).toBe(21_600);
     expect(
-      CourseAgentRuntimeSettingsSchema.parse({ ...settings, maxLifetimeSeconds: 5 })
-        .maxLifetimeSeconds,
-    ).toBe(5);
+      CourseAgentRuntimeSettingsSchema.parse({ ...settings, sleepAfterSeconds: 60 })
+        .sleepAfterSeconds,
+    ).toBe(60);
     expect(() =>
-      CourseAgentRuntimeSettingsSchema.parse({ ...settings, maxLifetimeSeconds: 0 }),
+      CourseAgentRuntimeSettingsSchema.parse({ ...settings, sleepAfterSeconds: 0 }),
     ).toThrow();
   });
   it('derives a stable sandbox ID and seed path', () => {

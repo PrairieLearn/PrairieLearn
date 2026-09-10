@@ -4,11 +4,35 @@ import { toolEvents } from './codex-events.js';
 
 type EmittedEvent = Pick<CourseAgentEvent, 'type' | 'data'>;
 
+export interface CodexStreamState {
+  response: string;
+  completed: boolean;
+  messages: [string, string][];
+  commentary: [string, string][];
+}
+
 export class CodexStream {
   response = '';
   completed = false;
   private messages = new Map<string, string>();
   private commentary = new Map<string, string>();
+
+  constructor(state?: CodexStreamState) {
+    if (!state) return;
+    this.response = state.response;
+    this.completed = state.completed;
+    this.messages = new Map(state.messages);
+    this.commentary = new Map(state.commentary);
+  }
+
+  snapshot(): CodexStreamState {
+    return {
+      response: this.response,
+      completed: this.completed,
+      messages: [...this.messages],
+      commentary: [...this.commentary],
+    };
+  }
 
   consume(event: Record<string, unknown>): EmittedEvent[] {
     const params = event.params;

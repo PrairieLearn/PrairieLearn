@@ -73,7 +73,7 @@ function runtimeSettings() {
   return {
     idleTimeoutSeconds: config.courseAgentSandbox.idleTimeoutSeconds,
     backupTtlSeconds: config.courseAgentSandbox.backupTtlSeconds,
-    maxLifetimeSeconds: config.courseAgentSandbox.maxLifetimeSeconds,
+    sleepAfterSeconds: config.courseAgentSandbox.sleepAfterSeconds,
     turnTimeoutSeconds: config.courseAgentSandbox.turnTimeoutSeconds,
   };
 }

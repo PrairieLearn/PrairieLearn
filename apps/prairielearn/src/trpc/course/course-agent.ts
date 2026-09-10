@@ -205,19 +205,26 @@ const start = courseAgentProcedure
       ctx.session.course_agent_conversation_id = conversationId;
       return result;
     } catch (error) {
+      const saved = await selectOptionalCourseAgentConversation({
+        conversationId,
+        courseId: ctx.course.id,
+        userId: ctx.locals.authn_user.id,
+      });
       await persistCourseAgentSnapshot({
         runId,
-        snapshot: {
+        snapshot: CourseAgentSnapshotSchema.parse({
           conversationId,
           sandboxId,
           activeRunId: null,
           status: 'failed',
+          conversationState: 'failed',
+          revision: saved?.lifecycle_revision ?? 0,
           response: null,
           error: error instanceof Error ? error.message : String(error),
           events: [],
           workspaceBackup: null,
           pendingApproval: null,
-        },
+        }),
       });
       throw error;
     }
@@ -343,14 +350,32 @@ const diagnostics = courseAgentProcedure
     }),
   )
   .input(z.object({ conversationId: z.uuid(), sandboxId: z.string() }))
-  .output(CourseAgentSnapshotSchema)
-  .query(({ ctx, input }) =>
-    getEphemeralCourseAgentSnapshot({
+  .output(
+    CourseAgentSnapshotSchema.extend({
+      persisted: CourseAgentConversationSchema.pick({
+        conversation_state: true,
+        sandbox_state: true,
+        lifecycle_revision: true,
+        sandbox_generation: true,
+        idle_expires_at: true,
+        active_run_expires_at: true,
+        process_id: true,
+      }).nullable(),
+    }),
+  )
+  .query(async ({ ctx, input }) => {
+    const identity = {
       userId: ctx.locals.authn_user.id,
       courseId: ctx.course.id,
       ...input,
-    }),
-  );
+    };
+    const snapshot = await getEphemeralCourseAgentSnapshot(identity);
+    const latestUser = snapshot.events.filter((event) => event.type === 'user.message').at(-1);
+    if (typeof latestUser?.data.runId === 'string') {
+      await persistCourseAgentSnapshot({ snapshot, runId: latestUser.data.runId });
+    }
+    return { ...snapshot, persisted: await selectOptionalCourseAgentConversation(identity) };
+  });
 
 const history = courseAgentProcedure
   .input(z.object({ conversationId: z.uuid().optional() }).optional())
