@@ -1,9 +1,10 @@
+import { renameSync } from 'node:fs';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import * as path from 'node:path';
 
 import express, { type ErrorRequestHandler } from 'express';
-import { afterAll, assert, beforeAll, describe, it } from 'vitest';
+import { afterAll, assert, beforeAll, describe, it, vi } from 'vitest';
 
 import { withServer } from '@prairielearn/express-test-utils';
 
@@ -124,6 +125,47 @@ describe('Instructor file downloads', () => {
         await fetch(`${downloadUrl(url, '.Rprofile')}?attachment=profile.R`),
         403,
       );
+    });
+  });
+
+  it.each(['../outside.R', '.config/.git/config'])(
+    'keeps serving the validated file when its path is replaced with a symlink to %s',
+    async (target) => {
+      const filename = path.join(coursePath, `race-${path.basename(target)}`);
+      const replacement = `${filename}.replacement`;
+      await fs.writeFile(filename, contents);
+      await fs.symlink(target, replacement);
+      // eslint-disable-next-line @typescript-eslint/unbound-method -- Bound to the response below.
+      const originalSendFile = express.response.sendFile;
+      using sendFile = vi.spyOn(express.response, 'sendFile').mockImplementation(function (
+        this: express.Response,
+        ...args
+      ) {
+        renameSync(replacement, filename);
+        return originalSendFile.apply(this, args);
+      });
+
+      await withServer(createApp(), async ({ url }) => {
+        const response = await fetch(downloadUrl(url, path.basename(filename)));
+        assert.equal(response.status, 200);
+        assert.equal(await response.text(), contents);
+        assert.equal(sendFile.mock.calls.length, 1);
+      });
+    },
+  );
+
+  it('rejects a symlink substituted between validation and opening', async () => {
+    const filename = path.join(coursePath, 'opening-race.R');
+    await fs.writeFile(filename, contents);
+    const originalOpen = fs.open;
+    using open = vi.spyOn(fs, 'open').mockImplementationOnce(async (...args) => {
+      await fs.rename(path.join(coursePath, '.outside-link'), filename);
+      return originalOpen(...args);
+    });
+
+    await withServer(createApp(), async ({ url }) => {
+      await assertErrorResponse(await fetch(downloadUrl(url, 'opening-race.R')), 404);
+      assert.equal(open.mock.calls.length, 1);
     });
   });
 
