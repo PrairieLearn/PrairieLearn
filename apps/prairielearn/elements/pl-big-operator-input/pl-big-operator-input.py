@@ -131,6 +131,7 @@ class RenderConfig:
     answer_name: str
     operator: Operator
     operator_latex: str
+    has_operator_latex_override: bool
     prefix_latex: str | None
     suffix_latex: str | None
     limits: LimitFormat
@@ -479,6 +480,7 @@ def _config(html: str, data: pl.QuestionData | None = None) -> RenderConfig:
         answer_name=answer,
         operator=operator,
         operator_latex=operator_latex,
+        has_operator_latex_override=custom_latex is not None,
         prefix_latex=pl.get_string_attrib(element, "prefix-latex", None),
         suffix_latex=pl.get_string_attrib(element, "suffix-latex", None),
         limits=limits,
@@ -884,7 +886,7 @@ def _question_mustache(config: RenderConfig, data: pl.QuestionData) -> str:
     context: dict[str, Any] = {
         config.limits: True,
         "integral": config.operator == "integral",
-        "operator_latex": config.operator_latex,
+        "operator_latex": _operator_tex(config),
         "prefix_latex": config.prefix_latex,
         "suffix_latex": config.suffix_latex,
         "index_label": index,
@@ -959,6 +961,12 @@ def _question_mustache(config: RenderConfig, data: pl.QuestionData) -> str:
     return _render_mustache(context, template="main")
 
 
+def _operator_tex(config: RenderConfig) -> str:
+    if config.has_operator_latex_override:
+        return rf"\mathop{{{config.operator_latex}}}\limits"
+    return config.operator_latex
+
+
 def _tex(config: RenderConfig, raw: dict[str, Any] | None) -> str:
     raw = raw or {}
 
@@ -966,9 +974,7 @@ def _tex(config: RenderConfig, raw: dict[str, Any] | None) -> str:
         return raw.get(config.name(c), "?")
 
     index = sympy.latex(sympy.Symbol(config.index))
-    op = config.operator_latex
-    if config.operator == "custom":
-        op = rf"\mathop{{{op}}}\limits"
+    op = _operator_tex(config)
     match config.limits, config.operator:
         case "bounds", "integral":
             return rf"{op}_{{{get_comp('lower')}}}^{{{get_comp('upper')}}} {get_comp('body')}\,\mathrm{{d}}{index}"

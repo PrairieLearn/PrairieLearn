@@ -725,17 +725,12 @@ class TestRenderUnits:
         assert expected_tex in rendered
         assert "badge" not in rendered
 
-    @pytest.mark.parametrize(
-        ("operator", "expected_tex"),
-        [
-            ("custom", r"\mathop{\mathbb{E}}\limits_{k=1}^{4} k^{2}"),
-            ("sum", r"\mathbb{E}_{k=1}^{4} k^{2}"),
-        ],
-    )
+    @pytest.mark.parametrize("operator", ["custom", "sum"])
+    @pytest.mark.parametrize("panel", ["question", "answer", "submission"])
     def test_operator_latex_overrides_structured_answer_for_rendering(
         self,
         operator: pl.OperatorExpressionOperator,
-        expected_tex: str,
+        panel: Literal["question", "answer", "submission"],
     ) -> None:
         correct_answer: pl.OperatorExpressionJson = pl.operator_expression_to_json(
             operator=operator,
@@ -751,12 +746,12 @@ class TestRenderUnits:
             "operator-latex": r"\mathbb{E}",
             "grading-method": "exact",
         })
-        data = question_data(correct_answer, panel="answer")
+        data = question_data(correct_answer, panel=panel)
         big_operator_input.prepare(markup, data)
 
         rendered = big_operator_input.render(markup, data)
 
-        assert expected_tex in rendered
+        assert r"\mathop{\mathbb{E}}\limits" in rendered
         assert r"\bigstar" not in rendered
 
     @pytest.mark.parametrize("panel", ["question", "answer", "submission"])
