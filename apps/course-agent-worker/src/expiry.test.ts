@@ -134,6 +134,31 @@ describe('sandbox expiry alarm', () => {
     expect(sandbox.destroy).not.toHaveBeenCalled();
   });
 
+  it('drains a completed process when its recovery alarm runs after the execution deadline', async () => {
+    const { coordinator, storage } = fixture('completed-run', 5000);
+    await coordinator['update']({ activeRunExpiresAt: new Date(5000).toISOString() });
+    sandbox.getProcess.mockResolvedValue({ status: 'completed', exitCode: 0 });
+    sandbox.getProcessLogs.mockResolvedValue({
+      stdout: [
+        JSON.stringify({
+          method: 'item/completed',
+          params: {
+            item: { id: 'answer', type: 'agentMessage', text: 'Finished before recovery.' },
+          },
+        }),
+        JSON.stringify({ method: 'turn/completed', params: { turn: { status: 'completed' } } }),
+      ].join('\n'),
+      stderr: '',
+    });
+    await coordinator.alarm();
+    expect(await storage.get('conversation')).toMatchObject({
+      response: 'Finished before recovery.',
+      error: null,
+      activeRunId: null,
+    });
+    expect(sandbox.killProcess).not.toHaveBeenCalled();
+  });
+
   it('starts a full idle interval when upgrading a legacy workspace', async () => {
     vi.useFakeTimers();
     vi.setSystemTime(5000);
