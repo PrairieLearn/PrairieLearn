@@ -17,27 +17,7 @@ const plBigOperatorInputAttributesSchema = z
     'correct-answer': z.string().regex(correctAnswerPattern).optional(),
     'custom-functions': z.string().optional(),
     'grading-method': z.enum(['exact', 'component', 'equivalent', 'none']).optional(),
-    'index-variable': z.string().optional(),
-    'limit-direction': z
-      .enum(['two-sided', 'from-left', 'from-right'])
-      .default('two-sided')
-      .optional(),
     'limit-size': integerFormat().optional(),
-    limits: z.enum(['auto', 'bounds', 'domain', 'approach']).default('auto').optional(),
-    operator: z
-      .enum([
-        'sum',
-        'product',
-        'integral',
-        'limit',
-        'union',
-        'intersection',
-        'disjoint-union',
-        'min',
-        'max',
-        'custom',
-      ])
-      .optional(),
     'operator-latex': z.string().optional(),
     'prefix-latex': z.string().optional(),
     'show-help-text': booleanFormat().default('true').optional(),
