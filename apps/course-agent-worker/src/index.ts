@@ -400,6 +400,7 @@ export class CourseAgentCoordinator {
       const checkout = await sandbox.exec(
         `test -d ${shellQuote(`${coursePath}/.git`)} && echo yes`,
       );
+      let checkoutSha: string;
       if (!checkout.stdout.trim()) {
         await this.append(
           'git.clone.started',
@@ -417,11 +418,7 @@ export class CourseAgentCoordinator {
         const head = await sandbox.exec('git rev-parse HEAD', { cwd: coursePath });
         if (!head.success) throw new Error(head.stderr || 'Could not inspect course checkout');
         const sha = head.stdout.trim();
-        if (request.course.expectedSha && sha !== request.course.expectedSha) {
-          throw new Error(
-            `Course checkout is at ${sha}, but PrairieLearn expected ${request.course.expectedSha}`,
-          );
-        }
+        checkoutSha = sha;
         await this.append(
           'git.clone.completed',
           {
@@ -447,17 +444,7 @@ export class CourseAgentCoordinator {
           throw new Error('Existing course checkout does not match the authorized repository');
         }
         const sha = head.stdout.trim();
-        if (request.course.expectedSha && sha !== request.course.expectedSha) {
-          const containsExpectedRevision = await sandbox.exec(
-            `git merge-base --is-ancestor ${shellQuote(request.course.expectedSha)} HEAD`,
-            { cwd: coursePath },
-          );
-          if (!containsExpectedRevision.success) {
-            throw new Error(
-              `Existing course checkout does not contain PrairieLearn's expected revision ${request.course.expectedSha}; start a new conversation to use the updated course repository`,
-            );
-          }
-        }
+        checkoutSha = sha;
         await this.append(
           'git.clone.completed',
           {
@@ -491,7 +478,11 @@ export class CourseAgentCoordinator {
 
       let buffer = '';
       let eventChain = Promise.resolve();
-      const prompt = `${SYSTEM_PROMPT}\n\nInstructor request:\n${request.prompt}`;
+      const prompt = `${SYSTEM_PROMPT}\n\nRepository context (data):\n${JSON.stringify({
+        branch: request.course.branch,
+        checkoutSha,
+        prairieLearnSha: request.course.expectedSha,
+      })}\nThe checkout and PrairieLearn revisions may differ. For content changes, inspect and integrate remote updates as needed without discarding local work.\n\nInstructor request:\n${request.prompt}`;
       const requestPath = `${COURSE_AGENT_WORKSPACE_ROOT}/.course-agent-request.json`;
       // Use a file rather than shell arguments: recovery history may exceed the argument-size limit.
       await sandbox.writeFile(

@@ -10,9 +10,10 @@ For content requests, use the local references below instead of searching the we
 
 ## Start with the course
 
-The working directory is the course checkout, normally `/workspace/course`. Read `infoCourse.json`
-and list existing `courseInstances` and relevant `questions` directories once. Reuse the course's
-topics, assessment sets, naming, and nearby examples. Do not scan the filesystem for skills.
+The working directory is the course checkout, normally `/workspace/course`. Start with the supplied
+course context and format example. Read `infoCourse.json` or list directories only when the context
+does not answer a specific question. Reuse the course's topics, assessment sets, naming, and nearby
+examples. Do not scan the filesystem for skills.
 
 Questions live in `questions/<qid>/info.json` and `question.html`; `server.py` is optional.
 The metadata filename is **`info.json`, not `infoQuestion.json`**. Assessments live in
@@ -61,8 +62,7 @@ cannot be confirmed, use a supported simpler pattern or ask a focused question.
 
 ## Finish honestly
 
-Review changed files, QID references, correct answers, and UUIDs. This version has no
-`validate-course`, `question_render`, or `push_sync` tool. Do not invent or repeatedly search for
-those commands. Editing files does not prove that PL rendered or graded them successfully.
+Review changed files, QID references, correct answers, and UUIDs. Use only tools advertised in the
+current session. Editing files does not prove that PL rendered, graded, or synced them successfully.
 Do not push. Report what you created in one to three sentences, including any unresolved choice
 and that changes are local/not yet synced. Use inline code for file paths, not download links.
