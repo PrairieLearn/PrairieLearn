@@ -19,6 +19,10 @@ import { createCourseInstanceTrpcClient } from '../../trpc/courseInstance/client
 import { TRPCProvider } from '../../trpc/courseInstance/context.js';
 
 import { CopyCourseInstanceModal } from './components/CopyCourseInstanceModal.js';
+import {
+  EnrollmentAndBillingCard,
+  type EnrollmentAndBillingCardProps,
+} from './components/EnrollmentAndBillingCard.js';
 import { SelfEnrollmentSettings } from './components/SelfEnrollmentSettings.js';
 import type { SettingsFormValues } from './instructorInstanceAdminSettings.types.js';
 
@@ -40,6 +44,7 @@ interface InstructorInstanceAdminSettingsProps {
   nonPublicAssessmentsInCourseInstance: { id: string; tid: string }[];
   questionSharingEnabled: boolean;
   accessControlMigrationNeeded: boolean;
+  enrollmentAndBilling: EnrollmentAndBillingCardProps | null;
 }
 
 export function InstructorInstanceAdminSettings({
@@ -83,6 +88,7 @@ function InstructorInstanceAdminSettingsInner({
   nonPublicAssessmentsInCourseInstance,
   questionSharingEnabled,
   accessControlMigrationNeeded,
+  enrollmentAndBilling,
 }: Omit<InstructorInstanceAdminSettingsProps, 'trpcCsrfToken'>) {
   const [showCopyModal, setShowCopyModal] = useState(false);
 
@@ -268,6 +274,8 @@ function InstructorInstanceAdminSettingsInner({
               </div>
             </div>
           </div>
+
+          {enrollmentAndBilling && <EnrollmentAndBillingCard {...enrollmentAndBilling} />}
 
           <div className="card">
             <div className="card-body">
