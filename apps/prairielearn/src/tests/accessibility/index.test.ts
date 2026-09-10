@@ -336,6 +336,7 @@ const SKIP_ROUTES = [
   '/pl/public/course/:course_id/question/:question_id/generatedFilesQuestion/variant/:unsafe_variant_id/*',
   '/pl/public/course/:course_id/question/:question_id/generatedFilesQuestion/submission/:unsafe_submission_id/*',
   '/pl/public/course/:course_id/question/:question_id/submission/:unsafe_submission_id/file/*',
+  '/pl/public/course_instance/:course_instance_id/assessment/:assessment_id/file_download/*',
 
   // File upload pages for external image capture.
   '/pl/course/:course_id/question/:question_id/externalImageCapture/variant/:variant_id',
