@@ -185,6 +185,12 @@ def _encode_sympy_field(value: OperatorExpressionValue, field: str) -> psu.Sympy
 
 @overload
 def operator_expression_to_json(
+    expression: OperatorExpression,
+) -> OperatorExpressionJson: ...
+
+
+@overload
+def operator_expression_to_json(
     *,
     operator: OperatorExpressionOperator,
     limits: Literal["bounds"],
@@ -225,11 +231,12 @@ def operator_expression_to_json(
 
 
 def operator_expression_to_json(
+    expression: OperatorExpression | None = None,
     *,
-    operator: OperatorExpressionOperator,
-    limits: OperatorExpressionLimit,
-    index: sympy.Symbol | str,
-    body: OperatorExpressionValue,
+    operator: OperatorExpressionOperator | None = None,
+    limits: OperatorExpressionLimit | None = None,
+    index: sympy.Symbol | str | None = None,
+    body: OperatorExpressionValue | None = None,
     lower: OperatorExpressionValue | None = None,
     upper: OperatorExpressionValue | None = None,
     domain: OperatorExpressionValue | None = None,
@@ -238,15 +245,16 @@ def operator_expression_to_json(
     operator_latex: str | None = None,
     version: Literal[1] = 1,
 ) -> OperatorExpressionJson:
-    """Encode labelled SymPy values as a version 1 operator-expression answer.
+    """Encode an operator expression as a version 1 JSON answer.
 
-    Use this to set a structured correct answer in ``server.py``. The ``limits``
-    argument selects the required labelled fields: ``lower`` and ``upper`` for
-    ``"bounds"``, ``domain`` for ``"domain"``, or ``target`` and ``direction``
-    for ``"approach"``. Custom operators require ``operator_latex``; built-in
-    operators must omit it.
+    Pass a decoded ``expression`` to serialize it, or use labelled fields to set
+    a structured correct answer in ``server.py``. For labelled fields, ``limits``
+    selects ``lower`` and ``upper`` for ``"bounds"``, ``domain`` for ``"domain"``,
+    or ``target`` and ``direction`` for ``"approach"``. Custom operators require
+    ``operator_latex``; built-in operators must omit it.
 
     Args:
+        expression: A decoded operator expression to serialize.
         operator: The operator represented by the answer.
         limits: The answer's bounds, domain, or approach layout.
         index: The bound index symbol.
@@ -266,6 +274,58 @@ def operator_expression_to_json(
         TypeError: If a mathematical field has the wrong SymPy type.
         ValueError: If the operator, layout, or labelled fields are inconsistent.
     """
+    if expression is not None:
+        if (
+            operator is not None
+            or limits is not None
+            or index is not None
+            or body is not None
+            or lower is not None
+            or upper is not None
+            or domain is not None
+            or target is not None
+            or direction is not None
+            or operator_latex is not None
+            or version != 1
+        ):
+            raise TypeError(
+                "Pass either an operator expression or labelled fields, not both."
+            )
+        match expression["limits"]:
+            case "bounds":
+                return operator_expression_to_json(
+                    operator=expression["operator"],
+                    limits="bounds",
+                    index=expression["index"],
+                    lower=cast(OperatorExpressionValue, expression["lower"]),
+                    upper=cast(OperatorExpressionValue, expression["upper"]),
+                    body=cast(OperatorExpressionValue, expression["body"]),
+                    operator_latex=expression.get("operator_latex"),
+                )
+            case "domain":
+                return operator_expression_to_json(
+                    operator=expression["operator"],
+                    limits="domain",
+                    index=expression["index"],
+                    domain=cast(OperatorExpressionValue, expression["domain"]),
+                    body=cast(OperatorExpressionValue, expression["body"]),
+                    operator_latex=expression.get("operator_latex"),
+                )
+            case "approach":
+                return operator_expression_to_json(
+                    operator=expression["operator"],
+                    limits="approach",
+                    index=expression["index"],
+                    target=cast(OperatorExpressionValue, expression["target"]),
+                    direction=expression["direction"],
+                    body=cast(OperatorExpressionValue, expression["body"]),
+                    operator_latex=expression.get("operator_latex"),
+                )
+
+    if operator is None or limits is None or index is None or body is None:
+        raise TypeError(
+            "Labelled operator expressions require operator, limits, index, and body."
+        )
     if version != 1:
         raise ValueError(f"Unknown {version=}")
     if operator not in _OPERATORS:
