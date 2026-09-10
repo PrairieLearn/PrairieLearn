@@ -280,9 +280,9 @@
     "brotli": 318707
   },
   "scripts/esm-bundles/hydrated-components/InstructorInstanceAdminAiGrading.ts": {
-    "raw": 2382085,
-    "gzip": 733119,
-    "brotli": 610997
+    "raw": 2382356,
+    "gzip": 733148,
+    "brotli": 611017
   },
   "scripts/esm-bundles/hydrated-components/InstructorInstanceAdminBillingForm.ts": {
     "raw": 257640,
@@ -320,9 +320,9 @@
     "brotli": 224267
   },
   "scripts/esm-bundles/hydrated-components/InstanceQuestionAiGrade.ts": {
-    "raw": 1251400,
-    "gzip": 352334,
-    "brotli": 301899
+    "raw": 1251671,
+    "gzip": 352362,
+    "brotli": 301926
   },
   "scripts/esm-bundles/hydrated-components/InstructorAssessmentDownloads.ts": {
     "raw": 358944,
@@ -345,9 +345,9 @@
     "brotli": 316936
   },
   "scripts/esm-bundles/hydrated-components/AssessmentQuestionManualGrading.ts": {
-    "raw": 1604637,
-    "gzip": 451441,
-    "brotli": 370222
+    "raw": 1604908,
+    "gzip": 451470,
+    "brotli": 370228
   },
   "scripts/esm-bundles/hydrated-components/AssessmentQuestionsEditor.ts": {
     "raw": 1703599,
