@@ -61,17 +61,21 @@ describe('course refresh visibility', () => {
     ).toBeUndefined();
   });
 
-  it('offers only the latest successful sync and ignores later text-only replies', () => {
+  it('offers refresh only for the latest turn, not subsequent uses', () => {
     expect(
       courseRefreshMessageId({
         ...page,
-        messages: [
-          message,
-          { ...message, id: 'latest-sync' },
-          { id: 'other', role: 'assistant', parts: [{ type: 'text', text: 'Hello' }] },
-        ],
+        messages: [message, { ...message, id: 'latest-sync' }],
       }),
     ).toBe('latest-sync');
+    for (const role of ['user', 'assistant'] as const) {
+      expect(
+        courseRefreshMessageId({
+          ...page,
+          messages: [message, { id: 'next', role, parts: [{ type: 'text', text: 'Hello' }] }],
+        }),
+      ).toBeUndefined();
+    }
   });
 
   it('does not offer refresh for legacy markers without a timestamp', () => {

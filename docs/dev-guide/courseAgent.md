@@ -233,14 +233,20 @@ API key. The localhost mock test verifies model selection on new and resumed thr
 availability, search activity notifications, and streamed response text.
 
 Proposed changes show the total number of files changed and added/deleted lines. Review opens a modal
-with a dimmed backdrop and approval controls. All file diffs share one scrolling body, with long lines
-wrapped and no file-navigation sidebar. The conversation offers refresh only
+with a dimmed backdrop and approval controls. New files appear as ordinary code with an Added badge;
+modified files use lightly tinted change lines and a separate marker gutter. Raw Git hunk headers
+are omitted. All file diffs share one scrolling body, with long lines wrapped and no file-navigation
+sidebar. The conversation offers refresh only for the latest turn,
 after a completed reply reports a successful course sync newer than the displayed page, and only
 when its revision is not already displayed. Reloading clears the refresh prompt and immediately
-positions saved history at the bottom.
+positions saved history at the bottom. Sending another message also dismisses the previous turn's
+refresh prompt.
 
 Commentary and reasoning are not displayed. Rebuild/restart the local Worker after changing its
 Dockerfile or runner script. The Docker build context excludes local configuration and credentials.
+The publication bridge rejects the old non-blocking tool protocol, so a stale sandbox image cannot
+silently complete a turn before the instructor decides. The image must include `push-approval.mjs`;
+run the packaged continuation check for both its default approved case and `--deny` after rebuilding.
 To verify the runner against the pinned Codex binary without paid requests, set
 `COURSE_AGENT_TEST_CODEX` to that binary's absolute path when running the Worker tests; its provider
 is replaced by a localhost-only mock with a fake key.

@@ -3,6 +3,7 @@
 !scripts/
 scripts/*
 !scripts/run-codex.mjs
+!scripts/push-approval.mjs
 !scripts/course-context.mjs
 
 !skills/

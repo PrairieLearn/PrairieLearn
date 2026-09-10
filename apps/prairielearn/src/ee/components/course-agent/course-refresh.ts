@@ -12,16 +12,15 @@ export function courseRefreshMessageId({
   courseCommitSha: string | null;
 }): string | undefined {
   if (busy) return;
-  const message = messages
-    .filter((message) => message.parts.some((part) => part.type === 'data-courseSynced'))
-    .at(-1);
-  const sync = message?.parts.filter((part) => part.type === 'data-courseSynced').at(-1);
+  const message = messages.at(-1);
+  if (message?.role !== 'assistant') return;
+  const sync = message.parts.filter((part) => part.type === 'data-courseSynced').at(-1);
   if (
     sync?.type === 'data-courseSynced' &&
     Date.parse(sync.data.syncedAt) > Date.parse(pageRenderedAt) &&
     (!sync.data.commitSha || sync.data.commitSha !== courseCommitSha) &&
-    !message?.metadata?.failure &&
-    message?.parts.some((part) => part.type === 'text' && part.text.trim())
+    !message.metadata?.failure &&
+    message.parts.some((part) => part.type === 'text' && part.text.trim())
   ) {
     return message.id;
   }

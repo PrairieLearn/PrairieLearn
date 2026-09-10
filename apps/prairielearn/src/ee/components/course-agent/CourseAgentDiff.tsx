@@ -3,6 +3,7 @@ import { Modal } from 'react-bootstrap';
 
 interface DiffFile {
   path: string;
+  status: 'added' | 'modified' | 'deleted';
   additions: number;
   deletions: number;
   lines: string[];
@@ -16,6 +17,7 @@ export function parseCourseAgentDiff(diff: string): DiffFile[] {
     if (line.startsWith('diff --git ')) {
       current = {
         path: line.replace(/^diff --git .*? b\//, ''),
+        status: 'modified',
         additions: 0,
         deletions: 0,
         lines: [],
@@ -25,6 +27,8 @@ export function parseCourseAgentDiff(diff: string): DiffFile[] {
       continue;
     }
     if (!current) continue;
+    if (!inHunk && line.startsWith('new file mode ')) current.status = 'added';
+    if (!inHunk && line.startsWith('deleted file mode ')) current.status = 'deleted';
     if (!inHunk && (line.startsWith('+++ ') || line.startsWith('--- '))) {
       const name = line.slice(4);
       if (name !== '/dev/null') current.path = name.replace(/^[ab]\//, '');
@@ -45,7 +49,6 @@ export function parseCourseAgentDiff(diff: string): DiffFile[] {
 function diffLineClass(line: string) {
   if (line.startsWith('+')) return 'course-agent-diff-addition';
   if (line.startsWith('-')) return 'course-agent-diff-deletion';
-  if (line.startsWith('@@')) return 'course-agent-diff-hunk';
   return '';
 }
 
@@ -66,30 +69,73 @@ export function CourseAgentDiffSummary({ diff }: { diff: string }) {
 
 export function CourseAgentDiff({ diff }: { diff: string }) {
   return (
-    <div className="course-agent-diff border-top">
-      {parseCourseAgentDiff(diff).map((file) => (
-        <section key={file.path} aria-label={`Changes to ${file.path}`}>
-          <div className="course-agent-diff-file border-bottom px-3 py-2 font-monospace small fw-semibold text-break">
-            {file.path}
-          </div>
-          <div className="course-agent-diff-lines border-bottom">
-            <pre className="m-0 border-0 rounded-0">
-              {file.lines.length > 0 ? (
-                file.lines.map((line, index) => (
-                  // Diff lines are an immutable snapshot with no per-line state.
-                  // eslint-disable-next-line @eslint-react/no-array-index-key
-                  <span key={index} className={`course-agent-diff-line ${diffLineClass(line)}`}>
-                    {line}
-                    {'\n'}
-                  </span>
-                ))
-              ) : (
-                <span className="course-agent-diff-line">File metadata changed</span>
+    <div className="course-agent-diff p-3">
+      {parseCourseAgentDiff(diff).map((file) => {
+        const filename = file.path.split('/').at(-1)!;
+        const directory = file.path.slice(0, -filename.length);
+        return (
+          <section
+            key={file.path}
+            aria-label={`Changes to ${file.path}`}
+            className="course-agent-diff-section border rounded"
+          >
+            <div className="course-agent-diff-file border-bottom px-3 py-2 d-flex align-items-center gap-2">
+              <div className="font-monospace small text-break flex-grow-1">
+                <div className="text-muted">{directory}</div>
+                <div className="fw-semibold">{filename}</div>
+              </div>
+              {file.status !== 'modified' && (
+                <span
+                  className={`badge ${file.status === 'added' ? 'text-bg-success' : 'text-bg-danger'}`}
+                >
+                  {file.status === 'added' ? 'Added' : 'Deleted'}
+                </span>
               )}
-            </pre>
-          </div>
-        </section>
-      ))}
+            </div>
+            <div className="course-agent-diff-lines py-3">
+              <pre className="m-0 border-0 rounded-0">
+                {file.lines.length > 0 ? (
+                  file.lines.map((line, index) => {
+                    if (line.startsWith('@@')) {
+                      // Separate noncontiguous hunks without exposing Git's raw range syntax.
+                      return index > 0 ? (
+                        <span
+                          // eslint-disable-next-line @eslint-react/no-array-index-key
+                          key={index}
+                          className="course-agent-diff-separator"
+                          role="separator"
+                          aria-label="Changed section"
+                        />
+                      ) : null;
+                    }
+                    const sourceLine = /^[ +-]/.test(line);
+                    return (
+                      <span
+                        // Diff lines are an immutable snapshot with no per-line state.
+                        // eslint-disable-next-line @eslint-react/no-array-index-key
+                        key={index}
+                        className={`course-agent-diff-line ${file.status === 'added' ? '' : diffLineClass(line)}`}
+                      >
+                        {file.status !== 'added' && (
+                          <span className="course-agent-diff-marker" aria-hidden="true">
+                            {sourceLine ? line[0] : ' '}
+                          </span>
+                        )}
+                        <span className="course-agent-diff-text">
+                          {sourceLine ? line.slice(1) : line}
+                          {'\n'}
+                        </span>
+                      </span>
+                    );
+                  })
+                ) : (
+                  <span className="course-agent-diff-line">File metadata changed</span>
+                )}
+              </pre>
+            </div>
+          </section>
+        );
+      })}
     </div>
   );
 }

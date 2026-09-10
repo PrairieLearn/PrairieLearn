@@ -11,7 +11,10 @@ export async function requestPushApproval(cwd) {
   );
   const response = await fetch('http://course-agent.internal/push-sync', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Course-Agent-Approval-Protocol': 'blocking-v1',
+    },
     body: stdout,
   });
   const result = await response.json();

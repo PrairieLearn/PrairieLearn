@@ -6,110 +6,138 @@ import { createTest, expect } from './fixtures.js';
 
 const test = createTest({ courseAgentRuntime: 'fake', features: { 'course-agent': true } });
 
-test('waits for the final streamed reply before showing refresh and clears it on reload', async ({
-  page,
-  courseInstance,
-}) => {
-  const run = { conversationId: randomUUID(), runId: randomUUID(), sandboxId: 'refresh-test' };
-  let completed = false;
-  const approvalId = randomUUID();
-  let syncedAt = '';
-  await page.route('**/trpc/courseAgent.*', async (route) => {
-    const method = new URL(route.request().url()).pathname.split('.').at(-1);
-    let data: unknown;
-    if (method === 'start') {
-      data = run;
-    } else if (method === 'history') {
-      data = {
-        run,
-        activeRunId: null,
-        warning: null,
-        messages: completed
-          ? [
-              {
-                id: run.runId,
-                role: 'assistant',
-                parts: [
-                  { type: 'text', text: 'Published the complete update.', state: 'done' },
-                  { type: 'data-courseSynced', data: { approvalId, commitSha: 'new', syncedAt } },
-                ],
-              },
-            ]
-          : [],
-      };
-    } else if (method === 'list') {
-      data = { conversations: [] };
-    } else if (method === 'getApprovalMode') {
-      data = { mode: 'ask' };
-    } else if (method === 'get' || method === 'diagnostics') {
-      data = {
-        ...run,
-        activeRunId: null,
-        status: 'waiting_for_user',
-        pendingApproval: null,
-        events: [],
-      };
-    } else {
-      await route.continue();
-      return;
-    }
-    await route.fulfill({ json: { result: { data: superjson.serialize(data) } } });
-  });
-  await page.addInitScript(
-    ({ approvalId }) => {
-      const fetch = window.fetch.bind(window);
-      window.fetch = async (input, init) => {
-        const url = new URL(input instanceof Request ? input.url : String(input), location.origin);
-        if (!url.pathname.endsWith('/course_agent/stream')) return fetch(input, init);
-        return new Response(
-          new ReadableStream({
-            start(controller) {
-              const encoder = new TextEncoder();
-              const send = (event: unknown) =>
-                controller.enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`));
-              send({ type: 'start', messageId: url.searchParams.get('runId') });
-              send({ type: 'text-start', id: 'text' });
-              send({ type: 'text-delta', id: 'text', delta: 'Published the ' });
-              // Even an early marker must not expose refresh while the reply is streaming.
-              send({
-                type: 'data-courseSynced',
-                data: { approvalId, commitSha: 'new', syncedAt: new Date().toISOString() },
-              });
-              window.addEventListener(
-                'finish-test-reply',
-                () => {
-                  send({ type: 'text-delta', id: 'text', delta: 'complete update.' });
+for (const [mode, clearBy] of [
+  ['ask', 'refresh'],
+  ['always', 'reload'],
+  ['always', 'next-turn'],
+] as const) {
+  test(`shows refresh only after the final reply (${mode}, cleared by ${clearBy})`, async ({
+    page,
+    courseInstance,
+  }) => {
+    const run = { conversationId: randomUUID(), runId: randomUUID(), sandboxId: 'refresh-test' };
+    let completed = false;
+    const approvalId = randomUUID();
+    let syncedAt = '';
+    let startCount = 0;
+    await page.route('**/trpc/courseAgent.*', async (route) => {
+      const method = new URL(route.request().url()).pathname.split('.').at(-1);
+      let data: unknown;
+      if (method === 'start') {
+        data = ++startCount === 1 ? run : { ...run, runId: randomUUID() };
+      } else if (method === 'history') {
+        data = {
+          run,
+          activeRunId: null,
+          warning: null,
+          messages: completed
+            ? [
+                {
+                  id: run.runId,
+                  role: 'assistant',
+                  parts: [
+                    { type: 'text', text: 'Published the complete update.', state: 'done' },
+                    { type: 'data-courseSynced', data: { approvalId, commitSha: 'new', syncedAt } },
+                  ],
+                },
+              ]
+            : [],
+        };
+      } else if (method === 'list') {
+        data = { conversations: [] };
+      } else if (method === 'getApprovalMode') {
+        data = { mode };
+      } else if (method === 'get' || method === 'diagnostics') {
+        data = {
+          ...run,
+          activeRunId: null,
+          status: 'waiting_for_user',
+          pendingApproval: null,
+          events: [],
+        };
+      } else {
+        await route.continue();
+        return;
+      }
+      await route.fulfill({ json: { result: { data: superjson.serialize(data) } } });
+    });
+    await page.addInitScript(
+      ({ approvalId }) => {
+        const fetch = window.fetch.bind(window);
+        let streamCount = 0;
+        window.fetch = async (input, init) => {
+          const url = new URL(
+            input instanceof Request ? input.url : String(input),
+            location.origin,
+          );
+          if (!url.pathname.endsWith('/course_agent/stream')) return fetch(input, init);
+          return new Response(
+            new ReadableStream({
+              start(controller) {
+                const encoder = new TextEncoder();
+                const send = (event: unknown) =>
+                  controller.enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`));
+                send({ type: 'start', messageId: url.searchParams.get('runId') });
+                send({ type: 'text-start', id: 'text' });
+                if (++streamCount > 1) {
+                  send({ type: 'text-delta', id: 'text', delta: 'Follow-up complete.' });
                   send({ type: 'text-end', id: 'text' });
                   send({ type: 'finish' });
                   controller.enqueue(encoder.encode('data: [DONE]\n\n'));
                   controller.close();
-                },
-                { once: true },
-              );
-            },
-          }),
-          { headers: { 'content-type': 'text/event-stream' } },
-        );
-      };
-    },
-    { approvalId },
-  );
-  await page.goto(`/pl/course/${courseInstance.course_id}/course_admin/instances`);
-  const panel = page.getByRole('complementary', { name: 'Course agent panel' });
-  await panel.getByRole('textbox', { name: 'Message course agent' }).fill('Publish the update');
-  await panel.getByRole('button', { name: 'Send message', exact: true }).click();
-  await expect(panel.getByText('Published the', { exact: true })).toBeVisible();
-  const refresh = panel.getByRole('button', { name: 'Refresh course content', exact: true });
-  await expect(refresh).toHaveCount(0);
-  await page.evaluate(() => window.dispatchEvent(new Event('finish-test-reply')));
-  await expect(panel.getByText('Published the complete update.', { exact: true })).toBeVisible();
-  await expect(refresh).toBeVisible();
-  completed = true;
-  syncedAt = new Date().toISOString();
-  await refresh.click();
-  await expect(panel.getByText('Published the complete update.', { exact: true })).toBeVisible();
-  await expect(refresh).toHaveCount(0);
-});
+                  return;
+                }
+                send({ type: 'text-delta', id: 'text', delta: 'Published the ' });
+                // Even an early marker must not expose refresh while the reply is streaming.
+                send({
+                  type: 'data-courseSynced',
+                  data: { approvalId, commitSha: 'new', syncedAt: new Date().toISOString() },
+                });
+                window.addEventListener(
+                  'finish-test-reply',
+                  () => {
+                    send({ type: 'text-delta', id: 'text', delta: 'complete update.' });
+                    send({ type: 'text-end', id: 'text' });
+                    send({ type: 'finish' });
+                    controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+                    controller.close();
+                  },
+                  { once: true },
+                );
+              },
+            }),
+            { headers: { 'content-type': 'text/event-stream' } },
+          );
+        };
+      },
+      { approvalId },
+    );
+    await page.goto(`/pl/course/${courseInstance.course_id}/course_admin/instances`);
+    const panel = page.getByRole('complementary', { name: 'Course agent panel' });
+    await panel.getByRole('textbox', { name: 'Message course agent' }).fill('Publish the update');
+    await panel.getByRole('button', { name: 'Send message', exact: true }).click();
+    await expect(panel.getByText('Published the', { exact: true })).toBeVisible();
+    const refresh = panel.getByRole('button', { name: 'Refresh course content', exact: true });
+    await expect(refresh).toHaveCount(0);
+    await page.evaluate(() => window.dispatchEvent(new Event('finish-test-reply')));
+    await expect(panel.getByText('Published the complete update.', { exact: true })).toBeVisible();
+    await expect(refresh).toBeVisible();
+    completed = true;
+    syncedAt = new Date().toISOString();
+    if (clearBy === 'next-turn') {
+      await panel.getByRole('textbox', { name: 'Message course agent' }).fill('Thanks');
+      await panel.getByRole('button', { name: 'Send message', exact: true }).click();
+      await expect(panel.getByText('Follow-up complete.', { exact: true })).toBeVisible();
+    } else {
+      if (clearBy === 'refresh') await refresh.click();
+      else await page.reload();
+      await expect(
+        panel.getByText('Published the complete update.', { exact: true }),
+      ).toBeVisible();
+    }
+    await expect(refresh).toHaveCount(0);
+  });
+}
 
 test('reviews wrapped diffs in one scrolling modal and hides historical refresh after reloading', async ({
   page,
@@ -235,11 +263,15 @@ test('reviews wrapped diffs in one scrolling modal and hides historical refresh 
   const review = page.getByRole('dialog', { name: 'Proposed changes' });
   const changes = review.getByRole('region', { name: 'Changes to questions/example/info.json' });
   await expect(changes.getByText('index 1234567', { exact: false })).toHaveCount(0);
-  await expect(changes.getByText('+{"title": "Updated title"}', { exact: true })).toHaveCSS(
-    'border-radius',
-    '0px',
-  );
+  await expect(changes.getByText('{"title": "Updated title"}', { exact: true })).toBeVisible();
+  await expect(changes.locator('.course-agent-diff-addition')).toHaveCSS('border-radius', '0px');
   await expect(review.getByRole('heading', { name: 'Proposed changes' })).toBeVisible();
+  const added = review.getByRole('region', { name: 'Changes to questions/example/question.html' });
+  await expect(added.getByText('Added', { exact: true })).toBeVisible();
+  await expect(added.locator('.course-agent-diff-addition, .course-agent-diff-marker')).toHaveCount(
+    0,
+  );
+  await expect(review.getByText('@@', { exact: false })).toHaveCount(0);
   await expect(review).toHaveCSS('opacity', '1');
   await expect(review.getByRole('navigation', { name: 'Changed files' })).toHaveCount(0);
   await expect(review.getByText('Close', { exact: true })).toHaveCount(0);
@@ -269,15 +301,21 @@ test('reviews wrapped diffs in one scrolling modal and hides historical refresh 
         ),
     )
     .toBe(true);
-  await expect(body.getByText(longLine, { exact: true })).toHaveCSS('white-space', 'pre-wrap');
-  await expect(body.getByText(longLine, { exact: true })).toHaveCSS('overflow-wrap', 'anywhere');
+  await expect(body.getByText(longLine.slice(1), { exact: true })).toHaveCSS(
+    'white-space',
+    'pre-wrap',
+  );
+  await expect(body.getByText(longLine.slice(1), { exact: true })).toHaveCSS(
+    'overflow-wrap',
+    'anywhere',
+  );
   await expect(review.getByRole('button', { name: 'Approve', exact: true })).toBeVisible();
   await page.screenshot({
     path: testInfo.outputPath('course-agent-approval-mobile.png'),
     animations: 'disabled',
   });
-  await body.getByText('+<p>Step 80</p>', { exact: true }).scrollIntoViewIfNeeded();
-  await expect(body.getByText('+<p>Step 80</p>', { exact: true })).toBeInViewport();
+  await body.getByText('<p>Step 80</p>', { exact: true }).scrollIntoViewIfNeeded();
+  await expect(body.getByText('<p>Step 80</p>', { exact: true })).toBeInViewport();
   await expect(review.getByRole('heading', { name: 'Proposed changes' })).toBeInViewport();
   await expect(review.getByRole('button', { name: 'Approve', exact: true })).toBeInViewport();
   await page.setViewportSize({ width: 1440, height: 1000 });

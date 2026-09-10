@@ -11,6 +11,7 @@ const cwd = await mkdtemp(join(tmpdir(), 'course-agent-continuation-'));
 const codexHome = join(cwd, '.codex');
 process.env.OPENAI_API_KEY = 'local-mock-key';
 const requests = [];
+const denied = process.argv.includes('--deny');
 const server = createServer(async (req, res) => {
   let body = '';
   for await (const chunk of req) body += chunk;
@@ -70,7 +71,8 @@ try {
     requestApproval: async () => 'approval-test',
   });
   assert.equal(events.at(-1).method, 'course_agent/approvalPaused');
-  const continuation = { approvalId: 'approval-test', ok: true, synced: true };
+  assert.equal(requests.length, 1);
+  const continuation = { approvalId: 'approval-test', ok: !denied, denied, synced: !denied };
   await runCodex({ ...options, prompt: '', continuation });
   assert.equal(events.at(-1).method, 'turn/completed');
   assert.equal(requests.length, 2, 'Restart must not replay publication or run a hidden turn');
@@ -87,7 +89,7 @@ try {
   );
   assert.ok(inputs.some((i) => i.type === 'function_call' && i.call_id === 'call_publish'));
   process.stdout.write(
-    'PASS: the production runner resumed the pinned Codex tool continuation after process replacement, with exactly one continuation request and no external network.\n',
+    `PASS: the packaged runner resumed the ${denied ? 'denied' : 'approved'} Codex tool continuation after process replacement, with exactly one continuation request and no external network.\n`,
   );
 } finally {
   server.closeAllConnections();

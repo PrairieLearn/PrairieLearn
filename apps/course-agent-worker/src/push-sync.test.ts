@@ -25,6 +25,7 @@ describe('proxyPushSync', () => {
     const response = await proxyPushSync(
       new Request('http://course-agent.internal/push-sync', {
         method: 'POST',
+        headers: { 'X-Course-Agent-Approval-Protocol': 'blocking-v1' },
         body: JSON.stringify(payload),
       }),
       coordinator,
@@ -52,5 +53,22 @@ describe('proxyPushSync', () => {
     );
 
     expect(response.status).toBe(403);
+  });
+
+  it('rejects the legacy non-blocking tool before creating an approval', async () => {
+    const get = vi.fn();
+    const response = await proxyPushSync(
+      new Request('http://course-agent.internal/push-sync', { method: 'POST' }),
+      { get } as unknown as DurableObjectNamespace,
+      {
+        containerId: 'container-id',
+        params: { containerId: 'container-id', sandboxId: 'course-agent-conversation' },
+      },
+    );
+    expect(response.status).toBe(409);
+    expect(await response.json()).toMatchObject({
+      error: expect.stringContaining('outdated publication tool'),
+    });
+    expect(get).not.toHaveBeenCalled();
   });
 });
