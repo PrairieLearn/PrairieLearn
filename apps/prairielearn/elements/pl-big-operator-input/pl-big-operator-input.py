@@ -554,14 +554,12 @@ def _canonical(
 
 
 def _structured(config: RenderConfig, value: dict[str, Any]) -> dict[str, Any]:
-    decoded = poe.json_to_operator_expression(value)
-    if (
-        config.operator == "custom"
-        and decoded.get("operator_latex") != config.operator_latex
-    ):
-        raise ValueError(
-            "Correct answer custom operator does not match operator-latex."
-        )
+    normalized = value.copy()
+    if config.operator == "custom":
+        normalized["operator_latex"] = config.operator_latex
+    else:
+        normalized.pop("operator_latex", None)
+    decoded = poe.json_to_operator_expression(normalized)
     values = _decoded_values(config, decoded)
     return _canonical(config, values)
 
