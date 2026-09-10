@@ -12,10 +12,39 @@ import sympy
 big_operator_input = importlib.import_module("pl-big-operator-input")
 
 
+def inferred_answer(operator: str, limits: str | None = None) -> str:
+    operator = operator[:1].lower() + operator[1:]
+    if operator == "limit":
+        return "Limit(k, (k, 0, '+-'))"
+    function = {
+        "sum": "Sum",
+        "product": "Product",
+        "integral": "Integral",
+        "union": "Union",
+        "intersection": "Intersection",
+        "disjoint-union": "DisjointUnion",
+        "min": "Min",
+        "max": "Max",
+        "custom": "Custom",
+    }[operator]
+    body = "{k}" if operator in {"union", "intersection", "disjoint-union"} else "k"
+    if limits == "domain" or (
+        limits is None
+        and operator in {"union", "intersection", "disjoint-union", "min", "max"}
+    ):
+        return f"{function}({body}, (k, {{1, 2}}))"
+    return f"{function}({body}, (k, 1, 2))"
+
+
 def html(**attributes: object) -> str:
+    operator = attributes.pop("operator", None)
+    limits = attributes.pop("limits", None)
+    if operator is not None and "correct-answer" not in attributes:
+        attributes["correct-answer"] = inferred_answer(
+            str(operator), None if limits is None else str(limits)
+        )
     values = {
         "answers-name": "op",
-        **({"index-variable": "k"} if attributes.get("operator") is not None else {}),
         **attributes,
     }
     serialized = " ".join(
@@ -44,126 +73,24 @@ def prepare_parse_grade(markup: str, data: dict[str, Any]) -> None:
 
 
 class TestConfigurationUnits:
-    @pytest.mark.parametrize(
-        ("operator", "limits"),
-        [
-            ("sum", "bounds"),
-            ("product", "bounds"),
-            ("integral", "bounds"),
-            ("limit", "approach"),
-            ("union", "domain"),
-            ("intersection", "domain"),
-            ("disjoint-union", "domain"),
-            ("min", "domain"),
-            ("max", "domain"),
-        ],
-    )
-    def test_default_limit_format(self, operator: str, limits: str) -> None:
-        assert big_operator_input._config(html(operator=operator)).limits == limits
+    def test_correct_answer_is_required(self) -> None:
+        with pytest.raises(ValueError, match="is required"):
+            big_operator_input._config(html())
 
-    @pytest.mark.parametrize(
-        ("operator", "limits"),
-        [
-            ("sum", "bounds"),
-            ("sum", "domain"),
-            ("integral", "bounds"),
-            ("integral", "domain"),
-            ("union", "bounds"),
-            ("union", "domain"),
-            ("min", "bounds"),
-            ("min", "domain"),
-            ("limit", "approach"),
-        ],
-    )
-    def test_supported_limit_formats(self, operator: str, limits: str) -> None:
-        assert (
-            big_operator_input._config(html(operator=operator, limits=limits)).limits
-            == limits
-        )
-
-    @pytest.mark.parametrize(
-        ("operator", "limits"),
-        [
-            ("sum", "approach"),
-            ("integral", "approach"),
-            ("limit", "bounds"),
-            ("limit", "domain"),
-        ],
-    )
-    def test_unsupported_limit_formats(self, operator: str, limits: str) -> None:
-        with pytest.raises(ValueError, match="does not support"):
-            big_operator_input._config(html(operator=operator, limits=limits))
-
-    @pytest.mark.parametrize(
-        "operator",
-        [
-            "Sum",
-            "Product",
-            "Integral",
-            "Limit",
-            "Union",
-            "Intersection",
-            "Disjoint-union",
-            "Min",
-            "Max",
-        ],
-    )
-    def test_operator_accepts_initial_capital(self, operator: str) -> None:
-        config = big_operator_input._config(html(operator=operator))
-
-        assert config.operator == operator[:1].lower() + operator[1:]
-
-    @pytest.mark.parametrize("operator", ["SUM", "and", "Or"])
-    def test_unknown_operator_is_rejected(self, operator: str) -> None:
-        with pytest.raises(ValueError, match="Unknown operator"):
-            big_operator_input._config(html(operator=operator))
-
-    def test_custom_operator_requires_limits_latex_and_index(self) -> None:
-        with pytest.raises(ValueError, match="explicit limits"):
+    def test_custom_operator_requires_latex(self) -> None:
+        with pytest.raises(ValueError, match='"operator-latex" is required'):
             big_operator_input._config(
-                html(operator="custom", **{"operator-latex": r"\star"})
+                html(**{"correct-answer": "Custom(k, (k, 1, 2))"})
             )
-
-        with pytest.raises(ValueError, match="required"):
-            big_operator_input._config(html(operator="custom", limits="bounds"))
-
-        with pytest.raises(ValueError, match='"index-variable" is required'):
-            big_operator_input._config(
-                html(
-                    operator="custom",
-                    limits="bounds",
-                    **{"index-variable": None, "operator-latex": r"\mathbb{E}"},
-                )
-            )
-
-        config = big_operator_input._config(
-            html(
-                operator="Custom",
-                limits="bounds",
-                **{"operator-latex": r"\mathbb{E}"},
-            )
-        )
-        assert config.operator == "custom"
-        assert config.operator_latex == r"\mathbb{E}"
-
-    def test_operator_latex_does_not_select_an_answerless_operator(self) -> None:
-        with pytest.raises(ValueError, match='"operator" is required'):
-            big_operator_input._config(html(**{"operator-latex": r"\mathbb{E}"}))
 
     def test_direction_input_only_applies_to_limits(self) -> None:
         assert big_operator_input._config(html(operator="limit")).allow_direction_input
 
         fixed = big_operator_input._config(
-            html(
-                operator="limit",
-                **{
-                    "limit-direction": "from-left",
-                    "allow-limit-direction-input": "false",
-                },
-            )
+            html(operator="limit", **{"allow-limit-direction-input": "false"})
         )
         assert not fixed.allow_direction_input
-        assert fixed.direction == "from-left"
+        assert fixed.direction == "two-sided"
 
         with pytest.raises(ValueError, match="can only be used"):
             big_operator_input._config(
@@ -210,7 +137,6 @@ class TestPrepareUnits:
     ) -> None:
         markup = html(**{
             "correct-answer": correct_answer,
-            "index-variable": None,
             "variables": "Gamma",
         })
         data = question_data()
@@ -232,7 +158,6 @@ class TestPrepareUnits:
     def test_limit_direction_is_normalized(self, direction: str, expected: str) -> None:
         markup = html(**{
             "correct-answer": f"Limit(k, (k, 0, '{direction}'))",
-            "limit-direction": expected,
         })
         data = question_data()
 
@@ -253,7 +178,7 @@ class TestPrepareUnits:
     ) -> None:
         data = question_data(psu.sympy_to_json(correct_answer))
 
-        big_operator_input.prepare(html(**{"index-variable": None}), data)
+        big_operator_input.prepare(html(), data)
 
         answer = data["correct_answers"]["op"]
         decoded = pl.decode_operator_expression(answer)
@@ -291,49 +216,20 @@ class TestPrepareUnits:
         assert data["correct_answers"]["op"]["operator"] == "sum"
 
     @pytest.mark.parametrize(
-        ("correct_attribute", "correct_answer"),
-        [
-            ("Sum(k**2, (k, 1, 4))", None),
-            (None, "Sum(k**2, (k, 1, 4))"),
-        ],
-        ids=("attribute", "server-data"),
+        "attribute", ["operator", "index-variable", "limits", "limit-direction"]
     )
-    def test_correct_answer_and_operator_are_mutually_exclusive(
-        self, correct_attribute: str | None, correct_answer: str | None
-    ) -> None:
-        with pytest.raises(ValueError, match='"operator" must be omitted'):
-            big_operator_input.prepare(
-                html(operator="sum", **{"correct-answer": correct_attribute}),
-                question_data(correct_answer),
-            )
+    def test_removed_structural_attributes_are_rejected(self, attribute: str) -> None:
+        markup = (
+            f'<pl-big-operator-input answers-name="op" correct-answer="Sum(k, (k, 1, 2))" '
+            f'{attribute}="sum"></pl-big-operator-input>'
+        )
 
-    @pytest.mark.parametrize(
-        ("correct_attribute", "correct_answer"),
-        [
-            ("Sum(k**2, (k, 1, 4))", None),
-            (None, "Sum(k**2, (k, 1, 4))"),
-        ],
-        ids=("attribute", "server-data"),
-    )
-    def test_correct_answer_and_index_variable_are_mutually_exclusive(
-        self, correct_attribute: str | None, correct_answer: str | None
-    ) -> None:
-        with pytest.raises(ValueError, match='"index-variable" must be omitted'):
-            big_operator_input.prepare(
-                html(**{
-                    "correct-answer": correct_attribute,
-                    "index-variable": "k",
-                }),
-                question_data(correct_answer),
-            )
+        with pytest.raises(ValueError, match="Unknown attribute"):
+            big_operator_input.prepare(markup, question_data())
 
     def test_noninferable_correct_answer_is_rejected(self) -> None:
         with pytest.raises(ValueError, match="supported complete answer"):
             big_operator_input.prepare(html(), question_data("k**2"))
-
-    def test_noninferable_correct_answer_is_not_rescued_by_operator(self) -> None:
-        with pytest.raises(ValueError, match='"operator" must be omitted'):
-            big_operator_input.prepare(html(operator="sum"), question_data("k**2"))
 
     def test_raw_sympy_correct_answer_is_rejected(self) -> None:
         correct_answer = sympy.Sum(sympy.Symbol("k") ** 2, (sympy.Symbol("k"), 1, 4))
@@ -621,61 +517,6 @@ class TestGradeUnits:
         else:
             assert data["partial_scores"]["op"] == {"score": 1.0, "weight": 1}
 
-    @pytest.mark.parametrize(
-        "configuration",
-        [
-            {"operator": "sum"},
-            {
-                "operator": "custom",
-                "operator-latex": r"\mathbb{E}",
-                "limits": "bounds",
-            },
-        ],
-        ids=("built-in", "custom"),
-    )
-    @pytest.mark.parametrize(
-        "grading_method", [None, "none"], ids=("default", "explicit")
-    )
-    def test_answerless_input_uses_none_grading(
-        self, configuration: dict[str, str], grading_method: str | None
-    ) -> None:
-        markup = html(**configuration, **{"grading-method": grading_method})
-        data = question_data(
-            raw_submitted_answers={
-                "op-start": "1",
-                "op-end": "4",
-                "op-body": "k^2",
-            }
-        )
-
-        assert big_operator_input._config(markup, data).grading == "none"
-        prepare_parse_grade(markup, data)
-
-        assert data["submitted_answers"]["op"] is not None
-        assert "op" not in data.get("partial_scores", {})
-
-    @pytest.mark.parametrize(
-        "configuration",
-        [
-            {"operator": "sum"},
-            {
-                "operator": "custom",
-                "operator-latex": r"\mathbb{E}",
-                "limits": "bounds",
-            },
-        ],
-        ids=("built-in", "custom"),
-    )
-    @pytest.mark.parametrize("grading_method", ["exact", "equivalent", "component"])
-    def test_answerless_input_rejects_scored_grading_methods(
-        self, configuration: dict[str, str], grading_method: str
-    ) -> None:
-        with pytest.raises(ValueError, match='"grading-method" must be "none"'):
-            big_operator_input.prepare(
-                html(**configuration, **{"grading-method": grading_method}),
-                question_data(),
-            )
-
     def test_none_grading_displays_correct_answer_without_scoring(self) -> None:
         markup = html(**{
             "correct-answer": "Sum(k**2, (k, 1, 4))",
@@ -955,7 +796,6 @@ class TestCorrectAnswerRegressions:
 
     def test_symbol_named_like_sympy_function_renders_as_symbol(self) -> None:
         markup = html(**{
-            "index-variable": None,
             "correct-answer": "Sum(k**-2, (k, N))",
             "variables": "N",
             "grading-method": "exact",
@@ -974,7 +814,7 @@ class TestCorrectAnswerRegressions:
 
 class TestLifecycleRegressions:
     def test_server_correct_answer_infers_after_prepare(self) -> None:
-        markup = html(**{"index-variable": None, "grading-method": "exact"})
+        markup = html(**{"grading-method": "exact"})
         data = question_data(
             "Sum(k**2, (k, 1, 4))",
             raw_submitted_answers={
