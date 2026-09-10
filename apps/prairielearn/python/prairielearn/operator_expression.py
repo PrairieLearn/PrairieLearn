@@ -5,7 +5,7 @@ import prairielearn as pl
 ```
 """
 
-from typing import Any, Literal, NotRequired, TypedDict, cast
+from typing import Any, Literal, NotRequired, TypedDict, cast, overload
 
 import sympy
 
@@ -30,6 +30,9 @@ type OperatorExpressionLimit = Literal["bounds", "domain", "approach"]
 
 type OperatorExpressionDirection = Literal["two-sided", "from-left", "from-right"]
 """The direction of an approach operator-expression answer."""
+
+type OperatorExpressionValue = sympy.Expr | sympy.Set | str
+"""A mathematical value or parseable string stored in an operator-expression answer."""
 
 
 class _OperatorExpressionJsonBase(TypedDict):
@@ -154,7 +157,185 @@ def _decode_sympy_field(value: Any, field: str) -> sympy.Basic:
     return decoded
 
 
-def decode_operator_expression(value: object) -> OperatorExpression:
+def _coerce_sympy_field(
+    value: OperatorExpressionValue, field: str
+) -> sympy.Expr | sympy.Set:
+    if isinstance(value, str):
+        try:
+            value = psu.convert_string_to_sympy(
+                value,
+                allow_sets=True,
+                allow_extra_symbols=True,
+            )
+        except psu.BaseSympyError as exc:
+            raise ValueError(
+                f'Operator-expression field "{field}" must be a valid SymPy string.'
+            ) from exc
+    if not isinstance(value, (sympy.Expr, sympy.Set)):
+        raise TypeError(
+            f'Operator-expression field "{field}" must be a SymPy expression, set, or string.'
+        )
+    return value
+
+
+def _encode_sympy_field(value: OperatorExpressionValue, field: str) -> psu.SympyJson:
+    value = _coerce_sympy_field(value, field)
+    return psu.sympy_to_json(value, allow_sets=True)
+
+
+@overload
+def encode_operator_expression(
+    *,
+    operator: OperatorExpressionOperator,
+    limits: Literal["bounds"],
+    index: sympy.Symbol | str,
+    lower: OperatorExpressionValue,
+    upper: OperatorExpressionValue,
+    body: OperatorExpressionValue,
+    operator_latex: str | None = None,
+    version: Literal[1] = 1,
+) -> BoundsOperatorExpressionJson: ...
+
+
+@overload
+def encode_operator_expression(
+    *,
+    operator: OperatorExpressionOperator,
+    limits: Literal["domain"],
+    index: sympy.Symbol | str,
+    domain: OperatorExpressionValue,
+    body: OperatorExpressionValue,
+    operator_latex: str | None = None,
+    version: Literal[1] = 1,
+) -> DomainOperatorExpressionJson: ...
+
+
+@overload
+def encode_operator_expression(
+    *,
+    operator: OperatorExpressionOperator,
+    limits: Literal["approach"],
+    index: sympy.Symbol | str,
+    target: OperatorExpressionValue,
+    direction: OperatorExpressionDirection,
+    body: OperatorExpressionValue,
+    operator_latex: str | None = None,
+    version: Literal[1] = 1,
+) -> ApproachOperatorExpressionJson: ...
+
+
+def encode_operator_expression(
+    *,
+    operator: OperatorExpressionOperator,
+    limits: OperatorExpressionLimit,
+    index: sympy.Symbol | str,
+    body: OperatorExpressionValue,
+    lower: OperatorExpressionValue | None = None,
+    upper: OperatorExpressionValue | None = None,
+    domain: OperatorExpressionValue | None = None,
+    target: OperatorExpressionValue | None = None,
+    direction: OperatorExpressionDirection | None = None,
+    operator_latex: str | None = None,
+    version: Literal[1] = 1,
+) -> OperatorExpressionJson:
+    """Encode labelled SymPy values as a version 1 operator-expression answer.
+
+    Use this to set a structured correct answer in ``server.py``. The ``limits``
+    argument selects the required labelled fields: ``lower`` and ``upper`` for
+    ``"bounds"``, ``domain`` for ``"domain"``, or ``target`` and ``direction``
+    for ``"approach"``. Custom operators require ``operator_latex``; built-in
+    operators must omit it.
+
+    Args:
+        operator: The operator represented by the answer.
+        limits: The answer's bounds, domain, or approach layout.
+        index: The bound index symbol.
+        body: The operator body.
+        lower: The lower bound for a bounds layout.
+        upper: The upper bound for a bounds layout.
+        domain: The domain for a domain layout.
+        target: The approach target for an approach layout.
+        direction: The approach direction for an approach layout.
+        operator_latex: The required display symbol for a custom operator.
+        version: The operator-expression format version.
+
+    Returns:
+        A JSON-serializable, canonical operator-expression dictionary.
+
+    Raises:
+        TypeError: If a mathematical field has the wrong SymPy type.
+        ValueError: If the operator, layout, or labelled fields are inconsistent.
+    """
+    if version != 1:
+        raise ValueError(f"Unknown {version=}")
+    if operator not in _OPERATORS:
+        raise ValueError("Operator expression has an unsupported operator.")
+    index_value = _coerce_sympy_field(index, "index")
+    if not isinstance(index_value, sympy.Symbol):
+        raise TypeError('Operator-expression field "index" must be a SymPy symbol.')
+    if operator == "custom":
+        if not isinstance(operator_latex, str) or not operator_latex.strip():
+            raise ValueError(
+                "Custom operator expression must have a nonempty operator_latex field."
+            )
+    elif operator_latex is not None:
+        raise ValueError("Built-in operator expressions must not have operator_latex.")
+
+    result: dict[str, Any] = {
+        "_type": "operator_expression",
+        "_version": 1,
+        "operator": operator,
+        "limits": limits,
+        "index": psu.sympy_to_json(index_value, allow_sets=True),
+        "body": _encode_sympy_field(body, "body"),
+    }
+    if operator_latex is not None:
+        result["operator_latex"] = operator_latex
+
+    match limits:
+        case "bounds":
+            if lower is None or upper is None:
+                raise ValueError(
+                    'Bounds operator expressions require "lower" and "upper".'
+                )
+            if domain is not None or target is not None or direction is not None:
+                raise ValueError(
+                    'Bounds operator expressions only accept "lower" and "upper".'
+                )
+            result["lower"] = _encode_sympy_field(lower, "lower")
+            result["upper"] = _encode_sympy_field(upper, "upper")
+            return cast(BoundsOperatorExpressionJson, result)
+        case "domain":
+            if domain is None:
+                raise ValueError('Domain operator expressions require "domain".')
+            if (
+                lower is not None
+                or upper is not None
+                or target is not None
+                or direction is not None
+            ):
+                raise ValueError('Domain operator expressions only accept "domain".')
+            result["domain"] = _encode_sympy_field(domain, "domain")
+            return cast(DomainOperatorExpressionJson, result)
+        case "approach":
+            if target is None or direction is None:
+                raise ValueError(
+                    'Approach operator expressions require "target" and "direction".'
+                )
+            if lower is not None or upper is not None or domain is not None:
+                raise ValueError(
+                    'Approach operator expressions only accept "target" and "direction".'
+                )
+            if direction not in _DIRECTIONS:
+                raise ValueError("Operator expression has an unsupported direction.")
+            result["target"] = _encode_sympy_field(target, "target")
+            result["direction"] = direction
+            return cast(ApproachOperatorExpressionJson, result)
+
+
+def decode_operator_expression(
+    value: object | OperatorExpressionJson,
+) -> OperatorExpression:
     """Validate and decode a version 1 operator-expression answer.
 
     Mathematical fields in the returned dictionary are SymPy values. The
@@ -256,5 +437,7 @@ __all__ = [
     "OperatorExpressionJson",
     "OperatorExpressionLimit",
     "OperatorExpressionOperator",
+    "OperatorExpressionValue",
     "decode_operator_expression",
+    "encode_operator_expression",
 ]
