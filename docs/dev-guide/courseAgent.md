@@ -54,10 +54,12 @@ the course timezone and an activity indicator for ongoing runs. The list refresh
 seconds while the page is visible without querying the sandbox for each entry.
 
 New conversations start as "New conversation". After the first completed substantive exchange,
-PL asynchronously requests a short title from the trusted Worker using `gpt-4.1-nano` and its
-existing `OPENAI_API_KEY`. This does not start a sandbox or add messages to the Codex thread.
+PL asynchronously requests a short title from the trusted Worker using `gpt-5.6-luna` through
+the Vercel AI SDK with the Worker's existing `OPENAI_API_KEY`.
+This does not start a sandbox or add messages to the Codex thread.
 Only the first substantive user message and its response are sent (at most 4,000 characters each),
-with a 64-token output limit and provider storage disabled. Common greetings defer naming.
+with a 64-token output limit, reasoning disabled, and provider storage disabled.
+Common greetings defer naming.
 An atomic PostgreSQL claim prevents duplicate naming requests across reloads or PL processes.
 If naming fails or PL exits after claiming it, the shortened user message remains as the title;
 there are no automatic paid retries. Existing conversation titles are left unchanged.
