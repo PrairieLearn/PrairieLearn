@@ -24,6 +24,8 @@ You can start the QTI importer from either of these pages:
 
 Both entry points use the same importer. If you start from the Questions page, PrairieLearn returns you to the Questions page after the import completes. Otherwise, it returns you to the Assessments page.
 
+Assessments can only be created inside a course instance. If your course has more than one, the importer lets you choose which one receives the imported assessments. You can also import from the Questions page before the course has any course instances; quizzes in the export are then imported as standalone questions that you can add to assessments later.
+
 ## What you can import
 
 The import tool supports individual quiz exports (`.zip` files) and full course exports (`.imscc` files). It handles the following QTI 1.2 question types:
@@ -108,7 +110,7 @@ Other LMS platforms may have similar export features. Look for "QTI export" or "
 8. If an imported question conflicts with an existing question directory, choose **Replace existing question** or **Keep both**. You can also apply overwrite/rename choices to all conflicts in a section.
 9. Click the final **Import** button to create the selected content.
 
-Imported questions are written under `questions/imported/`. Imported assessments are written under the current course instance's `assessments/` directory. After import, you can edit the generated content like any other PrairieLearn question or assessment.
+Imported questions are written under `questions/imported/`. Imported assessments are written under the selected course instance's `assessments/` directory. After import, you can edit the generated content like any other PrairieLearn question or assessment.
 
 ## Tips
 

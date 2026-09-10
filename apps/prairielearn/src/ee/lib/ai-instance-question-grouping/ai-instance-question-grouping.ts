@@ -1,4 +1,4 @@
-import { type OpenAIResponsesProviderOptions, createOpenAI } from '@ai-sdk/openai';
+import { type OpenAIResponsesProviderOptions } from '@ai-sdk/openai';
 import { type LanguageModel, Output, type UserContent, generateText } from 'ai';
 import * as async from 'async';
 import { z } from 'zod';
@@ -18,6 +18,7 @@ import { buildQuestionUrls } from '../../../lib/question-render.js';
 import { createServerJob } from '../../../lib/server-jobs.js';
 import * as questionServers from '../../../question-servers/index.js';
 import { resolveAiGradingKeys } from '../ai-grading/ai-grading-credentials.js';
+import { createAiGradingOpenAI } from '../ai-grading/ai-grading-openai-provider.js';
 import {
   generateSubmissionContent,
   selectInstanceQuestionsForAssessmentQuestion,
@@ -201,7 +202,7 @@ export async function aiInstanceQuestionGrouping({
     throw new HttpStatusError(403, 'AI submission grouping requires an OpenAI API key.');
   }
 
-  const openAi = createOpenAI({
+  const openAi = createAiGradingOpenAI({
     apiKey: resolvedKeys.openai.apiKey,
     organization: resolvedKeys.openai.organization ?? undefined,
   });
