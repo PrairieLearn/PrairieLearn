@@ -7,18 +7,33 @@ const sandbox = vi.hoisted(() => ({
   restoreBackup: vi.fn(async () => {}),
   getState: vi.fn(async () => ({ status: 'running' })),
   setOutboundByHost: vi.fn(async () => {}),
-  exec: vi.fn(async (command: string) => ({
-    success: true,
-    stdout:
-      command === 'git remote get-url origin'
-        ? 'https://x-access-token:proxy-read@github.com/PrairieLearn/test.git'
-        : command === 'git branch --show-current'
-          ? 'master'
-          : command.includes('test -d')
-            ? 'yes'
-            : '',
-    stderr: '',
-  })),
+  exec: vi.fn(
+    async (command: string, options?: { onOutput?: (stream: string, data: string) => void }) => {
+      if (command.startsWith('node ')) {
+        options?.onOutput?.(
+          'stdout',
+          `${JSON.stringify({
+            method: 'item/completed',
+            params: {
+              item: { type: 'agentMessage', id: 'answer', phase: 'final_answer', text: 'Hello.' },
+            },
+          })}\n`,
+        );
+      }
+      return {
+        success: true,
+        stdout:
+          command === 'git remote get-url origin'
+            ? 'https://x-access-token:proxy-read@github.com/PrairieLearn/test.git'
+            : command === 'git branch --show-current'
+              ? 'master'
+              : command.includes('test -d')
+                ? 'yes'
+                : '',
+        stderr: '',
+      };
+    },
+  ),
 }));
 vi.mock('@cloudflare/sandbox', () => ({
   Sandbox: vi.fn(),

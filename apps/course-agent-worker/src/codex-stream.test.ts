@@ -38,6 +38,53 @@ describe('Codex app-server notifications', () => {
     expect(stream.response).toBe('');
   });
 
+  it('retains the last user-visible message when a completed turn has no final answer', () => {
+    const stream = new CodexStream();
+    stream.consume({
+      method: 'item/started',
+      params: {
+        item: { type: 'agentMessage', id: 'greeting', phase: 'commentary', text: '' },
+      },
+    });
+    stream.consume({
+      method: 'item/agentMessage/delta',
+      params: { itemId: 'greeting', delta: 'Hi.' },
+    });
+    expect(
+      stream.consume({ method: 'turn/completed', params: { turn: { status: 'completed' } } }),
+    ).toEqual([{ type: 'assistant.delta', data: { text: 'Hi.' } }]);
+    expect(stream.response).toBe('Hi.');
+  });
+
+  it('does not replace a final answer with commentary or invent text for an empty turn', () => {
+    const stream = new CodexStream();
+    const completed = { method: 'turn/completed', params: { turn: { status: 'completed' } } };
+    expect(stream.consume(completed)).toEqual([]);
+    expect(stream.response).toBe('');
+    stream.consume({
+      method: 'item/completed',
+      params: {
+        item: { type: 'agentMessage', id: 'progress', phase: 'commentary', text: 'Checking.' },
+      },
+    });
+    expect(
+      stream.consume({ method: 'turn/completed', params: { turn: { status: 'failed' } } }),
+    ).toEqual([]);
+    stream.consume({
+      method: 'item/completed',
+      params: {
+        item: {
+          type: 'agentMessage',
+          id: 'answer',
+          phase: 'final_answer',
+          text: 'Here is the answer.',
+        },
+      },
+    });
+    expect(stream.consume(completed)).toEqual([]);
+    expect(stream.response).toBe('Here is the answer.');
+  });
+
   it('keeps tool lifecycle and usage in their existing public contracts', () => {
     const stream = new CodexStream();
     expect(
