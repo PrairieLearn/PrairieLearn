@@ -202,7 +202,7 @@ def generate(data):
 
 PrairieLearn accepts string and SymPy JSON representations of a single-variable `sympy.Sum`, `sympy.Product`, or `sympy.Integral`, as well as `sympy.Limit`. A two-item integral tuple creates a domain layout, while a three-item tuple creates a bounds layout.
 
-Use `pl.encode_operator_expression()` to construct a canonical answer from labelled SymPy values or strings. This is especially useful for custom operators, which cannot be represented by a SymPy expression alone:
+Use `pl.operator_expression_to_json()` to construct a canonical answer from labelled SymPy values or strings. This is especially useful for custom operators, which cannot be represented by a SymPy expression alone:
 
 ```html title="question.html"
 <pl-big-operator-input
@@ -219,7 +219,7 @@ import sympy
 
 
 def generate(data):
-    data["correct_answers"]["evaluation"] = pl.encode_operator_expression(
+    data["correct_answers"]["evaluation"] = pl.operator_expression_to_json(
         operator="custom",
         operator_latex=r"\operatorname{eval}",
         limits="approach",
@@ -271,7 +271,7 @@ When direction input is enabled, the student's raw selection is stored as `<answ
 
 ### Accessing structured answers in `server.py`
 
-Use [`pl.decode_operator_expression()`][prairielearn.operator_expression.decode_operator_expression] to validate the combined answer and decode its mathematical fields to SymPy values. Check the `limits` field before accessing layout-specific fields:
+Use [`pl.json_to_operator_expression()`][prairielearn.operator_expression.json_to_operator_expression] to validate the combined answer and decode its mathematical fields to SymPy values. Check the `limits` field before accessing layout-specific fields:
 
 ```python title="server.py"
 import prairielearn as pl
@@ -282,8 +282,8 @@ def grade(data):
     if not isinstance(submitted_json, dict):
         return
 
-    submitted = pl.decode_operator_expression(submitted_json)
-    correct = pl.decode_operator_expression(data["correct_answers"]["total"])
+    submitted = pl.json_to_operator_expression(submitted_json)
+    correct = pl.json_to_operator_expression(data["correct_answers"]["total"])
 
     if submitted["limits"] == "bounds" and correct["limits"] == "bounds":
         submitted_body = submitted["body"]

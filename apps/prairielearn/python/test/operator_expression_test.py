@@ -37,7 +37,7 @@ def bounds_answer(**updates: Any) -> dict[str, Any]:
 
 
 def test_decode_bounds_operator_expression_and_narrow_type() -> None:
-    decoded = pl.decode_operator_expression(bounds_answer())
+    decoded = pl.json_to_operator_expression(bounds_answer())
 
     assert decoded["index"] == sympy.Symbol("k")
     assert decoded["body"] == sympy.Symbol("k") ** 2
@@ -59,7 +59,7 @@ def test_decode_domain_operator_expression_with_sets() -> None:
         "body": sympy_json(sympy.FiniteSet(k)),
     }
 
-    decoded = pl.decode_operator_expression(answer)
+    decoded = pl.json_to_operator_expression(answer)
 
     assert_type(decoded, pl.OperatorExpression)
     assert decoded["limits"] == "domain"
@@ -81,7 +81,7 @@ def test_decode_approach_operator_expression() -> None:
         "body": sympy_json(1 / x),
     }
 
-    decoded = pl.decode_operator_expression(answer)
+    decoded = pl.json_to_operator_expression(answer)
 
     assert decoded["limits"] == "approach"
     assert_type(decoded, ApproachOperatorExpression)
@@ -91,7 +91,7 @@ def test_decode_approach_operator_expression() -> None:
 
 def test_decode_custom_operator_expression() -> None:
     k = sympy.Symbol("k", positive=True)
-    f: sympy.Expr = sympy.Function("f")(k)  # type: ignore
+    f: sympy.Expr = sympy.Function("f")(k)
     answer = bounds_answer(
         operator="custom",
         operator_latex=r"\mathbb{E}",
@@ -99,7 +99,7 @@ def test_decode_custom_operator_expression() -> None:
         body=sympy_json(f),
     )
 
-    decoded = pl.decode_operator_expression(answer)
+    decoded = pl.json_to_operator_expression(answer)
 
     assert "operator_latex" in decoded
     assert decoded.get("operator_latex") == r"\mathbb{E}"
@@ -109,9 +109,9 @@ def test_decode_custom_operator_expression() -> None:
 
 def test_encode_custom_bounds_operator_expression() -> None:
     k = sympy.Symbol("k", positive=True)
-    body: sympy.Expr = sympy.Function("f")(k)  # type: ignore
+    body: sympy.Expr = sympy.Function("f")(k)
 
-    encoded = pl.encode_operator_expression(
+    encoded = pl.operator_expression_to_json(
         operator="custom",
         operator_latex=r"\mathbb{E}",
         limits="bounds",
@@ -122,15 +122,15 @@ def test_encode_custom_bounds_operator_expression() -> None:
     )
 
     assert_type(encoded, BoundsOperatorExpressionJson)
-    decoded = pl.decode_operator_expression(encoded)
+    decoded = pl.json_to_operator_expression(encoded)
     assert decoded["operator"] == "custom"
     assert decoded.get("operator_latex") == r"\mathbb{E}"
     assert decoded["index"] == k
     assert decoded["body"] == body
 
 
-def test_encode_operator_expression_accepts_strings() -> None:
-    encoded = pl.encode_operator_expression(
+def test_operator_expression_to_json_accepts_strings() -> None:
+    encoded = pl.operator_expression_to_json(
         operator="sum",
         limits="bounds",
         index="k",
@@ -140,7 +140,7 @@ def test_encode_operator_expression_accepts_strings() -> None:
     )
 
     assert_type(encoded, BoundsOperatorExpressionJson)
-    decoded = pl.decode_operator_expression(encoded)
+    decoded = pl.json_to_operator_expression(encoded)
     assert decoded["limits"] == "bounds"
     assert decoded["index"] == sympy.Symbol("k")
     assert decoded["lower"] == 1
@@ -150,7 +150,7 @@ def test_encode_operator_expression_accepts_strings() -> None:
 
 def test_encode_domain_operator_expression() -> None:
     k = sympy.Symbol("k")
-    encoded = pl.encode_operator_expression(
+    encoded = pl.operator_expression_to_json(
         operator="union",
         limits="domain",
         index=k,
@@ -159,14 +159,14 @@ def test_encode_domain_operator_expression() -> None:
     )
 
     assert_type(encoded, DomainOperatorExpressionJson)
-    decoded = pl.decode_operator_expression(encoded)
+    decoded = pl.json_to_operator_expression(encoded)
     assert decoded["limits"] == "domain"
     assert decoded["domain"] == sympy.FiniteSet(1, 2)
 
 
 def test_encode_approach_operator_expression() -> None:
     x = sympy.Symbol("x")
-    encoded = pl.encode_operator_expression(
+    encoded = pl.operator_expression_to_json(
         operator="limit",
         limits="approach",
         index=x,
@@ -176,7 +176,7 @@ def test_encode_approach_operator_expression() -> None:
     )
 
     assert_type(encoded, ApproachOperatorExpressionJson)
-    decoded = pl.decode_operator_expression(encoded)
+    decoded = pl.json_to_operator_expression(encoded)
     assert decoded["limits"] == "approach"
     assert decoded["direction"] == "from-right"
 
@@ -192,7 +192,7 @@ def test_encode_approach_operator_expression() -> None:
 )
 def test_encode_rejects_inconsistent_fields(kwargs: dict[str, Any], match: str) -> None:
     with pytest.raises(ValueError, match=match):
-        cast(Any, pl.encode_operator_expression)(**{
+        cast(Any, pl.operator_expression_to_json)(**{
             "operator": "sum",
             "limits": "bounds",
             "index": sympy.Symbol("k"),
@@ -207,7 +207,7 @@ def test_encode_rejects_inconsistent_fields(kwargs: dict[str, Any], match: str) 
 def test_decode_preserves_symbols_named_like_imaginary_units(
     value: sympy.Basic,
 ) -> None:
-    decoded = pl.decode_operator_expression(bounds_answer(body=sympy_json(value)))
+    decoded = pl.json_to_operator_expression(bounds_answer(body=sympy_json(value)))
 
     assert decoded["body"] == value
 
@@ -216,7 +216,7 @@ def test_decode_does_not_mutate_input() -> None:
     answer = bounds_answer()
     original = copy.deepcopy(answer)
 
-    pl.decode_operator_expression(answer)
+    pl.json_to_operator_expression(answer)
 
     assert answer == original
 
@@ -224,7 +224,7 @@ def test_decode_does_not_mutate_input() -> None:
 @pytest.mark.parametrize("value", [None, "", [], 1])
 def test_decode_rejects_non_dictionary(value: object) -> None:
     with pytest.raises(TypeError, match="must be a dictionary"):
-        pl.decode_operator_expression(value)
+        pl.json_to_operator_expression(value)
 
 
 @pytest.mark.parametrize(
@@ -238,7 +238,7 @@ def test_decode_rejects_non_dictionary(value: object) -> None:
 )
 def test_decode_rejects_invalid_metadata(updates: dict[str, Any], match: str) -> None:
     with pytest.raises(ValueError, match=match):
-        pl.decode_operator_expression(bounds_answer(**updates))
+        pl.json_to_operator_expression(bounds_answer(**updates))
 
 
 @pytest.mark.parametrize("key", ["index", "lower", "upper", "body"])
@@ -247,17 +247,17 @@ def test_decode_rejects_missing_mathematical_field(key: str) -> None:
     answer.pop(key)
 
     with pytest.raises(ValueError, match="exactly the fields required"):
-        pl.decode_operator_expression(answer)
+        pl.json_to_operator_expression(answer)
 
 
 def test_decode_rejects_extra_field() -> None:
     with pytest.raises(ValueError, match="exactly the fields required"):
-        pl.decode_operator_expression(bounds_answer(extra="value"))
+        pl.json_to_operator_expression(bounds_answer(extra="value"))
 
 
 def test_decode_rejects_invalid_sympy_json() -> None:
     with pytest.raises(ValueError, match='field "body" must be'):
-        pl.decode_operator_expression(bounds_answer(body={"_type": "sympy"}))
+        pl.json_to_operator_expression(bounds_answer(body={"_type": "sympy"}))
 
 
 def test_decode_normalizes_invalid_sympy_expression_error() -> None:
@@ -268,12 +268,14 @@ def test_decode_normalizes_invalid_sympy_expression_error() -> None:
     }
 
     with pytest.raises(ValueError, match='field "body" contains invalid'):
-        pl.decode_operator_expression(bounds_answer(body=invalid))
+        pl.json_to_operator_expression(bounds_answer(body=invalid))
 
 
 def test_decode_rejects_non_symbol_index() -> None:
     with pytest.raises(TypeError, match='field "index" must be a SymPy symbol'):
-        pl.decode_operator_expression(bounds_answer(index=sympy_json(sympy.Integer(1))))
+        pl.json_to_operator_expression(
+            bounds_answer(index=sympy_json(sympy.Integer(1)))
+        )
 
 
 def test_decode_rejects_invalid_approach_direction() -> None:
@@ -290,7 +292,7 @@ def test_decode_rejects_invalid_approach_direction() -> None:
     }
 
     with pytest.raises(ValueError, match="unsupported direction"):
-        pl.decode_operator_expression(answer)
+        pl.json_to_operator_expression(answer)
 
 
 @pytest.mark.parametrize("operator_latex", [None, ""])
@@ -300,9 +302,9 @@ def test_decode_requires_custom_operator_latex(operator_latex: str | None) -> No
         answer["operator_latex"] = operator_latex
 
     with pytest.raises(ValueError, match="operator_latex"):
-        pl.decode_operator_expression(answer)
+        pl.json_to_operator_expression(answer)
 
 
 def test_decode_rejects_operator_latex_for_builtin_operator() -> None:
     with pytest.raises(ValueError, match="exactly the fields required"):
-        pl.decode_operator_expression(bounds_answer(operator_latex=r"\sum"))
+        pl.json_to_operator_expression(bounds_answer(operator_latex=r"\sum"))
