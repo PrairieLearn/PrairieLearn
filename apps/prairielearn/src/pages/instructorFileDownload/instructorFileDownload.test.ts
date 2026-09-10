@@ -6,7 +6,10 @@ import * as path from 'node:path';
 import express, { type ErrorRequestHandler } from 'express';
 import { afterAll, assert, beforeAll, describe, it, vi } from 'vitest';
 
+import { AugmentedError } from '@prairielearn/error';
 import { withServer } from '@prairielearn/express-test-utils';
+
+import cors from '../../middlewares/cors.js';
 
 import router from './instructorFileDownload.js';
 
@@ -34,7 +37,9 @@ function createApp(navPage = 'course_admin', hasViewPermission = true) {
   });
   app.use('/file_download', router);
   app.use(((err, _req, res, _next) => {
-    res.status((err as Error & { status?: number }).status ?? 500).send('<h1>Error</h1>');
+    res
+      .status((err as Error & { status?: number }).status ?? 500)
+      .send(err instanceof AugmentedError ? err.info : '<h1>Error</h1>');
   }) satisfies ErrorRequestHandler);
   return app;
 }
@@ -48,6 +53,8 @@ async function assertErrorResponse(response: Response, status: number) {
   assert.equal(response.status, status);
   assert.isNull(response.headers.get('Content-Disposition'));
   assert.isNull(response.headers.get('Content-Range'));
+  assert.isNull(response.headers.get('Accept-Ranges'));
+  assert.isNull(response.headers.get('Last-Modified'));
   assert.equal(response.headers.get('Content-Type'), 'text/html; charset=utf-8');
   assert.equal(await response.text(), '<h1>Error</h1>');
 }
@@ -98,23 +105,23 @@ describe('Instructor file downloads', () => {
   });
 
   it.each([
-    ['course_admin', '../outside.R', 500],
-    ['course_admin', 'questions/test/question/.Rprofile', 500],
-    ['course_admin', 'questionSources/test/question/.Rprofile', 404],
-    ['instance_admin', 'courseInstances/Fa18/assessments/HW1/.Rprofile', 500],
-    ['question', 'questions/test/question/../../../.Rprofile', 500],
-    ['question', 'questions/test/question/.course-link', 404],
-    ['course_admin', '.config/.git/config', 404],
-    ['course_admin', '.repository-link/config', 404],
-    ['course_admin', '.outside-link', 404],
-    ['course_admin', '.missing', 404],
-    ['course_admin', '.config', 404],
-    ['course_admin', 'submission.R/child', 404],
-  ] as const)('rejects %s: %s', async (navPage, filename, status) => {
+    ['course_admin', '../outside.R'],
+    ['course_admin', 'questions/test/question/.Rprofile'],
+    ['course_admin', 'questionSources/test/question/.Rprofile'],
+    ['instance_admin', 'courseInstances/Fa18/assessments/HW1/.Rprofile'],
+    ['question', 'questions/test/question/../../../.Rprofile'],
+    ['question', 'questions/test/question/.course-link'],
+    ['course_admin', '.config/.git/config'],
+    ['course_admin', '.repository-link/config'],
+    ['course_admin', '.outside-link'],
+    ['course_admin', '.missing'],
+    ['course_admin', '.config'],
+    ['course_admin', 'submission.R/child'],
+  ])('rejects %s: %s', async (navPage, filename) => {
     await withServer(createApp(navPage), async ({ url }) => {
       await assertErrorResponse(
         await fetch(`${downloadUrl(url, filename)}?attachment=error.pdf&type=application/pdf`),
-        status,
+        404,
       );
     });
   });
@@ -169,29 +176,38 @@ describe('Instructor file downloads', () => {
     });
   });
 
-  it('supports previews and ranges, and clears download headers on range errors', async () => {
-    await withServer(createApp(), async ({ url }) => {
-      const fileUrl = downloadUrl(url, '.Rprofile');
-      const preview = await fetch(`${fileUrl}?type=text/plain`);
-      assert.equal(preview.status, 200);
-      assert.isNull(preview.headers.get('Content-Disposition'));
-      assert.equal(preview.headers.get('Content-Type'), 'text/plain; charset=utf-8');
-      assert.equal(await preview.text(), contents);
+  it.each([false, true])(
+    'supports previews and ranges, and clears download headers on range errors (CORS: %s)',
+    async (withCors) => {
+      const app = express();
+      if (withCors) app.use(cors);
+      app.use(createApp());
+      await withServer(app, async ({ url }) => {
+        const fileUrl = downloadUrl(url, '.Rprofile');
+        const preview = await fetch(`${fileUrl}?type=text/plain`);
+        assert.equal(preview.status, 200);
+        assert.isNull(preview.headers.get('Content-Disposition'));
+        assert.equal(preview.headers.get('Content-Type'), 'text/plain; charset=utf-8');
+        assert.equal(await preview.text(), contents);
 
-      const partial = await fetch(fileUrl, { headers: { Range: 'bytes=0-6' } });
-      assert.equal(partial.status, 206);
-      assert.equal(
-        partial.headers.get('Content-Range'),
-        `bytes 0-6/${Buffer.byteLength(contents)}`,
-      );
-      assert.equal(await partial.text(), contents.slice(0, 7));
+        const partial = await fetch(fileUrl, { headers: { Range: 'bytes=0-6' } });
+        assert.equal(partial.status, 206);
+        assert.equal(
+          partial.headers.get('Content-Range'),
+          `bytes 0-6/${Buffer.byteLength(contents)}`,
+        );
+        assert.equal(await partial.text(), contents.slice(0, 7));
 
-      await assertErrorResponse(
-        await fetch(`${fileUrl}?attachment=error.pdf&type=application/pdf`, {
+        const rangeError = await fetch(`${fileUrl}?attachment=error.pdf&type=application/pdf`, {
           headers: { Range: 'bytes=10000-' },
-        }),
-        416,
-      );
-    });
-  });
+        });
+        await assertErrorResponse(rangeError, 416);
+        assert.notEqual(rangeError.headers.get('ETag'), preview.headers.get('ETag'));
+        assert.equal(
+          rangeError.headers.get('Cache-Control'),
+          withCors ? preview.headers.get('Cache-Control') : null,
+        );
+      });
+    },
+  );
 });

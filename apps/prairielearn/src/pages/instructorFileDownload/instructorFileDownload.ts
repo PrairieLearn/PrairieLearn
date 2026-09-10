@@ -5,7 +5,7 @@ import * as path from 'node:path';
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 
-import { HttpStatusError } from '@prairielearn/error';
+import { AugmentedError, HttpStatusError } from '@prairielearn/error';
 import { contains } from '@prairielearn/path-utils';
 
 import { getPaths } from '../../lib/instructorFiles.js';
@@ -18,8 +18,9 @@ router.get(
     if (!res.locals.authz_data.has_course_permission_view) {
       throw new HttpStatusError(403, 'Access denied (must be course viewer)');
     }
-    const paths = getPaths(req.params[0], res.locals);
+    const originalCacheControl = res.getHeader('Cache-Control');
     try {
+      const paths = getPaths(req.params[0], res.locals);
       // Resolve the boundaries too: a context can itself live beneath a symlink.
       const [coursePath, rootPath, workingPath, invalidRootPaths] = await Promise.all([
         fs.realpath(paths.coursePath),
@@ -79,18 +80,27 @@ router.get(
         return;
       }
 
-      // Let the error page render as HTML instead of being treated as a download.
+      // Remove file headers while preserving upstream cache restrictions for the error page.
       res.removeHeader('Content-Disposition');
       res.removeHeader('Content-Type');
       res.removeHeader('Content-Length');
       res.removeHeader('Content-Range');
+      res.removeHeader('Accept-Ranges');
+      res.removeHeader('ETag');
+      res.removeHeader('Last-Modified');
+      if (originalCacheControl === undefined) {
+        res.removeHeader('Cache-Control');
+      } else {
+        res.setHeader('Cache-Control', originalCacheControl);
+      }
       if (
-        err instanceof Error &&
-        'code' in err &&
-        (err.code === 'ENOENT' ||
-          err.code === 'ENOTDIR' ||
-          err.code === 'EISDIR' ||
-          err.code === 'ELOOP')
+        err instanceof AugmentedError ||
+        (err instanceof Error &&
+          'code' in err &&
+          (err.code === 'ENOENT' ||
+            err.code === 'ENOTDIR' ||
+            err.code === 'EISDIR' ||
+            err.code === 'ELOOP'))
       ) {
         throw new HttpStatusError(404, 'Not Found');
       }
