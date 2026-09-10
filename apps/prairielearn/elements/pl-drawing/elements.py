@@ -1,3 +1,4 @@
+# ruff:file-ignore[unused-static-method-argument]
 # pyright: reportUnknownParameterType=false
 
 import json
