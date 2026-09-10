@@ -554,7 +554,7 @@ def _canonical(
 
 
 def _structured(config: RenderConfig, value: dict[str, Any]) -> dict[str, Any]:
-    decoded = poe.decode_operator_expression(value)
+    decoded = poe.json_to_operator_expression(value)
     if (
         config.operator == "custom"
         and decoded.get("operator_latex") != config.operator_latex
@@ -729,7 +729,7 @@ def _formatted_answer(config: RenderConfig, source: str) -> dict[str, Any] | Non
 
 
 def _validate_correct(config: RenderConfig, correct: dict[str, Any]) -> dict[str, Any]:
-    decoded = poe.decode_operator_expression(correct)
+    decoded = poe.json_to_operator_expression(correct)
     _validate_component_values(config, _decoded_values(config, decoded))
     return correct
 
@@ -1177,7 +1177,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
 
 
 def _values(config: RenderConfig, structured: dict[str, Any]) -> dict[str, sympy.Basic]:
-    return _decoded_values(config, poe.decode_operator_expression(structured))
+    return _decoded_values(config, poe.json_to_operator_expression(structured))
 
 
 def _construct(

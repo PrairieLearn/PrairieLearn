@@ -184,7 +184,7 @@ def _encode_sympy_field(value: OperatorExpressionValue, field: str) -> psu.Sympy
 
 
 @overload
-def encode_operator_expression(
+def operator_expression_to_json(
     *,
     operator: OperatorExpressionOperator,
     limits: Literal["bounds"],
@@ -198,7 +198,7 @@ def encode_operator_expression(
 
 
 @overload
-def encode_operator_expression(
+def operator_expression_to_json(
     *,
     operator: OperatorExpressionOperator,
     limits: Literal["domain"],
@@ -211,7 +211,7 @@ def encode_operator_expression(
 
 
 @overload
-def encode_operator_expression(
+def operator_expression_to_json(
     *,
     operator: OperatorExpressionOperator,
     limits: Literal["approach"],
@@ -224,7 +224,7 @@ def encode_operator_expression(
 ) -> ApproachOperatorExpressionJson: ...
 
 
-def encode_operator_expression(
+def operator_expression_to_json(
     *,
     operator: OperatorExpressionOperator,
     limits: OperatorExpressionLimit,
@@ -333,7 +333,7 @@ def encode_operator_expression(
             return cast(ApproachOperatorExpressionJson, result)
 
 
-def decode_operator_expression(
+def json_to_operator_expression(
     value: object | OperatorExpressionJson,
 ) -> OperatorExpression:
     """Validate and decode a version 1 operator-expression answer.
@@ -438,6 +438,6 @@ __all__ = [
     "OperatorExpressionLimit",
     "OperatorExpressionOperator",
     "OperatorExpressionValue",
-    "decode_operator_expression",
-    "encode_operator_expression",
+    "json_to_operator_expression",
+    "operator_expression_to_json",
 ]
