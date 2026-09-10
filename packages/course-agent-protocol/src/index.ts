@@ -225,7 +225,8 @@ export const CourseAgentPushDecisionRequestSchema = z.object({
   conversationId: z.uuid(),
   sandboxId: z.string(),
   approvalId: z.uuid(),
-  decision: z.enum(['publishing', 'denied', 'completed', 'failed']),
+  decision: z.enum(['pending', 'publishing', 'denied', 'completed', 'failed']),
+  phase: z.enum(['publishing', 'syncing']).optional(),
   result: z.record(z.string(), z.unknown()).nullable().default(null),
 });
 

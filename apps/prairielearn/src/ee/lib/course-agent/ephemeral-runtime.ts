@@ -16,7 +16,8 @@ import { generateSignedToken } from '@prairielearn/signed-token';
 import { config } from '../../../lib/config.js';
 import { persistCourseAgentSnapshot } from '../../../models/course-agent.js';
 
-import { publicCourseAgentStream } from './public-events.js';
+import { publicCourseAgentEvent, publicCourseAgentStream } from './public-events.js';
+import { recoveringCourseAgentStream } from './recovering-stream.js';
 import { getCourseAgentStreamContext, getCourseAgentStreamId } from './redis.js';
 import { courseAgentUIStream } from './ui-stream.js';
 
@@ -143,24 +144,9 @@ export async function startEphemeralCourseAgentRun({
 }
 
 async function startCourseAgentEventRelay(identity: Identity & { runId: string }) {
-  const capability = generateSignedToken(
-    { type: 'course-agent-inspect', ...identity, expiresAt: expiresAt() },
-    capabilitySecret(),
-  );
-  const response = await fetchWorker('/v1/stream', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ capability, ...identity }),
-  });
-  const body = response.body;
-  if (!response.ok || !body) {
-    throw new Error(`Course-agent Worker stream failed (${response.status})`);
-  }
   const streamContext = await getCourseAgentStreamContext();
   await streamContext.createNewResumableStream(getCourseAgentStreamId(identity), () =>
-    body
-      .pipeThrough(new TextDecoderStream())
-      .pipeThrough(publicCourseAgentStream())
+    streamEphemeralCourseAgentEvents(identity)
       .pipeThrough(courseAgentUIStream(identity.runId))
       .pipeThrough(new JsonToSseTransformStream())
       .pipeThrough(
@@ -175,6 +161,37 @@ async function startCourseAgentEventRelay(identity: Identity & { runId: string }
         }),
       ),
   );
+}
+
+export function streamEphemeralCourseAgentEvents(identity: Identity & { runId: string }) {
+  return recoveringCourseAgentStream({
+    runId: identity.runId,
+    async connect() {
+      const capability = generateSignedToken(
+        { type: 'course-agent-inspect', ...identity, expiresAt: expiresAt() },
+        capabilitySecret(),
+      );
+      const response = await fetchWorker('/v1/stream', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ capability, ...identity }),
+      });
+      if (!response.ok || !response.body) {
+        throw new Error(`Course-agent Worker stream failed (${response.status})`);
+      }
+      return response.body
+        .pipeThrough(new TextDecoderStream())
+        .pipeThrough(publicCourseAgentStream());
+    },
+    async snapshot() {
+      const current = await getEphemeralCourseAgentSnapshot(identity);
+      await persistCourseAgentSnapshot({ snapshot: current, runId: identity.runId });
+      return {
+        ...current,
+        events: current.events.flatMap((event) => publicCourseAgentEvent(event) ?? []),
+      };
+    },
+  });
 }
 
 export async function getEphemeralCourseAgentSnapshot(identity: Identity) {
@@ -199,10 +216,12 @@ export async function respondToCourseAgentPushApproval({
   approvalId,
   decision,
   result,
+  phase,
   ...identity
 }: Identity & {
   approvalId: string;
-  decision: 'publishing' | 'denied' | 'completed' | 'failed';
+  decision: 'pending' | 'publishing' | 'denied' | 'completed' | 'failed';
+  phase?: 'publishing' | 'syncing';
   result?: Record<string, unknown> | null;
 }) {
   if (config.courseAgentRuntime === 'fake') return { accepted: true as const };
@@ -215,6 +234,7 @@ export async function respondToCourseAgentPushApproval({
     ...identity,
     approvalId,
     decision,
+    phase,
     result: result ?? null,
   });
   const response = await fetchWorker('/v1/push-decisions', {
@@ -275,6 +295,14 @@ function getFakeSnapshot(identity: Identity) {
     sandboxId: identity.sandboxId,
     activeRunId: conversation.activeRunId,
     status: conversation.status,
+    conversationState: conversation.activeRunId
+      ? 'working'
+      : conversation.error
+        ? 'failed'
+        : 'waiting_for_user',
+    sandboxState: 'ready',
+    revision: conversation.events.length,
+    sandboxGeneration: 1,
     response: conversation.response,
     error: conversation.error,
     events: conversation.events,

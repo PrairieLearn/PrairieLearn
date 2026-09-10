@@ -5,8 +5,15 @@ import { createInterface } from 'node:readline';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import { buildCourseManifest, formatCourseContext } from './course-context.mjs';
+import { requestPushApproval } from './push-approval.mjs';
 
-const THREAD_CONFIGURATION_VERSION = 2;
+const THREAD_CONFIGURATION_VERSION = 3;
+const pushTool = {
+  name: 'push_sync',
+  description:
+    'Validate committed course changes and request instructor approval to push and sync. Fix errors before resubmitting; denial is not approval.',
+  inputSchema: { type: 'object', properties: {}, additionalProperties: false },
+};
 
 // App-server, unlike exec --json, exposes incremental agent-message text.
 export async function runCodex({
@@ -20,6 +27,8 @@ export async function runCodex({
   history = [],
   authoringContext = { courseInstance: null },
   request = prompt,
+  continuation,
+  requestApproval = requestPushApproval,
 }) {
   const skillPath = fileURLToPath(
     new URL('../skills/course-content-authoring/SKILL.md', import.meta.url),
@@ -49,6 +58,11 @@ export async function runCodex({
   }
   const compatibleSavedThread =
     savedThread?.configurationVersion === THREAD_CONFIGURATION_VERSION ? savedThread : undefined;
+  if (continuation && compatibleSavedThread?.approvalId !== continuation.approvalId) {
+    throw new Error(
+      'The saved Codex approval continuation is unavailable. It has not been replaced.',
+    );
+  }
   const child = spawn(
     command,
     [
@@ -69,10 +83,6 @@ export async function runCodex({
       'model_providers.course_agent.supports_websockets=false',
       '-c',
       'web_search="live"',
-      '-c',
-      'mcp_servers.course_agent.command="python3"',
-      '-c',
-      'mcp_servers.course_agent.args=["/opt/prairielearn/course_agent_mcp.py"]',
     ],
     {
       stdio: ['pipe', 'pipe', 'inherit'],
@@ -95,6 +105,14 @@ export async function runCodex({
     /* Process exit is reported below. */
   });
   let threadId;
+  let pausedApproval;
+  const saveThread = async (approvalId) => {
+    await writeFile(
+      `${threadFile}.tmp`,
+      JSON.stringify({ threadId, configurationVersion: THREAD_CONFIGURATION_VERSION, approvalId }),
+    );
+    await rename(`${threadFile}.tmp`, threadFile);
+  };
   try {
     send({
       id: 0,
@@ -107,6 +125,31 @@ export async function runCodex({
     for await (const line of lines) {
       const message = JSON.parse(line);
       if ('id' in message && message.method) {
+        if (
+          message.method === 'item/tool/call' &&
+          message.params?.tool === 'push_sync' &&
+          message.params.threadId === threadId
+        ) {
+          try {
+            pausedApproval = await requestApproval(cwd);
+          } catch (error) {
+            send({
+              id: message.id,
+              result: {
+                success: false,
+                contentItems: [{ type: 'inputText', text: error.message }],
+              },
+            });
+            continue;
+          }
+          await saveThread(pausedApproval);
+          send({
+            id: 3,
+            method: 'turn/interrupt',
+            params: { threadId, turnId: message.params.turnId },
+          });
+          continue;
+        }
         // Unexpected interactive requests must fail closed, never receive blanket approval.
         send({
           id: message.id,
@@ -124,7 +167,7 @@ export async function runCodex({
             cwd,
             ...(compatibleSavedThread
               ? { threadId: compatibleSavedThread.threadId }
-              : { ephemeral: false }),
+              : { ephemeral: false, dynamicTools: [pushTool] }),
             approvalPolicy: 'on-request',
             approvalsReviewer: 'auto_review',
             sandbox: 'workspace-write',
@@ -135,11 +178,7 @@ export async function runCodex({
       } else if (message.id === 1) {
         threadId = message.result.thread.id;
         // Persist before starting the turn so an interrupted run can still be resumed.
-        await writeFile(
-          `${threadFile}.tmp`,
-          JSON.stringify({ threadId, configurationVersion: THREAD_CONFIGURATION_VERSION }),
-        );
-        await rename(`${threadFile}.tmp`, threadFile);
+        await saveThread(compatibleSavedThread?.approvalId);
         emit({ method: 'thread/started', params: { thread: { id: threadId } } });
         const input =
           !compatibleSavedThread && history.length > 0
@@ -150,10 +189,22 @@ export async function runCodex({
           method: 'turn/start',
           params: {
             threadId,
-            input: [{ type: 'text', text: input }],
+            ...(continuation
+              ? {
+                  input: [],
+                  toolOutput: { name: 'push_sync', output: JSON.stringify(continuation) },
+                }
+              : { input: [{ type: 'text', text: input }] }),
           },
         });
       } else if (message.method && message.params?.threadId === threadId) {
+        if (message.method === 'turn/completed' && pausedApproval) {
+          if (message.params.turn.status !== 'interrupted') {
+            throw new Error('Could not pause Codex for approval');
+          }
+          emit({ method: 'course_agent/approvalPaused', params: { approvalId: pausedApproval } });
+          return;
+        }
         if (
           [
             'item/started',
@@ -169,6 +220,7 @@ export async function runCodex({
           if (message.params.turn.status !== 'completed') {
             throw new Error(message.params.turn.error?.message ?? 'Agent turn did not complete');
           }
+          await saveThread(undefined);
           return;
         }
       }
@@ -194,6 +246,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     history: request.history,
     authoringContext: request.authoringContext,
     request: request.request,
+    continuation: request.continuation,
     codexHome: '/workspace/.course-agent/codex',
     emit: (event) => {
       process.stdout.write(`${JSON.stringify(event)}\n`);

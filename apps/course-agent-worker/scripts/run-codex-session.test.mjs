@@ -6,8 +6,14 @@ import { PassThrough } from 'node:stream';
 
 import { afterEach, expect, it, vi } from 'vitest';
 
-const mock = vi.hoisted(() => ({ requests: [], resumeError: false, turnError: false }));
+const mock = vi.hoisted(() => ({
+  requests: [],
+  resumeError: false,
+  turnError: false,
+  requestApproval: false,
+}));
 vi.mock('node:child_process', () => ({
+  execFile: vi.fn(),
   spawn: () => {
     const child = new EventEmitter();
     child.stdout = new PassThrough();
@@ -30,12 +36,31 @@ vi.mock('node:child_process', () => ({
         );
       }
       if (request.method === 'turn/start') {
+        if (mock.requestApproval) {
+          reply({
+            id: 'tool-request',
+            method: 'item/tool/call',
+            params: {
+              threadId: 'test-thread',
+              turnId: 'test-turn',
+              tool: 'push_sync',
+              arguments: {},
+            },
+          });
+          return;
+        }
         reply({
           method: 'turn/completed',
           params: {
             threadId: 'test-thread',
             turn: { status: mock.turnError ? 'failed' : 'completed' },
           },
+        });
+      }
+      if (request.method === 'turn/interrupt') {
+        reply({
+          method: 'turn/completed',
+          params: { threadId: 'test-thread', turn: { status: 'interrupted' } },
         });
       }
     });
@@ -52,6 +77,7 @@ afterEach(async () => {
   mock.requests = [];
   mock.resumeError = false;
   mock.turnError = false;
+  mock.requestApproval = false;
 });
 
 async function fixture() {
@@ -100,7 +126,7 @@ it('starts once, then resumes without replaying previous messages', async () => 
     JSON.parse(
       await readFile(join(options.cwd, '.course-agent/codex/course-agent-thread.json'), 'utf8'),
     ),
-  ).toEqual({ threadId: 'test-thread', configurationVersion: 2 });
+  ).toEqual({ threadId: 'test-thread', configurationVersion: 3 });
 });
 
 it('replaces an incompatible thread and restores its conversation history', async () => {
@@ -122,7 +148,7 @@ it('replaces an incompatible thread and restores its conversation history', asyn
   ).toContain(JSON.stringify(history));
   expect(JSON.parse(await readFile(join(codexHome, 'course-agent-thread.json'), 'utf8'))).toEqual({
     threadId: 'test-thread',
-    configurationVersion: 2,
+    configurationVersion: 3,
   });
 });
 
@@ -150,4 +176,43 @@ it('keeps the thread after a failed turn and does not silently replace a failed 
     'Saved session is unavailable',
   );
   expect(mock.requests.filter((request) => request.method === 'thread/start')).toHaveLength(1);
+});
+
+it('pauses a dynamic tool and resumes its result without fabricating a user message', async () => {
+  const options = await fixture();
+  const events = [];
+  mock.requestApproval = true;
+  await runCodex({
+    ...options,
+    prompt: 'Publish this change',
+    requestApproval: async () => 'approval-1',
+    emit: (event) => events.push(event),
+  });
+  expect(events.at(-1)).toEqual({
+    method: 'course_agent/approvalPaused',
+    params: { approvalId: 'approval-1' },
+  });
+  expect(
+    mock.requests.find((request) => request.method === 'thread/start').params.dynamicTools[0].name,
+  ).toBe('push_sync');
+  expect(mock.requests.some((request) => request.id === 'tool-request')).toBe(false);
+  mock.requestApproval = false;
+  const continuation = { approvalId: 'approval-1', ok: true, commitSha: 'published' };
+  await runCodex({ ...options, prompt: '', continuation });
+  expect(mock.requests.filter((request) => request.method === 'turn/start').at(-1).params).toEqual({
+    threadId: 'test-thread',
+    input: [],
+    toolOutput: { name: 'push_sync', output: JSON.stringify(continuation) },
+  });
+  await expect(runCodex({ ...options, prompt: '', continuation })).rejects.toThrow(
+    'continuation is unavailable',
+  );
+});
+
+it('refuses to replace a missing approval continuation with a new conversation', async () => {
+  const options = await fixture();
+  await expect(
+    runCodex({ ...options, prompt: '', continuation: { approvalId: 'missing' } }),
+  ).rejects.toThrow('continuation is unavailable');
+  expect(mock.requests).toHaveLength(0);
 });

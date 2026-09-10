@@ -24,7 +24,7 @@ def _git(*args: str) -> str:
     return _git_raw(*args).strip()
 
 
-def _push_sync() -> dict[str, Any]:
+def _proposal() -> dict[str, Any]:
     if _git("status", "--porcelain"):
         raise RuntimeError("Commit all intended changes before calling push_sync")
     if "Co-authored-by: PrairieLearn Agent (Codex)" not in _git_raw(
@@ -50,7 +50,7 @@ def _push_sync() -> dict[str, Any]:
             f"remote base {base_sha}. Fetch and reconcile the branch, then call "
             f"push_sync again.{f' Git reported: {detail}' if detail else ''}"
         )
-    payload = {
+    return {
         "branch": branch,
         "baseSha": base_sha,
         "proposedSha": proposed_sha,
@@ -61,6 +61,10 @@ def _push_sync() -> dict[str, Any]:
             "diff", "--binary", "--no-ext-diff", f"{base_sha}..{proposed_sha}"
         ),
     }
+
+
+def _push_sync() -> dict[str, Any]:
+    payload = _proposal()
     request = urllib.request.Request(
         "http://course-agent.internal/push-sync",
         data=json.dumps(payload).encode(),
@@ -88,7 +92,7 @@ def _push_sync() -> dict[str, Any]:
         sha = result.get("commitSha")
         if sha:
             try:
-                _git("fetch", "origin", branch)
+                _git("fetch", "origin", payload["branch"])
                 _git("merge", "--no-edit", sha)
             except RuntimeError as error:
                 result["checkoutWarning"] = (
@@ -164,6 +168,9 @@ def _handle(message: dict[str, Any]) -> dict[str, Any] | None:
 
 
 if __name__ == "__main__":
+    if sys.argv[1:] == ["--propose"]:
+        print(json.dumps(_proposal()))
+        sys.exit(0)
     for line in sys.stdin:
         message = json.loads(line)
         result = _handle(message)

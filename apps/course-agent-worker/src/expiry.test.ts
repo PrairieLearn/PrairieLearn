@@ -179,6 +179,31 @@ describe('sandbox expiry alarm', () => {
     expect(sandbox.destroy).not.toHaveBeenCalled();
   });
 
+  it('drains a completed process when its recovery alarm runs after the execution deadline', async () => {
+    const { coordinator, storage } = fixture('completed-run', 5000);
+    await coordinator['update']({ activeRunExpiresAt: new Date(5000).toISOString() });
+    sandbox.getProcess.mockResolvedValue({ status: 'completed', exitCode: 0 });
+    sandbox.getProcessLogs.mockResolvedValue({
+      stdout: [
+        JSON.stringify({
+          method: 'item/completed',
+          params: {
+            item: { id: 'answer', type: 'agentMessage', text: 'Finished before recovery.' },
+          },
+        }),
+        JSON.stringify({ method: 'turn/completed', params: { turn: { status: 'completed' } } }),
+      ].join('\n'),
+      stderr: '',
+    });
+    await coordinator.alarm();
+    expect(await storage.get('conversation')).toMatchObject({
+      response: 'Finished before recovery.',
+      error: null,
+      activeRunId: null,
+    });
+    expect(sandbox.killProcess).not.toHaveBeenCalled();
+  });
+
   it('starts a full idle interval when upgrading a legacy workspace', async () => {
     vi.useFakeTimers();
     vi.setSystemTime(5000);
@@ -420,4 +445,203 @@ describe('sandbox expiry alarm', () => {
     expect(values.has('event:000000000002')).toBe(true);
     expect(values.has('event:000000000004')).toBe(true);
   });
+
+  const proposal = {
+    id: 'approval-1',
+    branch: 'master',
+    baseSha: 'a'.repeat(40),
+    proposedSha: 'b'.repeat(40),
+    treeSha: 'c'.repeat(40),
+    diff: 'patch',
+    diffSummary: 'one file',
+    commitMessage: 'Update question',
+    status: 'pending' as const,
+    result: null,
+  };
+
+  it('only starts the approval idle clock after the harness has stopped', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(5000);
+    const { coordinator, storage } = fixture('run', 5000);
+    await coordinator['update']({ pendingApproval: proposal, approvalValidated: true });
+    sandbox.getProcessLogs.mockResolvedValue({
+      stdout:
+        JSON.stringify({
+          method: 'course_agent/approvalPaused',
+          params: { approvalId: proposal.id },
+        }) + '\n',
+      stderr: '',
+    });
+    await coordinator.alarm();
+    expect(await storage.get('conversation')).toMatchObject({
+      processId: 'course-agent-run',
+      idleExpiresAt: null,
+    });
+    sandbox.getProcess.mockResolvedValue({ status: 'completed', exitCode: 0 });
+    await coordinator.alarm();
+    expect(await storage.get('conversation')).toMatchObject({
+      activeRunId: 'run',
+      pausedApprovalId: proposal.id,
+      processId: null,
+      activeRunExpiresAt: null,
+      conversationState: 'waiting_for_approval',
+      idleExpiresAt: 605000,
+      error: null,
+    });
+    vi.setSystemTime(605000);
+    await coordinator.alarm();
+    expect(sandbox.destroy).toHaveBeenCalledOnce();
+    expect(await storage.get('conversation')).toMatchObject({
+      activeRunId: 'run',
+      pendingApproval: proposal,
+      sandboxState: 'offline',
+      conversationState: 'waiting_for_approval',
+    });
+    expect(sandbox.killProcess).not.toHaveBeenCalled();
+  });
+
+  it('keeps approval waits alive if the pre-suspension checkpoint fails', async () => {
+    const { coordinator, storage } = fixture('run', 5000);
+    await coordinator['update']({
+      pendingApproval: proposal,
+      approvalValidated: true,
+      pausedApprovalId: proposal.id,
+      processId: null,
+      activeRunExpiresAt: null,
+      idleExpiresAt: 5000,
+      conversationState: 'waiting_for_approval',
+    });
+    sandbox.createBackup.mockRejectedValueOnce(new Error('Storage unavailable'));
+    await coordinator.alarm();
+    expect(sandbox.destroy).not.toHaveBeenCalled();
+    expect(await storage.get('conversation')).toMatchObject({
+      activeRunId: 'run',
+      pendingApproval: proposal,
+      sandboxState: 'ready',
+      error: null,
+    });
+  });
+
+  it('waits for validation and does not extend the idle clock on duplicate validation acknowledgments', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(5000);
+    const { coordinator, storage } = fixture('run', 5000);
+    const conversationId = '96d65ba0-d536-490b-96ba-7be0df4e62c4';
+    const approvalId = 'e62d29c3-f76c-4108-afb0-bad789d9579a';
+    await coordinator['update']({
+      identity: { userId: '1', courseId: '2', conversationId, sandboxId: 'sandbox' },
+      pendingApproval: { ...proposal, id: approvalId },
+      pausedApprovalId: approvalId,
+      processId: null,
+      activeRunExpiresAt: null,
+      idleExpiresAt: null,
+      conversationState: 'validating_change',
+    });
+    await coordinator.alarm();
+    expect(sandbox.destroy).not.toHaveBeenCalled();
+    expect(storage.setAlarm).toHaveBeenLastCalledWith(65000);
+    const acknowledge = () =>
+      coordinator.fetch(
+        new Request('https://coordinator/push-decision', {
+          method: 'POST',
+          body: JSON.stringify({
+            capability: 'internal',
+            conversationId,
+            sandboxId: 'sandbox',
+            approvalId,
+            decision: 'pending',
+          }),
+        }),
+      );
+    expect((await acknowledge()).ok).toBe(true);
+    expect(await storage.get('conversation')).toMatchObject({
+      idleExpiresAt: 605000,
+      conversationState: 'waiting_for_approval',
+    });
+    vi.setSystemTime(305000);
+    expect((await acknowledge()).ok).toBe(true);
+    expect(await storage.get('conversation')).toMatchObject({ idleExpiresAt: 605000 });
+    vi.setSystemTime(605000);
+    await coordinator.alarm();
+    expect(sandbox.destroy).toHaveBeenCalledOnce();
+  });
+
+  it.each(['denied', 'completed', 'failed'] as const)(
+    'restores the workspace for a %s decision and resumes exactly once',
+    async (status) => {
+      const { coordinator, storage } = fixture('run', 5000);
+      const course = {
+        repository: 'https://github.com/PrairieLearn/test.git',
+        branch: 'master',
+        expectedSha: 'a'.repeat(40),
+      };
+      const settings = {
+        idleTimeoutSeconds: 600,
+        sleepAfterSeconds: 21600,
+        turnTimeoutSeconds: 21600,
+        backupTtlSeconds: 604800,
+      };
+      const approval = {
+        ...proposal,
+        status,
+        result: { message: 'Decision result', published: status === 'completed' },
+      };
+      await coordinator['update']({
+        course,
+        pendingApproval: approval,
+        pausedApprovalId: proposal.id,
+        processId: null,
+        activeRunExpiresAt: null,
+        activeExecutionRemainingMs: 120000,
+        sandboxState: 'offline',
+        workspaceBackup: {
+          handle: { id: 'checkpoint', dir: '/workspace', localBucket: true },
+          expiresAt: '2099-01-01T00:00:00.000Z',
+        },
+        startRequest: {
+          capability: 'unused',
+          conversationId: 'conversation',
+          sandboxId: 'sandbox',
+          runId: 'run',
+          prompt: 'Original request',
+          course,
+          authoringContext: { courseInstance: null },
+          runtimeSettings: settings,
+          workspaceBackup: null,
+        },
+      });
+      sandbox.getProcess.mockResolvedValue({ status: 'completed', exitCode: 0 });
+      sandbox.getProcess.mockResolvedValueOnce(null);
+      sandbox.getProcessLogs.mockResolvedValue({
+        stdout: [
+          JSON.stringify({
+            method: 'item/completed',
+            params: { item: { id: 'answer', type: 'agentMessage', text: 'Decision received.' } },
+          }),
+          JSON.stringify({ method: 'turn/completed', params: { turn: { status: 'completed' } } }),
+        ].join('\n'),
+        stderr: '',
+      });
+      await coordinator.alarm();
+      expect(sandbox.restoreBackup).toHaveBeenCalledOnce();
+      expect(sandbox.startProcess).toHaveBeenCalledOnce();
+      expect(sandbox.exec).toHaveBeenCalledWith(
+        "git fetch origin 'master' && git merge --no-edit 'origin/master'",
+        expect.objectContaining({ cwd: '/workspace/course' }),
+      );
+      expect(await storage.get('conversation')).toMatchObject({
+        response: 'Decision received.',
+        activeRunId: null,
+        pausedApprovalId: null,
+        conversationState: 'waiting_for_user',
+      });
+      await coordinator['resumeApproval']();
+      expect(sandbox.startProcess).toHaveBeenCalledOnce();
+      const events = await coordinator['getEvents']();
+      expect(events.filter((event) => event.type === 'user.message')).toHaveLength(0);
+      expect(events.filter((event) => event.type === 'sync.completed')).toHaveLength(
+        status === 'completed' ? 1 : 0,
+      );
+    },
+  );
 });

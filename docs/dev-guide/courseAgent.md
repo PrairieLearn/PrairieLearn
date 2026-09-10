@@ -73,10 +73,11 @@ course or executing question code. Validation runs once per proposal; errors ret
 before the instructor is asked to approve.
 
 PrairieLearn applies the approved diff to its trusted checkout, pushes and syncs it, and returns
-the resulting status and server-job errors to the waiting tool call. Denial returns control without
+the resulting status and server-job errors to a durable tool continuation. Denial returns control without
 publishing and tells the agent not to resubmit the same proposal. If publishing succeeds but sync
-fails, the result explicitly identifies that partial success. After publication, the sandbox fetches
-and merges the published revision to keep its history aligned with PrairieLearn's new commit.
+fails, the result explicitly identifies that partial success. After every decision, the sandbox fetches
+and merges the remote branch before delivering the result. Conflicts are included in the tool result;
+unpublished work is not discarded.
 Recoverable revision conflicts return to the agent; repository identity and approval checks remain
 enforced. A successful sync adds a refresh button in the conversation. Refreshing restores the
 selected conversation and saved messages.
@@ -115,11 +116,13 @@ Sandbox lifetime settings are non-secret and can be configured in `config.json`:
 }
 ```
 
-`idleTimeoutSeconds` starts a new idle interval after a turn finishes or fails. A new message clears
+`idleTimeoutSeconds` starts a new idle interval after a turn finishes, fails, or pauses for a validated
+approval. Validation acknowledgments and diagnostic polling do not extend it. A new message clears
 the deadline. The Durable Object alarm checks an active process every minute; idle expiry never
 interrupts a working agent. `turnTimeoutSeconds` is a separate active-execution guard, not a sandbox
 lifetime. `sleepAfterSeconds` controls Cloudflare's inactivity failsafe, with `keepAlive` disabled.
-Both guards default to six hours. Settings take effect on the next run and accept 60–86,400 seconds.
+Both guards default to six hours. Human approval wait time is excluded from the active-execution guard.
+Settings take effect on the next run and accept 60–86,400 seconds.
 
 There is no absolute sandbox lifetime. Legacy `maxLifetimeSeconds` values are ignored. On upgrade,
 old absolute-deadline alarms are replaced with a full idle interval or an active-process check.
@@ -130,14 +133,53 @@ The next message restores the last checkpoint; expired checkpoints are reported 
 
 The coordinator persists its process ID, parsed stream state and log cursor. An alarm can reconcile
 the same process after coordinator replacement, including its final output, without submitting the
-user's prompt again. Conversation state (`working`, `waiting_for_user`, `failed`) is separate from
-sandbox state (`offline`, `starting`, `ready`, `suspending`). Later PRs add approval/publication phases.
+user's prompt again. Conversation state is separate from sandbox state (`offline`, `starting`,
+`ready`, `suspending`):
+
+```mermaid
+stateDiagram-v2
+  waiting_for_user --> working: user message
+  working --> validating_change: push_sync
+  validating_change --> waiting_for_approval: validation passes and harness pauses
+  waiting_for_approval --> publishing: approve
+  publishing --> syncing: push succeeds
+  syncing --> refreshing_workspace: result recorded
+  waiting_for_approval --> refreshing_workspace: deny
+  validating_change --> refreshing_workspace: validation fails
+  publishing --> refreshing_workspace: publication fails
+  refreshing_workspace --> resuming_agent: remote reconciled or conflict reported
+  resuming_agent --> working: resume tool output
+  working --> waiting_for_user: final response
+  working --> failed: execution fails
+  failed --> working: user retries
+```
+
+The sandbox may be backed up and destroyed while the conversation remains `waiting_for_approval`.
+The pending approval and logical run ID survive in Durable Object storage and PostgreSQL. Codex
+persists its native thread before interrupting the pending dynamic tool; a decision restores that
+thread with standalone `toolOutput`, not a fabricated user message or a reply to a dead JSON-RPC
+request. The coordinator uses a stable process ID per continuation to avoid replaying it after
+replacement. New user runs are blocked while an approval is unresolved. An expired checkpoint is
+reported as a restoration failure; it is never replaced with an empty thread.
 
 The `courseAgentReconcile` server cron job polls outstanding conversations once per minute, without
-requiring an open browser. It only inspects coordinator state; it never starts a model turn or sandbox.
+requiring an open browser. It prepares proposals, acknowledges validation, and redelivers persisted
+decisions. Saved always-approve mode is honored only after checking current course ownership.
+Delivering a terminal decision may restore the sandbox and resume the existing logical run.
+Publication records its server-job ID before execution; recovery inspects that job and never repeats
+its push. Interrupted jobs with uncertain outcomes require remote inspection, not an automatic retry.
 Normal feature checks still apply. PostgreSQL stores the raw conversation/sandbox states, revision,
 generation, idle deadline and process ID; older snapshots cannot overwrite newer revisions. The
 diagnostic panel shows these database fields alongside explicitly labeled Worker values.
+
+SSE transport loss does not finish a model turn. The relay reconnects to the durable event log and
+deduplicates sequence numbers; Redis continues buffering the client stream. If that buffer is no
+longer available, an active run can be reattached from its durable log.
+
+The pinned Codex continuation protocol can be tested without API credentials using
+`scripts/verify-approval-continuation.mjs` inside the sandbox image with `--network none` and a writable
+`/tmp`. It uses the production runner and a localhost mock Responses server, and checks that process
+replacement produces exactly one continuation request and preserves the original tool-call history.
 
 Administrators see a collapsed **Conversation info (only visible to administrators)**
 accordion. The diagnostic endpoint also requires administrator access; the ordinary transcript

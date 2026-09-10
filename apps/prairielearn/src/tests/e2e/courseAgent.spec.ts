@@ -584,7 +584,19 @@ test('sends with Enter and keeps formatted responses and activity within each tu
     .getByText('Conversation info (only visible to administrators)', { exact: true })
     .click();
   await expect(panel.getByText('Token usage', { exact: true })).toBeVisible();
-  await expect(panel.getByText('Status: Ready', { exact: true })).toBeVisible();
+  await expect(panel.getByText('Worker status: waiting_for_user', { exact: true })).toBeVisible();
+  await expect(panel.getByText('conversation_state (PostgreSQL)', { exact: true })).toBeVisible();
+  await expect(panel.getByText('sandbox_state (PostgreSQL)', { exact: true })).toBeVisible();
+  await expect(
+    panel.getByText('conversation_state (PostgreSQL)', { exact: true }).locator('+ dd'),
+  ).toHaveText('waiting_for_user');
+  await expect(
+    panel.getByText('sandbox_state (PostgreSQL)', { exact: true }).locator('+ dd'),
+  ).toHaveText('ready');
+  await expect(
+    panel.getByText('process_id (PostgreSQL)', { exact: true }).locator('+ dd'),
+  ).toHaveText('null');
+  await panel.getByText('process_id (PostgreSQL)', { exact: true }).scrollIntoViewIfNeeded();
   await page.screenshot({ path: testInfo.outputPath('course-chat-tools.png') });
 });
 

@@ -80,6 +80,12 @@ interface ConversationState {
   workspaceBackup: CourseAgentWorkspaceBackup | null;
   course: CourseAgentStartRunRequest['course'];
   pendingApproval: CourseAgentPushApproval | null;
+  startRequest?: CourseAgentStartRunRequest;
+  pausedApprovalId?: string | null;
+  approvalPauseRequested?: string | null;
+  approvalValidated?: boolean;
+  continuationApprovalId?: string | null;
+  activeExecutionRemainingMs?: number;
   runtimeSettings: CourseAgentStartRunRequest['runtimeSettings'];
   checkout?: Pick<CourseAgentStartRunRequest['course'], 'repository' | 'branch'>;
 }
@@ -138,10 +144,6 @@ Sandbox.outboundHandlers = {
     proxyPushSync(request, env.COURSE_AGENT_COORDINATOR, context),
 };
 
-function wait(milliseconds: number) {
-  return new Promise<void>((resolve) => setTimeout(resolve, milliseconds));
-}
-
 function shellQuote(value: string) {
   return `'${value.replaceAll("'", "'\\''")}'`;
 }
@@ -182,6 +184,7 @@ export class CourseAgentCoordinator {
   private listeners = new Set<ReadableStreamDefaultController<string>>();
   private monitoring: Promise<void> | null = null;
   private shutdown: Promise<void> | null = null;
+  private resuming: Promise<void> | null = null;
 
   constructor(
     private state: DurableObjectState,
@@ -212,7 +215,14 @@ export class CourseAgentCoordinator {
       }
       const accepted = await this.state.blockConcurrencyWhile(async () => {
         current = await this.readConversationState();
-        if (current?.activeRunId || current?.sandboxState === 'suspending') return false;
+        if (
+          current?.activeRunId ||
+          current?.sandboxState === 'suspending' ||
+          (current?.pendingApproval &&
+            ['pending', 'publishing'].includes(current.pendingApproval.status))
+        ) {
+          return false;
+        }
         const next: ConversationState = {
           identity: capability,
           activeRunId: body.runId,
@@ -233,6 +243,10 @@ export class CourseAgentCoordinator {
           processId: null,
           course: current?.course ?? body.course,
           pendingApproval: current?.pendingApproval ?? null,
+          startRequest: body,
+          pausedApprovalId: null,
+          approvalPauseRequested: null,
+          continuationApprovalId: null,
           workspaceBackup: current?.workspaceBackup ?? body.workspaceBackup,
           checkout: current?.checkout ?? {
             repository: body.course.repository,
@@ -272,6 +286,7 @@ export class CourseAgentCoordinator {
         events: await this.getEvents(),
         workspaceBackup: current.workspaceBackup,
         pendingApproval:
+          current.pausedApprovalId ||
           current.pendingApproval?.status === 'pending' ||
           current.pendingApproval?.status === 'publishing'
             ? current.pendingApproval
@@ -293,6 +308,31 @@ export class CourseAgentCoordinator {
       ) {
         return Response.json({ error: 'Sandbox identity mismatch' }, { status: 403 });
       }
+      if (
+        current.pendingApproval.status !== 'pending' &&
+        current.pendingApproval.status !== 'publishing'
+      ) {
+        if (current.pendingApproval.status !== decision.decision) {
+          return Response.json({ error: 'Approval has already been decided' }, { status: 409 });
+        }
+        this.state.waitUntil(this.resumeApproval());
+        return Response.json({ accepted: true });
+      }
+      if (decision.decision === 'pending') {
+        if (current.pendingApproval.status !== 'pending') return Response.json({ accepted: true });
+        const idleExpiresAt = current.pausedApprovalId
+          ? idleDeadline(current.runtimeSettings.idleTimeoutSeconds)
+          : null;
+        if (!current.approvalValidated) {
+          await this.update({
+            approvalValidated: true,
+            conversationState: 'waiting_for_approval',
+            idleExpiresAt,
+          });
+          await this.state.storage.setAlarm(idleExpiresAt ?? Date.now() + ACTIVE_RECHECK_MS);
+        }
+        return Response.json({ accepted: true });
+      }
       await this.update({
         pendingApproval: {
           ...current.pendingApproval,
@@ -301,7 +341,15 @@ export class CourseAgentCoordinator {
         },
       });
       if (decision.decision === 'publishing') {
+        await this.update({
+          conversationState: decision.phase ?? 'publishing',
+          idleExpiresAt: null,
+        });
+        await this.state.storage.setAlarm(Date.now() + ACTIVE_RECHECK_MS);
         await this.append('git.push.approval.approved', { approvalId: decision.approvalId });
+      } else {
+        await this.state.storage.setAlarm(Date.now() + ACTIVE_RECHECK_MS);
+        this.state.waitUntil(this.resumeApproval());
       }
       return Response.json({ accepted: true });
     }
@@ -339,7 +387,8 @@ export class CourseAgentCoordinator {
     }
     const sandbox = getSandbox(this.env.Sandbox, current.identity.sandboxId, {
       normalizeId: true,
-      keepAlive: true,
+      keepAlive: false,
+      sleepAfter: current.runtimeSettings.sleepAfterSeconds,
     });
     const coursePath = `${COURSE_AGENT_WORKSPACE_ROOT}/course`;
     const [head, tree] = await Promise.all([
@@ -366,7 +415,11 @@ export class CourseAgentCoordinator {
       status: 'pending',
       result: null,
     };
-    await this.update({ pendingApproval: approval });
+    await this.update({
+      pendingApproval: approval,
+      approvalValidated: false,
+      conversationState: 'validating_change',
+    });
     await this.append('git.push.approval.requested', {
       approvalId: approval.id,
       baseSha: approval.baseSha,
@@ -374,41 +427,31 @@ export class CourseAgentCoordinator {
       branch: approval.branch,
       diffSummary: approval.diffSummary,
     });
-    let pending = approval;
-    while (pending.status === 'pending' || pending.status === 'publishing') {
-      await wait(500);
-      const latest = await this.state.storage.get<ConversationState>('conversation');
-      if (!latest?.pendingApproval) break;
-      pending = latest.pendingApproval;
-    }
-    if (pending.status === 'denied') {
-      await this.append('git.push.approval.denied', { approvalId: pending.id });
-      return Response.json({
-        ok: false,
-        denied: true,
-        message:
-          'The instructor denied this proposal. Do not publish or resubmit it unchanged. Ask what should change if their reason is unclear.',
-      });
-    }
-    if (pending.status === 'completed') {
-      await this.append('git.push.completed', { approvalId: pending.id, ...pending.result });
-      await this.append('sync.completed', { approvalId: pending.id, ...pending.result });
-      return Response.json({ ok: true, ...pending.result });
-    }
-    if (pending.result?.published === true) {
-      await this.append('git.push.completed', { approvalId: pending.id, ...pending.result });
-    }
-    const message =
-      pending.result && typeof pending.result.message === 'string'
-        ? pending.result.message
-        : 'The proposed changes could not be published';
-    return Response.json({ error: message, details: pending.result }, { status: 409 });
+    return Response.json({ approvalId: approval.id });
   }
 
   async alarm() {
     const current = await this.getConversationState();
-    if (!current || current.sandboxState === 'offline') return;
-    if (current.activeRunId) {
+    if (!current) return;
+    if (
+      current.pausedApprovalId &&
+      current.pendingApproval &&
+      !['pending', 'publishing'].includes(current.pendingApproval.status)
+    ) {
+      await this.state.storage.setAlarm(Date.now() + ACTIVE_RECHECK_MS);
+      await this.resumeApproval();
+      return;
+    }
+    if (current.pendingApproval?.status === 'publishing' && current.pausedApprovalId) {
+      await this.state.storage.setAlarm(Date.now() + ACTIVE_RECHECK_MS);
+      return;
+    }
+    if (current.pausedApprovalId && !current.approvalValidated) {
+      await this.state.storage.setAlarm(Date.now() + ACTIVE_RECHECK_MS);
+      return;
+    }
+    if (current.sandboxState === 'offline') return;
+    if (current.activeRunId && !current.pausedApprovalId) {
       await this.state.storage.setAlarm(Date.now() + ACTIVE_RECHECK_MS);
       await this.monitorRun();
       return;
@@ -425,13 +468,24 @@ export class CourseAgentCoordinator {
   private async suspendWorkspace() {
     const suspended = await this.state.blockConcurrencyWhile(async () => {
       const current = await this.readConversationState();
-      if (!current || current.activeRunId || current.sandboxState === 'offline') return null;
+      if (
+        !current ||
+        (current.activeRunId && !current.pausedApprovalId) ||
+        current.sandboxState === 'offline'
+      ) {
+        return null;
+      }
+      if (current.pausedApprovalId && current.pendingApproval?.status !== 'pending') return null;
       if (current.idleExpiresAt == null) return null;
       if (current.idleExpiresAt > Date.now()) {
         await this.state.storage.setAlarm(current.idleExpiresAt);
         return null;
       }
-      const next: ConversationState = { ...current, sandboxState: 'suspending' };
+      const next: ConversationState = {
+        ...current,
+        sandboxState: 'suspending',
+        revision: (current.revision ?? 0) + 1,
+      };
       await this.state.storage.put('conversation', next);
       return next;
     });
@@ -457,7 +511,7 @@ export class CourseAgentCoordinator {
     await this.update({ sandboxState: 'offline', status: 'offline', idleExpiresAt: null });
     await this.append('sandbox.destroyed', { reason: 'idle_timeout' });
     await this.state.storage.deleteAlarm();
-    this.closeStreams();
+    if (!suspended.activeRunId) this.closeStreams();
   }
 
   private async backupWorkspace(sandbox: ReturnType<typeof getSandbox<Sandbox>>, runId?: string) {
@@ -532,7 +586,7 @@ export class CourseAgentCoordinator {
     );
   }
 
-  private async run(request: CourseAgentStartRunRequest) {
+  private async run(request: CourseAgentStartRunRequest, continuation?: CourseAgentPushApproval) {
     const sandbox = getSandbox(this.env.Sandbox, request.sandboxId, {
       normalizeId: true,
       labels: { courseId: 'redacted', workload: 'course-agent' },
@@ -541,9 +595,10 @@ export class CourseAgentCoordinator {
     });
     try {
       const sandboxState = await sandbox.getState();
-      const starting = !['running', 'healthy'].includes(sandboxState.status);
       const current = await this.state.storage.get<ConversationState>('conversation');
       if (current?.activeRunId !== request.runId) return;
+      const starting =
+        current.sandboxState === 'offline' || !['running', 'healthy'].includes(sandboxState.status);
       const previousEvents = await this.getEvents();
       await this.update(
         {
@@ -552,11 +607,13 @@ export class CourseAgentCoordinator {
         },
         request.runId,
       );
-      await this.append(
-        'user.message',
-        { text: request.prompt, runId: request.runId },
-        request.runId,
-      );
+      if (!continuation) {
+        await this.append(
+          'user.message',
+          { text: request.prompt, runId: request.runId },
+          request.runId,
+        );
+      }
       if (starting) {
         await this.append(
           'sandbox.starting',
@@ -710,6 +767,26 @@ export class CourseAgentCoordinator {
       );
       if (!gitConfig.success) throw new Error(gitConfig.stderr || 'Could not configure Git');
       await this.append('git.configured', { coursePath }, request.runId);
+      let continuationResult: Record<string, unknown> | undefined;
+      if (continuation) {
+        await this.update({ conversationState: 'refreshing_workspace' }, request.runId);
+        continuationResult = {
+          ...continuation.result,
+          approvalId: continuation.id,
+          ok: continuation.status === 'completed',
+          denied: continuation.status === 'denied',
+        };
+        const refresh = await sandbox.exec(
+          `git fetch origin ${shellQuote(request.course.branch)} && git merge --no-edit ${shellQuote(`origin/${request.course.branch}`)}`,
+          { cwd: coursePath, timeout: 300_000 },
+        );
+        if (!refresh.success) {
+          continuationResult.checkoutError =
+            refresh.stderr ||
+            'Could not reconcile the workspace with the remote branch. Preserve local changes and resolve conflicts before proposing another change.';
+        }
+        await this.update({ conversationState: 'resuming_agent' }, request.runId);
+      }
       if (starting) {
         await this.append(
           'sandbox.ready',
@@ -738,6 +815,7 @@ export class CourseAgentCoordinator {
           request: request.prompt,
           history: conversationHistory(previousEvents),
           authoringContext: request.authoringContext,
+          continuation: continuationResult,
         }),
       );
       const command = [
@@ -745,7 +823,7 @@ export class CourseAgentCoordinator {
         shellQuote(this.env.OPENAI_MODEL),
         shellQuote(requestPath),
       ].join(' ');
-      const processId = `course-agent-${request.runId}`;
+      const processId = `course-agent-${request.runId}${continuation ? `-${continuation.id}` : ''}`;
       if (
         !(await this.update(
           { processId, processStartingUntil: Date.now() + ACTIVE_RECHECK_MS },
@@ -754,14 +832,19 @@ export class CourseAgentCoordinator {
       ) {
         return;
       }
-      await sandbox.startProcess(command, {
-        cwd: coursePath,
-        processId,
-        autoCleanup: false,
-        env: { OPENAI_API_KEY: 'proxy-injected', IS_SANDBOX: '1' },
-      });
-      await this.update({ processStartingUntil: null }, request.runId);
-      while ((await this.getConversationState())?.activeRunId === request.runId) {
+      if (!(await sandbox.getProcess(processId))) {
+        await sandbox.startProcess(command, {
+          cwd: coursePath,
+          processId,
+          autoCleanup: false,
+          env: { OPENAI_API_KEY: 'proxy-injected', IS_SANDBOX: '1' },
+        });
+      }
+      await this.update(
+        { processStartingUntil: null, pausedApprovalId: null, conversationState: 'working' },
+        request.runId,
+      );
+      while ((await this.getConversationState())?.processId === processId) {
         await this.monitorRun();
         await new Promise((resolve) => setTimeout(resolve, 1000));
       }
@@ -787,6 +870,101 @@ export class CourseAgentCoordinator {
     }
   }
 
+  private async resumeApproval() {
+    if (this.resuming) return this.resuming;
+    this.resuming = this.continueApproval();
+    try {
+      await this.resuming;
+    } finally {
+      this.resuming = null;
+    }
+  }
+
+  private async continueApproval() {
+    const current = await this.getConversationState();
+    const approval = current?.pendingApproval;
+    if (
+      !current?.activeRunId ||
+      !current.pausedApprovalId ||
+      !approval ||
+      ['pending', 'publishing'].includes(approval.status)
+    ) {
+      return;
+    }
+    if (!current.startRequest) {
+      await this.failRun(
+        current.activeRunId,
+        new Error('The saved approval continuation is unavailable'),
+      );
+      return;
+    }
+    if (current.continuationApprovalId !== approval.id) {
+      const remaining = current.activeExecutionRemainingMs ?? 0;
+      if (remaining <= 0) {
+        await this.failRun(
+          current.activeRunId,
+          new Error('The course-agent active execution limit was reached'),
+        );
+        return;
+      }
+      await this.state.blockConcurrencyWhile(async () => {
+        const latest = await this.readConversationState();
+        if (
+          latest?.activeRunId !== current.activeRunId ||
+          latest.continuationApprovalId === approval.id
+        ) {
+          return;
+        }
+        const next: ConversationState = {
+          ...latest,
+          conversationState: 'resuming_agent',
+          revision: (latest.revision ?? 0) + 1,
+          idleExpiresAt: null,
+          continuationApprovalId: approval.id,
+          approvalPauseRequested: null,
+          logCursor: 0,
+          logBuffer: '',
+          codexStream: latest.codexStream
+            ? { ...latest.codexStream, completed: false, commentary: [] }
+            : undefined,
+          activeRunExpiresAt: new Date(Date.now() + remaining).toISOString(),
+        };
+        const types: CourseAgentEvent['type'][] = [];
+        if (approval.status === 'denied') types.push('git.push.approval.denied');
+        if (approval.status === 'completed' || approval.result?.published === true) {
+          types.push('git.push.completed');
+        }
+        if (approval.status === 'completed') types.push('sync.completed');
+        const events = types.map((type) => ({
+          type,
+          sequence: next.nextSequence++,
+          occurredAt: new Date().toISOString(),
+          data: { approvalId: approval.id, ...approval.result },
+        }));
+        await this.putStateAndEvents(next, events);
+        for (const event of events) {
+          for (const listener of this.listeners) listener.enqueue(eventChunk(event));
+        }
+      });
+    }
+    await this.state.storage.setAlarm(Date.now() + ACTIVE_RECHECK_MS);
+    if (current.processId) {
+      const sandbox = getSandbox(this.env.Sandbox, current.identity.sandboxId, {
+        normalizeId: true,
+        keepAlive: false,
+      });
+      if (await sandbox.getProcess(current.processId)) {
+        await this.update(
+          { pausedApprovalId: null, conversationState: 'working' },
+          current.activeRunId,
+        );
+        await this.monitorRun();
+        return;
+      }
+    }
+    await this.run(current.startRequest, approval);
+  }
+
   private async pollProcess() {
     const current = await this.getConversationState();
     if (!current?.activeRunId) return;
@@ -797,34 +975,48 @@ export class CourseAgentCoordinator {
       sleepAfter: current.runtimeSettings?.sleepAfterSeconds ?? SANDBOX_SLEEP_AFTER_SECONDS,
     });
     try {
-      if (activeRunExpired(current.activeRunExpiresAt)) {
+      const process = current.processId ? await sandbox.getProcess(current.processId) : null;
+      const finished =
+        !!process && ['completed', 'failed', 'killed', 'error'].includes(process.status);
+      if (activeRunExpired(current.activeRunExpiresAt) && !finished) {
         if (current.processId) await sandbox.killProcess(current.processId);
         await this.failRun(runId, new Error('The course-agent active execution limit was reached'));
         return;
       }
       if (!current.processId) return;
-      const process = await sandbox.getProcess(current.processId);
       if (!process) {
         if ((current.processStartingUntil ?? 0) > Date.now()) return;
         await this.failRun(runId, new Error('The course-agent process is no longer available'));
         return;
       }
-      const finished = ['completed', 'failed', 'killed', 'error'].includes(process.status);
       const logs = await sandbox.getProcessLogs(current.processId);
       const previousCursor = current.logCursor ?? 0;
       const decoder = new CodexLogs({ offset: previousCursor, buffer: current.logBuffer ?? '' });
       const stream = new CodexStream(current.codexStream);
+      let approvalPauseRequested = current.approvalPauseRequested ?? null;
       const events: Pick<CourseAgentEvent, 'type' | 'data'>[] = [];
       for (const line of decoder.read(logs.stdout, finished)) {
         const event = parseCodexLine(line);
         if (!event) throw new Error('Codex returned a malformed notification');
+        if (event.method === 'course_agent/approvalPaused') {
+          const params = event.params as { approvalId?: unknown } | undefined;
+          if (
+            typeof params?.approvalId !== 'string' ||
+            params.approvalId !== current.pendingApproval?.id
+          ) {
+            throw new Error('Codex paused for an unknown approval');
+          }
+          approvalPauseRequested = params.approvalId;
+          continue;
+        }
         events.push(...stream.consume(event));
       }
+      const paused = finished && approvalPauseRequested !== null;
       if (finished) {
         if (process.status !== 'completed' || process.exitCode !== 0) {
           throw new Error(codexFailureMessage(logs.stdout, logs.stderr));
         }
-        if (!stream.completed || !stream.response.trim()) {
+        if (!paused && (!stream.completed || !stream.response.trim())) {
           throw new Error('The agent finished without a complete response. Please try again.');
         }
         try {
@@ -836,7 +1028,7 @@ export class CourseAgentCoordinator {
             runId,
           );
         }
-        events.push({ type: 'agent.completed', data: { response: stream.response } });
+        if (!paused) events.push({ type: 'agent.completed', data: { response: stream.response } });
       }
       await this.state.blockConcurrencyWhile(async () => {
         const latest = await this.readConversationState();
@@ -846,19 +1038,40 @@ export class CourseAgentCoordinator {
           logCursor: decoder.snapshot().offset,
           logBuffer: decoder.snapshot().buffer,
           codexStream: stream.snapshot(),
+          approvalPauseRequested,
           revision: (latest.revision ?? 0) + 1,
-          ...(finished
+          ...(paused
             ? {
-                activeRunId: null,
-                activeRunExpiresAt: null,
+                pausedApprovalId: approvalPauseRequested,
                 processId: null,
-                conversationState: 'waiting_for_user',
-                status: 'waiting_for_user',
-                response: stream.response,
-                error: null,
-                idleExpiresAt: idleDeadline(latest.runtimeSettings?.idleTimeoutSeconds ?? 600),
+                activeRunExpiresAt: null,
+                activeExecutionRemainingMs: Math.max(
+                  0,
+                  Date.parse(current.activeRunExpiresAt!) - Date.now(),
+                ),
+                conversationState:
+                  latest.pendingApproval?.status === 'publishing'
+                    ? latest.conversationState
+                    : latest.approvalValidated
+                      ? 'waiting_for_approval'
+                      : 'validating_change',
+                idleExpiresAt:
+                  latest.pendingApproval?.status === 'pending' && latest.approvalValidated
+                    ? idleDeadline(latest.runtimeSettings.idleTimeoutSeconds)
+                    : null,
               }
-            : {}),
+            : finished
+              ? {
+                  activeRunId: null,
+                  activeRunExpiresAt: null,
+                  processId: null,
+                  conversationState: 'waiting_for_user',
+                  status: 'waiting_for_user',
+                  response: stream.response,
+                  error: null,
+                  idleExpiresAt: idleDeadline(latest.runtimeSettings?.idleTimeoutSeconds ?? 600),
+                }
+              : {}),
         };
         const persisted = events.map((event) => ({
           ...event,
@@ -871,7 +1084,7 @@ export class CourseAgentCoordinator {
           for (const listener of this.listeners) listener.enqueue(eventChunk(event));
         }
       });
-      if (finished) {
+      if (finished && !paused) {
         this.closeStreams();
         await this.pruneCompletedDeltas(runId);
       }
@@ -898,6 +1111,7 @@ export class CourseAgentCoordinator {
         {
           activeRunId: null,
           activeRunExpiresAt: null,
+          pausedApprovalId: null,
           processId: null,
           status: 'failed',
           conversationState: 'failed',

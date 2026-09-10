@@ -60,8 +60,9 @@ async function withProposal(
     const diff = await git('diff', '--binary', baseSha, proposedSha);
     // The live course remains at the old revision while validation applies the proposal elsewhere.
     await git('checkout', '--detach', baseSha);
+    await git('branch', '-f', 'master', baseSha);
     await check([
-      { id: '1', path: checkout, branch: 'master', repository: null },
+      { id: '1', path: checkout, branch: 'master', repository: checkout },
       {
         branch: 'master',
         baseSha,
@@ -80,6 +81,19 @@ async function withProposal(
 }
 
 describe('automatic pre-approval validation', () => {
+  it('rejects a proposal whose remote base changed before showing approval', async () => {
+    await withProposal(
+      (checkout) => writeFile(path.join(checkout, 'README.md'), 'Proposed documentation\n'),
+      async (params) => {
+        await execa('git', ['branch', '-f', 'master', params[1].proposedSha], {
+          cwd: params[0].path,
+        });
+        await expect(validateCourseAgentProposal(...params)).rejects.toThrow(
+          'remote branch changed',
+        );
+      },
+    );
+  });
   it('validates the exact proposed tree without changing the live course', async () => {
     await withProposal(
       (checkout) => writeFile(path.join(checkout, 'README.md'), 'Proposed documentation\n'),

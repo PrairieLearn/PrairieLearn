@@ -117,6 +117,7 @@ export class CodexStream {
       fileChange: 'file_change',
       webSearch: 'web_search',
       mcpToolCall: 'mcp_tool_call',
+      dynamicToolCall: 'mcp_tool_call',
     };
     const changes = Array.isArray(item.changes)
       ? item.changes.map((change: unknown) =>

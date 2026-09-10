@@ -12,7 +12,7 @@ import type {
 import { doWithLock } from '@prairielearn/named-locks';
 import { runInTransactionAsync } from '@prairielearn/postgres';
 
-import type { AuthzData } from '../../../lib/authz-data-lib.js';
+import { type AuthzData, makePageAuthzData } from '../../../lib/authz-data-lib.js';
 import { config } from '../../../lib/config.js';
 import type { Course, CourseAgentPushApproval, User } from '../../../lib/db-types.js';
 import { Editor, classifyEditOutcome } from '../../../lib/editors.js';
@@ -29,6 +29,8 @@ import {
   writeErrorsAndWarningsForCourseData,
 } from '../../../sync/course-db.js';
 
+import { respondToCourseAgentPushApproval } from './ephemeral-runtime.js';
+
 export function courseAgentErrorMessage(error: unknown) {
   return stripAnsi(error instanceof Error ? error.message : String(error))
     .replaceAll(/(https?:\/\/)[^/\s@]+@/g, '$1[redacted]@')
@@ -36,7 +38,7 @@ export function courseAgentErrorMessage(error: unknown) {
     .replaceAll(/(authorization:\s*(?:bearer|basic)\s+)\S+/gi, '$1[redacted]');
 }
 
-export async function prepareCourseAgentApproval({
+async function prepareCourseAgentApproval({
   proposal,
   course,
   conversationId,
@@ -80,7 +82,7 @@ export async function prepareCourseAgentApproval({
           decidedBy: null,
           result,
         });
-        return { ...approval, status: 'failed', result };
+        return { ...approval, status: 'failed' as const, result };
       }
       return approval;
     });
@@ -93,6 +95,20 @@ export async function validateCourseAgentProposal(
 ) {
   if (proposal.branch !== course.branch) throw new Error('The configured course branch changed.');
   if (!proposal.diff.trim()) throw new Error('The proposed diff is empty.');
+  if (!course.repository) throw new Error('The configured course repository is missing.');
+  const remote = await execa(
+    'git',
+    ['ls-remote', '--', course.repository, `refs/heads/${course.branch}`],
+    {
+      env: config.gitSshCommand ? { GIT_SSH_COMMAND: config.gitSshCommand } : {},
+      timeout: 30_000,
+    },
+  );
+  if (remote.stdout.trim().split(/\s+/, 1)[0] !== proposal.baseSha) {
+    throw new Error(
+      'The remote branch changed. Fetch and reconcile the workspace before requesting approval again.',
+    );
+  }
   const directory = await mkdtemp(path.join(tmpdir(), 'pl-course-agent-validation-'));
   const checkout = path.join(directory, 'course');
   const env = {
@@ -246,10 +262,25 @@ export async function publishCourseAgentApproval({
     );
   }
   const editor = new CourseAgentDiffEditor({
-    locals: { authz_data: authzData, course, user },
+    locals: {
+      authz_data:
+        'authn_user' in authzData
+          ? authzData
+          : makePageAuthzData({ authzData, is_administrator: false }),
+      course,
+      user,
+    },
     approval,
   });
   const job = await editor.prepareServerJob();
+  const recorded = await updateCourseAgentPushApproval({
+    approvalId: approval.id,
+    status: 'publishing',
+    expectedStatuses: ['publishing'],
+    decidedBy: approval.decided_by,
+    result: { jobSequenceId: job.jobSequenceId },
+  });
+  if (!recorded) throw new Error('Publication is no longer authorized. No push was attempted.');
   try {
     await editor.executeWithServerJob(job);
   } catch (error) {
@@ -279,4 +310,101 @@ export async function publishCourseAgentApproval({
     commitSha: await getCourseCommitHash(course.path),
     message: 'The proposed changes were approved, pushed, and synced successfully.',
   };
+}
+
+export async function reconcileCourseAgentPushApproval({
+  proposal,
+  course,
+  conversationId,
+  sandboxId,
+  runId,
+  userId,
+}: {
+  proposal: WorkerApproval;
+  course: Course;
+  conversationId: string;
+  sandboxId: string;
+  runId: string;
+  userId: string;
+}) {
+  let approval: CourseAgentPushApproval = await prepareCourseAgentApproval({
+    proposal,
+    course,
+    conversationId,
+    runId,
+    userId,
+  });
+  if (approval.status === 'publishing' && typeof approval.result?.jobSequenceId === 'string') {
+    const jobSequenceId = approval.result.jobSequenceId;
+    const jobs = await selectJobsByJobSequenceId(jobSequenceId);
+    const job = jobs.at(-1);
+    if (job?.status === 'Running' && job.data.saveSucceeded === true) {
+      await respondToCourseAgentPushApproval({
+        userId,
+        courseId: course.id,
+        conversationId,
+        sandboxId,
+        approvalId: approval.id,
+        decision: 'publishing',
+        phase: 'syncing',
+      });
+    }
+    if (job && job.status !== 'Running' && job.status !== 'Stopping') {
+      const outcome = classifyEditOutcome(job.data);
+      const status = outcome === 'success' ? 'completed' : 'failed';
+      const result = {
+        jobSequenceId,
+        published: outcome !== 'save_failed',
+        publicationUnknown: outcome === 'save_failed',
+        message:
+          outcome === 'success'
+            ? 'The approved changes were published and synced.'
+            : `Publication was interrupted or failed. Inspect the remote before proposing further changes; this operation will not push again.\n${courseAgentErrorMessage(new Error(job.output ?? job.error_message ?? 'No job output was recorded.'))}`,
+      };
+      approval =
+        (await updateCourseAgentPushApproval({
+          approvalId: approval.id,
+          status,
+          expectedStatuses: ['publishing'],
+          decidedBy: approval.decided_by,
+          result,
+        })) ?? approval;
+    }
+  }
+  if (
+    approval.status === 'publishing' &&
+    !approval.result?.jobSequenceId &&
+    approval.decided_at &&
+    Date.now() - approval.decided_at.getTime() > 300_000
+  ) {
+    approval =
+      (await updateCourseAgentPushApproval({
+        approvalId: approval.id,
+        status: 'failed',
+        expectedStatuses: ['publishing'],
+        decidedBy: approval.decided_by,
+        result: {
+          published: false,
+          message:
+            'Publication stopped before its job was recorded. No push was started. Request publication again after inspecting the workspace.',
+        },
+      })) ?? approval;
+  }
+  if (
+    approval.status === 'pending' ||
+    approval.status === 'completed' ||
+    approval.status === 'failed' ||
+    approval.status === 'denied'
+  ) {
+    await respondToCourseAgentPushApproval({
+      userId,
+      courseId: course.id,
+      conversationId,
+      sandboxId,
+      approvalId: approval.id,
+      decision: approval.status,
+      result: approval.result,
+    });
+  }
+  return approval;
 }
