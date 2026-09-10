@@ -6,7 +6,6 @@ export const CourseAgentTitleCapabilitySchema = z.object({
   userId: z.string(),
   courseId: z.string(),
   prompt: z.string().min(1).max(4000),
-  response: z.string().min(1).max(4000),
   expiresAt: z.iso.datetime(),
 });
 

@@ -2,11 +2,7 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 
 import { withConfig } from '../../../tests/utils/config.js';
 
-import {
-  fallbackConversationTitle,
-  isGreeting,
-  nameCourseAgentConversation,
-} from './conversation-title.js';
+import { fallbackConversationTitle, nameCourseAgentConversation } from './conversation-title.js';
 
 const model = {
   selectCourseAgentHistory: vi.fn(),
@@ -36,18 +32,18 @@ beforeEach(() => {
 });
 afterEach(() => vi.unstubAllGlobals());
 
-it('defers greetings without claiming a title or calling the model', async () => {
-  model.selectCourseAgentHistory.mockResolvedValue({ messages: exchange('Hi!') });
+it('names a conversation immediately from a greeting without waiting for a reply', async () => {
+  model.selectCourseAgentHistory.mockResolvedValue({
+    messages: [{ role: 'user', run_id: 'first', content: 'Hi!' }],
+  });
   await withConfig(testConfig, () => nameCourseAgentConversation(conversationId, model));
-  expect(model.claimCourseAgentTitle).not.toHaveBeenCalled();
-  expect(fetchMock).not.toHaveBeenCalled();
-  expect(isGreeting('Hi, create an assessment')).toBe(false);
+  expect(model.claimCourseAgentTitle).toHaveBeenCalledWith(conversationId, 'Hi!');
+  expect(fetchMock).toHaveBeenCalledTimes(1);
 });
 
-it('waits for a reply and uses the first substantive completed exchange only', async () => {
+it('uses only the first user message', async () => {
   model.selectCourseAgentHistory.mockResolvedValue({
     messages: [
-      ...exchange('hi'),
       ...exchange('Create a numerical methods assessment'),
       ...exchange('Add five more questions'),
     ],
@@ -59,21 +55,21 @@ it('waits for a reply and uses the first substantive completed exchange only', a
     type: 'course-agent-title',
     conversationId,
     prompt: 'Create a numerical methods assessment',
-    response: 'Created three questions.',
   });
+  expect(capability).not.toHaveProperty('response');
   expect(model.updateCourseAgentTitle).toHaveBeenCalledWith(
     conversationId,
     'Create a numerical methods assessment',
     'Numerical methods assessment',
   );
   model.selectCourseAgentHistory.mockResolvedValue({
-    messages: [{ role: 'user', run_id: 'pending', content: 'Create an exam' }],
+    messages: [],
   });
   await withConfig(testConfig, () => nameCourseAgentConversation(conversationId, model));
   expect(fetchMock).toHaveBeenCalledTimes(1);
 });
 
-it('claims naming only once across simultaneous completion and reload requests', async () => {
+it('claims naming only once across simultaneous requests', async () => {
   model.claimCourseAgentTitle
     .mockResolvedValue(null)
     .mockResolvedValueOnce({ user_id: '1', course_id: '2' });
@@ -107,7 +103,7 @@ it('bounds title inputs and never calls a model in fake mode', async () => {
   const body = JSON.parse(fetchMock.mock.calls[0][1].body);
   const capability = JSON.parse(Buffer.from(body.capability.split('.')[2], 'base64url').toString());
   expect(capability.prompt).toHaveLength(4000);
-  expect(capability.response).toHaveLength(4000);
+  expect(capability).not.toHaveProperty('response');
   expect(fallbackConversationTitle('a'.repeat(20000))).toHaveLength(80);
   expect(fallbackConversationTitle('New conversation')).not.toBe('New conversation');
   fetchMock.mockClear();

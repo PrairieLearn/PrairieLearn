@@ -14,12 +14,6 @@ const defaultDependencies = {
   updateCourseAgentTitle,
 };
 
-export function isGreeting(prompt: string) {
-  return /^(hi|hello|hey|hey there|hi there|hello there|yo|yo wassup|sup|howdy|good morning|good afternoon|good evening|thanks|thank you|ok|okay|test|testing)[\s!.?]*$/i.test(
-    prompt.trim(),
-  );
-}
-
 export function fallbackConversationTitle(prompt: string) {
   const title = prompt.replaceAll(/\s+/g, ' ').trim().slice(0, 80);
   return title === 'New conversation' ? 'Course authoring conversation' : title;
@@ -30,20 +24,10 @@ export async function nameCourseAgentConversation(
   dependencies: typeof defaultDependencies = defaultDependencies,
 ) {
   const history = await dependencies.selectCourseAgentHistory(conversationId);
-  const prompt = history.messages.find(
-    (message) =>
-      message.role === 'user' &&
-      !isGreeting(message.content) &&
-      history.messages.some(
-        (reply) => reply.run_id === message.run_id && reply.role === 'assistant',
-      ),
-  );
+  const prompt = history.messages.find((message) => message.role === 'user');
   if (!prompt) return;
-  const reply = history.messages.find(
-    (message) => message.run_id === prompt.run_id && message.role === 'assistant',
-  )!;
   const fallback = fallbackConversationTitle(prompt.content);
-  // Claim once across relay completion, reloads, and multiple PL processes. If naming fails,
+  // Claim once across message submissions and multiple PL processes. If naming fails,
   // the persisted fallback remains useful and we do not repeatedly charge for retries.
   const conversation = await dependencies.claimCourseAgentTitle(conversationId, fallback);
   if (!conversation || config.courseAgentRuntime !== 'cloudflare') return;
@@ -57,7 +41,6 @@ export async function nameCourseAgentConversation(
       userId: conversation.user_id,
       courseId: conversation.course_id,
       prompt: prompt.content.slice(0, 4000),
-      response: reply.content.slice(0, 4000),
       expiresAt: new Date(Date.now() + 60000).toISOString(),
     },
     config.courseAgentCapabilitySecret,

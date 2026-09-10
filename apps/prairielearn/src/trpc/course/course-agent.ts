@@ -9,15 +9,16 @@ import {
   courseAgentSandboxId,
 } from '@prairielearn/course-agent-protocol';
 import { formatDateFriendly } from '@prairielearn/formatter';
+import { logger } from '@prairielearn/logger';
 import { IdSchema } from '@prairielearn/zod';
 
+import { nameCourseAgentConversation } from '../../ee/lib/course-agent/conversation-title.js';
 import {
   getEphemeralCourseAgentSnapshot,
   respondToCourseAgentPushApproval,
   startEphemeralCourseAgentRun,
 } from '../../ee/lib/course-agent/ephemeral-runtime.js';
 import { restoreCourseAgentMessages } from '../../ee/lib/course-agent/history.js';
-import { persistCourseAgentSnapshot } from '../../ee/lib/course-agent/persistence.js';
 import { publicCourseAgentEvent } from '../../ee/lib/course-agent/public-events.js';
 import { publishCourseAgentApproval } from '../../ee/lib/course-agent/publication.js';
 import { config } from '../../lib/config.js';
@@ -30,6 +31,7 @@ import { features } from '../../lib/features/index.js';
 import { idsEqual } from '../../lib/id.js';
 import {
   createCourseAgentTurn,
+  persistCourseAgentSnapshot,
   selectCourseAgentConversations,
   selectCourseAgentHistory,
   selectOptionalCourseAgentConversation,
@@ -158,6 +160,12 @@ const start = courseAgentProcedure
       runId,
       prompt: input.prompt,
       promptDigest: createHash('sha256').update(input.prompt).digest('hex'),
+    });
+    // Naming runs independently so it does not delay the agent's response.
+    void nameCourseAgentConversation(conversationId).catch(() => {
+      logger.warn('Course-agent title generation failed; keeping the fallback title', {
+        conversationId,
+      });
     });
     try {
       const result = await startEphemeralCourseAgentRun({

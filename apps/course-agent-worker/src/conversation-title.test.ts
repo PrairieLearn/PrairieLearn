@@ -14,7 +14,6 @@ function request(overrides = {}) {
       userId: '1',
       courseId: '2',
       prompt: 'Create a numerical methods assessment',
-      response: 'Created three questions.',
       expiresAt: new Date(Date.now() + 60000).toISOString(),
       ...overrides,
     }),
