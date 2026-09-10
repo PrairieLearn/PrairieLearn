@@ -202,6 +202,34 @@ def generate(data):
 
 PrairieLearn accepts string and SymPy JSON representations of a single-variable `sympy.Sum`, `sympy.Product`, or `sympy.Integral`, as well as `sympy.Limit`. A two-item integral tuple creates a domain layout, while a three-item tuple creates a bounds layout.
 
+Use `pl.encode_operator_expression()` to construct a canonical answer from labelled SymPy values or strings. This is especially useful for custom operators, which cannot be represented by a SymPy expression alone:
+
+```html title="question.html"
+<pl-big-operator-input
+  answers-name="evaluation"
+  operator-latex="\operatorname{eval}"
+  custom-functions="f"
+  grading-method="component"
+></pl-big-operator-input>
+```
+
+```python title="server.py"
+import prairielearn as pl
+import sympy
+
+
+def generate(data):
+    data["correct_answers"]["evaluation"] = pl.encode_operator_expression(
+        operator="custom",
+        operator_latex=r"\operatorname{eval}",
+        limits="approach",
+        index="x",
+        target="0",
+        direction="two-sided",
+        body=sympy.Function("f")(sympy.Symbol("x")),
+    )
+```
+
 The variadic SymPy forms `Union`, `Intersection`, `DisjointUnion`, `Min`, and `Max` do not preserve an indexed complete expression. For these operators, use a string with `(index, domain)` or `(index, lower, upper)` as the second argument:
 
 ```html
@@ -239,7 +267,7 @@ The fields depend on the limits layout:
 - Approach answers use `target`, `direction`, and `body`.
 - Custom answers include `operator_latex`; built-in answers do not.
 
-When direction input is enabled, the student's raw selection is stored as `<answers-name>-direction` and copied to the canonical `direction` field. When direction input is disabled, the configured direction is inserted directly. The outer `_type` differs from PrairieLearn's reserved `sympy` leaf type.
+When direction input is enabled, the student's raw selection is stored as `<answers-name>-direction` and copied to the canonical `direction` field. When direction input is disabled, the correct-answer direction is inserted directly. The outer `_type` differs from PrairieLearn's reserved `sympy` leaf type.
 
 ### Accessing structured answers in `server.py`
 
