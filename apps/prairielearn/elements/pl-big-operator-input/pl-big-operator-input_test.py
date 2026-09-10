@@ -181,7 +181,7 @@ class TestPrepareUnits:
         big_operator_input.prepare(html(), data)
 
         answer = data["correct_answers"]["op"]
-        decoded = pl.decode_operator_expression(answer)
+        decoded = pl.json_to_operator_expression(answer)
         assert answer["_type"] == "operator_expression"
         assert answer["operator"] == operator
         assert decoded["body"] == correct_answer.args[0]
@@ -304,7 +304,7 @@ class TestPrepareUnits:
 
         big_operator_input.prepare(markup, data)
 
-        answer = pl.decode_operator_expression(data["correct_answers"]["op"])
+        answer = pl.json_to_operator_expression(data["correct_answers"]["op"])
         assert answer["limits"] == "domain"
         assert answer["domain"] == sympy.Symbol("D")
         assert answer["body"] == sympy.Symbol("A")
@@ -435,7 +435,7 @@ class TestParseUnits:
             data,
         )
 
-        answer = pl.decode_operator_expression(data["submitted_answers"]["op"])
+        answer = pl.json_to_operator_expression(data["submitted_answers"]["op"])
         assert answer["limits"] == "domain"
         assert answer["domain"] == sympy.Symbol("D")
         assert answer["body"] == sympy.Symbol("A")
@@ -485,7 +485,7 @@ class TestParseUnits:
 
         big_operator_input.parse(markup, data)
 
-        decoded = pl.decode_operator_expression(data["submitted_answers"]["op"])
+        decoded = pl.json_to_operator_expression(data["submitted_answers"]["op"])
         assert decoded["body"] == sympy.Function("f")(sympy.Symbol("k")) + sympy.Symbol(
             "x"
         )
