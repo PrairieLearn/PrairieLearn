@@ -4,11 +4,9 @@ export function activeRunExpired(expiresAt: string | null | undefined, now = Dat
   return !Number.isFinite(expiresAtMilliseconds) || expiresAtMilliseconds <= now;
 }
 
-export function sandboxDeadline(
-  previous: number | null | undefined,
-  starting: boolean,
-  lifetimeSeconds: number,
-  now = Date.now(),
-) {
-  return starting || previous == null ? now + lifetimeSeconds * 1000 : previous;
+export const ACTIVE_RECHECK_MS = 60_000;
+export const SANDBOX_SLEEP_AFTER_SECONDS = 6 * 60 * 60;
+
+export function idleDeadline(idleTimeoutSeconds: number, now = Date.now()) {
+  return now + idleTimeoutSeconds * 1000;
 }

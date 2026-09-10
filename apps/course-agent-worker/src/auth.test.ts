@@ -42,7 +42,7 @@ async function makeRequest(): Promise<CourseAgentStartRunRequest> {
     promptDigest: [...digest].map((byte) => byte.toString(16).padStart(2, '0')).join(''),
     runtimeSettings: {
       idleTimeoutSeconds: 600,
-      maxLifetimeSeconds: 600,
+      sleepAfterSeconds: 600,
       backupTtlSeconds: 604_800,
       turnTimeoutSeconds: 900,
     },
@@ -113,7 +113,7 @@ describe('course-agent Worker authorization', () => {
     ).rejects.toThrow('does not authorize');
     await expect(
       authorizeRun(
-        { ...request, runtimeSettings: { ...request.runtimeSettings, maxLifetimeSeconds: 1200 } },
+        { ...request, runtimeSettings: { ...request.runtimeSettings, sleepAfterSeconds: 1200 } },
         secret,
       ),
     ).rejects.toThrow('does not authorize');

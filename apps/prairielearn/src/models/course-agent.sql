@@ -61,6 +61,12 @@ ORDER BY
 UPDATE course_agent_conversations
 SET
   runtime_status = 'starting',
+  conversation_state = 'working',
+  sandbox_state = CASE
+    WHEN sandbox_state = 'offline' THEN 'starting'
+    ELSE sandbox_state
+  END,
+  idle_expires_at = NULL,
   updated_at = NOW()
 WHERE
   id = $conversation_id;
@@ -72,6 +78,37 @@ VALUES
   ($run_id, $conversation_id, $prompt_digest)
 RETURNING
   *;
+
+-- BLOCK select_conversations_to_reconcile
+SELECT
+  to_jsonb(c.*) AS conversation,
+  to_jsonb(latest_run.*) AS run,
+  to_jsonb(course.*) AS course
+FROM
+  course_agent_conversations AS c
+  JOIN courses AS course ON course.id = c.course_id
+  AND course.deleted_at IS NULL
+  JOIN LATERAL (
+    SELECT
+      r.*
+    FROM
+      course_agent_runs AS r
+    WHERE
+      r.conversation_id = c.id
+    ORDER BY
+      r.created_at DESC,
+      r.id DESC
+    LIMIT
+      1
+  ) AS latest_run ON TRUE
+WHERE
+  c.deleted_at IS NULL
+  AND (
+    c.sandbox_state <> 'offline'
+    OR c.conversation_state NOT IN ('waiting_for_user', 'failed')
+  )
+ORDER BY
+  c.updated_at;
 
 -- BLOCK select_running_run
 SELECT
@@ -127,10 +164,20 @@ ON CONFLICT (conversation_id, sequence) DO NOTHING;
 UPDATE course_agent_conversations
 SET
   runtime_status = $runtime_status,
+  conversation_state = COALESCE($conversation_state, conversation_state),
+  sandbox_state = COALESCE($sandbox_state, sandbox_state),
+  lifecycle_revision = $lifecycle_revision,
+  sandbox_generation = $sandbox_generation,
+  idle_expires_at = $idle_expires_at,
+  active_run_expires_at = $active_run_expires_at,
+  process_id = $process_id,
   last_error = $last_error,
   updated_at = NOW()
 WHERE
-  id = $conversation_id;
+  id = $conversation_id
+  AND lifecycle_revision <= $lifecycle_revision
+RETURNING
+  *;
 
 -- BLOCK complete_run
 UPDATE course_agent_runs

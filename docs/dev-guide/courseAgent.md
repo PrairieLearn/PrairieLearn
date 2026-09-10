@@ -91,30 +91,42 @@ Sandbox lifetime settings are non-secret and can be configured in `config.json`:
 {
   "courseAgentSandbox": {
     "idleTimeoutSeconds": 600,
-    "maxLifetimeSeconds": 600,
+    "sleepAfterSeconds": 21600,
     "backupTtlSeconds": 604800,
-    "turnTimeoutSeconds": 540
+    "turnTimeoutSeconds": 21600
   }
 }
 ```
 
-The Worker caps each turn at the remaining absolute sandbox lifetime, so a turn cannot outlive its
-workspace.
+`idleTimeoutSeconds` starts a new idle interval after a turn finishes or fails. A new message clears
+the deadline. The Durable Object alarm checks an active process every minute; idle expiry never
+interrupts a working agent. `turnTimeoutSeconds` is a separate active-execution guard, not a sandbox
+lifetime. `sleepAfterSeconds` controls Cloudflare's inactivity failsafe, with `keepAlive` disabled.
+Both guards default to six hours. Settings take effect on the next run and accept 60–86,400 seconds.
 
-`maxLifetimeSeconds` is an absolute limit starting when the sandbox is created, not an idle timer.
-It defaults to 600 seconds and accepts values from 1 to 86,400 seconds (for example, 10 for local
-expiry testing). New messages do not extend an existing sandbox's deadline. A durable alarm shuts
-down the sandbox at the deadline, including during an active turn. In this persistence layer, the
-next message restores the last completed checkpoint. Changes from an interrupted turn may be lost.
-An idle backup failure retains the sandbox for a retry until the absolute deadline. An expired
-backup is reported instead of silently claiming unpublished edits were restored. The lifetime applies
-from sandbox creation; new messages do not reset it. `idleTimeoutSeconds` controls the separate
-durable idle timer after a turn finishes. With both defaults at 600 seconds, the absolute limit wins.
+There is no absolute sandbox lifetime. Legacy `maxLifetimeSeconds` values are ignored. On upgrade,
+old absolute-deadline alarms are replaced with a full idle interval or an active-process check.
+Before intentional suspension, the coordinator backs up the workspace. A failed backup keeps the
+sandbox available and retries after one minute; it never falls through to destruction. Successful
+turns also create checkpoints. Backup failure does not invalidate the agent's completed response.
+The next message restores the last checkpoint; expired checkpoints are reported explicitly.
+
+The coordinator persists its process ID, parsed stream state and log cursor. An alarm can reconcile
+the same process after coordinator replacement, including its final output, without submitting the
+user's prompt again. Conversation state (`working`, `waiting_for_user`, `failed`) is separate from
+sandbox state (`offline`, `starting`, `ready`, `suspending`). Later PRs add approval/publication phases.
+
+The `courseAgentReconcile` server cron job polls outstanding conversations once per minute, without
+requiring an open browser. It only inspects coordinator state; it never starts a model turn or sandbox.
+Normal feature checks still apply. PostgreSQL stores the raw conversation/sandbox states, revision,
+generation, idle deadline and process ID; older snapshots cannot overwrite newer revisions. The
+diagnostic panel shows these database fields alongside explicitly labeled Worker values.
 
 Administrators see a collapsed **Conversation info (only visible to administrators)**
 accordion. The diagnostic endpoint also requires administrator access; the ordinary transcript
 omits internal telemetry. The accordion shows runtime
-identifiers, state, and usage, but never credentials or model reasoning. Activity
+identifiers, raw state values and usage, but never credentials or model reasoning. Worker-owned fields
+are labeled explicitly; `null` is shown as `null`, and UI loading state never replaces stored state. Activity
 appears inline within each assistant response using the same tool-status components as question
 generation, and assistant responses support Markdown. Enter sends a message;
 Shift+Enter adds a newline. The sandbox image includes `python` and `python3`.

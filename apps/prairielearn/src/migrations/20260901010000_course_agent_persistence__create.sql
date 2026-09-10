@@ -14,6 +14,27 @@ CREATE TABLE course_agent_conversations (
     )
   ),
   last_error TEXT,
+  conversation_state TEXT NOT NULL DEFAULT 'waiting_for_user' CHECK (
+    conversation_state IN (
+      'working',
+      'waiting_for_user',
+      'validating_change',
+      'waiting_for_approval',
+      'publishing',
+      'syncing',
+      'refreshing_workspace',
+      'resuming_agent',
+      'failed'
+    )
+  ),
+  sandbox_state TEXT NOT NULL DEFAULT 'offline' CHECK (
+    sandbox_state IN ('offline', 'starting', 'ready', 'suspending')
+  ),
+  lifecycle_revision INTEGER NOT NULL DEFAULT 0 CHECK (lifecycle_revision >= 0),
+  sandbox_generation INTEGER NOT NULL DEFAULT 0 CHECK (sandbox_generation >= 0),
+  idle_expires_at TIMESTAMPTZ,
+  active_run_expires_at TIMESTAMPTZ,
+  process_id TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   deleted_at TIMESTAMPTZ
