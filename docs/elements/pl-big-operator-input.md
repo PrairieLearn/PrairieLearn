@@ -230,6 +230,8 @@ def generate(data):
     )
 ```
 
+It also serializes an `OperatorExpression` returned by `pl.json_to_operator_expression()`, allowing a validated structured answer to be round-tripped as canonical JSON.
+
 The variadic SymPy forms `Union`, `Intersection`, `DisjointUnion`, `Min`, and `Max` do not preserve an indexed complete expression. For these operators, use a string with `(index, domain)` or `(index, lower, upper)` as the second argument:
 
 ```html

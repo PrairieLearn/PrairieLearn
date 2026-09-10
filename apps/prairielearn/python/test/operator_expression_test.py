@@ -148,6 +148,15 @@ def test_operator_expression_to_json_accepts_strings() -> None:
     assert decoded["body"] == sympy.Symbol("k") ** 2
 
 
+def test_operator_expression_to_json_accepts_operator_expression() -> None:
+    decoded = pl.json_to_operator_expression(bounds_answer())
+
+    encoded = pl.operator_expression_to_json(decoded)
+
+    assert_type(encoded, pl.OperatorExpressionJson)
+    assert encoded == bounds_answer()
+
+
 def test_encode_domain_operator_expression() -> None:
     k = sympy.Symbol("k")
     encoded = pl.operator_expression_to_json(
