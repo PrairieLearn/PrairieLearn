@@ -10,7 +10,16 @@ const sandbox = vi.hoisted(() => ({
   startProcess: vi.fn(async () => ({
     id: 'codex',
     getStatus: vi.fn(async () => 'completed'),
-    getLogs: vi.fn(async () => ({ stdout: '', stderr: '' })),
+    getLogs: vi.fn(async () => ({
+      stdout:
+        JSON.stringify({
+          method: 'item/completed',
+          params: {
+            item: { type: 'agentMessage', id: 'answer', phase: 'final_answer', text: 'Hello.' },
+          },
+        }) + '\n',
+      stderr: '',
+    })),
     kill: vi.fn(async () => {}),
   })),
   getProcess: vi.fn(async () => ({ exitCode: 0 })),

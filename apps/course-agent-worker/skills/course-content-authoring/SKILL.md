@@ -10,9 +10,10 @@ For content requests, use the local references below instead of searching the we
 
 ## Start with the course
 
-The working directory is the course checkout, normally `/workspace/course`. Read `infoCourse.json`
-and list existing `courseInstances` and relevant `questions` directories once. Reuse the course's
-topics, assessment sets, naming, and nearby examples. Do not scan the filesystem for skills.
+The working directory is the course checkout, normally `/workspace/course`. Start with the supplied
+course context and format example. Read `infoCourse.json` or list directories only when the context
+does not answer a specific question. Reuse the course's topics, assessment sets, naming, and nearby
+examples. Do not scan the filesystem for skills.
 
 Questions live in `questions/<qid>/info.json` and `question.html`; `server.py` is optional.
 The metadata filename is **`info.json`, not `infoQuestion.json`**. Assessments live in
@@ -61,13 +62,11 @@ cannot be confirmed, use a supported simpler pattern or ask a focused question.
 
 ## Finish and request approval
 
-Review changed files, QID references, correct answers, and UUIDs. The course agent provides the
-`validate_course`, `render_question_variant`, and `push_sync` tools. Invoke these as tools; never
-type their names into a shell command or search the repository for them.
-
-Use `render_question_variant` to smoke-test a changed question when applicable. Commit the intended
-changes with a concise descriptive message and the required PrairieLearn Agent co-author trailer,
-then call `push_sync`. That tool validates the course and requests the instructor's approval; it
-does not authorize bypassing approval or pushing directly. Report what you created in one to three
-sentences, including any unresolved choice and whether approval or sync is still pending. Use
-inline code for file paths, not download links.
+Review changed files, QID references, correct answers, and UUIDs. For requested content changes,
+commit the intended edits with a descriptive message and the PrairieLearn Agent co-author trailer,
+then invoke `push_sync` as a tool. PrairieLearn validates the proposed content before requesting
+approval. It returns validation, Git, and sync errors to you; fix their cause before retrying.
+Do not invent separate validation or rendering tools. A denial means do not publish or resubmit
+the same proposal; ask the instructor what to change if unclear. Never push directly.
+Report what changed and whether publication and sync succeeded. Sync success does not prove that
+every question renders or grades correctly. Use inline code for file paths, not download links.

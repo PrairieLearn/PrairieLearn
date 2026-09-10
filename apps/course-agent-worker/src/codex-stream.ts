@@ -7,10 +7,20 @@ type EmittedEvent = Pick<CourseAgentEvent, 'type' | 'data'>;
 export class CodexStream {
   response = '';
   private messages = new Map<string, string>();
+  private commentary = new Map<string, string>();
 
   consume(event: Record<string, unknown>): EmittedEvent[] {
     const params = event.params;
     if (!isRecord(params)) return [];
+    if (
+      event.method === 'turn/completed' &&
+      isRecord(params.turn) &&
+      params.turn.status === 'completed' &&
+      !this.response.trim()
+    ) {
+      // Some turns end with a user-visible commentary message instead of a final-answer item.
+      return this.append([...this.commentary.values()].findLast((text) => text.trim()) ?? '');
+    }
     if (event.method === 'thread/started' && isRecord(params.thread)) {
       return [{ type: 'agent.started', data: { threadId: params.thread.id } }];
     }
@@ -43,6 +53,15 @@ export class CodexStream {
       return this.append(params.delta);
     }
     if (
+      event.method === 'item/agentMessage/delta' &&
+      typeof params.itemId === 'string' &&
+      typeof params.delta === 'string' &&
+      this.commentary.has(params.itemId)
+    ) {
+      this.commentary.set(params.itemId, this.commentary.get(params.itemId)! + params.delta);
+      return [];
+    }
+    if (
       !['item/started', 'item/completed'].includes(String(event.method)) ||
       !isRecord(params.item)
     ) {
@@ -50,8 +69,15 @@ export class CodexStream {
     }
     const item = params.item;
     if (item.type === 'agentMessage' && typeof item.id === 'string') {
-      // Commentary and reasoning stay out of the concise instructor transcript.
-      if (item.phase === 'commentary') return [];
+      if (item.phase === 'commentary') {
+        this.commentary.set(
+          item.id,
+          typeof item.text === 'string' && item.text
+            ? item.text
+            : (this.commentary.get(item.id) ?? ''),
+        );
+        return [];
+      }
       const previous = this.messages.get(item.id);
       const text = typeof item.text === 'string' ? item.text : '';
       const separator = previous === undefined && this.response ? '\n\n' : '';
