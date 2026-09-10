@@ -32,6 +32,29 @@ async function render(input: CourseAgentEvent[]) {
 }
 
 describe('course-agent UI-message adapter', () => {
+  it('keeps a refresh marker in the saved assistant message only after successful sync', async () => {
+    const messages = await render(
+      events([
+        ['user.message', { runId: 'current' }],
+        ['git.push.completed', { approvalId: 'approval-id' }],
+        ['sync.completed', { approvalId: 'approval-id' }],
+        ['agent.completed', { response: 'Published the update.' }],
+      ]),
+    );
+    expect(messages.at(-1)?.parts).toContainEqual({
+      type: 'data-courseSynced',
+      id: 'approval-id',
+      data: { approvalId: 'approval-id' },
+    });
+    const failed = await render(
+      events([
+        ['user.message', { runId: 'current' }],
+        ['git.push.completed', { approvalId: 'approval-id' }],
+        ['agent.completed', { response: 'The sync failed.' }],
+      ]),
+    );
+    expect(failed.at(-1)?.parts.some((part) => part.type === 'data-courseSynced')).toBe(false);
+  });
   it('emits a transient signal when a push needs instructor approval', async () => {
     const stream = new ReadableStream<CourseAgentEvent>({
       start(controller) {

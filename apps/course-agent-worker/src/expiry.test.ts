@@ -33,7 +33,9 @@ const sandbox = vi.hoisted(() => ({
           ? 'master'
           : command.includes('test -d')
             ? 'yes'
-            : '',
+            : command === 'git rev-parse HEAD'
+              ? 'a'.repeat(40)
+              : '',
     stderr: '',
   })),
 }));
@@ -187,7 +189,7 @@ describe('sandbox expiry alarm', () => {
   });
 
   it.each(['running', 'stopped'])(
-    'restores only a fresh sandbox and checkpoints after the turn (%s)',
+    'restores and checkpoints despite a different expected course revision (%s)',
     async (status) => {
       const { coordinator, storage } = fixture('run', Date.now() + 600000);
       const backup = {
@@ -205,7 +207,7 @@ describe('sandbox expiry alarm', () => {
         course: {
           repository: 'https://github.com/PrairieLearn/test.git',
           branch: 'master',
-          expectedSha: null,
+          expectedSha: 'b'.repeat(40),
         },
         authoringContext: { courseInstance: null },
         workspaceBackup: backup,

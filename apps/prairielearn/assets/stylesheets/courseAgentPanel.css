@@ -143,6 +143,9 @@
   padding-inline: 0.75rem;
   color: var(--bs-body-color);
   white-space: pre;
+  border-radius: 0;
+  font: inherit;
+  line-height: 1.5;
 }
 .course-agent-diff-addition {
   color: var(--bs-success-text-emphasis);

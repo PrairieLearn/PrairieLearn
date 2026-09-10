@@ -298,6 +298,7 @@ reportUnknownParameterType = "information"
 pythonpath = ["apps/prairielearn/python"]
 addopts = ["--cov=apps"]
 testpaths = [
+  "apps/course-agent-worker/sandbox",
   "apps/prairielearn/elements",
   "apps/prairielearn/python/test",
   "graders/python/python_autograder/tests",

@@ -20,7 +20,12 @@ import {
 } from '../../ee/lib/course-agent/ephemeral-runtime.js';
 import { restoreCourseAgentMessages } from '../../ee/lib/course-agent/history.js';
 import { publicCourseAgentEvent } from '../../ee/lib/course-agent/public-events.js';
-import { publishCourseAgentApproval } from '../../ee/lib/course-agent/publication.js';
+import {
+  CourseAgentPublicationError,
+  courseAgentErrorMessage,
+  prepareCourseAgentApproval,
+  publishCourseAgentApproval,
+} from '../../ee/lib/course-agent/publication.js';
 import { config } from '../../lib/config.js';
 import {
   CourseAgentConversationSchema,
@@ -38,7 +43,6 @@ import {
   selectOptionalCourseAgentPushApproval,
   selectOptionalRunningCourseAgentRun,
   updateCourseAgentPushApproval,
-  upsertCourseAgentPushApproval,
 } from '../../models/course-agent.js';
 import { selectOptionalCourseInstanceById } from '../../models/course-instances.js';
 import { selectUserSettings, updateCourseAgentApprovalMode } from '../../models/user-settings.js';
@@ -198,6 +202,7 @@ const start = courseAgentProcedure
         });
         await persistCourseAgentSnapshot({ snapshot, runId });
       }
+      ctx.session.course_agent_conversation_id = conversationId;
       return result;
     } catch (error) {
       await persistCourseAgentSnapshot({
@@ -253,14 +258,29 @@ const get = courseAgentProcedure
           message: 'Course repository is missing',
         });
       }
-      const approval = await upsertCourseAgentPushApproval({
-        approval: snapshot.pendingApproval,
+      const approval = await prepareCourseAgentApproval({
+        proposal: snapshot.pendingApproval,
         conversationId: conversation.id,
         runId,
-        courseId: ctx.course.id,
+        course: ctx.locals.course,
         userId: ctx.locals.authn_user.id,
-        repository: ctx.course.repository,
       });
+      if (
+        approval.status === 'failed' ||
+        approval.status === 'completed' ||
+        approval.status === 'denied'
+      ) {
+        await respondToCourseAgentPushApproval({
+          userId: ctx.locals.authn_user.id,
+          courseId: ctx.course.id,
+          conversationId: conversation.id,
+          sandboxId: input.sandboxId,
+          approvalId: approval.id,
+          decision: approval.status,
+          result: approval.result,
+        });
+        snapshot = { ...snapshot, pendingApproval: null };
+      }
       const userSettings = await selectUserSettings({ user_id: ctx.locals.authn_user.id });
       if (userSettings.course_agent_approval_mode === 'always' && approval.status === 'pending') {
         await resolvePushApproval({ ctx, approvalId: approval.id, decision: 'approve' });
@@ -443,7 +463,10 @@ async function resolvePushApproval({
       status: 'denied',
       expectedStatuses: ['pending'],
       decidedBy: ctx.locals.authn_user.id,
-      result: { message: 'The instructor denied publication' },
+      result: {
+        message:
+          'The instructor denied this proposal. Do not publish or resubmit it unchanged. Ask what should change if their reason is unclear.',
+      },
     });
     if (!denied) {
       throw new TRPCError({ code: 'CONFLICT', message: 'Approval is no longer pending' });
@@ -454,7 +477,7 @@ async function resolvePushApproval({
       decision: 'denied',
       result: denied.result,
     });
-    return { status: 'denied' as const, message: 'Publication denied' };
+    return { status: 'denied' as const, message: 'Denied request', published: false };
   }
 
   const publishing = await updateCourseAgentPushApproval({
@@ -472,30 +495,23 @@ async function resolvePushApproval({
     approvalId: approval.id,
     decision: 'publishing',
   });
+  let publicationResult: Awaited<ReturnType<typeof publishCourseAgentApproval>>;
   try {
-    const result = await publishCourseAgentApproval({
+    publicationResult = await publishCourseAgentApproval({
       approval: publishing,
       course: ctx.locals.course,
       user: ctx.locals.user,
       authzData: ctx.locals.authz_data,
     });
-    await updateCourseAgentPushApproval({
-      approvalId: approval.id,
-      status: 'completed',
-      expectedStatuses: ['publishing'],
-      decidedBy: ctx.locals.authn_user.id,
-      result,
-    });
-    await respondToCourseAgentPushApproval({
-      ...identity,
-      approvalId: approval.id,
-      decision: 'completed',
-      result,
-    });
-    return { status: 'completed' as const, message: 'Changes published and course sync completed' };
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    const result = { message };
+    const message = courseAgentErrorMessage(error);
+    const result = {
+      message,
+      published: error instanceof CourseAgentPublicationError && error.published,
+      ...(error instanceof CourseAgentPublicationError
+        ? { jobSequenceId: error.jobSequenceId, commitSha: error.commitSha }
+        : {}),
+    };
     await updateCourseAgentPushApproval({
       approvalId: approval.id,
       status: 'failed',
@@ -509,8 +525,26 @@ async function resolvePushApproval({
       decision: 'failed',
       result,
     });
-    return { status: 'failed' as const, message };
+    return { status: 'failed' as const, message, published: result.published };
   }
+  await updateCourseAgentPushApproval({
+    approvalId: approval.id,
+    status: 'completed',
+    expectedStatuses: ['publishing'],
+    decidedBy: ctx.locals.authn_user.id,
+    result: publicationResult,
+  });
+  await respondToCourseAgentPushApproval({
+    ...identity,
+    approvalId: approval.id,
+    decision: 'completed',
+    result: publicationResult,
+  });
+  return {
+    status: 'completed' as const,
+    message: 'Changes published and course sync completed',
+    published: true,
+  };
 }
 
 const respondToPushApproval = courseAgentProcedure
@@ -520,7 +554,13 @@ const respondToPushApproval = courseAgentProcedure
       decision: z.enum(['approve', 'deny']),
     }),
   )
-  .output(z.object({ status: z.enum(['denied', 'completed', 'failed']), message: z.string() }))
+  .output(
+    z.object({
+      status: z.enum(['denied', 'completed', 'failed']),
+      message: z.string(),
+      published: z.boolean(),
+    }),
+  )
   .mutation(({ ctx, input }) => resolvePushApproval({ ctx, ...input }));
 
 export const courseAgentRouter = t.router({

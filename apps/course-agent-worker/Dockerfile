@@ -9,9 +9,6 @@ COPY scripts/run-codex.mjs /opt/course-agent/scripts/run-codex.mjs
 COPY scripts/course-context.mjs /opt/course-agent/scripts/course-context.mjs
 COPY skills/course-content-authoring /opt/course-agent/skills/course-content-authoring
 
-COPY bin/validate-course.mjs /usr/local/bin/validate-course
-RUN chmod 0555 /usr/local/bin/validate-course
-
 RUN mkdir -p /opt/prairielearn
 COPY sandbox/course_agent_mcp.py /opt/prairielearn/course_agent_mcp.py
 

@@ -1,7 +1,7 @@
 import { useChat } from '@ai-sdk/react';
 import { QueryClient, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Fragment, useEffect, useRef, useState } from 'react';
-import { Alert, Button, Dropdown, Spinner } from 'react-bootstrap';
+import { Alert, Button, Dropdown, Modal, Spinner } from 'react-bootstrap';
 import type { Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useStickToBottom } from 'use-stick-to-bottom';
@@ -22,7 +22,7 @@ import { AssistantMessage, MessageMetadata, UserMessage } from './course-agent/C
 import { ChatMessageParts } from './course-agent/ChatMessageParts.js';
 import { ToolCallStatus } from './course-agent/ChatProgressStatus.js';
 import { ScrollToBottomButton } from './course-agent/ChatScrollToBottom.js';
-import { CourseAgentDiff } from './course-agent/CourseAgentDiff.js';
+import { CourseAgentDiff, CourseAgentDiffSummary } from './course-agent/CourseAgentDiff.js';
 import { type CourseAgentRun, CourseAgentTransport } from './courseAgentTransport.js';
 
 const markdownPlugins = [remarkGfm];
@@ -146,6 +146,7 @@ function CourseAgentConversationPanel({
   const stickToBottom = useStickToBottom({ initial: 'smooth', resize: 'smooth' });
 
   const [prompt, setPrompt] = useState('');
+  const [reviewOpen, setReviewOpen] = useState(false);
   const [queuedPrompts, setQueuedPrompts] = useState<
     { id: string; text: string; createdAt: string }[]
   >([]);
@@ -290,7 +291,7 @@ function CourseAgentConversationPanel({
               ) : (
                 <AssistantMessage key={message.id}>
                   <ChatMessageParts<CourseAgentMessage>
-                    parts={message.parts}
+                    parts={message.parts.filter((part) => part.type !== 'data-courseSynced')}
                     renderTool={(part) => {
                       if (
                         part.type !== 'tool-activity' ||
@@ -305,7 +306,11 @@ function CourseAgentConversationPanel({
                         (part.state === 'input-streaming' || part.state === 'input-available') &&
                         ['Proposing changes', 'Used push sync'].includes(part.input?.label ?? '');
                       if (waitingForApproval) {
-                        if (approvalMode.data?.mode === 'always') {
+                        if (
+                          approvalMode.data?.mode === 'always' ||
+                          snapshot.data?.pendingApproval?.status === 'publishing' ||
+                          (approval.isPending && approval.variables.decision === 'approve')
+                        ) {
                           return (
                             <ToolCallStatus
                               state={part.state}
@@ -320,6 +325,17 @@ function CourseAgentConversationPanel({
                           >
                             <i className="bi bi-person-check flex-shrink-0" aria-hidden="true" />
                             <span>Waiting for your approval</span>
+                          </div>
+                        );
+                      }
+                      if (
+                        part.state === 'output-available' &&
+                        part.output.label === 'Denied request'
+                      ) {
+                        return (
+                          <div className="small text-secondary">
+                            <i className="bi bi-x-circle me-1" aria-hidden="true" />
+                            Denied request
                           </div>
                         );
                       }
@@ -343,6 +359,18 @@ function CourseAgentConversationPanel({
                   />
                   {message.metadata?.failure && (
                     <Alert variant="danger">{message.metadata.failure}</Alert>
+                  )}
+                  {message.parts.some((part) => part.type === 'data-courseSynced') && (
+                    <Button
+                      size="sm"
+                      variant="outline-secondary"
+                      className="mb-2"
+                      disabled={busy}
+                      onClick={() => window.location.reload()}
+                    >
+                      <i className="bi bi-arrow-clockwise me-1" aria-hidden="true" />
+                      Refresh course content
+                    </Button>
                   )}
                   {(!busy || message.id !== messages.at(-1)?.id) && (
                     <MessageMetadata
@@ -399,7 +427,11 @@ function CourseAgentConversationPanel({
             />
             {approval.data?.status === 'failed' && (
               <Alert variant="danger" dismissible onClose={() => approval.reset()}>
-                <Alert.Heading className="h6">Proposed changes were not published</Alert.Heading>
+                <Alert.Heading className="h6">
+                  {approval.data.published
+                    ? 'Changes published, but sync failed'
+                    : 'Proposed changes were not published'}
+                </Alert.Heading>
                 <div className="small" style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>
                   {approval.data.message}
                 </div>
@@ -420,18 +452,36 @@ function CourseAgentConversationPanel({
                   <p className="small text-muted mb-1 mt-1">
                     Review the proposed changes and provide your approval.
                   </p>
-                  <p className="small text-break mb-0">
-                    {snapshot.data.pendingApproval.diffSummary}
-                  </p>
+                  <CourseAgentDiffSummary diff={snapshot.data.pendingApproval.diff} />
                 </div>
                 <details>
                   <summary className="small px-3 py-2">View full diff</summary>
                   <CourseAgentDiff diff={snapshot.data.pendingApproval.diff} />
                 </details>
+                <Button size="sm" variant="link" onClick={() => setReviewOpen(true)}>
+                  Expand diff
+                </Button>
+                <Modal show={reviewOpen} size="xl" scrollable onHide={() => setReviewOpen(false)}>
+                  <Modal.Header closeButton>
+                    <Modal.Title as="h2" className="h5">
+                      Proposed changes
+                    </Modal.Title>
+                  </Modal.Header>
+                  <Modal.Body className="p-0">
+                    <CourseAgentDiff diff={snapshot.data.pendingApproval.diff} />
+                  </Modal.Body>
+                  <Modal.Footer>
+                    <Button variant="secondary" onClick={() => setReviewOpen(false)}>
+                      Close
+                    </Button>
+                  </Modal.Footer>
+                </Modal>
                 <div className="d-flex justify-content-end gap-2 border-top px-2 py-2">
                   <Button
                     size="sm"
-                    disabled={approval.isPending}
+                    disabled={
+                      approval.isPending || snapshot.data.pendingApproval.status === 'publishing'
+                    }
                     onClick={() =>
                       approval.mutate({
                         approvalId: snapshot.data.pendingApproval!.id,
@@ -439,12 +489,22 @@ function CourseAgentConversationPanel({
                       })
                     }
                   >
-                    Approve
+                    {(approval.isPending && approval.variables.decision === 'approve') ||
+                    snapshot.data.pendingApproval.status === 'publishing' ? (
+                      <>
+                        <Spinner size="sm" aria-hidden="true" className="me-1" />
+                        Publishing…
+                      </>
+                    ) : (
+                      'Approve'
+                    )}
                   </Button>
                   <Button
                     size="sm"
                     variant="outline-danger"
-                    disabled={approval.isPending}
+                    disabled={
+                      approval.isPending || snapshot.data.pendingApproval.status === 'publishing'
+                    }
                     onClick={() =>
                       approval.mutate({
                         approvalId: snapshot.data.pendingApproval!.id,
@@ -452,7 +512,9 @@ function CourseAgentConversationPanel({
                       })
                     }
                   >
-                    Deny
+                    {approval.isPending && approval.variables.decision === 'deny'
+                      ? 'Denying…'
+                      : 'Deny'}
                   </Button>
                 </div>
               </div>

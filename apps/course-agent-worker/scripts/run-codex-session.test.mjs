@@ -133,9 +133,9 @@ it('tells Codex to invoke course-agent tools instead of shell commands', async (
 
   const instructions = mock.requests.find((request) => request.method === 'thread/start').params
     .developerInstructions;
-  expect(instructions).toContain('`push_sync` tools');
-  expect(instructions).toContain('Invoke these as tools; never');
-  expect(instructions).not.toContain('This version has no');
+  expect(instructions).toContain('invoke `push_sync` as a tool');
+  expect(instructions).toContain('Do not invent separate validation or rendering tools');
+  expect(instructions).toContain('Never push directly');
 });
 
 it('keeps the thread after a failed turn and does not silently replace a failed resume', async () => {

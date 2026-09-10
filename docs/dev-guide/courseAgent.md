@@ -64,12 +64,22 @@ generate duplicate requests. The title stays "New conversation" until generation
 including if naming fails. There are no automatic paid retries. Existing titles are left unchanged.
 The fake runtime uses the shortened message and makes no model requests.
 
-The fourth layer adds the approval-gated `push_sync` tool. Codex must statically validate the full
-course, smoke-test changed question variants, commit a clean workspace with a descriptive message
-and PrairieLearn Agent co-author trailer, and then call the tool. The Worker independently reruns
-validation and verifies the proposed commit and Git tree before it creates an approval. PrairieLearn
-applies the approved diff to its trusted checkout, pushes and syncs it, and returns the resulting
-status to the waiting tool call. Denial returns control without publishing.
+The fourth layer adds the approval-gated `push_sync` tool. For requested content changes, Codex
+commits a clean workspace with a descriptive message and PrairieLearn Agent co-author trailer,
+then calls the tool. The Worker verifies the proposed commit and Git tree. Before exposing an
+approval, PrairieLearn applies the diff to an isolated temporary checkout and runs its existing
+`loadFullCourse` loader. This checks course metadata and references without syncing the live
+course or executing question code. Validation runs once per proposal; errors return to the agent
+before the instructor is asked to approve.
+
+PrairieLearn applies the approved diff to its trusted checkout, pushes and syncs it, and returns
+the resulting status and server-job errors to the waiting tool call. Denial returns control without
+publishing and tells the agent not to resubmit the same proposal. If publishing succeeds but sync
+fails, the result explicitly identifies that partial success. After publication, the sandbox fetches
+and merges the published revision to keep its history aligned with PrairieLearn's new commit.
+Recoverable revision conflicts return to the agent; repository identity and approval checks remain
+enforced. A successful sync adds a refresh button in the conversation. Refreshing restores the
+selected conversation and saved messages.
 
 ## Free local testing
 
@@ -142,12 +152,10 @@ not require a separate template read. The skill encourages batched inspection, e
 review, and defaults to three complementary questions when no count is requested. It preserves
 requested subject depth. No automatic course inventory or eval runner is included.
 
-There is no standalone validator or `question_render` tool in the repository-setup PR. The later
-push/sync PR should return PL sync errors through `push_sync` and add `question_render` for a
-selected question variant before requesting publication. Rendering should use isolated proposed
-content, not mutate the live course; return rendered output and actionable generation/render
-errors to the agent. Sync success alone does not establish that every variant renders or grades.
-Until those tools exist, the agent reports local edits without claiming successful rendering or sync.
+There are no standalone validation or question-rendering tools. The course-specific MCP server
+exposes only `push_sync`; Codex retains its normal file, shell, and search capabilities. Validation
+inside `push_sync` and successful sync do not establish that every question variant renders or
+grades correctly. The agent must not claim unperformed rendering or grading checks.
 
 The panel uses the AI SDK's `useChat`. A small transport starts runs through tRPC and reads standard
 UI-message SSE. PrairieLearn translates Worker events into UI-message chunks before buffering them

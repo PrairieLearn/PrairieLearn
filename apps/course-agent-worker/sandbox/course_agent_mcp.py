@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 import json
-import pathlib
 import subprocess
 import sys
 import urllib.error
@@ -13,60 +12,19 @@ from typing import Any
 
 
 def _git_raw(*args: str) -> str:
-    return subprocess.run(
-        ["git", *args], check=True, text=True, capture_output=True
-    ).stdout
+    result = subprocess.run(["git", *args], text=True, capture_output=True, check=False)
+    if result.returncode != 0:
+        raise RuntimeError(
+            f"git {' '.join(args)} failed:\n{result.stdout}\n{result.stderr}".strip()
+        )
+    return result.stdout
 
 
 def _git(*args: str) -> str:
     return _git_raw(*args).strip()
 
 
-def _validate_course() -> dict[str, Any]:
-    result = subprocess.run(
-        ["validate-course", "."], text=True, capture_output=True, check=False
-    )
-    output = f"{result.stdout}\n{result.stderr}".strip()
-    if result.returncode != 0:
-        raise RuntimeError(output)
-    return {"ok": True, "output": output}
-
-
-def _render_question_variant(qid: str) -> dict[str, Any]:
-    _validate_course()
-    root = pathlib.Path.cwd().resolve()
-    question = (root / "questions" / qid).resolve()
-    if root not in question.parents or not question.is_dir():
-        raise RuntimeError("Question not found")
-    if not (question / "question.html").is_file():
-        raise RuntimeError("question.html is missing")
-    script = """
-import importlib.util, json, pathlib, sys
-path = pathlib.Path(sys.argv[1])
-data = {"params": {}, "correct_answers": {}, "options": {}, "variant_seed": 1}
-server = path / "server.py"
-if server.exists():
-    spec = importlib.util.spec_from_file_location("course_agent_question", server)
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    if hasattr(module, "generate"):
-        module.generate(data)
-print(json.dumps({"params": data["params"], "correct_answers": data["correct_answers"]}, default=str))
-"""
-    result = subprocess.run(
-        ["python3", "-c", script, str(question)],
-        text=True,
-        capture_output=True,
-        check=False,
-        cwd=question,
-    )
-    if result.returncode != 0:
-        raise RuntimeError(result.stderr.strip())
-    return {"ok": True, "qid": qid, "variant": json.loads(result.stdout)}
-
-
 def _push_sync() -> dict[str, Any]:
-    _validate_course()
     if _git("status", "--porcelain"):
         raise RuntimeError("Commit all intended changes before calling push_sync")
     if "Co-authored-by: PrairieLearn Agent (Codex)" not in _git_raw(
@@ -109,18 +67,35 @@ def _push_sync() -> dict[str, Any]:
         headers={"Content-Type": "application/json"},
         method="POST",
     )
+    result: dict[str, Any]
+    details: dict[str, Any]
     try:
         with urllib.request.urlopen(request) as response:
-            return json.load(response)
+            result = json.load(response)
     except urllib.error.HTTPError as error:
         body = error.read().decode()
+        error.close()
         try:
-            detail = json.loads(body).get("error", body)
+            details = json.loads(body)
         except json.JSONDecodeError:
-            detail = body
-        raise RuntimeError(
-            f"Push approval request failed ({error.code}): {detail}"
-        ) from error
+            details = {"error": body}
+        result = {
+            "ok": False,
+            **(details.get("details") or {}),
+            "error": f"Push/sync failed ({error.code}): {details.get('error', body)}",
+        }
+    if result.get("ok") or result.get("published"):
+        sha = result.get("commitSha")
+        if sha:
+            try:
+                _git("fetch", "origin", branch)
+                _git("merge", "--no-edit", sha)
+            except RuntimeError as error:
+                result["checkoutWarning"] = (
+                    f"Publication already occurred, but the workspace needs reconciliation: {error}. "
+                    "Preserve local work and resolve this before making further edits."
+                )
+    return result
 
 
 def _rpc_result(request_id: Any, result: Any) -> dict[str, Any]:
@@ -149,27 +124,8 @@ def _handle(message: dict[str, Any]) -> dict[str, Any] | None:
             {
                 "tools": [
                     {
-                        "name": "validate_course",
-                        "description": "Run static validation across the current PrairieLearn course checkout.",
-                        "inputSchema": {
-                            "type": "object",
-                            "additionalProperties": False,
-                            "properties": {},
-                        },
-                    },
-                    {
-                        "name": "render_question_variant",
-                        "description": "Smoke-test generation of one question variant after validating the course.",
-                        "inputSchema": {
-                            "type": "object",
-                            "additionalProperties": False,
-                            "required": ["qid"],
-                            "properties": {"qid": {"type": "string"}},
-                        },
-                    },
-                    {
                         "name": "push_sync",
-                        "description": "Submit the current committed diff for instructor approval, then wait for PrairieLearn to push and sync it.",
+                        "description": "Validate the committed course changes using PrairieLearn, request instructor approval, then push and sync. A denial is not approval; fix reported errors before submitting a new proposal.",
                         "inputSchema": {
                             "type": "object",
                             "additionalProperties": False,
@@ -183,16 +139,15 @@ def _handle(message: dict[str, Any]) -> dict[str, Any] | None:
         try:
             params = message.get("params", {})
             name = params.get("name")
-            arguments = params.get("arguments", {})
-            if name == "validate_course":
-                value = _validate_course()
-            elif name == "render_question_variant":
-                value = _render_question_variant(arguments.get("qid", ""))
-            elif name == "push_sync":
+            if name == "push_sync":
                 value = _push_sync()
             else:
                 raise RuntimeError(f"Unknown tool: {name}")
-            result = {"content": [{"type": "text", "text": json.dumps(value)}]}
+            result = {
+                "content": [{"type": "text", "text": json.dumps(value)}],
+                "structuredContent": value,
+                "isError": bool(value.get("error")),
+            }
         except Exception as error:
             result = {
                 "isError": True,
@@ -208,8 +163,9 @@ def _handle(message: dict[str, Any]) -> dict[str, Any] | None:
     return None
 
 
-for line in sys.stdin:
-    message = json.loads(line)
-    result = _handle(message)
-    if result is not None:
-        print(json.dumps(result, separators=(",", ":")), flush=True)
+if __name__ == "__main__":
+    for line in sys.stdin:
+        message = json.loads(line)
+        result = _handle(message)
+        if result is not None:
+            print(json.dumps(result, separators=(",", ":")), flush=True)

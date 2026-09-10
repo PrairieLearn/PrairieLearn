@@ -308,18 +308,6 @@ export class CourseAgentCoordinator {
       keepAlive: true,
     });
     const coursePath = `${COURSE_AGENT_WORKSPACE_ROOT}/course`;
-    const validation = await sandbox.exec('validate-course .', { cwd: coursePath });
-    const validationOutput = `${validation.stdout}\n${validation.stderr}`.trim().slice(-8_000);
-    await this.append(validation.success ? 'validation.completed' : 'validation.failed', {
-      phase: 'approval',
-      output: validationOutput,
-    });
-    if (!validation.success) {
-      return Response.json(
-        { error: `Course validation failed before approval:\n${validationOutput}` },
-        { status: 422 },
-      );
-    }
     const [head, tree] = await Promise.all([
       sandbox.exec('git rev-parse HEAD', { cwd: coursePath }),
       sandbox.exec('git rev-parse HEAD^{tree}', { cwd: coursePath }),
@@ -331,7 +319,10 @@ export class CourseAgentCoordinator {
       tree.stdout.trim() !== payload.treeSha
     ) {
       return Response.json(
-        { error: 'The validated workspace does not match the proposed commit' },
+        {
+          error:
+            'The workspace does not match the proposed commit. Inspect HEAD and submit the current committed changes.',
+        },
         { status: 409 },
       );
     }
@@ -358,12 +349,20 @@ export class CourseAgentCoordinator {
     }
     if (pending.status === 'denied') {
       await this.append('git.push.approval.denied', { approvalId: pending.id });
-      return Response.json({ ok: false, denied: true });
+      return Response.json({
+        ok: false,
+        denied: true,
+        message:
+          'The instructor denied this proposal. Do not publish or resubmit it unchanged. Ask what should change if their reason is unclear.',
+      });
     }
     if (pending.status === 'completed') {
       await this.append('git.push.completed', { approvalId: pending.id, ...pending.result });
       await this.append('sync.completed', { approvalId: pending.id, ...pending.result });
       return Response.json({ ok: true, ...pending.result });
+    }
+    if (pending.result?.published === true) {
+      await this.append('git.push.completed', { approvalId: pending.id, ...pending.result });
     }
     const message =
       pending.result && typeof pending.result.message === 'string'

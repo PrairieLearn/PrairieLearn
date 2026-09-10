@@ -265,9 +265,7 @@ VALUES
   )
 ON CONFLICT (id) DO UPDATE
 SET
-  commit_message = EXCLUDED.commit_message,
-  diff_summary = EXCLUDED.diff_summary,
-  diff = EXCLUDED.diff
+  id = EXCLUDED.id
 RETURNING
   *;
 

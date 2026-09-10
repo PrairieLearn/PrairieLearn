@@ -4,7 +4,7 @@ import type { CourseAgentEvent } from '@prairielearn/course-agent-protocol';
 
 export type CourseAgentMessage = UIMessage<
   { createdAt: string; failure?: string },
-  { approvalRequested: { approvalId: string } },
+  { approvalRequested: { approvalId: string }; courseSynced: { approvalId: string } },
   { activity: { input: { label: string }; output: { label: string } } }
 >;
 
@@ -104,6 +104,13 @@ export function courseAgentUIStream(runId: string) {
               ? String(event.data.text ?? '')
               : text + String(event.data.text ?? ''),
           );
+          break;
+        case 'sync.completed':
+          controller.enqueue({
+            type: 'data-courseSynced',
+            id: String(event.data.approvalId),
+            data: { approvalId: String(event.data.approvalId) },
+          });
           break;
         case 'agent.completed':
         case 'run.failed': {

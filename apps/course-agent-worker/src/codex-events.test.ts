@@ -76,7 +76,13 @@ describe('toolEvents', () => {
     expect(
       toolEvents({
         type: 'item.completed',
-        item: { id: 'item-5', type: 'mcp_tool_call', tool: 'push_sync', status: 'completed' },
+        item: {
+          id: 'item-5',
+          type: 'mcp_tool_call',
+          tool: 'push_sync',
+          status: 'completed',
+          result: { structuredContent: { ok: true } },
+        },
       }),
     ).toEqual([
       {
@@ -95,5 +101,35 @@ describe('toolEvents', () => {
         data: { operationId: 'item-6', label: 'Could not publish proposed changes' },
       },
     ]);
+  });
+
+  it.each([
+    [{ ok: false, denied: true }, false, 'tool.completed', 'Denied request'],
+    [
+      { ok: false, published: true, error: 'Sync failed' },
+      true,
+      'tool.failed',
+      'Changes published, but sync failed',
+    ],
+    [
+      { ok: false, error: 'Invalid assessment' },
+      true,
+      'tool.failed',
+      'Could not publish proposed changes',
+    ],
+    [{}, false, 'tool.completed', 'Proposed changes'],
+  ])('does not confuse an MCP result with publication success', (value, isError, type, label) => {
+    expect(
+      toolEvents({
+        type: 'item.completed',
+        item: {
+          id: 'push',
+          type: 'mcp_tool_call',
+          tool: 'push_sync',
+          status: 'completed',
+          result: { isError, content: [{ type: 'text', text: JSON.stringify(value) }] },
+        },
+      }),
+    ).toEqual([{ type, data: { operationId: 'push', label } }]);
   });
 });
