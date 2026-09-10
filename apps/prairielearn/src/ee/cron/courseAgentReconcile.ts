@@ -14,8 +14,9 @@ export async function run() {
         course_id: course.id,
         user_id: conversation.user_id,
       }))
-    )
+    ) {
       continue;
+    }
     try {
       await reconcileCourseAgentConversation({
         conversationId: conversation.id,
