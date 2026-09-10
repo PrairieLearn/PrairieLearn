@@ -8,23 +8,29 @@
     "enabled": true
   },
   "vars": {
-    "OPENAI_MODEL": "gpt-5.4-mini"
+    "OPENAI_MODEL": "gpt-5.4-mini",
+    "BACKUP_BUCKET_NAME": "prairielearn-course-agent-workspaces"
   },
   "secrets": {
     "required": ["OPENAI_API_KEY", "COURSE_AGENT_CAPABILITY_SECRET", "COURSE_AGENT_GITHUB_PAT"]
   },
+  "r2_buckets": [
+    {
+      "binding": "BACKUP_BUCKET",
+      "bucket_name": "prairielearn-course-agent-workspaces",
+      "preview_bucket_name": "prairielearn-course-agent-workspaces-local"
+    },
+    {
+      "binding": "COURSE_AGENT_DOCS",
+      "bucket_name": "prairielearn-course-agent-docs"
+    }
+  ],
   "containers": [
     {
       "class_name": "Sandbox",
       "image": "./Dockerfile",
       "instance_type": "basic",
       "max_instances": 10
-    }
-  ],
-  "r2_buckets": [
-    {
-      "binding": "COURSE_AGENT_DOCS",
-      "bucket_name": "prairielearn-course-agent-docs"
     }
   ],
   "durable_objects": {

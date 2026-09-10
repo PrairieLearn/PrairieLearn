@@ -8,6 +8,7 @@ export function CourseAgentPanelServer({
   courseId: string;
   courseInstanceId: string | null;
   userName: string;
+  timeZone: string;
   showDiagnostics: boolean;
 }) {
   return (

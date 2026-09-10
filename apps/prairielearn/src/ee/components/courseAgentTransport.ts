@@ -20,6 +20,7 @@ export class CourseAgentTransport extends DefaultChatTransport<CourseAgentMessag
     courseId: string,
     private readonly courseInstanceId: string | null,
     private readonly onRun: (run: CourseAgentRun | null) => void,
+    initialRun: CourseAgentRun | null = null,
   ) {
     super({
       prepareReconnectToStreamRequest: () => ({
@@ -30,6 +31,7 @@ export class CourseAgentTransport extends DefaultChatTransport<CourseAgentMessag
         })}`,
       }),
     });
+    this.run = initialRun;
   }
 
   override async sendMessages(

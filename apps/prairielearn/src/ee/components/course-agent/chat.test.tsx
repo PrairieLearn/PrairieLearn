@@ -85,7 +85,11 @@ describe('course agent chat', () => {
     await act(async () =>
       root.render(
         <>
-          <UserMessage userName="Instructor" createdAt="2026-09-03T12:00:00Z">
+          <UserMessage
+            userName="Instructor"
+            createdAt="2026-09-03T12:00:00Z"
+            timeZone="America/Chicago"
+          >
             Hello
           </UserMessage>
           <AssistantMessage>Hi</AssistantMessage>

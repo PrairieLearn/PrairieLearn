@@ -1,0 +1,40 @@
+columns
+    active_run_expires_at: timestamp with time zone
+    conversation_state: text not null default 'waiting_for_user'::text
+    course_id: bigint not null
+    created_at: timestamp with time zone not null default now()
+    deleted_at: timestamp with time zone
+    id: uuid not null
+    idle_expires_at: timestamp with time zone
+    last_error: text
+    lifecycle_revision: integer not null default 0
+    process_id: text
+    runtime_status: text not null default 'offline'::text
+    sandbox_generation: integer not null default 0
+    sandbox_id: text not null
+    sandbox_state: text not null default 'offline'::text
+    title: text not null default 'New chat'::text
+    updated_at: timestamp with time zone not null default now()
+    user_id: bigint not null
+
+indexes
+    course_agent_conversations_pkey: PRIMARY KEY (id) USING btree (id)
+    course_agent_conversations_sandbox_id_key: UNIQUE (sandbox_id) USING btree (sandbox_id)
+    course_agent_conversations_course_user_idx: USING btree (course_id, user_id, updated_at DESC) WHERE deleted_at IS NULL
+
+check constraints
+    course_agent_conversations_conversation_state_check: CHECK (conversation_state = ANY (ARRAY['working'::text, 'waiting_for_user'::text, 'validating_change'::text, 'waiting_for_approval'::text, 'publishing'::text, 'syncing'::text, 'refreshing_workspace'::text, 'resuming_agent'::text, 'failed'::text]))
+    course_agent_conversations_lifecycle_revision_check: CHECK (lifecycle_revision >= 0)
+    course_agent_conversations_runtime_status_check: CHECK (runtime_status = ANY (ARRAY['starting'::text, 'running'::text, 'waiting_for_user'::text, 'offline'::text, 'failed'::text]))
+    course_agent_conversations_sandbox_generation_check: CHECK (sandbox_generation >= 0)
+    course_agent_conversations_sandbox_state_check: CHECK (sandbox_state = ANY (ARRAY['offline'::text, 'starting'::text, 'ready'::text, 'suspending'::text]))
+
+foreign-key constraints
+    course_agent_conversations_course_id_fkey: FOREIGN KEY (course_id) REFERENCES courses(id) ON UPDATE CASCADE ON DELETE CASCADE
+    course_agent_conversations_user_id_fkey: FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE RESTRICT
+
+referenced by
+    course_agent_events: FOREIGN KEY (conversation_id) REFERENCES course_agent_conversations(id) ON UPDATE CASCADE ON DELETE CASCADE
+    course_agent_messages: FOREIGN KEY (conversation_id) REFERENCES course_agent_conversations(id) ON UPDATE CASCADE ON DELETE CASCADE
+    course_agent_runs: FOREIGN KEY (conversation_id) REFERENCES course_agent_conversations(id) ON UPDATE CASCADE ON DELETE CASCADE
+    course_agent_workspace_backups: FOREIGN KEY (conversation_id) REFERENCES course_agent_conversations(id) ON UPDATE CASCADE ON DELETE CASCADE

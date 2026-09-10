@@ -1,5 +1,16 @@
 import { z } from 'zod';
 
+export const CourseAgentTitleCapabilitySchema = z.object({
+  type: z.literal('course-agent-title'),
+  conversationId: z.uuid(),
+  userId: z.string(),
+  courseId: z.string(),
+  prompt: z.string().min(1).max(4000),
+  expiresAt: z.iso.datetime(),
+});
+
+export const CourseAgentTitleResponseSchema = z.object({ title: z.string().trim().min(1).max(80) });
+
 export const COURSE_AGENT_WORKSPACE_ROOT = '/workspace';
 export const COURSE_AGENT_SEED_FILE = `${COURSE_AGENT_WORKSPACE_ROOT}/README.md`;
 
@@ -22,6 +33,11 @@ export const CourseAgentEventTypeSchema = z.enum([
   'agent.completed',
   'usage.updated',
   'run.failed',
+  'workspace.backup.started',
+  'workspace.backup.completed',
+  'workspace.backup.failed',
+  'workspace.restore.started',
+  'workspace.restore.completed',
   'state.changed',
 ]);
 export type CourseAgentEventType = z.infer<typeof CourseAgentEventTypeSchema>;
@@ -76,6 +92,16 @@ export const CourseAgentRepositorySchema = z.object({
 });
 export type CourseAgentRepository = z.infer<typeof CourseAgentRepositorySchema>;
 
+export const CourseAgentWorkspaceBackupSchema = z.object({
+  handle: z.object({
+    id: z.string(),
+    dir: z.string(),
+    localBucket: z.boolean().optional(),
+  }),
+  expiresAt: z.iso.datetime(),
+});
+export type CourseAgentWorkspaceBackup = z.infer<typeof CourseAgentWorkspaceBackupSchema>;
+
 export const CourseAgentAuthoringContextSchema = z.object({
   courseInstance: z
     .object({
@@ -89,6 +115,7 @@ export type CourseAgentAuthoringContext = z.infer<typeof CourseAgentAuthoringCon
 
 export const CourseAgentRuntimeSettingsSchema = z.object({
   idleTimeoutSeconds: z.number().int().min(60).max(86_400),
+  backupTtlSeconds: z.number().int().min(60).max(2_592_000).default(604800),
   sleepAfterSeconds: z.number().int().min(60).max(86_400).default(21_600),
   turnTimeoutSeconds: z.number().int().min(60).max(86_400).default(21_600),
 });
@@ -98,6 +125,7 @@ export const CourseAgentRunCapabilitySchema = CourseAgentIdentitySchema.extend({
   type: z.literal('course-agent-run'),
   runId: z.uuid(),
   promptDigest: z.string().regex(/^[0-9a-f]{64}$/),
+  workspaceBackup: CourseAgentWorkspaceBackupSchema.nullable().default(null),
   repository: z.string(),
   branch: z.string(),
   expectedSha: z
@@ -126,6 +154,7 @@ export const CourseAgentStartRunRequestSchema = z.object({
     .max(20_000)
     .refine((prompt) => prompt.trim().length > 0, 'Prompt cannot be blank'),
   course: CourseAgentRepositorySchema,
+  workspaceBackup: CourseAgentWorkspaceBackupSchema.nullable().default(null),
   authoringContext: CourseAgentAuthoringContextSchema,
   runtimeSettings: CourseAgentRuntimeSettingsSchema,
 });
@@ -161,6 +190,7 @@ export const CourseAgentSnapshotSchema = z.object({
   response: z.string().nullable(),
   error: z.string().nullable(),
   events: z.array(CourseAgentEventSchema),
+  workspaceBackup: CourseAgentWorkspaceBackupSchema.nullable().default(null),
 });
 export type CourseAgentSnapshot = z.infer<typeof CourseAgentSnapshotSchema>;
 

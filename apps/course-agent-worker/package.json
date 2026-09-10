@@ -10,8 +10,10 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@ai-sdk/openai": "^4.0.35",
     "@cloudflare/sandbox": "0.12.7",
     "@prairielearn/course-agent-protocol": "workspace:^",
+    "ai": "^7.0.57",
     "zod": "^4.4.3"
   },
   "devDependencies": {

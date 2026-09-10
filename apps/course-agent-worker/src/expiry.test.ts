@@ -1,7 +1,39 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 const sandbox = vi.hoisted(() => ({
+  writeFile: vi.fn(async () => ({})),
   destroy: vi.fn(async () => {}),
+  createBackup: vi.fn(async () => ({ id: 'checkpoint', dir: '/workspace', localBucket: true })),
+  restoreBackup: vi.fn(async () => {}),
+  getState: vi.fn(async () => ({ status: 'running' })),
+  setOutboundByHost: vi.fn(async () => {}),
+  exec: vi.fn(
+    async (command: string, options?: { onOutput?: (stream: string, data: string) => void }) => {
+      if (command.startsWith('node ')) {
+        options?.onOutput?.(
+          'stdout',
+          `${JSON.stringify({
+            method: 'item/completed',
+            params: {
+              item: { type: 'agentMessage', id: 'answer', phase: 'final_answer', text: 'Hello.' },
+            },
+          })}\n`,
+        );
+      }
+      return {
+        success: true,
+        stdout:
+          command === 'git remote get-url origin'
+            ? 'https://x-access-token:proxy-read@github.com/PrairieLearn/test.git'
+            : command === 'git branch --show-current'
+              ? 'master'
+              : command.includes('test -d')
+                ? 'yes'
+                : '',
+        stderr: '',
+      };
+    },
+  ),
   getProcess: vi.fn(
     async (_id: string): Promise<{ status: string; exitCode?: number } | null> => ({
       status: 'running',
@@ -9,6 +41,7 @@ const sandbox = vi.hoisted(() => ({
   ),
   getProcessLogs: vi.fn(async (_id: string) => ({ stdout: '', stderr: '' })),
   killProcess: vi.fn(async (_id: string) => {}),
+  startProcess: vi.fn(async () => ({})),
 }));
 vi.mock('@cloudflare/sandbox', () => ({
   Sandbox: vi.fn(),
@@ -18,7 +51,11 @@ vi.mock('@cloudflare/sandbox', () => ({
 
 import { CourseAgentCoordinator } from './index.js';
 
-function fixture(activeRunId: string | null, expiresAt: number) {
+function fixture(
+  activeRunId: string | null,
+  expiresAt: number,
+  idleExpiresAt: number | null = expiresAt,
+) {
   const initial = {
     identity: { userId: '1', courseId: '2', conversationId: 'conversation', sandboxId: 'sandbox' },
     activeRunId,
@@ -29,13 +66,15 @@ function fixture(activeRunId: string | null, expiresAt: number) {
     sandboxState: 'ready',
     sandboxGeneration: 1,
     revision: 1,
-    idleExpiresAt: activeRunId ? null : expiresAt,
+    idleExpiresAt: activeRunId ? null : idleExpiresAt,
     processId: activeRunId ? `course-agent-${activeRunId}` : null,
     runtimeSettings: {
       idleTimeoutSeconds: 600,
       sleepAfterSeconds: 21_600,
+      backupTtlSeconds: 604800,
       turnTimeoutSeconds: 21_600,
     },
+    workspaceBackup: null,
     status: activeRunId ? 'running' : 'waiting_for_user',
     response: null,
     error: null,
@@ -70,7 +109,10 @@ function fixture(activeRunId: string | null, expiresAt: number) {
   };
   const coordinator = new CourseAgentCoordinator(
     state as unknown as DurableObjectState,
-    {} as ConstructorParameters<typeof CourseAgentCoordinator>[1],
+    {
+      Sandbox: { idFromName: () => 'sandbox-id' },
+      OPENAI_MODEL: 'test-model',
+    } as unknown as ConstructorParameters<typeof CourseAgentCoordinator>[1],
   );
   return { coordinator, storage, values, state };
 }
@@ -89,6 +131,7 @@ describe('sandbox expiry alarm', () => {
     const { coordinator, storage } = fixture(null, 5000);
     await coordinator.alarm();
     expect(sandbox.destroy).not.toHaveBeenCalled();
+    expect(sandbox.createBackup).not.toHaveBeenCalled();
     expect(storage.setAlarm).toHaveBeenCalledWith(5000);
   });
 
@@ -249,6 +292,132 @@ describe('sandbox expiry alarm', () => {
     });
     expect(sandbox.destroy).not.toHaveBeenCalled();
   });
+
+  it('checkpoints an idle workspace before destroying it', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(5000);
+    const { coordinator, storage } = fixture(null, 100000, 5000);
+    await coordinator.alarm();
+    expect(sandbox.createBackup).toHaveBeenCalledWith({
+      dir: '/workspace',
+      name: 'conversation',
+      ttl: 604800,
+      localBucket: true,
+    });
+    expect(sandbox.createBackup.mock.invocationCallOrder[0]).toBeLessThan(
+      sandbox.destroy.mock.invocationCallOrder[0],
+    );
+    expect(await storage.get('conversation')).toMatchObject({
+      workspaceBackup: {
+        handle: { id: 'checkpoint' },
+        expiresAt: new Date(5000 + 604800000).toISOString(),
+      },
+      status: 'offline',
+    });
+  });
+
+  it('keeps an idle workspace alive when its backup fails and schedules a retry', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(5000);
+    sandbox.createBackup.mockRejectedValueOnce(new Error('Storage unavailable'));
+    const { coordinator, storage } = fixture(null, 5000, 5000);
+    await coordinator.alarm();
+    expect(sandbox.destroy).not.toHaveBeenCalled();
+    expect(storage.setAlarm).toHaveBeenCalledWith(65000);
+    expect(await storage.get('conversation')).toMatchObject({
+      status: 'waiting_for_user',
+      workspaceBackup: null,
+    });
+    vi.setSystemTime(65000);
+    sandbox.createBackup.mockRejectedValueOnce(new Error('Storage still unavailable'));
+    await coordinator.alarm();
+    expect(sandbox.destroy).not.toHaveBeenCalled();
+    expect(storage.setAlarm).toHaveBeenLastCalledWith(125000);
+  });
+
+  it('preserves the final answer when the successful-turn checkpoint fails', async () => {
+    const { coordinator, storage } = fixture('run', Date.now());
+    sandbox.createBackup.mockRejectedValueOnce(new Error('Storage unavailable'));
+    sandbox.getProcess.mockResolvedValue({ status: 'completed', exitCode: 0 });
+    sandbox.getProcessLogs.mockResolvedValue({
+      stdout: [
+        JSON.stringify({
+          method: 'item/completed',
+          params: {
+            item: {
+              type: 'agentMessage',
+              id: 'answer',
+              phase: 'final_answer',
+              text: 'Your question is ready.',
+            },
+          },
+        }),
+        JSON.stringify({ method: 'turn/completed', params: { turn: { status: 'completed' } } }),
+      ].join('\n'),
+      stderr: '',
+    });
+    await coordinator.alarm();
+    expect(await storage.get('conversation')).toMatchObject({
+      response: 'Your question is ready.',
+      conversationState: 'waiting_for_user',
+      error: null,
+      workspaceBackup: null,
+    });
+    expect(sandbox.destroy).not.toHaveBeenCalled();
+  });
+
+  it.each(['running', 'stopped'])(
+    'restores only a fresh sandbox and checkpoints after the turn (%s)',
+    async (status) => {
+      const { coordinator, storage } = fixture('run', Date.now() + 600000);
+      const backup = {
+        handle: { id: 'previous-checkpoint', dir: '/workspace', localBucket: true },
+        expiresAt: new Date(Date.now() + 604800000).toISOString(),
+      };
+      await coordinator['update']({ workspaceBackup: backup });
+      sandbox.getState.mockResolvedValueOnce({ status });
+      sandbox.getProcess.mockResolvedValue({ status: 'completed', exitCode: 0 });
+      sandbox.getProcessLogs.mockResolvedValue({
+        stdout: [
+          JSON.stringify({
+            method: 'item/completed',
+            params: {
+              item: { type: 'agentMessage', id: 'answer', phase: 'final_answer', text: 'Hello.' },
+            },
+          }),
+          JSON.stringify({ method: 'turn/completed', params: { turn: { status: 'completed' } } }),
+        ].join('\n'),
+        stderr: '',
+      });
+      await coordinator['run']({
+        conversationId: 'conversation',
+        sandboxId: 'sandbox',
+        runId: 'run',
+        capability: 'unused',
+        prompt: 'Continue editing',
+        course: {
+          repository: 'https://github.com/PrairieLearn/test.git',
+          branch: 'master',
+          expectedSha: null,
+        },
+        authoringContext: { courseInstance: null },
+        workspaceBackup: backup,
+        runtimeSettings: {
+          idleTimeoutSeconds: 600,
+          sleepAfterSeconds: 21_600,
+          turnTimeoutSeconds: 900,
+          backupTtlSeconds: 604800,
+        },
+      });
+      expect(sandbox.restoreBackup).toHaveBeenCalledTimes(status === 'stopped' ? 1 : 0);
+      expect(await storage.get('conversation')).toMatchObject({
+        status: 'waiting_for_user',
+        error: null,
+        workspaceBackup: { handle: { id: 'checkpoint' } },
+      });
+      expect(sandbox.createBackup).toHaveBeenCalledOnce();
+    },
+  );
 
   it('stores stream events separately and prunes deltas after completion', async () => {
     const { coordinator, storage, values } = fixture(null, 5000);

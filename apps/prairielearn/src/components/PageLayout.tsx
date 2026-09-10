@@ -306,6 +306,7 @@ export function PageLayout({
           courseInstanceId={resLocals.course_instance?.id ?? null}
           initialOpen={resLocals.course_agent_expanded}
           userName={resLocals.authn_user.name ?? 'Instructor'}
+          timeZone={resLocals.course.display_timezone}
           showDiagnostics={resLocals.is_administrator}
         />
       </Hydrate>

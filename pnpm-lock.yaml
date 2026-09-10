@@ -329,12 +329,18 @@ importers:
 
   apps/course-agent-worker:
     dependencies:
+      '@ai-sdk/openai':
+        specifier: ^4.0.35
+        version: 4.0.35(zod@4.4.3)
       '@cloudflare/sandbox':
         specifier: 0.12.7
         version: 0.12.7
       '@prairielearn/course-agent-protocol':
         specifier: workspace:^
         version: link:../../packages/course-agent-protocol
+      ai:
+        specifier: ^7.0.57
+        version: 7.0.57(zod@4.4.3)
       zod:
         specifier: ^4.4.3
         version: 4.4.3

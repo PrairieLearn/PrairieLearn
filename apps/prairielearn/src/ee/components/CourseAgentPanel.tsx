@@ -1,18 +1,21 @@
 import { useChat } from '@ai-sdk/react';
-import { QueryClient, useQuery } from '@tanstack/react-query';
-import { Fragment, useState } from 'react';
+import { QueryClient, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Fragment, useEffect, useRef, useState } from 'react';
 import { Alert, Button, Spinner } from 'react-bootstrap';
 import type { Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useStickToBottom } from 'use-stick-to-bottom';
 
 import type { CourseAgentEvent, CourseAgentSnapshot } from '@prairielearn/course-agent-protocol';
-import { QueryClientProviderDebug } from '@prairielearn/trpc/react';
+import { getAppError } from '@prairielearn/trpc/client';
+import { AppErrorAlert, QueryClientProviderDebug } from '@prairielearn/trpc/react';
 
 import { createCourseTrpcClient } from '../../trpc/course/client.js';
 import { TRPCProvider, useTRPC } from '../../trpc/course/context.js';
+import type { CourseAgentError } from '../../trpc/course/course-agent.js';
 import type { CourseAgentMessage } from '../lib/course-agent/ui-stream.js';
 
+import { CourseAgentConversationPicker } from './CourseAgentConversationPicker.js';
 import { CourseAgentPanelShell } from './CourseAgentPanelShell.js';
 import { ChatComposer } from './course-agent/ChatComposer.js';
 import { AssistantMessage, MessageMetadata, UserMessage } from './course-agent/ChatMessage.js';
@@ -34,40 +37,156 @@ export const workspaceMarkdownComponents: Components = {
   img: ({ alt }) => <span>{alt}</span>,
 };
 
-function CourseAgentPanelInner({
-  courseId,
-  courseInstanceId,
-  userName,
-  showDiagnostics,
-  trpcClient,
-}: {
+function CourseAgentPanelInner(props: {
+  initialOpen: boolean;
   courseId: string;
   courseInstanceId: string | null;
   userName: string;
+  timeZone: string;
   showDiagnostics: boolean;
   trpcClient: ReturnType<typeof createCourseTrpcClient>;
 }) {
   const trpc = useTRPC();
+  const [selection, setSelection] = useState<{ id?: string; version: number }>({ version: 0 });
+  const selectConversation = useMutation(trpc.courseAgent.selectConversation.mutationOptions());
+  const conversations = useQuery(
+    trpc.courseAgent.list.queryOptions(undefined, { refetchInterval: 3000 }),
+  );
+  const history = useQuery(
+    trpc.courseAgent.history.queryOptions(
+      { conversationId: selection.id === 'new' ? undefined : selection.id },
+      {
+        enabled: selection.id !== 'new',
+        refetchOnWindowFocus: false,
+        refetchOnReconnect: false,
+        staleTime: 0,
+      },
+    ),
+  );
+  const newConversation = selection.id === 'new';
+  if (!newConversation && (history.isPending || history.isFetching)) {
+    return (
+      <CourseAgentPanelShell initialOpen={props.initialOpen} loading>
+        {null}
+      </CourseAgentPanelShell>
+    );
+  }
+  if (!newConversation && history.isError) {
+    return (
+      <CourseAgentPanelShell initialOpen={props.initialOpen}>
+        <div className="p-3">
+          <AppErrorAlert
+            error={getAppError<CourseAgentError['History']>(history.error)}
+            render={{ UNKNOWN: ({ message }) => message }}
+          />
+          <Button variant="link" onClick={() => void history.refetch()}>
+            Try again
+          </Button>
+          <Button
+            variant="link"
+            onClick={() => setSelection({ id: 'new', version: selection.version + 1 })}
+          >
+            New conversation
+          </Button>
+        </div>
+      </CourseAgentPanelShell>
+    );
+  }
+  return (
+    <CourseAgentPanelShell initialOpen={props.initialOpen}>
+      <CourseAgentConversationPanel
+        key={selection.version}
+        {...props}
+        initialHistory={
+          newConversation
+            ? { run: null, activeRunId: null, messages: [], warning: null }
+            : history.data!
+        }
+        conversations={conversations.data?.conversations ?? []}
+        listError={getAppError<CourseAgentError['List']>(conversations.error)}
+        onSelect={(id) => {
+          setSelection({ id, version: selection.version + 1 });
+          selectConversation.mutate({ conversationId: id === 'new' ? null : id });
+        }}
+      />
+    </CourseAgentPanelShell>
+  );
+}
+
+function CourseAgentConversationPanel({
+  courseId,
+  courseInstanceId,
+  userName,
+  timeZone,
+  showDiagnostics,
+  trpcClient,
+  initialHistory,
+  conversations,
+  listError,
+  onSelect,
+}: {
+  courseId: string;
+  courseInstanceId: string | null;
+  userName: string;
+  timeZone: string;
+  showDiagnostics: boolean;
+  trpcClient: ReturnType<typeof createCourseTrpcClient>;
+  initialHistory: Awaited<
+    ReturnType<ReturnType<typeof createCourseTrpcClient>['courseAgent']['history']['query']>
+  >;
+  conversations: Awaited<
+    ReturnType<ReturnType<typeof createCourseTrpcClient>['courseAgent']['list']['query']>
+  >['conversations'];
+  listError: ReturnType<typeof getAppError<CourseAgentError['List']>>;
+  onSelect: (id: string) => void;
+}) {
+  const trpc = useTRPC();
+  const queryClient = useQueryClient();
   const stickToBottom = useStickToBottom({ initial: 'smooth', resize: 'smooth' });
 
   const [prompt, setPrompt] = useState('');
-  const [conversation, setConversation] = useState<CourseAgentRun | null>(null);
+  const [conversation, setConversation] = useState<CourseAgentRun | null>(initialHistory.run);
   const [transport] = useState(
     () =>
       new CourseAgentTransport(
         (input) => trpcClient.courseAgent.start.mutate(input),
         courseId,
         courseInstanceId,
-        setConversation,
+        (run) => {
+          // Keep the conversation selected while the next run is being submitted.
+          if (run) {
+            setConversation(run);
+            void queryClient.invalidateQueries(trpc.courseAgent.list.queryFilter());
+          }
+        },
+        initialHistory.run,
       ),
   );
-  const { messages, sendMessage, status, error, resumeStream, setMessages } =
+  const { messages, sendMessage, status, error, resumeStream, setMessages, stop } =
     useChat<CourseAgentMessage>({
       transport,
+      messages: initialHistory.messages,
       onFinish: () => {
         if (showDiagnostics) void diagnostics.refetch();
+        void queryClient.invalidateQueries(trpc.courseAgent.list.queryFilter());
       },
     });
+  const resumedRef = useRef(false);
+  const [runToResume] = useState(initialHistory.activeRunId);
+  // A page reload reconnects to the existing run instead of submitting another prompt.
+  useEffect(() => {
+    if (runToResume && !resumedRef.current) {
+      resumedRef.current = true;
+      void resumeStream();
+    }
+  }, [runToResume, resumeStream]);
+  // Switching conversations disconnects this browser stream, not the server-side agent run.
+  useEffect(
+    () => () => {
+      void stop();
+    },
+    [stop],
+  );
   const busy = status === 'submitted' || status === 'streaming';
   const lastMessage = messages.at(-1);
   const hasActiveTool =
@@ -85,7 +204,17 @@ function CourseAgentPanelInner({
   );
 
   return (
-    <>
+    <div className="course-agent-conversation">
+      <div className="border-bottom bg-white px-3 pb-3">
+        <CourseAgentConversationPicker
+          conversations={conversations}
+          selectedId={conversation?.conversationId ?? 'new'}
+          busy={busy}
+          disabled={status === 'submitted'}
+          onSelect={onSelect}
+        />
+        <AppErrorAlert error={listError} render={{ UNKNOWN: ({ message }) => message }} />
+      </div>
       <div className="course-agent-history position-relative">
         <div
           ref={stickToBottom.scrollRef}
@@ -95,6 +224,7 @@ function CourseAgentPanelInner({
           aria-live="polite"
         >
           <div ref={stickToBottom.contentRef} className="px-4 py-4">
+            {initialHistory.warning && <Alert variant="warning">{initialHistory.warning}</Alert>}
             {messages.length === 0 && (
               <div className="course-agent-empty text-center text-muted px-3 py-5">
                 <i className="bi bi-stars fs-2 text-primary" aria-hidden="true" />
@@ -110,6 +240,7 @@ function CourseAgentPanelInner({
                   key={message.id}
                   userName={userName}
                   createdAt={message.metadata?.createdAt}
+                  timeZone={timeZone}
                 >
                   {message.parts
                     .filter((part) => part.type === 'text')
@@ -154,6 +285,7 @@ function CourseAgentPanelInner({
                     <MessageMetadata
                       author="PrairieLearn"
                       createdAt={message.metadata?.createdAt}
+                      timeZone={timeZone}
                     />
                   )}
                 </AssistantMessage>
@@ -191,6 +323,7 @@ function CourseAgentPanelInner({
                   events={diagnostics.data?.events ?? []}
                   status={diagnostics.data?.status ?? null}
                   lifecycle={diagnostics.data}
+                  persistence={diagnostics.data?.persisted}
                 />
               )}
             </div>
@@ -220,7 +353,7 @@ function CourseAgentPanelInner({
           }}
         />
       </footer>
-    </>
+    </div>
   );
 }
 
@@ -230,12 +363,14 @@ function Diagnostics({
   events,
   status,
   lifecycle,
+  persistence,
 }: {
   conversation: { conversationId: string; sandboxId: string } | null;
   runId: string | null;
   events: CourseAgentEvent[];
   status: string | null;
   lifecycle?: CourseAgentSnapshot;
+  persistence?: Record<string, string | number | Date | null> | null;
 }) {
   const agentStarted = findLastEvent(events, 'agent.started');
   const usage = findLastEvent(events, 'usage.updated');
@@ -252,6 +387,10 @@ function Diagnostics({
     ['idleExpiresAt (Worker)', String(lifecycle?.idleExpiresAt ?? null)],
     ['activeRunExpiresAt (Worker)', String(lifecycle?.activeRunExpiresAt ?? null)],
     ['processId (Worker)', String(lifecycle?.processId ?? null)],
+    ...Object.entries(persistence ?? {}).map(([key, value]) => [
+      `${key} (PostgreSQL)`,
+      value instanceof Date ? value.toISOString() : String(value),
+    ]),
     ['Documentation event', String(docs?.type ?? null)],
   ];
   const tokenFields = [
@@ -321,6 +460,7 @@ export function CourseAgentPanel({
   courseId,
   courseInstanceId,
   userName,
+  timeZone,
   showDiagnostics,
 }: {
   initialOpen: boolean;
@@ -328,6 +468,7 @@ export function CourseAgentPanel({
   courseId: string;
   courseInstanceId: string | null;
   userName: string;
+  timeZone: string;
   showDiagnostics: boolean;
 }) {
   const [queryClient] = useState(() => new QueryClient());
@@ -337,15 +478,15 @@ export function CourseAgentPanel({
   return (
     <QueryClientProviderDebug client={queryClient}>
       <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
-        <CourseAgentPanelShell initialOpen={initialOpen}>
-          <CourseAgentPanelInner
-            trpcClient={trpcClient}
-            courseId={courseId}
-            courseInstanceId={courseInstanceId}
-            userName={userName}
-            showDiagnostics={showDiagnostics}
-          />
-        </CourseAgentPanelShell>
+        <CourseAgentPanelInner
+          initialOpen={initialOpen}
+          trpcClient={trpcClient}
+          courseId={courseId}
+          courseInstanceId={courseInstanceId}
+          userName={userName}
+          timeZone={timeZone}
+          showDiagnostics={showDiagnostics}
+        />
       </TRPCProvider>
     </QueryClientProviderDebug>
   );
