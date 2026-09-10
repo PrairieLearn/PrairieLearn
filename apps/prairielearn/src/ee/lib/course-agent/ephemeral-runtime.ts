@@ -13,8 +13,8 @@ import {
 import { generateSignedToken } from '@prairielearn/signed-token';
 
 import { config } from '../../../lib/config.js';
+import { persistCourseAgentSnapshot } from '../../../models/course-agent.js';
 
-import { persistCourseAgentSnapshot } from './persistence.js';
 import { publicCourseAgentStream } from './public-events.js';
 import { getCourseAgentStreamContext, getCourseAgentStreamId } from './redis.js';
 import { courseAgentUIStream } from './ui-stream.js';

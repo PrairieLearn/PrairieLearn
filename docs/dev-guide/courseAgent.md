@@ -53,13 +53,12 @@ The persistence layer's Bootstrap conversation picker shows each conversation's 
 the course timezone and an activity indicator for ongoing runs. The list refreshes every three
 seconds while the page is visible without querying the sandbox for each entry.
 
-New conversations start as "New conversation". After the first completed substantive exchange,
+New conversations start as "New conversation". As soon as the first user message is saved,
 PL asynchronously requests a short title from the trusted Worker using `gpt-5.6-luna` through
 the Vercel AI SDK with the Worker's existing `OPENAI_API_KEY`.
 This does not start a sandbox or add messages to the Codex thread.
-Only the first substantive user message and its response are sent (at most 4,000 characters each),
+Only the first user message is sent (at most 4,000 characters),
 with a 64-token output limit, reasoning disabled, and provider storage disabled.
-Common greetings defer naming.
 An atomic PostgreSQL claim prevents duplicate naming requests across reloads or PL processes.
 If naming fails or PL exits after claiming it, the shortened user message remains as the title;
 there are no automatic paid retries. Existing conversation titles are left unchanged.
