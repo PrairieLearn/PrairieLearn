@@ -28,20 +28,8 @@ const CourseAgentConversationListItemSchema = CourseAgentConversationSchema.exte
   last_message_at: DateFromISOString,
 });
 
-export function claimCourseAgentTitle(conversationId: string, fallback: string) {
-  return queryOptionalRow(
-    sql.claim_title,
-    { conversation_id: conversationId, fallback },
-    CourseAgentConversationSchema,
-  );
-}
-
-export async function updateCourseAgentTitle(
-  conversationId: string,
-  fallback: string,
-  title: string,
-) {
-  await execute(sql.update_title, { conversation_id: conversationId, fallback, title });
+export async function updateCourseAgentTitle(conversationId: string, title: string) {
+  await execute(sql.update_title, { conversation_id: conversationId, title });
 }
 
 export function selectOptionalCourseAgentConversation({
