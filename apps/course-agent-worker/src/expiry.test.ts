@@ -1,6 +1,15 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-const sandbox = vi.hoisted(() => ({ destroy: vi.fn(async () => {}) }));
+const sandbox = vi.hoisted(() => ({
+  destroy: vi.fn(async () => {}),
+  getProcess: vi.fn(
+    async (_id: string): Promise<{ status: string; exitCode?: number } | null> => ({
+      status: 'running',
+    }),
+  ),
+  getProcessLogs: vi.fn(async (_id: string) => ({ stdout: '', stderr: '' })),
+  killProcess: vi.fn(async (_id: string) => {}),
+}));
 vi.mock('@cloudflare/sandbox', () => ({
   Sandbox: vi.fn(),
   ContainerProxy: vi.fn(),
@@ -15,6 +24,18 @@ function fixture(activeRunId: string | null, expiresAt: number) {
     activeRunId,
     activeRunExpiresAt: '2099-01-01T00:00:00.000Z',
     sandboxExpiresAt: expiresAt,
+    lifecycleVersion: 2,
+    conversationState: activeRunId ? 'working' : 'waiting_for_user',
+    sandboxState: 'ready',
+    sandboxGeneration: 1,
+    revision: 1,
+    idleExpiresAt: activeRunId ? null : expiresAt,
+    processId: activeRunId ? `course-agent-${activeRunId}` : null,
+    runtimeSettings: {
+      idleTimeoutSeconds: 600,
+      sleepAfterSeconds: 21_600,
+      turnTimeoutSeconds: 21_600,
+    },
     status: activeRunId ? 'running' : 'waiting_for_user',
     response: null,
     error: null,
@@ -51,12 +72,14 @@ function fixture(activeRunId: string | null, expiresAt: number) {
     state as unknown as DurableObjectState,
     {} as ConstructorParameters<typeof CourseAgentCoordinator>[1],
   );
-  return { coordinator, storage, values };
+  return { coordinator, storage, values, state };
 }
 
 afterEach(() => {
   vi.useRealTimers();
   vi.clearAllMocks();
+  sandbox.getProcess.mockResolvedValue({ status: 'running' });
+  sandbox.getProcessLogs.mockResolvedValue({ stdout: '', stderr: '' });
 });
 
 describe('sandbox expiry alarm', () => {
@@ -69,31 +92,137 @@ describe('sandbox expiry alarm', () => {
     expect(storage.setAlarm).toHaveBeenCalledWith(5000);
   });
 
-  it.each([null, 'active-run'])('expires an idle or active sandbox durably (%s)', async (runId) => {
+  it('suspends an idle sandbox durably', async () => {
     vi.useFakeTimers();
     vi.setSystemTime(5000);
-    const { coordinator, storage } = fixture(runId, 5000);
+    const { coordinator, storage } = fixture(null, 5000);
     await coordinator.alarm();
     expect(sandbox.destroy).toHaveBeenCalledOnce();
     expect(await storage.get('conversation')).toMatchObject({
       activeRunId: null,
       status: 'offline',
-      sandboxExpiresAt: null,
+      sandboxState: 'offline',
+      idleExpiresAt: null,
     });
     expect(storage.deleteAlarm).toHaveBeenCalledOnce();
     await coordinator.alarm();
     expect(sandbox.destroy).toHaveBeenCalledOnce();
   });
 
-  it('drops late output and completion from an expired run', async () => {
+  it('protects a live process when the old absolute lifetime expires', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(5000);
+    const { coordinator, storage } = fixture('active-run', 5000);
+    await coordinator.alarm();
+    expect(sandbox.destroy).not.toHaveBeenCalled();
+    expect(sandbox.killProcess).not.toHaveBeenCalled();
+    expect(sandbox.getProcess).toHaveBeenCalledWith('course-agent-active-run');
+    expect(storage.setAlarm).toHaveBeenCalledWith(65_000);
+  });
+
+  it('drops late output after the separate active execution guard expires', async () => {
     vi.useFakeTimers();
     vi.setSystemTime(5000);
     const { coordinator, storage } = fixture('old-run', 5000);
+    await coordinator['update']({ activeRunExpiresAt: new Date(5000).toISOString() });
     await coordinator.alarm();
     const expired = await storage.get('conversation');
     await coordinator['append']('assistant.delta', { text: 'Late response' }, 'old-run');
     expect(await coordinator['update']({ status: 'waiting_for_user' }, 'old-run')).toBe(false);
     expect(await storage.get('conversation')).toEqual(expired);
+    expect(sandbox.killProcess).toHaveBeenCalledOnce();
+    expect(sandbox.destroy).not.toHaveBeenCalled();
+  });
+
+  it('starts a full idle interval when upgrading a legacy workspace', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(5000);
+    const { coordinator, storage } = fixture(null, 5000);
+    await coordinator['update']({ lifecycleVersion: undefined, idleExpiresAt: undefined });
+    await coordinator.alarm();
+    expect(sandbox.destroy).not.toHaveBeenCalled();
+    expect(await storage.get('conversation')).toMatchObject({
+      lifecycleVersion: 2,
+      sandboxExpiresAt: null,
+      idleExpiresAt: 605000,
+    });
+    expect(storage.setAlarm).toHaveBeenLastCalledWith(605000);
+  });
+
+  it('ignores an old idle alarm after the conversation starts working again', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(5000);
+    const { coordinator, storage } = fixture(null, 5000);
+    await coordinator['update']({
+      activeRunId: 'new-run',
+      processId: 'course-agent-new-run',
+      conversationState: 'working',
+      idleExpiresAt: null,
+    });
+    await coordinator.alarm();
+    expect(sandbox.destroy).not.toHaveBeenCalled();
+    expect(storage.setAlarm).toHaveBeenCalledWith(65000);
+  });
+
+  it('reconciles a missing process without destroying its workspace', async () => {
+    const { coordinator, storage } = fixture('missing-run', 5000);
+    sandbox.getProcess.mockResolvedValue(null);
+    await coordinator.alarm();
+    expect(await storage.get('conversation')).toMatchObject({
+      activeRunId: null,
+      conversationState: 'failed',
+      sandboxState: 'ready',
+    });
+    expect(sandbox.destroy).not.toHaveBeenCalled();
+  });
+
+  it('resumes incremental output after coordinator replacement without replaying a turn', async () => {
+    const { coordinator, storage, state } = fixture('restart-run', 5000);
+    const notification = (method: string, params: unknown) => JSON.stringify({ method, params });
+    const first =
+      [
+        notification('item/started', {
+          item: { id: 'answer', type: 'agentMessage', phase: 'final_answer', text: '' },
+        }),
+        notification('item/agentMessage/delta', { itemId: 'answer', delta: 'Hello' }),
+      ].join('\n') + '\n';
+    sandbox.getProcessLogs.mockResolvedValue({ stdout: first, stderr: '' });
+    await coordinator.alarm();
+    const restarted = new CourseAgentCoordinator(
+      state as unknown as DurableObjectState,
+      {} as ConstructorParameters<typeof CourseAgentCoordinator>[1],
+    );
+    await restarted.alarm();
+    expect(
+      [...(await storage.list({ prefix: 'event:' }))].filter(
+        ([, event]) => (event as { type: string }).type === 'assistant.delta',
+      ),
+    ).toHaveLength(1);
+    sandbox.getProcess.mockResolvedValue({ status: 'completed', exitCode: 0 });
+    sandbox.getProcessLogs.mockResolvedValue({
+      stdout:
+        first +
+        [
+          notification('item/completed', {
+            item: {
+              id: 'answer',
+              type: 'agentMessage',
+              phase: 'final_answer',
+              text: 'Hello world',
+            },
+          }),
+          notification('turn/completed', { turn: { status: 'completed' } }),
+        ].join('\n'),
+      stderr: '',
+    });
+    await restarted.alarm();
+    expect(await storage.get('conversation')).toMatchObject({
+      response: 'Hello world',
+      activeRunId: null,
+      conversationState: 'waiting_for_user',
+      sandboxState: 'ready',
+    });
+    expect(sandbox.destroy).not.toHaveBeenCalled();
   });
 
   it('stores stream events separately and prunes deltas after completion', async () => {

@@ -3,8 +3,10 @@ import { Sandbox as BaseSandbox, ContainerProxy, getSandbox } from '@cloudflare/
 import {
   COURSE_AGENT_SEED_FILE,
   COURSE_AGENT_WORKSPACE_ROOT,
+  type CourseAgentConversationState,
   type CourseAgentEvent,
   type CourseAgentInspectCapability,
+  type CourseAgentSandboxState,
   CourseAgentSnapshotRequestSchema,
   type CourseAgentStartRunRequest,
   CourseAgentStartRunRequestSchema,
@@ -13,9 +15,14 @@ import {
 import { authorizeRun, authorizeSnapshot } from './auth.js';
 import { parseCodexLine } from './codex-events.js';
 import { codexFailureMessage } from './codex-output.js';
-import { CodexStream } from './codex-stream.js';
+import { CodexStream, type CodexStreamState } from './codex-stream.js';
 import { conversationHistory } from './conversation-history.js';
-import { activeRunExpired, sandboxDeadline } from './lifecycle.js';
+import {
+  ACTIVE_RECHECK_MS,
+  SANDBOX_SLEEP_AFTER_SECONDS,
+  activeRunExpired,
+  idleDeadline,
+} from './lifecycle.js';
 import { proxyOpenAiRequest } from './provider.js';
 
 interface Env {
@@ -35,6 +42,17 @@ interface ConversationState {
   activeRunExpiresAt?: string | null;
   status: 'starting' | 'running' | 'waiting_for_user' | 'failed' | 'offline';
   sandboxExpiresAt?: number | null;
+  lifecycleVersion?: number;
+  conversationState?: CourseAgentConversationState;
+  sandboxState?: CourseAgentSandboxState;
+  revision?: number;
+  sandboxGeneration?: number;
+  idleExpiresAt?: number | null;
+  runtimeSettings?: CourseAgentStartRunRequest['runtimeSettings'];
+  processId?: string | null;
+  processStartingUntil?: number | null;
+  logCursor?: number;
+  codexStream?: CodexStreamState;
   response: string | null;
   error: string | null;
   nextSequence: number;
@@ -107,6 +125,8 @@ PrairieLearn cannot open or download these files in this version; do not imply o
 
 export class CourseAgentCoordinator {
   private listeners = new Set<ReadableStreamDefaultController<string>>();
+  private monitoring: Promise<void> | null = null;
+  private shutdown: Promise<void> | null = null;
 
   constructor(
     private state: DurableObjectState,
@@ -116,6 +136,7 @@ export class CourseAgentCoordinator {
   async fetch(request: Request) {
     const url = new URL(request.url);
     if (request.method === 'POST' && url.pathname === '/run') {
+      if (this.shutdown) await this.shutdown;
       const body = CourseAgentStartRunRequestSchema.parse(await request.json());
       const capability = await authorizeRun(body, this.env.COURSE_AGENT_CAPABILITY_SECRET);
       let current = await this.getConversationState();
@@ -123,23 +144,33 @@ export class CourseAgentCoordinator {
         return Response.json({ error: 'Sandbox identity mismatch' }, { status: 403 });
       }
       await this.alarm();
-      current = await this.getConversationState();
-      if (current?.activeRunId) {
-        return Response.json({ error: 'A run is already active' }, { status: 409 });
-      }
-      const next: ConversationState = {
-        identity: capability,
-        activeRunId: body.runId,
-        activeRunExpiresAt: new Date(
-          Date.now() + body.runtimeSettings.turnTimeoutSeconds * 1000 + 60_000,
-        ).toISOString(),
-        status: 'starting',
-        response: null,
-        error: null,
-        nextSequence: current?.nextSequence ?? 0,
-        sandboxExpiresAt: current?.sandboxExpiresAt,
-      };
-      await this.state.storage.put('conversation', next);
+      const accepted = await this.state.blockConcurrencyWhile(async () => {
+        current = await this.readConversationState();
+        if (current?.activeRunId || current?.sandboxState === 'suspending') return false;
+        const next: ConversationState = {
+          identity: capability,
+          activeRunId: body.runId,
+          activeRunExpiresAt: new Date(
+            Date.now() + body.runtimeSettings.turnTimeoutSeconds * 1000,
+          ).toISOString(),
+          status: 'starting',
+          response: null,
+          error: null,
+          nextSequence: current?.nextSequence ?? 0,
+          lifecycleVersion: 2,
+          conversationState: 'working',
+          sandboxState: current?.sandboxState === 'ready' ? 'ready' : 'starting',
+          revision: (current?.revision ?? 0) + 1,
+          sandboxGeneration: current?.sandboxGeneration ?? 0,
+          idleExpiresAt: null,
+          runtimeSettings: body.runtimeSettings,
+          processId: null,
+        };
+        await this.state.storage.put('conversation', next);
+        await this.state.storage.setAlarm(Date.now() + ACTIVE_RECHECK_MS);
+        return true;
+      });
+      if (!accepted) return Response.json({ error: 'A run is already active' }, { status: 409 });
       this.state.waitUntil(this.run(body));
       return Response.json({ accepted: true });
     }
@@ -156,6 +187,13 @@ export class CourseAgentCoordinator {
         sandboxId: body.sandboxId,
         activeRunId: current.activeRunId,
         status: current.status,
+        conversationState: current.conversationState,
+        sandboxState: current.sandboxState,
+        revision: current.revision,
+        sandboxGeneration: current.sandboxGeneration,
+        idleExpiresAt: current.idleExpiresAt ?? null,
+        activeRunExpiresAt: current.activeRunExpiresAt ?? null,
+        processId: current.processId ?? null,
         response: current.response,
         error: current.error,
         events: await this.getEvents(),
@@ -177,52 +215,47 @@ export class CourseAgentCoordinator {
   }
 
   async alarm() {
-    await this.state.blockConcurrencyWhile(async () => {
-      const current = await this.state.storage.get<ConversationState>('conversation');
-      if (current?.sandboxExpiresAt == null) return;
-      if (current.sandboxExpiresAt > Date.now()) {
-        await this.state.storage.setAlarm(current.sandboxExpiresAt);
-        return;
+    const current = await this.getConversationState();
+    if (!current || current.sandboxState === 'offline') return;
+    if (current.activeRunId) {
+      await this.state.storage.setAlarm(Date.now() + ACTIVE_RECHECK_MS);
+      await this.monitorRun();
+      return;
+    }
+    if (this.shutdown) return this.shutdown;
+    this.shutdown = this.suspendWorkspace();
+    try {
+      await this.shutdown;
+    } finally {
+      this.shutdown = null;
+    }
+  }
+
+  private async suspendWorkspace() {
+    const suspended = await this.state.blockConcurrencyWhile(async () => {
+      const current = await this.readConversationState();
+      if (!current || current.activeRunId || current.sandboxState === 'offline') return null;
+      if (current.idleExpiresAt == null) return null;
+      if (current.idleExpiresAt > Date.now()) {
+        await this.state.storage.setAlarm(current.idleExpiresAt);
+        return null;
       }
-      const message =
-        'The agent workspace reached its lifetime limit. Send another message to start a fresh workspace; temporary files are no longer available.';
-      const events: CourseAgentEvent[] = [];
-      let nextSequence = current.nextSequence;
-      if (current.activeRunId) {
-        events.push({
-          sequence: nextSequence++,
-          type: 'run.failed',
-          occurredAt: new Date().toISOString(),
-          data: { message },
-        });
-      }
-      events.push({
-        sequence: nextSequence++,
-        type: 'sandbox.destroyed',
-        occurredAt: new Date().toISOString(),
-        data: { reason: 'max_lifetime' },
-      });
-      // Invalidate the run before destroying its container so late output cannot revive it.
-      const expired: ConversationState = {
-        ...current,
-        activeRunId: null,
-        activeRunExpiresAt: null,
-        status: 'offline',
-        error: current.activeRunId ? message : null,
-        nextSequence,
-      };
-      await this.putStateAndEvents(expired, events);
-      const sandbox = getSandbox(this.env.Sandbox, current.identity.sandboxId, {
-        normalizeId: true,
-      });
-      await sandbox.destroy();
-      await this.state.storage.put('conversation', { ...expired, sandboxExpiresAt: null });
-      await this.state.storage.deleteAlarm();
-      for (const event of events) {
-        for (const listener of this.listeners) listener.enqueue(eventChunk(event));
-      }
-      this.closeStreams();
+      const next: ConversationState = { ...current, sandboxState: 'suspending' };
+      await this.state.storage.put('conversation', next);
+      return next;
     });
+    if (!suspended) return;
+    const sandbox = getSandbox(this.env.Sandbox, suspended.identity.sandboxId, {
+      normalizeId: true,
+      keepAlive: false,
+    });
+    // Leave a retry alarm in storage before making an external call.
+    await this.state.storage.setAlarm(Date.now() + ACTIVE_RECHECK_MS);
+    await sandbox.destroy();
+    await this.update({ sandboxState: 'offline', status: 'offline', idleExpiresAt: null });
+    await this.append('sandbox.destroyed', { reason: 'idle_timeout' });
+    await this.state.storage.deleteAlarm();
+    this.closeStreams();
   }
 
   private async append(
@@ -283,7 +316,8 @@ export class CourseAgentCoordinator {
     const sandbox = getSandbox(this.env.Sandbox, request.sandboxId, {
       normalizeId: true,
       labels: { courseId: 'redacted', workload: 'course-agent' },
-      sleepAfter: request.runtimeSettings.idleTimeoutSeconds,
+      keepAlive: false,
+      sleepAfter: request.runtimeSettings.sleepAfterSeconds,
     });
     try {
       const sandboxState = await sandbox.getState();
@@ -291,13 +325,13 @@ export class CourseAgentCoordinator {
       const current = await this.state.storage.get<ConversationState>('conversation');
       if (current?.activeRunId !== request.runId) return;
       const previousEvents = await this.getEvents();
-      const deadline = sandboxDeadline(
-        current.sandboxExpiresAt,
-        starting,
-        request.runtimeSettings.maxLifetimeSeconds,
+      await this.update(
+        {
+          sandboxState: starting ? 'starting' : 'ready',
+          sandboxGeneration: (current.sandboxGeneration ?? 0) + Number(starting),
+        },
+        request.runId,
       );
-      await this.update({ sandboxExpiresAt: deadline }, request.runId);
-      await this.state.storage.setAlarm(deadline);
       await this.append(
         'user.message',
         { text: request.prompt, runId: request.runId },
@@ -321,15 +355,13 @@ export class CourseAgentCoordinator {
           request.runId,
         );
       }
-      if (!(await this.update({ status: 'running' }, request.runId))) return;
+      if (!(await this.update({ status: 'running', sandboxState: 'ready' }, request.runId))) return;
       await this.append(
         'agent.started',
         { model: this.env.OPENAI_MODEL, harness: 'codex' },
         request.runId,
       );
 
-      let buffer = '';
-      let eventChain = Promise.resolve();
       const prompt = `${SYSTEM_PROMPT}\n\nInstructor request:\n${request.prompt}`;
       const requestPath = `${COURSE_AGENT_WORKSPACE_ROOT}/.course-agent-request.json`;
       // Use a file rather than shell arguments: recovery history may exceed the argument-size limit.
@@ -340,73 +372,168 @@ export class CourseAgentCoordinator {
           history: conversationHistory(previousEvents),
         }),
       );
-      const stream = new CodexStream();
-      const consumeLine = (line: string) => {
-        const event = parseCodexLine(line);
-        if (!event) return;
-        for (const emitted of stream.consume(event)) {
-          eventChain = eventChain.then(() =>
-            this.append(emitted.type, emitted.data, request.runId),
-          );
-        }
-      };
       const command = [
         'node /opt/course-agent/run-codex.mjs',
         shellQuote(this.env.OPENAI_MODEL),
         shellQuote(requestPath),
       ].join(' ');
-      const codex = await sandbox.exec(command, {
-        cwd: COURSE_AGENT_WORKSPACE_ROOT,
-        timeout: Math.min(
-          request.runtimeSettings.turnTimeoutSeconds * 1_000,
-          Math.max(1_000, deadline - Date.now() - 1_000),
-        ),
-        stream: true,
-        env: { OPENAI_API_KEY: 'proxy-injected', IS_SANDBOX: '1' },
-        onOutput: (stream, data) => {
-          if (stream !== 'stdout') return;
-          buffer += data;
-          const lines = buffer.split('\n');
-          buffer = lines.pop() ?? '';
-          for (const line of lines) consumeLine(line);
-        },
-      });
-      if (buffer.trim()) consumeLine(buffer);
-      await eventChain;
-      if (!codex.success) throw new Error(codexFailureMessage(codex.stdout, codex.stderr));
-      const response = stream.response;
-      if (!response.trim()) {
-        throw new Error('The agent finished without a response. Please try again.');
+      const processId = `course-agent-${request.runId}`;
+      if (
+        !(await this.update(
+          { processId, processStartingUntil: Date.now() + ACTIVE_RECHECK_MS },
+          request.runId,
+        ))
+      ) {
+        return;
       }
-      await this.append('agent.completed', { response }, request.runId);
-      const finished = await this.update(
-        {
-          activeRunId: null,
-          activeRunExpiresAt: null,
-          status: 'waiting_for_user',
-          response,
-          error: null,
-        },
-        request.runId,
-      );
-      if (finished) {
-        this.closeStreams();
-        await this.pruneCompletedDeltas(request.runId);
+      await sandbox.startProcess(command, {
+        cwd: COURSE_AGENT_WORKSPACE_ROOT,
+        processId,
+        autoCleanup: false,
+        env: { OPENAI_API_KEY: 'proxy-injected', IS_SANDBOX: '1' },
+      });
+      await this.update({ processStartingUntil: null }, request.runId);
+      while ((await this.getConversationState())?.activeRunId === request.runId) {
+        await this.monitorRun();
+        await new Promise((resolve) => setTimeout(resolve, 1000));
       }
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      await this.append('run.failed', { message }, request.runId);
-      const finished = await this.update(
+      const current = await this.getConversationState();
+      if (current?.activeRunId === request.runId && current.processId) {
+        const process = await sandbox.getProcess(current.processId);
+        if (process && !['completed', 'failed', 'killed', 'error'].includes(process.status)) {
+          await sandbox.killProcess(current.processId);
+        }
+      }
+      await this.failRun(request.runId, error);
+    }
+  }
+
+  private async monitorRun() {
+    if (this.monitoring) return this.monitoring;
+    this.monitoring = this.pollProcess();
+    try {
+      await this.monitoring;
+    } finally {
+      this.monitoring = null;
+    }
+  }
+
+  private async pollProcess() {
+    const current = await this.getConversationState();
+    if (!current?.activeRunId) return;
+    const runId = current.activeRunId;
+    const sandbox = getSandbox(this.env.Sandbox, current.identity.sandboxId, {
+      normalizeId: true,
+      keepAlive: false,
+      sleepAfter: current.runtimeSettings?.sleepAfterSeconds ?? SANDBOX_SLEEP_AFTER_SECONDS,
+    });
+    try {
+      if (activeRunExpired(current.activeRunExpiresAt)) {
+        if (current.processId) await sandbox.killProcess(current.processId);
+        await this.failRun(runId, new Error('The course-agent active execution limit was reached'));
+        return;
+      }
+      if (!current.processId) return;
+      const process = await sandbox.getProcess(current.processId);
+      if (!process) {
+        if ((current.processStartingUntil ?? 0) > Date.now()) return;
+        await this.failRun(runId, new Error('The course-agent process is no longer available'));
+        return;
+      }
+      const finished = ['completed', 'failed', 'killed', 'error'].includes(process.status);
+      const logs = await sandbox.getProcessLogs(current.processId);
+      const previousCursor = current.logCursor ?? 0;
+      if (logs.stdout.length < previousCursor) throw new Error('Codex process logs were truncated');
+      const logCursor = finished ? logs.stdout.length : logs.stdout.lastIndexOf('\n') + 1;
+      const stream = new CodexStream(current.codexStream);
+      const events: Pick<CourseAgentEvent, 'type' | 'data'>[] = [];
+      for (const line of logs.stdout.slice(previousCursor, logCursor).split('\n')) {
+        if (!line.trim()) continue;
+        const event = parseCodexLine(line);
+        if (!event) throw new Error('Codex returned a malformed notification');
+        events.push(...stream.consume(event));
+      }
+      if (finished) {
+        if (process.status !== 'completed' || process.exitCode !== 0) {
+          throw new Error(codexFailureMessage(logs.stdout, logs.stderr));
+        }
+        if (!stream.completed || !stream.response.trim()) {
+          throw new Error('The agent finished without a complete response. Please try again.');
+        }
+        events.push({ type: 'agent.completed', data: { response: stream.response } });
+      }
+      await this.state.blockConcurrencyWhile(async () => {
+        const latest = await this.readConversationState();
+        if (latest?.activeRunId !== runId || (latest.logCursor ?? 0) !== previousCursor) return;
+        const next: ConversationState = {
+          ...latest,
+          logCursor,
+          codexStream: stream.snapshot(),
+          revision: (latest.revision ?? 0) + 1,
+          ...(finished
+            ? {
+                activeRunId: null,
+                activeRunExpiresAt: null,
+                processId: null,
+                conversationState: 'waiting_for_user',
+                status: 'waiting_for_user',
+                response: stream.response,
+                error: null,
+                idleExpiresAt: idleDeadline(latest.runtimeSettings?.idleTimeoutSeconds ?? 600),
+              }
+            : {}),
+        };
+        const persisted = events.map((event) => ({
+          ...event,
+          sequence: next.nextSequence++,
+          occurredAt: new Date().toISOString(),
+        }));
+        await this.putStateAndEvents(next, persisted);
+        await this.state.storage.setAlarm(next.idleExpiresAt ?? Date.now() + ACTIVE_RECHECK_MS);
+        for (const event of persisted) {
+          for (const listener of this.listeners) listener.enqueue(eventChunk(event));
+        }
+      });
+      if (finished) {
+        this.closeStreams();
+        await this.pruneCompletedDeltas(runId);
+      }
+    } catch (error) {
+      // Do not declare a run idle while its process could still be editing files.
+      if (current.processId) {
+        const process = await sandbox.getProcess(current.processId);
+        if (process && !['completed', 'failed', 'killed', 'error'].includes(process.status)) {
+          await sandbox.killProcess(current.processId);
+        }
+      }
+      await this.failRun(runId, error);
+    }
+  }
+
+  private async failRun(runId: string, error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    await this.append('run.failed', { message }, runId);
+    const current = await this.getConversationState();
+    if (current?.activeRunId !== runId) return;
+    const idleExpiresAt = idleDeadline(current.runtimeSettings?.idleTimeoutSeconds ?? 600);
+    if (
+      await this.update(
         {
           activeRunId: null,
           activeRunExpiresAt: null,
+          processId: null,
           status: 'failed',
+          conversationState: 'failed',
           response: null,
           error: message,
+          idleExpiresAt,
         },
-        request.runId,
-      );
-      if (finished) this.closeStreams();
+        runId,
+      )
+    ) {
+      await this.state.storage.setAlarm(idleExpiresAt);
+      this.closeStreams();
     }
   }
 
@@ -416,34 +543,67 @@ export class CourseAgentCoordinator {
 
   private async readConversationState() {
     const current = await this.state.storage.get<ConversationState>('conversation');
-    if (!current?.activeRunId || !activeRunExpired(current.activeRunExpiresAt)) return current;
-
-    const message = 'The course-agent run expired before it completed';
-    const event = {
-      sequence: current.nextSequence,
-      type: 'run.failed',
-      occurredAt: new Date().toISOString(),
-      data: { message },
-    } satisfies CourseAgentEvent;
-    const expired: ConversationState = {
+    if (!current || current.lifecycleVersion === 2) return current;
+    // Ignore the old absolute deadline. Existing idle workspaces get a full idle interval.
+    const migrated: ConversationState = {
       ...current,
-      activeRunId: null,
-      activeRunExpiresAt: null,
-      status: 'failed',
-      response: null,
-      error: message,
-      nextSequence: current.nextSequence + 1,
+      lifecycleVersion: 2,
+      conversationState: current.activeRunId
+        ? 'working'
+        : current.status === 'failed'
+          ? 'failed'
+          : 'waiting_for_user',
+      sandboxState:
+        current.status === 'offline'
+          ? 'offline'
+          : current.status === 'starting'
+            ? 'starting'
+            : 'ready',
+      revision: 1,
+      sandboxGeneration: current.status === 'offline' ? 0 : 1,
+      idleExpiresAt:
+        current.activeRunId || current.status === 'offline'
+          ? null
+          : idleDeadline(current.runtimeSettings?.idleTimeoutSeconds ?? 600),
+      sandboxExpiresAt: null,
     };
-    await this.putStateAndEvents(expired, [event]);
-    this.closeStreams();
-    return expired;
+    await this.state.storage.put('conversation', migrated);
+    if (migrated.sandboxState !== 'offline') {
+      await this.state.storage.setAlarm(migrated.idleExpiresAt ?? Date.now() + ACTIVE_RECHECK_MS);
+    }
+    return migrated;
   }
 
   private async update(update: Partial<ConversationState>, runId?: string) {
     return this.state.blockConcurrencyWhile(async () => {
       const current = await this.state.storage.get<ConversationState>('conversation');
       if (!current || (runId && current.activeRunId !== runId)) return false;
-      await this.state.storage.put('conversation', { ...current, ...update });
+      const next = {
+        ...current,
+        ...update,
+        revision: (current.revision ?? 0) + 1,
+      };
+      const changed =
+        current.conversationState !== next.conversationState ||
+        current.sandboxState !== next.sandboxState;
+      const events: CourseAgentEvent[] = changed
+        ? [
+            {
+              sequence: next.nextSequence++,
+              type: 'state.changed',
+              occurredAt: new Date().toISOString(),
+              data: {
+                conversationState: next.conversationState,
+                sandboxState: next.sandboxState,
+                revision: next.revision,
+              },
+            },
+          ]
+        : [];
+      await this.putStateAndEvents(next, events);
+      for (const event of events) {
+        for (const listener of this.listeners) listener.enqueue(eventChunk(event));
+      }
       return true;
     });
   }

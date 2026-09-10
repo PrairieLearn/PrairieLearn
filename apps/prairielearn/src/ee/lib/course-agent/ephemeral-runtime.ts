@@ -68,7 +68,7 @@ function expiresAt() {
 function runtimeSettings() {
   return {
     idleTimeoutSeconds: config.courseAgentSandbox.idleTimeoutSeconds,
-    maxLifetimeSeconds: config.courseAgentSandbox.maxLifetimeSeconds,
+    sleepAfterSeconds: config.courseAgentSandbox.sleepAfterSeconds,
     turnTimeoutSeconds: config.courseAgentSandbox.turnTimeoutSeconds,
   };
 }

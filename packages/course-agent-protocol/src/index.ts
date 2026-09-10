@@ -17,6 +17,7 @@ export const CourseAgentEventTypeSchema = z.enum([
   'agent.completed',
   'usage.updated',
   'run.failed',
+  'state.changed',
 ]);
 export type CourseAgentEventType = z.infer<typeof CourseAgentEventTypeSchema>;
 
@@ -37,6 +38,22 @@ export const CourseAgentRuntimeStatusSchema = z.enum([
 ]);
 export type CourseAgentRuntimeStatus = z.infer<typeof CourseAgentRuntimeStatusSchema>;
 
+export const CourseAgentConversationStateSchema = z.enum([
+  'working',
+  'waiting_for_user',
+  'validating_change',
+  'waiting_for_approval',
+  'publishing',
+  'syncing',
+  'refreshing_workspace',
+  'resuming_agent',
+  'failed',
+]);
+export type CourseAgentConversationState = z.infer<typeof CourseAgentConversationStateSchema>;
+
+export const CourseAgentSandboxStateSchema = z.enum(['offline', 'starting', 'ready', 'suspending']);
+export type CourseAgentSandboxState = z.infer<typeof CourseAgentSandboxStateSchema>;
+
 const CourseAgentIdentitySchema = z.object({
   userId: z.string(),
   courseId: z.string(),
@@ -46,8 +63,8 @@ const CourseAgentIdentitySchema = z.object({
 
 export const CourseAgentRuntimeSettingsSchema = z.object({
   idleTimeoutSeconds: z.number().int().min(60).max(86_400),
-  maxLifetimeSeconds: z.number().int().min(1).max(86_400).default(600),
-  turnTimeoutSeconds: z.number().int().min(60).max(3_600),
+  sleepAfterSeconds: z.number().int().min(60).max(86_400).default(21_600),
+  turnTimeoutSeconds: z.number().int().min(60).max(86_400).default(21_600),
 });
 export type CourseAgentRuntimeSettings = z.infer<typeof CourseAgentRuntimeSettingsSchema>;
 
@@ -99,6 +116,13 @@ export const CourseAgentSnapshotSchema = z.object({
   sandboxId: z.string(),
   activeRunId: z.uuid().nullable(),
   status: CourseAgentRuntimeStatusSchema,
+  conversationState: CourseAgentConversationStateSchema.nullable().default(null),
+  sandboxState: CourseAgentSandboxStateSchema.nullable().default(null),
+  revision: z.number().int().nonnegative().default(0),
+  sandboxGeneration: z.number().int().nonnegative().default(0),
+  idleExpiresAt: z.number().nullable().default(null),
+  activeRunExpiresAt: z.string().nullable().default(null),
+  processId: z.string().nullable().default(null),
   response: z.string().nullable(),
   error: z.string().nullable(),
   events: z.array(CourseAgentEventSchema),
