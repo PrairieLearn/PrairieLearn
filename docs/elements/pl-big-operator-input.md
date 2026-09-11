@@ -120,6 +120,8 @@ Valid approach directions are `"+"`, `"-"`, and `"+-"`.
 ></pl-big-operator-input>
 ```
 
+Custom operators also support `Limit`-like syntax:
+
 ```html {doctest-name="test_custom_approach"}
 <pl-big-operator-input
   answers-name="evaluation"
@@ -234,7 +236,6 @@ import sympy
 def generate(data):
     data["correct_answers"]["evaluation"] = pl.big_operator_to_json(
         operator="custom",
-        operator_latex=r"\operatorname{eval}",
         limits="approach",
         index="x",
         target="0",
