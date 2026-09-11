@@ -8,6 +8,8 @@
     "enabled": true
   },
   "vars": {
+    // In production, set this to the externally reachable PL origin.
+    "COURSE_AGENT_PL_ORIGIN": "http://localhost:3000",
     "OPENAI_MODEL": "gpt-6-astra",
     "BACKUP_BUCKET_NAME": "prairielearn-course-agent-workspaces"
   },

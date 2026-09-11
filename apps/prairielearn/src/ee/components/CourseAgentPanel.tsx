@@ -526,11 +526,12 @@ function CourseAgentConversationPanel({
               {showDiagnostics && (
                 <Diagnostics
                   conversation={conversation}
-                  runId={busy ? (conversation?.runId ?? null) : null}
+                  runId={conversation?.runId ?? null}
                   events={diagnostics.data?.events ?? []}
                   status={diagnostics.data?.status ?? null}
                   lifecycle={diagnostics.data}
                   persistence={diagnostics.data?.persisted}
+                  runUsages={diagnostics.data?.runUsages}
                 />
               )}
             </div>
@@ -625,6 +626,7 @@ function Diagnostics({
   status,
   lifecycle,
   persistence,
+  runUsages = [],
 }: {
   conversation: { conversationId: string; sandboxId: string } | null;
   runId: string | null;
@@ -632,6 +634,12 @@ function Diagnostics({
   status: string | null;
   lifecycle?: CourseAgentSnapshot;
   persistence?: Record<string, string | number | Date | null> | null;
+  runUsages?: {
+    run_id: string;
+    normalized_total_tokens: number;
+    estimated_cost_milli_dollars: number;
+    finalized_at: Date | string | null;
+  }[];
 }) {
   const agentStarted = findLastEvent(events, 'agent.started');
   const usage = findLastEvent(events, 'usage.updated');
@@ -693,6 +701,32 @@ function Diagnostics({
           </span>
         </div>
         <div className="fw-medium mb-2">Token usage</div>
+        <div className="mb-3">
+          <div>
+            Conversation:{' '}
+            {runUsages
+              .reduce((sum, value) => sum + value.normalized_total_tokens, 0)
+              .toLocaleString('en-US')}{' '}
+            tokens ·
+            {` $${(
+              runUsages.reduce((sum, value) => sum + value.estimated_cost_milli_dollars, 0) / 1000
+            ).toFixed(4)}`}{' '}
+            estimated
+          </div>
+          {runUsages
+            .filter((value) => value.run_id === runId)
+            .map((value) => (
+              <div key={value.run_id}>
+                Run: {value.normalized_total_tokens.toLocaleString('en-US')} tokens ·{' '}
+                {`$${(value.estimated_cost_milli_dollars / 1000).toFixed(4)}`} estimated ·{' '}
+                {value.finalized_at ? 'Finalized' : 'Accumulating'}
+              </div>
+            ))}
+          <div className="text-muted">
+            Recorded provider usage; interrupted requests may have unavailable usage. The harness
+            breakdown below is cumulative across its thread.
+          </div>
+        </div>
         {usage ? (
           <dl className="course-agent-token-usage mb-0">
             {tokenFields.map(([key, label]) => {

@@ -8,14 +8,9 @@ import {
 } from '@prairielearn/course-agent-protocol';
 
 import { decodeAndVerifyToken } from './auth.js';
+import { type UsageEnv, meteredOpenAiRequest } from './usage.js';
 
-export async function generateConversationTitle(
-  request: Request,
-  env: {
-    COURSE_AGENT_CAPABILITY_SECRET: string;
-    OPENAI_API_KEY: string;
-  },
-) {
+export async function generateConversationTitle(request: Request, env: UsageEnv) {
   const { capability: token } = z
     .object({ capability: z.string().max(50000) })
     .parse(await request.json());
@@ -23,7 +18,10 @@ export async function generateConversationTitle(
     await decodeAndVerifyToken(token, env.COURSE_AGENT_CAPABILITY_SECRET),
   );
   if (new Date(capability.expiresAt) <= new Date()) throw new Error('Title capability has expired');
-  const openai = createOpenAI({ apiKey: env.OPENAI_API_KEY });
+  const openai = createOpenAI({
+    apiKey: 'proxy-injected',
+    fetch: (url, init) => meteredOpenAiRequest(new Request(String(url), init), env, capability),
+  });
   const { text } = await generateText({
     model: openai.responses('gpt-5.6-luna'),
     abortSignal: AbortSignal.timeout(10000),

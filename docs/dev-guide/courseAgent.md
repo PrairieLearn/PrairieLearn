@@ -268,3 +268,60 @@ access keys. A deployed Worker may receive `R2_ACCESS_KEY_ID` and `R2_SECRET_ACC
 secrets when its backup implementation uses remote S3-compatible access.
 
 Cloud resources and credentials used by later stack layers are intentionally not configured here.
+
+## Usage and hourly guardrails
+
+Course-agent usage uses the same `RedisRateLimiter` as AI grading, unchanged: fixed,
+clock-aligned one-hour intervals, not rolling windows. PL's `nonVolatileRedisUrl` must be
+configured. Counters use a separate `course-agent-usage:` namespace and expire at the hour boundary.
+
+The default `courseAgentRateLimitDollars` settings are:
+
+```json
+{
+  "courseAgentRateLimitDollars": {
+    "user": 10,
+    "course": 50,
+    "global": 100
+  }
+}
+```
+
+A zero threshold disables new paid work for that scope. Limits apply across conversations.
+The trusted provider proxy checks PL before every model request, including compaction and
+conversation naming, and records token usage before delivering the final provider response.
+Approval decisions and publication are not charged or blocked by these model limits; a resumed
+agent's next provider request is checked normally. An unavailable limiter fails closed.
+
+Set `COURSE_AGENT_PL_ORIGIN` on the Worker to the PL origin reachable from the Worker, not
+from the sandbox. Wrangler's local default is `http://localhost:3000`; production must override
+it with the HTTPS PL origin. The callback uses the existing shared capability secret and an
+expiring purpose-bound signature. No database, Redis, or callback credentials enter the sandbox.
+
+`course_agent_run_usages` holds durable per-run token and estimated-cost totals, with one row
+created for each new run. `course_agent_usage_receipts` retains provider/model identifiers and
+per-request usage. The receipt is created before forwarding a paid request and completed exactly
+once, so repeated callbacks do not duplicate PostgreSQL totals. A missing terminal provider
+response leaves the receipt incomplete: this is unavailable usage, not a verified zero charge.
+Provider-reported dollar cost is currently unavailable and remains NULL. Historical runs from
+before this feature have no retrospective usage estimate.
+
+Diagnostics show the run and conversation's recorded totals; the existing raw harness breakdown
+is labeled separately because Codex reports cumulative thread usage. Cached input and reasoning
+are subsets of input and output, respectively, and are not added again to normalized totals.
+
+Estimates use `costPerMillionTokens`, with `courseAgentTokenPricing` overrides for agent models.
+Default [Astra](https://developers.openai.com/api/docs/models/gpt-6-astra) and
+[Luna](https://developers.openai.com/api/docs/models/gpt-5.6-luna) rates were verified on
+2026-09-11, including cache writes and long-context multipliers. Unknown models are rejected
+until pricing is configured. Only standard/auto service tier and foreground Responses requests
+are supported. Estimates cover tokens, not separately billed hosted-tool fees or sandbox costs.
+
+As with AI grading, these are guardrails, not a prepaid ledger: already-authorized concurrent
+requests can overshoot a threshold. Redis updates and PostgreSQL writes are not a distributed
+transaction; a crash between them, lost Redis data, or a provider response without usage can
+under-count the guardrail. PostgreSQL retains all successfully recorded usage regardless of
+Redis expiration. There are no reservations, credit pools, BYOK, or billing changes.
+
+Local tests use mocked provider responses and the existing test database/course fixtures.
+The usage browser test does not invoke a model or publish course content.

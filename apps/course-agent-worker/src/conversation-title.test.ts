@@ -4,12 +4,18 @@ import { afterEach, expect, it, vi } from 'vitest';
 
 import { generateConversationTitle } from './conversation-title.js';
 
+vi.mock('./usage.js', () => ({
+  meteredOpenAiRequest: async (request: Request) =>
+    fetch(request.url, { method: request.method, body: await request.text() }),
+}));
+
 const env = { COURSE_AGENT_CAPABILITY_SECRET: 'test-secret', OPENAI_API_KEY: 'fake-test-key' };
 
 function request(overrides = {}) {
   const data = Buffer.from(
     JSON.stringify({
       type: 'course-agent-title',
+      runId: '22222222-2222-4222-8222-222222222222',
       conversationId: '11111111-1111-4111-8111-111111111111',
       userId: '1',
       courseId: '2',

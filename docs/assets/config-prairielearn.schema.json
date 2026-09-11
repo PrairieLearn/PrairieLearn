@@ -1520,6 +1520,78 @@
         }
       ]
     },
+    "courseAgentRateLimitDollars": {
+      "default": {},
+      "type": "object",
+      "properties": {
+        "user": {
+          "default": 10,
+          "type": "number",
+          "minimum": 0
+        },
+        "course": {
+          "default": 50,
+          "type": "number",
+          "minimum": 0
+        },
+        "global": {
+          "default": 100,
+          "type": "number",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false
+    },
+    "courseAgentTokenPricing": {
+      "default": {
+        "gpt-6-astra": {
+          "input": 10,
+          "cachedInput": 1,
+          "cacheWrite": 12.5,
+          "output": 50,
+          "longContextThreshold": 272000
+        },
+        "gpt-5.6-luna": {
+          "input": 0.2,
+          "cachedInput": 0.02,
+          "cacheWrite": 0.25,
+          "output": 1.2,
+          "longContextThreshold": 272000
+        }
+      },
+      "type": "object",
+      "propertyNames": {
+        "type": "string"
+      },
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "input": {
+            "type": "number",
+            "minimum": 0
+          },
+          "cachedInput": {
+            "type": "number",
+            "minimum": 0
+          },
+          "cacheWrite": {
+            "type": "number",
+            "minimum": 0
+          },
+          "output": {
+            "type": "number",
+            "minimum": 0
+          },
+          "longContextThreshold": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": ["input", "cachedInput", "cacheWrite", "output"],
+        "additionalProperties": false
+      }
+    },
     "courseAgentRuntime": {
       "default": "disabled",
       "type": "string",

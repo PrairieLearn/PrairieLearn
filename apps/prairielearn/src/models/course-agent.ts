@@ -26,6 +26,11 @@ import {
   CourseSchema,
 } from '../lib/db-types.js';
 
+import {
+  createCourseAgentRunUsage,
+  finalizeCourseAgentRunUsage,
+} from './course-agent-run-usage.js';
+
 const sql = loadSqlEquiv(import.meta.url);
 const CourseAgentConversationListItemSchema = CourseAgentConversationSchema.extend({
   last_message_at: DateFromISOString,
@@ -118,6 +123,7 @@ export async function createCourseAgentTurn({
       { run_id: runId, conversation_id: conversation.id, prompt_digest: promptDigest },
       CourseAgentRunSchema,
     );
+    await createCourseAgentRunUsage(run.id);
     const message = await queryRow(
       sql.insert_user_message,
       {
@@ -173,6 +179,8 @@ export async function persistCourseAgentSnapshot({
         status: snapshot.error ? 'failed' : 'completed',
         error_message: snapshot.error,
       });
+      await createCourseAgentRunUsage(runId);
+      await finalizeCourseAgentRunUsage(runId);
       if (snapshot.response) {
         await execute(sql.insert_assistant_message, {
           conversation_id: snapshot.conversationId,

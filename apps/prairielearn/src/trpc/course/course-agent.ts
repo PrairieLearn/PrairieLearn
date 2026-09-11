@@ -21,14 +21,17 @@ import {
 import { restoreCourseAgentMessages } from '../../ee/lib/course-agent/history.js';
 import { publicCourseAgentEvent } from '../../ee/lib/course-agent/public-events.js';
 import { reconcileCourseAgentPushApproval } from '../../ee/lib/course-agent/publication.js';
+import { checkCourseAgentUsageLimits } from '../../ee/lib/course-agent/usage-limits.js';
 import { config } from '../../lib/config.js';
 import {
   CourseAgentConversationSchema,
   CourseAgentEventSchema,
   CourseAgentMessageSchema,
+  CourseAgentRunUsageSchema,
 } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
 import { idsEqual } from '../../lib/id.js';
+import { selectCourseAgentRunUsages } from '../../models/course-agent-run-usage.js';
 import {
   createCourseAgentTurn,
   persistCourseAgentSnapshot,
@@ -106,6 +109,18 @@ const start = courseAgentProcedure
           }
         : null,
     };
+    if (config.courseAgentRuntime !== 'fake') {
+      const limit = await checkCourseAgentUsageLimits({
+        courseId: ctx.course.id,
+        userId: ctx.locals.authn_user.id,
+      });
+      if (!limit.allowed) {
+        throw new TRPCError({
+          code: 'TOO_MANY_REQUESTS',
+          message: limit.message ?? 'Course-agent usage limit reached.',
+        });
+      }
+    }
     const conversationId = input.conversationId ?? randomUUID();
     const runId = randomUUID();
     const sandboxId = courseAgentSandboxId(conversationId);
@@ -161,6 +176,7 @@ const start = courseAgentProcedure
     if (!input.conversationId) {
       void nameCourseAgentConversation({
         conversationId,
+        runId,
         userId: ctx.locals.authn_user.id,
         courseId: ctx.course.id,
         prompt: input.prompt,
@@ -342,6 +358,7 @@ const diagnostics = courseAgentProcedure
   .input(z.object({ conversationId: z.uuid(), sandboxId: z.string() }))
   .output(
     CourseAgentSnapshotSchema.extend({
+      runUsages: z.array(CourseAgentRunUsageSchema),
       persisted: CourseAgentConversationSchema.pick({
         conversation_state: true,
         sandbox_state: true,
@@ -363,7 +380,13 @@ const diagnostics = courseAgentProcedure
     if (typeof latestUser?.data.runId === 'string') {
       await persistCourseAgentSnapshot({ snapshot, runId: latestUser.data.runId });
     }
-    return { ...snapshot, persisted: await selectOptionalCourseAgentConversation(identity) };
+    const persisted = await selectOptionalCourseAgentConversation(identity);
+    if (!persisted) throw new TRPCError({ code: 'NOT_FOUND', message: 'Conversation not found' });
+    return {
+      ...snapshot,
+      persisted,
+      runUsages: await selectCourseAgentRunUsages(input.conversationId),
+    };
   });
 
 const history = courseAgentProcedure
