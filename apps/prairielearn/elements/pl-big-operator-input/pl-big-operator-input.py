@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 import re
 from collections.abc import Sequence
 from dataclasses import dataclass
@@ -814,7 +815,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 
 
 def _render_symbolic_input(
-    data: dict[str, Any] | pl.QuestionData,
+    data: pl.QuestionData,
     *,
     name: str,
     variables: tuple[str, ...],
@@ -856,18 +857,9 @@ def _render_symbolic_input(
         initial_value=None,
     )
 
-    # create a view over data with tweaked values
-    view = cast(pl.QuestionData, dict(data))
-    view.setdefault("correct_answers", {})
-    view.setdefault("format_errors", {})
-    view.setdefault("partial_scores", {})
-    view.setdefault("raw_submitted_answers", {})
-    view.setdefault("submitted_answers", {})
-    view.setdefault("panel", "question")
-    view.setdefault("editable", view["panel"] == "question")
-
+    # create a defensive-copied view over data with tweaked values
+    view = copy.deepcopy(data)
     if score is not None:
-        view["partial_scores"] = dict(view["partial_scores"])
         view["partial_scores"][name] = {"score": score}
 
     template = SYMBOLIC_INPUT_TEMPLATE_PATH.read_text(encoding="utf-8")
