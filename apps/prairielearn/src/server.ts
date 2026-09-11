@@ -77,6 +77,7 @@ import { isEnterprise } from './lib/license.js';
 import * as lifecycleHooks from './lib/lifecycle-hooks.js';
 import * as load from './lib/load.js';
 import { APP_ROOT_PATH, REPOSITORY_ROOT_PATH } from './lib/paths.js';
+import { closePrintRenderer } from './lib/printing.js';
 import { isServerInitialized, isServerPending, setServerState } from './lib/server-initialized.js';
 import * as serverJobs from './lib/server-jobs.js';
 import * as serverJobProgressSocket from './lib/serverJobProgressSocket.js';
@@ -1089,6 +1090,12 @@ export async function initExpress(): Promise<Express> {
       },
       (await import('./pages/instructorAssessmentManualGrading/assessment/assessment.js')).default,
     ],
+  );
+
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment_instance/:assessment_instance_id(\\d+)/paper',
+    (await import('./pages/instructorAssessmentInstancePrint/instructorAssessmentInstancePrint.js'))
+      .default,
   );
 
   app.use(
@@ -2743,6 +2750,7 @@ if (shouldStartServer) {
       assets.close(),
       codeCaller.finish(),
       stopBatchedMigrations(),
+      closePrintRenderer(),
     ]);
     serviceResults.forEach((r) => {
       if (r.status === 'rejected') {

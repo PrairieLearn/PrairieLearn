@@ -26,6 +26,7 @@ allowBuilds:
   core-js: false
   cpu-features: false
   dtrace-provider: false
+  es5-ext: false
   esbuild: false
   protobufjs: false
   sharp: false
