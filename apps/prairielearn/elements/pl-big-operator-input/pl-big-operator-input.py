@@ -13,6 +13,7 @@ import prairielearn.operator_expression as poe
 import prairielearn.sympy_utils as psu
 import sympy
 import sympy.sets
+from prairielearn.internal import symbolic_input as psi
 
 HERE = Path(__file__).parent
 SCHEMA_PATH = HERE / "schemas" / "pl-big-operator-input.json"
@@ -822,7 +823,7 @@ def _render_symbolic_input(
     suffix: str | None = None,
     score: float | None = None,
 ) -> str:
-    config = psu.RenderConfig(
+    config = psi.RenderConfig(
         # passed-through
         name=name,
         label=prefix,
@@ -837,7 +838,7 @@ def _render_symbolic_input(
         show_score=show_score,
         show_info=show_help_text,
         # fixed
-        display=psu.DisplayType.INLINE,
+        display=psi.DisplayType.INLINE,
         placeholder="",
         imaginary_unit=imaginary_unit,
         allow_trig=True,
@@ -864,7 +865,7 @@ def _render_symbolic_input(
 
     template = SYMBOLIC_INPUT_TEMPLATE_PATH.read_text(encoding="utf-8")
 
-    return psu.render_with_config(config, view, template=template)
+    return psi.render_with_config(config, view, template=template)
 
 
 def _field(
@@ -1090,7 +1091,7 @@ def _structured_tex(config: RenderConfig, structured: dict[str, Any]) -> str:
     values = _values(config, structured)
     raw = {
         config.name(key): sympy.latex(
-            psu.replace_imaginary_for_display(
+            psi.replace_imaginary_for_display(
                 cast(sympy.Expr, value), config.imaginary_unit
             )
         )
@@ -1433,7 +1434,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
         case "correct":
             for component, value in correct.items():
                 data["raw_submitted_answers"][config.name(component)] = str(
-                    psu.replace_imaginary_for_display(
+                    psi.replace_imaginary_for_display(
                         cast(sympy.Expr, value), config.imaginary_unit
                     )
                 )
