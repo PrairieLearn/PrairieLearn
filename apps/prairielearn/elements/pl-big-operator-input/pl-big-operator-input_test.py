@@ -1027,10 +1027,65 @@ class TestRenderUnits:
         assert expected_tex in rendered
         assert "badge" not in rendered
 
+    @pytest.mark.parametrize(
+        "latex_override", [False, True], ids=["default-latex", "custom-latex"]
+    )
+    @pytest.mark.parametrize("operator", ["integral", "union"])
+    @pytest.mark.parametrize(
+        "indexing", ["bounds", "domain"], ids=["two-bounds", "single-bound"]
+    )
     @pytest.mark.parametrize("panel", ["answer", "submission"])
-    def test_integral_latex_override_uses_normal_limit_position(
-        self, panel: Literal["answer", "submission"]
+    def test_operator_limit_position(
+        self,
+        latex_override: bool,
+        operator: Literal["integral", "union"],
+        indexing: Literal["bounds", "domain"],
+        panel: Literal["answer", "submission"],
     ) -> None:
+        function_name = "Integral" if operator == "integral" else "Union"
+        body = "k" if operator == "integral" else "{k}"
+        index_spec = "(k, 0, 1)" if indexing == "bounds" else "(k, gamma)"
+        operator_latex = (
+            (r"\oint" if operator == "integral" else r"\bigoplus")
+            if latex_override
+            else None
+        )
+        markup = html(**{
+            "correct-answer": f"{function_name}({body}, {index_spec})",
+            "operator-latex": operator_latex,
+            "variables": "gamma",
+            "grading-method": "component",
+        })
+        raw_submitted_answers = {"op-body": body}
+        if indexing == "bounds":
+            raw_submitted_answers.update({"op-lower": "0", "op-upper": "1"})
+        else:
+            raw_submitted_answers["op-domain"] = "gamma"
+        data = question_data(raw_submitted_answers=raw_submitted_answers, panel=panel)
+        big_operator_input.prepare(markup, data)
+        if panel == "submission":
+            big_operator_input.parse(markup, data)
+
+        rendered = big_operator_input.render(markup, data)
+
+        operator_tex = {
+            ("integral", False): r"\int",
+            ("integral", True): r"\mathop{\oint}\nolimits",
+            ("union", False): r"\bigcup",
+            ("union", True): r"\mathop{\bigoplus}\limits",
+        }[operator, latex_override]
+        if indexing == "bounds":
+            subscript = "0" if operator == "integral" else "k=0"
+            indexed_operator = rf"{operator_tex}_{{{subscript}}}^{{1}}"
+        else:
+            subscript = r"\gamma" if operator == "integral" else r"k\in \gamma"
+            indexed_operator = rf"{operator_tex}_{{{subscript}}}"
+        suffix = r"\,\mathrm{d}k" if operator == "integral" else ""
+        body_tex = "k" if operator == "integral" else r"\left\{k\right\}"
+
+        assert f"{indexed_operator} {body_tex}{suffix}" in rendered
+
+    def test_submission_formats_valid_components_when_another_is_invalid(self) -> None:
         markup = html(**{
             "correct-answer": "Integral(1/z, (z, gamma))",
             "operator-latex": r"\oint",
@@ -1038,17 +1093,73 @@ class TestRenderUnits:
             "grading-method": "component",
         })
         data = question_data(
-            raw_submitted_answers={"op-domain": "gamma", "op-body": "1/z"},
-            panel=panel,
+            raw_submitted_answers={"op-domain": "gamma", "op-body": "dz"},
+            panel="submission",
         )
         big_operator_input.prepare(markup, data)
-        if panel == "submission":
-            big_operator_input.parse(markup, data)
+        big_operator_input.parse(markup, data)
 
         rendered = big_operator_input.render(markup, data)
 
-        assert r"\mathop{\oint}\nolimits_{\gamma} \frac{1}{z}\,\mathrm{d}z" in rendered
-        assert r"\mathop{\oint}\limits" not in rendered
+        assert data["submitted_answers"]["op"] is None
+        assert r"\mathop{\oint}\nolimits_{\gamma} dz\,\mathrm{d}z" in rendered
+
+    @pytest.mark.parametrize(
+        "latex_override", [False, True], ids=["default-latex", "custom-latex"]
+    )
+    @pytest.mark.parametrize("operator", ["integral", "union"])
+    @pytest.mark.parametrize(
+        "indexing", ["bounds", "domain"], ids=["two-bounds", "single-bound"]
+    )
+    def test_submission_formats_valid_component_when_all_others_are_blank(
+        self,
+        latex_override: bool,
+        operator: Literal["integral", "union"],
+        indexing: Literal["bounds", "domain"],
+    ) -> None:
+        function_name = "Integral" if operator == "integral" else "Union"
+        body = "k" if operator == "integral" else "{k}"
+        index_spec = "(k, 0, 1)" if indexing == "bounds" else "(k, gamma)"
+        operator_latex = (
+            (r"\oint" if operator == "integral" else r"\bigoplus")
+            if latex_override
+            else None
+        )
+        markup = html(**{
+            "correct-answer": f"{function_name}({body}, {index_spec})",
+            "operator-latex": operator_latex,
+            "variables": "gamma",
+            "grading-method": "component",
+        })
+        raw_submitted_answers = {"op-body": ""}
+        if indexing == "bounds":
+            raw_submitted_answers.update({"op-lower": "gamma", "op-upper": ""})
+        else:
+            raw_submitted_answers["op-domain"] = "gamma"
+        data = question_data(
+            raw_submitted_answers=raw_submitted_answers,
+            panel="submission",
+        )
+        big_operator_input.prepare(markup, data)
+        big_operator_input.parse(markup, data)
+
+        rendered = big_operator_input.render(markup, data)
+
+        assert data["submitted_answers"]["op"] is None
+        operator_tex = {
+            ("integral", False): r"\int",
+            ("integral", True): r"\mathop{\oint}\nolimits",
+            ("union", False): r"\bigcup",
+            ("union", True): r"\mathop{\bigoplus}\limits",
+        }[operator, latex_override]
+        if indexing == "bounds":
+            subscript = r"\gamma" if operator == "integral" else r"k=\gamma"
+            indexed_operator = rf"{operator_tex}_{{{subscript}}}^{{}}"
+        else:
+            subscript = r"\gamma" if operator == "integral" else r"k\in \gamma"
+            indexed_operator = rf"{operator_tex}_{{{subscript}}}"
+
+        assert indexed_operator in rendered
 
     @pytest.mark.parametrize("panel", ["answer", "submission"])
     def test_complete_notation_uses_configured_imaginary_unit(
