@@ -139,7 +139,7 @@ body {
 .exam-cover-summary {
   border: 1pt solid #777;
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   margin: 0 0 0.18in;
 }
 
