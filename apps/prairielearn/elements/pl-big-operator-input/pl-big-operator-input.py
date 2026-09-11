@@ -105,12 +105,14 @@ DIRECTION_NAMES: dict[DirectionSymbol, DirectionName] = {
 }
 type FormattedCall = tuple[str, tuple[str, ...]]
 type Component = Literal["lower", "upper", "domain", "target", "body"]
-type ResponseComponent = Literal["direction"] | Component
 COMPONENTS_MAP: dict[LimitFormat, Sequence[Component]] = {
     "bounds": ("lower", "upper", "body"),
     "domain": ("domain", "body"),
     "approach": ("target", "body"),
 }
+type ResponseComponent = Literal["direction"] | Component
+type ResponseValues = dict[ResponseComponent, sympy.Basic]
+
 type GradingMethod = Literal["equivalent", "component", "exact", "none"]
 GRADING_METHODS: frozenset[GradingMethod] = frozenset((
     "equivalent",
@@ -550,7 +552,7 @@ def _json(value: sympy.Basic) -> dict[str, Any]:
 
 def _canonical(
     config: RenderConfig,
-    values: dict[ResponseComponent, sympy.Basic],
+    values: ResponseValues,
     direction: str | None = None,
 ) -> dict[str, Any]:
     result: dict[str, Any] = {
@@ -579,9 +581,7 @@ def _structured(config: RenderConfig, value: dict[str, Any]) -> dict[str, Any]:
     return _canonical(config, values)
 
 
-def _decoded_values(
-    config: RenderConfig, decoded: poe.BigOperator
-) -> dict[ResponseComponent, sympy.Basic]:
+def _decoded_values(config: RenderConfig, decoded: poe.BigOperator) -> ResponseValues:
     match config.limits:
         case "bounds":
             if decoded["limits"] != "bounds":
@@ -601,9 +601,7 @@ def _decoded_values(
             return {"target": decoded["target"], "body": decoded["body"]}
 
 
-def _validate_component_values(
-    config: RenderConfig, values: dict[ResponseComponent, sympy.Basic]
-) -> None:
+def _validate_component_values(config: RenderConfig, values: ResponseValues) -> None:
     allowed = set(config.variables) | {config.index}
     for component, item in values.items():
         typed_component = cast(Component, component)
@@ -706,7 +704,7 @@ def _formatted_answer(config: RenderConfig, source: str) -> dict[str, Any] | Non
         raise ValueError(
             "The correct answer contains invalid SymPy data."
         ) from exc._src
-    values: dict[ResponseComponent, sympy.Basic]
+    values: ResponseValues
     try:
         match config.limits:
             case "approach":
@@ -1199,9 +1197,7 @@ def _component_allows_blank(config: RenderConfig, component: ResponseComponent) 
     )
 
 
-def _parse_values(
-    config: RenderConfig, data: pl.QuestionData
-) -> dict[ResponseComponent, sympy.Basic] | None:
+def _parse_values(config: RenderConfig, data: pl.QuestionData) -> ResponseValues | None:
     result = {}
     raw_answers = data.get("raw_submitted_answers", {})
     for component in config.components:
@@ -1235,7 +1231,6 @@ def _parse_values(
             continue
         result[component] = parsed.expr
         data.get("format_errors", {}).pop(name, None)
-
     return result if len(result) == len(config.components) else None
 
 
@@ -1283,15 +1278,13 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     )
 
 
-def _values(
-    config: RenderConfig, structured: dict[str, Any]
-) -> dict[ResponseComponent, sympy.Basic]:
+def _values(config: RenderConfig, structured: dict[str, Any]) -> ResponseValues:
     return _decoded_values(config, poe.json_to_big_operator(structured))
 
 
 def _construct(
     config: RenderConfig,
-    values: dict[ResponseComponent, sympy.Basic],
+    values: ResponseValues,
     direction: DirectionName | None = None,
 ) -> sympy.Basic:
     index = sympy.Symbol(config.index)
@@ -1330,8 +1323,8 @@ def _construct(
 
 def _equivalent(
     config: RenderConfig,
-    left_values: dict[ResponseComponent, sympy.Basic],
-    right_values: dict[ResponseComponent, sympy.Basic],
+    left_values: ResponseValues,
+    right_values: ResponseValues,
     left_direction: DirectionName | None = None,
     right_direction: DirectionName | None = None,
 ) -> bool:
