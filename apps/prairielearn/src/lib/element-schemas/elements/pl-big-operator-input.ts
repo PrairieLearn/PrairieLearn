@@ -10,7 +10,7 @@ const plBigOperatorInputAttributesSchema = z
   .object({
     'allow-complex': booleanFormat().default('false').optional(),
     'allow-limit-direction-input': booleanFormat().default('true').optional(),
-    'allowed-blank': z.enum(['none', 'limits', 'body', 'all']).default('none').optional(),
+    'allowed-blank': z.enum(['none', 'indices', 'body', 'all']).default('none').optional(),
     'answers-name': z.string(),
     'body-relative-weight': integerFormat().default('3').optional(),
     'body-size': integerFormat().optional(),

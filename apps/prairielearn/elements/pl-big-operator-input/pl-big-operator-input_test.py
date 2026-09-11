@@ -16,7 +16,7 @@ import sympy
 big_operator_input = importlib.import_module("pl-big-operator-input")
 
 
-def inferred_answer(operator: str, limits: str | None = None) -> str:
+def inferred_answer(operator: str, indexing: str | None = None) -> str:
     operator = operator[:1].lower() + operator[1:]
     if operator == "limit":
         return "Limit(k, (k, 0, '+-'))"
@@ -32,8 +32,8 @@ def inferred_answer(operator: str, limits: str | None = None) -> str:
         "custom": "Custom",
     }[operator]
     body = "{k}" if operator in {"union", "intersection", "disjoint-union"} else "k"
-    if limits == "domain" or (
-        limits is None
+    if indexing == "domain" or (
+        indexing is None
         and operator in {"union", "intersection", "disjoint-union", "min", "max"}
     ):
         return f"{function}({body}, (k, {{1, 2}}))"
@@ -42,10 +42,10 @@ def inferred_answer(operator: str, limits: str | None = None) -> str:
 
 def html(**attributes: object) -> str:
     operator = attributes.pop("operator", None)
-    limits = attributes.pop("limits", None)
+    indexing = attributes.pop("indexing", None)
     if operator is not None and "correct-answer" not in attributes:
         attributes["correct-answer"] = inferred_answer(
-            str(operator), None if limits is None else str(limits)
+            str(operator), None if indexing is None else str(indexing)
         )
     values = {
         "answers-name": "op",
@@ -326,7 +326,7 @@ class TestConfigurationUnits:
                 html(operator="sum", **{"allow-limit-direction-input": "false"})
             )
 
-    @pytest.mark.parametrize("allowed_blank", ["none", "limits", "body", "all"])
+    @pytest.mark.parametrize("allowed_blank", ["none", "indices", "body", "all"])
     def test_allowed_blank_values(self, allowed_blank: str) -> None:
         config = big_operator_input._config(
             html(operator="sum", **{"allowed-blank": allowed_blank})
@@ -363,7 +363,7 @@ class TestPrepareUnits:
         assert answer["body"] == sympy.I * sympy.Symbol("k")
 
     @pytest.mark.parametrize(
-        ("correct_answer", "operator", "limits", "index"),
+        ("correct_answer", "operator", "indexing", "index"),
         [
             ("Sum(k**2, (k, 1, 4))", "sum", "bounds", "k"),
             ("Product(k, (k, 1, 4))", "product", "bounds", "k"),
@@ -388,7 +388,7 @@ class TestPrepareUnits:
         ],
     )
     def test_whole_answer_infers_configuration(
-        self, correct_answer: str, operator: str, limits: str, index: str
+        self, correct_answer: str, operator: str, indexing: str, index: str
     ) -> None:
         markup = html(**{
             "correct-answer": correct_answer,
@@ -401,9 +401,9 @@ class TestPrepareUnits:
         answer = data["correct_answers"]["op"]
         config = big_operator_input._config(markup, data)
         assert answer["operator"] == operator
-        assert answer["limits"] == limits
+        assert answer["indexing"] == indexing
         assert config.operator == operator
-        assert config.limits == limits
+        assert config.indexing == indexing
         assert config.index == index
 
     @pytest.mark.parametrize(
@@ -471,7 +471,7 @@ class TestPrepareUnits:
         assert data["correct_answers"]["op"]["operator"] == "sum"
 
     @pytest.mark.parametrize(
-        "attribute", ["operator", "index-variable", "limits", "limit-direction"]
+        "attribute", ["operator", "index-variable", "indexing", "limit-direction"]
     )
     def test_removed_structural_attributes_are_rejected(self, attribute: str) -> None:
         markup = (
@@ -560,14 +560,14 @@ class TestPrepareUnits:
         big_operator_input.prepare(markup, data)
 
         answer = pl.json_to_big_operator(data["correct_answers"]["op"])
-        assert answer["limits"] == "domain"
+        assert answer["indexing"] == "domain"
         assert answer["domain"] == sympy.Symbol("D")
         assert answer["body"] == sympy.Symbol("A")
 
 
 class TestParseUnits:
     @pytest.mark.parametrize(
-        ("operator", "limits", "raw", "expected_components"),
+        ("operator", "indexing", "raw", "expected_components"),
         [
             (
                 "sum",
@@ -596,18 +596,18 @@ class TestParseUnits:
     def test_visible_fields_parse_to_one_canonical_answer(
         self,
         operator: str,
-        limits: str,
+        indexing: str,
         raw: dict[str, str],
         expected_components: set[str],
     ) -> None:
         data = question_data(raw_submitted_answers={**raw, "op-unused": "99"})
 
-        big_operator_input.parse(html(operator=operator, limits=limits), data)
+        big_operator_input.parse(html(operator=operator, indexing=indexing), data)
 
         answer = data["submitted_answers"]["op"]
         assert answer["_type"] == "big_operator"
         assert answer["operator"] == operator
-        assert answer["limits"] == limits
+        assert answer["indexing"] == indexing
         assert expected_components <= answer.keys()
         assert set(data["submitted_answers"]) == {"op"}
         assert not data.get("format_errors")
@@ -626,13 +626,13 @@ class TestParseUnits:
             raw = {"op-domain": "{1, 2}", "op-body": "k + 1"}
         data = question_data(raw_submitted_answers=raw)
 
-        big_operator_input.parse(html(operator=operator, limits="domain"), data)
+        big_operator_input.parse(html(operator=operator, indexing="domain"), data)
 
         assert data["submitted_answers"]["op"] is None
         assert data["format_errors"][field] == "This field must be a set."
 
     @pytest.mark.parametrize(
-        ("operator", "limits", "raw", "field"),
+        ("operator", "indexing", "raw", "field"),
         [
             (
                 "sum",
@@ -667,13 +667,13 @@ class TestParseUnits:
     def test_expression_fields_reject_sets(
         self,
         operator: str,
-        limits: str,
+        indexing: str,
         raw: dict[str, str],
         field: str,
     ) -> None:
         data = question_data(raw_submitted_answers=raw)
 
-        big_operator_input.parse(html(operator=operator, limits=limits), data)
+        big_operator_input.parse(html(operator=operator, indexing=indexing), data)
 
         assert data["submitted_answers"]["op"] is None
         assert "set notation is not allowed" in data["format_errors"][field]
@@ -684,21 +684,21 @@ class TestParseUnits:
         big_operator_input.parse(
             html(
                 operator="union",
-                limits="domain",
+                indexing="domain",
                 variables="A,D",
             ),
             data,
         )
 
         answer = pl.json_to_big_operator(data["submitted_answers"]["op"])
-        assert answer["limits"] == "domain"
+        assert answer["indexing"] == "domain"
         assert answer["domain"] == sympy.Symbol("D")
         assert answer["body"] == sympy.Symbol("A")
 
     @pytest.mark.parametrize(
         ("allowed_blank", "raw"),
         [
-            ("limits", {"op-lower": "", "op-upper": "2", "op-body": "k"}),
+            ("indices", {"op-lower": "", "op-upper": "2", "op-body": "k"}),
             ("body", {"op-lower": "1", "op-upper": "2", "op-body": ""}),
             ("all", {"op-lower": "", "op-upper": "", "op-body": ""}),
         ],
@@ -897,7 +897,7 @@ class TestGradeUnits:
 
 class TestRenderUnits:
     @pytest.mark.parametrize(
-        ("operator", "limits", "present", "absent"),
+        ("operator", "indexing", "present", "absent"),
         [
             ("sum", "bounds", ("op-lower", "op-upper", "op-body"), ("op-domain",)),
             ("union", "domain", ("op-domain", "op-body"), ("op-lower", "op-upper")),
@@ -909,15 +909,15 @@ class TestRenderUnits:
             ),
         ],
     )
-    def test_question_panel_renders_fields_for_limit_format(
+    def test_question_panel_renders_fields_for_indexing(
         self,
         operator: str,
-        limits: str,
+        indexing: str,
         present: tuple[str, ...],
         absent: tuple[str, ...],
     ) -> None:
         rendered = big_operator_input.render(
-            html(operator=operator, limits=limits), question_data()
+            html(operator=operator, indexing=indexing), question_data()
         )
 
         for field in present:
@@ -926,7 +926,7 @@ class TestRenderUnits:
             assert f'name="{field}"' not in rendered
 
     @pytest.mark.parametrize(
-        ("operator", "limits", "field_names"),
+        ("operator", "indexing", "field_names"),
         [
             ("sum", "bounds", ("op-lower", "op-upper", "op-body")),
             ("integral", "bounds", ("op-lower", "op-upper", "op-body")),
@@ -936,10 +936,10 @@ class TestRenderUnits:
         ],
     )
     def test_question_panel_fields_follow_tab_order(
-        self, operator: str, limits: str, field_names: tuple[str, ...]
+        self, operator: str, indexing: str, field_names: tuple[str, ...]
     ) -> None:
         rendered = big_operator_input.render(
-            html(operator=operator, limits=limits), question_data()
+            html(operator=operator, indexing=indexing), question_data()
         )
 
         operator_position = rendered.index('class="pl-big-operator-input__operator"')
