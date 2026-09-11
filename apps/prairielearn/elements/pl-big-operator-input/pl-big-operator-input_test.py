@@ -130,7 +130,7 @@ class TestPrepareUnits:
 
         big_operator_input.prepare(markup, data)
 
-        answer = pl.json_to_operator_expression(data["correct_answers"]["op"])
+        answer = pl.json_to_big_operator(data["correct_answers"]["op"])
         assert answer["body"] == sympy.I * sympy.Symbol("k")
 
     @pytest.mark.parametrize(
@@ -207,7 +207,7 @@ class TestPrepareUnits:
         big_operator_input.prepare(html(), data)
 
         answer = data["correct_answers"]["op"]
-        decoded = pl.json_to_operator_expression(answer)
+        decoded = pl.json_to_big_operator(answer)
         assert answer["_type"] == "operator_expression"
         assert answer["operator"] == operator
         assert decoded["body"] == correct_answer.args[0]
@@ -330,7 +330,7 @@ class TestPrepareUnits:
 
         big_operator_input.prepare(markup, data)
 
-        answer = pl.json_to_operator_expression(data["correct_answers"]["op"])
+        answer = pl.json_to_big_operator(data["correct_answers"]["op"])
         assert answer["limits"] == "domain"
         assert answer["domain"] == sympy.Symbol("D")
         assert answer["body"] == sympy.Symbol("A")
@@ -461,7 +461,7 @@ class TestParseUnits:
             data,
         )
 
-        answer = pl.json_to_operator_expression(data["submitted_answers"]["op"])
+        answer = pl.json_to_big_operator(data["submitted_answers"]["op"])
         assert answer["limits"] == "domain"
         assert answer["domain"] == sympy.Symbol("D")
         assert answer["body"] == sympy.Symbol("A")
@@ -511,7 +511,7 @@ class TestParseUnits:
 
         big_operator_input.parse(markup, data)
 
-        decoded = pl.json_to_operator_expression(data["submitted_answers"]["op"])
+        decoded = pl.json_to_big_operator(data["submitted_answers"]["op"])
         assert decoded["body"] == sympy.Function("f")(sympy.Symbol("k")) + sympy.Symbol(
             "x"
         )
@@ -805,7 +805,7 @@ class TestRenderUnits:
         operator: pl.OperatorExpressionOperator,
         panel: Literal["question", "answer", "submission"],
     ) -> None:
-        correct_answer: pl.OperatorExpressionJson = pl.operator_expression_to_json(
+        correct_answer: pl.OperatorExpressionJson = pl.big_operator_to_json(
             operator=operator,
             operator_latex=r"\bigstar" if operator == "custom" else None,
             limits="bounds",
