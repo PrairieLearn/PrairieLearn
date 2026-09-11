@@ -8,7 +8,7 @@ The fields accept the same symbolic syntax as [`pl-symbolic-input`](pl-symbolic-
 
 ![Screenshot of the pl-big-operator-input element showing an empty bounded sum](pl-big-operator-input-bounded-sum.png)
 
-```html title="question.html"
+```html {doctest-name="test_sample_element" title="question.html"}
 <pl-big-operator-input
   answers-name="total"
   correct-answer="Sum(k**2, (k, 1, n))"
@@ -87,7 +87,7 @@ For approach limits, students choose the direction by default. The initial red `
 
 ![Empty approach-limit input with a target field labeled x approaches, an unanswered direction selector, and a body field](pl-big-operator-input-limit.png)
 
-```html
+```html {doctest-name="test_fixed_limit_direction"}
 <pl-big-operator-input
   answers-name="right-limit"
   correct-answer="Limit(1/x, (x, 0, '+'))"
@@ -111,7 +111,7 @@ Valid approach directions are `"+"`, `"-"`, and `"+-"`.
 
 ![Empty custom star-operator input with lower and upper bound fields labeled j equals and a body field](pl-big-operator-input-custom.png)
 
-```html
+```html {doctest-name="test_custom_bounds"}
 <pl-big-operator-input
   answers-name="example-custom"
   correct-answer="Custom(j**2, (j, 1, 10))"
@@ -120,7 +120,7 @@ Valid approach directions are `"+"`, `"-"`, and `"+-"`.
 ></pl-big-operator-input>
 ```
 
-```html
+```html {doctest-name="test_custom_approach"}
 <pl-big-operator-input
   answers-name="evaluation"
   correct-answer="Custom(f(x), (x, 0, '+-'))"
@@ -154,7 +154,7 @@ In the table, `Name` means any supported operator name other than `Limit`.
 
 For example, the following element infers a product operator, index `k`, and a bounds layout:
 
-```html
+```html {doctest-name="test_product_correct_answer"}
 <pl-big-operator-input
   answers-name="total"
   correct-answer="Product(k + 1, (k, 1, 4))"
@@ -163,7 +163,7 @@ For example, the following element infers a product operator, index `k`, and a b
 
 A domain integral infers the domain layout with Greek latex:
 
-```html
+```html {doctest-name="test_domain_integral_correct_answer"}
 <pl-big-operator-input
   answers-name="contour"
   correct-answer="Integral(z**2, (z, Gamma))"
@@ -176,7 +176,7 @@ For a limit, use `Limit(body, (index, target, direction))`. The direction may be
 
 In this example, the element infers the operator, approach layout, and two-sided direction. The student must still choose the direction from the initially unanswered `?` control:
 
-```html
+```html {doctest-name="test_limit_correct_answer"}
 <pl-big-operator-input
   answers-name="sinc-limit"
   correct-answer="Limit(sin(x) / x, (x, 0, '+-'))"
@@ -197,17 +197,28 @@ import sympy
 
 Answers assigned in `server.py` must be JSON-serializable. Convert a supported SymPy expression to a string or use `prairielearn.sympy_utils.sympy_to_json`; do not assign a raw SymPy object to `data`.
 
+<!-- doctest-visible[test_sympy_json_correct_answer]: -->
+
 ```python title="server.py"
 import prairielearn.sympy_utils as psu
 import sympy
 
 
 def generate(data):
-    k = sympy.symbols("k")
+    k = sympy.Symbol("k")
     answer = sympy.Product(k + 1, (k, 1, 4))
     data["correct_answers"]["total"] = psu.sympy_to_json(answer)
     # Alternatively: data["correct_answers"]["total"] = str(answer)
 ```
+
+<!-- doctest-only[test_string_correct_answer]:
+```python title="server.py"
+def generate(data):
+    k = sympy.Symbol("k")
+    answer = sympy.Product(k + 1, (k, 1, 4))
+    data["correct_answers"]["total"] = str(answer)
+```
+-->
 
 PrairieLearn accepts string and SymPy JSON representations of a single-variable `sympy.Sum`, `sympy.Product`, or `sympy.Integral`, as well as `sympy.Limit`. A two-item integral tuple creates a domain layout, while a three-item tuple creates a bounds layout.
 
@@ -215,7 +226,7 @@ Use `pl.big_operator_to_json()` to construct a canonical answer from labelled Sy
 
 <!-- doctest-visible: before-next -->
 
-```python title="server.py"
+```python {doctest-name="test_custom_canonical_correct_answer" title="server.py"}
 import prairielearn as pl
 import sympy
 
@@ -232,7 +243,7 @@ def generate(data):
     )
 ```
 
-```html title="question.html"
+```html {doctest-name="test_custom_canonical_element" title="question.html"}
 <pl-big-operator-input
   answers-name="evaluation"
   operator-latex="\operatorname{eval}"
@@ -245,7 +256,7 @@ It also serializes a `BigOperator` returned by `pl.json_to_big_operator()`, allo
 
 The variadic SymPy forms `Union`, `Intersection`, `DisjointUnion`, `Min`, and `Max` do not preserve an indexed complete expression. For these operators, use a string with `(index, domain)` or `(index, lower, upper)` as the second argument:
 
-```html
+```html {doctest-name="test_set_correct_answer" title="question.html"}
 <pl-big-operator-input
   answers-name="sets"
   correct-answer="Union({k, -k}, (k, {1, 2}))"
@@ -265,7 +276,7 @@ k, n = sympy.symbols("k n")
 ```
 -->
 
-```python
+```python {doctest-name="test_canonical_answer_dictionary"}
 # Canonical representation of Sum(k**2, (k, 1, n))
 {
     "_type": "big_operator",
@@ -292,7 +303,7 @@ When direction input is enabled, the student's raw selection is stored as `<answ
 
 Use [`pl.json_to_big_operator()`][prairielearn.big_operator.json_to_big_operator] to validate the combined answer and decode its mathematical fields to SymPy values. Check the `limits` field before accessing layout-specific fields:
 
-```python title="server.py"
+```python {doctest-name="test_structured_answer_grading" title="server.py"}
 import prairielearn as pl
 
 
