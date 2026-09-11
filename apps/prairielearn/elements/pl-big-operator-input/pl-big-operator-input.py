@@ -553,16 +553,16 @@ def _safe_decode(value: Any) -> sympy.Expr | None:
         return None
 
 
-def _json(value: sympy.Basic) -> dict[str, Any]:
-    return cast(dict[str, Any], psu.sympy_to_json(cast(Any, value), allow_sets=True))
+def _json(value: sympy.Basic) -> psu.SympyJson:
+    return psu.sympy_to_json(cast(Any, value), allow_sets=True)
 
 
 def _canonical(
     config: RenderConfig,
     values: ResponseValues,
-    direction: str | None = None,
-) -> dict[str, Any]:
-    result: dict[str, Any] = {
+    direction: DirectionName | None = None,
+) -> pbo.BigOperatorJson:
+    result = {
         "_type": "big_operator",
         "_version": 1,
         "operator": config.operator,
@@ -574,10 +574,10 @@ def _canonical(
     result.update({key: _json(values[key]) for key in config.components})
     if config.limits == "approach":
         result["direction"] = direction or config.direction
-    return result
+    return result  # type: ignore
 
 
-def _structured(config: RenderConfig, value: dict[str, Any]) -> dict[str, Any]:
+def _structured(config: RenderConfig, value: dict[str, Any]) -> pbo.BigOperatorJson:
     normalized = value.copy()
     if config.operator == "custom":
         normalized["operator_latex"] = config.operator_latex
@@ -633,7 +633,7 @@ def _validate_component_values(config: RenderConfig, values: ResponseValues) -> 
             )
 
 
-def _binder(config: RenderConfig, value: Any) -> dict[str, Any] | None:
+def _binder(config: RenderConfig, value: Any) -> pbo.BigOperatorJson | None:
     match config.operator:
         case "limit":
             if not isinstance(value, sympy.Limit):
@@ -683,7 +683,7 @@ def _binder(config: RenderConfig, value: Any) -> dict[str, Any] | None:
             )
 
 
-def _formatted_answer(config: RenderConfig, source: str) -> dict[str, Any] | None:
+def _formatted_answer(config: RenderConfig, source: str) -> pbo.BigOperatorJson | None:
     formatted = _formatted_call(source, _operator_fn_name(config.operator))
     if formatted is None and config.operator == "limit":
         formatted = _legacy_limit_call(source)
@@ -760,13 +760,15 @@ def _formatted_answer(config: RenderConfig, source: str) -> dict[str, Any] | Non
     return _canonical(config, values)
 
 
-def _validate_correct(config: RenderConfig, correct: dict[str, Any]) -> dict[str, Any]:
+def _validate_correct(
+    config: RenderConfig, correct: dict[str, Any] | pbo.BigOperatorJson
+) -> pbo.BigOperatorJson:
     decoded = pbo.json_to_big_operator(correct)
     _validate_component_values(config, _decoded_values(config, decoded))
-    return correct
+    return correct  # type: ignore
 
 
-def _correct(config: RenderConfig, data: pl.QuestionData) -> dict[str, Any]:
+def _correct(config: RenderConfig, data: pl.QuestionData) -> pbo.BigOperatorJson:
     raw = _raw_correct_answer(config.answer_name, config.correct_attribute, data)
     if config.operator == "custom" and config.grading == "equivalent":
         raise ValueError(
@@ -1086,7 +1088,9 @@ def _tex(config: RenderConfig, raw: dict[str, Any] | None) -> str:
             return rf"{op}_{{{index}\to {get_comp('target')}{direction}}} {get_comp('body')}"
 
 
-def _structured_tex(config: RenderConfig, structured: dict[str, Any]) -> str:
+def _structured_tex(
+    config: RenderConfig, structured: pbo.BigOperatorJson | dict[str, Any]
+) -> str:
     values = _values(config, structured)
     raw = {
         config.component_name(key): sympy.latex(
@@ -1262,23 +1266,26 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         submitted[config.answer_name] = None if has_component_error else ""
         return
     values = _parse_values(config, data)
-    direction = config.direction
+    direction: DirectionName = config.direction
     if config.limits == "approach" and config.allow_direction_input:
         direction_name = config.component_name("direction")
-        direction = str(raw.get(direction_name, "")).strip()
-        if direction not in DIRECTION_SYMBOLS:
+        raw_direction = str(raw.get(direction_name, "")).strip()
+        if raw_direction not in DIRECTION_SYMBOLS:
             data.setdefault("format_errors", {})[direction_name] = (
                 "Select a valid limit direction."
             )
             submitted[config.answer_name] = None
             return
+        direction = raw_direction  # type: ignore
         data.get("format_errors", {}).pop(direction_name, None)
     submitted[config.answer_name] = (
         _canonical(config, values, direction=direction) if values else None
     )
 
 
-def _values(config: RenderConfig, structured: dict[str, Any]) -> ResponseValues:
+def _values(
+    config: RenderConfig, structured: pbo.BigOperatorJson | object
+) -> ResponseValues:
     return _decoded_values(config, pbo.json_to_big_operator(structured))
 
 
@@ -1437,8 +1444,8 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
                     )
                 )
             if config.limits == "approach" and config.allow_direction_input:
-                data["raw_submitted_answers"][config.component_name("direction")] = str(
-                    correct_json["direction"]
+                data["raw_submitted_answers"][config.component_name("direction")] = (
+                    correct_json.get("direction", None)
                 )
             if config.grading != "none":
                 data["partial_scores"][config.answer_name] = {
@@ -1456,8 +1463,8 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
                     raw_value
                 )
             if config.limits == "approach" and config.allow_direction_input:
-                data["raw_submitted_answers"][config.component_name("direction")] = str(
-                    correct_json["direction"]
+                data["raw_submitted_answers"][config.component_name("direction")] = (
+                    correct_json.get("direction", None)
                 )
             if config.grading != "none":
                 data["partial_scores"][config.answer_name] = {
