@@ -1,4 +1,4 @@
-"""Types and helpers for working with indexed operator-expression answers.
+"""Types and helpers for working with indexed big-operator answers.
 
 ```python
 import prairielearn as pl
@@ -23,20 +23,20 @@ type BigOperatorName = Literal[
     "max",
     "custom",
 ]
-"""An operator supported by an operator-expression answer."""
+"""An operator supported by a big-operator answer."""
 
 type BigOperatorLimit = Literal["bounds", "domain", "approach"]
-"""The layout of an operator-expression answer's limits."""
+"""The layout of a big-operator answer's limits."""
 
 type BigOperatorDirection = Literal["two-sided", "from-left", "from-right"]
-"""The direction of an approach operator-expression answer."""
+"""The direction of an approach big-operator answer."""
 
 type BigOperatorValue = sympy.Expr | sympy.Set | str
-"""A mathematical value or parseable string stored in an operator-expression answer."""
+"""A mathematical value or parseable string stored in a big-operator answer."""
 
 
 class _BigOperatorJsonBase(TypedDict):
-    _type: Literal["operator_expression"]
+    _type: Literal["big_operator"]
     _version: Literal[1]
     operator: BigOperatorName
     index: psu.SympyJson
@@ -45,7 +45,7 @@ class _BigOperatorJsonBase(TypedDict):
 
 
 class BigBoundsOperatorJson(_BigOperatorJsonBase):
-    """JSON representation of an operator expression with lower and upper bounds."""
+    """JSON representation of a big operator with lower and upper bounds."""
 
     limits: Literal["bounds"]
     lower: psu.SympyJson
@@ -53,14 +53,14 @@ class BigBoundsOperatorJson(_BigOperatorJsonBase):
 
 
 class BigDomainOperatorJson(_BigOperatorJsonBase):
-    """JSON representation of an operator expression over a domain."""
+    """JSON representation of a big operator over a domain."""
 
     limits: Literal["domain"]
     domain: psu.SympyJson
 
 
 class BigApproachOperatorJson(_BigOperatorJsonBase):
-    """JSON representation of an operator expression approaching a target."""
+    """JSON representation of a big operator approaching a target."""
 
     limits: Literal["approach"]
     target: psu.SympyJson
@@ -70,11 +70,11 @@ class BigApproachOperatorJson(_BigOperatorJsonBase):
 type BigOperatorJson = (
     BigBoundsOperatorJson | BigDomainOperatorJson | BigApproachOperatorJson
 )
-"""The persisted JSON representation of an operator-expression answer."""
+"""The persisted JSON representation of a big-operator answer."""
 
 
 class _BigOperatorBase(TypedDict):
-    _type: Literal["operator_expression"]
+    _type: Literal["big_operator"]
     _version: Literal[1]
     operator: BigOperatorName
     index: sympy.Symbol
@@ -83,7 +83,7 @@ class _BigOperatorBase(TypedDict):
 
 
 class BigBoundsOperator(_BigOperatorBase):
-    """A decoded operator expression with lower and upper bounds."""
+    """A decoded big operator with lower and upper bounds."""
 
     limits: Literal["bounds"]
     lower: sympy.Basic
@@ -91,14 +91,14 @@ class BigBoundsOperator(_BigOperatorBase):
 
 
 class BigDomainOperator(_BigOperatorBase):
-    """A decoded operator expression over a domain."""
+    """A decoded big operator over a domain."""
 
     limits: Literal["domain"]
     domain: sympy.Basic
 
 
 class BigApproachOperator(_BigOperatorBase):
-    """A decoded operator expression approaching a target."""
+    """A decoded big operator approaching a target."""
 
     limits: Literal["approach"]
     target: sympy.Basic
@@ -106,7 +106,7 @@ class BigApproachOperator(_BigOperatorBase):
 
 
 type BigOperator = BigBoundsOperator | BigDomainOperator | BigApproachOperator
-"""A decoded big-operator expression answer whose mathematical fields are SymPy values."""
+"""A decoded big operator answer whose mathematical fields are SymPy values."""
 
 
 _OPERATORS: frozenset[str] = frozenset({
@@ -133,7 +133,7 @@ def _decode_sympy_field(value: Any, field: str) -> sympy.Basic:
         isinstance(name, str) for name in value.get("_variables", [])
     ):
         raise ValueError(
-            f'Operator-expression field "{field}" must be PrairieLearn SymPy JSON.'
+            f'Big-operator field "{field}" must be PrairieLearn SymPy JSON.'
         )
     allow_complex = not any(name in {"i", "j"} for name in value["_variables"])
     try:
@@ -144,12 +144,10 @@ def _decode_sympy_field(value: Any, field: str) -> sympy.Basic:
         )
     except (TypeError, ValueError, psu.BaseSympyError) as exc:
         raise ValueError(
-            f'Operator-expression field "{field}" contains invalid SymPy JSON.'
+            f'Big-operator field "{field}" contains invalid SymPy JSON.'
         ) from exc
     if not isinstance(decoded, sympy.Basic):
-        raise TypeError(
-            f'Operator-expression field "{field}" must decode to a SymPy value.'
-        )
+        raise TypeError(f'Big-operator field "{field}" must decode to a SymPy value.')
     return decoded
 
 
@@ -163,11 +161,11 @@ def _coerce_sympy_field(value: BigOperatorValue, field: str) -> sympy.Expr | sym
             )
         except psu.BaseSympyError as exc:
             raise ValueError(
-                f'Operator-expression field "{field}" must be a valid SymPy string.'
+                f'Big-operator field "{field}" must be a valid SymPy string.'
             ) from exc
     if not isinstance(value, (sympy.Expr, sympy.Set)):
         raise TypeError(
-            f'Operator-expression field "{field}" must be a SymPy expression, set, or string.'
+            f'Big-operator field "{field}" must be a SymPy expression, set, or string.'
         )
     return value
 
@@ -239,7 +237,7 @@ def big_operator_to_json(
     operator_latex: str | None = None,
     version: Literal[1] = 1,
 ) -> BigOperatorJson:
-    """Encode an operator expression as a version 1 JSON answer.
+    """Encode a big operator as a version 1 JSON answer.
 
     Pass a decoded ``expression`` to serialize it, or use labelled fields to set
     a structured correct answer in ``server.py``. For labelled fields, ``limits``
@@ -248,7 +246,7 @@ def big_operator_to_json(
     ``operator_latex``; built-in operators must omit it.
 
     Args:
-        expression: A decoded operator expression to serialize.
+        expression: A decoded big operator to serialize.
         operator: The operator represented by the answer.
         limits: The answer's bounds, domain, or approach layout.
         index: The bound index symbol.
@@ -259,10 +257,10 @@ def big_operator_to_json(
         target: The approach target for an approach layout.
         direction: The approach direction for an approach layout.
         operator_latex: The required display symbol for a custom operator.
-        version: The operator-expression format version.
+        version: The big-operator format version.
 
     Returns:
-        A JSON-serializable, canonical operator-expression dictionary.
+        A JSON-serializable, canonical big-operator dictionary.
 
     Raises:
         TypeError: If a mathematical field has the wrong SymPy type.
@@ -282,9 +280,7 @@ def big_operator_to_json(
             or operator_latex is not None
             or version != 1
         ):
-            raise TypeError(
-                "Pass either an operator expression or labelled fields, not both."
-            )
+            raise TypeError("Pass either a big operator or labelled fields, not both.")
         match expression["limits"]:
             case "bounds":
                 return big_operator_to_json(
@@ -318,25 +314,25 @@ def big_operator_to_json(
 
     if operator is None or limits is None or index is None or body is None:
         raise TypeError(
-            "Labelled operator expressions require operator, limits, index, and body."
+            "Labelled big operators require operator, limits, index, and body."
         )
     if version != 1:
         raise ValueError(f"Unknown {version=}")
     if operator not in _OPERATORS:
-        raise ValueError("Operator expression has an unsupported operator.")
+        raise ValueError("Big operator has an unsupported operator.")
     index_value = _coerce_sympy_field(index, "index")
     if not isinstance(index_value, sympy.Symbol):
-        raise TypeError('Operator-expression field "index" must be a SymPy symbol.')
+        raise TypeError('Big-operator field "index" must be a SymPy symbol.')
     if operator == "custom":
         if not isinstance(operator_latex, str) or not operator_latex.strip():
             raise ValueError(
-                "Custom operator expression must have a nonempty operator_latex field."
+                "Custom big operator must have a nonempty operator_latex field."
             )
     elif operator_latex is not None:
-        raise ValueError("Built-in operator expressions must not have operator_latex.")
+        raise ValueError("Built-in big operators must not have operator_latex.")
 
     result: dict[str, Any] = {
-        "_type": "operator_expression",
+        "_type": "big_operator",
         "_version": 1,
         "operator": operator,
         "limits": limits,
@@ -349,46 +345,44 @@ def big_operator_to_json(
     match limits:
         case "bounds":
             if lower is None or upper is None:
-                raise ValueError(
-                    'Bounds operator expressions require "lower" and "upper".'
-                )
+                raise ValueError('Bounds big operators require "lower" and "upper".')
             if domain is not None or target is not None or direction is not None:
                 raise ValueError(
-                    'Bounds operator expressions only accept "lower" and "upper".'
+                    'Bounds big operators only accept "lower" and "upper".'
                 )
             result["lower"] = _encode_sympy_field(lower, "lower")
             result["upper"] = _encode_sympy_field(upper, "upper")
             return cast(BigBoundsOperatorJson, result)
         case "domain":
             if domain is None:
-                raise ValueError('Domain operator expressions require "domain".')
+                raise ValueError('Domain big operators require "domain".')
             if (
                 lower is not None
                 or upper is not None
                 or target is not None
                 or direction is not None
             ):
-                raise ValueError('Domain operator expressions only accept "domain".')
+                raise ValueError('Domain big operators only accept "domain".')
             result["domain"] = _encode_sympy_field(domain, "domain")
             return cast(BigDomainOperatorJson, result)
         case "approach":
             if target is None or direction is None:
                 raise ValueError(
-                    'Approach operator expressions require "target" and "direction".'
+                    'Approach big operators require "target" and "direction".'
                 )
             if lower is not None or upper is not None or domain is not None:
                 raise ValueError(
-                    'Approach operator expressions only accept "target" and "direction".'
+                    'Approach big operators only accept "target" and "direction".'
                 )
             if direction not in _DIRECTIONS:
-                raise ValueError("Operator expression has an unsupported direction.")
+                raise ValueError("Big operator has an unsupported direction.")
             result["target"] = _encode_sympy_field(target, "target")
             result["direction"] = direction
             return cast(BigApproachOperatorJson, result)
 
 
 def json_to_big_operator(value: BigOperatorJson | object) -> BigOperator:
-    """Validate and decode a version 1 operator-expression answer.
+    """Validate and decode a version 1 big-operator answer.
 
     Mathematical fields in the returned dictionary are SymPy values. The
     ``limits`` field discriminates between bounds, domain, and approach answers,
@@ -399,26 +393,26 @@ def json_to_big_operator(value: BigOperatorJson | object) -> BigOperator:
             ``data["submitted_answers"]`` after element processing.
 
     Returns:
-        A decoded bounds, domain, or approach operator expression.
+        A decoded bounds, domain, or approach big operator.
 
     Raises:
         TypeError: If ``value`` is not a dictionary.
-        ValueError: If ``value`` is not a valid version 1 operator expression.
+        ValueError: If ``value`` is not a valid version 1 big operator.
     """
     if not isinstance(value, dict):
-        raise TypeError("Operator expression must be a dictionary.")
-    if value.get("_type") != "operator_expression":
-        raise ValueError('Operator expression must have _type "operator_expression".')
+        raise TypeError("Big operator must be a dictionary.")
+    if value.get("_type") != "big_operator":
+        raise ValueError('Big operator must have _type "big_operator".')
     if value.get("_version") != 1:
-        raise ValueError("Operator expression must have _version 1.")
+        raise ValueError("Big operator must have _version 1.")
 
     operator = value.get("operator")
     if not isinstance(operator, str) or operator not in _OPERATORS:
-        raise ValueError("Operator expression has an unsupported operator.")
+        raise ValueError("Big operator has an unsupported operator.")
     operator = cast(BigOperatorName, operator)
     limits = value.get("limits")
     if limits not in {"bounds", "domain", "approach"}:
-        raise ValueError("Operator expression has an unsupported limits form.")
+        raise ValueError("Big operator has an unsupported limits form.")
     limits = cast(BigOperatorLimit, limits)
 
     expected_keys = {"_type", "_version", "operator", "limits", "index", "body"}
@@ -435,22 +429,22 @@ def json_to_big_operator(value: BigOperatorJson | object) -> BigOperator:
         not isinstance(operator_latex, str) or not operator_latex.strip()
     ):
         raise ValueError(
-            "Custom operator expression must have a nonempty operator_latex field."
+            "Custom big operator must have a nonempty operator_latex field."
         )
     if operator == "custom":
         expected_keys.add("operator_latex")
     if set(value) != expected_keys:
         raise ValueError(
-            "Operator expression does not contain exactly the fields required "
+            "Big operator does not contain exactly the fields required "
             f"for operator={operator!r} and limits={limits!r}."
         )
 
     index = _decode_sympy_field(value.get("index"), "index")
     if not isinstance(index, sympy.Symbol):
-        raise TypeError('Operator-expression field "index" must be a SymPy symbol.')
+        raise TypeError('Big-operator field "index" must be a SymPy symbol.')
     body = _decode_sympy_field(value.get("body"), "body")
     common: dict[str, Any] = {
-        "_type": "operator_expression",
+        "_type": "big_operator",
         "_version": 1,
         "operator": operator,
         "limits": limits,
@@ -471,7 +465,7 @@ def json_to_big_operator(value: BigOperatorJson | object) -> BigOperator:
         case "approach":
             direction = value.get("direction")
             if not isinstance(direction, str) or direction not in _DIRECTIONS:
-                raise ValueError("Operator expression has an unsupported direction.")
+                raise ValueError("Big operator has an unsupported direction.")
             common["target"] = _decode_sympy_field(value.get("target"), "target")
             common["direction"] = cast(BigOperatorDirection, direction)
             return cast(BigApproachOperator, common)
