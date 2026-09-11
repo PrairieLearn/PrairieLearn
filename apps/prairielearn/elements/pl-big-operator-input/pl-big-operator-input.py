@@ -1107,6 +1107,25 @@ def _structured_tex(
     return _tex(config, raw)
 
 
+def _parse_component_submission(
+    config: RenderConfig, component: Component, source: str | None
+) -> psu.SymbolicSubmissionParseResult:
+    variables = (
+        tuple(dict.fromkeys((*config.variables, config.index)))
+        if component == "body"
+        else config.variables
+    )
+    return psu.try_parse_symbolic_submission(
+        source,
+        variables,
+        formula_editor=True,
+        custom_functions=config.custom_functions,
+        allowed_types=_component_allowed_types(config, component),
+        allow_complex=config.allow_complex,
+        imaginary_unit=config.imaginary_unit,
+    )
+
+
 def _submitted_tex(config: RenderConfig, data: pl.QuestionData) -> str:
     structured = data.get("submitted_answers", {}).get(config.answer_name)
     if isinstance(structured, dict):
@@ -1114,7 +1133,19 @@ def _submitted_tex(config: RenderConfig, data: pl.QuestionData) -> str:
             return _structured_tex(config, structured)
         except (KeyError, TypeError, ValueError):
             pass
-    return _tex(config, data.get("raw_submitted_answers"))
+    raw = data.get("raw_submitted_answers", {})
+    display_raw: dict[str, Any] = dict(raw)
+    for component in config.components:
+        name = config.component_name(component)
+        parsed = _parse_component_submission(
+            config, component, cast(str | None, raw.get(name))
+        )
+        if isinstance(parsed, psu.SympyParseFailure) or parsed.expr == "":
+            continue
+        display_raw[name] = sympy.latex(
+            psi.replace_imaginary_for_display(parsed.expr, config.imaginary_unit)
+        )
+    return _tex(config, display_raw)
 
 
 def _score_badge(score: float) -> dict[str, Any]:
@@ -1214,20 +1245,9 @@ def _parse_values(config: RenderConfig, data: pl.QuestionData) -> ResponseValues
             config, component
         ):
             continue
-        variables = (
-            tuple(dict.fromkeys((*config.variables, config.index)))
-            if component == "body"
-            else config.variables
-        )
         requires_set = _requires_set(config, component)
-        parsed = psu.try_parse_symbolic_submission(
-            cast(str | None, raw_answers.get(name)),
-            variables,
-            formula_editor=True,
-            custom_functions=config.custom_functions,
-            allowed_types=_component_allowed_types(config, component),
-            allow_complex=config.allow_complex,
-            imaginary_unit=config.imaginary_unit,
+        parsed = _parse_component_submission(
+            config, component, cast(str | None, raw_answers.get(name))
         )
         if isinstance(parsed, psu.SympyParseFailure):
             data.setdefault("format_errors", {})[name] = parsed.error
