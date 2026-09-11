@@ -3,8 +3,7 @@ import { executeScripts, parseHTMLElement } from '@prairielearn/browser-utils';
 import { dispatchInstanceQuestionGradingPanelUpdate } from '../../../../lib/client/manual-grading-events.js';
 import { mathjaxTypeset } from '../../../../lib/client/mathjax.js';
 import { getManualGradingInstanceQuestionRubricPanelsUrl } from '../../../../lib/client/url.js';
-
-import type { InstanceQuestionGradingPanelProps } from './InstanceQuestionGradingPanel.types.js';
+import type { InstanceQuestionGradingPanelProps } from '../components/InstanceQuestionGradingPanel.types.js';
 
 interface GradingPanelResponse {
   aiGradingExplanation?: string;

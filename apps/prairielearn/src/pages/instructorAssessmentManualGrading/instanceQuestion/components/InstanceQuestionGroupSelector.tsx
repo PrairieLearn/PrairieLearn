@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMutation } from '@tanstack/react-query';
 import Form from 'react-bootstrap/Form';
 
 import { RichSelect, type RichSelectItem } from '@prairielearn/ui';
@@ -18,26 +18,19 @@ export function InstanceQuestionGroupSelector({
   updateUrl: string;
   onChange: (selectedGroupId: string | null) => void;
 }) {
-  const [error, setError] = useState<string | null>(null);
-  const [updating, setUpdating] = useState(false);
-
-  const updateGroup = async (selectedGroupId: string | null) => {
-    setUpdating(true);
-    setError(null);
-    try {
+  const updateGroupMutation = useMutation({
+    // TODO: Replace this legacy REST endpoint with an assessment-question tRPC mutation once the
+    // grading panel shares the page's tRPC client.
+    mutationFn: async (selectedGroupId: string | null) => {
       const response = await fetch(updateUrl, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ manualInstanceQuestionGroupId: selectedGroupId }),
       });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      onChange(selectedGroupId);
-    } catch {
-      setError('Failed to update the submission group.');
-    } finally {
-      setUpdating(false);
-    }
-  };
+    },
+    onSuccess: (_, selectedGroupId) => onChange(selectedGroupId),
+  });
 
   return (
     <li className="list-group-item">
@@ -47,8 +40,10 @@ export function InstanceQuestionGroupSelector({
       <RichSelect
         id="instance-question-group-toggle"
         aria-labelledby="instance-question-group-label"
-        disabled={disabled || updating}
-        errorMessage={error ?? undefined}
+        disabled={disabled || updateGroupMutation.isPending}
+        errorMessage={
+          updateGroupMutation.isError ? 'Failed to update the submission group.' : undefined
+        }
         items={[
           ...groups.map<RichSelectItem>((group) => ({
             value: group.id,
@@ -58,7 +53,7 @@ export function InstanceQuestionGroupSelector({
           { value: 'null', label: 'No group', description: 'No group assigned.' },
         ]}
         value={selectedGroupId ?? 'null'}
-        onChange={(selected) => void updateGroup(selected === 'null' ? null : selected)}
+        onChange={(selected) => updateGroupMutation.mutate(selected === 'null' ? null : selected)}
       />
     </li>
   );

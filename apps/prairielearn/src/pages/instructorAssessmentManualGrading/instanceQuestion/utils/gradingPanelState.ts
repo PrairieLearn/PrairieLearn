@@ -1,7 +1,7 @@
 import type {
   GradingFormState,
   InstanceQuestionGradingPanelProps,
-} from './InstanceQuestionGradingPanel.types.js';
+} from '../components/InstanceQuestionGradingPanel.types.js';
 
 export function roundPoints(points: number): number {
   return Math.round(points * 100) / 100;

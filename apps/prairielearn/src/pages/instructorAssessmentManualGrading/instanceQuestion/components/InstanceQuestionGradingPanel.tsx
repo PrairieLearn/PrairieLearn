@@ -1,8 +1,18 @@
+import { QueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import Form from 'react-bootstrap/Form';
 
+import { QueryClientProviderDebug } from '@prairielearn/trpc/react';
+
 import { subscribeToInstanceQuestionGradingPanelUpdates } from '../../../../lib/client/manual-grading-events.js';
 import { mathjaxTypeset } from '../../../../lib/client/mathjax.js';
+import {
+  createFormState,
+  percentageValue,
+  pointsValue,
+  roundPoints,
+  syncRubricScore,
+} from '../utils/gradingPanelState.js';
 
 import { GradingPoints, TotalPoints } from './GradingPoints.js';
 import { InstanceQuestionGradingActions } from './InstanceQuestionGradingActions.js';
@@ -12,13 +22,6 @@ import type {
 } from './InstanceQuestionGradingPanel.types.js';
 import { InstanceQuestionGroupSelector } from './InstanceQuestionGroupSelector.js';
 import { RubricInput } from './RubricInput.js';
-import {
-  createFormState,
-  percentageValue,
-  pointsValue,
-  roundPoints,
-  syncRubricScore,
-} from './instanceQuestionGradingPanelState.js';
 
 const SCORE_DISPLAY_CHANGE_EVENT = 'manual-grading-score-display-change';
 
@@ -49,7 +52,7 @@ function isEditableShortcutTarget(target: HTMLElement): boolean {
   );
 }
 
-export function InstanceQuestionGradingPanel({
+function InstanceQuestionGradingPanelInner({
   data: initialData,
 }: {
   data: InstanceQuestionGradingPanelProps;
@@ -507,6 +510,20 @@ export function InstanceQuestionGradingPanel({
         />
       </ul>
     </form>
+  );
+}
+
+export function InstanceQuestionGradingPanel({
+  data,
+}: {
+  data: InstanceQuestionGradingPanelProps;
+}) {
+  const [queryClient] = useState(() => new QueryClient());
+
+  return (
+    <QueryClientProviderDebug client={queryClient}>
+      <InstanceQuestionGradingPanelInner data={data} />
+    </QueryClientProviderDebug>
   );
 }
 

@@ -16,8 +16,7 @@ import {
   type AiGradingModelSelectionModalState,
 } from '../../assessmentQuestion/components/AiGradingModelSelectionModal.js';
 import { AI_GRADING_MODAL_OPEN_EVENT } from '../instanceQuestion.shared.js';
-
-import { reloadGradingPanel } from './reloadGradingPanel.js';
+import { reloadGradingPanel } from '../utils/reloadGradingPanel.js';
 
 interface InstanceQuestionAiGradeInnerProps {
   courseInstanceId: string;
