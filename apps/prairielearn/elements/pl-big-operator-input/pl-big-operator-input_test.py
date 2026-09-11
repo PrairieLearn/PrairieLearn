@@ -343,7 +343,7 @@ class TestParseUnits:
             (
                 "sum",
                 "bounds",
-                {"op-start": "1", "op-end": "4", "op-body": "k^2"},
+                {"op-lower": "1", "op-upper": "4", "op-body": "k^2"},
                 {"lower", "upper", "body"},
             ),
             (
@@ -408,14 +408,14 @@ class TestParseUnits:
             (
                 "sum",
                 "bounds",
-                {"op-start": "{1}", "op-end": "2", "op-body": "k"},
-                "op-start",
+                {"op-lower": "{1}", "op-upper": "2", "op-body": "k"},
+                "op-lower",
             ),
             (
                 "sum",
                 "bounds",
-                {"op-start": "1", "op-end": "{2}", "op-body": "k"},
-                "op-end",
+                {"op-lower": "1", "op-upper": "{2}", "op-body": "k"},
+                "op-upper",
             ),
             (
                 "limit",
@@ -430,7 +430,7 @@ class TestParseUnits:
             (
                 "sum",
                 "bounds",
-                {"op-start": "1", "op-end": "2", "op-body": "{k}"},
+                {"op-lower": "1", "op-upper": "2", "op-body": "{k}"},
                 "op-body",
             ),
         ],
@@ -469,9 +469,9 @@ class TestParseUnits:
     @pytest.mark.parametrize(
         ("allowed_blank", "raw"),
         [
-            ("limits", {"op-start": "", "op-end": "2", "op-body": "k"}),
-            ("body", {"op-start": "1", "op-end": "2", "op-body": ""}),
-            ("all", {"op-start": "", "op-end": "", "op-body": ""}),
+            ("limits", {"op-lower": "", "op-upper": "2", "op-body": "k"}),
+            ("body", {"op-lower": "1", "op-upper": "2", "op-body": ""}),
+            ("all", {"op-lower": "", "op-upper": "", "op-body": ""}),
         ],
     )
     def test_configured_blank_fields_are_accepted(
@@ -488,13 +488,13 @@ class TestParseUnits:
 
     def test_blank_required_fields_have_field_errors(self) -> None:
         data = question_data(
-            raw_submitted_answers={"op-start": "", "op-end": "", "op-body": ""}
+            raw_submitted_answers={"op-lower": "", "op-upper": "", "op-body": ""}
         )
 
         big_operator_input.parse(html(operator="sum"), data)
 
         assert data["submitted_answers"]["op"] is None
-        assert set(data["format_errors"]) == {"op-start", "op-end", "op-body"}
+        assert set(data["format_errors"]) == {"op-lower", "op-upper", "op-body"}
 
     def test_custom_functions_are_available_in_the_body(self) -> None:
         markup = html(
@@ -503,8 +503,8 @@ class TestParseUnits:
         )
         data = question_data(
             raw_submitted_answers={
-                "op-start": "1",
-                "op-end": "2",
+                "op-lower": "1",
+                "op-upper": "2",
                 "op-body": "f(k) + x",
             }
         )
@@ -530,8 +530,8 @@ class TestGradeUnits:
         })
         data = question_data(
             raw_submitted_answers={
-                "op-start": "1",
-                "op-end": "4",
+                "op-lower": "1",
+                "op-upper": "4",
                 "op-body": "k^2",
             }
         )
@@ -550,8 +550,8 @@ class TestGradeUnits:
         })
         data = question_data(
             raw_submitted_answers={
-                "op-start": "10",
-                "op-end": "20",
+                "op-lower": "10",
+                "op-upper": "20",
                 "op-body": "k + 1",
             }
         )
@@ -607,8 +607,8 @@ class TestGradeUnits:
         })
         data = question_data(
             raw_submitted_answers={
-                "op-start": "1 + 1",
-                "op-end": "5",
+                "op-lower": "1 + 1",
+                "op-upper": "5",
                 "op-body": "k + k",
             }
         )
@@ -659,8 +659,8 @@ class TestGradeUnits:
         big_operator_input.grade(markup, data)
 
         assert data["raw_submitted_answers"] == {
-            "op-start": "1",
-            "op-end": "4",
+            "op-lower": "1",
+            "op-upper": "4",
             "op-body": "k**2",
         }
         assert data["partial_scores"]["op"] == {"score": 1.0, "weight": 1}
@@ -670,13 +670,13 @@ class TestRenderUnits:
     @pytest.mark.parametrize(
         ("operator", "limits", "present", "absent"),
         [
-            ("sum", "bounds", ("op-start", "op-end", "op-body"), ("op-domain",)),
-            ("union", "domain", ("op-domain", "op-body"), ("op-start", "op-end")),
+            ("sum", "bounds", ("op-lower", "op-upper", "op-body"), ("op-domain",)),
+            ("union", "domain", ("op-domain", "op-body"), ("op-lower", "op-upper")),
             (
                 "limit",
                 "approach",
                 ("op-target", "op-direction", "op-body"),
-                ("op-start", "op-domain"),
+                ("op-lower", "op-domain"),
             ),
         ],
     )
@@ -699,8 +699,8 @@ class TestRenderUnits:
     @pytest.mark.parametrize(
         ("operator", "limits", "field_names"),
         [
-            ("sum", "bounds", ("op-start", "op-end", "op-body")),
-            ("integral", "bounds", ("op-start", "op-end", "op-body")),
+            ("sum", "bounds", ("op-lower", "op-upper", "op-body")),
+            ("integral", "bounds", ("op-lower", "op-upper", "op-body")),
             ("integral", "domain", ("op-domain", "op-body")),
             ("union", "domain", ("op-domain", "op-body")),
             ("limit", "approach", ("op-target", "op-direction", "op-body")),
@@ -785,8 +785,8 @@ class TestRenderUnits:
         data = question_data(
             correct_answer,
             raw_submitted_answers={
-                "op-start": "1",
-                "op-end": "2",
+                "op-lower": "1",
+                "op-upper": "2",
                 "op-body": "i*k",
             },
             panel=panel,
@@ -851,8 +851,8 @@ class TestRenderUnits:
         })
         data = question_data(
             raw_submitted_answers={
-                "op-start": "1",
-                "op-end": "5",
+                "op-lower": "1",
+                "op-upper": "5",
                 "op-body": "k^2",
             }
         )
@@ -920,8 +920,8 @@ class TestLifecycleRegressions:
         data = question_data(
             "Sum(k**2, (k, 1, 4))",
             raw_submitted_answers={
-                "op-start": "1",
-                "op-end": "4",
+                "op-lower": "1",
+                "op-upper": "4",
                 "op-body": "k^2",
             },
         )
@@ -934,32 +934,32 @@ class TestLifecycleRegressions:
         rendered = big_operator_input.render(markup, data)
 
         assert data["partial_scores"]["op"] == {"score": 1.0, "weight": 1}
-        assert 'name="op-start"' in rendered
+        assert 'name="op-lower"' in rendered
 
     def test_valid_reparse_clears_stale_format_error(self) -> None:
         markup = html(operator="sum")
         data = question_data(
             raw_submitted_answers={
-                "op-start": "bad@",
-                "op-end": "2",
+                "op-lower": "bad@",
+                "op-upper": "2",
                 "op-body": "k",
             }
         )
         big_operator_input.parse(markup, data)
-        assert "op-start" in data["format_errors"]
+        assert "op-lower" in data["format_errors"]
 
-        data["raw_submitted_answers"]["op-start"] = "1"
+        data["raw_submitted_answers"]["op-lower"] = "1"
         big_operator_input.parse(markup, data)
 
-        assert "op-start" not in data["format_errors"]
+        assert "op-lower" not in data["format_errors"]
         assert data["submitted_answers"]["op"] is not None
 
     def test_invalid_reparse_replaces_previous_score_with_zero(self) -> None:
         markup = html(**{"correct-answer": "Sum(k, (k, 1, 2))"})
         data = question_data(
             raw_submitted_answers={
-                "op-start": "1",
-                "op-end": "2",
+                "op-lower": "1",
+                "op-upper": "2",
                 "op-body": "k",
             }
         )
@@ -979,8 +979,8 @@ class TestLifecycleRegressions:
         })
         data = question_data(
             raw_submitted_answers={
-                "op-start": "1",
-                "op-end": "2",
+                "op-lower": "1",
+                "op-upper": "2",
                 "op-body": "k^2+2*k+1",
             }
         )
