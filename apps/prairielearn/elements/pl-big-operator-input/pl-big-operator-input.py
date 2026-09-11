@@ -9,11 +9,11 @@ from typing import Any, Literal, cast
 import chevron
 import lxml.html
 import prairielearn as pl
+import prairielearn.internal.symbolic_input as psi
 import prairielearn.operator_expression as poe
 import prairielearn.sympy_utils as psu
 import sympy
 import sympy.sets
-from prairielearn.internal import symbolic_input as psi
 
 HERE = Path(__file__).parent
 SCHEMA_PATH = HERE / "schemas" / "pl-big-operator-input.json"
@@ -37,7 +37,7 @@ type BuiltinOperator = Literal[
     "min",
     "max",
 ]
-type Operator = poe.OperatorExpressionOperator
+type Operator = poe.BigOperatorName
 type BuiltinOperatorFn = Literal[
     "Sum",
     "Product",
@@ -50,7 +50,7 @@ type BuiltinOperatorFn = Literal[
     "Max",
 ]
 type OperatorFn = Literal["Custom"] | BuiltinOperatorFn
-type LimitFormat = poe.OperatorExpressionLimit
+type LimitFormat = poe.BigOperatorLimit
 
 
 @dataclass(frozen=True, slots=True)
@@ -93,7 +93,7 @@ def _operator_fn_name(operator: Operator) -> OperatorFn:
     return "Custom" if operator == "custom" else OP_METADATA[operator].fn_name
 
 
-type DirectionName = poe.OperatorExpressionDirection
+type DirectionName = poe.BigOperatorDirection
 type DirectionSymbol = Literal["+-", "-", "+"]
 DIRECTION_SYMBOLS: dict[DirectionName, DirectionSymbol] = {
     "two-sided": "+-",
@@ -574,13 +574,13 @@ def _structured(config: RenderConfig, value: dict[str, Any]) -> dict[str, Any]:
         normalized["operator_latex"] = config.operator_latex
     else:
         normalized.pop("operator_latex", None)
-    decoded = poe.json_to_operator_expression(normalized)
+    decoded = poe.json_to_big_operator(normalized)
     values = _decoded_values(config, decoded)
     return _canonical(config, values)
 
 
 def _decoded_values(
-    config: RenderConfig, decoded: poe.OperatorExpression
+    config: RenderConfig, decoded: poe.BigOperator
 ) -> dict[str, sympy.Basic]:
     match config.limits:
         case "bounds":
@@ -755,7 +755,7 @@ def _formatted_answer(config: RenderConfig, source: str) -> dict[str, Any] | Non
 
 
 def _validate_correct(config: RenderConfig, correct: dict[str, Any]) -> dict[str, Any]:
-    decoded = poe.json_to_operator_expression(correct)
+    decoded = poe.json_to_big_operator(correct)
     _validate_component_values(config, _decoded_values(config, decoded))
     return correct
 
@@ -1281,7 +1281,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
 
 
 def _values(config: RenderConfig, structured: dict[str, Any]) -> dict[str, sympy.Basic]:
-    return _decoded_values(config, poe.json_to_operator_expression(structured))
+    return _decoded_values(config, poe.json_to_big_operator(structured))
 
 
 def _construct(
