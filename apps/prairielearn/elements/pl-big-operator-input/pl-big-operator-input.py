@@ -109,10 +109,10 @@ DIRECTION_NAMES: Final[frozendict[DirectionSymbol, DirectionName]] = frozendict(
 })
 type FormattedCall = tuple[str, tuple[str, ...]]
 type Component = Literal["lower", "upper", "domain", "target", "body"]
-COMPONENTS_MAP: Final[frozendict[LimitFormat, Sequence[Component]]] = frozendict({
-    "bounds": ("lower", "upper", "body"),
-    "domain": ("domain", "body"),
-    "approach": ("target", "body"),
+COMPONENTS_MAP: Final[frozendict[LimitFormat, frozenset[Component]]] = frozendict({
+    "bounds": frozenset(("lower", "upper", "body")),
+    "domain": frozenset(("domain", "body")),
+    "approach": frozenset(("target", "body")),
 })
 type ResponseComponent = Literal["direction"] | Component
 type ResponseValues = dict[ResponseComponent, sympy.Basic]
@@ -167,7 +167,7 @@ class RenderConfig:
     correct_attribute: str | None
 
     @property
-    def components(self) -> Sequence[Component]:
+    def components(self) -> frozenset[Component]:
         return COMPONENTS_MAP[self.limits]
 
     @property
@@ -476,8 +476,8 @@ def _config(html: str, data: pl.QuestionData | None = None) -> RenderConfig:
         raise ValueError(
             'Attribute "allow-limit-direction-input" can only be used with limits="approach".'
         )
-    allow_direction_input = bool(
-        pl.get_boolean_attrib(element, "allow-limit-direction-input", True)
+    allow_direction_input = pl.get_boolean_attrib(
+        element, "allow-limit-direction-input", limits == "approach"
     )
     variables = _get_tuple_attrib(element, "variables")
     custom_functions = _get_tuple_attrib(element, "custom-functions")
@@ -1394,20 +1394,20 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
             case "exact":
                 score = float(submitted_json == correct_json)
             case "component":
-                weights = [
-                    config.body_weight if c == "body" else 1 for c in config.components
-                ]
                 earned = sum(
-                    w
-                    for c, w in zip(config.components, weights, strict=False)
+                    config.body_weight if c == "body" else 1
+                    for c in config.components
                     if _expressions_equivalent(submitted[c], correct[c])
                 )
-                if config.limits == "approach" and config.allow_direction_input:
-                    weights.append(1)
+                possible = len(config.components) + (
+                    (config.body_weight - 1) if "body" in config.components else 0
+                )
+                if config.allow_direction_input:
                     earned += int(
                         submitted_json.get("direction") == correct_json.get("direction")
                     )
-                score = earned / sum(weights)
+                    possible += 1
+                score = earned / possible
             case "equivalent":
                 score = float(
                     _equivalent(
@@ -1467,6 +1467,6 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
                     "weight": config.weight,
                 }
         case "invalid":
-            name = config.component_name(config.components[0])
+            name = config.component_name(next(iter(config.components)))
             data["raw_submitted_answers"][name] = "INVALID"
             data["format_errors"][name] = "Invalid test input"
