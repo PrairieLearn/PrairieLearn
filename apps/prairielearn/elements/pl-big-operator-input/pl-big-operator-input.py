@@ -4,7 +4,10 @@ import re
 from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Literal, cast
+from types import (
+    MappingProxyType as frozendict,  # ruff: ignore[camelcase-imported-as-lowercase]
+)
+from typing import Any, Final, Literal, cast
 
 import chevron
 import lxml.html
@@ -15,16 +18,16 @@ import prairielearn.sympy_utils as psu
 import sympy
 import sympy.sets
 
-HERE = Path(__file__).parent
-SCHEMA_PATH = HERE / "schemas" / "pl-big-operator-input.json"
-SYMBOLIC_INPUT_TEMPLATE_PATH = (
+HERE: Final = Path(__file__).parent
+SCHEMA_PATH: Final = HERE / "schemas" / "pl-big-operator-input.json"
+SYMBOLIC_INPUT_TEMPLATE_PATH: Final = (
     HERE.parent / "pl-symbolic-input" / "pl-symbolic-input.mustache"
 )
 
-BODY_SIZE_DEFAULT = 16
-BOUNDS_LIMIT_SIZE_DEFAULT = 7
-ANNOTATION_LIMIT_SIZE_DEFAULT = 10
-IMAGINARY_UNIT_FOR_DISPLAY_DEFAULT = "i"
+BODY_SIZE_DEFAULT: Final = 16
+BOUNDS_LIMIT_SIZE_DEFAULT: Final = 7
+ANNOTATION_LIMIT_SIZE_DEFAULT: Final = 10
+IMAGINARY_UNIT_FOR_DISPLAY_DEFAULT: Final = "i"
 
 type BuiltinOperator = Literal[
     "sum",
@@ -66,8 +69,8 @@ class OperatorMetadata:
         return self._domain_constructor or self.bounds_constructor
 
 
-_BOUNDS_DOMAIN = frozenset(("bounds", "domain"))
-OP_METADATA: dict[BuiltinOperator, OperatorMetadata] = {
+_BOUNDS_DOMAIN: Final[frozenset[LimitFormat]] = frozenset(("bounds", "domain"))
+OP_METADATA: Final[frozendict[BuiltinOperator, OperatorMetadata]] = frozendict({
     "sum": OperatorMetadata("Sum", r"\sum", _BOUNDS_DOMAIN, sympy.Sum, sympy.Add),
     "product": OperatorMetadata(
         "Product", r"\prod", _BOUNDS_DOMAIN, sympy.Product, sympy.Mul
@@ -86,7 +89,7 @@ OP_METADATA: dict[BuiltinOperator, OperatorMetadata] = {
     ),
     "min": OperatorMetadata("Min", r"\min", _BOUNDS_DOMAIN, sympy.Min),
     "max": OperatorMetadata("Max", r"\max", _BOUNDS_DOMAIN, sympy.Max),
-}
+})
 
 
 def _operator_fn_name(operator: Operator) -> OperatorFn:
@@ -95,33 +98,38 @@ def _operator_fn_name(operator: Operator) -> OperatorFn:
 
 type DirectionName = poe.BigOperatorDirection
 type DirectionSymbol = Literal["+-", "-", "+"]
-DIRECTION_SYMBOLS: dict[DirectionName, DirectionSymbol] = {
+DIRECTION_SYMBOLS: Final[frozendict[DirectionName, DirectionSymbol]] = frozendict({
     "two-sided": "+-",
     "from-left": "-",
     "from-right": "+",
-}
-DIRECTION_NAMES: dict[DirectionSymbol, DirectionName] = {
+})
+DIRECTION_NAMES: Final[frozendict[DirectionSymbol, DirectionName]] = frozendict({
     symbol: name for name, symbol in DIRECTION_SYMBOLS.items()
-}
+})
 type FormattedCall = tuple[str, tuple[str, ...]]
 type Component = Literal["lower", "upper", "domain", "target", "body"]
-COMPONENTS_MAP: dict[LimitFormat, Sequence[Component]] = {
+COMPONENTS_MAP: Final[frozendict[LimitFormat, Sequence[Component]]] = frozendict({
     "bounds": ("lower", "upper", "body"),
     "domain": ("domain", "body"),
     "approach": ("target", "body"),
-}
+})
 type ResponseComponent = Literal["direction"] | Component
 type ResponseValues = dict[ResponseComponent, sympy.Basic]
 
 type GradingMethod = Literal["equivalent", "component", "exact", "none"]
-GRADING_METHODS: frozenset[GradingMethod] = frozenset((
+GRADING_METHODS: Final[frozenset[GradingMethod]] = frozenset((
     "equivalent",
     "component",
     "exact",
     "none",
 ))
 type AllowedBlank = Literal["none", "limits", "body", "all"]
-ALLOWED_BLANKS: frozenset[AllowedBlank] = frozenset(("none", "limits", "body", "all"))
+ALLOWED_BLANKS: Final[frozenset[AllowedBlank]] = frozenset((
+    "none",
+    "limits",
+    "body",
+    "all",
+))
 
 
 class _ParseError(ValueError):
