@@ -20,8 +20,8 @@ type BigOperatorName = Literal[
 ]
 """An operator supported by a big-operator answer."""
 
-type BigOperatorLimit = Literal["bounds", "domain", "approaches"]
-"""The layout of a big-operator answer's limits."""
+type BigOperatorIndexing = Literal["bounds", "domain", "approaches"]
+"""How a big-operator answer indexes its body."""
 
 type BigOperatorDirection = Literal["two-sided", "from-left", "from-right"]
 """The direction of an approaches big-operator answer."""
@@ -41,7 +41,7 @@ class _BigOperatorJsonBase(TypedDict):
 class BigBoundsOperatorJson(_BigOperatorJsonBase):
     """JSON representation of a big operator with lower and upper bounds."""
 
-    limits: Literal["bounds"]
+    indexing: Literal["bounds"]
     lower: psu.SympyJson
     upper: psu.SympyJson
 
@@ -49,14 +49,14 @@ class BigBoundsOperatorJson(_BigOperatorJsonBase):
 class BigDomainOperatorJson(_BigOperatorJsonBase):
     """JSON representation of a big operator over a domain."""
 
-    limits: Literal["domain"]
+    indexing: Literal["domain"]
     domain: psu.SympyJson
 
 
 class BigApproachesOperatorJson(_BigOperatorJsonBase):
     """JSON representation of a big operator approaches a target."""
 
-    limits: Literal["approaches"]
+    indexing: Literal["approaches"]
     target: psu.SympyJson
     direction: BigOperatorDirection
 
@@ -78,7 +78,7 @@ class _BigOperatorBase(TypedDict):
 class BigBoundsOperator(_BigOperatorBase):
     """A decoded big operator with lower and upper bounds."""
 
-    limits: Literal["bounds"]
+    indexing: Literal["bounds"]
     lower: sympy.Basic
     upper: sympy.Basic
 
@@ -86,14 +86,14 @@ class BigBoundsOperator(_BigOperatorBase):
 class BigDomainOperator(_BigOperatorBase):
     """A decoded big operator over a domain."""
 
-    limits: Literal["domain"]
+    indexing: Literal["domain"]
     domain: sympy.Basic
 
 
 class BigApproachesOperator(_BigOperatorBase):
     """A decoded big operator approaching a target."""
 
-    limits: Literal["approaches"]
+    indexing: Literal["approaches"]
     target: sympy.Basic
     direction: BigOperatorDirection
 
@@ -188,7 +188,7 @@ def big_operator_to_json(
         "max",
         "custom",
     ],
-    limits: Literal["bounds"],
+    indexing: Literal["bounds"],
     index: sympy.Symbol | str,
     lower: BigOperatorValue,
     upper: BigOperatorValue,
@@ -211,7 +211,7 @@ def big_operator_to_json(
         "max",
         "custom",
     ],
-    limits: Literal["domain"],
+    indexing: Literal["domain"],
     index: sympy.Symbol | str,
     domain: BigOperatorValue,
     body: BigOperatorValue,
@@ -223,7 +223,7 @@ def big_operator_to_json(
 def big_operator_to_json(
     *,
     operator: Literal["limit", "custom"],
-    limits: Literal["approaches"],
+    indexing: Literal["approaches"],
     index: sympy.Symbol | str,
     target: BigOperatorValue,
     direction: BigOperatorDirection,
@@ -236,7 +236,7 @@ def big_operator_to_json(
     expression: BigOperator | None = None,
     *,
     operator: BigOperatorName | None = None,
-    limits: BigOperatorLimit | None = None,
+    indexing: BigOperatorIndexing | None = None,
     index: sympy.Symbol | str | None = None,
     body: BigOperatorValue | None = None,
     lower: BigOperatorValue | None = None,
@@ -249,21 +249,22 @@ def big_operator_to_json(
     """Encode a big operator as a version 1 JSON answer.
 
     Pass a decoded ``expression`` to serialize it, or use labelled fields to set
-    a structured correct answer in ``server.py``. For labelled fields, ``limits``
+    a structured correct answer in ``server.py``. For labelled fields, ``indexing``
     selects ``lower`` and ``upper`` for ``"bounds"``, ``domain`` for ``"domain"``,
     or ``target`` and ``direction`` for ``"approaches"``.
 
     Args:
         expression: A decoded big operator to serialize.
         operator: The operator represented by the answer.
-        limits: The answer's bounds, domain, or approaches layout.
+        indexing: How the answer indexes its body: with bounds, a domain, or an
+            approach target.
         index: The bound index symbol.
         body: The operator body.
-        lower: The lower bound for a bounds layout.
-        upper: The upper bound for a bounds layout.
-        domain: The domain for a domain layout.
-        target: The approaches target for an approaches layout.
-        direction: The approaches direction for an approaches layout.
+        lower: The lower bound for bounds indexing.
+        upper: The upper bound for bounds indexing.
+        domain: The domain for domain indexing.
+        target: The target for approaches indexing.
+        direction: The direction for approaches indexing.
         version: The big-operator format version.
 
     Returns:
@@ -271,12 +272,12 @@ def big_operator_to_json(
 
     Raises:
         TypeError: If a mathematical field has the wrong SymPy type.
-        ValueError: If the operator, layout, or labelled fields are inconsistent.
+        ValueError: If the operator, indexing, or labelled fields are inconsistent.
     """
     if expression is not None:
         if (
             operator is not None
-            or limits is not None
+            or indexing is not None
             or index is not None
             or body is not None
             or lower is not None
@@ -287,11 +288,11 @@ def big_operator_to_json(
             or version != 1
         ):
             raise TypeError("Pass either a big operator or labelled fields, not both.")
-        match expression["limits"]:
+        match expression["indexing"]:
             case "bounds":
                 return big_operator_to_json(
                     operator=expression["operator"],  # type: ignore
-                    limits="bounds",
+                    indexing="bounds",
                     index=expression["index"],
                     lower=cast(BigOperatorValue, expression["lower"]),
                     upper=cast(BigOperatorValue, expression["upper"]),
@@ -300,7 +301,7 @@ def big_operator_to_json(
             case "domain":
                 return big_operator_to_json(
                     operator=expression["operator"],  # type: ignore
-                    limits="domain",
+                    indexing="domain",
                     index=expression["index"],
                     domain=cast(BigOperatorValue, expression["domain"]),
                     body=cast(BigOperatorValue, expression["body"]),
@@ -308,16 +309,16 @@ def big_operator_to_json(
             case "approaches":
                 return big_operator_to_json(
                     operator=expression["operator"],  # type: ignore
-                    limits="approaches",
+                    indexing="approaches",
                     index=expression["index"],
                     target=cast(BigOperatorValue, expression["target"]),
                     direction=expression["direction"],
                     body=cast(BigOperatorValue, expression["body"]),
                 )
 
-    if operator is None or limits is None or index is None or body is None:
+    if operator is None or indexing is None or index is None or body is None:
         raise TypeError(
-            "Labelled big operators require operator, limits, index, and body."
+            "Labelled big operators require operator, indexing, index, and body."
         )
     if version != 1:
         raise ValueError(f"Unknown {version=}")
@@ -331,12 +332,12 @@ def big_operator_to_json(
         "_type": "big_operator",
         "_version": 1,
         "operator": operator,
-        "limits": limits,
+        "indexing": indexing,
         "index": psu.sympy_to_json(index_value, allow_sets=True),
         "body": _encode_sympy_field(body, "body"),
     }
 
-    match limits:
+    match indexing:
         case "bounds":
             if lower is None or upper is None:
                 raise ValueError('Bounds big operators require "lower" and "upper".')
@@ -379,8 +380,8 @@ def json_to_big_operator(value: BigOperatorJson | object) -> BigOperator:
     """Validate and decode a version 1 big-operator answer.
 
     Mathematical fields in the returned dictionary are SymPy values. The
-    ``limits`` field discriminates between bounds, domain, and approaches answers,
-    so type checkers can narrow the result before layout-specific fields are read.
+    ``indexing`` field discriminates between bounds, domain, and approaches answers,
+    so type checkers can narrow the result before indexing-specific fields are read.
 
     Args:
         value: A value from ``data["correct_answers"]`` or
@@ -404,13 +405,13 @@ def json_to_big_operator(value: BigOperatorJson | object) -> BigOperator:
     if not isinstance(operator, str) or operator not in _OPERATORS:
         raise ValueError("Big operator has an unsupported operator.")
     operator = cast(BigOperatorName, operator)
-    limits = value.get("limits")
-    if limits not in {"bounds", "domain", "approaches"}:
-        raise ValueError("Big operator has an unsupported limits form.")
-    limits = cast(BigOperatorLimit, limits)
+    indexing = value.get("indexing")
+    if indexing not in {"bounds", "domain", "approaches"}:
+        raise ValueError("Big operator has unsupported indexing.")
+    indexing = cast(BigOperatorIndexing, indexing)
 
-    expected_keys = {"_type", "_version", "operator", "limits", "index", "body"}
-    match limits:
+    expected_keys = {"_type", "_version", "operator", "indexing", "index", "body"}
+    match indexing:
         case "bounds":
             expected_keys.update(("lower", "upper"))
         case "domain":
@@ -421,7 +422,7 @@ def json_to_big_operator(value: BigOperatorJson | object) -> BigOperator:
     if set(value) != expected_keys:
         raise ValueError(
             "Big operator does not contain exactly the fields required "
-            f"for operator={operator!r} and limits={limits!r}."
+            f"for operator={operator!r} and indexing={indexing!r}."
         )
 
     index = _decode_sympy_field(value.get("index"), "index")
@@ -432,12 +433,12 @@ def json_to_big_operator(value: BigOperatorJson | object) -> BigOperator:
         "_type": "big_operator",
         "_version": 1,
         "operator": operator,
-        "limits": limits,
+        "indexing": indexing,
         "index": index,
         "body": body,
     }
 
-    match limits:
+    match indexing:
         case "bounds":
             common["lower"] = _decode_sympy_field(value.get("lower"), "lower")
             common["upper"] = _decode_sympy_field(value.get("upper"), "upper")
@@ -463,8 +464,8 @@ __all__ = [
     "BigDomainOperatorJson",
     "BigOperator",
     "BigOperatorDirection",
+    "BigOperatorIndexing",
     "BigOperatorJson",
-    "BigOperatorLimit",
     "BigOperatorName",
     "BigOperatorValue",
     "big_operator_to_json",

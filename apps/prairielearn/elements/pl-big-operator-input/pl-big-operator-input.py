@@ -54,14 +54,14 @@ type BuiltinOperatorFn = Literal[
     "Max",
 ]
 type OperatorFn = Literal["Custom"] | BuiltinOperatorFn
-type LimitFormat = pbo.BigOperatorLimit
+type Indexing = pbo.BigOperatorIndexing
 
 
 @dataclass(frozen=True, slots=True)
 class OperatorMetadata:
     fn_name: BuiltinOperatorFn
     tex: str
-    valid_limits: frozenset[LimitFormat]
+    valid_indexing: frozenset[Indexing]
     bounds_constructor: type[sympy.Basic]
     _domain_constructor: type[sympy.Basic] | None = None
 
@@ -70,7 +70,7 @@ class OperatorMetadata:
         return self._domain_constructor or self.bounds_constructor
 
 
-_BOUNDS_DOMAIN: Final[frozenset[LimitFormat]] = frozenset(("bounds", "domain"))
+_BOUNDS_DOMAIN: Final[frozenset[Indexing]] = frozenset(("bounds", "domain"))
 OP_METADATA: Final[frozendict[BuiltinOperator, OperatorMetadata]] = frozendict({
     "sum": OperatorMetadata("Sum", r"\sum", _BOUNDS_DOMAIN, sympy.Sum, sympy.Add),
     "product": OperatorMetadata(
@@ -111,7 +111,7 @@ DIRECTION_NAMES: Final[frozendict[DirectionSymbol, DirectionName]] = frozendict(
 })
 type FormattedCall = tuple[str, tuple[str, ...]]
 type Component = Literal["lower", "upper", "domain", "target", "body"]
-COMPONENTS_MAP: Final[frozendict[LimitFormat, frozenset[Component]]] = frozendict({
+COMPONENTS_MAP: Final[frozendict[Indexing, frozenset[Component]]] = frozendict({
     "bounds": frozenset(("lower", "upper", "body")),
     "domain": frozenset(("domain", "body")),
     "approaches": frozenset(("target", "body")),
@@ -126,10 +126,10 @@ GRADING_METHODS: Final[frozenset[GradingMethod]] = frozenset((
     "exact",
     "none",
 ))
-type AllowedBlank = Literal["none", "limits", "body", "all"]
+type AllowedBlank = Literal["none", "indices", "body", "all"]
 ALLOWED_BLANKS: Final[frozenset[AllowedBlank]] = frozenset((
     "none",
-    "limits",
+    "indices",
     "body",
     "all",
 ))
@@ -151,7 +151,7 @@ class RenderConfig:
     has_operator_latex_override: bool
     prefix_latex: str | None
     suffix_latex: str | None
-    limits: LimitFormat
+    indexing: Indexing
     index: str
     variables: tuple[str, ...]
     custom_functions: tuple[str, ...]
@@ -170,11 +170,11 @@ class RenderConfig:
 
     @property
     def components(self) -> frozenset[Component]:
-        return COMPONENTS_MAP[self.limits]
+        return COMPONENTS_MAP[self.indexing]
 
     @property
     def response_components(self) -> Sequence[ResponseComponent]:
-        if self.limits == "approaches" and self.allow_direction_input:
+        if self.indexing == "approaches" and self.allow_direction_input:
             return (*self.components, "direction")
         return tuple(self.components)
 
@@ -197,7 +197,7 @@ def _raw_correct_answer(
     return correct_answers.get(answer)
 
 
-def _binder_limits(value: Any) -> LimitFormat | None:
+def _binder_indexing(value: Any) -> Indexing | None:
     match value:
         case sympy.Limit():
             return "approaches"
@@ -246,17 +246,17 @@ def _formatted_call(source: str, function_name: OperatorFn) -> FormattedCall | N
     arguments = _split_top_level(match.group(1))
     if len(arguments) != 2:
         return None
-    limits_source = arguments[1].strip()
-    if not (limits_source.startswith("(") and limits_source.endswith(")")):
+    indexing_source = arguments[1].strip()
+    if not (indexing_source.startswith("(") and indexing_source.endswith(")")):
         return None
-    limits = _split_top_level(limits_source[1:-1])
-    return arguments[0], tuple(limits)
+    indexing_args = _split_top_level(indexing_source[1:-1])
+    return arguments[0], tuple(indexing_args)
 
 
-def _formatted_direction(limits: Sequence[str]) -> DirectionSymbol | None:
-    if len(limits) != 3:
+def _formatted_direction(indexing_args: Sequence[str]) -> DirectionSymbol | None:
+    if len(indexing_args) != 3:
         return None
-    source = limits[2].strip()
+    source = indexing_args[2].strip()
     if len(source) < 2 or source[0] not in {"'", '"'} or source[-1] != source[0]:
         return None
     return source[1:-1]  # type: ignore
@@ -299,7 +299,7 @@ def _binder_index(value: Any) -> str | None:
 
 def _infer_spec(
     raw: Any,
-) -> tuple[Operator | None, LimitFormat | None, str | None]:
+) -> tuple[Operator | None, Indexing | None, str | None]:
     match raw:
         case str():
             regex_match = re.match(r"^\s*([A-Za-z][A-Za-z0-9_]*)\s*\(", raw)
@@ -340,21 +340,21 @@ def _infer_spec(
                     case _:
                         return operator, None, index
             if value := _safe_decode(raw):
-                return operator, _binder_limits(value), _binder_index(value)
+                return operator, _binder_indexing(value), _binder_index(value)
             return operator, None, None
 
         case {
             "_version": 1,
             "_type": "big_operator",
             "operator": operator,
-            "limits": limits,
+            "indexing": indexing,
             "index": index_var,
         } if (
             (index := _symbol_name(_safe_decode(index_var)))
             and (operator == "custom" or operator in OP_METADATA)
-            and limits in COMPONENTS_MAP
+            and indexing in COMPONENTS_MAP
         ):
-            return operator, limits, index
+            return operator, indexing, index
 
         case {"_type": "sympy", "_value": str(source)}:
             return _infer_spec(source)
@@ -385,7 +385,9 @@ def _infer_direction(raw: Any, operator: Operator) -> DirectionName | None:
                 case None:
                     return _decode_limit_direction(raw)
 
-                case _, limits if direction := _formatted_direction(limits):
+                case _, indexing_args if direction := _formatted_direction(
+                    indexing_args
+                ):
                     return DIRECTION_NAMES.get(direction)
 
                 case _:
@@ -417,11 +419,11 @@ def _config(html: str, data: pl.QuestionData | None = None) -> RenderConfig:
         raise ValueError(
             f'Correct answer "{answer}" is required to configure the big operator.'
         )
-    operator, limits, index = _infer_spec(raw_correct)
-    if operator is None or limits is None or index is None:
+    operator, indexing, index = _infer_spec(raw_correct)
+    if operator is None or indexing is None or index is None:
         raise ValueError(
             f'Correct answer "{answer}" must be a supported complete answer from '
-            "which the operator, index variable, and limits layout can be inferred."
+            "which the operator, index variable, and indexing can be inferred."
         )
     if operator == "custom":
         if custom_latex is None or not custom_latex.strip():
@@ -437,18 +439,18 @@ def _config(html: str, data: pl.QuestionData | None = None) -> RenderConfig:
     allowed = (
         frozenset(("bounds", "domain", "approaches"))
         if operator == "custom"
-        else OP_METADATA[operator].valid_limits
+        else OP_METADATA[operator].valid_indexing
     )
-    if limits not in allowed:
+    if indexing not in allowed:
         raise ValueError(
-            f'Operator "{operator}" does not support limits="{limits}"; use {", ".join(sorted(allowed))}.'
+            f'Operator "{operator}" does not support indexing="{indexing}"; use {", ".join(sorted(allowed))}.'
         )
     body_size = pl.get_integer_attrib(element, "body-size", BODY_SIZE_DEFAULT)
     if body_size < 1:
         raise ValueError('Attribute "body-size" must be positive.')
     default_limit_size = (
         BOUNDS_LIMIT_SIZE_DEFAULT
-        if limits == "bounds"
+        if indexing == "bounds"
         else ANNOTATION_LIMIT_SIZE_DEFAULT
     )
     limit_size = pl.get_integer_attrib(element, "limit-size", default_limit_size)
@@ -466,7 +468,7 @@ def _config(html: str, data: pl.QuestionData | None = None) -> RenderConfig:
         raise ValueError('Attribute "body-relative-weight" must be positive.')
     direction = (
         _infer_direction(raw_correct, operator)
-        if limits == "approaches"
+        if indexing == "approaches"
         else "two-sided"
     )
     if direction is None:
@@ -474,12 +476,12 @@ def _config(html: str, data: pl.QuestionData | None = None) -> RenderConfig:
             "Correct answer approaches limit must include a valid direction."
         )
     direction_input_attribute = "allow-limit-direction-input" in element.attrib
-    if direction_input_attribute and limits != "approaches":
+    if direction_input_attribute and indexing != "approaches":
         raise ValueError(
-            'Attribute "allow-limit-direction-input" can only be used with limits="approaches".'
+            'Attribute "allow-limit-direction-input" can only be used with indexing="approaches".'
         )
     allow_direction_input = pl.get_boolean_attrib(
-        element, "allow-limit-direction-input", limits == "approaches"
+        element, "allow-limit-direction-input", indexing == "approaches"
     )
     variables = _get_tuple_attrib(element, "variables")
     custom_functions = _get_tuple_attrib(element, "custom-functions")
@@ -488,7 +490,7 @@ def _config(html: str, data: pl.QuestionData | None = None) -> RenderConfig:
     )
     if allowed_blank not in ALLOWED_BLANKS:
         raise ValueError(
-            'Attribute "allowed-blank" must be none, limits, body, or all.'
+            'Attribute "allowed-blank" must be none, indices, body, or all.'
         )
     if operator == "custom" and grading == "equivalent":
         raise ValueError(
@@ -508,7 +510,7 @@ def _config(html: str, data: pl.QuestionData | None = None) -> RenderConfig:
         has_operator_latex_override=custom_latex is not None,
         prefix_latex=pl.get_string_attrib(element, "prefix-latex", None),
         suffix_latex=pl.get_string_attrib(element, "suffix-latex", None),
-        limits=limits,
+        indexing=indexing,
         index=index,
         variables=variables,
         custom_functions=custom_functions,
@@ -570,11 +572,11 @@ def _canonical(
         "_type": "big_operator",
         "_version": 1,
         "operator": config.operator,
-        "limits": config.limits,
+        "indexing": config.indexing,
         "index": _json(sympy.Symbol(config.index)),
     }
     result.update({key: _json(values[key]) for key in config.components})
-    if config.limits == "approaches":
+    if config.indexing == "approaches":
         result["direction"] = direction or config.direction
     return result  # type: ignore
 
@@ -586,22 +588,22 @@ def _structured(config: RenderConfig, value: dict[str, Any]) -> pbo.BigOperatorJ
 
 
 def _decoded_values(config: RenderConfig, decoded: pbo.BigOperator) -> ResponseValues:
-    match config.limits:
+    match config.indexing:
         case "bounds":
-            if decoded["limits"] != "bounds":
-                raise ValueError("Big operator limits do not match the element.")
+            if decoded["indexing"] != "bounds":
+                raise ValueError("Big operator indexing does not match the element.")
             return {
                 "lower": decoded["lower"],
                 "upper": decoded["upper"],
                 "body": decoded["body"],
             }
         case "domain":
-            if decoded["limits"] != "domain":
-                raise ValueError("Big operator limits do not match the element.")
+            if decoded["indexing"] != "domain":
+                raise ValueError("Big operator indexing does not match the element.")
             return {"domain": decoded["domain"], "body": decoded["body"]}
         case "approaches":
-            if decoded["limits"] != "approaches":
-                raise ValueError("Big operator limits do not match the element.")
+            if decoded["indexing"] != "approaches":
+                raise ValueError("Big operator indexing does not match the element.")
             return {"target": decoded["target"], "body": decoded["body"]}
 
 
@@ -653,30 +655,30 @@ def _binder(config: RenderConfig, value: Any) -> pbo.BigOperatorJson | None:
             return None
 
     if len(value.args) != 2 or not isinstance(value.args[1], sympy.Tuple):
-        raise ValueError("Correct answer must have exactly one limits tuple.")
-    limit_values = value.args[1].args
-    expected_length = 3 if config.limits == "bounds" else 2
-    if len(limit_values) != expected_length:
+        raise ValueError("Correct answer must have exactly one indexing tuple.")
+    indexing_values = value.args[1].args
+    expected_length = 3 if config.indexing == "bounds" else 2
+    if len(indexing_values) != expected_length:
         raise ValueError(
-            f'Correct answer for limits="{config.limits}" must have exactly one '
-            f"{expected_length}-item limits tuple."
+            f'Correct answer for indexing="{config.indexing}" must have exactly one '
+            f"{expected_length}-item indexing tuple."
         )
     body = value.args[0]
-    match config.limits:
+    match config.indexing:
         case "bounds":
             return _canonical(
                 config,
                 {
-                    "lower": limit_values[1],
-                    "upper": limit_values[2],
+                    "lower": indexing_values[1],
+                    "upper": indexing_values[2],
                     "body": body,
                 },
             )
         case "domain":
-            return _canonical(config, {"domain": limit_values[1], "body": body})
+            return _canonical(config, {"domain": indexing_values[1], "body": body})
         case "approaches":
             raise ValueError(
-                f"Correct answer operator does not support limits={config.limits!r}."
+                f"Correct answer operator does not support indexing={config.indexing!r}."
             )
 
 
@@ -686,16 +688,16 @@ def _formatted_answer(config: RenderConfig, source: str) -> pbo.BigOperatorJson 
         formatted = _legacy_limit_call(source)
     if formatted is None:
         return None
-    body_source, limits = formatted
-    match config.limits:
+    body_source, indexing_args = formatted
+    match config.indexing:
         case "domain":
             expected_length = 2
         case "bounds" | "approaches":
             expected_length = 3
-    if len(limits) != expected_length:
+    if len(indexing_args) != expected_length:
         raise ValueError(
-            f'Correct answer for limits="{config.limits}" requires a '
-            f"{expected_length}-item limits tuple."
+            f'Correct answer for indexing="{config.indexing}" requires a '
+            f"{expected_length}-item indexing tuple."
         )
     try:
         body = _unchecked_parse(
@@ -710,14 +712,14 @@ def _formatted_answer(config: RenderConfig, source: str) -> pbo.BigOperatorJson 
         ) from exc._src
     values: ResponseValues
     try:
-        match config.limits:
+        match config.indexing:
             case "approaches":
-                direction = _formatted_direction(limits)
+                direction = _formatted_direction(indexing_args)
                 if direction not in DIRECTION_NAMES:
                     raise ValueError('Limit direction must be "+", "-", or "+-".')
                 values = {
                     "target": _unchecked_parse(
-                        limits[1],
+                        indexing_args[1],
                         config.variables,
                         config.custom_functions,
                         allow_complex=config.allow_complex,
@@ -727,13 +729,13 @@ def _formatted_answer(config: RenderConfig, source: str) -> pbo.BigOperatorJson 
             case "bounds":
                 values = {
                     "lower": _unchecked_parse(
-                        limits[1],
+                        indexing_args[1],
                         config.variables,
                         config.custom_functions,
                         allow_complex=config.allow_complex,
                     ),
                     "upper": _unchecked_parse(
-                        limits[2],
+                        indexing_args[2],
                         config.variables,
                         config.custom_functions,
                         allow_complex=config.allow_complex,
@@ -743,7 +745,7 @@ def _formatted_answer(config: RenderConfig, source: str) -> pbo.BigOperatorJson 
             case "domain":
                 values = {
                     "domain": _unchecked_parse(
-                        limits[1],
+                        indexing_args[1],
                         config.variables,
                         config.custom_functions,
                         allow_complex=config.allow_complex,
@@ -922,7 +924,7 @@ def _component_scores(config: RenderConfig, data: pl.QuestionData) -> dict[str, 
         )
         for component in config.components
     }
-    if config.limits == "approaches" and config.allow_direction_input:
+    if config.indexing == "approaches" and config.allow_direction_input:
         scores["direction"] = float(
             submitted_json.get("direction") == correct_json.get("direction")
         )
@@ -971,7 +973,7 @@ def _question_mustache(config: RenderConfig, data: pl.QuestionData) -> str:
     index = sympy.latex(sympy.Symbol(config.index))
     component_scores = _component_scores(config, data)
     context: dict[str, Any] = {
-        config.limits: True,
+        config.indexing: True,
         "integral": config.operator == "integral",
         "operator_latex": _operator_tex(config),
         "prefix_latex": config.prefix_latex,
@@ -991,7 +993,7 @@ def _question_mustache(config: RenderConfig, data: pl.QuestionData) -> str:
     partial_score = data.get("partial_scores", {}).get(config.answer_name)
     if partial_score is not None:
         context["score_badge"] = _score_badge(float(partial_score.get("score") or 0))
-    match config.limits:
+    match config.indexing:
         case "bounds":
             context["lower_field"] = _symbolic_field(
                 config,
@@ -1062,7 +1064,7 @@ def _tex(config: RenderConfig, raw: dict[str, Any] | None) -> str:
 
     index = sympy.latex(sympy.Symbol(config.index))
     op = _operator_tex(config)
-    match config.limits, config.operator:
+    match config.indexing, config.operator:
         case "bounds", "integral":
             return rf"{op}_{{{get_comp('lower')}}}^{{{get_comp('upper')}}} {get_comp('body')}\,\mathrm{{d}}{index}"
         case "bounds", _:
@@ -1097,7 +1099,7 @@ def _structured_tex(
         )
         for key, value in values.items()
     }
-    if config.limits == "approaches" and config.allow_direction_input:
+    if config.indexing == "approaches" and config.allow_direction_input:
         raw[config.component_name("direction")] = structured.get("direction", "")
     return _tex(config, raw)
 
@@ -1194,7 +1196,7 @@ def _component_allows_blank(config: RenderConfig, component: ResponseComponent) 
     return config.allowed_blank == "all" or (
         config.allowed_blank == "body"
         if component == "body"
-        else config.allowed_blank == "limits"
+        else config.allowed_blank == "indices"
     )
 
 
@@ -1264,7 +1266,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         return
     values = _parse_values(config, data)
     direction: DirectionName = config.direction
-    if config.limits == "approaches" and config.allow_direction_input:
+    if config.indexing == "approaches" and config.allow_direction_input:
         direction_name = config.component_name("direction")
         raw_direction = str(raw.get(direction_name, "")).strip()
         if raw_direction not in DIRECTION_SYMBOLS:
@@ -1293,7 +1295,7 @@ def _construct(
 ) -> sympy.Basic:
     index = sympy.Symbol(config.index)
     body = values["body"]
-    match config.limits, config.operator:
+    match config.indexing, config.operator:
         case "bounds", "custom":
             return sympy.Tuple(body, (index, values["lower"], values["upper"]))
         case "bounds", operator:
@@ -1440,7 +1442,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
                         cast(sympy.Expr, value), config.imaginary_unit
                     )
                 )
-            if config.limits == "approaches" and config.allow_direction_input:
+            if config.indexing == "approaches" and config.allow_direction_input:
                 data["raw_submitted_answers"][config.component_name("direction")] = (
                     correct_json.get("direction", None)
                 )
@@ -1459,7 +1461,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
                 data["raw_submitted_answers"][config.component_name(component)] = (
                     raw_value
                 )
-            if config.limits == "approaches" and config.allow_direction_input:
+            if config.indexing == "approaches" and config.allow_direction_input:
                 data["raw_submitted_answers"][config.component_name("direction")] = (
                     correct_json.get("direction", None)
                 )
