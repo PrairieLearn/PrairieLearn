@@ -1053,6 +1053,8 @@ def _question_mustache(config: RenderConfig, data: pl.QuestionData) -> str:
 
 def _operator_tex(config: RenderConfig) -> str:
     if config.has_operator_latex_override:
+        if config.operator == "integral":
+            return rf"\mathop{{{config.operator_latex}}}\nolimits"
         return rf"\mathop{{{config.operator_latex}}}\limits"
     return config.operator_latex
 
