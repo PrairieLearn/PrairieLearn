@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import doctest
 import importlib
 import re
 from pathlib import Path
@@ -191,6 +190,12 @@ def documentation_examples(documentation: str) -> list[DocumentationExample]:
 
     assert not before_next
     return examples
+
+
+DOCUMENTATION_PATH = (
+    Path(__file__).parents[4] / "docs/elements/pl-big-operator-input.md"
+)
+DOCUMENTATION_EXAMPLES = documentation_examples(DOCUMENTATION_PATH.read_text())
 
 
 class TestConfigurationUnits:
@@ -1167,42 +1172,18 @@ class TestSymbolicInputRendering:
 
 
 class TestDocumentationExamples:
-    def _run_snippets(self, language: DocumentationLanguage) -> None:
-        documentation_path = (
-            Path(__file__).parents[4] / "docs/elements/pl-big-operator-input.md"
+    @pytest.mark.parametrize(
+        "example",
+        [
+            pytest.param(example, id=f"{example[0]}-line-{example[3]}")
+            for example in DOCUMENTATION_EXAMPLES
+        ],
+    )
+    def test_snippet(self, example: DocumentationExample) -> None:
+        language, source, setup_sources, _line_number = example
+        run_documentation_example(
+            language,
+            source,
+            setup_sources,
+            str(DOCUMENTATION_PATH),
         )
-        documentation = documentation_path.read_text()
-        snippets = [
-            example
-            for example in documentation_examples(documentation)
-            if example[0] == language
-        ]
-        assert snippets
-
-        doctest_examples = [
-            doctest.Example(
-                source=(
-                    f"run_documentation_example({language!r}, {source!r}, "
-                    f"{setup_sources!r}, {str(documentation_path)!r})\n"
-                ),
-                want="",
-                lineno=line_number - 1,
-            )
-            for _, source, setup_sources, line_number in snippets
-        ]
-        test = doctest.DocTest(
-            examples=doctest_examples,
-            globs={"run_documentation_example": run_documentation_example},
-            name=f"{documentation_path.name}:{language}",
-            filename=str(documentation_path),
-            lineno=0,
-            docstring=documentation,
-        )
-        result = doctest.DocTestRunner().run(test)
-        assert result.failed == 0
-
-    def test_python_snippets(self) -> None:
-        self._run_snippets("python")
-
-    def test_html_snippets(self) -> None:
-        self._run_snippets("html")
