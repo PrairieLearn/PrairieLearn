@@ -56,6 +56,10 @@ Alternatively, instructors may define a custom mode, which can be an alternative
 
 This element supports additional preview options through [element extensions](../elementExtensions.md). To provide this functionality, the extension must assign, to `window.PLFileEditor.prototype.preview.PREVIEW_TYPE` (where `PREVIEW_TYPE` is the value of the `preview` attribute), a function that converts a string representing the editor's content into suitable HTML content.
 
+## AI grading
+
+Submitted code is included in [AI grading](../aiGrading/index.md) as text labeled with its filename, preserving indentation and Unicode. A `pl-file-preview` element is not required. Questions can combine the editor with file uploads and image capture; each distinct submitted file is sent once.
+
 ## Example implementations
 
 - [element/fileEditor]
