@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+import doctest
 import importlib
 import re
+import textwrap
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Literal
 
@@ -79,7 +82,43 @@ def prepare_parse_grade(markup: str, data: dict[str, Any]) -> None:
 
 
 type DocumentationLanguage = Literal["python", "html"]
-type DocumentationExample = tuple[DocumentationLanguage, str, tuple[str, ...], int]
+
+
+@dataclass(frozen=True)
+class DocumentationExample:
+    language: DocumentationLanguage
+    source: str
+    setup_sources: tuple[str, ...]
+    line_number: int
+    name: str
+
+
+_DOCTEST_NAME_PATTERN = r"[a-zA-Z0-9_-]+"
+_DOCTEST_DIRECTIVE_PATTERN = (
+    rf"(?:\[(?P<name>{_DOCTEST_NAME_PATTERN})\]:"
+    r"|: (?P<semantics>before-next|before-each))"
+)
+_DOCUMENTATION_FENCE_RE = re.compile(
+    r"^```(?P<language>py(?:thon)?|html)(?P<header>[^\n]*)\n"
+    r"(?P<source>.*?)^```$",
+    flags=re.DOTALL | re.MULTILINE,
+)
+_DOCTEST_NAME_ATTRIBUTE_RE = re.compile(
+    rf'(?:^|[\s{{])doctest-name=(?P<quote>["\'])'
+    rf"(?P<name>{_DOCTEST_NAME_PATTERN})(?P=quote)(?=\s|}})"
+)
+
+
+def _fence_doctest_name(header: str) -> str | None:
+    matches = list(_DOCTEST_NAME_ATTRIBUTE_RE.finditer(header))
+    if "doctest-name" in header and (
+        len(matches) != 1 or re.fullmatch(r"\s*\{.*\}\s*", header) is None
+    ):
+        raise ValueError(
+            "doctest-name must use the fence attribute form "
+            '```python {doctest-name="test_name"}```.'
+        )
+    return matches[0].group("name") if matches else None
 
 
 def validate_generated_correct_answers(data: dict[str, Any]) -> None:
@@ -111,7 +150,12 @@ def run_documentation_example(
 ) -> None:
     namespace: dict[str, Any] = {}
     for setup_source in setup_sources:
-        exec(compile(setup_source, filename, "exec"), namespace)
+        try:
+            exec(compile(setup_source, filename, "exec"), namespace)
+        except Exception as e:
+            raise RuntimeError(
+                f"Error running test setup source:{textwrap.indent(setup_source, '  > ')}"
+            ) from e
 
     data = question_data()
     if language == "python":
@@ -131,40 +175,68 @@ def run_documentation_example(
 
 
 def documentation_examples(documentation: str) -> list[DocumentationExample]:
-    snippets = list(
+    snippets = list(_DOCUMENTATION_FENCE_RE.finditer(documentation))
+    snippets_by_start = {snippet.start(): snippet for snippet in snippets}
+
+    hidden_matches = list(
         re.finditer(
-            r"^```(?P<language>py(?:thon)?|html)[^\n]*\n(?P<source>.*?)^```$",
+            rf"^<!-- doctest-only{_DOCTEST_DIRECTIVE_PATTERN}\n"
+            r"(?=```py(?:thon)?(?:[ \t{]|$))",
             documentation,
-            flags=re.DOTALL | re.MULTILINE,
+            flags=re.MULTILINE,
         )
     )
-    setup_snippets = {
-        setup.start("source"): setup
-        for setup in re.finditer(
-            r"^<!-- doctest-only: "
-            r"(?P<semantics>before-next|before-each)\n"
-            r"```py(?:thon)?[^\n]*\n(?P<source>.*?)^```\n-->$",
-            documentation,
-            flags=re.DOTALL | re.MULTILINE,
+    if len(hidden_matches) != len(
+        re.findall(r"^<!-- doctest-only", documentation, flags=re.MULTILINE)
+    ):
+        raise ValueError(
+            "Standalone doctest-only blocks require a name; setup blocks require "
+            "before-next or before-each semantics."
         )
-    }
-    propagated_snippets = {
-        setup.start("source"): setup.group("semantics")
-        for setup in re.finditer(
-            r"^<!-- doctest-visible: (?P<semantics>before-next|before-each) -->\n+"
-            r"```py(?:thon)?[^\n]*\n(?P<source>.*?)^```$",
+    hidden_snippets: dict[int, re.Match[str]] = {}
+    for directive in hidden_matches:
+        snippet = snippets_by_start.get(directive.end())
+        if (
+            snippet is None
+            or re.match(r"\n-->(?:\n|$)", documentation[snippet.end() :]) is None
+        ):
+            raise ValueError("doctest-only must wrap exactly one Python fence.")
+        hidden_snippets[snippet.start()] = directive
+
+    visible_matches = list(
+        re.finditer(
+            rf"^<!-- doctest-visible{_DOCTEST_DIRECTIVE_PATTERN} -->\n+"
+            r"(?=```(?:py(?:thon)?|html)(?:[ \t{]|$))",
             documentation,
-            flags=re.DOTALL | re.MULTILINE,
+            flags=re.MULTILINE,
         )
-    }
+    )
+    if len(visible_matches) != len(
+        re.findall(r"^<!-- doctest-visible", documentation, flags=re.MULTILINE)
+    ):
+        raise ValueError(
+            "Standalone doctest-visible blocks require a name; setup blocks require "
+            "before-next or before-each semantics."
+        )
+    visible_snippets = {directive.end(): directive for directive in visible_matches}
 
     examples: list[DocumentationExample] = []
     before_each: list[str] = []
     before_next: list[str] = []
     for snippet in snippets:
-        if setup := setup_snippets.get(snippet.start("source")):
-            setup_source = setup.group("source")
-            if setup.group("semantics") == "before-each":
+        hidden = hidden_snippets.get(snippet.start())
+        visible = visible_snippets.get(snippet.start())
+        directive = hidden or visible
+        semantics = directive.group("semantics") if directive else None
+        fence_name = _fence_doctest_name(snippet.group("header"))
+
+        if hidden and semantics:
+            if fence_name is not None:
+                raise ValueError(
+                    "Setup-only doctest blocks cannot have a doctest-name."
+                )
+            setup_source = snippet.group("source")
+            if semantics == "before-each":
                 before_each.append(setup_source)
             else:
                 before_next.append(setup_source)
@@ -173,29 +245,50 @@ def documentation_examples(documentation: str) -> list[DocumentationExample]:
         language: DocumentationLanguage = (
             "python" if snippet.group("language").startswith("py") else "html"
         )
+        if visible and semantics and language != "python":
+            raise ValueError("Only Python fences can provide doctest setup code.")
+
+        directive_name = directive.group("name") if directive else None
+        if directive_name is not None and fence_name is not None:
+            raise ValueError("Specify a doctest name on either the directive or fence.")
+        example_name = directive_name or fence_name
         line_number = documentation.count("\n", 0, snippet.start("source")) + 1
-        examples.append((
-            language,
-            snippet.group("source"),
-            (*before_each, *before_next),
-            line_number,
-        ))
+        if example_name is None:
+            raise ValueError(
+                f"Doctest fence at line {line_number - 1} requires a doctest-name."
+            )
+        examples.append(
+            DocumentationExample(
+                language=language,
+                source=snippet.group("source"),
+                setup_sources=(*before_each, *before_next),
+                line_number=line_number,
+                name=example_name,
+            )
+        )
         before_next.clear()
 
-        if semantics := propagated_snippets.get(snippet.start("source")):
+        if visible and semantics:
             if semantics == "before-each":
                 before_each.append(snippet.group("source"))
             else:
                 before_next.append(snippet.group("source"))
 
-    assert not before_next
+    if before_next:
+        raise ValueError(
+            "A before-next doctest block must be followed by another fence."
+        )
+    example_names = [example.name for example in examples]
+    if len(example_names) != len(set(example_names)):
+        raise ValueError("Doctest names must be unique.")
     return examples
 
 
 DOCUMENTATION_PATH = (
     Path(__file__).parents[4] / "docs/elements/pl-big-operator-input.md"
 )
-DOCUMENTATION_EXAMPLES = documentation_examples(DOCUMENTATION_PATH.read_text())
+DOCUMENTATION_SOURCE = DOCUMENTATION_PATH.read_text()
+DOCUMENTATION_EXAMPLES = documentation_examples(DOCUMENTATION_SOURCE)
 
 
 class TestConfigurationUnits:
@@ -1172,18 +1265,62 @@ class TestSymbolicInputRendering:
 
 
 class TestDocumentationExamples:
+    def test_visible_directive_requires_a_name(self) -> None:
+        with pytest.raises(ValueError, match="doctest-visible blocks require a name"):
+            documentation_examples(
+                "<!-- doctest-visible -->\n"
+                '```python {doctest-name="test_example"}\n'
+                "pass\n"
+                "```"
+            )
+
+    def test_ordinary_fence_requires_a_name(self) -> None:
+        with pytest.raises(ValueError, match="requires a doctest-name"):
+            documentation_examples("```html\n<pl-big-operator-input />\n```")
+
+    @pytest.mark.parametrize(
+        ("documentation", "expected_name"),
+        [
+            (
+                "<!-- doctest-visible[test_directive_name]: -->\n```python\npass\n```",
+                "test_directive_name",
+            ),
+            (
+                '```html {doctest-name="test_fence_name"}\n<pl-big-operator-input />\n```',
+                "test_fence_name",
+            ),
+        ],
+        ids=["visible-directive", "fence-attribute"],
+    )
+    def test_name_sources(self, documentation: str, expected_name: str) -> None:
+        [example] = documentation_examples(documentation)
+        assert example.name == expected_name
+
     @pytest.mark.parametrize(
         "example",
-        [
-            pytest.param(example, id=f"{example[0]}-line-{example[3]}")
-            for example in DOCUMENTATION_EXAMPLES
-        ],
+        [pytest.param(example, id=example.name) for example in DOCUMENTATION_EXAMPLES],
     )
     def test_snippet(self, example: DocumentationExample) -> None:
-        language, source, setup_sources, _line_number = example
-        run_documentation_example(
-            language,
-            source,
-            setup_sources,
-            str(DOCUMENTATION_PATH),
+        test = doctest.DocTest(
+            examples=[
+                doctest.Example(
+                    source="run_example()\n",
+                    want="",
+                    lineno=example.line_number - 1,
+                )
+            ],
+            globs={
+                "run_example": lambda: run_documentation_example(
+                    example.language,
+                    example.source,
+                    example.setup_sources,
+                    str(DOCUMENTATION_PATH),
+                )
+            },
+            name=example.name,
+            filename=str(DOCUMENTATION_PATH),
+            lineno=0,
+            docstring=DOCUMENTATION_SOURCE,
         )
+        result = doctest.DocTestRunner().run(test)
+        assert result.failed == 0
