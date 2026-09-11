@@ -107,7 +107,7 @@ describe('planPrintQuestionPages', () => {
     );
   });
 
-  it('uses the final-page space around an oversized automatic question', () => {
+  it('isolates an oversized question so subpart page breaks cannot split adjacent questions', () => {
     const pages = planPrintQuestionPages({
       pageHeight: 900,
       questions: [
@@ -118,10 +118,11 @@ describe('planPrintQuestionPages', () => {
     });
 
     expect(pages.map((page) => page.questions.map((question) => question.id))).toEqual([
-      ['Question 1', 'Question 2', 'Question 3'],
+      ['Question 1'],
+      ['Question 2'],
+      ['Question 3'],
     ]);
-    expect(pages[0].allowsFlow).toBe(true);
-    expect(pages[0].questions.map((question) => question.allowsFlow)).toEqual([false, true, false]);
+    expect(pages.map((page) => page.allowsFlow)).toEqual([false, true, false]);
   });
 
   it('starts a fresh group when the next question cannot fit after an oversized question', () => {
@@ -135,7 +136,8 @@ describe('planPrintQuestionPages', () => {
     });
 
     expect(pages.map((page) => page.questions.map((question) => question.id))).toEqual([
-      ['Question 1', 'Question 2'],
+      ['Question 1'],
+      ['Question 2'],
       ['Question 3'],
     ]);
   });

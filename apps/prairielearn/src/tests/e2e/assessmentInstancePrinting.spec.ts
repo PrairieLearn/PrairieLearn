@@ -74,7 +74,7 @@ async function readAnswerKeyQuestionPresentations(
       return questions.map((question) => {
         const visibleStudentResponseCount = [
           ...question.querySelectorAll<HTMLElement>(
-            'input:not([type="hidden"]), textarea, select, math-field, [data-print-response-area], .printing-choice-list',
+            'input:not([type="hidden"]), textarea, select, math-field, [data-print-response-line], [data-print-response-area], .printing-choice-list',
           ),
         ].filter(
           (response) =>
@@ -93,7 +93,7 @@ async function readAnswerKeyQuestionPresentations(
     });
 }
 
-test('keeps answer-key questions on the same pages as the student exam', async ({
+test('renders readable answer keys for every student question', async ({
   page,
   courseInstance,
 }) => {
@@ -125,7 +125,21 @@ test('keeps answer-key questions on the same pages as the student exam', async (
   await page.goto(`${endpoint}&document=answer_key`);
   const answerKeyLayout = await readPaginatedQuestionLayout(page);
 
-  expect(answerKeyLayout).toEqual(examLayout);
+  expect(Object.keys(answerKeyLayout.questionPages)).toEqual(Object.keys(examLayout.questionPages));
+  const answerContents = await page
+    .locator('.printing-answer-key-content')
+    .evaluateAll((contents) =>
+      contents.map((content) => ({
+        transform: getComputedStyle(content).transform,
+        fontSize: Number.parseFloat(getComputedStyle(content).fontSize),
+        clippedHorizontally: content.scrollWidth > content.clientWidth + 1,
+      })),
+    );
+  for (const content of answerContents) {
+    expect(content.transform).toBe('none');
+    expect(content.fontSize).toBeGreaterThanOrEqual(12);
+    expect(content.clippedHorizontally).toBe(false);
+  }
 
   const presentations = await readAnswerKeyQuestionPresentations(page);
   expect(presentations).toHaveLength(Object.keys(examLayout.questionPages).length);

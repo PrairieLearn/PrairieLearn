@@ -76,19 +76,6 @@ export function planPrintQuestionPages({
     return page;
   }
 
-  function getRemainingHeight(page: PlannedPrintQuestionPage): number {
-    const occupiedHeight = page.allowsFlow ? page.reservedHeight % pageHeight : page.reservedHeight;
-    return pageHeight - occupiedHeight;
-  }
-
-  function fillsCurrentPhysicalPage(page: PlannedPrintQuestionPage): boolean {
-    const occupiedHeight = page.allowsFlow ? page.reservedHeight % pageHeight : page.reservedHeight;
-    return (
-      pageHeight - occupiedHeight <= FIT_TOLERANCE_PX ||
-      (page.allowsFlow && occupiedHeight <= FIT_TOLERANCE_PX)
-    );
-  }
-
   for (const question of questions) {
     const questionLabel = question.label ?? question.id;
     if (!Number.isFinite(question.naturalHeight) || question.naturalHeight < 0) {
@@ -113,7 +100,8 @@ export function planPrintQuestionPages({
     const plannedQuestion = { ...question, reservedHeight, allowsFlow: needsMultiplePages };
     if (
       currentPage == null ||
-      (!needsMultiplePages && reservedHeight - getRemainingHeight(currentPage) > FIT_TOLERANCE_PX)
+      needsMultiplePages ||
+      currentPage.reservedHeight + reservedHeight - pageHeight > FIT_TOLERANCE_PX
     ) {
       currentPage = startPage();
     }
@@ -121,7 +109,7 @@ export function planPrintQuestionPages({
     currentPage.reservedHeight += reservedHeight;
     currentPage.allowsFlow ||= needsMultiplePages;
 
-    if (fillsCurrentPhysicalPage(currentPage)) {
+    if (needsMultiplePages || pageHeight - currentPage.reservedHeight <= FIT_TOLERANCE_PX) {
       currentPage = undefined;
     }
   }
