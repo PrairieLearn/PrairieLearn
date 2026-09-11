@@ -64,3 +64,43 @@ it('keeps selection options separate and preserves lettered answer references', 
   const numbering = load(await zip.file('word/numbering.xml')!.async('string'), { xmlMode: true });
   expect(numbering('w\\:numFmt[w\\:val="upperLetter"]')).toHaveLength(1);
 });
+
+it('separates answer key labels from inline prompts and keeps labels with their answers', async () => {
+  const html = `<article class="printing-question" data-question-number="1"><div class="question-body">
+    Score = <span><small>number ±1%</small><div class="printing-answer-key" data-docx-block="true">
+      <div class="printing-answer-key-label">Correct answer</div>
+      <div data-docx-block="true">Score = <samp>100</samp>%</div>
+    </div></span>
+  </div></article>`;
+  const content = buildDocxContent(html, [], 700);
+  const zip = await JSZip.loadAsync(
+    await Packer.toBuffer(new Document({ sections: [{ children: content.children }] })),
+  );
+  const word = load(await zip.file('word/document.xml')!.async('string'), { xmlMode: true });
+  const paragraphs = word('w\\:p').toArray();
+  const label = paragraphs.find((node) => word(node).find('w\\:t').text() === 'Correct answer')!;
+  expect(word(label).find('w\\:keepNext')).toHaveLength(1);
+  expect(word(label).next().find('w\\:t').text()).toBe('Score = 100%');
+  expect(paragraphs.map((node) => word(node).find('w\\:t').text())).toContain('number ±1%');
+});
+
+it('preserves ordering solution indentation without adding list bullets', async () => {
+  const html = `<article class="printing-question" data-question-number="1"><div class="question-body">
+    <ul><li class="pl-order-block" data-docx-indent="0" data-docx-mono="true">def sum(a, b):</li>
+      <li class="pl-order-block" data-docx-indent="28" data-docx-mono="true">return a + b</li></ul>
+  </div></article>`;
+  const content = buildDocxContent(html, [], 700);
+  const zip = await JSZip.loadAsync(
+    await Packer.toBuffer(new Document({ sections: [{ children: content.children }] })),
+  );
+  const word = load(await zip.file('word/document.xml')!.async('string'), { xmlMode: true });
+  const paragraphs = word('w\\:p').toArray();
+  const definition = paragraphs.find(
+    (node) => word(node).find('w\\:t').text() === 'def sum(a, b):',
+  )!;
+  const body = paragraphs.find((node) => word(node).find('w\\:t').text() === 'return a + b')!;
+  expect(word(definition).find('w\\:ind').attr('w:left')).toBe('100');
+  expect(word(body).find('w\\:ind').attr('w:left')).toBe('520');
+  expect(word(body).find('w\\:rFonts').attr('w:ascii')).toBe('Courier New');
+  expect(word('w\\:numPr')).toHaveLength(0);
+});
