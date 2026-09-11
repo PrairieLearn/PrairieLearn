@@ -77,7 +77,9 @@ OP_METADATA: Final[frozendict[BuiltinOperator, OperatorMetadata]] = frozendict({
         "Product", r"\prod", _BOUNDS_DOMAIN, sympy.Product, sympy.Mul
     ),
     "integral": OperatorMetadata("Integral", r"\int", _BOUNDS_DOMAIN, sympy.Integral),
-    "limit": OperatorMetadata("Limit", r"\lim", frozenset(("approach",)), sympy.Limit),
+    "limit": OperatorMetadata(
+        "Limit", r"\lim", frozenset(("approaches",)), sympy.Limit
+    ),
     "union": OperatorMetadata("Union", r"\bigcup", _BOUNDS_DOMAIN, sympy.Union),
     "intersection": OperatorMetadata(
         "Intersection", r"\bigcap", _BOUNDS_DOMAIN, sympy.Intersection
@@ -112,7 +114,7 @@ type Component = Literal["lower", "upper", "domain", "target", "body"]
 COMPONENTS_MAP: Final[frozendict[LimitFormat, frozenset[Component]]] = frozendict({
     "bounds": frozenset(("lower", "upper", "body")),
     "domain": frozenset(("domain", "body")),
-    "approach": frozenset(("target", "body")),
+    "approaches": frozenset(("target", "body")),
 })
 type ResponseComponent = Literal["direction"] | Component
 type ResponseValues = dict[ResponseComponent, sympy.Basic]
@@ -172,7 +174,7 @@ class RenderConfig:
 
     @property
     def response_components(self) -> Sequence[ResponseComponent]:
-        if self.limits == "approach" and self.allow_direction_input:
+        if self.limits == "approaches" and self.allow_direction_input:
             return (*self.components, "direction")
         return tuple(self.components)
 
@@ -198,7 +200,7 @@ def _raw_correct_answer(
 def _binder_limits(value: Any) -> LimitFormat | None:
     match value:
         case sympy.Limit():
-            return "approach"
+            return "approaches"
         case sympy.Sum() | sympy.Product() | sympy.Integral():
             if len(value.limits) != 1:
                 return None
@@ -324,13 +326,13 @@ def _infer_spec(
                 index = _identifier(formatted[1][0]) if formatted[1] else None
                 match parsed_operator, len(formatted[1]):
                     case "limit", _:
-                        return operator, "approach", index
+                        return operator, "approaches", index
                     case _, 2:
                         return operator, "domain", index
                     case _, 3:
                         return (
                             operator,
-                            "approach"
+                            "approaches"
                             if _formatted_direction(formatted[1]) is not None
                             else "bounds",
                             index,
@@ -433,7 +435,7 @@ def _config(html: str, data: pl.QuestionData | None = None) -> RenderConfig:
             custom_latex.strip() if custom_latex is not None else metadata.tex
         )
     allowed = (
-        frozenset(("bounds", "domain", "approach"))
+        frozenset(("bounds", "domain", "approaches"))
         if operator == "custom"
         else OP_METADATA[operator].valid_limits
     )
@@ -463,19 +465,21 @@ def _config(html: str, data: pl.QuestionData | None = None) -> RenderConfig:
     if body_weight < 1:
         raise ValueError('Attribute "body-relative-weight" must be positive.')
     direction = (
-        _infer_direction(raw_correct, operator) if limits == "approach" else "two-sided"
+        _infer_direction(raw_correct, operator)
+        if limits == "approaches"
+        else "two-sided"
     )
     if direction is None:
         raise ValueError(
-            "Correct answer approach limit must include a valid direction."
+            "Correct answer approaches limit must include a valid direction."
         )
     direction_input_attribute = "allow-limit-direction-input" in element.attrib
-    if direction_input_attribute and limits != "approach":
+    if direction_input_attribute and limits != "approaches":
         raise ValueError(
-            'Attribute "allow-limit-direction-input" can only be used with limits="approach".'
+            'Attribute "allow-limit-direction-input" can only be used with limits="approaches".'
         )
     allow_direction_input = pl.get_boolean_attrib(
-        element, "allow-limit-direction-input", limits == "approach"
+        element, "allow-limit-direction-input", limits == "approaches"
     )
     variables = _get_tuple_attrib(element, "variables")
     custom_functions = _get_tuple_attrib(element, "custom-functions")
@@ -570,7 +574,7 @@ def _canonical(
         "index": _json(sympy.Symbol(config.index)),
     }
     result.update({key: _json(values[key]) for key in config.components})
-    if config.limits == "approach":
+    if config.limits == "approaches":
         result["direction"] = direction or config.direction
     return result  # type: ignore
 
@@ -595,8 +599,8 @@ def _decoded_values(config: RenderConfig, decoded: pbo.BigOperator) -> ResponseV
             if decoded["limits"] != "domain":
                 raise ValueError("Big operator limits do not match the element.")
             return {"domain": decoded["domain"], "body": decoded["body"]}
-        case "approach":
-            if decoded["limits"] != "approach":
+        case "approaches":
+            if decoded["limits"] != "approaches":
                 raise ValueError("Big operator limits do not match the element.")
             return {"target": decoded["target"], "body": decoded["body"]}
 
@@ -670,7 +674,7 @@ def _binder(config: RenderConfig, value: Any) -> pbo.BigOperatorJson | None:
             )
         case "domain":
             return _canonical(config, {"domain": limit_values[1], "body": body})
-        case "approach":
+        case "approaches":
             raise ValueError(
                 f"Correct answer operator does not support limits={config.limits!r}."
             )
@@ -686,7 +690,7 @@ def _formatted_answer(config: RenderConfig, source: str) -> pbo.BigOperatorJson 
     match config.limits:
         case "domain":
             expected_length = 2
-        case "bounds" | "approach":
+        case "bounds" | "approaches":
             expected_length = 3
     if len(limits) != expected_length:
         raise ValueError(
@@ -707,7 +711,7 @@ def _formatted_answer(config: RenderConfig, source: str) -> pbo.BigOperatorJson 
     values: ResponseValues
     try:
         match config.limits:
-            case "approach":
+            case "approaches":
                 direction = _formatted_direction(limits)
                 if direction not in DIRECTION_NAMES:
                     raise ValueError('Limit direction must be "+", "-", or "+-".')
@@ -918,7 +922,7 @@ def _component_scores(config: RenderConfig, data: pl.QuestionData) -> dict[str, 
         )
         for component in config.components
     }
-    if config.limits == "approach" and config.allow_direction_input:
+    if config.limits == "approaches" and config.allow_direction_input:
         scores["direction"] = float(
             submitted_json.get("direction") == correct_json.get("direction")
         )
@@ -1018,7 +1022,7 @@ def _question_mustache(config: RenderConfig, data: pl.QuestionData) -> str:
                 prefix=None if config.operator == "integral" else rf"\({index} \in \)",
                 score=component_scores.get("domain"),
             )
-        case "approach":
+        case "approaches":
             direction_score = component_scores.get("direction")
             if config.allow_direction_input:
                 context["direction_input"] = _direction_input(
@@ -1034,7 +1038,7 @@ def _question_mustache(config: RenderConfig, data: pl.QuestionData) -> str:
             context["annotation_field"] = _symbolic_field(
                 config,
                 component="target",
-                label="Approach target",
+                label="approaches target",
                 size=config.limit_size,
                 data=data,
                 prefix=rf"\({index} \to \)",
@@ -1067,7 +1071,7 @@ def _tex(config: RenderConfig, raw: dict[str, Any] | None) -> str:
             return rf"{op}_{{{get_comp('domain')}}} {get_comp('body')}\,\mathrm{{d}}{index}"
         case "domain", _:
             return rf"{op}_{{{index}\in {get_comp('domain')}}} {get_comp('body')}"
-        case "approach", _:
+        case "approaches", _:
             direction_value = (
                 str(raw.get(config.component_name("direction"), ""))
                 if config.allow_direction_input
@@ -1093,7 +1097,7 @@ def _structured_tex(
         )
         for key, value in values.items()
     }
-    if config.limits == "approach" and config.allow_direction_input:
+    if config.limits == "approaches" and config.allow_direction_input:
         raw[config.component_name("direction")] = structured.get("direction", "")
     return _tex(config, raw)
 
@@ -1260,7 +1264,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         return
     values = _parse_values(config, data)
     direction: DirectionName = config.direction
-    if config.limits == "approach" and config.allow_direction_input:
+    if config.limits == "approaches" and config.allow_direction_input:
         direction_name = config.component_name("direction")
         raw_direction = str(raw.get(direction_name, "")).strip()
         if raw_direction not in DIRECTION_SYMBOLS:
@@ -1295,7 +1299,7 @@ def _construct(
         case "bounds", operator:
             bound_constructor = OP_METADATA[operator].bounds_constructor
             return bound_constructor(body, (index, values["lower"], values["upper"]))
-        case "approach", _:
+        case "approaches", _:
             return sympy.Limit(
                 body,
                 index,
@@ -1436,7 +1440,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
                         cast(sympy.Expr, value), config.imaginary_unit
                     )
                 )
-            if config.limits == "approach" and config.allow_direction_input:
+            if config.limits == "approaches" and config.allow_direction_input:
                 data["raw_submitted_answers"][config.component_name("direction")] = (
                     correct_json.get("direction", None)
                 )
@@ -1455,7 +1459,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
                 data["raw_submitted_answers"][config.component_name(component)] = (
                     raw_value
                 )
-            if config.limits == "approach" and config.allow_direction_input:
+            if config.limits == "approaches" and config.allow_direction_input:
                 data["raw_submitted_answers"][config.component_name("direction")] = (
                     correct_json.get("direction", None)
                 )

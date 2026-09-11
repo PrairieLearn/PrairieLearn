@@ -8,8 +8,8 @@ import prairielearn.sympy_utils as psu
 import pytest
 import sympy
 from prairielearn.big_operator import (
-    BigApproachOperator,
-    BigApproachOperatorJson,
+    BigApproachesOperator,
+    BigApproachesOperatorJson,
     BigBoundsOperator,
     BigBoundsOperatorJson,
     BigDomainOperator,
@@ -68,13 +68,13 @@ def test_decode_domain_big_operator_with_sets() -> None:
     assert decoded["body"] == sympy.FiniteSet(k)
 
 
-def test_decode_approach_big_operator() -> None:
+def test_decode_approaches_big_operator() -> None:
     x = sympy.Symbol("x")
     answer = {
         "_type": "big_operator",
         "_version": 1,
         "operator": "limit",
-        "limits": "approach",
+        "limits": "approaches",
         "index": sympy_json(x),
         "target": sympy_json(sympy.Integer(0)),
         "direction": "from-right",
@@ -83,8 +83,8 @@ def test_decode_approach_big_operator() -> None:
 
     decoded = pl.json_to_big_operator(answer)
 
-    assert decoded["limits"] == "approach"
-    assert_type(decoded, BigApproachOperator)
+    assert decoded["limits"] == "approaches"
+    assert_type(decoded, BigApproachesOperator)
     assert decoded["target"] == 0
     assert decoded["direction"] == "from-right"
 
@@ -168,20 +168,20 @@ def test_encode_domain_big_operator() -> None:
     assert decoded["domain"] == sympy.FiniteSet(1, 2)
 
 
-def test_encode_approach_big_operator() -> None:
+def test_encode_approaches_big_operator() -> None:
     x = sympy.Symbol("x")
     encoded = pl.big_operator_to_json(
         operator="limit",
-        limits="approach",
+        limits="approaches",
         index=x,
         target=sympy.Integer(0),
         direction="from-right",
         body=1 / x,
     )
 
-    assert_type(encoded, BigApproachOperatorJson)
+    assert_type(encoded, BigApproachesOperatorJson)
     decoded = pl.json_to_big_operator(encoded)
-    assert decoded["limits"] == "approach"
+    assert decoded["limits"] == "approaches"
     assert decoded["direction"] == "from-right"
 
 
@@ -278,13 +278,13 @@ def test_decode_rejects_non_symbol_index() -> None:
         pl.json_to_big_operator(bounds_answer(index=sympy_json(sympy.Integer(1))))
 
 
-def test_decode_rejects_invalid_approach_direction() -> None:
+def test_decode_rejects_invalid_approaches_direction() -> None:
     x = sympy.Symbol("x")
     answer = {
         "_type": "big_operator",
         "_version": 1,
         "operator": "limit",
-        "limits": "approach",
+        "limits": "approaches",
         "index": sympy_json(x),
         "target": sympy_json(sympy.Integer(0)),
         "direction": "sideways",
