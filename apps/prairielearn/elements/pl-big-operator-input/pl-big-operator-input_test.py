@@ -369,7 +369,7 @@ class TestPrepareUnits:
             ("Product(k, (k, 1, 4))", "product", "bounds", "k"),
             ("Integral(k, (k, 0, 1))", "integral", "bounds", "k"),
             ("Integral(z, (z, Gamma))", "integral", "domain", "z"),
-            ("Limit(sin(x) / x, (x, 0, '+'))", "limit", "approach", "x"),
+            ("Limit(sin(x) / x, (x, 0, '+'))", "limit", "approaches", "x"),
             ("Union({k}, (k, {1, 2}))", "union", "domain", "k"),
             (
                 "Intersection({k}, (k, {1, 2}))",
@@ -583,7 +583,7 @@ class TestParseUnits:
             ),
             (
                 "limit",
-                "approach",
+                "approaches",
                 {
                     "op-target": "0",
                     "op-body": "sin(k)/k",
@@ -648,7 +648,7 @@ class TestParseUnits:
             ),
             (
                 "limit",
-                "approach",
+                "approaches",
                 {
                     "op-target": "{0}",
                     "op-body": "k",
@@ -903,7 +903,7 @@ class TestRenderUnits:
             ("union", "domain", ("op-domain", "op-body"), ("op-lower", "op-upper")),
             (
                 "limit",
-                "approach",
+                "approaches",
                 ("op-target", "op-direction", "op-body"),
                 ("op-lower", "op-domain"),
             ),
@@ -932,7 +932,7 @@ class TestRenderUnits:
             ("integral", "bounds", ("op-lower", "op-upper", "op-body")),
             ("integral", "domain", ("op-domain", "op-body")),
             ("union", "domain", ("op-domain", "op-body")),
-            ("limit", "approach", ("op-target", "op-direction", "op-body")),
+            ("limit", "approaches", ("op-target", "op-direction", "op-body")),
         ],
     )
     def test_question_panel_fields_follow_tab_order(

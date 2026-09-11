@@ -13,9 +13,7 @@
     <div
       class="pl-big-operator-input__operator-stack pl-big-operator-input__operator-stack--integral"
     >
-      <div class="pl-big-operator-input__operator">
-        \(\displaystyle {{{operator_latex}}}\)
-      </div>
+      <div class="pl-big-operator-input__operator">\(\displaystyle {{{operator_latex}}}\)</div>
       <div class="pl-big-operator-input__limits">
         {{#bounds}}
           <div class="pl-big-operator-input__lower">{{#lower_field}}{{{html}}}{{/lower_field}}</div>
@@ -33,11 +31,9 @@
   {{/integral}}
   {{^integral}}
     <div
-      class="pl-big-operator-input__operator-stack{{#bounds}} pl-big-operator-input__operator-stack--bounds{{/bounds}}{{#domain}} pl-big-operator-input__operator-stack--annotated{{/domain}}{{#approach}} pl-big-operator-input__operator-stack--annotated{{/approach}}"
+      class="pl-big-operator-input__operator-stack{{#bounds}} pl-big-operator-input__operator-stack--bounds{{/bounds}}{{#domain}} pl-big-operator-input__operator-stack--annotated{{/domain}}{{#approaches}} pl-big-operator-input__operator-stack--annotated{{/approaches}}"
     >
-      <div class="pl-big-operator-input__operator">
-        \(\displaystyle {{{operator_latex}}}\)
-      </div>
+      <div class="pl-big-operator-input__operator">\(\displaystyle {{{operator_latex}}}\)</div>
       {{#bounds}}
         <div class="pl-big-operator-input__lower">{{#lower_field}}{{{html}}}{{/lower_field}}</div>
       {{/bounds}}
@@ -46,7 +42,7 @@
           {{#annotation_field}}{{{html}}}{{/annotation_field}}
         </div>
       {{/domain}}
-      {{#approach}}
+      {{#approaches}}
         <div class="pl-big-operator-input__annotation">
           {{#annotation_field}}{{{html}}}{{/annotation_field}}
           {{#direction_input}}
@@ -80,7 +76,7 @@
             </div>
           {{/direction_input}}
         </div>
-      {{/approach}}
+      {{/approaches}}
       {{#bounds}}
         <div class="pl-big-operator-input__upper pl-big-operator-input__range-upper-bound">
           {{#upper_field}}{{{html}}}{{/upper_field}}
