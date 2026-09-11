@@ -19,7 +19,9 @@
         { "id": "internalGrade/addingNumbers", "autoPoints": 2, "maxAutoPoints": 6 },
         { "id": "manualGrade/codeUpload", "manualPoints": 6 },
         { "id": "externalGrade/alpine", "autoPoints": 2, "maxAutoPoints": 6 },
-        { "id": "externalGrade/entrypointArgs", "autoPoints": 2, "maxAutoPoints": 6 }
+        { "id": "externalGrade/entrypointArgs", "autoPoints": 2, "maxAutoPoints": 6 },
+        { "id": "externalGrade/customResult", "autoPoints": 2, "maxAutoPoints": 6 },
+        { "id": "externalGrade/customResultNoPartialCredit", "autoPoints": 2, "maxAutoPoints": 6 }
       ]
     },
     {
