@@ -59,7 +59,7 @@ function InstanceQuestionGradingPanelInner({
 }) {
   const [data, setData] = useState(initialData);
   const [formState, setFormState] = useState(() => createFormState(initialData));
-  const usePercentage = useSyncExternalStore(
+  const preferPercentage = useSyncExternalStore(
     subscribeToScoreDisplay,
     getScoreDisplaySnapshot,
     () => false,
@@ -71,10 +71,13 @@ function InstanceQuestionGradingPanelInner({
   const nextButtonRef = useRef<HTMLButtonElement>(null);
 
   const maxPoints = data.assessmentQuestion.maxPoints;
+  const usePercentage = maxPoints > 0 && preferPercentage;
   const maxRubricPoints = data.assessmentQuestion.maxManualPoints || maxPoints;
-  const hasAutoPoints =
-    data.assessmentQuestion.maxAutoPoints !== 0 || Number(formState.autoPoints) !== 0;
-  const showRubricWithTotal = Boolean(data.rubricData?.replaceAutoPoints && hasAutoPoints);
+  const showAutoPoints =
+    data.assessmentQuestion.maxAutoPoints !== 0 ||
+    Number(formState.autoPoints) !== 0 ||
+    formState.autoEditing;
+  const showRubricWithTotal = Boolean(data.rubricData?.replaceAutoPoints && showAutoPoints);
   const totalPoints = roundPoints(
     Number(formState.autoPoints || 0) + Number(formState.manualPoints || 0),
   );
@@ -202,6 +205,7 @@ function InstanceQuestionGradingPanelInner({
       adjustmentPercentage={formState.adjustmentPercentage}
       adjustmentPoints={formState.adjustmentPoints}
       aiSelectedRubricItemIds={aiSelectedRubricItemIds}
+      context={data.context}
       disabled={data.disabled}
       enableKeyboardShortcuts={editShortcuts}
       maxPoints={maxPoints}
@@ -372,7 +376,7 @@ function InstanceQuestionGradingPanelInner({
           {!showRubricWithTotal && rubricInput}
         </li>
 
-        {hasAutoPoints && (
+        {showAutoPoints && (
           <>
             <li className="list-group-item">
               <GradingPoints

@@ -1,15 +1,19 @@
 import clsx from 'clsx';
-import { type RefObject, useId } from 'react';
+import type { RefObject } from 'react';
 import Form from 'react-bootstrap/Form';
 import InputGroup from 'react-bootstrap/InputGroup';
 
-import type { GradingPanelRubricData } from './InstanceQuestionGradingPanel.types.js';
+import type {
+  GradingPanelRubricData,
+  ManualGradingContext,
+} from './InstanceQuestionGradingPanel.types.js';
 
 export function RubricInput({
   adjustmentInputRef,
   adjustmentPercentage,
   adjustmentPoints,
   aiSelectedRubricItemIds,
+  context,
   disabled,
   enableKeyboardShortcuts,
   maxPoints,
@@ -28,6 +32,7 @@ export function RubricInput({
   adjustmentPercentage: string;
   adjustmentPoints: string;
   aiSelectedRubricItemIds: Set<string> | null;
+  context: ManualGradingContext;
   disabled: boolean;
   enableKeyboardShortcuts: boolean;
   maxPoints: number;
@@ -42,8 +47,6 @@ export function RubricInput({
   showEditRubricButton: boolean;
   usePercentage: boolean;
 }) {
-  const rubricItemBaseId = useId();
-
   return (
     <>
       <div className="d-flex align-items-center justify-content-between mb-1">
@@ -87,7 +90,7 @@ export function RubricInput({
       {rubricData.items.map((item) => {
         const id = item.id;
         const selected = selectedRubricItemIds.has(id);
-        const inputId = `${rubricItemBaseId}-${id}`;
+        const inputId = `rubric-item-${context}-${id}`;
         const aiSelected = aiSelectedRubricItemIds?.has(id);
         const keyBinding = enableKeyboardShortcuts ? item.keyBinding : null;
         const itemPoints = item.points;
