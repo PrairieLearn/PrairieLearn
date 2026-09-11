@@ -1,7 +1,8 @@
 import { type Browser, type BrowserContext, type Page, chromium } from 'playwright';
 
 import { type DocxOutputOptions, createDocxOutput } from './docxOutput.js';
-import { pdfOutput } from './pdfOutput.js';
+import type { PageCodeOptions } from './pageCode.js';
+import { createPdfOutput } from './pdfOutput.js';
 
 const QUESTION_BLOCK_SIZE_OVERFLOW_ERROR_CODE = 'question-block-size-overflow';
 
@@ -112,6 +113,7 @@ export interface RenderPageOptions {
   timeoutMs?: number;
 }
 
+export type RenderPdfOptions = RenderPageOptions & { pageCode?: PageCodeOptions };
 export type RenderDocxOptions = RenderPageOptions & DocxOutputOptions;
 
 export interface PrintablePageOutput<T> {
@@ -152,8 +154,8 @@ export class PrintRenderer {
     this.worker = new Semaphore(1, maxQueuedRenders);
   }
 
-  renderPdf(options: RenderPageOptions): Promise<Buffer> {
-    return this.render(options, pdfOutput);
+  renderPdf(options: RenderPdfOptions): Promise<Buffer> {
+    return this.render(options, createPdfOutput(options.pageCode));
   }
 
   renderDocx({ cover, footerLabel, ...options }: RenderDocxOptions): Promise<Buffer> {

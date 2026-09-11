@@ -2,6 +2,7 @@ export { namespaceQuestionHtmls } from './namespaceQuestionHtmls.js';
 export type { QuestionHtmlToNamespace } from './namespaceQuestionHtmls.js';
 export { PAPER_SIZES } from './pdfOutput.js';
 export type { PaperSize } from './pdfOutput.js';
+export type { PageCodeOptions } from './pageCode.js';
 export { htmlToTextBlocks } from './printableCover.js';
 export type {
   PrintableCover,
@@ -15,6 +16,7 @@ export type {
   PrintablePageOutput,
   PrintRendererOptions,
   RenderDocxOptions,
+  RenderPdfOptions,
   RenderPageOptions,
 } from './printRenderer.js';
 export { QUESTION_BLOCK_SIZES } from './questionBlockSize.js';

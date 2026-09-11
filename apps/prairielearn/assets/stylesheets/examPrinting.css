@@ -1,5 +1,14 @@
 @page {
-  margin: 0.55in 0.55in 0.68in;
+  margin: 0.55in 0.55in 0.7in;
+
+  @bottom-left {
+    content: ' ';
+    vertical-align: middle;
+  }
+
+  @bottom-right {
+    vertical-align: middle;
+  }
 }
 
 :root {
@@ -7,7 +16,7 @@
   --exam-print-page-height: 11in;
   --exam-print-margin-top: 0.55in;
   --exam-print-margin-right: 0.55in;
-  --exam-print-margin-bottom: 0.68in;
+  --exam-print-margin-bottom: 0.7in;
   --exam-print-margin-left: 0.55in;
   --exam-print-question-spacing: 0.18in;
   --exam-print-content-width: calc(
@@ -17,6 +26,13 @@
     var(--exam-print-page-height) - var(--exam-print-margin-top) - var(--exam-print-margin-bottom)
   );
   color-scheme: light;
+}
+
+.printing-page-code {
+  display: block;
+  width: 0.35in;
+  height: 0.35in;
+  object-fit: contain;
 }
 
 :root[data-print-paper-size='A4'] {
