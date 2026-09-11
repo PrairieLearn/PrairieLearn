@@ -1,15 +1,23 @@
 .pl-big-operator-input {
   --pl-big-operator-input-gap: 0.8rem;
 
-  display: inline-flex;
   align-items: center;
   gap: var(--pl-big-operator-input-gap);
-  vertical-align: middle;
   margin: 0.25rem 0;
 }
 
-.pl-big-operator-input__submission {
+.pl-big-operator-input--inline {
   display: inline-flex;
+  vertical-align: middle;
+}
+
+.pl-big-operator-input--block {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.pl-big-operator-input__submission {
   align-items: center;
   gap: 0.4rem;
 }
@@ -182,17 +190,18 @@
   margin: 0.15rem 0;
 }
 
+.pl-big-operator-input__operator,
+.pl-big-operator-input__affix,
+.pl-big-operator-input--block .pl-big-operator-input__submission-value {
+  font-size: 2rem;
+}
+
 .pl-big-operator-input__affix--prefix {
   margin-inline-end: calc(-1 * var(--pl-big-operator-input-gap));
 }
 
 .pl-big-operator-input__affix--suffix {
   margin-inline-start: calc(-1 * var(--pl-big-operator-input-gap));
-}
-
-.pl-big-operator-input__operator,
-.pl-big-operator-input__affix {
-  font-size: 2rem;
 }
 
 .pl-big-operator-input__integral-tail {
@@ -241,7 +250,8 @@
   }
 
   .pl-big-operator-input__operator,
-  .pl-big-operator-input__affix {
+  .pl-big-operator-input__affix,
+  .pl-big-operator-input--block .pl-big-operator-input__submission-value {
     font-size: 2.9rem;
   }
 
