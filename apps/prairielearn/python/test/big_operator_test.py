@@ -7,7 +7,7 @@ import prairielearn as pl
 import prairielearn.sympy_utils as psu
 import pytest
 import sympy
-from prairielearn.operator_expression import (
+from prairielearn.big_operator import (
     BigApproachOperator,
     BigApproachOperatorJson,
     BigBoundsOperator,
@@ -23,7 +23,7 @@ def sympy_json(value: sympy.Basic) -> psu.SympyJson:
 
 def bounds_answer(**updates: Any) -> dict[str, Any]:
     answer: dict[str, Any] = {
-        "_type": "operator_expression",
+        "_type": "big_operator",
         "_version": 1,
         "operator": "sum",
         "limits": "bounds",
@@ -36,7 +36,7 @@ def bounds_answer(**updates: Any) -> dict[str, Any]:
     return answer
 
 
-def test_decode_bounds_operator_expression_and_narrow_type() -> None:
+def test_decode_bounds_big_operator_and_narrow_type() -> None:
     decoded = pl.json_to_big_operator(bounds_answer())
 
     assert decoded["index"] == sympy.Symbol("k")
@@ -47,10 +47,10 @@ def test_decode_bounds_operator_expression_and_narrow_type() -> None:
         assert decoded["upper"] == sympy.Symbol("n")
 
 
-def test_decode_domain_operator_expression_with_sets() -> None:
+def test_decode_domain_big_operator_with_sets() -> None:
     k = sympy.Symbol("k")
     answer = {
-        "_type": "operator_expression",
+        "_type": "big_operator",
         "_version": 1,
         "operator": "union",
         "limits": "domain",
@@ -68,10 +68,10 @@ def test_decode_domain_operator_expression_with_sets() -> None:
     assert decoded["body"] == sympy.FiniteSet(k)
 
 
-def test_decode_approach_operator_expression() -> None:
+def test_decode_approach_big_operator() -> None:
     x = sympy.Symbol("x")
     answer = {
-        "_type": "operator_expression",
+        "_type": "big_operator",
         "_version": 1,
         "operator": "limit",
         "limits": "approach",
@@ -89,7 +89,7 @@ def test_decode_approach_operator_expression() -> None:
     assert decoded["direction"] == "from-right"
 
 
-def test_decode_custom_operator_expression() -> None:
+def test_decode_custom_big_operator() -> None:
     k = sympy.Symbol("k", positive=True)
     f: sympy.Expr = sympy.Function("f")(k)
     answer = bounds_answer(
@@ -107,7 +107,7 @@ def test_decode_custom_operator_expression() -> None:
     assert decoded["body"] == f
 
 
-def test_encode_custom_bounds_operator_expression() -> None:
+def test_encode_custom_bounds_big_operator() -> None:
     k = sympy.Symbol("k", positive=True)
     body: sympy.Expr = sympy.Function("f")(k)
 
@@ -129,7 +129,7 @@ def test_encode_custom_bounds_operator_expression() -> None:
     assert decoded["body"] == body
 
 
-def test_operator_expression_to_json_accepts_strings() -> None:
+def test_big_operator_to_json_accepts_strings() -> None:
     encoded = pl.big_operator_to_json(
         operator="sum",
         limits="bounds",
@@ -148,7 +148,7 @@ def test_operator_expression_to_json_accepts_strings() -> None:
     assert decoded["body"] == sympy.Symbol("k") ** 2
 
 
-def test_operator_expression_to_json_accepts_operator_expression() -> None:
+def test_big_operator_to_json_accepts_big_operator() -> None:
     decoded = pl.json_to_big_operator(bounds_answer())
 
     encoded = pl.big_operator_to_json(decoded)
@@ -157,7 +157,7 @@ def test_operator_expression_to_json_accepts_operator_expression() -> None:
     assert encoded == bounds_answer()
 
 
-def test_encode_domain_operator_expression() -> None:
+def test_encode_domain_big_operator() -> None:
     k = sympy.Symbol("k")
     encoded = pl.big_operator_to_json(
         operator="union",
@@ -173,7 +173,7 @@ def test_encode_domain_operator_expression() -> None:
     assert decoded["domain"] == sympy.FiniteSet(1, 2)
 
 
-def test_encode_approach_operator_expression() -> None:
+def test_encode_approach_big_operator() -> None:
     x = sympy.Symbol("x")
     encoded = pl.big_operator_to_json(
         operator="limit",
@@ -288,7 +288,7 @@ def test_decode_rejects_non_symbol_index() -> None:
 def test_decode_rejects_invalid_approach_direction() -> None:
     x = sympy.Symbol("x")
     answer = {
-        "_type": "operator_expression",
+        "_type": "big_operator",
         "_version": 1,
         "operator": "limit",
         "limits": "approach",
