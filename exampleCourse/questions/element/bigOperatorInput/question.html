@@ -34,15 +34,21 @@
   ></pl-big-operator-input>
 </pl-card>
 
-<pl-card header="An example with a bounded product">
+<pl-card header="An inline bounded product (&lt;code&gt;display=&quot;inline&quot;&lt;/code&gt;)">
   <pl-question-panel>
     <p>Submit $\displaystyle \prod_{k=1}^{4} k$.</p>
   </pl-question-panel>
-  <pl-big-operator-input
-    answers-name="product"
-    correct-answer="Product(k, (k, 1, 4))"
-    allowed-blank="all"
-  ></pl-big-operator-input>
+  <p>
+    Enter the product here
+    <pl-big-operator-input
+      answers-name="product"
+      correct-answer="Product(k, (k, 1, 4))"
+      display="inline"
+      allowed-blank="all"
+      prefix-latex="\Bigg("
+      suffix-latex="\Bigg)"
+    ></pl-big-operator-input> then continue reading this line.
+  </p>
 </pl-card>
 
 <h2>Integrals</h2>

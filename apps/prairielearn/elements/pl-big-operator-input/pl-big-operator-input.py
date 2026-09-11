@@ -29,6 +29,7 @@ BODY_SIZE_DEFAULT: Final = 16
 BOUNDS_LIMIT_SIZE_DEFAULT: Final = 7
 ANNOTATION_LIMIT_SIZE_DEFAULT: Final = 10
 IMAGINARY_UNIT_FOR_DISPLAY_DEFAULT: Final = "i"
+DISPLAY_DEFAULT: Final = psi.DisplayType.BLOCK
 
 type BuiltinOperator = Literal[
     "sum",
@@ -158,6 +159,7 @@ class RenderConfig:
     direction: DirectionName
     allow_direction_input: bool
     allowed_blank: AllowedBlank
+    display: psi.DisplayType
     allow_complex: bool
     imaginary_unit: str
     show_help_text: bool
@@ -517,6 +519,9 @@ def _config(html: str, data: pl.QuestionData | None = None) -> RenderConfig:
         direction=direction,
         allow_direction_input=allow_direction_input,
         allowed_blank=allowed_blank,
+        display=pl.get_enum_attrib(
+            element, "display", psi.DisplayType, DISPLAY_DEFAULT
+        ),
         allow_complex=pl.get_boolean_attrib(element, "allow-complex", False),
         imaginary_unit=imaginary_unit,
         show_help_text=pl.get_boolean_attrib(element, "show-help-text", True),
@@ -954,16 +959,11 @@ def _direction_input(
 
 
 def _render_mustache(
-    context: dict[str, Any], *, template: Literal["main", "submission"]
+    context: dict[str, Any], *, mode: Literal["question", "submission"]
 ) -> str:
-    match template:
-        case "main":
-            stub = "pl-big-operator-input.mustache"
-        case "submission":
-            stub = "pl-big-operator-input-submission.mustache"
     return chevron.render(
-        (HERE / stub).read_text(),
-        context,
+        (HERE / "pl-big-operator-input.mustache").read_text(),
+        {**context, mode: True},
         partials_path=str(HERE / "partials"),
         partials_ext="mustache",
     )
@@ -974,6 +974,7 @@ def _question_mustache(config: RenderConfig, data: pl.QuestionData) -> str:
     component_scores = _component_scores(config, data)
     context: dict[str, Any] = {
         config.indexing: True,
+        config.display.value: True,
         "integral": config.operator == "integral",
         "operator_latex": _operator_tex(config),
         "prefix_latex": config.prefix_latex,
@@ -1047,7 +1048,7 @@ def _question_mustache(config: RenderConfig, data: pl.QuestionData) -> str:
                 suffix=rf"\({{}}^{direction_suffix}\)" if direction_suffix else None,
                 score=component_scores.get("target"),
             )
-    return _render_mustache(context, template="main")
+    return _render_mustache(context, mode="question")
 
 
 def _operator_tex(config: RenderConfig) -> str:
@@ -1132,14 +1133,16 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             correct = _correct(config, data)
             return _render_mustache(
                 {
+                    config.display.value: True,
                     "tex": _structured_tex(config, correct),
                     "prefix_latex": config.prefix_latex,
                     "suffix_latex": config.suffix_latex,
                 },
-                template="submission",
+                mode="submission",
             )
         case "submission":
             context: dict[str, Any] = {
+                config.display.value: True,
                 "tex": _submitted_tex(config, data),
                 "prefix_latex": config.prefix_latex,
                 "suffix_latex": config.suffix_latex,
@@ -1147,7 +1150,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             partial_score = data.get("partial_scores", {}).get(config.answer_name)
             if partial_score is not None:
                 context.update(_score_badge(float(partial_score.get("score") or 0)))
-            return _render_mustache(context, template="submission")
+            return _render_mustache(context, mode="submission")
 
 
 def _unchecked_parse(
