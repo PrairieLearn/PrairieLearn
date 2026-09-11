@@ -1,5 +1,6 @@
 import base64
 import hashlib
+import html as stdlib_html
 import os
 
 import chevron
@@ -65,6 +66,19 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 
 
 def render(element_html: str, data: pl.QuestionData) -> str:
+    if data["ai_grading"] and data["panel"] == "submission":
+        element = lxml.html.fragment_fromstring(element_html)
+        file_name = pl.get_string_attrib(element, "file-name", "")
+        if any(
+            file["name"] == file_name
+            for file in data["submitted_answers"].get("_files", [])
+        ):
+            return (
+                f'<div data-ai-grading-file-name="{stdlib_html.escape(file_name, quote=True)}">'
+                f"{stdlib_html.escape(file_name)}</div>"
+            )
+        return ""
+
     if data["panel"] != "question":
         return ""
 

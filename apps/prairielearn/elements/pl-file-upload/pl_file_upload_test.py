@@ -188,18 +188,19 @@ def test_get_answer_name_parts() -> None:
     assert len(outputs) == 4
 
 
-def test_render_ai_grading_submission_with_matching_files() -> None:
+@pytest.mark.parametrize("extension", ["pdf", "py", "cpp", "java", "txt"])
+def test_render_ai_grading_submission_with_matching_files(extension: str) -> None:
     output = file_upload.render(
-        '<pl-file-upload file-patterns="*.pdf" optional-file-names="notes.png"></pl-file-upload>',
+        f'<pl-file-upload file-patterns="*.{extension}" optional-file-names="notes.png"></pl-file-upload>',
         {
             "panel": "submission",
             "ai_grading": True,
             "format_errors": {},
             "submitted_answers": {
                 "_files": [
-                    {"name": "solution.pdf", "contents": "pdfdata"},
+                    {"name": f"solution.{extension}", "contents": "filedata"},
                     {"name": "notes.png", "contents": "imagedata"},
-                    {"name": "ignored.txt", "contents": "textdata"},
+                    {"name": "ignored.other", "contents": "textdata"},
                 ]
             },
         },
@@ -207,7 +208,7 @@ def test_render_ai_grading_submission_with_matching_files() -> None:
 
     assert output == (
         '<div data-ai-grading-file-name="notes.png">notes.png</div>\n'
-        '<div data-ai-grading-file-name="solution.pdf">solution.pdf</div>'
+        f'<div data-ai-grading-file-name="solution.{extension}">solution.{extension}</div>'
     )
 
 

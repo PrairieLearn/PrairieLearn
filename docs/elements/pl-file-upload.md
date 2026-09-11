@@ -72,7 +72,7 @@ Required files (`file-names` or `file-patterns`) and optional files (`optional-f
 
 The `pl-file-upload` element and the contents of the uploaded file(s) are only displayed by default in the question panel. If the contents are expected to be listed in the submission panel, they should be explicitly added using other elements such as [`pl-file-preview`](pl-file-preview.md) or [`pl-xss-safe`](pl-xss-safe.md).
 
-AI grading supports PDF, JPEG, PNG, and WebP files submitted with `pl-file-upload`. Other file types can still be used with manual or external grading, but cannot be graded with AI grading. Questions can combine `pl-file-upload` with other supported elements such as [`pl-image-capture`](pl-image-capture.md); each distinct submitted file is sent to the model once. Learn more in the [AI grading docs](../aiGrading/index.md).
+AI grading supports text and source-code files (including `.py`, `.cpp`, `.java`, and `.txt`) as well as PDF, JPEG, PNG, and WebP files submitted with `pl-file-upload`. Text is decoded from UTF-8 or UTF-16 with a byte-order mark and sent with its filename. Other binary formats cause an explicit AI grading error; they can still be used with manual or external grading. Questions can combine `pl-file-upload` with other supported elements such as [`pl-file-editor`](pl-file-editor.md) and [`pl-image-capture`](pl-image-capture.md); each distinct submitted file is sent to the model once. See [supported file formats](../aiGrading/index.md#submitted-file-formats) for encoding details and limitations.
 
 ## Example implementations
 

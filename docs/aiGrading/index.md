@@ -8,7 +8,8 @@ AI grading uses large language models to grade manual questions in PrairieLearn.
 
 AI grading works on manually graded questions that use these elements:
 
-- [`pl-file-upload`](../elements/pl-file-upload.md) for PDF, JPEG, PNG, and WebP files
+- [`pl-file-upload`](../elements/pl-file-upload.md) for text and source-code files, PDFs, and supported images
+- [`pl-file-editor`](../elements/pl-file-editor.md) for source-code files
 - [`pl-image-capture`](../elements/pl-image-capture.md)
 - [`pl-rich-text-editor`](../elements/pl-rich-text-editor.md)
 - [`pl-string-input`](../elements/pl-string-input.md)
@@ -19,10 +20,20 @@ Common use cases include:
 - Mathematical proofs and derivations
 - Diagrams and handwritten work
 - PDF documents produced with external tools
-- Code explanations and written reasoning
+- Source code, code explanations, and written reasoning
 - Short-answer justifications
 
 Questions can combine these elements. For example, when a question contains both `pl-file-upload` and `pl-image-capture`, every distinct submitted file is sent to the model once.
+
+AI grading also includes files saved in the submission from [workspaces](../workspaces/index.md). Only files collected for grading are included; the AI grader does not read the live workspace. Files do not need a `pl-file-preview` element to be included.
+
+### Submitted file formats
+
+- **Text and source code:** Files such as `.py`, `.cpp`, `.java`, `.txt`, `.csv`, and `.json` are decoded and sent as text with their filenames. Any filename or extension is accepted if the contents are readable text. Indentation, line breaks, and Unicode are preserved. Supported encodings are UTF-8 (with or without a byte-order mark) and UTF-16 (with a byte-order mark).
+- **PDFs and images:** PDF, JPEG, PNG, and WebP files are sent as attachments so the model can interpret their visual content.
+- **Other binary formats or encodings:** Files such as ZIP archives, compiled programs, and binary Office documents are not decoded as text. An unreadable file causes AI grading of that submission to fail with an error identifying the file, rather than producing a grade with missing content. Convert these files to a supported format or use manual grading.
+
+Text files are passed as source text, without executing code or rendering HTML, Markdown, or SVG. File contents count toward the model's input limits; they are not truncated by PrairieLearn.
 
 ## Prerequisites
 
