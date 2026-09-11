@@ -6,8 +6,6 @@ The fields accept the same symbolic syntax as [`pl-symbolic-input`](pl-symbolic-
 
 ## Sample element
 
-![Screenshot of the pl-big-operator-input element showing an empty bounded sum](pl-big-operator-input-bounded-sum.png)
-
 ```html {doctest-name="test_sample_element" title="question.html"}
 <pl-big-operator-input
   answers-name="total"
@@ -15,6 +13,8 @@ The fields accept the same symbolic syntax as [`pl-symbolic-input`](pl-symbolic-
   variables="n"
 ></pl-big-operator-input>
 ```
+
+![Screenshot of the pl-big-operator-input element showing an empty bounded sum](pl-big-operator-input-bounded-sum.png)
 
 Every element requires a complete correct answer, either through `correct-answer` or `data["correct_answers"]` in `server.py`. The answer determines the operator, index variable, indexing, and limit direction. A `Custom(...)` answer also requires `operator-latex`. If you would like the element not to grade student submissions, set `grading-method='none'`.
 
