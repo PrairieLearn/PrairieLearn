@@ -142,6 +142,11 @@
 .pl-big-operator-input__range-upper-bound .input-group > math-field {
   border-top-left-radius: var(--bs-border-radius) !important;
   border-bottom-left-radius: var(--bs-border-radius) !important;
+  padding-inline: 0.1rem;
+}
+
+.pl-big-operator-input__range-upper-bound math-field::part(content) {
+  justify-content: center;
 }
 
 .pl-big-operator-input__operator-stack--bounds > .pl-big-operator-input__upper {
