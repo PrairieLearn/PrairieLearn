@@ -60,9 +60,14 @@ def question_data(
 ) -> dict[str, Any]:
     return {
         "params": {},
+        "preferences": {},
         "correct_answers": ({} if correct_answer is None else {"op": correct_answer}),
+        "submitted_answers": {},
         "raw_submitted_answers": raw_submitted_answers or {},
+        "format_errors": {},
+        "partial_scores": {},
         "panel": panel,
+        "editable": panel == "question",
     }
 
 
