@@ -5,9 +5,9 @@ from typing import assert_never, cast
 
 import lxml.html
 import prairielearn as pl
+import prairielearn.internal.symbolic_input as psi
 import prairielearn.sympy_utils as psu
 import sympy
-from prairielearn.internal import symbolic_input as psi
 
 WEIGHT_DEFAULT = 1
 VARIABLES_DEFAULT = None
