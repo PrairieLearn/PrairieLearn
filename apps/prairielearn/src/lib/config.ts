@@ -611,6 +611,38 @@ export const ConfigSchema = z.object({
   aiGradingGoogleApiKey: z.string().nullable().default(null),
   aiGradingAnthropicApiKey: z.string().nullable().default(null),
   /** Experimental course-agent runtime. The fake runtime never calls external services. */
+  courseAgentRateLimitDollars: z
+    .object({
+      user: z.number().nonnegative().default(10),
+      course: z.number().nonnegative().default(50),
+      global: z.number().nonnegative().default(100),
+    })
+    .prefault({}),
+  // Overrides for course-agent models not yet in costPerMillionTokens. Unknown prices fail closed.
+  courseAgentTokenPricing: z
+    .record(
+      z.string(),
+      TokenPricingSchema.extend({
+        longContextThreshold: z.number().int().positive().optional(),
+      }),
+    )
+    .default({
+      // Standard pricing, verified 2026-09-11 against the official OpenAI model pages.
+      'gpt-6-astra': {
+        input: 10,
+        cachedInput: 1,
+        cacheWrite: 12.5,
+        output: 50,
+        longContextThreshold: 272000,
+      },
+      'gpt-5.6-luna': {
+        input: 0.2,
+        cachedInput: 0.02,
+        cacheWrite: 0.25,
+        output: 1.2,
+        longContextThreshold: 272000,
+      },
+    }),
   courseAgentRuntime: z.enum(['disabled', 'fake', 'cloudflare']).default('disabled'),
   courseAgentWorkerOrigin: z
     .intersection(

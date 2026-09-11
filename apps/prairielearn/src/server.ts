@@ -388,6 +388,11 @@ export async function initExpress(): Promise<Express> {
     if (isMultipartRequest(req)) return next();
     bodyParser.urlencoded({ extended: false, limit: 5 * 1536 * 1024 })(req, res, next);
   });
+  // Worker callbacks use signed, short-lived tokens rather than browser sessions or CSRF.
+  app.use(
+    '/pl/webhooks/course-agent-usage',
+    await enterpriseOnly(async () => (await import('./ee/pages/courseAgent/usage.js')).default),
+  );
   app.use(cookieParser());
   app.use(passport.initialize());
   if (config.devMode) app.use(favicon(path.join(APP_ROOT_PATH, 'public', 'favicon-dev.ico')));

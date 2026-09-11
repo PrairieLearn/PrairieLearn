@@ -11,11 +11,13 @@ const defaultDependencies = {
 export async function nameCourseAgentConversation(
   {
     conversationId,
+    runId,
     userId,
     courseId,
     prompt,
   }: {
     conversationId: string;
+    runId: string;
     userId: string;
     courseId: string;
     prompt: string;
@@ -33,6 +35,7 @@ export async function nameCourseAgentConversation(
   const capability = generateSignedToken(
     {
       type: 'course-agent-title',
+      runId,
       conversationId,
       userId,
       courseId,

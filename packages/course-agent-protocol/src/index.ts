@@ -1,7 +1,36 @@
 import { z } from 'zod';
 
+export const CourseAgentUsageIdentitySchema = z.object({
+  runId: z.uuid(),
+  conversationId: z.uuid(),
+  userId: z.string().regex(/^[1-9][0-9]*$/),
+  courseId: z.string().regex(/^[1-9][0-9]*$/),
+});
+export const CourseAgentTokenUsageSchema = z
+  .object({
+    input_tokens: z.number().int().nonnegative(),
+    cache_read_tokens: z.number().int().nonnegative(),
+    cache_write_tokens: z.number().int().nonnegative(),
+    output_tokens: z.number().int().nonnegative(),
+    reasoning_tokens: z.number().int().nonnegative(),
+  })
+  .refine(
+    (v) =>
+      v.cache_read_tokens + v.cache_write_tokens <= v.input_tokens &&
+      v.reasoning_tokens <= v.output_tokens,
+  );
+export const CourseAgentUsageCallbackSchema = CourseAgentUsageIdentitySchema.extend({
+  type: z.literal('course-agent-usage'),
+  action: z.enum(['authorize', 'record']),
+  id: z.uuid(),
+  model: z.string().min(1).max(150),
+  usage: CourseAgentTokenUsageSchema.nullable(),
+  expiresAt: z.iso.datetime(),
+});
+
 export const CourseAgentTitleCapabilitySchema = z.object({
   type: z.literal('course-agent-title'),
+  runId: z.uuid(),
   conversationId: z.uuid(),
   userId: z.string(),
   courseId: z.string(),

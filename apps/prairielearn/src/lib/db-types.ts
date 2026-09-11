@@ -745,6 +745,30 @@ export const CourseAgentRunSchema = z.object({
 });
 export type CourseAgentRun = z.infer<typeof CourseAgentRunSchema>;
 
+export const CourseAgentRunUsageSchema = z.object({
+  cache_read_tokens: z.coerce.number().int().nonnegative(),
+  cache_write_tokens: z.coerce.number().int().nonnegative(),
+  estimated_cost_milli_dollars: z.number().nonnegative(),
+  finalized_at: DateFromISOString.nullable(),
+  input_tokens: z.coerce.number().int().nonnegative(),
+  normalized_total_tokens: z.coerce.number().int().nonnegative(),
+  output_tokens: z.coerce.number().int().nonnegative(),
+  reasoning_tokens: z.coerce.number().int().nonnegative(),
+  run_id: z.uuid(),
+  updated_at: DateFromISOString,
+});
+export const CourseAgentUsageReceiptSchema = z.object({
+  completed_at: DateFromISOString.nullable(),
+  created_at: DateFromISOString,
+  estimated_cost_milli_dollars: z.number().nullable(),
+  id: z.uuid(),
+  model: z.string(),
+  provider: z.string(),
+  provider_cost_milli_dollars: z.number().nullable(),
+  run_id: z.uuid(),
+  usage: z.record(z.string(), z.unknown()).nullable(),
+});
+
 export const CourseAgentMessageSchema = z.object({
   authn_user_id: IdSchema.nullable(),
   content: z.string(),
@@ -1902,6 +1926,8 @@ export const TableNames = [
   'course_agent_messages',
   'course_agent_push_approvals',
   'course_agent_runs',
+  'course_agent_run_usages',
+  'course_agent_usage_receipts',
   'course_agent_workspace_backups',
   'course_instance_access_rules',
   'course_instance_ai_grading_credentials',

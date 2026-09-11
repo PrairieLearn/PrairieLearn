@@ -25,6 +25,7 @@ import {
   CourseAgentSnapshotRequestSchema,
   type CourseAgentStartRunRequest,
   CourseAgentStartRunRequestSchema,
+  CourseAgentUsageIdentitySchema,
   type CourseAgentWorkspaceBackup,
 } from '@prairielearn/course-agent-protocol';
 
@@ -42,8 +43,8 @@ import {
   proxyCourseGithubRead,
 } from './github.js';
 import { ACTIVE_RECHECK_MS, SANDBOX_SLEEP_AFTER_SECONDS, idleDeadline } from './lifecycle.js';
-import { proxyOpenAiRequest } from './provider.js';
 import { proxyPushSync, pushSyncParams } from './push-sync.js';
+import { meteredOpenAiRequest } from './usage.js';
 import { SandboxInactivityWatchdog, recordSandboxActivity, watchdogStub } from './watchdog.js';
 
 interface Env {
@@ -60,6 +61,7 @@ interface Env {
   BACKUP_BUCKET: R2Bucket;
   OPENAI_MODEL: string;
   COURSE_AGENT_DOCS?: R2Bucket;
+  COURSE_AGENT_PL_ORIGIN?: string;
 }
 
 interface ConversationState {
@@ -147,13 +149,20 @@ Sandbox.outbound = async (request: Request, env: Env, context) => {
 };
 
 Sandbox.outboundByHost = {
-  'api.openai.com': async (request: Request, env: Env, context) => {
-    await recordSandboxActivity(env, context.containerId);
-    return proxyOpenAiRequest(request, env);
-  },
+  'api.openai.com': () => new Response('No active model authorization.', { status: 403 }),
 };
 
 Sandbox.outboundHandlers = {
+  courseModel: async (request: Request, env: Env, context) => {
+    const params = CourseAgentUsageIdentitySchema.extend({ containerId: z.string() }).parse(
+      context.params,
+    );
+    if (params.containerId !== context.containerId) {
+      return new Response('Sandbox identity mismatch', { status: 403 });
+    }
+    await recordSandboxActivity(env, context.containerId);
+    return meteredOpenAiRequest(request, env, params);
+  },
   courseGithubRead: async (request: Request, env: Env, context) => {
     await recordSandboxActivity(env, context.containerId);
     return proxyCourseGithubRead(request, env, context);
@@ -866,6 +875,11 @@ export class CourseAgentCoordinator {
       }
       const repository = githubRepositoryPath(request.course.repository);
       const coursePath = `${COURSE_AGENT_WORKSPACE_ROOT}/course`;
+      await sandbox.setOutboundByHost('api.openai.com', 'courseModel', {
+        ...current.identity,
+        runId: request.runId,
+        containerId: this.env.Sandbox.idFromName(request.sandboxId).toString(),
+      });
       await sandbox.setOutboundByHost(
         'github.com',
         'courseGithubRead',
