@@ -1028,6 +1028,29 @@ class TestRenderUnits:
         assert "badge" not in rendered
 
     @pytest.mark.parametrize("panel", ["answer", "submission"])
+    def test_integral_latex_override_uses_normal_limit_position(
+        self, panel: Literal["answer", "submission"]
+    ) -> None:
+        markup = html(**{
+            "correct-answer": "Integral(1/z, (z, gamma))",
+            "operator-latex": r"\oint",
+            "variables": "gamma",
+            "grading-method": "component",
+        })
+        data = question_data(
+            raw_submitted_answers={"op-domain": "gamma", "op-body": "1/z"},
+            panel=panel,
+        )
+        big_operator_input.prepare(markup, data)
+        if panel == "submission":
+            big_operator_input.parse(markup, data)
+
+        rendered = big_operator_input.render(markup, data)
+
+        assert r"\mathop{\oint}\nolimits_{\gamma} \frac{1}{z}\,\mathrm{d}z" in rendered
+        assert r"\mathop{\oint}\limits" not in rendered
+
+    @pytest.mark.parametrize("panel", ["answer", "submission"])
     def test_complete_notation_uses_configured_imaginary_unit(
         self, panel: Literal["answer", "submission"]
     ) -> None:
