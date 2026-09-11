@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Literal
 
+import lxml.html
 import prairielearn as pl
 import prairielearn.sympy_utils as psu
 import pytest
@@ -954,7 +955,39 @@ class TestRenderUnits:
     ) -> None:
         rendered = big_operator_input.render(html(operator=operator), question_data())
 
-        assert '<div class="pl-big-operator-input__operator">' in rendered
+        assert '<span class="pl-big-operator-input__operator">' in rendered
+
+    @pytest.mark.parametrize(
+        ("display", "expected_display", "expected_tag"),
+        [
+            (None, "block", "div"),
+            ("inline", "inline", "span"),
+            ("block", "block", "div"),
+        ],
+    )
+    @pytest.mark.parametrize("panel", ["question", "answer", "submission"])
+    def test_display_controls_layout_in_every_panel(
+        self,
+        display: str | None,
+        expected_display: str,
+        expected_tag: str,
+        panel: Literal["question", "answer", "submission"],
+    ) -> None:
+        markup = html(operator="sum", display=display)
+        data = question_data(panel=panel)
+        big_operator_input.prepare(markup, data)
+
+        rendered = big_operator_input.render(markup, data)
+        root = lxml.html.fragment_fromstring(rendered)
+
+        assert root.tag == expected_tag
+        assert f"pl-big-operator-input--{expected_display}" in root.classes
+        if panel != "question":
+            submission_values = root.xpath(
+                './/*[contains(concat(" ", normalize-space(@class), " "), '
+                '" pl-big-operator-input__submission-value ")]'
+            )
+            assert len(submission_values) == 1
 
     def test_question_panel_configures_imaginary_unit_for_every_field(self) -> None:
         rendered = big_operator_input.render(
