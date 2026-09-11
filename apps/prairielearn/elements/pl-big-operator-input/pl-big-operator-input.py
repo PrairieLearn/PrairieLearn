@@ -11,12 +11,14 @@ import lxml.html
 import prairielearn as pl
 import prairielearn.operator_expression as poe
 import prairielearn.sympy_utils as psu
-import symbolic_input_adapter
 import sympy
 import sympy.sets
 
 HERE = Path(__file__).parent
 SCHEMA_PATH = HERE / "schemas" / "pl-big-operator-input.json"
+SYMBOLIC_INPUT_TEMPLATE_PATH = (
+    HERE.parent / "pl-symbolic-input" / "pl-symbolic-input.mustache"
+)
 
 BODY_SIZE_DEFAULT = 16
 BOUNDS_LIMIT_SIZE_DEFAULT = 7
@@ -780,6 +782,67 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     data.setdefault("correct_answers", {})[config.answer_name] = correct
 
 
+def _render_symbolic_input(
+    data: dict[str, Any] | pl.QuestionData,
+    *,
+    name: str,
+    variables: tuple[str, ...],
+    custom_functions: tuple[str, ...],
+    aria_label: str,
+    size: int,
+    allowed_types: set[psu.AllowedSympyType],
+    allow_complex: bool,
+    show_help_text: bool = False,
+    show_score: bool = False,
+    prefix: str | None = None,
+    suffix: str | None = None,
+    score: float | None = None,
+) -> str:
+    config = psu.RenderConfig(
+        # passed-through
+        name=name,
+        label=prefix,
+        aria_label=aria_label,
+        suffix=suffix,
+        variables=list(variables),
+        initial_value_variables=list(variables),
+        custom_functions=list(custom_functions),
+        allow_complex=allow_complex,
+        allowed_types=allowed_types,
+        size=size,
+        show_score=show_score,
+        show_info=show_help_text,
+        # fixed
+        display=psu.DisplayType.INLINE,
+        placeholder="",
+        imaginary_unit="i",
+        allow_trig=True,
+        simplify_expression=True,
+        display_log_as_ln=False,
+        formula_editor=True,
+        show_score_percent=False,
+        initial_value=None,
+    )
+
+    # create a view over data with tweaked values
+    view = cast(pl.QuestionData, dict(data))
+    view.setdefault("correct_answers", {})
+    view.setdefault("format_errors", {})
+    view.setdefault("partial_scores", {})
+    view.setdefault("raw_submitted_answers", {})
+    view.setdefault("submitted_answers", {})
+    view.setdefault("panel", "question")
+    view.setdefault("editable", view["panel"] == "question")
+
+    if score is not None:
+        view["partial_scores"] = dict(view["partial_scores"])
+        view["partial_scores"][name] = {"score": score}
+
+    template = SYMBOLIC_INPUT_TEMPLATE_PATH.read_text(encoding="utf-8")
+
+    return psu.render_with_config(config, view, template=template)
+
+
 def _field(
     config: RenderConfig,
     component: str,
@@ -797,7 +860,7 @@ def _field(
         else config.variables
     )
     return {
-        "html": symbolic_input_adapter.render(
+        "html": _render_symbolic_input(
             data,
             name=name,
             variables=variables,
