@@ -1163,7 +1163,7 @@ def _find_type_error_offset(expr: str, offsets: list[int], exc: TypeError) -> in
 
 
 def sympy_to_json(
-    a: sympy.Expr | sympy.Set,
+    a: sympy.Basic,
     *,
     allow_complex: bool = True,
     allow_trig_functions: bool = True,
