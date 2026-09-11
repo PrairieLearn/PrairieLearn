@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import doctest
 import importlib
 import re
+from pathlib import Path
 from typing import Any, Literal
 
 import prairielearn as pl
@@ -75,6 +77,120 @@ def prepare_parse_grade(markup: str, data: dict[str, Any]) -> None:
     big_operator_input.prepare(markup, data)
     big_operator_input.parse(markup, data)
     big_operator_input.grade(markup, data)
+
+
+type DocumentationLanguage = Literal["python", "html"]
+type DocumentationExample = tuple[DocumentationLanguage, str, tuple[str, ...], int]
+
+
+def validate_generated_correct_answers(data: dict[str, Any]) -> None:
+    assert data["correct_answers"]
+    for answer_name, correct_answer in data["correct_answers"].items():
+        attributes: dict[str, object] = {"answers-name": answer_name}
+        if isinstance(correct_answer, dict):
+            operator_latex = correct_answer.get("operator_latex")
+            if isinstance(operator_latex, str):
+                attributes["operator-latex"] = operator_latex
+                attributes["grading-method"] = "component"
+        elif isinstance(correct_answer, str) and re.match(
+            r"^\s*Custom\s*\(", correct_answer
+        ):
+            attributes["operator-latex"] = r"\operatorname{custom}"
+            attributes["grading-method"] = "component"
+
+        validation_data = question_data()
+        validation_data["correct_answers"][answer_name] = correct_answer
+        big_operator_input.prepare(html(**attributes), validation_data)
+        pl.json_to_big_operator(validation_data["correct_answers"][answer_name])
+
+
+def run_documentation_example(
+    language: DocumentationLanguage,
+    source: str,
+    setup_sources: tuple[str, ...],
+    filename: str,
+) -> None:
+    namespace: dict[str, Any] = {}
+    for setup_source in setup_sources:
+        exec(compile(setup_source, filename, "exec"), namespace)
+
+    data = question_data()
+    if language == "python":
+        exec(compile(source, filename, "exec"), namespace)
+        generate = namespace.get("generate")
+        if callable(generate):
+            generate(data)
+            validate_generated_correct_answers(data)
+        return
+
+    generate = namespace.get("generate")
+    if callable(generate):
+        generate(data)
+    big_operator_input.prepare(source, data)
+    big_operator_input.parse(source, data)
+    big_operator_input.render(source, data)
+
+
+def documentation_examples(documentation: str) -> list[DocumentationExample]:
+    snippets = list(
+        re.finditer(
+            r"^```(?P<language>py(?:thon)?|html)[^\n]*\n(?P<source>.*?)^```$",
+            documentation,
+            flags=re.DOTALL | re.MULTILINE,
+        )
+    )
+    setup_snippets = {
+        setup.start("source"): setup
+        for setup in re.finditer(
+            r"^<!-- doctest-only: "
+            r"(?P<semantics>before-next|before-each)\n"
+            r"```py(?:thon)?[^\n]*\n(?P<source>.*?)^```\n-->$",
+            documentation,
+            flags=re.DOTALL | re.MULTILINE,
+        )
+    }
+    propagated_snippets = {
+        setup.start("source"): setup.group("semantics")
+        for setup in re.finditer(
+            r"^<!-- doctest-visible: (?P<semantics>before-next|before-each) -->\n+"
+            r"```py(?:thon)?[^\n]*\n(?P<source>.*?)^```$",
+            documentation,
+            flags=re.DOTALL | re.MULTILINE,
+        )
+    }
+
+    examples: list[DocumentationExample] = []
+    before_each: list[str] = []
+    before_next: list[str] = []
+    for snippet in snippets:
+        if setup := setup_snippets.get(snippet.start("source")):
+            setup_source = setup.group("source")
+            if setup.group("semantics") == "before-each":
+                before_each.append(setup_source)
+            else:
+                before_next.append(setup_source)
+            continue
+
+        language: DocumentationLanguage = (
+            "python" if snippet.group("language").startswith("py") else "html"
+        )
+        line_number = documentation.count("\n", 0, snippet.start("source")) + 1
+        examples.append((
+            language,
+            snippet.group("source"),
+            (*before_each, *before_next),
+            line_number,
+        ))
+        before_next.clear()
+
+        if semantics := propagated_snippets.get(snippet.start("source")):
+            if semantics == "before-each":
+                before_each.append(snippet.group("source"))
+            else:
+                before_next.append(snippet.group("source"))
+
+    assert not before_next
+    return examples
 
 
 class TestConfigurationUnits:
@@ -1048,3 +1164,45 @@ class TestSymbolicInputRendering:
         )
         assert "text-bg-warning" in rendered
         assert re.search(r"\d+(?:\.\d+)?%", rendered) is None
+
+
+class TestDocumentationExamples:
+    def _run_snippets(self, language: DocumentationLanguage) -> None:
+        documentation_path = (
+            Path(__file__).parents[4] / "docs/elements/pl-big-operator-input.md"
+        )
+        documentation = documentation_path.read_text()
+        snippets = [
+            example
+            for example in documentation_examples(documentation)
+            if example[0] == language
+        ]
+        assert snippets
+
+        doctest_examples = [
+            doctest.Example(
+                source=(
+                    f"run_documentation_example({language!r}, {source!r}, "
+                    f"{setup_sources!r}, {str(documentation_path)!r})\n"
+                ),
+                want="",
+                lineno=line_number - 1,
+            )
+            for _, source, setup_sources, line_number in snippets
+        ]
+        test = doctest.DocTest(
+            examples=doctest_examples,
+            globs={"run_documentation_example": run_documentation_example},
+            name=f"{documentation_path.name}:{language}",
+            filename=str(documentation_path),
+            lineno=0,
+            docstring=documentation,
+        )
+        result = doctest.DocTestRunner().run(test)
+        assert result.failed == 0
+
+    def test_python_snippets(self) -> None:
+        self._run_snippets("python")
+
+    def test_html_snippets(self) -> None:
+        self._run_snippets("html")

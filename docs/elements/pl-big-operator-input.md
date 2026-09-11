@@ -152,7 +152,7 @@ In the table, `Name` means any supported operator name other than `Limit`.
 | `Limit(body, (index, target, direction))`                          | `approach`      |
 | `Custom(body, (index, target, direction))` with a quoted direction | `approach`      |
 
-For example, the following element infers a product operator, index `k`, and bounds layout:
+For example, the following element infers a product operator, index `k`, and a bounds layout:
 
 ```html
 <pl-big-operator-input
@@ -161,7 +161,7 @@ For example, the following element infers a product operator, index `k`, and bou
 ></pl-big-operator-input>
 ```
 
-A domain integral infers the domain layout:
+A domain integral infers the domain layout with Greek latex:
 
 ```html
 <pl-big-operator-input
@@ -187,6 +187,14 @@ The complete expression may also be a canonical `big_operator` dictionary or a s
 
 ### Setting the correct answer in `server.py`
 
+<!-- doctest-only: before-each
+```python
+import prairielearn as pl
+import prairielearn.sympy_utils as psu
+import sympy
+```
+-->
+
 Answers assigned in `server.py` must be JSON-serializable. Convert a supported SymPy expression to a string or use `prairielearn.sympy_utils.sympy_to_json`; do not assign a raw SymPy object to `data`.
 
 ```python title="server.py"
@@ -197,22 +205,15 @@ import sympy
 def generate(data):
     k = sympy.symbols("k")
     answer = sympy.Product(k + 1, (k, 1, 4))
-    data["correct_answers"]["total"] = str(answer)
-    # Alternatively: data["correct_answers"]["total"] = psu.sympy_to_json(answer)
+    data["correct_answers"]["total"] = psu.sympy_to_json(answer)
+    # Alternatively: data["correct_answers"]["total"] = str(answer)
 ```
 
 PrairieLearn accepts string and SymPy JSON representations of a single-variable `sympy.Sum`, `sympy.Product`, or `sympy.Integral`, as well as `sympy.Limit`. A two-item integral tuple creates a domain layout, while a three-item tuple creates a bounds layout.
 
 Use `pl.big_operator_to_json()` to construct a canonical answer from labelled SymPy values or strings. This is especially useful for custom operators, which cannot be represented by a SymPy expression alone:
 
-```html title="question.html"
-<pl-big-operator-input
-  answers-name="evaluation"
-  operator-latex="\operatorname{eval}"
-  custom-functions="f"
-  grading-method="component"
-></pl-big-operator-input>
-```
+<!-- doctest-visible: before-next -->
 
 ```python title="server.py"
 import prairielearn as pl
@@ -229,6 +230,15 @@ def generate(data):
         direction="two-sided",
         body=sympy.Function("f")(sympy.Symbol("x")),
     )
+```
+
+```html title="question.html"
+<pl-big-operator-input
+  answers-name="evaluation"
+  operator-latex="\operatorname{eval}"
+  custom-functions="f"
+  grading-method="component"
+></pl-big-operator-input>
 ```
 
 It also serializes a `BigOperator` returned by `pl.json_to_big_operator()`, allowing a validated structured answer to be round-tripped as canonical JSON.
@@ -249,6 +259,12 @@ The same syntax supports `Intersection`, `DisjointUnion`, `Min`, and `Max`. The 
 
 Every successfully prepared correct answer and successfully parsed student answer uses a flat, version 1 dictionary. Mathematical values use `sympy_to_json(..., allow_sets=True)`:
 
+<!-- doctest-only: before-next
+```python
+k, n = sympy.symbols("k n")
+```
+-->
+
 ```python
 # Canonical representation of Sum(k**2, (k, 1, n))
 {
@@ -257,7 +273,7 @@ Every successfully prepared correct answer and successfully parsed student answe
     "operator": "sum",
     "limits": "bounds",
     "index": psu.sympy_to_json(k),
-    "lower": psu.sympy_to_json(1),
+    "lower": psu.sympy_to_json(sympy.Integer(1)),
     "upper": psu.sympy_to_json(n),
     "body": psu.sympy_to_json(k**2),
 }
@@ -311,7 +327,7 @@ The `grading-method` attribute supports four modes:
 | `exact`      | Requires the operator, layout, direction, index, and every SymPy component to match exactly.                                                                             |
 | `equivalent` | Builds complete SymPy expressions and checks whether they are mathematically equivalent. It first checks structural equality, then tests whether the difference is zero. |
 | `component`  | Checks each visible field separately for mathematical equivalence. This method does not change how the correct answer is specified.                                      |
-| `none`       | Accepts any input without assigning a score. The configured correct answer is still displayed in the answer panel.                                                       |
+| `none`       | Accepts any input without assigning a score. (Careful: the score default is 0!) The configured correct answer is still displayed in the answer panel.                    |
 
 For domain equivalence, the element expands only a concrete `FiniteSet`. A symbolic or infinite domain fails with an explicit error instead of being expanded.
 
