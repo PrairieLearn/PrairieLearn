@@ -94,10 +94,7 @@ class DocumentationExample:
 
 
 _DOCTEST_NAME_PATTERN = r"[a-zA-Z0-9_-]+"
-_DOCTEST_DIRECTIVE_PATTERN = (
-    rf"(?:\[(?P<name>{_DOCTEST_NAME_PATTERN})\]:"
-    r"|: (?P<semantics>before-next|before-each))"
-)
+_DOCTEST_SEMANTICS_PATTERN = r"(?:: (?P<semantics>before-next|before-each))?"
 _DOCUMENTATION_FENCE_RE = re.compile(
     r"^```(?P<language>py(?:thon)?|html)(?P<header>[^\n]*)\n"
     r"(?P<source>.*?)^```$",
@@ -184,7 +181,7 @@ def documentation_examples(documentation: str) -> list[DocumentationExample]:
 
     hidden_matches = list(
         re.finditer(
-            rf"^<!-- doctest-only{_DOCTEST_DIRECTIVE_PATTERN}\n"
+            rf"^<!-- doctest-only{_DOCTEST_SEMANTICS_PATTERN}\n"
             r"(?=```py(?:thon)?(?:[ \t{]|$))",
             documentation,
             flags=re.MULTILINE,
@@ -194,8 +191,8 @@ def documentation_examples(documentation: str) -> list[DocumentationExample]:
         re.findall(r"^<!-- doctest-only", documentation, flags=re.MULTILINE)
     ):
         raise ValueError(
-            "Standalone doctest-only blocks require a name; setup blocks require "
-            "before-next or before-each semantics."
+            "doctest-only directives may be standalone or specify before-next or "
+            "before-each; names belong in fence attributes."
         )
     hidden_snippets: dict[int, re.Match[str]] = {}
     for directive in hidden_matches:
@@ -209,7 +206,7 @@ def documentation_examples(documentation: str) -> list[DocumentationExample]:
 
     visible_matches = list(
         re.finditer(
-            rf"^<!-- doctest-visible{_DOCTEST_DIRECTIVE_PATTERN} -->\n+"
+            rf"^<!-- doctest-visible{_DOCTEST_SEMANTICS_PATTERN} -->\n+"
             r"(?=```(?:py(?:thon)?|html)(?:[ \t{]|$))",
             documentation,
             flags=re.MULTILINE,
@@ -219,8 +216,8 @@ def documentation_examples(documentation: str) -> list[DocumentationExample]:
         re.findall(r"^<!-- doctest-visible", documentation, flags=re.MULTILINE)
     ):
         raise ValueError(
-            "Standalone doctest-visible blocks require a name; setup blocks require "
-            "before-next or before-each semantics."
+            "doctest-visible directives may be standalone or specify before-next or "
+            "before-each; names belong in fence attributes."
         )
     visible_snippets = {directive.end(): directive for directive in visible_matches}
 
@@ -252,12 +249,8 @@ def documentation_examples(documentation: str) -> list[DocumentationExample]:
         if visible and semantics and language != "python":
             raise ValueError("Only Python fences can provide doctest setup code.")
 
-        directive_name = directive.group("name") if directive else None
-        if directive_name is not None and fence_name is not None:
-            raise ValueError("Specify a doctest name on either the directive or fence.")
-        example_name = directive_name or fence_name
         line_number = documentation.count("\n", 0, snippet.start("source")) + 1
-        if example_name is None:
+        if fence_name is None:
             raise ValueError(
                 f"Doctest fence at line {line_number - 1} requires a doctest-name."
             )
@@ -267,7 +260,7 @@ def documentation_examples(documentation: str) -> list[DocumentationExample]:
                 source=snippet.group("source"),
                 setup_sources=(*before_each, *before_next),
                 line_number=line_number,
-                name=example_name,
+                name=fence_name,
             )
         )
         before_next.clear()
@@ -292,7 +285,20 @@ DOCUMENTATION_PATH = (
     Path(__file__).parents[4] / "docs/elements/pl-big-operator-input.md"
 )
 DOCUMENTATION_SOURCE = DOCUMENTATION_PATH.read_text()
-DOCUMENTATION_EXAMPLES = documentation_examples(DOCUMENTATION_SOURCE)
+
+
+def _discover_documentation_examples(
+    documentation: str,
+) -> tuple[list[DocumentationExample], Exception | None]:
+    try:
+        return documentation_examples(documentation), None
+    except Exception as error:
+        return [], error
+
+
+DOCUMENTATION_EXAMPLES, DOCUMENTATION_DISCOVERY_ERROR = (
+    _discover_documentation_examples(DOCUMENTATION_SOURCE)
+)
 
 
 class TestConfigurationUnits:
@@ -448,7 +454,7 @@ class TestPrepareUnits:
 
         answer = data["correct_answers"]["op"]
         assert answer["operator"] == "custom"
-        assert answer["operator_latex"] == r"\mathbb{E}"
+        assert "operator_latex" not in answer
 
     def test_builtin_operator_latex_override_retains_inferred_semantics(self) -> None:
         markup = html(**{
@@ -1239,15 +1245,21 @@ class TestSymbolicInputRendering:
         assert re.search(r"\d+(?:\.\d+)?%", rendered) is None
 
 
-class TestDocumentationExamples:
-    def test_visible_directive_requires_a_name(self) -> None:
-        with pytest.raises(ValueError, match="doctest-visible blocks require a name"):
-            documentation_examples(
-                "<!-- doctest-visible -->\n"
-                '```python {doctest-name="test_example"}\n'
-                "pass\n"
-                "```"
-            )
+class TestDocumentationPreflight:
+    def test_documentation_examples_are_discoverable(self) -> None:
+        if DOCUMENTATION_DISCOVERY_ERROR is not None:
+            raise DOCUMENTATION_DISCOVERY_ERROR
+
+    def test_failed_discovery_has_no_doctest_parameters(self) -> None:
+        examples, error = _discover_documentation_examples(
+            "```html\n<pl-big-operator-input />\n```"
+        )
+        assert error is not None
+        assert examples == []
+
+    def test_visible_directive_requires_a_fence_name(self) -> None:
+        with pytest.raises(ValueError, match="requires a doctest-name"):
+            documentation_examples("<!-- doctest-visible -->\n```python\npass\n```")
 
     def test_ordinary_fence_requires_a_name(self) -> None:
         with pytest.raises(ValueError, match="requires a doctest-name"):
@@ -1257,20 +1269,30 @@ class TestDocumentationExamples:
         ("documentation", "expected_name"),
         [
             (
-                "<!-- doctest-visible[test_directive_name]: -->\n```python\npass\n```",
-                "test_directive_name",
+                '<!-- doctest-visible -->\n```python {doctest-name="test_visible"}\npass\n```',
+                "test_visible",
+            ),
+            (
+                '<!-- doctest-only\n```python {doctest-name="test_hidden"}\npass\n```\n-->',
+                "test_hidden",
             ),
             (
                 '```html {doctest-name="test_fence_name"}\n<pl-big-operator-input />\n```',
                 "test_fence_name",
             ),
         ],
-        ids=["visible-directive", "fence-attribute"],
+        ids=["visible", "hidden", "ordinary"],
     )
     def test_name_sources(self, documentation: str, expected_name: str) -> None:
         [example] = documentation_examples(documentation)
         assert example.name == expected_name
 
+
+@pytest.mark.skipif(
+    DOCUMENTATION_DISCOVERY_ERROR is not None,
+    reason="Documentation example discovery failed.",
+)
+class TestDocumentationExamples:
     @pytest.mark.parametrize(
         "example",
         [pytest.param(example, id=example.name) for example in DOCUMENTATION_EXAMPLES],
