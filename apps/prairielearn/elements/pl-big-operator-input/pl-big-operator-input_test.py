@@ -105,8 +105,34 @@ class TestConfigurationUnits:
 
         assert config.allowed_blank == allowed_blank
 
+    @pytest.mark.parametrize(("imaginary_unit", "expected"), [(None, "i"), ("j", "j")])
+    def test_imaginary_unit_for_display(
+        self, imaginary_unit: str | None, expected: str
+    ) -> None:
+        config = big_operator_input._config(
+            html(
+                operator="sum",
+                **{"imaginary-unit-for-display": imaginary_unit},
+            )
+        )
+
+        assert config.imaginary_unit == expected
+
 
 class TestPrepareUnits:
+    def test_formatted_complex_answer_uses_either_imaginary_unit(self) -> None:
+        markup = html(**{
+            "correct-answer": "Sum(j*k, (k, 1, 2))",
+            "allow-complex": "true",
+            "imaginary-unit-for-display": "i",
+        })
+        data = question_data()
+
+        big_operator_input.prepare(markup, data)
+
+        answer = pl.json_to_operator_expression(data["correct_answers"]["op"])
+        assert answer["body"] == sympy.I * sympy.Symbol("k")
+
     @pytest.mark.parametrize(
         ("correct_answer", "operator", "limits", "index"),
         [
@@ -701,6 +727,20 @@ class TestRenderUnits:
 
         assert '<div class="pl-big-operator-input__operator">' in rendered
 
+    def test_question_panel_configures_imaginary_unit_for_every_field(self) -> None:
+        rendered = big_operator_input.render(
+            html(
+                operator="sum",
+                **{
+                    "allow-complex": "true",
+                    "imaginary-unit-for-display": "j",
+                },
+            ),
+            question_data(),
+        )
+
+        assert rendered.count('imaginary-unit="j"') == 3
+
     @pytest.mark.parametrize(
         ("correct_answer", "expected_tex"),
         [
@@ -724,6 +764,39 @@ class TestRenderUnits:
 
         assert expected_tex in rendered
         assert "badge" not in rendered
+
+    @pytest.mark.parametrize("panel", ["answer", "submission"])
+    def test_complete_notation_uses_configured_imaginary_unit(
+        self, panel: Literal["answer", "submission"]
+    ) -> None:
+        base_config = big_operator_input._config(html(operator="sum"))
+        correct_answer = big_operator_input._canonical(
+            base_config,
+            {
+                "lower": sympy.Integer(1),
+                "upper": sympy.Integer(2),
+                "body": sympy.I * sympy.Symbol("k"),
+            },
+        )
+        markup = html(**{
+            "allow-complex": "true",
+            "imaginary-unit-for-display": "j",
+        })
+        data = question_data(
+            correct_answer,
+            raw_submitted_answers={
+                "op-start": "1",
+                "op-end": "2",
+                "op-body": "i*k",
+            },
+            panel=panel,
+        )
+        big_operator_input.prepare(markup, data)
+        big_operator_input.parse(markup, data)
+
+        rendered = big_operator_input.render(markup, data)
+
+        assert r"\sum_{k=1}^{2} j k" in rendered
 
     @pytest.mark.parametrize("operator", ["custom", "sum"])
     @pytest.mark.parametrize("panel", ["question", "answer", "submission"])
@@ -964,6 +1037,7 @@ class TestSymbolicInputRendering:
             size=20,
             allowed_types={"expression"},
             allow_complex=False,
+            imaginary_unit="i",
             show_score=True,
             score=0.5,
         )
