@@ -569,8 +569,6 @@ def _canonical(
         "limits": config.limits,
         "index": _json(sympy.Symbol(config.index)),
     }
-    if config.operator == "custom":
-        result["operator_latex"] = config.operator_latex
     result.update({key: _json(values[key]) for key in config.components})
     if config.limits == "approach":
         result["direction"] = direction or config.direction
@@ -578,12 +576,7 @@ def _canonical(
 
 
 def _structured(config: RenderConfig, value: dict[str, Any]) -> pbo.BigOperatorJson:
-    normalized = value.copy()
-    if config.operator == "custom":
-        normalized["operator_latex"] = config.operator_latex
-    else:
-        normalized.pop("operator_latex", None)
-    decoded = pbo.json_to_big_operator(normalized)
+    decoded = pbo.json_to_big_operator(value)
     values = _decoded_values(config, decoded)
     return _canonical(config, values)
 

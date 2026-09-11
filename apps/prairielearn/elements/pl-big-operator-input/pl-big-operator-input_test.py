@@ -127,8 +127,12 @@ def validate_generated_correct_answers(data: dict[str, Any]) -> None:
         attributes: dict[str, object] = {"answers-name": answer_name}
         if isinstance(correct_answer, dict):
             operator_latex = correct_answer.get("operator_latex")
-            if isinstance(operator_latex, str):
-                attributes["operator-latex"] = operator_latex
+            if correct_answer.get("operator") == "custom":
+                attributes["operator-latex"] = (
+                    operator_latex
+                    if isinstance(operator_latex, str)
+                    else r"\operatorname{custom}"
+                )
                 attributes["grading-method"] = "component"
         elif isinstance(correct_answer, str) and re.match(
             r"^\s*Custom\s*\(", correct_answer
@@ -1016,35 +1020,6 @@ class TestRenderUnits:
         rendered = big_operator_input.render(markup, data)
 
         assert r"\sum_{k=1}^{2} j k" in rendered
-
-    @pytest.mark.parametrize("operator", ["custom", "sum"])
-    @pytest.mark.parametrize("panel", ["question", "answer", "submission"])
-    def test_operator_latex_overrides_structured_answer_for_rendering(
-        self,
-        operator: pl.BigOperatorName,
-        panel: Literal["question", "answer", "submission"],
-    ) -> None:
-        correct_answer: pl.BigOperatorJson = pl.big_operator_to_json(
-            operator=operator,
-            operator_latex=r"\bigstar" if operator == "custom" else None,
-            limits="bounds",
-            index="k",
-            lower="1",
-            upper="4",
-            body="k ** 2",
-        )
-        correct_answer["operator_latex"] = r"\bigstar"
-        markup = html(**{
-            "operator-latex": r"\mathbb{E}",
-            "grading-method": "exact",
-        })
-        data = question_data(correct_answer, panel=panel)
-        big_operator_input.prepare(markup, data)
-
-        rendered = big_operator_input.render(markup, data)
-
-        assert r"\mathop{\mathbb{E}}\limits" in rendered
-        assert r"\bigstar" not in rendered
 
     @pytest.mark.parametrize("panel", ["question", "answer", "submission"])
     def test_prefix_and_suffix_latex_render_in_every_panel(
