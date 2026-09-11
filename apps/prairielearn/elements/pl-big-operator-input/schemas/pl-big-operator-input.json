@@ -15,7 +15,7 @@
     "allowed-blank": {
       "default": "none",
       "type": "string",
-      "enum": ["none", "limits", "body", "all"]
+      "enum": ["none", "indices", "body", "all"]
     },
     "answers-name": {
       "type": "string"
