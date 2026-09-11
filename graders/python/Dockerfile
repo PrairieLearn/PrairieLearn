@@ -25,6 +25,8 @@ RUN dnf -y update \
     && uv venv --python-preference managed --python 3.13 /venv
 
 COPY requirements.txt /
+# Disable binary wheels for pygraphviz to avoid issues with bundled Graphviz/font stack
+ENV UV_NO_BINARY="pygraphviz"
 RUN uv pip install -r /requirements.txt
 
 # Copy the source files last to speed up local dev
