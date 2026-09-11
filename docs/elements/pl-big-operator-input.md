@@ -199,9 +199,9 @@ import sympy
 
 Answers assigned in `server.py` must be JSON-serializable. Convert a supported SymPy expression to a string or use `prairielearn.sympy_utils.sympy_to_json`; do not assign a raw SymPy object to `data`.
 
-<!-- doctest-visible[test_sympy_json_correct_answer]: -->
+<!-- doctest-visible -->
 
-```python title="server.py"
+```python {doctest-name="test_sympy_json_correct_answer" title="server.py"}
 import prairielearn.sympy_utils as psu
 import sympy
 
@@ -213,8 +213,8 @@ def generate(data):
     # Alternatively: data["correct_answers"]["total"] = str(answer)
 ```
 
-<!-- doctest-only[test_string_correct_answer]:
-```python title="server.py"
+<!-- doctest-only
+```python {doctest-name="test_string_correct_answer" title="server.py"}
 def generate(data):
     k = sympy.Symbol("k")
     answer = sympy.Product(k + 1, (k, 1, 4))
