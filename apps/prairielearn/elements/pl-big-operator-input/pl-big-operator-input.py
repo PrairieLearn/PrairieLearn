@@ -869,7 +869,7 @@ def _render_symbolic_input(
     return html, view
 
 
-def _field(
+def _symbolic_field(
     config: RenderConfig,
     *,
     data: pl.QuestionData,
@@ -982,7 +982,7 @@ def _question_mustache(config: RenderConfig, data: pl.QuestionData) -> str:
         "index_label": index,
         "body_size": config.body_size,
         "limit_size": config.limit_size,
-        "body_field": _field(
+        "body_field": _symbolic_field(
             config,
             component="body",
             label="Operator body",
@@ -996,7 +996,7 @@ def _question_mustache(config: RenderConfig, data: pl.QuestionData) -> str:
         context["score_badge"] = _score_badge(float(partial_score.get("score") or 0))
     match config.limits:
         case "bounds":
-            context["lower_field"] = _field(
+            context["lower_field"] = _symbolic_field(
                 config,
                 component="lower",
                 label="Lower bound",
@@ -1005,7 +1005,7 @@ def _question_mustache(config: RenderConfig, data: pl.QuestionData) -> str:
                 prefix=None if config.operator == "integral" else rf"\({index} = \)",
                 score=component_scores.get("lower"),
             )
-            context["upper_field"] = _field(
+            context["upper_field"] = _symbolic_field(
                 config,
                 component="upper",
                 label="Upper bound",
@@ -1014,7 +1014,7 @@ def _question_mustache(config: RenderConfig, data: pl.QuestionData) -> str:
                 score=component_scores.get("upper"),
             )
         case "domain":
-            context["annotation_field"] = _field(
+            context["annotation_field"] = _symbolic_field(
                 config,
                 component="domain",
                 label="Integration domain"
@@ -1038,7 +1038,7 @@ def _question_mustache(config: RenderConfig, data: pl.QuestionData) -> str:
                     config.direction
                 ]
             )
-            context["annotation_field"] = _field(
+            context["annotation_field"] = _symbolic_field(
                 config,
                 component="target",
                 label="Approach target",
