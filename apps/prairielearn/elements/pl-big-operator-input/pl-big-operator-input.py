@@ -165,8 +165,8 @@ class RenderConfig:
             return (*self.components, "direction")
         return tuple(self.components)
 
-    def name(self, component: str) -> str:
-        return f"{self.answer_name}-{ {'lower': 'start', 'upper': 'end'}.get(component, component) }"
+    def component_name(self, component: ResponseComponent) -> str:
+        return f"{self.answer_name}-{component}"
 
 
 def _raw_correct_answer(
@@ -550,7 +550,7 @@ def _json(value: sympy.Basic) -> dict[str, Any]:
 
 def _canonical(
     config: RenderConfig,
-    values: dict[str, sympy.Basic],
+    values: dict[ResponseComponent, sympy.Basic],
     direction: str | None = None,
 ) -> dict[str, Any]:
     result: dict[str, Any] = {
@@ -581,7 +581,7 @@ def _structured(config: RenderConfig, value: dict[str, Any]) -> dict[str, Any]:
 
 def _decoded_values(
     config: RenderConfig, decoded: poe.BigOperator
-) -> dict[str, sympy.Basic]:
+) -> dict[ResponseComponent, sympy.Basic]:
     match config.limits:
         case "bounds":
             if decoded["limits"] != "bounds":
@@ -602,7 +602,7 @@ def _decoded_values(
 
 
 def _validate_component_values(
-    config: RenderConfig, values: dict[str, sympy.Basic]
+    config: RenderConfig, values: dict[ResponseComponent, sympy.Basic]
 ) -> None:
     allowed = set(config.variables) | {config.index}
     for component, item in values.items():
@@ -706,6 +706,7 @@ def _formatted_answer(config: RenderConfig, source: str) -> dict[str, Any] | Non
         raise ValueError(
             "The correct answer contains invalid SymPy data."
         ) from exc._src
+    values: dict[ResponseComponent, sympy.Basic]
     try:
         match config.limits:
             case "approach":
@@ -870,7 +871,7 @@ def _render_symbolic_input(
 
 def _field(
     config: RenderConfig,
-    component: str,
+    component: Component,
     label: str,
     size: int,
     data: pl.QuestionData,
@@ -878,7 +879,7 @@ def _field(
     suffix: str | None = None,
     score: float | None = None,
 ) -> dict[str, Any]:
-    name = config.name(component)
+    name = config.component_name(component)
     variables = (
         tuple(dict.fromkeys((*config.variables, config.index)))
         if component == "body"
@@ -892,7 +893,7 @@ def _field(
             custom_functions=config.custom_functions,
             aria_label=label,
             size=size,
-            allowed_types=_component_allowed_types(config, cast(Component, component)),
+            allowed_types=_component_allowed_types(config, component),
             allow_complex=config.allow_complex,
             imaginary_unit=config.imaginary_unit,
             show_help_text=component == "body" and config.show_help_text,
@@ -934,7 +935,7 @@ def _component_scores(config: RenderConfig, data: pl.QuestionData) -> dict[str, 
 def _direction_input(
     config: RenderConfig, data: pl.QuestionData, score: float | None
 ) -> dict[str, Any]:
-    name = config.name("direction")
+    name = config.component_name("direction")
     raw_value = str(data.get("raw_submitted_answers", {}).get(name, ""))
     has_error = name in data.get("format_errors", {})
     return {
@@ -1060,7 +1061,7 @@ def _tex(config: RenderConfig, raw: dict[str, Any] | None) -> str:
     raw = raw or {}
 
     def get_comp(c: Component) -> Any:
-        return raw.get(config.name(c), "?")
+        return raw.get(config.component_name(c), "?")
 
     index = sympy.latex(sympy.Symbol(config.index))
     op = _operator_tex(config)
@@ -1075,7 +1076,7 @@ def _tex(config: RenderConfig, raw: dict[str, Any] | None) -> str:
             return rf"{op}_{{{index}\in {get_comp('domain')}}} {get_comp('body')}"
         case "approach", _:
             direction_value = (
-                str(raw.get(config.name("direction"), ""))
+                str(raw.get(config.component_name("direction"), ""))
                 if config.allow_direction_input
                 else config.direction
             )
@@ -1090,7 +1091,7 @@ def _tex(config: RenderConfig, raw: dict[str, Any] | None) -> str:
 def _structured_tex(config: RenderConfig, structured: dict[str, Any]) -> str:
     values = _values(config, structured)
     raw = {
-        config.name(key): sympy.latex(
+        config.component_name(key): sympy.latex(
             psi.replace_imaginary_for_display(
                 cast(sympy.Expr, value), config.imaginary_unit
             )
@@ -1098,7 +1099,7 @@ def _structured_tex(config: RenderConfig, structured: dict[str, Any]) -> str:
         for key, value in values.items()
     }
     if config.limits == "approach" and config.allow_direction_input:
-        raw[config.name("direction")] = structured.get("direction", "")
+        raw[config.component_name("direction")] = structured.get("direction", "")
     return _tex(config, raw)
 
 
@@ -1200,11 +1201,11 @@ def _component_allows_blank(config: RenderConfig, component: ResponseComponent) 
 
 def _parse_values(
     config: RenderConfig, data: pl.QuestionData
-) -> dict[str, sympy.Basic] | None:
-    result: dict[str, sympy.Basic] = {}
+) -> dict[ResponseComponent, sympy.Basic] | None:
+    result = {}
     raw_answers = data.get("raw_submitted_answers", {})
     for component in config.components:
-        name = config.name(component)
+        name = config.component_name(component)
         if not str(raw_answers.get(name, "")).strip() and _component_allows_blank(
             config, component
         ):
@@ -1234,59 +1235,63 @@ def _parse_values(
             continue
         result[component] = parsed.expr
         data.get("format_errors", {}).pop(name, None)
+
     return result if len(result) == len(config.components) else None
 
 
 def parse(element_html: str, data: pl.QuestionData) -> None:
     config = _config(element_html, data)
     submitted = data.setdefault("submitted_answers", {})
-    raw = data.get("raw_submitted_answers", {})
-    try:
-        blank_components: list[ResponseComponent] = [
-            component
-            for component in config.response_components
-            if not str(raw.get(config.name(component), "")).strip()
-        ]
-        if blank_components and all(
-            _component_allows_blank(config, component) for component in blank_components
-        ):
-            _parse_values(config, data)
-            if "direction" in blank_components:
-                data.get("format_errors", {}).pop(config.name("direction"), None)
-            errors = data.get("format_errors", {})
-            has_component_error = any(
-                config.name(component) in errors
-                for component in config.response_components
-            )
-            submitted[config.answer_name] = None if has_component_error else ""
-            return
-        values = _parse_values(config, data)
-        direction = config.direction
-        if config.limits == "approach" and config.allow_direction_input:
-            direction_name = config.name("direction")
-            direction = str(raw.get(direction_name, "")).strip()
-            if direction not in DIRECTION_SYMBOLS:
-                data.setdefault("format_errors", {})[direction_name] = (
-                    "Select a valid limit direction."
-                )
-                submitted[config.answer_name] = None
-                return
-            data.get("format_errors", {}).pop(direction_name, None)
-        submitted[config.answer_name] = (
-            _canonical(config, values, direction=direction) if values else None
-        )
-    finally:
+    if submitted:
+        # undo the pollution of submitted_answers by the inner symbolic-inputs
         for component in config.response_components:
-            submitted.pop(config.name(component), None)
+            submitted.pop(config.component_name(component), None)
+
+    raw = data.get("raw_submitted_answers", {})
+    blank_components: list[ResponseComponent] = [
+        component
+        for component in config.response_components
+        if not str(raw.get(config.component_name(component), "")).strip()
+    ]
+    if blank_components and all(
+        _component_allows_blank(config, component) for component in blank_components
+    ):
+        _parse_values(config, data)
+        if "direction" in blank_components:
+            data.get("format_errors", {}).pop(config.component_name("direction"), None)
+        errors = data.get("format_errors", {})
+        has_component_error = any(
+            config.component_name(component) in errors
+            for component in config.response_components
+        )
+        submitted[config.answer_name] = None if has_component_error else ""
+        return
+    values = _parse_values(config, data)
+    direction = config.direction
+    if config.limits == "approach" and config.allow_direction_input:
+        direction_name = config.component_name("direction")
+        direction = str(raw.get(direction_name, "")).strip()
+        if direction not in DIRECTION_SYMBOLS:
+            data.setdefault("format_errors", {})[direction_name] = (
+                "Select a valid limit direction."
+            )
+            submitted[config.answer_name] = None
+            return
+        data.get("format_errors", {}).pop(direction_name, None)
+    submitted[config.answer_name] = (
+        _canonical(config, values, direction=direction) if values else None
+    )
 
 
-def _values(config: RenderConfig, structured: dict[str, Any]) -> dict[str, sympy.Basic]:
+def _values(
+    config: RenderConfig, structured: dict[str, Any]
+) -> dict[ResponseComponent, sympy.Basic]:
     return _decoded_values(config, poe.json_to_big_operator(structured))
 
 
 def _construct(
     config: RenderConfig,
-    values: dict[str, sympy.Basic],
+    values: dict[ResponseComponent, sympy.Basic],
     direction: DirectionName | None = None,
 ) -> sympy.Basic:
     index = sympy.Symbol(config.index)
@@ -1325,8 +1330,8 @@ def _construct(
 
 def _equivalent(
     config: RenderConfig,
-    left_values: dict[str, sympy.Basic],
-    right_values: dict[str, sympy.Basic],
+    left_values: dict[ResponseComponent, sympy.Basic],
+    right_values: dict[ResponseComponent, sympy.Basic],
     left_direction: DirectionName | None = None,
     right_direction: DirectionName | None = None,
 ) -> bool:
@@ -1433,13 +1438,13 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     match data["test_type"]:
         case "correct":
             for component, value in correct.items():
-                data["raw_submitted_answers"][config.name(component)] = str(
+                data["raw_submitted_answers"][config.component_name(component)] = str(
                     psi.replace_imaginary_for_display(
                         cast(sympy.Expr, value), config.imaginary_unit
                     )
                 )
             if config.limits == "approach" and config.allow_direction_input:
-                data["raw_submitted_answers"][config.name("direction")] = str(
+                data["raw_submitted_answers"][config.component_name("direction")] = str(
                     correct_json["direction"]
                 )
             if config.grading != "none":
@@ -1454,9 +1459,11 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
                     if _requires_set(config, cast(Component, component))
                     else f"({value}) + 1"
                 )
-                data["raw_submitted_answers"][config.name(component)] = raw_value
+                data["raw_submitted_answers"][config.component_name(component)] = (
+                    raw_value
+                )
             if config.limits == "approach" and config.allow_direction_input:
-                data["raw_submitted_answers"][config.name("direction")] = str(
+                data["raw_submitted_answers"][config.component_name("direction")] = str(
                     correct_json["direction"]
                 )
             if config.grading != "none":
@@ -1465,6 +1472,6 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
                     "weight": config.weight,
                 }
         case "invalid":
-            name = config.name(config.components[0])
+            name = config.component_name(config.components[0])
             data["raw_submitted_answers"][name] = "INVALID"
             data["format_errors"][name] = "Invalid test input"
