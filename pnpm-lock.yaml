@@ -2461,6 +2461,9 @@ importers:
       docx:
         specifier: ^9.7.1
         version: 9.7.1
+      mathml2omml:
+        specifier: ^0.5.0
+        version: 0.5.0
       playwright:
         specifier: ^1.62.1
         version: 1.62.1
@@ -8808,6 +8811,9 @@ packages:
 
   mathml-tag-names@2.1.3:
     resolution: {integrity: sha512-APMBEanjybaPzUrfqU0IMU5I0AswKMH7k8OTLs0vvV4KZpExkTkY87nR/zpbuTPj+gARop7aGUbl11pnDfW6xg==}
+
+  mathml2omml@0.5.0:
+    resolution: {integrity: sha512-4eLs37a+TH+CL/M5XZZrlc75SNRJNPiZzIaeSSvH0UFCRaCdSYRHWvrlA7MUbeQks/z4sVhfg+GlcZhVVUHzqg==}
 
   md5@2.3.0:
     resolution: {integrity: sha512-T1GITYmFaKuO91vxyoQMFETst+O71VUPEU3ze5GNzDm0OWdP8v1ziTaAEPUr/3kLsY3Sftgz242A1SetQiDL7g==}
@@ -17279,6 +17285,8 @@ snapshots:
       '@cortex-js/compute-engine': 0.58.0
 
   mathml-tag-names@2.1.3: {}
+
+  mathml2omml@0.5.0: {}
 
   md5@2.3.0:
     dependencies:

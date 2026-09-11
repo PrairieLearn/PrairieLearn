@@ -119,6 +119,8 @@ export interface PrintablePageOutput<T> {
   label: string;
   /** Device pixel ratio of the rendering context. Element screenshots scale with it. */
   deviceScaleFactor?: number;
+  /** Installs output-specific capture hooks before navigating to the printable page. */
+  prepare?: (page: Page) => Promise<void>;
   /** Produces the output from a page whose pagination has reported `ready`. */
   produce: (page: Page) => Promise<T>;
 }
@@ -279,6 +281,7 @@ export class PrintRenderer {
       });
 
       const page = await context.newPage();
+      await output.prepare?.(page);
       await page.emulateMedia({ media: 'screen' });
       const response = await page.goto(url, {
         waitUntil: 'load',

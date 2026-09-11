@@ -133,13 +133,15 @@ PrairieLearn endpoint.
 
 ### Word output
 
-The Word document keeps the cover page and the running footer as native content built from the
-caller's `PrintableCover` and `footerLabel`. Every `.printing-question` element inside a
-`.pagedjs_page` becomes one image captured at twice the CSS resolution, and a page break starts
-each subsequent printed page so the document paginates like the PDF. Instructors can edit the
-cover, reorder questions, and add space between them, but question content itself is not editable
-text. The sheet size and margins are measured from the paginated page, so they follow the page's
-CSS.
+The Word document contains native paragraphs, lists, tables, answer spaces, hyperlinks, and
+Office Math equations. Only actual figures (images, SVG diagrams, and canvases) are captured as
+images. Question content is captured before pagination, so Word can reflow edited text and its
+page count can differ from the PDF. The sheet size and margins follow the printable page's CSS.
+
+The renderer installs optional browser hooks to retain MathML before print transforms clone
+typeset equations, then captures normalized HTML before Paged.js fragments the questions.
+`docxBrowser.ts` owns that capture; `docxContent.ts` maps it to native Word objects. The cover and
+footer remain native content built from the caller's `PrintableCover` and `footerLabel`.
 
 `cover` may be a function; it receives the page's root `data-*` attributes so that values which
 are only known after rendering, such as the number of questions that rendered successfully, can be
@@ -190,7 +192,7 @@ Generic input placeholders such as "symbolic expression", "integer", and "matrix
 | ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Number, integer, string, units, big-O, symbolic | Empty response lines; preserve labels, suffixes, and tolerance hints. Replace formula editors rather than copying shadow-root controls.                                                                                                                                                                                                                       |
 | Matrix entries                                  | One line per entry in the original row/column structure.                                                                                                                                                                                                                                                                                                      |
-| Radio and checkbox choices                      | Unchecked, high-contrast markers with aligned labels, generous vertical spacing, and light option separators.                                                                                                                                                                                              |
+| Radio and checkbox choices                      | Unchecked, high-contrast markers with aligned labels, generous vertical spacing, and light option separators. Word keeps each option in a separate editable row.                                                                                                                                                                                              |
 | Dropdown and matching                           | Visible option lists and response lines; retain a matching option bank even when the dropdown originally contained the only copy.                                                                                                                                                                                                                             |
 | Ordering                                        | Blank order-number boxes beside every option and provided block, with boxed "Choose only one block from this group" sets. Tell students to leave unused blocks blank. When indentation is graded, add an Indent box (0 = no indentation) beside the Order box instead of asking students to copy the solution. Label multiple block sets within one question. |
 | File, rich text, workspace                      | Written response space; preserve file names, starter code, and rich-text word-count requirements.                                                                                                                                                                                                                                                             |

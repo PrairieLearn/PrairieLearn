@@ -61,7 +61,6 @@ test('describes the printable exports and serves each linked document', async ({
     .evaluateAll((questions) =>
       questions.map((question) => (question as HTMLElement).dataset.questionNumber),
     );
-  const pageCount = await page.locator('.pagedjs_page').count();
   for (const warning of body.warnings) {
     expect(printedQuestionNumbers).not.toContain(warning.question_number);
   }
@@ -84,16 +83,13 @@ test('describes the printable exports and serves each linked document', async ({
     /^attachment; filename=".+_letter\.docx"$/,
   );
   const archive = await unzipper.Open.buffer(await docxResponse.body());
-  const mediaFiles = archive.files.filter(
-    (file) => file.type === 'File' && file.path.startsWith('word/media/'),
-  );
-  expect(mediaFiles).toHaveLength(printedQuestionNumbers.length);
   const documentFile = archive.files.find((file) => file.path === 'word/document.xml');
   expect(documentFile).toBeDefined();
   const documentXml = (await documentFile!.buffer()).toString();
-  expect(documentXml.match(/<w:drawing>/g)).toHaveLength(printedQuestionNumbers.length);
-  // The cover is page 1; every later printed page starts with a page break.
-  expect(documentXml.match(/<w:pageBreakBefore\/>/g)).toHaveLength(pageCount - 1);
+  for (const number of printedQuestionNumbers) expect(documentXml).toContain(`Question ${number}`);
+  expect(documentXml).toContain('<m:oMath>');
+  expect(documentXml).toContain('Consider two numbers');
+  expect(documentXml.match(/<w:pageBreakBefore\/>/g)).toHaveLength(1);
   for (const label of [
     'Name',
     'Section',
@@ -265,6 +261,23 @@ test('exports the broad printing fixture with inline, ordering, sketch, and disp
   for (const sketch of await sketches.all()) {
     await expect(sketch).toHaveAttribute('viewBox', '0 0 800 450');
   }
+
+  const docxResponse = await page.request.get(`${paperUrl}/docx?paper_size=Letter`, {
+    timeout: 120_000,
+  });
+  expect(docxResponse.status()).toBe(200);
+  const archive = await unzipper.Open.buffer(await docxResponse.body());
+  const documentXml = (
+    await archive.files.find((file) => file.path === 'word/document.xml')!.buffer()
+  ).toString();
+  for (const number of questionNumbers) expect(documentXml).toContain(`Question ${number}`);
+  expect(documentXml.match(/<m:oMath>/g)?.length).toBeGreaterThan(100);
+  expect(documentXml).toContain('Choose only one block from this group');
+  expect(documentXml).toContain('Indent');
+  expect(documentXml).not.toContain('Solution with indentation');
+  expect(documentXml).toContain('Find the derivative');
+  expect(documentXml).not.toContain('PrintedQuestionImage');
+  expect(documentXml).toContain('w:hRule="atLeast"');
 
   await page.goto(`${paperUrl}/preview?paper_size=Letter&document=answer_key`);
   await expect(page.locator('html').first()).toHaveAttribute('data-print-status', 'ready');

@@ -4,9 +4,7 @@ import {
   Document,
   Footer,
   HeightRule,
-  ImageRun,
   LevelFormat,
-  LineRuleType,
   Packer,
   PageNumber,
   Paragraph,
@@ -19,6 +17,8 @@ import {
 } from 'docx';
 import type { Page } from 'playwright';
 
+import { type DocxSource, annotateDocxMath, captureDocxSource } from './docxBrowser.js';
+import { type DocxFigure, buildDocxContent } from './docxContent.js';
 import type { PrintablePageOutput } from './printRenderer.js';
 import type { PrintableCover, PrintableCoverField, PrintableTextBlock } from './printableCover.js';
 
@@ -44,13 +44,6 @@ interface PrintedPageGeometry {
   marginLeft: number;
 }
 
-interface PrintedQuestionImage {
-  pageIndex: number;
-  width: number;
-  height: number;
-  png: Buffer;
-}
-
 /** One CSS pixel is 0.75pt, and Word measures page geometry in twentieths of a point. */
 const DXA_PER_PX = 15;
 const IMAGE_DEVICE_SCALE_FACTOR = 2;
@@ -59,17 +52,12 @@ const FONT = 'Arial';
 const BODY_FONT_SIZE = 21;
 const SMALL_FONT_SIZE = 16;
 const LABEL_FONT_SIZE = 15;
-const QUESTION_IMAGE_STYLE_ID = 'PrintedQuestionImage';
 const ORDERED_LIST_REFERENCE = 'printable-ordered-list';
 const BULLET_LIST_REFERENCE = 'printable-bullet-list';
 const NO_BORDER = { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' };
 const RULE_BORDER = { style: BorderStyle.SINGLE, size: 8, color: '111111' };
 
-/**
- * Builds a Word document from a paginated printable page. The cover and running footer are
- * native, editable Word content; every printed question becomes one image so that the question
- * looks exactly as it does in the PDF, and page breaks reproduce the PDF's pagination.
- */
+/** Builds editable Word content from the normalized, unpaginated questions. */
 export function createDocxOutput({
   cover,
   footerLabel,
@@ -77,15 +65,32 @@ export function createDocxOutput({
   return {
     label: 'DOCX',
     deviceScaleFactor: IMAGE_DEVICE_SCALE_FACTOR,
+    prepare: async (page) => {
+      await page.addInitScript({
+        content: `window.__PL_PRINT_CAPTURE_MATH__ = ${annotateDocxMath.toString()}; window.__PL_PRINT_CAPTURE_SOURCE__ = ${captureDocxSource.toString()};`,
+      });
+    },
     produce: async (page) => {
       const pageDataset = await page.evaluate(() => ({ ...document.documentElement.dataset }));
       const geometry = await readPrintedPageGeometry(page);
-      const questionImages = await captureQuestionImages(page);
+      const source = await page.evaluate(
+        () => Reflect.get(window, '__PL_PRINT_DOCX_SOURCE__') as DocxSource | undefined,
+      );
+      if (!source) throw new Error('The printable page did not capture editable question content');
+      const figures: DocxFigure[] = [];
+      for (const figure of source.figures) {
+        const element = page.locator(`.pagedjs_page [data-docx-figure="${figure.id}"]`).first();
+        figures.push({
+          ...figure,
+          png: await element.screenshot({ type: 'png', scale: 'device' }),
+        });
+      }
       return await buildDocx({
         geometry,
         cover: typeof cover === 'function' ? cover(pageDataset) : cover,
         footerLabel,
-        questionImages,
+        source,
+        figures,
       });
     },
   };
@@ -109,27 +114,6 @@ async function readPrintedPageGeometry(page: Page): Promise<PrintedPageGeometry>
       marginLeft: areaRect.left - pageRect.left,
     };
   });
-}
-
-async function captureQuestionImages(page: Page): Promise<PrintedQuestionImage[]> {
-  const questions = await page.locator('.pagedjs_page .printing-question').all();
-  const images: PrintedQuestionImage[] = [];
-  for (const question of questions) {
-    const placement = await question.evaluate((element) => {
-      const pages = [...document.querySelectorAll('.pagedjs_page')];
-      const pageElement = element.closest('.pagedjs_page');
-      const rect = element.getBoundingClientRect();
-      return {
-        pageIndex: pageElement ? pages.indexOf(pageElement) : -1,
-        width: rect.width,
-        height: rect.height,
-      };
-    });
-    if (placement.pageIndex < 0) throw new Error('A printed question is not on a paginated page');
-    const png = await question.screenshot({ type: 'png', scale: 'device' });
-    images.push({ ...placement, png });
-  }
-  return images;
 }
 
 function toDxa(px: number): number {
@@ -331,30 +315,6 @@ function buildCover(cover: PrintableCover, contentWidthDxa: number): (Paragraph 
   ];
 }
 
-function buildQuestionPages(images: PrintedQuestionImage[], contentWidthPx: number): Paragraph[] {
-  return images.map((image, index) => {
-    const startsPage = index === 0 || image.pageIndex !== images[index - 1].pageIndex;
-    const scale = Math.min(1, contentWidthPx / image.width);
-    return new Paragraph({
-      style: QUESTION_IMAGE_STYLE_ID,
-      pageBreakBefore: startsPage,
-      children: [
-        new ImageRun({
-          type: 'png',
-          data: image.png,
-          // Word lays out in whole points, so a page whose questions exactly fill the printable
-          // height would otherwise spill its last question onto an extra page. The trimmed pixel
-          // falls inside the question's own bottom spacing.
-          transformation: {
-            width: Math.max(1, Math.floor(image.width * scale)),
-            height: Math.max(1, Math.floor(image.height * scale) - 1),
-          },
-        }),
-      ],
-    });
-  });
-}
-
 function buildFooter(footerLabel: string): Footer {
   const footerText = { size: SMALL_FONT_SIZE, color: '555555', font: FONT };
   return new Footer({
@@ -376,14 +336,22 @@ async function buildDocx({
   geometry,
   cover,
   footerLabel,
-  questionImages,
+  source,
+  figures,
 }: {
   geometry: PrintedPageGeometry;
   cover: PrintableCover;
   footerLabel: string;
-  questionImages: PrintedQuestionImage[];
+  source: DocxSource;
+  figures: DocxFigure[];
 }): Promise<Buffer> {
   const contentWidthPx = geometry.pageWidth - geometry.marginLeft - geometry.marginRight;
+  const content = buildDocxContent(
+    source.html,
+    figures,
+    contentWidthPx,
+    geometry.pageHeight - geometry.marginTop - geometry.marginBottom,
+  );
   const listLevel = (
     format: (typeof LevelFormat)[keyof typeof LevelFormat],
     levelText: string,
@@ -400,21 +368,12 @@ async function buildDocx({
     title: cover.title,
     styles: {
       default: { document: { run: { font: FONT, size: BODY_FONT_SIZE } } },
-      paragraphStyles: [
-        {
-          id: QUESTION_IMAGE_STYLE_ID,
-          name: 'Printed question image',
-          basedOn: 'Normal',
-          // The paragraph mark's descender would otherwise add space below every question image.
-          run: { size: 2 },
-          paragraph: { spacing: { before: 0, after: 0, line: 240, lineRule: LineRuleType.AUTO } },
-        },
-      ],
     },
     numbering: {
       config: [
         { reference: ORDERED_LIST_REFERENCE, levels: [listLevel(LevelFormat.DECIMAL, '%1.')] },
         { reference: BULLET_LIST_REFERENCE, levels: [listLevel(LevelFormat.BULLET, '•')] },
+        ...content.numbering,
       ],
     },
     sections: [
@@ -433,10 +392,7 @@ async function buildDocx({
           },
         },
         footers: { default: buildFooter(footerLabel) },
-        children: [
-          ...buildCover(cover, toDxa(contentWidthPx)),
-          ...buildQuestionPages(questionImages, contentWidthPx),
-        ],
+        children: [...buildCover(cover, toDxa(contentWidthPx)), ...content.children],
       },
     ],
   });
