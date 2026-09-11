@@ -36,6 +36,11 @@
     "custom-functions": {
       "type": "string"
     },
+    "display": {
+      "default": "block",
+      "type": "string",
+      "enum": ["block", "inline"]
+    },
     "grading-method": {
       "type": "string",
       "enum": ["exact", "component", "equivalent", "none"]
