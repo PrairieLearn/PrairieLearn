@@ -830,7 +830,7 @@ def _render_symbolic_input(
     prefix: str | None = None,
     suffix: str | None = None,
     score: float | None = None,
-) -> str:
+) -> tuple[str, pl.QuestionData]:
     config = psi.RenderConfig(
         # passed-through
         name=name,
@@ -864,43 +864,45 @@ def _render_symbolic_input(
 
     template = SYMBOLIC_INPUT_TEMPLATE_PATH.read_text(encoding="utf-8")
 
-    return psi.render_with_config(config, view, template=template)
+    html = psi.render_with_config(config, view, template=template)
+
+    return html, view
 
 
 def _field(
     config: RenderConfig,
+    *,
+    data: pl.QuestionData,
     component: Component,
     label: str,
     size: int,
-    data: pl.QuestionData,
     prefix: str | None = None,
     suffix: str | None = None,
     score: float | None = None,
-) -> dict[str, Any]:
+) -> dict[Literal["html"], str]:
     name = config.component_name(component)
     variables = (
         tuple(dict.fromkeys((*config.variables, config.index)))
         if component == "body"
         else config.variables
     )
-    return {
-        "html": _render_symbolic_input(
-            data,
-            name=name,
-            variables=variables,
-            custom_functions=config.custom_functions,
-            aria_label=label,
-            size=size,
-            allowed_types=_component_allowed_types(config, component),
-            allow_complex=config.allow_complex,
-            imaginary_unit=config.imaginary_unit,
-            show_help_text=component == "body" and config.show_help_text,
-            show_score=config.grading == "component",
-            prefix=prefix,
-            suffix=suffix,
-            score=score,
-        ),
-    }
+    html, _view = _render_symbolic_input(
+        data,
+        name=name,
+        variables=variables,
+        custom_functions=config.custom_functions,
+        aria_label=label,
+        size=size,
+        allowed_types=_component_allowed_types(config, component),
+        allow_complex=config.allow_complex,
+        imaginary_unit=config.imaginary_unit,
+        show_help_text=component == "body" and config.show_help_text,
+        show_score=config.grading == "component",
+        prefix=prefix,
+        suffix=suffix,
+        score=score,
+    )
+    return {"html": html}
 
 
 def _component_scores(config: RenderConfig, data: pl.QuestionData) -> dict[str, float]:
@@ -982,10 +984,10 @@ def _question_mustache(config: RenderConfig, data: pl.QuestionData) -> str:
         "limit_size": config.limit_size,
         "body_field": _field(
             config,
-            "body",
-            "Operator body",
-            config.body_size,
-            data,
+            component="body",
+            label="Operator body",
+            size=config.body_size,
+            data=data,
             score=component_scores.get("body"),
         ),
     }
@@ -996,31 +998,31 @@ def _question_mustache(config: RenderConfig, data: pl.QuestionData) -> str:
         case "bounds":
             context["lower_field"] = _field(
                 config,
-                "lower",
-                "Lower bound",
-                config.limit_size,
-                data,
-                None if config.operator == "integral" else rf"\({index} = \)",
+                component="lower",
+                label="Lower bound",
+                size=config.limit_size,
+                data=data,
+                prefix=None if config.operator == "integral" else rf"\({index} = \)",
                 score=component_scores.get("lower"),
             )
             context["upper_field"] = _field(
                 config,
-                "upper",
-                "Upper bound",
-                config.limit_size,
-                data,
+                component="upper",
+                label="Upper bound",
+                size=config.limit_size,
+                data=data,
                 score=component_scores.get("upper"),
             )
         case "domain":
             context["annotation_field"] = _field(
                 config,
-                "domain",
-                "Integration domain"
+                component="domain",
+                label="Integration domain"
                 if config.operator == "integral"
                 else "Index domain",
-                config.limit_size,
-                data,
-                None if config.operator == "integral" else rf"\({index} \in \)",
+                size=config.limit_size,
+                data=data,
+                prefix=None if config.operator == "integral" else rf"\({index} \in \)",
                 score=component_scores.get("domain"),
             )
         case "approach":
@@ -1038,12 +1040,12 @@ def _question_mustache(config: RenderConfig, data: pl.QuestionData) -> str:
             )
             context["annotation_field"] = _field(
                 config,
-                "target",
-                "Approach target",
-                config.limit_size,
-                data,
-                rf"\({index} \to \)",
-                rf"\({{}}^{direction_suffix}\)" if direction_suffix else None,
+                component="target",
+                label="Approach target",
+                size=config.limit_size,
+                data=data,
+                prefix=rf"\({index} \to \)",
+                suffix=rf"\({{}}^{direction_suffix}\)" if direction_suffix else None,
                 score=component_scores.get("target"),
             )
     return _render_mustache(context, template="main")
