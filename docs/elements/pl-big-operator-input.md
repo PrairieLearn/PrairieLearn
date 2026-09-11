@@ -1,6 +1,6 @@
 # `pl-big-operator-input` element
 
-Displays an indexed operator expression, such as a sum, integral, or limit. Students enter the limits and body in separate fields, and PrairieLearn stores them as one combined answer.
+Displays an indexed big operator, such as a sum, integral, or limit. Students enter the limits and body in separate fields, and PrairieLearn stores them as one combined answer.
 
 The fields accept the same symbolic syntax as [`pl-symbolic-input`](pl-symbolic-input.md).
 
@@ -34,9 +34,9 @@ Every element requires a complete correct answer, either through `correct-answer
 | `imaginary-unit-for-display`  | `"i"` or `"j"`                                        | `"i"`          | Imaginary unit used for display. This does not affect parsing: students may enter either `i` or `j` when `allow-complex="true"`.                                             |
 | `limit-size`                  | integer                                               | 7 or 10        | Positive character width of each limit field. The default is 7 for bounds and 10 for domain or approach limits.                                                              |
 | `operator-latex`              | string                                                | —              | Independent display override. It supplies a custom operator's required glyph or overrides an inferred built-in symbol.                                                       |
-| `prefix-latex`                | string                                                | —              | LaTeX displayed immediately before the operator expression.                                                                                                                  |
+| `prefix-latex`                | string                                                | —              | LaTeX displayed immediately before the big operator.                                                                                                                         |
 | `show-help-text`              | boolean                                               | true           | Whether to show symbolic-input help beside the body field.                                                                                                                   |
-| `suffix-latex`                | string                                                | —              | LaTeX displayed immediately after the operator expression.                                                                                                                   |
+| `suffix-latex`                | string                                                | —              | LaTeX displayed immediately after the big operator.                                                                                                                          |
 | `variables`                   | string                                                | —              | Comma-separated list of allowed symbols in addition to the index variable, such as `"Gamma,k,N"`.                                                                            |
 | `weight`                      | integer                                               | 1              | Weight used when computing a weighted average score across elements.                                                                                                         |
 
@@ -79,7 +79,7 @@ Set-valued fields accept set notation, such as `{1, 2}` or `[0, 1]`, and bare sy
 
 ![Empty domain-indexed summation input with a domain field labeled k in below the summation symbol and a body field to its right](pl-big-operator-input-sum.png)
 
-The `prefix-latex` and `suffix-latex` attributes place additional notation immediately before and after the operator expression. For example, they can present an input as part of a larger equation:
+The `prefix-latex` and `suffix-latex` attributes place additional notation immediately before and after the big operator. For example, they can present an input as part of a larger equation:
 
 ![Empty bounded integral input prefixed by Gamma of z equals, with lower and upper limit fields, a body field, and a differential t suffix](pl-big-operator-input-integral.png)
 
@@ -183,7 +183,7 @@ In this example, the element infers the operator, approach layout, and two-sided
 ></pl-big-operator-input>
 ```
 
-The complete expression may also be a canonical `operator_expression` dictionary or a supported PrairieLearn SymPy JSON dictionary. A canonical dictionary identifies its operator and index with the `operator` and `index` fields. SymPy JSON supports `Sum`, `Product`, `Integral`, and `Limit` expressions. Raw SymPy objects are not supported because values in `data["correct_answers"]` must be JSON-serializable. Malformed and unrecognized representations are rejected.
+The complete expression may also be a canonical `big_operator` dictionary or a supported PrairieLearn SymPy JSON dictionary. A canonical dictionary identifies its operator and index with the `operator` and `index` fields. SymPy JSON supports `Sum`, `Product`, `Integral`, and `Limit` expressions. Raw SymPy objects are not supported because values in `data["correct_answers"]` must be JSON-serializable. Malformed and unrecognized representations are rejected.
 
 ### Setting the correct answer in `server.py`
 
@@ -203,7 +203,7 @@ def generate(data):
 
 PrairieLearn accepts string and SymPy JSON representations of a single-variable `sympy.Sum`, `sympy.Product`, or `sympy.Integral`, as well as `sympy.Limit`. A two-item integral tuple creates a domain layout, while a three-item tuple creates a bounds layout.
 
-Use `pl.operator_expression_to_json()` to construct a canonical answer from labelled SymPy values or strings. This is especially useful for custom operators, which cannot be represented by a SymPy expression alone:
+Use `pl.big_operator_to_json()` to construct a canonical answer from labelled SymPy values or strings. This is especially useful for custom operators, which cannot be represented by a SymPy expression alone:
 
 ```html title="question.html"
 <pl-big-operator-input
@@ -220,7 +220,7 @@ import sympy
 
 
 def generate(data):
-    data["correct_answers"]["evaluation"] = pl.operator_expression_to_json(
+    data["correct_answers"]["evaluation"] = pl.big_operator_to_json(
         operator="custom",
         operator_latex=r"\operatorname{eval}",
         limits="approach",
@@ -231,7 +231,7 @@ def generate(data):
     )
 ```
 
-It also serializes an `OperatorExpression` returned by `pl.json_to_operator_expression()`, allowing a validated structured answer to be round-tripped as canonical JSON.
+It also serializes a `BigOperator` returned by `pl.json_to_big_operator()`, allowing a validated structured answer to be round-tripped as canonical JSON.
 
 The variadic SymPy forms `Union`, `Intersection`, `DisjointUnion`, `Min`, and `Max` do not preserve an indexed complete expression. For these operators, use a string with `(index, domain)` or `(index, lower, upper)` as the second argument:
 
@@ -252,7 +252,7 @@ Every successfully prepared correct answer and successfully parsed student answe
 ```python
 # Canonical representation of Sum(k**2, (k, 1, n))
 {
-    "_type": "operator_expression",
+    "_type": "big_operator",
     "_version": 1,
     "operator": "sum",
     "limits": "bounds",
@@ -274,7 +274,7 @@ When direction input is enabled, the student's raw selection is stored as `<answ
 
 ### Accessing structured answers in `server.py`
 
-Use [`pl.json_to_operator_expression()`][prairielearn.operator_expression.json_to_operator_expression] to validate the combined answer and decode its mathematical fields to SymPy values. Check the `limits` field before accessing layout-specific fields:
+Use [`pl.json_to_big_operator()`][prairielearn.big_operator.json_to_big_operator] to validate the combined answer and decode its mathematical fields to SymPy values. Check the `limits` field before accessing layout-specific fields:
 
 ```python title="server.py"
 import prairielearn as pl
@@ -285,8 +285,8 @@ def grade(data):
     if not isinstance(submitted_json, dict):
         return
 
-    submitted = pl.json_to_operator_expression(submitted_json)
-    correct = pl.json_to_operator_expression(data["correct_answers"]["total"])
+    submitted = pl.json_to_big_operator(submitted_json)
+    correct = pl.json_to_big_operator(data["correct_answers"]["total"])
 
     if submitted["limits"] == "bounds" and correct["limits"] == "bounds":
         submitted_body = submitted["body"]

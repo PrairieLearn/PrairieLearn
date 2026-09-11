@@ -13,8 +13,8 @@ from typing import Any, Final, Literal, cast
 import chevron
 import lxml.html
 import prairielearn as pl
+import prairielearn.big_operator as pbo
 import prairielearn.internal.symbolic_input as psi
-import prairielearn.operator_expression as poe
 import prairielearn.sympy_utils as psu
 import sympy
 import sympy.sets
@@ -41,7 +41,7 @@ type BuiltinOperator = Literal[
     "min",
     "max",
 ]
-type Operator = poe.BigOperatorName
+type Operator = pbo.BigOperatorName
 type BuiltinOperatorFn = Literal[
     "Sum",
     "Product",
@@ -54,7 +54,7 @@ type BuiltinOperatorFn = Literal[
     "Max",
 ]
 type OperatorFn = Literal["Custom"] | BuiltinOperatorFn
-type LimitFormat = poe.BigOperatorLimit
+type LimitFormat = pbo.BigOperatorLimit
 
 
 @dataclass(frozen=True, slots=True)
@@ -97,7 +97,7 @@ def _operator_fn_name(operator: Operator) -> OperatorFn:
     return "Custom" if operator == "custom" else OP_METADATA[operator].fn_name
 
 
-type DirectionName = poe.BigOperatorDirection
+type DirectionName = pbo.BigOperatorDirection
 type DirectionSymbol = Literal["+-", "-", "+"]
 DIRECTION_SYMBOLS: Final[frozendict[DirectionName, DirectionSymbol]] = frozendict({
     "two-sided": "+-",
@@ -343,7 +343,7 @@ def _infer_spec(
 
         case {
             "_version": 1,
-            "_type": "operator_expression",
+            "_type": "big_operator",
             "operator": operator,
             "limits": limits,
             "index": index_var,
@@ -369,9 +369,7 @@ def _infer_direction(raw: Any, operator: Operator) -> DirectionName | None:
         return None
 
     match raw:
-        case {"_type": "operator_expression", "direction": dir} if (
-            dir in DIRECTION_SYMBOLS
-        ):
+        case {"_type": "big_operator", "direction": dir} if dir in DIRECTION_SYMBOLS:
             return dir
 
         case {"_type": "sympy", "_value": str(source)}:
@@ -415,7 +413,7 @@ def _config(html: str, data: pl.QuestionData | None = None) -> RenderConfig:
     raw_correct = _raw_correct_answer(answer, correct_attribute, data)
     if raw_correct is None:
         raise ValueError(
-            f'Correct answer "{answer}" is required to configure the operator expression.'
+            f'Correct answer "{answer}" is required to configure the big operator.'
         )
     operator, limits, index = _infer_spec(raw_correct)
     if operator is None or limits is None or index is None:
@@ -565,7 +563,7 @@ def _canonical(
     direction: str | None = None,
 ) -> dict[str, Any]:
     result: dict[str, Any] = {
-        "_type": "operator_expression",
+        "_type": "big_operator",
         "_version": 1,
         "operator": config.operator,
         "limits": config.limits,
@@ -585,16 +583,16 @@ def _structured(config: RenderConfig, value: dict[str, Any]) -> dict[str, Any]:
         normalized["operator_latex"] = config.operator_latex
     else:
         normalized.pop("operator_latex", None)
-    decoded = poe.json_to_big_operator(normalized)
+    decoded = pbo.json_to_big_operator(normalized)
     values = _decoded_values(config, decoded)
     return _canonical(config, values)
 
 
-def _decoded_values(config: RenderConfig, decoded: poe.BigOperator) -> ResponseValues:
+def _decoded_values(config: RenderConfig, decoded: pbo.BigOperator) -> ResponseValues:
     match config.limits:
         case "bounds":
             if decoded["limits"] != "bounds":
-                raise ValueError("Operator expression limits do not match the element.")
+                raise ValueError("Big operator limits do not match the element.")
             return {
                 "lower": decoded["lower"],
                 "upper": decoded["upper"],
@@ -602,11 +600,11 @@ def _decoded_values(config: RenderConfig, decoded: poe.BigOperator) -> ResponseV
             }
         case "domain":
             if decoded["limits"] != "domain":
-                raise ValueError("Operator expression limits do not match the element.")
+                raise ValueError("Big operator limits do not match the element.")
             return {"domain": decoded["domain"], "body": decoded["body"]}
         case "approach":
             if decoded["limits"] != "approach":
-                raise ValueError("Operator expression limits do not match the element.")
+                raise ValueError("Big operator limits do not match the element.")
             return {"target": decoded["target"], "body": decoded["body"]}
 
 
@@ -763,7 +761,7 @@ def _formatted_answer(config: RenderConfig, source: str) -> dict[str, Any] | Non
 
 
 def _validate_correct(config: RenderConfig, correct: dict[str, Any]) -> dict[str, Any]:
-    decoded = poe.json_to_big_operator(correct)
+    decoded = pbo.json_to_big_operator(correct)
     _validate_component_values(config, _decoded_values(config, decoded))
     return correct
 
@@ -776,9 +774,9 @@ def _correct(config: RenderConfig, data: pl.QuestionData) -> dict[str, Any]:
         )
     if raw is None:
         raise ValueError(
-            f'Correct answer "{config.answer_name}" is required to configure the operator expression.'
+            f'Correct answer "{config.answer_name}" is required to configure the big operator.'
         )
-    if isinstance(raw, dict) and raw.get("_type") == "operator_expression":
+    if isinstance(raw, dict) and raw.get("_type") == "big_operator":
         return _validate_correct(config, _structured(config, raw))
     if isinstance(raw, str):
         converted = _formatted_answer(config, raw)
@@ -1281,7 +1279,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
 
 
 def _values(config: RenderConfig, structured: dict[str, Any]) -> ResponseValues:
-    return _decoded_values(config, poe.json_to_big_operator(structured))
+    return _decoded_values(config, pbo.json_to_big_operator(structured))
 
 
 def _construct(
