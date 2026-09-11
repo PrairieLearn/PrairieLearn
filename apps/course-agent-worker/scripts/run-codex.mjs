@@ -6,28 +6,15 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import { buildCourseManifest, formatCourseContext } from './course-context.mjs';
 import { requestPushApproval } from './push-approval.mjs';
-import { requestQuestionRender } from './render-question.mjs';
 import { watchWorkspaceActivity } from './workspace-activity.mjs';
 
-const THREAD_CONFIGURATION_VERSION = 4;
+const THREAD_CONFIGURATION_VERSION = 5;
 const pushTool = {
   name: 'push_sync',
   description:
     'Validate committed course changes and request instructor approval to push and sync. Fix errors before resubmitting; denial is not approval.',
   inputSchema: { type: 'object', properties: {}, additionalProperties: false },
 };
-const renderTool = {
-  name: 'render_question_variant',
-  description:
-    'Generate and render one variant of the currently synced question after successful push_sync. Does not validate unpublished sandbox files or grading. Fix failures and request a new publication approval.',
-  inputSchema: {
-    type: 'object',
-    properties: { qid: { type: 'string' }, seed: { type: 'string' } },
-    required: ['qid'],
-    additionalProperties: false,
-  },
-};
-
 // App-server, unlike exec --json, exposes incremental agent-message text.
 export async function runCodex({
   model,
@@ -42,7 +29,6 @@ export async function runCodex({
   request = prompt,
   continuation,
   requestApproval = requestPushApproval,
-  renderQuestion = requestQuestionRender,
   watchActivity = watchWorkspaceActivity,
 }) {
   const skillPath = fileURLToPath(
@@ -148,31 +134,6 @@ export async function runCodex({
       if ('id' in message && message.method) {
         if (
           message.method === 'item/tool/call' &&
-          message.params?.tool === 'render_question_variant' &&
-          message.params.threadId === threadId
-        ) {
-          try {
-            const result = await renderQuestion(message.params.arguments);
-            send({
-              id: message.id,
-              result: {
-                success: result.success,
-                contentItems: [{ type: 'inputText', text: JSON.stringify(result) }],
-              },
-            });
-          } catch (error) {
-            send({
-              id: message.id,
-              result: {
-                success: false,
-                contentItems: [{ type: 'inputText', text: error.message }],
-              },
-            });
-          }
-          continue;
-        }
-        if (
-          message.method === 'item/tool/call' &&
           message.params?.tool === 'push_sync' &&
           message.params.threadId === threadId
         ) {
@@ -213,7 +174,7 @@ export async function runCodex({
             cwd,
             ...(compatibleSavedThread
               ? { threadId: compatibleSavedThread.threadId }
-              : { ephemeral: false, dynamicTools: [pushTool, renderTool] }),
+              : { ephemeral: false, dynamicTools: [pushTool] }),
             approvalPolicy: 'on-request',
             approvalsReviewer: 'auto_review',
             sandbox: 'workspace-write',

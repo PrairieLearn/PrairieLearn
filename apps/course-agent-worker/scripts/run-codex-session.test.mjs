@@ -126,7 +126,7 @@ it('starts once, then resumes without replaying previous messages', async () => 
     JSON.parse(
       await readFile(join(options.cwd, '.course-agent/codex/course-agent-thread.json'), 'utf8'),
     ),
-  ).toEqual({ threadId: 'test-thread', configurationVersion: 4 });
+  ).toEqual({ threadId: 'test-thread', configurationVersion: 5 });
 });
 
 it('replaces an incompatible thread and restores its conversation history', async () => {
@@ -135,7 +135,7 @@ it('replaces an incompatible thread and restores its conversation history', asyn
   await mkdir(codexHome, { recursive: true });
   await writeFile(
     join(codexHome, 'course-agent-thread.json'),
-    JSON.stringify({ threadId: 'legacy-thread' }),
+    JSON.stringify({ threadId: 'legacy-thread', configurationVersion: 4 }),
   );
   const history = [{ role: 'user', text: 'Earlier request' }];
 
@@ -148,7 +148,7 @@ it('replaces an incompatible thread and restores its conversation history', asyn
   ).toContain(JSON.stringify(history));
   expect(JSON.parse(await readFile(join(codexHome, 'course-agent-thread.json'), 'utf8'))).toEqual({
     threadId: 'test-thread',
-    configurationVersion: 4,
+    configurationVersion: 5,
   });
 });
 
@@ -160,7 +160,7 @@ it('tells Codex to invoke course-agent tools instead of shell commands', async (
   const instructions = mock.requests.find((request) => request.method === 'thread/start').params
     .developerInstructions;
   expect(instructions).toContain('invoke `push_sync` as a tool');
-  expect(instructions).toContain('render_question_variant');
+  expect(instructions).toContain('Sync success does not prove');
   expect(instructions).toContain('Never silently publish a fix');
   expect(instructions).toContain('Never push directly');
 });
@@ -194,8 +194,10 @@ it('pauses a dynamic tool and resumes its result without fabricating a user mess
     params: { approvalId: 'approval-1' },
   });
   expect(
-    mock.requests.find((request) => request.method === 'thread/start').params.dynamicTools[0].name,
-  ).toBe('push_sync');
+    mock.requests
+      .find((request) => request.method === 'thread/start')
+      .params.dynamicTools.map((tool) => tool.name),
+  ).toEqual(['push_sync']);
   expect(mock.requests.some((request) => request.id === 'tool-request')).toBe(false);
   mock.requestApproval = false;
   const continuation = { approvalId: 'approval-1', ok: true, commitSha: 'published' };
