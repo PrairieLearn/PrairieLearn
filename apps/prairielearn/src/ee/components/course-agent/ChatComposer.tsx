@@ -6,6 +6,7 @@ export function ChatComposer({
   onSubmit,
   disabled,
   isGenerating,
+  allowSubmitWhileGenerating = false,
   onStop,
   footer,
   disclaimer,
@@ -19,6 +20,7 @@ export function ChatComposer({
   onSubmit: (text: string) => void;
   disabled: boolean;
   isGenerating: boolean;
+  allowSubmitWhileGenerating?: boolean;
   onStop?: () => void;
   footer?: ReactNode;
   disclaimer?: ReactNode;
@@ -32,9 +34,7 @@ export function ChatComposer({
       onSubmit={(e) => {
         e.preventDefault();
 
-        // Forbid sending a new message while generation is in progress. The user
-        // must hit "stop" first to stop generation.
-        if (isGenerating || disabled) return;
+        if ((isGenerating && !allowSubmitWhileGenerating) || disabled) return;
 
         const trimmedInput = value.trim();
         if (trimmedInput) {
@@ -73,7 +73,9 @@ export function ChatComposer({
           <button
             type="submit"
             className="btn btn-primary btn-sm"
-            disabled={disabled || isGenerating || value.trim().length === 0}
+            disabled={
+              disabled || (isGenerating && !allowSubmitWhileGenerating) || value.trim().length === 0
+            }
             aria-label={sendLabel}
           >
             <i className="bi bi-send-fill" />

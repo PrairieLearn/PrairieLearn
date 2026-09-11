@@ -64,6 +64,24 @@ generate duplicate requests. The title stays "New conversation" until generation
 including if naming fails. There are no automatic paid retries. Existing titles are left unchanged.
 The fake runtime uses the shortened message and makes no model requests.
 
+The fourth layer adds the approval-gated `push_sync` tool. For requested content changes, Codex
+commits a clean workspace with a descriptive message and PrairieLearn Agent co-author trailer,
+then calls the tool. The Worker verifies the proposed commit and Git tree. Before exposing an
+approval, PrairieLearn applies the diff to an isolated temporary checkout and runs its existing
+`loadFullCourse` loader. This checks course metadata and references without syncing the live
+course or executing question code. Validation runs once per proposal; errors return to the agent
+before the instructor is asked to approve.
+
+PrairieLearn applies the approved diff to its trusted checkout, pushes and syncs it, and returns
+the resulting status and server-job errors to a durable tool continuation. Denial returns control without
+publishing and tells the agent not to resubmit the same proposal. If publishing succeeds but sync
+fails, the result explicitly identifies that partial success. After every decision, the sandbox fetches
+and merges the remote branch before delivering the result. Conflicts are included in the tool result;
+unpublished work is not discarded.
+Recoverable revision conflicts return to the agent; repository identity and approval checks remain
+enforced. A successful sync adds a refresh button in the conversation. Refreshing restores the
+selected conversation and saved messages.
+
 ## Free local testing
 
 Set `courseAgentRuntime` to `fake` in your existing PrairieLearn configuration and enable the
@@ -90,37 +108,90 @@ Sandbox lifetime settings are non-secret and can be configured in `config.json`:
 ```json
 {
   "courseAgentSandbox": {
-    "idleTimeoutSeconds": 600,
-    "sleepAfterSeconds": 21600,
-    "backupTtlSeconds": 604800,
-    "turnTimeoutSeconds": 21600
+    "waitingForUserTimeoutSeconds": 600,
+    "sandboxInactivityTimeoutSeconds": 21600,
+    "cloudflareSandboxTimeoutSeconds": 21600,
+    "backupTtlSeconds": 604800
   }
 }
 ```
 
-`idleTimeoutSeconds` starts a new idle interval after a turn finishes or fails. A new message clears
-the deadline. The Durable Object alarm checks an active process every minute; idle expiry never
-interrupts a working agent. `turnTimeoutSeconds` is a separate active-execution guard, not a sandbox
-lifetime. `sleepAfterSeconds` controls Cloudflare's inactivity failsafe, with `keepAlive` disabled.
-Both guards default to six hours. Settings take effect on the next run and accept 60–86,400 seconds.
+- `waitingForUserTimeoutSeconds`: normal cost-saving suspension after a reply, failure, or validated
+  approval request. Back up first, then destroy. Polling and repeated validation acknowledgments do
+  not extend the wait. A new message clears it.
+- `sandboxInactivityTimeoutSeconds`: emergency shutdown after no course-checkout modifications or
+  agent network requests. An independent Durable Object records activity and destroys the sandbox
+  even if the coordinator or backups fail. SDK polling, diagnostics, backup work, and tool-result
+  polling do not count. The native filesystem watcher emits only on changes; it does not keep an
+  SDK watch request open. A socket left open without new requests does not reset this deadline.
+- `cloudflareSandboxTimeoutSeconds`: native `sleepAfter`, with `keepAlive: false`. This is the
+  platform fallback if our lifecycle handling fails. SDK requests can renew it, so it is not the
+  same clock as the activity watchdog. Diagnostics do not invent a platform expiration timestamp.
+- `backupTtlSeconds`: how long a saved workspace remains restorable (seven days by default), not
+  how long a sandbox runs.
 
-There is no absolute sandbox lifetime. Legacy `maxLifetimeSeconds` values are ignored. On upgrade,
-old absolute-deadline alarms are replaced with a full idle interval or an active-process check.
-Before intentional suspension, the coordinator backs up the workspace. A failed backup keeps the
-sandbox available and retries after one minute; it never falls through to destruction. Successful
-turns also create checkpoints. Backup failure does not invalidate the agent's completed response.
-The next message restores the last checkpoint; expired checkpoints are reported explicitly.
+Legacy `idleTimeoutSeconds` and `sleepAfterSeconds` still work; the corresponding new names take
+precedence. `turnTimeoutSeconds` and `maxLifetimeSeconds` are ignored. There is no absolute runtime
+cap: an active agent may continue longer than six hours. Operation-level Git, tool, and Python
+execution limits remain. Timeout settings accept 60–86,400 seconds and apply on the next run.
+
+Normal suspension retries a failed backup after one minute, but the independent inactivity watchdog
+can still force destruction without another backup. Successful turns also checkpoint. A lost sandbox
+does not discard a pending approval or its saved publication outcome. Recovery restores a usable
+backup; a confirmed missing/expired backup starts from the current repository and conversation
+history with a warning about unpublished files. Transient storage failures are not treated as an
+expired backup. If no compatible native Codex continuation remains, a fresh native session receives
+the saved outcome as recovery context, not as an answer to a nonexistent RPC.
 
 The coordinator persists its process ID, parsed stream state and log cursor. An alarm can reconcile
 the same process after coordinator replacement, including its final output, without submitting the
-user's prompt again. Conversation state (`working`, `waiting_for_user`, `failed`) is separate from
-sandbox state (`offline`, `starting`, `ready`, `suspending`). Later PRs add approval/publication phases.
+user's prompt again. Conversation state is separate from sandbox state (`offline`, `starting`,
+`ready`, `suspending`):
+
+```mermaid
+stateDiagram-v2
+  waiting_for_user --> working: user message
+  working --> validating_change: push_sync
+  validating_change --> waiting_for_approval: validation passes and harness pauses
+  waiting_for_approval --> publishing: approve
+  publishing --> syncing: push succeeds
+  syncing --> refreshing_workspace: result recorded
+  waiting_for_approval --> refreshing_workspace: deny
+  validating_change --> refreshing_workspace: validation fails
+  publishing --> refreshing_workspace: publication fails
+  refreshing_workspace --> resuming_agent: remote reconciled or conflict reported
+  resuming_agent --> working: resume tool output
+  working --> waiting_for_user: final response
+  working --> failed: execution fails
+  failed --> working: user retries
+```
+
+The sandbox may be backed up and destroyed while the conversation remains `waiting_for_approval`.
+The pending approval and logical run ID survive in Durable Object storage and PostgreSQL. Codex
+persists its native thread before interrupting the pending dynamic tool; a decision restores that
+thread with standalone `toolOutput`, not a fabricated user message or a reply to a dead JSON-RPC
+request. The coordinator uses a stable process ID per continuation to avoid replaying it after
+replacement. New user runs are blocked while an approval is unresolved. An expired checkpoint is
+reported as a restoration failure; it is never replaced with an empty thread.
 
 The `courseAgentReconcile` server cron job polls outstanding conversations once per minute, without
-requiring an open browser. It only inspects coordinator state; it never starts a model turn or sandbox.
+requiring an open browser. It prepares proposals, acknowledges validation, and redelivers persisted
+decisions. Saved always-approve mode is honored only after checking current course ownership.
+Delivering a terminal decision may restore the sandbox and resume the existing logical run.
+Publication records its server-job ID before execution; recovery inspects that job and never repeats
+its push. Interrupted jobs with uncertain outcomes require remote inspection, not an automatic retry.
 Normal feature checks still apply. PostgreSQL stores the raw conversation/sandbox states, revision,
 generation, idle deadline and process ID; older snapshots cannot overwrite newer revisions. The
 diagnostic panel shows these database fields alongside explicitly labeled Worker values.
+
+SSE transport loss does not finish a model turn. The relay reconnects to the durable event log and
+deduplicates sequence numbers; Redis continues buffering the client stream. If that buffer is no
+longer available, an active run can be reattached from its durable log.
+
+The pinned Codex continuation protocol can be tested without API credentials using
+`scripts/verify-approval-continuation.mjs` inside the sandbox image with `--network none` and a writable
+`/tmp`. It uses the production runner and a localhost mock Responses server, and checks that process
+replacement produces exactly one continuation request and preserves the original tool-call history.
 
 Administrators see a collapsed **Conversation info (only visible to administrators)**
 accordion. The diagnostic endpoint also requires administrator access; the ordinary transcript
@@ -147,12 +218,10 @@ not require a separate template read. The skill encourages batched inspection, e
 review, and defaults to three complementary questions when no count is requested. It preserves
 requested subject depth. No automatic course inventory or eval runner is included.
 
-There is no standalone validator or `question_render` tool in the repository-setup PR. The later
-push/sync PR should return PL sync errors through `push_sync` and add `question_render` for a
-selected question variant before requesting publication. Rendering should use isolated proposed
-content, not mutate the live course; return rendered output and actionable generation/render
-errors to the agent. Sync success alone does not establish that every variant renders or grades.
-Until those tools exist, the agent reports local edits without claiming successful rendering or sync.
+There are no standalone validation or question-rendering tools. The course-specific MCP server
+exposes only `push_sync`; Codex retains its normal file, shell, and search capabilities. Validation
+inside `push_sync` and successful sync do not establish that every question variant renders or
+grades correctly. The agent must not claim unperformed rendering or grading checks.
 
 The panel uses the AI SDK's `useChat`. A small transport starts runs through tRPC and reads standard
 UI-message SSE. PrairieLearn translates Worker events into UI-message chunks before buffering them
@@ -165,8 +234,31 @@ request. Saved history remains readable if the Worker is temporarily unavailable
 and backup handles are omitted from this ordinary history response.
 
 The sandbox runs Codex app-server over stdio to forward final-answer text deltas as they arrive.
+The Worker reads cumulative process logs, preserving partial JSON lines between polls and draining
+every remaining line after process exit. It waits for those events to be persisted before publishing
+the final response. Malformed output or a missing `turn/completed` notification is reported as a
+stream failure rather than silently accepting a partial answer.
+
+The default coding model is `gpt-6-astra`, configured by the Worker's `OPENAI_MODEL` variable.
+The runner enables live web search through the Responses API; it does not require a separate search
+API key. The localhost mock test verifies model selection on new and resumed threads, search-tool
+availability, search activity notifications, and streamed response text.
+
+Proposed changes show the total number of files changed and added/deleted lines. Review opens a modal
+with a dimmed backdrop and approval controls. New files appear as ordinary code with an Added badge;
+modified files use lightly tinted change lines and a separate marker gutter. Raw Git hunk headers
+are omitted. All file diffs share one scrolling body, with long lines wrapped and no file-navigation
+sidebar. The conversation offers refresh only for the latest turn,
+after a completed reply reports a successful course sync newer than the displayed page, and only
+when its revision is not already displayed. Reloading clears the refresh prompt and immediately
+positions saved history at the bottom. Sending another message also dismisses the previous turn's
+refresh prompt.
+
 Commentary and reasoning are not displayed. Rebuild/restart the local Worker after changing its
 Dockerfile or runner script. The Docker build context excludes local configuration and credentials.
+The publication bridge rejects the old non-blocking tool protocol, so a stale sandbox image cannot
+silently complete a turn before the instructor decides. The image must include `push-approval.mjs`;
+run the packaged continuation check for both its default approved case and `--deny` after rebuilding.
 To verify the runner against the pinned Codex binary without paid requests, set
 `COURSE_AGENT_TEST_CODEX` to that binary's absolute path when running the Worker tests; its provider
 is replaced by a localhost-only mock with a fake key.

@@ -4,7 +4,7 @@ import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
 import { getUserTrpcUrl } from '../lib/client/url.js';
 import { config } from '../lib/config.js';
-import { selectUserSettings } from '../models/user-settings.js';
+import { selectUserSettings, updateCourseAgentApprovalMode } from '../models/user-settings.js';
 import { createUserTrpcClient } from '../trpc/user/client.js';
 
 import * as helperServer from './helperServer.js';
@@ -38,5 +38,20 @@ describe('User settings', { timeout: 60_000, concurrent: false }, () => {
     });
 
     await trpcClient.settings.update.mutate({ enableSingleKeyShortcuts: true });
+  });
+
+  test('stores the course-agent approval mode independently', async () => {
+    const settings = await updateCourseAgentApprovalMode({
+      user_id: '1',
+      course_agent_approval_mode: 'always',
+    });
+
+    assert.equal(settings.course_agent_approval_mode, 'always');
+    assert.equal((await selectUserSettings({ user_id: '1' })).course_agent_approval_mode, 'always');
+
+    await updateCourseAgentApprovalMode({
+      user_id: '1',
+      course_agent_approval_mode: 'ask',
+    });
   });
 });

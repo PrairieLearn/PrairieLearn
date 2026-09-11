@@ -7,7 +7,7 @@ import type { selectCourseAgentHistory } from '../../../models/course-agent.js';
 
 import { restoreCourseAgentMessages } from './history.js';
 
-type History = Awaited<ReturnType<typeof selectCourseAgentHistory>>;
+type History = Pick<Awaited<ReturnType<typeof selectCourseAgentHistory>>, 'events' | 'messages'>;
 const createdAt = new Date('2026-09-04T12:00:00Z');
 
 it('accepts the zero-based PostgreSQL event sequence', () => {
@@ -46,7 +46,6 @@ function event(
 
 it('restores per-turn text and tool calls without exposing internal telemetry', async () => {
   const messages = await restoreCourseAgentMessages({
-    backup: null,
     messages: [user('1', 'first'), user('2', 'second')],
     events: [
       event(0, 'first', 'user.message', { runId: 'first', text: 'Prompt 1' }),
@@ -85,7 +84,6 @@ it('restores per-turn text and tool calls without exposing internal telemetry', 
 
 it('leaves active runs for SSE replay and preserves failures on completed runs', async () => {
   const messages = await restoreCourseAgentMessages({
-    backup: null,
     messages: [user('1', 'failed'), user('2', 'active')],
     events: [
       event(0, 'failed', 'tool.started', { operationId: 'read', label: 'Reading a file' }),

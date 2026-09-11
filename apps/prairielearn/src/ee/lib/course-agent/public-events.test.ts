@@ -20,6 +20,13 @@ describe('public course-agent transcript', () => {
     expect(
       publicCourseAgentEvent({
         ...base,
+        type: 'git.push.approval.requested',
+        data: { approvalId: 'approval-id', diff: 'private diff' },
+      })?.data,
+    ).toEqual({ approvalId: 'approval-id' });
+    expect(
+      publicCourseAgentEvent({
+        ...base,
         type: 'tool.completed',
         data: { operationId: 'tool-1', label: 'Read question.html', rawOutput: 'internal' },
       })?.data,
@@ -59,5 +66,16 @@ describe('public course-agent transcript', () => {
     expect(serialized).toContain('Héllo');
     expect(serialized).not.toContain('private-thread');
     expect(output).not.toContain('agent.started');
+  });
+
+  it('preserves the synced revision used to decide whether the page needs refreshing', () => {
+    expect(
+      publicCourseAgentEvent({
+        sequence: 1,
+        occurredAt: '2026-09-10T12:00:00Z',
+        type: 'sync.completed',
+        data: { approvalId: 'approval', commitSha: 'abc', internal: 'private' },
+      })?.data,
+    ).toEqual({ approvalId: 'approval', commitSha: 'abc' });
   });
 });

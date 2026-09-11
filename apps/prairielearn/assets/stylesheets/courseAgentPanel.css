@@ -92,6 +92,10 @@
   max-height: min(24rem, 60dvh);
   overflow-y: auto;
 }
+.course-agent-conversation-selected {
+  min-width: 0;
+  white-space: nowrap;
+}
 .course-agent-transcript {
   min-width: 0;
   min-height: 0;
@@ -124,6 +128,73 @@
 .course-agent-transcript .markdown-body td {
   padding: 0.25rem 0.5rem;
   border: 1px solid var(--bs-border-color);
+}
+.course-agent-diff-file {
+  background: var(--bs-tertiary-bg);
+}
+.course-agent-diff-path {
+  display: flex;
+  min-width: 0;
+  white-space: nowrap;
+}
+.course-agent-diff-directory {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.course-agent-diff-filename {
+  flex-shrink: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.course-agent-diff-section + .course-agent-diff-section {
+  margin-top: 1.5rem;
+}
+.course-agent-diff-section {
+  overflow: hidden;
+}
+
+.course-agent-diff-lines {
+  background: var(--bs-body-bg);
+}
+.course-agent-diff-lines pre {
+  overflow: visible;
+  white-space: pre-wrap;
+}
+.course-agent-diff-line {
+  display: flex;
+  padding-inline: 1rem;
+  color: var(--bs-body-color);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  border-radius: 0;
+  font: inherit;
+  line-height: 1.65;
+}
+.course-agent-diff-marker {
+  flex: 0 0 1.5rem;
+  color: var(--bs-secondary-color);
+  user-select: none;
+}
+.course-agent-diff-text {
+  min-width: 0;
+}
+.course-agent-diff-separator {
+  display: block;
+  margin-block: 0.75rem;
+  border-top: 1px dashed var(--bs-border-color);
+}
+.course-agent-diff-addition {
+  background: rgba(var(--bs-success-rgb), 0.18);
+}
+.course-agent-diff-deletion {
+  background: rgba(var(--bs-danger-rgb), 0.18);
+}
+.course-agent-diff-addition .course-agent-diff-marker {
+  color: var(--bs-success-text-emphasis);
+}
+.course-agent-diff-deletion .course-agent-diff-marker {
+  color: var(--bs-danger-text-emphasis);
 }
 
 @media (prefers-reduced-motion: reduce) {

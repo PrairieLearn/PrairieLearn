@@ -49,18 +49,30 @@ it.skipIf(!process.env.COURSE_AGENT_TEST_CODEX)(
         content: [],
       };
       send({ type: 'response.created', response: { id: 'response-1', status: 'in_progress' } });
-      send({ type: 'response.output_item.added', output_index: 0, item });
+      const search = {
+        id: 'search-1',
+        type: 'web_search_call',
+        status: 'in_progress',
+        action: { type: 'search', query: 'PrairieLearn documentation' },
+      };
+      send({ type: 'response.output_item.added', output_index: 0, item: search });
+      send({
+        type: 'response.output_item.done',
+        output_index: 0,
+        item: { ...search, status: 'completed' },
+      });
+      send({ type: 'response.output_item.added', output_index: 1, item });
       send({
         type: 'response.content_part.added',
         item_id: item.id,
-        output_index: 0,
+        output_index: 1,
         content_index: 0,
         part: { type: 'output_text', text: '', annotations: [] },
       });
       send({
         type: 'response.output_text.delta',
         item_id: item.id,
-        output_index: 0,
+        output_index: 1,
         content_index: 0,
         delta: 'Hello',
       });
@@ -68,7 +80,7 @@ it.skipIf(!process.env.COURSE_AGENT_TEST_CODEX)(
         send({
           type: 'response.output_text.delta',
           item_id: item.id,
-          output_index: 0,
+          output_index: 1,
           content_index: 0,
           delta: ' world',
         });
@@ -76,20 +88,20 @@ it.skipIf(!process.env.COURSE_AGENT_TEST_CODEX)(
         send({
           type: 'response.output_text.done',
           item_id: item.id,
-          output_index: 0,
+          output_index: 1,
           content_index: 0,
           text: part.text,
         });
         send({
           type: 'response.content_part.done',
           item_id: item.id,
-          output_index: 0,
+          output_index: 1,
           content_index: 0,
           part,
         });
         send({
           type: 'response.output_item.done',
-          output_index: 0,
+          output_index: 1,
           item: { ...item, status: 'completed', content: [part] },
         });
         send({
@@ -108,7 +120,7 @@ it.skipIf(!process.env.COURSE_AGENT_TEST_CODEX)(
     const running = runCodex({
       command: process.env.COURSE_AGENT_TEST_CODEX,
       cwd,
-      model: 'gpt-5.4',
+      model: 'gpt-6-astra',
       prompt: 'Say hello.',
       baseUrl: `http://127.0.0.1:${server.address().port}/v1`,
       emit: (event) => notifications.push(event),
@@ -136,6 +148,14 @@ it.skipIf(!process.env.COURSE_AGENT_TEST_CODEX)(
       complete();
       complete = undefined;
       await running;
+      expect(requests[0].model).toBe('gpt-6-astra');
+      expect(requests[0].tools).toContainEqual(expect.objectContaining({ type: 'web_search' }));
+      expect(notifications).toContainEqual(
+        expect.objectContaining({
+          method: 'item/completed',
+          params: expect.objectContaining({ item: expect.objectContaining({ type: 'webSearch' }) }),
+        }),
+      );
       expect(
         requests.flatMap((request) => request.input).flatMap((item) => item.content ?? []),
       ).toContainEqual(
@@ -171,7 +191,7 @@ it.skipIf(!process.env.COURSE_AGENT_TEST_CODEX)(
       next = runCodex({
         command: process.env.COURSE_AGENT_TEST_CODEX,
         cwd,
-        model: 'gpt-5.4',
+        model: 'gpt-6-astra',
         prompt: 'Now say goodbye.',
         baseUrl: `http://127.0.0.1:${server.address().port}/v1`,
         emit: (event) => resumed.push(event),
@@ -189,6 +209,7 @@ it.skipIf(!process.env.COURSE_AGENT_TEST_CODEX)(
       complete();
       complete = undefined;
       await next;
+      expect(requests.at(-1).model).toBe('gpt-6-astra');
       expect(resumed.find((event) => event.method === 'thread/started').params.thread.id).toBe(
         threadId,
       );

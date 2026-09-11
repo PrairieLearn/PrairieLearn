@@ -20,3 +20,4 @@ foreign-key constraints
 referenced by
     course_agent_events: FOREIGN KEY (run_id) REFERENCES course_agent_runs(id) ON UPDATE CASCADE ON DELETE SET NULL
     course_agent_messages: FOREIGN KEY (run_id) REFERENCES course_agent_runs(id) ON UPDATE CASCADE ON DELETE SET NULL
+    course_agent_push_approvals: FOREIGN KEY (run_id) REFERENCES course_agent_runs(id) ON UPDATE CASCADE ON DELETE CASCADE

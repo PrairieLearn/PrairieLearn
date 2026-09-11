@@ -60,9 +60,13 @@ specific missing fact after checking the documentation map. Do not repeat search
 schema or continue researching after the needed information is available. If an advanced feature
 cannot be confirmed, use a supported simpler pattern or ask a focused question.
 
-## Finish honestly
+## Finish and request approval
 
-Review changed files, QID references, correct answers, and UUIDs. Use only tools advertised in the
-current session. Editing files does not prove that PL rendered, graded, or synced them successfully.
-Do not push. Report what you created in one to three sentences, including any unresolved choice
-and that changes are local/not yet synced. Use inline code for file paths, not download links.
+Review changed files, QID references, correct answers, and UUIDs. For requested content changes,
+commit the intended edits with a descriptive message and the PrairieLearn Agent co-author trailer,
+then invoke `push_sync` as a tool. PrairieLearn validates the proposed content before requesting
+approval. It returns validation, Git, and sync errors to you; fix their cause before retrying.
+A denial means do not publish or resubmit the same proposal; ask the instructor what to change if
+unclear. Never silently publish a fix. Never push directly.
+Report what changed and whether publication and sync succeeded. Sync success does not prove that
+every question renders or grades correctly. Use inline code for file paths, not download links.

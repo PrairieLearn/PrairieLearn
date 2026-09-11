@@ -63,6 +63,10 @@ test('updates activity badges without changing the last-message time', async ({
   await input.fill('Build a numerical methods assessment');
   await input.press('Enter');
   await expect(picker).toContainText('Build a numerical methods assessment');
+  await expect(picker.getByText('Build a numerical methods assessment', { exact: true })).toHaveCSS(
+    'white-space',
+    'nowrap',
+  );
   const first = (await picker.getAttribute('data-conversation-id'))!;
   await picker.click();
   const item = panel.getByRole('menuitemradio', { name: /Build a numerical methods assessment/ });
@@ -76,6 +80,27 @@ test('updates activity badges without changing the last-message time', async ({
   await page.screenshot({ path: testInfo.outputPath('course-conversation-active-menu.png') });
   await execute(sql.set_activity, { conversation_id: first, status: 'waiting_for_user' });
   await expect(item.getByLabel('Conversation in progress')).toHaveCount(0, { timeout: 10000 });
+});
+
+test('persists the instructor approval preference', async ({ page, courseInstance }) => {
+  await page.goto(`/pl/course/${courseInstance.course_id}/course_admin/instances`);
+  const panel = page.getByRole('complementary', { name: 'Course agent panel' });
+  const saved = page.waitForResponse(
+    (response) => response.url().includes('courseAgent.setApprovalMode') && response.ok(),
+  );
+  await panel.getByRole('button', { name: 'Ask for approval', exact: true }).click();
+  await panel.getByText('Always approve', { exact: true }).click();
+  await saved;
+  await expect(panel.getByRole('button', { name: 'Always approve', exact: true })).toBeVisible();
+  await page.reload();
+  await expect(panel.getByRole('button', { name: 'Always approve', exact: true })).toBeVisible();
+
+  const reset = page.waitForResponse(
+    (response) => response.url().includes('courseAgent.setApprovalMode') && response.ok(),
+  );
+  await panel.getByRole('button', { name: 'Always approve', exact: true }).click();
+  await panel.getByText('Ask for approval', { exact: true }).click();
+  await reset;
 });
 
 test('restores both turns and their tool history after a page reload', async ({
@@ -416,7 +441,10 @@ test('shows only the active progress indicator and renders text before turn comp
   });
   await expect(reply.getByText('First words', { exact: true })).toBeVisible();
   await expect(working).toBeVisible();
-  await expect(panel.getByRole('button', { name: 'Send message', exact: true })).toBeDisabled();
+  await panel
+    .getByRole('textbox', { name: 'Message course agent' })
+    .fill('Follow up while the agent works');
+  await expect(panel.getByRole('button', { name: 'Send message', exact: true })).toBeEnabled();
   await page.evaluate(() => {
     for (const chunk of [
       { type: 'text-delta', id: 'text', delta: ', then the rest.' },
@@ -556,7 +584,19 @@ test('sends with Enter and keeps formatted responses and activity within each tu
     .getByText('Conversation info (only visible to administrators)', { exact: true })
     .click();
   await expect(panel.getByText('Token usage', { exact: true })).toBeVisible();
-  await expect(panel.getByText('Status: Ready', { exact: true })).toBeVisible();
+  await expect(panel.getByText('Worker status: waiting_for_user', { exact: true })).toBeVisible();
+  await expect(panel.getByText('conversation_state (PostgreSQL)', { exact: true })).toBeVisible();
+  await expect(panel.getByText('sandbox_state (PostgreSQL)', { exact: true })).toBeVisible();
+  await expect(
+    panel.getByText('conversation_state (PostgreSQL)', { exact: true }).locator('+ dd'),
+  ).toHaveText('waiting_for_user');
+  await expect(
+    panel.getByText('sandbox_state (PostgreSQL)', { exact: true }).locator('+ dd'),
+  ).toHaveText('ready');
+  await expect(
+    panel.getByText('process_id (PostgreSQL)', { exact: true }).locator('+ dd'),
+  ).toHaveText('null');
+  await panel.getByText('process_id (PostgreSQL)', { exact: true }).scrollIntoViewIfNeeded();
   await page.screenshot({ path: testInfo.outputPath('course-chat-tools.png') });
 });
 
@@ -667,7 +707,7 @@ test('contains long messages and tool paths without widening the panel', async (
   }
 });
 
-test('scrolls to the latest turn on send after the instructor scrolls up', async ({
+test('scrolls on send and jumps to the latest turn after reload', async ({
   page,
   courseInstance,
 }) => {
@@ -692,4 +732,31 @@ test('scrolls to the latest turn on send after the instructor scrolls up', async
       ),
     )
     .toBeLessThan(5);
+  await page.addInitScript(() => {
+    const offsets: number[] = [];
+    document.addEventListener(
+      'scroll',
+      (event) => {
+        const element = event.target;
+        if (!(element instanceof HTMLElement) || element.getAttribute('role') !== 'log') return;
+        offsets.push(element.scrollHeight - element.clientHeight - element.scrollTop);
+        document.documentElement.dataset.courseAgentScrollOffsets = JSON.stringify(offsets);
+      },
+      { capture: true },
+    );
+  });
+  await page.reload();
+  await expect(panel.getByText('Edited README.md', { exact: true })).toHaveCount(2);
+  await expect
+    .poll(() =>
+      transcript.evaluate(
+        (element) => element.scrollHeight - element.clientHeight - element.scrollTop,
+      ),
+    )
+    .toBeLessThan(5);
+  const offsets = await page.evaluate(() =>
+    JSON.parse(document.documentElement.dataset.courseAgentScrollOffsets!),
+  );
+  expect(offsets.length).toBeGreaterThan(0);
+  expect(offsets.every((offset: number) => offset < 5)).toBe(true);
 });

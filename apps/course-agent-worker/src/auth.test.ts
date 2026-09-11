@@ -44,7 +44,9 @@ async function makeRequest(): Promise<CourseAgentStartRunRequest> {
       idleTimeoutSeconds: 600,
       sleepAfterSeconds: 600,
       backupTtlSeconds: 604_800,
-      turnTimeoutSeconds: 900,
+      sandboxInactivityTimeoutSeconds: 900,
+      waitingForUserTimeoutSeconds: 600,
+      cloudflareSandboxTimeoutSeconds: 600,
     },
     expiresAt: new Date(Date.now() + 60_000).toISOString(),
     repository: 'https://github.com/PrairieLearn/test.git',
@@ -94,7 +96,10 @@ describe('course-agent Worker authorization', () => {
     ).rejects.toThrow('does not authorize');
     await expect(
       authorizeRun(
-        { ...request, runtimeSettings: { ...request.runtimeSettings, turnTimeoutSeconds: 1_200 } },
+        {
+          ...request,
+          runtimeSettings: { ...request.runtimeSettings, sandboxInactivityTimeoutSeconds: 1_200 },
+        },
         secret,
       ),
     ).rejects.toThrow('does not authorize');

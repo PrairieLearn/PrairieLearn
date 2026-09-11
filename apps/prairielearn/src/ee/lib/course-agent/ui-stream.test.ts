@@ -32,6 +32,74 @@ async function render(input: CourseAgentEvent[]) {
 }
 
 describe('course-agent UI-message adapter', () => {
+  it('does not show intentionally paused legacy publication tools as interrupted', async () => {
+    const messages = await render(
+      events([
+        ['user.message', { runId: 'current' }],
+        ['tool.started', { operationId: 'publish', label: 'Proposing changes' }],
+        ['git.push.approval.requested', { approvalId: 'approval' }],
+        ['agent.completed', { response: 'Publication was denied.' }],
+      ]),
+    );
+    expect(messages.at(-1)?.parts.some((part) => part.type === 'tool-activity')).toBe(false);
+  });
+  it('keeps a refresh marker in the saved assistant message only after successful sync', async () => {
+    const messages = await render(
+      events([
+        ['user.message', { runId: 'current' }],
+        ['git.push.completed', { approvalId: 'approval-id' }],
+        ['sync.completed', { approvalId: 'approval-id', commitSha: 'abc' }],
+        ['agent.completed', { response: 'Published the update.' }],
+      ]),
+    );
+    expect(messages.at(-1)?.parts).toContainEqual({
+      type: 'data-courseSynced',
+      id: 'approval-id',
+      data: { approvalId: 'approval-id', commitSha: 'abc', syncedAt: '2026-09-03T12:00:00Z' },
+    });
+    expect(
+      messages
+        .filter((message) => message.parts.some((part) => part.type === 'data-courseSynced'))
+        .every((message) =>
+          message.parts.some(
+            (part) =>
+              part.type === 'text' &&
+              part.text === 'Published the update.' &&
+              part.state === 'done',
+          ),
+        ),
+    ).toBe(true);
+    const failed = await render(
+      events([
+        ['user.message', { runId: 'current' }],
+        ['git.push.completed', { approvalId: 'approval-id' }],
+        ['agent.completed', { response: 'The sync failed.' }],
+      ]),
+    );
+    expect(failed.at(-1)?.parts.some((part) => part.type === 'data-courseSynced')).toBe(false);
+  });
+  it('emits a transient signal when a push needs instructor approval', async () => {
+    const stream = new ReadableStream<CourseAgentEvent>({
+      start(controller) {
+        for (const event of events([
+          ['user.message', { runId: 'current' }],
+          ['git.push.approval.requested', { approvalId: 'approval-id' }],
+          ['agent.completed', { response: 'Done.' }],
+        ])) {
+          controller.enqueue(event);
+        }
+        controller.close();
+      },
+    }).pipeThrough(courseAgentUIStream('current'));
+    const output = [];
+    for await (const chunk of stream) output.push(chunk);
+    expect(output).toContainEqual({
+      type: 'data-approvalRequested',
+      data: { approvalId: 'approval-id' },
+      transient: true,
+    });
+  });
+
   it('streams text and inline tool updates without replaying earlier turns or duplicate events', async () => {
     const input = events([
       ['user.message', { runId: 'old', text: 'Earlier' }],

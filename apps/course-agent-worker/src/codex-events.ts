@@ -19,7 +19,7 @@ export function toolEvents(event: Record<string, unknown>): EmittedEvent[] {
   const item = event.item;
   if (item.type === 'agent_message') return [];
 
-  const label = toolLabel(item);
+  const label = toolLabel(item, event.type === 'item.completed');
   if (!label) return [];
 
   const operationId = typeof item.id === 'string' ? item.id : crypto.randomUUID();
@@ -29,13 +29,18 @@ export function toolEvents(event: Record<string, unknown>): EmittedEvent[] {
 
   return [
     {
-      type: item.status === 'failed' ? 'tool.failed' : 'tool.completed',
+      type:
+        item.status === 'failed' ||
+        (isRecord(item.result) && item.result.isError === true) ||
+        pushSyncResult(item.result)?.error
+          ? 'tool.failed'
+          : 'tool.completed',
       data: { operationId, label },
     },
   ];
 }
 
-function toolLabel(item: Record<string, unknown>) {
+function toolLabel(item: Record<string, unknown>, completed: boolean) {
   switch (item.type) {
     case 'command_execution':
       return commandLabel(typeof item.command === 'string' ? item.command : '');
@@ -52,11 +57,40 @@ function toolLabel(item: Record<string, unknown>) {
           : typeof item.name === 'string'
             ? item.name
             : null;
+      if (name?.endsWith('push_sync')) {
+        if (!completed) return 'Proposing changes';
+        const result = pushSyncResult(item.result);
+        if (result?.denied === true) return 'Denied request';
+        if (result?.ok === true) return 'Published and synced changes';
+        if (result?.published === true) return 'Changes published, but sync failed';
+        if (
+          item.status === 'failed' ||
+          result?.error ||
+          (isRecord(item.result) && item.result.isError === true)
+        ) {
+          return 'Could not publish proposed changes';
+        }
+        return 'Proposed changes';
+      }
       return name ? `Used ${humanize(name)}` : 'Used a PrairieLearn tool';
     }
     default:
       return null;
   }
+}
+
+function pushSyncResult(result: unknown): Record<string, unknown> | null {
+  if (!isRecord(result)) return null;
+  if (isRecord(result.structuredContent)) return result.structuredContent;
+  if (Array.isArray(result.content)) {
+    for (const content of result.content) {
+      if (isRecord(content) && content.type === 'text' && typeof content.text === 'string') {
+        const value = parseCodexLine(content.text);
+        if (value) return value;
+      }
+    }
+  }
+  return null;
 }
 
 function commandLabel(command: string) {

@@ -3,8 +3,14 @@
 !scripts/
 scripts/*
 !scripts/run-codex.mjs
+!scripts/push-approval.mjs
+!scripts/workspace-activity.mjs
 !scripts/course-context.mjs
 
 !skills/
 skills/*
 !skills/course-content-authoring/
+
+!sandbox/
+sandbox/*
+!sandbox/course_agent_mcp.py

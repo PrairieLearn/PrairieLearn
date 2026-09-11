@@ -1,13 +1,19 @@
 import { EventEmitter } from 'node:events';
-import { mkdtemp, readFile, rm } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { PassThrough } from 'node:stream';
 
 import { afterEach, expect, it, vi } from 'vitest';
 
-const mock = vi.hoisted(() => ({ requests: [], resumeError: false, turnError: false }));
+const mock = vi.hoisted(() => ({
+  requests: [],
+  resumeError: false,
+  turnError: false,
+  requestApproval: false,
+}));
 vi.mock('node:child_process', () => ({
+  execFile: vi.fn(),
   spawn: () => {
     const child = new EventEmitter();
     child.stdout = new PassThrough();
@@ -30,12 +36,31 @@ vi.mock('node:child_process', () => ({
         );
       }
       if (request.method === 'turn/start') {
+        if (mock.requestApproval) {
+          reply({
+            id: 'tool-request',
+            method: 'item/tool/call',
+            params: {
+              threadId: 'test-thread',
+              turnId: 'test-turn',
+              tool: 'push_sync',
+              arguments: {},
+            },
+          });
+          return;
+        }
         reply({
           method: 'turn/completed',
           params: {
             threadId: 'test-thread',
             turn: { status: mock.turnError ? 'failed' : 'completed' },
           },
+        });
+      }
+      if (request.method === 'turn/interrupt') {
+        reply({
+          method: 'turn/completed',
+          params: { threadId: 'test-thread', turn: { status: 'interrupted' } },
         });
       }
     });
@@ -52,6 +77,7 @@ afterEach(async () => {
   mock.requests = [];
   mock.resumeError = false;
   mock.turnError = false;
+  mock.requestApproval = false;
 });
 
 async function fixture() {
@@ -100,7 +126,43 @@ it('starts once, then resumes without replaying previous messages', async () => 
     JSON.parse(
       await readFile(join(options.cwd, '.course-agent/codex/course-agent-thread.json'), 'utf8'),
     ),
-  ).toEqual({ threadId: 'test-thread' });
+  ).toEqual({ threadId: 'test-thread', configurationVersion: 5 });
+});
+
+it('replaces an incompatible thread and restores its conversation history', async () => {
+  const options = await fixture();
+  const codexHome = join(options.cwd, '.course-agent/codex');
+  await mkdir(codexHome, { recursive: true });
+  await writeFile(
+    join(codexHome, 'course-agent-thread.json'),
+    JSON.stringify({ threadId: 'legacy-thread', configurationVersion: 4 }),
+  );
+  const history = [{ role: 'user', text: 'Earlier request' }];
+
+  await runCodex({ ...options, prompt: 'Current request', history });
+
+  expect(mock.requests.filter((request) => request.method === 'thread/resume')).toHaveLength(0);
+  expect(mock.requests.filter((request) => request.method === 'thread/start')).toHaveLength(1);
+  expect(
+    mock.requests.find((request) => request.method === 'turn/start').params.input[0].text,
+  ).toContain(JSON.stringify(history));
+  expect(JSON.parse(await readFile(join(codexHome, 'course-agent-thread.json'), 'utf8'))).toEqual({
+    threadId: 'test-thread',
+    configurationVersion: 5,
+  });
+});
+
+it('tells Codex to invoke course-agent tools instead of shell commands', async () => {
+  const options = await fixture();
+
+  await runCodex({ ...options, prompt: 'Request push approval' });
+
+  const instructions = mock.requests.find((request) => request.method === 'thread/start').params
+    .developerInstructions;
+  expect(instructions).toContain('invoke `push_sync` as a tool');
+  expect(instructions).toContain('Sync success does not prove');
+  expect(instructions).toContain('Never silently publish a fix');
+  expect(instructions).toContain('Never push directly');
 });
 
 it('keeps the thread after a failed turn and does not silently replace a failed resume', async () => {
@@ -115,4 +177,51 @@ it('keeps the thread after a failed turn and does not silently replace a failed 
     'Saved session is unavailable',
   );
   expect(mock.requests.filter((request) => request.method === 'thread/start')).toHaveLength(1);
+});
+
+it('pauses a dynamic tool and resumes its result without fabricating a user message', async () => {
+  const options = await fixture();
+  const events = [];
+  mock.requestApproval = true;
+  await runCodex({
+    ...options,
+    prompt: 'Publish this change',
+    requestApproval: async () => 'approval-1',
+    emit: (event) => events.push(event),
+  });
+  expect(events.at(-1)).toEqual({
+    method: 'course_agent/approvalPaused',
+    params: { approvalId: 'approval-1' },
+  });
+  expect(
+    mock.requests
+      .find((request) => request.method === 'thread/start')
+      .params.dynamicTools.map((tool) => tool.name),
+  ).toEqual(['push_sync']);
+  expect(mock.requests.some((request) => request.id === 'tool-request')).toBe(false);
+  mock.requestApproval = false;
+  const continuation = { approvalId: 'approval-1', ok: true, commitSha: 'published' };
+  await runCodex({ ...options, prompt: '', continuation });
+  expect(mock.requests.filter((request) => request.method === 'turn/start').at(-1).params).toEqual({
+    threadId: 'test-thread',
+    input: [],
+    toolOutput: { name: 'push_sync', output: JSON.stringify(continuation) },
+  });
+  await expect(runCodex({ ...options, prompt: '', continuation })).rejects.toThrow(
+    'continuation is unavailable',
+  );
+});
+
+it('recovers a missing native continuation using the saved outcome and conversation history', async () => {
+  const options = await fixture();
+  await runCodex({
+    ...options,
+    prompt: '',
+    history: [{ role: 'user', text: 'Previous request' }],
+    continuation: { approvalId: 'missing', synced: true },
+  });
+  const turn = mock.requests.find((request) => request.method === 'turn/start');
+  expect(turn.params.input[0].text).toContain('authoritative saved push_sync outcome');
+  expect(turn.params.input[0].text).toContain('Previous request');
+  expect(turn.params).not.toHaveProperty('toolOutput');
 });

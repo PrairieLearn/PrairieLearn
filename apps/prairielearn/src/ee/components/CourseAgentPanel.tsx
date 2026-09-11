@@ -1,7 +1,7 @@
 import { useChat } from '@ai-sdk/react';
 import { QueryClient, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Fragment, useEffect, useRef, useState } from 'react';
-import { Alert, Button, Spinner } from 'react-bootstrap';
+import { Alert, Button, Dropdown, Spinner } from 'react-bootstrap';
 import type { Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useStickToBottom } from 'use-stick-to-bottom';
@@ -22,6 +22,8 @@ import { AssistantMessage, MessageMetadata, UserMessage } from './course-agent/C
 import { ChatMessageParts } from './course-agent/ChatMessageParts.js';
 import { ToolCallStatus } from './course-agent/ChatProgressStatus.js';
 import { ScrollToBottomButton } from './course-agent/ChatScrollToBottom.js';
+import { CourseAgentDiffReview, CourseAgentDiffSummary } from './course-agent/CourseAgentDiff.js';
+import { courseRefreshMessageId } from './course-agent/course-refresh.js';
 import { type CourseAgentRun, CourseAgentTransport } from './courseAgentTransport.js';
 
 const markdownPlugins = [remarkGfm];
@@ -40,6 +42,8 @@ export const workspaceMarkdownComponents: Components = {
 function CourseAgentPanelInner(props: {
   initialOpen: boolean;
   courseId: string;
+  courseCommitSha: string | null;
+  pageRenderedAt: string;
   courseInstanceId: string | null;
   userName: string;
   timeZone: string;
@@ -115,6 +119,8 @@ function CourseAgentPanelInner(props: {
 
 function CourseAgentConversationPanel({
   courseId,
+  courseCommitSha,
+  pageRenderedAt,
   courseInstanceId,
   userName,
   timeZone,
@@ -126,6 +132,8 @@ function CourseAgentConversationPanel({
   onSelect,
 }: {
   courseId: string;
+  courseCommitSha: string | null;
+  pageRenderedAt: string;
   courseInstanceId: string | null;
   userName: string;
   timeZone: string;
@@ -142,9 +150,14 @@ function CourseAgentConversationPanel({
 }) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
-  const stickToBottom = useStickToBottom({ initial: 'smooth', resize: 'smooth' });
+  const stickToBottom = useStickToBottom({ initial: 'instant', resize: 'smooth' });
 
   const [prompt, setPrompt] = useState('');
+  const [reviewOpen, setReviewOpen] = useState(false);
+  const [queuedPrompts, setQueuedPrompts] = useState<
+    { id: string; text: string; createdAt: string }[]
+  >([]);
+  const queuedPromptsRef = useRef(queuedPrompts);
   const [conversation, setConversation] = useState<CourseAgentRun | null>(initialHistory.run);
   const [transport] = useState(
     () =>
@@ -162,13 +175,32 @@ function CourseAgentConversationPanel({
         initialHistory.run,
       ),
   );
+  const snapshot = useQuery(
+    trpc.courseAgent.get.queryOptions(
+      conversation ?? { conversationId: '00000000-0000-0000-0000-000000000000', sandboxId: '' },
+      { enabled: conversation !== null, retry: false },
+    ),
+  );
   const { messages, sendMessage, status, error, resumeStream, setMessages, stop } =
     useChat<CourseAgentMessage>({
       transport,
       messages: initialHistory.messages,
+      onData: () => void snapshot.refetch(),
       onFinish: () => {
         if (showDiagnostics) void diagnostics.refetch();
         void queryClient.invalidateQueries(trpc.courseAgent.list.queryFilter());
+        const next = queuedPromptsRef.current.at(0);
+        if (next) {
+          const remaining = queuedPromptsRef.current.slice(1);
+          queuedPromptsRef.current = remaining;
+          setQueuedPrompts(remaining);
+          queueMicrotask(() => {
+            void sendMessage({
+              text: next.text,
+              metadata: { createdAt: next.createdAt },
+            });
+          });
+        }
       },
     });
   const resumedRef = useRef(false);
@@ -188,6 +220,12 @@ function CourseAgentConversationPanel({
     [stop],
   );
   const busy = status === 'submitted' || status === 'streaming';
+  const refreshMessageId = courseRefreshMessageId({
+    messages,
+    busy,
+    pageRenderedAt,
+    courseCommitSha,
+  });
   const lastMessage = messages.at(-1);
   const hasActiveTool =
     lastMessage?.role === 'assistant' &&
@@ -202,6 +240,26 @@ function CourseAgentConversationPanel({
       { enabled: showDiagnostics && conversation !== null, refetchInterval: busy ? 1000 : 5000 },
     ),
   );
+  const approval = useMutation(
+    trpc.courseAgent.respondToPushApproval.mutationOptions({
+      onSuccess: () => {
+        setReviewOpen(false);
+        void snapshot.refetch();
+      },
+      onError: () => setReviewOpen(false),
+    }),
+  );
+  const approvalMode = useQuery(trpc.courseAgent.getApprovalMode.queryOptions());
+  const setApprovalMode = useMutation(
+    trpc.courseAgent.setApprovalMode.mutationOptions({
+      onSuccess: async () => {
+        await queryClient.invalidateQueries(trpc.courseAgent.getApprovalMode.queryFilter());
+        if (snapshot.data?.pendingApproval) await snapshot.refetch();
+      },
+    }),
+  );
+  const approvalError = getAppError<CourseAgentError['RespondToPushApproval']>(approval.error);
+  const approvalModeError = getAppError<CourseAgentError['SetApprovalMode']>(setApprovalMode.error);
 
   return (
     <div className="course-agent-conversation">
@@ -250,7 +308,7 @@ function CourseAgentConversationPanel({
               ) : (
                 <AssistantMessage key={message.id}>
                   <ChatMessageParts<CourseAgentMessage>
-                    parts={message.parts}
+                    parts={message.parts.filter((part) => part.type !== 'data-courseSynced')}
                     renderTool={(part) => {
                       if (
                         part.type !== 'tool-activity' ||
@@ -259,6 +317,44 @@ function CourseAgentConversationPanel({
                         part.state === 'output-denied'
                       ) {
                         return null;
+                      }
+                      const waitingForApproval =
+                        snapshot.data?.pendingApproval &&
+                        (part.state === 'input-streaming' || part.state === 'input-available') &&
+                        ['Proposing changes', 'Used push sync'].includes(part.input?.label ?? '');
+                      if (waitingForApproval) {
+                        if (
+                          approvalMode.data?.mode === 'always' ||
+                          snapshot.data?.pendingApproval?.status === 'publishing' ||
+                          (approval.isPending && approval.variables.decision === 'approve')
+                        ) {
+                          return (
+                            <ToolCallStatus
+                              state={part.state}
+                              statusText="Publishing proposed changes"
+                            />
+                          );
+                        }
+                        return (
+                          <div
+                            role="status"
+                            className="d-flex align-items-start gap-1 small text-warning-emphasis"
+                          >
+                            <i className="bi bi-person-check flex-shrink-0" aria-hidden="true" />
+                            <span>Waiting for your approval</span>
+                          </div>
+                        );
+                      }
+                      if (
+                        part.state === 'output-available' &&
+                        part.output.label === 'Denied request'
+                      ) {
+                        return (
+                          <div className="small text-secondary">
+                            <i className="bi bi-x-circle me-1" aria-hidden="true" />
+                            Denied request
+                          </div>
+                        );
                       }
                       return (
                         <ToolCallStatus
@@ -281,6 +377,17 @@ function CourseAgentConversationPanel({
                   {message.metadata?.failure && (
                     <Alert variant="danger">{message.metadata.failure}</Alert>
                   )}
+                  {message.id === refreshMessageId && (
+                    <Button
+                      size="sm"
+                      variant="outline-secondary"
+                      className="mb-2"
+                      onClick={() => window.location.reload()}
+                    >
+                      <i className="bi bi-arrow-clockwise me-1" aria-hidden="true" />
+                      Refresh course content
+                    </Button>
+                  )}
                   {(!busy || message.id !== messages.at(-1)?.id) && (
                     <MessageMetadata
                       author="PrairieLearn"
@@ -291,7 +398,21 @@ function CourseAgentConversationPanel({
                 </AssistantMessage>
               ),
             )}
-            {busy && !hasActiveTool && (
+            {queuedPrompts.map((message) => (
+              <UserMessage
+                key={message.id}
+                userName={userName}
+                createdAt={message.createdAt}
+                timeZone={timeZone}
+              >
+                <span>{message.text}</span>
+                <span className="small text-muted">
+                  <i className="bi bi-clock me-1" aria-hidden="true" />
+                  Queued
+                </span>
+              </UserMessage>
+            ))}
+            {busy && !hasActiveTool && !snapshot.data?.pendingApproval && (
               <div role="status" className="d-flex align-items-center gap-2 small text-muted mb-3">
                 <Spinner size="sm" /> Working…
               </div>
@@ -314,6 +435,92 @@ function CourseAgentConversationPanel({
                   </Button>
                 )}
               </Alert>
+            )}
+            <AppErrorAlert
+              error={approvalError}
+              render={{ UNKNOWN: ({ message }) => message }}
+              onDismiss={() => approval.reset()}
+            />
+            {approval.data?.status === 'failed' && (
+              <Alert variant="danger" dismissible onClose={() => approval.reset()}>
+                <Alert.Heading className="h6">
+                  {approval.data.published
+                    ? 'Changes published, but sync failed'
+                    : 'Proposed changes were not published'}
+                </Alert.Heading>
+                <div className="small" style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>
+                  {approval.data.message}
+                </div>
+              </Alert>
+            )}
+            <AppErrorAlert
+              error={approvalModeError}
+              render={{ UNKNOWN: ({ message }) => message }}
+              onDismiss={() => setApprovalMode.reset()}
+            />
+            {snapshot.data?.pendingApproval && approvalMode.data?.mode !== 'always' && (
+              <div className="course-agent-approval border rounded bg-white overflow-hidden mb-4">
+                <div className="border-bottom px-3 py-2">
+                  <div className="d-flex align-items-center gap-2 fw-semibold">
+                    <i className="bi bi-shield-check text-warning" aria-hidden="true" />
+                    Proposed changes
+                  </div>
+                  <p className="small text-muted mb-1 mt-1">
+                    Review the proposed changes and provide your approval.
+                  </p>
+                  <CourseAgentDiffSummary diff={snapshot.data.pendingApproval.diff} />
+                </div>
+                <div className="px-3 py-2">
+                  <Button size="sm" variant="outline-primary" onClick={() => setReviewOpen(true)}>
+                    Review changes
+                  </Button>
+                </div>
+                <CourseAgentDiffReview
+                  diff={snapshot.data.pendingApproval.diff}
+                  show={reviewOpen}
+                  onHide={() => setReviewOpen(false)}
+                >
+                  <Button
+                    size="sm"
+                    disabled={
+                      approval.isPending || snapshot.data.pendingApproval.status === 'publishing'
+                    }
+                    onClick={() =>
+                      approval.mutate({
+                        approvalId: snapshot.data.pendingApproval!.id,
+                        decision: 'approve',
+                      })
+                    }
+                  >
+                    {(approval.isPending && approval.variables.decision === 'approve') ||
+                    snapshot.data.pendingApproval.status === 'publishing' ? (
+                      <>
+                        <Spinner size="sm" aria-hidden="true" className="me-1" />
+                        Publishing…
+                      </>
+                    ) : (
+                      'Approve'
+                    )}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline-danger"
+                    disabled={
+                      approval.isPending || snapshot.data.pendingApproval.status === 'publishing'
+                    }
+                    onClick={() =>
+                      approval.mutate({
+                        approvalId: snapshot.data.pendingApproval!.id,
+                        decision: 'deny',
+                      })
+                    }
+                  >
+                    {approval.isPending && approval.variables.decision === 'deny'
+                      ? 'Denying…'
+                      : 'Deny'}
+                  </Button>
+                </CourseAgentDiffReview>
+              </div>
             )}
             <div className="pt-3 mt-3">
               {showDiagnostics && (
@@ -338,22 +545,76 @@ function CourseAgentConversationPanel({
       <footer className="course-agent-footer border-top bg-white p-3">
         <ChatComposer
           value={prompt}
-          disabled={busy}
+          disabled={false}
           isGenerating={busy}
           label="Message course agent"
           sendLabel="Send message"
           placeholder="Ask anything about your course…"
           textareaClassName="form-control course-agent-chat-input shadow-none mb-2"
-          footer={<span className="small text-muted">Codex</span>}
+          footer={
+            <ApprovalModePicker
+              mode={approvalMode.data?.mode ?? 'ask'}
+              loading={approvalMode.isPending}
+              disabled={setApprovalMode.isPending}
+              onSelect={(mode) => setApprovalMode.mutate({ mode })}
+            />
+          }
+          allowSubmitWhileGenerating
           onChange={setPrompt}
           onSubmit={(text) => {
             void stickToBottom.scrollToBottom();
             setPrompt('');
-            void sendMessage({ text, metadata: { createdAt: new Date().toISOString() } });
+            const createdAt = new Date().toISOString();
+            if (busy) {
+              const queued = { id: crypto.randomUUID(), text, createdAt };
+              setQueuedPrompts((current) => {
+                const next = [...current, queued];
+                queuedPromptsRef.current = next;
+                return next;
+              });
+            } else {
+              void sendMessage({ text, metadata: { createdAt } });
+            }
           }}
         />
       </footer>
     </div>
+  );
+}
+
+function ApprovalModePicker({
+  mode,
+  loading,
+  disabled,
+  onSelect,
+}: {
+  mode: 'ask' | 'always';
+  loading: boolean;
+  disabled: boolean;
+  onSelect: (mode: 'ask' | 'always') => void;
+}) {
+  const label = mode === 'always' ? 'Always approve' : 'Ask for approval';
+  return (
+    <Dropdown>
+      <Dropdown.Toggle
+        size="sm"
+        variant="light"
+        className="border-0 px-1 text-muted"
+        disabled={loading || disabled}
+      >
+        {loading && <Spinner size="sm" className="me-2" aria-hidden="true" />}
+        {loading ? 'Loading approval setting' : label}
+      </Dropdown.Toggle>
+      <Dropdown.Menu>
+        <Dropdown.Header>Approvals for course editing</Dropdown.Header>
+        <Dropdown.Item active={mode === 'ask'} onClick={() => onSelect('ask')}>
+          Ask for approval
+        </Dropdown.Item>
+        <Dropdown.Item active={mode === 'always'} onClick={() => onSelect('always')}>
+          Always approve
+        </Dropdown.Item>
+      </Dropdown.Menu>
+    </Dropdown>
   );
 }
 
@@ -385,7 +646,12 @@ function Diagnostics({
     ['revision (Worker)', String(lifecycle?.revision ?? null)],
     ['sandboxGeneration (Worker)', String(lifecycle?.sandboxGeneration ?? null)],
     ['idleExpiresAt (Worker)', String(lifecycle?.idleExpiresAt ?? null)],
-    ['activeRunExpiresAt (Worker)', String(lifecycle?.activeRunExpiresAt ?? null)],
+    ['Last sandbox activity (watchdog)', String(lifecycle?.lastSandboxActivityAt ?? null)],
+    [
+      'Sandbox inactivity deadline (watchdog)',
+      String(lifecycle?.sandboxInactivityExpiresAt ?? null),
+    ],
+    ['Shutdown reason', String(lifecycle?.shutdownReason ?? null)],
     ['processId (Worker)', String(lifecycle?.processId ?? null)],
     ...Object.entries(persistence ?? {}).map(([key, value]) => [
       `${key} (PostgreSQL)`,
@@ -458,6 +724,8 @@ export function CourseAgentPanel({
   initialOpen,
   trpcCsrfToken,
   courseId,
+  courseCommitSha,
+  pageRenderedAt,
   courseInstanceId,
   userName,
   timeZone,
@@ -466,6 +734,8 @@ export function CourseAgentPanel({
   initialOpen: boolean;
   trpcCsrfToken: string;
   courseId: string;
+  courseCommitSha: string | null;
+  pageRenderedAt: string;
   courseInstanceId: string | null;
   userName: string;
   timeZone: string;
@@ -482,6 +752,8 @@ export function CourseAgentPanel({
           initialOpen={initialOpen}
           trpcClient={trpcClient}
           courseId={courseId}
+          courseCommitSha={courseCommitSha}
+          pageRenderedAt={pageRenderedAt}
           courseInstanceId={courseInstanceId}
           userName={userName}
           timeZone={timeZone}

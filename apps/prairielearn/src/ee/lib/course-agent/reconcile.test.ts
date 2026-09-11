@@ -1,12 +1,19 @@
-import { expect, it, vi } from 'vitest';
+import { beforeEach, expect, it, vi } from 'vitest';
 
 import { CourseAgentSnapshotSchema } from '@prairielearn/course-agent-protocol';
 
-const mock = vi.hoisted(() => ({ snapshot: vi.fn(), persist: vi.fn() }));
-vi.mock('./ephemeral-runtime.js', () => ({ getEphemeralCourseAgentSnapshot: mock.snapshot }));
+const mock = vi.hoisted(() => ({
+  snapshot: vi.fn(),
+  persist: vi.fn(),
+}));
+vi.mock('./ephemeral-runtime.js', () => ({
+  getEphemeralCourseAgentSnapshot: mock.snapshot,
+}));
 vi.mock('../../../models/course-agent.js', () => ({ persistCourseAgentSnapshot: mock.persist }));
 
 import { reconcileCourseAgentConversation } from './reconcile.js';
+
+beforeEach(() => vi.resetAllMocks());
 
 it('uses the observed run ID when a new run starts during a reconciliation poll', async () => {
   const conversationId = '7c7d78ce-5f84-4e94-a616-09fae056a5b2';

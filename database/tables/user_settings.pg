@@ -1,9 +1,13 @@
 columns
+    course_agent_approval_mode: text not null default 'ask'::text
     enable_single_key_shortcuts: boolean not null default true
     user_id: bigint not null
 
 indexes
     user_settings_pkey: PRIMARY KEY (user_id) USING btree (user_id)
+
+check constraints
+    user_settings_course_agent_approval_mode_check: CHECK (course_agent_approval_mode = ANY (ARRAY['ask'::text, 'always'::text]))
 
 foreign-key constraints
     user_settings_user_id_fkey: FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE

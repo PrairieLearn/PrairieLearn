@@ -25,6 +25,8 @@ export const CourseAgentEventTypeSchema = z.enum([
   'git.clone.started',
   'git.clone.completed',
   'git.configured',
+  'validation.completed',
+  'validation.failed',
   'agent.started',
   'assistant.delta',
   'tool.started',
@@ -38,6 +40,11 @@ export const CourseAgentEventTypeSchema = z.enum([
   'workspace.backup.failed',
   'workspace.restore.started',
   'workspace.restore.completed',
+  'git.push.approval.requested',
+  'git.push.approval.approved',
+  'git.push.approval.denied',
+  'git.push.completed',
+  'sync.completed',
   'state.changed',
 ]);
 export type CourseAgentEventType = z.infer<typeof CourseAgentEventTypeSchema>;
@@ -102,6 +109,24 @@ export const CourseAgentWorkspaceBackupSchema = z.object({
 });
 export type CourseAgentWorkspaceBackup = z.infer<typeof CourseAgentWorkspaceBackupSchema>;
 
+export const CourseAgentPushPayloadSchema = z.object({
+  baseSha: z.string().regex(/^[0-9a-f]{40}$/),
+  proposedSha: z.string().regex(/^[0-9a-f]{40}$/),
+  branch: z.string().min(1).max(255),
+  commitMessage: z.string().min(1).max(20_000),
+  diffSummary: z.string().max(20_000),
+  diff: z.string().max(500_000),
+  treeSha: z.string().regex(/^[0-9a-f]{40}$/),
+});
+export type CourseAgentPushPayload = z.infer<typeof CourseAgentPushPayloadSchema>;
+
+export const CourseAgentPushApprovalSchema = CourseAgentPushPayloadSchema.extend({
+  id: z.uuid(),
+  status: z.enum(['pending', 'denied', 'publishing', 'completed', 'failed']),
+  result: z.record(z.string(), z.unknown()).nullable(),
+});
+export type CourseAgentPushApproval = z.infer<typeof CourseAgentPushApprovalSchema>;
+
 export const CourseAgentAuthoringContextSchema = z.object({
   courseInstance: z
     .object({
@@ -113,12 +138,25 @@ export const CourseAgentAuthoringContextSchema = z.object({
 });
 export type CourseAgentAuthoringContext = z.infer<typeof CourseAgentAuthoringContextSchema>;
 
-export const CourseAgentRuntimeSettingsSchema = z.object({
-  idleTimeoutSeconds: z.number().int().min(60).max(86_400),
-  backupTtlSeconds: z.number().int().min(60).max(2_592_000).default(604800),
-  sleepAfterSeconds: z.number().int().min(60).max(86_400).default(21_600),
-  turnTimeoutSeconds: z.number().int().min(60).max(86_400).default(21_600),
-});
+export const CourseAgentRuntimeSettingsSchema = z
+  .object({
+    waitingForUserTimeoutSeconds: z.number().int().min(60).max(86_400).optional(),
+    sandboxInactivityTimeoutSeconds: z.number().int().min(60).max(86_400).default(21_600),
+    cloudflareSandboxTimeoutSeconds: z.number().int().min(60).max(86_400).optional(),
+    // Accepted for existing local configurations during the rename.
+    idleTimeoutSeconds: z.number().int().min(60).max(86_400).default(600),
+    backupTtlSeconds: z.number().int().min(60).max(2_592_000).default(604800),
+    sleepAfterSeconds: z.number().int().min(60).max(86_400).default(21_600),
+  })
+  .transform((settings) => ({
+    ...settings,
+    waitingForUserTimeoutSeconds:
+      settings.waitingForUserTimeoutSeconds ?? settings.idleTimeoutSeconds,
+    cloudflareSandboxTimeoutSeconds:
+      settings.cloudflareSandboxTimeoutSeconds ?? settings.sleepAfterSeconds,
+    idleTimeoutSeconds: settings.waitingForUserTimeoutSeconds ?? settings.idleTimeoutSeconds,
+    sleepAfterSeconds: settings.cloudflareSandboxTimeoutSeconds ?? settings.sleepAfterSeconds,
+  }));
 export type CourseAgentRuntimeSettings = z.infer<typeof CourseAgentRuntimeSettingsSchema>;
 
 export const CourseAgentRunCapabilitySchema = CourseAgentIdentitySchema.extend({
@@ -186,13 +224,27 @@ export const CourseAgentSnapshotSchema = z.object({
   sandboxGeneration: z.number().int().nonnegative().default(0),
   idleExpiresAt: z.number().nullable().default(null),
   activeRunExpiresAt: z.string().nullable().default(null),
+  lastSandboxActivityAt: z.number().nullable().default(null),
+  sandboxInactivityExpiresAt: z.number().nullable().default(null),
+  shutdownReason: z.string().nullable().default(null),
   processId: z.string().nullable().default(null),
   response: z.string().nullable(),
   error: z.string().nullable(),
   events: z.array(CourseAgentEventSchema),
   workspaceBackup: CourseAgentWorkspaceBackupSchema.nullable().default(null),
+  pendingApproval: CourseAgentPushApprovalSchema.nullable().default(null),
 });
 export type CourseAgentSnapshot = z.infer<typeof CourseAgentSnapshotSchema>;
+
+export const CourseAgentPushDecisionRequestSchema = z.object({
+  capability: z.string(),
+  conversationId: z.uuid(),
+  sandboxId: z.string(),
+  approvalId: z.uuid(),
+  decision: z.enum(['pending', 'publishing', 'denied', 'completed', 'failed']),
+  phase: z.enum(['publishing', 'syncing']).optional(),
+  result: z.record(z.string(), z.unknown()).nullable().default(null),
+});
 
 export function courseAgentSandboxId(conversationId: string) {
   return `course-agent-${z.uuid().parse(conversationId)}`;

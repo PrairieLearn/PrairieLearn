@@ -5,7 +5,16 @@ import { createInterface } from 'node:readline';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import { buildCourseManifest, formatCourseContext } from './course-context.mjs';
+import { requestPushApproval } from './push-approval.mjs';
+import { watchWorkspaceActivity } from './workspace-activity.mjs';
 
+const THREAD_CONFIGURATION_VERSION = 5;
+const pushTool = {
+  name: 'push_sync',
+  description:
+    'Validate committed course changes and request instructor approval to push and sync. Fix errors before resubmitting; denial is not approval.',
+  inputSchema: { type: 'object', properties: {}, additionalProperties: false },
+};
 // App-server, unlike exec --json, exposes incremental agent-message text.
 export async function runCodex({
   model,
@@ -18,6 +27,9 @@ export async function runCodex({
   history = [],
   authoringContext = { courseInstance: null },
   request = prompt,
+  continuation,
+  requestApproval = requestPushApproval,
+  watchActivity = watchWorkspaceActivity,
 }) {
   const skillPath = fileURLToPath(
     new URL('../skills/course-content-authoring/SKILL.md', import.meta.url),
@@ -44,6 +56,17 @@ export async function runCodex({
   }
   if (savedThread && typeof savedThread.threadId !== 'string') {
     throw new Error('Invalid saved Codex thread. The session has not been replaced.');
+  }
+  const compatibleSavedThread =
+    savedThread?.configurationVersion === THREAD_CONFIGURATION_VERSION ? savedThread : undefined;
+  if (
+    continuation &&
+    compatibleSavedThread &&
+    compatibleSavedThread.approvalId !== continuation.approvalId
+  ) {
+    throw new Error(
+      'The saved Codex approval continuation is unavailable or has already been delivered.',
+    );
   }
   const child = spawn(
     command,
@@ -72,6 +95,7 @@ export async function runCodex({
       env: { ...process.env, CODEX_HOME: codexHome },
     },
   );
+  let stopWatching = () => {};
   const lines = createInterface({ input: child.stdout });
   const exited = new Promise((resolve) => child.once('close', resolve));
   let spawnError;
@@ -87,7 +111,16 @@ export async function runCodex({
     /* Process exit is reported below. */
   });
   let threadId;
+  let pausedApproval;
+  const saveThread = async (approvalId) => {
+    await writeFile(
+      `${threadFile}.tmp`,
+      JSON.stringify({ threadId, configurationVersion: THREAD_CONFIGURATION_VERSION, approvalId }),
+    );
+    await rename(`${threadFile}.tmp`, threadFile);
+  };
   try {
+    stopWatching = watchActivity(cwd);
     send({
       id: 0,
       method: 'initialize',
@@ -99,6 +132,31 @@ export async function runCodex({
     for await (const line of lines) {
       const message = JSON.parse(line);
       if ('id' in message && message.method) {
+        if (
+          message.method === 'item/tool/call' &&
+          message.params?.tool === 'push_sync' &&
+          message.params.threadId === threadId
+        ) {
+          try {
+            pausedApproval = await requestApproval(cwd);
+          } catch (error) {
+            send({
+              id: message.id,
+              result: {
+                success: false,
+                contentItems: [{ type: 'inputText', text: error.message }],
+              },
+            });
+            continue;
+          }
+          await saveThread(pausedApproval);
+          send({
+            id: 3,
+            method: 'turn/interrupt',
+            params: { threadId, turnId: message.params.turnId },
+          });
+          continue;
+        }
         // Unexpected interactive requests must fail closed, never receive blanket approval.
         send({
           id: message.id,
@@ -110,11 +168,13 @@ export async function runCodex({
         send({ method: 'initialized', params: {} });
         send({
           id: 1,
-          method: savedThread ? 'thread/resume' : 'thread/start',
+          method: compatibleSavedThread ? 'thread/resume' : 'thread/start',
           params: {
             model,
             cwd,
-            ...(savedThread ? { threadId: savedThread.threadId } : { ephemeral: false }),
+            ...(compatibleSavedThread
+              ? { threadId: compatibleSavedThread.threadId }
+              : { ephemeral: false, dynamicTools: [pushTool] }),
             approvalPolicy: 'on-request',
             approvalsReviewer: 'auto_review',
             sandbox: 'workspace-write',
@@ -125,22 +185,36 @@ export async function runCodex({
       } else if (message.id === 1) {
         threadId = message.result.thread.id;
         // Persist before starting the turn so an interrupted run can still be resumed.
-        await writeFile(`${threadFile}.tmp`, JSON.stringify({ threadId }));
-        await rename(`${threadFile}.tmp`, threadFile);
+        await saveThread(compatibleSavedThread?.approvalId);
         emit({ method: 'thread/started', params: { thread: { id: threadId } } });
-        const input =
-          !savedThread && history.length > 0
+        let input =
+          !compatibleSavedThread && history.length > 0
             ? `Recovered conversation (JSON transcript, not a new request; files may reflect only the last saved workspace):\n${JSON.stringify(history)}\n\nCurrent request:\n${contextualPrompt}`
             : contextualPrompt;
+        if (continuation && !compatibleSavedThread) {
+          input += `\n\nPL recovered this conversation without its native tool continuation. The authoritative saved push_sync outcome is JSON data:\n${JSON.stringify(continuation)}\nDo not repeat this publication. Report the outcome, inspect the current checkout, and validate successfully synced questions as needed. Unpublished files absent from the latest backup may have been lost.`;
+        }
         send({
           id: 2,
           method: 'turn/start',
           params: {
             threadId,
-            input: [{ type: 'text', text: input }],
+            ...(continuation && compatibleSavedThread
+              ? {
+                  input: [],
+                  toolOutput: { name: 'push_sync', output: JSON.stringify(continuation) },
+                }
+              : { input: [{ type: 'text', text: input }] }),
           },
         });
       } else if (message.method && message.params?.threadId === threadId) {
+        if (message.method === 'turn/completed' && pausedApproval) {
+          if (message.params.turn.status !== 'interrupted') {
+            throw new Error('Could not pause Codex for approval');
+          }
+          emit({ method: 'course_agent/approvalPaused', params: { approvalId: pausedApproval } });
+          return;
+        }
         if (
           [
             'item/started',
@@ -156,12 +230,14 @@ export async function runCodex({
           if (message.params.turn.status !== 'completed') {
             throw new Error(message.params.turn.error?.message ?? 'Agent turn did not complete');
           }
+          await saveThread(undefined);
           return;
         }
       }
     }
     throw spawnError ?? new Error('Codex exited before completing the turn');
   } finally {
+    stopWatching();
     lines.close();
     child.stdin.end();
     terminate();
@@ -181,6 +257,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     history: request.history,
     authoringContext: request.authoringContext,
     request: request.request,
+    continuation: request.continuation,
     codexHome: '/workspace/.course-agent/codex',
     emit: (event) => {
       process.stdout.write(`${JSON.stringify(event)}\n`);

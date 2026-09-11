@@ -12,6 +12,7 @@ import { formatDateFriendly } from '@prairielearn/formatter';
 import { logger } from '@prairielearn/logger';
 import { IdSchema } from '@prairielearn/zod';
 
+import { resolveCourseAgentApproval } from '../../ee/lib/course-agent/approval-decisions.js';
 import { nameCourseAgentConversation } from '../../ee/lib/course-agent/conversation-title.js';
 import {
   getEphemeralCourseAgentSnapshot,
@@ -19,6 +20,7 @@ import {
 } from '../../ee/lib/course-agent/ephemeral-runtime.js';
 import { restoreCourseAgentMessages } from '../../ee/lib/course-agent/history.js';
 import { publicCourseAgentEvent } from '../../ee/lib/course-agent/public-events.js';
+import { reconcileCourseAgentPushApproval } from '../../ee/lib/course-agent/publication.js';
 import { config } from '../../lib/config.js';
 import {
   CourseAgentConversationSchema,
@@ -36,6 +38,7 @@ import {
   selectOptionalRunningCourseAgentRun,
 } from '../../models/course-agent.js';
 import { selectOptionalCourseInstanceById } from '../../models/course-instances.js';
+import { selectUserSettings, updateCourseAgentApprovalMode } from '../../models/user-settings.js';
 
 import {
   requireAuthnCoursePermissionOwn,
@@ -191,6 +194,7 @@ const start = courseAgentProcedure
         });
         await persistCourseAgentSnapshot({ snapshot, runId });
       }
+      ctx.session.course_agent_conversation_id = conversationId;
       return result;
     } catch (error) {
       const saved = await selectOptionalCourseAgentConversation({
@@ -211,6 +215,7 @@ const start = courseAgentProcedure
           error: error instanceof Error ? error.message : String(error),
           events: [],
           workspaceBackup: null,
+          pendingApproval: null,
         }),
       });
       throw error;
@@ -240,11 +245,49 @@ const get = courseAgentProcedure
       if (message.run_id) runId = message.run_id;
     }
     if (!runId) throw new TRPCError({ code: 'NOT_FOUND', message: 'Course-agent run not found' });
-    const snapshot = await getEphemeralCourseAgentSnapshot({
+    let snapshot = await getEphemeralCourseAgentSnapshot({
       userId: ctx.locals.authn_user.id,
       courseId: ctx.course.id,
       ...input,
     });
+    if (snapshot.pendingApproval) {
+      if (!ctx.course.repository) {
+        throw new TRPCError({
+          code: 'PRECONDITION_FAILED',
+          message: 'Course repository is missing',
+        });
+      }
+      const approval = await reconcileCourseAgentPushApproval({
+        proposal: snapshot.pendingApproval,
+        conversationId: conversation.id,
+        sandboxId: input.sandboxId,
+        runId,
+        course: ctx.locals.course,
+        userId: ctx.locals.authn_user.id,
+      });
+      if (
+        approval.status === 'failed' ||
+        approval.status === 'completed' ||
+        approval.status === 'denied'
+      ) {
+        snapshot = { ...snapshot, pendingApproval: null };
+      }
+      const userSettings = await selectUserSettings({ user_id: ctx.locals.authn_user.id });
+      if (userSettings.course_agent_approval_mode === 'always' && approval.status === 'pending') {
+        await resolveCourseAgentApproval({
+          course: ctx.locals.course,
+          user: ctx.locals.authn_user,
+          authzData: ctx.locals.authz_data,
+          approvalId: approval.id,
+          decision: 'approve',
+        });
+        snapshot = await getEphemeralCourseAgentSnapshot({
+          userId: ctx.locals.authn_user.id,
+          courseId: ctx.course.id,
+          ...input,
+        });
+      }
+    }
     await persistCourseAgentSnapshot({ snapshot, runId });
     const history = await selectCourseAgentHistory(conversation.id);
     return {
@@ -305,7 +348,6 @@ const diagnostics = courseAgentProcedure
         lifecycle_revision: true,
         sandbox_generation: true,
         idle_expires_at: true,
-        active_run_expires_at: true,
         process_id: true,
       }).nullable(),
     }),
@@ -388,6 +430,47 @@ const settings = courseAgentProcedure
     ctx.session.course_agent_expanded = input.expanded;
   });
 
+const getApprovalMode = courseAgentProcedure
+  .output(z.object({ mode: z.enum(['ask', 'always']) }))
+  .query(async ({ ctx }) => {
+    const settings = await selectUserSettings({ user_id: ctx.locals.authn_user.id });
+    return { mode: settings.course_agent_approval_mode };
+  });
+
+const setApprovalMode = courseAgentProcedure
+  .input(z.object({ mode: z.enum(['ask', 'always']) }))
+  .output(z.object({ mode: z.enum(['ask', 'always']) }))
+  .mutation(async ({ ctx, input }) => {
+    const settings = await updateCourseAgentApprovalMode({
+      user_id: ctx.locals.authn_user.id,
+      course_agent_approval_mode: input.mode,
+    });
+    return { mode: settings.course_agent_approval_mode };
+  });
+
+const respondToPushApproval = courseAgentProcedure
+  .input(
+    z.object({
+      approvalId: z.uuid(),
+      decision: z.enum(['approve', 'deny']),
+    }),
+  )
+  .output(
+    z.object({
+      status: z.enum(['denied', 'completed', 'failed']),
+      message: z.string(),
+      published: z.boolean(),
+    }),
+  )
+  .mutation(({ ctx, input }) =>
+    resolveCourseAgentApproval({
+      course: ctx.locals.course,
+      user: ctx.locals.authn_user,
+      authzData: ctx.locals.authz_data,
+      ...input,
+    }),
+  );
+
 export const courseAgentRouter = t.router({
   get,
   list,
@@ -396,6 +479,9 @@ export const courseAgentRouter = t.router({
   history,
   selectConversation,
   settings,
+  getApprovalMode,
+  setApprovalMode,
+  respondToPushApproval,
 });
 
 export interface CourseAgentError {
@@ -406,4 +492,7 @@ export interface CourseAgentError {
   History: never;
   SelectConversation: never;
   Settings: never;
+  GetApprovalMode: never;
+  SetApprovalMode: never;
+  RespondToPushApproval: never;
 }

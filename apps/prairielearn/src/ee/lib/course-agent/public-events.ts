@@ -12,6 +12,8 @@ export function publicCourseAgentEvent(event: CourseAgentEvent): CourseAgentEven
     'sandbox.destroyed': ['reason'],
     'agent.completed': ['response'],
     'run.failed': ['message'],
+    'git.push.approval.requested': ['approvalId'],
+    'sync.completed': ['approvalId', 'commitSha'],
   };
   const allowed = fields[event.type];
   if (!allowed) return null;

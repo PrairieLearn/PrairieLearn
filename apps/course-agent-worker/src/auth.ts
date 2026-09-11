@@ -81,7 +81,12 @@ export async function authorizeRun(request: CourseAgentStartRunRequest, secret: 
     capability.runtimeSettings.idleTimeoutSeconds !== request.runtimeSettings.idleTimeoutSeconds ||
     capability.runtimeSettings.backupTtlSeconds !== request.runtimeSettings.backupTtlSeconds ||
     capability.runtimeSettings.sleepAfterSeconds !== request.runtimeSettings.sleepAfterSeconds ||
-    capability.runtimeSettings.turnTimeoutSeconds !== request.runtimeSettings.turnTimeoutSeconds
+    capability.runtimeSettings.sandboxInactivityTimeoutSeconds !==
+      request.runtimeSettings.sandboxInactivityTimeoutSeconds ||
+    capability.runtimeSettings.waitingForUserTimeoutSeconds !==
+      request.runtimeSettings.waitingForUserTimeoutSeconds ||
+    capability.runtimeSettings.cloudflareSandboxTimeoutSeconds !==
+      request.runtimeSettings.cloudflareSandboxTimeoutSeconds
   ) {
     throw new Error('Run capability does not authorize this request');
   }

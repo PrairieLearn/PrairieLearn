@@ -79,6 +79,11 @@ describe('course agent chat', () => {
     expect(container.querySelector<HTMLButtonElement>('button')!.disabled).toBe(true);
     await act(async () => container.querySelector('form')!.requestSubmit());
     expect(props.onSubmit).not.toHaveBeenCalled();
+
+    await act(async () => root.render(<ChatComposer {...props} allowSubmitWhileGenerating />));
+    expect(container.querySelector<HTMLButtonElement>('button')!.disabled).toBe(false);
+    await act(async () => container.querySelector('form')!.requestSubmit());
+    expect(props.onSubmit).toHaveBeenCalledWith('Hello');
   });
 
   it('renders user metadata and accessible assistant messages', async () => {

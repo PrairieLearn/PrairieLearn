@@ -303,6 +303,8 @@ export function PageLayout({
             config.secretKey,
           )}
           courseId={resLocals.course.id}
+          courseCommitSha={resLocals.course.commit_hash}
+          pageRenderedAt={new Date().toISOString()}
           courseInstanceId={resLocals.course_instance?.id ?? null}
           initialOpen={resLocals.course_agent_expanded}
           userName={resLocals.authn_user.name ?? 'Instructor'}

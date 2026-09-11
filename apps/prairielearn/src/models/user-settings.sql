@@ -16,3 +16,14 @@ SET
   enable_single_key_shortcuts = EXCLUDED.enable_single_key_shortcuts
 RETURNING
   *;
+
+-- BLOCK upsert_course_agent_approval_mode
+INSERT INTO
+  user_settings (user_id, course_agent_approval_mode)
+VALUES
+  ($user_id, $course_agent_approval_mode)
+ON CONFLICT (user_id) DO UPDATE
+SET
+  course_agent_approval_mode = EXCLUDED.course_agent_approval_mode
+RETURNING
+  *;

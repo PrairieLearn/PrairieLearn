@@ -7,9 +7,12 @@ import type { selectCourseAgentHistory } from '../../../models/course-agent.js';
 import { publicCourseAgentEvent } from './public-events.js';
 import { type CourseAgentMessage, courseAgentUIStream } from './ui-stream.js';
 
-export async function restoreCourseAgentMessages(
-  history: Awaited<ReturnType<typeof selectCourseAgentHistory>>,
-) {
+type CourseAgentHistory = Pick<
+  Awaited<ReturnType<typeof selectCourseAgentHistory>>,
+  'events' | 'messages'
+>;
+
+export async function restoreCourseAgentMessages(history: CourseAgentHistory) {
   const messages: CourseAgentMessage[] = [];
   for (const user of history.messages.filter((message) => message.role === 'user')) {
     messages.push({

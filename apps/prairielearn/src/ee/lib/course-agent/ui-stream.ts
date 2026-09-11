@@ -2,9 +2,18 @@ import type { UIMessage, UIMessageChunk } from 'ai';
 
 import type { CourseAgentEvent } from '@prairielearn/course-agent-protocol';
 
+interface CourseSync {
+  approvalId: string;
+  commitSha: string | null;
+  syncedAt: string;
+}
+
 export type CourseAgentMessage = UIMessage<
   { createdAt: string; failure?: string },
-  never,
+  {
+    approvalRequested: { approvalId: string };
+    courseSynced: CourseSync;
+  },
   { activity: { input: { label: string }; output: { label: string } } }
 >;
 
@@ -17,6 +26,7 @@ export function courseAgentUIStream(runId: string) {
   let textStarted = false;
   let restoring = false;
   const pendingTools = new Set<string>();
+  const pendingSyncs = new Map<string, CourseSync>();
   const textId = `${runId}:text`;
 
   return new TransformStream<CourseAgentEvent, UIMessageChunk>({
@@ -87,16 +97,33 @@ export function courseAgentUIStream(runId: string) {
         case 'tool.failed': {
           const id = `${runId}:tool:${String(event.data.operationId ?? event.sequence)}`;
           const label = String(event.data.label ?? 'Used a tool');
+          // Older streams recorded the deliberately paused native publication call as a tool.
+          // Approval state and its result are represented by the durable approval card instead.
+          if (label === 'Proposing changes') break;
           if (event.type === 'tool.started') startTool(id, label);
           else endTool(id, label, event.type === 'tool.failed');
           break;
         }
+        case 'git.push.approval.requested':
+          controller.enqueue({
+            type: 'data-approvalRequested',
+            data: { approvalId: String(event.data.approvalId) },
+            transient: true,
+          });
+          break;
         case 'assistant.delta':
           appendText(
             event.data.replace
               ? String(event.data.text ?? '')
               : text + String(event.data.text ?? ''),
           );
+          break;
+        case 'sync.completed':
+          pendingSyncs.set(String(event.data.approvalId), {
+            approvalId: String(event.data.approvalId),
+            commitSha: typeof event.data.commitSha === 'string' ? event.data.commitSha : null,
+            syncedAt: event.occurredAt,
+          });
           break;
         case 'agent.completed':
         case 'run.failed': {
@@ -109,6 +136,10 @@ export function courseAgentUIStream(runId: string) {
               : undefined;
           for (const id of pendingTools) endTool(id, 'Interrupted', true);
           if (textStarted) controller.enqueue({ type: 'text-end', id: textId });
+          // Publishing may happen before the final reply. Offer refresh only once the turn ends.
+          for (const [id, data] of pendingSyncs) {
+            controller.enqueue({ type: 'data-courseSynced', id, data });
+          }
           controller.enqueue({
             type: 'finish',
             finishReason: failure ? 'error' : 'stop',
