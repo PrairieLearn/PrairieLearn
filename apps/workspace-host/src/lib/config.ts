@@ -70,6 +70,7 @@ export const ConfigSchema = z.object({
   workspaceHostHomeDirRoot: z.string().default('/jobs/workspaces'),
   workspaceJobsDirectoryOwnerUid: z.number().default(0),
   workspaceJobsDirectoryOwnerGid: z.number().default(0),
+  workspaceJobsDirectoryChangeOwner: z.boolean().default(true),
   workspaceDockerMemory: z.number().default(1 << 30), // 1GiB
   workspaceDockerMemorySwap: z.number().default(1 << 30), // Same as memory, so no access to swap.
   workspaceDockerKernelMemory: z.number().default(1 << 29), // 512 MiB
