@@ -23,7 +23,7 @@ export async function proxyPushSync(
     return new Response('Push approval operation is not permitted.', { status: 403 });
   }
   const pathname = new URL(request.url).pathname;
-  if (pathname !== '/push-sync' && pathname !== '/render-question-variant') {
+  if (pathname !== '/push-sync') {
     return new Response('Not found', { status: 404 });
   }
   if (

@@ -4,7 +4,6 @@
 scripts/*
 !scripts/run-codex.mjs
 !scripts/push-approval.mjs
-!scripts/render-question.mjs
 !scripts/workspace-activity.mjs
 !scripts/course-context.mjs
 

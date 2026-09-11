@@ -13,13 +13,10 @@ import {
   type CourseAgentConversationState,
   type CourseAgentEvent,
   type CourseAgentInspectCapability,
-  type CourseAgentPendingRender,
   type CourseAgentPushApproval,
   CourseAgentPushDecisionRequestSchema,
   type CourseAgentPushPayload,
   CourseAgentPushPayloadSchema,
-  CourseAgentRenderRequestSchema,
-  CourseAgentRenderResponseSchema,
   CourseAgentRuntimeSettingsSchema,
   type CourseAgentSandboxState,
   CourseAgentSnapshotRequestSchema,
@@ -90,8 +87,6 @@ interface ConversationState {
   workspaceBackup: CourseAgentWorkspaceBackup | null;
   course: CourseAgentStartRunRequest['course'];
   pendingApproval: CourseAgentPushApproval | null;
-  pendingRender?: CourseAgentPendingRender | null;
-  renderCount?: number;
   startRequest?: CourseAgentStartRunRequest;
   pausedApprovalId?: string | null;
   approvalPauseRequested?: string | null;
@@ -200,11 +195,8 @@ conversation: inspect the branch and preserve local changes when integrating rem
 For requested content changes, review and commit the intended edits with a descriptive message and
 "Co-authored-by: PrairieLearn Agent (Codex) <noreply@prairielearn.com>". Then invoke \`push_sync\`
 as a tool, not a shell command. It validates the proposed course before asking for approval and
-publishes according to the instructor's saved preference. After a successful push AND sync, call
-\`render_question_variant\` for every question you created or modified, using its course-relative QID.
-This checks one variant of the currently synced revision, not sandbox edits, grading, or all seeds.
-Report failures honestly, fix the code, and request another approval with \`push_sync\`. Never publish
-fixes silently. A denied or failed publication must not be described as validated.
+publishes according to the instructor's saved preference. Report whether publication and sync
+succeeded; sync success does not prove that every question renders or grades correctly.
 If validation or publication fails, use the complete error to fix the cause before retrying.
 For branch conflicts, fetch and merge remote changes without discarding local work. Never repeat
 an unchanged failed proposal. If publication succeeded but sync failed, do not republish the same
@@ -337,7 +329,6 @@ export class CourseAgentCoordinator {
         error: current.error,
         events: await this.getEvents(),
         workspaceBackup: current.workspaceBackup,
-        pendingRender: current.pendingRender ?? null,
         pendingApproval:
           current.pausedApprovalId ||
           current.pendingApproval?.status === 'pending' ||
@@ -378,49 +369,6 @@ export class CourseAgentCoordinator {
         await this.update({ sandboxState: 'offline', idleExpiresAt: null });
       }
       return new Response(null, { status: 204 });
-    }
-    if (request.method === 'POST' && url.pathname === '/render-question-variant') {
-      const body = CourseAgentRenderRequestSchema.parse(await request.json());
-      return this.state.blockConcurrencyWhile(async () => {
-        const current = await this.readConversationState();
-        if (!current?.activeRunId || current.pausedApprovalId) {
-          return Response.json({ error: 'No active agent turn' }, { status: 409 });
-        }
-        if (current.pendingRender?.id === body.id) return Response.json(current.pendingRender);
-        if (
-          current.pendingRender &&
-          !current.pendingRender.result &&
-          current.pendingRender.expiresAt > Date.now()
-        ) {
-          return Response.json({ error: 'A render is already pending' }, { status: 409 });
-        }
-        if ((current.renderCount ?? 0) >= 30) {
-          return Response.json({ error: 'Render limit reached for this turn' }, { status: 429 });
-        }
-        const pendingRender = {
-          ...body,
-          runId: current.activeRunId,
-          expiresAt: Date.now() + 180_000,
-          result: null,
-        };
-        await this.update({ pendingRender, renderCount: (current.renderCount ?? 0) + 1 });
-        return Response.json(pendingRender);
-      });
-    }
-    if (request.method === 'POST' && url.pathname === '/render-result') {
-      const body = CourseAgentRenderResponseSchema.parse(await request.json());
-      const capability = await authorizeSnapshot(body, this.env.COURSE_AGENT_CAPABILITY_SECRET);
-      const current = await this.getConversationState();
-      if (!current || !sameIdentity(current.identity, capability)) {
-        return new Response('Forbidden', { status: 403 });
-      }
-      if (current.activeRunId !== body.runId || current.pendingRender?.id !== body.id) {
-        return new Response('Stale render', { status: 409 });
-      }
-      if (!current.pendingRender.result) {
-        await this.update({ pendingRender: { ...current.pendingRender, result: body.result } });
-      }
-      return Response.json({ accepted: true });
     }
     if (request.method === 'POST' && url.pathname === '/push-sync') {
       return this.requestPushSync(CourseAgentPushPayloadSchema.parse(await request.json()));
@@ -1473,11 +1421,6 @@ export default {
       }
       if (request.method === 'POST' && url.pathname === '/v1/title') {
         return await generateConversationTitle(request, env);
-      }
-      if (request.method === 'POST' && url.pathname === '/v1/render-results') {
-        const body = CourseAgentRenderResponseSchema.parse(await request.json());
-        await authorizeSnapshot(body, env.COURSE_AGENT_CAPABILITY_SECRET);
-        return coordinatorFetch(env, body.sandboxId, '/render-result', body);
       }
       if (request.method === 'POST' && url.pathname === '/v1/push-decisions') {
         const body = CourseAgentPushDecisionRequestSchema.parse(await request.json());

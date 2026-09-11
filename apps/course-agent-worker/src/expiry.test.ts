@@ -133,28 +133,6 @@ afterEach(() => {
 });
 
 describe('sandbox expiry alarm', () => {
-  it('queues and polls a render without creating duplicate work or allowing it during approval', async () => {
-    const { coordinator, storage } = fixture('run', 5000);
-    await coordinator['update']({ lifecycleVersion: 3 });
-    const id = 'fe3635bd-9ca1-4281-8159-d95d512a3a12';
-    const request = () =>
-      coordinator.fetch(
-        new Request('https://coordinator/render-question-variant', {
-          method: 'POST',
-          body: JSON.stringify({ id, qid: 'nested/question', seed: '123' }),
-        }),
-      );
-    expect(await (await request()).json()).toMatchObject({
-      id,
-      qid: 'nested/question',
-      runId: 'run',
-      result: null,
-    });
-    await request();
-    expect(await storage.get('conversation')).toMatchObject({ renderCount: 1 });
-    await coordinator['update']({ pausedApprovalId: 'approval' });
-    expect((await request()).status).toBe(409);
-  });
   it('preserves an approval when the independent watchdog destroys its sandbox', async () => {
     const { coordinator, storage } = fixture('run', 5000);
     const approval = { ...proposal, status: 'pending' as const, result: null };

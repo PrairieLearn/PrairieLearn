@@ -143,21 +143,6 @@ history with a warning about unpublished files. Transient storage failures are n
 expired backup. If no compatible native Codex continuation remains, a fresh native session receives
 the saved outcome as recovery context, not as an answer to a nonexistent RPC.
 
-### Post-sync rendering
-
-After an approved `push_sync` succeeds, the agent calls `render_question_variant({ qid, seed? })`
-for created or modified questions. The sandbox queues a bounded request; PL's existing reconciliation
-path checks current conversation ownership and permissions, resolves the QID within that course,
-and calls `getAndRenderVariant`, as AI question generation does. Rendering holds the course checkout
-lock and verifies it matches the synced revision. It never renders unpublished sandbox files.
-
-Results include QID, actual seed, synced revision, success, and bounded/redacted diagnostics,
-including available Python traceback output. The existing Python caller enforces its execution
-timeout. Requests expire after three minutes; a turn can request at most 30 renders. Background
-reconciliation may add up to a minute before rendering starts. A failure is not validation success:
-the agent must fix it and request a new approval. Broken content may remain live until that fix is
-approved. This checks generation/rendering of one seed, not screenshots, grading, or every variant.
-
 The coordinator persists its process ID, parsed stream state and log cursor. An alarm can reconcile
 the same process after coordinator replacement, including its final output, without submitting the
 user's prompt again. Conversation state is separate from sandbox state (`offline`, `starting`,

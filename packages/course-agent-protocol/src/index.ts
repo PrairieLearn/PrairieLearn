@@ -242,38 +242,6 @@ export const CourseAgentSnapshotRequestSchema = z.object({
 });
 export type CourseAgentSnapshotRequest = z.infer<typeof CourseAgentSnapshotRequestSchema>;
 
-export const CourseAgentRenderInputSchema = z.object({
-  qid: z
-    .string()
-    .min(1)
-    .max(1000)
-    .refine((qid) => !qid.split('/').some((part) => part === '..' || part === ''), 'Invalid QID'),
-  seed: z
-    .string()
-    .regex(/^[0-9a-zA-Z_-]{1,100}$/)
-    .optional(),
-});
-export const CourseAgentRenderResultSchema = z.object({
-  qid: z.string(),
-  seed: z.string().nullable(),
-  syncedRevision: z.string().nullable(),
-  success: z.boolean(),
-  diagnostics: z.array(z.string().max(4000)).max(10),
-});
-export type CourseAgentRenderResult = z.infer<typeof CourseAgentRenderResultSchema>;
-export const CourseAgentRenderRequestSchema = CourseAgentRenderInputSchema.extend({ id: z.uuid() });
-export const CourseAgentPendingRenderSchema = CourseAgentRenderRequestSchema.extend({
-  runId: z.uuid(),
-  expiresAt: z.number(),
-  result: CourseAgentRenderResultSchema.nullable().default(null),
-});
-export type CourseAgentPendingRender = z.infer<typeof CourseAgentPendingRenderSchema>;
-export const CourseAgentRenderResponseSchema = CourseAgentSnapshotRequestSchema.extend({
-  id: z.uuid(),
-  runId: z.uuid(),
-  result: CourseAgentRenderResultSchema,
-});
-
 export const CourseAgentSnapshotSchema = z.object({
   conversationId: z.uuid(),
   sandboxId: z.string(),
@@ -294,7 +262,6 @@ export const CourseAgentSnapshotSchema = z.object({
   events: z.array(CourseAgentEventSchema),
   workspaceBackup: CourseAgentWorkspaceBackupSchema.nullable().default(null),
   pendingApproval: CourseAgentPushApprovalSchema.nullable().default(null),
-  pendingRender: CourseAgentPendingRenderSchema.nullable().default(null),
 });
 export type CourseAgentSnapshot = z.infer<typeof CourseAgentSnapshotSchema>;
 
