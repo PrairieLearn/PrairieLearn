@@ -8,6 +8,7 @@ import lxml.html
 import prairielearn as pl
 import prairielearn.sympy_utils as psu
 import sympy
+from prairielearn.internal import symbolic_input as psi
 
 WEIGHT_DEFAULT = 1
 VARIABLES_DEFAULT = None
@@ -15,7 +16,7 @@ CUSTOM_FUNCTIONS_DEFAULT = None
 LABEL_DEFAULT = None
 ARIA_LABEL_DEFAULT = None
 SUFFIX_DEFAULT = None
-DISPLAY_DEFAULT = psu.DisplayType.INLINE
+DISPLAY_DEFAULT = psi.DisplayType.INLINE
 ALLOW_COMPLEX_DEFAULT = False
 ALLOWED_TYPES_DEFAULT = "expression"
 DISPLAY_LOG_AS_LN_DEFAULT = False
@@ -227,7 +228,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     variables = psu.get_items_list(
         pl.get_string_attrib(element, "variables", VARIABLES_DEFAULT)
     )
-    config = psu.RenderConfig(
+    config = psi.RenderConfig(
         name=name,
         label=pl.get_string_attrib(element, "label", LABEL_DEFAULT),
         aria_label=pl.get_string_attrib(element, "aria-label", ARIA_LABEL_DEFAULT),
@@ -238,7 +239,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             pl.get_string_attrib(element, "custom-functions", CUSTOM_FUNCTIONS_DEFAULT)
         ),
         display=pl.get_enum_attrib(
-            element, "display", psu.DisplayType, DISPLAY_DEFAULT
+            element, "display", psi.DisplayType, DISPLAY_DEFAULT
         ),
         allow_complex=pl.get_boolean_attrib(
             element, "allow-complex", ALLOW_COMPLEX_DEFAULT
@@ -271,7 +272,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             element, "initial-value", INITIAL_VALUE_DEFAULT
         ),
     )
-    return psu.render_with_config(
+    return psi.render_with_config(
         config,
         data,
         template=SYMBOLIC_INPUT_MUSTACHE_TEMPLATE_PATH.read_text(encoding="utf-8"),
@@ -934,7 +935,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
 
         if a_tru != "":
             # Substitute in imaginary unit symbol
-            a_tru_str = str(psu.replace_imaginary_for_display(a_tru, imaginary_unit))
+            a_tru_str = str(psi.replace_imaginary_for_display(a_tru, imaginary_unit))
 
     match result:
         case "correct":
