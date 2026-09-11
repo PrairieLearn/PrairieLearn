@@ -61,7 +61,7 @@ def test_decode_domain_operator_expression_with_sets() -> None:
 
     decoded = pl.json_to_big_operator(answer)
 
-    assert_type(decoded, pl.OperatorExpression)
+    assert_type(decoded, pl.BigOperator)
     assert decoded["limits"] == "domain"
     assert_type(decoded, BigDomainOperator)
     assert decoded["domain"] == sympy.FiniteSet(1, 2)
@@ -153,7 +153,7 @@ def test_operator_expression_to_json_accepts_operator_expression() -> None:
 
     encoded = pl.big_operator_to_json(decoded)
 
-    assert_type(encoded, pl.OperatorExpressionJson)
+    assert_type(encoded, pl.BigOperatorJson)
     assert encoded == bounds_answer()
 
 

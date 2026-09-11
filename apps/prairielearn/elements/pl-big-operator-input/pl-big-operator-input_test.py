@@ -802,10 +802,10 @@ class TestRenderUnits:
     @pytest.mark.parametrize("panel", ["question", "answer", "submission"])
     def test_operator_latex_overrides_structured_answer_for_rendering(
         self,
-        operator: pl.OperatorExpressionOperator,
+        operator: pl.BigOperatorName,
         panel: Literal["question", "answer", "submission"],
     ) -> None:
-        correct_answer: pl.OperatorExpressionJson = pl.big_operator_to_json(
+        correct_answer: pl.BigOperatorJson = pl.big_operator_to_json(
             operator=operator,
             operator_latex=r"\bigstar" if operator == "custom" else None,
             limits="bounds",
