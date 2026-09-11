@@ -257,10 +257,6 @@ export function InstructorAssessmentInstancePrint({
                 <dd>${maxPoints}</dd>
               </div>
               <div>
-                <dt>Paper</dt>
-                <dd>${paperSize}</dd>
-              </div>
-              <div>
                 <dt>Form ID</dt>
                 <dd>${resLocals.assessment_instance.id}</dd>
               </div>

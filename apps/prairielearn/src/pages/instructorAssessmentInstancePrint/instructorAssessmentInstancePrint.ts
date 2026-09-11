@@ -240,7 +240,6 @@ function createDocumentHandler(format: PrintFormat) {
             buildPrintableCover({
               resLocals: res.locals,
               document,
-              paperSize: layout.paperSize,
               identityFields: layout.identityFields,
               questionCount: Number(pageDataset.printQuestionCount),
               maxPoints: Number(pageDataset.printMaxPoints),

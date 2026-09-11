@@ -1,5 +1,4 @@
 import {
-  type PaperSize,
   type PrintableCover,
   type PrintableCoverField,
   type PrintableCoverSection,
@@ -60,7 +59,6 @@ export function getPrintFooterLabel({
 export function buildPrintableCover({
   resLocals,
   document,
-  paperSize,
   identityFields,
   questionCount,
   maxPoints,
@@ -69,7 +67,6 @@ export function buildPrintableCover({
 }: {
   resLocals: ResLocalsForPage<'assessment-instance'>;
   document: PrintDocument;
-  paperSize: PaperSize;
   identityFields: readonly string[];
   questionCount: number;
   maxPoints: number;
@@ -109,7 +106,6 @@ export function buildPrintableCover({
     summary: [
       { term: 'Questions', value: String(questionCount) },
       { term: 'Points', value: String(maxPoints) },
-      { term: 'Paper', value: paperSize },
       { term: 'Form ID', value: formId },
     ],
     sections,
