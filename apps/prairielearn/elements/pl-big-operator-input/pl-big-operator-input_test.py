@@ -213,7 +213,7 @@ class TestPrepareUnits:
 
         answer = data["correct_answers"]["op"]
         decoded = pl.json_to_big_operator(answer)
-        assert answer["_type"] == "operator_expression"
+        assert answer["_type"] == "big_operator"
         assert answer["operator"] == operator
         assert decoded["body"] == correct_answer.args[0]
         assert data["params"] == {}
@@ -381,7 +381,7 @@ class TestParseUnits:
         big_operator_input.parse(html(operator=operator, limits=limits), data)
 
         answer = data["submitted_answers"]["op"]
-        assert answer["_type"] == "operator_expression"
+        assert answer["_type"] == "big_operator"
         assert answer["operator"] == operator
         assert answer["limits"] == limits
         assert expected_components <= answer.keys()
@@ -932,7 +932,7 @@ class TestLifecycleRegressions:
         )
 
         big_operator_input.prepare(markup, data)
-        assert data["correct_answers"]["op"]["_type"] == "operator_expression"
+        assert data["correct_answers"]["op"]["_type"] == "big_operator"
 
         big_operator_input.parse(markup, data)
         big_operator_input.grade(markup, data)
