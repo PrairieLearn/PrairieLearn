@@ -94,15 +94,12 @@ def test_decode_custom_big_operator() -> None:
     f: sympy.Expr = sympy.Function("f")(k)
     answer = bounds_answer(
         operator="custom",
-        operator_latex=r"\mathbb{E}",
         index=sympy_json(k),
         body=sympy_json(f),
     )
 
     decoded = pl.json_to_big_operator(answer)
 
-    assert "operator_latex" in decoded
-    assert decoded.get("operator_latex") == r"\mathbb{E}"
     assert getattr(decoded["index"], "is_positive", None) is True
     assert decoded["body"] == f
 
@@ -113,7 +110,6 @@ def test_encode_custom_bounds_big_operator() -> None:
 
     encoded = pl.big_operator_to_json(
         operator="custom",
-        operator_latex=r"\mathbb{E}",
         limits="bounds",
         index=k,
         lower=sympy.Integer(1),
@@ -124,7 +120,6 @@ def test_encode_custom_bounds_big_operator() -> None:
     assert_type(encoded, BigBoundsOperatorJson)
     decoded = pl.json_to_big_operator(encoded)
     assert decoded["operator"] == "custom"
-    assert decoded.get("operator_latex") == r"\mathbb{E}"
     assert decoded["index"] == k
     assert decoded["body"] == body
 
@@ -193,8 +188,6 @@ def test_encode_approach_big_operator() -> None:
 @pytest.mark.parametrize(
     ("kwargs", "match"),
     [
-        ({"operator": "custom"}, "operator_latex"),
-        ({"operator": "sum", "operator_latex": r"\sum"}, "Built-in"),
         ({"operator": "sum", "upper": None}, '"upper"'),
         ({"operator": "sum", "domain": sympy.FiniteSet(1)}, "only accept"),
     ],
@@ -302,16 +295,9 @@ def test_decode_rejects_invalid_approach_direction() -> None:
         pl.json_to_big_operator(answer)
 
 
-@pytest.mark.parametrize("operator_latex", [None, ""])
-def test_decode_requires_custom_operator_latex(operator_latex: str | None) -> None:
-    answer = bounds_answer(operator="custom")
-    if operator_latex is not None:
-        answer["operator_latex"] = operator_latex
-
-    with pytest.raises(ValueError, match="operator_latex"):
-        pl.json_to_big_operator(answer)
-
-
-def test_decode_rejects_operator_latex_for_builtin_operator() -> None:
+@pytest.mark.parametrize("operator", ["sum", "custom"])
+def test_decode_rejects_operator_latex(operator: str) -> None:
     with pytest.raises(ValueError, match="exactly the fields required"):
-        pl.json_to_big_operator(bounds_answer(operator_latex=r"\sum"))
+        pl.json_to_big_operator(
+            bounds_answer(operator=operator, operator_latex=r"\operatorname{op}")
+        )
