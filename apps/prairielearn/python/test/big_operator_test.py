@@ -26,7 +26,7 @@ def bounds_answer(**updates: Any) -> dict[str, Any]:
         "_type": "big_operator",
         "_version": 1,
         "operator": "sum",
-        "limits": "bounds",
+        "indexing": "bounds",
         "index": sympy_json(sympy.Symbol("k")),
         "lower": sympy_json(sympy.Integer(1)),
         "upper": sympy_json(sympy.Symbol("n")),
@@ -41,7 +41,7 @@ def test_decode_bounds_big_operator_and_narrow_type() -> None:
 
     assert decoded["index"] == sympy.Symbol("k")
     assert decoded["body"] == sympy.Symbol("k") ** 2
-    if decoded["limits"] == "bounds":
+    if decoded["indexing"] == "bounds":
         assert_type(decoded, BigBoundsOperator)
         assert decoded["lower"] == 1
         assert decoded["upper"] == sympy.Symbol("n")
@@ -53,7 +53,7 @@ def test_decode_domain_big_operator_with_sets() -> None:
         "_type": "big_operator",
         "_version": 1,
         "operator": "union",
-        "limits": "domain",
+        "indexing": "domain",
         "index": sympy_json(k),
         "domain": sympy_json(sympy.FiniteSet(1, 2)),
         "body": sympy_json(sympy.FiniteSet(k)),
@@ -62,7 +62,7 @@ def test_decode_domain_big_operator_with_sets() -> None:
     decoded = pl.json_to_big_operator(answer)
 
     assert_type(decoded, pl.BigOperator)
-    assert decoded["limits"] == "domain"
+    assert decoded["indexing"] == "domain"
     assert_type(decoded, BigDomainOperator)
     assert decoded["domain"] == sympy.FiniteSet(1, 2)
     assert decoded["body"] == sympy.FiniteSet(k)
@@ -74,7 +74,7 @@ def test_decode_approaches_big_operator() -> None:
         "_type": "big_operator",
         "_version": 1,
         "operator": "limit",
-        "limits": "approaches",
+        "indexing": "approaches",
         "index": sympy_json(x),
         "target": sympy_json(sympy.Integer(0)),
         "direction": "from-right",
@@ -83,7 +83,7 @@ def test_decode_approaches_big_operator() -> None:
 
     decoded = pl.json_to_big_operator(answer)
 
-    assert decoded["limits"] == "approaches"
+    assert decoded["indexing"] == "approaches"
     assert_type(decoded, BigApproachesOperator)
     assert decoded["target"] == 0
     assert decoded["direction"] == "from-right"
@@ -110,7 +110,7 @@ def test_encode_custom_bounds_big_operator() -> None:
 
     encoded = pl.big_operator_to_json(
         operator="custom",
-        limits="bounds",
+        indexing="bounds",
         index=k,
         lower=sympy.Integer(1),
         upper=sympy.Integer(4),
@@ -127,7 +127,7 @@ def test_encode_custom_bounds_big_operator() -> None:
 def test_big_operator_to_json_accepts_strings() -> None:
     encoded = pl.big_operator_to_json(
         operator="sum",
-        limits="bounds",
+        indexing="bounds",
         index="k",
         lower="1",
         upper="n",
@@ -136,7 +136,7 @@ def test_big_operator_to_json_accepts_strings() -> None:
 
     assert_type(encoded, BigBoundsOperatorJson)
     decoded = pl.json_to_big_operator(encoded)
-    assert decoded["limits"] == "bounds"
+    assert decoded["indexing"] == "bounds"
     assert decoded["index"] == sympy.Symbol("k")
     assert decoded["lower"] == 1
     assert decoded["upper"] == sympy.Symbol("n")
@@ -156,7 +156,7 @@ def test_encode_domain_big_operator() -> None:
     k = sympy.Symbol("k")
     encoded = pl.big_operator_to_json(
         operator="union",
-        limits="domain",
+        indexing="domain",
         index=k,
         domain=sympy.FiniteSet(1, 2),
         body=sympy.FiniteSet(k),
@@ -164,7 +164,7 @@ def test_encode_domain_big_operator() -> None:
 
     assert_type(encoded, BigDomainOperatorJson)
     decoded = pl.json_to_big_operator(encoded)
-    assert decoded["limits"] == "domain"
+    assert decoded["indexing"] == "domain"
     assert decoded["domain"] == sympy.FiniteSet(1, 2)
 
 
@@ -172,7 +172,7 @@ def test_encode_approaches_big_operator() -> None:
     x = sympy.Symbol("x")
     encoded = pl.big_operator_to_json(
         operator="limit",
-        limits="approaches",
+        indexing="approaches",
         index=x,
         target=sympy.Integer(0),
         direction="from-right",
@@ -181,7 +181,7 @@ def test_encode_approaches_big_operator() -> None:
 
     assert_type(encoded, BigApproachesOperatorJson)
     decoded = pl.json_to_big_operator(encoded)
-    assert decoded["limits"] == "approaches"
+    assert decoded["indexing"] == "approaches"
     assert decoded["direction"] == "from-right"
 
 
@@ -196,7 +196,7 @@ def test_encode_rejects_inconsistent_fields(kwargs: dict[str, Any], match: str) 
     with pytest.raises(ValueError, match=match):
         cast(Any, pl.big_operator_to_json)(**{
             "operator": "sum",
-            "limits": "bounds",
+            "indexing": "bounds",
             "index": sympy.Symbol("k"),
             "lower": sympy.Integer(1),
             "upper": sympy.Integer(2),
@@ -235,7 +235,7 @@ def test_decode_rejects_non_dictionary(value: object) -> None:
         ({"_type": "sympy"}, "_type"),
         ({"_version": 2}, "_version"),
         ({"operator": "mean"}, "unsupported operator"),
-        ({"limits": "range"}, "unsupported limits"),
+        ({"indexing": "range"}, "unsupported indexing"),
     ],
 )
 def test_decode_rejects_invalid_metadata(updates: dict[str, Any], match: str) -> None:
@@ -284,7 +284,7 @@ def test_decode_rejects_invalid_approaches_direction() -> None:
         "_type": "big_operator",
         "_version": 1,
         "operator": "limit",
-        "limits": "approaches",
+        "indexing": "approaches",
         "index": sympy_json(x),
         "target": sympy_json(sympy.Integer(0)),
         "direction": "sideways",
