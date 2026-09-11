@@ -1,11 +1,11 @@
 {
-  "name": "@prairielearn/printing",
+  "name": "@prairielearn/qr-code",
   "version": "0.1.0",
   "type": "module",
   "repository": {
     "type": "git",
     "url": "https://github.com/PrairieLearn/PrairieLearn.git",
-    "directory": "packages/printing"
+    "directory": "packages/qr-code"
   },
   "private": true,
   "engines": {
@@ -18,20 +18,17 @@
     "test": "vitest run --coverage"
   },
   "dependencies": {
-    "@prairielearn/qr-code": "workspace:^",
-    "cheerio": "^1.2.0",
-    "css-tree": "^3.2.1",
-    "docx": "^9.7.1",
-    "mathml2omml": "^0.5.0",
-    "playwright": "^1.62.1"
+    "jsqr": "^1.4.0",
+    "qrcode": "^1.5.4"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/css-tree": "^3.2.0",
     "@types/node": "^24.13.3",
+    "@types/pngjs": "^6.0.5",
+    "@types/qrcode": "^1.5.6",
     "@typescript/native-preview": "beta",
     "@vitest/coverage-v8": "^4.1.10",
-    "jszip": "^3.10.1",
+    "pngjs": "^7.0.0",
     "vitest": "^4.1.10"
   }
 }

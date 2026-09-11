@@ -148,6 +148,29 @@ are only known after rendering, such as the number of questions that rendered su
 placed on the cover. `htmlToTextBlocks` reduces author-provided HTML (for example assessment
 instructions) to headings, paragraphs, and flat lists for the cover.
 
+### Page identification codes
+
+`renderPdf` accepts `pageCode: { encodePage(pageNumber) }`. After pagination, it generates a QR
+code for each physical page, including the cover, using the caller's versioned payload. The
+template must reserve a bottom-left margin box and enough space for the code and its quiet zone.
+The PrairieLearn template reserves 0.7 inches below the content for a 0.35-inch vector code,
+including its four-module quiet zone. This is about 10% of the original 1.1-inch code's area.
+The coverage exam's codes decode from 300 and 600 DPI PDF rasterizations, but not at 150 DPI.
+Physical print-and-scan validation is still needed; longer metadata produces denser codes at the
+same printed size and should be checked with the intended printer and scanner.
+
+PrairieLearn's `pl:print:1:` payload identifies the course, assessment, assessment instance,
+one-based physical page, authenticated generating user (ID, UID, and nullable name), UTC
+generation timestamp, document kind, output format, and a UUID for that export. IDs remain
+strings to preserve PostgreSQL bigint precision. All pages in one export share its timestamp and
+UUID. `decodePrintPageIdentity` validates the version and fields for future scanning workflows;
+decoded metadata is untrusted and does not authenticate the document or authorize database access.
+
+Editable DOCX output currently has no page identification codes. Static codes cannot follow
+Word repagination, and Word's `DISPLAYBARCODE` field is not supported in Word for Mac. A finalization
+workflow or an explicitly fixed-page document format is needed before promising physical-page
+identification in Word.
+
 ### PrairieLearn endpoint parameters
 
 The PrairieLearn print endpoint accepts layout choices as query parameters. `block_size` sets the

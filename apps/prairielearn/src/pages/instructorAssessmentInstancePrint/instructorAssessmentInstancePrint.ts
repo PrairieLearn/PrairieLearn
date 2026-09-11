@@ -1,3 +1,5 @@
+import { randomUUID } from 'node:crypto';
+
 import { type RequestHandler, Router } from 'express';
 import mustache from 'mustache';
 import { z } from 'zod';
@@ -14,8 +16,10 @@ import {
 import { parseRequestQuery } from '@prairielearn/zod';
 
 import { renderText as renderAssessmentText } from '../../lib/assessment.js';
+import { extractPageContext } from '../../lib/client/page-context.js';
 import { config } from '../../lib/config.js';
 import type { Assessment } from '../../lib/db-types.js';
+import { encodePrintPageIdentity } from '../../lib/print-page-code.js';
 import {
   type OmittedQuestionWarning,
   PRINT_DOCUMENTS,
@@ -197,12 +201,35 @@ function createDocumentHandler(format: PrintFormat) {
       printUrl(req.baseUrl, 'preview', layout, document),
       `${config.serverType}://localhost:${config.serverPort}`,
     );
-    const renderOptions = { url: previewUrl.href, cookieHeader: req.get('cookie') };
+    const { course, assessment, authn_user } = extractPageContext(res.locals, {
+      pageType: 'assessment',
+      accessType: 'instructor',
+    });
+    const generatedAt = new Date().toISOString();
+    const exportId = randomUUID();
+    const renderOptions = {
+      url: previewUrl.href,
+      cookieHeader: req.get('cookie'),
+    };
+    const pageCode = {
+      encodePage: (pageNumber: number) =>
+        encodePrintPageIdentity({
+          courseId: course.id,
+          assessmentId: assessment.id,
+          assessmentInstanceId: res.locals.assessment_instance.id,
+          pageNumber,
+          generatedBy: { userId: authn_user.id, uid: authn_user.uid, name: authn_user.name },
+          generatedAt,
+          exportId,
+          document,
+          format,
+        }),
+    };
     const renderer = getPrintRenderer();
     let output: Buffer;
     try {
       if (format === 'pdf') {
-        output = await renderer.renderPdf(renderOptions);
+        output = await renderer.renderPdf({ ...renderOptions, pageCode });
       } else {
         const { assessmentTextHtml, honorCodeHtml } = getCoverHtml(res.locals);
         output = await renderer.renderDocx({
