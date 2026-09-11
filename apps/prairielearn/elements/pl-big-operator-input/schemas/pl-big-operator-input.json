@@ -40,6 +40,11 @@
       "type": "string",
       "enum": ["exact", "component", "equivalent", "none"]
     },
+    "imaginary-unit-for-display": {
+      "default": "i",
+      "type": "string",
+      "enum": ["i", "j"]
+    },
     "limit-size": {
       "type": "string",
       "format": "integer"

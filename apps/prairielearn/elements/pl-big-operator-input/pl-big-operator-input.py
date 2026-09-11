@@ -23,6 +23,7 @@ SYMBOLIC_INPUT_TEMPLATE_PATH = (
 BODY_SIZE_DEFAULT = 16
 BOUNDS_LIMIT_SIZE_DEFAULT = 7
 ANNOTATION_LIMIT_SIZE_DEFAULT = 10
+IMAGINARY_UNIT_FOR_DISPLAY_DEFAULT = "i"
 
 type BuiltinOperator = Literal[
     "sum",
@@ -144,6 +145,7 @@ class RenderConfig:
     allow_direction_input: bool
     allowed_blank: AllowedBlank
     allow_complex: bool
+    imaginary_unit: str
     show_help_text: bool
     body_size: int
     limit_size: int
@@ -478,6 +480,13 @@ def _config(html: str, data: pl.QuestionData | None = None) -> RenderConfig:
         raise ValueError(
             'Custom operators with a correct answer do not support grading-method="equivalent".'
         )
+    imaginary_unit = pl.get_string_attrib(
+        element,
+        "imaginary-unit-for-display",
+        IMAGINARY_UNIT_FOR_DISPLAY_DEFAULT,
+    )
+    if imaginary_unit not in {"i", "j"}:
+        raise ValueError('Attribute "imaginary-unit-for-display" must be i or j.')
     return RenderConfig(
         answer_name=answer,
         operator=operator,
@@ -493,6 +502,7 @@ def _config(html: str, data: pl.QuestionData | None = None) -> RenderConfig:
         allow_direction_input=allow_direction_input,
         allowed_blank=allowed_blank,
         allow_complex=pl.get_boolean_attrib(element, "allow-complex", False),
+        imaginary_unit=imaginary_unit,
         show_help_text=pl.get_boolean_attrib(element, "show-help-text", True),
         body_size=body_size,
         limit_size=limit_size,
@@ -689,6 +699,7 @@ def _formatted_answer(config: RenderConfig, source: str) -> dict[str, Any] | Non
             body_source,
             tuple(dict.fromkeys((*config.variables, config.index))),
             config.custom_functions,
+            allow_complex=config.allow_complex,
         )
     except _ParseError as exc:
         raise ValueError(
@@ -702,24 +713,36 @@ def _formatted_answer(config: RenderConfig, source: str) -> dict[str, Any] | Non
                     raise ValueError('Limit direction must be "+", "-", or "+-".')
                 values = {
                     "target": _unchecked_parse(
-                        limits[1], config.variables, config.custom_functions
+                        limits[1],
+                        config.variables,
+                        config.custom_functions,
+                        allow_complex=config.allow_complex,
                     ),
                     "body": body,
                 }
             case "bounds":
                 values = {
                     "lower": _unchecked_parse(
-                        limits[1], config.variables, config.custom_functions
+                        limits[1],
+                        config.variables,
+                        config.custom_functions,
+                        allow_complex=config.allow_complex,
                     ),
                     "upper": _unchecked_parse(
-                        limits[2], config.variables, config.custom_functions
+                        limits[2],
+                        config.variables,
+                        config.custom_functions,
+                        allow_complex=config.allow_complex,
                     ),
                     "body": body,
                 }
             case "domain":
                 values = {
                     "domain": _unchecked_parse(
-                        limits[1], config.variables, config.custom_functions
+                        limits[1],
+                        config.variables,
+                        config.custom_functions,
+                        allow_complex=config.allow_complex,
                     ),
                     "body": body,
                 }
@@ -792,6 +815,7 @@ def _render_symbolic_input(
     size: int,
     allowed_types: set[psu.AllowedSympyType],
     allow_complex: bool,
+    imaginary_unit: str,
     show_help_text: bool = False,
     show_score: bool = False,
     prefix: str | None = None,
@@ -815,7 +839,7 @@ def _render_symbolic_input(
         # fixed
         display=psu.DisplayType.INLINE,
         placeholder="",
-        imaginary_unit="i",
+        imaginary_unit=imaginary_unit,
         allow_trig=True,
         simplify_expression=True,
         display_log_as_ln=False,
@@ -869,6 +893,7 @@ def _field(
             size=size,
             allowed_types=_component_allowed_types(config, cast(Component, component)),
             allow_complex=config.allow_complex,
+            imaginary_unit=config.imaginary_unit,
             show_help_text=component == "body" and config.show_help_text,
             show_score=config.grading == "component",
             prefix=prefix,
@@ -1063,7 +1088,14 @@ def _tex(config: RenderConfig, raw: dict[str, Any] | None) -> str:
 
 def _structured_tex(config: RenderConfig, structured: dict[str, Any]) -> str:
     values = _values(config, structured)
-    raw = {config.name(key): sympy.latex(value) for key, value in values.items()}
+    raw = {
+        config.name(key): sympy.latex(
+            psu.replace_imaginary_for_display(
+                cast(sympy.Expr, value), config.imaginary_unit
+            )
+        )
+        for key, value in values.items()
+    }
     if config.limits == "approach" and config.allow_direction_input:
         raw[config.name("direction")] = structured.get("direction", "")
     return _tex(config, raw)
@@ -1119,6 +1151,8 @@ def _unchecked_parse(
     source: str,
     variables: tuple[str, ...],
     custom_functions: tuple[str, ...] = (),
+    *,
+    allow_complex: bool = False,
 ) -> sympy.Basic:
     source = re.sub(r"\binfinity\b", "infty", source)
     for name in ("sin", "cos", "tan", "sec", "csc", "cot"):
@@ -1128,6 +1162,7 @@ def _unchecked_parse(
             source,
             variables,
             allow_hidden=True,
+            allow_complex=allow_complex,
             allow_sets=True,
             allow_trig_functions=True,
             custom_functions=custom_functions,
@@ -1186,6 +1221,7 @@ def _parse_values(
             custom_functions=config.custom_functions,
             allowed_types=_component_allowed_types(config, component),
             allow_complex=config.allow_complex,
+            imaginary_unit=config.imaginary_unit,
         )
         if isinstance(parsed, psu.SympyParseFailure):
             data.setdefault("format_errors", {})[name] = parsed.error
@@ -1396,7 +1432,11 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     match data["test_type"]:
         case "correct":
             for component, value in correct.items():
-                data["raw_submitted_answers"][config.name(component)] = str(value)
+                data["raw_submitted_answers"][config.name(component)] = str(
+                    psu.replace_imaginary_for_display(
+                        cast(sympy.Expr, value), config.imaginary_unit
+                    )
+                )
             if config.limits == "approach" and config.allow_direction_input:
                 data["raw_submitted_answers"][config.name("direction")] = str(
                     correct_json["direction"]
