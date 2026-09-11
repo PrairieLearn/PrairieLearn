@@ -146,7 +146,7 @@ export function buildDocxContent(
       ...format,
       bold: format.bold || has(node, 'b, strong, th, [data-docx-bold]'),
       italic: format.italic || has(node, 'i, em, [data-docx-italic]'),
-      mono: format.mono || has(node, 'code, kbd, samp, pre'),
+      mono: format.mono || has(node, 'code, kbd, samp, pre, [data-docx-mono]'),
       small: format.small || has(node, 'small, .printing-response-placeholder'),
       sub: format.sub || node.name === 'sub',
       sup: format.sup || node.name === 'sup',
@@ -432,6 +432,16 @@ export function buildDocxContent(
         blocks.push(...response(node, maxWidth));
         continue;
       }
+      if (has(node, '.printing-answer-key-label')) {
+        flush();
+        blocks.push(
+          paragraph(inline(node.children, { bold: true, small: true }, maxWidth), {
+            keepNext: true,
+            spacing: { before: 100, after: 60 },
+          }),
+        );
+        continue;
+      }
       if (has(node, '.printing-order-choice-group, .printing-order-options')) {
         flush();
         blocks.push(...ordering(node, maxWidth));
@@ -472,7 +482,9 @@ export function buildDocxContent(
         blocks.push(...table(node, maxWidth));
         continue;
       }
-      if ($(node).find('.printing-selection-option, .input-group').length > 0) {
+      if (
+        $(node).find('.printing-selection-option, .input-group, .printing-answer-key').length > 0
+      ) {
         flush();
         blocks.push(...walk(node.children, format, maxWidth));
         continue;
@@ -502,6 +514,18 @@ export function buildDocxContent(
       }
       if (node.name === 'ul' || node.name === 'ol') {
         flush();
+        if ($(node).children('.pl-order-block').length > 0) {
+          for (const item of $(node).children('.pl-order-block')) {
+            const indent = Math.round(number(item, 'data-docx-indent', 0) * 15);
+            blocks.push(
+              paragraph(inline(item.children, formatFor(item, format), maxWidth - indent / 15), {
+                indent: { left: indent + 100 },
+                spacing: { after: 60, line: 240 },
+              }),
+            );
+          }
+          continue;
+        }
         const reference = `question-list-${numbering.length}`;
         const ordered = node.name === 'ol';
         numbering.push({

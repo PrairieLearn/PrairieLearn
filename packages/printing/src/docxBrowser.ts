@@ -70,6 +70,12 @@ export function captureDocxSource(source: HTMLElement): DocxSource {
     clone.removeAttribute('style');
     clone.setAttribute('data-docx-width', String(rect.width));
     clone.setAttribute('data-docx-height', String(rect.height));
+    if (element.matches('.printing-answer-key-content .pl-order-block')) {
+      clone.setAttribute('data-docx-indent', String(Number.parseFloat(style.marginLeft)));
+      if (/monospace|courier/i.test(style.fontFamily)) {
+        clone.setAttribute('data-docx-mono', 'true');
+      }
+    }
     if (['block', 'flex', 'grid', 'list-item'].includes(style.display)) {
       clone.setAttribute('data-docx-block', 'true');
     }
