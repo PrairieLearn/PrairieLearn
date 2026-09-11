@@ -33,6 +33,132 @@ def abserr_ang(ref, x):
     return np.abs(((np.abs(ref - x) + 180) % 360) - 180)
 
 
+def get_text_position(
+    el_name: str, el: HtmlElement, prefix: str, default_pos: str, default_sep: float
+) -> dict:
+    position_data = {}
+
+    valid_positions = [
+        "above left",
+        "above",
+        "above right",
+        "left",
+        "at",
+        "right",
+        "below left",
+        "below",
+        "below right",
+    ]
+
+    pos = pl.get_string_attrib(el, prefix + "pos", default_pos)
+    if pos not in valid_positions:
+        raise ValueError(
+            el_name
+            + " error: the attribute "
+            + prefix
+            + "pos was given as '"
+            + pos
+            + "' but must be one of "
+            + str(valid_positions)
+            + "."
+        )
+
+    sep = pl.get_float_attrib(el, prefix + "sep", default_sep)
+    # Handle x shifts
+    if pos in ["above", "at", "below"]:
+        position_data["originX"] = "center"
+        position_data["textAlign"] = "center"
+        position_data["offsetx"] = 0
+    elif "left" in pos:
+        position_data["originX"] = "right"
+        position_data["textAlign"] = "left"
+        position_data["offsetx"] = -sep
+    else:
+        position_data["originX"] = "left"
+        position_data["textAlign"] = "right"
+        position_data["offsetx"] = sep
+
+    # Handle y shifts
+    if pos in ["left", "at", "right"]:
+        position_data["originY"] = "center"
+        position_data["offsety"] = 0
+    elif "above" in pos:
+        position_data["originY"] = "bottom"
+        position_data["offsety"] = -sep
+    else:
+        position_data["originY"] = "top"
+        position_data["offsety"] = sep
+
+    return position_data
+
+
+def insert_relative_text_position(
+    el_name: str,
+    el: HtmlElement,
+    angle: float,
+    prefix: str,
+    default_pos: str,
+    default_sep: float,
+    destination_dict: dict,
+) -> None:
+    """Insert relative text position into destination_dict
+
+    Args:
+        el_name: Name of the element
+        el: The HtmlElement
+        angle: The direction (expressed as an angle clockwise from rightward) which should be considered "ahead" for the text in question
+        prefix: The prefix for the html attribute describing the relative position (prefix+"relpos") and separation distance (prexi+"sep")
+        default_pos: A string indicating the default position. Not directly validated, but if the prefix+"relpos" attribute is not specified, this will become the actual position key, which must be an element of valid_relative_positions below
+        default_sep: The default separation distance used if the prefix+"sep" attribute is not specified
+        destination_dict: The dictionary into which the relevant key-value pairs should be inserted
+
+    Raises:
+        ValueError: If the relative position is not an element of valid_relative_positions below
+    """
+    relpos = pl.get_string_attrib(el, prefix + "relpos", default_pos)
+
+    # Validate
+
+    ordered_rotational_positions = [
+        "ahead",
+        "ahead right",
+        "right",
+        "behind right",
+        "behind",
+        "behind left",
+        "left",
+        "ahead left",
+    ]
+
+    valid_relative_positions = ["at", *ordered_rotational_positions]
+
+    if relpos not in valid_relative_positions:
+        raise ValueError(
+            el_name
+            + " error: the attribute "
+            + prefix
+            + "relpos was given as '"
+            + relpos
+            + "' but must be one of "
+            + str(valid_relative_positions)
+            + "."
+        )
+
+    prefix_in_dict = prefix.replace("-", "_")
+
+    if relpos == "at":
+        destination_dict[prefix_in_dict + "relpos_is_at"] = True
+    else:
+        destination_dict[prefix_in_dict + "relpos_is_at"] = False
+
+        destination_dict[prefix_in_dict + "relpos_angle"] = (
+            angle + ordered_rotational_positions.index(relpos) * 45
+        )
+        destination_dict[prefix_in_dict + "sep"] = pl.get_float_attrib(
+            el, prefix + "sep", default_sep
+        )
+
+
 # Drawing Elements
 
 elements = {}
@@ -713,7 +839,9 @@ class Vector(BaseElement):
         else:
             obj_draw = None
 
-        return {
+        relpos_active = "label-relpos" in el.attrib
+
+        result = {
             "left": left,
             "top": top,
             "x1": x1,
@@ -721,6 +849,13 @@ class Vector(BaseElement):
             "width": w,
             "angle": angle,
             "label": pl.get_string_attrib(el, "label", ""),
+            "label_latex": pl.get_boolean_attrib(el, "label-latex", True),
+            "relpos_active": relpos_active,
+            "label_anchor_pos_frac": pl.get_float_attrib(
+                el,
+                "label-anchor-pos-frac",
+                0 if ("behind" in pl.get_string_attrib(el, "label-relpos", "")) else 1,
+            ),
             "offsetx": pl.get_float_attrib(el, "offsetx", 2),
             "offsety": pl.get_float_attrib(el, "offsety", 2),
             "stroke": color,
@@ -743,6 +878,11 @@ class Vector(BaseElement):
             "selectable": drawing_defaults["selectable"],
             "evented": drawing_defaults["selectable"],
         }
+
+        if relpos_active:
+            insert_relative_text_position("pl-vector", el, 0, "label-", "", 5, result)
+
+        return result
 
     @staticmethod
     def is_gradable() -> bool:
@@ -803,6 +943,10 @@ class Vector(BaseElement):
             "width",
             "angle",
             "label",
+            "label-relpos",
+            "label-sep",
+            "label-anchor-pos-frac",
+            "label-latex",
             "offsetx",
             "offsety",
             "color",
@@ -1001,6 +1145,10 @@ class DoubleHeadedVector(BaseElement):
             "width",
             "angle",
             "label",
+            "label-relpos",
+            "label-sep",
+            "label-anchor-is-tail",
+            "label-latex",
             "offsetx",
             "offsety",
             "color",
@@ -1310,6 +1458,8 @@ class Point(BaseElement):
         tol = pl.get_float_attrib(el, "tol", grid_size / 2)
         pc, hbox, wbox, _, _ = get_error_box(x1, y1, 0, tol, 0, 0)
 
+        label_pos_data = get_text_position("pl-point", el, "label-", "below right", 5)
+
         return {
             "left": pl.get_float_attrib(el, "x1", 20),
             "top": pl.get_float_attrib(el, "y1", 20),
@@ -1320,8 +1470,16 @@ class Point(BaseElement):
             "widthErrorBox": wbox,
             "heightErrorBox": hbox,
             "label": pl.get_string_attrib(el, "label", drawing_defaults["label"]),
-            "offsetx": pl.get_float_attrib(el, "offsetx", 5),
-            "offsety": pl.get_float_attrib(el, "offsety", 5),
+            "label_latex": pl.get_boolean_attrib(el, "label-latex", True),
+            "label_originX": label_pos_data["originX"],
+            "label_originY": label_pos_data["originY"],
+            "label_textAlign": label_pos_data["textAlign"],
+            "offsetx": label_pos_data["offsetx"]
+            if "label-pos" in el.attrib
+            else pl.get_float_attrib(el, "offsetx", 0),
+            "offsety": label_pos_data["offsety"]
+            if "label-pos" in el.attrib
+            else pl.get_float_attrib(el, "offsety", 0),
             "originX": "center",
             "originY": "center",
             "opacity": pl.get_float_attrib(el, "opacity", drawing_defaults["opacity"]),
@@ -1349,6 +1507,9 @@ class Point(BaseElement):
             "y1",
             "radius",
             "label",
+            "label-latex",
+            "label-pos",
+            "label-sep",
             "offsetx",
             "offsety",
             "opacity",
@@ -1361,15 +1522,22 @@ class Coordinates(BaseElement):
     @staticmethod
     def generate(el: HtmlElement, data: dict) -> dict:
         color = pl.get_color_attrib(el, "color", "black")
-        return {
+
+        relpos_active = pl.get_boolean_attrib(el, "relpos-active", False)
+
+        result = {
             "left": pl.get_float_attrib(el, "x1", drawing_defaults["x1"]),
             "top": pl.get_float_attrib(el, "y1", drawing_defaults["y1"]),
             "width": pl.get_float_attrib(el, "width", drawing_defaults["width"]),
+            "relpos_active": relpos_active,
             "label": pl.get_string_attrib(el, "label", ""),
+            "label_latex": pl.get_boolean_attrib(el, "label-latex", True),
             "offsetx": pl.get_float_attrib(el, "offsetx", -16),
             "offsety": pl.get_float_attrib(el, "offsety", -10),
             "labelx": pl.get_string_attrib(el, "label-x", "x"),
+            "labelx_latex": pl.get_boolean_attrib(el, "label-x-latex", True),
             "labely": pl.get_string_attrib(el, "label-y", "y"),
+            "labely_latex": pl.get_boolean_attrib(el, "label-y-latex", True),
             "offsetx_label_x": pl.get_float_attrib(el, "offsetx-label-x", 0),
             "offsety_label_x": pl.get_float_attrib(el, "offsety-label-x", 0),
             "offsetx_label_y": pl.get_float_attrib(el, "offsetx-label-y", -20),
@@ -1387,6 +1555,19 @@ class Coordinates(BaseElement):
             "selectable": drawing_defaults["selectable"],
         }
 
+        if relpos_active:
+            insert_relative_text_position(
+                "pl-coordinates", el, -45, "label-", "behind", 5, result
+            )
+            insert_relative_text_position(
+                "pl-coordinates", el, 0, "label-x-", "ahead", 5, result
+            )
+            insert_relative_text_position(
+                "pl-coordinates", el, -90, "label-y-", "ahead", 5, result
+            )
+
+        return result
+
     @staticmethod
     def get_attributes() -> list[str]:
         return [
@@ -1394,13 +1575,23 @@ class Coordinates(BaseElement):
             "y1",
             "width",
             "angle",
+            "relpos-active",
             "label",
+            "label-latex",
+            "label-relpos",
+            "label-sep",
             "offsetx",
             "offsety",
             "label-x",
+            "label-x-latex",
+            "label-x-relpos",
+            "label-x-sep",
             "offsetx-label-x",
             "offsety-label-x",
             "label-y",
+            "label-y-latex",
+            "label-y-relpos",
+            "label-y-sep",
             "offsetx-label-y",
             "offsety-label-y",
             "color",
@@ -1923,12 +2114,21 @@ class Arc(BaseElement):
 class Text(BaseElement):
     @staticmethod
     def generate(el: HtmlElement, data: dict) -> dict:
+        pos_data = get_text_position("pl-text", el, "", "below right", 0)
+
         return {
+            "originX": pos_data["originX"],
+            "originY": pos_data["originY"],
+            "textAlign": pos_data["textAlign"],
             "left": pl.get_float_attrib(el, "x1", drawing_defaults["x1"]),
             "top": pl.get_float_attrib(el, "y1", drawing_defaults["y1"]),
             "label": pl.get_string_attrib(el, "label", " Text "),
-            "offsetx": pl.get_float_attrib(el, "offsetx", 0),
-            "offsety": pl.get_float_attrib(el, "offsety", 0),
+            "offsetx": pos_data["offsetx"]
+            if "pos" in el.attrib
+            else pl.get_float_attrib(el, "offsetx", 0),
+            "offsety": pos_data["offsety"]
+            if "pos" in el.attrib
+            else pl.get_float_attrib(el, "offsety", 0),
             "fontSize": pl.get_float_attrib(
                 el, "font-size", drawing_defaults["font-size"]
             ),
@@ -1937,7 +2137,17 @@ class Text(BaseElement):
 
     @staticmethod
     def get_attributes() -> list[str]:
-        return ["label", "latex", "font-size", "x1", "y1", "offsetx", "offsety"]
+        return [
+            "label",
+            "latex",
+            "font-size",
+            "pos",
+            "sep",
+            "x1",
+            "y1",
+            "offsetx",
+            "offsety",
+        ]
 
 
 class Axes(BaseElement):
