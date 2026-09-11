@@ -1033,7 +1033,7 @@ class TestSymbolicInputRendering:
     def test_score_badges_do_not_show_percent(self) -> None:
         data = question_data(raw_submitted_answers={"op": "x"}, panel="submission")
         data["submitted_answers"] = {"op": "x"}
-        rendered = big_operator_input._render_symbolic_input(
+        rendered, _view = big_operator_input._render_symbolic_input(
             data,
             name="op",
             variables=("x",),
