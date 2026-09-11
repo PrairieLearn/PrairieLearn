@@ -66,7 +66,12 @@ Review changed files, QID references, correct answers, and UUIDs. For requested 
 commit the intended edits with a descriptive message and the PrairieLearn Agent co-author trailer,
 then invoke `push_sync` as a tool. PrairieLearn validates the proposed content before requesting
 approval. It returns validation, Git, and sync errors to you; fix their cause before retrying.
-Do not invent separate validation or rendering tools. A denial means do not publish or resubmit
+After successful push and sync, call `render_question_variant({ qid, seed? })` for every question
+you created or modified. It renders one variant of the currently synced question, not unpublished
+files, and reports the tested seed and revision. Use the returned errors to fix broken content,
+then request a new approval with `push_sync`. Never silently publish a fix. This is not grading
+verification or a guarantee across all seeds; report the actual scope and any failures.
+A denial means do not publish or resubmit
 the same proposal; ask the instructor what to change if unclear. Never push directly.
 Report what changed and whether publication and sync succeeded. Sync success does not prove that
 every question renders or grades correctly. Use inline code for file paths, not download links.

@@ -108,28 +108,55 @@ Sandbox lifetime settings are non-secret and can be configured in `config.json`:
 ```json
 {
   "courseAgentSandbox": {
-    "idleTimeoutSeconds": 600,
-    "sleepAfterSeconds": 21600,
-    "backupTtlSeconds": 604800,
-    "turnTimeoutSeconds": 21600
+    "waitingForUserTimeoutSeconds": 600,
+    "sandboxInactivityTimeoutSeconds": 21600,
+    "cloudflareSandboxTimeoutSeconds": 21600,
+    "backupTtlSeconds": 604800
   }
 }
 ```
 
-`idleTimeoutSeconds` starts a new idle interval after a turn finishes, fails, or pauses for a validated
-approval. Validation acknowledgments and diagnostic polling do not extend it. A new message clears
-the deadline. The Durable Object alarm checks an active process every minute; idle expiry never
-interrupts a working agent. `turnTimeoutSeconds` is a separate active-execution guard, not a sandbox
-lifetime. `sleepAfterSeconds` controls Cloudflare's inactivity failsafe, with `keepAlive` disabled.
-Both guards default to six hours. Human approval wait time is excluded from the active-execution guard.
-Settings take effect on the next run and accept 60–86,400 seconds.
+- `waitingForUserTimeoutSeconds`: normal cost-saving suspension after a reply, failure, or validated
+  approval request. Back up first, then destroy. Polling and repeated validation acknowledgments do
+  not extend the wait. A new message clears it.
+- `sandboxInactivityTimeoutSeconds`: emergency shutdown after no course-checkout modifications or
+  agent network requests. An independent Durable Object records activity and destroys the sandbox
+  even if the coordinator or backups fail. SDK polling, diagnostics, backup work, and tool-result
+  polling do not count. The native filesystem watcher emits only on changes; it does not keep an
+  SDK watch request open. A socket left open without new requests does not reset this deadline.
+- `cloudflareSandboxTimeoutSeconds`: native `sleepAfter`, with `keepAlive: false`. This is the
+  platform fallback if our lifecycle handling fails. SDK requests can renew it, so it is not the
+  same clock as the activity watchdog. Diagnostics do not invent a platform expiration timestamp.
+- `backupTtlSeconds`: how long a saved workspace remains restorable (seven days by default), not
+  how long a sandbox runs.
 
-There is no absolute sandbox lifetime. Legacy `maxLifetimeSeconds` values are ignored. On upgrade,
-old absolute-deadline alarms are replaced with a full idle interval or an active-process check.
-Before intentional suspension, the coordinator backs up the workspace. A failed backup keeps the
-sandbox available and retries after one minute; it never falls through to destruction. Successful
-turns also create checkpoints. Backup failure does not invalidate the agent's completed response.
-The next message restores the last checkpoint; expired checkpoints are reported explicitly.
+Legacy `idleTimeoutSeconds` and `sleepAfterSeconds` still work; the corresponding new names take
+precedence. `turnTimeoutSeconds` and `maxLifetimeSeconds` are ignored. There is no absolute runtime
+cap: an active agent may continue longer than six hours. Operation-level Git, tool, and Python
+execution limits remain. Timeout settings accept 60–86,400 seconds and apply on the next run.
+
+Normal suspension retries a failed backup after one minute, but the independent inactivity watchdog
+can still force destruction without another backup. Successful turns also checkpoint. A lost sandbox
+does not discard a pending approval or its saved publication outcome. Recovery restores a usable
+backup; a confirmed missing/expired backup starts from the current repository and conversation
+history with a warning about unpublished files. Transient storage failures are not treated as an
+expired backup. If no compatible native Codex continuation remains, a fresh native session receives
+the saved outcome as recovery context, not as an answer to a nonexistent RPC.
+
+### Post-sync rendering
+
+After an approved `push_sync` succeeds, the agent calls `render_question_variant({ qid, seed? })`
+for created or modified questions. The sandbox queues a bounded request; PL's existing reconciliation
+path checks current conversation ownership and permissions, resolves the QID within that course,
+and calls `getAndRenderVariant`, as AI question generation does. Rendering holds the course checkout
+lock and verifies it matches the synced revision. It never renders unpublished sandbox files.
+
+Results include QID, actual seed, synced revision, success, and bounded/redacted diagnostics,
+including available Python traceback output. The existing Python caller enforces its execution
+timeout. Requests expire after three minutes; a turn can request at most 30 renders. Background
+reconciliation may add up to a minute before rendering starts. A failure is not validation success:
+the agent must fix it and request a new approval. Broken content may remain live until that fix is
+approved. This checks generation/rendering of one seed, not screenshots, grading, or every variant.
 
 The coordinator persists its process ID, parsed stream state and log cursor. An alarm can reconcile
 the same process after coordinator replacement, including its final output, without submitting the

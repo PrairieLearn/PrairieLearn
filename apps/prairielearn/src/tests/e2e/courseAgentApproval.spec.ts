@@ -288,6 +288,10 @@ test('reviews wrapped diffs in one scrolling modal and hides historical refresh 
     animations: 'disabled',
   });
   await page.setViewportSize({ width: 390, height: 844 });
+  const filePath = added.getByTitle('questions/example/question.html');
+  await expect(filePath).toHaveText('questions/example/question.html');
+  await expect(filePath).toHaveCSS('white-space', 'nowrap');
+  await expect(filePath.locator('.course-agent-diff-filename')).toHaveText('question.html');
   await expect.poll(async () => (await content.boundingBox())!.width).toBeLessThan(390);
   await expect.poll(() => body.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true);
   await expect

@@ -1,4 +1,4 @@
-import { mkdtemp, rm } from 'node:fs/promises';
+import { access, mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 
@@ -28,6 +28,7 @@ import {
   loadFullCourse,
   writeErrorsAndWarningsForCourseData,
 } from '../../../sync/course-db.js';
+import { validateHTML } from '../validateHTML.js';
 
 import { respondToCourseAgentPushApproval } from './ephemeral-runtime.js';
 
@@ -154,6 +155,34 @@ export async function validateCourseAgentProposal(
       const lines: string[] = [];
       writeErrorsAndWarningsForCourseData(course.id, data, (line = '') => lines.push(line));
       throw new Error(`Course validation failed before approval:\n${stripAnsi(lines.join('\n'))}`);
+    }
+    const changed = await execa(
+      'git',
+      ['diff', '--cached', '--name-only', '-z', '--diff-filter=ACMR'],
+      { cwd: checkout, env },
+    );
+    const questionDirectories = new Set(
+      changed.stdout
+        .split('\0')
+        .filter(
+          (file) =>
+            file.startsWith('questions/') &&
+            ['question.html', 'server.py', 'info.json'].includes(path.basename(file)),
+        )
+        .map((file) => path.dirname(file)),
+    );
+    for (const directory of questionDirectories) {
+      const html = await readFile(path.join(checkout, directory, 'question.html'), 'utf8');
+      const hasServer = await access(path.join(checkout, directory, 'server.py')).then(
+        () => true,
+        () => false,
+      );
+      const validation = await validateHTML(html, hasServer);
+      if (validation.errors.length > 0) {
+        throw new Error(
+          `Question HTML validation failed before approval (${directory}):\n${validation.errors.join('\n')}`,
+        );
+      }
     }
   } finally {
     await rm(directory, { recursive: true, force: true });

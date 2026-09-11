@@ -132,6 +132,21 @@
 .course-agent-diff-file {
   background: var(--bs-tertiary-bg);
 }
+.course-agent-diff-path {
+  display: flex;
+  min-width: 0;
+  white-space: nowrap;
+}
+.course-agent-diff-directory {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.course-agent-diff-filename {
+  flex-shrink: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 .course-agent-diff-section + .course-agent-diff-section {
   margin-top: 1.5rem;
 }
@@ -170,10 +185,16 @@
   border-top: 1px dashed var(--bs-border-color);
 }
 .course-agent-diff-addition {
-  background: rgba(var(--bs-success-rgb), 0.06);
+  background: rgba(var(--bs-success-rgb), 0.18);
 }
 .course-agent-diff-deletion {
-  background: rgba(var(--bs-danger-rgb), 0.06);
+  background: rgba(var(--bs-danger-rgb), 0.18);
+}
+.course-agent-diff-addition .course-agent-diff-marker {
+  color: var(--bs-success-text-emphasis);
+}
+.course-agent-diff-deletion .course-agent-diff-marker {
+  color: var(--bs-danger-text-emphasis);
 }
 
 @media (prefers-reduced-motion: reduce) {

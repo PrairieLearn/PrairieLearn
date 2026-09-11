@@ -626,10 +626,13 @@ export const ConfigSchema = z.object({
   courseAgentCapabilitySecret: z.string().nullable().default(null),
   courseAgentSandbox: z
     .object({
+      waitingForUserTimeoutSeconds: z.number().int().min(60).max(86_400).optional(),
+      sandboxInactivityTimeoutSeconds: z.number().int().min(60).max(86_400).default(21_600),
+      cloudflareSandboxTimeoutSeconds: z.number().int().min(60).max(86_400).optional(),
+      // Legacy names remain readable while local configurations are updated.
       idleTimeoutSeconds: z.number().int().min(60).max(86_400).default(600),
       sleepAfterSeconds: z.number().int().min(60).max(86_400).default(21_600),
       backupTtlSeconds: z.number().int().min(60).max(2_592_000).default(604_800),
-      turnTimeoutSeconds: z.number().int().min(60).max(86_400).default(21_600),
     })
     .prefault({}),
   /**

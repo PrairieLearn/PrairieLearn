@@ -6,6 +6,8 @@ import {
   type CourseAgentAuthoringContext,
   type CourseAgentEvent,
   CourseAgentPushDecisionRequestSchema,
+  CourseAgentRenderResponseSchema,
+  type CourseAgentRenderResult,
   CourseAgentSnapshotSchema,
   CourseAgentStartRunResponseSchema,
   type CourseAgentWorkspaceBackup,
@@ -26,6 +28,33 @@ interface Identity {
   courseId: string;
   conversationId: string;
   sandboxId: string;
+}
+
+export async function respondToCourseAgentRender(
+  identity: Identity,
+  id: string,
+  runId: string,
+  result: CourseAgentRenderResult,
+) {
+  const capability = generateSignedToken(
+    { type: 'course-agent-inspect', ...identity, expiresAt: expiresAt() },
+    capabilitySecret(),
+  );
+  const body = CourseAgentRenderResponseSchema.parse({
+    ...identity,
+    capability,
+    id,
+    runId,
+    result,
+  });
+  const response = await fetchWorker('/v1/render-results', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (!response.ok && response.status !== 409) {
+    throw new Error(`Could not return question render result (${response.status})`);
+  }
 }
 
 interface FakeConversation extends Identity {
@@ -72,10 +101,16 @@ function expiresAt() {
 
 function runtimeSettings() {
   return {
-    idleTimeoutSeconds: config.courseAgentSandbox.idleTimeoutSeconds,
+    idleTimeoutSeconds:
+      config.courseAgentSandbox.waitingForUserTimeoutSeconds ??
+      config.courseAgentSandbox.idleTimeoutSeconds,
     backupTtlSeconds: config.courseAgentSandbox.backupTtlSeconds,
-    sleepAfterSeconds: config.courseAgentSandbox.sleepAfterSeconds,
-    turnTimeoutSeconds: config.courseAgentSandbox.turnTimeoutSeconds,
+    sleepAfterSeconds:
+      config.courseAgentSandbox.cloudflareSandboxTimeoutSeconds ??
+      config.courseAgentSandbox.sleepAfterSeconds,
+    waitingForUserTimeoutSeconds: config.courseAgentSandbox.waitingForUserTimeoutSeconds,
+    sandboxInactivityTimeoutSeconds: config.courseAgentSandbox.sandboxInactivityTimeoutSeconds,
+    cloudflareSandboxTimeoutSeconds: config.courseAgentSandbox.cloudflareSandboxTimeoutSeconds,
   };
 }
 

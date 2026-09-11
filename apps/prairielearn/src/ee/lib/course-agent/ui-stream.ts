@@ -97,6 +97,9 @@ export function courseAgentUIStream(runId: string) {
         case 'tool.failed': {
           const id = `${runId}:tool:${String(event.data.operationId ?? event.sequence)}`;
           const label = String(event.data.label ?? 'Used a tool');
+          // Older streams recorded the deliberately paused native publication call as a tool.
+          // Approval state and its result are represented by the durable approval card instead.
+          if (label === 'Proposing changes') break;
           if (event.type === 'tool.started') startTool(id, label);
           else endTool(id, label, event.type === 'tool.failed');
           break;

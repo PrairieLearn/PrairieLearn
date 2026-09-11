@@ -14,6 +14,36 @@ describe('pushSyncParams', () => {
 });
 
 describe('proxyPushSync', () => {
+  it('routes rendering only through the owning sandbox and rejects arbitrary internal paths', async () => {
+    const fetch = vi.fn((_request: Request) => Response.json({ result: null }));
+    const coordinator = {
+      idFromName: () => 'id',
+      get: () => ({ fetch }),
+    } as unknown as DurableObjectNamespace;
+    const context = {
+      containerId: 'container-id',
+      params: { containerId: 'container-id', sandboxId: 'sandbox' },
+    };
+    const result = await proxyPushSync(
+      new Request('http://course-agent.internal/render-question-variant', {
+        method: 'POST',
+        body: '{"qid":"question"}',
+      }),
+      coordinator,
+      context,
+    );
+    expect(result.ok).toBe(true);
+    expect(new URL(fetch.mock.calls[0][0].url).pathname).toBe('/render-question-variant');
+    expect(
+      (
+        await proxyPushSync(
+          new Request('http://course-agent.internal/admin', { method: 'POST' }),
+          coordinator,
+          context,
+        )
+      ).status,
+    ).toBe(404);
+  });
   it('routes the request using the application sandbox ID', async () => {
     const fetch = vi.fn(() => Response.json({ accepted: true }));
     const coordinator = {

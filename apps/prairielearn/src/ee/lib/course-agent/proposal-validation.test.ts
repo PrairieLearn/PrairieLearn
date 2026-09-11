@@ -81,6 +81,18 @@ async function withProposal(
 }
 
 describe('automatic pre-approval validation', () => {
+  it('reuses AI HTML validation before showing approval', async () => {
+    await withProposal(
+      (checkout) =>
+        writeFile(
+          path.join(checkout, 'questions/addNumbers/question.html'),
+          '<!doctype html><html><body>Invalid question document</body></html>',
+        ),
+      async (params) => {
+        await expect(validateCourseAgentProposal(...params)).rejects.toThrow('DOCTYPE');
+      },
+    );
+  });
   it('rejects a proposal whose remote base changed before showing approval', async () => {
     await withProposal(
       (checkout) => writeFile(path.join(checkout, 'README.md'), 'Proposed documentation\n'),

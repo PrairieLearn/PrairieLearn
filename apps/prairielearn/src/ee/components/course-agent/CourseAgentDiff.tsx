@@ -72,7 +72,7 @@ export function CourseAgentDiff({ diff }: { diff: string }) {
     <div className="course-agent-diff p-3">
       {parseCourseAgentDiff(diff).map((file) => {
         const filename = file.path.split('/').at(-1)!;
-        const directory = file.path.slice(0, -filename.length);
+        const directory = file.path.slice(0, -filename.length - 1);
         return (
           <section
             key={file.path}
@@ -80,9 +80,13 @@ export function CourseAgentDiff({ diff }: { diff: string }) {
             className="course-agent-diff-section border rounded"
           >
             <div className="course-agent-diff-file border-bottom px-3 py-2 d-flex align-items-center gap-2">
-              <div className="font-monospace small text-break flex-grow-1">
-                <div className="text-muted">{directory}</div>
-                <div className="fw-semibold">{filename}</div>
+              <div
+                className="course-agent-diff-path font-monospace small flex-grow-1"
+                title={file.path}
+              >
+                <span className="course-agent-diff-directory text-muted">{directory}</span>
+                {directory && <span className="flex-shrink-0 text-muted">/</span>}
+                <span className="course-agent-diff-filename fw-semibold">{filename}</span>
               </div>
               {file.status !== 'modified' && (
                 <span

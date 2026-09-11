@@ -646,7 +646,12 @@ function Diagnostics({
     ['revision (Worker)', String(lifecycle?.revision ?? null)],
     ['sandboxGeneration (Worker)', String(lifecycle?.sandboxGeneration ?? null)],
     ['idleExpiresAt (Worker)', String(lifecycle?.idleExpiresAt ?? null)],
-    ['activeRunExpiresAt (Worker)', String(lifecycle?.activeRunExpiresAt ?? null)],
+    ['Last sandbox activity (watchdog)', String(lifecycle?.lastSandboxActivityAt ?? null)],
+    [
+      'Sandbox inactivity deadline (watchdog)',
+      String(lifecycle?.sandboxInactivityExpiresAt ?? null),
+    ],
+    ['Shutdown reason', String(lifecycle?.shutdownReason ?? null)],
     ['processId (Worker)', String(lifecycle?.processId ?? null)],
     ...Object.entries(persistence ?? {}).map(([key, value]) => [
       `${key} (PostgreSQL)`,

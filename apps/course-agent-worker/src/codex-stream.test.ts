@@ -3,6 +3,19 @@ import { describe, expect, it } from 'vitest';
 import { CodexStream } from './codex-stream.js';
 
 describe('Codex app-server notifications', () => {
+  it('does not leave an interrupted native publication tool in the approval UI', () => {
+    const stream = new CodexStream();
+    for (const method of ['item/started', 'item/completed']) {
+      expect(
+        stream.consume({
+          method,
+          params: {
+            item: { type: 'dynamicToolCall', id: 'push', tool: 'push_sync', status: 'failed' },
+          },
+        }),
+      ).toEqual([]);
+    }
+  });
   it('streams final-answer deltas immediately, without duplicating item completion', () => {
     const stream = new CodexStream();
     const item = { type: 'agentMessage', id: 'answer', phase: 'final_answer', text: '' };

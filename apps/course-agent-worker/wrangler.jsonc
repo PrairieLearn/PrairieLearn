@@ -42,6 +42,10 @@
       {
         "class_name": "CourseAgentCoordinator",
         "name": "COURSE_AGENT_COORDINATOR"
+      },
+      {
+        "class_name": "CourseAgentWatchdog",
+        "name": "COURSE_AGENT_WATCHDOG"
       }
     ]
   },
@@ -49,6 +53,10 @@
     {
       "new_sqlite_classes": ["Sandbox", "CourseAgentCoordinator"],
       "tag": "v1"
+    },
+    {
+      "new_sqlite_classes": ["CourseAgentWatchdog"],
+      "tag": "v2"
     }
   ]
 }

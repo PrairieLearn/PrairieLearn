@@ -348,7 +348,6 @@ const diagnostics = courseAgentProcedure
         lifecycle_revision: true,
         sandbox_generation: true,
         idle_expires_at: true,
-        active_run_expires_at: true,
         process_id: true,
       }).nullable(),
     }),

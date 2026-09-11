@@ -7,6 +7,8 @@ RUN npm install -g @openai/codex@0.153.0-alpha.5
 
 COPY scripts/run-codex.mjs /opt/course-agent/scripts/run-codex.mjs
 COPY scripts/push-approval.mjs /opt/course-agent/scripts/push-approval.mjs
+COPY scripts/render-question.mjs /opt/course-agent/scripts/render-question.mjs
+COPY scripts/workspace-activity.mjs /opt/course-agent/scripts/workspace-activity.mjs
 COPY scripts/course-context.mjs /opt/course-agent/scripts/course-context.mjs
 COPY skills/course-content-authoring /opt/course-agent/skills/course-content-authoring
 

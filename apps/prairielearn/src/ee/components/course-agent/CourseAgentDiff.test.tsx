@@ -19,6 +19,13 @@ const diff = [
 ].join('\n');
 
 describe('course-agent diff review', () => {
+  it('keeps the directory and filename inline with the full path available', () => {
+    const html = renderToStaticMarkup(<CourseAgentDiff diff={diff} />);
+    expect(html).toContain('title="questions/example/question.html"');
+    expect(html).toContain('>questions/example</span><span');
+    expect(html).toContain('>/</span><span');
+    expect(html).toContain('>question.html</span>');
+  });
   it('counts changes without interpreting hunk contents as Git metadata', () => {
     expect(parseCourseAgentDiff(diff)).toEqual([
       {

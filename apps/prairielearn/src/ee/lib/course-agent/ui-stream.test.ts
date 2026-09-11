@@ -32,6 +32,17 @@ async function render(input: CourseAgentEvent[]) {
 }
 
 describe('course-agent UI-message adapter', () => {
+  it('does not show intentionally paused legacy publication tools as interrupted', async () => {
+    const messages = await render(
+      events([
+        ['user.message', { runId: 'current' }],
+        ['tool.started', { operationId: 'publish', label: 'Proposing changes' }],
+        ['git.push.approval.requested', { approvalId: 'approval' }],
+        ['agent.completed', { response: 'Publication was denied.' }],
+      ]),
+    );
+    expect(messages.at(-1)?.parts.some((part) => part.type === 'tool-activity')).toBe(false);
+  });
   it('keeps a refresh marker in the saved assistant message only after successful sync', async () => {
     const messages = await render(
       events([

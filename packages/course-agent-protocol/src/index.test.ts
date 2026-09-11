@@ -9,6 +9,26 @@ import {
 } from './index.js';
 
 describe('course-agent protocol', () => {
+  it('prefers canonical timeout settings over legacy aliases and drops the execution cap', () => {
+    expect(
+      CourseAgentRuntimeSettingsSchema.parse({
+        idleTimeoutSeconds: 60,
+        waitingForUserTimeoutSeconds: 120,
+        sleepAfterSeconds: 60,
+        cloudflareSandboxTimeoutSeconds: 21600,
+        turnTimeoutSeconds: 600,
+      }),
+    ).toMatchObject({
+      idleTimeoutSeconds: 120,
+      waitingForUserTimeoutSeconds: 120,
+      sleepAfterSeconds: 21600,
+      cloudflareSandboxTimeoutSeconds: 21600,
+      sandboxInactivityTimeoutSeconds: 21600,
+    });
+    expect(CourseAgentRuntimeSettingsSchema.parse({ turnTimeoutSeconds: 600 })).not.toHaveProperty(
+      'turnTimeoutSeconds',
+    );
+  });
   it('defaults the platform failsafe to six hours without an absolute sandbox lifetime', () => {
     const settings = { idleTimeoutSeconds: 600, turnTimeoutSeconds: 900 };
     expect(CourseAgentRuntimeSettingsSchema.parse(settings).sleepAfterSeconds).toBe(21_600);

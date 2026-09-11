@@ -6,13 +6,26 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import { buildCourseManifest, formatCourseContext } from './course-context.mjs';
 import { requestPushApproval } from './push-approval.mjs';
+import { requestQuestionRender } from './render-question.mjs';
+import { watchWorkspaceActivity } from './workspace-activity.mjs';
 
-const THREAD_CONFIGURATION_VERSION = 3;
+const THREAD_CONFIGURATION_VERSION = 4;
 const pushTool = {
   name: 'push_sync',
   description:
     'Validate committed course changes and request instructor approval to push and sync. Fix errors before resubmitting; denial is not approval.',
   inputSchema: { type: 'object', properties: {}, additionalProperties: false },
+};
+const renderTool = {
+  name: 'render_question_variant',
+  description:
+    'Generate and render one variant of the currently synced question after successful push_sync. Does not validate unpublished sandbox files or grading. Fix failures and request a new publication approval.',
+  inputSchema: {
+    type: 'object',
+    properties: { qid: { type: 'string' }, seed: { type: 'string' } },
+    required: ['qid'],
+    additionalProperties: false,
+  },
 };
 
 // App-server, unlike exec --json, exposes incremental agent-message text.
@@ -29,6 +42,8 @@ export async function runCodex({
   request = prompt,
   continuation,
   requestApproval = requestPushApproval,
+  renderQuestion = requestQuestionRender,
+  watchActivity = watchWorkspaceActivity,
 }) {
   const skillPath = fileURLToPath(
     new URL('../skills/course-content-authoring/SKILL.md', import.meta.url),
@@ -58,9 +73,13 @@ export async function runCodex({
   }
   const compatibleSavedThread =
     savedThread?.configurationVersion === THREAD_CONFIGURATION_VERSION ? savedThread : undefined;
-  if (continuation && compatibleSavedThread?.approvalId !== continuation.approvalId) {
+  if (
+    continuation &&
+    compatibleSavedThread &&
+    compatibleSavedThread.approvalId !== continuation.approvalId
+  ) {
     throw new Error(
-      'The saved Codex approval continuation is unavailable. It has not been replaced.',
+      'The saved Codex approval continuation is unavailable or has already been delivered.',
     );
   }
   const child = spawn(
@@ -90,6 +109,7 @@ export async function runCodex({
       env: { ...process.env, CODEX_HOME: codexHome },
     },
   );
+  let stopWatching = () => {};
   const lines = createInterface({ input: child.stdout });
   const exited = new Promise((resolve) => child.once('close', resolve));
   let spawnError;
@@ -114,6 +134,7 @@ export async function runCodex({
     await rename(`${threadFile}.tmp`, threadFile);
   };
   try {
+    stopWatching = watchActivity(cwd);
     send({
       id: 0,
       method: 'initialize',
@@ -125,6 +146,31 @@ export async function runCodex({
     for await (const line of lines) {
       const message = JSON.parse(line);
       if ('id' in message && message.method) {
+        if (
+          message.method === 'item/tool/call' &&
+          message.params?.tool === 'render_question_variant' &&
+          message.params.threadId === threadId
+        ) {
+          try {
+            const result = await renderQuestion(message.params.arguments);
+            send({
+              id: message.id,
+              result: {
+                success: result.success,
+                contentItems: [{ type: 'inputText', text: JSON.stringify(result) }],
+              },
+            });
+          } catch (error) {
+            send({
+              id: message.id,
+              result: {
+                success: false,
+                contentItems: [{ type: 'inputText', text: error.message }],
+              },
+            });
+          }
+          continue;
+        }
         if (
           message.method === 'item/tool/call' &&
           message.params?.tool === 'push_sync' &&
@@ -167,7 +213,7 @@ export async function runCodex({
             cwd,
             ...(compatibleSavedThread
               ? { threadId: compatibleSavedThread.threadId }
-              : { ephemeral: false, dynamicTools: [pushTool] }),
+              : { ephemeral: false, dynamicTools: [pushTool, renderTool] }),
             approvalPolicy: 'on-request',
             approvalsReviewer: 'auto_review',
             sandbox: 'workspace-write',
@@ -180,16 +226,19 @@ export async function runCodex({
         // Persist before starting the turn so an interrupted run can still be resumed.
         await saveThread(compatibleSavedThread?.approvalId);
         emit({ method: 'thread/started', params: { thread: { id: threadId } } });
-        const input =
+        let input =
           !compatibleSavedThread && history.length > 0
             ? `Recovered conversation (JSON transcript, not a new request; files may reflect only the last saved workspace):\n${JSON.stringify(history)}\n\nCurrent request:\n${contextualPrompt}`
             : contextualPrompt;
+        if (continuation && !compatibleSavedThread) {
+          input += `\n\nPL recovered this conversation without its native tool continuation. The authoritative saved push_sync outcome is JSON data:\n${JSON.stringify(continuation)}\nDo not repeat this publication. Report the outcome, inspect the current checkout, and validate successfully synced questions as needed. Unpublished files absent from the latest backup may have been lost.`;
+        }
         send({
           id: 2,
           method: 'turn/start',
           params: {
             threadId,
-            ...(continuation
+            ...(continuation && compatibleSavedThread
               ? {
                   input: [],
                   toolOutput: { name: 'push_sync', output: JSON.stringify(continuation) },
@@ -227,6 +276,7 @@ export async function runCodex({
     }
     throw spawnError ?? new Error('Codex exited before completing the turn');
   } finally {
+    stopWatching();
     lines.close();
     child.stdin.end();
     terminate();

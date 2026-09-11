@@ -126,7 +126,7 @@ it('starts once, then resumes without replaying previous messages', async () => 
     JSON.parse(
       await readFile(join(options.cwd, '.course-agent/codex/course-agent-thread.json'), 'utf8'),
     ),
-  ).toEqual({ threadId: 'test-thread', configurationVersion: 3 });
+  ).toEqual({ threadId: 'test-thread', configurationVersion: 4 });
 });
 
 it('replaces an incompatible thread and restores its conversation history', async () => {
@@ -148,7 +148,7 @@ it('replaces an incompatible thread and restores its conversation history', asyn
   ).toContain(JSON.stringify(history));
   expect(JSON.parse(await readFile(join(codexHome, 'course-agent-thread.json'), 'utf8'))).toEqual({
     threadId: 'test-thread',
-    configurationVersion: 3,
+    configurationVersion: 4,
   });
 });
 
@@ -160,7 +160,8 @@ it('tells Codex to invoke course-agent tools instead of shell commands', async (
   const instructions = mock.requests.find((request) => request.method === 'thread/start').params
     .developerInstructions;
   expect(instructions).toContain('invoke `push_sync` as a tool');
-  expect(instructions).toContain('Do not invent separate validation or rendering tools');
+  expect(instructions).toContain('render_question_variant');
+  expect(instructions).toContain('Never silently publish a fix');
   expect(instructions).toContain('Never push directly');
 });
 
@@ -209,10 +210,16 @@ it('pauses a dynamic tool and resumes its result without fabricating a user mess
   );
 });
 
-it('refuses to replace a missing approval continuation with a new conversation', async () => {
+it('recovers a missing native continuation using the saved outcome and conversation history', async () => {
   const options = await fixture();
-  await expect(
-    runCodex({ ...options, prompt: '', continuation: { approvalId: 'missing' } }),
-  ).rejects.toThrow('continuation is unavailable');
-  expect(mock.requests).toHaveLength(0);
+  await runCodex({
+    ...options,
+    prompt: '',
+    history: [{ role: 'user', text: 'Previous request' }],
+    continuation: { approvalId: 'missing', synced: true },
+  });
+  const turn = mock.requests.find((request) => request.method === 'turn/start');
+  expect(turn.params.input[0].text).toContain('authoritative saved push_sync outcome');
+  expect(turn.params.input[0].text).toContain('Previous request');
+  expect(turn.params).not.toHaveProperty('toolOutput');
 });

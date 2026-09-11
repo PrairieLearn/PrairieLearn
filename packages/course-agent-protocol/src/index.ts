@@ -138,12 +138,25 @@ export const CourseAgentAuthoringContextSchema = z.object({
 });
 export type CourseAgentAuthoringContext = z.infer<typeof CourseAgentAuthoringContextSchema>;
 
-export const CourseAgentRuntimeSettingsSchema = z.object({
-  idleTimeoutSeconds: z.number().int().min(60).max(86_400),
-  backupTtlSeconds: z.number().int().min(60).max(2_592_000).default(604800),
-  sleepAfterSeconds: z.number().int().min(60).max(86_400).default(21_600),
-  turnTimeoutSeconds: z.number().int().min(60).max(86_400).default(21_600),
-});
+export const CourseAgentRuntimeSettingsSchema = z
+  .object({
+    waitingForUserTimeoutSeconds: z.number().int().min(60).max(86_400).optional(),
+    sandboxInactivityTimeoutSeconds: z.number().int().min(60).max(86_400).default(21_600),
+    cloudflareSandboxTimeoutSeconds: z.number().int().min(60).max(86_400).optional(),
+    // Accepted for existing local configurations during the rename.
+    idleTimeoutSeconds: z.number().int().min(60).max(86_400).default(600),
+    backupTtlSeconds: z.number().int().min(60).max(2_592_000).default(604800),
+    sleepAfterSeconds: z.number().int().min(60).max(86_400).default(21_600),
+  })
+  .transform((settings) => ({
+    ...settings,
+    waitingForUserTimeoutSeconds:
+      settings.waitingForUserTimeoutSeconds ?? settings.idleTimeoutSeconds,
+    cloudflareSandboxTimeoutSeconds:
+      settings.cloudflareSandboxTimeoutSeconds ?? settings.sleepAfterSeconds,
+    idleTimeoutSeconds: settings.waitingForUserTimeoutSeconds ?? settings.idleTimeoutSeconds,
+    sleepAfterSeconds: settings.cloudflareSandboxTimeoutSeconds ?? settings.sleepAfterSeconds,
+  }));
 export type CourseAgentRuntimeSettings = z.infer<typeof CourseAgentRuntimeSettingsSchema>;
 
 export const CourseAgentRunCapabilitySchema = CourseAgentIdentitySchema.extend({
@@ -200,6 +213,38 @@ export const CourseAgentSnapshotRequestSchema = z.object({
 });
 export type CourseAgentSnapshotRequest = z.infer<typeof CourseAgentSnapshotRequestSchema>;
 
+export const CourseAgentRenderInputSchema = z.object({
+  qid: z
+    .string()
+    .min(1)
+    .max(1000)
+    .refine((qid) => !qid.split('/').some((part) => part === '..' || part === ''), 'Invalid QID'),
+  seed: z
+    .string()
+    .regex(/^[0-9a-zA-Z_-]{1,100}$/)
+    .optional(),
+});
+export const CourseAgentRenderResultSchema = z.object({
+  qid: z.string(),
+  seed: z.string().nullable(),
+  syncedRevision: z.string().nullable(),
+  success: z.boolean(),
+  diagnostics: z.array(z.string().max(4000)).max(10),
+});
+export type CourseAgentRenderResult = z.infer<typeof CourseAgentRenderResultSchema>;
+export const CourseAgentRenderRequestSchema = CourseAgentRenderInputSchema.extend({ id: z.uuid() });
+export const CourseAgentPendingRenderSchema = CourseAgentRenderRequestSchema.extend({
+  runId: z.uuid(),
+  expiresAt: z.number(),
+  result: CourseAgentRenderResultSchema.nullable().default(null),
+});
+export type CourseAgentPendingRender = z.infer<typeof CourseAgentPendingRenderSchema>;
+export const CourseAgentRenderResponseSchema = CourseAgentSnapshotRequestSchema.extend({
+  id: z.uuid(),
+  runId: z.uuid(),
+  result: CourseAgentRenderResultSchema,
+});
+
 export const CourseAgentSnapshotSchema = z.object({
   conversationId: z.uuid(),
   sandboxId: z.string(),
@@ -211,12 +256,16 @@ export const CourseAgentSnapshotSchema = z.object({
   sandboxGeneration: z.number().int().nonnegative().default(0),
   idleExpiresAt: z.number().nullable().default(null),
   activeRunExpiresAt: z.string().nullable().default(null),
+  lastSandboxActivityAt: z.number().nullable().default(null),
+  sandboxInactivityExpiresAt: z.number().nullable().default(null),
+  shutdownReason: z.string().nullable().default(null),
   processId: z.string().nullable().default(null),
   response: z.string().nullable(),
   error: z.string().nullable(),
   events: z.array(CourseAgentEventSchema),
   workspaceBackup: CourseAgentWorkspaceBackupSchema.nullable().default(null),
   pendingApproval: CourseAgentPushApprovalSchema.nullable().default(null),
+  pendingRender: CourseAgentPendingRenderSchema.nullable().default(null),
 });
 export type CourseAgentSnapshot = z.infer<typeof CourseAgentSnapshotSchema>;
 

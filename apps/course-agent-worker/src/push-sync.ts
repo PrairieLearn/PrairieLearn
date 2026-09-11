@@ -22,7 +22,14 @@ export async function proxyPushSync(
   if (context.containerId !== params.containerId) {
     return new Response('Push approval operation is not permitted.', { status: 403 });
   }
-  if (request.headers.get('X-Course-Agent-Approval-Protocol') !== 'blocking-v1') {
+  const pathname = new URL(request.url).pathname;
+  if (pathname !== '/push-sync' && pathname !== '/render-question-variant') {
+    return new Response('Not found', { status: 404 });
+  }
+  if (
+    pathname === '/push-sync' &&
+    request.headers.get('X-Course-Agent-Approval-Protocol') !== 'blocking-v1'
+  ) {
     return Response.json(
       {
         error:
@@ -33,7 +40,7 @@ export async function proxyPushSync(
   }
   const id = coordinator.idFromName(params.sandboxId);
   return coordinator.get(id).fetch(
-    new Request('https://coordinator/push-sync', {
+    new Request(`https://coordinator${pathname}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: await request.text(),

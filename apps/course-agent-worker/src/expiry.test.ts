@@ -47,6 +47,8 @@ const sandbox = vi.hoisted(() => ({
 }));
 vi.mock('@cloudflare/sandbox', () => ({
   Sandbox: vi.fn(),
+  BackupExpiredError: class extends Error {},
+  BackupNotFoundError: class extends Error {},
   ContainerProxy: vi.fn(),
   getSandbox: () => sandbox,
 }));
@@ -113,6 +115,10 @@ function fixture(
     state as unknown as DurableObjectState,
     {
       Sandbox: { idFromName: () => 'sandbox-id' },
+      COURSE_AGENT_WATCHDOG: {
+        idFromName: () => 'watchdog',
+        get: () => ({ fetch: async () => Response.json({ accepted: true }) }),
+      },
       OPENAI_MODEL: 'test-model',
     } as unknown as ConstructorParameters<typeof CourseAgentCoordinator>[1],
   );
@@ -127,6 +133,65 @@ afterEach(() => {
 });
 
 describe('sandbox expiry alarm', () => {
+  it('queues and polls a render without creating duplicate work or allowing it during approval', async () => {
+    const { coordinator, storage } = fixture('run', 5000);
+    await coordinator['update']({ lifecycleVersion: 3 });
+    const id = 'fe3635bd-9ca1-4281-8159-d95d512a3a12';
+    const request = () =>
+      coordinator.fetch(
+        new Request('https://coordinator/render-question-variant', {
+          method: 'POST',
+          body: JSON.stringify({ id, qid: 'nested/question', seed: '123' }),
+        }),
+      );
+    expect(await (await request()).json()).toMatchObject({
+      id,
+      qid: 'nested/question',
+      runId: 'run',
+      result: null,
+    });
+    await request();
+    expect(await storage.get('conversation')).toMatchObject({ renderCount: 1 });
+    await coordinator['update']({ pausedApprovalId: 'approval' });
+    expect((await request()).status).toBe(409);
+  });
+  it('preserves an approval when the independent watchdog destroys its sandbox', async () => {
+    const { coordinator, storage } = fixture('run', 5000);
+    const approval = { ...proposal, status: 'pending' as const, result: null };
+    await coordinator['update']({
+      lifecycleVersion: 3,
+      pendingApproval: approval,
+      pausedApprovalId: proposal.id,
+    });
+    const response = await coordinator.fetch(
+      new Request('https://coordinator/inactivity-expired', {
+        method: 'POST',
+        body: JSON.stringify({ generation: 1 }),
+      }),
+    );
+    expect(response.ok).toBe(true);
+    expect(await storage.get('conversation')).toMatchObject({
+      activeRunId: 'run',
+      pausedApprovalId: proposal.id,
+      pendingApproval: approval,
+      sandboxState: 'offline',
+      processId: null,
+    });
+  });
+  it('ignores shutdown notifications from an older sandbox generation', async () => {
+    const { coordinator, storage } = fixture('run', 5000);
+    await coordinator['update']({ lifecycleVersion: 3, sandboxGeneration: 2 });
+    await coordinator.fetch(
+      new Request('https://coordinator/inactivity-expired', {
+        method: 'POST',
+        body: JSON.stringify({ generation: 1 }),
+      }),
+    );
+    expect(await storage.get('conversation')).toMatchObject({
+      sandboxState: 'ready',
+      activeRunId: 'run',
+    });
+  });
   it('reschedules an early alarm without destroying the sandbox', async () => {
     vi.useFakeTimers();
     vi.setSystemTime(1000);
@@ -165,17 +230,17 @@ describe('sandbox expiry alarm', () => {
     expect(storage.setAlarm).toHaveBeenCalledWith(65_000);
   });
 
-  it('drops late output after the separate active execution guard expires', async () => {
+  it('does not expire active work using a legacy absolute execution deadline', async () => {
     vi.useFakeTimers();
     vi.setSystemTime(5000);
     const { coordinator, storage } = fixture('old-run', 5000);
     await coordinator['update']({ activeRunExpiresAt: new Date(5000).toISOString() });
     await coordinator.alarm();
-    const expired = await storage.get('conversation');
-    await coordinator['append']('assistant.delta', { text: 'Late response' }, 'old-run');
-    expect(await coordinator['update']({ status: 'waiting_for_user' }, 'old-run')).toBe(false);
-    expect(await storage.get('conversation')).toEqual(expired);
-    expect(sandbox.killProcess).toHaveBeenCalledOnce();
+    expect(await storage.get('conversation')).toMatchObject({
+      activeRunId: 'old-run',
+      status: 'running',
+    });
+    expect(sandbox.killProcess).not.toHaveBeenCalled();
     expect(sandbox.destroy).not.toHaveBeenCalled();
   });
 
@@ -212,7 +277,7 @@ describe('sandbox expiry alarm', () => {
     await coordinator.alarm();
     expect(sandbox.destroy).not.toHaveBeenCalled();
     expect(await storage.get('conversation')).toMatchObject({
-      lifecycleVersion: 2,
+      lifecycleVersion: 3,
       sandboxExpiresAt: null,
       idleExpiresAt: 605000,
     });
@@ -407,7 +472,9 @@ describe('sandbox expiry alarm', () => {
         runtimeSettings: {
           idleTimeoutSeconds: 600,
           sleepAfterSeconds: 21_600,
-          turnTimeoutSeconds: 900,
+          sandboxInactivityTimeoutSeconds: 900,
+          waitingForUserTimeoutSeconds: 600,
+          cloudflareSandboxTimeoutSeconds: 21_600,
           backupTtlSeconds: 604800,
         },
       });
@@ -578,7 +645,9 @@ describe('sandbox expiry alarm', () => {
       const settings = {
         idleTimeoutSeconds: 600,
         sleepAfterSeconds: 21600,
-        turnTimeoutSeconds: 21600,
+        sandboxInactivityTimeoutSeconds: 21600,
+        waitingForUserTimeoutSeconds: 600,
+        cloudflareSandboxTimeoutSeconds: 21600,
         backupTtlSeconds: 604800,
       };
       const approval = {
@@ -592,7 +661,6 @@ describe('sandbox expiry alarm', () => {
         pausedApprovalId: proposal.id,
         processId: null,
         activeRunExpiresAt: null,
-        activeExecutionRemainingMs: 120000,
         sandboxState: 'offline',
         workspaceBackup: {
           handle: { id: 'checkpoint', dir: '/workspace', localBucket: true },

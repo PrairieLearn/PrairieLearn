@@ -94,6 +94,9 @@ export class CodexStream {
       return [];
     }
     const item = params.item;
+    // Publication has its own durable approval UI. Its native tool is intentionally
+    // interrupted while awaiting approval and cannot complete in the original process.
+    if (item.type === 'dynamicToolCall' && item.tool === 'push_sync') return [];
     if (item.type === 'agentMessage' && typeof item.id === 'string') {
       if (item.phase === 'commentary') {
         this.commentary.set(
