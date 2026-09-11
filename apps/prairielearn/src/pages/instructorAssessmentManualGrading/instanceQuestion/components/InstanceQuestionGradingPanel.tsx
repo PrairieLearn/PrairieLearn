@@ -93,8 +93,8 @@ function InstanceQuestionGradingPanelInner({
       const style = window.getComputedStyle(element);
       element.style.height = `${
         element.scrollHeight +
-        Number.parseFloat(style.paddingTop) +
-        Number.parseFloat(style.paddingBottom)
+        Number.parseFloat(style.borderTopWidth) +
+        Number.parseFloat(style.borderBottomWidth)
       }px`;
     }
   }, []);
@@ -133,6 +133,7 @@ function InstanceQuestionGradingPanelInner({
     if (data.context !== 'main' || !data.enableSingleKeyShortcuts) return;
     const handleKeyDown = (event: KeyboardEvent) => {
       if (
+        event.defaultPrevented ||
         event.repeat ||
         event.altKey ||
         event.ctrlKey ||
@@ -147,16 +148,24 @@ function InstanceQuestionGradingPanelInner({
       const key = event.key.toLowerCase();
       if (key === 'n' && showNextShortcut) {
         nextButtonRef.current?.click();
+        return;
       }
       if (!editShortcuts) return;
       if (key === 'f') {
         event.preventDefault();
         feedbackRef.current?.focus();
-      } else if (key === 'g') {
+        return;
+      }
+      if (key === 'g') {
         gradeButtonRef.current?.click();
-      } else if (key === 'a' && data.rubricData && !formState.showAdjustment) {
-        setFormState((current) => ({ ...current, showAdjustment: true }));
-        requestAnimationFrame(() => adjustmentInputRef.current?.focus());
+        return;
+      }
+      if (key === 'a') {
+        if (data.rubricData && !formState.showAdjustment) {
+          setFormState((current) => ({ ...current, showAdjustment: true }));
+          requestAnimationFrame(() => adjustmentInputRef.current?.focus());
+        }
+        return;
       }
 
       const rubricItem = data.rubricData?.items.find(
