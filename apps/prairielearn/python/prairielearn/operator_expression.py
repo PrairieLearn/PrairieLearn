@@ -11,7 +11,7 @@ import sympy
 
 import prairielearn.sympy_utils as psu
 
-type OperatorExpressionOperator = Literal[
+type BigOperatorName = Literal[
     "sum",
     "product",
     "integral",
@@ -25,26 +25,26 @@ type OperatorExpressionOperator = Literal[
 ]
 """An operator supported by an operator-expression answer."""
 
-type OperatorExpressionLimit = Literal["bounds", "domain", "approach"]
+type BigOperatorLimit = Literal["bounds", "domain", "approach"]
 """The layout of an operator-expression answer's limits."""
 
-type OperatorExpressionDirection = Literal["two-sided", "from-left", "from-right"]
+type BigOperatorDirection = Literal["two-sided", "from-left", "from-right"]
 """The direction of an approach operator-expression answer."""
 
-type OperatorExpressionValue = sympy.Expr | sympy.Set | str
+type BigOperatorValue = sympy.Expr | sympy.Set | str
 """A mathematical value or parseable string stored in an operator-expression answer."""
 
 
-class _OperatorExpressionJsonBase(TypedDict):
+class _BigOperatorJsonBase(TypedDict):
     _type: Literal["operator_expression"]
     _version: Literal[1]
-    operator: OperatorExpressionOperator
+    operator: BigOperatorName
     index: psu.SympyJson
     body: psu.SympyJson
     operator_latex: NotRequired[str]
 
 
-class BoundsOperatorExpressionJson(_OperatorExpressionJsonBase):
+class BigBoundsOperatorJson(_BigOperatorJsonBase):
     """JSON representation of an operator expression with lower and upper bounds."""
 
     limits: Literal["bounds"]
@@ -52,39 +52,37 @@ class BoundsOperatorExpressionJson(_OperatorExpressionJsonBase):
     upper: psu.SympyJson
 
 
-class DomainOperatorExpressionJson(_OperatorExpressionJsonBase):
+class BigDomainOperatorJson(_BigOperatorJsonBase):
     """JSON representation of an operator expression over a domain."""
 
     limits: Literal["domain"]
     domain: psu.SympyJson
 
 
-class ApproachOperatorExpressionJson(_OperatorExpressionJsonBase):
+class BigApproachOperatorJson(_BigOperatorJsonBase):
     """JSON representation of an operator expression approaching a target."""
 
     limits: Literal["approach"]
     target: psu.SympyJson
-    direction: OperatorExpressionDirection
+    direction: BigOperatorDirection
 
 
-type OperatorExpressionJson = (
-    BoundsOperatorExpressionJson
-    | DomainOperatorExpressionJson
-    | ApproachOperatorExpressionJson
+type BigOperatorJson = (
+    BigBoundsOperatorJson | BigDomainOperatorJson | BigApproachOperatorJson
 )
 """The persisted JSON representation of an operator-expression answer."""
 
 
-class _OperatorExpressionBase(TypedDict):
+class _BigOperatorBase(TypedDict):
     _type: Literal["operator_expression"]
     _version: Literal[1]
-    operator: OperatorExpressionOperator
+    operator: BigOperatorName
     index: sympy.Symbol
     body: sympy.Basic
     operator_latex: NotRequired[str]
 
 
-class BoundsOperatorExpression(_OperatorExpressionBase):
+class BigBoundsOperator(_BigOperatorBase):
     """A decoded operator expression with lower and upper bounds."""
 
     limits: Literal["bounds"]
@@ -92,25 +90,23 @@ class BoundsOperatorExpression(_OperatorExpressionBase):
     upper: sympy.Basic
 
 
-class DomainOperatorExpression(_OperatorExpressionBase):
+class BigDomainOperator(_BigOperatorBase):
     """A decoded operator expression over a domain."""
 
     limits: Literal["domain"]
     domain: sympy.Basic
 
 
-class ApproachOperatorExpression(_OperatorExpressionBase):
+class BigApproachOperator(_BigOperatorBase):
     """A decoded operator expression approaching a target."""
 
     limits: Literal["approach"]
     target: sympy.Basic
-    direction: OperatorExpressionDirection
+    direction: BigOperatorDirection
 
 
-type OperatorExpression = (
-    BoundsOperatorExpression | DomainOperatorExpression | ApproachOperatorExpression
-)
-"""A decoded operator-expression answer whose mathematical fields are SymPy values."""
+type BigOperator = BigBoundsOperator | BigDomainOperator | BigApproachOperator
+"""A decoded big-operator expression answer whose mathematical fields are SymPy values."""
 
 
 _OPERATORS: frozenset[str] = frozenset({
@@ -157,9 +153,7 @@ def _decode_sympy_field(value: Any, field: str) -> sympy.Basic:
     return decoded
 
 
-def _coerce_sympy_field(
-    value: OperatorExpressionValue, field: str
-) -> sympy.Expr | sympy.Set:
+def _coerce_sympy_field(value: BigOperatorValue, field: str) -> sympy.Expr | sympy.Set:
     if isinstance(value, str):
         try:
             value = psu.convert_string_to_sympy(
@@ -178,73 +172,73 @@ def _coerce_sympy_field(
     return value
 
 
-def _encode_sympy_field(value: OperatorExpressionValue, field: str) -> psu.SympyJson:
+def _encode_sympy_field(value: BigOperatorValue, field: str) -> psu.SympyJson:
     value = _coerce_sympy_field(value, field)
     return psu.sympy_to_json(value, allow_sets=True)
 
 
 @overload
-def operator_expression_to_json(
-    expression: OperatorExpression,
-) -> OperatorExpressionJson: ...
+def big_operator_to_json(
+    expression: BigOperator,
+) -> BigOperatorJson: ...
 
 
 @overload
-def operator_expression_to_json(
+def big_operator_to_json(
     *,
-    operator: OperatorExpressionOperator,
+    operator: BigOperatorName,
     limits: Literal["bounds"],
     index: sympy.Symbol | str,
-    lower: OperatorExpressionValue,
-    upper: OperatorExpressionValue,
-    body: OperatorExpressionValue,
+    lower: BigOperatorValue,
+    upper: BigOperatorValue,
+    body: BigOperatorValue,
     operator_latex: str | None = None,
     version: Literal[1] = 1,
-) -> BoundsOperatorExpressionJson: ...
+) -> BigBoundsOperatorJson: ...
 
 
 @overload
-def operator_expression_to_json(
+def big_operator_to_json(
     *,
-    operator: OperatorExpressionOperator,
+    operator: BigOperatorName,
     limits: Literal["domain"],
     index: sympy.Symbol | str,
-    domain: OperatorExpressionValue,
-    body: OperatorExpressionValue,
+    domain: BigOperatorValue,
+    body: BigOperatorValue,
     operator_latex: str | None = None,
     version: Literal[1] = 1,
-) -> DomainOperatorExpressionJson: ...
+) -> BigDomainOperatorJson: ...
 
 
 @overload
-def operator_expression_to_json(
+def big_operator_to_json(
     *,
-    operator: OperatorExpressionOperator,
+    operator: BigOperatorName,
     limits: Literal["approach"],
     index: sympy.Symbol | str,
-    target: OperatorExpressionValue,
-    direction: OperatorExpressionDirection,
-    body: OperatorExpressionValue,
+    target: BigOperatorValue,
+    direction: BigOperatorDirection,
+    body: BigOperatorValue,
     operator_latex: str | None = None,
     version: Literal[1] = 1,
-) -> ApproachOperatorExpressionJson: ...
+) -> BigApproachOperatorJson: ...
 
 
-def operator_expression_to_json(
-    expression: OperatorExpression | None = None,
+def big_operator_to_json(
+    expression: BigOperator | None = None,
     *,
-    operator: OperatorExpressionOperator | None = None,
-    limits: OperatorExpressionLimit | None = None,
+    operator: BigOperatorName | None = None,
+    limits: BigOperatorLimit | None = None,
     index: sympy.Symbol | str | None = None,
-    body: OperatorExpressionValue | None = None,
-    lower: OperatorExpressionValue | None = None,
-    upper: OperatorExpressionValue | None = None,
-    domain: OperatorExpressionValue | None = None,
-    target: OperatorExpressionValue | None = None,
-    direction: OperatorExpressionDirection | None = None,
+    body: BigOperatorValue | None = None,
+    lower: BigOperatorValue | None = None,
+    upper: BigOperatorValue | None = None,
+    domain: BigOperatorValue | None = None,
+    target: BigOperatorValue | None = None,
+    direction: BigOperatorDirection | None = None,
     operator_latex: str | None = None,
     version: Literal[1] = 1,
-) -> OperatorExpressionJson:
+) -> BigOperatorJson:
     """Encode an operator expression as a version 1 JSON answer.
 
     Pass a decoded ``expression`` to serialize it, or use labelled fields to set
@@ -293,32 +287,32 @@ def operator_expression_to_json(
             )
         match expression["limits"]:
             case "bounds":
-                return operator_expression_to_json(
+                return big_operator_to_json(
                     operator=expression["operator"],
                     limits="bounds",
                     index=expression["index"],
-                    lower=cast(OperatorExpressionValue, expression["lower"]),
-                    upper=cast(OperatorExpressionValue, expression["upper"]),
-                    body=cast(OperatorExpressionValue, expression["body"]),
+                    lower=cast(BigOperatorValue, expression["lower"]),
+                    upper=cast(BigOperatorValue, expression["upper"]),
+                    body=cast(BigOperatorValue, expression["body"]),
                     operator_latex=expression.get("operator_latex"),
                 )
             case "domain":
-                return operator_expression_to_json(
+                return big_operator_to_json(
                     operator=expression["operator"],
                     limits="domain",
                     index=expression["index"],
-                    domain=cast(OperatorExpressionValue, expression["domain"]),
-                    body=cast(OperatorExpressionValue, expression["body"]),
+                    domain=cast(BigOperatorValue, expression["domain"]),
+                    body=cast(BigOperatorValue, expression["body"]),
                     operator_latex=expression.get("operator_latex"),
                 )
             case "approach":
-                return operator_expression_to_json(
+                return big_operator_to_json(
                     operator=expression["operator"],
                     limits="approach",
                     index=expression["index"],
-                    target=cast(OperatorExpressionValue, expression["target"]),
+                    target=cast(BigOperatorValue, expression["target"]),
                     direction=expression["direction"],
-                    body=cast(OperatorExpressionValue, expression["body"]),
+                    body=cast(BigOperatorValue, expression["body"]),
                     operator_latex=expression.get("operator_latex"),
                 )
 
@@ -364,7 +358,7 @@ def operator_expression_to_json(
                 )
             result["lower"] = _encode_sympy_field(lower, "lower")
             result["upper"] = _encode_sympy_field(upper, "upper")
-            return cast(BoundsOperatorExpressionJson, result)
+            return cast(BigBoundsOperatorJson, result)
         case "domain":
             if domain is None:
                 raise ValueError('Domain operator expressions require "domain".')
@@ -376,7 +370,7 @@ def operator_expression_to_json(
             ):
                 raise ValueError('Domain operator expressions only accept "domain".')
             result["domain"] = _encode_sympy_field(domain, "domain")
-            return cast(DomainOperatorExpressionJson, result)
+            return cast(BigDomainOperatorJson, result)
         case "approach":
             if target is None or direction is None:
                 raise ValueError(
@@ -390,12 +384,10 @@ def operator_expression_to_json(
                 raise ValueError("Operator expression has an unsupported direction.")
             result["target"] = _encode_sympy_field(target, "target")
             result["direction"] = direction
-            return cast(ApproachOperatorExpressionJson, result)
+            return cast(BigApproachOperatorJson, result)
 
 
-def json_to_operator_expression(
-    value: object | OperatorExpressionJson,
-) -> OperatorExpression:
+def json_to_big_operator(value: BigOperatorJson | object) -> BigOperator:
     """Validate and decode a version 1 operator-expression answer.
 
     Mathematical fields in the returned dictionary are SymPy values. The
@@ -423,11 +415,11 @@ def json_to_operator_expression(
     operator = value.get("operator")
     if not isinstance(operator, str) or operator not in _OPERATORS:
         raise ValueError("Operator expression has an unsupported operator.")
-    operator = cast(OperatorExpressionOperator, operator)
+    operator = cast(BigOperatorName, operator)
     limits = value.get("limits")
     if limits not in {"bounds", "domain", "approach"}:
         raise ValueError("Operator expression has an unsupported limits form.")
-    limits = cast(OperatorExpressionLimit, limits)
+    limits = cast(BigOperatorLimit, limits)
 
     expected_keys = {"_type", "_version", "operator", "limits", "index", "body"}
     match limits:
@@ -472,32 +464,32 @@ def json_to_operator_expression(
         case "bounds":
             common["lower"] = _decode_sympy_field(value.get("lower"), "lower")
             common["upper"] = _decode_sympy_field(value.get("upper"), "upper")
-            return cast(BoundsOperatorExpression, common)
+            return cast(BigBoundsOperator, common)
         case "domain":
             common["domain"] = _decode_sympy_field(value.get("domain"), "domain")
-            return cast(DomainOperatorExpression, common)
+            return cast(BigDomainOperator, common)
         case "approach":
             direction = value.get("direction")
             if not isinstance(direction, str) or direction not in _DIRECTIONS:
                 raise ValueError("Operator expression has an unsupported direction.")
             common["target"] = _decode_sympy_field(value.get("target"), "target")
-            common["direction"] = cast(OperatorExpressionDirection, direction)
-            return cast(ApproachOperatorExpression, common)
+            common["direction"] = cast(BigOperatorDirection, direction)
+            return cast(BigApproachOperator, common)
 
 
 __all__ = [
-    "ApproachOperatorExpression",
-    "ApproachOperatorExpressionJson",
-    "BoundsOperatorExpression",
-    "BoundsOperatorExpressionJson",
-    "DomainOperatorExpression",
-    "DomainOperatorExpressionJson",
-    "OperatorExpression",
-    "OperatorExpressionDirection",
-    "OperatorExpressionJson",
-    "OperatorExpressionLimit",
-    "OperatorExpressionOperator",
-    "OperatorExpressionValue",
-    "json_to_operator_expression",
-    "operator_expression_to_json",
+    "BigApproachOperator",
+    "BigApproachOperatorJson",
+    "BigBoundsOperator",
+    "BigBoundsOperatorJson",
+    "BigDomainOperator",
+    "BigDomainOperatorJson",
+    "BigOperator",
+    "BigOperatorDirection",
+    "BigOperatorJson",
+    "BigOperatorLimit",
+    "BigOperatorName",
+    "BigOperatorValue",
+    "big_operator_to_json",
+    "json_to_big_operator",
 ]
