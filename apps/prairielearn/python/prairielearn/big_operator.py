@@ -20,11 +20,11 @@ type BigOperatorName = Literal[
 ]
 """An operator supported by a big-operator answer."""
 
-type BigOperatorLimit = Literal["bounds", "domain", "approach"]
+type BigOperatorLimit = Literal["bounds", "domain", "approaches"]
 """The layout of a big-operator answer's limits."""
 
 type BigOperatorDirection = Literal["two-sided", "from-left", "from-right"]
-"""The direction of an approach big-operator answer."""
+"""The direction of an approaches big-operator answer."""
 
 type BigOperatorValue = sympy.Expr | sympy.Set | str
 """A mathematical value or parseable string stored in a big-operator answer."""
@@ -53,16 +53,16 @@ class BigDomainOperatorJson(_BigOperatorJsonBase):
     domain: psu.SympyJson
 
 
-class BigApproachOperatorJson(_BigOperatorJsonBase):
-    """JSON representation of a big operator approaching a target."""
+class BigApproachesOperatorJson(_BigOperatorJsonBase):
+    """JSON representation of a big operator approaches a target."""
 
-    limits: Literal["approach"]
+    limits: Literal["approaches"]
     target: psu.SympyJson
     direction: BigOperatorDirection
 
 
 type BigOperatorJson = (
-    BigBoundsOperatorJson | BigDomainOperatorJson | BigApproachOperatorJson
+    BigBoundsOperatorJson | BigDomainOperatorJson | BigApproachesOperatorJson
 )
 """The persisted JSON representation of a big-operator answer."""
 
@@ -90,15 +90,15 @@ class BigDomainOperator(_BigOperatorBase):
     domain: sympy.Basic
 
 
-class BigApproachOperator(_BigOperatorBase):
+class BigApproachesOperator(_BigOperatorBase):
     """A decoded big operator approaching a target."""
 
-    limits: Literal["approach"]
+    limits: Literal["approaches"]
     target: sympy.Basic
     direction: BigOperatorDirection
 
 
-type BigOperator = BigBoundsOperator | BigDomainOperator | BigApproachOperator
+type BigOperator = BigBoundsOperator | BigDomainOperator | BigApproachesOperator
 """A decoded big operator answer whose mathematical fields are SymPy values."""
 
 
@@ -223,13 +223,13 @@ def big_operator_to_json(
 def big_operator_to_json(
     *,
     operator: Literal["limit", "custom"],
-    limits: Literal["approach"],
+    limits: Literal["approaches"],
     index: sympy.Symbol | str,
     target: BigOperatorValue,
     direction: BigOperatorDirection,
     body: BigOperatorValue,
     version: Literal[1] = 1,
-) -> BigApproachOperatorJson: ...
+) -> BigApproachesOperatorJson: ...
 
 
 def big_operator_to_json(
@@ -251,19 +251,19 @@ def big_operator_to_json(
     Pass a decoded ``expression`` to serialize it, or use labelled fields to set
     a structured correct answer in ``server.py``. For labelled fields, ``limits``
     selects ``lower`` and ``upper`` for ``"bounds"``, ``domain`` for ``"domain"``,
-    or ``target`` and ``direction`` for ``"approach"``.
+    or ``target`` and ``direction`` for ``"approaches"``.
 
     Args:
         expression: A decoded big operator to serialize.
         operator: The operator represented by the answer.
-        limits: The answer's bounds, domain, or approach layout.
+        limits: The answer's bounds, domain, or approaches layout.
         index: The bound index symbol.
         body: The operator body.
         lower: The lower bound for a bounds layout.
         upper: The upper bound for a bounds layout.
         domain: The domain for a domain layout.
-        target: The approach target for an approach layout.
-        direction: The approach direction for an approach layout.
+        target: The approaches target for an approaches layout.
+        direction: The approaches direction for an approaches layout.
         version: The big-operator format version.
 
     Returns:
@@ -305,10 +305,10 @@ def big_operator_to_json(
                     domain=cast(BigOperatorValue, expression["domain"]),
                     body=cast(BigOperatorValue, expression["body"]),
                 )
-            case "approach":
+            case "approaches":
                 return big_operator_to_json(
                     operator=expression["operator"],  # type: ignore
-                    limits="approach",
+                    limits="approaches",
                     index=expression["index"],
                     target=cast(BigOperatorValue, expression["target"]),
                     direction=expression["direction"],
@@ -359,27 +359,27 @@ def big_operator_to_json(
                 raise ValueError('Domain big operators only accept "domain".')
             result["domain"] = _encode_sympy_field(domain, "domain")
             return cast(BigDomainOperatorJson, result)
-        case "approach":
+        case "approaches":
             if target is None or direction is None:
                 raise ValueError(
-                    'Approach big operators require "target" and "direction".'
+                    'approaches big operators require "target" and "direction".'
                 )
             if lower is not None or upper is not None or domain is not None:
                 raise ValueError(
-                    'Approach big operators only accept "target" and "direction".'
+                    'approaches big operators only accept "target" and "direction".'
                 )
             if direction not in _DIRECTIONS:
                 raise ValueError("Big operator has an unsupported direction.")
             result["target"] = _encode_sympy_field(target, "target")
             result["direction"] = direction
-            return cast(BigApproachOperatorJson, result)
+            return cast(BigApproachesOperatorJson, result)
 
 
 def json_to_big_operator(value: BigOperatorJson | object) -> BigOperator:
     """Validate and decode a version 1 big-operator answer.
 
     Mathematical fields in the returned dictionary are SymPy values. The
-    ``limits`` field discriminates between bounds, domain, and approach answers,
+    ``limits`` field discriminates between bounds, domain, and approaches answers,
     so type checkers can narrow the result before layout-specific fields are read.
 
     Args:
@@ -387,7 +387,7 @@ def json_to_big_operator(value: BigOperatorJson | object) -> BigOperator:
             ``data["submitted_answers"]`` after element processing.
 
     Returns:
-        A decoded bounds, domain, or approach big operator.
+        A decoded bounds, domain, or approaches big operator.
 
     Raises:
         TypeError: If ``value`` is not a dictionary.
@@ -405,7 +405,7 @@ def json_to_big_operator(value: BigOperatorJson | object) -> BigOperator:
         raise ValueError("Big operator has an unsupported operator.")
     operator = cast(BigOperatorName, operator)
     limits = value.get("limits")
-    if limits not in {"bounds", "domain", "approach"}:
+    if limits not in {"bounds", "domain", "approaches"}:
         raise ValueError("Big operator has an unsupported limits form.")
     limits = cast(BigOperatorLimit, limits)
 
@@ -415,7 +415,7 @@ def json_to_big_operator(value: BigOperatorJson | object) -> BigOperator:
             expected_keys.update(("lower", "upper"))
         case "domain":
             expected_keys.add("domain")
-        case "approach":
+        case "approaches":
             expected_keys.update(("target", "direction"))
 
     if set(value) != expected_keys:
@@ -445,18 +445,18 @@ def json_to_big_operator(value: BigOperatorJson | object) -> BigOperator:
         case "domain":
             common["domain"] = _decode_sympy_field(value.get("domain"), "domain")
             return cast(BigDomainOperator, common)
-        case "approach":
+        case "approaches":
             direction = value.get("direction")
             if not isinstance(direction, str) or direction not in _DIRECTIONS:
                 raise ValueError("Big operator has an unsupported direction.")
             common["target"] = _decode_sympy_field(value.get("target"), "target")
             common["direction"] = cast(BigOperatorDirection, direction)
-            return cast(BigApproachOperator, common)
+            return cast(BigApproachesOperator, common)
 
 
 __all__ = [
-    "BigApproachOperator",
-    "BigApproachOperatorJson",
+    "BigApproachesOperator",
+    "BigApproachesOperatorJson",
     "BigBoundsOperator",
     "BigBoundsOperatorJson",
     "BigDomainOperator",
