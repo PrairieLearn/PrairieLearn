@@ -21,7 +21,7 @@
   display: inline-block;
 }
 
-.pl-drawing-header {
+.pl-drawing-footer {
   box-sizing: border-box;
   display: flex;
   align-items: center;
@@ -34,9 +34,9 @@
   background-color: var(--bs-card-cap-bg, var(--bs-tertiary-bg));
   border: var(--bs-card-border-width, var(--bs-border-width)) solid
     var(--bs-card-border-color, var(--bs-border-color-translucent));
-  border-bottom: 0;
-  border-top-left-radius: var(--bs-card-border-radius, var(--bs-border-radius));
-  border-top-right-radius: var(--bs-card-border-radius, var(--bs-border-radius));
+  border-top: 0;
+  border-bottom-right-radius: var(--bs-card-border-radius, var(--bs-border-radius));
+  border-bottom-left-radius: var(--bs-card-border-radius, var(--bs-border-radius));
 }
 
 .pl-drawing-sidebar {

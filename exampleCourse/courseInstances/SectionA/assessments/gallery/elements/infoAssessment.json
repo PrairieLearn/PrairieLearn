@@ -50,6 +50,7 @@
         { "id": "element/matrixLatex", "autoPoints": 2, "maxAutoPoints": 10 },
         { "id": "element/graph", "autoPoints": 2, "maxAutoPoints": 10 },
         { "id": "element/overlay", "autoPoints": 2, "maxAutoPoints": 10 },
+        { "id": "element/overlayDrawingFeedback", "autoPoints": 2, "maxAutoPoints": 10 },
         { "id": "element/xssSafe", "manualPoints": 2 },
         { "id": "element/card", "autoPoints": 2, "maxAutoPoints": 10 }
       ]
