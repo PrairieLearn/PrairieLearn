@@ -1,5 +1,5 @@
 import JSZip from 'jszip';
-import type { Browser, BrowserContext, Locator, Page, Response } from 'playwright';
+import type { Browser, BrowserContext, Page, Response } from 'playwright';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const playwrightMocks = vi.hoisted(() => ({
@@ -58,22 +58,28 @@ const cover: PrintableCover = {
   footer: 'Spring 2015  |  Form ID 13',
 };
 
-function createQuestionLocator(pageIndex: number, width: number, height: number): Locator {
-  return {
-    evaluate: vi.fn(async () => ({ pageIndex, width, height })),
-    screenshot: vi.fn(async () => Buffer.concat([PNG_SIGNATURE, Buffer.from(`${pageIndex}`)])),
-  } as unknown as Locator;
-}
+const source = {
+  html: `<article class="printing-question" data-question-number="1"><div class="question-body">
+    <p data-docx-block="true">Find the derivative <span data-docx-math='&lt;math xmlns="http://www.w3.org/1998/Math/MathML"&gt;&lt;mfrac&gt;&lt;mi&gt;x&lt;/mi&gt;&lt;mn&gt;2&lt;/mn&gt;&lt;/mfrac&gt;&lt;/math&gt;'></span>.</p>
+    <span data-print-response-line data-docx-width="200"></span>
+    <ol><li>First choice</li><li>Second choice</li></ol>
+    <table><tr><th>Variable</th><th>Value</th></tr><tr><td>x</td><td>2</td></tr></table>
+    <img data-docx-figure="1">
+  </div></article>
+  <article class="printing-question" data-question-number="2"><div class="question-body">
+    <p data-docx-block="true">Explain your reasoning.</p>
+    <div class="printing-response-area"><div class="printing-response-label">Response</div><div class="printing-response-lines" data-docx-height="192"></div></div>
+  </div></article>`,
+  figures: [{ id: '1', width: 100, height: 60, alt: 'A plotted function' }],
+};
 
 function createBrowserHarness({
-  questions = [
-    createQuestionLocator(1, 710.4, 300.25),
-    createQuestionLocator(1, 710.4, 400),
-    createQuestionLocator(2, 710.4, 937.9),
-  ],
   pageDataset = { printQuestionCount: '3', printMaxPoints: '15' },
-}: { questions?: Locator[]; pageDataset?: Record<string, string> } = {}) {
+  docxSource = source,
+}: { pageDataset?: Record<string, string>; docxSource?: typeof source | null } = {}) {
+  const figure = { screenshot: vi.fn(async () => PNG_SIGNATURE) };
   const page = {
+    addInitScript: vi.fn(async () => undefined),
     emulateMedia: vi.fn(async () => undefined),
     goto: vi.fn(async () => ({ ok: () => true, status: () => 200 }) as Response),
     waitForFunction: vi.fn(async () => undefined),
@@ -81,8 +87,9 @@ function createBrowserHarness({
       .fn()
       .mockResolvedValueOnce({ status: 'ready', error: null, errorCode: null })
       .mockResolvedValueOnce(pageDataset)
-      .mockResolvedValueOnce(LETTER_GEOMETRY),
-    locator: vi.fn(() => ({ all: async () => questions })),
+      .mockResolvedValueOnce(LETTER_GEOMETRY)
+      .mockResolvedValueOnce(docxSource),
+    locator: vi.fn(() => ({ first: () => figure })),
   } as unknown as Page;
   const context = {
     route: vi.fn(async () => undefined),
@@ -96,7 +103,7 @@ function createBrowserHarness({
     on: vi.fn(),
   } as unknown as Browser;
   playwrightMocks.launch.mockResolvedValue(browser);
-  return { browser, context, page, questions };
+  return { browser, context, page, figure };
 }
 
 async function readDocx(buffer: Buffer) {
@@ -118,46 +125,30 @@ describe('renderDocx', () => {
     vi.clearAllMocks();
   });
 
-  it('renders the cover natively and every printed question as an image on its PDF page', async () => {
+  it('keeps question text, math, lists, tables, and answer spaces editable', async () => {
     const harness = createBrowserHarness();
-
     const docx = await new PrintRenderer().renderDocx({
       url: 'https://localhost:3000/print',
       cover,
       footerLabel: 'Form ID 13',
     });
     const { files, documentXml, footerXml } = await readDocx(docx);
-
-    expect(harness.browser.newContext).toHaveBeenCalledWith(
-      expect.objectContaining({ deviceScaleFactor: 2 }),
-    );
-    expect(harness.page.locator).toHaveBeenCalledWith('.pagedjs_page .printing-question');
-    for (const question of harness.questions) {
-      expect(question.screenshot).toHaveBeenCalledWith({ type: 'png', scale: 'device' });
-    }
-    expect(files.filter((file) => file.startsWith('word/media/'))).toHaveLength(3);
-    expect(documentXml.match(/<w:drawing>/g)).toHaveLength(3);
-    // The cover ends page 1; each later PDF page starts with a page break.
-    expect(documentXml.match(/<w:pageBreakBefore\/>/g)).toHaveLength(2);
+    expect(harness.page.addInitScript).toHaveBeenCalled();
+    expect(harness.page.locator).toHaveBeenCalledWith('.pagedjs_page [data-docx-figure="1"]');
+    expect(harness.figure.screenshot).toHaveBeenCalledTimes(1);
+    expect(
+      files.filter((file) => file.startsWith('word/media/') && file.endsWith('.png')),
+    ).toHaveLength(1);
+    expect(documentXml.match(/<w:drawing>/g)).toHaveLength(1);
+    expect(documentXml).toContain('<m:oMath>');
+    expect(documentXml).toContain('<m:f>');
+    expect(documentXml).toContain('Find the derivative');
+    expect(documentXml).toContain('First choice');
+    expect(documentXml).toContain('Explain your reasoning.');
+    expect(documentXml).toContain('w:hRule="atLeast"');
+    expect(documentXml.match(/<w:pageBreakBefore\/>/g)).toHaveLength(1);
     expect(documentXml).toContain('<w:pgSz w:w="12240" w:h="15840" w:orient="portrait"/>');
-    expect(documentXml).toContain('<w:pgMar w:top="792" w:right="792" w:bottom="979" w:left="792"');
-    // Images keep their CSS pixel size (9525 EMU per pixel) with a pixel trimmed from the height.
-    expect(documentXml).toContain(`<wp:extent cx="${710 * 9525}" cy="${299 * 9525}"/>`);
-    expect(documentXml).toContain(`<wp:extent cx="${710 * 9525}" cy="${936 * 9525}"/>`);
-    for (const value of [
-      'XC 101',
-      'E4',
-      'Name',
-      'Student ID',
-      'QUESTIONS',
-      'Write your name.',
-      'No calculators.',
-      'Signature',
-      'Spring 2015  |  Form ID 13',
-    ]) {
-      expect(documentXml).toContain(value);
-    }
-    expect(footerXml).toContain('Form ID 13  |  Page ');
+    expect(documentXml).toContain('A plotted function');
     expect(footerXml).toContain('PAGE');
     expect(footerXml).toContain('NUMPAGES');
   });
@@ -186,28 +177,14 @@ describe('renderDocx', () => {
     expect(documentXml).toContain('>50<');
   });
 
-  it('scales images wider than the printable area down to fit', async () => {
-    createBrowserHarness({ questions: [createQuestionLocator(1, 1420.8, 200)] });
-
-    const docx = await new PrintRenderer().renderDocx({
-      url: 'https://localhost:3000/print',
-      cover,
-      footerLabel: 'Form ID 13',
-    });
-    const { documentXml } = await readDocx(docx);
-
-    expect(documentXml).toContain(`<wp:extent cx="${710 * 9525}" cy="${99 * 9525}"/>`);
-  });
-
-  it('fails when a question is not inside a paginated page', async () => {
-    createBrowserHarness({ questions: [createQuestionLocator(-1, 710.4, 200)] });
-
+  it('fails rather than silently falling back to question screenshots', async () => {
+    createBrowserHarness({ docxSource: null });
     await expect(
       new PrintRenderer().renderDocx({
         url: 'https://localhost:3000/print',
         cover,
         footerLabel: 'Form ID 13',
       }),
-    ).rejects.toThrow('A printed question is not on a paginated page');
+    ).rejects.toThrow('The printable page did not capture editable question content');
   });
 });
