@@ -25,16 +25,6 @@ import { RubricInput } from './RubricInput.js';
 
 const SCORE_DISPLAY_CHANGE_EVENT = 'manual-grading-score-display-change';
 
-declare global {
-  interface Window {
-    bootstrap: {
-      Modal: {
-        getOrCreateInstance: (element: Element) => { show: () => void };
-      };
-    };
-  }
-}
-
 function subscribeToScoreDisplay(callback: () => void): () => void {
   document.addEventListener(SCORE_DISPLAY_CHANGE_EVENT, callback);
   return () => document.removeEventListener(SCORE_DISPLAY_CHANGE_EVENT, callback);
@@ -133,17 +123,7 @@ function InstanceQuestionGradingPanelInner({
   }, [data]);
 
   useEffect(() => {
-    // The conflict modal remains server-rendered around two React grading-panel islands. Bootstrap
-    // owns its visibility, while React owns the controls inside it.
-    if (data.context !== 'existing') return;
-    const modal = document.getElementById('conflictGradingJobModal');
-    if (!modal) return;
-    modal.addEventListener('shown.bs.modal', adjustFeedbackHeight);
-    window.bootstrap.Modal.getOrCreateInstance(modal).show();
-    return () => modal.removeEventListener('shown.bs.modal', adjustFeedbackHeight);
-  }, [adjustFeedbackHeight, data.context]);
-
-  useEffect(() => {
+    // Textareas do not grow with their content, so remeasure after the feedback changes.
     adjustFeedbackHeight();
   }, [adjustFeedbackHeight, formState.feedback]);
 

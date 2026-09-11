@@ -27,6 +27,10 @@ import {
   InstanceQuestionAiGrade,
   type InstanceQuestionAiGradeProps,
 } from './components/InstanceQuestionAiGrade.js';
+import {
+  InstanceQuestionGradingConflictModal,
+  type InstanceQuestionGradingConflictModalProps,
+} from './components/InstanceQuestionGradingConflictModal.js';
 import { InstanceQuestionGradingPanel } from './components/InstanceQuestionGradingPanel.js';
 import type { InstanceQuestionGradingPanelProps } from './components/InstanceQuestionGradingPanel.types.js';
 
@@ -394,7 +398,7 @@ export function InstanceQuestion({
           )
         : ''}
       ${conflict_grading_job
-        ? ConflictGradingJobModal({
+        ? renderConflictGradingJobModal({
             resLocals,
             conflict_grading_job,
             graders,
@@ -475,7 +479,7 @@ export function InstanceQuestion({
   });
 }
 
-function ConflictGradingJobModal({
+function renderConflictGradingJobModal({
   resLocals,
   conflict_grading_job,
   graders,
@@ -486,91 +490,53 @@ function ConflictGradingJobModal({
 }: {
   resLocals: ResLocalsForPage<'instance-question'> & ResLocalsInstanceQuestionRender;
   conflict_grading_job: GradingJobData;
-  graders: User[] | null;
+  graders: User[];
   lastGrader: User | null;
   skipGradedSubmissions: boolean;
   showSubmissionsAssignedToMeOnly: boolean;
   enable_single_key_shortcuts: boolean;
 }) {
   const lastGraderName = lastGrader?.name ?? lastGrader?.uid ?? 'an unknown grader';
-  return html`
-    <div id="conflictGradingJobModal" class="modal fade">
-      <div class="modal-dialog modal-xl">
-        <div class="modal-content">
-          <div class="modal-header bg-danger text-light">
-            <div class="modal-title">Grading conflict identified</div>
-            <button
-              type="button"
-              class="btn-close"
-              data-bs-dismiss="modal"
-              aria-label="Close"
-            ></button>
-          </div>
-          <div class="modal-body">
-            <div class="alert alert-danger" role="alert">
-              The submission you have just graded has already been graded by ${lastGraderName}. Your
-              score and feedback have not been applied. Please review the feedback below and select
-              how you would like to proceed.
-            </div>
-            <div class="row mb-2">
-              <div class="col-lg-6 col-12">
-                <div><strong>Existing score and feedback</strong></div>
-                <div class="mb-2">
-                  ${formatDateYMDHM(
-                    resLocals.instance_question.modified_at,
-                    resLocals.course_instance.display_timezone,
-                  )},
-                  by ${lastGraderName}
-                </div>
-                <div class="card">
-                  ${hydrateHtml(
-                    <InstanceQuestionGradingPanel
-                      data={buildInstanceQuestionGradingPanelProps({
-                        resLocals,
-                        disable: true,
-                        skipText: 'Accept existing score',
-                        context: 'existing',
-                        skipGradedSubmissions,
-                        showSubmissionsAssignedToMeOnly,
-                        enableSingleKeyShortcuts: enable_single_key_shortcuts,
-                      })}
-                    />,
-                  )}
-                </div>
-              </div>
-              <div class="col-lg-6 col-12">
-                <div><strong>Conflicting score and feedback</strong></div>
-                <div class="mb-2">
-                  ${conflict_grading_job.date
-                    ? `${formatDateYMDHM(
-                        conflict_grading_job.date,
-                        resLocals.course_instance.display_timezone,
-                      )},`
-                    : ''}
-                  by ${conflict_grading_job.grader_name}
-                </div>
-                <div class="card">
-                  ${hydrateHtml(
-                    <InstanceQuestionGradingPanel
-                      data={buildInstanceQuestionGradingPanelProps({
-                        resLocals,
-                        customAutoPoints: conflict_grading_job.auto_points ?? 0,
-                        customManualPoints: conflict_grading_job.manual_points ?? 0,
-                        gradingJob: conflict_grading_job,
-                        context: 'conflicting',
-                        graders,
-                        skipGradedSubmissions,
-                        showSubmissionsAssignedToMeOnly,
-                        enableSingleKeyShortcuts: enable_single_key_shortcuts,
-                      })}
-                    />,
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  `;
+  const props: InstanceQuestionGradingConflictModalProps = {
+    existingGrade: {
+      gradedAt: formatDateYMDHM(
+        resLocals.instance_question.modified_at,
+        resLocals.course_instance.display_timezone,
+      ),
+      graderName: lastGraderName,
+      gradingPanelData: buildInstanceQuestionGradingPanelProps({
+        resLocals,
+        disable: true,
+        skipText: 'Accept existing score',
+        context: 'existing',
+        skipGradedSubmissions,
+        showSubmissionsAssignedToMeOnly,
+        enableSingleKeyShortcuts: enable_single_key_shortcuts,
+      }),
+    },
+    conflictingGrade: {
+      gradedAt: conflict_grading_job.date
+        ? formatDateYMDHM(conflict_grading_job.date, resLocals.course_instance.display_timezone)
+        : null,
+      graderName: conflict_grading_job.grader_name ?? 'an unknown grader',
+      gradingPanelData: buildInstanceQuestionGradingPanelProps({
+        resLocals,
+        customAutoPoints: conflict_grading_job.auto_points ?? 0,
+        customManualPoints: conflict_grading_job.manual_points ?? 0,
+        gradingJob: conflict_grading_job,
+        context: 'conflicting',
+        graders,
+        skipGradedSubmissions,
+        showSubmissionsAssignedToMeOnly,
+        enableSingleKeyShortcuts: enable_single_key_shortcuts,
+      }),
+    },
+  };
+
+  return hydrateHtml(
+    <InstanceQuestionGradingConflictModal
+      conflictingGrade={props.conflictingGrade}
+      existingGrade={props.existingGrade}
+    />,
+  );
 }

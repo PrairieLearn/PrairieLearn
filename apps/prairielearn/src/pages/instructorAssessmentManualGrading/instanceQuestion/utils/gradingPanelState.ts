@@ -15,6 +15,11 @@ export function percentageValue(points: number, maxPoints: number): string {
   return pointsValue((points * 100) / maxPoints);
 }
 
+/**
+ * Creates controlled form state from the latest server data. When `current` is provided during an
+ * in-place panel refresh, unsaved grader input is preserved while selections for rubric items that
+ * no longer exist are discarded.
+ */
 export function createFormState(
   data: InstanceQuestionGradingPanelProps,
   current?: GradingFormState,
@@ -69,6 +74,11 @@ export function createFormState(
   });
 }
 
+/**
+ * Recomputes the manual score from the selected rubric items and adjustment. A rubric that replaces
+ * auto points produces the total score, so its auto-point portion is subtracted before updating the
+ * form's manual-point fields.
+ */
 export function syncRubricScore(
   data: InstanceQuestionGradingPanelProps,
   state: GradingFormState,
