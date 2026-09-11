@@ -91,3 +91,121 @@ export function getCanonicalTimezones({
     .map((name) => getTimezoneAtInstant(name, instant))
     .sort((a, b) => a.utc_offset - b.utc_offset || a.name.localeCompare(b.name));
 }
+
+const ENGLISH_MONTHS = [
+  'january',
+  'february',
+  'march',
+  'april',
+  'may',
+  'june',
+  'july',
+  'august',
+  'september',
+  'october',
+  'november',
+  'december',
+];
+
+const DATE_TIME_PATTERN =
+  /^(?:(\d{4})-(\d{1,2})-(\d{1,2})|(\d{1,2})\/(\d{1,2})\/(\d{2}|\d{4}))(?:[T\s]+(\d{1,2})(?::(\d{1,2})(?::(\d{1,2}(?:\.\d+)?))?)?\s*([AP]M)?(?:\s*(?:Z|[+-](?:[01]\d|2[0-3])(?::?[0-5]\d)?))?)?$/i;
+
+/**
+ * Parses ISO, US numeric, and English month-name date/time inputs as civil time
+ * in the supplied timezone. UTC designators and numeric offsets in the input are
+ * ignored, matching PostgreSQL's `timestamp without time zone` input semantics.
+ * Callers must explicitly choose how to resolve ambiguous or nonexistent times.
+ */
+export function parseDateTimeInTimezone(
+  dateTime: string,
+  timezone: string,
+  disambiguation: TimezoneDisambiguation,
+): Date {
+  const normalizedDateTime = dateTime
+    .trim()
+    .replace(/^(\d{4})\/(\d{1,2})\/(\d{1,2})(?=[T\s]|$)/, '$1-$2-$3')
+    .replace(
+      /^([a-z]+)\s+(\d{1,2})(?:,\s*|\s+)(\d{4})(?=\s|$)/i,
+      (_, monthName: string, day: string, year: string) => {
+        const month = ENGLISH_MONTHS.findIndex(
+          (name) =>
+            name === monthName.toLowerCase() || name.slice(0, 3) === monthName.toLowerCase(),
+        );
+        if (month === -1) throw new Error(`Invalid month: "${monthName}"`);
+        return `${year}-${month + 1}-${day}`;
+      },
+    );
+  const match = DATE_TIME_PATTERN.exec(normalizedDateTime);
+  if (!match) throw new Error(`Invalid date/time: "${dateTime}"`);
+
+  const isoYear = match.at(1);
+  const isoMonth = match.at(2);
+  const isoDay = match.at(3);
+  const usMonth = match.at(4);
+  const usDay = match.at(5);
+  const usYear = match.at(6);
+  const hour = match.at(7) ?? '0';
+  const minute = match.at(8) ?? '0';
+  const second = match.at(9);
+  const meridiem = match.at(10);
+  const yearNumber = Number(isoYear ?? usYear);
+  let plainDate = Temporal.PlainDate.from(
+    {
+      year: usYear?.length === 2 ? yearNumber + (yearNumber < 70 ? 2000 : 1900) : yearNumber,
+      month: Number(isoMonth ?? usMonth),
+      day: Number(isoDay ?? usDay),
+    },
+    { overflow: 'reject' },
+  );
+  let hourNumber = Number(hour);
+  const minuteNumber = Number(minute);
+  const secondNumber = Number(second ?? 0);
+
+  if (minuteNumber > 59 || secondNumber >= 60) {
+    throw new Error(`Invalid time: "${dateTime}"`);
+  }
+
+  if (meridiem) {
+    if (hourNumber < 1 || hourNumber > 12) {
+      throw new Error(`Invalid 12-hour time: "${dateTime}"`);
+    }
+    hourNumber = (hourNumber % 12) + (meridiem.toUpperCase() === 'PM' ? 12 : 0);
+  } else if (hourNumber === 24 && minuteNumber === 0 && secondNumber === 0) {
+    plainDate = plainDate.add({ days: 1 });
+    hourNumber = 0;
+  } else if (hourNumber > 23) {
+    throw new Error(`Invalid time: "${dateTime}"`);
+  }
+
+  const normalizedSecond = second?.replace(/^\d+/, (value) => value.padStart(2, '0'));
+  const normalizedTime = `${hourNumber.toString().padStart(2, '0')}:${minute.padStart(2, '0')}${
+    normalizedSecond ? `:${normalizedSecond}` : ''
+  }`;
+  const plainDateTime = Temporal.PlainDateTime.from(`${plainDate}T${normalizedTime}`);
+  return plainDateTimeToDate(plainDateTime, timezone, disambiguation);
+}
+
+/** Returns the first valid instant of a calendar day, including midnight DST transitions. */
+export function getStartOfDayInTimezone(date: Temporal.PlainDate, timezone: string): Date {
+  return new Date(date.toZonedDateTime(timezone).epochMilliseconds);
+}
+
+export function getAdjacentDates(
+  dateStrings: Iterable<string>,
+  currentDateString: string,
+): { previousDate: Temporal.PlainDate | null; nextDate: Temporal.PlainDate | null } {
+  let previousDateString: string | undefined;
+  let nextDateString: string | undefined;
+  for (const date of dateStrings) {
+    if (date < currentDateString && (!previousDateString || date > previousDateString)) {
+      previousDateString = date;
+    }
+    if (date > currentDateString && (!nextDateString || date < nextDateString)) {
+      nextDateString = date;
+    }
+  }
+  return {
+    previousDate: previousDateString ? Temporal.PlainDate.from(previousDateString) : null,
+    nextDate: nextDateString ? Temporal.PlainDate.from(nextDateString) : null,
+  };
+}
