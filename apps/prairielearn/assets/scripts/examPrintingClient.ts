@@ -1,9 +1,12 @@
-import { moveCheckboxInstructions } from '../../src/lib/client/print-checkbox-instructions.js';
 import {
   QuestionBlockSizeOverflowError,
   parsePrintBlockSize,
   planPrintQuestionPages,
 } from '../../src/lib/client/print-question-layout.js';
+import {
+  normalizeAnswerPresentation,
+  normalizeResponseControls,
+} from '../../src/lib/client/print-response-controls.js';
 
 interface PagedFlow {
   total: number;
@@ -100,203 +103,6 @@ async function waitForLegacyQuestions(source: HTMLElement): Promise<void> {
   }
 }
 
-function createResponseArea(label: string): HTMLDivElement {
-  const responseArea = document.createElement('div');
-  responseArea.className = 'printing-response-area';
-  responseArea.dataset.printResponseArea = '';
-
-  const responseLabel = document.createElement('div');
-  responseLabel.className = 'printing-response-label';
-  responseLabel.textContent = label;
-
-  const responseLines = document.createElement('div');
-  responseLines.className = 'printing-response-lines';
-  responseLines.ariaHidden = 'true';
-
-  responseArea.append(responseLabel, responseLines);
-  return responseArea;
-}
-
-function replaceWithResponseArea(element: HTMLElement, label: string): void {
-  element.replaceWith(createResponseArea(label));
-}
-
-function decodeBase64Utf8(value: string): string | null {
-  try {
-    const bytes = Uint8Array.from(atob(value), (character) => character.charCodeAt(0));
-    return new TextDecoder('utf-8', { fatal: true }).decode(bytes);
-  } catch {
-    return null;
-  }
-}
-
-function replaceFileEditors(source: HTMLElement): void {
-  for (const editor of source.querySelectorAll<HTMLElement>('[id^="file-editor-"]')) {
-    const paperEditor = document.createElement('div');
-    paperEditor.className = 'printing-file-editor';
-
-    const header = editor.querySelector<HTMLElement>('.card-header')?.cloneNode(true);
-    if (header instanceof HTMLElement) {
-      for (const button of header.querySelectorAll('button')) button.remove();
-      const fileName = header.textContent.trim();
-      if (fileName) {
-        const fileNameElement = document.createElement('div');
-        fileNameElement.className = 'printing-file-editor-name';
-        fileNameElement.textContent = fileName;
-        paperEditor.append(fileNameElement);
-      }
-    }
-
-    const encodedContents = editor.querySelector<HTMLInputElement>('input[type="hidden"]')?.value;
-    const contents = encodedContents == null ? null : decodeBase64Utf8(encodedContents);
-    if (contents) {
-      const starterLabel = document.createElement('div');
-      starterLabel.className = 'printing-file-editor-starter-label';
-      starterLabel.textContent = 'Starter code';
-
-      const starterContents = document.createElement('pre');
-      starterContents.className = 'printing-file-editor-contents';
-      starterContents.textContent = contents;
-      paperEditor.append(starterLabel, starterContents);
-    }
-
-    paperEditor.append(createResponseArea('Written response'));
-    editor.replaceWith(paperEditor);
-  }
-}
-
-function expandMultipleChoiceDropdowns(source: HTMLElement): void {
-  for (const dropdown of source.querySelectorAll<HTMLElement>('.pl-multiple-choice-dropdown')) {
-    const select = dropdown.querySelector('select');
-    if (!select) continue;
-
-    const choices = document.createElement('div');
-    choices.className = 'printing-choice-list';
-    for (const option of select.querySelectorAll<HTMLOptionElement>('option')) {
-      if (!option.value) continue;
-      const choice = document.createElement('div');
-      choice.className = 'printing-choice';
-
-      const marker = document.createElement('span');
-      marker.className = 'printing-choice-marker';
-      marker.ariaHidden = 'true';
-
-      const content = document.createElement('span');
-      content.innerHTML = option.dataset.content ?? option.textContent;
-      choice.append(marker, content);
-      choices.append(choice);
-    }
-    dropdown.replaceWith(choices);
-  }
-}
-
-function moveResponseControlPlaceholders(source: HTMLElement): void {
-  const controls = source.querySelectorAll<HTMLElement>(
-    'input[placeholder]:not([type="hidden"]):not([type="file"]), textarea[placeholder], math-field[placeholder], math-field[data-placeholder-text]',
-  );
-
-  for (const control of controls) {
-    const placeholder = (
-      control.dataset.placeholderText ??
-      control.getAttribute('placeholder') ??
-      ''
-    ).trim();
-    control.removeAttribute('placeholder');
-    control.removeAttribute('data-placeholder-text');
-    if (!placeholder) continue;
-
-    const helper = document.createElement('small');
-    helper.className = 'printing-response-placeholder';
-    helper.textContent = placeholder;
-
-    const inputGroup = control.closest<HTMLElement>('.input-group');
-    (inputGroup ?? control).before(helper);
-  }
-}
-
-function normalizeQuestionBodyResponseControls(questionBody: HTMLElement): void {
-  expandMultipleChoiceDropdowns(questionBody);
-  moveCheckboxInstructions(questionBody);
-  replaceFileEditors(questionBody);
-  moveResponseControlPlaceholders(questionBody);
-
-  for (const upload of questionBody.querySelectorAll<HTMLElement>('.pl-file-upload-container')) {
-    replaceWithResponseArea(upload, 'File response');
-  }
-  for (const fileInput of questionBody.querySelectorAll<HTMLInputElement>('input[type="file"]')) {
-    replaceWithResponseArea(fileInput, 'File response');
-  }
-  for (const editor of questionBody.querySelectorAll<HTMLElement>(
-    '.pl-rich-text-editor-container',
-  )) {
-    replaceWithResponseArea(editor, 'Written response');
-  }
-  for (const workspaceLink of questionBody.querySelectorAll<HTMLElement>(
-    'a[href*="/workspace"], button[data-workspace-url]',
-  )) {
-    replaceWithResponseArea(workspaceLink, 'Workspace response');
-  }
-
-  for (const input of questionBody.querySelectorAll<HTMLInputElement>('input')) {
-    if (input.type === 'hidden') {
-      input.remove();
-      continue;
-    }
-    const isChoiceInput = input.type === 'checkbox' || input.type === 'radio';
-    if (isChoiceInput) input.checked = false;
-    input.removeAttribute('checked');
-    input.removeAttribute('required');
-    input.removeAttribute('value');
-    input.value = '';
-    input.disabled = isChoiceInput;
-    input.readOnly = !isChoiceInput;
-    input.tabIndex = -1;
-  }
-  for (const textarea of questionBody.querySelectorAll<HTMLTextAreaElement>('textarea')) {
-    textarea.value = '';
-    textarea.textContent = '';
-    textarea.readOnly = true;
-    textarea.removeAttribute('required');
-    textarea.tabIndex = -1;
-  }
-  for (const select of questionBody.querySelectorAll<HTMLSelectElement>('select')) {
-    for (const option of select.options) {
-      option.selected = false;
-      option.removeAttribute('selected');
-    }
-    select.selectedIndex = -1;
-    select.disabled = true;
-    select.removeAttribute('required');
-    select.tabIndex = -1;
-  }
-  for (const editable of questionBody.querySelectorAll<HTMLElement>('[contenteditable]')) {
-    editable.contentEditable = 'false';
-  }
-}
-
-function normalizeResponseControls(source: HTMLElement): void {
-  for (const questionBody of source.querySelectorAll<HTMLElement>(
-    '.printing-question .question-block > .question-body',
-  )) {
-    normalizeQuestionBodyResponseControls(questionBody);
-  }
-
-  for (const form of source.querySelectorAll('form')) {
-    form.removeAttribute('action');
-    form.removeAttribute('method');
-  }
-
-  for (const question of source.querySelectorAll<HTMLElement>(
-    '.printing-question-calculation, .printing-question-file, .printing-question-unknown',
-  )) {
-    const questionBody = question.querySelector<HTMLElement>('.question-block > .question-body');
-    const hasResponseControl = questionBody?.querySelector(
-      'input:not([type="hidden"]), textarea, select, [data-print-response-area]',
-    );
-    if (!hasResponseControl) (questionBody ?? question).append(createResponseArea('Response'));
-  }
-}
-
 function getLowestCommonAncestor(elements: HTMLElement[], limit: HTMLElement): HTMLElement | null {
   let ancestor: HTMLElement | null = elements[0] ?? null;
   while (ancestor && ancestor !== limit) {
@@ -309,7 +115,7 @@ function getLowestCommonAncestor(elements: HTMLElement[], limit: HTMLElement): H
 function getAnswerKeyResponseTargets(questionBody: HTMLElement): HTMLElement[] {
   const targets = [
     ...questionBody.querySelectorAll<HTMLElement>(
-      '[data-print-response-area], .printing-choice-list, .pl-matching-statement, .pl-order-blocks-pairing',
+      '[data-print-response-area], .printing-choice-list, .printing-select-options, .pl-matching-container',
     ),
   ];
   const choiceControls = [
@@ -345,9 +151,7 @@ function getAnswerKeyResponseTargets(questionBody: HTMLElement): HTMLElement[] {
   }
 
   const responseControls = [
-    ...questionBody.querySelectorAll<HTMLElement>(
-      'input:not([type="hidden"]):not([type="radio"]):not([type="checkbox"]), textarea, select, math-field',
-    ),
+    ...questionBody.querySelectorAll<HTMLElement>('[data-print-response-line]'),
   ];
   const groupedResponseControls = responseControls.flatMap((control) => {
     const inputGroup = control.closest<HTMLElement>('.input-group');
@@ -381,7 +185,6 @@ function createAnswerKeyArea(answerBody: HTMLElement, responseHeight: number): H
   answerKey.className = 'printing-answer-key';
   answerKey.dataset.printAnswerKey = '';
   answerKey.dataset.printReplacedResponseHeight = formatMeasurement(responseHeight);
-  answerKey.style.setProperty('--printing-answer-key-height', `${responseHeight}px`);
 
   const label = document.createElement('div');
   label.className = 'printing-answer-key-label';
@@ -418,6 +221,7 @@ function replaceStudentResponsesWithAnswerKeys(source: HTMLElement): void {
     }
 
     for (const gradingBlock of gradingBlocks) gradingBlock.remove();
+    normalizeAnswerPresentation(answerBody);
     const studentHeight = question.getBoundingClientRect().height;
     const responseTargets = getAnswerKeyResponseTargets(questionBody);
     const responseHeight =
@@ -427,9 +231,20 @@ function replaceStudentResponsesWithAnswerKeys(source: HTMLElement): void {
             (height, responseTarget) => height + responseTarget.getBoundingClientRect().height,
             0,
           );
+    const hasMultipleParts =
+      responseTargets.length > 1 ||
+      answerBody.querySelector(
+        'h1, h2, h3, h4, h5, h6, .card, .pl-order-blocks-answer-container',
+      ) !== null;
     const answerKey = createAnswerKeyArea(answerBody, responseHeight);
 
-    if (responseTargets.length > 0) {
+    if (hasMultipleParts) {
+      // These answer panels contain the authored subparts themselves. Keeping the student
+      // subparts as well duplicates headings and leaves empty prompts between answers.
+      answerKey.classList.add('printing-answer-key-sections');
+      questionBody.replaceChildren(answerKey);
+      question.dataset.printAnswerKeyPlacement = 'response';
+    } else if (responseTargets.length > 0) {
       responseTargets[0].replaceWith(answerKey);
       for (const responseTarget of responseTargets.slice(1)) responseTarget.remove();
       question.dataset.printAnswerKeyPlacement = 'response';
@@ -439,39 +254,14 @@ function replaceStudentResponsesWithAnswerKeys(source: HTMLElement): void {
     }
 
     const transformedHeight = question.getBoundingClientRect().height;
-    if (transformedHeight - studentHeight > 0.5) {
-      const questionLabel = question.getAttribute('aria-label') ?? 'A question';
-      throw new Error(
-        `${questionLabel}'s answer key is too tall to fit in its student response area`,
-      );
-    }
-
-    const reservationHeight = Math.max(0, studentHeight - transformedHeight);
+    const reservationHeight = hasMultipleParts ? 0 : Math.max(0, studentHeight - transformedHeight);
     const heightReservation = document.createElement('div');
     heightReservation.dataset.printAnswerKeyHeightReservation =
       formatMeasurement(reservationHeight);
     heightReservation.ariaHidden = 'true';
     heightReservation.style.blockSize = `${reservationHeight}px`;
     question.append(heightReservation);
-    question.dataset.printStudentHeight = formatMeasurement(studentHeight);
-  }
-}
-
-function fitAnswerKeyContents(source: HTMLElement): void {
-  for (const answerKey of source.querySelectorAll<HTMLElement>('[data-print-answer-key]')) {
-    const viewport = answerKey.querySelector<HTMLElement>('.printing-answer-key-viewport');
-    const content = answerKey.querySelector<HTMLElement>('.printing-answer-key-content');
-    if (!viewport || !content) continue;
-
-    const { height: availableHeight, width: availableWidth } = viewport.getBoundingClientRect();
-    const scale = Math.min(
-      1,
-      availableHeight / Math.max(content.scrollHeight, 1),
-      availableWidth / Math.max(content.scrollWidth, 1),
-    );
-    content.style.setProperty('--printing-answer-key-scale', String(scale));
-    content.style.inlineSize = `${100 / scale}%`;
-    answerKey.dataset.printAnswerScale = formatMeasurement(scale);
+    question.dataset.printStudentHeight = formatMeasurement(transformedHeight + reservationHeight);
   }
 }
 
@@ -479,12 +269,52 @@ function replaceCanvasesWithImages(source: HTMLElement): void {
   for (const canvas of source.querySelectorAll('canvas')) {
     if (canvas.width === 0 || canvas.height === 0) continue;
     const image = document.createElement('img');
-    image.className = 'printing-canvas-image';
+    image.className = `${canvas.className} printing-canvas-image`;
+    image.id = canvas.id;
+    image.style.cssText = canvas.style.cssText;
     image.alt = canvas.getAttribute('aria-label') ?? '';
     image.src = canvas.toDataURL('image/png');
-    image.width = canvas.width;
-    image.height = canvas.height;
+    const bounds = canvas.getBoundingClientRect();
+    image.width = bounds.width || canvas.width;
+    image.height = bounds.height || canvas.height;
     canvas.replaceWith(image);
+  }
+}
+
+function keepPrintableGroupsTogether(source: HTMLElement): void {
+  const measure = document.createElement('div');
+  measure.className = 'exam-print-page-measure';
+  source.append(measure);
+  const pageHeight = measure.getBoundingClientRect().height;
+  measure.remove();
+  for (const group of source.querySelectorAll<HTMLElement>(
+    '.question-body .card, .printing-order-blocks, .printing-order-choice-group, .sketchresponse, .pl-drawing-container, .printing-subsection, .pl-order-blocks-answer-container, .printing-excalidraw',
+  )) {
+    if (group.getBoundingClientRect().height < pageHeight - 48) {
+      group.classList.add('printing-keep-together');
+    }
+  }
+}
+
+function placeQuestionGroupBreaks(source: HTMLElement, pageHeight: number): void {
+  for (const page of source.querySelectorAll<HTMLElement>(
+    '.printing-question-page[data-print-allows-flow="true"]',
+  )) {
+    const pageTop = page.getBoundingClientRect().top;
+    let addedSpace = 0;
+    const groups = [...page.querySelectorAll<HTMLElement>('.printing-keep-together')].filter(
+      (group) => !group.parentElement?.closest('.printing-keep-together'),
+    );
+    // Paged.js can split nested cards and SVGs despite break-inside: avoid. Give it explicit
+    // boundaries for complete subparts, measured at the same width as the generated pages.
+    for (const group of groups) {
+      const bounds = group.getBoundingClientRect();
+      const offset = (bounds.top - pageTop + addedSpace) % pageHeight;
+      if (offset > 0.5 && offset + bounds.height > pageHeight - 2) {
+        group.classList.add('printing-break-before');
+        addedSpace += pageHeight - offset;
+      }
+    }
   }
 }
 
@@ -683,19 +513,24 @@ async function paginateExam(): Promise<{ totalPages: number }> {
   await waitForAnimationFrame();
   await waitForAnimationFrame();
   materializePrintableShadowRootStyles(source);
-  normalizeResponseControls(source);
   const mathJax = Reflect.get(window, 'MathJax') as
-    | { typesetPromise?: (elements?: Element[]) => Promise<unknown> }
+    | {
+        startup?: { promise?: Promise<unknown> };
+        typesetPromise?: (elements?: Element[]) => Promise<unknown>;
+      }
     | undefined;
+  await mathJax?.startup?.promise;
+  normalizeResponseControls(source);
   await mathJax?.typesetPromise?.([source]);
   await document.fonts.ready;
   replaceCanvasesWithImages(source);
   await waitForImages(source);
   if (document.documentElement.dataset.printDocument === 'answer_key') {
     replaceStudentResponsesWithAnswerKeys(source);
-    fitAnswerKeyContents(source);
   }
+  keepPrintableGroupsTogether(source);
   const layout = layoutQuestions(source);
+  placeQuestionGroupBreaks(source, layout.pageHeight);
   await waitForAnimationFrame();
 
   // All asynchronous content is settled above, so Paged.js can use a fixed layout. Its resize

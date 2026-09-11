@@ -250,7 +250,7 @@ body {
 
 .printing-question .question-container > .card-header h1,
 .printing-question .question-block > .card-header h1 {
-  color: #777;
+  color: #555;
   font-size: 9pt;
   letter-spacing: 0.04em;
   line-height: 1.1;
@@ -266,18 +266,15 @@ body {
 }
 
 html[data-print-document='answer_key'] .printing-answer-key {
-  --printing-answer-key-scale: 1;
-  align-items: start;
+  align-items: center;
   background: #f5f5f5;
   border: 0.8pt solid #777;
   border-radius: 0;
-  block-size: var(--printing-answer-key-height);
   box-sizing: border-box;
   break-inside: avoid;
   display: grid;
   gap: 0.1in;
   grid-template-columns: max-content minmax(0, 1fr);
-  overflow: hidden;
   padding: 0.05in 0.08in;
 }
 
@@ -295,17 +292,23 @@ html[data-print-document='answer_key'] .printing-answer-key-label {
 }
 
 html[data-print-document='answer_key'] .printing-answer-key-viewport {
-  block-size: 100%;
   min-inline-size: 0;
-  overflow: hidden;
 }
 
 html[data-print-document='answer_key'] .printing-answer-key-content {
   font-size: 9pt;
   line-height: 1.25;
   margin: 0;
-  transform: scale(var(--printing-answer-key-scale));
-  transform-origin: top left;
+}
+
+.printing-answer-key-content .d-inline-block + .d-inline-block {
+  margin-inline-start: 0.15in;
+}
+
+.printing-answer-key-content span + samp,
+.printing-answer-key-content span + code,
+.printing-answer-key-content span + mjx-container {
+  margin-inline-start: 0.2em;
 }
 
 html[data-print-document='answer_key'] .printing-answer-key-content > :last-child {
@@ -337,8 +340,8 @@ html[data-print-document='answer_key'] .printing-answer-key-content pre {
   break-inside: avoid;
 }
 
-.printing-question button:not(.answer-body *),
-.printing-question .modal:not(.answer-body *),
+.printing-question button,
+.printing-question .modal,
 .printing-question .toast:not(.answer-body *),
 .printing-question .popover:not(.answer-body *),
 .printing-question .question-form > .card-footer,
@@ -366,34 +369,46 @@ html[data-print-document='answer_key'] .printing-answer-key-content pre {
   border-radius: 50%;
 }
 
-.printing-question .question-body input[type='text'],
-.printing-question .question-body input[type='number'],
-.printing-question .question-body input[type='email'],
-.printing-question .question-body input[type='url'],
-.printing-question .question-body input:not([type]),
-.printing-question .question-body select {
-  appearance: none;
-  background: transparent !important;
-  border: 0 !important;
-  border-bottom: 0.8pt solid #111 !important;
-  border-radius: 0 !important;
-  box-shadow: none !important;
-  color: transparent !important;
-  min-height: 0.25in;
-  min-width: 0.75in;
+.printing-question .printing-selection-group {
+  display: block !important;
+  margin-block: 0.1in 0.16in;
 }
 
-.printing-question .question-body textarea {
-  background-image: repeating-linear-gradient(
-    to bottom,
-    transparent 0,
-    transparent 0.26in,
-    #aaa 0.27in
-  );
-  border: 0.6pt solid #777;
-  border-radius: 0;
-  min-height: 1.35in;
+.printing-question .printing-selection-option {
+  align-items: flex-start !important;
+  border-bottom: 0.5pt solid #ddd;
+  display: flex !important;
+  gap: 0.1in !important;
+  margin: 0 !important;
+  padding: 0.085in 0.04in !important;
   width: 100%;
+}
+
+.printing-question .printing-selection-option:last-of-type {
+  border-bottom: 0;
+}
+
+.printing-question .printing-selection-option .form-check-label {
+  align-items: flex-start !important;
+  display: flex !important;
+  gap: 0.06in;
+  line-height: 1.4;
+  min-width: 0;
+}
+
+.printing-question .printing-selection-option .form-check-input {
+  flex: 0 0 0.17in;
+  height: 0.17in;
+  margin: 0.025in 0 0 !important;
+  width: 0.17in;
+}
+
+.printing-question .printing-selection-option .form-check-label p:last-child {
+  margin-bottom: 0;
+}
+
+.printing-question .pl-checkbox-key-label {
+  font-weight: 600;
 }
 
 .printing-response-placeholder {
@@ -429,11 +444,12 @@ html[data-print-document='answer_key'] .printing-answer-key-content pre {
 }
 
 .printing-checkbox-instructions {
-  color: #555;
+  color: #333;
   display: block !important;
-  font-size: 8.5pt;
-  line-height: 1.2;
-  margin: 0 0 0.06in;
+  font-size: 9pt;
+  font-weight: 600;
+  line-height: 1.35;
+  margin: 0 0 0.08in;
 }
 
 .printing-checkbox-instructions .form-text {
@@ -444,6 +460,7 @@ html[data-print-document='answer_key'] .printing-answer-key-content pre {
 
 .printing-response-area {
   break-inside: avoid;
+  inline-size: 100%;
   margin-top: 0.2in;
 }
 
@@ -455,13 +472,9 @@ html[data-print-document='answer_key'] .printing-answer-key-content pre {
 }
 
 .printing-response-lines {
-  background-image: repeating-linear-gradient(
-    to bottom,
-    transparent 0,
-    transparent 0.34in,
-    #999 0.35in
-  );
-  min-height: 2.15in;
+  /* Hard color stops keep rules solid; a 24pt repeat aligns with CSS pixels. */
+  background-image: repeating-linear-gradient(to bottom, transparent 0 23pt, #333 23pt 24pt);
+  min-height: var(--printing-response-area-height, 2.15in);
 }
 
 .printing-file-editor-name,
@@ -494,11 +507,6 @@ html[data-print-document='answer_key'] .printing-answer-key-content pre {
   white-space: pre-wrap;
 }
 
-.printing-question-file .question-body .pl-file-upload-container,
-.printing-question-file .question-body input[type='file'] {
-  display: none !important;
-}
-
 .printing-question-multiple-true-false .question-body .trueFalse > div > div:last-child {
   white-space: nowrap;
 }
@@ -506,5 +514,329 @@ html[data-print-document='answer_key'] .printing-answer-key-content pre {
 .printing-canvas-image {
   display: block;
   height: auto;
+  max-width: 100%;
+}
+
+/* Use document typography inside questions; Bootstrap's heading and control sizes are for screens. */
+.printing-question .question-body h1,
+.printing-question .question-body h2 {
+  font-size: 13pt;
+}
+
+.printing-question .question-body h3,
+.printing-question .question-body h4,
+.printing-question .question-body h5,
+.printing-question .question-body h6 {
+  font-size: 11pt;
+}
+
+.printing-question .question-body h1,
+.printing-question .question-body h2,
+.printing-question .question-body h3,
+.printing-question .question-body h4,
+.printing-question .question-body h5,
+.printing-question .question-body h6 {
+  break-after: avoid;
+  font-weight: 700;
+  line-height: 1.25;
+  margin: 0.15in 0 0.08in;
+}
+
+.printing-question .question-body p {
+  orphans: 2;
+  widows: 2;
+  margin-bottom: 0.1in;
+}
+
+.printing-question .question-container,
+.printing-question .question-form,
+.printing-question .question-block,
+.printing-question .question-body {
+  display: block;
+  overflow: visible !important;
+}
+
+.printing-question .question-container,
+.printing-question .question-block {
+  margin-bottom: 0 !important;
+}
+
+.printing-question .question-body {
+  padding-top: 0.12in;
+  padding-bottom: 0;
+}
+
+.printing-question .question-body .input-group {
+  align-items: baseline;
+  flex-wrap: nowrap;
+  gap: 0.05in;
+  margin-block: 0.025in 0.08in;
+  max-inline-size: 100%;
+}
+
+.printing-question .question-body .input-group-text {
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  color: #111;
+  font-size: inherit;
+  line-height: inherit;
+  padding: 0;
+  white-space: normal;
+}
+
+.printing-question .question-body .input-group > .printing-response-line {
+  flex: 1 1 var(--printing-response-width);
+  min-inline-size: 0.6in;
+}
+
+.printing-response-line {
+  border-bottom: 0.8pt solid #111;
+  box-sizing: border-box;
+  display: inline-block;
+  block-size: 0.28in;
+  inline-size: var(--printing-response-width, 26ch);
+  max-inline-size: 100%;
+  vertical-align: baseline;
+}
+
+.printing-question .question-body .form-check-label,
+.printing-question .question-body input:disabled ~ label {
+  color: #111 !important;
+  opacity: 1 !important;
+}
+
+.printing-question .question-body .pl-matrix-component-input-container {
+  background: transparent;
+  border: 0;
+  flex: 0 0 auto;
+  inline-size: max-content;
+  overflow: visible;
+  padding: 0.04in;
+}
+
+.printing-question .question-body .pl-matrix-component-input-container td {
+  padding: 0.03in;
+}
+
+.printing-question .question-body .card:not(.question-block) {
+  border: 0.5pt solid #aaa;
+  border-radius: 0;
+  box-shadow: none;
+  display: block;
+}
+
+.printing-question .question-body .card-header {
+  background: #f5f5f5;
+  break-after: avoid;
+  font-size: 9.5pt;
+  font-weight: 600;
+  padding: 0.06in 0.1in;
+}
+
+.printing-question .question-body .card-body {
+  padding: 0.1in;
+}
+
+.printing-question .question-body pre {
+  font-size: 9pt;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.printing-question .question-body img,
+.printing-question .question-body svg,
+.printing-question .question-body .printing-keep-together {
+  break-inside: avoid;
+}
+
+.printing-question .question-body .sketchresponse {
+  margin-top: 0.08in;
+}
+
+.printing-question .question-body svg.printing-sketch {
+  display: block;
+  block-size: auto;
+  inline-size: min(100%, 6.3in);
+  margin-inline: auto;
+}
+
+.printing-drawing-response .printing-response-lines {
+  background: none;
+  border: 0.6pt solid #999;
+  min-height: 2.2in;
+}
+
+.printing-textarea-response {
+  margin-top: 0.08in;
+}
+
+.printing-textarea-response .printing-response-lines {
+  min-height: 1.4in;
+}
+
+.printing-order-blocks {
+  margin-block: 0.18in;
+}
+
+.printing-question .printing-order-set-heading {
+  font-size: 10pt;
+  font-weight: 700;
+  margin-block: 0 0.06in;
+}
+
+.printing-order-options {
+  list-style: none;
+  margin-bottom: 0.1in;
+  padding-left: 0;
+}
+
+.printing-order-options > li {
+  align-items: flex-start;
+  border-bottom: 0.5pt solid #ccc;
+  break-inside: avoid;
+  display: flex;
+  gap: 0.1in;
+  padding: 0.055in 0.05in;
+  white-space: normal;
+}
+
+.printing-order-position {
+  border: 1pt solid #333;
+  box-sizing: border-box;
+  display: block;
+  flex: 0 0 0.3in;
+  height: 0.3in;
+  width: 0.3in;
+}
+
+.printing-order-fields {
+  display: flex;
+  flex-shrink: 0;
+  gap: 0.09in;
+}
+
+.printing-order-field-label {
+  display: block;
+  font-size: 8pt;
+  line-height: 1.2;
+  margin-bottom: 0.025in;
+}
+
+.printing-order-block-content {
+  flex: 1;
+  min-inline-size: 0;
+  padding-top: 0.04in;
+}
+
+.printing-break-before {
+  break-before: page;
+}
+
+.printing-order-choice-group {
+  border: 0.75pt solid #999;
+  break-inside: avoid;
+  margin-block: 0.12in;
+  padding: 0.08in 0.1in;
+}
+
+.printing-order-choice-heading {
+  break-after: avoid;
+  font-size: 9.5pt;
+  font-weight: 700;
+  margin-bottom: 0.06in;
+}
+
+.printing-order-choice-group .printing-order-options {
+  margin-bottom: 0;
+}
+
+.printing-order-choice-group .printing-order-options > li:last-child {
+  border-bottom: 0;
+}
+
+.printing-response-instructions,
+.printing-select-options {
+  font-size: 9.5pt;
+}
+
+.printing-order-provided {
+  border-left: 1pt solid #777;
+  padding-left: 0.1in;
+}
+
+.printing-media-reference {
+  border: 0.6pt solid #aaa;
+  color: #333;
+  display: block;
+  font-size: 9pt;
+  margin-block: 0.1in;
+  overflow-wrap: anywhere;
+  padding: 0.1in;
+}
+
+html[data-print-document='answer_key'] .printing-answer-key-sections {
+  background: transparent;
+  border: 0;
+  break-inside: auto;
+  display: block;
+  padding: 0;
+}
+
+.printing-answer-key-sections > .printing-answer-key-label {
+  margin-bottom: 0.1in;
+}
+
+.printing-order-answer-group {
+  display: flow-root;
+}
+
+.printing-answer-key-content .pl-order-blocks-answer-container {
+  background: transparent;
+  border: 0.5pt solid #aaa;
+  border-radius: 0;
+  break-inside: avoid;
+  box-shadow: none;
+  display: block;
+  inline-size: 100%;
+  margin-block: 0.1in;
+  max-height: none;
+  overflow: visible;
+}
+
+.printing-answer-key-content .pl-order-block {
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  font-size: 9.5pt;
+  padding: 0.03in 0.05in;
+}
+
+.printing-question .question-body .pl-matching-container {
+  display: grid;
+  gap: 0.15in;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+
+.printing-question .question-body .pl-matching-statement-select {
+  flex: 0 0 0.5in;
+  inline-size: 0.5in;
+}
+
+.printing-question .question-body .pl-matching-options {
+  margin: 0;
+  min-inline-size: 0;
+  padding-left: 0.2in;
+}
+
+.printing-excalidraw canvas,
+.printing-excalidraw img {
+  display: block;
+  height: auto;
+  max-width: 100%;
+}
+
+.printing-question .pl-drawing-main .canvas-container {
   max-width: 100%;
 }

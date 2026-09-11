@@ -172,7 +172,7 @@ function getCoverHtml(resLocals: ResLocalsForPage<'assessment-instance'>) {
               user_name: '____________________________',
             }),
             { allowHtml: false, interpretMath: false },
-          )
+          ).replace(/^<h([1-6])>Academic integrity pledge<\/h\1>\s*/i, '')
         : null,
   };
 }
