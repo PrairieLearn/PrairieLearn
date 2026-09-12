@@ -1,0 +1,87 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "allow-complex": {
+      "default": "false",
+      "type": "string",
+      "format": "boolean"
+    },
+    "allow-limit-direction-input": {
+      "default": "true",
+      "type": "string",
+      "format": "boolean"
+    },
+    "allowed-blank": {
+      "default": "none",
+      "type": "string",
+      "enum": ["none", "indices", "body", "all"]
+    },
+    "answers-name": {
+      "type": "string"
+    },
+    "body-relative-weight": {
+      "default": "3",
+      "type": "string",
+      "format": "integer"
+    },
+    "body-size": {
+      "type": "string",
+      "format": "integer"
+    },
+    "correct-answer": {
+      "type": "string",
+      "pattern": "^\\s*(?:Sum|Product|Integral|Limit|Union|Intersection|DisjointUnion|Min|Max|Custom)\\s*\\(.+\\)\\s*$"
+    },
+    "custom-functions": {
+      "type": "string"
+    },
+    "display": {
+      "default": "block",
+      "type": "string",
+      "enum": ["block", "inline"]
+    },
+    "display-log-as-ln": {
+      "default": "false",
+      "type": "string",
+      "format": "boolean"
+    },
+    "grading-method": {
+      "type": "string",
+      "enum": ["exact", "component", "equivalent", "none"]
+    },
+    "imaginary-unit-for-display": {
+      "default": "i",
+      "type": "string",
+      "enum": ["i", "j"]
+    },
+    "index-field-size": {
+      "type": "string",
+      "format": "integer"
+    },
+    "operator-latex": {
+      "type": "string"
+    },
+    "prefix-latex": {
+      "type": "string"
+    },
+    "show-help-text": {
+      "default": "true",
+      "type": "string",
+      "format": "boolean"
+    },
+    "suffix-latex": {
+      "type": "string"
+    },
+    "variables": {
+      "type": "string"
+    },
+    "weight": {
+      "default": "1",
+      "type": "string",
+      "format": "integer"
+    }
+  },
+  "required": ["answers-name"],
+  "additionalProperties": false
+}

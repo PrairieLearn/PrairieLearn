@@ -239,7 +239,7 @@ export const htmlMustacheConfig: Config = {
     {
       id: 'pl-input-missing-answers-name',
       selector:
-        'pl-big-o-input:not([answers-name]), pl-checkbox:not([answers-name]), pl-excalidraw:not([gradable="false"]):not([answers-name]), pl-integer-input:not([answers-name]), pl-matching:not([answers-name]), pl-matrix-component-input:not([answers-name]), pl-matrix-input:not([answers-name]), pl-multiple-choice:not([answers-name]), pl-number-input:not([answers-name]), pl-order-blocks:not([answers-name]), pl-string-input:not([answers-name]), pl-symbolic-input:not([answers-name]), pl-units-input:not([answers-name])',
+        'pl-big-o-input:not([answers-name]), pl-big-operator-input:not([answers-name]), pl-checkbox:not([answers-name]), pl-excalidraw:not([gradable="false"]):not([answers-name]), pl-integer-input:not([answers-name]), pl-matching:not([answers-name]), pl-matrix-component-input:not([answers-name]), pl-matrix-input:not([answers-name]), pl-multiple-choice:not([answers-name]), pl-number-input:not([answers-name]), pl-order-blocks:not([answers-name]), pl-string-input:not([answers-name]), pl-symbolic-input:not([answers-name]), pl-units-input:not([answers-name])',
       message: 'Input element is missing the required `answers-name` attribute.',
     },
     {
@@ -260,7 +260,7 @@ export const htmlMustacheConfig: Config = {
       // pl-file-upload is omitted: its render() returns ""; nesting it inside any panel is harmless.
       id: 'pl-input-in-panel',
       selector:
-        ':is(pl-question-panel, pl-answer-panel, pl-submission-panel) :is(pl-big-o-input, pl-excalidraw:not([gradable="false"]), pl-image-capture, pl-integer-input, pl-matching, pl-matrix-component-input, pl-matrix-input, pl-checkbox, pl-multiple-choice, pl-order-blocks, pl-number-input, pl-rich-text-editor, pl-string-input, pl-symbolic-input, pl-units-input)',
+        ':is(pl-question-panel, pl-answer-panel, pl-submission-panel) :is(pl-big-o-input, pl-big-operator-input, pl-excalidraw:not([gradable="false"]), pl-image-capture, pl-integer-input, pl-matching, pl-matrix-component-input, pl-matrix-input, pl-checkbox, pl-multiple-choice, pl-order-blocks, pl-number-input, pl-rich-text-editor, pl-string-input, pl-symbolic-input, pl-units-input)',
       message:
         'Input elements must not be nested inside pl-question-panel, pl-answer-panel, or pl-submission-panel. Place them as siblings of the panel instead.',
     },
