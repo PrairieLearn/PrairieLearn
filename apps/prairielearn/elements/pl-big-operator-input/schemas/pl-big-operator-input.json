@@ -50,7 +50,7 @@
       "type": "string",
       "enum": ["i", "j"]
     },
-    "limit-size": {
+    "index-field-size": {
       "type": "string",
       "format": "integer"
     },
