@@ -3,7 +3,7 @@ import { type CourseAgentEvent, CourseAgentEventSchema } from '@prairielearn/cou
 export function publicCourseAgentEvent(event: CourseAgentEvent): CourseAgentEvent | null {
   const fields: Partial<Record<CourseAgentEvent['type'], string[]>> = {
     'user.message': ['text', 'runId'],
-    'assistant.delta': ['text', 'replace'],
+    'assistant.delta': ['text'],
     'tool.started': ['operationId', 'label'],
     'tool.completed': ['operationId', 'label'],
     'tool.failed': ['operationId', 'label'],
@@ -44,6 +44,7 @@ export function publicCourseAgentStream() {
       }
     },
     flush() {
+      // Never accept a truncated frame as successful completion; the client can reconnect.
       if (buffer.trim()) throw new Error('The course-agent stream ended unexpectedly');
     },
   });

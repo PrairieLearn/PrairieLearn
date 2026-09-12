@@ -1,5 +1,5 @@
 import { useChat } from '@ai-sdk/react';
-import { QueryClient, useQuery } from '@tanstack/react-query';
+import { QueryClient, skipToken, useQuery } from '@tanstack/react-query';
 import { Fragment, useState } from 'react';
 import { Alert, Button, Spinner } from 'react-bootstrap';
 import type { Components } from 'react-markdown';
@@ -76,8 +76,8 @@ function CourseAgentPanelInner({
     );
   const diagnostics = useQuery(
     trpc.courseAgent.diagnostics.queryOptions(
-      conversation ?? { conversationId: '00000000-0000-0000-0000-000000000000', sandboxId: '' },
-      { enabled: showDiagnostics && conversation !== null, refetchInterval: busy ? 1000 : 5000 },
+      showDiagnostics && conversation ? conversation : skipToken,
+      { refetchInterval: busy ? 1000 : 5000 },
     ),
   );
 

@@ -92,11 +92,7 @@ export function courseAgentUIStream(runId: string) {
           break;
         }
         case 'assistant.delta':
-          appendText(
-            event.data.replace
-              ? String(event.data.text ?? '')
-              : text + String(event.data.text ?? ''),
-          );
+          appendText(text + String(event.data.text ?? ''));
           break;
         case 'agent.completed':
         case 'run.failed': {

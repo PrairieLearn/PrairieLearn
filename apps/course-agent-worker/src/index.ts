@@ -127,6 +127,8 @@ export class CourseAgentCoordinator {
   private listeners = new Set<ReadableStreamDefaultController<string>>();
   private monitoring: Promise<void> | null = null;
   private shutdown: Promise<void> | null = null;
+  private pollDelayMs = 1000;
+  private observedLogLength = 0;
 
   constructor(
     private state: DurableObjectState,
@@ -146,6 +148,7 @@ export class CourseAgentCoordinator {
       await this.alarm();
       const accepted = await this.state.blockConcurrencyWhile(async () => {
         current = await this.readConversationState();
+        if (current && !sameIdentity(current.identity, capability)) return 'identity-mismatch';
         if (current?.activeRunId || current?.sandboxState === 'suspending') return false;
         const next: ConversationState = {
           identity: capability,
@@ -170,6 +173,9 @@ export class CourseAgentCoordinator {
         await this.state.storage.setAlarm(Date.now() + ACTIVE_RECHECK_MS);
         return true;
       });
+      if (accepted === 'identity-mismatch') {
+        return Response.json({ error: 'Sandbox identity mismatch' }, { status: 403 });
+      }
       if (!accepted) return Response.json({ error: 'A run is already active' }, { status: 409 });
       this.state.waitUntil(this.run(body));
       return Response.json({ accepted: true });
@@ -397,9 +403,11 @@ export class CourseAgentCoordinator {
         env: { OPENAI_API_KEY: 'proxy-injected', IS_SANDBOX: '1' },
       });
       await this.update({ processStartingUntil: null }, request.runId);
+      this.pollDelayMs = 1000;
+      this.observedLogLength = 0;
       while ((await this.getConversationState())?.activeRunId === request.runId) {
         await this.monitorRun();
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+        await new Promise((resolve) => setTimeout(resolve, this.pollDelayMs));
       }
     } catch (error) {
       const current = await this.getConversationState();
@@ -451,6 +459,12 @@ export class CourseAgentCoordinator {
       const previousCursor = current.logCursor ?? 0;
       if (logs.stdout.length < previousCursor) throw new Error('Codex process logs were truncated');
       const logCursor = finished ? logs.stdout.length : logs.stdout.lastIndexOf('\n') + 1;
+      // The SDK log stream has no resume offset. Keep recoverable polling, but back off
+      // quiet processes and avoid rewriting the checkpoint when no complete line arrived.
+      this.pollDelayMs =
+        logs.stdout.length === this.observedLogLength ? Math.min(this.pollDelayMs * 2, 8000) : 1000;
+      this.observedLogLength = logs.stdout.length;
+      if (!finished && logCursor === previousCursor) return;
       const stream = new CodexStream(current.codexStream);
       const events: Pick<CourseAgentEvent, 'type' | 'data'>[] = [];
       for (const line of logs.stdout.slice(previousCursor, logCursor).split('\n')) {
@@ -499,9 +513,9 @@ export class CourseAgentCoordinator {
         for (const event of persisted) {
           for (const listener of this.listeners) listener.enqueue(eventChunk(event));
         }
+        if (finished) this.closeStreams();
       });
       if (finished) {
-        this.closeStreams();
         await this.pruneCompletedDeltas(runId);
       }
     } catch (error) {
@@ -701,7 +715,7 @@ function eventChunk(event: CourseAgentEvent) {
 }
 
 function coordinatorFetch(env: Env, sandboxId: string, path: string, body: unknown) {
-  const id = env.COURSE_AGENT_COORDINATOR.idFromName(sandboxId.toLowerCase());
+  const id = env.COURSE_AGENT_COORDINATOR.idFromName(sandboxId);
   return env.COURSE_AGENT_COORDINATOR.get(id).fetch(
     new Request(`https://coordinator${path}`, {
       method: 'POST',

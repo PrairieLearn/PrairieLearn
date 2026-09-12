@@ -64,7 +64,11 @@ old absolute-deadline alarms are replaced with a full idle interval or an active
 Temporary files are still lost when this base PR's ephemeral workspace is suspended; backup and
 restore are added by the persistence PR.
 
-The coordinator persists its process ID, parsed stream state and log cursor. An alarm can reconcile
+The coordinator persists its process ID, parsed stream state and log cursor. Quiet process polling
+backs off from one to eight seconds and does not rewrite unchanged checkpoints. New output resets
+the interval to one second. Conversation UUIDs and derived sandbox IDs are canonicalized to lowercase;
+inspection requests derive the sandbox ID server-side instead of trusting the client value.
+An alarm can reconcile
 the same process after coordinator replacement, including its final output, without submitting the
 user's prompt again. Conversation state (`working`, `waiting_for_user`, `failed`) is separate from
 sandbox state (`offline`, `starting`, `ready`, `suspending`). Later PRs add approval/publication phases.

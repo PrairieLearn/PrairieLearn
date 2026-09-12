@@ -88,6 +88,7 @@ export async function startEphemeralCourseAgentRun({
     throw new Error('Course-agent runtime is disabled');
   }
   const runId = randomUUID();
+  conversationId = conversationId.toLowerCase();
   const sandboxId = courseAgentSandboxId(conversationId);
   const identity = { userId, courseId, conversationId, sandboxId };
   if (config.courseAgentRuntime === 'fake') {
@@ -147,6 +148,11 @@ async function startCourseAgentEventRelay(identity: Identity & { runId: string }
 }
 
 export async function getEphemeralCourseAgentSnapshot(identity: Identity) {
+  identity = {
+    ...identity,
+    conversationId: identity.conversationId.toLowerCase(),
+    sandboxId: courseAgentSandboxId(identity.conversationId),
+  };
   if (config.courseAgentRuntime === 'disabled') {
     throw new Error('Course-agent runtime is disabled');
   }

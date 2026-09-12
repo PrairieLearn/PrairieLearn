@@ -44,7 +44,7 @@ describe('course-agent UI-message adapter', () => {
       ['tool.completed', { operationId: 'read', label: 'Read README.md' }],
       ['assistant.delta', { text: 'Hé' }],
       ['assistant.delta', { text: 'llo' }],
-      ['assistant.delta', { text: 'Héllo!', replace: true }],
+      ['assistant.delta', { text: '!' }],
       ['agent.completed', { response: 'Héllo!' }],
     ]);
     input.splice(10, 0, input[9]);
@@ -108,7 +108,7 @@ describe('course-agent UI-message adapter', () => {
         events([
           ['user.message', { runId: 'current' }],
           ['assistant.delta', { text: 'Hello' }],
-          ['assistant.delta', { text: 'Different answer', replace: true }],
+          ['agent.completed', { response: 'Different answer' }],
         ]),
       ),
     ).rejects.toThrow('replaced an already streamed response');

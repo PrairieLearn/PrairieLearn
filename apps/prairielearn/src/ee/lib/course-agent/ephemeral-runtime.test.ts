@@ -58,14 +58,14 @@ describe('ephemeral course-agent runtime', () => {
       await startEphemeralCourseAgentRun({
         courseId: '1',
         userId: '2',
-        conversationId: first.conversationId,
+        conversationId: first.conversationId.toUpperCase(),
         prompt: 'Update the same note',
       });
       const snapshot = await getEphemeralCourseAgentSnapshot({
         courseId: '1',
         userId: '2',
-        conversationId: first.conversationId,
-        sandboxId: first.sandboxId,
+        conversationId: first.conversationId.toUpperCase(),
+        sandboxId: 'untrusted-client-sandbox',
       });
       assert.equal(snapshot.status, 'waiting_for_user');
       assert.equal(snapshot.events.filter((event) => event.type === 'workspace.seeded').length, 1);

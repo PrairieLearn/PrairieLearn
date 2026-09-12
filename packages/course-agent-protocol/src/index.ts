@@ -130,5 +130,5 @@ export const CourseAgentSnapshotSchema = z.object({
 export type CourseAgentSnapshot = z.infer<typeof CourseAgentSnapshotSchema>;
 
 export function courseAgentSandboxId(conversationId: string) {
-  return `course-agent-${z.uuid().parse(conversationId)}`;
+  return `course-agent-${z.uuid().parse(conversationId).toLowerCase()}`;
 }

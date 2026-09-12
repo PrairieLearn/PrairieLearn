@@ -15,6 +15,8 @@ vi.mock('@cloudflare/sandbox', () => ({
   ContainerProxy: vi.fn(),
   getSandbox: () => sandbox,
 }));
+const authorization = vi.hoisted(() => ({ run: vi.fn() }));
+vi.mock('./auth.js', () => ({ authorizeRun: authorization.run }));
 
 import { CourseAgentCoordinator } from './index.js';
 
@@ -83,6 +85,81 @@ afterEach(() => {
 });
 
 describe('sandbox expiry alarm', () => {
+  it('rechecks ownership after the alarm before accepting a run', async () => {
+    const { coordinator, storage } = fixture(null, 5000);
+    const identity = {
+      userId: '1',
+      courseId: '2',
+      conversationId: '9a6d8f44-d55b-4e73-8b9b-547dd00fb400',
+      sandboxId: 'course-agent-9a6d8f44-d55b-4e73-8b9b-547dd00fb400',
+    };
+    await coordinator['update']({ identity });
+    authorization.run.mockResolvedValue(identity);
+    vi.spyOn(coordinator, 'alarm').mockImplementation(async () => {
+      await coordinator['update']({ identity: { ...identity, userId: 'other-owner' } });
+    });
+    const response = await coordinator.fetch(
+      new Request('https://coordinator/run', {
+        method: 'POST',
+        body: JSON.stringify({
+          capability: 'test-capability',
+          ...identity,
+          runId: '40cff9bd-6931-4405-a8e6-57f93a190d4b',
+          prompt: 'Hello',
+          runtimeSettings: { idleTimeoutSeconds: 600, turnTimeoutSeconds: 900 },
+        }),
+      }),
+    );
+    expect(response.status).toBe(403);
+    expect(await storage.get('conversation')).toMatchObject({ activeRunId: null });
+  });
+
+  it('backs off quiet logs without rewriting state and resets when output arrives', async () => {
+    const { coordinator, storage } = fixture('quiet-run', 5000);
+    for (let attempt = 0; attempt < 5; attempt++) await coordinator.alarm();
+    expect(storage.put).not.toHaveBeenCalled();
+    expect(coordinator['pollDelayMs']).toBe(8000);
+    sandbox.getProcessLogs.mockResolvedValue({
+      stdout:
+        JSON.stringify({ method: 'thread/started', params: { thread: { id: 'thread' } } }) + '\n',
+      stderr: '',
+    });
+    await coordinator.alarm();
+    expect(coordinator['pollDelayMs']).toBe(1000);
+    expect(storage.put).toHaveBeenCalledOnce();
+  });
+
+  it('closes completed listeners before releasing the state lock', async () => {
+    const { coordinator, state } = fixture('finished-run', 5000);
+    sandbox.getProcess.mockResolvedValue({ status: 'completed', exitCode: 0 });
+    sandbox.getProcessLogs.mockResolvedValue({
+      stdout: [
+        JSON.stringify({
+          method: 'item/completed',
+          params: { item: { id: 'answer', type: 'agentMessage', text: 'Done' } },
+        }),
+        JSON.stringify({ method: 'turn/completed', params: { turn: { status: 'completed' } } }),
+      ].join('\n'),
+      stderr: '',
+    });
+    let locked = false;
+    state.blockConcurrencyWhile = async (callback) => {
+      locked = true;
+      try {
+        return await callback();
+      } finally {
+        locked = false;
+      }
+    };
+    const close = vi.fn(() => expect(locked).toBe(true));
+    coordinator['listeners'].add({
+      enqueue: vi.fn(),
+      close,
+    } as unknown as ReadableStreamDefaultController<string>);
+    await coordinator.alarm();
+    expect(close).toHaveBeenCalledOnce();
+  });
+
   it('reschedules an early alarm without destroying the sandbox', async () => {
     vi.useFakeTimers();
     vi.setSystemTime(1000);

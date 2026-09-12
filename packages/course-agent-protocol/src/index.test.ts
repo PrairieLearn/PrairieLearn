@@ -23,6 +23,9 @@ describe('course-agent protocol', () => {
   it('derives a stable sandbox ID and seed path', () => {
     const conversationId = '9a6d8f44-d55b-4e73-8b9b-547dd00fb400';
     expect(courseAgentSandboxId(conversationId)).toBe(`course-agent-${conversationId}`);
+    expect(courseAgentSandboxId(conversationId.toUpperCase())).toBe(
+      `course-agent-${conversationId}`,
+    );
     expect(COURSE_AGENT_SEED_FILE).toBe('/workspace/README.md');
   });
 

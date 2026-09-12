@@ -271,7 +271,7 @@ test('sends with Enter and keeps formatted responses and activity within each tu
     .getByText('Conversation info (only visible to administrators)', { exact: true })
     .click();
   await expect(panel.getByText('Token usage', { exact: true })).toBeVisible();
-  await expect(panel.getByText('Status: Ready', { exact: true })).toBeVisible();
+  await expect(panel.getByText('Worker status: waiting_for_user', { exact: true })).toBeVisible();
   await page.screenshot({ path: testInfo.outputPath('course-chat-tools.png') });
 });
 
