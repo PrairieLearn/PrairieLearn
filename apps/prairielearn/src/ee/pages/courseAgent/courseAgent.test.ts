@@ -4,22 +4,10 @@ import type { AddressInfo } from 'node:net';
 import express from 'express';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 
-import {
-  getEphemeralCourseAgentSnapshot,
-  getEphemeralCourseAgentStream,
-} from '../../lib/course-agent/ephemeral-runtime.js';
-import { getCourseAgentStreamContext } from '../../lib/course-agent/redis.js';
+import * as runtime from '../../lib/course-agent/ephemeral-runtime.js';
+import * as redis from '../../lib/course-agent/redis.js';
 
 import router from './courseAgent.js';
-
-vi.mock('../../lib/course-agent/ephemeral-runtime.js', () => ({
-  getEphemeralCourseAgentSnapshot: vi.fn(),
-  getEphemeralCourseAgentStream: vi.fn(),
-}));
-vi.mock('../../lib/course-agent/redis.js', () => ({
-  getCourseAgentStreamContext: vi.fn(),
-  getCourseAgentStreamId: ({ runId }: { runId: string }) => runId,
-}));
 
 const conversationId = '9a6d8f44-d55b-4e73-8b9b-547dd00fb400';
 const runId = '40cff9bd-6931-4405-a8e6-57f93a190d4b';
@@ -28,9 +16,11 @@ let server: Server;
 let url: string;
 
 beforeEach(async () => {
-  vi.mocked(getCourseAgentStreamContext).mockResolvedValue({
+  vi.spyOn(runtime, 'getEphemeralCourseAgentSnapshot');
+  vi.spyOn(runtime, 'getEphemeralCourseAgentStream');
+  vi.spyOn(redis, 'getCourseAgentStreamContext').mockResolvedValue({
     resumeExistingStream: vi.fn().mockResolvedValue(null),
-  } as unknown as Awaited<ReturnType<typeof getCourseAgentStreamContext>>);
+  } as unknown as Awaited<ReturnType<typeof redis.getCourseAgentStreamContext>>);
   const app = express();
   app.use((_req, res, next) => {
     Object.assign(res.locals, {
@@ -51,16 +41,16 @@ afterEach(async () => {
   await new Promise<void>((resolve, reject) =>
     server.close((error) => (error ? reject(error) : resolve())),
   );
-  vi.resetAllMocks();
+  vi.restoreAllMocks();
 });
 
 it('follows live Worker output when an active run has no Redis stream', async () => {
-  vi.mocked(getEphemeralCourseAgentSnapshot).mockResolvedValue({
+  vi.mocked(runtime.getEphemeralCourseAgentSnapshot).mockResolvedValue({
     activeRunId: runId,
     events: [],
-  } as unknown as Awaited<ReturnType<typeof getEphemeralCourseAgentSnapshot>>);
+  } as unknown as Awaited<ReturnType<typeof runtime.getEphemeralCourseAgentSnapshot>>);
   let output!: ReadableStreamDefaultController<string>;
-  vi.mocked(getEphemeralCourseAgentStream).mockResolvedValue(
+  vi.mocked(runtime.getEphemeralCourseAgentStream).mockResolvedValue(
     new ReadableStream<string>({
       start(controller) {
         output = controller;
@@ -80,7 +70,7 @@ it('follows live Worker output when an active run has no Redis stream', async ()
     remaining += new TextDecoder().decode(value);
   }
   expect(remaining).toContain('"type":"finish"');
-  expect(getEphemeralCourseAgentStream).toHaveBeenCalledWith({
+  expect(runtime.getEphemeralCourseAgentStream).toHaveBeenCalledWith({
     courseId: '1',
     userId: '2',
     conversationId,
@@ -90,7 +80,7 @@ it('follows live Worker output when an active run has no Redis stream', async ()
 });
 
 it('replays a completed snapshot without opening a live Worker stream', async () => {
-  vi.mocked(getEphemeralCourseAgentSnapshot).mockResolvedValue({
+  vi.mocked(runtime.getEphemeralCourseAgentSnapshot).mockResolvedValue({
     activeRunId: null,
     events: [
       {
@@ -106,11 +96,11 @@ it('replays a completed snapshot without opening a live Worker stream', async ()
         data: { response: 'Hello world' },
       },
     ],
-  } as unknown as Awaited<ReturnType<typeof getEphemeralCourseAgentSnapshot>>);
+  } as unknown as Awaited<ReturnType<typeof runtime.getEphemeralCourseAgentSnapshot>>);
   const response = await fetch(url);
   const body = await response.text();
   expect(response.status).toBe(200);
   expect(body).toContain('Hello world');
   expect(body).toContain('"type":"finish"');
-  expect(getEphemeralCourseAgentStream).not.toHaveBeenCalled();
+  expect(runtime.getEphemeralCourseAgentStream).not.toHaveBeenCalled();
 });
