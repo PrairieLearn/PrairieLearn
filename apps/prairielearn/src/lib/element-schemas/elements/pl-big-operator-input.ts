@@ -17,6 +17,7 @@ const plBigOperatorInputAttributesSchema = z
     'correct-answer': z.string().regex(correctAnswerPattern).optional(),
     'custom-functions': z.string().optional(),
     display: z.enum(['block', 'inline']).default('block').optional(),
+    'display-log-as-ln': booleanFormat().default('false').optional(),
     'grading-method': z.enum(['exact', 'component', 'equivalent', 'none']).optional(),
     'imaginary-unit-for-display': z.enum(['i', 'j']).default('i').optional(),
     'index-field-size': integerFormat().optional(),
