@@ -51,6 +51,7 @@ function fixture(activeRunId: string | null, expiresAt: number) {
         values.set(keyOrEntries, structuredClone(value));
         return;
       }
+      if (Object.keys(keyOrEntries).length > 128) throw new RangeError('Too many pairs');
       for (const [key, entry] of Object.entries(keyOrEntries)) {
         values.set(key, structuredClone(entry));
       }
@@ -61,8 +62,21 @@ function fixture(activeRunId: string | null, expiresAt: number) {
       );
     }),
     delete: vi.fn(async (keys: string | string[]) => {
+      if (Array.isArray(keys) && keys.length > 128) throw new RangeError('Too many keys');
       for (const key of typeof keys === 'string' ? [keys] : keys) values.delete(key);
     }),
+    transaction: async (
+      callback: (transaction: Pick<DurableObjectTransaction, 'put'>) => Promise<void>,
+    ) => {
+      const before = structuredClone(values);
+      try {
+        await callback({ put: storage.put });
+      } catch (error) {
+        values.clear();
+        for (const [key, value] of before) values.set(key, value);
+        throw error;
+      }
+    },
     setAlarm: vi.fn(async () => {}),
     deleteAlarm: vi.fn(async () => {}),
   };
@@ -85,6 +99,95 @@ afterEach(() => {
 });
 
 describe('sandbox expiry alarm', () => {
+  it('checkpoints and prunes a large response within storage batch limits', async () => {
+    const { coordinator, storage } = fixture('large-run', 5000);
+    await coordinator['append']('user.message', { text: 'Hello', runId: 'large-run' });
+    const notifications = [
+      {
+        method: 'item/started',
+        params: { item: { id: 'answer', type: 'agentMessage', text: '' } },
+      },
+      ...Array.from({ length: 300 }, () => ({
+        method: 'item/agentMessage/delta',
+        params: { itemId: 'answer', delta: 'x' },
+      })),
+      { method: 'turn/completed', params: { turn: { status: 'completed' } } },
+    ];
+    sandbox.getProcess.mockResolvedValue({ status: 'completed', exitCode: 0 });
+    sandbox.getProcessLogs.mockResolvedValue({
+      stdout: notifications.map((event) => JSON.stringify(event)).join('\n'),
+      stderr: '',
+    });
+    await coordinator.alarm();
+    expect(await storage.get('conversation')).toMatchObject({
+      response: 'x'.repeat(300),
+      activeRunId: null,
+      error: null,
+    });
+    const events = [...(await storage.list({ prefix: 'event:' })).values()];
+    expect(events).toContainEqual(expect.objectContaining({ type: 'agent.completed' }));
+    expect(events).not.toContainEqual(expect.objectContaining({ type: 'assistant.delta' }));
+    expect(sandbox.killProcess).not.toHaveBeenCalled();
+  });
+
+  it('rolls back the cursor and events if a later storage batch fails', async () => {
+    const { coordinator, storage, values } = fixture('batch-run', 5000);
+    const original = structuredClone(values);
+    const put = storage.put.getMockImplementation()!;
+    storage.put.mockImplementationOnce(put).mockRejectedValueOnce(new Error('Storage unavailable'));
+    await expect(
+      coordinator['putStateAndEvents'](
+        {
+          ...((await storage.get('conversation')) as Parameters<
+            (typeof coordinator)['putStateAndEvents']
+          >[0]),
+          logCursor: 500,
+          nextSequence: 300,
+        },
+        Array.from({ length: 300 }, (_, sequence) => ({
+          sequence,
+          type: 'assistant.delta',
+          occurredAt: new Date().toISOString(),
+          data: { text: 'x' },
+        })),
+      ),
+    ).rejects.toThrow('Storage unavailable');
+    expect(values).toEqual(original);
+  });
+
+  it('fails abandoned startup after its grace period and preserves live startup before it', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(1000);
+    const { coordinator, storage, state } = fixture('startup-run', 5000);
+    await coordinator['update']({ processId: null, processStartingUntil: 301000 });
+    const restarted = new CourseAgentCoordinator(
+      state as unknown as DurableObjectState,
+      {} as ConstructorParameters<typeof CourseAgentCoordinator>[1],
+    );
+    await restarted.alarm();
+    expect(await storage.get('conversation')).toMatchObject({ activeRunId: 'startup-run' });
+    vi.setSystemTime(301000);
+    await restarted.alarm();
+    expect(await storage.get('conversation')).toMatchObject({
+      activeRunId: null,
+      status: 'failed',
+      idleExpiresAt: 901000,
+      error: 'The course-agent startup was interrupted. Please try again.',
+    });
+    expect(await coordinator['update']({ processId: 'late-process' }, 'startup-run')).toBe(false);
+    expect(sandbox.killProcess).not.toHaveBeenCalled();
+  });
+
+  it('fails legacy abandoned startup without a startup deadline', async () => {
+    const { coordinator, storage } = fixture('legacy-startup', 5000);
+    await coordinator['update']({ processId: null });
+    await coordinator.alarm();
+    expect(await storage.get('conversation')).toMatchObject({
+      activeRunId: null,
+      status: 'failed',
+    });
+  });
+
   it('rechecks ownership after the alarm before accepting a run', async () => {
     const { coordinator, storage } = fixture(null, 5000);
     const identity = {

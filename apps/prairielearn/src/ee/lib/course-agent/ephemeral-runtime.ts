@@ -124,6 +124,17 @@ export async function startEphemeralCourseAgentRun({
 }
 
 async function startCourseAgentEventRelay(identity: Identity & { runId: string }) {
+  const stream = await getEphemeralCourseAgentStream(identity);
+  const streamContext = await getCourseAgentStreamContext();
+  await streamContext.createNewResumableStream(getCourseAgentStreamId(identity), () => stream);
+}
+
+export async function getEphemeralCourseAgentStream(identity: Identity & { runId: string }) {
+  identity = {
+    ...identity,
+    conversationId: identity.conversationId.toLowerCase(),
+    sandboxId: courseAgentSandboxId(identity.conversationId),
+  };
   const capability = generateSignedToken(
     { type: 'course-agent-inspect', ...identity, expiresAt: expiresAt() },
     capabilitySecret(),
@@ -137,14 +148,11 @@ async function startCourseAgentEventRelay(identity: Identity & { runId: string }
   if (!response.ok || !body) {
     throw new Error(`Course-agent Worker stream failed (${response.status})`);
   }
-  const streamContext = await getCourseAgentStreamContext();
-  await streamContext.createNewResumableStream(getCourseAgentStreamId(identity), () =>
-    body
-      .pipeThrough(new TextDecoderStream())
-      .pipeThrough(publicCourseAgentStream())
-      .pipeThrough(courseAgentUIStream(identity.runId))
-      .pipeThrough(new JsonToSseTransformStream()),
-  );
+  return body
+    .pipeThrough(new TextDecoderStream())
+    .pipeThrough(publicCourseAgentStream())
+    .pipeThrough(courseAgentUIStream(identity.runId))
+    .pipeThrough(new JsonToSseTransformStream());
 }
 
 export async function getEphemeralCourseAgentSnapshot(identity: Identity) {

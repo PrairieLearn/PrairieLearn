@@ -6,7 +6,10 @@ import * as error from '@prairielearn/error';
 import { parseRequestQuery } from '@prairielearn/zod';
 
 import { typedAsyncHandler } from '../../../lib/res-locals.js';
-import { getEphemeralCourseAgentSnapshot } from '../../lib/course-agent/ephemeral-runtime.js';
+import {
+  getEphemeralCourseAgentSnapshot,
+  getEphemeralCourseAgentStream,
+} from '../../lib/course-agent/ephemeral-runtime.js';
 import { publicCourseAgentEvent } from '../../lib/course-agent/public-events.js';
 import {
   getCourseAgentStreamContext,
@@ -46,17 +49,27 @@ router.get(
         conversationId,
         sandboxId,
       });
-      stream = new ReadableStream({
-        start(controller) {
-          for (const event of snapshot.events) {
-            const projected = publicCourseAgentEvent(event);
-            if (projected) controller.enqueue(projected);
-          }
-          controller.close();
-        },
-      })
-        .pipeThrough(courseAgentUIStream(runId))
-        .pipeThrough(new JsonToSseTransformStream());
+      if (snapshot.activeRunId === runId) {
+        stream = await getEphemeralCourseAgentStream({
+          courseId: res.locals.course.id,
+          userId: res.locals.authn_user.id,
+          conversationId,
+          sandboxId,
+          runId,
+        });
+      } else {
+        stream = new ReadableStream({
+          start(controller) {
+            for (const event of snapshot.events) {
+              const projected = publicCourseAgentEvent(event);
+              if (projected) controller.enqueue(projected);
+            }
+            controller.close();
+          },
+        })
+          .pipeThrough(courseAgentUIStream(runId))
+          .pipeThrough(new JsonToSseTransformStream());
+      }
     }
     await pipeCourseAgentUIStream(stream, res);
   }),

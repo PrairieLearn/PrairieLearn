@@ -58,6 +58,8 @@ the deadline. The Durable Object alarm checks an active process every minute; id
 interrupts a working agent. `turnTimeoutSeconds` is a separate active-execution guard, not a sandbox
 lifetime. `sleepAfterSeconds` controls Cloudflare's inactivity failsafe, with `keepAlive` disabled.
 Both guards default to six hours. Settings take effect on the next run and accept 60–86,400 seconds.
+Startup has a separate five-minute grace period. If the coordinator is replaced before it records
+the process ID, an alarm fails the abandoned startup after that period so the instructor can retry.
 
 There is no absolute sandbox lifetime. Legacy `maxLifetimeSeconds` values are ignored. On upgrade,
 old absolute-deadline alarms are replaced with a full idle interval or an active-process check.
@@ -87,7 +89,9 @@ UI-message SSE. PrairieLearn translates Worker events into UI-message chunks bef
 in Redis; each run has a stable assistant-message ID, and earlier turns in the Worker's replay are
 excluded. Reconnecting rebuilds that run's message from the beginning without submitting another
 model request. If Redis no longer has the completed stream, the same adapter reconstructs it from
-the authorized workspace snapshot. This does not persist the browser conversation across reloads;
+the authorized workspace snapshot. If the run is still active, reconnect opens an authenticated
+Worker stream to replay its events and follow new output through completion.
+This does not persist the browser conversation across reloads;
 conversation persistence belongs to the later persistence PR.
 
 The sandbox runs Codex app-server over stdio to forward final-answer text deltas as they arrive.

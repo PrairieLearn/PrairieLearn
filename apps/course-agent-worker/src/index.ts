@@ -59,6 +59,8 @@ interface ConversationState {
 }
 
 const EVENT_KEY_PREFIX = 'event:';
+const STORAGE_BATCH_SIZE = 128;
+const STARTUP_TIMEOUT_MS = 5 * 60_000;
 
 function eventKey(sequence: number) {
   return `${EVENT_KEY_PREFIX}${sequence.toString().padStart(12, '0')}`;
@@ -168,6 +170,7 @@ export class CourseAgentCoordinator {
           idleExpiresAt: null,
           runtimeSettings: body.runtimeSettings,
           processId: null,
+          processStartingUntil: Date.now() + STARTUP_TIMEOUT_MS,
         };
         await this.state.storage.put('conversation', next);
         await this.state.storage.setAlarm(Date.now() + ACTIVE_RECHECK_MS);
@@ -373,7 +376,7 @@ export class CourseAgentCoordinator {
       );
 
       const prompt = `${SYSTEM_PROMPT}\n\nInstructor request:\n${request.prompt}`;
-      const requestPath = `${COURSE_AGENT_WORKSPACE_ROOT}/.course-agent-request.json`;
+      const requestPath = `${COURSE_AGENT_WORKSPACE_ROOT}/.course-agent-request-${request.runId}.json`;
       // Use a file rather than shell arguments: recovery history may exceed the argument-size limit.
       await sandbox.writeFile(
         requestPath,
@@ -449,7 +452,15 @@ export class CourseAgentCoordinator {
         await this.failRun(runId, new Error('The course-agent active execution limit was reached'));
         return;
       }
-      if (!current.processId) return;
+      if (!current.processId) {
+        if ((current.processStartingUntil ?? 0) <= Date.now()) {
+          await this.failRun(
+            runId,
+            new Error('The course-agent startup was interrupted. Please try again.'),
+          );
+        }
+        return;
+      }
       if (!process) {
         if ((current.processStartingUntil ?? 0) > Date.now()) return;
         await this.failRun(runId, new Error('The course-agent process is no longer available'));
@@ -632,9 +643,19 @@ export class CourseAgentCoordinator {
   }
 
   private async putStateAndEvents(state: ConversationState, events: CourseAgentEvent[]) {
-    await this.state.storage.put({
+    const entries = Object.entries({
       conversation: state,
       ...Object.fromEntries(events.map((event) => [eventKey(event.sequence), event])),
+    });
+    if (entries.length <= STORAGE_BATCH_SIZE) {
+      await this.state.storage.put(Object.fromEntries(entries));
+      return;
+    }
+    // Keep the cursor and all emitted events atomic even when they require multiple writes.
+    await this.state.storage.transaction(async (transaction) => {
+      for (let index = 0; index < entries.length; index += STORAGE_BATCH_SIZE) {
+        await transaction.put(Object.fromEntries(entries.slice(index, index + STORAGE_BATCH_SIZE)));
+      }
     });
   }
 
@@ -657,7 +678,9 @@ export class CourseAgentCoordinator {
           event.sequence < endSequence,
       )
       .map(([key]) => key);
-    if (deltaKeys.length > 0) await this.state.storage.delete(deltaKeys);
+    for (let index = 0; index < deltaKeys.length; index += STORAGE_BATCH_SIZE) {
+      await this.state.storage.delete(deltaKeys.slice(index, index + STORAGE_BATCH_SIZE));
+    }
   }
 }
 
