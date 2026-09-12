@@ -30,6 +30,7 @@ BOUNDS_INDEX_FIELD_SIZE_DEFAULT: Final = 7
 ANNOTATION_INDEX_FIELD_SIZE_DEFAULT: Final = 10
 IMAGINARY_UNIT_FOR_DISPLAY_DEFAULT: Final = "i"
 DISPLAY_DEFAULT: Final = psi.DisplayType.BLOCK
+DISPLAY_LOG_AS_LN_DEFAULT: Final = False
 
 type BuiltinOperator = Literal[
     "sum",
@@ -162,6 +163,7 @@ class RenderConfig:
     display: psi.DisplayType
     allow_complex: bool
     imaginary_unit: str
+    display_log_as_ln: bool
     show_help_text: bool
     body_size: int
     index_field_size: int
@@ -526,6 +528,9 @@ def _config(html: str, data: pl.QuestionData | None = None) -> RenderConfig:
         ),
         allow_complex=pl.get_boolean_attrib(element, "allow-complex", False),
         imaginary_unit=imaginary_unit,
+        display_log_as_ln=pl.get_boolean_attrib(
+            element, "display-log-as-ln", DISPLAY_LOG_AS_LN_DEFAULT
+        ),
         show_help_text=pl.get_boolean_attrib(element, "show-help-text", True),
         body_size=body_size,
         index_field_size=index_field_size,
@@ -831,6 +836,7 @@ def _render_symbolic_input(
     allowed_types: set[psu.AllowedSympyType],
     allow_complex: bool,
     imaginary_unit: str,
+    display_log_as_ln: bool,
     show_help_text: bool = False,
     show_score: bool = False,
     prefix: str | None = None,
@@ -851,13 +857,13 @@ def _render_symbolic_input(
         size=size,
         show_score=show_score,
         show_info=show_help_text,
+        display_log_as_ln=display_log_as_ln,
+        imaginary_unit=imaginary_unit,
         # fixed
         display=psi.DisplayType.INLINE,
         placeholder="",
-        imaginary_unit=imaginary_unit,
         allow_trig=True,
         simplify_expression=True,
-        display_log_as_ln=False,
         formula_editor=True,
         show_score_percent=False,
         initial_value=None,
@@ -902,6 +908,7 @@ def _symbolic_field(
         allowed_types=_component_allowed_types(config, component),
         allow_complex=config.allow_complex,
         imaginary_unit=config.imaginary_unit,
+        display_log_as_ln=config.display_log_as_ln,
         show_help_text=component == "body" and config.show_help_text,
         show_score=config.grading == "component",
         prefix=prefix,
@@ -1097,16 +1104,21 @@ def _structured_tex(
 ) -> str:
     values = _values(config, structured)
     raw = {
-        config.component_name(key): sympy.latex(
-            psi.replace_imaginary_for_display(
-                cast(sympy.Expr, value), config.imaginary_unit
-            )
-        )
+        config.component_name(key): _expression_tex(config, value)
         for key, value in values.items()
     }
     if config.indexing == "approaches" and config.allow_direction_input:
         raw[config.component_name("direction")] = structured.get("direction", "")
     return _tex(config, raw)
+
+
+def _expression_tex(config: RenderConfig, value: sympy.Basic) -> str:
+    display_value = psi.replace_imaginary_for_display(
+        cast(sympy.Expr, value), config.imaginary_unit
+    )
+    if config.display_log_as_ln:
+        display_value = display_value.replace(sympy.log, sympy.Function("ln"))
+    return sympy.latex(display_value)
 
 
 def _parse_component_submission(
@@ -1144,9 +1156,7 @@ def _submitted_tex(config: RenderConfig, data: pl.QuestionData) -> str:
         )
         if isinstance(parsed, psu.SympyParseFailure) or parsed.expr == "":
             continue
-        display_raw[name] = sympy.latex(
-            psi.replace_imaginary_for_display(parsed.expr, config.imaginary_unit)
-        )
+        display_raw[name] = _expression_tex(config, parsed.expr)
     return _tex(config, display_raw)
 
 

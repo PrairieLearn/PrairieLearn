@@ -41,6 +41,11 @@
       "type": "string",
       "enum": ["block", "inline"]
     },
+    "display-log-as-ln": {
+      "default": "false",
+      "type": "string",
+      "format": "boolean"
+    },
     "grading-method": {
       "type": "string",
       "enum": ["exact", "component", "equivalent", "none"]
