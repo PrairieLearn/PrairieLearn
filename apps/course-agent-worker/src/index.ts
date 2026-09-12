@@ -536,24 +536,19 @@ export class CourseAgentCoordinator {
     const current = await this.getConversationState();
     if (current?.activeRunId !== runId) return;
     const idleExpiresAt = idleDeadline(current.runtimeSettings?.idleTimeoutSeconds ?? 600);
-    if (
-      await this.update(
-        {
-          activeRunId: null,
-          activeRunExpiresAt: null,
-          processId: null,
-          status: 'failed',
-          conversationState: 'failed',
-          response: null,
-          error: message,
-          idleExpiresAt,
-        },
-        runId,
-      )
-    ) {
-      await this.state.storage.setAlarm(idleExpiresAt);
-      this.closeStreams();
-    }
+    await this.update(
+      {
+        activeRunId: null,
+        activeRunExpiresAt: null,
+        processId: null,
+        status: 'failed',
+        conversationState: 'failed',
+        response: null,
+        error: message,
+        idleExpiresAt,
+      },
+      runId,
+    );
   }
 
   private async getConversationState() {
@@ -622,6 +617,10 @@ export class CourseAgentCoordinator {
       await this.putStateAndEvents(next, events);
       for (const event of events) {
         for (const listener of this.listeners) listener.enqueue(eventChunk(event));
+      }
+      if (current.activeRunId && next.activeRunId === null) {
+        await this.state.storage.setAlarm(next.idleExpiresAt ?? Date.now() + ACTIVE_RECHECK_MS);
+        this.closeStreams();
       }
       return true;
     });

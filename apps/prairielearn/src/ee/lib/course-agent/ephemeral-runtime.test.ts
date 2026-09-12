@@ -68,6 +68,7 @@ describe('ephemeral course-agent runtime', () => {
         sandboxId: 'untrusted-client-sandbox',
       });
       assert.equal(snapshot.status, 'waiting_for_user');
+      assert.equal(snapshot.events.filter((event) => event.type === 'user.message').length, 2);
       assert.equal(snapshot.events.filter((event) => event.type === 'workspace.seeded').length, 1);
       await expect(() =>
         getEphemeralCourseAgentSnapshot({

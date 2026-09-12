@@ -129,36 +129,39 @@ describe('sandbox expiry alarm', () => {
     expect(storage.put).toHaveBeenCalledOnce();
   });
 
-  it('closes completed listeners before releasing the state lock', async () => {
-    const { coordinator, state } = fixture('finished-run', 5000);
-    sandbox.getProcess.mockResolvedValue({ status: 'completed', exitCode: 0 });
-    sandbox.getProcessLogs.mockResolvedValue({
-      stdout: [
-        JSON.stringify({
-          method: 'item/completed',
-          params: { item: { id: 'answer', type: 'agentMessage', text: 'Done' } },
-        }),
-        JSON.stringify({ method: 'turn/completed', params: { turn: { status: 'completed' } } }),
-      ].join('\n'),
-      stderr: '',
-    });
-    let locked = false;
-    state.blockConcurrencyWhile = async (callback) => {
-      locked = true;
-      try {
-        return await callback();
-      } finally {
-        locked = false;
-      }
-    };
-    const close = vi.fn(() => expect(locked).toBe(true));
-    coordinator['listeners'].add({
-      enqueue: vi.fn(),
-      close,
-    } as unknown as ReadableStreamDefaultController<string>);
-    await coordinator.alarm();
-    expect(close).toHaveBeenCalledOnce();
-  });
+  it.each(['completed', 'failed'])(
+    'closes %s listeners before releasing the state lock',
+    async (status) => {
+      const { coordinator, state } = fixture('finished-run', 5000);
+      sandbox.getProcess.mockResolvedValue({ status, exitCode: status === 'completed' ? 0 : 1 });
+      sandbox.getProcessLogs.mockResolvedValue({
+        stdout: [
+          JSON.stringify({
+            method: 'item/completed',
+            params: { item: { id: 'answer', type: 'agentMessage', text: 'Done' } },
+          }),
+          JSON.stringify({ method: 'turn/completed', params: { turn: { status: 'completed' } } }),
+        ].join('\n'),
+        stderr: '',
+      });
+      let locked = false;
+      state.blockConcurrencyWhile = async (callback) => {
+        locked = true;
+        try {
+          return await callback();
+        } finally {
+          locked = false;
+        }
+      };
+      const close = vi.fn(() => expect(locked).toBe(true));
+      coordinator['listeners'].add({
+        enqueue: vi.fn(),
+        close,
+      } as unknown as ReadableStreamDefaultController<string>);
+      await coordinator.alarm();
+      expect(close).toHaveBeenCalledOnce();
+    },
+  );
 
   it('reschedules an early alarm without destroying the sandbox', async () => {
     vi.useFakeTimers();
