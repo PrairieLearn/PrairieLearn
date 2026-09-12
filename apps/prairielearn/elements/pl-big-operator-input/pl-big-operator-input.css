@@ -138,12 +138,12 @@
 
 .pl-big-operator-input__upper math-field,
 .pl-big-operator-input__lower math-field {
-  min-width: var(--pl-big-operator-input-limit-size) !important;
+  min-width: var(--pl-big-operator-input-index-field-size) !important;
   text-align: center;
 }
 
 .pl-big-operator-input__annotation math-field {
-  min-width: var(--pl-big-operator-input-limit-size) !important;
+  min-width: var(--pl-big-operator-input-index-field-size) !important;
 }
 
 /* Hidden formula-editor inputs make the visible math-field a non-first child. */
