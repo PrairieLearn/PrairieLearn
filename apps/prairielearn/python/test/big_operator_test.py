@@ -152,6 +152,36 @@ def test_big_operator_to_json_accepts_big_operator() -> None:
     assert encoded == bounds_answer()
 
 
+@pytest.mark.parametrize(
+    "answer",
+    [
+        {
+            "_type": "big_operator",
+            "_version": 1,
+            "operator": "union",
+            "indexing": "domain",
+            "index": sympy_json(sympy.Symbol("k")),
+            "domain": sympy_json(sympy.FiniteSet(1, 2)),
+            "body": sympy_json(sympy.FiniteSet(sympy.Symbol("k"))),
+        },
+        {
+            "_type": "big_operator",
+            "_version": 1,
+            "operator": "limit",
+            "indexing": "approaches",
+            "index": sympy_json(sympy.Symbol("x")),
+            "target": sympy_json(sympy.Integer(0)),
+            "direction": "from-left",
+            "body": sympy_json(1 / sympy.Symbol("x")),
+        },
+    ],
+)
+def test_big_operator_to_json_accepts_decoded_non_bounds_operator(
+    answer: dict[str, Any],
+) -> None:
+    assert pl.big_operator_to_json(pl.json_to_big_operator(answer)) == answer
+
+
 def test_encode_domain_big_operator() -> None:
     k = sympy.Symbol("k")
     encoded = pl.big_operator_to_json(
@@ -203,6 +233,87 @@ def test_encode_rejects_inconsistent_fields(kwargs: dict[str, Any], match: str) 
             "body": sympy.Symbol("k"),
             **kwargs,
         })
+
+
+@pytest.mark.parametrize(
+    ("kwargs", "exception", "match"),
+    [
+        ({"index": None}, TypeError, "require operator, indexing, index, and body"),
+        ({"version": 2}, ValueError, "version=2"),
+        ({"operator": "mean"}, ValueError, "unsupported operator"),
+        ({"index": sympy.Integer(1)}, TypeError, 'field "index"'),
+        ({"body": "not valid !"}, ValueError, 'field "body" must be a valid'),
+        ({"body": object()}, TypeError, 'field "body" must be a SymPy'),
+        (
+            {"indexing": "domain", "lower": None, "upper": None},
+            ValueError,
+            'require "domain"',
+        ),
+        (
+            {
+                "indexing": "domain",
+                "lower": None,
+                "upper": None,
+                "domain": sympy.FiniteSet(1),
+                "target": sympy.Integer(0),
+            },
+            ValueError,
+            "only accept",
+        ),
+        (
+            {
+                "indexing": "approaches",
+                "lower": None,
+                "upper": None,
+                "target": None,
+            },
+            ValueError,
+            'require "target" and "direction"',
+        ),
+        (
+            {
+                "indexing": "approaches",
+                "lower": sympy.Integer(1),
+                "upper": None,
+                "target": sympy.Integer(0),
+                "direction": "from-left",
+            },
+            ValueError,
+            "only accept",
+        ),
+        (
+            {
+                "indexing": "approaches",
+                "lower": None,
+                "upper": None,
+                "target": sympy.Integer(0),
+                "direction": "sideways",
+            },
+            ValueError,
+            "unsupported direction",
+        ),
+    ],
+)
+def test_encode_rejects_invalid_labelled_fields(
+    kwargs: dict[str, Any], exception: type[Exception], match: str
+) -> None:
+    with pytest.raises(exception, match=match):
+        cast(Any, pl.big_operator_to_json)(**{
+            "operator": "sum",
+            "indexing": "bounds",
+            "index": sympy.Symbol("k"),
+            "lower": sympy.Integer(1),
+            "upper": sympy.Integer(2),
+            "body": sympy.Symbol("k"),
+            **kwargs,
+        })
+
+
+def test_encode_rejects_expression_with_labelled_fields() -> None:
+    decoded = pl.json_to_big_operator(bounds_answer())
+
+    with pytest.raises(TypeError, match="either a big operator or labelled fields"):
+        pl.big_operator_to_json(decoded, operator="sum")  # type: ignore[call-overload]
 
 
 @pytest.mark.parametrize("value", [sympy.Symbol("i"), sympy.Symbol("j"), sympy.I])
