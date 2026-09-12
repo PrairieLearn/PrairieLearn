@@ -13,6 +13,7 @@ import { UserSettingsPurchasesCard } from '../../ee/lib/billing/components/UserS
 import { getPurchasesForUser } from '../../ee/lib/billing/purchases.js';
 import { UserAccessTokenSchema } from '../../lib/client/safe-db-types.js';
 import { getUserTrpcUrl } from '../../lib/client/url.js';
+import { getClientIpAddress } from '../../lib/client-ip.js';
 import { config } from '../../lib/config.js';
 import { AccessTokenSchema, InstitutionSchema, UserSchema } from '../../lib/db-types.js';
 import { ipToMode } from '../../lib/exam-mode.js';
@@ -87,6 +88,7 @@ router.get(
                   short_name: authn_institution.short_name,
                 }}
                 authnProviderName={res.locals.authn_provider_name}
+                ipAddress={getClientIpAddress(req)}
                 accessTokens={isExamMode ? [] : UserAccessTokenSchema.array().parse(accessTokens)}
                 newAccessTokens={isExamMode ? [] : newAccessTokens}
                 isExamMode={isExamMode}

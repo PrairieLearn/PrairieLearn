@@ -1851,6 +1851,36 @@
           "cacheWrite": 0,
           "output": 15
         },
+        "gpt-5.6-luna": {
+          "input": 0.2,
+          "cachedInput": 0.02,
+          "cacheWrite": 0.25,
+          "output": 1.2
+        },
+        "gpt-5.6-terra": {
+          "input": 2,
+          "cachedInput": 0.2,
+          "cacheWrite": 2.5,
+          "output": 12
+        },
+        "gpt-5.6-sol": {
+          "input": 4,
+          "cachedInput": 0.4,
+          "cacheWrite": 5,
+          "output": 20
+        },
+        "gpt-6-astra": {
+          "input": 10,
+          "cachedInput": 1,
+          "cacheWrite": 12.5,
+          "output": 50
+        },
+        "gemini-3.8-flash": {
+          "input": 0.75,
+          "cachedInput": 0.075,
+          "cacheWrite": 0,
+          "output": 3.75
+        },
         "gemini-3.5-flash": {
           "input": 1.5,
           "cachedInput": 0.15,
@@ -1875,17 +1905,35 @@
           "cacheWrite": 1.25,
           "output": 5
         },
+        "claude-sonnet-5": {
+          "input": 2,
+          "cachedInput": 0.2,
+          "cacheWrite": 2.5,
+          "output": 10
+        },
         "claude-sonnet-4-6": {
           "input": 3,
           "cachedInput": 0.3,
           "cacheWrite": 3.75,
           "output": 15
         },
+        "claude-opus-5": {
+          "input": 5,
+          "cachedInput": 0.5,
+          "cacheWrite": 6.25,
+          "output": 25
+        },
         "claude-opus-4-7": {
           "input": 5,
           "cachedInput": 0.5,
           "cacheWrite": 6.25,
           "output": 25
+        },
+        "claude-fable-5-1": {
+          "input": 10,
+          "cachedInput": 0.25,
+          "cacheWrite": 12.5,
+          "output": 50
         }
       },
       "type": "object",
@@ -2005,6 +2053,121 @@
           "required": ["input", "cachedInput", "cacheWrite", "output"],
           "additionalProperties": false
         },
+        "gpt-5.6-luna": {
+          "type": "object",
+          "properties": {
+            "input": {
+              "type": "number",
+              "minimum": 0
+            },
+            "cachedInput": {
+              "type": "number",
+              "minimum": 0
+            },
+            "cacheWrite": {
+              "type": "number",
+              "minimum": 0
+            },
+            "output": {
+              "type": "number",
+              "minimum": 0
+            }
+          },
+          "required": ["input", "cachedInput", "cacheWrite", "output"],
+          "additionalProperties": false
+        },
+        "gpt-5.6-terra": {
+          "type": "object",
+          "properties": {
+            "input": {
+              "type": "number",
+              "minimum": 0
+            },
+            "cachedInput": {
+              "type": "number",
+              "minimum": 0
+            },
+            "cacheWrite": {
+              "type": "number",
+              "minimum": 0
+            },
+            "output": {
+              "type": "number",
+              "minimum": 0
+            }
+          },
+          "required": ["input", "cachedInput", "cacheWrite", "output"],
+          "additionalProperties": false
+        },
+        "gpt-5.6-sol": {
+          "type": "object",
+          "properties": {
+            "input": {
+              "type": "number",
+              "minimum": 0
+            },
+            "cachedInput": {
+              "type": "number",
+              "minimum": 0
+            },
+            "cacheWrite": {
+              "type": "number",
+              "minimum": 0
+            },
+            "output": {
+              "type": "number",
+              "minimum": 0
+            }
+          },
+          "required": ["input", "cachedInput", "cacheWrite", "output"],
+          "additionalProperties": false
+        },
+        "gpt-6-astra": {
+          "type": "object",
+          "properties": {
+            "input": {
+              "type": "number",
+              "minimum": 0
+            },
+            "cachedInput": {
+              "type": "number",
+              "minimum": 0
+            },
+            "cacheWrite": {
+              "type": "number",
+              "minimum": 0
+            },
+            "output": {
+              "type": "number",
+              "minimum": 0
+            }
+          },
+          "required": ["input", "cachedInput", "cacheWrite", "output"],
+          "additionalProperties": false
+        },
+        "gemini-3.8-flash": {
+          "type": "object",
+          "properties": {
+            "input": {
+              "type": "number",
+              "minimum": 0
+            },
+            "cachedInput": {
+              "type": "number",
+              "minimum": 0
+            },
+            "cacheWrite": {
+              "type": "number",
+              "minimum": 0
+            },
+            "output": {
+              "type": "number",
+              "minimum": 0
+            }
+          },
+          "required": ["input", "cachedInput", "cacheWrite", "output"],
+          "additionalProperties": false
+        },
         "gemini-3.5-flash": {
           "type": "object",
           "properties": {
@@ -2097,7 +2260,53 @@
           "required": ["input", "cachedInput", "cacheWrite", "output"],
           "additionalProperties": false
         },
+        "claude-sonnet-5": {
+          "type": "object",
+          "properties": {
+            "input": {
+              "type": "number",
+              "minimum": 0
+            },
+            "cachedInput": {
+              "type": "number",
+              "minimum": 0
+            },
+            "cacheWrite": {
+              "type": "number",
+              "minimum": 0
+            },
+            "output": {
+              "type": "number",
+              "minimum": 0
+            }
+          },
+          "required": ["input", "cachedInput", "cacheWrite", "output"],
+          "additionalProperties": false
+        },
         "claude-sonnet-4-6": {
+          "type": "object",
+          "properties": {
+            "input": {
+              "type": "number",
+              "minimum": 0
+            },
+            "cachedInput": {
+              "type": "number",
+              "minimum": 0
+            },
+            "cacheWrite": {
+              "type": "number",
+              "minimum": 0
+            },
+            "output": {
+              "type": "number",
+              "minimum": 0
+            }
+          },
+          "required": ["input", "cachedInput", "cacheWrite", "output"],
+          "additionalProperties": false
+        },
+        "claude-opus-5": {
           "type": "object",
           "properties": {
             "input": {
@@ -2142,6 +2351,29 @@
           },
           "required": ["input", "cachedInput", "cacheWrite", "output"],
           "additionalProperties": false
+        },
+        "claude-fable-5-1": {
+          "type": "object",
+          "properties": {
+            "input": {
+              "type": "number",
+              "minimum": 0
+            },
+            "cachedInput": {
+              "type": "number",
+              "minimum": 0
+            },
+            "cacheWrite": {
+              "type": "number",
+              "minimum": 0
+            },
+            "output": {
+              "type": "number",
+              "minimum": 0
+            }
+          },
+          "required": ["input", "cachedInput", "cacheWrite", "output"],
+          "additionalProperties": false
         }
       },
       "required": [
@@ -2150,12 +2382,20 @@
         "gpt-5.2-2025-12-11",
         "gpt-5.4-mini-2026-03-17",
         "gpt-5.4-2026-03-05",
+        "gpt-5.6-luna",
+        "gpt-5.6-terra",
+        "gpt-5.6-sol",
+        "gpt-6-astra",
+        "gemini-3.8-flash",
         "gemini-3.5-flash",
         "gemini-3-flash-preview",
         "gemini-3.1-pro-preview",
         "claude-haiku-4-5",
+        "claude-sonnet-5",
         "claude-sonnet-4-6",
-        "claude-opus-4-7"
+        "claude-opus-5",
+        "claude-opus-4-7",
+        "claude-fable-5-1"
       ],
       "additionalProperties": false
     },

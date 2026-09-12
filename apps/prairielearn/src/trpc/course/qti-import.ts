@@ -1,19 +1,24 @@
+import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
 import { flash } from '@prairielearn/flash';
+import { run } from '@prairielearn/run';
 import { throwAppError } from '@prairielearn/trpc/server';
+import { IdSchema } from '@prairielearn/zod';
 
 import {
   type QtiImportAssessmentData,
   QtiImportEditor,
   type QtiImportQuestionData,
 } from '../../lib/editors.js';
+import { idsEqual } from '../../lib/id.js';
 import { readQtiImportDraft } from '../../lib/qti-import-drafts.js';
 import { SHORT_NAME_REGEX } from '../../lib/short-name.js';
+import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances.js';
 import { AssessmentJsonSchema } from '../../schemas/infoAssessment.js';
 import { QuestionJsonSchema } from '../../schemas/infoQuestion.js';
 
-import { requireCoursePermissionEdit, t } from './init.js';
+import { requireCoursePermissionEdit, requireNotExampleCourse, t } from './init.js';
 
 const QTI_IMPORT_DRAFT_UNAVAILABLE_MESSAGE =
   'The uploaded course content files are no longer available. Restart the import process and upload the export again.';
@@ -99,17 +104,36 @@ export interface QtiImportError {
 
 const create = t.procedure
   .use(requireCoursePermissionEdit)
+  .use(requireNotExampleCourse)
   .input(
     z
       .object({
+        courseInstanceId: IdSchema.nullable(),
         assessments: z.array(AssessmentDataSchema).default([]),
         questions: z.array(QuestionDataSchema).default([]),
       })
       .refine((data) => data.assessments.length > 0 || data.questions.length > 0, {
         message: 'At least one assessment or question must be included',
+      })
+      .refine((data) => data.assessments.length === 0 || data.courseInstanceId != null, {
+        message: 'A course instance is required to import assessments',
       }),
   )
   .mutation(async ({ input, ctx }) => {
+    const courseInstance = await run(async () => {
+      const { courseInstanceId } = input;
+      if (courseInstanceId == null) return null;
+      const courseInstances = await selectCourseInstancesWithStaffAccess({
+        course: ctx.course,
+        authzData: ctx.authz_data,
+      });
+      const courseInstance = courseInstances.find((ci) => idsEqual(ci.id, courseInstanceId));
+      if (!courseInstance) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invalid course instance' });
+      }
+      return courseInstance;
+    });
+
     const draftCache = new Map<string, Promise<StoredSerializedConversionResultForHydration[]>>();
     const loadDraft = (draftId: string) => {
       let promise = draftCache.get(draftId);
@@ -117,7 +141,6 @@ const create = t.procedure
         promise = readQtiImportDraft({
           draftId,
           courseId: ctx.course.id,
-          courseInstanceId: ctx.course_instance.id,
           userId: ctx.locals.authn_user.id,
         })
           .then((draft) =>
@@ -179,6 +202,7 @@ const create = t.procedure
 
     const editor = new QtiImportEditor({
       locals: ctx.locals,
+      course_instance: courseInstance,
       assessments,
       questions,
     });

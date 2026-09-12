@@ -52,6 +52,7 @@ function getSamlSaveBody(page: CheerioResponse): URLSearchParams {
     'validate_audience',
     'want_assertions_signed',
     'want_authn_response_signed',
+    'allow_missing_name',
   ]) {
     if (form.find(`[name=${name}]`).is(':checked')) body.set(name, '1');
   }
@@ -217,10 +218,13 @@ describe('institution LTI 1.3 roster syncing guardrails', { concurrent: false },
 
     const safeSamlChange = getSamlSaveBody(samlPage);
     safeSamlChange.set('certificate', 'replacement certificate');
-    assert.equal(
-      (await fetchCheerio(samlPage.url, { method: 'POST', body: safeSamlChange })).status,
-      200,
-    );
+    safeSamlChange.set('allow_missing_name', '1');
+    const safeSamlResponse = await fetchCheerio(samlPage.url, {
+      method: 'POST',
+      body: safeSamlChange,
+    });
+    assert.equal(safeSamlResponse.status, 200);
+    assert.isTrue(safeSamlResponse.$('input[name=allow_missing_name]').is(':checked'));
 
     const changedIssuer = getSamlSaveBody(await fetchCheerio(samlPage.url));
     changedIssuer.set('issuer', 'https://replacement.example.com/saml');

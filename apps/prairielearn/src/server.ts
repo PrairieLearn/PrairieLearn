@@ -37,7 +37,7 @@ import passport from 'passport';
 import favicon from 'serve-favicon';
 
 import { cache } from '@prairielearn/cache';
-import { generateErrorId } from '@prairielearn/error';
+import { HttpStatusError, generateErrorId } from '@prairielearn/error';
 import { flashMiddleware } from '@prairielearn/flash';
 import { addFileLogging, logger, reopenFileLogging } from '@prairielearn/logger';
 import * as migrations from '@prairielearn/migrations';
@@ -60,6 +60,7 @@ import * as cron from './cron/index.js';
 import * as assets from './lib/assets.js';
 import { makeAwsClientConfig } from './lib/aws.js';
 import { canonicalLoggerMiddleware } from './lib/canonical-logger.js';
+import { getCourseAdminQtiImportUrl } from './lib/client/url.js';
 import * as codeCaller from './lib/code-caller/index.js';
 import { DEV_EXECUTION_MODE, config, loadConfig, setLocalsFromConfig } from './lib/config.js';
 import { pullAndUpdateCourse } from './lib/course.js';
@@ -401,10 +402,18 @@ export async function initExpress(): Promise<Express> {
 
   // For backwards compatibility, we redirect requests for the old `node_modules`
   // route to the new `cacheable_node_modules` route.
-  app.use('/node_modules', (req, res) => {
+  app.use('/node_modules', (req, res, next) => {
     // Strip the leading slash.
     const assetPath = req.url.slice(1);
-    res.redirect(assets.nodeModulesAssetPath(assetPath));
+    try {
+      res.redirect(assets.nodeModulesAssetPath(assetPath));
+    } catch (err) {
+      if (err instanceof Error && 'code' in err && err.code === 'MODULE_NOT_FOUND') {
+        next(new HttpStatusError(404, 'Not Found'));
+      } else {
+        next(err);
+      }
+    }
   });
 
   // Support legacy use of ace by v2 questions
@@ -1221,6 +1230,10 @@ export async function initExpress(): Promise<Express> {
     (await import('./pages/instructorQuestions/instructorQuestions.js')).default,
   );
   app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/qti_import',
+    (await import('./pages/instructorQtiImport/instructorQtiImport.js')).default,
+  );
+  app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/getting_started',
     (
       await import('./pages/instructorCourseAdminGettingStarted/instructorCourseAdminGettingStarted.js')
@@ -1317,9 +1330,19 @@ export async function initExpress(): Promise<Express> {
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/assessments',
     (await import('./pages/instructorAssessments/instructorAssessments.js')).default,
   );
-  app.use(
+  // The QTI importer moved to the course admin area; keep older links working.
+  app.get(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/qti_import',
-    (await import('./pages/instructorQtiImport/instructorQtiImport.js')).default,
+    (req, res) => {
+      res.redirect(
+        url.format({
+          pathname: getCourseAdminQtiImportUrl({
+            courseInstanceId: req.params.course_instance_id,
+          }),
+          search: getSearchParams(req).toString(),
+        }),
+      );
+    },
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/gradebook',
@@ -1711,6 +1734,10 @@ export async function initExpress(): Promise<Express> {
   app.use(
     '/pl/course/:course_id(\\d+)/course_admin/questions',
     (await import('./pages/instructorQuestions/instructorQuestions.js')).default,
+  );
+  app.use(
+    '/pl/course/:course_id(\\d+)/course_admin/qti_import',
+    (await import('./pages/instructorQtiImport/instructorQtiImport.js')).default,
   );
   if (isEnterprise()) {
     app.use(

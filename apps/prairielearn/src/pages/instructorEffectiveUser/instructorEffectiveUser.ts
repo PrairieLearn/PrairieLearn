@@ -4,6 +4,7 @@ import { Router } from 'express';
 import { HttpStatusError } from '@prairielearn/error';
 import { loadSqlEquiv, queryRow } from '@prairielearn/postgres';
 
+import { getClientIpAddress } from '../../lib/client-ip.js';
 import { clearCookie, setCookie } from '../../lib/cookie.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 
@@ -28,13 +29,13 @@ router.get(
       CourseRolesSchema,
     );
 
-    let ipAddress = req.ip;
-    // Trim out IPv6 wrapper on IPv4 addresses
-    if (ipAddress?.slice(0, 7) === '::ffff:') {
-      ipAddress = ipAddress.slice(7);
-    }
-
-    res.send(InstructorEffectiveUser({ resLocals: res.locals, ipAddress, courseRoles }));
+    res.send(
+      InstructorEffectiveUser({
+        resLocals: res.locals,
+        ipAddress: getClientIpAddress(req),
+        courseRoles,
+      }),
+    );
   }),
 );
 

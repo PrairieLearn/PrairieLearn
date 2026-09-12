@@ -2,7 +2,7 @@ import assert from 'node:assert';
 
 import { createAnthropic } from '@ai-sdk/anthropic';
 import { createGoogle } from '@ai-sdk/google';
-import { type OpenAIResponsesProviderOptions, createOpenAI } from '@ai-sdk/openai';
+import { type OpenAIResponsesProviderOptions } from '@ai-sdk/openai';
 import { type GenerateTextResult, type ModelMessage, Output, generateText } from 'ai';
 import * as async from 'async';
 import { z } from 'zod';
@@ -49,11 +49,12 @@ import * as questionServers from '../../../question-servers/index.js';
 
 import { resolveAiGradingKeys } from './ai-grading-credentials.js';
 import { AI_GRADING_MODEL_PROVIDERS, type AiGradingModelId } from './ai-grading-models.shared.js';
+import { createAiGradingOpenAI } from './ai-grading-openai-provider.js';
 import { selectGradingJobsInfo } from './ai-grading-stats.js';
 import {
   type AiGradingPrompt,
   addAiGradingCostToIntervalUsage,
-  containsImageCapture,
+  containsSubmissionAttachment,
   correctImagesOrientation,
   extractSubmissionImages,
   generatePrompt,
@@ -346,7 +347,7 @@ export async function aiGrade({
       if (!resolvedKeys.openai) {
         throw new error.HttpStatusError(403, 'Model not available (OpenAI API key not provided)');
       }
-      return createOpenAI({
+      return createAiGradingOpenAI({
         apiKey: resolvedKeys.openai.apiKey,
         organization: resolvedKeys.openai.organization ?? undefined,
       })(model_id);
@@ -616,7 +617,14 @@ export async function aiGrade({
       });
       const submission_text = render_submission_results.data.submissionHtmls[0];
 
-      const hasImage = containsImageCapture(submission_text);
+      const submittedImages = submission.submitted_answer
+        ? extractSubmissionImages({
+            submission_text,
+            submitted_answer: submission.submitted_answer,
+          })
+        : {};
+      const hasImage = Object.keys(submittedImages).length > 0;
+      const hasAttachment = containsSubmissionAttachment(submission_text);
 
       const { rubric, rubric_items } = await selectCompleteRubric(assessment_question.id);
 
@@ -672,21 +680,14 @@ export async function aiGrade({
         true_answer: variant.true_answer ?? {},
       });
 
-      const submittedImages = submission.submitted_answer
-        ? extractSubmissionImages({
-            submission_text,
-            submitted_answer: submission.submitted_answer,
-          })
-        : {};
-
-      // If the submission contains images, prompt the model to transcribe any relevant information
-      // out of the image.
+      // If the submission contains attachments, prompt the model to transcribe any relevant
+      // information out of them.
       const explanationDescription = run(() => {
         const parts = ['Instructor-facing explanation of the grading decision.'];
-        if (hasImage) {
+        if (hasAttachment) {
           parts.push(
-            'You MUST include a complete transcription of all relevant text, numbers, and information from any images the student submitted.',
-            'You MUST transcribe the final answer(s) from the images.',
+            'You MUST include a complete transcription of all relevant text, numbers, and information from any files or images the student submitted.',
+            'You MUST transcribe the final answer(s) from the files and images.',
             'You MUST use LaTeX formatting for mathematical expressions, equations, and formulas.',
             'You MUST wrap inline LaTeX in dollar signs ($).',
             'You MUST wrap block LaTeX in double dollar signs ($$).',

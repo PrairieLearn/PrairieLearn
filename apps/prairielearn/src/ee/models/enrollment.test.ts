@@ -5,13 +5,19 @@ import { queryRow } from '@prairielearn/postgres';
 import { dangerousFullSystemAuthz } from '../../lib/authz-data-lib.js';
 import { CourseInstanceSchema } from '../../lib/db-types.js';
 import { selectCourseInstanceById } from '../../models/course-instances.js';
+import { selectCourseById } from '../../models/course.js';
 import { ensureUncheckedEnrollment } from '../../models/enrollment.js';
+import { selectInstitutionForCourse } from '../../models/institution.js';
 import { uniqueEnrollmentCode } from '../../sync/fromDisk/courseInstances.js';
 import * as helperCourse from '../../tests/helperCourse.js';
 import * as helperDb from '../../tests/helperDb.js';
 import { getOrCreateUser } from '../../tests/utils/auth.js';
+import { type PlanName } from '../lib/billing/plans-types.js';
+import { updateRequiredPlansForCourseInstance } from '../lib/billing/plans.js';
 
 import {
+  PotentialEnrollmentStatus,
+  checkPotentialEnterpriseEnrollment,
   getEnrollmentCountsForCourse,
   getEnrollmentCountsForCourseInstance,
   getEnrollmentCountsForInstitution,
@@ -348,4 +354,94 @@ describe('getEnrollmentCountsForCourseInstance', () => {
     assert.equal(result.free, 1);
     assert.equal(result.paid, 0);
   });
+});
+
+describe('checkPotentialEnterpriseEnrollment', () => {
+  beforeEach(async () => {
+    await helperDb.before();
+    await helperCourse.syncCourse();
+  });
+
+  afterEach(async () => {
+    await helperDb.after();
+  });
+
+  async function setupEnrollment(planNames: PlanName[]) {
+    const course = await selectCourseById('1');
+    const institution = await selectInstitutionForCourse({ course_id: course.id });
+    const courseInstance = await selectCourseInstanceById('1');
+    const user = await getOrCreateUser({
+      uid: 'student@example.com',
+      name: 'Student',
+      uin: 'student',
+    });
+    for (const plan_name of planNames) {
+      await ensurePlanGrant({
+        plan_grant: {
+          institution_id: institution.id,
+          course_instance_id: courseInstance.id,
+          user_id: user.id,
+          plan_name,
+          type: 'stripe',
+        },
+        authn_user_id: '1',
+      });
+    }
+    await updateRequiredPlansForCourseInstance(courseInstance.id, planNames, '1');
+    return {
+      institution,
+      course,
+      courseInstance,
+      authzData: { user, authn_course_role: 'None', authn_course_instance_role: 'None' },
+    };
+  }
+
+  const plans: PlanName[][] = [[], ['basic'], ['compute'], ['basic', 'compute']];
+  describe.each(plans.map((planNames) => ({ planNames })))(
+    'with $planNames grants',
+    ({ planNames }) => {
+      it.each(['institution', 'course', 'course instance'])(
+        'checks an exhausted %s limit',
+        async (limit) => {
+          const context = await setupEnrollment(planNames);
+          // With no enrollments, a zero limit is already exhausted.
+          if (limit === 'institution') context.institution.yearly_enrollment_limit = 0;
+          if (limit === 'course') context.course.yearly_enrollment_limit = 0;
+          if (limit === 'course instance') context.courseInstance.enrollment_limit = 0;
+
+          assert.equal(
+            await checkPotentialEnterpriseEnrollment(context),
+            planNames.includes('basic')
+              ? PotentialEnrollmentStatus.ALLOWED
+              : PotentialEnrollmentStatus.LIMIT_EXCEEDED,
+          );
+        },
+      );
+
+      it('allows enrollment when capacity is available', async () => {
+        const context = await setupEnrollment(planNames);
+        assert.equal(
+          await checkPotentialEnterpriseEnrollment(context),
+          PotentialEnrollmentStatus.ALLOWED,
+        );
+      });
+    },
+  );
+
+  it.each(['basic', 'compute'] satisfies PlanName[])(
+    'requires all plans before bypassing limits with %s access',
+    async (planName) => {
+      const context = await setupEnrollment([planName]);
+      await updateRequiredPlansForCourseInstance(
+        context.courseInstance.id,
+        ['basic', 'compute'],
+        '1',
+      );
+      context.courseInstance.enrollment_limit = 0;
+      assert.equal(
+        await checkPotentialEnterpriseEnrollment(context),
+        PotentialEnrollmentStatus.PLAN_GRANTS_REQUIRED,
+      );
+    },
+  );
 });

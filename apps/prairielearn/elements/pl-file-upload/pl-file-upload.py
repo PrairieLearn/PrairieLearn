@@ -1,7 +1,13 @@
+# The pl-file-upload element enables students to submit files to questions.
+
+# Neither this element nor its implementation strategy should be copied or forked
+# because it is tightly coupled with logic within PrairieLearn's web server.
+
 import base64
 import csv
 import fnmatch
 import hashlib
+import html as stdlib_html
 import json
 import random
 import re
@@ -162,7 +168,8 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 
 
 def render(element_html: str, data: pl.QuestionData) -> str:
-    if data["panel"] != "question":
+    expected_panel = "submission" if data["ai_grading"] else "question"
+    if data["panel"] != expected_panel:
         return ""
 
     element = lxml.html.fragment_fromstring(element_html)
@@ -231,6 +238,14 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     accepted_file_names = list(
         required_files | optional_files | wildcard_files | opt_wildcard_files
     )
+
+    if data["ai_grading"]:
+        # This marker is internal to PrairieLearn's AI grading implementation.
+        return "\n".join(
+            f'<div data-ai-grading-file-name="{stdlib_html.escape(file_name, quote=True)}">'
+            f"{stdlib_html.escape(file_name)}</div>"
+            for file_name in sorted(accepted_file_names)
+        )
 
     submitted_file_names_json = json.dumps(accepted_file_names, allow_nan=False)
 

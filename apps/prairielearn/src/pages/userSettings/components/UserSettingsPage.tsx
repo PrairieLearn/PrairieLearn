@@ -26,6 +26,7 @@ interface UserSettingsPageProps {
     short_name: string;
   };
   authnProviderName: string;
+  ipAddress: string | undefined;
   accessTokens: UserAccessToken[];
   newAccessTokens: string[];
   isExamMode: boolean;
@@ -38,6 +39,7 @@ export function UserSettingsPage({
   user,
   institution,
   authnProviderName,
+  ipAddress,
   accessTokens,
   newAccessTokens,
   isExamMode,
@@ -57,6 +59,7 @@ export function UserSettingsPage({
           user={user}
           institution={institution}
           authnProviderName={authnProviderName}
+          ipAddress={ipAddress}
         />
 
         <UserSettingsCard initialEnableSingleKeyShortcuts={initialEnableSingleKeyShortcuts} />
@@ -80,10 +83,12 @@ function UserProfileCard({
   user,
   institution,
   authnProviderName,
+  ipAddress,
 }: {
   user: UserSettingsPageProps['user'];
   institution: UserSettingsPageProps['institution'];
   authnProviderName: string;
+  ipAddress: string | undefined;
 }) {
   return (
     <div className="card mb-4">
@@ -121,6 +126,10 @@ function UserProfileCard({
             <tr>
               <th>Authentication method</th>
               <td>{authnProviderName}</td>
+            </tr>
+            <tr>
+              <th>IP address</th>
+              <td>{ipAddress ?? <em>Unknown</em>}</td>
             </tr>
           </tbody>
         </table>
