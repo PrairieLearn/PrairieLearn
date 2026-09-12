@@ -26,8 +26,8 @@ SYMBOLIC_INPUT_TEMPLATE_PATH: Final = (
 )
 
 BODY_SIZE_DEFAULT: Final = 16
-BOUNDS_LIMIT_SIZE_DEFAULT: Final = 7
-ANNOTATION_LIMIT_SIZE_DEFAULT: Final = 10
+BOUNDS_INDEX_FIELD_SIZE_DEFAULT: Final = 7
+ANNOTATION_INDEX_FIELD_SIZE_DEFAULT: Final = 10
 IMAGINARY_UNIT_FOR_DISPLAY_DEFAULT: Final = "i"
 DISPLAY_DEFAULT: Final = psi.DisplayType.BLOCK
 
@@ -164,7 +164,7 @@ class RenderConfig:
     imaginary_unit: str
     show_help_text: bool
     body_size: int
-    limit_size: int
+    index_field_size: int
     grading: GradingMethod
     body_weight: int
     weight: int
@@ -450,14 +450,16 @@ def _config(html: str, data: pl.QuestionData | None = None) -> RenderConfig:
     body_size = pl.get_integer_attrib(element, "body-size", BODY_SIZE_DEFAULT)
     if body_size < 1:
         raise ValueError('Attribute "body-size" must be positive.')
-    default_limit_size = (
-        BOUNDS_LIMIT_SIZE_DEFAULT
+    default_index_field_size = (
+        BOUNDS_INDEX_FIELD_SIZE_DEFAULT
         if indexing == "bounds"
-        else ANNOTATION_LIMIT_SIZE_DEFAULT
+        else ANNOTATION_INDEX_FIELD_SIZE_DEFAULT
     )
-    limit_size = pl.get_integer_attrib(element, "limit-size", default_limit_size)
-    if limit_size < 1:
-        raise ValueError('Attribute "limit-size" must be positive.')
+    index_field_size = pl.get_integer_attrib(
+        element, "index-field-size", default_index_field_size
+    )
+    if index_field_size < 1:
+        raise ValueError('Attribute "index-field-size" must be positive.')
     grading: GradingMethod | str = (
         pl.get_string_attrib(element, "grading-method", "equivalent") or "equivalent"
     )
@@ -526,7 +528,7 @@ def _config(html: str, data: pl.QuestionData | None = None) -> RenderConfig:
         imaginary_unit=imaginary_unit,
         show_help_text=pl.get_boolean_attrib(element, "show-help-text", True),
         body_size=body_size,
-        limit_size=limit_size,
+        index_field_size=index_field_size,
         grading=grading,
         body_weight=body_weight,
         weight=pl.get_integer_attrib(element, "weight", 1),
@@ -981,7 +983,7 @@ def _question_mustache(config: RenderConfig, data: pl.QuestionData) -> str:
         "suffix_latex": config.suffix_latex,
         "index_label": index,
         "body_size": config.body_size,
-        "limit_size": config.limit_size,
+        "index_field_size": config.index_field_size,
         "body_field": _symbolic_field(
             config,
             component="body",
@@ -1000,7 +1002,7 @@ def _question_mustache(config: RenderConfig, data: pl.QuestionData) -> str:
                 config,
                 component="lower",
                 label="Lower bound",
-                size=config.limit_size,
+                size=config.index_field_size,
                 data=data,
                 prefix=None if config.operator == "integral" else rf"\({index} = \)",
                 score=component_scores.get("lower"),
@@ -1009,7 +1011,7 @@ def _question_mustache(config: RenderConfig, data: pl.QuestionData) -> str:
                 config,
                 component="upper",
                 label="Upper bound",
-                size=config.limit_size,
+                size=config.index_field_size,
                 data=data,
                 score=component_scores.get("upper"),
             )
@@ -1020,7 +1022,7 @@ def _question_mustache(config: RenderConfig, data: pl.QuestionData) -> str:
                 label="Integration domain"
                 if config.operator == "integral"
                 else "Index domain",
-                size=config.limit_size,
+                size=config.index_field_size,
                 data=data,
                 prefix=None if config.operator == "integral" else rf"\({index} \in \)",
                 score=component_scores.get("domain"),
@@ -1042,7 +1044,7 @@ def _question_mustache(config: RenderConfig, data: pl.QuestionData) -> str:
                 config,
                 component="target",
                 label="approaches target",
-                size=config.limit_size,
+                size=config.index_field_size,
                 data=data,
                 prefix=rf"\({index} \to \)",
                 suffix=rf"\({{}}^{direction_suffix}\)" if direction_suffix else None,
