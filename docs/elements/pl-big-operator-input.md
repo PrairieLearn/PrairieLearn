@@ -84,9 +84,11 @@ The `prefix-latex` and `suffix-latex` attributes place additional notation immed
 
 ![Empty bounded integral input prefixed by Gamma of z equals, with lower and upper bound fields, a body field, and a differential t suffix](pl-big-operator-input-integral.png)
 
-For a limit with `approaches` indexing, students choose the direction by default. The initial red `?` asks them to select `±` (two-sided), `−` (from the left), or `+` (from the right); it does not reveal the correct direction. To display a fixed direction instead, set `allow-limit-direction-input="false"`.
+For a limit with `approaches` indexing, students choose the direction by default. The initial red `?` asks them to select `±` (two-sided), `−` (from the left), or `+` (from the right); it does not reveal the correct direction.
 
 ![Empty approaches-limit input with a target field labeled x approaches, an unanswered direction selector, and a body field](pl-big-operator-input-limit.png)
+
+To display a fixed direction instead, set `allow-limit-direction-input="false"`:
 
 ```html {doctest-name="test_fixed_limit_direction"}
 <pl-big-operator-input
