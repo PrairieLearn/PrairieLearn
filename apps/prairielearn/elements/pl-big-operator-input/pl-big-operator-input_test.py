@@ -4,7 +4,7 @@ import doctest
 import importlib
 import re
 import textwrap
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any, Literal
 
@@ -347,6 +347,224 @@ class TestConfigurationUnits:
         )
 
         assert config.imaginary_unit == expected
+
+    @pytest.mark.parametrize(
+        ("attributes", "correct_answer", "match"),
+        [
+            ({"body-size": "0"}, None, '"body-size" must be positive'),
+            ({"limit-size": "0"}, None, '"limit-size" must be positive'),
+            ({"grading-method": "invalid"}, None, '"grading-method" must be'),
+            (
+                {"body-relative-weight": "0"},
+                None,
+                '"body-relative-weight" must be positive',
+            ),
+            ({"allowed-blank": "invalid"}, None, '"allowed-blank" must be'),
+            (
+                {"imaginary-unit-for-display": "k"},
+                None,
+                '"imaginary-unit-for-display" must be',
+            ),
+            (
+                {"operator-latex": r"\bigstar"},
+                "Custom(k, (k, 1, 2))",
+                "do not support grading-method",
+            ),
+        ],
+    )
+    def test_invalid_configuration_values_are_rejected(
+        self,
+        attributes: dict[str, str],
+        correct_answer: str | None,
+        match: str,
+    ) -> None:
+        markup = html(operator="sum", **attributes)
+        data = question_data(correct_answer)
+        if correct_answer is not None:
+            markup = html(**attributes)
+
+        with pytest.raises(ValueError, match=match):
+            big_operator_input._config(markup, data)
+
+    def test_missing_answer_name_is_rejected(self) -> None:
+        with pytest.raises(ValueError, match='"answers-name" missing'):
+            big_operator_input._config(
+                '<pl-big-operator-input correct-answer="Sum(k, (k, 1, 2))" />'
+            )
+
+    def test_correct_answers_must_be_a_mapping(self) -> None:
+        with pytest.raises(TypeError, match="must be a mapping"):
+            big_operator_input._config(html(), {"correct_answers": []})
+
+    def test_inferred_operator_rejects_unsupported_indexing(self) -> None:
+        correct_answer = pl.big_operator_to_json(
+            operator="limit",  # type: ignore[arg-type]
+            indexing="bounds",
+            index="k",
+            lower="1",
+            upper="2",
+            body="k",
+        )
+
+        with pytest.raises(ValueError, match="does not support"):
+            big_operator_input._config(html(), question_data(correct_answer))
+
+    def test_invalid_inferred_limit_direction_is_rejected(self) -> None:
+        correct_answer = pl.big_operator_to_json(
+            operator="limit",
+            indexing="approaches",
+            index="k",
+            target="0",
+            direction="from-right",
+            body="1/k",
+        )
+        correct_answer["direction"] = "sideways"  # type: ignore[typeddict-item]
+
+        with pytest.raises(ValueError, match="valid direction"):
+            big_operator_input._config(html(), question_data(correct_answer))
+
+
+class TestCorrectAnswerParsingUnits:
+    def test_low_level_shape_helpers_handle_noncanonical_input(self) -> None:
+        k, j = sympy.symbols("k j")
+        domain_sum = sympy.Basic.__new__(
+            sympy.Sum, k, sympy.Tuple(k, sympy.FiniteSet(1, 2))
+        )
+        multi_sum = sympy.Sum(k, (k, 1, 2), (j, 1, 2))
+
+        assert big_operator_input._binder_indexing(sympy.Limit(k, k, 0)) == "approaches"
+        assert big_operator_input._binder_indexing(domain_sum) == "domain"
+        assert big_operator_input._binder_indexing(sympy.Sum(k, (k, 1, 2))) == "bounds"
+        assert big_operator_input._binder_indexing(multi_sum) is None
+        assert big_operator_input._binder_indexing(k) is None
+        assert big_operator_input._binder_index(sympy.Limit(k, k, 0)) == "k"
+        assert big_operator_input._binder_index(sympy.Sum(k, (k, 1, 2))) == "k"
+        assert big_operator_input._binder_index(multi_sum) is None
+
+    def test_wrapper_helpers_reject_malformed_calls(self) -> None:
+        assert big_operator_input._formatted_call("k + 1", "Sum") is None
+        assert big_operator_input._formatted_call("Sum(k)", "Sum") is None
+        assert big_operator_input._formatted_call("Sum(k, k)", "Sum") is None
+        assert big_operator_input._formatted_direction(("k", "0")) is None
+        assert big_operator_input._formatted_direction(("k", "0", "+")) is None
+        assert big_operator_input._legacy_limit_call("k + 1") is None
+        assert big_operator_input._legacy_limit_call("Limit(k, k, 0)") is None
+        assert (
+            big_operator_input._legacy_limit_call("Limit(k, k, 0, dir='sideways')")
+            is None
+        )
+        assert (
+            big_operator_input._formatted_answer(
+                big_operator_input._config(html(operator="sum")), "k + 1"
+            )
+            is None
+        )
+
+    def test_inference_falls_back_for_unformatted_limits(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        sympy_json = psu.sympy_to_json(sympy.Limit(sympy.Symbol("k"), "k", 0))
+
+        assert big_operator_input._infer_spec(sympy_json) == (
+            "limit",
+            "approaches",
+            "k",
+        )
+        assert big_operator_input._infer_spec(object()) == (None, None, None)
+        assert (
+            big_operator_input._infer_direction("Limit(k, (k, 0, '?'))", "limit")
+            is None
+        )
+        assert (
+            big_operator_input._infer_direction("Limit(k, (k, 0, unquoted))", "limit")
+            is None
+        )
+        assert big_operator_input._infer_direction(object(), "limit") is None
+
+        monkeypatch.setattr(
+            big_operator_input,
+            "_safe_decode",
+            lambda _raw: sympy.Limit(sympy.Symbol("k"), "k", 0),
+        )
+        assert big_operator_input._infer_direction("not a wrapper", "limit") == (
+            "from-right"
+        )
+
+    def test_binder_normalizes_supported_sympy_objects(self) -> None:
+        k = sympy.Symbol("k")
+        sum_config = big_operator_input._config(html(operator="sum"))
+        product_config = big_operator_input._config(html(operator="product"))
+        integral_config = big_operator_input._config(html(operator="integral"))
+        limit_config = big_operator_input._config(html(operator="limit"))
+
+        assert (
+            big_operator_input._binder(sum_config, sympy.Sum(k, (k, 1, 2))) is not None
+        )
+        assert (
+            big_operator_input._binder(product_config, sympy.Product(k, (k, 1, 2)))
+            is not None
+        )
+        assert (
+            big_operator_input._binder(integral_config, sympy.Integral(k, (k, 1, 2)))
+            is not None
+        )
+        assert (
+            big_operator_input._binder(limit_config, sympy.Limit(k, k, 0)) is not None
+        )
+
+        assert big_operator_input._binder(limit_config, k) is None
+        assert (
+            big_operator_input._binder(sum_config, sympy.Product(k, (k, 1, 2))) is None
+        )
+        assert (
+            big_operator_input._binder(product_config, sympy.Sum(k, (k, 1, 2))) is None
+        )
+        assert (
+            big_operator_input._binder(integral_config, sympy.Sum(k, (k, 1, 2))) is None
+        )
+        assert (
+            big_operator_input._binder(
+                replace(sum_config, operator="custom"), sympy.Sum(k, (k, 1, 2))
+            )
+            is None
+        )
+
+    def test_binder_rejects_malformed_or_mismatched_indexing(self) -> None:
+        k = sympy.Symbol("k")
+        sum_config = big_operator_input._config(html(operator="sum"))
+        domain_config = big_operator_input._config(
+            html(**{"correct-answer": "Sum(k, (k, {1, 2}))"})
+        )
+        domain_sum = sympy.Basic.__new__(
+            sympy.Sum, k, sympy.Tuple(k, sympy.FiniteSet(1, 2))
+        )
+
+        assert big_operator_input._binder(domain_config, domain_sum) is not None
+        with pytest.raises(ValueError, match="exactly one indexing tuple"):
+            big_operator_input._binder(sum_config, sympy.Basic.__new__(sympy.Sum, k))
+        with pytest.raises(ValueError, match="3-item indexing tuple"):
+            big_operator_input._binder(sum_config, domain_sum)
+        with pytest.raises(ValueError, match="does not support indexing"):
+            big_operator_input._binder(
+                replace(domain_config, indexing="approaches"), domain_sum
+            )
+
+    @pytest.mark.parametrize(
+        ("operator", "source", "match"),
+        [
+            ("sum", "Sum(k, (k, 1))", "3-item indexing tuple"),
+            ("sum", "Sum(INVALID, (k, 1, 2))", "invalid SymPy data"),
+            ("sum", "Sum(k, (k, INVALID, 2))", "invalid SymPy data"),
+            ("limit", "Limit(k, (k, 0, '?'))", "Limit direction"),
+        ],
+    )
+    def test_formatted_answers_report_specific_invalid_component(
+        self, operator: str, source: str, match: str
+    ) -> None:
+        config = big_operator_input._config(html(operator=operator))
+
+        with pytest.raises(ValueError, match=match):
+            big_operator_input._formatted_answer(config, source)
 
 
 class TestPrepareUnits:
@@ -895,6 +1113,95 @@ class TestGradeUnits:
         }
         assert data["partial_scores"]["op"] == {"score": 1.0, "weight": 1}
 
+    def test_equivalent_construction_covers_each_indexing_shape(self) -> None:
+        k = sympy.Symbol("k")
+        bounds_config = big_operator_input._config(html(operator="sum"))
+        limit_config = big_operator_input._config(html(operator="limit"))
+        domain_config = big_operator_input._config(
+            html(**{"correct-answer": "Sum(k, (k, {1, 2}))"})
+        )
+        integral_domain_config = big_operator_input._config(
+            html(**{"correct-answer": "Integral(k, (k, D))", "variables": "D"})
+        )
+
+        bounds_values = {
+            "lower": sympy.Integer(1),
+            "upper": sympy.Integer(2),
+            "body": k,
+        }
+        domain_values = {"domain": sympy.FiniteSet(1, 2), "body": k}
+        approach_values = {"target": sympy.Integer(0), "body": 1 / k}
+
+        assert big_operator_input._construct(
+            replace(bounds_config, operator="custom"), bounds_values
+        ) == sympy.Tuple(k, (k, 1, 2))
+        assert big_operator_input._construct(
+            limit_config, approach_values, "from-right"
+        ) == sympy.Limit(1 / k, k, 0, dir="+")
+        assert big_operator_input._construct(domain_config, domain_values) == 3
+        assert big_operator_input._construct(
+            replace(domain_config, operator="custom"), domain_values
+        ) == sympy.Tuple(1, 2)
+        assert (
+            big_operator_input._construct(
+                replace(domain_config, operator="max"), domain_values
+            )
+            == 2
+        )
+
+        with pytest.raises(NotImplementedError, match="domain integrals"):
+            big_operator_input._construct(integral_domain_config, domain_values)
+        with pytest.raises(NotImplementedError, match="concrete FiniteSet"):
+            big_operator_input._construct(
+                domain_config, {"domain": sympy.Interval(1, 2), "body": k}
+            )
+
+    @pytest.mark.parametrize(
+        ("test_type", "operator"),
+        [
+            ("correct", "limit"),
+            ("incorrect", "limit"),
+            ("invalid", "sum"),
+        ],
+    )
+    def test_generated_submissions_cover_each_test_type(
+        self, test_type: str, operator: str
+    ) -> None:
+        markup = html(operator=operator)
+        data = question_data()
+        big_operator_input.prepare(markup, data)
+        data.update(
+            test_type=test_type,
+            raw_submitted_answers={},
+            partial_scores={},
+            format_errors={},
+        )
+
+        big_operator_input.test(markup, data)
+
+        if test_type == "invalid":
+            assert data["format_errors"]
+        else:
+            assert data["raw_submitted_answers"]
+            assert data["partial_scores"]["op"]["score"] == pytest.approx(
+                float(test_type == "correct")
+            )
+
+    def test_blank_allowed_submission_grades_as_incorrect(self) -> None:
+        markup = html(operator="sum", **{"allowed-blank": "all"})
+        data = question_data(
+            raw_submitted_answers={
+                "op-lower": "",
+                "op-upper": "",
+                "op-body": "",
+            }
+        )
+        big_operator_input.prepare(markup, data)
+        big_operator_input.parse(markup, data)
+        big_operator_input.grade(markup, data)
+
+        assert data["partial_scores"]["op"] == {"score": 0.0, "weight": 1}
+
 
 class TestRenderUnits:
     @pytest.mark.parametrize(
@@ -1230,8 +1537,71 @@ class TestRenderUnits:
         assert rendered.count("fa-check") == 2
         assert rendered.count("fa-times") == 1
 
+    @pytest.mark.parametrize(
+        ("panel", "direction_tex"),
+        [("question", r"{}^+"), ("submission", r"0^+")],
+    )
+    def test_fixed_limit_direction_and_incorrect_score_render(
+        self, panel: Literal["question", "submission"], direction_tex: str
+    ) -> None:
+        markup = html(**{
+            "correct-answer": "Limit(1/k, (k, 0, '+'))",
+            "allow-limit-direction-input": "false",
+        })
+        data = question_data(
+            raw_submitted_answers={"op-target": "0", "op-body": "1/k"},
+            panel=panel,
+        )
+        big_operator_input.prepare(markup, data)
+        big_operator_input.parse(markup, data)
+        data["partial_scores"]["op"] = {"score": 0}
+
+        rendered = big_operator_input.render(markup, data)
+
+        assert direction_tex in rendered
+        assert "text-bg-danger" in rendered
+
+    def test_component_scores_ignore_missing_or_malformed_submission(self) -> None:
+        markup = html(operator="sum", **{"grading-method": "component"})
+        config = big_operator_input._config(markup)
+        data = question_data()
+        data["partial_scores"]["op"] = {"score": 0}
+
+        assert big_operator_input._component_scores(config, data) == {}
+
+        data["submitted_answers"]["op"] = {"invalid": True}
+        assert big_operator_input._component_scores(config, data) == {}
+
 
 class TestCorrectAnswerRegressions:
+    @pytest.mark.parametrize(
+        ("operator", "actual_indexing"),
+        [
+            ("sum", "domain"),
+            ("union", "bounds"),
+            ("limit", "bounds"),
+        ],
+    )
+    def test_structured_answer_indexing_must_match_element(
+        self, operator: str, actual_indexing: str
+    ) -> None:
+        config = big_operator_input._config(html(operator=operator))
+
+        with pytest.raises(ValueError, match="indexing does not match"):
+            big_operator_input._decoded_values(
+                config,
+                {"indexing": actual_indexing},
+            )
+
+    def test_internal_decode_rejects_non_mathematical_values(self) -> None:
+        expression = sympy.Symbol("k")
+
+        assert big_operator_input._decode(expression) == expression
+        assert big_operator_input._safe_decode(object()) is None
+
+        with pytest.raises(TypeError, match="must be SymPy expressions"):
+            big_operator_input._decode(object())
+
     def test_structured_answer_rejects_disallowed_complex_value(self) -> None:
         config = big_operator_input._config(html(operator="sum"))
         answer = big_operator_input._canonical(
