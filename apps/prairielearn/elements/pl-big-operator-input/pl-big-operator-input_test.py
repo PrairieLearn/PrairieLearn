@@ -352,7 +352,7 @@ class TestConfigurationUnits:
         ("attributes", "correct_answer", "match"),
         [
             ({"body-size": "0"}, None, '"body-size" must be positive'),
-            ({"limit-size": "0"}, None, '"limit-size" must be positive'),
+            ({"index-field-size": "0"}, None, '"index-field-size" must be positive'),
             ({"grading-method": "invalid"}, None, '"grading-method" must be'),
             (
                 {"body-relative-weight": "0"},
