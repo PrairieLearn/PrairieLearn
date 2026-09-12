@@ -349,6 +349,21 @@ class TestConfigurationUnits:
         assert config.imaginary_unit == expected
 
     @pytest.mark.parametrize(
+        ("display_log_as_ln", "expected"), [(None, False), ("true", True)]
+    )
+    def test_display_log_as_ln(
+        self, display_log_as_ln: str | None, expected: bool
+    ) -> None:
+        config = big_operator_input._config(
+            html(
+                operator="sum",
+                **{"display-log-as-ln": display_log_as_ln},
+            )
+        )
+
+        assert config.display_log_as_ln is expected
+
+    @pytest.mark.parametrize(
         ("attributes", "correct_answer", "match"),
         [
             ({"body-size": "0"}, None, '"body-size" must be positive'),
@@ -1310,6 +1325,32 @@ class TestRenderUnits:
 
         assert rendered.count('imaginary-unit="j"') == 3
 
+    def test_question_panel_configures_log_display_for_every_field(self) -> None:
+        rendered = big_operator_input.render(
+            html(operator="sum", **{"display-log-as-ln": "true"}),
+            question_data(),
+        )
+
+        assert rendered.count('log-as-ln="log-as-ln"') == 3
+
+    @pytest.mark.parametrize("panel", ["answer", "submission"])
+    def test_log_display_uses_ln_in_read_only_panels(
+        self, panel: Literal["answer", "submission"]
+    ) -> None:
+        markup = html(**{
+            "correct-answer": "Sum(log(k), (k, log(2), log(3)))",
+            "display-log-as-ln": "true",
+        })
+        data = question_data(panel=panel)
+        big_operator_input.prepare(markup, data)
+        if panel == "submission":
+            data["submitted_answers"]["op"] = data["correct_answers"]["op"]
+
+        rendered = big_operator_input.render(markup, data)
+
+        assert "\\ln" in rendered
+        assert "\\log" not in rendered
+
     @pytest.mark.parametrize(
         ("correct_answer", "expected_tex"),
         [
@@ -1775,6 +1816,7 @@ class TestSymbolicInputRendering:
             allowed_types={"expression"},
             allow_complex=False,
             imaginary_unit="i",
+            display_log_as_ln=False,
             show_score=True,
             score=0.5,
         )
