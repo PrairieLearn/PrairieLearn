@@ -338,10 +338,12 @@ export interface ResLocalsCourse {
   course: ConstructedCourseOrInstanceSuccessContext['course'];
   institution: ConstructedCourseOrInstanceSuccessContext['institution'];
   side_nav_expanded: boolean;
+  course_agent_expanded: boolean;
   authz_data: ResLocalsCourseAuthz;
   user: ResLocalsCourseAuthz['user'];
   course_has_course_instances: boolean;
   question_sharing_enabled: boolean;
+  course_agent_enabled: boolean;
   is_administrator: boolean;
 }
 
@@ -689,9 +691,11 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
     res.locals.course_instance = authnCourseInstance;
   }
 
-  // The session middleware does not run for API requests.
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-  res.locals.side_nav_expanded = req.session?.side_nav_expanded ?? true; // The side nav is expanded by default.
+  // The session middleware does not run for API requests, although the Express
+  // type declaration treats the session as always present.
+  const session = req.session as typeof req.session | undefined;
+  res.locals.side_nav_expanded = session?.side_nav_expanded ?? true; // The side nav is expanded by default.
+  res.locals.course_agent_expanded = session?.course_agent_expanded ?? true;
 
   res.locals.course_has_course_instances = await selectCourseHasCourseInstances({
     course: res.locals.course,
@@ -701,6 +705,11 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
     'question-sharing',
     res.locals,
   );
+  res.locals.course_agent_enabled =
+    authnAuthzData.has_course_permission_own &&
+    effectiveAuthzData.has_course_permission_own &&
+    !authnCourse.example_course &&
+    (await features.enabledFromLocals('course-agent', res.locals));
 }
 
 export default asyncHandler(async (req, res, next) => {

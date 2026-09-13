@@ -1,0 +1,22 @@
+{
+  "name": "@prairielearn/course-agent-worker",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "build": "tsc --noEmit",
+    "dev": "wrangler dev --local --persist-to .wrangler/state",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@cloudflare/sandbox": "0.12.7",
+    "@prairielearn/course-agent-protocol": "workspace:^"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "5.20260820.1",
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.10",
+    "wrangler": "^4.125.0"
+  }
+}
