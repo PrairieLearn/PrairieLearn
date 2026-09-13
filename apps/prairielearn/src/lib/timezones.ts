@@ -1,46 +1,29 @@
-import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
+import { Temporal } from '@js-temporal/polyfill';
 
-import { type Timezone, TimezoneCodec } from './timezone.shared.js';
+import { plainDateTimeToDate } from '@prairielearn/utils/timezone';
 
-const sql = loadSqlEquiv(import.meta.url);
-
-let memoizedAvailableTimezones: Timezone[] | null = null;
-
-async function getAvailableTimezonesFromDB(): Promise<Timezone[]> {
-  const availableTimezones = await queryRows(sql.select_timezones, TimezoneCodec);
-  return availableTimezones;
-}
+const LOCAL_DATE_TIME_PATTERN = /([0-9]{4}-[0-9]{2}-[0-9]{2})[ T]([0-9]{2}:[0-9]{2}:[0-9]{2})/;
 
 /**
- * Returns a list of all timezones supported by the database. The list is
- * memoized so that, if it is needed more than once in the same session, the
- * same list is returned.
- */
-async function getAvailableTimezones(): Promise<Timezone[]> {
-  if (memoizedAvailableTimezones == null) {
-    memoizedAvailableTimezones = await getAvailableTimezonesFromDB();
-  }
-  return memoizedAvailableTimezones;
-}
-
-/**
- * Returns a filtered list of canonical timezones that are supported by both
- * Postgres and the JavaScript Intl API. As per the specification of
- * Intl.supportedValuesOf('timeZone'), the list includes only canonical timezone
- * names, and does not include aliases or deprecated names.
+ * Parses the local date/time syntax accepted in course configuration files.
  *
- * @param alwaysInclude - Optional array of timezone names to always include in
- * the result, even if they're not canonical. These timezones are only included
- * if they're supported by Postgres.
+ * PostgreSQL historically resolved both ambiguous fall-back times and
+ * nonexistent spring-forward times to the later possible instant. We specify
+ * that policy explicitly so it cannot change with a Temporal default.
  */
-export async function getCanonicalTimezones(alwaysInclude?: string[]): Promise<Timezone[]> {
-  const availableTimezones = await getAvailableTimezones();
-  const canonicalTimezones = new Set(Intl.supportedValuesOf('timeZone'));
-  // Intl.supportedValuesOf('timeZone') returns the list of canonical timezones,
-  // but it skips UTC and a few other entries
-  // (https://github.com/tc39/ecma402/issues/778). We include UTC manually.
-  canonicalTimezones.add('UTC');
-  return availableTimezones.filter(
-    ({ name }) => canonicalTimezones.has(name) || alwaysInclude?.includes(name),
-  );
+export function parseLocalDateTime(dateString: string, timeZone: string): Date;
+export function parseLocalDateTime(dateString: null, timeZone: string): null;
+export function parseLocalDateTime(dateString: string | null, timeZone: string): Date | null;
+export function parseLocalDateTime(dateString: string | null, timeZone: string): Date | null {
+  if (dateString == null) return null;
+
+  const match = LOCAL_DATE_TIME_PATTERN.exec(dateString);
+  if (!match) {
+    throw new Error(
+      `Invalid date format: ${dateString}, must be like either "2016-07-24T16:52:48" or "2016-07-24 16:52:48"`,
+    );
+  }
+
+  const plainDateTime = Temporal.PlainDateTime.from(`${match[1]}T${match[2]}`);
+  return plainDateTimeToDate(plainDateTime, timeZone, 'later');
 }

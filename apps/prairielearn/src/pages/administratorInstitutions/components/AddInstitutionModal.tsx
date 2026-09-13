@@ -7,9 +7,9 @@ import ReactMarkdown from 'react-markdown';
 import { getAppError } from '@prairielearn/trpc/client';
 import { AppErrorAlert } from '@prairielearn/trpc/react';
 import { OverlayTrigger } from '@prairielearn/ui';
+import { type Timezone, formatTimezone } from '@prairielearn/utils/timezone';
 
 import type { StaffAuthnProvider } from '../../../lib/client/safe-db-types.js';
-import { type Timezone, formatTimezone } from '../../../lib/timezone.shared.js';
 import { UidRegexpSchema } from '../../../lib/uid-regexp.js';
 import { useTRPC } from '../../../trpc/administrator/context.js';
 import type { AdministratorInstitutionsError } from '../../../trpc/administrator/institutions.js';

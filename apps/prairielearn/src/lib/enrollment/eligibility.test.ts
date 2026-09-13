@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
-import type { Course, CourseInstance, User } from './db-types.js';
-import { checkEnrollmentEligibility } from './enrollment-eligibility.js';
+import type { Course, CourseInstance, User } from '../db-types.js';
+
+import { checkEnrollmentEligibility } from './eligibility.js';
 
 describe('checkEnrollmentEligibility', () => {
   const baseParams = {

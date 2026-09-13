@@ -156,6 +156,7 @@ updates:
     patterns: ['*']
     directories:
       - '/'
+      - '/apps/prairielearn/python'
       - '/docs'
       - '/graders/c'
       - '/graders/python'

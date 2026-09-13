@@ -17,6 +17,7 @@
 
 import { z } from 'zod';
 
+import { AssessmentInstanceAuthzResultSchema as RawAssessmentInstanceAuthzResultSchema } from '../assessment-access-control/authz-result.js';
 import {
   AccessTokenSchema as RawAccessTokenSchema,
   AlternativePoolSchema as RawAlternativePoolSchema,
@@ -43,7 +44,6 @@ import {
   RubricItemSchema as RawRubricItemSchema,
   RubricSchema as RawRubricSchema,
   SharingSetSchema as RawSharingSetSchema,
-  SprocAuthzAssessmentInstanceSchema as RawSprocAuthzAssessmentInstanceSchema,
   StudentLabelSchema as RawStudentLabelSchema,
   TagSchema as RawTagSchema,
   GroupSchema as RawTeamSchema,
@@ -154,7 +154,7 @@ export type StudentAssessmentInstance__UNSAFE = z.infer<
 
 /** Assessment Instance Authz Results */
 export const RawStudentAssessmentInstanceAuthzResultSchema =
-  RawSprocAuthzAssessmentInstanceSchema.pick({
+  RawAssessmentInstanceAuthzResultSchema.pick({
     active: true,
     authorized_edit: true,
     credit_date_string: true,

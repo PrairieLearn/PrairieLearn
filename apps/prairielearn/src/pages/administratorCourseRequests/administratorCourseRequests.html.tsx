@@ -2,10 +2,10 @@ import { QueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 
 import { QueryClientProviderDebug } from '@prairielearn/trpc/react';
+import type { Timezone } from '@prairielearn/utils/timezone';
 
 import type { AdminInstitutionWithSettings } from '../../lib/client/safe-db-types.js';
 import type { CourseRequestRow } from '../../lib/course-request.js';
-import type { Timezone } from '../../lib/timezone.shared.js';
 import { createAdministratorTrpcClient } from '../../trpc/administrator/client.js';
 import { TRPCProvider } from '../../trpc/administrator/context.js';
 

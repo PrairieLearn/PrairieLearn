@@ -120,6 +120,7 @@ When working with assessment "groups" / "teams", see the [`groups-and-teams` ski
 
 ### SQL query conventions
 
+- Node is authoritative for operations that depend on rule-bearing IANA timezone data, such as parsing civil times, calculating DST-aware boundaries, and grouping or formatting in course or institution timezones. Fixed-UTC timestamp arithmetic, truncation, bucketing, and internal transport serialization may remain in PostgreSQL because UTC has no mutable timezone rules; do not move these operations to Node solely for timezone ownership, especially when doing so adds query round trips. Never rely on the PostgreSQL session timezone for UTC behavior; make UTC explicit.
 - Always prefer existing model functions or library helpers over one-off raw SQL queries. Check `apps/prairielearn/src/models/` and `apps/prairielearn/src/lib/` before writing any database queries. Only write raw queries when no suitable abstraction exists.
 - Use `to_jsonb(table.*)` if you need to select all columns from a table as JSON. This is preferred over explicit `jsonb_build_object` calls or returning columns explicitly in a SELECT statement because it automatically includes all columns and stays in sync with schema changes and Zod types.
 - When a query spans multiple tables, model it as a composite object with named canonical `db-types` entities plus any true computed fields, rather than flattening columns or embedding one entity inside another.

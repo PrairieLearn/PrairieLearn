@@ -7,15 +7,13 @@ import { run } from '@prairielearn/run';
 import { withBrand } from '@prairielearn/utils';
 import { IdSchema } from '@prairielearn/zod';
 
-import { selectLatestPublishingExtensionByEnrollment } from '../models/course-instance-publishing-extensions.js';
-import { selectOptionalEnrollmentByUserId } from '../models/enrollment.js';
+import { selectLatestPublishingExtensionByEnrollmentIds } from '../models/course-instance-publishing-extensions.js';
 
 import {
   type ConstructedCourseOrInstanceContext,
   type PlainAuthzData,
   calculateCourseInstanceRolePermissions,
   calculateCourseRolePermissions,
-  dangerousFullSystemAuthz,
 } from './authz-data-lib.js';
 import {
   type CourseInstance,
@@ -28,6 +26,11 @@ import {
   InstitutionSchema,
   type User,
 } from './db-types.js';
+import {
+  type EnrollmentIdentityContext,
+  getEnrollmentAdmissionDecision,
+  selectEnrollmentIdentityClassification,
+} from './enrollment/identity.js';
 import { ipToMode } from './exam-mode.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -94,24 +97,28 @@ export async function checkCourseInstanceLegacyAccess({
  * @param courseInstance - The course instance to check access for.
  * @param userId - The ID of the user to check access for.
  * @param reqDate - The date of the request.
+ * @param lti13Identity - Exact link and `sub` from a verified LTI launch, used to find a pending enrollment's publishing extension.
  */
 export async function calculateModernCourseInstanceStudentAccess(
   courseInstance: CourseInstance,
   userId: string,
   reqDate: Date,
+  lti13Identity?: NonNullable<EnrollmentIdentityContext['lti13Identity']>,
 ) {
   // This function should only be called for course instances that are using
   // modern publishing configs.
   assert(courseInstance.modern_publishing);
 
-  // We can't trust the authzData to have the correct permissioning,
-  // so we need to use system auth to get the enrollment.
-  const enrollment = await selectOptionalEnrollmentByUserId({
+  const classification = await selectEnrollmentIdentityClassification({
+    courseInstanceId: courseInstance.id,
+    lti13Identity,
     userId,
-    requiredRole: ['System'],
-    authzData: dangerousFullSystemAuthz(),
-    courseInstance,
   });
+  const joinedEnrollment =
+    classification.boundCandidate?.enrollment.status === 'joined'
+      ? classification.boundCandidate.enrollment
+      : null;
+  const isJoined = joinedEnrollment !== null;
 
   // Not published at all.
   if (courseInstance.publishing_start_date == null) {
@@ -130,18 +137,33 @@ export async function calculateModernCourseInstanceStudentAccess(
   if (reqDate < courseInstance.publishing_end_date) {
     return {
       has_student_access: true,
-      has_student_access_with_enrollment: enrollment?.status === 'joined',
+      has_student_access_with_enrollment: isJoined,
     };
   }
 
-  // We are after the end date. We might have access if we have an extension.
-  // Only enrolled students can have extensions.
-  if (enrollment?.status !== 'joined') {
+  // Before admission, any matching row may carry the extension that will be
+  // preserved when those rows are merged. Once the user has joined, pending
+  // rows are not merged automatically and must not extend the joined row's access.
+  const hasActionableInvitation =
+    classification.actionableUidInvitation !== null ||
+    classification.actionableInstitutionUinInvitation !== null ||
+    (lti13Identity !== undefined &&
+      getEnrollmentAdmissionDecision(classification, {
+        type: 'invitation',
+        matchedBy: 'lti13',
+        lti13CourseInstanceId: lti13Identity.lti13CourseInstanceId,
+        sub: lti13Identity.sub,
+      }).allowed);
+  if (!isJoined && !hasActionableInvitation) {
     return { has_student_access: false, has_student_access_with_enrollment: false };
   }
 
-  const latestPublishingExtension = await selectLatestPublishingExtensionByEnrollment({
-    enrollment,
+  const latestPublishingExtension = await selectLatestPublishingExtensionByEnrollmentIds({
+    courseInstance,
+    enrollmentIds:
+      joinedEnrollment === null
+        ? classification.candidates.map((candidate) => candidate.enrollment.id)
+        : [joinedEnrollment.id],
   });
 
   // Check if we have access via extension.
@@ -150,38 +172,39 @@ export async function calculateModernCourseInstanceStudentAccess(
 
   return {
     has_student_access: hasAccessViaExtension,
-    has_student_access_with_enrollment: hasAccessViaExtension,
+    has_student_access_with_enrollment: hasAccessViaExtension && isJoined,
   };
 }
 
 /**
- * Builds the authorization data for a user on a page. The optional parameters are used for effective user overrides,
- * most scenarios should not need to change these parameters.
- *
- * @param params
- * @param params.user - The authenticated user.
- * @param params.course_id - The ID of the course. Inferred from the course instance if null.
- * @param params.course_instance_id - The ID of the course instance.
- * @param params.ip - The IP address of the request.
- * @param params.req_date - The date of the request.
- * @param params.is_administrator - Whether the user is an administrator.
- * @param params.overrides - The overrides to apply to the authorization data.
+ * Builds the authorization data for a user on a page. Most callers should not
+ * need the LTI identity or effective-user overrides.
  */
 export async function constructCourseOrInstanceContext({
   user,
   course_id,
   course_instance_id,
+  lti13Identity,
   ip,
   req_date,
   is_administrator,
   overrides = {},
 }: {
+  /** The authenticated user. */
   user: User;
+  /** The course ID, or `null` to infer it from the course instance. */
   course_id: string | null;
+  /** The course instance ID. */
   course_instance_id: string | null;
+  /** Exact link and `sub` from a verified LTI launch, used when checking publishing extensions. */
+  lti13Identity?: NonNullable<EnrollmentIdentityContext['lti13Identity']>;
+  /** The request IP address. */
   ip: string | null;
+  /** The request date. */
   req_date: Date;
+  /** Whether the authenticated user is an administrator. */
   is_administrator: boolean;
+  /** Effective-user and course-context overrides. */
   overrides?: CourseOrInstanceOverrides;
 }): Promise<ConstructedCourseOrInstanceContext> {
   const resolvedOverrides = {
@@ -265,6 +288,7 @@ export async function constructCourseOrInstanceContext({
                 rawAuthzData.course_instance,
                 user.id,
                 req_date,
+                lti13Identity,
               );
             }
             const courseInstanceIdsWithAccess = await checkCourseInstanceLegacyAccess({

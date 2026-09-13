@@ -7,6 +7,7 @@ import ReactMarkdown from 'react-markdown';
 
 import { type AppError, getAppError } from '@prairielearn/trpc/client';
 import { OverlayTrigger, useModalState } from '@prairielearn/ui';
+import type { Timezone } from '@prairielearn/utils/timezone';
 
 import {
   AdministratorCourseFormFields,
@@ -28,7 +29,6 @@ import {
   GITHUB_USERNAME_VALIDATION_MESSAGE,
   isValidGithubUsername,
 } from '../../../lib/github-utils.js';
-import { type Timezone } from '../../../lib/timezone.shared.js';
 import { useTRPC } from '../../../trpc/administrator/context.js';
 import type { AdminCourseRequestError } from '../../../trpc/administrator/course-requests.js';
 
