@@ -45,6 +45,7 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
       this.previousCropRotateState = null;
       this.selectedContainerName = 'capture-preview';
       this.handwritingEnhanced = false;
+      this.manualUploadId = 0;
 
       /** Resizing canvas and context used for image scaling */
       this.resizingCanvas = null;
@@ -150,21 +151,48 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
         });
       }
 
-      manualUploadInput.addEventListener('change', (event) => {
+      manualUploadInput.addEventListener('change', async (event) => {
         const target = event.target;
         const file = target.files && target.files[0];
         if (!file) return;
+        target.value = '';
 
-        const reader = new FileReader();
+        const uploadId = ++this.manualUploadId;
+        this.setManualUploadMessage('');
 
-        reader.onload = () => {
-          this.loadCapturePreviewFromDataUrl({
-            dataUrl: reader.result,
+        try {
+          let blob = file;
+          if (/^image\/hei[cf](?:-sequence)?$/i.test(file.type) || /\.hei[cf]$/i.test(file.name)) {
+            this.setManualUploadMessage('Converting image…');
+            const { heicTo } = await import('heic-to/csp');
+            blob = await heicTo({ blob: file, type: 'image/jpeg', quality: 0.9 });
+          }
+
+          const dataUrl = await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = () => reject(reader.error);
+            reader.readAsDataURL(blob);
           });
-        };
 
-        reader.readAsDataURL(file);
+          // A newer upload, capture, or deletion takes precedence over this upload.
+          if (uploadId !== this.manualUploadId) return;
+          this.loadCapturePreviewFromDataUrl({ dataUrl });
+        } catch {
+          if (uploadId !== this.manualUploadId) return;
+          this.setManualUploadMessage(
+            'Could not load this image. Try uploading a JPEG or PNG.',
+            true,
+          );
+        }
       });
+    }
+
+    setManualUploadMessage(message, isError = false) {
+      const status = this.imageCaptureDiv.querySelector('.js-manual-upload-message');
+      status.textContent = message;
+      status.classList.toggle('d-none', !message);
+      status.classList.toggle('text-danger', isError);
     }
 
     createLocalCameraCaptureListeners() {
@@ -732,6 +760,10 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
     }
 
     loadCapturePreviewFromDataUrl({ dataUrl, originalCapture = true }) {
+      this.manualUploadId++;
+      if (this.editable && this.manual_upload_enabled) {
+        this.setManualUploadMessage('');
+      }
       const uploadedImageContainer = this.imageCaptureDiv.querySelector(
         '.js-uploaded-image-container',
       );
