@@ -9,7 +9,7 @@ architecture discussion.
 
 More comprehensive documentation is planned for a future PR.
 
-`src/index.ts` describes the architecture and owns coordination. `src/codex/` contains the Codex
-runner, event adapters, and their tests. The runner executes in the sandbox; the TypeScript adapters
-execute in the Worker. Edit `src/codex/prompts/system.md` to change the system prompt, then rebuild
+`src/index.ts` describes the architecture and owns coordination. `src/codex/` contains the
+Worker-side event adapters and their tests. `src/sandbox/` contains the container-side Codex
+runner, prompts, and tests. Edit `src/sandbox/prompts/system.md` to change the system prompt, then rebuild
 the sandbox image. The Dockerfile copies the runner and prompt into the image, outside `/workspace`.

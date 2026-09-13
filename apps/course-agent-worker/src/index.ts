@@ -35,7 +35,7 @@ import { proxyOpenAiRequest } from './provider.js';
  * HarnessAgent, whose Cloudflare integration would need separate validation.
  *
  * One coordinator serializes each conversation's state and event delivery.
- * Codex runs in the container through codex/runner.mjs; codex/stream.ts translates
+ * Codex runs in the container through sandbox/runner.mjs; codex/stream.ts translates
  * its output. PL filters those events and buffers the UI stream in Redis.
  *
  * This is feature-specific infrastructure, not a template for other PL Workers.

@@ -2,8 +2,8 @@
 !Dockerfile
 !src/
 src/*
-!src/codex/
-src/codex/*
-!src/codex/runner.mjs
-!src/codex/prompts/
-!src/codex/prompts/system.md
+!src/sandbox/
+src/sandbox/*
+!src/sandbox/runner.mjs
+!src/sandbox/prompts/
+!src/sandbox/prompts/system.md
