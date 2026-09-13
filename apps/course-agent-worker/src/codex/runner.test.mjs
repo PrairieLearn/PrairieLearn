@@ -5,7 +5,7 @@ import { join } from 'node:path';
 
 import { afterEach, expect, it, vi } from 'vitest';
 
-import { runCodex } from './run-codex.mjs';
+import { runCodex } from './runner.mjs';
 
 afterEach(() => vi.unstubAllEnvs());
 

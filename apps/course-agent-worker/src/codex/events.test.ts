@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { toolEvents } from './codex-events.js';
+import { toolEvents } from './events.js';
 
 describe('toolEvents', () => {
   it.each([

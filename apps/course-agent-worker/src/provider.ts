@@ -2,6 +2,10 @@ export interface ProviderEnv {
   OPENAI_API_KEY?: string;
 }
 
+/**
+ * Brokers model credentials outside the sandbox. Only supported provider
+ * requests with the sandbox's placeholder credential receive the real key.
+ */
 export async function proxyOpenAiRequest(
   request: Request,
   env: ProviderEnv,

@@ -8,6 +8,10 @@ export interface CourseAgentRun {
   runId: string;
 }
 
+/**
+ * Starts runs through tRPC, then uses the AI SDK transport to read their SSE output.
+ * Reconnection only attaches to the saved run; it must not resubmit the prompt.
+ */
 export class CourseAgentTransport extends DefaultChatTransport<CourseAgentMessage> {
   private run: CourseAgentRun | null = null;
 
@@ -38,6 +42,7 @@ export class CourseAgentTransport extends DefaultChatTransport<CourseAgentMessag
       throw new Error('Send a new message to the course agent.');
     }
     const conversationId = this.run?.conversationId;
+    // A failed submission must not leave reconnect pointing at the previous run.
     this.run = null;
     this.onRun(null);
     this.run = await this.startRun({
@@ -69,6 +74,7 @@ export class CourseAgentTransport extends DefaultChatTransport<CourseAgentMessag
           controller.enqueue(chunk);
         },
         flush() {
+          // EOF can be a dropped connection; only a finish event confirms a complete response.
           if (!finished) {
             throw new Error('The connection was interrupted. Reconnect to recover the response.');
           }

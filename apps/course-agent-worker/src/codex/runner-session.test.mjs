@@ -43,7 +43,7 @@ vi.mock('node:child_process', () => ({
   },
 }));
 
-import { runCodex } from './run-codex.mjs';
+import { runCodex } from './runner.mjs';
 
 const directories = [];
 afterEach(async () => {
@@ -76,8 +76,12 @@ it('starts once, then resumes without replaying previous messages', async () => 
     'test-thread',
   );
   const turns = mock.requests.filter((request) => request.method === 'turn/start');
+  const systemPrompt = await readFile(new URL('prompts/system.md', import.meta.url), 'utf8');
   expect(turns[0].params.input[0].text).toContain(JSON.stringify(history));
-  expect(turns[1].params.input[0].text).toBe('Next request');
+  expect(turns[0].params.input[0].text).toContain(systemPrompt.trim());
+  expect(turns[1].params.input[0].text).toBe(
+    `${systemPrompt.trim()}\n\nInstructor request:\nNext request`,
+  );
   expect(
     JSON.parse(
       await readFile(join(options.cwd, '.course-agent/codex/course-agent-thread.json'), 'utf8'),

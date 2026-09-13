@@ -1,6 +1,6 @@
 import type { CourseAgentEvent } from '@prairielearn/course-agent-protocol';
 
-import { toolEvents } from './codex-events.js';
+import { toolEvents } from './events.js';
 
 type EmittedEvent = Pick<CourseAgentEvent, 'type' | 'data'>;
 
@@ -11,6 +11,10 @@ export interface CodexStreamState {
   commentary: [string, string][];
 }
 
+/**
+ * Converts Codex notifications to append-only course-agent events. Its snapshot
+ * is stored with the log cursor so coordinator recovery preserves deduplication.
+ */
 export class CodexStream {
   response = '';
   completed = false;
@@ -109,6 +113,7 @@ export class CodexStream {
       const separator = previous === undefined && this.response ? '\n\n' : '';
       this.messages.set(item.id, text || previous || '');
       if (event.method === 'item/started') return this.append(separator + text);
+      // Completed items repeat their full text; emit only what the deltas have not already sent.
       if (!text.startsWith(previous ?? '')) throw new Error('Codex replaced streamed message text');
       return this.append(separator + text.slice(previous?.length ?? 0));
     }

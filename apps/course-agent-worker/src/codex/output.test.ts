@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { codexFailureMessage } from './codex-output.js';
+import { codexFailureMessage } from './output.js';
 
 describe('codexFailureMessage', () => {
   it('returns the structured turn failure instead of incidental stderr', () => {

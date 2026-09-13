@@ -1,5 +1,10 @@
 import { z } from 'zod';
 
+/*
+ * Shared message contracts for the separately deployed PL server and Worker.
+ * These schemas validate message shape, not permission to run or inspect an agent.
+ * Keep wire changes compatible while the two deployments may be on different versions.
+ */
 export const COURSE_AGENT_WORKSPACE_ROOT = '/workspace';
 export const COURSE_AGENT_SEED_FILE = `${COURSE_AGENT_WORKSPACE_ROOT}/README.md`;
 

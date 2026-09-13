@@ -123,6 +123,10 @@ export async function startEphemeralCourseAgentRun({
   return result;
 }
 
+/**
+ * Relays Worker events into a Redis-backed UI stream independently of the
+ * browser connection. Reconnecting reads that stream instead of starting a run.
+ */
 async function startCourseAgentEventRelay(identity: Identity & { runId: string }) {
   const capability = generateSignedToken(
     { type: 'course-agent-inspect', ...identity, expiresAt: expiresAt() },
@@ -148,6 +152,7 @@ async function startCourseAgentEventRelay(identity: Identity & { runId: string }
 }
 
 export async function getEphemeralCourseAgentSnapshot(identity: Identity) {
+  // Derive the sandbox ID so a client cannot redirect inspection to another workspace.
   identity = {
     ...identity,
     conversationId: identity.conversationId.toLowerCase(),

@@ -1,5 +1,9 @@
 *
 !Dockerfile
-!scripts/
-scripts/*
-!scripts/run-codex.mjs
+!src/
+src/*
+!src/codex/
+src/codex/*
+!src/codex/runner.mjs
+!src/codex/prompts/
+!src/codex/prompts/system.md

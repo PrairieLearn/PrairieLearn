@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { CodexStream } from './codex-stream.js';
+import { CodexStream } from './stream.js';
 
 describe('Codex app-server notifications', () => {
   it('streams final-answer deltas immediately, without duplicating item completion', () => {

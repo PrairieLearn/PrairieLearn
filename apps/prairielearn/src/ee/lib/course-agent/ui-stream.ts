@@ -8,7 +8,10 @@ export type CourseAgentMessage = UIMessage<
   { activity: { input: { label: string }; output: { label: string } } }
 >;
 
-/** Translate one run, not the entire conversation replayed by the Worker. */
+/**
+ * Translates one run out of the Worker's conversation-wide replay. Stable message
+ * and tool IDs let reconnects rebuild the same response instead of creating a new one.
+ */
 export function courseAgentUIStream(runId: string) {
   let active = false;
   let finished = false;

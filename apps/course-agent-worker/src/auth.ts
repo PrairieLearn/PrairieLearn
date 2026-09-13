@@ -5,6 +5,11 @@ import {
   type CourseAgentStartRunRequest,
 } from '@prairielearn/course-agent-protocol';
 
+/**
+ * Verifies PL's signed-token wire format using the Worker's Web Crypto API.
+ * Signature verification alone does not authorize an operation; callers must
+ * validate the capability's claims and expiration.
+ */
 export async function decodeAndVerifyToken(token: string, secret: string) {
   const [encodedSignature, date, encodedData, ...rest] = token.split('.');
   if (!encodedSignature || !date || !encodedData || rest.length > 0) return null;
@@ -52,6 +57,7 @@ export async function authorizeRun(request: CourseAgentStartRunRequest, secret: 
   const capability = CourseAgentRunCapabilitySchema.parse(
     await decodeAndVerifyToken(request.capability, secret),
   );
+  // Bind permission to the exact run, prompt, and limits rather than just a sandbox ID.
   if (
     capability.conversationId !== request.conversationId ||
     capability.runId !== request.runId ||

@@ -1,5 +1,6 @@
 import { type CourseAgentEvent, CourseAgentEventSchema } from '@prairielearn/course-agent-protocol';
 
+/** Allowlist browser-visible fields so new internal telemetry stays private by default. */
 export function publicCourseAgentEvent(event: CourseAgentEvent): CourseAgentEvent | null {
   const fields: Partial<Record<CourseAgentEvent['type'], string[]>> = {
     'user.message': ['text', 'runId'],

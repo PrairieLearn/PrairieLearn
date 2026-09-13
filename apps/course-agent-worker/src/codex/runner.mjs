@@ -4,7 +4,11 @@ import { join } from 'node:path';
 import { createInterface } from 'node:readline';
 import { pathToFileURL } from 'node:url';
 
-// App-server, unlike exec --json, exposes incremental agent-message text.
+/**
+ * Runs inside the container, bridging Codex app-server notifications to stdout.
+ * App-server exposes incremental text and native thread resumption; recovered
+ * user/assistant history is used only when no saved thread exists.
+ */
 export async function runCodex({
   model,
   prompt,
@@ -15,6 +19,9 @@ export async function runCodex({
   codexHome = join(cwd, '.course-agent', 'codex'),
   history = [],
 }) {
+  // Load the image-owned prompt, not a file from the agent's editable workspace.
+  const systemPrompt = await readFile(new URL('prompts/system.md', import.meta.url), 'utf8');
+  prompt = `${systemPrompt.trim()}\n\nInstructor request:\n${prompt}`;
   await mkdir(codexHome, { recursive: true });
   const threadFile = join(codexHome, 'course-agent-thread.json');
   let savedThread;
