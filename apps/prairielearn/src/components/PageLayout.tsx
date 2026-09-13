@@ -10,7 +10,7 @@ import { run } from '@prairielearn/run';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 import { assertNever } from '@prairielearn/utils';
 
-import { CourseAgentPanelServer } from '../ee/components/CourseAgentPanelServer.js';
+import { CourseAgentPanelServer } from '../ee/components/course-agent/CourseAgentPanelServer.js';
 import { getCourseTrpcUrl } from '../lib/client/url.js';
 import { config } from '../lib/config.js';
 import { getNavPageTabs } from '../lib/navPageTabs.js';

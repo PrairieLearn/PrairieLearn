@@ -9,16 +9,16 @@ import { useStickToBottom } from 'use-stick-to-bottom';
 import type { CourseAgentEvent, CourseAgentSnapshot } from '@prairielearn/course-agent-protocol';
 import { QueryClientProviderDebug } from '@prairielearn/trpc/react';
 
-import { createCourseTrpcClient } from '../../trpc/course/client.js';
-import { TRPCProvider, useTRPC } from '../../trpc/course/context.js';
-import type { CourseAgentMessage } from '../lib/course-agent/ui-stream.js';
+import { createCourseTrpcClient } from '../../../trpc/course/client.js';
+import { TRPCProvider, useTRPC } from '../../../trpc/course/context.js';
+import type { CourseAgentMessage } from '../../lib/course-agent/ui-stream.js';
 
+import { ChatComposer } from './ChatComposer.js';
+import { AssistantMessage, MessageMetadata, UserMessage } from './ChatMessage.js';
+import { ChatMessageParts } from './ChatMessageParts.js';
+import { ToolCallStatus } from './ChatProgressStatus.js';
+import { ScrollToBottomButton } from './ChatScrollToBottom.js';
 import { CourseAgentPanelShell } from './CourseAgentPanelShell.js';
-import { ChatComposer } from './course-agent/ChatComposer.js';
-import { AssistantMessage, MessageMetadata, UserMessage } from './course-agent/ChatMessage.js';
-import { ChatMessageParts } from './course-agent/ChatMessageParts.js';
-import { ToolCallStatus } from './course-agent/ChatProgressStatus.js';
-import { ScrollToBottomButton } from './course-agent/ChatScrollToBottom.js';
 import { type CourseAgentRun, CourseAgentTransport } from './courseAgentTransport.js';
 
 const markdownPlugins = [remarkGfm];

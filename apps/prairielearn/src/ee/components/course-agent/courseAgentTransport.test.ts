@@ -2,7 +2,7 @@ import { Chat } from '@ai-sdk/react';
 import { JsonToSseTransformStream, type UIMessageChunk } from 'ai';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import type { CourseAgentMessage } from '../lib/course-agent/ui-stream.js';
+import type { CourseAgentMessage } from '../../lib/course-agent/ui-stream.js';
 
 import { CourseAgentTransport } from './courseAgentTransport.js';
 

@@ -1,6 +1,6 @@
 import { type ChatTransport, DefaultChatTransport, type UIMessageChunk } from 'ai';
 
-import type { CourseAgentMessage } from '../lib/course-agent/ui-stream.js';
+import type { CourseAgentMessage } from '../../lib/course-agent/ui-stream.js';
 
 export interface CourseAgentRun {
   conversationId: string;

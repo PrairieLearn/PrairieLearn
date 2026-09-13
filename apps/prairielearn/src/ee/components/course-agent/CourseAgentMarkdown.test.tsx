@@ -1,8 +1,8 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 
+import { ChatMarkdown } from './ChatMarkdown.js';
 import { workspaceMarkdownComponents } from './CourseAgentPanel.js';
-import { ChatMarkdown } from './course-agent/ChatMarkdown.js';
 
 describe('CourseAgentMarkdown', () => {
   it('keeps file references non-clickable but permits public documentation links', () => {

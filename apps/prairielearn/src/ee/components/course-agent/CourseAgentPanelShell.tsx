@@ -1,7 +1,7 @@
 import { useMutation } from '@tanstack/react-query';
 import { type ReactNode, useState, useSyncExternalStore } from 'react';
 
-import { useTRPC } from '../../trpc/course/context.js';
+import { useTRPC } from '../../../trpc/course/context.js';
 
 import { CourseAgentPanelFrame } from './CourseAgentPanelFrame.js';
 
