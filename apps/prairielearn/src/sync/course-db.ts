@@ -580,7 +580,7 @@ async function loadCourseInfo({
     const result = deduplicateByName<Entry>(info![fieldName] ?? [], defaults);
 
     if (result.duplicates.size > 0) {
-      const duplicateIdsString = [...result.duplicates].map((name) => `"${name}"`).join(', ');
+      const duplicateIdsString = Array.from(result.duplicates, (name) => `"${name}"`).join(', ');
       infofile.addWarning(
         loadedData,
         `Found duplicates in '${fieldName}': ${duplicateIdsString}. Only the last of each duplicate will be synced.`,
@@ -936,7 +936,7 @@ function checkAllowAccessRoles(rule: { role?: string }): string[] {
 
 /**
  * Returns whether or not an `allowAccess` rule date is valid. It's considered
- * valid if it matches the regexp used in the `input_date` sproc and if it can
+ * valid if it matches the local datetime syntax used by the sync parser and if it can
  * parse into a JavaScript `Date` object. If the supplied date is considered
  * invalid, `null` is returned.
  */
@@ -944,7 +944,7 @@ function parseJsonDate(date: string): Date | null {
   // This ensures we don't accept strings like "2024-04", which `parseISO`
   // would happily accept. We want folks to always be explicit about days/times.
   //
-  // This matches the regexp used in the `input_date` sproc.
+  // This matches the syntax accepted by the local datetime sync parser.
   const match = /[0-9]{4}-[0-9]{2}-[0-9]{2}[ T][0-9]{2}:[0-9]{2}:[0-9]{2}/.exec(date);
   if (!match) return null;
 
@@ -970,8 +970,8 @@ function checkAllowAccessDates(rule: { startDate?: string | null; endDate?: stri
   // care about here are if the dates are valid and that the end date is after the
   // start date.
   //
-  // See the `input_date` sproc for where these strings are ultimately parsed for
-  // storage in the database. That sproc actually has stricter validation
+  // The sync layer parses these strings in the course instance's timezone before
+  // storage in the database. That parser has stricter validation
   if (rule.startDate) {
     startDate = parseJsonDate(rule.startDate);
     if (!startDate) {
@@ -1135,9 +1135,7 @@ function validateQuestion({
  * @returns A comma-separated list of double-quoted values.
  */
 function formatValues(qids: Set<string> | string[]) {
-  return Array.from(qids)
-    .map((qid) => `"${qid}"`)
-    .join(', ');
+  return Array.from(qids, (qid) => `"${qid}"`).join(', ');
 }
 
 function validateAssessment({
@@ -1795,7 +1793,7 @@ function validateCourseInstance({
   if (courseInstance.studentLabels) {
     const result = deduplicateByName(courseInstance.studentLabels);
     if (result.duplicates.size > 0) {
-      const duplicateNamesString = [...result.duplicates].map((name) => `"${name}"`).join(', ');
+      const duplicateNamesString = Array.from(result.duplicates, (name) => `"${name}"`).join(', ');
       warnings.push(
         `Found duplicates in 'studentLabels': ${duplicateNamesString}. Only the last of each duplicate will be synced.`,
       );

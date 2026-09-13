@@ -31,6 +31,14 @@ def on_config(config: MkDocsConfig) -> MkDocsConfig:
         """
         result, svg, ok = original_render(source, opts, alt)
         if ok:
+            # D2 0.9 uses xml:space for SVG Markdown labels. Python-Markdown
+            # serializes ElementTree's expanded attribute names verbatim, so
+            # restore the XML prefix before the image extension embeds the SVG.
+            xml_space = "{http://www.w3.org/XML/1998/namespace}space"
+            for element in svg.root.iter():
+                if xml_space in element.attrib:
+                    element.set("xml:space", element.attrib.pop(xml_space))
+
             is_file = isinstance(source, Path)
 
             # Check if this diagram should be ignored

@@ -386,7 +386,8 @@
         id: 'power',
         label: () => '<span class="ML__insert-template">x<sup>y</sup></span>',
         onMenuSelect: () =>
-          isSelected(mf) ? mf.insert('\\left({#@}\\right)^{#?}') : mf.insert('{#@}^{#?}'),
+          // Keep power bases ungrouped so implicit fraction insertion does not detach their superscripts.
+          isSelected(mf) ? mf.insert('\\left({#@}\\right)^{#?}') : mf.insert('#@^{#?}'),
       },
       {
         id: 'sqrt',
@@ -415,12 +416,12 @@
       rows: [
         [
           ...onlyIfSets('[separator]'),
-          makeShortcutProxy({ class: 'small', latex: '{#@}^{#?}' }, mf),
+          makeShortcutProxy({ class: 'small', latex: '#@^{#?}' }, mf),
           makeShortcutProxy(
             {
               class: 'small',
-              latex: '{#@}^{2}',
-              variants: [{ class: 'small', latex: '{#@}^{3}' }],
+              latex: '#@^{2}',
+              variants: [{ class: 'small', latex: '#@^{3}' }],
             },
             mf,
           ),
@@ -714,10 +715,10 @@
     // Additional shortcuts for instant replacement inside the pl-symbolic-input box
     const inlineShortcuts = {
       '**': {
-        value: '{#@}^{#?}',
+        value: '#@^{#?}',
       },
       '^': {
-        value: '{#@}^{#?}',
+        value: '#@^{#?}',
       },
       '*': {
         value: '{#@}\\cdot',

@@ -95,7 +95,15 @@ BEGIN
     ),
     update_matched_dest_rows AS (
         UPDATE assessments AS dest
-        SET tid = src_tid, uuid = src_uuid, deleted_at = NULL
+        SET
+            tid = src_tid,
+            uuid = src_uuid,
+            deleted_at = NULL,
+            -- Statistics may have become stale while the assessment was deleted.
+            statistics_last_updated_at = CASE
+                WHEN dest.deleted_at IS NOT NULL THEN now() - interval '100 years'
+                ELSE dest.statistics_last_updated_at
+            END
         FROM matched_rows
         WHERE dest.id = dest_id AND dest.course_instance_id = syncing_course_instance_id
     ),
@@ -293,15 +301,13 @@ BEGIN
                     (access_rule->>'time_limit_min')::integer,
                     access_rule->>'password',
                     (access_rule->>'exam_uuid')::uuid,
-                    input_date(access_rule->>'start_date', ci.display_timezone),
-                    input_date(access_rule->>'end_date', ci.display_timezone),
+                    (access_rule->>'start_date')::timestamptz,
+                    (access_rule->>'end_date')::timestamptz,
                     (access_rule->>'show_closed_assessment')::boolean,
                     (access_rule->>'show_closed_assessment_score')::boolean,
                     (access_rule->>'active')::boolean,
                     (access_rule->'comment')
-                FROM
-                    assessments AS a
-                    JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
+                FROM assessments AS a
                 WHERE
                     a.id = new_assessment_id
             )

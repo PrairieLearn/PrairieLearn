@@ -117,7 +117,7 @@ WITH
       AND gj.deleted_at IS NULL
       AND iq.assessment_question_id IN (
         SELECT
-          unnest($assessment_question_ids::int[])
+          unnest($assessment_question_ids::bigint[])
       )
     RETURNING
       gj.id AS grading_job_id,

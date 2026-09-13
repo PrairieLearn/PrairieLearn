@@ -1,0 +1,6 @@
+{
+  "extends": "@prairielearn/tsconfig/tsconfig.package-node.json",
+  "compilerOptions": {
+    "jsx": "react-jsx"
+  }
+}

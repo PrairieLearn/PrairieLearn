@@ -20,6 +20,8 @@ export interface SerializedQuestionOutput {
   clientFiles: Record<string, { size: number }>;
   /** Video files that were excluded from this question's assets. */
   skippedVideos: string[];
+  /** Number of unique client files created from external images. */
+  copiedExternalImageFileCount: number;
 }
 
 interface StoredSerializedQuestionOutput extends Omit<
@@ -112,6 +114,15 @@ export interface QuestionOverrides {
   collisionStrategy: CollisionStrategy;
 }
 
+/** Reviewer edits to a conversion result, indexed in parallel with the results array. */
+export interface AssessmentOverrides {
+  title: string;
+  type: 'Homework' | 'Exam';
+  set: string;
+  number: string;
+  included: boolean;
+}
+
 export const DUPLICATE_ASSESSMENT_QUESTION_WARNING =
   'This question appears multiple times on the assessment. Only the first occurrence of the question will be imported.';
 
@@ -156,7 +167,7 @@ export function deduplicateAssessmentZoneQuestions(zones: PLAssessmentZone[]): {
 
   return {
     zones: dedupedZones,
-    warnings: [...duplicateQuestionIds].map((questionId) => ({
+    warnings: Array.from(duplicateQuestionIds, (questionId) => ({
       questionId,
       message: DUPLICATE_ASSESSMENT_QUESTION_WARNING,
       level: 'warn',
@@ -201,7 +212,7 @@ export interface UploadResponse {
   strippedAccessRules: StrippedAccessRules;
   /** Assessment set names defined in the course's infoCourse.json. */
   assessmentSetNames: string[];
-  /** Existing (set, number) pairs in this course instance, for deduplication. */
+  /** Existing (set, number) pairs in the target course instance, for deduplication. Empty without one. */
   existingAssessmentLabels: { set: string; number: string }[];
   /** Count of unique questions that appeared in more than one question bank and were deduplicated. */
   deduplicatedQuestionBankQuestionCount: number;

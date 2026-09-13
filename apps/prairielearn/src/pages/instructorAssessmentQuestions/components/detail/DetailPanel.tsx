@@ -1,5 +1,6 @@
+import type { AppError } from '@prairielearn/trpc/client';
+
 import type { EditorQuestionMetadata } from '../../../../lib/assessment-question.shared.js';
-import type { AppError } from '../../../../lib/client/errors.js';
 import type { AssessmentQuestionsError } from '../../../../trpc/assessment/assessment-questions.js';
 import {
   type CourseQuestionForPicker,

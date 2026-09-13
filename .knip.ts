@@ -117,7 +117,7 @@ const sourceFileDependencies = (
   await Promise.all(
     sourceFiles.map(async (path) => {
       const content = await readFile(path, 'utf-8');
-      return [...content.matchAll(assetPathRegex)].map((match) => match[1]);
+      return Array.from(content.matchAll(assetPathRegex), (match) => match[1]);
     }),
   )
 ).flat();

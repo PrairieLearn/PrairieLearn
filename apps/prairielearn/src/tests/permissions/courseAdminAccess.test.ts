@@ -3,8 +3,8 @@ import z from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
+import { getAppError } from '@prairielearn/trpc/client';
 
-import { getAppError } from '../../lib/client/errors.js';
 import { getCourseTrpcUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
 import {

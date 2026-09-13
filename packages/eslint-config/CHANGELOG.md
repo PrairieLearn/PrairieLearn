@@ -1,5 +1,13 @@
 # @prairielearn/eslint-config
 
+## 3.1.5
+
+### Patch Changes
+
+- 439df7c: Use second argument of Array.from
+- Updated dependencies [452f675]
+  - @prairielearn/eslint-plugin@4.4.0
+
 ## 3.1.4
 
 ### Patch Changes

@@ -16,9 +16,10 @@ import {
 import { useForm } from 'react-hook-form';
 
 import { run } from '@prairielearn/run';
+import { getAppError } from '@prairielearn/trpc/client';
+import { AppErrorAlert } from '@prairielearn/trpc/react';
 import { useModalState } from '@prairielearn/ui';
 
-import { AppErrorAlert, getAppError } from '../../../lib/client/errors.js';
 import type { StaffAssessment, StaffAssessmentSet } from '../../../lib/client/safe-db-types.js';
 import {
   getAssessmentDownloadUrl,

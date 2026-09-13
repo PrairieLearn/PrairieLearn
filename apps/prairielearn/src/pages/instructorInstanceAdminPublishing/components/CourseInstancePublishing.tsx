@@ -2,12 +2,13 @@ import { QueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 
+import { QueryClientProviderDebug } from '@prairielearn/trpc/react';
+
 import {
   CourseInstancePublishingForm,
   type PublishingFormValues,
 } from '../../../components/CourseInstancePublishingForm.js';
 import type { StaffCourseInstance } from '../../../lib/client/safe-db-types.js';
-import { QueryClientProviderDebug } from '../../../lib/client/tanstackQuery.js';
 import type { CourseInstancePublishingExtensionRow } from '../instructorInstanceAdminPublishing.types.js';
 import { dateToPlainDateTime } from '../utils/dateUtils.js';
 
@@ -21,7 +22,6 @@ export function CourseInstancePublishing({
   csrfToken,
   origHash,
   extensions,
-  isDevMode,
 }: {
   courseInstance: StaffCourseInstance;
   canEditPublishing: boolean;
@@ -30,7 +30,6 @@ export function CourseInstancePublishing({
   csrfToken: string;
   origHash: string | null;
   extensions: CourseInstancePublishingExtensionRow[];
-  isDevMode: boolean;
 }) {
   const [queryClient] = useState(() => new QueryClient());
 
@@ -98,7 +97,7 @@ export function CourseInstancePublishing({
         {startDate && (
           <>
             <hr className="my-4" />
-            <QueryClientProviderDebug client={queryClient} isDevMode={isDevMode}>
+            <QueryClientProviderDebug client={queryClient}>
               <PublishingExtensions
                 courseInstance={courseInstance}
                 initialExtensions={extensions}

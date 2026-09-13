@@ -5,9 +5,9 @@ import { Alert, Modal } from 'react-bootstrap';
 import { useFieldArray, useForm } from 'react-hook-form';
 
 import { run } from '@prairielearn/run';
+import { getAppError } from '@prairielearn/trpc/client';
 
 import { HelpTooltip } from '../../../components/HelpTooltip.js';
-import { getAppError } from '../../../lib/client/errors.js';
 import { type StaffGroupConfig } from '../../../lib/client/safe-db-types.js';
 import { type GroupSettingsFormValues, makeRole } from '../../../lib/group-config.js';
 import type { AssessmentGroupsError } from '../../../trpc/assessment/assessment-groups.js';

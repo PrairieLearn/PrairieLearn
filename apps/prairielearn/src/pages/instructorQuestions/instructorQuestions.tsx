@@ -129,7 +129,6 @@ router.get(
               urlPrefix={res.locals.urlPrefix}
               trpcCsrfToken={trpcCsrfToken}
               search={search}
-              isDevMode={config.devMode}
             />
           </Hydrate>
         ),

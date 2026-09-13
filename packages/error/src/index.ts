@@ -1,8 +1,15 @@
-import { isError } from 'es-toolkit';
+import { isError, sampleSize } from 'es-toolkit';
 
 import { type HtmlSafeString } from '@prairielearn/html';
 
 export { formatErrorStack, formatErrorStackSafe } from './format.js';
+
+const ERROR_ID_CHARACTERS = [...'0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'];
+
+/** Generates an uppercase alphanumeric correlation ID for an error. */
+export function generateErrorId(): string {
+  return sampleSize(ERROR_ID_CHARACTERS, 12).join('');
+}
 
 interface ErrorWithData extends Error {
   data: any;

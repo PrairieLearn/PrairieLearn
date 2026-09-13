@@ -863,7 +863,7 @@ describe('migrateAllowAccess', () => {
       },
     },
     {
-      name: 'dates with fractional seconds and UTC suffix match input_date handling',
+      name: 'dates with fractional seconds and UTC suffix match sync parser handling',
       rules: [
         {
           credit: 100,

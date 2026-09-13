@@ -37,6 +37,23 @@ describe('Static assets', () => {
   beforeAll(helperServer.before());
   afterAll(helperServer.after);
 
+  it('returns 404 for pnpm-internal paths through the legacy node_modules route', async () => {
+    const res = await fetch(
+      `${SITE_URL}/node_modules/.pnpm/superjson@2.2.6/node_modules/superjson/src/util.ts`,
+      { redirect: 'manual' },
+    );
+
+    assert.equal(res.status, 404);
+  });
+
+  it('redirects valid paths through the legacy node_modules route', async () => {
+    const assetPath = 'superjson/dist/index.js';
+    const res = await fetch(`${SITE_URL}/node_modules/${assetPath}`, { redirect: 'manual' });
+
+    assert.equal(res.status, 302);
+    assert.equal(res.headers.get('location'), assets.nodeModulesAssetPath(assetPath));
+  });
+
   it('serves all element node_modules assets', async () => {
     const elementsInfo = await getOrLoadElementsInfo();
 

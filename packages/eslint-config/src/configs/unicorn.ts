@@ -101,7 +101,6 @@ export function unicornConfig(): TSESLint.FlatConfig.ConfigArray {
         'unicorn/no-useless-coercion': 'off', // 43 violations
         'unicorn/no-useless-template-literals': 'off', // 32 violations
         'unicorn/operator-assignment': 'off', // 10 violations
-        'unicorn/prefer-array-from-map': 'off', // 23 violations
         'unicorn/prefer-direct-iteration': 'off', // 15 violations
         'unicorn/prefer-includes-over-repeated-comparisons': 'off', // 10 violations
         'unicorn/prefer-object-iterable-methods': 'off', // 19 violations

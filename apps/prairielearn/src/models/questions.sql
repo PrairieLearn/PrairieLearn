@@ -23,6 +23,7 @@ SELECT
   q.external_grading_image,
   q.workspace_image,
   coalesce(q.single_variant, FALSE) AS single_variant,
+  coalesce(q.partial_credit, FALSE) AS partial_credit,
   (
     q.preferences_schema IS NOT NULL
     AND q.preferences_schema != '{}'::jsonb
@@ -131,6 +132,7 @@ SELECT
   q.external_grading_image,
   q.workspace_image,
   coalesce(q.single_variant, FALSE) AS single_variant,
+  coalesce(q.partial_credit, FALSE) AS partial_credit,
   (
     q.preferences_schema IS NOT NULL
     AND q.preferences_schema != '{}'::jsonb

@@ -76,7 +76,6 @@ router.get(
               origHash={origHash}
               courseId={course.id}
               trpcCsrfToken={trpcCsrfToken}
-              isDevMode={config.devMode}
             />
           </Hydrate>
         ),

@@ -20,6 +20,7 @@ router.get(
     const assessment = await selectOptionalAssessmentById(assessment_id);
     if (
       !assessment?.share_source_publicly ||
+      assessment.deleted_at != null ||
       assessment.course_instance_id !== res.locals.course_instance.id
     ) {
       throw new error.HttpStatusError(404, 'Not Found');

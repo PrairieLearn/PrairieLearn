@@ -108,6 +108,10 @@ export function InstructorInstanceAdminLti13({
   lineitems: Lti13Assessment[];
 }): string {
   const lmsConnectionName = getLti13ConnectionDisplayName(instance);
+  // Coursera may retain duplicate LTI line items that aren't visible in its UI, making bulk
+  // creation difficult to recover from. See https://github.com/PrairieLearn/PrairieLearn/issues/15643.
+  const allowBulkAssignmentCreation =
+    instance.lti13_instance.issuer_params?.issuer !== 'https://coursera.org';
 
   return PageLayout({
     resLocals,
@@ -182,6 +186,7 @@ export function InstructorInstanceAdminLti13({
                     assessments,
                     lineitems,
                     hasMultipleLmsCourses: instances.length > 1,
+                    allowBulkAssignmentCreation,
                   })
                 : html`
                     <p>
@@ -220,12 +225,14 @@ function LinkedAssessments({
   assessments,
   lineitems,
   hasMultipleLmsCourses,
+  allowBulkAssignmentCreation,
 }: {
   resLocals: ResLocalsForPage<'course-instance'>;
   lmsConnectionName: string;
   assessments: AssessmentRow[];
   lineitems: Lti13Assessment[];
   hasMultipleLmsCourses: boolean;
+  allowBulkAssignmentCreation: boolean;
 }): HtmlSafeString {
   const { urlPrefix } = resLocals;
   const { assessments_group_by } = resLocals.course_instance;
@@ -287,16 +294,20 @@ function LinkedAssessments({
                           value="${group.assessment_module_id}"
                         />
 
-                        <button
-                          class="btn btn-success"
-                          name="__action"
-                          value="bulk_create_assessments"
-                          onclick="return confirm('Are you sure?');"
-                        >
-                          Create and link assignments in ${lmsConnectionName}
-                        </button>
-                        that aren't already linked.
-                        <br />
+                        ${allowBulkAssignmentCreation
+                          ? html`
+                              <button
+                                class="btn btn-success"
+                                name="__action"
+                                value="bulk_create_assessments"
+                                onclick="return confirm('Are you sure?');"
+                              >
+                                Create and link assignments in ${lmsConnectionName}
+                              </button>
+                              that aren't already linked.
+                              <br />
+                            `
+                          : ''}
                         <button
                           class="btn btn-med-light"
                           name="__action"

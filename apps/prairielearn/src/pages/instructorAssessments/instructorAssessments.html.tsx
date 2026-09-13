@@ -14,6 +14,7 @@ import { ScorebarHtml } from '../../components/Scorebar.js';
 import { AssessmentShortNameDescription } from '../../components/ShortNameDescriptions.js';
 import { SyncProblemButtonHtml } from '../../components/SyncProblemButton.js';
 import { compiledScriptTag } from '../../lib/assets.js';
+import { getCourseAdminQtiImportUrl } from '../../lib/client/url.js';
 import { type AssessmentModule, type AssessmentSet } from '../../lib/db-types.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
 import { SHORT_NAME_PATTERN } from '../../lib/short-name.js';
@@ -74,7 +75,7 @@ export function InstructorAssessments({
             ? html`
                 <div class="d-flex gap-2 ms-auto">
                   <a
-                    href="${urlPrefix}/instance_admin/qti_import"
+                    href="${getCourseAdminQtiImportUrl({ courseInstanceId: course_instance.id })}"
                     class="btn btn-sm btn-light"
                     aria-label="Import content"
                   >

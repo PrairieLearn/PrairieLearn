@@ -14,6 +14,7 @@ const schemaNameOverrides: Record<string, string | null> = {
   last_accesses: 'LastAccessSchema',
   query_runs: 'QueryRunSchema',
   time_series: 'TimeSeriesSchema',
+  user_settings: 'UserSettingsSchema',
 };
 
 const extraDatabaseColumnExceptions: Record<string, string[]> = {

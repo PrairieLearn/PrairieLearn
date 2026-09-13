@@ -1,5 +1,11 @@
 # @prairielearn/error
 
+## 3.1.0
+
+### Minor Changes
+
+- 452f675: Add a shared generator for error correlation IDs.
+
 ## 3.0.13
 
 ### Patch Changes

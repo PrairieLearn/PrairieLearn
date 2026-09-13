@@ -224,9 +224,7 @@ function makeSystemPrompt({ isExistingQuestion }: { isExistingQuestion: boolean 
       'It can also include PrairieLearn elements like `<pl-multiple-choice>` and `<pl-number-input>`.',
     ],
     'The following PrairieLearn elements are supported (and may be used in the generated question.html):',
-    Array.from(SUPPORTED_ELEMENTS)
-      .map((el) => `- \`<${el}>\``)
-      .join('\n'),
+    Array.from(SUPPORTED_ELEMENTS, (el) => `- \`<${el}>\``).join('\n'),
     '## Panel elements',
     [
       'Panel elements control when content is visible.',

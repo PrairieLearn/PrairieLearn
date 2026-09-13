@@ -61,7 +61,6 @@ router.get(
                 .parse(assessmentModules)}
               allowEdit={allowEdit}
               isExampleCourse={course.example_course}
-              isDevMode={config.devMode}
               origHash={origHash}
             />
           </Hydrate>

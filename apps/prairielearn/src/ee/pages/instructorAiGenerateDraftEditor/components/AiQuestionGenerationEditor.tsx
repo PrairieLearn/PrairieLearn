@@ -2,10 +2,10 @@ import { QueryClient, useQuery } from '@tanstack/react-query';
 import { useCallback, useMemo, useRef, useState } from 'react';
 
 import { run } from '@prairielearn/run';
+import { QueryClientProviderDebug } from '@prairielearn/trpc/react';
 
 import { b64DecodeUnicode } from '../../../../lib/base64-util.js';
 import type { StaffQuestion } from '../../../../lib/client/safe-db-types.js';
-import { QueryClientProviderDebug } from '../../../../lib/client/tanstackQuery.js';
 import { DRAFT_QID_PREFIX } from '../../../../lib/draft-question.js';
 import type { QuestionGenerationUIMessage } from '../../../lib/ai-question-generation/agent.js';
 

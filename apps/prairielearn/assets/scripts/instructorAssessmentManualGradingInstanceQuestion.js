@@ -244,9 +244,10 @@ function computePointsFromRubric(sourceInput = null) {
       if (!manualInput) return;
       const replaceAutoPoints = form.dataset.rubricReplaceAutoPoints === 'true';
       const startingPoints = Number(form.dataset.rubricStartingPoints ?? 0);
-      const itemsSum = Array.from(form.querySelectorAll('.js-selectable-rubric-item:checked'))
-        .map((item) => Number(item.dataset.rubricItemPoints))
-        .reduce((a, b) => a + b, startingPoints);
+      const itemsSum = Array.from(
+        form.querySelectorAll('.js-selectable-rubric-item:checked'),
+        (item) => Number(item.dataset.rubricItemPoints),
+      ).reduce((a, b) => a + b, startingPoints);
       const rubricValue =
         Math.min(
           Math.max(Math.round(itemsSum * 100) / 100, Number(form.dataset.rubricMinPoints)),
