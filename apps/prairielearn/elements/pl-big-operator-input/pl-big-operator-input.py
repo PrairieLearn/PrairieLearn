@@ -1343,7 +1343,10 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     if submitted:
         # undo the pollution of submitted_answers by the inner symbolic-inputs
         for component in config.response_components:
-            submitted.pop(config.component_name(component), None)
+            component_name = config.component_name(component)
+            submitted.pop(component_name, None)
+            if component != "direction":
+                submitted.pop(f"{component_name}-latex", None)
 
     raw = data.get("raw_submitted_answers", {})
     blank_components: list[ResponseComponent] = [
