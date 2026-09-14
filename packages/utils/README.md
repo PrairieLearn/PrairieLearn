@@ -8,9 +8,11 @@ Various shared utilities.
 
 The `timezone` subpath provides `parseDateTimeInTimezone()`, `getStartOfDayInTimezone()`, and `getAdjacentDates()`.
 
-`parseDateTimeInTimezone(input, timezone, disambiguation)` accepts ISO dates (`2026-09-01`), numeric US dates (`9/1/2026`), year-first dates with slashes (`2026/09/01`), and English month names (`Sep 1, 2026`). Times can use 24-hour or AM/PM notation. Date-only inputs use midnight; `24:00` means midnight on the following day. Two-digit US years use 2000–2069 for `00`–`69` and 1970–1999 for `70`–`99`.
+`parseDateTimeInTimezone(input, timezone, disambiguation)` accepts ISO dates (`2026-09-01`), compact dates (`20260901`), numeric US dates (`9/1/2026`), year-first dates with slashes (`2026/09/01`), and English month names in month-first or day-first order (`Sep 1, 2026`, `1 Sep 2026`, `1-Sep-26`, `01-Sep-2026`). Month names are case insensitive and accept full names or three-letter abbreviations, plus `Sept`. An optional leading English weekday, full or abbreviated, is ignored (`Tuesday, September 1, 2026` or `Tue, 1-Sep-26`).
 
-The supplied timezone always determines the interpretation: a trailing `Z` or numeric UTC offset is ignored, matching PostgreSQL's `timestamp without time zone` semantics. This function parses civil time, so it should not be used to parse strings representing absolute instants. The required disambiguation argument selects Temporal's `earlier`, `later`, `compatible`, or `reject` policy for DST gaps and overlaps.
+Times can use 24-hour or AM/PM notation. Date-only inputs use midnight; `24:00` means midnight on the following day. Two-digit years in numeric US and month-name dates (`Sep 1, 26`) use 2000–2069 for `00`–`69` and 1970–1999 for `70`–`99`. Invalid dates and unrecognized trailing input are rejected.
+
+The supplied timezone always determines the interpretation: a trailing `Z`, `UTC`, or numeric UTC offset after the time is ignored, matching PostgreSQL's `timestamp without time zone` semantics. This function parses civil time, so it should not be used to parse strings representing absolute instants. The required disambiguation argument selects Temporal's `earlier`, `later`, `compatible`, or `reject` policy for DST gaps and overlaps.
 
 `getStartOfDayInTimezone(date, timezone)` returns the first valid instant of a `Temporal.PlainDate`, including when midnight is repeated or skipped. `getAdjacentDates(dateStrings, currentDateString)` accepts ISO date strings and returns the closest strictly earlier and later dates as `previousDate` and `nextDate`, or `null` when absent.
 

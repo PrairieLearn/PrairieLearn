@@ -9,7 +9,22 @@ describe('parseDateTimeInTimezone', () => {
     'Sep 1, 2026 13:00',
     'September 1,2026 13:00',
     'sEp 1 2026 1:00 PM',
+    '1-Sep-26 13:00',
+    '01-Sep-2026 13:00',
+    '1-Sep-2026 13:00',
+    '1 Sep 2026 13:00',
+    '1 September 2026 13:00',
+    'Sept 1, 2026 13:00',
+    '1-Sept-26 13:00',
+    'Sep 1, 26 13:00',
+    'Tuesday, September 1, 2026 13:00',
+    'Tue, Sept 1, 2026 13:00',
+    'tuesday september 1 26 1:00 PM',
+    '20260901 13:00',
+    '20260901T13:00:00',
     '2026-09-01 13:00:00Z',
+    '2026-09-01 13:00 UTC',
+    '2026-09-01 13:00 utc',
     '2026-09-01T13:00:00+02:30',
     '2026-09-01 13:00 -0700',
   ])('interprets %s as civil time in the supplied timezone', (input) => {
@@ -19,9 +34,43 @@ describe('parseDateTimeInTimezone', () => {
   });
 
   it.each([
+    '1-Sep-26',
+    '01-Sep-2026',
+    '1 Sep 2026',
+    'Sept 1, 2026',
+    'Sep 1, 26',
+    'Tuesday, September 1, 2026',
+    '20260901',
+  ])('interprets the spreadsheet date %s as local midnight', (input) => {
+    expect(parseDateTimeInTimezone(input, 'America/Chicago', 'later').toISOString()).toBe(
+      '2026-09-01T05:00:00.000Z',
+    );
+  });
+
+  it.each([
+    ['1-Jan-69', '2069-01-01T00:00:00.000Z'],
+    ['Jan 1, 70', '1970-01-01T00:00:00.000Z'],
+    ['1 January 00', '2000-01-01T00:00:00.000Z'],
+    ['1-Jan-0069', '0069-01-01T00:00:00.000Z'],
+  ])('expands only two-digit years in %s', (input, expected) => {
+    expect(parseDateTimeInTimezone(input, 'UTC', 'later').toISOString()).toBe(expected);
+  });
+
+  it.each([
     '2026/02/29 13:00',
     'September 31, 2026 13:00',
     'NotAMonth 1, 2026 13:00',
+    '31-Apr-26',
+    '29-Feb-2025',
+    '20260229',
+    '1-Septober-26',
+    'Sep 1, 026',
+    'Tuesday, September 31, 2026',
+    'Funday, September 1, 2026',
+    '1-Sep-2026 trailing',
+    '202609011',
+    '2026-09-01 13:00 UTC trailing',
+    '2026-09-01 13:00 UTCjunk',
     '2026-09-01 13:00:00Z trailing',
     '2026-09-01 13:00+99:99',
     '2026-09-01 24:01',

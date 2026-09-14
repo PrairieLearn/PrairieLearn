@@ -108,7 +108,7 @@ const ENGLISH_MONTHS = [
 ];
 
 const DATE_TIME_PATTERN =
-  /^(?:(\d{4})-(\d{1,2})-(\d{1,2})|(\d{1,2})\/(\d{1,2})\/(\d{2}|\d{4}))(?:[T\s]+(\d{1,2})(?::(\d{1,2})(?::(\d{1,2}(?:\.\d+)?))?)?\s*([AP]M)?(?:\s*(?:Z|[+-](?:[01]\d|2[0-3])(?::?[0-5]\d)?))?)?$/i;
+  /^(?:(\d{4})-(\d{1,2})-(\d{1,2})|(\d{1,2})\/(\d{1,2})\/(\d{2}|\d{4}))(?:[T\s]+(\d{1,2})(?::(\d{1,2})(?::(\d{1,2}(?:\.\d+)?))?)?\s*([AP]M)?(?:\s*(?:Z|UTC|[+-](?:[01]\d|2[0-3])(?::?[0-5]\d)?))?)?$/i;
 
 /**
  * Parses ISO, US numeric, and English month-name date/time inputs as civil time
@@ -123,16 +123,23 @@ export function parseDateTimeInTimezone(
 ): Date {
   const normalizedDateTime = dateTime
     .trim()
-    .replace(/^(\d{4})\/(\d{1,2})\/(\d{1,2})(?=[T\s]|$)/, '$1-$2-$3')
     .replace(
-      /^([a-z]+)\s+(\d{1,2})(?:,\s*|\s+)(\d{4})(?=\s|$)/i,
+      /^(?:mon(?:day)?|tue(?:sday)?|wed(?:nesday)?|thu(?:rsday)?|fri(?:day)?|sat(?:urday)?|sun(?:day)?)(?:,\s*|\s+)/i,
+      '',
+    )
+    .replace(/^(\d{4})(\d{2})(\d{2})(?=[T\s]|$)/, '$1-$2-$3')
+    .replace(/^(\d{4})\/(\d{1,2})\/(\d{1,2})(?=[T\s]|$)/, '$1-$2-$3')
+    .replace(/^(\d{1,2})(?:-|\s+)([a-z]+)(?:-|\s+)(\d{2}|\d{4})(?=\s|$)/i, '$2 $1, $3')
+    .replace(
+      /^([a-z]+)\s+(\d{1,2})(?:,\s*|\s+)(\d{2}|\d{4})(?=\s|$)/i,
       (_, monthName: string, day: string, year: string) => {
+        const normalizedMonthName = monthName.toLowerCase().replace(/^sept$/, 'sep');
         const month = ENGLISH_MONTHS.findIndex(
-          (name) =>
-            name === monthName.toLowerCase() || name.slice(0, 3) === monthName.toLowerCase(),
+          (name) => name === normalizedMonthName || name.slice(0, 3) === normalizedMonthName,
         );
         if (month === -1) throw new Error(`Invalid month: "${monthName}"`);
-        return `${year}-${month + 1}-${day}`;
+        // Use the numeric US form so two-digit years share the same cutoff.
+        return `${month + 1}/${day}/${year}`;
       },
     );
   const match = DATE_TIME_PATTERN.exec(normalizedDateTime);
