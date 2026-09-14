@@ -1,8 +1,9 @@
-import { type Browser, type BrowserContext, type Page, chromium } from 'playwright';
+import { type Browser, type BrowserContext, chromium } from 'playwright';
 
 import { type DocxOutputOptions, createDocxOutput } from './docxOutput.js';
 import type { PageCodeOptions } from './pageCode.js';
 import { createPdfOutput } from './pdfOutput.js';
+import type { PrintablePageOutput } from './printablePageOutput.js';
 
 const QUESTION_BLOCK_SIZE_OVERFLOW_ERROR_CODE = 'question-block-size-overflow';
 
@@ -115,17 +116,6 @@ export interface RenderPageOptions {
 
 export type RenderPdfOptions = RenderPageOptions & { pageCode?: PageCodeOptions };
 export type RenderDocxOptions = RenderPageOptions & DocxOutputOptions;
-
-export interface PrintablePageOutput<T> {
-  /** Names the output in timeout messages, for example `PDF`. */
-  label: string;
-  /** Device pixel ratio of the rendering context. Element screenshots scale with it. */
-  deviceScaleFactor?: number;
-  /** Installs output-specific capture hooks before navigating to the printable page. */
-  prepare?: (page: Page) => Promise<void>;
-  /** Produces the output from a page whose pagination has reported `ready`. */
-  produce: (page: Page) => Promise<T>;
-}
 
 /**
  * Renders printable pages with a single, long-lived Chromium. Renders run one at a time so that a
