@@ -1,0 +1,176 @@
+import { z } from 'zod';
+
+export const COURSE_AGENT_WORKSPACE_ROOT = '/workspace';
+export const COURSE_AGENT_SEED_FILE = `${COURSE_AGENT_WORKSPACE_ROOT}/README.md`;
+
+export const CourseAgentEventTypeSchema = z.enum([
+  'user.message',
+  'ui.chunk',
+  'sandbox.starting',
+  'sandbox.ready',
+  'sandbox.destroyed',
+  'workspace.seeded',
+  'docs.mounted',
+  'docs.unavailable',
+  'git.clone.started',
+  'git.clone.completed',
+  'git.configured',
+  'validation.completed',
+  'validation.failed',
+  'agent.started',
+  'assistant.delta',
+  'tool.started',
+  'tool.completed',
+  'tool.failed',
+  'agent.completed',
+  'usage.updated',
+  'run.failed',
+  'workspace.backup.started',
+  'workspace.backup.completed',
+  'workspace.backup.failed',
+  'workspace.restore.started',
+  'workspace.restore.completed',
+  'git.push.approval.requested',
+  'git.push.approval.approved',
+  'git.push.approval.denied',
+  'git.push.completed',
+  'sync.completed',
+  'state.changed',
+]);
+export type CourseAgentEventType = z.infer<typeof CourseAgentEventTypeSchema>;
+
+export const CourseAgentEventSchema = z.object({
+  sequence: z.number().int().nonnegative(),
+  type: CourseAgentEventTypeSchema,
+  occurredAt: z.iso.datetime(),
+  data: z.record(z.string(), z.unknown()).default({}),
+});
+export type CourseAgentEvent = z.infer<typeof CourseAgentEventSchema>;
+
+export const CourseAgentRuntimeStatusSchema = z.enum([
+  'offline',
+  'starting',
+  'running',
+  'waiting_for_user',
+  'failed',
+]);
+export type CourseAgentRuntimeStatus = z.infer<typeof CourseAgentRuntimeStatusSchema>;
+
+export const CourseAgentConversationStateSchema = z.enum([
+  'working',
+  'waiting_for_user',
+  'validating_change',
+  'waiting_for_approval',
+  'publishing',
+  'syncing',
+  'refreshing_workspace',
+  'resuming_agent',
+  'failed',
+]);
+export type CourseAgentConversationState = z.infer<typeof CourseAgentConversationStateSchema>;
+
+export const CourseAgentSandboxStateSchema = z.enum(['offline', 'starting', 'ready', 'suspending']);
+export type CourseAgentSandboxState = z.infer<typeof CourseAgentSandboxStateSchema>;
+
+export const CourseAgentRepositorySchema = z.object({
+  repository: z.string().min(1),
+  branch: z.string().min(1).max(255),
+  expectedSha: z
+    .string()
+    .regex(/^[0-9a-f]{40}$/)
+    .nullable(),
+});
+export type CourseAgentRepository = z.infer<typeof CourseAgentRepositorySchema>;
+
+export const CourseAgentWorkspaceBackupSchema = z.object({
+  handle: z.object({
+    id: z.string(),
+    dir: z.string(),
+    localBucket: z.boolean().optional(),
+  }),
+  expiresAt: z.iso.datetime(),
+});
+export type CourseAgentWorkspaceBackup = z.infer<typeof CourseAgentWorkspaceBackupSchema>;
+
+export const CourseAgentPushPayloadSchema = z.object({
+  baseSha: z.string().regex(/^[0-9a-f]{40}$/),
+  proposedSha: z.string().regex(/^[0-9a-f]{40}$/),
+  branch: z.string().min(1).max(255),
+  commitMessage: z.string().min(1).max(20_000),
+  diffSummary: z.string().max(20_000),
+  diff: z.string().max(500_000),
+  treeSha: z.string().regex(/^[0-9a-f]{40}$/),
+});
+export type CourseAgentPushPayload = z.infer<typeof CourseAgentPushPayloadSchema>;
+
+export const CourseAgentPushApprovalSchema = CourseAgentPushPayloadSchema.extend({
+  id: z.uuid(),
+  status: z.enum(['pending', 'denied', 'publishing', 'completed', 'failed']),
+  result: z.record(z.string(), z.unknown()).nullable(),
+});
+export type CourseAgentPushApproval = z.infer<typeof CourseAgentPushApprovalSchema>;
+
+export const CourseAgentAuthoringContextSchema = z.object({
+  courseInstance: z
+    .object({
+      id: z.string().min(1),
+      shortName: z.string().min(1),
+      longName: z.string().nullable(),
+    })
+    .nullable(),
+});
+export type CourseAgentAuthoringContext = z.infer<typeof CourseAgentAuthoringContextSchema>;
+
+export const CourseAgentRuntimeSettingsSchema = z.object({
+  backupTtlSeconds: z.number().int().min(60).max(2_592_000).default(604_800),
+});
+export type CourseAgentRuntimeSettings = z.infer<typeof CourseAgentRuntimeSettingsSchema>;
+
+export const CourseAgentStartRunRequestSchema = z.object({
+  conversationId: z.uuid(),
+  runId: z.uuid(),
+  sandboxId: z.string().min(1).max(120),
+  prompt: z
+    .string()
+    .max(20_000)
+    .refine((prompt) => prompt.trim().length > 0, 'Prompt cannot be blank'),
+  course: CourseAgentRepositorySchema,
+  workspaceBackup: CourseAgentWorkspaceBackupSchema.nullable().default(null),
+  authoringContext: CourseAgentAuthoringContextSchema,
+  runtimeSettings: CourseAgentRuntimeSettingsSchema,
+});
+export type CourseAgentStartRunRequest = z.infer<typeof CourseAgentStartRunRequestSchema>;
+
+export const CourseAgentSnapshotSchema = z.object({
+  conversationId: z.uuid(),
+  sandboxId: z.string(),
+  activeRunId: z.uuid().nullable(),
+  status: CourseAgentRuntimeStatusSchema,
+  conversationState: CourseAgentConversationStateSchema.nullable().default(null),
+  sandboxState: CourseAgentSandboxStateSchema.nullable().default(null),
+  revision: z.number().int().nonnegative().default(0),
+  sandboxGeneration: z.number().int().nonnegative().default(0),
+  idleExpiresAt: z.number().nullable().default(null),
+  activeRunExpiresAt: z.string().nullable().default(null),
+  shutdownReason: z.string().nullable().default(null),
+  processId: z.string().nullable().default(null),
+  response: z.string().nullable(),
+  error: z.string().nullable(),
+  events: z.array(CourseAgentEventSchema),
+  workspaceBackup: CourseAgentWorkspaceBackupSchema.nullable().default(null),
+  pendingApproval: CourseAgentPushApprovalSchema.nullable().default(null),
+});
+export type CourseAgentSnapshot = z.infer<typeof CourseAgentSnapshotSchema>;
+
+export const CourseAgentPushDecisionRequestSchema = z.object({
+  conversationId: z.uuid(),
+  sandboxId: z.string(),
+  approvalId: z.uuid(),
+  decision: z.enum(['pending', 'publishing', 'denied', 'completed', 'failed']),
+  phase: z.enum(['publishing', 'syncing']).optional(),
+  result: z.record(z.string(), z.unknown()).nullable().default(null),
+});
+
+export function courseAgentSandboxId(conversationId: string) {
+  return `course-agent-${z.uuid().parse(conversationId)}`;
+}

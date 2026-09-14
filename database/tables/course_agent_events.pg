@@ -1,0 +1,16 @@
+columns
+    conversation_id: uuid not null
+    created_at: timestamp with time zone not null default now()
+    data: jsonb not null default '{}'::jsonb
+    event_type: text not null
+    id: bigint not null default nextval('course_agent_events_id_seq'::regclass)
+    run_id: uuid
+    sequence: bigint not null
+
+indexes
+    course_agent_events_pkey: PRIMARY KEY (id) USING btree (id)
+    course_agent_events_conversation_id_sequence_key: UNIQUE (conversation_id, sequence) USING btree (conversation_id, sequence)
+
+foreign-key constraints
+    course_agent_events_conversation_id_fkey: FOREIGN KEY (conversation_id) REFERENCES course_agent_conversations(id) ON UPDATE CASCADE ON DELETE CASCADE
+    course_agent_events_run_id_fkey: FOREIGN KEY (run_id) REFERENCES course_agent_runs(id) ON UPDATE CASCADE ON DELETE SET NULL

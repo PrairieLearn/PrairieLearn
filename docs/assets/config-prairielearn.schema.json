@@ -1520,6 +1520,93 @@
         }
       ]
     },
+    "courseAgentRuntime": {
+      "default": "disabled",
+      "type": "string",
+      "enum": ["disabled", "fake", "vercel"]
+    },
+    "courseAgentVercel": {
+      "default": {},
+      "type": "object",
+      "properties": {
+        "token": {
+          "default": null,
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "teamId": {
+          "default": null,
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "projectId": {
+          "default": null,
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "openaiApiKey": {
+          "default": null,
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "githubReadToken": {
+          "default": null,
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "model": {
+          "default": "gpt-5.4",
+          "type": "string"
+        },
+        "timeoutMs": {
+          "default": 1800000,
+          "type": "integer",
+          "minimum": 60000,
+          "maximum": 3600000
+        },
+        "backupTtlSeconds": {
+          "default": 604800,
+          "type": "integer",
+          "minimum": 60,
+          "maximum": 2592000
+        },
+        "stateDirectory": {
+          "default": ".course-agent",
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
     "aiGradingRateLimitDollars": {
       "default": 10,
       "type": "number"

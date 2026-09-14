@@ -117,6 +117,11 @@ export async function init() {
   if (isEnterprise()) {
     jobs.push(
       {
+        name: 'courseAgentReconcile',
+        module: await import('../ee/cron/courseAgentReconcile.js'),
+        intervalSec: config.cronOverrideAllIntervalsSec || 60,
+      },
+      {
         name: 'externalGraderLoad',
         module: await import('../ee/cron/externalGraderLoad.js'),
         intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalExternalGraderLoadSec,

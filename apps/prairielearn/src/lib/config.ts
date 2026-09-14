@@ -610,6 +610,21 @@ export const ConfigSchema = z.object({
   aiQuestionGenerationOpenAiOrganization: z.string().nullable().default(null),
   aiGradingGoogleApiKey: z.string().nullable().default(null),
   aiGradingAnthropicApiKey: z.string().nullable().default(null),
+  /** Experimental course agent. Fake mode is for local UI tests only. */
+  courseAgentRuntime: z.enum(['disabled', 'fake', 'vercel']).default('disabled'),
+  courseAgentVercel: z
+    .object({
+      token: z.string().nullable().default(null),
+      teamId: z.string().nullable().default(null),
+      projectId: z.string().nullable().default(null),
+      openaiApiKey: z.string().nullable().default(null),
+      githubReadToken: z.string().nullable().default(null),
+      model: z.string().default('gpt-5.4'),
+      timeoutMs: z.number().int().min(60_000).max(3_600_000).default(1_800_000),
+      backupTtlSeconds: z.number().int().min(60).max(2_592_000).default(604_800),
+      stateDirectory: z.string().default('.course-agent'),
+    })
+    .prefault({}),
   /**
    * The hourly spending rate limit for AI grading, in US dollars.
    * This is applied per course instance.

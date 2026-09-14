@@ -1,0 +1,19 @@
+<pl-question-panel>
+  <p>
+    A staircase has {{params.n}} steps. You may climb 1 or 2 steps at a time. How many distinct
+    sequences of moves reach the top? Different orders count separately.
+  </p>
+</pl-question-panel>
+
+<pl-number-input
+  answers-name="ways"
+  comparison="integer"
+  label="Number of sequences"
+></pl-number-input>
+
+<pl-answer-panel>
+  <p>
+    Let ways(0) = ways(1) = 1. The final move comes from one or two steps below, so ways(n) =
+    ways(n-1) + ways(n-2). For {{params.n}} steps, this gives {{params.ways}}.
+  </p>
+</pl-answer-panel>

@@ -756,6 +756,10 @@ export async function initExpress(): Promise<Express> {
   ]);
 
   app.use('/pl/course/:course_id(\\d+)/trpc', courseTrpcRouter);
+  app.use(
+    '/pl/course/:course_id(\\d+)/course_agent',
+    (await import('./ee/pages/courseAgent/courseAgent.js')).default,
+  );
 
   // Serve element statics. As with core PrairieLearn assets and files served
   // from `node_modules`, we include a cachebuster in the URL. This allows
@@ -2810,6 +2814,8 @@ if (shouldStartServer) {
 export async function close() {
   // These are run in the opposite order in which they're initialized/started.
   await cron.stop();
+  const { closeVercelCourseAgentRuntime } = await import('./ee/lib/course-agent/vercel/index.js');
+  await closeVercelCourseAgentRuntime();
   await serverJobs.stop();
   await socketServer.close();
   await cache.close();
