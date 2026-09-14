@@ -271,6 +271,40 @@ def test_encode_rejects_inconsistent_fields(kwargs: dict[str, Any], match: str) 
 
 
 @pytest.mark.parametrize(
+    ("operator", "indexing", "indexing_fields"),
+    [
+        ("limit", "bounds", {"lower": 1, "upper": 2}),
+        (
+            "sum",
+            "approaches",
+            {"target": 0, "direction": "two-sided"},
+        ),
+    ],
+)
+def test_encode_rejects_incompatible_operator_and_indexing(
+    operator: str, indexing: str, indexing_fields: dict[str, Any]
+) -> None:
+    with pytest.raises(ValueError, match="does not support indexing"):
+        cast(Any, pl.big_operator_to_json)(
+            operator=operator,
+            indexing=indexing,
+            index="k",
+            body="k",
+            **indexing_fields,
+        )
+
+
+def test_get_valid_big_operator_indexing() -> None:
+    assert pl.get_valid_big_operator_indexing("sum") == {"bounds", "domain"}
+    assert pl.get_valid_big_operator_indexing("limit") == {"approaches"}
+    assert pl.get_valid_big_operator_indexing("custom") == {
+        "bounds",
+        "domain",
+        "approaches",
+    }
+
+
+@pytest.mark.parametrize(
     ("kwargs", "exception", "match"),
     [
         ({"index": None}, TypeError, "require operator, indexing, index, and body"),
@@ -297,6 +331,7 @@ def test_encode_rejects_inconsistent_fields(kwargs: dict[str, Any], match: str) 
         ),
         (
             {
+                "operator": "limit",
                 "indexing": "approaches",
                 "lower": None,
                 "upper": None,
@@ -307,6 +342,7 @@ def test_encode_rejects_inconsistent_fields(kwargs: dict[str, Any], match: str) 
         ),
         (
             {
+                "operator": "limit",
                 "indexing": "approaches",
                 "lower": sympy.Integer(1),
                 "upper": None,
@@ -318,6 +354,7 @@ def test_encode_rejects_inconsistent_fields(kwargs: dict[str, Any], match: str) 
         ),
         (
             {
+                "operator": "limit",
                 "indexing": "approaches",
                 "lower": None,
                 "upper": None,
@@ -387,6 +424,11 @@ def test_decode_rejects_non_dictionary(value: object) -> None:
 def test_decode_rejects_invalid_metadata(updates: dict[str, Any], match: str) -> None:
     with pytest.raises(ValueError, match=match):
         pl.json_to_big_operator(bounds_answer(**updates))
+
+
+def test_decode_rejects_incompatible_operator_and_indexing() -> None:
+    with pytest.raises(ValueError, match="does not support indexing"):
+        pl.json_to_big_operator(bounds_answer(operator="limit"))
 
 
 @pytest.mark.parametrize("key", ["index", "lower", "upper", "body"])
