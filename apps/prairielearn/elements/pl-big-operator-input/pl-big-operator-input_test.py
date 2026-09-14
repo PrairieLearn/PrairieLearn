@@ -67,6 +67,7 @@ def question_data(
         "params": {},
         "preferences": {},
         "correct_answers": ({} if correct_answer is None else {"op": correct_answer}),
+        "answers_names": {},
         "submitted_answers": {},
         "raw_submitted_answers": raw_submitted_answers or {},
         "format_errors": {},
@@ -583,6 +584,22 @@ class TestCorrectAnswerParsingUnits:
 
 
 class TestPrepareUnits:
+    def test_duplicate_answer_name_is_rejected(self) -> None:
+        data = question_data()
+        big_operator_input.prepare(html(operator="sum"), data)
+
+        with pytest.raises(KeyError, match='Duplicate "answers-name"'):
+            big_operator_input.prepare(html(operator="sum"), data)
+
+    def test_correct_answer_attribute_cannot_replace_server_answer(self) -> None:
+        data = question_data("Sum(k, (k, 1, 2))")
+        markup = html(**{"correct-answer": "Sum(k, (k, 3, 4))"})
+
+        with pytest.raises(ValueError, match="duplicate correct_answers"):
+            big_operator_input.prepare(markup, data)
+
+        assert data["correct_answers"]["op"] == "Sum(k, (k, 1, 2))"
+
     def test_formatted_complex_answer_uses_either_imaginary_unit(self) -> None:
         markup = html(**{
             "correct-answer": "Sum(j*k, (k, 1, 2))",

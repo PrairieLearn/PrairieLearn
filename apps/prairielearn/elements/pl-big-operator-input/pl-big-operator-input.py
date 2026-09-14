@@ -823,6 +823,14 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     pl.validate_element(element, SCHEMA_PATH)
     config = _config(element_html, data)
+    pl.check_answers_names(data, config.answer_name)
+    if (
+        config.correct_attribute is not None
+        and config.answer_name in data["correct_answers"]
+    ):
+        raise ValueError(
+            f"duplicate correct_answers variable name: {config.answer_name}"
+        )
     correct = _correct(config, data)
     _validate_equivalent_configuration(config, correct)
     data.setdefault("correct_answers", {})[config.answer_name] = correct
