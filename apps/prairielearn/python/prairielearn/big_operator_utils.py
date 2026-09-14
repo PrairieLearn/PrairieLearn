@@ -21,6 +21,20 @@ type BigOperatorName = Literal[
 ]
 """An operator supported by a big-operator answer."""
 
+type BigOperatorFunctionName = Literal[
+    "Sum",
+    "Product",
+    "Integral",
+    "Limit",
+    "Union",
+    "Intersection",
+    "DisjointUnion",
+    "Min",
+    "Max",
+    "Custom",
+]
+"""A function name supported by a big-operator answer."""
+
 type BigOperatorIndexing = Literal["bounds", "domain", "approaches"]
 """How a big-operator answer indexes its body."""
 
@@ -492,6 +506,7 @@ __all__ = [
     "BigDomainOperatorJson",
     "BigOperator",
     "BigOperatorDirection",
+    "BigOperatorFunctionName",
     "BigOperatorIndexing",
     "BigOperatorJson",
     "BigOperatorName",
