@@ -1,5 +1,6 @@
 """Utilities for working with pl-big-operator-input answers."""
 
+from collections.abc import Set as AbstractSet
 from typing import Any, Literal, TypedDict, cast, overload
 
 import sympy
@@ -26,8 +27,11 @@ type BigOperatorIndexing = Literal["bounds", "domain", "approaches"]
 type BigOperatorDirection = Literal["two-sided", "from-left", "from-right"]
 """The direction of an approaches big-operator answer."""
 
-type BigOperatorValue = sympy.Expr | sympy.Set | str
-"""A mathematical value or parseable string stored in a big-operator answer."""
+type _BigOperatorSetItem = sympy.Expr | sympy.Set | str | int
+type BigOperatorValue = (
+    sympy.Expr | sympy.Set | str | int | AbstractSet[_BigOperatorSetItem]
+)
+"""A mathematical value or coercible Python value stored in a big-operator answer."""
 
 
 class _BigOperatorJsonBase(TypedDict):
@@ -156,9 +160,13 @@ def _coerce_sympy_field(value: BigOperatorValue, field: str) -> sympy.Expr | sym
             raise ValueError(
                 f'Big-operator field "{field}" must be a valid SymPy string.'
             ) from exc
+    elif isinstance(value, int) and not isinstance(value, bool):
+        value = sympy.Integer(value)
+    elif isinstance(value, AbstractSet):
+        value = sympy.FiniteSet(*(_coerce_sympy_field(item, field) for item in value))
     if not isinstance(value, (sympy.Expr, sympy.Set)):
         raise TypeError(
-            f'Big-operator field "{field}" must be a SymPy expression, set, or string.'
+            f'Big-operator field "{field}" must be a SymPy expression, set, string, or integer.'
         )
     return value
 
@@ -259,7 +267,8 @@ def big_operator_to_json(
         indexing: How the answer indexes its body: with bounds, a domain, or an
             approach target.
         index: The bound index symbol.
-        body: The operator body.
+        body: The operator body. Mathematical fields accept SymPy expressions or
+            sets, parseable strings, Python integers, and Python sets.
         lower: The lower bound for bounds indexing.
         upper: The upper bound for bounds indexing.
         domain: The domain for domain indexing.
