@@ -1,5 +1,9 @@
 # Course agent development
 
+For the Vercel Sandbox compatibility spike, setup instructions, and current limitations, see
+[the Vercel runtime guide](https://github.com/PrairieLearn/PrairieLearn/blob/codex/course-agent-vercel-spike/apps/course-agent-vercel/README.md).
+The remaining sections describe the original Cloudflare runtime.
+
 ## Codex thread state
 
 Each conversation keeps one native Codex thread in `/workspace/.course-agent/codex`, outside the

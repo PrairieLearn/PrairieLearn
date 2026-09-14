@@ -89,3 +89,11 @@ it('does nothing when the feature is disabled', async () => {
   expect(mock.snapshot).not.toHaveBeenCalled();
   expect(mock.decide).not.toHaveBeenCalled();
 });
+
+it('keeps Vercel prototype publication manual despite a saved automatic preference', async () => {
+  config.courseAgentRuntime = 'vercel';
+  mock.settings.mockResolvedValue({ course_agent_approval_mode: 'always' });
+  await run();
+  expect(mock.approval).toHaveBeenCalled();
+  expect(mock.decide).not.toHaveBeenCalled();
+});

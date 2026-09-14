@@ -611,7 +611,7 @@ export const ConfigSchema = z.object({
   aiGradingGoogleApiKey: z.string().nullable().default(null),
   aiGradingAnthropicApiKey: z.string().nullable().default(null),
   /** Experimental course-agent runtime. The fake runtime never calls external services. */
-  courseAgentRuntime: z.enum(['disabled', 'fake', 'cloudflare']).default('disabled'),
+  courseAgentRuntime: z.enum(['disabled', 'fake', 'cloudflare', 'vercel']).default('disabled'),
   courseAgentWorkerOrigin: z
     .intersection(
       z.url(),
@@ -623,6 +623,10 @@ export const ConfigSchema = z.object({
         ),
     )
     .default('http://127.0.0.1:8787'),
+  courseAgentVercelOrigin: z
+    .url()
+    .regex(/^http:\/\/(?:127\.0\.0\.1|localhost)(?::\d+)?$/)
+    .default('http://127.0.0.1:8788'),
   courseAgentCapabilitySecret: z.string().nullable().default(null),
   courseAgentSandbox: z
     .object({

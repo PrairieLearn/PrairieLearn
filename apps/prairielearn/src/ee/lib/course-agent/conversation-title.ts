@@ -22,7 +22,7 @@ export async function nameCourseAgentConversation(
   },
   dependencies: typeof defaultDependencies = defaultDependencies,
 ) {
-  if (config.courseAgentRuntime === 'fake') {
+  if (['fake', 'vercel'].includes(config.courseAgentRuntime)) {
     await dependencies.updateCourseAgentTitle(conversationId, prompt.trim().slice(0, 80));
     return;
   }

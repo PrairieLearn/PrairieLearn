@@ -103,7 +103,7 @@ function eventKey(sequence: number) {
 
 export { ContainerProxy };
 
-export class CourseAgentWatchdog extends SandboxInactivityWatchdog {}
+export class CourseAgentWatchdog extends SandboxInactivityWatchdog<Sandbox> {}
 
 export class Sandbox extends BaseSandbox<Env> {
   interceptHttps = true;

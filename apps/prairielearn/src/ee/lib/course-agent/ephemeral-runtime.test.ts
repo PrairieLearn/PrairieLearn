@@ -69,30 +69,36 @@ describe('ephemeral course-agent runtime', () => {
     );
   });
 
-  it('rejects Worker redirects when sending a push decision', async () => {
-    const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 200 }));
-    vi.stubGlobal('fetch', fetchMock);
-    await withConfig(
-      {
-        courseAgentRuntime: 'cloudflare',
-        courseAgentCapabilitySecret: 'local-test-secret',
-      },
-      async () => {
-        await respondToCourseAgentPushApproval({
-          approvalId: '48d3c806-5030-4713-825a-9374853b7af1',
-          decision: 'completed',
-          userId: '2',
-          courseId: '1',
-          conversationId: '9a6d8f44-d55b-4e73-8b9b-547dd00fb400',
-          sandboxId: 'course-agent-9a6d8f44-d55b-4e73-8b9b-547dd00fb400',
-        });
-      },
-    );
-    expect(fetchMock).toHaveBeenCalledWith(
-      expect.objectContaining({ pathname: '/v1/push-decisions' }),
-      expect.objectContaining({ redirect: 'error' }),
-    );
-  });
+  it.each(['cloudflare', 'vercel'] as const)(
+    'rejects redirects when sending a %s push decision',
+    async (runtime) => {
+      const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 200 }));
+      vi.stubGlobal('fetch', fetchMock);
+      await withConfig(
+        {
+          courseAgentRuntime: runtime,
+          courseAgentCapabilitySecret: 'local-test-secret',
+        },
+        async () => {
+          await respondToCourseAgentPushApproval({
+            approvalId: '48d3c806-5030-4713-825a-9374853b7af1',
+            decision: 'completed',
+            userId: '2',
+            courseId: '1',
+            conversationId: '9a6d8f44-d55b-4e73-8b9b-547dd00fb400',
+            sandboxId: 'course-agent-9a6d8f44-d55b-4e73-8b9b-547dd00fb400',
+          });
+        },
+      );
+      expect(fetchMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          pathname: '/v1/push-decisions',
+          origin: runtime === 'vercel' ? 'http://127.0.0.1:8788' : 'http://127.0.0.1:8787',
+        }),
+        expect.objectContaining({ redirect: 'error' }),
+      );
+    },
+  );
 
   it('reuses one fake workspace within a conversation and scopes access', async () => {
     await withConfig({ courseAgentRuntime: 'fake' }, async () => {

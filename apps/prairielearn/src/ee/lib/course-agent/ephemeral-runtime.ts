@@ -41,14 +41,24 @@ const fakeConversations = new Map<string, FakeConversation>();
 
 async function fetchWorker(path: string, init: RequestInit) {
   try {
-    return await fetch(new URL(path, config.courseAgentWorkerOrigin), {
-      ...init,
-      redirect: 'error',
-    });
+    return await fetch(
+      new URL(
+        path,
+        config.courseAgentRuntime === 'vercel'
+          ? config.courseAgentVercelOrigin
+          : config.courseAgentWorkerOrigin,
+      ),
+      {
+        ...init,
+        redirect: 'error',
+      },
+    );
   } catch (error) {
     throw new Error(
       config.devMode
-        ? 'The course-agent Worker is not reachable. Start it in a separate terminal with pnpm dev-course-agent-worker, then try again.'
+        ? config.courseAgentRuntime === 'vercel'
+          ? 'The Vercel prototype is not reachable. Start pnpm dev-course-agent-vercel in a separate terminal.'
+          : 'The course-agent Worker is not reachable. Start it in a separate terminal with pnpm dev-course-agent-worker, then try again.'
         : 'The course agent is temporarily unavailable. Please try again later.',
       { cause: error },
     );

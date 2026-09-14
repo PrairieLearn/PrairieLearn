@@ -1,7 +1,5 @@
-import { getSandbox } from '@cloudflare/sandbox';
+import { type Sandbox, getSandbox } from '@cloudflare/sandbox';
 import { z } from 'zod';
-
-import type { Sandbox } from './index.js';
 
 const RegistrationSchema = z.object({
   sandboxId: z.string(),
@@ -13,17 +11,20 @@ interface WatchdogState extends z.infer<typeof RegistrationSchema> {
   stopped: boolean;
   expired?: boolean;
 }
-interface WatchdogEnv {
-  Sandbox: DurableObjectNamespace<Sandbox>;
+interface WatchdogEnv<T extends Sandbox> {
+  Sandbox: DurableObjectNamespace<T>;
   COURSE_AGENT_COORDINATOR: DurableObjectNamespace;
   COURSE_AGENT_WATCHDOG: DurableObjectNamespace;
 }
 
-export function watchdogStub(env: WatchdogEnv, containerId: string) {
+export function watchdogStub<T extends Sandbox>(env: WatchdogEnv<T>, containerId: string) {
   return env.COURSE_AGENT_WATCHDOG.get(env.COURSE_AGENT_WATCHDOG.idFromName(containerId));
 }
 
-export async function recordSandboxActivity(env: WatchdogEnv, containerId: string) {
+export async function recordSandboxActivity<T extends Sandbox>(
+  env: WatchdogEnv<T>,
+  containerId: string,
+) {
   const response = await watchdogStub(env, containerId).fetch('https://watchdog/activity', {
     method: 'POST',
   });
@@ -31,10 +32,10 @@ export async function recordSandboxActivity(env: WatchdogEnv, containerId: strin
 }
 
 /** Independent of coordinator alarms and sandbox SDK requests. No public route exposes this DO. */
-export class SandboxInactivityWatchdog {
+export class SandboxInactivityWatchdog<T extends Sandbox> {
   constructor(
     private readonly state: DurableObjectState,
-    private readonly env: WatchdogEnv,
+    private readonly env: WatchdogEnv<T>,
   ) {}
 
   async fetch(request: Request) {

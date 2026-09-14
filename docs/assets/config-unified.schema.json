@@ -1725,7 +1725,7 @@
     "courseAgentRuntime": {
       "default": "disabled",
       "type": "string",
-      "enum": ["disabled", "fake", "cloudflare"]
+      "enum": ["disabled", "fake", "cloudflare", "vercel"]
     },
     "courseAgentWorkerOrigin": {
       "default": "http://127.0.0.1:8787",
@@ -1739,6 +1739,11 @@
           "pattern": "^(?:https:\\/\\/|http:\\/\\/(?:127\\.0\\.0\\.1|localhost|\\[::1\\])(?::\\d+)?(?:[/?#]|$))"
         }
       ]
+    },
+    "courseAgentVercelOrigin": {
+      "default": "http://127.0.0.1:8788",
+      "type": "string",
+      "pattern": "^http:\\/\\/(?:127\\.0\\.0\\.1|localhost)(?::\\d+)?$"
     },
     "courseAgentCapabilitySecret": {
       "default": null,
