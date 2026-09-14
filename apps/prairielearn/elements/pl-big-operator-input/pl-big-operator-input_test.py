@@ -4,6 +4,7 @@ import doctest
 import importlib
 import re
 import textwrap
+import time
 from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any, Literal
@@ -1012,6 +1013,59 @@ class TestParseUnits:
 
 
 class TestGradeUnits:
+    def test_equivalent_grading_timeout_is_reported_as_format_error(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        markup = html(operator="sum")
+        data = question_data(
+            raw_submitted_answers={
+                "op-lower": "1",
+                "op-upper": "2",
+                "op-body": "k",
+            }
+        )
+        big_operator_input.prepare(markup, data)
+        big_operator_input.parse(markup, data)
+        monkeypatch.setattr(big_operator_input, "SYMPY_TIMEOUT", 0.01)
+        monkeypatch.setattr(
+            big_operator_input,
+            "_expressions_equivalent",
+            lambda _left, _right: time.sleep(1),
+        )
+
+        big_operator_input.grade(markup, data)
+
+        assert data["format_errors"]["op"] == (
+            big_operator_input.SYMPY_TIMEOUT_FORMAT_ERROR
+        )
+        assert data["partial_scores"]["op"] == {"score": 0.0, "weight": 1}
+
+    def test_component_score_badges_timeout_without_failing_render(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        markup = html(
+            operator="sum",
+            **{"grading-method": "component"},
+        )
+        data = question_data(
+            raw_submitted_answers={
+                "op-lower": "1",
+                "op-upper": "2",
+                "op-body": "k",
+            },
+        )
+        prepare_parse_grade(markup, data)
+        monkeypatch.setattr(big_operator_input, "SYMPY_TIMEOUT", 0.01)
+        monkeypatch.setattr(
+            big_operator_input,
+            "_expressions_equivalent",
+            lambda _left, _right: time.sleep(1),
+        )
+
+        rendered = big_operator_input.render(markup, data)
+
+        assert rendered.count('class="badge') == 1
+
     @pytest.mark.parametrize(
         ("operator", "indexing"),
         [
