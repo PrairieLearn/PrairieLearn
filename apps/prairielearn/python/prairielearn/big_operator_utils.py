@@ -6,7 +6,7 @@ from prairielearn.big_operator_utils import ...
 """
 
 from collections.abc import Set as AbstractSet
-from typing import Any, Literal, TypedDict, cast, overload
+from typing import Any, Literal, TypedDict, TypeGuard, cast, overload
 
 import sympy
 
@@ -132,6 +132,34 @@ _DIRECTIONS: frozenset[str] = frozenset({
     "from-left",
     "from-right",
 })
+
+
+def is_big_operator_json(value: Any) -> TypeGuard[BigOperatorJson]:
+    """Check if a value has the structure of a big-operator JSON answer."""
+    if (
+        not isinstance(value, dict)
+        or value.get("_type") != "big_operator"
+        or value.get("_version") != 1
+        or value.get("operator") not in _VALID_INDEXING_BY_OPERATOR
+        or value.get("indexing") not in _INDEXING_MODES
+        or not psu.is_sympy_json(value.get("index"))
+        or not psu.is_sympy_json(value.get("body"))
+    ):
+        return False
+
+    match value["indexing"]:
+        case "bounds":
+            return psu.is_sympy_json(value.get("lower")) and psu.is_sympy_json(
+                value.get("upper")
+            )
+        case "domain":
+            return psu.is_sympy_json(value.get("domain"))
+        case "approaches":
+            return psu.is_sympy_json(value.get("target")) and isinstance(
+                value.get("direction"), str
+            )
+        case _:
+            return False
 
 
 def get_valid_big_operator_indexing(
@@ -506,5 +534,6 @@ __all__ = [
     "BigOperatorValue",
     "big_operator_to_json",
     "get_valid_big_operator_indexing",
+    "is_big_operator_json",
     "json_to_big_operator",
 ]
