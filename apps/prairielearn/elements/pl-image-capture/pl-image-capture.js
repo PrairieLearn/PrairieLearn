@@ -185,7 +185,7 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
 
           // A newer upload, capture, or deletion takes precedence over this upload.
           if (uploadId !== this.manualUploadId) return;
-          this.loadCapturePreviewFromDataUrl({ dataUrl });
+          await this.loadCapturePreviewFromDataUrl({ dataUrl, uploadId });
         } catch {
           if (uploadId !== this.manualUploadId) return;
           uploadedImageContainer.replaceChildren(...this.manualUploadPreview);
@@ -664,18 +664,10 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
       }
     }
 
-    async setHiddenCaptureInputValue(dataUrl) {
+    async setHiddenCaptureInputValue(dataUrl, uploadId = this.manualUploadId) {
       const hiddenCaptureInput = this.imageCaptureDiv.querySelector('.js-hidden-capture-input');
 
-      this.ensureElementsExist({
-        hiddenCaptureInput,
-      });
-
-      if (dataUrl && !hiddenCaptureInput.value) {
-        this.updateCaptureButtons(true);
-      } else if (!dataUrl) {
-        this.updateCaptureButtons(false);
-      }
+      this.ensureElementsExist({ hiddenCaptureInput });
 
       if (dataUrl) {
         // Perform scaling to ensure that captured images are not too large.
@@ -683,40 +675,38 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
         // If the image width and height are both less than 2000px, no scaling is applied.
         const image = new Image();
         image.src = dataUrl;
-
-        try {
-          await image.decode();
-        } catch (error) {
-          throw new Error('Failed to decode image', { cause: error });
-        }
+        await image.decode();
+        if (uploadId !== this.manualUploadId) return;
 
         const imageScaleFactor = MAX_IMAGE_SIDE_LENGTH / Math.max(image.width, image.height);
-        if (imageScaleFactor >= 1) {
-          // If we don't need to shrink the image, just use it directly.
-          hiddenCaptureInput.value = dataUrl;
-          return;
-        }
-        const targetWidth = Math.round(image.width * imageScaleFactor);
-        const targetHeight = Math.round(image.height * imageScaleFactor);
+        if (imageScaleFactor < 1) {
+          const targetWidth = Math.round(image.width * imageScaleFactor);
+          const targetHeight = Math.round(image.height * imageScaleFactor);
 
-        if (!this.resizingCanvas) {
-          this.resizingCanvas = document.createElement('canvas');
-        }
-        if (!this.resizingCtx) {
-          this.resizingCtx = this.resizingCanvas.getContext('2d');
-          if (!this.resizingCtx) {
-            throw new Error('Failed to get canvas context');
+          if (!this.resizingCanvas) {
+            this.resizingCanvas = document.createElement('canvas');
           }
+          if (!this.resizingCtx) {
+            this.resizingCtx = this.resizingCanvas.getContext('2d');
+            if (!this.resizingCtx) {
+              throw new Error('Failed to get canvas context');
+            }
+          }
+
+          this.resizingCanvas.width = targetWidth;
+          this.resizingCanvas.height = targetHeight;
+          this.resizingCtx.drawImage(image, 0, 0, targetWidth, targetHeight);
+          dataUrl = this.resizingCanvas.toDataURL('image/jpeg');
         }
-
-        this.resizingCanvas.width = targetWidth;
-        this.resizingCanvas.height = targetHeight;
-        this.resizingCtx.drawImage(image, 0, 0, targetWidth, targetHeight);
-
-        hiddenCaptureInput.value = this.resizingCanvas.toDataURL('image/jpeg');
-      } else {
-        hiddenCaptureInput.value = '';
       }
+
+      if (uploadId !== this.manualUploadId) return;
+      if (dataUrl && !hiddenCaptureInput.value) {
+        this.updateCaptureButtons(true);
+      } else if (!dataUrl) {
+        this.updateCaptureButtons(false);
+      }
+      hiddenCaptureInput.value = dataUrl || '';
     }
 
     /**
@@ -769,8 +759,21 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
       await this.setHiddenCaptureInputValue(capturePreviewImg ? capturePreviewImg.src : '');
     }
 
-    loadCapturePreviewFromDataUrl({ dataUrl, originalCapture = true }) {
-      this.manualUploadId++;
+    async loadCapturePreviewFromDataUrl({ dataUrl, originalCapture = true, uploadId }) {
+      if (uploadId === undefined) {
+        this.manualUploadId++;
+        uploadId = this.manualUploadId;
+      }
+      if (uploadId !== this.manualUploadId) return;
+      if (this.editable) {
+        if (dataUrl) {
+          await this.setHiddenCaptureInputValue(dataUrl, uploadId);
+        } else {
+          // Keep deletion synchronous so the caller can immediately show the empty placeholder.
+          this.setHiddenCaptureInputValue(dataUrl, uploadId);
+        }
+      }
+      if (uploadId !== this.manualUploadId) return;
       this.manualUploadPreview = null;
       if (this.editable && this.manual_upload_enabled) {
         this.setManualUploadMessage('');
@@ -927,8 +930,6 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
       }
 
       if (this.editable) {
-        this.setHiddenCaptureInputValue(dataUrl);
-
         if (originalCapture) {
           if (dataUrl) {
             this.originalImageCaptureDataUrl = dataUrl;
