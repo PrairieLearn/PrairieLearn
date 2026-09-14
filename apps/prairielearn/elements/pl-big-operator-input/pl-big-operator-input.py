@@ -976,6 +976,7 @@ def _direction_input(
         "name": name,
         "invalid": has_error,
         "feedback": data.get("format_errors", {}).get(name),
+        "feedback_id": f"{name}-feedback",
         "options": [
             {"value": value, "label": label, "selected": raw_value == value}
             for value, label in (
