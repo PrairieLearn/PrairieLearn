@@ -7,7 +7,7 @@
       "type": "string",
       "format": "boolean"
     },
-    "allow-limit-direction-input": {
+    "allow-approach-direction-input": {
       "default": "true",
       "type": "string",
       "format": "boolean"

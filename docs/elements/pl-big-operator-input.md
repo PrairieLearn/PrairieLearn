@@ -22,27 +22,27 @@ Every element requires a complete answer. Set it with either the `correct-answer
 
 ## Customizations
 
-| Attribute                     | Type                                                  | Default        | Description                                                                                                                                                             |
-| ----------------------------- | ----------------------------------------------------- | -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `allow-complex`               | boolean                                               | false          | Whether to allow complex numbers. Students may use `i` or `j` as the imaginary unit.                                                                                    |
-| `allow-limit-direction-input` | boolean                                               | true           | Whether students choose the direction of a limit. When `false`, the direction in the correct answer is shown. Only valid for limits and custom operators with a target. |
-| `allowed-blank`               | `"none"`, `"indices"`, `"body"`, or `"all"`           | `"none"`       | Which parts of the answer students may leave blank.                                                                                                                     |
-| `answers-name`                | string                                                | —              | Name used to store the answer. This value must be unique within a question.                                                                                             |
-| `body-relative-weight`        | integer                                               | 3              | Weight of the body when `grading-method="component"`. Each index field has a weight of 1.                                                                               |
-| `body-size`                   | integer                                               | 16             | Positive character width of the body field.                                                                                                                             |
-| `correct-answer`              | string                                                | —              | Complete answer in `Func(...)` format. Defaults to `data["correct_answers"][answers-name]`.                                                                             |
-| `custom-functions`            | string                                                | —              | Comma-separated list of symbolic function names allowed in answers, such as `"f,g"`.                                                                                    |
-| `display`                     | `"block"` or `"inline"`                               | `"block"`      | Whether the input is centered on its own line or aligned with surrounding text.                                                                                         |
-| `display-log-as-ln`           | boolean                                               | false          | Whether to display `ln` rather than `log`. Both names are accepted in student answers and treated as equivalent.                                                        |
-| `grading-method`              | `"exact"`, `"component"`, `"equivalent"`, or `"none"` | `"equivalent"` | How to compare the student answer with the correct answer. See [Grading](#grading).                                                                                     |
-| `imaginary-unit-for-display`  | `"i"` or `"j"`                                        | `"i"`          | Imaginary unit shown in displayed answers. Students may enter either unit when `allow-complex="true"`.                                                                  |
-| `index-field-size`            | integer                                               | 7 or 10        | Positive character width of each index field. The default is 7 for bounds and 10 for a domain or limit.                                                                 |
-| `operator-latex`              | string                                                | —              | LaTeX used instead of the standard operator symbol. Required for `Custom(...)`.                                                                                         |
-| `prefix-latex`                | string                                                | —              | LaTeX displayed immediately before the operator.                                                                                                                        |
-| `show-help-text`              | boolean                                               | true           | Whether to show symbolic-input help beside the body field.                                                                                                              |
-| `suffix-latex`                | string                                                | —              | LaTeX displayed immediately after the operator.                                                                                                                         |
-| `variables`                   | string                                                | —              | Comma-separated list of allowed symbols in addition to the index variable, such as `"Gamma,k,N"`.                                                                       |
-| `weight`                      | integer                                               | 1              | Weight used when computing a weighted average score across elements.                                                                                                    |
+| Attribute                        | Type                                                  | Default        | Description                                                                                                                                                           |
+| -------------------------------- | ----------------------------------------------------- | -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `allow-complex`                  | boolean                                               | false          | Whether to allow complex numbers. Students may use `i` or `j` as the imaginary unit.                                                                                  |
+| `allow-approach-direction-input` | boolean                                               | true           | Whether students choose the approach direction. When `false`, the direction in the correct answer is shown. Only valid for limits and custom operators with a target. |
+| `allowed-blank`                  | `"none"`, `"indices"`, `"body"`, or `"all"`           | `"none"`       | Which parts of the answer students may leave blank.                                                                                                                   |
+| `answers-name`                   | string                                                | —              | Name used to store the answer. This value must be unique within a question.                                                                                           |
+| `body-relative-weight`           | integer                                               | 3              | Weight of the body when `grading-method="component"`. Each index field has a weight of 1.                                                                             |
+| `body-size`                      | integer                                               | 16             | Positive character width of the body field.                                                                                                                           |
+| `correct-answer`                 | string                                                | —              | Complete answer in `Func(...)` format. Defaults to `data["correct_answers"][answers-name]`.                                                                           |
+| `custom-functions`               | string                                                | —              | Comma-separated list of symbolic function names allowed in answers, such as `"f,g"`.                                                                                  |
+| `display`                        | `"block"` or `"inline"`                               | `"block"`      | Whether the input is centered on its own line or aligned with surrounding text.                                                                                       |
+| `display-log-as-ln`              | boolean                                               | false          | Whether to display `ln` rather than `log`. Both names are accepted in student answers and treated as equivalent.                                                      |
+| `grading-method`                 | `"exact"`, `"component"`, `"equivalent"`, or `"none"` | `"equivalent"` | How to compare the student answer with the correct answer. See [Grading](#grading).                                                                                   |
+| `imaginary-unit-for-display`     | `"i"` or `"j"`                                        | `"i"`          | Imaginary unit shown in displayed answers. Students may enter either unit when `allow-complex="true"`.                                                                |
+| `index-field-size`               | integer                                               | 7 or 10        | Positive character width of each index field. The default is 7 for bounds and 10 for a domain or limit.                                                               |
+| `operator-latex`                 | string                                                | —              | LaTeX used instead of the standard operator symbol. Required for `Custom(...)`.                                                                                       |
+| `prefix-latex`                   | string                                                | —              | LaTeX displayed immediately before the operator.                                                                                                                      |
+| `show-help-text`                 | boolean                                               | true           | Whether to show symbolic-input help beside the body field.                                                                                                            |
+| `suffix-latex`                   | string                                                | —              | LaTeX displayed immediately after the operator.                                                                                                                       |
+| `variables`                      | string                                                | —              | Comma-separated list of allowed symbols in addition to the index variable, such as `"Gamma,k,N"`.                                                                     |
+| `weight`                         | integer                                               | 1              | Weight used when computing a weighted average score across elements.                                                                                                  |
 
 ## Complete answer syntax
 
@@ -127,13 +127,13 @@ This example creates a two-sided limit:
 ></pl-big-operator-input>
 ```
 
-To show the correct direction instead of asking the student to choose it, set `allow-limit-direction-input="false"`:
+To show the correct direction instead of asking the student to choose it, set `allow-approach-direction-input="false"`:
 
 ```html {doctest-name="test_fixed_limit_direction"}
 <pl-big-operator-input
   answers-name="right-limit"
   correct-answer="Limit(1/x, (x, 0, '+'))"
-  allow-limit-direction-input="false"
+  allow-approach-direction-input="false"
 ></pl-big-operator-input>
 ```
 
