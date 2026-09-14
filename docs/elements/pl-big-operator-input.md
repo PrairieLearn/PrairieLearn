@@ -6,7 +6,7 @@ The fields accept the same symbolic syntax as [`pl-symbolic-input`](pl-symbolic-
 
 ## Sample element
 
-```html {doctest-name="test_sample_element" title="question.html"}
+```html title="question.html"
 <pl-big-operator-input
   answers-name="total"
   correct-answer="Sum(k**2, (k, 1, n))"
@@ -72,7 +72,7 @@ The tuple in the second argument configures the index fields:
 
 For example, this bounded product has index `k`, lower bound `1`, upper bound `4`, and body `k + 1`:
 
-```html {doctest-name="test_product_correct_answer"}
+```html
 <pl-big-operator-input
   answers-name="total"
   correct-answer="Product(k + 1, (k, 1, 4))"
@@ -81,7 +81,7 @@ For example, this bounded product has index `k`, lower bound `1`, upper bound `4
 
 This domain integral displays the correct answer $\displaystyle\int_\Gamma z^2\,\mathrm dz$:
 
-```html {doctest-name="test_domain_integral_correct_answer"}
+```html
 <pl-big-operator-input
   answers-name="contour"
   correct-answer="Integral(z**2, (z, Gamma))"
@@ -100,7 +100,7 @@ Bounds, limit targets, and most operator bodies accept mathematical expressions.
 
 The bodies of `Union`, `Intersection`, and `DisjointUnion` must also be sets. For example:
 
-```html {doctest-name="test_set_correct_answer" title="question.html"}
+```html title="question.html"
 <pl-big-operator-input
   answers-name="sets"
   correct-answer="Union({k, -k}, (k, {1, 2}))"
@@ -120,7 +120,7 @@ By default, students must choose the direction. The initial `?` does not reveal 
 
 This example creates a two-sided limit:
 
-```html {doctest-name="test_limit_correct_answer"}
+```html
 <pl-big-operator-input
   answers-name="sinc-limit"
   correct-answer="Limit(sin(x) / x, (x, 0, '+-'))"
@@ -129,7 +129,7 @@ This example creates a two-sided limit:
 
 To show the correct direction instead of asking the student to choose it, set `allow-approach-direction-input="false"`:
 
-```html {doctest-name="test_fixed_limit_direction"}
+```html
 <pl-big-operator-input
   answers-name="right-limit"
   correct-answer="Limit(1/x, (x, 0, '+'))"
@@ -143,7 +143,7 @@ Use `Custom(...)` with `operator-latex` to display an operator that is not liste
 
 ![A custom star operator with lower-bound, upper-bound, and body fields](pl-big-operator-input-custom.png)
 
-```html {doctest-name="test_custom_bounds"}
+```html
 <pl-big-operator-input
   answers-name="example-custom"
   correct-answer="Custom(j**2, (j, 1, 10))"
@@ -154,7 +154,7 @@ Use `Custom(...)` with `operator-latex` to display an operator that is not liste
 
 An approaches-style custom operator uses the same direction symbols as `Limit(...)`:
 
-```html {doctest-name="test_custom_approaches"}
+```html
 <pl-big-operator-input
   answers-name="evaluation"
   correct-answer="Custom(f(x), (x, 0, '+-'))"
@@ -189,7 +189,7 @@ Use `allowed-blank` separately to control whether students may omit index fields
 
 For a randomized question, omit `correct-answer` and assign the answer to `data["correct_answers"][answers-name]`. You can use the same `Func(...)` syntax as in `question.html`:
 
-```python {doctest-name="test_string_correct_answer" title="server.py"}
+```python title="server.py"
 import random
 
 
@@ -201,7 +201,7 @@ def generate(data):
 
 You can also build a `Sum`, `Product`, `Integral`, or `Limit` with SymPy and convert it to JSON:
 
-```python {doctest-name="test_sympy_json_correct_answer" title="server.py"}
+```python title="server.py"
 import prairielearn.sympy_utils as psu
 import sympy
 
@@ -214,9 +214,7 @@ def generate(data):
 
 Use `pl.big_operator_to_json()` when you want to provide the operator, indexing, and mathematical values separately. Mathematical fields accept SymPy values, strings, Python integers, and Python sets. This is particularly useful for custom operators:
 
-<!-- doctest-visible: before-next -->
-
-```python {doctest-name="test_custom_python_correct_answer" title="server.py"}
+```python title="server.py"
 import prairielearn as pl
 import sympy
 
@@ -233,7 +231,7 @@ def generate(data):
     )
 ```
 
-```html {doctest-name="test_custom_python_element" title="question.html"}
+```html title="question.html"
 <pl-big-operator-input
   answers-name="evaluation"
   operator-latex="\operatorname{eval}"
@@ -246,7 +244,7 @@ def generate(data):
 
 Most questions should use one of the built-in grading methods. For custom grading, use [`pl.json_to_big_operator()`][prairielearn.big_operator_utils.json_to_big_operator] to validate the combined answer and convert its mathematical fields to SymPy values. Check `indexing` before accessing fields that are specific to bounds, domains, or limits.
 
-```python {doctest-name="test_structured_answer_grading" title="server.py"}
+```python title="server.py"
 import prairielearn as pl
 
 
