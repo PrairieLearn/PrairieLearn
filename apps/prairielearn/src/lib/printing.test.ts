@@ -1,12 +1,21 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { renderAssessmentInstanceQuestionsForPrinting } from './printing.js';
 import type { ResLocalsForPage } from './res-locals.js';
 
-const mocks = vi.hoisted(() => ({
-  getAndRenderVariant: vi.fn(async (..._args: unknown[]) => ({})),
-  queryRows: vi.fn(async (..._args: unknown[]) => [] as unknown[]),
-}));
+const mocks = vi.hoisted(() => {
+  // Tests share a module cache; server tests may have loaded printing before these mocks.
+  vi.resetModules();
+  return {
+    getAndRenderVariant: vi.fn(async (..._args: unknown[]) => ({})),
+    queryRows: vi.fn(async (..._args: unknown[]) => [] as unknown[]),
+  };
+});
+
+afterAll(() => {
+  // Later server tests must not reuse printing with this file's mocked dependencies.
+  vi.resetModules();
+});
 
 vi.mock('@prairielearn/postgres', () => ({
   loadSqlEquiv: () => ({ select_questions_for_printing: 'select_questions_for_printing' }),
