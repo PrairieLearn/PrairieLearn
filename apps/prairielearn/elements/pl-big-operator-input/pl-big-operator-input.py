@@ -230,7 +230,7 @@ def _formatted_call(source: str, function_name: OperatorName) -> FormattedCall |
     return arguments[0], tuple(indexing_args)
 
 
-def _formatted_direction(indexing_args: Sequence[str]) -> DirectionSymbol | None:
+def _direction_symbol_from_args(indexing_args: Sequence[str]) -> DirectionSymbol | None:
     if len(indexing_args) != 3:
         return None
     source = indexing_args[2].strip()
@@ -239,7 +239,7 @@ def _formatted_direction(indexing_args: Sequence[str]) -> DirectionSymbol | None
     return source[1:-1]  # type: ignore
 
 
-def _legacy_limit_call(source: str) -> FormattedCall | None:
+def _parse_sympy_limit_call(source: str) -> FormattedCall | None:
     """Parse SymPy's documented ``Limit(body, index, target, dir=...)`` form."""
     match = re.fullmatch(r"\s*Limit\s*\((.*)\)\s*", source, re.DOTALL)
     if match is None:
@@ -253,8 +253,8 @@ def _legacy_limit_call(source: str) -> FormattedCall | None:
     return arguments[0], (arguments[1], arguments[2], repr(direction.group(2)))
 
 
-def _symbol_name(value: Any) -> str | None:
-    return str(value) if isinstance(value, sympy.Symbol) else None
+def _symbol_name(value: sympy.Basic) -> str | None:
+    return value.name if isinstance(value, sympy.Symbol) else None
 
 
 def _identifier(source: str) -> str | None:
@@ -274,7 +274,7 @@ def _binder_index(value: Any) -> str | None:
     return None
 
 
-def _derive_spec(raw: Any) -> tuple[OperatorName | None, Indexing | None, str | None]:
+def _parse_spec(raw: Any) -> tuple[OperatorName | None, Indexing | None, str | None]:
     match raw:
         case str():
             regex_match = re.match(r"^\s*([A-Za-z][A-Za-z0-9_]*)\s*\(", raw)
@@ -289,24 +289,24 @@ def _derive_spec(raw: Any) -> tuple[OperatorName | None, Indexing | None, str | 
             operator = parsed_operator
             formatted = _formatted_call(raw, parsed_operator)
             if formatted is None and parsed_operator == "Limit":
-                formatted = _legacy_limit_call(raw)
+                formatted = _parse_sympy_limit_call(raw)
             if formatted is not None:
-                index = _identifier(formatted[1][0]) if formatted[1] else None
+                index_name = _identifier(formatted[1][0]) if formatted[1] else None
                 match parsed_operator, len(formatted[1]):
                     case "Limit", _:
-                        return operator, "approaches", index
+                        return operator, "approaches", index_name
                     case _, 2:
-                        return operator, "domain", index
+                        return operator, "domain", index_name
                     case _, 3:
                         return (
                             operator,
                             "approaches"
-                            if _formatted_direction(formatted[1]) is not None
+                            if _direction_symbol_from_args(formatted[1]) is not None
                             else "bounds",
-                            index,
+                            index_name,
                         )
                     case _:
-                        return operator, None, index
+                        return operator, None, index_name
             if value := _safe_decode(raw):
                 return operator, _binder_indexing(value), _binder_index(value)
             return operator, None, None
@@ -317,22 +317,25 @@ def _derive_spec(raw: Any) -> tuple[OperatorName | None, Indexing | None, str | 
             "operator": operator,
             "indexing": indexing,
             "index": index_var,
-        } if (
-            (index := _symbol_name(_safe_decode(index_var)))
-            and (operator == "Custom" or operator in OP_METADATA)
-            and indexing in COMPONENTS_MAP
-        ):
-            return operator, indexing, index
+        }:
+            if (
+                (index_symbol := _safe_decode(index_var))
+                and (index_name := _symbol_name(index_symbol))
+                and (operator == "Custom" or operator in OP_METADATA)
+                and indexing in COMPONENTS_MAP
+            ):
+                return operator, indexing, index_name
+            return None, None, None
 
         case {"_type": "sympy", "_value": str(source)}:
-            return _derive_spec(source)
+            return _parse_spec(source)
 
         case _:
             return None, None, None
 
 
-def _derive_direction(raw: Any, operator: OperatorName) -> DirectionName | None:
-    def _decode_limit_direction(raw: dict | str) -> DirectionName | None:
+def _parse_direction(raw: Any, operator: OperatorName) -> DirectionName | None:
+    def _parse_limit_direction(raw: dict | str) -> DirectionName | None:
         if (value := _safe_decode(raw)) is not None and isinstance(value, sympy.Limit):
             return DIRECTION_NAMES.get(str(value.args[3]))  # type: ignore
         return None
@@ -342,17 +345,17 @@ def _derive_direction(raw: Any, operator: OperatorName) -> DirectionName | None:
             return dir if dir in DIRECTION_SYMBOLS else None
 
         case {"_type": "sympy", "_value": str(source)}:
-            return _derive_direction(source, operator)
+            return _parse_direction(source, operator)
 
         case str():
             formatted = _formatted_call(raw, operator)
             if formatted is None and operator == "Limit":
-                formatted = _legacy_limit_call(raw)
+                formatted = _parse_sympy_limit_call(raw)
             match formatted:
                 case None:
-                    return _decode_limit_direction(raw)
+                    return _parse_limit_direction(raw)
 
-                case _, indexing_args if direction := _formatted_direction(
+                case _, indexing_args if direction := _direction_symbol_from_args(
                     indexing_args
                 ):
                     return DIRECTION_NAMES.get(direction)
@@ -386,7 +389,7 @@ def _config(html: str, data: QuestionData | None = None) -> RenderConfig:
         raise ValueError(
             f'Correct answer "{answer}" is required to configure the big operator.'
         )
-    operator, indexing, index = _derive_spec(raw_correct)
+    operator, indexing, index = _parse_spec(raw_correct)
     if operator is None or indexing is None or index is None:
         raise ValueError(
             f'Correct answer "{answer}" must be a supported complete answer from '
@@ -432,7 +435,7 @@ def _config(html: str, data: QuestionData | None = None) -> RenderConfig:
     if body_weight < 1:
         raise ValueError('Attribute "body-relative-weight" must be positive.')
     direction = (
-        _derive_direction(raw_correct, operator)
+        _parse_direction(raw_correct, operator)
         if indexing == "approaches"
         else "two-sided"
     )
@@ -672,7 +675,7 @@ def _binder(config: RenderConfig, value: Any) -> BigOperatorJson | None:
 def _formatted_answer(config: RenderConfig, source: str) -> BigOperatorJson | None:
     formatted = _formatted_call(source, config.operator)
     if formatted is None and config.operator == "Limit":
-        formatted = _legacy_limit_call(source)
+        formatted = _parse_sympy_limit_call(source)
     if formatted is None:
         return None
     body_source, indexing_args = formatted
@@ -687,7 +690,7 @@ def _formatted_answer(config: RenderConfig, source: str) -> BigOperatorJson | No
             f"{expected_length}-item indexing tuple."
         )
     try:
-        body = _unchecked_parse(
+        body = _unchecked_parse_sympy(
             body_source,
             tuple(dict.fromkeys((*config.variables, config.index))),
             config.custom_functions,
@@ -701,11 +704,11 @@ def _formatted_answer(config: RenderConfig, source: str) -> BigOperatorJson | No
     try:
         match config.indexing:
             case "approaches":
-                direction = _formatted_direction(indexing_args)
+                direction = _direction_symbol_from_args(indexing_args)
                 if direction not in DIRECTION_NAMES:
                     raise ValueError('Limit direction must be "+", "-", or "+-".')
                 values = {
-                    "target": _unchecked_parse(
+                    "target": _unchecked_parse_sympy(
                         indexing_args[1],
                         config.variables,
                         config.custom_functions,
@@ -715,13 +718,13 @@ def _formatted_answer(config: RenderConfig, source: str) -> BigOperatorJson | No
                 }
             case "bounds":
                 values = {
-                    "lower": _unchecked_parse(
+                    "lower": _unchecked_parse_sympy(
                         indexing_args[1],
                         config.variables,
                         config.custom_functions,
                         allow_complex=config.allow_complex,
                     ),
-                    "upper": _unchecked_parse(
+                    "upper": _unchecked_parse_sympy(
                         indexing_args[2],
                         config.variables,
                         config.custom_functions,
@@ -731,7 +734,7 @@ def _formatted_answer(config: RenderConfig, source: str) -> BigOperatorJson | No
                 }
             case "domain":
                 values = {
-                    "domain": _unchecked_parse(
+                    "domain": _unchecked_parse_sympy(
                         indexing_args[1],
                         config.variables,
                         config.custom_functions,
@@ -1191,7 +1194,7 @@ def render(element_html: str, data: QuestionData) -> str:
             return _render_mustache(context, mode="submission")
 
 
-def _unchecked_parse(
+def _unchecked_parse_sympy(
     source: str,
     variables: tuple[str, ...],
     custom_functions: tuple[str, ...] = (),
