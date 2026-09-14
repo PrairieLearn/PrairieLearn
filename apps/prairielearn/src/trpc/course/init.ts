@@ -7,7 +7,7 @@ import { appErrorFormatter } from '@prairielearn/trpc/server';
 import { extractPageContext } from '../../lib/client/page-context.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
 
-export function createContext({ res }: CreateExpressContextOptions) {
+export function createContext({ req, res }: CreateExpressContextOptions) {
   const locals = res.locals as ResLocalsForPage<'course'>;
   const { authz_data: authzData, course } = extractPageContext(locals, {
     pageType: 'course',
@@ -15,6 +15,7 @@ export function createContext({ res }: CreateExpressContextOptions) {
   });
 
   return {
+    session: req.session,
     course,
     authz_data: authzData,
     locals,
@@ -33,6 +34,16 @@ export const requireCoursePermissionOwn = t.middleware(async (opts) => {
     throw new TRPCError({
       code: 'FORBIDDEN',
       message: 'Access denied (must be a course owner)',
+    });
+  }
+  return opts.next();
+});
+
+export const requireAuthnCoursePermissionOwn = t.middleware(async (opts) => {
+  if (!opts.ctx.authz_data.authn_has_course_permission_own) {
+    throw new TRPCError({
+      code: 'FORBIDDEN',
+      message: 'Access denied (authenticated user must be a course owner)',
     });
   }
   return opts.next();
