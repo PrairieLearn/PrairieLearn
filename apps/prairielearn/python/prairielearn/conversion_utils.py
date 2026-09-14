@@ -17,6 +17,7 @@ import numpy.typing as npt
 import pandas as pd
 import sympy
 
+import prairielearn.big_operator_utils as _pbo
 from prairielearn.html_utils import escape_invalid_string
 from prairielearn.misc_utils import full_unidecode
 from prairielearn.sympy_utils import (
@@ -70,6 +71,7 @@ _JSONSerializedType = (
     | _JSONSerializedNdarray
     | _JSONSerializedComplexNdarray
     | _JSONSerializedSympyMatrix
+    | _pbo.BigOperatorJson
 )
 
 _JSONPythonType = (
@@ -85,6 +87,7 @@ _JSONPythonType = (
     | nx.DiGraph
     | nx.MultiGraph
     | nx.MultiDiGraph
+    | _pbo.BigOperator
 )
 """
 This represents additional object formats (i.e. non-standard Python types)
@@ -101,6 +104,15 @@ def is_int_json_serializable(n: int) -> bool:
         `True` if it can be serialized by JS code.
     """
     return -((2**53) - 1) <= n <= 2**53 - 1
+
+
+@overload
+def to_json(
+    v: _pbo.BigOperator,
+    *,
+    df_encoding_version: Literal[1, 2] = 1,
+    np_encoding_version: Literal[1, 2] = 1,
+) -> _pbo.BigOperatorJson: ...
 
 
 @overload
@@ -143,6 +155,7 @@ def to_json(
     | `sympy.Expr` | `sympy` | any scalar SymPy expression |
     | `sympy.Set` | `sympy` | SymPy sets such as `FiniteSet` and `Interval` |
     | `sympy.Matrix` | `sympy_matrix` | |
+    | `BigOperator` | `big_operator` | decoded big-operator answer |
     | `pandas.DataFrame` | `dataframe` | `df_encoding_version=1` |
     | `pandas.DataFrame` | `dataframe_v2` | `df_encoding_version=2` |
     | networkx graph type | `networkx_graph` |
@@ -210,6 +223,12 @@ def to_json(
             "_variables": s,
             "_shape": [num_rows, num_cols],
         }
+    elif (
+        isinstance(v, dict)
+        and v.get("_type") == "big_operator"
+        and isinstance(v.get("index"), sympy.Symbol)
+    ):
+        return _pbo.big_operator_to_json(cast(_pbo.BigOperator, v))
     elif isinstance(v, pd.DataFrame):
         if df_encoding_version == 1:
             return {
@@ -276,6 +295,7 @@ def from_json(v: _JSONSerializedType | Any) -> Any:
     | `complex_ndarray` | complex `ndarray` |
     | `sympy` | `sympy.Expr` |
     | `sympy_matrix` | `sympy.Matrix` |
+    | `big_operator` | [`BigOperator`][prairielearn.big_operator_utils.BigOperator] |
     | `dataframe` | `pandas.DataFrame` |
     | `dataframe_v2` | `pandas.DataFrame` |
     | `networkx_graph` | corresponding networkx graph |
@@ -293,6 +313,8 @@ def from_json(v: _JSONSerializedType | Any) -> Any:
     Raises:
         ValueError: If the JSON object is not in the expected format.
     """
+    if isinstance(v, dict) and v.get("_type") == "big_operator":
+        return _pbo.json_to_big_operator(v)
     if isinstance(v, dict) and "_type" in v:
         v_json = cast(_JSONSerializedType, v)
         if v_json["_type"] == "complex":

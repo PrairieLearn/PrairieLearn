@@ -7,7 +7,6 @@ from dataclasses import replace
 from typing import Any, Literal, cast, get_args
 
 import lxml.html
-import prairielearn as pl
 import prairielearn.big_operator_utils as pbo
 import prairielearn.sympy_utils as psu
 import pytest
@@ -201,7 +200,7 @@ class TestConfigurationUnits:
             big_operator_input._config(html(), question_data(correct_answer))
 
     def test_invalid_inferred_limit_direction_is_rejected(self) -> None:
-        correct_answer = pl.big_operator_to_json(
+        correct_answer = pbo.big_operator_to_json(
             operator="Limit",
             indexing="approaches",
             index="k",
@@ -360,7 +359,7 @@ class TestCorrectAnswerParsingUnits:
         )
 
         assert answer is not None
-        assert pl.json_to_big_operator(answer)["index"] == ell_g
+        assert pbo.json_to_big_operator(answer)["index"] == ell_g
 
     @pytest.mark.parametrize(
         ("operator", "source", "match"),
@@ -407,7 +406,7 @@ class TestPrepareUnits:
 
         big_operator_input.prepare(markup, data)
 
-        answer = pl.json_to_big_operator(data["correct_answers"]["op"])
+        answer = pbo.json_to_big_operator(data["correct_answers"]["op"])
         assert answer["body"] == sympy.I * sympy.Symbol("k")
 
     @pytest.mark.parametrize(
@@ -498,7 +497,7 @@ class TestPrepareUnits:
         big_operator_input.prepare(html(), data)
 
         answer = data["correct_answers"]["op"]
-        decoded = pl.json_to_big_operator(answer)
+        decoded = pbo.json_to_big_operator(answer)
         assert answer["_type"] == "big_operator"
         assert answer["operator"] == operator
         assert decoded["body"] == correct_answer.args[0]
@@ -621,7 +620,7 @@ class TestPrepareUnits:
 
         big_operator_input.prepare(markup, data)
 
-        answer = pl.json_to_big_operator(data["correct_answers"]["op"])
+        answer = pbo.json_to_big_operator(data["correct_answers"]["op"])
         assert answer["indexing"] == "domain"
         assert answer["domain"] == sympy.Symbol("D")
         assert answer["body"] == sympy.Symbol("A")
@@ -796,7 +795,7 @@ class TestParseUnits:
             data,
         )
 
-        answer = pl.json_to_big_operator(data["submitted_answers"]["op"])
+        answer = pbo.json_to_big_operator(data["submitted_answers"]["op"])
         assert answer["indexing"] == "domain"
         assert answer["domain"] == sympy.Symbol("D")
         assert answer["body"] == sympy.Symbol("A")
@@ -846,7 +845,7 @@ class TestParseUnits:
 
         big_operator_input.parse(markup, data)
 
-        decoded = pl.json_to_big_operator(data["submitted_answers"]["op"])
+        decoded = pbo.json_to_big_operator(data["submitted_answers"]["op"])
         assert decoded["body"] == sympy.Function("f")(sympy.Symbol("k")) + sympy.Symbol(
             "x"
         )
@@ -1737,7 +1736,7 @@ class TestLifecycleRegressions:
             if assumed_symbol == "variable"
             else sympy.Symbol("n")
         )
-        answer = pl.big_operator_to_json(
+        answer = pbo.big_operator_to_json(
             operator="Sum",
             indexing="bounds",
             index=k,
@@ -1757,8 +1756,8 @@ class TestLifecycleRegressions:
 
         prepare_parse_grade(markup, data)
 
-        correct = pl.json_to_big_operator(data["correct_answers"]["op"])
-        submitted = pl.json_to_big_operator(data["submitted_answers"]["op"])
+        correct = pbo.json_to_big_operator(data["correct_answers"]["op"])
+        submitted = pbo.json_to_big_operator(data["submitted_answers"]["op"])
         assert submitted["indexing"] == "bounds"
         if assumed_symbol == "index":
             assert getattr(correct["index"], "is_positive", False) is True
