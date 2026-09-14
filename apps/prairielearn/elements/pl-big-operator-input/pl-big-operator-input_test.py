@@ -295,9 +295,9 @@ DOCUMENTATION_EXAMPLES, DOCUMENTATION_DISCOVERY_ERROR = (
 
 
 class TestConfigurationUnits:
-    def test_defined_operator_metadata_is_complete(self) -> None:
+    def test_sympy_operator_metadata_is_complete(self) -> None:
         assert set(big_operator_input.OP_METADATA) == set(
-            get_args(pbo.BigOperatorDefinedFunctionName.__value__)
+            get_args(pbo.BigOperatorSympyName.__value__)
         )
 
     def test_correct_answer_is_required(self) -> None:
