@@ -68,7 +68,6 @@ type Indexing = pbo.BigOperatorIndexing
 class OperatorMetadata:
     fn_name: BuiltinOperatorFn
     tex: str
-    valid_indexing: frozenset[Indexing]
     bounds_constructor: type[sympy.Basic]
     _domain_constructor: type[sympy.Basic] | None = None
 
@@ -77,28 +76,18 @@ class OperatorMetadata:
         return self._domain_constructor or self.bounds_constructor
 
 
-_BOUNDS_DOMAIN: Final[frozenset[Indexing]] = frozenset(("bounds", "domain"))
 OP_METADATA: Final[frozendict[BuiltinOperator, OperatorMetadata]] = frozendict({
-    "sum": OperatorMetadata("Sum", r"\sum", _BOUNDS_DOMAIN, sympy.Sum, sympy.Add),
-    "product": OperatorMetadata(
-        "Product", r"\prod", _BOUNDS_DOMAIN, sympy.Product, sympy.Mul
-    ),
-    "integral": OperatorMetadata("Integral", r"\int", _BOUNDS_DOMAIN, sympy.Integral),
-    "limit": OperatorMetadata(
-        "Limit", r"\lim", frozenset(("approaches",)), sympy.Limit
-    ),
-    "union": OperatorMetadata("Union", r"\bigcup", _BOUNDS_DOMAIN, sympy.Union),
-    "intersection": OperatorMetadata(
-        "Intersection", r"\bigcap", _BOUNDS_DOMAIN, sympy.Intersection
-    ),
+    "sum": OperatorMetadata("Sum", r"\sum", sympy.Sum, sympy.Add),
+    "product": OperatorMetadata("Product", r"\prod", sympy.Product, sympy.Mul),
+    "integral": OperatorMetadata("Integral", r"\int", sympy.Integral),
+    "limit": OperatorMetadata("Limit", r"\lim", sympy.Limit),
+    "union": OperatorMetadata("Union", r"\bigcup", sympy.Union),
+    "intersection": OperatorMetadata("Intersection", r"\bigcap", sympy.Intersection),
     "disjoint-union": OperatorMetadata(
-        "DisjointUnion",
-        r"\bigsqcup",
-        _BOUNDS_DOMAIN,
-        sympy.sets.DisjointUnion,
+        "DisjointUnion", r"\bigsqcup", sympy.sets.DisjointUnion
     ),
-    "min": OperatorMetadata("Min", r"\min", _BOUNDS_DOMAIN, sympy.Min),
-    "max": OperatorMetadata("Max", r"\max", _BOUNDS_DOMAIN, sympy.Max),
+    "min": OperatorMetadata("Min", r"\min", sympy.Min),
+    "max": OperatorMetadata("Max", r"\max", sympy.Max),
 })
 
 
@@ -445,11 +434,7 @@ def _config(html: str, data: pl.QuestionData | None = None) -> RenderConfig:
         operator_latex = (
             custom_latex.strip() if custom_latex is not None else metadata.tex
         )
-    allowed = (
-        frozenset(("bounds", "domain", "approaches"))
-        if operator == "custom"
-        else OP_METADATA[operator].valid_indexing
-    )
+    allowed = pbo.get_valid_big_operator_indexing(operator)
     if indexing not in allowed:
         raise ValueError(
             f'Operator "{operator}" does not support indexing="{indexing}"; use {", ".join(sorted(allowed))}.'
