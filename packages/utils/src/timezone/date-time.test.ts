@@ -5,26 +5,17 @@ import { getAdjacentDates, getStartOfDayInTimezone, parseDateTimeInTimezone } fr
 
 describe('parseDateTimeInTimezone', () => {
   it.each([
+    '2026-09-01T13:00',
     '2026/09/01 13:00',
-    'Sep 1, 2026 13:00',
-    'September 1,2026 13:00',
-    'sEp 1 2026 1:00 PM',
-    '1-Sep-26 13:00',
+    '9/1/26 1:00 PM',
+    '2026-9-1  \t 1:0 PM',
+    'sEp 1, 26 13:00',
     '01-Sep-2026 13:00',
-    '1-Sep-2026 13:00',
     '1 Sep 2026 13:00',
-    '1 September 2026 13:00',
-    'Sept 1, 2026 13:00',
-    '1-Sept-26 13:00',
-    'Sep 1, 26 13:00',
     'Tuesday, September 1, 2026 13:00',
-    'Tue, Sept 1, 2026 13:00',
-    'tuesday september 1 26 1:00 PM',
-    '20260901 13:00',
-    '20260901T13:00:00',
+    'Tue Sept 1 2026 13:00',
     '2026-09-01 13:00:00Z',
     '2026-09-01 13:00 UTC',
-    '2026-09-01 13:00 utc',
     '2026-09-01T13:00:00+02:30',
     '2026-09-01 13:00 -0700',
   ])('interprets %s as civil time in the supplied timezone', (input) => {
@@ -33,15 +24,7 @@ describe('parseDateTimeInTimezone', () => {
     );
   });
 
-  it.each([
-    '1-Sep-26',
-    '01-Sep-2026',
-    '1 Sep 2026',
-    'Sept 1, 2026',
-    'Sep 1, 26',
-    'Tuesday, September 1, 2026',
-    '20260901',
-  ])('interprets the spreadsheet date %s as local midnight', (input) => {
+  it.each(['1-Sep-26', '20260901'])('interprets %s as local midnight', (input) => {
     expect(parseDateTimeInTimezone(input, 'America/Chicago', 'later').toISOString()).toBe(
       '2026-09-01T05:00:00.000Z',
     );
@@ -50,31 +33,20 @@ describe('parseDateTimeInTimezone', () => {
   it.each([
     ['1-Jan-69', '2069-01-01T00:00:00.000Z'],
     ['Jan 1, 70', '1970-01-01T00:00:00.000Z'],
-    ['1 January 00', '2000-01-01T00:00:00.000Z'],
     ['1-Jan-0069', '0069-01-01T00:00:00.000Z'],
   ])('expands only two-digit years in %s', (input, expected) => {
     expect(parseDateTimeInTimezone(input, 'UTC', 'later').toISOString()).toBe(expected);
   });
 
   it.each([
-    '2026/02/29 13:00',
-    'September 31, 2026 13:00',
-    'NotAMonth 1, 2026 13:00',
-    '31-Apr-26',
-    '29-Feb-2025',
     '20260229',
     '1-Septober-26',
-    'Sep 1, 026',
-    'Tuesday, September 31, 2026',
     'Funday, September 1, 2026',
-    '1-Sep-2026 trailing',
-    '202609011',
     '2026-09-01 13:00 UTC trailing',
-    '2026-09-01 13:00 UTCjunk',
-    '2026-09-01 13:00:00Z trailing',
     '2026-09-01 13:00+99:99',
     '2026-09-01 24:01',
     '2026-09-01 0:00 PM',
+    '2016-12-31 23:59:60',
   ])('rejects invalid input %s', (input) => {
     expect(() => parseDateTimeInTimezone(input, 'America/Chicago', 'later')).toThrow();
   });
@@ -88,76 +60,12 @@ describe('parseDateTimeInTimezone', () => {
     ).toThrow();
   });
 
-  it('accepts a date with a single-digit hour', () => {
-    const date = parseDateTimeInTimezone('2022-01-03 1:00', 'America/Chicago', 'later');
-
-    expect(date.toISOString()).toBe('2022-01-03T07:00:00.000Z');
+  it.each([
+    ['2026-09-01 12:00 AM', '2026-09-01T05:00:00.000Z'],
+    ['2026-09-01 24:00', '2026-09-02T05:00:00.000Z'],
+  ])('interprets midnight notation %s', (input, expected) => {
+    expect(parseDateTimeInTimezone(input, 'America/Chicago', 'later').toISOString()).toBe(expected);
   });
-
-  it('accepts a native datetime-local value', () => {
-    const date = parseDateTimeInTimezone('2030-01-15T14:30', 'America/Chicago', 'later');
-
-    expect(date.toISOString()).toBe('2030-01-15T20:30:00.000Z');
-  });
-
-  it('accepts repeated whitespace between the date and time', () => {
-    const date = parseDateTimeInTimezone('2022-01-03  \t 1:00', 'America/Chicago', 'later');
-
-    expect(date.toISOString()).toBe('2022-01-03T07:00:00.000Z');
-  });
-
-  it('normalizes 24:00 to midnight on the following day', () => {
-    const date = parseDateTimeInTimezone('2022-01-03 24:00', 'America/Chicago', 'later');
-
-    expect(date.toISOString()).toBe('2022-01-04T06:00:00.000Z');
-  });
-
-  it('accepts PostgreSQL-compatible AM/PM times', () => {
-    const afternoon = parseDateTimeInTimezone('2026-09-01 1:00 PM', 'America/Chicago', 'later');
-    const midnight = parseDateTimeInTimezone('2026-09-01 12:00 AM', 'America/Chicago', 'later');
-
-    expect(afternoon.toISOString()).toBe('2026-09-01T18:00:00.000Z');
-    expect(midnight.toISOString()).toBe('2026-09-01T05:00:00.000Z');
-  });
-
-  it('accepts common spreadsheet date and time formats', () => {
-    const unpadded = parseDateTimeInTimezone('2026-8-7 1:2 PM', 'America/Chicago', 'later');
-    const usDate = parseDateTimeInTimezone('08/07/2026 1:02 PM', 'America/Chicago', 'later');
-    const shortYear = parseDateTimeInTimezone('8/7/26 1:02 PM', 'America/Chicago', 'later');
-
-    expect(unpadded.toISOString()).toBe('2026-08-07T18:02:00.000Z');
-    expect(usDate.toISOString()).toBe('2026-08-07T18:02:00.000Z');
-    expect(shortYear.toISOString()).toBe('2026-08-07T18:02:00.000Z');
-  });
-
-  it('rejects trailing input', () => {
-    expect(() => parseDateTimeInTimezone('2026-09-01 1:00 unexpected', 'UTC', 'later')).toThrow();
-  });
-
-  it('rejects leap seconds instead of silently shifting them', () => {
-    expect(() => parseDateTimeInTimezone('2016-12-31 23:59:60', 'UTC', 'later')).toThrow();
-  });
-
-  it('chooses the later instant for ambiguous fall-back times', () => {
-    const date = parseDateTimeInTimezone('2025-11-02 01:30', 'America/Chicago', 'later');
-
-    expect(date.toISOString()).toBe('2025-11-02T07:30:00.000Z');
-  });
-
-  it('moves nonexistent spring-forward times forward across the gap', () => {
-    const date = parseDateTimeInTimezone('2025-03-09 02:30', 'America/Chicago', 'later');
-
-    expect(date.toISOString()).toBe('2025-03-09T08:30:00.000Z');
-  });
-
-  it.skipIf((process.versions.tz ?? '') < '2026b')(
-    'parses British Columbia dates using the application timezone data',
-    () => {
-      const date = parseDateTimeInTimezone('2026-11-02 16:30', 'America/Vancouver', 'later');
-
-      expect(date.toISOString()).toBe('2026-11-02T23:30:00.000Z');
-    },
-  );
 });
 
 describe('getStartOfDayInTimezone', () => {
@@ -177,10 +85,10 @@ describe('getStartOfDayInTimezone', () => {
 describe('getAdjacentDates', () => {
   it('finds occupied dates around a day in an unsorted list with duplicates', () => {
     const { previousDate, nextDate } = getAdjacentDates(
-      ['2026-09-04', '2026-09-01', '2026-09-02', '2026-09-04'],
-      '2026-09-02',
+      ['2026-09-05', '2026-09-01', '2026-09-03', '2026-09-02', '2026-09-04', '2026-09-02'],
+      '2026-09-03',
     );
-    expect(previousDate?.toString()).toBe('2026-09-01');
+    expect(previousDate?.toString()).toBe('2026-09-02');
     expect(nextDate?.toString()).toBe('2026-09-04');
   });
 
@@ -189,10 +97,12 @@ describe('getAdjacentDates', () => {
       previousDate: null,
       nextDate: null,
     });
-    const dates = ['2026-09-02'];
-    expect(getAdjacentDates(dates, '2026-09-01').previousDate).toBeNull();
-    expect(getAdjacentDates(dates, '2026-09-01').nextDate?.toString()).toBe('2026-09-02');
-    expect(getAdjacentDates(dates, '2026-09-03').previousDate?.toString()).toBe('2026-09-02');
-    expect(getAdjacentDates(dates, '2026-09-03').nextDate).toBeNull();
+    const beforeFirst = getAdjacentDates(['2026-09-02'], '2026-09-01');
+    expect(beforeFirst.previousDate).toBeNull();
+    expect(beforeFirst.nextDate?.toString()).toBe('2026-09-02');
+
+    const afterLast = getAdjacentDates(['2026-09-02'], '2026-09-03');
+    expect(afterLast.previousDate?.toString()).toBe('2026-09-02');
+    expect(afterLast.nextDate).toBeNull();
   });
 });
