@@ -13,7 +13,7 @@ from typing import Any, Final, Literal, cast
 import chevron
 import lxml.html
 import prairielearn as pl
-import prairielearn.big_operator as pbo
+import prairielearn.big_operator_utils as pbo
 import prairielearn.internal.symbolic_input as psi
 import prairielearn.sympy_utils as psu
 import sympy

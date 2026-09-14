@@ -1,4 +1,4 @@
-"""Types and helpers for working with pl-big-operator-input answers."""
+"""Utilities for working with pl-big-operator-input answers."""
 
 from typing import Any, Literal, TypedDict, cast, overload
 
