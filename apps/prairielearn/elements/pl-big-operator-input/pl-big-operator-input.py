@@ -19,6 +19,7 @@ import prairielearn.sympy_utils as psu
 import sympy
 import sympy.sets
 from prairielearn.big_operator_utils import BigOperatorName as OperatorName
+from prairielearn.internal.symbolic_input import DisplayType
 from prairielearn.timeout_utils import SignalTimeout, TimeoutState
 
 if TYPE_CHECKING:
@@ -48,7 +49,7 @@ BODY_SIZE_DEFAULT: Final = 16
 BOUNDS_INDEX_FIELD_SIZE_DEFAULT: Final = 7
 ANNOTATION_INDEX_FIELD_SIZE_DEFAULT: Final = 10
 IMAGINARY_UNIT_FOR_DISPLAY_DEFAULT: Final = "i"
-DISPLAY_DEFAULT: Final = psi.DisplayType.BLOCK
+DISPLAY_DEFAULT: Final = DisplayType.BLOCK
 DISPLAY_LOG_AS_LN_DEFAULT: Final = False
 SYMPY_TIMEOUT: Final = 3
 SYMPY_TIMEOUT_FORMAT_ERROR: Final = (
@@ -132,7 +133,7 @@ class RenderConfig:
     direction: DirectionName
     allow_direction_input: bool
     allowed_blank: AllowedBlank
-    display: psi.DisplayType
+    display: DisplayType
     allow_complex: bool
     imaginary_unit: str
     display_log_as_ln: bool
@@ -273,9 +274,7 @@ def _binder_index(value: Any) -> str | None:
     return None
 
 
-def _infer_spec(
-    raw: Any,
-) -> tuple[OperatorName | None, Indexing | None, str | None]:
+def _derive_spec(raw: Any) -> tuple[OperatorName | None, Indexing | None, str | None]:
     match raw:
         case str():
             regex_match = re.match(r"^\s*([A-Za-z][A-Za-z0-9_]*)\s*\(", raw)
@@ -326,25 +325,24 @@ def _infer_spec(
             return operator, indexing, index
 
         case {"_type": "sympy", "_value": str(source)}:
-            return _infer_spec(source)
+            return _derive_spec(source)
 
         case _:
             return None, None, None
 
 
-def _infer_direction(raw: Any, operator: OperatorName) -> DirectionName | None:
+def _derive_direction(raw: Any, operator: OperatorName) -> DirectionName | None:
     def _decode_limit_direction(raw: dict | str) -> DirectionName | None:
-        if (value := _safe_decode(raw)) is not None:  # ruff: ignore[collapsible-if]
-            if isinstance(value, sympy.Limit):
-                return DIRECTION_NAMES.get(str(value.args[3]))  # type: ignore
+        if (value := _safe_decode(raw)) is not None and isinstance(value, sympy.Limit):
+            return DIRECTION_NAMES.get(str(value.args[3]))  # type: ignore
         return None
 
     match raw:
-        case {"_type": "big_operator", "direction": dir} if dir in DIRECTION_SYMBOLS:
-            return dir
+        case {"_type": "big_operator", "direction": dir}:
+            return dir if dir in DIRECTION_SYMBOLS else None
 
         case {"_type": "sympy", "_value": str(source)}:
-            return _infer_direction(source, operator)
+            return _derive_direction(source, operator)
 
         case str():
             formatted = _formatted_call(raw, operator)
@@ -388,11 +386,11 @@ def _config(html: str, data: QuestionData | None = None) -> RenderConfig:
         raise ValueError(
             f'Correct answer "{answer}" is required to configure the big operator.'
         )
-    operator, indexing, index = _infer_spec(raw_correct)
+    operator, indexing, index = _derive_spec(raw_correct)
     if operator is None or indexing is None or index is None:
         raise ValueError(
             f'Correct answer "{answer}" must be a supported complete answer from '
-            "which the operator, index variable, and indexing can be inferred."
+            "which the operator, index variable, and indexing can be derivered."
         )
     if operator == "Custom":
         if custom_latex is None or not custom_latex.strip():
@@ -434,7 +432,7 @@ def _config(html: str, data: QuestionData | None = None) -> RenderConfig:
     if body_weight < 1:
         raise ValueError('Attribute "body-relative-weight" must be positive.')
     direction = (
-        _infer_direction(raw_correct, operator)
+        _derive_direction(raw_correct, operator)
         if indexing == "approaches"
         else "two-sided"
     )
@@ -486,9 +484,7 @@ def _config(html: str, data: QuestionData | None = None) -> RenderConfig:
         direction=direction,
         allow_direction_input=allow_direction_input,
         allowed_blank=allowed_blank,
-        display=pl.get_enum_attrib(
-            element, "display", psi.DisplayType, DISPLAY_DEFAULT
-        ),
+        display=pl.get_enum_attrib(element, "display", DisplayType, DISPLAY_DEFAULT),
         allow_complex=pl.get_boolean_attrib(element, "allow-complex", False),
         imaginary_unit=imaginary_unit,
         display_log_as_ln=pl.get_boolean_attrib(
@@ -848,7 +844,7 @@ def _render_symbolic_input(
         display_log_as_ln=display_log_as_ln,
         imaginary_unit=imaginary_unit,
         # fixed
-        display=psi.DisplayType.INLINE,
+        display=DisplayType.INLINE,
         placeholder="",
         allow_trig=True,
         simplify_expression=True,
