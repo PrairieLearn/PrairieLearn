@@ -1,4 +1,9 @@
-"""Utilities for working with pl-big-operator-input answers."""
+"""Utilities for working with pl-big-operator-input answers.
+
+```python
+from prairielearn.big_operator_utils import ...
+```
+"""
 
 from collections.abc import Set as AbstractSet
 from typing import Any, Literal, TypedDict, cast, overload

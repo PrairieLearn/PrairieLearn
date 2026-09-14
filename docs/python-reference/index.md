@@ -8,6 +8,7 @@ Here are the recommended ways to import the helpers:
 
 ```python
 import prairielearn as pl
+import prairielearn.big_operator_utils as pbo
 from prairielearn.colors import Y
 from prairielearn.to_precision import Z
 import prairielearn.sympy_utils as psu
@@ -24,6 +25,7 @@ import prairielearn.sympy_utils as psu
     These modules must be imported directly:
 
     ```python
+    from prairielearn.big_operator_utils import W
     from prairielearn.colors import Y
     from prairielearn.to_precision import Z
     from prairielearn.sympy_utils import Z
