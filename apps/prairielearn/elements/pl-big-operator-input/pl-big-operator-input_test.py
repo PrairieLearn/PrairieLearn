@@ -415,14 +415,16 @@ class TestConfigurationUnits:
             big_operator_input._config(html(), {"correct_answers": []})
 
     def test_inferred_operator_rejects_unsupported_indexing(self) -> None:
-        correct_answer = pl.big_operator_to_json(
-            operator="limit",  # type: ignore[arg-type]
-            indexing="bounds",
-            index="k",
-            lower="1",
-            upper="2",
-            body="k",
-        )
+        correct_answer = {
+            "_type": "big_operator",
+            "_version": 1,
+            "operator": "limit",
+            "indexing": "bounds",
+            "index": psu.sympy_to_json(sympy.Symbol("k")),
+            "lower": psu.sympy_to_json(sympy.Integer(1)),
+            "upper": psu.sympy_to_json(sympy.Integer(2)),
+            "body": psu.sympy_to_json(sympy.Symbol("k")),
+        }
 
         with pytest.raises(ValueError, match="does not support"):
             big_operator_input._config(html(), question_data(correct_answer))

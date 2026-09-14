@@ -106,23 +106,48 @@ type BigOperator = BigBoundsOperator | BigDomainOperator | BigApproachesOperator
 """A decoded big operator answer whose mathematical fields are SymPy values."""
 
 
-_OPERATORS: frozenset[str] = frozenset({
-    "sum",
-    "product",
-    "integral",
-    "limit",
-    "union",
-    "intersection",
-    "disjoint-union",
-    "min",
-    "max",
-    "custom",
-})
+_BOUNDS_DOMAIN: frozenset[BigOperatorIndexing] = frozenset(("bounds", "domain"))
+_VALID_INDEXING_BY_OPERATOR: dict[BigOperatorName, frozenset[BigOperatorIndexing]] = {
+    "sum": _BOUNDS_DOMAIN,
+    "product": _BOUNDS_DOMAIN,
+    "integral": _BOUNDS_DOMAIN,
+    "limit": frozenset(("approaches",)),
+    "union": _BOUNDS_DOMAIN,
+    "intersection": _BOUNDS_DOMAIN,
+    "disjoint-union": _BOUNDS_DOMAIN,
+    "min": _BOUNDS_DOMAIN,
+    "max": _BOUNDS_DOMAIN,
+    "custom": frozenset(("bounds", "domain", "approaches")),
+}
+_INDEXING_MODES: frozenset[str] = frozenset(("bounds", "domain", "approaches"))
 _DIRECTIONS: frozenset[str] = frozenset({
     "two-sided",
     "from-left",
     "from-right",
 })
+
+
+def get_valid_big_operator_indexing(
+    operator: BigOperatorName,
+) -> frozenset[BigOperatorIndexing]:
+    """Return the indexing modes supported by a big operator."""
+    return _VALID_INDEXING_BY_OPERATOR[operator]
+
+
+def _validate_operator_indexing(
+    operator: object, indexing: object
+) -> tuple[BigOperatorName, BigOperatorIndexing]:
+    if not isinstance(operator, str) or operator not in _VALID_INDEXING_BY_OPERATOR:
+        raise ValueError("Big operator has an unsupported operator.")
+    if not isinstance(indexing, str) or indexing not in _INDEXING_MODES:
+        raise ValueError("Big operator has unsupported indexing.")
+    typed_operator = operator
+    typed_indexing = cast(BigOperatorIndexing, indexing)
+    if typed_indexing not in get_valid_big_operator_indexing(typed_operator):
+        raise ValueError(
+            f'Operator "{typed_operator}" does not support indexing="{typed_indexing}".'
+        )
+    return typed_operator, typed_indexing
 
 
 def _decode_sympy_field(value: Any, field: str) -> sympy.Basic:
@@ -331,8 +356,7 @@ def big_operator_to_json(
         )
     if version != 1:
         raise ValueError(f"Unknown {version=}")
-    if operator not in _OPERATORS:
-        raise ValueError("Big operator has an unsupported operator.")
+    operator, indexing = _validate_operator_indexing(operator, indexing)
     index_value = _coerce_sympy_field(index, "index")
     if not isinstance(index_value, sympy.Symbol):
         raise TypeError('Big-operator field "index" must be a SymPy symbol.')
@@ -410,14 +434,9 @@ def json_to_big_operator(value: BigOperatorJson | object) -> BigOperator:
     if value.get("_version") != 1:
         raise ValueError("Big operator must have _version 1.")
 
-    operator = value.get("operator")
-    if not isinstance(operator, str) or operator not in _OPERATORS:
-        raise ValueError("Big operator has an unsupported operator.")
-    operator = cast(BigOperatorName, operator)
-    indexing = value.get("indexing")
-    if indexing not in {"bounds", "domain", "approaches"}:
-        raise ValueError("Big operator has unsupported indexing.")
-    indexing = cast(BigOperatorIndexing, indexing)
+    operator, indexing = _validate_operator_indexing(
+        value.get("operator"), value.get("indexing")
+    )
 
     expected_keys = {"_type", "_version", "operator", "indexing", "index", "body"}
     match indexing:
@@ -478,5 +497,6 @@ __all__ = [
     "BigOperatorName",
     "BigOperatorValue",
     "big_operator_to_json",
+    "get_valid_big_operator_indexing",
     "json_to_big_operator",
 ]
