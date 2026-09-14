@@ -144,7 +144,7 @@
     "cookie": "^0.7.2 <1",
     "cookie-parser": "^1.4.7 <2",
     "cropperjs": "^2.1.1",
-    "csv-parse": "^6.2.1",
+    "csv-parse": "^7.0.2",
     "d3": "^7.9.0",
     "date-fns": "^4.4.0",
     "debug": "^4.4.3",
