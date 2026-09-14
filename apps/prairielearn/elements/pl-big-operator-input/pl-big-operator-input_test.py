@@ -1,13 +1,10 @@
 from __future__ import annotations
 
-import doctest
 import importlib
 import re
-import textwrap
 import time
-from dataclasses import dataclass, replace
-from pathlib import Path
-from typing import Any, Literal, get_args
+from dataclasses import replace
+from typing import Any, Literal, cast, get_args
 
 import lxml.html
 import prairielearn as pl
@@ -72,226 +69,6 @@ def prepare_parse_grade(markup: str, data: dict[str, Any]) -> None:
     big_operator_input.prepare(markup, data)
     big_operator_input.parse(markup, data)
     big_operator_input.grade(markup, data)
-
-
-type DocumentationLanguage = Literal["python", "html"]
-
-
-@dataclass(frozen=True)
-class DocumentationExample:
-    language: DocumentationLanguage
-    source: str
-    setup_sources: tuple[str, ...]
-    line_number: int
-    name: str
-
-
-_DOCTEST_NAME_PATTERN = r"[a-zA-Z0-9_-]+"
-_DOCTEST_SEMANTICS_PATTERN = r"(?:: (?P<semantics>before-next|before-each))?"
-_DOCUMENTATION_FENCE_RE = re.compile(
-    r"^```(?P<language>py(?:thon)?|html)(?P<header>[^\n]*)\n"
-    r"(?P<source>.*?)^```$",
-    flags=re.DOTALL | re.MULTILINE,
-)
-_DOCTEST_NAME_ATTRIBUTE_RE = re.compile(
-    rf'(?:^|[\s{{])doctest-name=(?P<quote>["\'])'
-    rf"(?P<name>{_DOCTEST_NAME_PATTERN})(?P=quote)(?=\s|}})"
-)
-
-
-def _fence_doctest_name(header: str) -> str | None:
-    matches = list(_DOCTEST_NAME_ATTRIBUTE_RE.finditer(header))
-    if "doctest-name" in header and (
-        len(matches) != 1 or re.fullmatch(r"\s*\{.*\}\s*", header) is None
-    ):
-        raise ValueError(
-            "doctest-name must use the fence attribute form "
-            '```python {doctest-name="test_name"}```.'
-        )
-    return matches[0].group("name") if matches else None
-
-
-def validate_generated_correct_answers(data: dict[str, Any]) -> None:
-    assert data["correct_answers"]
-    for answer_name, correct_answer in data["correct_answers"].items():
-        attributes: dict[str, object] = {"answers-name": answer_name}
-        if isinstance(correct_answer, dict):
-            operator_latex = correct_answer.get("operator_latex")
-            if correct_answer.get("operator") == "Custom":
-                attributes["operator-latex"] = (
-                    operator_latex
-                    if isinstance(operator_latex, str)
-                    else r"\operatorname{custom}"
-                )
-                attributes["grading-method"] = "component"
-        elif isinstance(correct_answer, str) and re.match(
-            r"^\s*Custom\s*\(", correct_answer
-        ):
-            attributes["operator-latex"] = r"\operatorname{custom}"
-            attributes["grading-method"] = "component"
-
-        validation_data = question_data()
-        validation_data["correct_answers"][answer_name] = correct_answer
-        big_operator_input.prepare(html(**attributes), validation_data)
-        pl.json_to_big_operator(validation_data["correct_answers"][answer_name])
-
-
-def run_documentation_example(
-    language: DocumentationLanguage,
-    source: str,
-    setup_sources: tuple[str, ...],
-    filename: str,
-) -> None:
-    namespace: dict[str, Any] = {}
-    for setup_source in setup_sources:
-        try:
-            exec(compile(setup_source, filename, "exec"), namespace)
-        except Exception as e:
-            raise RuntimeError(
-                f"Error running test setup source:{textwrap.indent(setup_source, '  > ')}"
-            ) from e
-
-    data = question_data()
-    if language == "python":
-        exec(compile(source, filename, "exec"), namespace)
-        generate = namespace.get("generate")
-        if callable(generate):
-            generate(data)
-            validate_generated_correct_answers(data)
-        return
-
-    generate = namespace.get("generate")
-    if callable(generate):
-        generate(data)
-    big_operator_input.prepare(source, data)
-    big_operator_input.parse(source, data)
-    big_operator_input.render(source, data)
-
-
-def documentation_examples(documentation: str) -> list[DocumentationExample]:
-    snippets = list(_DOCUMENTATION_FENCE_RE.finditer(documentation))
-    snippets_by_start = {snippet.start(): snippet for snippet in snippets}
-
-    hidden_matches = list(
-        re.finditer(
-            rf"^<!-- doctest-only{_DOCTEST_SEMANTICS_PATTERN}\n"
-            r"(?=```py(?:thon)?(?:[ \t{]|$))",
-            documentation,
-            flags=re.MULTILINE,
-        )
-    )
-    if len(hidden_matches) != len(
-        re.findall(r"^<!-- doctest-only", documentation, flags=re.MULTILINE)
-    ):
-        raise ValueError(
-            "doctest-only directives may be standalone or specify before-next or "
-            "before-each; names belong in fence attributes."
-        )
-    hidden_snippets: dict[int, re.Match[str]] = {}
-    for directive in hidden_matches:
-        snippet = snippets_by_start.get(directive.end())
-        if (
-            snippet is None
-            or re.match(r"\n-->(?:\n|$)", documentation[snippet.end() :]) is None
-        ):
-            raise ValueError("doctest-only must wrap exactly one Python fence.")
-        hidden_snippets[snippet.start()] = directive
-
-    visible_matches = list(
-        re.finditer(
-            rf"^<!-- doctest-visible{_DOCTEST_SEMANTICS_PATTERN} -->\n+"
-            r"(?=```(?:py(?:thon)?|html)(?:[ \t{]|$))",
-            documentation,
-            flags=re.MULTILINE,
-        )
-    )
-    if len(visible_matches) != len(
-        re.findall(r"^<!-- doctest-visible", documentation, flags=re.MULTILINE)
-    ):
-        raise ValueError(
-            "doctest-visible directives may be standalone or specify before-next or "
-            "before-each; names belong in fence attributes."
-        )
-    visible_snippets = {directive.end(): directive for directive in visible_matches}
-
-    examples: list[DocumentationExample] = []
-    before_each: list[str] = []
-    before_next: list[str] = []
-    for snippet in snippets:
-        hidden = hidden_snippets.get(snippet.start())
-        visible = visible_snippets.get(snippet.start())
-        directive = hidden or visible
-        semantics = directive.group("semantics") if directive else None
-        fence_name = _fence_doctest_name(snippet.group("header"))
-
-        if hidden and semantics:
-            if fence_name is not None:
-                raise ValueError(
-                    "Setup-only doctest blocks cannot have a doctest-name."
-                )
-            setup_source = snippet.group("source")
-            if semantics == "before-each":
-                before_each.append(setup_source)
-            else:
-                before_next.append(setup_source)
-            continue
-
-        language: DocumentationLanguage = (
-            "python" if snippet.group("language").startswith("py") else "html"
-        )
-        if visible and semantics and language != "python":
-            raise ValueError("Only Python fences can provide doctest setup code.")
-
-        line_number = documentation.count("\n", 0, snippet.start("source")) + 1
-        if fence_name is None:
-            raise ValueError(
-                f"Doctest fence at line {line_number - 1} requires a doctest-name."
-            )
-        examples.append(
-            DocumentationExample(
-                language=language,
-                source=snippet.group("source"),
-                setup_sources=(*before_each, *before_next),
-                line_number=line_number,
-                name=fence_name,
-            )
-        )
-        before_next.clear()
-
-        if visible and semantics:
-            if semantics == "before-each":
-                before_each.append(snippet.group("source"))
-            else:
-                before_next.append(snippet.group("source"))
-
-    if before_next:
-        raise ValueError(
-            "A before-next doctest block must be followed by another fence."
-        )
-    example_names = [example.name for example in examples]
-    if len(example_names) != len(set(example_names)):
-        raise ValueError("Doctest names must be unique.")
-    return examples
-
-
-DOCUMENTATION_PATH = (
-    Path(__file__).parents[4] / "docs/elements/pl-big-operator-input.md"
-)
-DOCUMENTATION_SOURCE = DOCUMENTATION_PATH.read_text()
-
-
-def _discover_documentation_examples(
-    documentation: str,
-) -> tuple[list[DocumentationExample], Exception | None]:
-    try:
-        return documentation_examples(documentation), None
-    except Exception as error:
-        return [], error
-
-
-DOCUMENTATION_EXAMPLES, DOCUMENTATION_DISCOVERY_ERROR = (
-    _discover_documentation_examples(DOCUMENTATION_SOURCE)
-)
 
 
 class TestConfigurationUnits:
@@ -2122,79 +1899,165 @@ class TestSymbolicInputRendering:
         assert re.search(r"\d+(?:\.\d+)?%", rendered) is None
 
 
-class TestDocumentationPreflight:
-    def test_documentation_examples_are_discoverable(self) -> None:
-        if DOCUMENTATION_DISCOVERY_ERROR is not None:
-            raise DOCUMENTATION_DISCOVERY_ERROR
-
-    def test_failed_discovery_has_no_doctest_parameters(self) -> None:
-        examples, error = _discover_documentation_examples(
-            "```html\n<pl-big-operator-input />\n```"
-        )
-        assert error is not None
-        assert examples == []
-
-    def test_visible_directive_requires_a_fence_name(self) -> None:
-        with pytest.raises(ValueError, match="requires a doctest-name"):
-            documentation_examples("<!-- doctest-visible -->\n```python\npass\n```")
-
-    def test_ordinary_fence_requires_a_name(self) -> None:
-        with pytest.raises(ValueError, match="requires a doctest-name"):
-            documentation_examples("```html\n<pl-big-operator-input />\n```")
+class TestDocSmoke:
+    @staticmethod
+    def _prepare_parse_render(
+        markup: str, data: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
+        data = question_data() if data is None else data
+        big_operator_input.prepare(markup, data)
+        big_operator_input.parse(markup, data)
+        assert big_operator_input.render(markup, data)
+        assert data["correct_answers"]
+        for answer in data["correct_answers"].values():
+            pbo.json_to_big_operator(answer)
+        return data
 
     @pytest.mark.parametrize(
-        ("documentation", "expected_name"),
+        "markup",
         [
-            (
-                '<!-- doctest-visible -->\n```python {doctest-name="test_visible"}\npass\n```',
-                "test_visible",
+            pytest.param(
+                html(**{
+                    "answers-name": "total",
+                    "correct-answer": "Sum(k**2, (k, 1, n))",
+                    "variables": "n",
+                }),
+                id="test_sample_element",
             ),
-            (
-                '<!-- doctest-only\n```python {doctest-name="test_hidden"}\npass\n```\n-->',
-                "test_hidden",
+            pytest.param(
+                html(**{
+                    "answers-name": "total",
+                    "correct-answer": "Product(k + 1, (k, 1, 4))",
+                }),
+                id="test_product_correct_answer",
             ),
-            (
-                '```html {doctest-name="test_fence_name"}\n<pl-big-operator-input />\n```',
-                "test_fence_name",
+            pytest.param(
+                html(**{
+                    "answers-name": "contour",
+                    "correct-answer": "Integral(z**2, (z, Gamma))",
+                    "variables": "Gamma",
+                    "grading-method": "component",
+                }),
+                id="test_domain_integral_correct_answer",
+            ),
+            pytest.param(
+                html(**{
+                    "answers-name": "sets",
+                    "correct-answer": "Union({k, -k}, (k, {1, 2}))",
+                    "grading-method": "exact",
+                }),
+                id="test_set_correct_answer",
+            ),
+            pytest.param(
+                html(**{
+                    "answers-name": "sinc-limit",
+                    "correct-answer": "Limit(sin(x) / x, (x, 0, '+-'))",
+                }),
+                id="test_limit_correct_answer",
+            ),
+            pytest.param(
+                html(**{
+                    "answers-name": "right-limit",
+                    "correct-answer": "Limit(1/x, (x, 0, '+'))",
+                    "allow-approach-direction-input": "false",
+                }),
+                id="test_fixed_limit_direction",
+            ),
+            pytest.param(
+                html(**{
+                    "answers-name": "example-custom",
+                    "correct-answer": "Custom(j**2, (j, 1, 10))",
+                    "operator-latex": r"\displaystyle{\Huge\bigstar{}}",
+                    "grading-method": "component",
+                }),
+                id="test_custom_bounds",
+            ),
+            pytest.param(
+                html(**{
+                    "answers-name": "evaluation",
+                    "correct-answer": "Custom(f(x), (x, 0, '+-'))",
+                    "operator-latex": r"\operatorname{eval}",
+                    "custom-functions": "f",
+                    "grading-method": "component",
+                }),
+                id="test_custom_approaches",
             ),
         ],
-        ids=["visible", "hidden", "ordinary"],
     )
-    def test_name_sources(self, documentation: str, expected_name: str) -> None:
-        [example] = documentation_examples(documentation)
-        assert example.name == expected_name
+    def test_question_html_examples(self, markup: str) -> None:
+        self._prepare_parse_render(markup)
 
+    def test_string_correct_answer(self) -> None:
+        data = question_data()
+        upper = 6
+        data["params"]["upper"] = upper
+        data["correct_answers"]["total"] = f"Product(k + 1, (k, 1, {upper}))"
 
-@pytest.mark.skipif(
-    DOCUMENTATION_DISCOVERY_ERROR is not None,
-    reason="Documentation example discovery failed.",
-)
-class TestDocumentationExamples:
-    @pytest.mark.parametrize(
-        "example",
-        [pytest.param(example, id=example.name) for example in DOCUMENTATION_EXAMPLES],
-    )
-    def test_snippet(self, example: DocumentationExample) -> None:
-        test = doctest.DocTest(
-            examples=[
-                doctest.Example(
-                    source="run_example()\n",
-                    want="",
-                    lineno=example.line_number - 1,
-                )
-            ],
-            globs={
-                "run_example": lambda: run_documentation_example(
-                    example.language,
-                    example.source,
-                    example.setup_sources,
-                    str(DOCUMENTATION_PATH),
-                )
-            },
-            name=example.name,
-            filename=str(DOCUMENTATION_PATH),
-            lineno=0,
-            docstring=DOCUMENTATION_SOURCE,
+        prepared = self._prepare_parse_render(html(**{"answers-name": "total"}), data)
+
+        decoded = pbo.json_to_big_operator(prepared["correct_answers"]["total"])
+        assert decoded["indexing"] == "bounds"
+        assert decoded["upper"] == upper
+
+    def test_sympy_json_correct_answer(self) -> None:
+        data = question_data()
+        k = sympy.Symbol("k")
+        answer = cast(sympy.Expr, sympy.Product(k + 1, (k, 1, 4)))
+        data["correct_answers"]["total"] = psu.sympy_to_json(answer)
+
+        prepared = self._prepare_parse_render(html(**{"answers-name": "total"}), data)
+
+        decoded = pbo.json_to_big_operator(prepared["correct_answers"]["total"])
+        assert decoded["body"] == k + 1
+
+    def test_custom_python_correct_answer(self) -> None:
+        data = question_data()
+        x = sympy.Symbol("x")
+        data["correct_answers"]["evaluation"] = pbo.big_operator_to_json(
+            operator="Custom",
+            indexing="approaches",
+            index=x,
+            target=0,
+            direction="two-sided",
+            body=sympy.Function("f")(x),
         )
-        result = doctest.DocTestRunner().run(test)
-        assert result.failed == 0
+        markup = html(**{
+            "answers-name": "evaluation",
+            "operator-latex": r"\operatorname{eval}",
+            "custom-functions": "f",
+            "grading-method": "component",
+        })
+
+        prepared = self._prepare_parse_render(markup, data)
+
+        decoded = pbo.json_to_big_operator(prepared["correct_answers"]["evaluation"])
+        assert decoded["operator"] == "Custom"
+        assert decoded["indexing"] == "approaches"
+
+    def test_structured_answer_grading(self) -> None:
+        k = sympy.Symbol("k")
+        correct_answer = pbo.big_operator_to_json(
+            operator="Sum",
+            indexing="bounds",
+            index=k,
+            lower=1,
+            upper=4,
+            body=k + 1,
+        )
+        markup = html(**{"answers-name": "total"})
+        data = question_data(
+            raw_submitted_answers={
+                "total-lower": "1",
+                "total-upper": "4",
+                "total-body": "k + 1",
+            }
+        )
+        data["correct_answers"]["total"] = correct_answer
+
+        prepared = self._prepare_parse_render(markup, data)
+        submitted = pbo.json_to_big_operator(prepared["submitted_answers"]["total"])
+        correct = pbo.json_to_big_operator(prepared["correct_answers"]["total"])
+
+        assert submitted["indexing"] == "bounds"
+        assert correct["indexing"] == "bounds"
+        assert submitted["body"] == correct["body"]
