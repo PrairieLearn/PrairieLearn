@@ -8,7 +8,7 @@ from pathlib import Path
 from types import (
     MappingProxyType as frozendict,  # ruff: ignore[camelcase-imported-as-lowercase]
 )
-from typing import Any, Final, Literal, cast
+from typing import TYPE_CHECKING, Any, Final, Literal, cast
 
 import chevron
 import lxml.html
@@ -18,7 +18,15 @@ import prairielearn.internal.symbolic_input as psi
 import prairielearn.sympy_utils as psu
 import sympy
 import sympy.sets
+from prairielearn.big_operator_utils import BigOperatorName as OperatorName
 from prairielearn.timeout_utils import SignalTimeout, TimeoutState
+
+if TYPE_CHECKING:
+    from prairielearn.big_operator_utils import BigOperator, BigOperatorJson
+    from prairielearn.big_operator_utils import BigOperatorDirection as DirectionName
+    from prairielearn.big_operator_utils import BigOperatorIndexing as Indexing
+    from prairielearn.big_operator_utils import BigOperatorSympyName as SympyOperator
+    from prairielearn.question_utils import QuestionData
 
 HERE: Final = Path(__file__).parent
 SCHEMA_PATH: Final = HERE / "schemas" / "pl-big-operator-input.json"
@@ -36,10 +44,6 @@ SYMPY_TIMEOUT: Final = 3
 SYMPY_TIMEOUT_FORMAT_ERROR: Final = (
     "Your answer did not converge, try a simpler expression."
 )
-
-type SympyOperator = pbo.BigOperatorSympyName
-type Operator = pbo.BigOperatorName
-type Indexing = pbo.BigOperatorIndexing
 
 
 @dataclass(frozen=True, slots=True)
@@ -66,7 +70,6 @@ OP_METADATA: Final[frozendict[SympyOperator, OperatorMetadata]] = frozendict({
 })
 
 
-type DirectionName = pbo.BigOperatorDirection
 type DirectionSymbol = Literal["+-", "-", "+"]
 DIRECTION_SYMBOLS: Final[frozendict[DirectionName, DirectionSymbol]] = frozendict({
     "two-sided": "+-",
@@ -76,7 +79,7 @@ DIRECTION_SYMBOLS: Final[frozendict[DirectionName, DirectionSymbol]] = frozendic
 DIRECTION_NAMES: Final[frozendict[DirectionSymbol, DirectionName]] = frozendict({
     symbol: name for name, symbol in DIRECTION_SYMBOLS.items()
 })
-type FormattedCall = tuple[str, tuple[str, ...]]
+
 type Component = Literal["lower", "upper", "domain", "target", "body"]
 COMPONENTS_MAP: Final[frozendict[Indexing, frozenset[Component]]] = frozendict({
     "bounds": frozenset(("lower", "upper", "body")),
@@ -113,7 +116,7 @@ class _ParseError(ValueError):
 @dataclass(frozen=True, slots=True, kw_only=True)
 class RenderConfig:
     answer_name: str
-    operator: Operator
+    operator: OperatorName
     operator_latex: str
     has_operator_latex_override: bool
     prefix_latex: str | None
@@ -206,7 +209,10 @@ def _split_top_level(source: str) -> list[str]:
     return parts
 
 
-def _formatted_call(source: str, function_name: Operator) -> FormattedCall | None:
+type FormattedCall = tuple[str, tuple[str, ...]]
+
+
+def _formatted_call(source: str, function_name: OperatorName) -> FormattedCall | None:
     match = re.fullmatch(
         rf"\s*{re.escape(function_name)}\s*\((.*)\)\s*", source, re.DOTALL
     )
@@ -268,13 +274,13 @@ def _binder_index(value: Any) -> str | None:
 
 def _infer_spec(
     raw: Any,
-) -> tuple[Operator | None, Indexing | None, str | None]:
+) -> tuple[OperatorName | None, Indexing | None, str | None]:
     match raw:
         case str():
             regex_match = re.match(r"^\s*([A-Za-z][A-Za-z0-9_]*)\s*\(", raw)
             function = regex_match.group(1) if regex_match else None
-            parsed_operator: Operator | None = (
-                cast(Operator, function)
+            parsed_operator = (
+                cast(OperatorName, function)
                 if function == "Custom" or function in OP_METADATA
                 else None
             )
@@ -325,7 +331,7 @@ def _infer_spec(
             return None, None, None
 
 
-def _infer_direction(raw: Any, operator: Operator) -> DirectionName | None:
+def _infer_direction(raw: Any, operator: OperatorName) -> DirectionName | None:
     def _decode_limit_direction(raw: dict | str) -> DirectionName | None:
         if (value := _safe_decode(raw)) is not None:  # ruff: ignore[collapsible-if]
             if isinstance(value, sympy.Limit):
@@ -368,7 +374,7 @@ def _get_tuple_attrib[T](
     return tuple(filter(bool, map(str.strip, val.split(","))))
 
 
-def _config(html: str, data: pl.QuestionData | None = None) -> RenderConfig:
+def _config(html: str, data: QuestionData | None = None) -> RenderConfig:
     element = lxml.html.fragment_fromstring(html)
     answer = pl.get_string_attrib(element, "answers-name", None)
     if answer is None or not answer.strip():
@@ -537,7 +543,7 @@ def _canonical(
     *,
     index: sympy.Symbol | None = None,
     direction: DirectionName | None = None,
-) -> pbo.BigOperatorJson:
+) -> BigOperatorJson:
     result = {
         "_type": "big_operator",
         "_version": 1,
@@ -551,13 +557,13 @@ def _canonical(
     return result  # type: ignore
 
 
-def _structured(config: RenderConfig, value: dict[str, Any]) -> pbo.BigOperatorJson:
+def _structured(config: RenderConfig, value: dict[str, Any]) -> BigOperatorJson:
     decoded = pbo.json_to_big_operator(value)
     values = _decoded_values(config, decoded)
     return _canonical(config, values, index=decoded["index"])
 
 
-def _decoded_values(config: RenderConfig, decoded: pbo.BigOperator) -> ResponseValues:
+def _decoded_values(config: RenderConfig, decoded: BigOperator) -> ResponseValues:
     match config.indexing:
         case "bounds":
             if decoded["indexing"] != "bounds":
@@ -602,7 +608,7 @@ def _validate_component_values(config: RenderConfig, values: ResponseValues) -> 
             )
 
 
-def _binder(config: RenderConfig, value: Any) -> pbo.BigOperatorJson | None:
+def _binder(config: RenderConfig, value: Any) -> BigOperatorJson | None:
     match config.operator:
         case "Limit":
             if not isinstance(value, sympy.Limit):
@@ -666,7 +672,7 @@ def _binder(config: RenderConfig, value: Any) -> pbo.BigOperatorJson | None:
             )
 
 
-def _formatted_answer(config: RenderConfig, source: str) -> pbo.BigOperatorJson | None:
+def _formatted_answer(config: RenderConfig, source: str) -> BigOperatorJson | None:
     formatted = _formatted_call(source, config.operator)
     if formatted is None and config.operator == "Limit":
         formatted = _legacy_limit_call(source)
@@ -744,14 +750,14 @@ def _formatted_answer(config: RenderConfig, source: str) -> pbo.BigOperatorJson 
 
 
 def _validate_correct(
-    config: RenderConfig, correct: dict[str, Any] | pbo.BigOperatorJson
-) -> pbo.BigOperatorJson:
+    config: RenderConfig, correct: dict[str, Any] | BigOperatorJson
+) -> BigOperatorJson:
     decoded = pbo.json_to_big_operator(correct)
     _validate_component_values(config, _decoded_values(config, decoded))
     return correct  # type: ignore
 
 
-def _correct(config: RenderConfig, data: pl.QuestionData) -> pbo.BigOperatorJson:
+def _correct(config: RenderConfig, data: QuestionData) -> BigOperatorJson:
     raw = _raw_correct_answer(config.answer_name, config.correct_attribute, data)
     if config.operator == "Custom" and config.grading == "equivalent":
         raise ValueError(
@@ -789,7 +795,7 @@ def _correct(config: RenderConfig, data: pl.QuestionData) -> pbo.BigOperatorJson
     )
 
 
-def prepare(element_html: str, data: pl.QuestionData) -> None:
+def prepare(element_html: str, data: QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     pl.validate_element(element, SCHEMA_PATH)
     config = _config(element_html, data)
@@ -807,7 +813,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 
 
 def _render_symbolic_input(
-    data: pl.QuestionData,
+    data: QuestionData,
     *,
     name: str,
     variables: tuple[str, ...],
@@ -823,7 +829,7 @@ def _render_symbolic_input(
     prefix: str | None = None,
     suffix: str | None = None,
     score: float | None = None,
-) -> tuple[str, pl.QuestionData]:
+) -> tuple[str, QuestionData]:
     config = psi.RenderConfig(
         # passed-through
         name=name,
@@ -865,7 +871,7 @@ def _render_symbolic_input(
 def _symbolic_field(
     config: RenderConfig,
     *,
-    data: pl.QuestionData,
+    data: QuestionData,
     component: Component,
     label: str,
     size: int,
@@ -899,7 +905,7 @@ def _symbolic_field(
     return {"html": html}
 
 
-def _component_scores(config: RenderConfig, data: pl.QuestionData) -> dict[str, float]:
+def _component_scores(config: RenderConfig, data: QuestionData) -> dict[str, float]:
     if config.grading != "component" or config.answer_name not in data.get(
         "partial_scores", {}
     ):
@@ -931,7 +937,7 @@ def _component_scores(config: RenderConfig, data: pl.QuestionData) -> dict[str, 
 
 
 def _direction_input(
-    config: RenderConfig, data: pl.QuestionData, score: float | None
+    config: RenderConfig, data: QuestionData, score: float | None
 ) -> dict[str, Any]:
     name = config.component_name("direction")
     raw_value = str(data.get("raw_submitted_answers", {}).get(name, ""))
@@ -964,7 +970,7 @@ def _render_mustache(
     )
 
 
-def _question_mustache(config: RenderConfig, data: pl.QuestionData) -> str:
+def _question_mustache(config: RenderConfig, data: QuestionData) -> str:
     index = sympy.latex(sympy.Symbol(config.index))
     component_scores = _component_scores(config, data)
     context: dict[str, Any] = {
@@ -1086,7 +1092,7 @@ def _tex(config: RenderConfig, raw: dict[str, Any] | None) -> str:
 
 
 def _structured_tex(
-    config: RenderConfig, structured: pbo.BigOperatorJson | dict[str, Any]
+    config: RenderConfig, structured: BigOperatorJson | dict[str, Any]
 ) -> str:
     values = _values(config, structured)
     raw = {
@@ -1130,7 +1136,7 @@ def _parse_component_submission(
     )
 
 
-def _submitted_tex(config: RenderConfig, data: pl.QuestionData) -> str:
+def _submitted_tex(config: RenderConfig, data: QuestionData) -> str:
     structured = data.get("submitted_answers", {}).get(config.answer_name)
     if isinstance(structured, dict):
         try:
@@ -1158,7 +1164,7 @@ def _score_badge(score: float) -> dict[str, Any]:
     return {"partial": round(score * 100)}
 
 
-def render(element_html: str, data: pl.QuestionData) -> str:
+def render(element_html: str, data: QuestionData) -> str:
     config = _config(element_html, data)
     panel = data.get("panel", "question")
     match panel:
@@ -1239,7 +1245,7 @@ def _component_allows_blank(config: RenderConfig, component: ResponseComponent) 
 
 
 def _component_assumptions(
-    correct: pbo.BigOperatorJson, component: Component
+    correct: BigOperatorJson, component: Component
 ) -> psu.AssumptionsDictT | None:
     value = correct.get(component)
     if not isinstance(value, dict):
@@ -1254,8 +1260,8 @@ def _component_assumptions(
 
 def _parse_values(
     config: RenderConfig,
-    data: pl.QuestionData,
-    correct: pbo.BigOperatorJson,
+    data: QuestionData,
+    correct: BigOperatorJson,
 ) -> ResponseValues | None:
     result = {}
     raw_answers = data.get("raw_submitted_answers", {})
@@ -1285,7 +1291,7 @@ def _parse_values(
     return result if len(result) == len(config.components) else None
 
 
-def parse(element_html: str, data: pl.QuestionData) -> None:
+def parse(element_html: str, data: QuestionData) -> None:
     config = _config(element_html, data)
     correct = _correct(config, data)
     correct_index = pbo.json_to_big_operator(correct)["index"]
@@ -1338,7 +1344,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
 
 
 def _values(
-    config: RenderConfig, structured: pbo.BigOperatorJson | object
+    config: RenderConfig, structured: BigOperatorJson | object
 ) -> ResponseValues:
     return _decoded_values(config, pbo.json_to_big_operator(structured))
 
@@ -1394,7 +1400,7 @@ def _construct(
 
 
 def _validate_equivalent_configuration(
-    config: RenderConfig, correct: pbo.BigOperatorJson
+    config: RenderConfig, correct: BigOperatorJson
 ) -> None:
     if config.grading != "equivalent":
         return
@@ -1450,7 +1456,7 @@ def _expressions_equivalent(left: sympy.Basic, right: sympy.Basic) -> bool:
         return False
 
 
-def grade(element_html: str, data: pl.QuestionData) -> None:
+def grade(element_html: str, data: QuestionData) -> None:
     config = _config(element_html, data)
     grading = config.grading
     if grading == "none":
