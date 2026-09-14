@@ -143,6 +143,41 @@ def test_big_operator_to_json_accepts_strings() -> None:
     assert decoded["body"] == sympy.Symbol("k") ** 2
 
 
+def test_big_operator_to_json_accepts_integers() -> None:
+    encoded = pl.big_operator_to_json(
+        operator="sum",
+        indexing="bounds",
+        index="k",
+        lower=1,
+        upper=4,
+        body=0,
+    )
+
+    assert_type(encoded, BigBoundsOperatorJson)
+    decoded = pl.json_to_big_operator(encoded)
+    assert decoded["indexing"] == "bounds"
+    assert decoded["lower"] == sympy.Integer(1)
+    assert decoded["upper"] == sympy.Integer(4)
+    assert decoded["body"] == sympy.Integer(0)
+
+
+def test_big_operator_to_json_accepts_python_sets() -> None:
+    k = sympy.Symbol("k")
+    encoded = pl.big_operator_to_json(
+        operator="union",
+        indexing="domain",
+        index=k,
+        domain={1, 2},
+        body={k},
+    )
+
+    assert_type(encoded, BigDomainOperatorJson)
+    decoded = pl.json_to_big_operator(encoded)
+    assert decoded["indexing"] == "domain"
+    assert decoded["domain"] == sympy.FiniteSet(1, 2)
+    assert decoded["body"] == sympy.FiniteSet(k)
+
+
 def test_big_operator_to_json_accepts_big_operator() -> None:
     decoded = pl.json_to_big_operator(bounds_answer())
 
