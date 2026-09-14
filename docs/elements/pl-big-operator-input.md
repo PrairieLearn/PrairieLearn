@@ -244,7 +244,7 @@ def generate(data):
 
 ### Custom grading in `server.py`
 
-Most questions should use one of the built-in grading methods. For custom grading, use [`pl.json_to_big_operator()`][prairielearn.big_operator.json_to_big_operator] to validate the combined answer and convert its mathematical fields to SymPy values. Check `indexing` before accessing fields that are specific to bounds, domains, or limits.
+Most questions should use one of the built-in grading methods. For custom grading, use [`pl.json_to_big_operator()`][prairielearn.big_operator_utils.json_to_big_operator] to validate the combined answer and convert its mathematical fields to SymPy values. Check `indexing` before accessing fields that are specific to bounds, domains, or limits.
 
 ```python {doctest-name="test_structured_answer_grading" title="server.py"}
 import prairielearn as pl
