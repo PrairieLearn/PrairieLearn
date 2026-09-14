@@ -20,27 +20,15 @@ big_operator_input = importlib.import_module("pl-big-operator-input")
 
 
 def inferred_answer(operator: str, indexing: str | None = None) -> str:
-    operator = operator[:1].lower() + operator[1:]
-    if operator == "limit":
+    if operator == "Limit":
         return "Limit(k, (k, 0, '+-'))"
-    function = {
-        "sum": "Sum",
-        "product": "Product",
-        "integral": "Integral",
-        "union": "Union",
-        "intersection": "Intersection",
-        "disjoint-union": "DisjointUnion",
-        "min": "Min",
-        "max": "Max",
-        "custom": "Custom",
-    }[operator]
-    body = "{k}" if operator in {"union", "intersection", "disjoint-union"} else "k"
+    body = "{k}" if operator in {"Union", "Intersection", "DisjointUnion"} else "k"
     if indexing == "domain" or (
         indexing is None
-        and operator in {"union", "intersection", "disjoint-union", "min", "max"}
+        and operator in {"Union", "Intersection", "DisjointUnion", "Min", "Max"}
     ):
-        return f"{function}({body}, (k, {{1, 2}}))"
-    return f"{function}({body}, (k, 1, 2))"
+        return f"{operator}({body}, (k, {{1, 2}}))"
+    return f"{operator}({body}, (k, 1, 2))"
 
 
 def html(**attributes: object) -> str:
@@ -129,7 +117,7 @@ def validate_generated_correct_answers(data: dict[str, Any]) -> None:
         attributes: dict[str, object] = {"answers-name": answer_name}
         if isinstance(correct_answer, dict):
             operator_latex = correct_answer.get("operator_latex")
-            if correct_answer.get("operator") == "custom":
+            if correct_answer.get("operator") == "Custom":
                 attributes["operator-latex"] = (
                     operator_latex
                     if isinstance(operator_latex, str)
@@ -307,12 +295,9 @@ DOCUMENTATION_EXAMPLES, DOCUMENTATION_DISCOVERY_ERROR = (
 
 
 class TestConfigurationUnits:
-    def test_builtin_operator_types_are_subtypes(self) -> None:
-        assert set(get_args(big_operator_input.BuiltinOperator.__value__)) < set(
-            get_args(pbo.BigOperatorName.__value__)
-        )
-        assert set(get_args(big_operator_input.BuiltinOperatorFn.__value__)) < set(
-            get_args(pbo.BigOperatorFunctionName.__value__)
+    def test_defined_operator_metadata_is_complete(self) -> None:
+        assert set(big_operator_input.OP_METADATA) == set(
+            get_args(pbo.BigOperatorDefinedFunctionName.__value__)
         )
 
     def test_correct_answer_is_required(self) -> None:
@@ -326,23 +311,23 @@ class TestConfigurationUnits:
             )
 
     def test_direction_input_only_applies_to_limits(self) -> None:
-        assert big_operator_input._config(html(operator="limit")).allow_direction_input
+        assert big_operator_input._config(html(operator="Limit")).allow_direction_input
 
         fixed = big_operator_input._config(
-            html(operator="limit", **{"allow-approach-direction-input": "false"})
+            html(operator="Limit", **{"allow-approach-direction-input": "false"})
         )
         assert not fixed.allow_direction_input
         assert fixed.direction == "two-sided"
 
         with pytest.raises(ValueError, match="can only be used"):
             big_operator_input._config(
-                html(operator="sum", **{"allow-approach-direction-input": "false"})
+                html(operator="Sum", **{"allow-approach-direction-input": "false"})
             )
 
     @pytest.mark.parametrize("allowed_blank", ["none", "indices", "body", "all"])
     def test_allowed_blank_values(self, allowed_blank: str) -> None:
         config = big_operator_input._config(
-            html(operator="sum", **{"allowed-blank": allowed_blank})
+            html(operator="Sum", **{"allowed-blank": allowed_blank})
         )
 
         assert config.allowed_blank == allowed_blank
@@ -353,7 +338,7 @@ class TestConfigurationUnits:
     ) -> None:
         config = big_operator_input._config(
             html(
-                operator="sum",
+                operator="Sum",
                 **{"imaginary-unit-for-display": imaginary_unit},
             )
         )
@@ -368,7 +353,7 @@ class TestConfigurationUnits:
     ) -> None:
         config = big_operator_input._config(
             html(
-                operator="sum",
+                operator="Sum",
                 **{"display-log-as-ln": display_log_as_ln},
             )
         )
@@ -405,7 +390,7 @@ class TestConfigurationUnits:
         correct_answer: str | None,
         match: str,
     ) -> None:
-        markup = html(operator="sum", **attributes)
+        markup = html(operator="Sum", **attributes)
         data = question_data(correct_answer)
         if correct_answer is not None:
             markup = html(**attributes)
@@ -427,7 +412,7 @@ class TestConfigurationUnits:
         correct_answer = {
             "_type": "big_operator",
             "_version": 1,
-            "operator": "limit",
+            "operator": "Limit",
             "indexing": "bounds",
             "index": psu.sympy_to_json(sympy.Symbol("k")),
             "lower": psu.sympy_to_json(sympy.Integer(1)),
@@ -440,7 +425,7 @@ class TestConfigurationUnits:
 
     def test_invalid_inferred_limit_direction_is_rejected(self) -> None:
         correct_answer = pl.big_operator_to_json(
-            operator="limit",
+            operator="Limit",
             indexing="approaches",
             index="k",
             target="0",
@@ -484,7 +469,7 @@ class TestCorrectAnswerParsingUnits:
         )
         assert (
             big_operator_input._formatted_answer(
-                big_operator_input._config(html(operator="sum")), "k + 1"
+                big_operator_input._config(html(operator="Sum")), "k + 1"
             )
             is None
         )
@@ -495,36 +480,36 @@ class TestCorrectAnswerParsingUnits:
         sympy_json = psu.sympy_to_json(sympy.Limit(sympy.Symbol("k"), "k", 0))
 
         assert big_operator_input._infer_spec(sympy_json) == (
-            "limit",
+            "Limit",
             "approaches",
             "k",
         )
         assert big_operator_input._infer_spec(object()) == (None, None, None)
         assert (
-            big_operator_input._infer_direction("Limit(k, (k, 0, '?'))", "limit")
+            big_operator_input._infer_direction("Limit(k, (k, 0, '?'))", "Limit")
             is None
         )
         assert (
-            big_operator_input._infer_direction("Limit(k, (k, 0, unquoted))", "limit")
+            big_operator_input._infer_direction("Limit(k, (k, 0, unquoted))", "Limit")
             is None
         )
-        assert big_operator_input._infer_direction(object(), "limit") is None
+        assert big_operator_input._infer_direction(object(), "Limit") is None
 
         monkeypatch.setattr(
             big_operator_input,
             "_safe_decode",
             lambda _raw: sympy.Limit(sympy.Symbol("k"), "k", 0),
         )
-        assert big_operator_input._infer_direction("not a wrapper", "limit") == (
+        assert big_operator_input._infer_direction("not a wrapper", "Limit") == (
             "from-right"
         )
 
     def test_binder_normalizes_supported_sympy_objects(self) -> None:
         k = sympy.Symbol("k")
-        sum_config = big_operator_input._config(html(operator="sum"))
-        product_config = big_operator_input._config(html(operator="product"))
-        integral_config = big_operator_input._config(html(operator="integral"))
-        limit_config = big_operator_input._config(html(operator="limit"))
+        sum_config = big_operator_input._config(html(operator="Sum"))
+        product_config = big_operator_input._config(html(operator="Product"))
+        integral_config = big_operator_input._config(html(operator="Integral"))
+        limit_config = big_operator_input._config(html(operator="Limit"))
 
         assert (
             big_operator_input._binder(sum_config, sympy.Sum(k, (k, 1, 2))) is not None
@@ -553,15 +538,15 @@ class TestCorrectAnswerParsingUnits:
         )
         assert (
             big_operator_input._binder(
-                replace(sum_config, operator="custom"), sympy.Sum(k, (k, 1, 2))
+                replace(sum_config, operator="Custom"), sympy.Sum(k, (k, 1, 2))
             )
             is None
         )
 
     def test_binder_rejects_malformed_or_mismatched_indexing(self) -> None:
         k = sympy.Symbol("k")
-        sum_config = big_operator_input._config(html(operator="sum"))
-        limit_config = big_operator_input._config(html(operator="limit"))
+        sum_config = big_operator_input._config(html(operator="Sum"))
+        limit_config = big_operator_input._config(html(operator="Limit"))
         domain_config = big_operator_input._config(
             html(**{"correct-answer": "Sum(k, (k, {1, 2}))"})
         )
@@ -603,10 +588,10 @@ class TestCorrectAnswerParsingUnits:
     @pytest.mark.parametrize(
         ("operator", "source", "match"),
         [
-            ("sum", "Sum(k, (k, 1))", "3-item indexing tuple"),
-            ("sum", "Sum(INVALID, (k, 1, 2))", "invalid SymPy data"),
-            ("sum", "Sum(k, (k, INVALID, 2))", "invalid SymPy data"),
-            ("limit", "Limit(k, (k, 0, '?'))", "Limit direction"),
+            ("Sum", "Sum(k, (k, 1))", "3-item indexing tuple"),
+            ("Sum", "Sum(INVALID, (k, 1, 2))", "invalid SymPy data"),
+            ("Sum", "Sum(k, (k, INVALID, 2))", "invalid SymPy data"),
+            ("Limit", "Limit(k, (k, 0, '?'))", "Limit direction"),
         ],
     )
     def test_formatted_answers_report_specific_invalid_component(
@@ -621,10 +606,10 @@ class TestCorrectAnswerParsingUnits:
 class TestPrepareUnits:
     def test_duplicate_answer_name_is_rejected(self) -> None:
         data = question_data()
-        big_operator_input.prepare(html(operator="sum"), data)
+        big_operator_input.prepare(html(operator="Sum"), data)
 
         with pytest.raises(KeyError, match='Duplicate "answers-name"'):
-            big_operator_input.prepare(html(operator="sum"), data)
+            big_operator_input.prepare(html(operator="Sum"), data)
 
     def test_correct_answer_attribute_cannot_replace_server_answer(self) -> None:
         data = question_data("Sum(k, (k, 1, 2))")
@@ -651,34 +636,34 @@ class TestPrepareUnits:
     @pytest.mark.parametrize(
         ("correct_answer", "operator", "indexing", "index", "grading_method"),
         [
-            ("Sum(k**2, (k, 1, 4))", "sum", "bounds", "k", "equivalent"),
-            ("Product(k, (k, 1, 4))", "product", "bounds", "k", "equivalent"),
-            ("Integral(k, (k, 0, 1))", "integral", "bounds", "k", "equivalent"),
-            ("Integral(z, (z, Gamma))", "integral", "domain", "z", "component"),
+            ("Sum(k**2, (k, 1, 4))", "Sum", "bounds", "k", "equivalent"),
+            ("Product(k, (k, 1, 4))", "Product", "bounds", "k", "equivalent"),
+            ("Integral(k, (k, 0, 1))", "Integral", "bounds", "k", "equivalent"),
+            ("Integral(z, (z, Gamma))", "Integral", "domain", "z", "component"),
             (
                 "Limit(sin(x) / x, (x, 0, '+'))",
-                "limit",
+                "Limit",
                 "approaches",
                 "x",
                 "equivalent",
             ),
-            ("Union({k}, (k, {1, 2}))", "union", "domain", "k", "equivalent"),
+            ("Union({k}, (k, {1, 2}))", "Union", "domain", "k", "equivalent"),
             (
                 "Intersection({k}, (k, {1, 2}))",
-                "intersection",
+                "Intersection",
                 "domain",
                 "k",
                 "equivalent",
             ),
             (
                 "DisjointUnion({k}, (k, {1, 2}))",
-                "disjoint-union",
+                "DisjointUnion",
                 "domain",
                 "k",
                 "equivalent",
             ),
-            ("Min(k**2, (k, {1, 2}))", "min", "domain", "k", "equivalent"),
-            ("Max(k**2, (k, {1, 2}))", "max", "domain", "k", "equivalent"),
+            ("Min(k**2, (k, {1, 2}))", "Min", "domain", "k", "equivalent"),
+            ("Max(k**2, (k, {1, 2}))", "Max", "domain", "k", "equivalent"),
         ],
     )
     def test_whole_answer_infers_configuration(
@@ -723,9 +708,9 @@ class TestPrepareUnits:
     @pytest.mark.parametrize(
         ("correct_answer", "operator"),
         [
-            (sympy.Sum(sympy.Symbol("k") ** 2, (sympy.Symbol("k"), 1, 4)), "sum"),
-            (sympy.Product(sympy.Symbol("k"), (sympy.Symbol("k"), 1, 4)), "product"),
-            (sympy.Integral(sympy.Symbol("k"), (sympy.Symbol("k"), 0, 1)), "integral"),
+            (sympy.Sum(sympy.Symbol("k") ** 2, (sympy.Symbol("k"), 1, 4)), "Sum"),
+            (sympy.Product(sympy.Symbol("k"), (sympy.Symbol("k"), 1, 4)), "Product"),
+            (sympy.Integral(sympy.Symbol("k"), (sympy.Symbol("k"), 0, 1)), "Integral"),
         ],
     )
     def test_sympy_json_answers_are_normalized(
@@ -753,7 +738,7 @@ class TestPrepareUnits:
         big_operator_input.prepare(markup, data)
 
         answer = data["correct_answers"]["op"]
-        assert answer["operator"] == "custom"
+        assert answer["operator"] == "Custom"
         assert "operator_latex" not in answer
 
     def test_builtin_operator_latex_override_retains_inferred_semantics(self) -> None:
@@ -766,9 +751,9 @@ class TestPrepareUnits:
         big_operator_input.prepare(markup, data)
 
         config = big_operator_input._config(markup, data)
-        assert config.operator == "sum"
+        assert config.operator == "Sum"
         assert config.operator_latex == r"\Sigma"
-        assert data["correct_answers"]["op"]["operator"] == "sum"
+        assert data["correct_answers"]["op"]["operator"] == "Sum"
 
     @pytest.mark.parametrize(
         "attribute", ["operator", "index-variable", "indexing", "limit-direction"]
@@ -776,7 +761,7 @@ class TestPrepareUnits:
     def test_removed_structural_attributes_are_rejected(self, attribute: str) -> None:
         markup = (
             f'<pl-big-operator-input answers-name="op" correct-answer="Sum(k, (k, 1, 2))" '
-            f'{attribute}="sum"></pl-big-operator-input>'
+            f'{attribute}="Sum"></pl-big-operator-input>'
         )
 
         with pytest.raises(ValueError, match="Unknown attribute"):
@@ -825,7 +810,7 @@ class TestPrepareUnits:
             case "formatted-lower":
                 correct_answer: object = "Sum(k, (k, {1}, 2))"
             case "canonical-upper":
-                config = big_operator_input._config(html(operator="sum"))
+                config = big_operator_input._config(html(operator="Sum"))
                 correct_answer = big_operator_input._canonical(
                     config,
                     {
@@ -870,19 +855,19 @@ class TestParseUnits:
         ("operator", "indexing", "raw", "expected_components"),
         [
             (
-                "sum",
+                "Sum",
                 "bounds",
                 {"op-lower": "1", "op-upper": "4", "op-body": "k^2"},
                 {"lower", "upper", "body"},
             ),
             (
-                "union",
+                "Union",
                 "domain",
                 {"op-domain": "{1, 2}", "op-body": "{k}"},
                 {"domain", "body"},
             ),
             (
-                "limit",
+                "Limit",
                 "approaches",
                 {
                     "op-target": "0",
@@ -925,7 +910,7 @@ class TestParseUnits:
             }
         )
 
-        big_operator_input.parse(html(operator="sum"), data)
+        big_operator_input.parse(html(operator="Sum"), data)
 
         assert set(data["submitted_answers"]) == {"op", "other-answer"}
         assert data["submitted_answers"]["other-answer"] == "unchanged"
@@ -946,8 +931,8 @@ class TestParseUnits:
             panel=panel,
         )
 
-        big_operator_input.parse(html(operator="sum"), data)
-        rendered = big_operator_input.render(html(operator="sum"), data)
+        big_operator_input.parse(html(operator="Sum"), data)
+        rendered = big_operator_input.render(html(operator="Sum"), data)
 
         if panel == "question":
             assert 'name="op-lower"' in rendered
@@ -959,9 +944,9 @@ class TestParseUnits:
     @pytest.mark.parametrize(
         ("operator", "field"),
         [
-            ("sum", "op-domain"),
-            ("union", "op-domain"),
-            ("union", "op-body"),
+            ("Sum", "op-domain"),
+            ("Union", "op-domain"),
+            ("Union", "op-body"),
         ],
     )
     def test_set_fields_reject_non_sets(self, operator: str, field: str) -> None:
@@ -979,19 +964,19 @@ class TestParseUnits:
         ("operator", "indexing", "raw", "field"),
         [
             (
-                "sum",
+                "Sum",
                 "bounds",
                 {"op-lower": "{1}", "op-upper": "2", "op-body": "k"},
                 "op-lower",
             ),
             (
-                "sum",
+                "Sum",
                 "bounds",
                 {"op-lower": "1", "op-upper": "{2}", "op-body": "k"},
                 "op-upper",
             ),
             (
-                "limit",
+                "Limit",
                 "approaches",
                 {
                     "op-target": "{0}",
@@ -1001,7 +986,7 @@ class TestParseUnits:
                 "op-target",
             ),
             (
-                "sum",
+                "Sum",
                 "bounds",
                 {"op-lower": "1", "op-upper": "2", "op-body": "{k}"},
                 "op-body",
@@ -1027,7 +1012,7 @@ class TestParseUnits:
 
         big_operator_input.parse(
             html(
-                operator="union",
+                operator="Union",
                 indexing="domain",
                 variables="A,D",
             ),
@@ -1053,7 +1038,7 @@ class TestParseUnits:
         data = question_data(raw_submitted_answers=raw)
 
         big_operator_input.parse(
-            html(operator="sum", **{"allowed-blank": allowed_blank}), data
+            html(operator="Sum", **{"allowed-blank": allowed_blank}), data
         )
 
         assert data["submitted_answers"]["op"] == ""
@@ -1064,14 +1049,14 @@ class TestParseUnits:
             raw_submitted_answers={"op-lower": "", "op-upper": "", "op-body": ""}
         )
 
-        big_operator_input.parse(html(operator="sum"), data)
+        big_operator_input.parse(html(operator="Sum"), data)
 
         assert data["submitted_answers"]["op"] is None
         assert set(data["format_errors"]) == {"op-lower", "op-upper", "op-body"}
 
     def test_custom_functions_are_available_in_the_body(self) -> None:
         markup = html(
-            operator="sum",
+            operator="Sum",
             **{"custom-functions": "f", "variables": "x"},
         )
         data = question_data(
@@ -1094,7 +1079,7 @@ class TestGradeUnits:
     def test_equivalent_grading_timeout_is_reported_as_format_error(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        markup = html(operator="sum")
+        markup = html(operator="Sum")
         data = question_data(
             raw_submitted_answers={
                 "op-lower": "1",
@@ -1122,7 +1107,7 @@ class TestGradeUnits:
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         markup = html(
-            operator="sum",
+            operator="Sum",
             **{"grading-method": "component"},
         )
         data = question_data(
@@ -1147,22 +1132,22 @@ class TestGradeUnits:
     @pytest.mark.parametrize(
         ("operator", "indexing"),
         [
-            ("sum", "bounds"),
-            ("sum", "domain"),
-            ("product", "bounds"),
-            ("product", "domain"),
-            ("integral", "bounds"),
-            ("limit", "approaches"),
-            ("union", "bounds"),
-            ("union", "domain"),
-            ("intersection", "bounds"),
-            ("intersection", "domain"),
-            ("disjoint-union", "bounds"),
-            ("disjoint-union", "domain"),
-            ("min", "bounds"),
-            ("min", "domain"),
-            ("max", "bounds"),
-            ("max", "domain"),
+            ("Sum", "bounds"),
+            ("Sum", "domain"),
+            ("Product", "bounds"),
+            ("Product", "domain"),
+            ("Integral", "bounds"),
+            ("Limit", "approaches"),
+            ("Union", "bounds"),
+            ("Union", "domain"),
+            ("Intersection", "bounds"),
+            ("Intersection", "domain"),
+            ("DisjointUnion", "bounds"),
+            ("DisjointUnion", "domain"),
+            ("Min", "bounds"),
+            ("Min", "domain"),
+            ("Max", "bounds"),
+            ("Max", "domain"),
         ],
     )
     def test_equivalent_grading_accepts_each_supported_builtin_configuration(
@@ -1170,9 +1155,7 @@ class TestGradeUnits:
         operator: str,
         indexing: Literal["bounds", "domain", "approaches"],
     ) -> None:
-        body = (
-            r"{k}" if operator in {"union", "intersection", "disjoint-union"} else "k"
-        )
+        body = r"{k}" if operator in {"Union", "Intersection", "DisjointUnion"} else "k"
         raw_submitted_answers = {"op-body": body}
         match indexing:
             case "bounds":
@@ -1275,7 +1258,7 @@ class TestGradeUnits:
 
         big_operator_input.prepare(markup, data)
 
-        assert data["correct_answers"]["op"]["operator"] == "custom"
+        assert data["correct_answers"]["op"]["operator"] == "Custom"
 
     def test_none_grading_generates_unscored_test_input(self) -> None:
         markup = html(**{
@@ -1366,8 +1349,8 @@ class TestGradeUnits:
 
     def test_equivalent_construction_covers_each_indexing_shape(self) -> None:
         k = sympy.Symbol("k")
-        bounds_config = big_operator_input._config(html(operator="sum"))
-        limit_config = big_operator_input._config(html(operator="limit"))
+        bounds_config = big_operator_input._config(html(operator="Sum"))
+        limit_config = big_operator_input._config(html(operator="Limit"))
         domain_config = big_operator_input._config(
             html(**{"correct-answer": "Sum(k, (k, {1, 2}))"})
         )
@@ -1384,18 +1367,18 @@ class TestGradeUnits:
         approach_values = {"target": sympy.Integer(0), "body": 1 / k}
 
         assert big_operator_input._construct(
-            replace(bounds_config, operator="custom"), bounds_values
+            replace(bounds_config, operator="Custom"), bounds_values
         ) == sympy.Tuple(k, (k, 1, 2))
         assert big_operator_input._construct(
             limit_config, approach_values, "from-right"
         ) == sympy.Limit(1 / k, k, 0, dir="+")
         assert big_operator_input._construct(domain_config, domain_values) == 3
         assert big_operator_input._construct(
-            replace(domain_config, operator="custom"), domain_values
+            replace(domain_config, operator="Custom"), domain_values
         ) == sympy.Tuple(1, 2)
         assert (
             big_operator_input._construct(
-                replace(domain_config, operator="max"), domain_values
+                replace(domain_config, operator="Max"), domain_values
             )
             == 2
         )
@@ -1410,9 +1393,9 @@ class TestGradeUnits:
     @pytest.mark.parametrize(
         ("test_type", "operator"),
         [
-            ("correct", "limit"),
-            ("incorrect", "limit"),
-            ("invalid", "sum"),
+            ("correct", "Limit"),
+            ("incorrect", "Limit"),
+            ("invalid", "Sum"),
         ],
     )
     def test_generated_submissions_cover_each_test_type(
@@ -1439,7 +1422,7 @@ class TestGradeUnits:
             )
 
     def test_blank_allowed_submission_grades_as_incorrect(self) -> None:
-        markup = html(operator="sum", **{"allowed-blank": "all"})
+        markup = html(operator="Sum", **{"allowed-blank": "all"})
         data = question_data(
             raw_submitted_answers={
                 "op-lower": "",
@@ -1458,10 +1441,10 @@ class TestRenderUnits:
     @pytest.mark.parametrize(
         ("operator", "indexing", "present", "absent"),
         [
-            ("sum", "bounds", ("op-lower", "op-upper", "op-body"), ("op-domain",)),
-            ("union", "domain", ("op-domain", "op-body"), ("op-lower", "op-upper")),
+            ("Sum", "bounds", ("op-lower", "op-upper", "op-body"), ("op-domain",)),
+            ("Union", "domain", ("op-domain", "op-body"), ("op-lower", "op-upper")),
             (
-                "limit",
+                "Limit",
                 "approaches",
                 ("op-target", "op-direction", "op-body"),
                 ("op-lower", "op-domain"),
@@ -1487,11 +1470,11 @@ class TestRenderUnits:
     @pytest.mark.parametrize(
         ("operator", "indexing", "field_names"),
         [
-            ("sum", "bounds", ("op-lower", "op-upper", "op-body")),
-            ("integral", "bounds", ("op-lower", "op-upper", "op-body")),
-            ("integral", "domain", ("op-domain", "op-body")),
-            ("union", "domain", ("op-domain", "op-body")),
-            ("limit", "approaches", ("op-target", "op-direction", "op-body")),
+            ("Sum", "bounds", ("op-lower", "op-upper", "op-body")),
+            ("Integral", "bounds", ("op-lower", "op-upper", "op-body")),
+            ("Integral", "domain", ("op-domain", "op-body")),
+            ("Union", "domain", ("op-domain", "op-body")),
+            ("Limit", "approaches", ("op-target", "op-direction", "op-body")),
         ],
     )
     def test_question_panel_fields_follow_tab_order(
@@ -1514,7 +1497,7 @@ class TestRenderUnits:
     def test_direction_input_exposes_validation_state(
         self, direction: str, invalid: bool
     ) -> None:
-        markup = html(operator="limit")
+        markup = html(operator="Limit")
         data = question_data(
             raw_submitted_answers={
                 "op-target": "0",
@@ -1538,7 +1521,7 @@ class TestRenderUnits:
             assert select.get("aria-errormessage") is None
             assert root.xpath('//*[@id="op-direction-feedback"]') == []
 
-    @pytest.mark.parametrize("operator", ["integral", "sum"])
+    @pytest.mark.parametrize("operator", ["Integral", "Sum"])
     def test_question_panel_operator_is_accessibility_exposed(
         self, operator: str
     ) -> None:
@@ -1562,7 +1545,7 @@ class TestRenderUnits:
         expected_tag: str,
         panel: Literal["question", "answer", "submission"],
     ) -> None:
-        markup = html(operator="sum", display=display)
+        markup = html(operator="Sum", display=display)
         data = question_data(panel=panel)
         big_operator_input.prepare(markup, data)
 
@@ -1581,7 +1564,7 @@ class TestRenderUnits:
     def test_question_panel_configures_imaginary_unit_for_every_field(self) -> None:
         rendered = big_operator_input.render(
             html(
-                operator="sum",
+                operator="Sum",
                 **{
                     "allow-complex": "true",
                     "imaginary-unit-for-display": "j",
@@ -1594,7 +1577,7 @@ class TestRenderUnits:
 
     def test_question_panel_configures_log_display_for_every_field(self) -> None:
         rendered = big_operator_input.render(
-            html(operator="sum", **{"display-log-as-ln": "true"}),
+            html(operator="Sum", **{"display-log-as-ln": "true"}),
             question_data(),
         )
 
@@ -1645,7 +1628,7 @@ class TestRenderUnits:
     @pytest.mark.parametrize(
         "latex_override", [False, True], ids=["default-latex", "custom-latex"]
     )
-    @pytest.mark.parametrize("operator", ["integral", "union"])
+    @pytest.mark.parametrize("operator", ["Integral", "Union"])
     @pytest.mark.parametrize(
         "indexing", ["bounds", "domain"], ids=["two-bounds", "single-bound"]
     )
@@ -1653,15 +1636,15 @@ class TestRenderUnits:
     def test_operator_limit_position(
         self,
         latex_override: bool,
-        operator: Literal["integral", "union"],
+        operator: Literal["Integral", "Union"],
         indexing: Literal["bounds", "domain"],
         panel: Literal["answer", "submission"],
     ) -> None:
-        function_name = "Integral" if operator == "integral" else "Union"
-        body = "k" if operator == "integral" else "{k}"
+        function_name = "Integral" if operator == "Integral" else "Union"
+        body = "k" if operator == "Integral" else "{k}"
         index_spec = "(k, 0, 1)" if indexing == "bounds" else "(k, gamma)"
         operator_latex = (
-            (r"\oint" if operator == "integral" else r"\bigoplus")
+            (r"\oint" if operator == "Integral" else r"\bigoplus")
             if latex_override
             else None
         )
@@ -1684,19 +1667,19 @@ class TestRenderUnits:
         rendered = big_operator_input.render(markup, data)
 
         operator_tex = {
-            ("integral", False): r"\int",
-            ("integral", True): r"\mathop{\oint}\nolimits",
-            ("union", False): r"\bigcup",
-            ("union", True): r"\mathop{\bigoplus}\limits",
+            ("Integral", False): r"\int",
+            ("Integral", True): r"\mathop{\oint}\nolimits",
+            ("Union", False): r"\bigcup",
+            ("Union", True): r"\mathop{\bigoplus}\limits",
         }[operator, latex_override]
         if indexing == "bounds":
-            subscript = "0" if operator == "integral" else "k=0"
+            subscript = "0" if operator == "Integral" else "k=0"
             indexed_operator = rf"{operator_tex}_{{{subscript}}}^{{1}}"
         else:
-            subscript = r"\gamma" if operator == "integral" else r"k\in \gamma"
+            subscript = r"\gamma" if operator == "Integral" else r"k\in \gamma"
             indexed_operator = rf"{operator_tex}_{{{subscript}}}"
-        suffix = r"\,\mathrm{d}k" if operator == "integral" else ""
-        body_tex = "k" if operator == "integral" else r"\left\{k\right\}"
+        suffix = r"\,\mathrm{d}k" if operator == "Integral" else ""
+        body_tex = "k" if operator == "Integral" else r"\left\{k\right\}"
 
         assert f"{indexed_operator} {body_tex}{suffix}" in rendered
 
@@ -1722,21 +1705,21 @@ class TestRenderUnits:
     @pytest.mark.parametrize(
         "latex_override", [False, True], ids=["default-latex", "custom-latex"]
     )
-    @pytest.mark.parametrize("operator", ["integral", "union"])
+    @pytest.mark.parametrize("operator", ["Integral", "Union"])
     @pytest.mark.parametrize(
         "indexing", ["bounds", "domain"], ids=["two-bounds", "single-bound"]
     )
     def test_submission_formats_valid_component_when_all_others_are_blank(
         self,
         latex_override: bool,
-        operator: Literal["integral", "union"],
+        operator: Literal["Integral", "Union"],
         indexing: Literal["bounds", "domain"],
     ) -> None:
-        function_name = "Integral" if operator == "integral" else "Union"
-        body = "k" if operator == "integral" else "{k}"
+        function_name = "Integral" if operator == "Integral" else "Union"
+        body = "k" if operator == "Integral" else "{k}"
         index_spec = "(k, 0, 1)" if indexing == "bounds" else "(k, gamma)"
         operator_latex = (
-            (r"\oint" if operator == "integral" else r"\bigoplus")
+            (r"\oint" if operator == "Integral" else r"\bigoplus")
             if latex_override
             else None
         )
@@ -1762,16 +1745,16 @@ class TestRenderUnits:
 
         assert data["submitted_answers"]["op"] is None
         operator_tex = {
-            ("integral", False): r"\int",
-            ("integral", True): r"\mathop{\oint}\nolimits",
-            ("union", False): r"\bigcup",
-            ("union", True): r"\mathop{\bigoplus}\limits",
+            ("Integral", False): r"\int",
+            ("Integral", True): r"\mathop{\oint}\nolimits",
+            ("Union", False): r"\bigcup",
+            ("Union", True): r"\mathop{\bigoplus}\limits",
         }[operator, latex_override]
         if indexing == "bounds":
-            subscript = r"\gamma" if operator == "integral" else r"k=\gamma"
+            subscript = r"\gamma" if operator == "Integral" else r"k=\gamma"
             indexed_operator = rf"{operator_tex}_{{{subscript}}}^{{}}"
         else:
-            subscript = r"\gamma" if operator == "integral" else r"k\in \gamma"
+            subscript = r"\gamma" if operator == "Integral" else r"k\in \gamma"
             indexed_operator = rf"{operator_tex}_{{{subscript}}}"
 
         assert indexed_operator in rendered
@@ -1780,7 +1763,7 @@ class TestRenderUnits:
     def test_complete_notation_uses_configured_imaginary_unit(
         self, panel: Literal["answer", "submission"]
     ) -> None:
-        base_config = big_operator_input._config(html(operator="sum"))
+        base_config = big_operator_input._config(html(operator="Sum"))
         correct_answer = big_operator_input._canonical(
             base_config,
             {
@@ -1870,7 +1853,7 @@ class TestRenderUnits:
         assert "text-bg-danger" in rendered
 
     def test_component_scores_ignore_missing_or_malformed_submission(self) -> None:
-        markup = html(operator="sum", **{"grading-method": "component"})
+        markup = html(operator="Sum", **{"grading-method": "component"})
         config = big_operator_input._config(markup)
         data = question_data()
         data["partial_scores"]["op"] = {"score": 0}
@@ -1885,9 +1868,9 @@ class TestCorrectAnswerRegressions:
     @pytest.mark.parametrize(
         ("operator", "actual_indexing"),
         [
-            ("sum", "domain"),
-            ("union", "bounds"),
-            ("limit", "bounds"),
+            ("Sum", "domain"),
+            ("Union", "bounds"),
+            ("Limit", "bounds"),
         ],
     )
     def test_structured_answer_indexing_must_match_element(
@@ -1911,7 +1894,7 @@ class TestCorrectAnswerRegressions:
             big_operator_input._decode(object())
 
     def test_structured_answer_rejects_disallowed_complex_value(self) -> None:
-        config = big_operator_input._config(html(operator="sum"))
+        config = big_operator_input._config(html(operator="Sum"))
         answer = big_operator_input._canonical(
             config,
             {
@@ -1928,7 +1911,7 @@ class TestCorrectAnswerRegressions:
             )
 
     def test_structured_answer_rejects_undeclared_symbol(self) -> None:
-        config = big_operator_input._config(html(operator="sum"))
+        config = big_operator_input._config(html(operator="Sum"))
         answer = big_operator_input._canonical(
             config,
             {
@@ -1978,7 +1961,7 @@ class TestLifecycleRegressions:
             else sympy.Symbol("n")
         )
         answer = pl.big_operator_to_json(
-            operator="sum",
+            operator="Sum",
             indexing="bounds",
             index=k,
             lower="1",
@@ -2030,7 +2013,7 @@ class TestLifecycleRegressions:
         assert 'name="op-lower"' in rendered
 
     def test_valid_reparse_clears_stale_format_error(self) -> None:
-        markup = html(operator="sum")
+        markup = html(operator="Sum")
         data = question_data(
             raw_submitted_answers={
                 "op-lower": "bad@",
