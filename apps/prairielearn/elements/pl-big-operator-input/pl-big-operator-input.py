@@ -20,6 +20,11 @@ import sympy
 import sympy.sets
 from prairielearn.big_operator_utils import BigOperatorName as OperatorName
 from prairielearn.internal.symbolic_input import DisplayType
+from prairielearn.sympy_utils import (
+    AssumptionsDictT,
+    BaseSympyError,
+    SympyParseFailure,
+)
 from prairielearn.timeout_utils import SignalTimeout, TimeoutState
 
 if TYPE_CHECKING:
@@ -28,11 +33,16 @@ if TYPE_CHECKING:
     from prairielearn.big_operator_utils import BigOperatorIndexing as Indexing
     from prairielearn.big_operator_utils import BigOperatorSympyName as SympyOperator
     from prairielearn.question_utils import QuestionData
+    from prairielearn.sympy_utils import (
+        AllowedSympyType,
+        SymbolicSubmissionParseResult,
+        SympyJson,
+    )
 
     type DirectionSymbol = Literal["+-", "-", "+"]
     type Component = Literal["lower", "upper", "domain", "target", "body"]
     type ResponseComponent = Literal["direction"] | Component
-    type ResponseValues = dict[ResponseComponent, sympy.Basic]
+    type ResponseValues = dict[Component, sympy.Basic]
 
     type GradingMethod = Literal["equivalent", "component", "exact", "none"]
     type AllowedBlank = Literal["none", "indices", "body", "all"]
@@ -113,7 +123,7 @@ ALLOWED_BLANKS: Final[frozenset[AllowedBlank]] = frozenset((
 class _ParseError(ValueError):
     """An author-provided mathematical expression could not be parsed."""
 
-    def __init__(self, src: psu.BaseSympyError) -> None:
+    def __init__(self, src: BaseSympyError) -> None:
         super().__init__(str(src))
         self._src = src
 
@@ -497,16 +507,17 @@ def _config(html: str, data: QuestionData | None = None) -> RenderConfig:
 
 def _coerce_sympy(value: Any) -> sympy.Expr:
     match value:
-        case {"_type": "sympy"}:
+        case dict(d) if psu.is_sympy_json(d):
             serialized_variables = value.get("_variables")
             allow_complex = not (
                 isinstance(serialized_variables, list)
                 and any(name in {"i", "j"} for name in serialized_variables)
             )
             return psu.json_to_sympy(
-                cast(psu.SympyJson, value),
-                allow_sets=True,
+                d,
                 allow_complex=allow_complex,
+                allow_sets=True,
+                allow_trig_functions=True,
             )
 
         case sympy.Expr():
@@ -525,7 +536,7 @@ def _as_sympy(value: Any) -> sympy.Expr | None:
         return None
 
 
-def _sympy_json(value: sympy.Basic) -> psu.SympyJson:
+def _sympy_json(value: sympy.Basic) -> SympyJson:
     return psu.sympy_to_json(
         cast(Any, value),
         allow_sets=True,
@@ -579,15 +590,14 @@ def _get_values(config: RenderConfig, big_op: BigOperator) -> ResponseValues:
 def _validate_component_values(config: RenderConfig, values: ResponseValues) -> None:
     allowed = set(config.variables) | {config.index}
     for component, item in values.items():
-        typed_component = cast("Component", component)
         type_failure = psu.check_sympy_types(
-            item, _component_allowed_types(config, typed_component)
+            item, _component_allowed_types(config, component)
         )
         if type_failure is not None:
             raise ValueError(
                 f'Correct answer component "{component}" must be an expression.'
             )
-        if _requires_set(config, typed_component) and not _is_set_input(item):
+        if _requires_set(config, component) and not _is_set_input(item):
             raise ValueError(f'Correct answer component "{component}" must be a set.')
         undeclared = {str(symbol) for symbol in item.free_symbols} - allowed
         if undeclared:
@@ -802,7 +812,8 @@ def prepare(element_html: str, data: QuestionData) -> None:
             f"duplicate correct_answers variable name: {config.answer_name}"
         )
     correct = _correct(config, data)
-    _validate_equivalent_configuration(config, correct)
+    if config.grading == "equivalent":
+        _validate_equivalent_configuration(config, correct)
     data.setdefault("correct_answers", {})[config.answer_name] = correct
 
 
@@ -814,7 +825,7 @@ def _render_symbolic_input(
     custom_functions: tuple[str, ...],
     aria_label: str,
     size: int,
-    allowed_types: set[psu.AllowedSympyType],
+    allowed_types: set[AllowedSympyType],
     allow_complex: bool,
     imaginary_unit: str,
     display_log_as_ln: bool,
@@ -1111,8 +1122,8 @@ def _parse_component_submission(
     config: RenderConfig,
     component: Component,
     source: str | None,
-    assumptions: psu.AssumptionsDictT | None = None,
-) -> psu.SymbolicSubmissionParseResult:
+    assumptions: AssumptionsDictT | None = None,
+) -> SymbolicSubmissionParseResult:
     variables = (
         tuple(dict.fromkeys((*config.variables, config.index)))
         if component == "body"
@@ -1144,7 +1155,7 @@ def _submitted_tex(config: RenderConfig, data: QuestionData) -> str:
         parsed = _parse_component_submission(
             config, component, cast(str | None, raw.get(name))
         )
-        if isinstance(parsed, psu.SympyParseFailure) or parsed.expr == "":
+        if isinstance(parsed, SympyParseFailure) or parsed.expr == "":
             continue
         display_raw[name] = _expression_tex(config, parsed.expr)
     return _tex(config, display_raw)
@@ -1208,7 +1219,7 @@ def _unchecked_parse_sympy(
             allow_trig_functions=True,
             custom_functions=custom_functions,
         )
-    except psu.BaseSympyError as exc:
+    except BaseSympyError as exc:
         raise _ParseError(exc) from None
 
 
@@ -1220,8 +1231,9 @@ def _requires_set(config: RenderConfig, component: Component) -> bool:
 
 
 def _component_allowed_types(
-    config: RenderConfig, component: Component
-) -> set[psu.AllowedSympyType]:
+    config: RenderConfig,
+    component: Component,
+) -> set[AllowedSympyType]:
     return {"all" if _requires_set(config, component) else "expression"}
 
 
@@ -1239,16 +1251,15 @@ def _component_allows_blank(config: RenderConfig, component: ResponseComponent) 
 
 
 def _component_assumptions(
-    correct: BigOperatorJson, component: Component
-) -> psu.AssumptionsDictT | None:
+    correct: BigOperatorJson,
+    component: Component,
+) -> AssumptionsDictT | None:
     value = correct.get(component)
     if not isinstance(value, dict):
         return None
     assumptions = value.get("_assumptions")
     return (
-        cast(psu.AssumptionsDictT, assumptions)
-        if isinstance(assumptions, dict)
-        else None
+        cast(AssumptionsDictT, assumptions) if isinstance(assumptions, dict) else None
     )
 
 
@@ -1272,7 +1283,7 @@ def _parse_values(
             cast(str | None, raw_answers.get(name)),
             assumptions=_component_assumptions(correct, component),
         )
-        if isinstance(parsed, psu.SympyParseFailure):
+        if isinstance(parsed, SympyParseFailure):
             data.setdefault("format_errors", {})[name] = parsed.error
             continue
         if parsed.expr == "":
@@ -1406,7 +1417,9 @@ def _validate_equivalent_configuration(
             index=pbo.json_to_big_operator(correct)["index"],
         )
     except NotImplementedError as exc:
-        raise ValueError(str(exc)) from exc
+        raise ValueError(
+            f"A SymPy baseline for equivalence-checking could not be constructed for your answer:\n{exc}"
+        ) from exc
 
 
 def _equivalent(
@@ -1535,7 +1548,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
             for component, value in correct.items():
                 raw_value = (
                     r"{999999}"
-                    if _requires_set(config, cast("Component", component))
+                    if _requires_set(config, component)
                     else f"({value}) + 1"
                 )
                 data["raw_submitted_answers"][config.component_name(component)] = (
