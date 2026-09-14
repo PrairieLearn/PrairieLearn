@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import copy
 import re
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from types import (
@@ -824,6 +824,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     pl.validate_element(element, SCHEMA_PATH)
     config = _config(element_html, data)
     correct = _correct(config, data)
+    _validate_equivalent_configuration(config, correct)
     data.setdefault("correct_answers", {})[config.answer_name] = correct
 
 
@@ -1337,9 +1338,18 @@ def _construct(
     match config.indexing, config.operator:
         case "bounds", "custom":
             return sympy.Tuple(body, (index, values["lower"], values["upper"]))
-        case "bounds", operator:
+        case "bounds", "sum" | "product" | "integral" as operator:
             bound_constructor = OP_METADATA[operator].bounds_constructor
             return bound_constructor(body, (index, values["lower"], values["upper"]))
+        case "bounds", operator:
+            # SymPy does not provide binder forms for these operators. A formal
+            # function preserves the operation while still allowing equivalence
+            # checks to simplify its body and bounds.
+            constructor = cast(
+                Callable[..., sympy.Basic],
+                sympy.Function(f"_pl_{OP_METADATA[operator].fn_name}_bounds"),
+            )
+            return constructor(body, index, values["lower"], values["upper"])
         case "approaches", _:
             return sympy.Limit(
                 body,
@@ -1364,6 +1374,21 @@ def _construct(
             if operator == "custom":
                 return sympy.Tuple(*terms)
             return OP_METADATA[operator].domain_constructor(*terms)
+
+
+def _validate_equivalent_configuration(
+    config: RenderConfig, correct: pbo.BigOperatorJson
+) -> None:
+    if config.grading != "equivalent":
+        return
+    try:
+        _construct(
+            config,
+            _values(config, correct),
+            correct.get("direction"),
+        )
+    except NotImplementedError as exc:
+        raise ValueError(str(exc)) from exc
 
 
 def _equivalent(
