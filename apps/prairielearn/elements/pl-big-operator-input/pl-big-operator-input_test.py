@@ -317,14 +317,14 @@ class TestConfigurationUnits:
         assert big_operator_input._config(html(operator="limit")).allow_direction_input
 
         fixed = big_operator_input._config(
-            html(operator="limit", **{"allow-limit-direction-input": "false"})
+            html(operator="limit", **{"allow-approach-direction-input": "false"})
         )
         assert not fixed.allow_direction_input
         assert fixed.direction == "two-sided"
 
         with pytest.raises(ValueError, match="can only be used"):
             big_operator_input._config(
-                html(operator="sum", **{"allow-limit-direction-input": "false"})
+                html(operator="sum", **{"allow-approach-direction-input": "false"})
             )
 
     @pytest.mark.parametrize("allowed_blank", ["none", "indices", "body", "all"])
@@ -1587,7 +1587,7 @@ class TestRenderUnits:
     ) -> None:
         markup = html(**{
             "correct-answer": "Limit(1/k, (k, 0, '+'))",
-            "allow-limit-direction-input": "false",
+            "allow-approach-direction-input": "false",
         })
         data = question_data(
             raw_submitted_answers={"op-target": "0", "op-body": "1/k"},

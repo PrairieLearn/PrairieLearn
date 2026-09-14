@@ -195,7 +195,7 @@
 </pl-card>
 
 <pl-card
-  header="An example with fixed limit sidedness (&lt;code&gt;allow-limit-direction-input=&quot;false&quot;&lt;/code&gt;)"
+  header="An example with fixed limit sidedness (&lt;code&gt;allow-approach-direction-input=&quot;false&quot;&lt;/code&gt;)"
 >
   <pl-question-panel>
     <p>Submit $\displaystyle \lim_{x \to 0} \cos(x)$.</p>
@@ -203,7 +203,7 @@
   <pl-big-operator-input
     answers-name="fixed-limit-direction"
     correct-answer="Limit(cos(x), (x, 0, '+-'))"
-    allow-limit-direction-input="false"
+    allow-approach-direction-input="false"
     allowed-blank="all"
   ></pl-big-operator-input>
 </pl-card>
@@ -217,7 +217,7 @@
   <pl-big-operator-input
     answers-name="fixed-left-limit"
     correct-answer="Limit(1/x, (x, 0, '-'))"
-    allow-limit-direction-input="false"
+    allow-approach-direction-input="false"
     allowed-blank="all"
   ></pl-big-operator-input>
 </pl-card>
@@ -240,7 +240,7 @@
 </pl-card>
 
 <pl-card
-  header="An example without limit-direction input (&lt;code&gt;allow-limit-direction-input=&quot;false&quot;&lt;/code&gt;)"
+  header="An example without approach-direction input (&lt;code&gt;allow-approach-direction-input=&quot;false&quot;&lt;/code&gt;)"
 >
   <pl-question-panel>
     <p>Submit $\displaystyle \mathop{ \operatorname{eval} }\limits_{x \to 0} f(x)$.</p>
@@ -250,7 +250,7 @@
     correct-answer="Custom(f(x), (x, 0, '+-'))"
     operator-latex="\operatorname{eval}"
     custom-functions="f"
-    allow-limit-direction-input="false"
+    allow-approach-direction-input="false"
     grading-method="component"
     allowed-blank="all"
   ></pl-big-operator-input>
