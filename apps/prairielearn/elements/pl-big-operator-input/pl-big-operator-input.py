@@ -28,6 +28,16 @@ if TYPE_CHECKING:
     from prairielearn.big_operator_utils import BigOperatorSympyName as SympyOperator
     from prairielearn.question_utils import QuestionData
 
+    type DirectionSymbol = Literal["+-", "-", "+"]
+    type Component = Literal["lower", "upper", "domain", "target", "body"]
+    type ResponseComponent = Literal["direction"] | Component
+    type ResponseValues = dict[ResponseComponent, sympy.Basic]
+
+    type GradingMethod = Literal["equivalent", "component", "exact", "none"]
+    type AllowedBlank = Literal["none", "indices", "body", "all"]
+
+    type FormattedCall = tuple[str, tuple[str, ...]]
+
 HERE: Final = Path(__file__).parent
 SCHEMA_PATH: Final = HERE / "schemas" / "pl-big-operator-input.json"
 SYMBOLIC_INPUT_TEMPLATE_PATH: Final = (
@@ -70,7 +80,6 @@ OP_METADATA: Final[frozendict[SympyOperator, OperatorMetadata]] = frozendict({
 })
 
 
-type DirectionSymbol = Literal["+-", "-", "+"]
 DIRECTION_SYMBOLS: Final[frozendict[DirectionName, DirectionSymbol]] = frozendict({
     "two-sided": "+-",
     "from-left": "-",
@@ -80,23 +89,18 @@ DIRECTION_NAMES: Final[frozendict[DirectionSymbol, DirectionName]] = frozendict(
     symbol: name for name, symbol in DIRECTION_SYMBOLS.items()
 })
 
-type Component = Literal["lower", "upper", "domain", "target", "body"]
 COMPONENTS_MAP: Final[frozendict[Indexing, frozenset[Component]]] = frozendict({
     "bounds": frozenset(("lower", "upper", "body")),
     "domain": frozenset(("domain", "body")),
     "approaches": frozenset(("target", "body")),
 })
-type ResponseComponent = Literal["direction"] | Component
-type ResponseValues = dict[ResponseComponent, sympy.Basic]
 
-type GradingMethod = Literal["equivalent", "component", "exact", "none"]
 GRADING_METHODS: Final[frozenset[GradingMethod]] = frozenset((
     "equivalent",
     "component",
     "exact",
     "none",
 ))
-type AllowedBlank = Literal["none", "indices", "body", "all"]
 ALLOWED_BLANKS: Final[frozenset[AllowedBlank]] = frozenset((
     "none",
     "indices",
@@ -207,9 +211,6 @@ def _split_top_level(source: str) -> list[str]:
             start = position + 1
     parts.append(source[start:].strip())
     return parts
-
-
-type FormattedCall = tuple[str, tuple[str, ...]]
 
 
 def _formatted_call(source: str, function_name: OperatorName) -> FormattedCall | None:
