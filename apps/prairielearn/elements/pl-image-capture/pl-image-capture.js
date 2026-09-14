@@ -46,6 +46,7 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
       this.selectedContainerName = 'capture-preview';
       this.handwritingEnhanced = false;
       this.manualUploadId = 0;
+      this.manualUploadPreview = null;
 
       /** Resizing canvas and context used for image scaling */
       this.resizingCanvas = null;
@@ -159,11 +160,16 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
 
         const uploadId = ++this.manualUploadId;
         this.setManualUploadMessage('');
+        const uploadedImageContainer = this.imageCaptureDiv.querySelector(
+          '.js-uploaded-image-container',
+        );
+        // Retain the preview nodes so a failed upload can restore the previous image.
+        this.manualUploadPreview ??= [...uploadedImageContainer.childNodes];
+        this.setLoadingCaptureState(uploadedImageContainer);
 
         try {
           let blob = file;
           if (/^image\/hei[cf](?:-sequence)?$/i.test(file.type) || /\.hei[cf]$/i.test(file.name)) {
-            this.setManualUploadMessage('Converting image…');
             const { heicTo } = await import('heic-to/csp');
             blob = await heicTo({ blob: file, type: 'image/jpeg', quality: 0.9 });
           }
@@ -180,6 +186,8 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
           this.loadCapturePreviewFromDataUrl({ dataUrl });
         } catch {
           if (uploadId !== this.manualUploadId) return;
+          uploadedImageContainer.replaceChildren(...this.manualUploadPreview);
+          this.manualUploadPreview = null;
           this.setManualUploadMessage(
             'Could not load this image. Try uploading a JPEG or PNG.',
             true,
@@ -761,6 +769,7 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
 
     loadCapturePreviewFromDataUrl({ dataUrl, originalCapture = true }) {
       this.manualUploadId++;
+      this.manualUploadPreview = null;
       if (this.editable && this.manual_upload_enabled) {
         this.setManualUploadMessage('');
       }

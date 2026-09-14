@@ -73,12 +73,14 @@ test('preserves the previous image after conversion failure and allows retry', a
     'Could not load this image. Try uploading a JPEG or PNG.',
   );
   await expect(hiddenInput).toHaveValue(previousValue);
+  await expect(page.getByAltText('Captured image preview').first()).toBeVisible();
   await expect(input).toHaveValue('');
   await input.setInputFiles(invalidFile);
   await expect(page.getByRole('status', { name: 'Image upload' }).first()).toHaveText(
     'Could not load this image. Try uploading a JPEG or PNG.',
   );
   await expect(hiddenInput).toHaveValue(previousValue);
+  await expect(page.getByAltText('Captured image preview').first()).toBeVisible();
 });
 
 test('a newer upload supersedes a pending HEIC conversion', async ({ page }) => {
@@ -99,9 +101,9 @@ test('a newer upload supersedes a pending HEIC conversion', async ({ page }) => 
     mimeType: 'image/heic',
     buffer: Buffer.from('pending'),
   });
-  await expect(page.getByRole('status', { name: 'Image upload' }).first()).toHaveText(
-    'Converting image…',
-  );
+  await expect(page.getByText('Loading...', { exact: true }).first()).toBeAttached();
+  await expect(page.locator('.js-uploaded-image-container .spinner-border').first()).toBeVisible();
+  await page.screenshot({ path: test.info().outputPath('upload-loading.png') });
   await input.setInputFiles({
     name: 'image.png',
     mimeType: 'image/png',
