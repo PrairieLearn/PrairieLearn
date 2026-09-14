@@ -481,13 +481,15 @@ def _config(html: str, data: pl.QuestionData | None = None) -> RenderConfig:
         raise ValueError(
             "Correct answer approaches limit must include a valid direction."
         )
-    direction_input_attribute = "allow-limit-direction-input" in element.attrib
-    if direction_input_attribute and indexing != "approaches":
+    approach_direction_input_attribute = (
+        "allow-approach-direction-input" in element.attrib
+    )
+    if approach_direction_input_attribute and indexing != "approaches":
         raise ValueError(
-            'Attribute "allow-limit-direction-input" can only be used with indexing="approaches".'
+            'Attribute "allow-approach-direction-input" can only be used with indexing="approaches".'
         )
     allow_direction_input = pl.get_boolean_attrib(
-        element, "allow-limit-direction-input", indexing == "approaches"
+        element, "allow-approach-direction-input", indexing == "approaches"
     )
     variables = _get_tuple_attrib(element, "variables")
     custom_functions = _get_tuple_attrib(element, "custom-functions")
