@@ -7,10 +7,11 @@ import textwrap
 import time
 from dataclasses import dataclass, replace
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any, Literal, get_args
 
 import lxml.html
 import prairielearn as pl
+import prairielearn.big_operator_utils as pbo
 import prairielearn.sympy_utils as psu
 import pytest
 import sympy
@@ -306,6 +307,14 @@ DOCUMENTATION_EXAMPLES, DOCUMENTATION_DISCOVERY_ERROR = (
 
 
 class TestConfigurationUnits:
+    def test_builtin_operator_types_are_subtypes(self) -> None:
+        assert set(get_args(big_operator_input.BuiltinOperator.__value__)) < set(
+            get_args(pbo.BigOperatorName.__value__)
+        )
+        assert set(get_args(big_operator_input.BuiltinOperatorFn.__value__)) < set(
+            get_args(pbo.BigOperatorFunctionName.__value__)
+        )
+
     def test_correct_answer_is_required(self) -> None:
         with pytest.raises(ValueError, match="is required"):
             big_operator_input._config(html())
