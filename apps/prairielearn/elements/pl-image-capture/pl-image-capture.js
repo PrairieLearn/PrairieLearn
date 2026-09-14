@@ -158,7 +158,8 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
         if (!file) return;
         target.value = '';
 
-        const uploadId = ++this.manualUploadId;
+        this.manualUploadId++;
+        const uploadId = this.manualUploadId;
         this.setManualUploadMessage('');
         const uploadedImageContainer = this.imageCaptureDiv.querySelector(
           '.js-uploaded-image-container',
@@ -170,8 +171,9 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
         try {
           let blob = file;
           if (/^image\/hei[cf](?:-sequence)?$/i.test(file.type) || /\.hei[cf]$/i.test(file.name)) {
+            // Load only for HEIC uploads; subsequent imports reuse the cached module.
             const { heicTo } = await import('heic-to/csp');
-            blob = await heicTo({ blob: file, type: 'image/jpeg', quality: 0.9 });
+            blob = await heicTo({ blob: file, type: 'image/jpeg', quality: 1 });
           }
 
           const dataUrl = await new Promise((resolve, reject) => {

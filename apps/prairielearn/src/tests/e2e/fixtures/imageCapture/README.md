@@ -1,3 +1,5 @@
+# Image capture test fixture
+
 `large.heic` is a generated 2400 × 1200 solid blue image used to exercise real
 browser HEIC decoding and the element's 2000-pixel submission limit. It contains
 no personal photos or metadata. Generate it with Pillow and pillow-heif in a
