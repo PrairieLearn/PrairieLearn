@@ -7,21 +7,7 @@ import sympy
 
 import prairielearn.sympy_utils as psu
 
-type BigOperatorName = Literal[
-    "sum",
-    "product",
-    "integral",
-    "limit",
-    "union",
-    "intersection",
-    "disjoint-union",
-    "min",
-    "max",
-    "custom",
-]
-"""An operator supported by a big-operator answer."""
-
-type BigOperatorFunctionName = Literal[
+type BigOperatorDefinedFunctionName = Literal[
     "Sum",
     "Product",
     "Integral",
@@ -31,9 +17,14 @@ type BigOperatorFunctionName = Literal[
     "DisjointUnion",
     "Min",
     "Max",
-    "Custom",
 ]
+"""A defined function name supported by a big-operator answer."""
+
+type BigOperatorFunctionName = BigOperatorDefinedFunctionName | Literal["Custom"]
 """A function name supported by a big-operator answer."""
+
+type BigOperatorName = BigOperatorFunctionName
+"""Deprecated alias for :data:`BigOperatorFunctionName`."""
 
 type BigOperatorIndexing = Literal["bounds", "domain", "approaches"]
 """How a big-operator answer indexes its body."""
@@ -51,7 +42,7 @@ type BigOperatorValue = (
 class _BigOperatorJsonBase(TypedDict):
     _type: Literal["big_operator"]
     _version: Literal[1]
-    operator: BigOperatorName
+    operator: BigOperatorFunctionName
     index: psu.SympyJson
     body: psu.SympyJson
 
@@ -88,7 +79,7 @@ type BigOperatorJson = (
 class _BigOperatorBase(TypedDict):
     _type: Literal["big_operator"]
     _version: Literal[1]
-    operator: BigOperatorName
+    operator: BigOperatorFunctionName
     index: sympy.Symbol
     body: sympy.Basic
 
@@ -121,17 +112,19 @@ type BigOperator = BigBoundsOperator | BigDomainOperator | BigApproachesOperator
 
 
 _BOUNDS_DOMAIN: frozenset[BigOperatorIndexing] = frozenset(("bounds", "domain"))
-_VALID_INDEXING_BY_OPERATOR: dict[BigOperatorName, frozenset[BigOperatorIndexing]] = {
-    "sum": _BOUNDS_DOMAIN,
-    "product": _BOUNDS_DOMAIN,
-    "integral": _BOUNDS_DOMAIN,
-    "limit": frozenset(("approaches",)),
-    "union": _BOUNDS_DOMAIN,
-    "intersection": _BOUNDS_DOMAIN,
-    "disjoint-union": _BOUNDS_DOMAIN,
-    "min": _BOUNDS_DOMAIN,
-    "max": _BOUNDS_DOMAIN,
-    "custom": frozenset(("bounds", "domain", "approaches")),
+_VALID_INDEXING_BY_OPERATOR: dict[
+    BigOperatorFunctionName, frozenset[BigOperatorIndexing]
+] = {
+    "Sum": _BOUNDS_DOMAIN,
+    "Product": _BOUNDS_DOMAIN,
+    "Integral": _BOUNDS_DOMAIN,
+    "Limit": frozenset(("approaches",)),
+    "Union": _BOUNDS_DOMAIN,
+    "Intersection": _BOUNDS_DOMAIN,
+    "DisjointUnion": _BOUNDS_DOMAIN,
+    "Min": _BOUNDS_DOMAIN,
+    "Max": _BOUNDS_DOMAIN,
+    "Custom": frozenset(("bounds", "domain", "approaches")),
 }
 _INDEXING_MODES: frozenset[str] = frozenset(("bounds", "domain", "approaches"))
 _DIRECTIONS: frozenset[str] = frozenset({
@@ -142,7 +135,7 @@ _DIRECTIONS: frozenset[str] = frozenset({
 
 
 def get_valid_big_operator_indexing(
-    operator: BigOperatorName,
+    operator: BigOperatorFunctionName,
 ) -> frozenset[BigOperatorIndexing]:
     """Return the indexing modes supported by a big operator."""
     return _VALID_INDEXING_BY_OPERATOR[operator]
@@ -150,7 +143,7 @@ def get_valid_big_operator_indexing(
 
 def _validate_operator_indexing(
     operator: object, indexing: object
-) -> tuple[BigOperatorName, BigOperatorIndexing]:
+) -> tuple[BigOperatorFunctionName, BigOperatorIndexing]:
     if not isinstance(operator, str) or operator not in _VALID_INDEXING_BY_OPERATOR:
         raise ValueError("Big operator has an unsupported operator.")
     if not isinstance(indexing, str) or indexing not in _INDEXING_MODES:
@@ -225,15 +218,15 @@ def big_operator_to_json(
 def big_operator_to_json(
     *,
     operator: Literal[
-        "sum",
-        "product",
-        "integral",
-        "union",
-        "intersection",
-        "disjoint-union",
-        "min",
-        "max",
-        "custom",
+        "Sum",
+        "Product",
+        "Integral",
+        "Union",
+        "Intersection",
+        "DisjointUnion",
+        "Min",
+        "Max",
+        "Custom",
     ],
     indexing: Literal["bounds"],
     index: sympy.Symbol | str,
@@ -248,15 +241,15 @@ def big_operator_to_json(
 def big_operator_to_json(
     *,
     operator: Literal[
-        "sum",
-        "product",
-        "integral",
-        "union",
-        "intersection",
-        "disjoint-union",
-        "min",
-        "max",
-        "custom",
+        "Sum",
+        "Product",
+        "Integral",
+        "Union",
+        "Intersection",
+        "DisjointUnion",
+        "Min",
+        "Max",
+        "Custom",
     ],
     indexing: Literal["domain"],
     index: sympy.Symbol | str,
@@ -269,7 +262,7 @@ def big_operator_to_json(
 @overload
 def big_operator_to_json(
     *,
-    operator: Literal["limit", "custom"],
+    operator: Literal["Limit", "Custom"],
     indexing: Literal["approaches"],
     index: sympy.Symbol | str,
     target: BigOperatorValue,
@@ -282,7 +275,7 @@ def big_operator_to_json(
 def big_operator_to_json(
     expression: BigOperator | None = None,
     *,
-    operator: BigOperatorName | None = None,
+    operator: BigOperatorFunctionName | None = None,
     indexing: BigOperatorIndexing | None = None,
     index: sympy.Symbol | str | None = None,
     body: BigOperatorValue | None = None,
@@ -505,6 +498,7 @@ __all__ = [
     "BigDomainOperator",
     "BigDomainOperatorJson",
     "BigOperator",
+    "BigOperatorDefinedFunctionName",
     "BigOperatorDirection",
     "BigOperatorFunctionName",
     "BigOperatorIndexing",
