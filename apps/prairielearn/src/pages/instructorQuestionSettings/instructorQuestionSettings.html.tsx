@@ -381,6 +381,22 @@ export const InstructorQuestionSettingsForm = ({
             <h2 className="h5 card-title mb-3">General</h2>
             <div className="row">
               <div className="col-md-6 mb-3">
+                <label className="form-label" htmlFor="title">
+                  Title
+                </label>
+                <input
+                  type="text"
+                  className="form-control"
+                  id="title"
+                  disabled={!canEdit}
+                  defaultValue={defaultValues.title}
+                  {...register('title')}
+                />
+                <small className="form-text text-muted">
+                  The title of the question (e.g., "Add two numbers").
+                </small>
+              </div>
+              <div className="col-md-6 mb-3">
                 <label className="form-label" htmlFor="qid">
                   QID
                 </label>
@@ -415,22 +431,6 @@ export const InstructorQuestionSettingsForm = ({
                 )}
                 <small className="form-text text-muted">
                   <QuestionShortNameDescription />
-                </small>
-              </div>
-              <div className="col-md-6 mb-3">
-                <label className="form-label" htmlFor="title">
-                  Title
-                </label>
-                <input
-                  type="text"
-                  className="form-control"
-                  id="title"
-                  disabled={!canEdit}
-                  defaultValue={defaultValues.title}
-                  {...register('title')}
-                />
-                <small className="form-text text-muted">
-                  The title of the question (e.g., "Add two numbers").
                 </small>
               </div>
             </div>

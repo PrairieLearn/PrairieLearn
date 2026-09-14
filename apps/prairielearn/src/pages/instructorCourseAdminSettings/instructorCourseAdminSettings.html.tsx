@@ -54,24 +54,6 @@ export function InstructorCourseAdminSettings({
           <input type="hidden" name="__csrf_token" value={csrfToken} />
           <input type="hidden" name="orig_hash" value={origHash} />
           <div className="mb-3">
-            <label className="form-label" htmlFor="short_name">
-              Short Name
-            </label>
-            <input
-              type="text"
-              className="form-control"
-              id="short_name"
-              name="short_name"
-              defaultValue={course.short_name ?? ''}
-              disabled={disabled}
-              required
-            />
-            <small className="form-text text-muted">
-              The short name of the course. Often this is the course rubric and number (e.g., "MATH
-              101" or "PHYS 440").
-            </small>
-          </div>
-          <div className="mb-3">
             <label className="form-label" htmlFor="title">
               Title
             </label>
@@ -86,6 +68,24 @@ export function InstructorCourseAdminSettings({
             />
             <small className="form-text text-muted">
               This is the official title of the course, as given in the course catalog.
+            </small>
+          </div>
+          <div className="mb-3">
+            <label className="form-label" htmlFor="short_name">
+              Short name
+            </label>
+            <input
+              type="text"
+              className="form-control"
+              id="short_name"
+              name="short_name"
+              defaultValue={course.short_name ?? ''}
+              disabled={disabled}
+              required
+            />
+            <small className="form-text text-muted">
+              The short name of the course. Often this is the course rubric and number (e.g., "MATH
+              101" or "PHYS 440").
             </small>
           </div>
           <div className="mb-3">

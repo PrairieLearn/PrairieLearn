@@ -52,6 +52,19 @@ import { uniqueEnrollmentCode } from '../../sync/fromDisk/courseInstances.js';
 import { InstructorInstanceAdminSettings } from './instructorInstanceAdminSettings.html.js';
 import { SettingsFormBodySchema } from './instructorInstanceAdminSettings.types.js';
 
+const CopyCourseInstanceBodySchema = z.object({
+  short_name: z.string().trim(),
+  long_name: z.string().trim(),
+  start_date: z.string(),
+  end_date: z.string(),
+  self_enrollment_enabled: z.boolean(),
+  self_enrollment_use_enrollment_code: z.boolean(),
+  self_enrollment_restrict_to_institution: z.boolean(),
+  course_instance_permission: EnumCourseInstanceRoleSchema.optional().default('None'),
+  access_control_strategy: z.enum(['migrate', 'keep', 'clear']).optional().default('clear'),
+  clear_incompatible: z.boolean().optional().default(false),
+});
+
 const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
@@ -73,7 +86,7 @@ router.get(
     const names = await sqldb.queryRows(
       sql.select_names,
       { course_id: course.id },
-      z.object({ short_name: z.string() }),
+      z.object({ short_name: z.string(), long_name: z.string().nullable() }),
     );
     const enrollmentCount = await sqldb.queryScalar(
       sql.select_enrollment_count,
@@ -206,23 +219,11 @@ router.post(
         end_date,
         self_enrollment_enabled,
         self_enrollment_use_enrollment_code,
+        self_enrollment_restrict_to_institution,
         course_instance_permission,
         access_control_strategy,
         clear_incompatible,
-      } = parseRequestBody(
-        req,
-        z.object({
-          short_name: z.string().trim(),
-          long_name: z.string().trim(),
-          start_date: z.string(),
-          end_date: z.string(),
-          self_enrollment_enabled: z.boolean(),
-          self_enrollment_use_enrollment_code: z.boolean(),
-          course_instance_permission: EnumCourseInstanceRoleSchema.optional().default('None'),
-          access_control_strategy: z.enum(['migrate', 'keep', 'clear']).optional().default('clear'),
-          clear_incompatible: z.boolean().optional().default(false),
-        }),
-      );
+      } = parseRequestBody(req, CopyCourseInstanceBodySchema);
 
       if (!short_name) {
         throw new error.HttpStatusError(400, 'Short name is required');
@@ -239,7 +240,7 @@ router.post(
       const existingNames = await sqldb.queryRows(
         sql.select_names,
         { course_id: course.id },
-        z.object({ short_name: z.string() }),
+        z.object({ short_name: z.string(), long_name: z.string().nullable() }),
       );
       const existingShortNames = existingNames.map((name) => name.short_name.toLowerCase());
 
@@ -275,11 +276,20 @@ router.post(
         false,
       );
 
+      const selfEnrollmentRestrictToInstitution = propertyValueWithDefault(
+        undefined,
+        self_enrollment_restrict_to_institution,
+        true,
+      );
+
       const resolvedSelfEnrollment =
-        (selfEnrollmentEnabled ?? selfEnrollmentUseEnrollmentCode) !== undefined
+        (selfEnrollmentEnabled ??
+          selfEnrollmentUseEnrollmentCode ??
+          selfEnrollmentRestrictToInstitution) !== undefined
           ? {
               enabled: selfEnrollmentEnabled,
               useEnrollmentCode: selfEnrollmentUseEnrollmentCode,
+              restrictToInstitution: selfEnrollmentRestrictToInstitution,
             }
           : undefined;
 

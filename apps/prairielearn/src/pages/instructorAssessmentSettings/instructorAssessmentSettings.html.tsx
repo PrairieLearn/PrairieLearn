@@ -915,6 +915,23 @@ function InstructorAssessmentSettingsInner({
           <div className="card">
             <div className="card-body">
               <h2 className="h5 card-title mb-3">General</h2>
+              <div className="mb-3">
+                <label className="form-label" htmlFor="title">
+                  Title
+                </label>
+                <input
+                  type="text"
+                  className="form-control"
+                  id="title"
+                  aria-describedby="title-help"
+                  disabled={!canEdit}
+                  defaultValue={defaultValues.title}
+                  {...register('title')}
+                />
+                <small id="title-help" className="form-text text-muted">
+                  The full name of the assessment, visible to users.
+                </small>
+              </div>
               <div className="row">
                 <div className="col-md-6 mb-3">
                   <label className="form-label" htmlFor="aid">
@@ -998,23 +1015,6 @@ function InstructorAssessmentSettingsInner({
                       : 'Changing the type may modify or remove existing configuration.'}
                   </small>
                 </div>
-              </div>
-              <div className="mb-3">
-                <label className="form-label" htmlFor="title">
-                  Title
-                </label>
-                <input
-                  type="text"
-                  className="form-control"
-                  id="title"
-                  aria-describedby="title-help"
-                  disabled={!canEdit}
-                  defaultValue={defaultValues.title}
-                  {...register('title')}
-                />
-                <small id="title-help" className="form-text text-muted">
-                  The full name of the assessment, visible to users.
-                </small>
               </div>
               <div className="row">
                 <div className="col-md-6 mb-3">
