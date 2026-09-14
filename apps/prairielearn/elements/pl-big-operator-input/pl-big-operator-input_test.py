@@ -1507,6 +1507,37 @@ class TestRenderUnits:
         assert operator_position < field_positions[0]
         assert field_positions == sorted(field_positions)
 
+    @pytest.mark.parametrize(
+        ("direction", "invalid"),
+        [("sideways", True), ("two-sided", False)],
+    )
+    def test_direction_input_exposes_validation_state(
+        self, direction: str, invalid: bool
+    ) -> None:
+        markup = html(operator="limit")
+        data = question_data(
+            raw_submitted_answers={
+                "op-target": "0",
+                "op-direction": direction,
+                "op-body": "1/k",
+            }
+        )
+        big_operator_input.prepare(markup, data)
+        big_operator_input.parse(markup, data)
+
+        root = lxml.html.fragment_fromstring(big_operator_input.render(markup, data))
+        select = root.get_element_by_id("op-direction")
+
+        if invalid:
+            assert select.get("aria-invalid") == "true"
+            assert select.get("aria-errormessage") == "op-direction-feedback"
+            feedback = root.get_element_by_id("op-direction-feedback")
+            assert feedback.text_content() == "Select a valid limit direction."
+        else:
+            assert select.get("aria-invalid") is None
+            assert select.get("aria-errormessage") is None
+            assert root.xpath('//*[@id="op-direction-feedback"]') == []
+
     @pytest.mark.parametrize("operator", ["integral", "sum"])
     def test_question_panel_operator_is_accessibility_exposed(
         self, operator: str
