@@ -64,13 +64,14 @@ def question_data(
     raw_submitted_answers: dict[str, str] | None = None,
     panel: Literal["answer", "submission", "question"] = "question",
 ) -> dict[str, Any]:
+    raw_submitted_answers = raw_submitted_answers or {}
     return {
         "params": {},
         "preferences": {},
         "correct_answers": ({} if correct_answer is None else {"op": correct_answer}),
         "answers_names": {},
-        "submitted_answers": {},
-        "raw_submitted_answers": raw_submitted_answers or {},
+        "submitted_answers": dict(raw_submitted_answers),
+        "raw_submitted_answers": raw_submitted_answers,
         "format_errors": {},
         "partial_scores": {},
         "panel": panel,
@@ -888,7 +889,7 @@ class TestParseUnits:
         raw: dict[str, str],
         expected_components: set[str],
     ) -> None:
-        data = question_data(raw_submitted_answers={**raw, "op-unused": "99"})
+        data = question_data(raw_submitted_answers=raw)
 
         big_operator_input.parse(html(operator=operator, indexing=indexing), data)
 
@@ -899,6 +900,50 @@ class TestParseUnits:
         assert expected_components <= answer.keys()
         assert set(data["submitted_answers"]) == {"op"}
         assert not data.get("format_errors")
+
+    def test_formula_editor_transport_fields_are_not_persisted(self) -> None:
+        data = question_data(
+            raw_submitted_answers={
+                "op-lower": "1",
+                "op-lower-latex": "1",
+                "op-upper": "2",
+                "op-upper-latex": "2",
+                "op-body": "k",
+                "op-body-latex": "k",
+                "other-answer": "unchanged",
+            }
+        )
+
+        big_operator_input.parse(html(operator="sum"), data)
+
+        assert set(data["submitted_answers"]) == {"op", "other-answer"}
+        assert data["submitted_answers"]["other-answer"] == "unchanged"
+
+    @pytest.mark.parametrize("panel", ["question", "submission"])
+    def test_formula_editor_transport_cleanup_preserves_render(
+        self, panel: Literal["question", "submission"]
+    ) -> None:
+        data = question_data(
+            raw_submitted_answers={
+                "op-lower": "1",
+                "op-lower-latex": "1",
+                "op-upper": "2",
+                "op-upper-latex": "2",
+                "op-body": "k",
+                "op-body-latex": "k",
+            },
+            panel=panel,
+        )
+
+        big_operator_input.parse(html(operator="sum"), data)
+        rendered = big_operator_input.render(html(operator="sum"), data)
+
+        if panel == "question":
+            assert 'name="op-lower"' in rendered
+            assert 'name="op-upper"' in rendered
+            assert 'name="op-body"' in rendered
+        else:
+            assert r"\sum_{k=1}^{2} k" in rendered
 
     @pytest.mark.parametrize(
         ("operator", "field"),
