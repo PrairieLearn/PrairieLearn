@@ -39,6 +39,8 @@ def fib(n):
 
 ## Details
 
+Editors with a preview provide an **Enter fullscreen** button that opens an overlay filling the browser viewport. The browser tabs and address bar remain visible. The overlay places the editor on the left and the preview on the right, with independent scrolling. Use **Exit fullscreen** or press Escape to return to the normal layout. Editing continues to update the submitted answer immediately in either layout.
+
 When using `auto-resize`, consider specifying a custom `min-lines` or pre-populating the code editor window with a code sample.
 This will initialize the editor area with a sufficient number of lines to display all the code simultaneously without the need for scrolling.
 

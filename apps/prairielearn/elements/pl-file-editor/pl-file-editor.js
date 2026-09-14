@@ -82,6 +82,7 @@ window.PLFileEditor = function (uuid, options) {
   this.syncSettings();
 
   this.initSettingsButton(uuid);
+  if (options.preview) initFileEditorFullscreen(this);
 
   if (!options.readOnly) {
     this.initRestoreOriginalButton();
@@ -342,3 +343,82 @@ window.PLFileEditor.prototype.preview = {
   })(),
   // Additional preview types can be created by extensions, by adding entries to window.PLFileEditor.prototype.preview.
 };
+
+/**
+ * Keep the editor in its form while a fixed overlay fills the browser viewport.
+ * @param {{element: JQuery<HTMLElement>, editor: import('ace-builds').Ace.Editor, modal: JQuery<HTMLElement>}} fileEditor
+ * @returns {void}
+ */
+function initFileEditorFullscreen(fileEditor) {
+  const root = fileEditor.element[0];
+  const button = /** @type {HTMLButtonElement | null} */ (root.querySelector('.fullscreen-button'));
+  if (!button) return;
+  button.hidden = false;
+  const label = /** @type {HTMLElement} */ (button.querySelector('.fullscreen-label'));
+  /** @type {{minLines: number | undefined, maxLines: number | undefined, overflow: string, scrollX: number, scrollY: number} | undefined} */
+  let savedState;
+
+  /** @param {boolean} fullscreen */
+  const setFullscreen = (fullscreen) => {
+    if (fullscreen === Boolean(savedState)) return;
+    if (fullscreen) {
+      savedState = {
+        minLines: fileEditor.editor.getOption('minLines'),
+        maxLines: fileEditor.editor.getOption('maxLines'),
+        overflow: document.body.style.overflow,
+        scrollX: window.scrollX,
+        scrollY: window.scrollY,
+      };
+      document.body.style.overflow = 'hidden';
+      root.classList.add('file-editor-fullscreen');
+      root.setAttribute('role', 'dialog');
+      root.setAttribute('aria-modal', 'true');
+      root.setAttribute('aria-label', 'File editor');
+      // The overlay owns the pane height; Ace must scroll instead of growing.
+      fileEditor.editor.setOptions({ minLines: 0, maxLines: 0 });
+    } else if (savedState) {
+      root.classList.remove('file-editor-fullscreen');
+      root.removeAttribute('role');
+      root.removeAttribute('aria-modal');
+      root.removeAttribute('aria-label');
+      document.body.style.overflow = savedState.overflow;
+      fileEditor.editor.setOptions({
+        minLines: savedState.minLines,
+        maxLines: savedState.maxLines,
+      });
+      fileEditor.editor.resize(true);
+      window.scrollTo(savedState.scrollX, savedState.scrollY);
+      savedState = undefined;
+    }
+    label.textContent = fullscreen ? 'Exit fullscreen' : 'Enter fullscreen';
+    button.setAttribute('aria-pressed', String(fullscreen));
+    fileEditor.editor.resize(true);
+    if (fullscreen) fileEditor.editor.focus();
+    else button.focus({ preventScroll: true });
+  };
+
+  /** @param {KeyboardEvent} event */
+  const onKeyDown = (event) => {
+    // Leave keyboard handling to the settings dialog while it is open.
+    if (savedState && event.key === 'Escape' && !fileEditor.modal.hasClass('show')) {
+      event.preventDefault();
+      event.stopPropagation();
+      setFullscreen(false);
+    }
+  };
+  /** @param {FocusEvent} event */
+  const onFocusIn = (event) => {
+    if (savedState && !root.contains(/** @type {Node} */ (event.target))) fileEditor.editor.focus();
+  };
+  document.addEventListener('keydown', onKeyDown, { capture: true });
+  document.addEventListener('focusin', onFocusIn);
+  fileEditor.editor.on('destroy', () => {
+    document.removeEventListener('keydown', onKeyDown, true);
+    document.removeEventListener('focusin', onFocusIn);
+    if (savedState) {
+      document.body.style.overflow = savedState.overflow;
+      root.classList.remove('file-editor-fullscreen');
+    }
+  });
+  button.addEventListener('click', () => setFullscreen(!savedState));
+}
