@@ -246,12 +246,19 @@ const SKIP_ROUTES = [
   /^\/pl\/api\/v1\//,
   /\.json$/,
   '/pl/request_course/check',
+  '/pl/course_instance/:course_instance_id/instructor/assessment_instance/:assessment_instance_id/paper',
+
+  // The printable preview requires browser-side transformations and pagination.
+  // Accessibility is checked after rendering in assessmentInstancePrinting.spec.ts.
+  '/pl/course_instance/:course_instance_id/instructor/assessment_instance/:assessment_instance_id/paper/preview',
 
   // Static assets.
   '/assets/elements/:cachebuster/*',
   '/pl/static/elements/*',
 
   // File downloads.
+  '/pl/course_instance/:course_instance_id/instructor/assessment_instance/:assessment_instance_id/paper/pdf',
+  '/pl/course_instance/:course_instance_id/instructor/assessment_instance/:assessment_instance_id/paper/docx',
   '/pl/course_instance/:course_instance_id/assessment_instance/:assessment_instance_id/file/:unsafe_file_id/:unsafe_display_filename',
   '/pl/course_instance/:course_instance_id/assessment/:assessment_id/clientFilesCourse/*',
   '/pl/course_instance/:course_instance_id/assessment/:assessment_id/clientFilesCourseInstance/*',

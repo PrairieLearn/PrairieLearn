@@ -1,0 +1,858 @@
+@page {
+  margin: 0.55in 0.55in 0.7in;
+
+  @bottom-left {
+    content: ' ';
+    vertical-align: middle;
+  }
+
+  @bottom-right {
+    vertical-align: middle;
+  }
+}
+
+:root {
+  --exam-print-page-width: 8.5in;
+  --exam-print-page-height: 11in;
+  --exam-print-margin-top: 0.55in;
+  --exam-print-margin-right: 0.55in;
+  --exam-print-margin-bottom: 0.7in;
+  --exam-print-margin-left: 0.55in;
+  --exam-print-question-spacing: 0.18in;
+  --exam-print-content-width: calc(
+    var(--exam-print-page-width) - var(--exam-print-margin-left) - var(--exam-print-margin-right)
+  );
+  --exam-print-content-height: calc(
+    var(--exam-print-page-height) - var(--exam-print-margin-top) - var(--exam-print-margin-bottom)
+  );
+  color-scheme: light;
+}
+
+.printing-page-code {
+  display: block;
+  width: 0.35in;
+  height: 0.35in;
+  object-fit: contain;
+}
+
+:root[data-print-paper-size='A4'] {
+  --exam-print-page-width: 210mm;
+  --exam-print-page-height: 297mm;
+}
+
+body {
+  color: #111;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 10.5pt;
+  line-height: 1.35;
+}
+
+.exam-print-document {
+  box-sizing: border-box;
+  inline-size: var(--exam-print-content-width);
+}
+
+.exam-print-page-measure {
+  block-size: var(--exam-print-content-height);
+  inline-size: var(--exam-print-content-width);
+  pointer-events: none;
+  position: absolute;
+  visibility: hidden;
+}
+
+.exam-cover {
+  break-after: page;
+  display: flex;
+  flex-direction: column;
+  min-height: var(--exam-print-content-height);
+  page: exam-cover;
+}
+
+.exam-cover-header {
+  border-bottom: 1.5pt solid #111;
+  margin-bottom: 0.2in;
+  padding-bottom: 0.15in;
+  text-align: center;
+}
+
+.exam-cover-course {
+  font-size: 14pt;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.exam-cover-course-title {
+  color: #444;
+  font-size: 9.5pt;
+  margin-top: 0.04in;
+}
+
+.exam-cover h1 {
+  font-size: 24pt;
+  font-weight: 700;
+  margin: 0.12in 0 0;
+}
+
+.exam-cover-document-label {
+  color: #444;
+  font-size: 10pt;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  margin-top: 0.08in;
+  text-transform: uppercase;
+}
+
+.exam-cover-title {
+  font-size: 12.5pt;
+  margin-top: 0.05in;
+}
+
+.exam-cover-fields {
+  display: grid;
+  gap: 0.12in;
+  grid-template-columns: repeat(auto-fit, minmax(1.45in, 1fr));
+  margin-bottom: 0.15in;
+}
+
+.exam-cover-field-wide {
+  grid-column: 1 / -1;
+}
+
+.exam-cover-field {
+  border-bottom: 1pt solid #111;
+  height: 0.3in;
+  position: relative;
+}
+
+.exam-cover-field span,
+.exam-cover-signature span {
+  background: #fff;
+  bottom: -0.07in;
+  color: #333;
+  font-size: 7.5pt;
+  left: 0.08in;
+  padding: 0 0.04in;
+  position: absolute;
+  text-transform: uppercase;
+}
+
+.exam-cover-summary {
+  border: 1pt solid #777;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  margin: 0 0 0.18in;
+}
+
+.exam-cover-summary > div {
+  border-right: 0.5pt solid #aaa;
+  padding: 0.07in 0.1in;
+  text-align: center;
+}
+
+.exam-cover-summary > div:last-child {
+  border-right: 0;
+}
+
+.exam-cover-summary dt {
+  color: #555;
+  font-size: 7.5pt;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.exam-cover-summary dd {
+  font-size: 11pt;
+  font-weight: 700;
+  margin: 0.03in 0 0;
+}
+
+.exam-cover-instructions,
+.exam-cover-honor-code {
+  border: 0.6pt solid #aaa;
+  font-size: 9.5pt;
+  line-height: 1.25;
+  margin-bottom: 0.14in;
+  padding: 0.1in 0.14in;
+}
+
+.exam-cover h2 {
+  font-size: 11pt;
+  font-weight: 700;
+  margin: 0 0 0.06in;
+}
+
+.exam-cover ol,
+.exam-cover-custom-instructions > :last-child,
+.exam-cover-honor-code > :last-child {
+  margin-bottom: 0;
+}
+
+.exam-cover-custom-instructions {
+  border-top: 0.5pt solid #bbb;
+  font-size: 8.5pt;
+  line-height: 1.2;
+  margin-top: 0.08in;
+  padding-top: 0.08in;
+}
+
+.exam-cover-signature {
+  border-bottom: 1pt solid #111;
+  height: 0.25in;
+  margin-top: 0.08in;
+  position: relative;
+}
+
+.exam-cover footer {
+  border-top: 0.5pt solid #aaa;
+  color: #555;
+  display: flex;
+  font-size: 8pt;
+  justify-content: space-between;
+  margin-top: auto;
+  padding-top: 0.06in;
+}
+
+.printing-question-page {
+  break-after: page;
+}
+
+.printing-question-page + .printing-question-page {
+  break-before: page;
+}
+
+.printing-question-page:not([data-print-allows-flow='true']) {
+  break-inside: avoid;
+}
+
+.printing-question-page[data-print-allows-flow='true']
+  > .printing-question[data-print-allows-flow='true'] {
+  break-inside: auto !important;
+}
+
+.printing-question-page:last-child {
+  break-after: auto;
+}
+
+.printing-question {
+  box-sizing: border-box;
+  break-inside: avoid;
+  display: flow-root;
+  min-height: 1in;
+  padding-block-end: var(--exam-print-question-spacing);
+}
+
+.printing-question[data-print-block-size='third'],
+.printing-question[data-print-block-size='half'],
+.printing-question[data-print-block-size='full'] {
+  block-size: var(--printing-question-block-height);
+  break-inside: avoid;
+}
+
+.printing-question .question-container.card,
+.printing-question .question-block.card {
+  border: 0 !important;
+  box-shadow: none !important;
+  margin: 0;
+}
+
+.printing-question .question-container > .card-header,
+.printing-question .question-block > .card-header {
+  background: #fff !important;
+  border-bottom: 0.5pt solid #aaa !important;
+  color: #111 !important;
+  padding: 0 0 0.04in;
+}
+
+.printing-question .question-container > .card-header h1,
+.printing-question .question-block > .card-header h1 {
+  color: #555;
+  font-size: 9pt;
+  letter-spacing: 0.04em;
+  line-height: 1.1;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.printing-question .question-container > .card-body,
+.printing-question .question-block > .card-body,
+.printing-question .question-body {
+  padding-left: 0;
+  padding-right: 0;
+}
+
+html[data-print-document='answer_key'] .printing-answer-key {
+  align-items: center;
+  background: #f5f5f5;
+  border: 0.8pt solid #777;
+  border-radius: 0;
+  box-sizing: border-box;
+  break-inside: avoid;
+  display: grid;
+  gap: 0.1in;
+  grid-template-columns: max-content minmax(0, 1fr);
+  padding: 0.05in 0.08in;
+}
+
+html[data-print-document='answer_key'] .printing-answer-key.printing-answer-key-code {
+  gap: 0.03in;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: max-content minmax(0, 1fr);
+}
+
+html[data-print-document='answer_key'] .printing-answer-key-label {
+  font-size: 8.5pt;
+  font-weight: 700;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+html[data-print-document='answer_key'] .printing-answer-key-viewport {
+  min-inline-size: 0;
+}
+
+html[data-print-document='answer_key'] .printing-answer-key-content {
+  font-size: 9pt;
+  line-height: 1.25;
+  margin: 0;
+}
+
+.printing-answer-key-content .d-inline-block + .d-inline-block {
+  margin-inline-start: 0.15in;
+}
+
+.printing-answer-key-content span + samp,
+.printing-answer-key-content span + code,
+.printing-answer-key-content span + mjx-container {
+  margin-inline-start: 0.2em;
+}
+
+html[data-print-document='answer_key'] .printing-answer-key-content > :last-child {
+  margin-bottom: 0 !important;
+}
+
+html[data-print-document='answer_key'] .printing-answer-key-content pre {
+  font-size: 7.5pt;
+  line-height: 1.25;
+  margin-bottom: 0;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.printing-question img,
+.printing-question svg {
+  height: auto;
+  max-width: 100%;
+}
+
+.printing-question table,
+.printing-question figure,
+.printing-question .form-check,
+.printing-question .checkbox,
+.printing-question .trueFalse,
+.printing-question .input-group,
+.printing-question .pl-matching-statement,
+.printing-question .pl-order-blocks-pairing {
+  break-inside: avoid;
+}
+
+.printing-question button,
+.printing-question .modal,
+.printing-question .toast:not(.answer-body *),
+.printing-question .popover:not(.answer-body *),
+.printing-question .question-form > .card-footer,
+.printing-question .pl-hidden-hint:not(.answer-body *),
+.printing-question .upload-dropzone:not(.answer-body *),
+.printing-question .file-upload-status:not(.answer-body *),
+.printing-question .pl-rich-text-editor-counter-container:not(.answer-body *) {
+  display: none !important;
+}
+
+.printing-question .question-body input[type='radio'],
+.printing-question .question-body input[type='checkbox'] {
+  appearance: none;
+  background: #fff !important;
+  border: 1.2pt solid #111 !important;
+  display: inline-block;
+  height: 0.16in;
+  margin: 0 0.07in 0 0;
+  opacity: 1 !important;
+  vertical-align: -0.025in;
+  width: 0.16in;
+}
+
+.printing-question .question-body input[type='radio'] {
+  border-radius: 50%;
+}
+
+.printing-question .printing-selection-group {
+  display: block !important;
+  margin-block: 0.1in 0.16in;
+}
+
+.printing-question .printing-selection-option {
+  align-items: flex-start !important;
+  border-bottom: 0.5pt solid #ddd;
+  display: flex !important;
+  gap: 0.1in !important;
+  margin: 0 !important;
+  padding: 0.085in 0.04in !important;
+  width: 100%;
+}
+
+.printing-question .printing-selection-option:last-of-type {
+  border-bottom: 0;
+}
+
+.printing-question .printing-selection-option .form-check-label {
+  align-items: flex-start !important;
+  display: flex !important;
+  gap: 0.06in;
+  line-height: 1.4;
+  min-width: 0;
+}
+
+.printing-question .printing-selection-option .form-check-input {
+  flex: 0 0 0.17in;
+  height: 0.17in;
+  margin: 0.025in 0 0 !important;
+  width: 0.17in;
+}
+
+.printing-question .printing-selection-option .form-check-label p:last-child {
+  margin-bottom: 0;
+}
+
+.printing-question .pl-checkbox-key-label {
+  font-weight: 600;
+}
+
+.printing-response-placeholder {
+  break-after: avoid;
+  color: #555;
+  display: block;
+  font-size: 7.5pt;
+  font-style: italic;
+  line-height: 1.2;
+  margin: 0 0 0.025in;
+}
+
+.printing-choice-list {
+  display: grid;
+  gap: 0.09in;
+  margin: 0.1in 0;
+}
+
+.printing-choice {
+  align-items: flex-start;
+  break-inside: avoid;
+  display: flex;
+  gap: 0.08in;
+}
+
+.printing-choice-marker {
+  border: 1.2pt solid #111;
+  border-radius: 50%;
+  flex: 0 0 0.16in;
+  height: 0.16in;
+  margin-top: 0.02in;
+  width: 0.16in;
+}
+
+.printing-checkbox-instructions {
+  color: #333;
+  display: block !important;
+  font-size: 9pt;
+  font-weight: 600;
+  line-height: 1.35;
+  margin: 0 0 0.08in;
+}
+
+.printing-checkbox-instructions .form-text {
+  color: inherit !important;
+  font-size: inherit;
+  margin: 0;
+}
+
+.printing-response-area {
+  break-inside: avoid;
+  inline-size: 100%;
+  margin-top: 0.2in;
+}
+
+.printing-response-label {
+  font-size: 9pt;
+  font-weight: 700;
+  margin-bottom: 0.04in;
+  text-transform: uppercase;
+}
+
+.printing-response-lines {
+  /* Hard color stops keep rules solid; a 24pt repeat aligns with CSS pixels. */
+  background-image: repeating-linear-gradient(to bottom, transparent 0 23pt, #333 23pt 24pt);
+  min-height: var(--printing-response-area-height, 2.15in);
+}
+
+.printing-file-editor-name,
+.printing-file-editor-starter-label {
+  font-size: 9pt;
+  font-weight: 700;
+}
+
+.printing-file-editor-name {
+  border-bottom: 0.6pt solid #777;
+  margin-bottom: 0.08in;
+  padding-bottom: 0.04in;
+}
+
+.printing-file-editor-starter-label {
+  color: #444;
+  margin-bottom: 0.03in;
+  text-transform: uppercase;
+}
+
+.printing-file-editor-contents {
+  background: #f5f5f5;
+  border: 0.6pt solid #999;
+  font-size: 8.5pt;
+  line-height: 1.25;
+  margin: 0 0 0.12in;
+  overflow-wrap: anywhere;
+  padding: 0.08in;
+  tab-size: 2;
+  white-space: pre-wrap;
+}
+
+.printing-question-multiple-true-false .question-body .trueFalse > div > div:last-child {
+  white-space: nowrap;
+}
+
+.printing-canvas-image {
+  display: block;
+  height: auto;
+  max-width: 100%;
+}
+
+/* Use document typography inside questions; Bootstrap's heading and control sizes are for screens. */
+.printing-question .question-body h1,
+.printing-question .question-body h2 {
+  font-size: 13pt;
+}
+
+.printing-question .question-body h3,
+.printing-question .question-body h4,
+.printing-question .question-body h5,
+.printing-question .question-body h6 {
+  font-size: 11pt;
+}
+
+.printing-question .question-body h1,
+.printing-question .question-body h2,
+.printing-question .question-body h3,
+.printing-question .question-body h4,
+.printing-question .question-body h5,
+.printing-question .question-body h6 {
+  break-after: avoid;
+  font-weight: 700;
+  line-height: 1.25;
+  margin: 0.15in 0 0.08in;
+}
+
+.printing-question .question-body p {
+  orphans: 2;
+  widows: 2;
+  margin-bottom: 0.1in;
+}
+
+.printing-question .question-container,
+.printing-question .question-form,
+.printing-question .question-block,
+.printing-question .question-body {
+  display: block;
+  overflow: visible !important;
+}
+
+.printing-question .question-container,
+.printing-question .question-block {
+  margin-bottom: 0 !important;
+}
+
+.printing-question .question-body {
+  padding-top: 0.12in;
+  padding-bottom: 0;
+}
+
+.printing-question .question-body .input-group {
+  align-items: baseline;
+  flex-wrap: nowrap;
+  gap: 0.05in;
+  margin-block: 0.025in 0.08in;
+  max-inline-size: 100%;
+}
+
+.printing-question .question-body .input-group-text {
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  color: #111;
+  font-size: inherit;
+  line-height: inherit;
+  padding: 0;
+  white-space: normal;
+}
+
+.printing-question .question-body .input-group > .printing-response-line {
+  flex: 1 1 var(--printing-response-width);
+  min-inline-size: 0.6in;
+}
+
+.printing-response-line {
+  border-bottom: 0.8pt solid #111;
+  box-sizing: border-box;
+  display: inline-block;
+  block-size: 0.28in;
+  inline-size: var(--printing-response-width, 26ch);
+  max-inline-size: 100%;
+  vertical-align: baseline;
+}
+
+.printing-question .question-body .form-check-label,
+.printing-question .question-body input:disabled ~ label {
+  color: #111 !important;
+  opacity: 1 !important;
+}
+
+.printing-question .question-body .pl-matrix-component-input-container {
+  background: transparent;
+  border: 0;
+  flex: 0 0 auto;
+  inline-size: max-content;
+  overflow: visible;
+  padding: 0.04in;
+}
+
+.printing-question .question-body .pl-matrix-component-input-container td {
+  padding: 0.03in;
+}
+
+.printing-question .question-body .card:not(.question-block) {
+  border: 0.5pt solid #aaa;
+  border-radius: 0;
+  box-shadow: none;
+  display: block;
+}
+
+.printing-question .question-body .card-header {
+  background: #f5f5f5;
+  break-after: avoid;
+  font-size: 9.5pt;
+  font-weight: 600;
+  padding: 0.06in 0.1in;
+}
+
+.printing-question .question-body .card-body {
+  padding: 0.1in;
+}
+
+.printing-question .question-body pre {
+  font-size: 9pt;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.printing-question .question-body img,
+.printing-question .question-body svg,
+.printing-question .question-body .printing-keep-together {
+  break-inside: avoid;
+}
+
+.printing-question .question-body .sketchresponse {
+  margin-top: 0.08in;
+}
+
+.printing-question .question-body svg.printing-sketch {
+  display: block;
+  block-size: auto;
+  inline-size: min(100%, 6.3in);
+  margin-inline: auto;
+}
+
+.printing-drawing-response .printing-response-lines {
+  background: none;
+  border: 0.6pt solid #999;
+  min-height: 2.2in;
+}
+
+.printing-textarea-response {
+  margin-top: 0.08in;
+}
+
+.printing-textarea-response .printing-response-lines {
+  min-height: 1.4in;
+}
+
+.printing-order-blocks {
+  margin-block: 0.18in;
+}
+
+.printing-question .printing-order-set-heading {
+  font-size: 10pt;
+  font-weight: 700;
+  margin-block: 0 0.06in;
+}
+
+.printing-order-options {
+  list-style: none;
+  margin-bottom: 0.1in;
+  padding-left: 0;
+}
+
+.printing-order-options > li {
+  align-items: flex-start;
+  border-bottom: 0.5pt solid #ccc;
+  break-inside: avoid;
+  display: flex;
+  gap: 0.1in;
+  padding: 0.055in 0.05in;
+  white-space: normal;
+}
+
+.printing-order-position {
+  border: 1pt solid #333;
+  box-sizing: border-box;
+  display: block;
+  flex: 0 0 0.3in;
+  height: 0.3in;
+  width: 0.3in;
+}
+
+.printing-order-fields {
+  display: flex;
+  flex-shrink: 0;
+  gap: 0.09in;
+}
+
+.printing-order-field-label {
+  display: block;
+  font-size: 8pt;
+  line-height: 1.2;
+  margin-bottom: 0.025in;
+}
+
+.printing-order-block-content {
+  flex: 1;
+  min-inline-size: 0;
+  padding-top: 0.04in;
+}
+
+.printing-break-before {
+  break-before: page;
+}
+
+.printing-order-choice-group {
+  border: 0.75pt solid #999;
+  break-inside: avoid;
+  margin-block: 0.12in;
+  padding: 0.08in 0.1in;
+}
+
+.printing-order-choice-heading {
+  break-after: avoid;
+  font-size: 9.5pt;
+  font-weight: 700;
+  margin-bottom: 0.06in;
+}
+
+.printing-order-choice-group .printing-order-options {
+  margin-bottom: 0;
+}
+
+.printing-order-choice-group .printing-order-options > li:last-child {
+  border-bottom: 0;
+}
+
+.printing-response-instructions,
+.printing-select-options {
+  font-size: 9.5pt;
+}
+
+.printing-order-provided {
+  border-left: 1pt solid #777;
+  padding-left: 0.1in;
+}
+
+.printing-media-reference {
+  border: 0.6pt solid #aaa;
+  color: #333;
+  display: block;
+  font-size: 9pt;
+  margin-block: 0.1in;
+  overflow-wrap: anywhere;
+  padding: 0.1in;
+}
+
+html[data-print-document='answer_key'] .printing-answer-key-sections {
+  background: transparent;
+  border: 0;
+  break-inside: auto;
+  display: block;
+  padding: 0;
+}
+
+.printing-answer-key-sections > .printing-answer-key-label {
+  margin-bottom: 0.1in;
+}
+
+.printing-order-answer-group {
+  display: flow-root;
+}
+
+.printing-answer-key-content .pl-order-blocks-answer-container {
+  background: transparent;
+  border: 0.5pt solid #aaa;
+  border-radius: 0;
+  break-inside: avoid;
+  box-shadow: none;
+  display: block;
+  inline-size: 100%;
+  margin-block: 0.1in;
+  max-height: none;
+  overflow: visible;
+}
+
+.printing-answer-key-content .pl-order-block {
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  font-size: 9.5pt;
+  padding: 0.03in 0.05in;
+}
+
+.printing-question .question-body .pl-matching-container {
+  display: grid;
+  gap: 0.15in;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+
+.printing-question .question-body .pl-matching-statement-select {
+  flex: 0 0 0.5in;
+  inline-size: 0.5in;
+}
+
+.printing-question .question-body .pl-matching-options {
+  margin: 0;
+  min-inline-size: 0;
+  padding-left: 0.2in;
+}
+
+.printing-excalidraw canvas,
+.printing-excalidraw img {
+  display: block;
+  height: auto;
+  max-width: 100%;
+}
+
+.printing-question .pl-drawing-main .canvas-container {
+  max-width: 100%;
+}
