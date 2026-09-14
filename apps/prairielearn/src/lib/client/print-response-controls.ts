@@ -143,6 +143,7 @@ function replaceTextControls(source: HTMLElement): void {
     line.className = 'printing-response-line';
     line.dataset.printResponseLine = '';
     line.dataset.printAnswerName = control.getAttribute('name') ?? control.id;
+    line.setAttribute('role', 'img');
     line.setAttribute('aria-label', control.getAttribute('aria-label') ?? 'Answer');
     if (control.id) line.id = control.id;
     const size = Number(control.getAttribute('size') ?? 26);
@@ -191,6 +192,7 @@ function createOrderBlockItem(
   const position = document.createElement('span');
   position.className = 'printing-order-position';
   position.dataset.printResponseLine = '';
+  position.setAttribute('role', 'img');
   position.setAttribute('aria-label', ordered ? 'Order number' : 'Include block');
   position.classList.toggle('printing-order-selection', !ordered);
   if (indentation) {

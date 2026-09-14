@@ -216,7 +216,7 @@ export function InstructorAssessmentInstancePrint({
         <div id="exam-print-status" role="status">
           Preparing ${paperSize} ${documentLabel.toLowerCase()} pages…
         </div>
-        <main id="exam-print-source" class="exam-print-document">
+        <div id="exam-print-source" class="exam-print-document">
           <article class="exam-cover" aria-label="${documentLabel} cover page">
             <header class="exam-cover-header">
               <div class="exam-cover-course">${resLocals.course.short_name}</div>
@@ -307,8 +307,8 @@ export function InstructorAssessmentInstancePrint({
                   This exam contains no questions.
                 </section>`}
           </div>
-        </main>
-        <div id="exam-print-pages"></div>
+        </div>
+        <main id="exam-print-pages"></main>
         <noscript>This printable exam requires JavaScript to paginate its pages.</noscript>
       </body>
     </html>`;

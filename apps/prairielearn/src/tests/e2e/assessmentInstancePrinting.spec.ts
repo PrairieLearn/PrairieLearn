@@ -1,4 +1,5 @@
 import type { Page } from '@playwright/test';
+import axe from 'axe-core';
 
 import { makeAssessmentInstance } from '../../lib/assessment.js';
 import type { CourseInstance } from '../../lib/db-types.js';
@@ -91,6 +92,21 @@ async function readAnswerKeyQuestionPresentations(
         };
       });
     });
+}
+
+for (const document of ['exam', 'answer_key'] as const) {
+  test(`renders an accessible ${document} preview`, async ({ page, courseInstance }) => {
+    const assessmentInstanceId = await makePrintableAssessmentInstance(
+      courseInstance,
+      'exam20-assessmentTools',
+    );
+    await page.goto(`${paperUrl(courseInstance, assessmentInstanceId)}&document=${document}`);
+    await readPaginatedQuestionLayout(page);
+    await expect(page.getByText('Consider two numbers', { exact: false })).toBeVisible();
+    await page.addScriptTag({ content: axe.source });
+    const { violations } = await page.evaluate(async () => await axe.run());
+    expect(violations).toEqual([]);
+  });
 }
 
 test('renders readable answer keys for every student question', async ({
