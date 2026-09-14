@@ -60,7 +60,7 @@ type BuiltinOperatorFn = Literal[
     "Min",
     "Max",
 ]
-type OperatorFn = Literal["Custom"] | BuiltinOperatorFn
+type OperatorFn = pbo.BigOperatorFunctionName
 type Indexing = pbo.BigOperatorIndexing
 
 
