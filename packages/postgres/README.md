@@ -96,6 +96,8 @@ WHERE
 ```
 
 ```ts
+import { queryRows } from '@prairielearn/postgres';
+
 const users = await queryRows(sql.select_users, { user_ids: userIds }, UserSchema);
 ```
 
