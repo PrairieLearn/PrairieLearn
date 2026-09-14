@@ -20,11 +20,6 @@ import sympy
 import sympy.sets
 from prairielearn.big_operator_utils import BigOperatorName as OperatorName
 from prairielearn.internal.symbolic_input import DisplayType
-from prairielearn.sympy_utils import (
-    AssumptionsDictT,
-    BaseSympyError,
-    SympyParseFailure,
-)
 from prairielearn.timeout_utils import SignalTimeout, TimeoutState
 
 if TYPE_CHECKING:
@@ -123,7 +118,7 @@ ALLOWED_BLANKS: Final[frozenset[AllowedBlank]] = frozenset((
 class _ParseError(ValueError):
     """An author-provided mathematical expression could not be parsed."""
 
-    def __init__(self, src: BaseSympyError) -> None:
+    def __init__(self, src: psu.BaseSympyError) -> None:
         super().__init__(str(src))
         self._src = src
 
@@ -1122,7 +1117,7 @@ def _parse_component_submission(
     config: RenderConfig,
     component: Component,
     source: str | None,
-    assumptions: AssumptionsDictT | None = None,
+    assumptions: psu.AssumptionsDictT | None = None,
 ) -> SymbolicSubmissionParseResult:
     variables = (
         tuple(dict.fromkeys((*config.variables, config.index)))
@@ -1155,7 +1150,7 @@ def _submitted_tex(config: RenderConfig, data: QuestionData) -> str:
         parsed = _parse_component_submission(
             config, component, cast(str | None, raw.get(name))
         )
-        if isinstance(parsed, SympyParseFailure) or parsed.expr == "":
+        if isinstance(parsed, psu.SympyParseFailure) or parsed.expr == "":
             continue
         display_raw[name] = _expression_tex(config, parsed.expr)
     return _tex(config, display_raw)
@@ -1219,7 +1214,7 @@ def _unchecked_parse_sympy(
             allow_trig_functions=True,
             custom_functions=custom_functions,
         )
-    except BaseSympyError as exc:
+    except psu.BaseSympyError as exc:
         raise _ParseError(exc) from None
 
 
@@ -1253,14 +1248,11 @@ def _component_allows_blank(config: RenderConfig, component: ResponseComponent) 
 def _component_assumptions(
     correct: BigOperatorJson,
     component: Component,
-) -> AssumptionsDictT | None:
+) -> psu.AssumptionsDictT | None:
     value = correct.get(component)
-    if not isinstance(value, dict):
+    if not psu.is_sympy_json(value):
         return None
-    assumptions = value.get("_assumptions")
-    return (
-        cast(AssumptionsDictT, assumptions) if isinstance(assumptions, dict) else None
-    )
+    return value.get("_assumptions")
 
 
 def _parse_values(
@@ -1283,7 +1275,7 @@ def _parse_values(
             cast(str | None, raw_answers.get(name)),
             assumptions=_component_assumptions(correct, component),
         )
-        if isinstance(parsed, SympyParseFailure):
+        if isinstance(parsed, psu.SympyParseFailure):
             data.setdefault("format_errors", {})[name] = parsed.error
             continue
         if parsed.expr == "":
