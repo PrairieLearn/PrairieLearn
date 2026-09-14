@@ -48,18 +48,22 @@ Every element requires a complete answer. Set it with either the `correct-answer
 
 In `question.html`, the `Func(...)` answer configures the operator and its index fields. Start the correct answer with one of these function names:
 
-| Function        | Displayed operator | Supported index formats |
-| --------------- | ------------------ | ----------------------- |
-| `Sum`           | $\sum$             | Bounds or domain        |
-| `Product`       | $\prod$            | Bounds or domain        |
-| `Integral`      | $\int$             | Bounds or domain        |
-| `Limit`         | $\lim$             | Approaches              |
-| `Union`         | $\bigcup$          | Bounds or domain        |
-| `Intersection`  | $\bigcap$          | Bounds or domain        |
-| `DisjointUnion` | $\bigsqcup$        | Bounds or domain        |
-| `Min`           | $\min$             | Bounds or domain        |
-| `Max`           | $\max$             | Bounds or domain        |
-| `Custom`        | `operator-latex`   | Any format              |
+<div class="big-operator-formats" markdown>
+
+| Function        | Bounds                                          | Domain                                                       | Approaches                                                    |
+| --------------- | ----------------------------------------------- | ------------------------------------------------------------ | ------------------------------------------------------------- |
+| `Sum`           | $\displaystyle\sum_{k=1}^{n} k^2$               | $\displaystyle\sum_{k\in S}^{\phantom{n}} k^2$               | Not Supported                                                 |
+| `Product`       | $\displaystyle\prod_{k=1}^{n} k$                | $\displaystyle\prod_{k\in S}^{\phantom{n}} k$                | Not Supported                                                 |
+| `Integral`      | $\displaystyle\int_0^1 x^2\,\mathrm dx$         | $\displaystyle\int_\Gamma^{\phantom{1}} z^2\,\mathrm dz$     | Not Supported                                                 |
+| `Limit`         | Not Supported                                   | Not Supported                                                | $\displaystyle\lim_{x\to 0} f(x)$                             |
+| `Union`         | $\displaystyle\bigcup_{k=1}^{n} A_k$            | $\displaystyle\bigcup_{k\in S}^{\phantom{n}} A_k$            | Not Supported                                                 |
+| `Intersection`  | $\displaystyle\bigcap_{k=1}^{n} A_k$            | $\displaystyle\bigcap_{k\in S}^{\phantom{n}} A_k$            | Not Supported                                                 |
+| `DisjointUnion` | $\displaystyle\bigsqcup_{k=1}^{n} A_k$          | $\displaystyle\bigsqcup_{k\in S}^{\phantom{n}} A_k$          | Not Supported                                                 |
+| `Min`           | $\displaystyle\min_{k=1}^{n} a_k$               | $\displaystyle\min_{k\in S}^{\phantom{n}} a_k$               | Not Supported                                                 |
+| `Max`           | $\displaystyle\max_{k=1}^{n} a_k$               | $\displaystyle\max_{k\in S}^{\phantom{n}} a_k$               | Not Supported                                                 |
+| `Custom`        | $\displaystyle\mathop{\Huge\star}_{k=1}^{n}a_k$ | $\displaystyle\mathop{\Huge\star}_{k\in S}^{\phantom{n}}a_k$ | $\displaystyle\mathop{\Huge\star}_{x\to 0}^{\phantom{n}}f(x)$ |
+
+</div>
 
 The tuple in the second argument configures the index fields:
 
