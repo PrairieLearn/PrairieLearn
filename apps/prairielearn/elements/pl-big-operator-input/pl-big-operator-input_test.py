@@ -597,36 +597,50 @@ class TestPrepareUnits:
         assert answer["body"] == sympy.I * sympy.Symbol("k")
 
     @pytest.mark.parametrize(
-        ("correct_answer", "operator", "indexing", "index"),
+        ("correct_answer", "operator", "indexing", "index", "grading_method"),
         [
-            ("Sum(k**2, (k, 1, 4))", "sum", "bounds", "k"),
-            ("Product(k, (k, 1, 4))", "product", "bounds", "k"),
-            ("Integral(k, (k, 0, 1))", "integral", "bounds", "k"),
-            ("Integral(z, (z, Gamma))", "integral", "domain", "z"),
-            ("Limit(sin(x) / x, (x, 0, '+'))", "limit", "approaches", "x"),
-            ("Union({k}, (k, {1, 2}))", "union", "domain", "k"),
+            ("Sum(k**2, (k, 1, 4))", "sum", "bounds", "k", "equivalent"),
+            ("Product(k, (k, 1, 4))", "product", "bounds", "k", "equivalent"),
+            ("Integral(k, (k, 0, 1))", "integral", "bounds", "k", "equivalent"),
+            ("Integral(z, (z, Gamma))", "integral", "domain", "z", "component"),
+            (
+                "Limit(sin(x) / x, (x, 0, '+'))",
+                "limit",
+                "approaches",
+                "x",
+                "equivalent",
+            ),
+            ("Union({k}, (k, {1, 2}))", "union", "domain", "k", "equivalent"),
             (
                 "Intersection({k}, (k, {1, 2}))",
                 "intersection",
                 "domain",
                 "k",
+                "equivalent",
             ),
             (
                 "DisjointUnion({k}, (k, {1, 2}))",
                 "disjoint-union",
                 "domain",
                 "k",
+                "equivalent",
             ),
-            ("Min(k**2, (k, {1, 2}))", "min", "domain", "k"),
-            ("Max(k**2, (k, {1, 2}))", "max", "domain", "k"),
+            ("Min(k**2, (k, {1, 2}))", "min", "domain", "k", "equivalent"),
+            ("Max(k**2, (k, {1, 2}))", "max", "domain", "k", "equivalent"),
         ],
     )
     def test_whole_answer_infers_configuration(
-        self, correct_answer: str, operator: str, indexing: str, index: str
+        self,
+        correct_answer: str,
+        operator: str,
+        indexing: str,
+        index: str,
+        grading_method: str,
     ) -> None:
         markup = html(**{
             "correct-answer": correct_answer,
             "variables": "Gamma",
+            "grading-method": grading_method,
         })
         data = question_data()
 
@@ -981,6 +995,79 @@ class TestParseUnits:
 
 
 class TestGradeUnits:
+    @pytest.mark.parametrize(
+        ("operator", "indexing"),
+        [
+            ("sum", "bounds"),
+            ("sum", "domain"),
+            ("product", "bounds"),
+            ("product", "domain"),
+            ("integral", "bounds"),
+            ("limit", "approaches"),
+            ("union", "bounds"),
+            ("union", "domain"),
+            ("intersection", "bounds"),
+            ("intersection", "domain"),
+            ("disjoint-union", "bounds"),
+            ("disjoint-union", "domain"),
+            ("min", "bounds"),
+            ("min", "domain"),
+            ("max", "bounds"),
+            ("max", "domain"),
+        ],
+    )
+    def test_equivalent_grading_accepts_each_supported_builtin_configuration(
+        self,
+        operator: str,
+        indexing: Literal["bounds", "domain", "approaches"],
+    ) -> None:
+        body = (
+            r"{k}" if operator in {"union", "intersection", "disjoint-union"} else "k"
+        )
+        raw_submitted_answers = {"op-body": body}
+        match indexing:
+            case "bounds":
+                raw_submitted_answers.update({"op-lower": "1", "op-upper": "2"})
+            case "domain":
+                raw_submitted_answers["op-domain"] = "{1, 2}"
+            case "approaches":
+                raw_submitted_answers.update({
+                    "op-target": "0",
+                    "op-direction": "two-sided",
+                })
+
+        data = question_data(raw_submitted_answers=raw_submitted_answers)
+
+        prepare_parse_grade(html(operator=operator, indexing=indexing), data)
+
+        assert data["partial_scores"]["op"] == {"score": 1.0, "weight": 1}
+
+    @pytest.mark.parametrize(
+        ("correct_answer", "variables", "match"),
+        [
+            (
+                "Integral(k, (k, {1, 2}))",
+                None,
+                "domain integrals",
+            ),
+            (
+                "Sum(k, (k, D))",
+                "D",
+                "concrete FiniteSet",
+            ),
+        ],
+    )
+    def test_unsupported_equivalent_configurations_are_rejected_during_prepare(
+        self, correct_answer: str, variables: str | None, match: str
+    ) -> None:
+        markup = html(**{
+            "correct-answer": correct_answer,
+            "variables": variables,
+        })
+
+        with pytest.raises(ValueError, match=match):
+            big_operator_input.prepare(markup, question_data())
+
     @pytest.mark.parametrize(
         "grading_method", ["exact", "equivalent", "component", "none"]
     )
