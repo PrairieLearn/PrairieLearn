@@ -212,16 +212,16 @@ def generate(data):
     data["correct_answers"]["total"] = psu.sympy_to_json(answer)
 ```
 
-Use `pl.big_operator_to_json()` when you want to provide the operator, indexing, and mathematical values separately. Mathematical fields accept SymPy values, strings, Python integers, and Python sets. This is particularly useful for custom operators:
+Use `pbo.big_operator_to_json()` when you want to provide the operator, indexing, and mathematical values separately. Mathematical fields accept SymPy values, strings, Python integers, and Python sets. This is particularly useful for custom operators:
 
 ```python title="server.py"
-import prairielearn as pl
+import prairielearn.big_operator_utils as pbo
 import sympy
 
 
 def generate(data):
     x = sympy.Symbol("x")
-    data["correct_answers"]["evaluation"] = pl.big_operator_to_json(
+    data["correct_answers"]["evaluation"] = pbo.big_operator_to_json(
         operator="Custom",
         indexing="approaches",
         index=x,
@@ -242,10 +242,10 @@ def generate(data):
 
 ### Custom grading in `server.py`
 
-Most questions should use one of the built-in grading methods. For custom grading, use [`pl.json_to_big_operator()`][prairielearn.big_operator_utils.json_to_big_operator] to validate the combined answer and convert its mathematical fields to SymPy values. Check `indexing` before accessing fields that are specific to bounds, domains, or limits.
+Most questions should use one of the built-in grading methods. For custom grading, use [`pbo.json_to_big_operator()`][prairielearn.big_operator_utils.json_to_big_operator] to validate the combined answer and convert its mathematical fields to SymPy values. Check `indexing` before accessing fields that are specific to bounds, domains, or limits.
 
 ```python title="server.py"
-import prairielearn as pl
+import prairielearn.big_operator_utils as pbo
 
 
 def grade(data):
@@ -253,8 +253,8 @@ def grade(data):
     if not isinstance(submitted_json, dict):
         return
 
-    submitted = pl.json_to_big_operator(submitted_json)
-    correct = pl.json_to_big_operator(data["correct_answers"]["total"])
+    submitted = pbo.json_to_big_operator(submitted_json)
+    correct = pbo.json_to_big_operator(data["correct_answers"]["total"])
 
     if submitted["indexing"] == "bounds" and correct["indexing"] == "bounds":
         submitted_body = submitted["body"]
