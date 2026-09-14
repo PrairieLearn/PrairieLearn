@@ -1,5 +1,81 @@
+// @ts-check
+/** @import {} from "./pl-file-editor-globals.js" */
 /* global ace, MathJax, DOMPurify */
 
+/**
+ * @typedef {object} FileEditorOptions
+ * @property {string} [originalContents] Base64-encoded contents used by Restore original.
+ * @property {string} [currentContents] Base64-encoded initial answer.
+ * @property {boolean} readOnly Whether answer editing is disabled.
+ * @property {string} [aceMode] Ace syntax mode module name.
+ * @property {string} [aceModePath] Course-provided URL for a custom mode.
+ * @property {string} [aceTheme] Initial theme when no saved preference exists.
+ * @property {string} [fontSize] Initial CSS font size.
+ * @property {number} [minLines] Minimum visible editor lines.
+ * @property {number} [maxLines] Maximum visible editor lines.
+ * @property {boolean} [autoResize] Whether the editor grows with its contents.
+ * @property {boolean} [plOptionFocus] Whether setting contents also focuses the editor.
+ * @property {string} [preview] Key in the extensible preview renderer registry.
+ */
+
+/**
+ * @typedef {object} PreviewRequest
+ * @property {string} type Preview renderer registry key.
+ * @property {string} value Snapshot of the answer at scheduling time.
+ * @property {number} version Used to discard results superseded by edits.
+ */
+
+/**
+ * @typedef {object} PreviewMath
+ * @property {string} source Sanitized math source and ancestor rendering context.
+ * @property {Element} node Token wrapper owning the rendered MathJax nodes.
+ */
+
+/** @typedef {(value: string) => string | Promise<string>} PreviewRenderer */
+
+/**
+ * @typedef {object} FileEditor
+ * @property {JQuery<HTMLElement>} element Root element containing this editor instance.
+ * @property {string} originalContents Base64-encoded answer used by Restore original.
+ * @property {JQuery<HTMLInputElement>} inputElement Hidden input carrying the submitted answer.
+ * @property {JQuery<HTMLElement>} editorElement DOM host passed to Ace.
+ * @property {JQuery<HTMLElement>} settingsButton Control opening editor settings.
+ * @property {JQuery<HTMLElement>} modal Settings dialog for this instance.
+ * @property {JQuery<HTMLElement>} saveSettingsButton Control persisting settings.
+ * @property {JQuery<HTMLElement>} closeSettingsButton Control restoring settings when the dialog closes.
+ * @property {JQuery<HTMLElement>} restoreOriginalButton Control starting the restore confirmation.
+ * @property {JQuery<HTMLElement>} restoreOriginalConfirmContainer Container for restore confirmation controls.
+ * @property {JQuery<HTMLElement>} restoreOriginalConfirm Control accepting the restore.
+ * @property {JQuery<HTMLElement>} restoreOriginalCancel Control canceling the restore.
+ * @property {import('ace-builds').Ace.Editor} editor Ace instance owning the answer and undo history.
+ * @property {boolean | undefined} plOptionFocus Whether setting contents also focuses the editor.
+ * @property {number} previewVersion Monotonically increasing edit/render generation.
+ * @property {PreviewMath[]} previewMath Math wrappers in the committed preview.
+ * @property {number | undefined} previewTimer Browser debounce timer.
+ * @property {PreviewRequest | null} pendingPreview Latest request awaiting rendering.
+ * @property {Promise<void> | null} previewJob Single active render loop.
+ * @property {boolean} previewDestroyed Whether future preview work must be ignored.
+ * @property {Record<string, PreviewRenderer | undefined>} preview Extension renderer registry.
+ * @property {() => void} syncSettings Bind shared editor preference events.
+ * @property {(previewType: string) => Promise<void>} updatePreview Schedule the latest answer and await rendering.
+ * @property {() => Promise<void>} renderPendingPreviews Drain coalesced preview requests.
+ * @property {() => void} destroyPreview Cancel preview updates and release math.
+ * @property {(request: PreviewRequest) => Promise<void>} renderPreview Prepare and commit one versioned preview.
+ * @property {(uuid: string) => void} initSettingsButton Bind settings controls for an instance.
+ * @property {() => void} initRestoreOriginalButton Bind restore confirmation controls.
+ * @property {(contents: string, options?: {resetUndo?: boolean}) => void} setEditorContents Replace the answer with optional undo reset.
+ * @property {() => void} syncFileToHiddenInput Encode the current answer for submission.
+ * @property {(str: string) => string} b64DecodeUnicode Decode base64 into UTF-8 text.
+ * @property {(str: string) => string} b64EncodeUnicode Encode UTF-8 text as base64.
+ */
+
+/**
+ * Ace editor with immediate answer synchronization and asynchronous previews.
+ * @class
+ * @this {FileEditor}
+ * @param {string} uuid Element instance identifier.
+ * @param {FileEditorOptions} options
+ */
 window.PLFileEditor = function (uuid, options) {
   const elementId = '#file-editor-' + uuid;
   this.element = $(elementId);
@@ -74,9 +150,26 @@ window.PLFileEditor = function (uuid, options) {
   }
   this.setEditorContents(currentContents, { resetUndo: true });
 
+  this.previewVersion = 0;
+  /** @type {PreviewMath[]} */
+  this.previewMath = [];
+  /** @type {number | undefined} */
+  this.previewTimer = undefined;
+  /** @type {PreviewRequest | null} */
+  this.pendingPreview = null;
+  /** @type {Promise<void> | null} */
+  this.previewJob = null;
+  this.previewDestroyed = false;
+
   if (options.preview) {
-    this.editor.session.on('change', () => this.updatePreview(options.preview));
-    this.updatePreview(options.preview);
+    const previewType = options.preview;
+    this.editor.session.on('change', () => {
+      this.previewVersion++;
+      clearTimeout(this.previewTimer);
+      this.previewTimer = window.setTimeout(() => this.updatePreview(previewType), 200);
+    });
+    this.editor.on('destroy', () => this.destroyPreview());
+    void this.updatePreview(options.preview);
   }
 
   this.syncSettings();
@@ -88,6 +181,11 @@ window.PLFileEditor = function (uuid, options) {
   }
 };
 
+/**
+ * Listen for settings changes shared by all file editors.
+ * @returns {void}
+ * @this {FileEditor}
+ */
 window.PLFileEditor.prototype.syncSettings = function () {
   window.addEventListener('storage', (event) => {
     if (event.key === 'pl-file-editor-theme') {
@@ -108,17 +206,84 @@ window.PLFileEditor.prototype.syncSettings = function () {
   });
 };
 
-window.PLFileEditor.prototype.updatePreview = async function (preview_type) {
-  /** @type {HTMLElement} */
+/**
+ * Coalesce requests into one render loop; callers can await its completion.
+ * @param {string} preview_type
+ * @returns {Promise<void>}
+ * @this {FileEditor}
+ */
+window.PLFileEditor.prototype.updatePreview = function (preview_type) {
+  clearTimeout(this.previewTimer);
+  if (this.previewDestroyed) return Promise.resolve();
+  this.pendingPreview = {
+    type: preview_type,
+    value: this.editor.getValue(),
+    version: ++this.previewVersion,
+  };
+  if (!this.previewJob) {
+    this.previewJob = this.renderPendingPreviews().finally(() => {
+      this.previewJob = null;
+    });
+  }
+  return this.previewJob;
+};
+
+/**
+ * Render the newest queued snapshot after the current render completes.
+ * @returns {Promise<void>}
+ * @this {FileEditor}
+ */
+window.PLFileEditor.prototype.renderPendingPreviews = async function () {
+  while (this.pendingPreview && !this.previewDestroyed) {
+    const request = this.pendingPreview;
+    this.pendingPreview = null;
+    try {
+      await this.renderPreview(request);
+    } catch (error) {
+      // Leave the last completed preview visible and allow the next edit to retry.
+      console.error('Unable to render file editor preview', error);
+    }
+  }
+};
+
+/**
+ * Release preview state and MathJax ownership when Ace is explicitly destroyed.
+ * @returns {void}
+ * @this {FileEditor}
+ */
+window.PLFileEditor.prototype.destroyPreview = function () {
+  this.previewDestroyed = true;
+  this.previewVersion++;
+  this.pendingPreview = null;
+  this.previewMath = [];
+  clearTimeout(this.previewTimer);
+  void MathJax.startup.promise.then(() =>
+    MathJax.whenReady(() => {
+      const shadowRoot = this.element.find('.preview')[0].shadowRoot;
+      if (shadowRoot) {
+        MathJax.typesetClear(Array.from(shadowRoot.children));
+        shadowRoot.replaceChildren();
+      }
+    }),
+  );
+};
+
+/**
+ * Prepare sanitized content off-screen and commit only the current version.
+ * @param {PreviewRequest} request
+ * @returns {Promise<void>}
+ * @this {FileEditor}
+ */
+window.PLFileEditor.prototype.renderPreview = async function (request) {
+  await MathJax.startup.promise;
+  const html = request.value ? await this.preview[request.type]?.(request.value) : '';
+  if (request.version !== this.previewVersion || this.previewDestroyed) return;
+
   const preview = this.element.find('.preview')[0];
   let shadowRoot = preview.shadowRoot;
   if (!shadowRoot) {
     shadowRoot = preview.attachShadow({ mode: 'open' });
-    // MathJax includes assistive content that is not visible by default (i.e.,
-    // only readable by screen readers). The hiding of this content is found in
-    // a style tag in the head, but this tag is not applied to the shadow DOM by
-    // default, so we need to manually adopt the MathJax styles.
-    await MathJax.startup.promise;
+    // MathJax's accessibility styles in the document head do not reach shadow roots.
     const mjxStyles = MathJax.svgStylesheet();
     if (mjxStyles) {
       const style = new CSSStyleSheet();
@@ -127,30 +292,96 @@ window.PLFileEditor.prototype.updatePreview = async function (preview_type) {
     }
   }
 
-  const editor_value = this.editor.getValue();
-  const default_preview_text = '<p>Begin typing above to preview</p>';
-  const html_contents = editor_value
-    ? ((await Promise.resolve(this.preview[preview_type]?.(editor_value))) ??
-      `<p>Unknown preview type: <code>${preview_type}</code></p>`)
-    : '';
+  const contents = html ?? `<p>Unknown preview type: <code>${request.type}</code></p>`;
+  // Prepare the next preview off-screen so the current one stays visible until
+  // math is ready. Match its width and shadow-root styles for MathJax layout.
+  const stage = /** @type {HTMLElement} */ (preview.cloneNode(false));
+  stage.classList.remove('preview');
+  stage.classList.add('file-editor-preview-stage');
+  stage.setAttribute('aria-hidden', 'true');
+  stage.style.width = `${preview.getBoundingClientRect().width}px`;
+  const stageRoot = stage.attachShadow({ mode: 'open' });
+  stageRoot.adoptedStyleSheets = shadowRoot.adoptedStyleSheets;
+  const content = document.createElement('div');
+  content.innerHTML = DOMPurify.sanitize(
+    contents.trim() ? contents : '<p>Begin typing above to preview</p>',
+  );
+  stageRoot.append(content);
 
-  if (html_contents.trim().length === 0) {
-    shadowRoot.innerHTML = default_preview_text;
-  } else {
-    const sanitized_contents = DOMPurify.sanitize(html_contents);
-    shadowRoot.innerHTML = sanitized_contents;
-    if (
-      sanitized_contents.includes('$') ||
-      sanitized_contents.includes('\\(') ||
-      sanitized_contents.includes('\\)') ||
-      sanitized_contents.includes('\\[') ||
-      sanitized_contents.includes('\\]')
+  const math = Array.from(content.querySelectorAll('.pl-file-editor-math'), (node) => {
+    // Ancestors can change MathJax processing (e.g. mathjax_ignore) or font/layout.
+    let source = node.outerHTML;
+    for (
+      let parent = node.parentElement;
+      parent && parent !== content;
+      parent = parent.parentElement
     ) {
-      MathJax.typesetPromise(shadowRoot.children);
+      source +=
+        parent.tagName +
+        JSON.stringify(Array.from(parent.attributes, (attr) => [attr.name, attr.value]));
     }
+    return { source, node };
+  });
+  const otherContent = /** @type {HTMLDivElement} */ (content.cloneNode(true));
+  otherContent.querySelectorAll('.pl-file-editor-math').forEach((node) => node.remove());
+  /** @param {string} value */
+  const hasMath = (value) => /\$|\\[()[\]]/.test(value);
+  // Reuse only an unchanged, ordered math sequence. Changes to definitions,
+  // labels or references can affect expressions elsewhere in the document.
+  // Raw HTML/custom renderers can contain math outside our Markdown tokens.
+  const reuseMath =
+    request.type === 'markdown' &&
+    !hasMath(otherContent.innerHTML) &&
+    math.length === this.previewMath.length &&
+    math.every((item, i) => item.source === this.previewMath[i].source);
+  if (reuseMath) {
+    // Leave placeholders here; moving the existing equations now would make
+    // them disappear from the visible preview before we are ready to commit.
+    math.forEach(({ node }) => node.replaceChildren());
+  }
+
+  // MathJax needs an attached, measurable container even though it is invisible.
+  preview.after(stage);
+  try {
+    if (!reuseMath && hasMath(content.innerHTML)) {
+      await MathJax.typesetPromise([content]);
+    }
+    await MathJax.whenReady(() => {
+      // Typing may have superseded this render while MathJax was working.
+      if (request.version !== this.previewVersion || this.previewDestroyed) return;
+      // Move reusable equations and swap content synchronously so the browser
+      // never paints an intermediate preview containing placeholders or raw TeX.
+      const scrollTop = preview.scrollTop;
+      if (reuseMath) {
+        math.forEach((item, i) => {
+          const existing = this.previewMath[i].node;
+          item.node.replaceWith(existing);
+          item.node = existing;
+        });
+      }
+      // Move reused math out first so clearing outgoing content keeps its MathItems.
+      MathJax.typesetClear(Array.from(shadowRoot.children));
+      shadowRoot.replaceChildren(...content.childNodes);
+      this.previewMath = math;
+      preview.scrollTop = scrollTop;
+    });
+  } finally {
+    // After a successful commit, content is empty because its children moved to
+    // the visible preview. Otherwise, release the discarded/failed render's
+    // MathItems before removing the stage so MathJax does not retain its nodes.
+    await MathJax.whenReady(() => {
+      MathJax.typesetClear([content]);
+      stage.remove();
+    });
   }
 };
 
+/**
+ * Bind the settings modal controls for this editor.
+ * @param {string} uuid
+ * @returns {void}
+ * @this {FileEditor}
+ */
 window.PLFileEditor.prototype.initSettingsButton = function (uuid) {
   this.settingsButton.click(() => {
     ace.require(['ace/ext/themelist'], (themeList) => {
@@ -199,28 +430,32 @@ window.PLFileEditor.prototype.initSettingsButton = function (uuid) {
     });
     this.modal.modal('show');
     sessionStorage.setItem('pl-file-editor-theme-current', this.editor.getTheme());
-    sessionStorage.setItem('pl-file-editor-fontsize-current', this.editor.getFontSize());
-    if (localStorage.getItem('pl-file-editor-keyboardHandler')) {
-      sessionStorage.setItem(
-        'pl-file-editor-keyboardHandler-current',
-        localStorage.getItem('pl-file-editor-keyboardHandler'),
-      );
+    sessionStorage.setItem('pl-file-editor-fontsize-current', String(this.editor.getFontSize()));
+    const savedKeyboardHandler = localStorage.getItem('pl-file-editor-keyboardHandler');
+    if (savedKeyboardHandler) {
+      sessionStorage.setItem('pl-file-editor-keyboardHandler-current', savedKeyboardHandler);
     }
 
     this.modal.find('#modal-' + uuid + '-themes').change((e) => {
-      const theme = $(e.currentTarget).val();
+      const theme = /** @type {HTMLSelectElement} */ (e.currentTarget).value;
       this.editor.setTheme(theme);
     });
     this.modal.find('#modal-' + uuid + '-fontsize').change((e) => {
-      const fontSize = $(e.currentTarget).val();
+      const fontSize = /** @type {HTMLSelectElement} */ (e.currentTarget).value;
       this.editor.setFontSize(fontSize);
     });
   });
 
   this.saveSettingsButton.click(() => {
-    const theme = this.modal.find('#modal-' + uuid + '-themes').val();
-    const fontsize = this.modal.find('#modal-' + uuid + '-fontsize').val();
-    const keyboardHandler = this.modal.find('#modal-' + uuid + '-keyboardHandler').val();
+    const theme = /** @type {HTMLSelectElement} */ (
+      this.modal.find('#modal-' + uuid + '-themes')[0]
+    ).value;
+    const fontsize = /** @type {HTMLSelectElement} */ (
+      this.modal.find('#modal-' + uuid + '-fontsize')[0]
+    ).value;
+    const keyboardHandler = /** @type {HTMLSelectElement} */ (
+      this.modal.find('#modal-' + uuid + '-keyboardHandler')[0]
+    ).value;
 
     localStorage.setItem('pl-file-editor-theme', theme);
     localStorage.setItem('pl-file-editor-fontsize', fontsize);
@@ -254,6 +489,11 @@ window.PLFileEditor.prototype.initSettingsButton = function (uuid) {
   });
 };
 
+/**
+ * Bind the confirmation flow for restoring the original file.
+ * @returns {void}
+ * @this {FileEditor}
+ */
 window.PLFileEditor.prototype.initRestoreOriginalButton = function () {
   this.restoreOriginalButton.click(() => {
     this.restoreOriginalButton.hide();
@@ -275,6 +515,13 @@ window.PLFileEditor.prototype.initRestoreOriginalButton = function () {
   });
 };
 
+/**
+ * Replace the answer, optionally resetting undo history.
+ * @param {string} contents
+ * @param {{resetUndo?: boolean}} [options]
+ * @returns {void}
+ * @this {FileEditor}
+ */
 window.PLFileEditor.prototype.setEditorContents = function (contents, { resetUndo = false } = {}) {
   if (resetUndo) {
     // Setting the value of the session causes the undo manager to be reset.
@@ -291,14 +538,31 @@ window.PLFileEditor.prototype.setEditorContents = function (contents, { resetUnd
   this.syncFileToHiddenInput();
 };
 
+/**
+ * Synchronize the submitted answer independently of preview scheduling.
+ * @returns {void}
+ * @this {FileEditor}
+ */
 window.PLFileEditor.prototype.syncFileToHiddenInput = function () {
   this.inputElement.val(this.b64EncodeUnicode(this.editor.getValue()));
 };
 
+/**
+ * Decode a base64-encoded UTF-8 answer.
+ * @param {string} str
+ * @returns {string} Converted answer text.
+ * @this {FileEditor}
+ */
 window.PLFileEditor.prototype.b64DecodeUnicode = function (str) {
   return new TextDecoder().decode(Uint8Array.from(atob(str), (c) => c.charCodeAt(0)));
 };
 
+/**
+ * Encode a UTF-8 answer without exceeding the argument limit for large files.
+ * @param {string} str
+ * @returns {string} Converted answer text.
+ * @this {FileEditor}
+ */
 window.PLFileEditor.prototype.b64EncodeUnicode = function (str) {
   const bytes = new TextEncoder().encode(str);
   let binaryString = '';
@@ -309,21 +573,42 @@ window.PLFileEditor.prototype.b64EncodeUnicode = function (str) {
   return btoa(binaryString);
 };
 
+/** @type {Record<string, PreviewRenderer | undefined>} */
 window.PLFileEditor.prototype.preview = {
   html: (value) => value,
   markdown: (() => {
-    let marked = null;
+    /** @type {Promise<import('marked').Marked> | undefined} */
+    let markedPromise;
+    /**
+     * @param {string} value
+     * @returns {Promise<string>} Rendered preview HTML.
+     */
     return async (value) => {
-      if (marked == null) {
-        marked = (await import('marked')).marked;
+      markedPromise ??= (async () => {
+        const { Marked } = await import('marked');
+        const marked = new Marked();
         await MathJax.startup.promise;
         (await import('@prairielearn/marked-mathjax')).addMathjaxExtension(marked, MathJax);
-      }
-      return marked.parse(value);
+        marked.use({
+          extensions: [
+            {
+              name: 'math',
+              renderer: ({ text }) => `<span class="pl-file-editor-math">${text}</span>`,
+            },
+          ],
+        });
+        return marked;
+      })();
+      return (await markedPromise).parse(value);
     };
   })(),
   dot: (() => {
+    /** @type {Promise<import('@viz-js/viz').Viz> | null} */
     let vizPromise = null;
+    /**
+     * @param {string} value
+     * @returns {Promise<string>} Rendered preview HTML.
+     */
     return async (value) => {
       try {
         // Only load/create instance on first call.
@@ -336,7 +621,7 @@ window.PLFileEditor.prototype.preview = {
         const viz = await vizPromise;
         return viz.renderString(value, { format: 'svg' });
       } catch (err) {
-        return `<span class="text-danger">${err.message}</span>`;
+        return `<span class="text-danger">${err instanceof Error ? err.message : `${err}`}</span>`;
       }
     };
   })(),
