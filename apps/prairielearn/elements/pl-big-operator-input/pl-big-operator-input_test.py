@@ -235,16 +235,16 @@ class TestCorrectAnswerParsingUnits:
         assert big_operator_input._formatted_call("k + 1", "Sum") is None
         assert big_operator_input._formatted_call("Sum(k)", "Sum") is None
         assert big_operator_input._formatted_call("Sum(k, k)", "Sum") is None
-        assert big_operator_input._formatted_direction(("k", "0")) is None
-        assert big_operator_input._formatted_direction(("k", "0", "+")) is None
-        assert big_operator_input._legacy_limit_call("k + 1") is None
-        assert big_operator_input._legacy_limit_call("Limit(k, k, 0)") is None
+        assert big_operator_input._direction_symbol_from_args(("k", "0")) is None
+        assert big_operator_input._direction_symbol_from_args(("k", "0", "+")) is None
+        assert big_operator_input._parse_sympy_limit_call("k + 1") is None
+        assert big_operator_input._parse_sympy_limit_call("Limit(k, k, 0)") is None
         assert (
-            big_operator_input._legacy_limit_call("Limit(k, k, 0, dir='sideways')")
+            big_operator_input._parse_sympy_limit_call("Limit(k, k, 0, dir='sideways')")
             is None
         )
         assert (
-            big_operator_input._formatted_answer(
+            big_operator_input._answer_json(
                 big_operator_input._config(html(operator="Sum")), "k + 1"
             )
             is None
@@ -255,32 +255,32 @@ class TestCorrectAnswerParsingUnits:
     ) -> None:
         sympy_json = psu.sympy_to_json(sympy.Limit(sympy.Symbol("k"), "k", 0))
 
-        assert big_operator_input._infer_spec(sympy_json) == (
+        assert big_operator_input._parse_spec(sympy_json) == (
             "Limit",
             "approaches",
             "k",
         )
-        assert big_operator_input._infer_spec(object()) == (None, None, None)
+        assert big_operator_input._parse_spec(object()) == (None, None, None)
         assert (
-            big_operator_input._infer_direction("Limit(k, (k, 0, '?'))", "Limit")
+            big_operator_input._parse_direction("Limit(k, (k, 0, '?'))", "Limit")
             is None
         )
         assert (
-            big_operator_input._infer_direction("Limit(k, (k, 0, unquoted))", "Limit")
+            big_operator_input._parse_direction("Limit(k, (k, 0, unquoted))", "Limit")
             is None
         )
-        assert big_operator_input._infer_direction(object(), "Limit") is None
+        assert big_operator_input._parse_direction(object(), "Limit") is None
 
         monkeypatch.setattr(
             big_operator_input,
-            "_safe_decode",
+            "_as_sympy",
             lambda _raw: sympy.Limit(sympy.Symbol("k"), "k", 0),
         )
-        assert big_operator_input._infer_direction("not a wrapper", "Limit") == (
+        assert big_operator_input._parse_direction("not a wrapper", "Limit") == (
             "from-right"
         )
 
-    def test_binder_normalizes_supported_sympy_objects(self) -> None:
+    def test_sympy_to_big_operator_json_normalizes_supported_objects(self) -> None:
         k = sympy.Symbol("k")
         sum_config = big_operator_input._config(html(operator="Sum"))
         product_config = big_operator_input._config(html(operator="Product"))
@@ -288,38 +288,57 @@ class TestCorrectAnswerParsingUnits:
         limit_config = big_operator_input._config(html(operator="Limit"))
 
         assert (
-            big_operator_input._binder(sum_config, sympy.Sum(k, (k, 1, 2))) is not None
-        )
-        assert (
-            big_operator_input._binder(product_config, sympy.Product(k, (k, 1, 2)))
+            big_operator_input._sympy_to_big_operator_json(
+                sum_config, sympy.Sum(k, (k, 1, 2))
+            )
             is not None
         )
         assert (
-            big_operator_input._binder(integral_config, sympy.Integral(k, (k, 1, 2)))
+            big_operator_input._sympy_to_big_operator_json(
+                product_config, sympy.Product(k, (k, 1, 2))
+            )
             is not None
         )
         assert (
-            big_operator_input._binder(limit_config, sympy.Limit(k, k, 0)) is not None
+            big_operator_input._sympy_to_big_operator_json(
+                integral_config, sympy.Integral(k, (k, 1, 2))
+            )
+            is not None
+        )
+        assert (
+            big_operator_input._sympy_to_big_operator_json(
+                limit_config, sympy.Limit(k, k, 0)
+            )
+            is not None
         )
 
-        assert big_operator_input._binder(limit_config, k) is None
+        assert big_operator_input._sympy_to_big_operator_json(limit_config, k) is None
         assert (
-            big_operator_input._binder(sum_config, sympy.Product(k, (k, 1, 2))) is None
+            big_operator_input._sympy_to_big_operator_json(
+                sum_config, sympy.Product(k, (k, 1, 2))
+            )
+            is None
         )
         assert (
-            big_operator_input._binder(product_config, sympy.Sum(k, (k, 1, 2))) is None
+            big_operator_input._sympy_to_big_operator_json(
+                product_config, sympy.Sum(k, (k, 1, 2))
+            )
+            is None
         )
         assert (
-            big_operator_input._binder(integral_config, sympy.Sum(k, (k, 1, 2))) is None
+            big_operator_input._sympy_to_big_operator_json(
+                integral_config, sympy.Sum(k, (k, 1, 2))
+            )
+            is None
         )
         assert (
-            big_operator_input._binder(
+            big_operator_input._sympy_to_big_operator_json(
                 replace(sum_config, operator="Custom"), sympy.Sum(k, (k, 1, 2))
             )
             is None
         )
 
-    def test_binder_rejects_malformed_or_mismatched_indexing(self) -> None:
+    def test_sympy_to_big_operator_json_rejects_malformed_indexing(self) -> None:
         k = sympy.Symbol("k")
         sum_config = big_operator_input._config(html(operator="Sum"))
         limit_config = big_operator_input._config(html(operator="Limit"))
@@ -330,30 +349,37 @@ class TestCorrectAnswerParsingUnits:
             sympy.Sum, k, sympy.Tuple(k, sympy.FiniteSet(1, 2))
         )
 
-        assert big_operator_input._binder(domain_config, domain_sum) is not None
+        assert (
+            big_operator_input._sympy_to_big_operator_json(domain_config, domain_sum)
+            is not None
+        )
         with pytest.raises(ValueError, match="exactly one indexing tuple"):
-            big_operator_input._binder(sum_config, sympy.Basic.__new__(sympy.Sum, k))
+            big_operator_input._sympy_to_big_operator_json(
+                sum_config, sympy.Basic.__new__(sympy.Sum, k)
+            )
         with pytest.raises(ValueError, match="3-item indexing tuple"):
-            big_operator_input._binder(sum_config, domain_sum)
+            big_operator_input._sympy_to_big_operator_json(sum_config, domain_sum)
         with pytest.raises(ValueError, match="does not support indexing"):
-            big_operator_input._binder(
+            big_operator_input._sympy_to_big_operator_json(
                 replace(domain_config, indexing="approaches"), domain_sum
             )
         with pytest.raises(TypeError, match="index must be a symbol"):
-            big_operator_input._binder(limit_config, sympy.Limit(k, k + 1, 0))
+            big_operator_input._sympy_to_big_operator_json(
+                limit_config, sympy.Limit(k, k + 1, 0)
+            )
         with pytest.raises(TypeError, match="index must be a symbol"):
-            big_operator_input._binder(
+            big_operator_input._sympy_to_big_operator_json(
                 sum_config,
                 sympy.Basic.__new__(sympy.Sum, k, sympy.Tuple(k + 1, 1, 2)),
             )
 
-    def test_binder_accepts_symbol_with_latex_subscript(self) -> None:
+    def test_sympy_to_big_operator_json_accepts_latex_subscript(self) -> None:
         ell_g = sympy.Symbol("ell_g")
         config = big_operator_input._config(
             html(**{"correct-answer": "Sum(ell_g, (ell_g, 1, 2))"})
         )
 
-        answer = big_operator_input._binder(
+        answer = big_operator_input._sympy_to_big_operator_json(
             config,
             sympy.Sum(ell_g, (ell_g, 1, 2)),
         )
@@ -376,7 +402,7 @@ class TestCorrectAnswerParsingUnits:
         config = big_operator_input._config(html(operator=operator))
 
         with pytest.raises(ValueError, match=match):
-            big_operator_input._formatted_answer(config, source)
+            big_operator_input._answer_json(config, source)
 
 
 class TestPrepareUnits:
@@ -503,6 +529,23 @@ class TestPrepareUnits:
         assert decoded["body"] == correct_answer.args[0]
         assert data["params"] == {}
 
+    def test_structured_answers_are_recanonicalized(self) -> None:
+        k = sympy.Symbol("k")
+        correct_answer = pbo.big_operator_to_json(
+            operator="Sum",
+            indexing="bounds",
+            index=k,
+            lower=1,
+            upper=2,
+            body=k + 1,
+        )
+        correct_answer["body"]["_value"] = "1 + k"
+        data = question_data(correct_answer)
+
+        big_operator_input.prepare(html(), data)
+
+        assert data["correct_answers"]["op"]["body"]["_value"] == "k + 1"
+
     def test_custom_operator_is_inferred_from_complete_answer(self) -> None:
         markup = html(**{
             "correct-answer": "Custom(k**2, (k, 1, 4))",
@@ -587,7 +630,7 @@ class TestPrepareUnits:
                 correct_answer: object = "Sum(k, (k, {1}, 2))"
             case "canonical-upper":
                 config = big_operator_input._config(html(operator="Sum"))
-                correct_answer = big_operator_input._canonical(
+                correct_answer = big_operator_input._canonical_json(
                     config,
                     {
                         "lower": sympy.Integer(1),
@@ -1540,7 +1583,7 @@ class TestRenderUnits:
         self, panel: Literal["answer", "submission"]
     ) -> None:
         base_config = big_operator_input._config(html(operator="Sum"))
-        correct_answer = big_operator_input._canonical(
+        correct_answer = big_operator_input._canonical_json(
             base_config,
             {
                 "lower": sympy.Integer(1),
@@ -1655,23 +1698,23 @@ class TestCorrectAnswerRegressions:
         config = big_operator_input._config(html(operator=operator))
 
         with pytest.raises(ValueError, match="indexing does not match"):
-            big_operator_input._decoded_values(
+            big_operator_input._get_values(
                 config,
                 {"indexing": actual_indexing},
             )
 
-    def test_internal_decode_rejects_non_mathematical_values(self) -> None:
+    def test_sympy_coercion_rejects_non_mathematical_values(self) -> None:
         expression = sympy.Symbol("k")
 
-        assert big_operator_input._decode(expression) == expression
-        assert big_operator_input._safe_decode(object()) is None
+        assert big_operator_input._coerce_sympy(expression) == expression
+        assert big_operator_input._as_sympy(object()) is None
 
         with pytest.raises(TypeError, match="must be SymPy expressions"):
-            big_operator_input._decode(object())
+            big_operator_input._coerce_sympy(object())
 
     def test_structured_answer_rejects_disallowed_complex_value(self) -> None:
         config = big_operator_input._config(html(operator="Sum"))
-        answer = big_operator_input._canonical(
+        answer = big_operator_input._canonical_json(
             config,
             {
                 "lower": sympy.Integer(1),
@@ -1688,7 +1731,7 @@ class TestCorrectAnswerRegressions:
 
     def test_structured_answer_rejects_undeclared_symbol(self) -> None:
         config = big_operator_input._config(html(operator="Sum"))
-        answer = big_operator_input._canonical(
+        answer = big_operator_input._canonical_json(
             config,
             {
                 "lower": sympy.Integer(1),

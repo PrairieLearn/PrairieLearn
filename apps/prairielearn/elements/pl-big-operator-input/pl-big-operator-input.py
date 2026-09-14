@@ -307,24 +307,15 @@ def _parse_spec(raw: Any) -> tuple[OperatorName | None, Indexing | None, str | N
                         )
                     case _:
                         return operator, None, index_name
-            if value := _safe_decode(raw):
+            if value := _as_sympy(raw):
                 return operator, _binder_indexing(value), _binder_index(value)
             return operator, None, None
 
-        case {
-            "_version": 1,
-            "_type": "big_operator",
-            "operator": operator,
-            "indexing": indexing,
-            "index": index_var,
-        }:
-            if (
-                (index_symbol := _safe_decode(index_var))
-                and (index_name := _symbol_name(index_symbol))
-                and (operator == "Custom" or operator in OP_METADATA)
-                and indexing in COMPONENTS_MAP
+        case dict() if pbo.is_big_operator_json(raw):
+            if (index_symbol := _as_sympy(raw["index"])) is not None and (
+                index_name := _symbol_name(index_symbol)
             ):
-                return operator, indexing, index_name
+                return raw["operator"], raw["indexing"], index_name
             return None, None, None
 
         case {"_type": "sympy", "_value": str(source)}:
@@ -335,8 +326,9 @@ def _parse_spec(raw: Any) -> tuple[OperatorName | None, Indexing | None, str | N
 
 
 def _parse_direction(raw: Any, operator: OperatorName) -> DirectionName | None:
-    def _parse_limit_direction(raw: dict | str) -> DirectionName | None:
-        if (value := _safe_decode(raw)) is not None and isinstance(value, sympy.Limit):
+    def _parse_limit_direction(raw: Any | str) -> DirectionName | None:
+        value = _as_sympy(raw)
+        if value is not None and isinstance(value, sympy.Limit):
             return DIRECTION_NAMES.get(str(value.args[3]))  # type: ignore
         return None
 
@@ -503,7 +495,7 @@ def _config(html: str, data: QuestionData | None = None) -> RenderConfig:
     )
 
 
-def _decode(value: Any) -> sympy.Expr:
+def _coerce_sympy(value: Any) -> sympy.Expr:
     match value:
         case {"_type": "sympy"}:
             serialized_variables = value.get("_variables")
@@ -526,18 +518,23 @@ def _decode(value: Any) -> sympy.Expr:
             )
 
 
-def _safe_decode(value: Any) -> sympy.Expr | None:
+def _as_sympy(value: Any) -> sympy.Expr | None:
     try:
-        return _decode(value)
+        return _coerce_sympy(value)
     except (TypeError, ValueError):
         return None
 
 
-def _json(value: sympy.Basic) -> psu.SympyJson:
-    return psu.sympy_to_json(cast(Any, value), allow_sets=True)
+def _sympy_json(value: sympy.Basic) -> psu.SympyJson:
+    return psu.sympy_to_json(
+        cast(Any, value),
+        allow_sets=True,
+        allow_complex=True,
+        allow_trig_functions=True,
+    )
 
 
-def _canonical(
+def _canonical_json(
     config: RenderConfig,
     values: ResponseValues,
     *,
@@ -549,44 +546,40 @@ def _canonical(
         "_version": 1,
         "operator": config.operator,
         "indexing": config.indexing,
-        "index": _json(index if index is not None else sympy.Symbol(config.index)),
+        "index": _sympy_json(
+            index if index is not None else sympy.Symbol(config.index)
+        ),
     }
-    result.update({key: _json(values[key]) for key in config.components})
+    result.update({key: _sympy_json(values[key]) for key in config.components})
     if config.indexing == "approaches":
         result["direction"] = direction or config.direction
     return result  # type: ignore
 
 
-def _structured(config: RenderConfig, value: dict[str, Any]) -> BigOperatorJson:
-    decoded = pbo.json_to_big_operator(value)
-    values = _decoded_values(config, decoded)
-    return _canonical(config, values, index=decoded["index"])
-
-
-def _decoded_values(config: RenderConfig, decoded: BigOperator) -> ResponseValues:
+def _get_values(config: RenderConfig, big_op: BigOperator) -> ResponseValues:
     match config.indexing:
         case "bounds":
-            if decoded["indexing"] != "bounds":
+            if big_op["indexing"] != "bounds":
                 raise ValueError("Big operator indexing does not match the element.")
             return {
-                "lower": decoded["lower"],
-                "upper": decoded["upper"],
-                "body": decoded["body"],
+                "lower": big_op["lower"],
+                "upper": big_op["upper"],
+                "body": big_op["body"],
             }
         case "domain":
-            if decoded["indexing"] != "domain":
+            if big_op["indexing"] != "domain":
                 raise ValueError("Big operator indexing does not match the element.")
-            return {"domain": decoded["domain"], "body": decoded["body"]}
+            return {"domain": big_op["domain"], "body": big_op["body"]}
         case "approaches":
-            if decoded["indexing"] != "approaches":
+            if big_op["indexing"] != "approaches":
                 raise ValueError("Big operator indexing does not match the element.")
-            return {"target": decoded["target"], "body": decoded["body"]}
+            return {"target": big_op["target"], "body": big_op["body"]}
 
 
 def _validate_component_values(config: RenderConfig, values: ResponseValues) -> None:
     allowed = set(config.variables) | {config.index}
     for component, item in values.items():
-        typed_component = cast(Component, component)
+        typed_component = cast("Component", component)
         type_failure = psu.check_sympy_types(
             item, _component_allowed_types(config, typed_component)
         )
@@ -608,7 +601,9 @@ def _validate_component_values(config: RenderConfig, values: ResponseValues) -> 
             )
 
 
-def _binder(config: RenderConfig, value: Any) -> BigOperatorJson | None:
+def _sympy_to_big_operator_json(
+    config: RenderConfig, value: sympy.Basic
+) -> BigOperatorJson | None:
     match config.operator:
         case "Limit":
             if not isinstance(value, sympy.Limit):
@@ -618,7 +613,7 @@ def _binder(config: RenderConfig, value: Any) -> BigOperatorJson | None:
             body, index, target, _ = value.args
             if not isinstance(index, sympy.Symbol):
                 raise TypeError("Correct answer index must be a symbol.")
-            return _canonical(
+            return _canonical_json(
                 config,
                 {"target": target, "body": body},
                 index=index,
@@ -651,7 +646,7 @@ def _binder(config: RenderConfig, value: Any) -> BigOperatorJson | None:
         raise TypeError("Correct answer index must be a symbol.")
     match config.indexing:
         case "bounds":
-            return _canonical(
+            return _canonical_json(
                 config,
                 {
                     "lower": indexing_values[1],
@@ -661,7 +656,7 @@ def _binder(config: RenderConfig, value: Any) -> BigOperatorJson | None:
                 index=index,
             )
         case "domain":
-            return _canonical(
+            return _canonical_json(
                 config,
                 {"domain": indexing_values[1], "body": body},
                 index=index,
@@ -672,7 +667,7 @@ def _binder(config: RenderConfig, value: Any) -> BigOperatorJson | None:
             )
 
 
-def _formatted_answer(config: RenderConfig, source: str) -> BigOperatorJson | None:
+def _answer_json(config: RenderConfig, source: str) -> BigOperatorJson | None:
     formatted = _formatted_call(source, config.operator)
     if formatted is None and config.operator == "Limit":
         formatted = _parse_sympy_limit_call(source)
@@ -746,14 +741,14 @@ def _formatted_answer(config: RenderConfig, source: str) -> BigOperatorJson | No
         raise ValueError(
             "The correct answer contains invalid SymPy data."
         ) from exc._src
-    return _canonical(config, values)
+    return _canonical_json(config, values)
 
 
 def _validate_correct(
     config: RenderConfig, correct: dict[str, Any] | BigOperatorJson
 ) -> BigOperatorJson:
-    decoded = pbo.json_to_big_operator(correct)
-    _validate_component_values(config, _decoded_values(config, decoded))
+    big_op = pbo.json_to_big_operator(correct)
+    _validate_component_values(config, _get_values(config, big_op))
     return correct  # type: ignore
 
 
@@ -763,36 +758,35 @@ def _correct(config: RenderConfig, data: QuestionData) -> BigOperatorJson:
         raise ValueError(
             'Custom operators with a correct answer do not support grading-method="equivalent".'
         )
-    if raw is None:
-        raise ValueError(
-            f'Correct answer "{config.answer_name}" is required to configure the big operator.'
-        )
-    if isinstance(raw, dict) and raw.get("_type") == "big_operator":
-        return _validate_correct(config, _structured(config, raw))
-    if isinstance(raw, str):
-        converted = _formatted_answer(config, raw)
-        if converted is not None:
-            return _validate_correct(config, converted)
-        if config.operator == "Limit" and re.match(r"^\s*Limit\s*\(", raw):
-            raise ValueError("The correct answer has an invalid Limit wrapper.")
+
+    json: BigOperatorJson | None
+    match raw:
+        case None:
+            raise ValueError(
+                f'Correct answer "{config.answer_name}" is required to configure the big operator.'
+            )
+        case {"_type": "big_operator"}:
+            big_op = pbo.json_to_big_operator(raw)
+            values = _get_values(config, big_op)
+            json = _canonical_json(config, values, index=big_op["index"])
+        case str(src) | {"_type": "sympy", "_value": str(src)} if json := _answer_json(
+            config, src
+        ):
+            pass
+        case str(src):
+            if config.operator == "Limit" and re.match(r"^\s*Limit\s*\(", src):
+                raise ValueError("The correct answer has an invalid Limit wrapper.")
+            raise TypeError(
+                f'Correct answer "{config.answer_name}" must be a matching formatted object or canonical structured dictionary.'
+            )
+        case _:
+            json = _sympy_to_big_operator_json(config, _coerce_sympy(raw))
+
+    if json is None:
         raise TypeError(
             f'Correct answer "{config.answer_name}" must be a matching formatted object or canonical structured dictionary.'
         )
-    if (
-        isinstance(raw, dict)
-        and raw.get("_type") == "sympy"
-        and isinstance(raw.get("_value"), str)
-    ):
-        converted = _formatted_answer(config, raw["_value"])
-        if converted is not None:
-            return _validate_correct(config, converted)
-    value = _decode(raw)
-    converted = _binder(config, value)
-    if converted is not None:
-        return _validate_correct(config, converted)
-    raise TypeError(
-        f'Correct answer "{config.answer_name}" must be a matching formatted object or canonical structured dictionary.'
-    )
+    return _validate_correct(config, json)
 
 
 def prepare(element_html: str, data: QuestionData) -> None:
@@ -1337,7 +1331,7 @@ def parse(element_html: str, data: QuestionData) -> None:
         direction = raw_direction  # type: ignore
         data.get("format_errors", {}).pop(direction_name, None)
     submitted[config.answer_name] = (
-        _canonical(config, values, index=correct_index, direction=direction)
+        _canonical_json(config, values, index=correct_index, direction=direction)
         if values
         else None
     )
@@ -1346,7 +1340,7 @@ def parse(element_html: str, data: QuestionData) -> None:
 def _values(
     config: RenderConfig, structured: BigOperatorJson | object
 ) -> ResponseValues:
-    return _decoded_values(config, pbo.json_to_big_operator(structured))
+    return _get_values(config, pbo.json_to_big_operator(structured))
 
 
 def _construct(
@@ -1541,7 +1535,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
             for component, value in correct.items():
                 raw_value = (
                     r"{999999}"
-                    if _requires_set(config, cast(Component, component))
+                    if _requires_set(config, cast("Component", component))
                     else f"({value}) + 1"
                 )
                 data["raw_submitted_answers"][config.component_name(component)] = (
