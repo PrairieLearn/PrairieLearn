@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import copy
+import json
 from typing import Any, assert_type, cast
 
 import prairielearn as pl
+import prairielearn.big_operator_utils as pbo
 import prairielearn.sympy_utils as psu
 import pytest
 import sympy
@@ -37,7 +39,7 @@ def bounds_answer(**updates: Any) -> dict[str, Any]:
 
 
 def test_decode_bounds_big_operator_and_narrow_type() -> None:
-    decoded = pl.json_to_big_operator(bounds_answer())
+    decoded = pbo.json_to_big_operator(bounds_answer())
 
     assert decoded["index"] == sympy.Symbol("k")
     assert decoded["body"] == sympy.Symbol("k") ** 2
@@ -59,9 +61,9 @@ def test_decode_domain_big_operator_with_sets() -> None:
         "body": sympy_json(sympy.FiniteSet(k)),
     }
 
-    decoded = pl.json_to_big_operator(answer)
+    decoded = pbo.json_to_big_operator(answer)
 
-    assert_type(decoded, pl.BigOperator)
+    assert_type(decoded, pbo.BigOperator)
     assert decoded["indexing"] == "domain"
     assert_type(decoded, BigDomainOperator)
     assert decoded["domain"] == sympy.FiniteSet(1, 2)
@@ -81,7 +83,7 @@ def test_decode_approaches_big_operator() -> None:
         "body": sympy_json(1 / x),
     }
 
-    decoded = pl.json_to_big_operator(answer)
+    decoded = pbo.json_to_big_operator(answer)
 
     assert decoded["indexing"] == "approaches"
     assert_type(decoded, BigApproachesOperator)
@@ -98,7 +100,7 @@ def test_decode_custom_big_operator() -> None:
         body=sympy_json(f),
     )
 
-    decoded = pl.json_to_big_operator(answer)
+    decoded = pbo.json_to_big_operator(answer)
 
     assert getattr(decoded["index"], "is_positive", None) is True
     assert decoded["body"] == f
@@ -108,7 +110,7 @@ def test_encode_custom_bounds_big_operator() -> None:
     k = sympy.Symbol("k", positive=True)
     body: sympy.Expr = sympy.Function("f")(k)
 
-    encoded = pl.big_operator_to_json(
+    encoded = pbo.big_operator_to_json(
         operator="Custom",
         indexing="bounds",
         index=k,
@@ -118,14 +120,14 @@ def test_encode_custom_bounds_big_operator() -> None:
     )
 
     assert_type(encoded, BigBoundsOperatorJson)
-    decoded = pl.json_to_big_operator(encoded)
+    decoded = pbo.json_to_big_operator(encoded)
     assert decoded["operator"] == "Custom"
     assert decoded["index"] == k
     assert decoded["body"] == body
 
 
 def test_big_operator_to_json_accepts_strings() -> None:
-    encoded = pl.big_operator_to_json(
+    encoded = pbo.big_operator_to_json(
         operator="Sum",
         indexing="bounds",
         index="k",
@@ -135,7 +137,7 @@ def test_big_operator_to_json_accepts_strings() -> None:
     )
 
     assert_type(encoded, BigBoundsOperatorJson)
-    decoded = pl.json_to_big_operator(encoded)
+    decoded = pbo.json_to_big_operator(encoded)
     assert decoded["indexing"] == "bounds"
     assert decoded["index"] == sympy.Symbol("k")
     assert decoded["lower"] == 1
@@ -144,7 +146,7 @@ def test_big_operator_to_json_accepts_strings() -> None:
 
 
 def test_big_operator_to_json_accepts_integers() -> None:
-    encoded = pl.big_operator_to_json(
+    encoded = pbo.big_operator_to_json(
         operator="Sum",
         indexing="bounds",
         index="k",
@@ -154,7 +156,7 @@ def test_big_operator_to_json_accepts_integers() -> None:
     )
 
     assert_type(encoded, BigBoundsOperatorJson)
-    decoded = pl.json_to_big_operator(encoded)
+    decoded = pbo.json_to_big_operator(encoded)
     assert decoded["indexing"] == "bounds"
     assert decoded["lower"] == sympy.Integer(1)
     assert decoded["upper"] == sympy.Integer(4)
@@ -163,7 +165,7 @@ def test_big_operator_to_json_accepts_integers() -> None:
 
 def test_big_operator_to_json_accepts_python_sets() -> None:
     k = sympy.Symbol("k")
-    encoded = pl.big_operator_to_json(
+    encoded = pbo.big_operator_to_json(
         operator="Union",
         indexing="domain",
         index=k,
@@ -172,19 +174,29 @@ def test_big_operator_to_json_accepts_python_sets() -> None:
     )
 
     assert_type(encoded, BigDomainOperatorJson)
-    decoded = pl.json_to_big_operator(encoded)
+    decoded = pbo.json_to_big_operator(encoded)
     assert decoded["indexing"] == "domain"
     assert decoded["domain"] == sympy.FiniteSet(1, 2)
     assert decoded["body"] == sympy.FiniteSet(k)
 
 
 def test_big_operator_to_json_accepts_big_operator() -> None:
-    decoded = pl.json_to_big_operator(bounds_answer())
+    decoded = pbo.json_to_big_operator(bounds_answer())
 
-    encoded = pl.big_operator_to_json(decoded)
+    encoded = pbo.big_operator_to_json(decoded)
 
-    assert_type(encoded, pl.BigOperatorJson)
+    assert_type(encoded, pbo.BigOperatorJson)
     assert encoded == bounds_answer()
+
+
+def test_conversion_utils_round_trip() -> None:
+    decoded = pbo.json_to_big_operator(bounds_answer())
+
+    encoded = pl.to_json(decoded)
+
+    assert_type(encoded, pbo.BigOperatorJson)
+    assert encoded == bounds_answer()
+    assert pl.from_json(json.loads(json.dumps(encoded))) == decoded
 
 
 @pytest.mark.parametrize(
@@ -214,12 +226,12 @@ def test_big_operator_to_json_accepts_big_operator() -> None:
 def test_big_operator_to_json_accepts_decoded_non_bounds_operator(
     answer: dict[str, Any],
 ) -> None:
-    assert pl.big_operator_to_json(pl.json_to_big_operator(answer)) == answer
+    assert pbo.big_operator_to_json(pbo.json_to_big_operator(answer)) == answer
 
 
 def test_encode_domain_big_operator() -> None:
     k = sympy.Symbol("k")
-    encoded = pl.big_operator_to_json(
+    encoded = pbo.big_operator_to_json(
         operator="Union",
         indexing="domain",
         index=k,
@@ -228,14 +240,14 @@ def test_encode_domain_big_operator() -> None:
     )
 
     assert_type(encoded, BigDomainOperatorJson)
-    decoded = pl.json_to_big_operator(encoded)
+    decoded = pbo.json_to_big_operator(encoded)
     assert decoded["indexing"] == "domain"
     assert decoded["domain"] == sympy.FiniteSet(1, 2)
 
 
 def test_encode_approaches_big_operator() -> None:
     x = sympy.Symbol("x")
-    encoded = pl.big_operator_to_json(
+    encoded = pbo.big_operator_to_json(
         operator="Limit",
         indexing="approaches",
         index=x,
@@ -245,7 +257,7 @@ def test_encode_approaches_big_operator() -> None:
     )
 
     assert_type(encoded, BigApproachesOperatorJson)
-    decoded = pl.json_to_big_operator(encoded)
+    decoded = pbo.json_to_big_operator(encoded)
     assert decoded["indexing"] == "approaches"
     assert decoded["direction"] == "from-right"
 
@@ -259,7 +271,7 @@ def test_encode_approaches_big_operator() -> None:
 )
 def test_encode_rejects_inconsistent_fields(kwargs: dict[str, Any], match: str) -> None:
     with pytest.raises(ValueError, match=match):
-        cast(Any, pl.big_operator_to_json)(**{
+        cast(Any, pbo.big_operator_to_json)(**{
             "operator": "Sum",
             "indexing": "bounds",
             "index": sympy.Symbol("k"),
@@ -285,7 +297,7 @@ def test_encode_rejects_incompatible_operator_and_indexing(
     operator: str, indexing: str, indexing_fields: dict[str, Any]
 ) -> None:
     with pytest.raises(ValueError, match="does not support indexing"):
-        cast(Any, pl.big_operator_to_json)(
+        cast(Any, pbo.big_operator_to_json)(
             operator=operator,
             indexing=indexing,
             index="k",
@@ -295,9 +307,9 @@ def test_encode_rejects_incompatible_operator_and_indexing(
 
 
 def test_get_valid_big_operator_indexing() -> None:
-    assert pl.get_valid_big_operator_indexing("Sum") == {"bounds", "domain"}
-    assert pl.get_valid_big_operator_indexing("Limit") == {"approaches"}
-    assert pl.get_valid_big_operator_indexing("Custom") == {
+    assert pbo.get_valid_big_operator_indexing("Sum") == {"bounds", "domain"}
+    assert pbo.get_valid_big_operator_indexing("Limit") == {"approaches"}
+    assert pbo.get_valid_big_operator_indexing("Custom") == {
         "bounds",
         "domain",
         "approaches",
@@ -370,7 +382,7 @@ def test_encode_rejects_invalid_labelled_fields(
     kwargs: dict[str, Any], exception: type[Exception], match: str
 ) -> None:
     with pytest.raises(exception, match=match):
-        cast(Any, pl.big_operator_to_json)(**{
+        cast(Any, pbo.big_operator_to_json)(**{
             "operator": "Sum",
             "indexing": "bounds",
             "index": sympy.Symbol("k"),
@@ -382,17 +394,17 @@ def test_encode_rejects_invalid_labelled_fields(
 
 
 def test_encode_rejects_expression_with_labelled_fields() -> None:
-    decoded = pl.json_to_big_operator(bounds_answer())
+    decoded = pbo.json_to_big_operator(bounds_answer())
 
     with pytest.raises(TypeError, match="either a big operator or labelled fields"):
-        pl.big_operator_to_json(decoded, operator="Sum")  # type: ignore[call-overload]
+        pbo.big_operator_to_json(decoded, operator="Sum")  # type: ignore[call-overload]
 
 
 @pytest.mark.parametrize("value", [sympy.Symbol("i"), sympy.Symbol("j"), sympy.I])
 def test_decode_preserves_symbols_named_like_imaginary_units(
     value: sympy.Basic,
 ) -> None:
-    decoded = pl.json_to_big_operator(bounds_answer(body=sympy_json(value)))
+    decoded = pbo.json_to_big_operator(bounds_answer(body=sympy_json(value)))
 
     assert decoded["body"] == value
 
@@ -401,7 +413,7 @@ def test_decode_does_not_mutate_input() -> None:
     answer = bounds_answer()
     original = copy.deepcopy(answer)
 
-    pl.json_to_big_operator(answer)
+    pbo.json_to_big_operator(answer)
 
     assert answer == original
 
@@ -409,7 +421,7 @@ def test_decode_does_not_mutate_input() -> None:
 @pytest.mark.parametrize("value", [None, "", [], 1])
 def test_decode_rejects_non_dictionary(value: object) -> None:
     with pytest.raises(TypeError, match="must be a dictionary"):
-        pl.json_to_big_operator(value)
+        pbo.json_to_big_operator(value)
 
 
 @pytest.mark.parametrize(
@@ -423,12 +435,12 @@ def test_decode_rejects_non_dictionary(value: object) -> None:
 )
 def test_decode_rejects_invalid_metadata(updates: dict[str, Any], match: str) -> None:
     with pytest.raises(ValueError, match=match):
-        pl.json_to_big_operator(bounds_answer(**updates))
+        pbo.json_to_big_operator(bounds_answer(**updates))
 
 
 def test_decode_rejects_incompatible_operator_and_indexing() -> None:
     with pytest.raises(ValueError, match="does not support indexing"):
-        pl.json_to_big_operator(bounds_answer(operator="Limit"))
+        pbo.json_to_big_operator(bounds_answer(operator="Limit"))
 
 
 @pytest.mark.parametrize("key", ["index", "lower", "upper", "body"])
@@ -437,17 +449,17 @@ def test_decode_rejects_missing_mathematical_field(key: str) -> None:
     answer.pop(key)
 
     with pytest.raises(ValueError, match="exactly the fields required"):
-        pl.json_to_big_operator(answer)
+        pbo.json_to_big_operator(answer)
 
 
 def test_decode_rejects_extra_field() -> None:
     with pytest.raises(ValueError, match="exactly the fields required"):
-        pl.json_to_big_operator(bounds_answer(extra="value"))
+        pbo.json_to_big_operator(bounds_answer(extra="value"))
 
 
 def test_decode_rejects_invalid_sympy_json() -> None:
     with pytest.raises(ValueError, match='field "body" must be'):
-        pl.json_to_big_operator(bounds_answer(body={"_type": "sympy"}))
+        pbo.json_to_big_operator(bounds_answer(body={"_type": "sympy"}))
 
 
 def test_decode_normalizes_invalid_sympy_expression_error() -> None:
@@ -458,12 +470,12 @@ def test_decode_normalizes_invalid_sympy_expression_error() -> None:
     }
 
     with pytest.raises(ValueError, match='field "body" contains invalid'):
-        pl.json_to_big_operator(bounds_answer(body=invalid))
+        pbo.json_to_big_operator(bounds_answer(body=invalid))
 
 
 def test_decode_rejects_non_symbol_index() -> None:
     with pytest.raises(TypeError, match='field "index" must be a SymPy symbol'):
-        pl.json_to_big_operator(bounds_answer(index=sympy_json(sympy.Integer(1))))
+        pbo.json_to_big_operator(bounds_answer(index=sympy_json(sympy.Integer(1))))
 
 
 def test_decode_rejects_invalid_approaches_direction() -> None:
@@ -480,12 +492,12 @@ def test_decode_rejects_invalid_approaches_direction() -> None:
     }
 
     with pytest.raises(ValueError, match="unsupported direction"):
-        pl.json_to_big_operator(answer)
+        pbo.json_to_big_operator(answer)
 
 
 @pytest.mark.parametrize("operator", ["Sum", "Custom"])
 def test_decode_rejects_operator_latex(operator: str) -> None:
     with pytest.raises(ValueError, match="exactly the fields required"):
-        pl.json_to_big_operator(
+        pbo.json_to_big_operator(
             bounds_answer(operator=operator, operator_latex=r"\operatorname{op}")
         )
