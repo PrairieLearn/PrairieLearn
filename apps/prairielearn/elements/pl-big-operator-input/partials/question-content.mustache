@@ -45,13 +45,17 @@
               class="form-select form-select-sm{{#invalid}} is-invalid{{/invalid}}"
               id="{{name}}"
               name="{{name}}"
+              {{#invalid}}
+                aria-invalid="true"
+                aria-errormessage="{{feedback_id}}"
+              {{/invalid}}
             >
               <option value="">?</option>
               {{#options}}
                 <option value="{{value}}" {{#selected}} selected{{/selected}}>{{label}}</option>
               {{/options}}
             </select>
-            {{#feedback}}<span class="invalid-feedback d-block">{{feedback}}</span>{{/feedback}}
+            {{#feedback}}<span id="{{feedback_id}}" class="invalid-feedback d-block">{{feedback}}</span>{{/feedback}}
             {{#score_badge}}
               <span class="pl-big-operator-input__direction-score">
                 {{#correct}}
