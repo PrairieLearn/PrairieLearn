@@ -2061,7 +2061,7 @@ class TestDocSmoke:
             index=x,
             target=0,
             direction="two-sided",
-            body=sympy.Function("f")(x),
+            body=cast(sympy.Expr, sympy.Function("f")(x)),
         )
         markup = html(**{
             "answers-name": "evaluation",
