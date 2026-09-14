@@ -224,7 +224,7 @@ import sympy
 def generate(data):
     x = sympy.Symbol("x")
     data["correct_answers"]["evaluation"] = pl.big_operator_to_json(
-        operator="custom",
+        operator="Custom",
         indexing="approaches",
         index=x,
         target=0,

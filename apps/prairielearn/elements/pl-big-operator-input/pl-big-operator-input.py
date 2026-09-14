@@ -37,36 +37,13 @@ SYMPY_TIMEOUT_FORMAT_ERROR: Final = (
     "Your answer did not converge, try a simpler expression."
 )
 
-type BuiltinOperator = Literal[
-    "sum",
-    "product",
-    "integral",
-    "limit",
-    "union",
-    "intersection",
-    "disjoint-union",
-    "min",
-    "max",
-]
-type Operator = pbo.BigOperatorName
-type BuiltinOperatorFn = Literal[
-    "Sum",
-    "Product",
-    "Integral",
-    "Limit",
-    "Union",
-    "Intersection",
-    "DisjointUnion",
-    "Min",
-    "Max",
-]
-type OperatorFn = pbo.BigOperatorFunctionName
+type DefinedOperator = pbo.BigOperatorDefinedFunctionName
+type Operator = pbo.BigOperatorFunctionName
 type Indexing = pbo.BigOperatorIndexing
 
 
 @dataclass(frozen=True, slots=True)
 class OperatorMetadata:
-    fn_name: BuiltinOperatorFn
     tex: str
     bounds_constructor: type[sympy.Basic]
     _domain_constructor: type[sympy.Basic] | None = None
@@ -76,23 +53,17 @@ class OperatorMetadata:
         return self._domain_constructor or self.bounds_constructor
 
 
-OP_METADATA: Final[frozendict[BuiltinOperator, OperatorMetadata]] = frozendict({
-    "sum": OperatorMetadata("Sum", r"\sum", sympy.Sum, sympy.Add),
-    "product": OperatorMetadata("Product", r"\prod", sympy.Product, sympy.Mul),
-    "integral": OperatorMetadata("Integral", r"\int", sympy.Integral),
-    "limit": OperatorMetadata("Limit", r"\lim", sympy.Limit),
-    "union": OperatorMetadata("Union", r"\bigcup", sympy.Union),
-    "intersection": OperatorMetadata("Intersection", r"\bigcap", sympy.Intersection),
-    "disjoint-union": OperatorMetadata(
-        "DisjointUnion", r"\bigsqcup", sympy.sets.DisjointUnion
-    ),
-    "min": OperatorMetadata("Min", r"\min", sympy.Min),
-    "max": OperatorMetadata("Max", r"\max", sympy.Max),
+OP_METADATA: Final[frozendict[DefinedOperator, OperatorMetadata]] = frozendict({
+    "Sum": OperatorMetadata(r"\sum", sympy.Sum, sympy.Add),
+    "Product": OperatorMetadata(r"\prod", sympy.Product, sympy.Mul),
+    "Integral": OperatorMetadata(r"\int", sympy.Integral),
+    "Limit": OperatorMetadata(r"\lim", sympy.Limit),
+    "Union": OperatorMetadata(r"\bigcup", sympy.Union),
+    "Intersection": OperatorMetadata(r"\bigcap", sympy.Intersection),
+    "DisjointUnion": OperatorMetadata(r"\bigsqcup", sympy.sets.DisjointUnion),
+    "Min": OperatorMetadata(r"\min", sympy.Min),
+    "Max": OperatorMetadata(r"\max", sympy.Max),
 })
-
-
-def _operator_fn_name(operator: Operator) -> OperatorFn:
-    return "Custom" if operator == "custom" else OP_METADATA[operator].fn_name
 
 
 type DirectionName = pbo.BigOperatorDirection
@@ -235,7 +206,7 @@ def _split_top_level(source: str) -> list[str]:
     return parts
 
 
-def _formatted_call(source: str, function_name: OperatorFn) -> FormattedCall | None:
+def _formatted_call(source: str, function_name: Operator) -> FormattedCall | None:
     match = re.fullmatch(
         rf"\s*{re.escape(function_name)}\s*\((.*)\)\s*", source, re.DOTALL
     )
@@ -303,27 +274,20 @@ def _infer_spec(
             regex_match = re.match(r"^\s*([A-Za-z][A-Za-z0-9_]*)\s*\(", raw)
             function = regex_match.group(1) if regex_match else None
             parsed_operator: Operator | None = (
-                "custom"
-                if function == "Custom"
-                else next(
-                    (
-                        operator
-                        for operator, metadata in OP_METADATA.items()
-                        if metadata.fn_name == function
-                    ),
-                    None,
-                )
+                cast(Operator, function)
+                if function == "Custom" or function in OP_METADATA
+                else None
             )
             if parsed_operator is None:
                 return None, None, None
             operator = parsed_operator
-            formatted = _formatted_call(raw, _operator_fn_name(parsed_operator))
-            if formatted is None and parsed_operator == "limit":
+            formatted = _formatted_call(raw, parsed_operator)
+            if formatted is None and parsed_operator == "Limit":
                 formatted = _legacy_limit_call(raw)
             if formatted is not None:
                 index = _identifier(formatted[1][0]) if formatted[1] else None
                 match parsed_operator, len(formatted[1]):
-                    case "limit", _:
+                    case "Limit", _:
                         return operator, "approaches", index
                     case _, 2:
                         return operator, "domain", index
@@ -349,7 +313,7 @@ def _infer_spec(
             "index": index_var,
         } if (
             (index := _symbol_name(_safe_decode(index_var)))
-            and (operator == "custom" or operator in OP_METADATA)
+            and (operator == "Custom" or operator in OP_METADATA)
             and indexing in COMPONENTS_MAP
         ):
             return operator, indexing, index
@@ -376,8 +340,8 @@ def _infer_direction(raw: Any, operator: Operator) -> DirectionName | None:
             return _infer_direction(source, operator)
 
         case str():
-            formatted = _formatted_call(raw, _operator_fn_name(operator))
-            if formatted is None and operator == "limit":
+            formatted = _formatted_call(raw, operator)
+            if formatted is None and operator == "Limit":
                 formatted = _legacy_limit_call(raw)
             match formatted:
                 case None:
@@ -423,10 +387,10 @@ def _config(html: str, data: pl.QuestionData | None = None) -> RenderConfig:
             f'Correct answer "{answer}" must be a supported complete answer from '
             "which the operator, index variable, and indexing can be inferred."
         )
-    if operator == "custom":
+    if operator == "Custom":
         if custom_latex is None or not custom_latex.strip():
             raise ValueError(
-                'Attribute "operator-latex" is required when operator="custom".'
+                'Attribute "operator-latex" is required when operator="Custom".'
             )
         operator_latex = custom_latex.strip()
     else:
@@ -490,7 +454,7 @@ def _config(html: str, data: pl.QuestionData | None = None) -> RenderConfig:
         raise ValueError(
             'Attribute "allowed-blank" must be none, indices, body, or all.'
         )
-    if operator == "custom" and grading == "equivalent":
+    if operator == "Custom" and grading == "equivalent":
         raise ValueError(
             'Custom operators with a correct answer do not support grading-method="equivalent".'
         )
@@ -640,7 +604,7 @@ def _validate_component_values(config: RenderConfig, values: ResponseValues) -> 
 
 def _binder(config: RenderConfig, value: Any) -> pbo.BigOperatorJson | None:
     match config.operator:
-        case "limit":
+        case "Limit":
             if not isinstance(value, sympy.Limit):
                 return None
             if len(value.args) != 4:
@@ -654,13 +618,13 @@ def _binder(config: RenderConfig, value: Any) -> pbo.BigOperatorJson | None:
                 index=index,
             )
 
-        case "sum":
+        case "Sum":
             if not isinstance(value, sympy.Sum):
                 return None
-        case "product":
+        case "Product":
             if not isinstance(value, sympy.Product):
                 return None
-        case "integral":
+        case "Integral":
             if not isinstance(value, sympy.Integral):
                 return None
         case _:
@@ -703,8 +667,8 @@ def _binder(config: RenderConfig, value: Any) -> pbo.BigOperatorJson | None:
 
 
 def _formatted_answer(config: RenderConfig, source: str) -> pbo.BigOperatorJson | None:
-    formatted = _formatted_call(source, _operator_fn_name(config.operator))
-    if formatted is None and config.operator == "limit":
+    formatted = _formatted_call(source, config.operator)
+    if formatted is None and config.operator == "Limit":
         formatted = _legacy_limit_call(source)
     if formatted is None:
         return None
@@ -789,7 +753,7 @@ def _validate_correct(
 
 def _correct(config: RenderConfig, data: pl.QuestionData) -> pbo.BigOperatorJson:
     raw = _raw_correct_answer(config.answer_name, config.correct_attribute, data)
-    if config.operator == "custom" and config.grading == "equivalent":
+    if config.operator == "Custom" and config.grading == "equivalent":
         raise ValueError(
             'Custom operators with a correct answer do not support grading-method="equivalent".'
         )
@@ -803,7 +767,7 @@ def _correct(config: RenderConfig, data: pl.QuestionData) -> pbo.BigOperatorJson
         converted = _formatted_answer(config, raw)
         if converted is not None:
             return _validate_correct(config, converted)
-        if config.operator == "limit" and re.match(r"^\s*Limit\s*\(", raw):
+        if config.operator == "Limit" and re.match(r"^\s*Limit\s*\(", raw):
             raise ValueError("The correct answer has an invalid Limit wrapper.")
         raise TypeError(
             f'Correct answer "{config.answer_name}" must be a matching formatted object or canonical structured dictionary.'
@@ -1006,7 +970,7 @@ def _question_mustache(config: RenderConfig, data: pl.QuestionData) -> str:
     context: dict[str, Any] = {
         config.indexing: True,
         config.display.value: True,
-        "integral": config.operator == "integral",
+        "integral": config.operator == "Integral",
         "operator_latex": _operator_tex(config),
         "prefix_latex": config.prefix_latex,
         "suffix_latex": config.suffix_latex,
@@ -1033,7 +997,7 @@ def _question_mustache(config: RenderConfig, data: pl.QuestionData) -> str:
                 label="Lower bound",
                 size=config.index_field_size,
                 data=data,
-                prefix=None if config.operator == "integral" else rf"\({index} = \)",
+                prefix=None if config.operator == "Integral" else rf"\({index} = \)",
                 score=component_scores.get("lower"),
             )
             context["upper_field"] = _symbolic_field(
@@ -1049,11 +1013,11 @@ def _question_mustache(config: RenderConfig, data: pl.QuestionData) -> str:
                 config,
                 component="domain",
                 label="Integration domain"
-                if config.operator == "integral"
+                if config.operator == "Integral"
                 else "Index domain",
                 size=config.index_field_size,
                 data=data,
-                prefix=None if config.operator == "integral" else rf"\({index} \in \)",
+                prefix=None if config.operator == "Integral" else rf"\({index} \in \)",
                 score=component_scores.get("domain"),
             )
         case "approaches":
@@ -1084,7 +1048,7 @@ def _question_mustache(config: RenderConfig, data: pl.QuestionData) -> str:
 
 def _operator_tex(config: RenderConfig) -> str:
     if config.has_operator_latex_override:
-        if config.operator == "integral":
+        if config.operator == "Integral":
             return rf"\mathop{{{config.operator_latex}}}\nolimits"
         return rf"\mathop{{{config.operator_latex}}}\limits"
     return config.operator_latex
@@ -1099,11 +1063,11 @@ def _tex(config: RenderConfig, raw: dict[str, Any] | None) -> str:
     index = sympy.latex(sympy.Symbol(config.index))
     op = _operator_tex(config)
     match config.indexing, config.operator:
-        case "bounds", "integral":
+        case "bounds", "Integral":
             return rf"{op}_{{{get_comp('lower')}}}^{{{get_comp('upper')}}} {get_comp('body')}\,\mathrm{{d}}{index}"
         case "bounds", _:
             return rf"{op}_{{{index}={get_comp('lower')}}}^{{{get_comp('upper')}}} {get_comp('body')}"
-        case "domain", "integral":
+        case "domain", "Integral":
             return rf"{op}_{{{get_comp('domain')}}} {get_comp('body')}\,\mathrm{{d}}{index}"
         case "domain", _:
             return rf"{op}_{{{index}\in {get_comp('domain')}}} {get_comp('body')}"
@@ -1251,7 +1215,7 @@ def _unchecked_parse(
 def _requires_set(config: RenderConfig, component: Component) -> bool:
     return component == "domain" or (
         component == "body"
-        and config.operator in {"union", "intersection", "disjoint-union"}
+        and config.operator in {"Union", "Intersection", "DisjointUnion"}
     )
 
 
@@ -1389,9 +1353,9 @@ def _construct(
     index = index if index is not None else sympy.Symbol(config.index)
     body = values["body"]
     match config.indexing, config.operator:
-        case "bounds", "custom":
+        case "bounds", "Custom":
             return sympy.Tuple(body, (index, values["lower"], values["upper"]))
-        case "bounds", "sum" | "product" | "integral" as operator:
+        case "bounds", "Sum" | "Product" | "Integral" as operator:
             bound_constructor = OP_METADATA[operator].bounds_constructor
             return bound_constructor(body, (index, values["lower"], values["upper"]))
         case "bounds", operator:
@@ -1400,7 +1364,7 @@ def _construct(
             # checks to simplify its body and bounds.
             constructor = cast(
                 Callable[..., sympy.Basic],
-                sympy.Function(f"_pl_{OP_METADATA[operator].fn_name}_bounds"),
+                sympy.Function(f"_pl_{operator}_bounds"),
             )
             return constructor(body, index, values["lower"], values["upper"])
         case "approaches", _:
@@ -1410,7 +1374,7 @@ def _construct(
                 values["target"],
                 dir=DIRECTION_SYMBOLS[direction or config.direction],
             )
-        case "domain", "integral":
+        case "domain", "Integral":
             raise NotImplementedError(
                 "Equivalent grading for domain integrals is unsupported; use exact or component grading."
             )
@@ -1424,7 +1388,7 @@ def _construct(
                 body.subs(index, item)
                 for item in domain  # type: ignore
             ]
-            if operator == "custom":
+            if operator == "Custom":
                 return sympy.Tuple(*terms)
             return OP_METADATA[operator].domain_constructor(*terms)
 

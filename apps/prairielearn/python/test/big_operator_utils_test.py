@@ -25,7 +25,7 @@ def bounds_answer(**updates: Any) -> dict[str, Any]:
     answer: dict[str, Any] = {
         "_type": "big_operator",
         "_version": 1,
-        "operator": "sum",
+        "operator": "Sum",
         "indexing": "bounds",
         "index": sympy_json(sympy.Symbol("k")),
         "lower": sympy_json(sympy.Integer(1)),
@@ -52,7 +52,7 @@ def test_decode_domain_big_operator_with_sets() -> None:
     answer = {
         "_type": "big_operator",
         "_version": 1,
-        "operator": "union",
+        "operator": "Union",
         "indexing": "domain",
         "index": sympy_json(k),
         "domain": sympy_json(sympy.FiniteSet(1, 2)),
@@ -73,7 +73,7 @@ def test_decode_approaches_big_operator() -> None:
     answer = {
         "_type": "big_operator",
         "_version": 1,
-        "operator": "limit",
+        "operator": "Limit",
         "indexing": "approaches",
         "index": sympy_json(x),
         "target": sympy_json(sympy.Integer(0)),
@@ -93,7 +93,7 @@ def test_decode_custom_big_operator() -> None:
     k = sympy.Symbol("k", positive=True)
     f: sympy.Expr = sympy.Function("f")(k)
     answer = bounds_answer(
-        operator="custom",
+        operator="Custom",
         index=sympy_json(k),
         body=sympy_json(f),
     )
@@ -109,7 +109,7 @@ def test_encode_custom_bounds_big_operator() -> None:
     body: sympy.Expr = sympy.Function("f")(k)
 
     encoded = pl.big_operator_to_json(
-        operator="custom",
+        operator="Custom",
         indexing="bounds",
         index=k,
         lower=sympy.Integer(1),
@@ -119,14 +119,14 @@ def test_encode_custom_bounds_big_operator() -> None:
 
     assert_type(encoded, BigBoundsOperatorJson)
     decoded = pl.json_to_big_operator(encoded)
-    assert decoded["operator"] == "custom"
+    assert decoded["operator"] == "Custom"
     assert decoded["index"] == k
     assert decoded["body"] == body
 
 
 def test_big_operator_to_json_accepts_strings() -> None:
     encoded = pl.big_operator_to_json(
-        operator="sum",
+        operator="Sum",
         indexing="bounds",
         index="k",
         lower="1",
@@ -145,7 +145,7 @@ def test_big_operator_to_json_accepts_strings() -> None:
 
 def test_big_operator_to_json_accepts_integers() -> None:
     encoded = pl.big_operator_to_json(
-        operator="sum",
+        operator="Sum",
         indexing="bounds",
         index="k",
         lower=1,
@@ -164,7 +164,7 @@ def test_big_operator_to_json_accepts_integers() -> None:
 def test_big_operator_to_json_accepts_python_sets() -> None:
     k = sympy.Symbol("k")
     encoded = pl.big_operator_to_json(
-        operator="union",
+        operator="Union",
         indexing="domain",
         index=k,
         domain={1, 2},
@@ -193,7 +193,7 @@ def test_big_operator_to_json_accepts_big_operator() -> None:
         {
             "_type": "big_operator",
             "_version": 1,
-            "operator": "union",
+            "operator": "Union",
             "indexing": "domain",
             "index": sympy_json(sympy.Symbol("k")),
             "domain": sympy_json(sympy.FiniteSet(1, 2)),
@@ -202,7 +202,7 @@ def test_big_operator_to_json_accepts_big_operator() -> None:
         {
             "_type": "big_operator",
             "_version": 1,
-            "operator": "limit",
+            "operator": "Limit",
             "indexing": "approaches",
             "index": sympy_json(sympy.Symbol("x")),
             "target": sympy_json(sympy.Integer(0)),
@@ -220,7 +220,7 @@ def test_big_operator_to_json_accepts_decoded_non_bounds_operator(
 def test_encode_domain_big_operator() -> None:
     k = sympy.Symbol("k")
     encoded = pl.big_operator_to_json(
-        operator="union",
+        operator="Union",
         indexing="domain",
         index=k,
         domain=sympy.FiniteSet(1, 2),
@@ -236,7 +236,7 @@ def test_encode_domain_big_operator() -> None:
 def test_encode_approaches_big_operator() -> None:
     x = sympy.Symbol("x")
     encoded = pl.big_operator_to_json(
-        operator="limit",
+        operator="Limit",
         indexing="approaches",
         index=x,
         target=sympy.Integer(0),
@@ -253,14 +253,14 @@ def test_encode_approaches_big_operator() -> None:
 @pytest.mark.parametrize(
     ("kwargs", "match"),
     [
-        ({"operator": "sum", "upper": None}, '"upper"'),
-        ({"operator": "sum", "domain": sympy.FiniteSet(1)}, "only accept"),
+        ({"operator": "Sum", "upper": None}, '"upper"'),
+        ({"operator": "Sum", "domain": sympy.FiniteSet(1)}, "only accept"),
     ],
 )
 def test_encode_rejects_inconsistent_fields(kwargs: dict[str, Any], match: str) -> None:
     with pytest.raises(ValueError, match=match):
         cast(Any, pl.big_operator_to_json)(**{
-            "operator": "sum",
+            "operator": "Sum",
             "indexing": "bounds",
             "index": sympy.Symbol("k"),
             "lower": sympy.Integer(1),
@@ -273,9 +273,9 @@ def test_encode_rejects_inconsistent_fields(kwargs: dict[str, Any], match: str) 
 @pytest.mark.parametrize(
     ("operator", "indexing", "indexing_fields"),
     [
-        ("limit", "bounds", {"lower": 1, "upper": 2}),
+        ("Limit", "bounds", {"lower": 1, "upper": 2}),
         (
-            "sum",
+            "Sum",
             "approaches",
             {"target": 0, "direction": "two-sided"},
         ),
@@ -295,9 +295,9 @@ def test_encode_rejects_incompatible_operator_and_indexing(
 
 
 def test_get_valid_big_operator_indexing() -> None:
-    assert pl.get_valid_big_operator_indexing("sum") == {"bounds", "domain"}
-    assert pl.get_valid_big_operator_indexing("limit") == {"approaches"}
-    assert pl.get_valid_big_operator_indexing("custom") == {
+    assert pl.get_valid_big_operator_indexing("Sum") == {"bounds", "domain"}
+    assert pl.get_valid_big_operator_indexing("Limit") == {"approaches"}
+    assert pl.get_valid_big_operator_indexing("Custom") == {
         "bounds",
         "domain",
         "approaches",
@@ -331,7 +331,7 @@ def test_get_valid_big_operator_indexing() -> None:
         ),
         (
             {
-                "operator": "limit",
+                "operator": "Limit",
                 "indexing": "approaches",
                 "lower": None,
                 "upper": None,
@@ -342,7 +342,7 @@ def test_get_valid_big_operator_indexing() -> None:
         ),
         (
             {
-                "operator": "limit",
+                "operator": "Limit",
                 "indexing": "approaches",
                 "lower": sympy.Integer(1),
                 "upper": None,
@@ -354,7 +354,7 @@ def test_get_valid_big_operator_indexing() -> None:
         ),
         (
             {
-                "operator": "limit",
+                "operator": "Limit",
                 "indexing": "approaches",
                 "lower": None,
                 "upper": None,
@@ -371,7 +371,7 @@ def test_encode_rejects_invalid_labelled_fields(
 ) -> None:
     with pytest.raises(exception, match=match):
         cast(Any, pl.big_operator_to_json)(**{
-            "operator": "sum",
+            "operator": "Sum",
             "indexing": "bounds",
             "index": sympy.Symbol("k"),
             "lower": sympy.Integer(1),
@@ -385,7 +385,7 @@ def test_encode_rejects_expression_with_labelled_fields() -> None:
     decoded = pl.json_to_big_operator(bounds_answer())
 
     with pytest.raises(TypeError, match="either a big operator or labelled fields"):
-        pl.big_operator_to_json(decoded, operator="sum")  # type: ignore[call-overload]
+        pl.big_operator_to_json(decoded, operator="Sum")  # type: ignore[call-overload]
 
 
 @pytest.mark.parametrize("value", [sympy.Symbol("i"), sympy.Symbol("j"), sympy.I])
@@ -428,7 +428,7 @@ def test_decode_rejects_invalid_metadata(updates: dict[str, Any], match: str) ->
 
 def test_decode_rejects_incompatible_operator_and_indexing() -> None:
     with pytest.raises(ValueError, match="does not support indexing"):
-        pl.json_to_big_operator(bounds_answer(operator="limit"))
+        pl.json_to_big_operator(bounds_answer(operator="Limit"))
 
 
 @pytest.mark.parametrize("key", ["index", "lower", "upper", "body"])
@@ -471,7 +471,7 @@ def test_decode_rejects_invalid_approaches_direction() -> None:
     answer = {
         "_type": "big_operator",
         "_version": 1,
-        "operator": "limit",
+        "operator": "Limit",
         "indexing": "approaches",
         "index": sympy_json(x),
         "target": sympy_json(sympy.Integer(0)),
@@ -483,7 +483,7 @@ def test_decode_rejects_invalid_approaches_direction() -> None:
         pl.json_to_big_operator(answer)
 
 
-@pytest.mark.parametrize("operator", ["sum", "custom"])
+@pytest.mark.parametrize("operator", ["Sum", "Custom"])
 def test_decode_rejects_operator_latex(operator: str) -> None:
     with pytest.raises(ValueError, match="exactly the fields required"):
         pl.json_to_big_operator(
