@@ -37,8 +37,8 @@ SYMPY_TIMEOUT_FORMAT_ERROR: Final = (
     "Your answer did not converge, try a simpler expression."
 )
 
-type DefinedOperator = pbo.BigOperatorDefinedFunctionName
-type Operator = pbo.BigOperatorFunctionName
+type SympyOperator = pbo.BigOperatorSympyName
+type Operator = pbo.BigOperatorName
 type Indexing = pbo.BigOperatorIndexing
 
 
@@ -53,7 +53,7 @@ class OperatorMetadata:
         return self._domain_constructor or self.bounds_constructor
 
 
-OP_METADATA: Final[frozendict[DefinedOperator, OperatorMetadata]] = frozendict({
+OP_METADATA: Final[frozendict[SympyOperator, OperatorMetadata]] = frozendict({
     "Sum": OperatorMetadata(r"\sum", sympy.Sum, sympy.Add),
     "Product": OperatorMetadata(r"\prod", sympy.Product, sympy.Mul),
     "Integral": OperatorMetadata(r"\int", sympy.Integral),
