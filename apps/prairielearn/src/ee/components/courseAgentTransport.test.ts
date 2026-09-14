@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import type { CourseAgentMessage } from '../lib/course-agent/ui-stream.js';
 
-import { CourseAgentTransport } from './courseAgentTransport.js';
+import { createCourseAgentTransport } from './courseAgentTransport.js';
 
 const run = { runId: 'test-run', conversationId: 'conversation', sandboxId: 'sandbox' };
 
@@ -30,7 +30,7 @@ describe('course-agent useChat transport', () => {
     );
     const start = vi.fn().mockResolvedValue(run);
     const chat = new Chat<CourseAgentMessage>({
-      transport: new CourseAgentTransport(start, '1', '91', vi.fn()),
+      transport: createCourseAgentTransport(start, '1', '91', vi.fn()),
     });
     const sending = chat.sendMessage({ text: 'Hello' });
     controller.enqueue({ type: 'start', messageId: run.runId });
@@ -54,7 +54,7 @@ describe('course-agent useChat transport', () => {
     });
   });
 
-  it('reports truncated streams and replays without submitting another model request', async () => {
+  it('uses SDK errors for connection loss and replays without submitting another model request', async () => {
     const chunks: UIMessageChunk[] = [
       { type: 'start', messageId: run.runId },
       { type: 'text-start', id: 'text' },
@@ -69,11 +69,14 @@ describe('course-agent useChat transport', () => {
       );
     vi.stubGlobal(
       'fetch',
-      vi.fn().mockResolvedValueOnce(response(false)).mockResolvedValueOnce(response(true)),
+      vi
+        .fn()
+        .mockRejectedValueOnce(new TypeError('Connection interrupted'))
+        .mockResolvedValueOnce(response(true)),
     );
     const start = vi.fn().mockResolvedValue(run);
     const chat = new Chat<CourseAgentMessage>({
-      transport: new CourseAgentTransport(start, '1', null, vi.fn()),
+      transport: createCourseAgentTransport(start, '1', null, vi.fn()),
     });
     await chat.sendMessage({ text: 'Hello' });
     expect(chat.status).toBe('error');
@@ -104,7 +107,7 @@ describe('course-agent useChat transport', () => {
       .mockResolvedValueOnce(run)
       .mockRejectedValueOnce(new Error('Could not start the next run'));
     const chat = new Chat<CourseAgentMessage>({
-      transport: new CourseAgentTransport(start, '1', null, vi.fn()),
+      transport: createCourseAgentTransport(start, '1', null, vi.fn()),
     });
 
     await chat.sendMessage({ text: 'First' });

@@ -1,6 +1,6 @@
 import { useChat } from '@ai-sdk/react';
 import { QueryClient, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Fragment, useEffect, useRef, useState } from 'react';
+import { Fragment, useEffect, useState } from 'react';
 import { Alert, Button, Dropdown, Spinner } from 'react-bootstrap';
 import type { Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -24,7 +24,7 @@ import { ToolCallStatus } from './course-agent/ChatProgressStatus.js';
 import { ScrollToBottomButton } from './course-agent/ChatScrollToBottom.js';
 import { CourseAgentDiffReview, CourseAgentDiffSummary } from './course-agent/CourseAgentDiff.js';
 import { courseRefreshMessageId } from './course-agent/course-refresh.js';
-import { type CourseAgentRun, CourseAgentTransport } from './courseAgentTransport.js';
+import { type CourseAgentRun, createCourseAgentTransport } from './courseAgentTransport.js';
 
 const markdownPlugins = [remarkGfm];
 export const workspaceMarkdownComponents: Components = {
@@ -154,26 +154,18 @@ function CourseAgentConversationPanel({
 
   const [prompt, setPrompt] = useState('');
   const [reviewOpen, setReviewOpen] = useState(false);
-  const [queuedPrompts, setQueuedPrompts] = useState<
-    { id: string; text: string; createdAt: string }[]
-  >([]);
-  const queuedPromptsRef = useRef(queuedPrompts);
   const [conversation, setConversation] = useState<CourseAgentRun | null>(initialHistory.run);
-  const [transport] = useState(
-    () =>
-      new CourseAgentTransport(
-        (input) => trpcClient.courseAgent.start.mutate(input),
-        courseId,
-        courseInstanceId,
-        (run) => {
-          // Keep the conversation selected while the next run is being submitted.
-          if (run) {
-            setConversation(run);
-            void queryClient.invalidateQueries(trpc.courseAgent.list.queryFilter());
-          }
-        },
-        initialHistory.run,
-      ),
+  const [transport] = useState(() =>
+    createCourseAgentTransport(
+      (input) => trpcClient.courseAgent.start.mutate(input),
+      courseId,
+      courseInstanceId,
+      (run) => {
+        setConversation(run);
+        void queryClient.invalidateQueries(trpc.courseAgent.list.queryFilter());
+      },
+      initialHistory.run,
+    ),
   );
   const snapshot = useQuery(
     trpc.courseAgent.get.queryOptions(
@@ -185,33 +177,13 @@ function CourseAgentConversationPanel({
     useChat<CourseAgentMessage>({
       transport,
       messages: initialHistory.messages,
+      resume: initialHistory.activeRunId !== null,
       onData: () => void snapshot.refetch(),
       onFinish: () => {
         if (showDiagnostics) void diagnostics.refetch();
         void queryClient.invalidateQueries(trpc.courseAgent.list.queryFilter());
-        const next = queuedPromptsRef.current.at(0);
-        if (next) {
-          const remaining = queuedPromptsRef.current.slice(1);
-          queuedPromptsRef.current = remaining;
-          setQueuedPrompts(remaining);
-          queueMicrotask(() => {
-            void sendMessage({
-              text: next.text,
-              metadata: { createdAt: next.createdAt },
-            });
-          });
-        }
       },
     });
-  const resumedRef = useRef(false);
-  const [runToResume] = useState(initialHistory.activeRunId);
-  // A page reload reconnects to the existing run instead of submitting another prompt.
-  useEffect(() => {
-    if (runToResume && !resumedRef.current) {
-      resumedRef.current = true;
-      void resumeStream();
-    }
-  }, [runToResume, resumeStream]);
   // Switching conversations disconnects this browser stream, not the server-side agent run.
   useEffect(
     () => () => {
@@ -398,20 +370,6 @@ function CourseAgentConversationPanel({
                 </AssistantMessage>
               ),
             )}
-            {queuedPrompts.map((message) => (
-              <UserMessage
-                key={message.id}
-                userName={userName}
-                createdAt={message.createdAt}
-                timeZone={timeZone}
-              >
-                <span>{message.text}</span>
-                <span className="small text-muted">
-                  <i className="bi bi-clock me-1" aria-hidden="true" />
-                  Queued
-                </span>
-              </UserMessage>
-            ))}
             {busy && !hasActiveTool && !snapshot.data?.pendingApproval && (
               <div role="status" className="d-flex align-items-center gap-2 small text-muted mb-3">
                 <Spinner size="sm" /> Working…
@@ -559,22 +517,12 @@ function CourseAgentConversationPanel({
               onSelect={(mode) => setApprovalMode.mutate({ mode })}
             />
           }
-          allowSubmitWhileGenerating
           onChange={setPrompt}
           onSubmit={(text) => {
             void stickToBottom.scrollToBottom();
             setPrompt('');
             const createdAt = new Date().toISOString();
-            if (busy) {
-              const queued = { id: crypto.randomUUID(), text, createdAt };
-              setQueuedPrompts((current) => {
-                const next = [...current, queued];
-                queuedPromptsRef.current = next;
-                return next;
-              });
-            } else {
-              void sendMessage({ text, metadata: { createdAt } });
-            }
+            void sendMessage({ text, metadata: { createdAt } });
           }}
         />
       </footer>
@@ -633,38 +581,20 @@ function Diagnostics({
   lifecycle?: CourseAgentSnapshot;
   persistence?: Record<string, string | number | Date | null> | null;
 }) {
-  const agentStarted = findLastEvent(events, 'agent.started');
-  const usage = findLastEvent(events, 'usage.updated');
-  const docs = findLastEvent(events, 'docs.mounted', 'docs.unavailable');
   const identifiers = [
     ['Conversation', String(conversation?.conversationId ?? null)],
     ['Sandbox', String(conversation?.sandboxId ?? null)],
     ['Run', String(runId)],
-    ['Codex thread', String(agentStarted?.data.threadId ?? null)],
-    ['conversationState (Worker)', String(lifecycle?.conversationState ?? null)],
-    ['sandboxState (Worker)', String(lifecycle?.sandboxState ?? null)],
-    ['revision (Worker)', String(lifecycle?.revision ?? null)],
-    ['sandboxGeneration (Worker)', String(lifecycle?.sandboxGeneration ?? null)],
-    ['idleExpiresAt (Worker)', String(lifecycle?.idleExpiresAt ?? null)],
-    ['Last sandbox activity (watchdog)', String(lifecycle?.lastSandboxActivityAt ?? null)],
-    [
-      'Sandbox inactivity deadline (watchdog)',
-      String(lifecycle?.sandboxInactivityExpiresAt ?? null),
-    ],
+    ['conversationState (runtime)', String(lifecycle?.conversationState ?? null)],
+    ['sandboxState (runtime)', String(lifecycle?.sandboxState ?? null)],
+    ['revision (runtime)', String(lifecycle?.revision ?? null)],
+    ['sandboxGeneration (runtime)', String(lifecycle?.sandboxGeneration ?? null)],
     ['Shutdown reason', String(lifecycle?.shutdownReason ?? null)],
-    ['processId (Worker)', String(lifecycle?.processId ?? null)],
     ...Object.entries(persistence ?? {}).map(([key, value]) => [
       `${key} (PostgreSQL)`,
       value instanceof Date ? value.toISOString() : String(value),
     ]),
-    ['Documentation event', String(docs?.type ?? null)],
-  ];
-  const tokenFields = [
-    ['input_tokens', 'Input'],
-    ['cached_input_tokens', 'Cached input'],
-    ['cache_write_input_tokens', 'Cache writes'],
-    ['output_tokens', 'Output'],
-    ['reasoning_output_tokens', 'Reasoning'],
+    ['Snapshot', String(lifecycle?.workspaceBackup?.handle.id ?? null)],
   ];
   return (
     <details className="course-agent-diagnostic-card small text-muted">
@@ -675,7 +605,7 @@ function Diagnostics({
       </summary>
       <div className="pt-2">
         <div className="mb-3">
-          Worker status: <code className="text-body">{String(status)}</code>
+          Runtime status: <code className="text-body">{String(status)}</code>
         </div>
         <dl className="course-agent-diagnostics mb-3">
           {identifiers.map(([label, value]) => (
@@ -692,32 +622,9 @@ function Diagnostics({
             {events.length.toLocaleString('en-US')} events
           </span>
         </div>
-        <div className="fw-medium mb-2">Token usage</div>
-        {usage ? (
-          <dl className="course-agent-token-usage mb-0">
-            {tokenFields.map(([key, label]) => {
-              const value = usage.data[key];
-              return typeof value === 'number' ? (
-                <div key={key} className="d-flex justify-content-between gap-3 py-1">
-                  <dt className="text-muted fw-normal">{label}</dt>
-                  <dd className="mb-0 font-monospace">{value.toLocaleString('en-US')}</dd>
-                </div>
-              ) : null;
-            })}
-          </dl>
-        ) : (
-          <p className="text-muted mb-0">Available after the agent responds.</p>
-        )}
       </div>
     </details>
   );
-}
-
-function findLastEvent(events: CourseAgentEvent[], ...types: CourseAgentEvent['type'][]) {
-  for (let index = events.length - 1; index >= 0; index--) {
-    if (types.includes(events[index].type)) return events[index];
-  }
-  return undefined;
 }
 
 export function CourseAgentPanel({

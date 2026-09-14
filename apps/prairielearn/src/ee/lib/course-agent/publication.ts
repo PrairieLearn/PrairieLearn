@@ -7,7 +7,7 @@ import stripAnsi from 'strip-ansi';
 
 import type {
   CourseAgentPushPayload,
-  CourseAgentPushApproval as WorkerApproval,
+  CourseAgentPushApproval as RuntimeApproval,
 } from '@prairielearn/course-agent-protocol';
 import { doWithLock } from '@prairielearn/named-locks';
 import { runInTransactionAsync } from '@prairielearn/postgres';
@@ -46,7 +46,7 @@ async function prepareCourseAgentApproval({
   runId,
   userId,
 }: {
-  proposal: WorkerApproval;
+  proposal: RuntimeApproval;
   course: Course;
   conversationId: string;
   runId: string;
@@ -349,7 +349,7 @@ export async function reconcileCourseAgentPushApproval({
   runId,
   userId,
 }: {
-  proposal: WorkerApproval;
+  proposal: RuntimeApproval;
   course: Course;
   conversationId: string;
   sandboxId: string;

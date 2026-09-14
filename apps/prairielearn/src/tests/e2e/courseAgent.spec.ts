@@ -444,7 +444,7 @@ test('shows only the active progress indicator and renders text before turn comp
   await panel
     .getByRole('textbox', { name: 'Message course agent' })
     .fill('Follow up while the agent works');
-  await expect(panel.getByRole('button', { name: 'Send message', exact: true })).toBeEnabled();
+  await expect(panel.getByRole('button', { name: 'Send message', exact: true })).toBeDisabled();
   await page.evaluate(() => {
     for (const chunk of [
       { type: 'text-delta', id: 'text', delta: ', then the rest.' },
@@ -457,6 +457,7 @@ test('shows only the active progress indicator and renders text before turn comp
   });
   await expect(reply.getByText('First words, then the rest.', { exact: true })).toBeVisible();
   await expect(working).toHaveCount(0);
+  await expect(panel.getByRole('button', { name: 'Send message', exact: true })).toBeEnabled();
 });
 
 test('reconnects an interrupted response without duplicating the turn or starting a new run', async ({
@@ -468,21 +469,37 @@ test('reconnects an interrupted response without duplicating the turn or startin
   page.on('request', (request) => {
     if (request.url().includes('courseAgent.start')) startRequests++;
   });
-  await page.route('**/course_agent/stream?*', async (route) => {
-    streamRequests++;
-    if (streamRequests !== 1) return route.continue();
-    const response = await route.fetch();
-    const body = (await response.text())
-      .split('\n\n')
-      .filter((frame) => !frame.includes('"type":"finish"') && !frame.includes('[DONE]'))
-      .join('\n\n');
-    await route.fulfill({ response, body });
+  page.on('request', (request) => {
+    if (request.url().includes('/course_agent/stream?')) streamRequests++;
+  });
+  await page.addInitScript(() => {
+    const originalFetch = window.fetch.bind(window);
+    let interrupted = false;
+    window.fetch = async (input, init) => {
+      const response = await originalFetch(input, init);
+      const url = input instanceof Request ? input.url : String(input);
+      if (!url.includes('/course_agent/stream?') || interrupted) return response;
+      interrupted = true;
+      const body = (await response.text())
+        .split('\n\n')
+        .filter((frame) => !frame.includes('"type":"finish"') && !frame.includes('[DONE]'))
+        .join('\n\n');
+      return new Response(
+        new ReadableStream({
+          start(controller) {
+            controller.enqueue(new TextEncoder().encode(`${body}\n\n`));
+            setTimeout(() => controller.error(new TypeError('Connection interrupted')), 100);
+          },
+        }),
+        { headers: response.headers },
+      );
+    };
   });
   await page.goto(`/pl/course/${courseInstance.course_id}/course_admin/instances`);
   const panel = page.getByRole('complementary', { name: 'Course agent panel' });
   await panel.getByRole('textbox', { name: 'Message course agent' }).fill('Reconnect test');
   await panel.getByRole('button', { name: 'Send message', exact: true }).click();
-  await expect(panel.getByRole('alert')).toContainText('connection was interrupted');
+  await expect(panel.getByRole('alert')).toContainText('Connection interrupted');
   await panel.getByRole('button', { name: 'Reconnect', exact: true }).click();
   await expect(panel.getByRole('alert')).toHaveCount(0);
   const reply = panel.getByRole('article', { name: 'Message from PrairieLearn' });
@@ -576,15 +593,12 @@ test('sends with Enter and keeps formatted responses and activity within each tu
   const replies = panel.getByRole('article', { name: 'Message from PrairieLearn' });
   await expect(replies.first().getByText('Edited README.md', { exact: true })).toBeVisible();
   await expect(replies.last().getByText('Edited README.md', { exact: true })).toBeVisible();
-  await expect(replies.first().getByText('Started agent', { exact: true })).toBeVisible();
-  await expect(replies.last().getByText('Started agent', { exact: true })).toHaveCount(0);
   await expect(panel.getByText('Set up course', { exact: true })).toHaveCount(0);
   await expect(panel.getByRole('button', { name: /Worked for/ })).toHaveCount(0);
   await panel
     .getByText('Conversation info (only visible to administrators)', { exact: true })
     .click();
-  await expect(panel.getByText('Token usage', { exact: true })).toBeVisible();
-  await expect(panel.getByText('Worker status: waiting_for_user', { exact: true })).toBeVisible();
+  await expect(panel.getByText('Runtime status: waiting_for_user', { exact: true })).toBeVisible();
   await expect(panel.getByText('conversation_state (PostgreSQL)', { exact: true })).toBeVisible();
   await expect(panel.getByText('sandbox_state (PostgreSQL)', { exact: true })).toBeVisible();
   await expect(
@@ -593,10 +607,7 @@ test('sends with Enter and keeps formatted responses and activity within each tu
   await expect(
     panel.getByText('sandbox_state (PostgreSQL)', { exact: true }).locator('+ dd'),
   ).toHaveText('ready');
-  await expect(
-    panel.getByText('process_id (PostgreSQL)', { exact: true }).locator('+ dd'),
-  ).toHaveText('null');
-  await panel.getByText('process_id (PostgreSQL)', { exact: true }).scrollIntoViewIfNeeded();
+  await panel.getByText('sandbox_state (PostgreSQL)', { exact: true }).scrollIntoViewIfNeeded();
   await page.screenshot({ path: testInfo.outputPath('course-chat-tools.png') });
 });
 

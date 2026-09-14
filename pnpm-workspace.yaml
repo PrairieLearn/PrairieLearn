@@ -31,7 +31,6 @@ allowBuilds:
   sharp: false
   ssh2: false
   unrs-resolver: false
-  workerd: true
 
 supportedArchitectures:
   # @postgres-language-server/cli currently tags its glibc Linux binaries with

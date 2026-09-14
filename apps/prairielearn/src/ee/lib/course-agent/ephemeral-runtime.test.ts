@@ -5,7 +5,6 @@ import { withConfig } from '../../../tests/utils/config.js';
 import {
   getEphemeralCourseAgentSnapshot,
   resetFakeCourseAgentRuntime,
-  respondToCourseAgentPushApproval,
   startEphemeralCourseAgentRun,
 } from './ephemeral-runtime.js';
 
@@ -13,92 +12,23 @@ describe('ephemeral course-agent runtime', () => {
   afterEach(resetFakeCourseAgentRuntime);
   afterEach(() => vi.unstubAllGlobals());
 
-  it('explains how to start the separately managed Worker when it is unreachable', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('fetch failed')));
-    await withConfig(
-      {
-        devMode: true,
-        courseAgentRuntime: 'cloudflare',
-        courseAgentCapabilitySecret: 'local-test-secret',
-      },
-      async () => {
-        await expect(
-          startEphemeralCourseAgentRun({
-            courseId: '1',
-            userId: '2',
-            prompt: 'Hello',
-            authoringContext: { courseInstance: null },
-            course: {
-              repository: 'https://github.com/PrairieLearn/test.git',
-              branch: 'master',
-              expectedSha: null,
-            },
-          }),
-        ).rejects.toThrow('pnpm dev-course-agent-worker');
-      },
-    );
-  });
-
-  it('rejects Worker redirects without forwarding its capability', async () => {
-    const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 400 }));
-    vi.stubGlobal('fetch', fetchMock);
-    await withConfig(
-      {
-        courseAgentRuntime: 'cloudflare',
-        courseAgentCapabilitySecret: 'local-test-secret',
-      },
-      async () => {
-        await expect(
-          startEphemeralCourseAgentRun({
-            courseId: '1',
-            userId: '2',
-            prompt: 'Hello',
-            authoringContext: { courseInstance: null },
-            course: {
-              repository: 'https://github.com/PrairieLearn/test.git',
-              branch: 'master',
-              expectedSha: null,
-            },
-          }),
-        ).rejects.toThrow('rejected the run');
-      },
-    );
-    expect(fetchMock).toHaveBeenCalledWith(
-      expect.any(URL),
-      expect.objectContaining({ redirect: 'error' }),
-    );
-  });
-
-  it.each(['cloudflare', 'vercel'] as const)(
-    'rejects redirects when sending a %s push decision',
-    async (runtime) => {
-      const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 200 }));
-      vi.stubGlobal('fetch', fetchMock);
-      await withConfig(
-        {
-          courseAgentRuntime: runtime,
-          courseAgentCapabilitySecret: 'local-test-secret',
-        },
-        async () => {
-          await respondToCourseAgentPushApproval({
-            approvalId: '48d3c806-5030-4713-825a-9374853b7af1',
-            decision: 'completed',
-            userId: '2',
-            courseId: '1',
-            conversationId: '9a6d8f44-d55b-4e73-8b9b-547dd00fb400',
-            sandboxId: 'course-agent-9a6d8f44-d55b-4e73-8b9b-547dd00fb400',
-          });
-        },
-      );
-      expect(fetchMock).toHaveBeenCalledWith(
-        expect.objectContaining({
-          pathname: '/v1/push-decisions',
-          origin: runtime === 'vercel' ? 'http://127.0.0.1:8788' : 'http://127.0.0.1:8787',
+  it('reports missing Vercel configuration before starting a run', async () => {
+    await withConfig({ courseAgentRuntime: 'vercel' }, async () => {
+      await expect(
+        startEphemeralCourseAgentRun({
+          courseId: '1',
+          userId: '2',
+          prompt: 'Hello',
+          authoringContext: { courseInstance: null },
+          course: {
+            repository: 'https://github.com/PrairieLearn/test.git',
+            branch: 'master',
+            expectedSha: null,
+          },
         }),
-        expect.objectContaining({ redirect: 'error' }),
-      );
-    },
-  );
+      ).rejects.toThrow('Configure courseAgentVercel');
+    });
+  });
 
   it('reuses one fake workspace within a conversation and scopes access', async () => {
     await withConfig({ courseAgentRuntime: 'fake' }, async () => {
@@ -153,7 +83,7 @@ describe('ephemeral course-agent runtime', () => {
           conversationId: '9a6d8f44-d55b-4e73-8b9b-547dd00fb400',
           sandboxId: 'course-agent-test',
         }),
-      ).rejects.toThrow('Course-agent runtime is disabled');
+      ).rejects.toThrow('disabled');
     });
   });
 });

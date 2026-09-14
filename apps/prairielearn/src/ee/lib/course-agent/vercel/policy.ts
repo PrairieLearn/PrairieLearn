@@ -20,6 +20,7 @@ export function readOnlyPolicy(repository: string, githubToken: string): Network
     allow: {
       'api.openai.com': [],
       'registry.npmjs.org': [],
+      'docs.prairielearn.com': [],
       'github.com': [
         {
           match: {

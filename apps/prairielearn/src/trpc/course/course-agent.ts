@@ -161,8 +161,6 @@ const start = courseAgentProcedure
     if (!input.conversationId) {
       void nameCourseAgentConversation({
         conversationId,
-        userId: ctx.locals.authn_user.id,
-        courseId: ctx.course.id,
         prompt: input.prompt,
       }).catch(() => {
         logger.warn('Course-agent title generation failed; keeping New conversation', {
@@ -273,11 +271,7 @@ const get = courseAgentProcedure
         snapshot = { ...snapshot, pendingApproval: null };
       }
       const userSettings = await selectUserSettings({ user_id: ctx.locals.authn_user.id });
-      if (
-        config.courseAgentRuntime !== 'vercel' &&
-        userSettings.course_agent_approval_mode === 'always' &&
-        approval.status === 'pending'
-      ) {
+      if (userSettings.course_agent_approval_mode === 'always' && approval.status === 'pending') {
         await resolveCourseAgentApproval({
           course: ctx.locals.course,
           user: ctx.locals.authn_user,
@@ -438,34 +432,18 @@ const getApprovalMode = courseAgentProcedure
   .output(z.object({ mode: z.enum(['ask', 'always']) }))
   .query(async ({ ctx }) => {
     const settings = await selectUserSettings({ user_id: ctx.locals.authn_user.id });
-    return {
-      mode:
-        config.courseAgentRuntime === 'vercel'
-          ? ('ask' as const)
-          : settings.course_agent_approval_mode,
-    };
+    return { mode: settings.course_agent_approval_mode };
   });
 
 const setApprovalMode = courseAgentProcedure
   .input(z.object({ mode: z.enum(['ask', 'always']) }))
   .output(z.object({ mode: z.enum(['ask', 'always']) }))
   .mutation(async ({ ctx, input }) => {
-    if (config.courseAgentRuntime === 'vercel' && input.mode === 'always') {
-      throw new TRPCError({
-        code: 'PRECONDITION_FAILED',
-        message: 'The Vercel prototype requires explicit approval for each publication.',
-      });
-    }
     const settings = await updateCourseAgentApprovalMode({
       user_id: ctx.locals.authn_user.id,
       course_agent_approval_mode: input.mode,
     });
-    return {
-      mode:
-        config.courseAgentRuntime === 'vercel'
-          ? ('ask' as const)
-          : settings.course_agent_approval_mode,
-    };
+    return { mode: settings.course_agent_approval_mode };
   });
 
 const respondToPushApproval = courseAgentProcedure

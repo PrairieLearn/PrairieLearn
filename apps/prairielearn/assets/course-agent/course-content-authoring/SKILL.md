@@ -10,7 +10,7 @@ For content requests, use the local references below instead of searching the we
 
 ## Start with the course
 
-The working directory is the course checkout, normally `/workspace/course`. Start with the supplied
+The working directory is the course checkout, `/vercel/sandbox/course`. Start with the supplied
 course context and format example. Read `infoCourse.json` or list directories only when the context
 does not answer a specific question. Reuse the course's topics, assessment sets, naming, and nearby
 examples. Do not scan the filesystem for skills.

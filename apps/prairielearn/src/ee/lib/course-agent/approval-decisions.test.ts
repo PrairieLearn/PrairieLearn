@@ -50,8 +50,8 @@ beforeEach(() => {
 it('redelivers a committed decision after transport failure without publishing twice', async () => {
   mock.respond
     .mockResolvedValueOnce({ accepted: true })
-    .mockRejectedValueOnce(new Error('Worker disconnected'));
-  await expect(resolveCourseAgentApproval(options)).rejects.toThrow('Worker disconnected');
+    .mockRejectedValueOnce(new Error('Runtime unavailable'));
+  await expect(resolveCourseAgentApproval(options)).rejects.toThrow('Runtime unavailable');
   await expect(resolveCourseAgentApproval(options)).resolves.toMatchObject({
     status: 'completed',
     published: true,

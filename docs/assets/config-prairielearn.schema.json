@@ -1523,74 +1523,86 @@
     "courseAgentRuntime": {
       "default": "disabled",
       "type": "string",
-      "enum": ["disabled", "fake", "cloudflare", "vercel"]
+      "enum": ["disabled", "fake", "vercel"]
     },
-    "courseAgentWorkerOrigin": {
-      "default": "http://127.0.0.1:8787",
-      "allOf": [
-        {
-          "type": "string",
-          "format": "uri"
-        },
-        {
-          "type": "string",
-          "pattern": "^(?:https:\\/\\/|http:\\/\\/(?:127\\.0\\.0\\.1|localhost|\\[::1\\])(?::\\d+)?(?:[/?#]|$))"
-        }
-      ]
-    },
-    "courseAgentVercelOrigin": {
-      "default": "http://127.0.0.1:8788",
-      "type": "string",
-      "pattern": "^http:\\/\\/(?:127\\.0\\.0\\.1|localhost)(?::\\d+)?$"
-    },
-    "courseAgentCapabilitySecret": {
-      "default": null,
-      "anyOf": [
-        {
-          "type": "string"
-        },
-        {
-          "type": "null"
-        }
-      ]
-    },
-    "courseAgentSandbox": {
+    "courseAgentVercel": {
       "default": {},
       "type": "object",
       "properties": {
-        "waitingForUserTimeoutSeconds": {
-          "type": "integer",
-          "minimum": 60,
-          "maximum": 86400
+        "token": {
+          "default": null,
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
         },
-        "sandboxInactivityTimeoutSeconds": {
-          "default": 21600,
-          "type": "integer",
-          "minimum": 60,
-          "maximum": 86400
+        "teamId": {
+          "default": null,
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
         },
-        "cloudflareSandboxTimeoutSeconds": {
-          "type": "integer",
-          "minimum": 60,
-          "maximum": 86400
+        "projectId": {
+          "default": null,
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
         },
-        "idleTimeoutSeconds": {
-          "default": 600,
-          "type": "integer",
-          "minimum": 60,
-          "maximum": 86400
+        "openaiApiKey": {
+          "default": null,
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
         },
-        "sleepAfterSeconds": {
-          "default": 21600,
+        "githubReadToken": {
+          "default": null,
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "model": {
+          "default": "gpt-5.4",
+          "type": "string"
+        },
+        "timeoutMs": {
+          "default": 1800000,
           "type": "integer",
-          "minimum": 60,
-          "maximum": 86400
+          "minimum": 60000,
+          "maximum": 3600000
         },
         "backupTtlSeconds": {
           "default": 604800,
           "type": "integer",
           "minimum": 60,
           "maximum": 2592000
+        },
+        "stateDirectory": {
+          "default": ".course-agent",
+          "type": "string"
         }
       },
       "additionalProperties": false

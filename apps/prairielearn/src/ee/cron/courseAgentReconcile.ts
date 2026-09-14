@@ -40,11 +40,7 @@ export async function run() {
           userId: conversation.user_id,
         });
         const settings = await selectUserSettings({ user_id: conversation.user_id });
-        if (
-          config.courseAgentRuntime !== 'vercel' &&
-          approval.status === 'pending' &&
-          settings.course_agent_approval_mode === 'always'
-        ) {
+        if (approval.status === 'pending' && settings.course_agent_approval_mode === 'always') {
           const user = await selectOptionalUserById(conversation.user_id);
           if (!user) continue;
           const context = await constructCourseOrInstanceContext({

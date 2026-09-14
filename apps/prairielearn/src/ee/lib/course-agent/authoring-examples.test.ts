@@ -7,7 +7,7 @@ import { AssessmentJsonSchema } from '../../../schemas/infoAssessment.js';
 import { QuestionJsonSchema } from '../../../schemas/infoQuestion.js';
 
 const assets = new URL(
-  '../../../../../course-agent-worker/skills/course-content-authoring/assets/',
+  '../../../../assets/course-agent/course-content-authoring/assets/',
   import.meta.url,
 );
 const qids = ['dynamicProgramming/overlappingSubproblems', 'dynamicProgramming/staircase'];

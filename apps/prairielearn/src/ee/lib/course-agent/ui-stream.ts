@@ -1,4 +1,4 @@
-import type { UIMessage, UIMessageChunk } from 'ai';
+import { type UIMessage, type UIMessageChunk, uiMessageChunkSchema } from 'ai';
 
 import type { CourseAgentEvent } from '@prairielearn/course-agent-protocol';
 
@@ -17,20 +17,14 @@ export type CourseAgentMessage = UIMessage<
   { activity: { input: { label: string }; output: { label: string } } }
 >;
 
-/** Translate one run, not the entire conversation replayed by the Worker. */
+/** Add course workflow notifications around the SDK's native message chunks. */
 export function courseAgentUIStream(runId: string) {
   let active = false;
   let finished = false;
   let sequence = -Infinity;
-  let text = '';
-  let textStarted = false;
-  let restoring = false;
-  const pendingTools = new Set<string>();
   const pendingSyncs = new Map<string, CourseSync>();
-  const textId = `${runId}:text`;
-
   return new TransformStream<CourseAgentEvent, UIMessageChunk>({
-    transform(event, controller) {
+    async transform(event, controller) {
       if (finished || event.sequence <= sequence) return;
       sequence = event.sequence;
       if (event.type === 'user.message') {
@@ -45,109 +39,36 @@ export function courseAgentUIStream(runId: string) {
         return;
       }
       if (!active) return;
-
-      function startTool(id: string, label: string) {
-        if (pendingTools.has(id)) return;
-        pendingTools.add(id);
+      if (event.type === 'ui.chunk') {
+        const parsed = await uiMessageChunkSchema().validate!(event.data.chunk);
+        if (!parsed.success) throw parsed.error;
+        controller.enqueue(parsed.value);
+      } else if (event.type === 'git.push.approval.requested') {
         controller.enqueue({
-          type: 'tool-input-available',
-          toolCallId: id,
-          toolName: 'activity',
-          input: { label },
-          providerExecuted: true,
+          type: 'data-approvalRequested',
+          data: { approvalId: String(event.data.approvalId) },
+          transient: true,
         });
-      }
-
-      function endTool(id: string, label: string, failed = false) {
-        startTool(id, label);
-        pendingTools.delete(id);
-        controller.enqueue(
-          failed
-            ? { type: 'tool-output-error', toolCallId: id, errorText: label }
-            : { type: 'tool-output-available', toolCallId: id, output: { label } },
-        );
-      }
-
-      function appendText(next: string) {
-        // UI-message deltas are append-only; never silently duplicate a replacement response.
-        if (!next.startsWith(text)) {
-          throw new Error('The agent replaced an already streamed response.');
+      } else if (event.type === 'sync.completed') {
+        pendingSyncs.set(String(event.data.approvalId), {
+          approvalId: String(event.data.approvalId),
+          commitSha: typeof event.data.commitSha === 'string' ? event.data.commitSha : null,
+          syncedAt: event.occurredAt,
+        });
+      } else if (event.type === 'agent.completed' || event.type === 'run.failed') {
+        const failure =
+          event.type === 'run.failed'
+            ? String(event.data.message ?? 'The request could not be completed.')
+            : undefined;
+        for (const [id, data] of pendingSyncs) {
+          controller.enqueue({ type: 'data-courseSynced', id, data });
         }
-        if (next === text) return;
-        if (!textStarted) {
-          controller.enqueue({ type: 'text-start', id: textId });
-          textStarted = true;
-        }
-        controller.enqueue({ type: 'text-delta', id: textId, delta: next.slice(text.length) });
-        text = next;
-      }
-
-      switch (event.type) {
-        case 'sandbox.starting':
-          restoring = event.data.restoring === true;
-          startTool(`${runId}:startup`, restoring ? 'Restoring agent' : 'Starting agent');
-          break;
-        case 'sandbox.ready':
-          if (pendingTools.has(`${runId}:startup`)) {
-            endTool(`${runId}:startup`, restoring ? 'Restored agent' : 'Started agent');
-          }
-          break;
-        case 'tool.started':
-        case 'tool.completed':
-        case 'tool.failed': {
-          const id = `${runId}:tool:${String(event.data.operationId ?? event.sequence)}`;
-          const label = String(event.data.label ?? 'Used a tool');
-          // Older streams recorded the deliberately paused native publication call as a tool.
-          // Approval state and its result are represented by the durable approval card instead.
-          if (label === 'Proposing changes') break;
-          if (event.type === 'tool.started') startTool(id, label);
-          else endTool(id, label, event.type === 'tool.failed');
-          break;
-        }
-        case 'git.push.approval.requested':
-          controller.enqueue({
-            type: 'data-approvalRequested',
-            data: { approvalId: String(event.data.approvalId) },
-            transient: true,
-          });
-          break;
-        case 'assistant.delta':
-          appendText(
-            event.data.replace
-              ? String(event.data.text ?? '')
-              : text + String(event.data.text ?? ''),
-          );
-          break;
-        case 'sync.completed':
-          pendingSyncs.set(String(event.data.approvalId), {
-            approvalId: String(event.data.approvalId),
-            commitSha: typeof event.data.commitSha === 'string' ? event.data.commitSha : null,
-            syncedAt: event.occurredAt,
-          });
-          break;
-        case 'agent.completed':
-        case 'run.failed': {
-          if (event.type === 'agent.completed' && typeof event.data.response === 'string') {
-            appendText(event.data.response);
-          }
-          const failure =
-            event.type === 'run.failed'
-              ? String(event.data.message ?? 'The request could not be completed.')
-              : undefined;
-          for (const id of pendingTools) endTool(id, 'Interrupted', true);
-          if (textStarted) controller.enqueue({ type: 'text-end', id: textId });
-          // Publishing may happen before the final reply. Offer refresh only once the turn ends.
-          for (const [id, data] of pendingSyncs) {
-            controller.enqueue({ type: 'data-courseSynced', id, data });
-          }
-          controller.enqueue({
-            type: 'finish',
-            finishReason: failure ? 'error' : 'stop',
-            messageMetadata: { createdAt: event.occurredAt, ...(failure ? { failure } : {}) },
-          });
-          finished = true;
-          break;
-        }
+        controller.enqueue({
+          type: 'finish',
+          finishReason: failure ? 'error' : 'stop',
+          messageMetadata: { createdAt: event.occurredAt, ...(failure ? { failure } : {}) },
+        });
+        finished = true;
       }
     },
     flush() {

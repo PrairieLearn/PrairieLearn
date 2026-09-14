@@ -610,33 +610,19 @@ export const ConfigSchema = z.object({
   aiQuestionGenerationOpenAiOrganization: z.string().nullable().default(null),
   aiGradingGoogleApiKey: z.string().nullable().default(null),
   aiGradingAnthropicApiKey: z.string().nullable().default(null),
-  /** Experimental course-agent runtime. The fake runtime never calls external services. */
-  courseAgentRuntime: z.enum(['disabled', 'fake', 'cloudflare', 'vercel']).default('disabled'),
-  courseAgentWorkerOrigin: z
-    .intersection(
-      z.url(),
-      z
-        .string()
-        .regex(
-          /^(?:https:\/\/|http:\/\/(?:127\.0\.0\.1|localhost|\[::1\])(?::\d+)?(?:[/?#]|$))/,
-          'Course-agent Worker origin must use HTTPS unless it is a loopback development URL',
-        ),
-    )
-    .default('http://127.0.0.1:8787'),
-  courseAgentVercelOrigin: z
-    .url()
-    .regex(/^http:\/\/(?:127\.0\.0\.1|localhost)(?::\d+)?$/)
-    .default('http://127.0.0.1:8788'),
-  courseAgentCapabilitySecret: z.string().nullable().default(null),
-  courseAgentSandbox: z
+  /** Experimental course agent. Fake mode is for local UI tests only. */
+  courseAgentRuntime: z.enum(['disabled', 'fake', 'vercel']).default('disabled'),
+  courseAgentVercel: z
     .object({
-      waitingForUserTimeoutSeconds: z.number().int().min(60).max(86_400).optional(),
-      sandboxInactivityTimeoutSeconds: z.number().int().min(60).max(86_400).default(21_600),
-      cloudflareSandboxTimeoutSeconds: z.number().int().min(60).max(86_400).optional(),
-      // Legacy names remain readable while local configurations are updated.
-      idleTimeoutSeconds: z.number().int().min(60).max(86_400).default(600),
-      sleepAfterSeconds: z.number().int().min(60).max(86_400).default(21_600),
+      token: z.string().nullable().default(null),
+      teamId: z.string().nullable().default(null),
+      projectId: z.string().nullable().default(null),
+      openaiApiKey: z.string().nullable().default(null),
+      githubReadToken: z.string().nullable().default(null),
+      model: z.string().default('gpt-5.4'),
+      timeoutMs: z.number().int().min(60_000).max(3_600_000).default(1_800_000),
       backupTtlSeconds: z.number().int().min(60).max(2_592_000).default(604_800),
+      stateDirectory: z.string().default('.course-agent'),
     })
     .prefault({}),
   /**

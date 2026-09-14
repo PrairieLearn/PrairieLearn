@@ -2787,6 +2787,8 @@ if (shouldStartServer) {
 export async function close() {
   // These are run in the opposite order in which they're initialized/started.
   await cron.stop();
+  const { closeVercelCourseAgentRuntime } = await import('./ee/lib/course-agent/vercel/index.js');
+  await closeVercelCourseAgentRuntime();
   await serverJobs.stop();
   await socketServer.close();
   await cache.close();

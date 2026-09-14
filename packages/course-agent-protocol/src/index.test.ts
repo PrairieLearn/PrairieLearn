@@ -9,36 +9,10 @@ import {
 } from './index.js';
 
 describe('course-agent protocol', () => {
-  it('prefers canonical timeout settings over legacy aliases and drops the execution cap', () => {
-    expect(
-      CourseAgentRuntimeSettingsSchema.parse({
-        idleTimeoutSeconds: 60,
-        waitingForUserTimeoutSeconds: 120,
-        sleepAfterSeconds: 60,
-        cloudflareSandboxTimeoutSeconds: 21600,
-        turnTimeoutSeconds: 600,
-      }),
-    ).toMatchObject({
-      idleTimeoutSeconds: 120,
-      waitingForUserTimeoutSeconds: 120,
-      sleepAfterSeconds: 21600,
-      cloudflareSandboxTimeoutSeconds: 21600,
-      sandboxInactivityTimeoutSeconds: 21600,
-    });
-    expect(CourseAgentRuntimeSettingsSchema.parse({ turnTimeoutSeconds: 600 })).not.toHaveProperty(
-      'turnTimeoutSeconds',
-    );
-  });
-  it('defaults the platform failsafe to six hours without an absolute sandbox lifetime', () => {
-    const settings = { idleTimeoutSeconds: 600, turnTimeoutSeconds: 900 };
-    expect(CourseAgentRuntimeSettingsSchema.parse(settings).sleepAfterSeconds).toBe(21_600);
-    expect(
-      CourseAgentRuntimeSettingsSchema.parse({ ...settings, sleepAfterSeconds: 60 })
-        .sleepAfterSeconds,
-    ).toBe(60);
-    expect(() =>
-      CourseAgentRuntimeSettingsSchema.parse({ ...settings, sleepAfterSeconds: 0 }),
-    ).toThrow();
+  it('bounds the saved-workspace lifetime', () => {
+    expect(CourseAgentRuntimeSettingsSchema.parse({}).backupTtlSeconds).toBe(604_800);
+    expect(() => CourseAgentRuntimeSettingsSchema.parse({ backupTtlSeconds: 0 })).toThrow();
+    expect(() => CourseAgentRuntimeSettingsSchema.parse({ backupTtlSeconds: 2_592_001 })).toThrow();
   });
   it('derives a stable sandbox ID and seed path', () => {
     const conversationId = '9a6d8f44-d55b-4e73-8b9b-547dd00fb400';
@@ -60,10 +34,9 @@ describe('course-agent protocol', () => {
     ).toBe('waiting_for_user');
   });
 
-  it('validates a prompt without changing its signed wire value', () => {
+  it('validates a prompt without changing its content', () => {
     const prompt = '  Create a question  ';
     const request = CourseAgentStartRunRequestSchema.parse({
-      capability: 'signed-capability',
       conversationId: '9a6d8f44-d55b-4e73-8b9b-547dd00fb400',
       runId: '40cff9bd-6931-4405-a8e6-57f93a190d4b',
       sandboxId: 'course-agent-test',
@@ -77,9 +50,7 @@ describe('course-agent protocol', () => {
         courseInstance: { id: '91', shortName: 'Fa26', longName: 'Fall 2026' },
       },
       runtimeSettings: {
-        idleTimeoutSeconds: 600,
         backupTtlSeconds: 604_800,
-        turnTimeoutSeconds: 900,
       },
     });
     expect(request.prompt).toBe(prompt);

@@ -1,13 +1,12 @@
 import { readFile, readdir } from 'node:fs/promises';
 import path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
-import { fileURLToPath } from 'node:url';
 
 import { HarnessAgent, type HarnessAgentResumeSessionState } from '@ai-sdk/harness/agent';
 import { createCodex } from '@ai-sdk/harness-codex';
 import { createVercelSandbox } from '@ai-sdk/sandbox-vercel';
 import { Sandbox } from '@vercel/sandbox';
-import { tool } from 'ai';
+import { type UIMessageChunk, toUIMessageStream } from 'ai';
 import { z } from 'zod';
 
 import {
@@ -15,22 +14,22 @@ import {
   CourseAgentPushPayloadSchema,
 } from '@prairielearn/course-agent-protocol';
 
-import { readOnlyPolicy, repositoryPath } from './policy.ts';
-import type { State } from './state.ts';
+import { REPOSITORY_ROOT_PATH } from '../../../../lib/paths.js';
 
-export type Part =
-  | { type: 'text'; text: string }
-  | { type: 'tool-start' | 'tool-end'; id: string; label: string; failed?: boolean }
-  | { type: 'publish'; id: string };
+import { readOnlyPolicy, repositoryPath } from './policy.js';
+import type { State } from './state.js';
+
+export type Part = { type: 'chunk'; chunk: UIMessageChunk } | { type: 'publish'; id: string };
 
 export interface DriverSession {
   stream(
+    this: void,
     input: { prompt: string } | { toolCallId: string; output: Record<string, unknown> },
   ): AsyncIterable<Part>;
-  proposal(): Promise<CourseAgentPushPayload>;
-  refresh(): Promise<void>;
-  checkpoint(): Promise<{ resume: HarnessAgentResumeSessionState; snapshotId: string }>;
-  interrupt(): Promise<void>;
+  proposal(this: void): Promise<CourseAgentPushPayload>;
+  refresh(this: void): Promise<void>;
+  checkpoint(this: void): Promise<{ resume: HarnessAgentResumeSessionState; snapshotId: string }>;
+  interrupt(this: void): Promise<void>;
 }
 
 export type DriverFactory = (state: State) => Promise<DriverSession>;
@@ -47,8 +46,9 @@ export interface RuntimeConfig {
 
 const WORKSPACE = '/vercel/sandbox/course';
 const REFERENCE_ROOT = '/vercel/sandbox/course-authoring';
-const referenceDirectory = fileURLToPath(
-  new URL('../../course-agent-worker/skills/course-content-authoring/', import.meta.url),
+const referenceDirectory = path.join(
+  REPOSITORY_ROOT_PATH,
+  'apps/prairielearn/assets/course-agent/course-content-authoring',
 );
 
 async function referenceFiles(
@@ -169,11 +169,11 @@ export function createDriver(config: RuntimeConfig): DriverFactory {
       },
       instructions: `You help an authorized instructor edit this PrairieLearn course. Work in ${WORKSPACE}. Read ${REFERENCE_ROOT}/SKILL.md before authoring content; its references and examples are available locally. Current course instance: ${JSON.stringify(state.request.authoringContext.courseInstance)}. Commit intended changes locally, then call the argument-free push_sync tool. The tool asks the instructor to review the exact proposed files, publishes through PrairieLearn, and returns the sync outcome. Never push directly. Never claim a change was published before the tool reports success. A denied proposal must not be resubmitted unchanged. Do not change release/access rules unless requested.`,
       tools: {
-        push_sync: tool({
+        push_sync: {
           description:
             'Validate committed course changes and request instructor approval to publish and sync. Wait for the result before proceeding.',
           inputSchema: z.strictObject({}),
-        }),
+        },
       },
     });
     const session = await agent
@@ -204,18 +204,53 @@ export function createDriver(config: RuntimeConfig): DriverFactory {
                 ],
                 abortSignal: controller.signal,
               });
-        for await (const part of result.stream) {
-          if (part.type === 'text-delta') {
-            yield { type: 'text', text: part.text };
-          } else if (part.type === 'tool-call') {
-            if (part.toolName === 'push_sync') yield { type: 'publish', id: part.toolCallId };
-            else yield { type: 'tool-start', id: part.toolCallId, label: part.toolName };
-          } else if (part.type === 'tool-result') {
-            yield { type: 'tool-end', id: part.toolCallId, label: part.toolName };
-          } else if (part.type === 'tool-error') {
-            yield { type: 'tool-end', id: part.toolCallId, label: part.toolName, failed: true };
+        const labels = new Map<string, string>();
+        for await (const part of toUIMessageStream({
+          stream: result.stream,
+          sendStart: false,
+          sendFinish: false,
+          sendReasoning: false,
+          onError: (error) => {
+            throw error;
+          },
+        })) {
+          if (
+            part.type === 'text-start' ||
+            part.type === 'text-delta' ||
+            part.type === 'text-end'
+          ) {
+            yield { type: 'chunk', chunk: part };
+          } else if (part.type === 'tool-input-available') {
+            if (part.toolName === 'push_sync') {
+              yield { type: 'publish', id: part.toolCallId };
+            } else {
+              labels.set(part.toolCallId, part.toolName);
+              yield {
+                type: 'chunk',
+                chunk: {
+                  type: 'tool-input-available',
+                  toolCallId: part.toolCallId,
+                  toolName: 'activity',
+                  input: { label: part.toolName },
+                  providerExecuted: true,
+                },
+              };
+            }
+          } else if (part.type === 'tool-output-available' || part.type === 'tool-output-error') {
+            const label = labels.get(part.toolCallId);
+            if (label) {
+              yield {
+                type: 'chunk',
+                chunk:
+                  part.type === 'tool-output-available'
+                    ? { type: part.type, toolCallId: part.toolCallId, output: { label } }
+                    : { type: part.type, toolCallId: part.toolCallId, errorText: label },
+              };
+            }
           } else if (part.type === 'error') {
-            throw part.error;
+            throw new Error(part.errorText);
+          } else if (part.type === 'abort') {
+            throw new Error('The agent run was interrupted.');
           }
         }
       },

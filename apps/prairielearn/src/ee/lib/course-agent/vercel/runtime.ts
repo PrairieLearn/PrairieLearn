@@ -9,8 +9,8 @@ import {
   type CourseAgentStartRunRequest,
 } from '@prairielearn/course-agent-protocol';
 
-import type { DriverFactory, DriverSession } from './driver.ts';
-import { type State, type StateStore } from './state.ts';
+import type { DriverFactory, DriverSession } from './driver.js';
+import { type State, type StateStore } from './state.js';
 
 interface Identity {
   userId: string;
@@ -76,8 +76,7 @@ export class Runtime {
   private assertIdentity(identity: Identity) {
     const state = this.states.get(identity.conversationId);
     if (
-      !state ||
-      state.userId !== identity.userId ||
+      state?.userId !== identity.userId ||
       state.courseId !== identity.courseId ||
       state.request.sandboxId !== identity.sandboxId
     ) {
@@ -242,20 +241,12 @@ export class Runtime {
     for (;;) {
       let requestedTool: string | null = null;
       for await (const part of session.stream(nextInput)) {
-        if (part.type === 'text') {
-          state.snapshot.response = (state.snapshot.response ?? '') + part.text;
-          await this.append(state, 'assistant.delta', { text: part.text });
-        } else if (part.type === 'tool-start' || part.type === 'tool-end') {
-          await this.append(
-            state,
-            part.type === 'tool-start'
-              ? 'tool.started'
-              : part.failed
-                ? 'tool.failed'
-                : 'tool.completed',
-            { operationId: part.id, label: part.label },
-          );
-        } else if (part.type === 'publish') {
+        if (part.type === 'chunk') {
+          if (part.chunk.type === 'text-delta') {
+            state.snapshot.response = (state.snapshot.response ?? '') + part.chunk.delta;
+          }
+          await this.append(state, 'ui.chunk', { chunk: part.chunk });
+        } else {
           requestedTool = part.id;
         }
       }
@@ -317,7 +308,7 @@ export class Runtime {
         sandboxId: request.sandboxId,
       });
       const approval = state.snapshot.pendingApproval;
-      if (!approval || approval.id !== request.approvalId) {
+      if (approval?.id !== request.approvalId) {
         throw new Error('The approval is unavailable.');
       }
       if (state.continuationDelivered === request.approvalId) return { accepted: true as const };

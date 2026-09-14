@@ -1,11 +1,9 @@
 # Documentation map
 
 The bundled examples cover basic multiple-choice/numeric questions and Homework/Exam assessments.
-No R2 credentials or internet access are needed to read them.
+They are copied into each Vercel sandbox.
 
-Additional PL documentation may be mounted read-only at `/opt/prairielearn-docs`. Check once for
-the needed file, directly or under `docs/`. An empty directory is not documentation. Do not keep
-retrying an unavailable mount or search the entire workspace for it.
+For additional details, read the official documentation pages below.
 
 | Need                         | Relative documentation path      | Official page if not mounted                                                          |
 | ---------------------------- | -------------------------------- | ------------------------------------------------------------------------------------- |
@@ -17,7 +15,5 @@ retrying an unavailable mount or search the entire workspace for it.
 | Multiple choice              | `elements/pl-multiple-choice.md` | [Multiple-choice element](https://docs.prairielearn.com/elements/pl-multiple-choice/) |
 | Numeric input                | `elements/pl-number-input.md`    | [Number-input element](https://docs.prairielearn.com/elements/pl-number-input/)       |
 
-Prefer a targeted read over repeated broad searches. Start with the local examples and course
-conventions, not search-engine snippets. A docs bundle may contain `exampleCourse/` or schemas;
-these are optional, not required for the bundled patterns. A course repository is not the PL
-application source tree.
+Start with the local examples and course conventions, then read only the relevant official page.
+A course repository is not the PL application source tree.

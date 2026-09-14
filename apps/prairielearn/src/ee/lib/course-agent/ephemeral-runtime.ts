@@ -1,4 +1,4 @@
-import { createHash, randomUUID } from 'node:crypto';
+import { randomUUID } from 'node:crypto';
 
 import { JsonToSseTransformStream } from 'ai';
 
@@ -7,19 +7,18 @@ import {
   type CourseAgentEvent,
   CourseAgentPushDecisionRequestSchema,
   CourseAgentSnapshotSchema,
-  CourseAgentStartRunResponseSchema,
+  CourseAgentStartRunRequestSchema,
   type CourseAgentWorkspaceBackup,
   courseAgentSandboxId,
 } from '@prairielearn/course-agent-protocol';
-import { generateSignedToken } from '@prairielearn/signed-token';
 
 import { config } from '../../../lib/config.js';
 import { persistCourseAgentSnapshot } from '../../../models/course-agent.js';
 
-import { publicCourseAgentEvent, publicCourseAgentStream } from './public-events.js';
-import { recoveringCourseAgentStream } from './recovering-stream.js';
+import { publicCourseAgentEvent } from './public-events.js';
 import { getCourseAgentStreamContext, getCourseAgentStreamId } from './redis.js';
 import { courseAgentUIStream } from './ui-stream.js';
+import { getVercelCourseAgentRuntime } from './vercel/index.js';
 
 interface Identity {
   userId: string;
@@ -38,62 +37,6 @@ interface FakeConversation extends Identity {
 }
 
 const fakeConversations = new Map<string, FakeConversation>();
-
-async function fetchWorker(path: string, init: RequestInit) {
-  try {
-    return await fetch(
-      new URL(
-        path,
-        config.courseAgentRuntime === 'vercel'
-          ? config.courseAgentVercelOrigin
-          : config.courseAgentWorkerOrigin,
-      ),
-      {
-        ...init,
-        redirect: 'error',
-      },
-    );
-  } catch (error) {
-    throw new Error(
-      config.devMode
-        ? config.courseAgentRuntime === 'vercel'
-          ? 'The Vercel prototype is not reachable. Start pnpm dev-course-agent-vercel in a separate terminal.'
-          : 'The course-agent Worker is not reachable. Start it in a separate terminal with pnpm dev-course-agent-worker, then try again.'
-        : 'The course agent is temporarily unavailable. Please try again later.',
-      { cause: error },
-    );
-  }
-}
-
-function capabilitySecret() {
-  if (!config.courseAgentCapabilitySecret) {
-    throw new Error('Course-agent capability secret is not configured');
-  }
-  return config.courseAgentCapabilitySecret;
-}
-
-function promptDigest(prompt: string) {
-  return createHash('sha256').update(prompt).digest('hex');
-}
-
-function expiresAt() {
-  return new Date(Date.now() + 5 * 60_000).toISOString();
-}
-
-function runtimeSettings() {
-  return {
-    idleTimeoutSeconds:
-      config.courseAgentSandbox.waitingForUserTimeoutSeconds ??
-      config.courseAgentSandbox.idleTimeoutSeconds,
-    backupTtlSeconds: config.courseAgentSandbox.backupTtlSeconds,
-    sleepAfterSeconds:
-      config.courseAgentSandbox.cloudflareSandboxTimeoutSeconds ??
-      config.courseAgentSandbox.sleepAfterSeconds,
-    waitingForUserTimeoutSeconds: config.courseAgentSandbox.waitingForUserTimeoutSeconds,
-    sandboxInactivityTimeoutSeconds: config.courseAgentSandbox.sandboxInactivityTimeoutSeconds,
-    cloudflareSandboxTimeoutSeconds: config.courseAgentSandbox.cloudflareSandboxTimeoutSeconds,
-  };
-}
 
 export async function startEphemeralCourseAgentRun({
   courseId,
@@ -114,35 +57,12 @@ export async function startEphemeralCourseAgentRun({
   workspaceBackup?: CourseAgentWorkspaceBackup | null;
   authoringContext: CourseAgentAuthoringContext;
 }) {
-  if (config.courseAgentRuntime === 'disabled') {
-    throw new Error('Course-agent runtime is disabled');
-  }
   const sandboxId = courseAgentSandboxId(conversationId);
   const identity = { userId, courseId, conversationId, sandboxId };
-  if (config.courseAgentRuntime === 'fake') {
-    return startFakeRun({ ...identity, runId, prompt });
-  }
-  const capability = generateSignedToken(
-    {
-      type: 'course-agent-run',
-      ...identity,
-      runId,
-      promptDigest: promptDigest(prompt),
-      workspaceBackup,
-      repository: course.repository,
-      branch: course.branch,
-      expectedSha: course.expectedSha,
-      authoringContext,
-      runtimeSettings: runtimeSettings(),
-      expiresAt: expiresAt(),
-    },
-    capabilitySecret(),
-  );
-  const response = await fetchWorker('/v1/runs', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      capability,
+  if (config.courseAgentRuntime === 'fake') return startFakeRun({ ...identity, runId, prompt });
+  const runtime = await getVercelCourseAgentRuntime();
+  const result = await runtime.start(
+    CourseAgentStartRunRequestSchema.parse({
       conversationId,
       runId,
       sandboxId,
@@ -150,11 +70,10 @@ export async function startEphemeralCourseAgentRun({
       course,
       workspaceBackup,
       authoringContext,
-      runtimeSettings: runtimeSettings(),
+      runtimeSettings: { backupTtlSeconds: config.courseAgentVercel.backupTtlSeconds },
     }),
-  });
-  if (!response.ok) throw new Error(`Course-agent Worker rejected the run (${response.status})`);
-  const result = CourseAgentStartRunResponseSchema.parse(await response.json());
+    identity,
+  );
   await startCourseAgentEventRelay({ ...identity, runId });
   return result;
 }
@@ -180,52 +99,39 @@ async function startCourseAgentEventRelay(identity: Identity & { runId: string }
 }
 
 export function streamEphemeralCourseAgentEvents(identity: Identity & { runId: string }) {
-  return recoveringCourseAgentStream({
-    runId: identity.runId,
-    async connect() {
-      const capability = generateSignedToken(
-        { type: 'course-agent-inspect', ...identity, expiresAt: expiresAt() },
-        capabilitySecret(),
-      );
-      const response = await fetchWorker('/v1/stream', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ capability, ...identity }),
-      });
-      if (!response.ok || !response.body) {
-        throw new Error(`Course-agent Worker stream failed (${response.status})`);
-      }
-      return response.body
-        .pipeThrough(new TextDecoderStream())
-        .pipeThrough(publicCourseAgentStream());
-    },
-    async snapshot() {
-      const current = await getEphemeralCourseAgentSnapshot(identity);
-      await persistCourseAgentSnapshot({ snapshot: current, runId: identity.runId });
-      return {
-        ...current,
-        events: current.events.flatMap((event) => publicCourseAgentEvent(event) ?? []),
+  let sequence = -1;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  let cancelled = false;
+  return new ReadableStream<CourseAgentEvent>({
+    start(controller) {
+      const poll = async () => {
+        try {
+          const snapshot = await getEphemeralCourseAgentSnapshot(identity);
+          if (cancelled) return;
+          for (const event of snapshot.events) {
+            if (event.sequence <= sequence) continue;
+            sequence = event.sequence;
+            const visible = publicCourseAgentEvent(event);
+            if (visible) controller.enqueue(visible);
+          }
+          if (snapshot.activeRunId !== identity.runId) controller.close();
+          else timer = setTimeout(() => void poll(), 100);
+        } catch (error) {
+          if (!cancelled) controller.error(error);
+        }
       };
+      void poll();
+    },
+    cancel() {
+      cancelled = true;
+      clearTimeout(timer);
     },
   });
 }
 
 export async function getEphemeralCourseAgentSnapshot(identity: Identity) {
-  if (config.courseAgentRuntime === 'disabled') {
-    throw new Error('Course-agent runtime is disabled');
-  }
   if (config.courseAgentRuntime === 'fake') return getFakeSnapshot(identity);
-  const capability = generateSignedToken(
-    { type: 'course-agent-inspect', ...identity, expiresAt: expiresAt() },
-    capabilitySecret(),
-  );
-  const response = await fetchWorker('/v1/snapshot', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ capability, ...identity }),
-  });
-  if (!response.ok) throw new Error(`Course-agent Worker snapshot failed (${response.status})`);
-  return CourseAgentSnapshotSchema.parse(await response.json());
+  return (await getVercelCourseAgentRuntime()).snapshot(identity);
 }
 
 export async function respondToCourseAgentPushApproval({
@@ -241,27 +147,17 @@ export async function respondToCourseAgentPushApproval({
   result?: Record<string, unknown> | null;
 }) {
   if (config.courseAgentRuntime === 'fake') return { accepted: true as const };
-  const capability = generateSignedToken(
-    { type: 'course-agent-inspect', ...identity, expiresAt: expiresAt() },
-    capabilitySecret(),
+  const runtime = await getVercelCourseAgentRuntime();
+  return runtime.decision(
+    CourseAgentPushDecisionRequestSchema.parse({
+      ...identity,
+      approvalId,
+      decision,
+      phase,
+      result: result ?? null,
+    }),
+    identity,
   );
-  const body = CourseAgentPushDecisionRequestSchema.parse({
-    capability,
-    ...identity,
-    approvalId,
-    decision,
-    phase,
-    result: result ?? null,
-  });
-  const response = await fetchWorker('/v1/push-decisions', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
-  if (!response.ok) {
-    throw new Error(`Course-agent Worker rejected the push decision (${response.status})`);
-  }
-  return { accepted: true as const };
 }
 
 function startFakeRun({
@@ -284,10 +180,23 @@ function startFakeRun({
     append('sandbox.ready', { workspacePath: '/workspace' });
   }
   append('agent.started', { model: 'fake' });
-  append('tool.started', { operationId: runId, label: 'Edited README.md' });
-  append('tool.completed', { operationId: runId, label: 'Edited README.md' });
   const response = `Updated /workspace/README.md for: ${prompt}`;
-  append('assistant.delta', { text: response });
+  const textId = `${runId}:text`;
+  for (const chunk of [
+    {
+      type: 'tool-input-available',
+      toolCallId: runId,
+      toolName: 'activity',
+      input: { label: 'Edited README.md' },
+      providerExecuted: true,
+    },
+    { type: 'tool-output-available', toolCallId: runId, output: { label: 'Edited README.md' } },
+    { type: 'text-start', id: textId },
+    { type: 'text-delta', id: textId, delta: response },
+    { type: 'text-end', id: textId },
+  ]) {
+    append('ui.chunk', { chunk });
+  }
   append('agent.completed', { response });
   fakeConversations.set(identity.conversationId, {
     ...identity,

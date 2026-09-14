@@ -1,21 +1,11 @@
 import { z } from 'zod';
 
-export const CourseAgentTitleCapabilitySchema = z.object({
-  type: z.literal('course-agent-title'),
-  conversationId: z.uuid(),
-  userId: z.string(),
-  courseId: z.string(),
-  prompt: z.string().min(1).max(4000),
-  expiresAt: z.iso.datetime(),
-});
-
-export const CourseAgentTitleResponseSchema = z.object({ title: z.string().trim().min(1).max(80) });
-
 export const COURSE_AGENT_WORKSPACE_ROOT = '/workspace';
 export const COURSE_AGENT_SEED_FILE = `${COURSE_AGENT_WORKSPACE_ROOT}/README.md`;
 
 export const CourseAgentEventTypeSchema = z.enum([
   'user.message',
+  'ui.chunk',
   'sandbox.starting',
   'sandbox.ready',
   'sandbox.destroyed',
@@ -82,13 +72,6 @@ export type CourseAgentConversationState = z.infer<typeof CourseAgentConversatio
 export const CourseAgentSandboxStateSchema = z.enum(['offline', 'starting', 'ready', 'suspending']);
 export type CourseAgentSandboxState = z.infer<typeof CourseAgentSandboxStateSchema>;
 
-const CourseAgentIdentitySchema = z.object({
-  userId: z.string(),
-  courseId: z.string(),
-  conversationId: z.uuid(),
-  sandboxId: z.string().min(1).max(120),
-});
-
 export const CourseAgentRepositorySchema = z.object({
   repository: z.string().min(1),
   branch: z.string().min(1).max(255),
@@ -138,52 +121,12 @@ export const CourseAgentAuthoringContextSchema = z.object({
 });
 export type CourseAgentAuthoringContext = z.infer<typeof CourseAgentAuthoringContextSchema>;
 
-export const CourseAgentRuntimeSettingsSchema = z
-  .object({
-    waitingForUserTimeoutSeconds: z.number().int().min(60).max(86_400).optional(),
-    sandboxInactivityTimeoutSeconds: z.number().int().min(60).max(86_400).default(21_600),
-    cloudflareSandboxTimeoutSeconds: z.number().int().min(60).max(86_400).optional(),
-    // Accepted for existing local configurations during the rename.
-    idleTimeoutSeconds: z.number().int().min(60).max(86_400).default(600),
-    backupTtlSeconds: z.number().int().min(60).max(2_592_000).default(604800),
-    sleepAfterSeconds: z.number().int().min(60).max(86_400).default(21_600),
-  })
-  .transform((settings) => ({
-    ...settings,
-    waitingForUserTimeoutSeconds:
-      settings.waitingForUserTimeoutSeconds ?? settings.idleTimeoutSeconds,
-    cloudflareSandboxTimeoutSeconds:
-      settings.cloudflareSandboxTimeoutSeconds ?? settings.sleepAfterSeconds,
-    idleTimeoutSeconds: settings.waitingForUserTimeoutSeconds ?? settings.idleTimeoutSeconds,
-    sleepAfterSeconds: settings.cloudflareSandboxTimeoutSeconds ?? settings.sleepAfterSeconds,
-  }));
+export const CourseAgentRuntimeSettingsSchema = z.object({
+  backupTtlSeconds: z.number().int().min(60).max(2_592_000).default(604_800),
+});
 export type CourseAgentRuntimeSettings = z.infer<typeof CourseAgentRuntimeSettingsSchema>;
 
-export const CourseAgentRunCapabilitySchema = CourseAgentIdentitySchema.extend({
-  type: z.literal('course-agent-run'),
-  runId: z.uuid(),
-  promptDigest: z.string().regex(/^[0-9a-f]{64}$/),
-  workspaceBackup: CourseAgentWorkspaceBackupSchema.nullable().default(null),
-  repository: z.string(),
-  branch: z.string(),
-  expectedSha: z
-    .string()
-    .regex(/^[0-9a-f]{40}$/)
-    .nullable(),
-  authoringContext: CourseAgentAuthoringContextSchema,
-  runtimeSettings: CourseAgentRuntimeSettingsSchema,
-  expiresAt: z.iso.datetime(),
-});
-export type CourseAgentRunCapability = z.infer<typeof CourseAgentRunCapabilitySchema>;
-
-export const CourseAgentInspectCapabilitySchema = CourseAgentIdentitySchema.extend({
-  type: z.literal('course-agent-inspect'),
-  expiresAt: z.iso.datetime(),
-});
-export type CourseAgentInspectCapability = z.infer<typeof CourseAgentInspectCapabilitySchema>;
-
 export const CourseAgentStartRunRequestSchema = z.object({
-  capability: z.string().min(1),
   conversationId: z.uuid(),
   runId: z.uuid(),
   sandboxId: z.string().min(1).max(120),
@@ -198,21 +141,6 @@ export const CourseAgentStartRunRequestSchema = z.object({
 });
 export type CourseAgentStartRunRequest = z.infer<typeof CourseAgentStartRunRequestSchema>;
 
-export const CourseAgentStartRunResponseSchema = z.object({
-  accepted: z.literal(true),
-  conversationId: z.uuid(),
-  runId: z.uuid(),
-  sandboxId: z.string(),
-});
-export type CourseAgentStartRunResponse = z.infer<typeof CourseAgentStartRunResponseSchema>;
-
-export const CourseAgentSnapshotRequestSchema = z.object({
-  capability: z.string().min(1),
-  conversationId: z.uuid(),
-  sandboxId: z.string().min(1).max(120),
-});
-export type CourseAgentSnapshotRequest = z.infer<typeof CourseAgentSnapshotRequestSchema>;
-
 export const CourseAgentSnapshotSchema = z.object({
   conversationId: z.uuid(),
   sandboxId: z.string(),
@@ -224,8 +152,6 @@ export const CourseAgentSnapshotSchema = z.object({
   sandboxGeneration: z.number().int().nonnegative().default(0),
   idleExpiresAt: z.number().nullable().default(null),
   activeRunExpiresAt: z.string().nullable().default(null),
-  lastSandboxActivityAt: z.number().nullable().default(null),
-  sandboxInactivityExpiresAt: z.number().nullable().default(null),
   shutdownReason: z.string().nullable().default(null),
   processId: z.string().nullable().default(null),
   response: z.string().nullable(),
@@ -237,7 +163,6 @@ export const CourseAgentSnapshotSchema = z.object({
 export type CourseAgentSnapshot = z.infer<typeof CourseAgentSnapshotSchema>;
 
 export const CourseAgentPushDecisionRequestSchema = z.object({
-  capability: z.string(),
   conversationId: z.uuid(),
   sandboxId: z.string(),
   approvalId: z.uuid(),

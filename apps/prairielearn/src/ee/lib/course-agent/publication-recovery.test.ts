@@ -1,6 +1,6 @@
 import { beforeEach, expect, it, vi } from 'vitest';
 
-import type { CourseAgentPushApproval as WorkerApproval } from '@prairielearn/course-agent-protocol';
+import type { CourseAgentPushApproval as RuntimeApproval } from '@prairielearn/course-agent-protocol';
 
 import type { Course, CourseAgentPushApproval } from '../../../lib/db-types.js';
 
@@ -26,7 +26,7 @@ vi.mock('./ephemeral-runtime.js', () => ({ respondToCourseAgentPushApproval: moc
 import { reconcileCourseAgentPushApproval } from './publication.js';
 
 const options = {
-  proposal: { id: 'approval' } as WorkerApproval,
+  proposal: { id: 'approval' } as RuntimeApproval,
   course: { id: '1' } as Course,
   conversationId: 'conversation',
   sandboxId: 'sandbox',

@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest';
 
-import { readOnlyPolicy, repositoryPath } from './policy.ts';
+import { readOnlyPolicy, repositoryPath } from './policy.js';
 
 test.each([
   'https://github.com/PrairieLearn/test-course.git',

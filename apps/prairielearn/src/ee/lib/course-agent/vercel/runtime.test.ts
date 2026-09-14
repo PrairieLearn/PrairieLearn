@@ -7,9 +7,9 @@ import { afterEach, expect, test, vi } from 'vitest';
 
 import { CourseAgentStartRunRequestSchema } from '@prairielearn/course-agent-protocol';
 
-import type { DriverFactory, DriverSession, Part } from './driver.ts';
-import { Runtime } from './runtime.ts';
-import { StateStore } from './state.ts';
+import type { DriverFactory, DriverSession, Part } from './driver.js';
+import { Runtime } from './runtime.js';
+import { StateStore } from './state.js';
 
 const directories: string[] = [];
 afterEach(async () => {
@@ -21,7 +21,6 @@ afterEach(async () => {
 
 function request(conversationId: string = randomUUID()) {
   return CourseAgentStartRunRequestSchema.parse({
-    capability: 'test',
     conversationId,
     runId: randomUUID(),
     sandboxId: `course-agent-${conversationId}`,
@@ -36,14 +35,28 @@ function request(conversationId: string = randomUUID()) {
   });
 }
 
-async function setup(parts: Part[] = [{ type: 'text', text: 'Created the question.' }]) {
+async function setup(
+  parts: Part[] = [
+    { type: 'chunk', chunk: { type: 'text-delta', id: 'text', delta: 'Created the question.' } },
+  ],
+) {
   const directory = await mkdtemp(path.join(tmpdir(), 'pl-vercel-runtime-'));
   directories.push(directory);
   const store = new StateStore(directory);
   const session: DriverSession = {
     async *stream(input) {
-      if ('prompt' in input) yield* parts;
-      else yield { type: 'text', text: `Decision: ${String(input.output.decision)}` };
+      if ('prompt' in input) {
+        yield* parts;
+      } else {
+        yield {
+          type: 'chunk',
+          chunk: {
+            type: 'text-delta',
+            id: 'text',
+            delta: `Decision: ${String(input.output.decision)}`,
+          },
+        };
+      }
     },
     proposal: vi.fn(async () => ({
       baseSha: 'a'.repeat(40),
@@ -116,7 +129,7 @@ test('continues a saved approval after restart and delivers a repeated decision 
   await restored.initialize();
   const decision = {
     ...identity,
-    capability: 'test',
+
     approvalId: snapshot.pendingApproval!.id,
     decision: 'completed' as const,
     result: { commitSha: 'd'.repeat(40), message: 'Published and synced' },
@@ -140,7 +153,7 @@ test('denial resumes with an explicit result and never refreshes published conte
   await runtime.decision(
     {
       ...identity,
-      capability: 'test',
+
       approvalId: approval.id,
       decision: 'denied',
       result: { message: 'Do not publish' },
@@ -162,7 +175,7 @@ test('rejects cross-owner reads and concurrent conversation runs', async () => {
     release = resolve;
   });
   session.stream = async function* () {
-    yield { type: 'text', text: 'Working' };
+    yield { type: 'chunk', chunk: { type: 'text-delta', id: 'text', delta: 'Working' } };
     await gate;
   };
   await runtime.start(run, identity);
@@ -239,7 +252,7 @@ test('a failed workspace merge still delivers the recorded publication result to
   await runtime.decision(
     {
       ...identity,
-      capability: 'test',
+
       approvalId: approval.id,
       decision: 'completed',
       result: { message: 'Published' },
