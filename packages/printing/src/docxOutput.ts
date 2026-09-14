@@ -19,8 +19,8 @@ import type { Page } from 'playwright';
 
 import { type DocxSource, annotateDocxMath, captureDocxSource } from './docxBrowser.js';
 import { type DocxFigure, buildDocxContent } from './docxContent.js';
-import type { PrintablePageOutput } from './printRenderer.js';
 import type { PrintableCover, PrintableCoverField, PrintableTextBlock } from './printableCover.js';
+import type { PrintablePageOutput } from './printablePageOutput.js';
 
 export interface DocxOutputOptions {
   /**
