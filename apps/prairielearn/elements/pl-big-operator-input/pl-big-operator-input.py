@@ -585,6 +585,8 @@ def _json(value: sympy.Basic) -> psu.SympyJson:
 def _canonical(
     config: RenderConfig,
     values: ResponseValues,
+    *,
+    index: sympy.Symbol | None = None,
     direction: DirectionName | None = None,
 ) -> pbo.BigOperatorJson:
     result = {
@@ -592,7 +594,7 @@ def _canonical(
         "_version": 1,
         "operator": config.operator,
         "indexing": config.indexing,
-        "index": _json(sympy.Symbol(config.index)),
+        "index": _json(index if index is not None else sympy.Symbol(config.index)),
     }
     result.update({key: _json(values[key]) for key in config.components})
     if config.indexing == "approaches":
@@ -603,7 +605,7 @@ def _canonical(
 def _structured(config: RenderConfig, value: dict[str, Any]) -> pbo.BigOperatorJson:
     decoded = pbo.json_to_big_operator(value)
     values = _decoded_values(config, decoded)
-    return _canonical(config, values)
+    return _canonical(config, values, index=decoded["index"])
 
 
 def _decoded_values(config: RenderConfig, decoded: pbo.BigOperator) -> ResponseValues:
@@ -658,8 +660,14 @@ def _binder(config: RenderConfig, value: Any) -> pbo.BigOperatorJson | None:
                 return None
             if len(value.args) != 4:
                 raise ValueError("Correct answer Limit has an invalid structure.")
-            body, _, target, _ = value.args
-            return _canonical(config, {"target": target, "body": body})
+            body, index, target, _ = value.args
+            if not isinstance(index, sympy.Symbol):
+                raise TypeError("Correct answer index must be a symbol.")
+            return _canonical(
+                config,
+                {"target": target, "body": body},
+                index=index,
+            )
 
         case "sum":
             if not isinstance(value, sympy.Sum):
@@ -683,6 +691,9 @@ def _binder(config: RenderConfig, value: Any) -> pbo.BigOperatorJson | None:
             f"{expected_length}-item indexing tuple."
         )
     body = value.args[0]
+    index = indexing_values[0]
+    if not isinstance(index, sympy.Symbol):
+        raise TypeError("Correct answer index must be a symbol.")
     match config.indexing:
         case "bounds":
             return _canonical(
@@ -692,9 +703,14 @@ def _binder(config: RenderConfig, value: Any) -> pbo.BigOperatorJson | None:
                     "upper": indexing_values[2],
                     "body": body,
                 },
+                index=index,
             )
         case "domain":
-            return _canonical(config, {"domain": indexing_values[1], "body": body})
+            return _canonical(
+                config,
+                {"domain": indexing_values[1], "body": body},
+                index=index,
+            )
         case "approaches":
             raise ValueError(
                 f"Correct answer operator does not support indexing={config.indexing!r}."
@@ -1142,7 +1158,10 @@ def _expression_tex(config: RenderConfig, value: sympy.Basic) -> str:
 
 
 def _parse_component_submission(
-    config: RenderConfig, component: Component, source: str | None
+    config: RenderConfig,
+    component: Component,
+    source: str | None,
+    assumptions: psu.AssumptionsDictT | None = None,
 ) -> psu.SymbolicSubmissionParseResult:
     variables = (
         tuple(dict.fromkeys((*config.variables, config.index)))
@@ -1157,6 +1176,7 @@ def _parse_component_submission(
         allowed_types=_component_allowed_types(config, component),
         allow_complex=config.allow_complex,
         imaginary_unit=config.imaginary_unit,
+        assumptions=assumptions,
     )
 
 
@@ -1268,7 +1288,25 @@ def _component_allows_blank(config: RenderConfig, component: ResponseComponent) 
     )
 
 
-def _parse_values(config: RenderConfig, data: pl.QuestionData) -> ResponseValues | None:
+def _component_assumptions(
+    correct: pbo.BigOperatorJson, component: Component
+) -> psu.AssumptionsDictT | None:
+    value = correct.get(component)
+    if not isinstance(value, dict):
+        return None
+    assumptions = value.get("_assumptions")
+    return (
+        cast(psu.AssumptionsDictT, assumptions)
+        if isinstance(assumptions, dict)
+        else None
+    )
+
+
+def _parse_values(
+    config: RenderConfig,
+    data: pl.QuestionData,
+    correct: pbo.BigOperatorJson,
+) -> ResponseValues | None:
     result = {}
     raw_answers = data.get("raw_submitted_answers", {})
     for component in config.components:
@@ -1279,7 +1317,10 @@ def _parse_values(config: RenderConfig, data: pl.QuestionData) -> ResponseValues
             continue
         requires_set = _requires_set(config, component)
         parsed = _parse_component_submission(
-            config, component, cast(str | None, raw_answers.get(name))
+            config,
+            component,
+            cast(str | None, raw_answers.get(name)),
+            assumptions=_component_assumptions(correct, component),
         )
         if isinstance(parsed, psu.SympyParseFailure):
             data.setdefault("format_errors", {})[name] = parsed.error
@@ -1296,6 +1337,8 @@ def _parse_values(config: RenderConfig, data: pl.QuestionData) -> ResponseValues
 
 def parse(element_html: str, data: pl.QuestionData) -> None:
     config = _config(element_html, data)
+    correct = _correct(config, data)
+    correct_index = pbo.json_to_big_operator(correct)["index"]
     submitted = data.setdefault("submitted_answers", {})
     if submitted:
         # undo the pollution of submitted_answers by the inner symbolic-inputs
@@ -1311,7 +1354,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     if blank_components and all(
         _component_allows_blank(config, component) for component in blank_components
     ):
-        _parse_values(config, data)
+        _parse_values(config, data, correct)
         if "direction" in blank_components:
             data.get("format_errors", {}).pop(config.component_name("direction"), None)
         errors = data.get("format_errors", {})
@@ -1321,7 +1364,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         )
         submitted[config.answer_name] = None if has_component_error else ""
         return
-    values = _parse_values(config, data)
+    values = _parse_values(config, data, correct)
     direction: DirectionName = config.direction
     if config.indexing == "approaches" and config.allow_direction_input:
         direction_name = config.component_name("direction")
@@ -1335,7 +1378,9 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         direction = raw_direction  # type: ignore
         data.get("format_errors", {}).pop(direction_name, None)
     submitted[config.answer_name] = (
-        _canonical(config, values, direction=direction) if values else None
+        _canonical(config, values, index=correct_index, direction=direction)
+        if values
+        else None
     )
 
 
@@ -1349,8 +1394,10 @@ def _construct(
     config: RenderConfig,
     values: ResponseValues,
     direction: DirectionName | None = None,
+    *,
+    index: sympy.Symbol | None = None,
 ) -> sympy.Basic:
-    index = sympy.Symbol(config.index)
+    index = index if index is not None else sympy.Symbol(config.index)
     body = values["body"]
     match config.indexing, config.operator:
         case "bounds", "custom":
@@ -1403,6 +1450,7 @@ def _validate_equivalent_configuration(
             config,
             _values(config, correct),
             correct.get("direction"),
+            index=pbo.json_to_big_operator(correct)["index"],
         )
     except NotImplementedError as exc:
         raise ValueError(str(exc)) from exc
@@ -1414,11 +1462,13 @@ def _equivalent(
     right_values: ResponseValues,
     left_direction: DirectionName | None = None,
     right_direction: DirectionName | None = None,
+    *,
+    index: sympy.Symbol | None = None,
 ) -> bool:
     try:
         left, right = (
-            _construct(config, left_values, left_direction),
-            _construct(config, right_values, right_direction),
+            _construct(config, left_values, left_direction, index=index),
+            _construct(config, right_values, right_direction, index=index),
         )
         return _expressions_equivalent(left, right)
     except (NotImplementedError, TypeError, ValueError, ZeroDivisionError):
@@ -1490,6 +1540,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
                         correct,
                         submitted_json.get("direction"),
                         correct_json.get("direction"),
+                        index=pbo.json_to_big_operator(correct_json)["index"],
                     )
                 )
         return score, None

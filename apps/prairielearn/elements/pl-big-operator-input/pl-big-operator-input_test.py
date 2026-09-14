@@ -549,6 +549,7 @@ class TestCorrectAnswerParsingUnits:
     def test_binder_rejects_malformed_or_mismatched_indexing(self) -> None:
         k = sympy.Symbol("k")
         sum_config = big_operator_input._config(html(operator="sum"))
+        limit_config = big_operator_input._config(html(operator="limit"))
         domain_config = big_operator_input._config(
             html(**{"correct-answer": "Sum(k, (k, {1, 2}))"})
         )
@@ -565,6 +566,27 @@ class TestCorrectAnswerParsingUnits:
             big_operator_input._binder(
                 replace(domain_config, indexing="approaches"), domain_sum
             )
+        with pytest.raises(TypeError, match="index must be a symbol"):
+            big_operator_input._binder(limit_config, sympy.Limit(k, k + 1, 0))
+        with pytest.raises(TypeError, match="index must be a symbol"):
+            big_operator_input._binder(
+                sum_config,
+                sympy.Basic.__new__(sympy.Sum, k, sympy.Tuple(k + 1, 1, 2)),
+            )
+
+    def test_binder_accepts_symbol_with_latex_subscript(self) -> None:
+        ell_g = sympy.Symbol("ell_g")
+        config = big_operator_input._config(
+            html(**{"correct-answer": "Sum(ell_g, (ell_g, 1, 2))"})
+        )
+
+        answer = big_operator_input._binder(
+            config,
+            sympy.Sum(ell_g, (ell_g, 1, 2)),
+        )
+
+        assert answer is not None
+        assert pl.json_to_big_operator(answer)["index"] == ell_g
 
     @pytest.mark.parametrize(
         ("operator", "source", "match"),
@@ -1851,6 +1873,54 @@ class TestCorrectAnswerRegressions:
 
 
 class TestLifecycleRegressions:
+    @pytest.mark.parametrize(
+        "assumed_symbol",
+        ["index", "variable"],
+    )
+    def test_structured_answer_assumptions_are_applied_to_submissions(
+        self, assumed_symbol: str
+    ) -> None:
+        k = (
+            sympy.Symbol("k", positive=True)
+            if assumed_symbol == "index"
+            else sympy.Symbol("k")
+        )
+        n = (
+            sympy.Symbol("n", positive=True)
+            if assumed_symbol == "variable"
+            else sympy.Symbol("n")
+        )
+        answer = pl.big_operator_to_json(
+            operator="sum",
+            indexing="bounds",
+            index=k,
+            lower="1",
+            upper=n,
+            body=k,
+        )
+        markup = html(variables="n")
+        data = question_data(
+            answer,
+            raw_submitted_answers={
+                "op-lower": "1",
+                "op-upper": "n",
+                "op-body": "k",
+            },
+        )
+
+        prepare_parse_grade(markup, data)
+
+        correct = pl.json_to_big_operator(data["correct_answers"]["op"])
+        submitted = pl.json_to_big_operator(data["submitted_answers"]["op"])
+        assert submitted["indexing"] == "bounds"
+        if assumed_symbol == "index":
+            assert getattr(correct["index"], "is_positive", False) is True
+            assert getattr(submitted["index"], "is_positive", False) is True
+            assert getattr(submitted["body"], "is_positive", False) is True
+        else:
+            assert getattr(submitted["upper"], "is_positive", False) is True
+        assert data["partial_scores"]["op"] == {"score": 1.0, "weight": 1}
+
     def test_server_correct_answer_infers_after_prepare(self) -> None:
         markup = html(**{"grading-method": "exact"})
         data = question_data(
