@@ -56,7 +56,7 @@ import prairielearn.sympy_utils as psu
     options:
         members:
             - misc_utils
-            - big_operator
+            - big_operator_utils
             - sympy_utils
             - extension_utils
             - question_utils

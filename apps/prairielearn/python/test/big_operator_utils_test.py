@@ -7,7 +7,7 @@ import prairielearn as pl
 import prairielearn.sympy_utils as psu
 import pytest
 import sympy
-from prairielearn.big_operator import (
+from prairielearn.big_operator_utils import (
     BigApproachesOperator,
     BigApproachesOperatorJson,
     BigBoundsOperator,
