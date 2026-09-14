@@ -1,6 +1,6 @@
 # `pl-big-operator-input` element
 
-Displays an indexed big operator, such as a sum, integral, or limit. Students enter the indexing values and body in separate fields, and PrairieLearn stores them as one combined answer.
+Displays a sum, integral, limit, or other indexed operator. Students enter the index values and body in separate fields.
 
 The fields accept the same symbolic syntax as [`pl-symbolic-input`](pl-symbolic-input.md).
 
@@ -14,82 +14,120 @@ The fields accept the same symbolic syntax as [`pl-symbolic-input`](pl-symbolic-
 ></pl-big-operator-input>
 ```
 
-![Screenshot of the pl-big-operator-input element showing an empty bounded sum](pl-big-operator-input-bounded-sum.png)
+![A bounded sum with fields for the upper bound, lower bound, and body](pl-big-operator-input-bounded-sum.png)
 
-Every element requires a complete correct answer, either through `correct-answer` or `data["correct_answers"]` in `server.py`. The answer determines the operator, index variable, indexing, and limit direction. A `Custom(...)` answer also requires `operator-latex`. If you would like the element not to grade student submissions, set `grading-method='none'`.
+The complete answer `Sum(k**2, (k, 1, n))` configures the sum symbol, the index variable `k`, the bounds `1` and `n`, and the body `k**2`.
+
+Every element requires a complete answer. Set it with either the `correct-answer` attribute or `data["correct_answers"]` in `server.py`. To display the input without grading it, set `grading-method="none"`.
 
 ## Customizations
 
-| Attribute                     | Type                                                  | Default        | Description                                                                                                                                                                                         |
-| ----------------------------- | ----------------------------------------------------- | -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `allow-complex`               | boolean                                               | false          | Whether to allow complex numbers. Students may use `i` or `j` as the imaginary unit.                                                                                                                |
-| `allow-limit-direction-input` | boolean                                               | true           | Whether students choose the direction of a limit with `approaches` indexing. When `false`, the direction from the correct answer is fixed. This attribute is only valid with `approaches` indexing. |
-| `allowed-blank`               | `"none"`, `"indices"`, `"body"`, or `"all"`           | `"none"`       | Which parts of the answer students may leave blank.                                                                                                                                                 |
-| `answers-name`                | string                                                | —              | Name used to store the combined answer. This value must be unique within a question.                                                                                                                |
-| `body-relative-weight`        | integer                                               | 3              | Weight of the body when `grading-method="component"`. Each indexing field has a weight of 1.                                                                                                        |
-| `body-size`                   | integer                                               | 16             | Positive character width of the body field.                                                                                                                                                         |
-| `correct-answer`              | string                                                | —              | Complete, inferable correct answer. It supplies the operator, index variable, indexing, and limit direction. Defaults to `data["correct_answers"][answers-name]`.                                   |
-| `custom-functions`            | string                                                | —              | Comma-separated list of symbolic function names allowed in correct answers and student answers, such as `"f,g"`.                                                                                    |
-| `display`                     | `"block"` or `"inline"`                               | `"block"`      | How to display the input. Block inputs are horizontally centered and retain their large notation in answer and submission panels; inline inputs are vertically aligned with surrounding text.       |
-| `display-log-as-ln`           | boolean                                               | false          | Whether to display `ln` rather than `log` in the input fields, submissions, and correct answers. Both names are accepted in student answers and treated as equivalent.                              |
-| `grading-method`              | `"exact"`, `"component"`, `"equivalent"`, or `"none"` | `"equivalent"` | How to compare the student answer with the correct answer. See [Grading](#grading).                                                                                                                 |
-| `imaginary-unit-for-display`  | `"i"` or `"j"`                                        | `"i"`          | Imaginary unit used for display. This does not affect parsing: students may enter either `i` or `j` when `allow-complex="true"`.                                                                    |
-| `index-field-size`            | integer                                               | 7 or 10        | Positive character width of each indexing field. The default is 7 for bounds indexing and 10 for domain or approaches indexing.                                                                     |
-| `operator-latex`              | string                                                | —              | Independent display override. It supplies a custom operator's required glyph or overrides an inferred built-in symbol.                                                                              |
-| `prefix-latex`                | string                                                | —              | LaTeX displayed immediately before the big operator.                                                                                                                                                |
-| `show-help-text`              | boolean                                               | true           | Whether to show symbolic-input help beside the body field.                                                                                                                                          |
-| `suffix-latex`                | string                                                | —              | LaTeX displayed immediately after the big operator.                                                                                                                                                 |
-| `variables`                   | string                                                | —              | Comma-separated list of allowed symbols in addition to the index variable, such as `"Gamma,k,N"`.                                                                                                   |
-| `weight`                      | integer                                               | 1              | Weight used when computing a weighted average score across elements.                                                                                                                                |
+| Attribute                     | Type                                                  | Default        | Description                                                                                                                                                             |
+| ----------------------------- | ----------------------------------------------------- | -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `allow-complex`               | boolean                                               | false          | Whether to allow complex numbers. Students may use `i` or `j` as the imaginary unit.                                                                                    |
+| `allow-limit-direction-input` | boolean                                               | true           | Whether students choose the direction of a limit. When `false`, the direction in the correct answer is shown. Only valid for limits and custom operators with a target. |
+| `allowed-blank`               | `"none"`, `"indices"`, `"body"`, or `"all"`           | `"none"`       | Which parts of the answer students may leave blank.                                                                                                                     |
+| `answers-name`                | string                                                | —              | Name used to store the answer. This value must be unique within a question.                                                                                             |
+| `body-relative-weight`        | integer                                               | 3              | Weight of the body when `grading-method="component"`. Each index field has a weight of 1.                                                                               |
+| `body-size`                   | integer                                               | 16             | Positive character width of the body field.                                                                                                                             |
+| `correct-answer`              | string                                                | —              | Complete answer in `Func(...)` format. Defaults to `data["correct_answers"][answers-name]`.                                                                             |
+| `custom-functions`            | string                                                | —              | Comma-separated list of symbolic function names allowed in answers, such as `"f,g"`.                                                                                    |
+| `display`                     | `"block"` or `"inline"`                               | `"block"`      | Whether the input is centered on its own line or aligned with surrounding text.                                                                                         |
+| `display-log-as-ln`           | boolean                                               | false          | Whether to display `ln` rather than `log`. Both names are accepted in student answers and treated as equivalent.                                                        |
+| `grading-method`              | `"exact"`, `"component"`, `"equivalent"`, or `"none"` | `"equivalent"` | How to compare the student answer with the correct answer. See [Grading](#grading).                                                                                     |
+| `imaginary-unit-for-display`  | `"i"` or `"j"`                                        | `"i"`          | Imaginary unit shown in displayed answers. Students may enter either unit when `allow-complex="true"`.                                                                  |
+| `index-field-size`            | integer                                               | 7 or 10        | Positive character width of each index field. The default is 7 for bounds and 10 for a domain or limit.                                                                 |
+| `operator-latex`              | string                                                | —              | LaTeX used instead of the standard operator symbol. Required for `Custom(...)`.                                                                                         |
+| `prefix-latex`                | string                                                | —              | LaTeX displayed immediately before the operator.                                                                                                                        |
+| `show-help-text`              | boolean                                               | true           | Whether to show symbolic-input help beside the body field.                                                                                                              |
+| `suffix-latex`                | string                                                | —              | LaTeX displayed immediately after the operator.                                                                                                                         |
+| `variables`                   | string                                                | —              | Comma-separated list of allowed symbols in addition to the index variable, such as `"Gamma,k,N"`.                                                                       |
+| `weight`                      | integer                                               | 1              | Weight used when computing a weighted average score across elements.                                                                                                    |
 
-## Operators and indexing
+## Complete answer syntax
 
-The correct answer determines which fields appear:
+In `question.html`, the `Func(...)` answer configures the operator and its index fields. Start the correct answer with one of these function names:
 
-- `bounds` displays a lower bound, an upper bound, and a body.
-- `domain` displays a domain and a body.
-- `approaches` displays a target value and a body.
+| Function        | Displayed operator | Supported index formats |
+| --------------- | ------------------ | ----------------------- |
+| `Sum`           | $\sum$             | Bounds or domain        |
+| `Product`       | $\prod$            | Bounds or domain        |
+| `Integral`      | $\int$             | Bounds or domain        |
+| `Limit`         | $\lim$             | Approaches              |
+| `Union`         | $\bigcup$          | Bounds or domain        |
+| `Intersection`  | $\bigcap$          | Bounds or domain        |
+| `DisjointUnion` | $\bigsqcup$        | Bounds or domain        |
+| `Min`           | $\min$             | Bounds or domain        |
+| `Max`           | $\max$             | Bounds or domain        |
+| `Custom`        | `operator-latex`   | Any format              |
 
-The supported complete-answer operators and indexing forms are:
+The tuple in the second argument configures the index fields:
 
-| Operator         | Symbol                | Supported indexing               |
-| ---------------- | --------------------- | -------------------------------- |
-| `sum`            | $\sum$                | `bounds`, `domain`               |
-| `product`        | $\prod$               | `bounds`, `domain`               |
-| `integral`       | $\int$                | `bounds`, `domain`               |
-| `limit`          | $\lim$                | `approaches`                     |
-| `union`          | $\bigcup$             | `bounds`, `domain`               |
-| `intersection`   | $\bigcap$             | `bounds`, `domain`               |
-| `disjoint-union` | $\bigsqcup$           | `bounds`, `domain`               |
-| `min`            | $\min$                | `bounds`, `domain`               |
-| `max`            | $\max$                | `bounds`, `domain`               |
-| `custom`         | From `operator-latex` | `bounds`, `domain`, `approaches` |
+| Index format | Correct answer pattern                     | Student input fields               |
+| ------------ | ------------------------------------------ | ---------------------------------- |
+| Bounds       | `Func(body, (index, lower, upper))`        | Lower bound, upper bound, and body |
+| Domain       | `Func(body, (index, domain))`              | Domain and body                    |
+| Approaches   | `Limit(body, (index, target, direction))`  | Target, direction, and body        |
+| Approaches   | `Custom(body, (index, target, direction))` | Target, direction, and body        |
 
-### Field types
+For example, this bounded product has index `k`, lower bound `1`, upper bound `4`, and body `k + 1`:
 
-The element infers each field's accepted type from the indexing and operator. The same policy applies to correct-answer components and student submissions:
+```html {doctest-name="test_product_correct_answer"}
+<pl-big-operator-input
+  answers-name="total"
+  correct-answer="Product(k + 1, (k, 1, 4))"
+></pl-big-operator-input>
+```
 
-| Field             | Accepted type                                                                                      |
-| ----------------- | -------------------------------------------------------------------------------------------------- |
-| Lower bound       | Expression                                                                                         |
-| Upper bound       | Expression                                                                                         |
-| Approaches target | Expression                                                                                         |
-| Domain            | Set, or a bare symbol representing a set                                                           |
-| Operator body     | Set-valued for union, intersection, and disjoint union; expression-valued for every other operator |
+This domain integral displays the correct answer $\displaystyle\int_\Gamma z^2\,\mathrm dz$:
 
-Set-valued fields accept set notation, such as `{1, 2}` or `[0, 1]`, and bare symbols whose members are not known at parse time. Declare non-index symbols with `variables`. Unlike `pl-symbolic-input`, this element does not have an `allowed-types` attribute; authors cannot override the inferred policy on the parent element.
+```html {doctest-name="test_domain_integral_correct_answer"}
+<pl-big-operator-input
+  answers-name="contour"
+  correct-answer="Integral(z**2, (z, Gamma))"
+  variables="Gamma"
+  grading-method="component"
+></pl-big-operator-input>
+```
 
-![Empty domain-indexed summation input with a domain field labeled k in below the summation symbol and a body field to its right](pl-big-operator-input-sum.png)
+For a domain integral, the domain appears by itself below the integral symbol rather than after an index and $\in$ symbol. Domain integrals cannot use `grading-method="equivalent"`; use `exact`, `component`, or `none` instead.
 
-The `prefix-latex` and `suffix-latex` attributes place additional notation immediately before and after the big operator. For example, they can present an input as part of a larger equation:
+![A domain-indexed sum with a domain field below the operator and a body field to its right](pl-big-operator-input-sum.png)
 
-![Empty bounded integral input prefixed by Gamma of z equals, with lower and upper bound fields, a body field, and a differential t suffix](pl-big-operator-input-integral.png)
+### Accepted values in each field
 
-For a limit with `approaches` indexing, students choose the direction by default. The initial red `?` asks them to select `±` (two-sided), `−` (from the left), or `+` (from the right); it does not reveal the correct direction.
+Bounds, limit targets, and most operator bodies accept mathematical expressions. Domains accept set notation, such as `{1, 2}` or `[0, 1]`, as well as a symbol representing a set. Add any non-index symbols to `variables`.
 
-![Empty approaches-limit input with a target field labeled x approaches, an unanswered direction selector, and a body field](pl-big-operator-input-limit.png)
+The bodies of `Union`, `Intersection`, and `DisjointUnion` must also be sets. For example:
 
-To display a fixed direction instead, set `allow-limit-direction-input="false"`:
+```html {doctest-name="test_set_correct_answer" title="question.html"}
+<pl-big-operator-input
+  answers-name="sets"
+  correct-answer="Union({k, -k}, (k, {1, 2}))"
+  grading-method="exact"
+></pl-big-operator-input>
+```
+
+Unlike `pl-symbolic-input`, this element does not have an `allowed-types` attribute. The operator and index format determine what each field accepts.
+
+### Limits
+
+Use `Limit(body, (index, target, direction))`, where direction is `"+"` (from the right), `"-"` (from the left), or `"+-"` (two-sided).
+
+By default, students must choose the direction. The initial red `?` does not reveal the correct choice.
+
+![A limit with a target field, an unanswered direction selector, and a body field](pl-big-operator-input-limit.png)
+
+This example creates a two-sided limit:
+
+```html {doctest-name="test_limit_correct_answer"}
+<pl-big-operator-input
+  answers-name="sinc-limit"
+  correct-answer="Limit(sin(x) / x, (x, 0, '+-'))"
+></pl-big-operator-input>
+```
+
+To show the correct direction instead of asking the student to choose it, set `allow-limit-direction-input="false"`:
 
 ```html {doctest-name="test_fixed_limit_direction"}
 <pl-big-operator-input
@@ -99,21 +137,11 @@ To display a fixed direction instead, set `allow-limit-direction-input="false"`:
 ></pl-big-operator-input>
 ```
 
-For a domain integral, the domain appears as the only subscript, without an `index \in` prefix. For example, the element renders `\int_\Gamma z\,\mathrm{d}z`. Because SymPy does not have a lossless indexed representation for this notation, use `grading-method="exact"` or `grading-method="component"` when grading it, or `grading-method="none"` to display a correct answer without grading.
-
 ### Custom operators
 
-Provide `operator-latex` with a complete `Custom(...)` answer to use a symbol that is not built in.
+Use `Custom(...)` with `operator-latex` to display an operator that is not listed above. Custom operators use the same bounds, domain, and approaches patterns as the built-in operators.
 
-A custom correct answer uses one of these forms:
-
-- Bounds: `Custom(body, (index, lower, upper))`
-- Domain: `Custom(body, (index, domain))`
-- Approaches: `Custom(body, (index, target, direction))`
-
-Valid approaches directions are `"+"`, `"-"`, and `"+-"`.
-
-![Empty custom star-operator input with lower and upper bound fields labeled j equals and a body field](pl-big-operator-input-custom.png)
+![A custom star operator with lower-bound, upper-bound, and body fields](pl-big-operator-input-custom.png)
 
 ```html {doctest-name="test_custom_bounds"}
 <pl-big-operator-input
@@ -124,7 +152,7 @@ Valid approaches directions are `"+"`, `"-"`, and `"+-"`.
 ></pl-big-operator-input>
 ```
 
-Custom operators also support `Limit`-like syntax:
+An approaches-style custom operator uses the same direction symbols as `Limit(...)`:
 
 ```html {doctest-name="test_custom_approaches"}
 <pl-big-operator-input
@@ -136,74 +164,42 @@ Custom operators also support `Limit`-like syntax:
 ></pl-big-operator-input>
 ```
 
-Custom operators change the displayed symbol and use the standard indexing forms. They do not define a new SymPy operation. As a result:
+`operator-latex` changes only the displayed symbol; it does not define a new mathematical operation. For this reason, custom operators cannot use `grading-method="equivalent"`. Use `exact`, `component`, or `none`.
 
-- A custom operator does not support `grading-method="equivalent"`. Use `exact` or `component` grading instead, or `none` to display the correct answer without grading.
-- `operator-latex` is required. It is rendered as a `\mathop` and controls presentation only; it does not define parsing or mathematical behavior.
+### Adding notation before or after the operator
 
-## Correct answers
+Use `prefix-latex` and `suffix-latex` to present the input as part of a larger equation. For example, they can add $\Gamma(z) =$ before an integral and $\mathrm{d}t, \operatorname{Re}(z) > 0$ after it.
 
-### Complete expressions
+![A bounded integral with mathematical notation before and after the input](pl-big-operator-input-integral.png)
 
-A correct answer must be a complete, inferable representation that supplies the operator, index variable, indexing, and limit direction. Supported strings begin with `Sum`, `Product`, `Integral`, `Limit`, `Union`, `Intersection`, `DisjointUnion`, `Min`, `Max`, or `Custom`.
+## Grading
 
-The operator and tuple arguments determine the indexing:
+| Method       | Behavior                                                                                                                           |
+| ------------ | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `equivalent` | Accepts a student answer that is mathematically equivalent to the complete correct answer. This is the default.                    |
+| `component`  | Grades each visible field separately for mathematical equivalence. The body has the relative weight set by `body-relative-weight`. |
+| `exact`      | Requires the operator, index format, direction, index, and each mathematical value to match the correct answer exactly.            |
+| `none`       | Accepts any input but awards no points. The configured correct answer is still displayed in the answer panel.                      |
 
-In the table, `Name` means any supported operator name other than `Limit`.
+When using `equivalent` grading with a domain, the domain must be a concrete finite set, such as `{1, 2, 3}`. Use `component` or `exact` for a symbolic or infinite domain.
 
-| Complete answer form                                               | Inferred indexing |
-| ------------------------------------------------------------------ | ----------------- |
-| `Name(body, (index, domain))`                                      | `domain`          |
-| `Name(body, (index, lower, upper))`                                | `bounds`          |
-| `Limit(body, (index, target, direction))`                          | `approaches`      |
-| `Custom(body, (index, target, direction))` with a quoted direction | `approaches`      |
+Use `allowed-blank` separately to control whether students may omit index fields, the body, or both. For a limit with a direction selector, the direction counts as an index field.
 
-For example, the following element infers a product operator, index `k`, and `bounds` indexing:
+## Setting the answer in `server.py`
 
-```html {doctest-name="test_product_correct_answer"}
-<pl-big-operator-input
-  answers-name="total"
-  correct-answer="Product(k + 1, (k, 1, 4))"
-></pl-big-operator-input>
+For a randomized question, omit `correct-answer` and assign the answer to `data["correct_answers"][answers-name]`. You can use the same `Func(...)` syntax as in `question.html`:
+
+```python {doctest-name="test_string_correct_answer" title="server.py"}
+import random
+
+
+def generate(data):
+    upper = random.randint(4, 8)
+    data["params"]["upper"] = upper
+    data["correct_answers"]["total"] = f"Product(k + 1, (k, 1, {upper}))"
 ```
 
-A domain integral infers `domain` indexing with Greek latex:
-
-```html {doctest-name="test_domain_integral_correct_answer"}
-<pl-big-operator-input
-  answers-name="contour"
-  correct-answer="Integral(z**2, (z, Gamma))"
-  variables="Gamma"
-  grading-method="component"
-></pl-big-operator-input>
-```
-
-For a limit, use `Limit(body, (index, target, direction))`. The direction may be `"+"` (from the right), `"-"` (from the left), or `"+-"` (two-sided).
-
-In this example, the element infers the operator, `approaches` indexing, and two-sided direction. The student must still choose the direction from the initially unanswered `?` control:
-
-```html {doctest-name="test_limit_correct_answer"}
-<pl-big-operator-input
-  answers-name="sinc-limit"
-  correct-answer="Limit(sin(x) / x, (x, 0, '+-'))"
-></pl-big-operator-input>
-```
-
-The complete expression may also be a canonical `big_operator` dictionary or a supported PrairieLearn SymPy JSON dictionary. A canonical dictionary identifies its operator and index with the `operator` and `index` fields. SymPy JSON supports `Sum`, `Product`, `Integral`, and `Limit` expressions. Raw SymPy objects are not supported because values in `data["correct_answers"]` must be JSON-serializable. Malformed and unrecognized representations are rejected.
-
-### Setting the correct answer in `server.py`
-
-<!-- doctest-only: before-each
-```python
-import prairielearn as pl
-import prairielearn.sympy_utils as psu
-import sympy
-```
--->
-
-Answers assigned in `server.py` must be JSON-serializable. Convert a supported SymPy expression to a string or use `prairielearn.sympy_utils.sympy_to_json`; do not assign a raw SymPy object to `data`.
-
-<!-- doctest-visible -->
+You can also build a `Sum`, `Product`, `Integral`, or `Limit` with SymPy and convert it to JSON:
 
 ```python {doctest-name="test_sympy_json_correct_answer" title="server.py"}
 import prairielearn.sympy_utils as psu
@@ -214,41 +210,30 @@ def generate(data):
     k = sympy.Symbol("k")
     answer = sympy.Product(k + 1, (k, 1, 4))
     data["correct_answers"]["total"] = psu.sympy_to_json(answer)
-    # Alternatively: data["correct_answers"]["total"] = str(answer)
 ```
 
-<!-- doctest-only
-```python {doctest-name="test_string_correct_answer" title="server.py"}
-def generate(data):
-    k = sympy.Symbol("k")
-    answer = sympy.Product(k + 1, (k, 1, 4))
-    data["correct_answers"]["total"] = str(answer)
-```
--->
-
-PrairieLearn accepts string and SymPy JSON representations of a single-variable `sympy.Sum`, `sympy.Product`, or `sympy.Integral`, as well as `sympy.Limit`. A two-item integral tuple creates `domain` indexing, while a three-item tuple creates `bounds` indexing.
-
-Use `pl.big_operator_to_json()` to construct a canonical answer from labelled SymPy values or strings. This is especially useful for custom operators, which cannot be represented by a SymPy expression alone:
+Use `pl.big_operator_to_json()` when you want to provide the operator, indexing, and mathematical values separately. This is particularly useful for custom operators:
 
 <!-- doctest-visible: before-next -->
 
-```python {doctest-name="test_custom_canonical_correct_answer" title="server.py"}
+```python {doctest-name="test_custom_python_correct_answer" title="server.py"}
 import prairielearn as pl
 import sympy
 
 
 def generate(data):
+    x = sympy.Symbol("x")
     data["correct_answers"]["evaluation"] = pl.big_operator_to_json(
         operator="custom",
         indexing="approaches",
-        index="x",
+        index=x,
         target="0",
         direction="two-sided",
-        body=sympy.Function("f")(sympy.Symbol("x")),
+        body=sympy.Function("f")(x),
     )
 ```
 
-```html {doctest-name="test_custom_canonical_element" title="question.html"}
+```html {doctest-name="test_custom_python_element" title="question.html"}
 <pl-big-operator-input
   answers-name="evaluation"
   operator-latex="\operatorname{eval}"
@@ -257,56 +242,9 @@ def generate(data):
 ></pl-big-operator-input>
 ```
 
-It also serializes a `BigOperator` returned by `pl.json_to_big_operator()`, allowing a validated structured answer to be round-tripped as canonical JSON.
+### Custom grading in `server.py`
 
-The variadic SymPy forms `Union`, `Intersection`, `DisjointUnion`, `Min`, and `Max` do not preserve an indexed complete expression. For these operators, use a string with `(index, domain)` or `(index, lower, upper)` as the second argument:
-
-```html {doctest-name="test_set_correct_answer" title="question.html"}
-<pl-big-operator-input
-  answers-name="sets"
-  correct-answer="Union({k, -k}, (k, {1, 2}))"
-  grading-method="exact"
-></pl-big-operator-input>
-```
-
-The same syntax supports `Intersection`, `DisjointUnion`, `Min`, and `Max`. The element normalizes these strings without evaluating away the index or indexing data.
-
-### Machine-readable answer format
-
-Every successfully prepared correct answer and successfully parsed student answer uses a flat, version 1 dictionary. Mathematical values use `sympy_to_json(..., allow_sets=True)`:
-
-<!-- doctest-only: before-next
-```python
-k, n = sympy.symbols("k n")
-```
--->
-
-```python {doctest-name="test_canonical_answer_dictionary"}
-# Canonical representation of Sum(k**2, (k, 1, n))
-{
-    "_type": "big_operator",
-    "_version": 1,
-    "operator": "sum",
-    "indexing": "bounds",
-    "index": psu.sympy_to_json(k),
-    "lower": psu.sympy_to_json(sympy.Integer(1)),
-    "upper": psu.sympy_to_json(n),
-    "body": psu.sympy_to_json(k**2),
-}
-```
-
-The fields depend on the indexing:
-
-- Bounds answers use `lower`, `upper`, and `body`.
-- Domain answers use `domain` and `body`.
-- Approaches answers use `target`, `direction`, and `body`.
-- Custom answers include `operator_latex`; built-in answers do not.
-
-When direction input is enabled, the student's raw selection is stored as `<answers-name>-direction` and copied to the canonical `direction` field. When direction input is disabled, the correct-answer direction is inserted directly. The outer `_type` differs from PrairieLearn's reserved `sympy` leaf type.
-
-### Accessing structured answers in `server.py`
-
-Use [`pl.json_to_big_operator()`][prairielearn.big_operator.json_to_big_operator] to validate the combined answer and decode its mathematical fields to SymPy values. Check the `indexing` field before accessing indexing-specific fields:
+Most questions should use one of the built-in grading methods. For custom grading, use [`pl.json_to_big_operator()`][prairielearn.big_operator.json_to_big_operator] to validate the combined answer and convert its mathematical fields to SymPy values. Check `indexing` before accessing fields that are specific to bounds, domains, or limits.
 
 ```python {doctest-name="test_structured_answer_grading" title="server.py"}
 import prairielearn as pl
@@ -323,31 +261,8 @@ def grade(data):
     if submitted["indexing"] == "bounds" and correct["indexing"] == "bounds":
         submitted_body = submitted["body"]
         correct_body = correct["body"]
-        submitted_lower = submitted["lower"]
-        correct_lower = correct["lower"]
         # Apply custom grading logic to the decoded SymPy values.
 ```
-
-After element processing:
-
-- `correct_answers[answers-name]` contains the canonical correct answer.
-- `submitted_answers[answers-name]` contains a canonical dictionary when parsing succeeds, `""` for an allowed blank answer, or `None` when parsing fails.
-- Internal field names such as `<answers-name>-body` and `<answers-name>-start` remain available in `raw_submitted_answers` and `format_errors` for redisplay and field-specific feedback. They are not separate processed answers.
-
-## Grading
-
-The `grading-method` attribute supports four modes:
-
-| Method       | Behavior                                                                                                                                                                 |
-| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `exact`      | Requires the operator, indexing, direction, index, and every SymPy component to match exactly.                                                                           |
-| `equivalent` | Builds complete SymPy expressions and checks whether they are mathematically equivalent. It first checks structural equality, then tests whether the difference is zero. |
-| `component`  | Checks each visible field separately for mathematical equivalence. This method does not change how the correct answer is specified.                                      |
-| `none`       | Accepts any input without assigning a score. (Careful: the score default is 0!) The configured correct answer is still displayed in the answer panel.                    |
-
-For domain equivalence, the element expands only a concrete `FiniteSet`. A symbolic or infinite domain fails with an explicit error instead of being expanded.
-
-Blank-answer validation is controlled separately by `allowed-blank`. A student-entered direction is part of the indexing, so `allowed-blank="indices"` and `allowed-blank="all"` allow the direction to remain unanswered.
 
 ## Example implementations
 
