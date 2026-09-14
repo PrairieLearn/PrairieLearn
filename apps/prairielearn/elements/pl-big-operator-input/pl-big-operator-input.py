@@ -18,6 +18,7 @@ import prairielearn.internal.symbolic_input as psi
 import prairielearn.sympy_utils as psu
 import sympy
 import sympy.sets
+from prairielearn.timeout_utils import SignalTimeout, TimeoutState
 
 HERE: Final = Path(__file__).parent
 SCHEMA_PATH: Final = HERE / "schemas" / "pl-big-operator-input.json"
@@ -31,6 +32,10 @@ ANNOTATION_INDEX_FIELD_SIZE_DEFAULT: Final = 10
 IMAGINARY_UNIT_FOR_DISPLAY_DEFAULT: Final = "i"
 DISPLAY_DEFAULT: Final = psi.DisplayType.BLOCK
 DISPLAY_LOG_AS_LN_DEFAULT: Final = False
+SYMPY_TIMEOUT: Final = 3
+SYMPY_TIMEOUT_FORMAT_ERROR: Final = (
+    "Your answer did not converge, try a simpler expression."
+)
 
 type BuiltinOperator = Literal[
     "sum",
@@ -934,26 +939,30 @@ def _component_scores(config: RenderConfig, data: pl.QuestionData) -> dict[str, 
         "partial_scores", {}
     ):
         return {}
+    if config.answer_name in data.get("format_errors", {}):
+        return {}
     submitted_json = data.get("submitted_answers", {}).get(config.answer_name)
     correct_json = _correct(config, data)
     if not isinstance(submitted_json, dict):
         return {}
-    try:
-        submitted = _values(config, submitted_json)
-        correct = _values(config, correct_json)
-    except (KeyError, TypeError, ValueError):
-        return {}
-    scores = {
-        component: float(
-            _expressions_equivalent(submitted[component], correct[component])
-        )
-        for component in config.components
-    }
-    if config.indexing == "approaches" and config.allow_direction_input:
-        scores["direction"] = float(
-            submitted_json.get("direction") == correct_json.get("direction")
-        )
-    return scores
+    scores: dict[str, float] = {}
+    with SignalTimeout(SYMPY_TIMEOUT) as timeout:
+        try:
+            submitted = _values(config, submitted_json)
+            correct = _values(config, correct_json)
+        except (KeyError, TypeError, ValueError):
+            return {}
+        scores = {
+            component: float(
+                _expressions_equivalent(submitted[component], correct[component])
+            )
+            for component in config.components
+        }
+        if config.indexing == "approaches" and config.allow_direction_input:
+            scores["direction"] = float(
+                submitted_json.get("direction") == correct_json.get("direction")
+            )
+    return {} if timeout.state == TimeoutState.TIMED_OUT else scores
 
 
 def _direction_input(
@@ -1440,40 +1449,29 @@ def _expressions_equivalent(left: sympy.Basic, right: sympy.Basic) -> bool:
 
 def grade(element_html: str, data: pl.QuestionData) -> None:
     config = _config(element_html, data)
-    if config.grading == "none":
+    grading = config.grading
+    if grading == "none":
         return
     correct_json = _correct(config, data)
-    if data.get("submitted_answers", {}).get(config.answer_name) == "":
-        score = 0.0
-    else:
-        submitted_json = data.get("submitted_answers", {}).get(config.answer_name)
-        if not isinstance(submitted_json, dict):
-            data.setdefault("partial_scores", {})[config.answer_name] = {
-                "score": 0.0,
-                "weight": config.weight,
-            }
-            pl.set_weighted_score_data(data)
-            return
+
+    def grade_function(submitted_json: object) -> tuple[float, None]:
+        if submitted_json == "" or not isinstance(submitted_json, dict):
+            return 0.0, None
         try:
             submitted, correct = (
                 _values(config, submitted_json),
                 _values(config, correct_json),
             )
         except (KeyError, TypeError, ValueError):
-            data.setdefault("partial_scores", {})[config.answer_name] = {
-                "score": 0.0,
-                "weight": config.weight,
-            }
-            pl.set_weighted_score_data(data)
-            return
-        match config.grading:
+            return 0.0, None
+        match grading:
             case "exact":
                 score = float(submitted_json == correct_json)
             case "component":
                 earned = sum(
-                    config.body_weight if c == "body" else 1
-                    for c in config.components
-                    if _expressions_equivalent(submitted[c], correct[c])
+                    config.body_weight if component == "body" else 1
+                    for component in config.components
+                    if _expressions_equivalent(submitted[component], correct[component])
                 )
                 possible = len(config.components) + (
                     (config.body_weight - 1) if "body" in config.components else 0
@@ -1494,10 +1492,16 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
                         correct_json.get("direction"),
                     )
                 )
-    data.setdefault("partial_scores", {})[config.answer_name] = {
-        "score": score,
-        "weight": config.weight,
-    }
+        return score, None
+
+    pl.grade_answer_parameterized(
+        data,
+        config.answer_name,
+        grade_function,
+        weight=config.weight,
+        timeout=SYMPY_TIMEOUT,
+        timeout_format_error=SYMPY_TIMEOUT_FORMAT_ERROR,
+    )
     pl.set_weighted_score_data(data)
 
 
