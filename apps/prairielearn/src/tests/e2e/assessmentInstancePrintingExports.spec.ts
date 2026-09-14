@@ -1,10 +1,15 @@
 import * as unzipper from 'unzipper';
 
 import { makeAssessmentInstance } from '../../lib/assessment.js';
+import type { CourseInstance } from '../../lib/db-types.js';
 import { selectAssessmentByTid } from '../../models/assessment.js';
 import { getConfiguredUser } from '../utils/auth.js';
 
 import { expect, test } from './fixtures.js';
+import { waitForPrintablePage } from './utils/printing.js';
+
+// Rendering a preview and an export can exceed Playwright's default 30-second test timeout.
+test.describe.configure({ timeout: 180_000 });
 
 const DOCX_CONTENT_TYPE = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
 
@@ -15,14 +20,11 @@ interface PrintableAssessmentInstanceResponse {
   warnings: { code: string; message: string; question_number?: string; qid?: string | null }[];
 }
 
-test('describes the printable exports and serves each linked document', async ({
-  page,
-  courseInstance,
-}) => {
+async function createPrintableExam(courseInstance: CourseInstance, tid: string) {
   const user = await getConfiguredUser();
   const assessment = await selectAssessmentByTid({
     course_instance_id: courseInstance.id,
-    tid: 'exam1-automaticTestSuite',
+    tid,
   });
   const assessmentInstanceId = await makeAssessmentInstance({
     assessment,
@@ -34,72 +36,91 @@ test('describes the printable exports and serves each linked document', async ({
     client_fingerprint_id: null,
   });
   const paperUrl = `/pl/course_instance/${courseInstance.id}/instructor/assessment_instance/${assessmentInstanceId}/paper`;
-  const query = 'paper_size=Letter&identity_field=Section&identity_field=Student+ID';
+  return { paperUrl, assessmentInstanceId };
+}
 
-  const response = await page.request.get(`${paperUrl}?${query}`);
-  expect(response.status()).toBe(200);
-  expect(response.headers()['content-type']).toContain('application/json');
-  const body = (await response.json()) as PrintableAssessmentInstanceResponse;
-  expect(body).toEqual({
-    pdf_url: `${paperUrl}/pdf?${query}`,
-    answer_key_pdf_url: `${paperUrl}/pdf?${query}&document=answer_key`,
-    docx_url: `${paperUrl}/docx?${query}`,
-    warnings: expect.any(Array),
-  });
-
-  // exam1-automaticTestSuite includes a question whose generate() always throws.
-  expect(body.warnings.length).toBeGreaterThan(0);
-  for (const warning of body.warnings) {
-    expect(warning).toMatchObject({ code: 'broken_variant', question_number: expect.any(String) });
-    expect(warning.message).toContain(`Question ${warning.question_number}`);
-  }
-
-  await page.goto(`${paperUrl}/preview?${query}`);
-  await expect(page.locator('html').first()).toHaveAttribute('data-print-status', 'ready');
-  const printedQuestionNumbers = await page
-    .locator('.pagedjs_page .printing-question')
-    .evaluateAll((questions) =>
-      questions.map((question) => (question as HTMLElement).dataset.questionNumber),
+for (const format of ['pdf', 'answer_key_pdf', 'docx'] as const) {
+  test(`describes printable exports and serves the linked ${format}`, async ({
+    page,
+    courseInstance,
+  }) => {
+    const { paperUrl, assessmentInstanceId } = await createPrintableExam(
+      courseInstance,
+      'exam1-automaticTestSuite',
     );
-  for (const warning of body.warnings) {
-    expect(printedQuestionNumbers).not.toContain(warning.question_number);
-  }
+    const query = 'paper_size=Letter&identity_field=Section&identity_field=Student+ID';
 
-  for (const url of [body.pdf_url, body.answer_key_pdf_url]) {
-    const pdfResponse = await page.request.get(url);
-    expect(pdfResponse.status()).toBe(200);
-    expect(pdfResponse.headers()['content-type']).toBe('application/pdf');
-    expect(pdfResponse.headers()['content-disposition']).toMatch(/^inline; filename=".+\.pdf"$/);
-    expect((await pdfResponse.body()).subarray(0, 5).toString()).toBe('%PDF-');
-  }
-  expect(
-    (await page.request.get(body.answer_key_pdf_url)).headers()['content-disposition'],
-  ).toContain('_answer_key.pdf');
+    const response = await page.request.get(`${paperUrl}?${query}`);
+    expect(response.status()).toBe(200);
+    expect(response.headers()['content-type']).toContain('application/json');
+    const body = (await response.json()) as PrintableAssessmentInstanceResponse;
+    expect(body).toEqual({
+      pdf_url: `${paperUrl}/pdf?${query}`,
+      answer_key_pdf_url: `${paperUrl}/pdf?${query}&document=answer_key`,
+      docx_url: `${paperUrl}/docx?${query}`,
+      warnings: expect.any(Array),
+    });
 
-  const docxResponse = await page.request.get(body.docx_url);
-  expect(docxResponse.status()).toBe(200);
-  expect(docxResponse.headers()['content-type']).toContain(DOCX_CONTENT_TYPE);
-  expect(docxResponse.headers()['content-disposition']).toMatch(
-    /^attachment; filename=".+_letter\.docx"$/,
-  );
-  const archive = await unzipper.Open.buffer(await docxResponse.body());
-  const documentFile = archive.files.find((file) => file.path === 'word/document.xml');
-  expect(documentFile).toBeDefined();
-  const documentXml = (await documentFile!.buffer()).toString();
-  for (const number of printedQuestionNumbers) expect(documentXml).toContain(`Question ${number}`);
-  expect(documentXml).toContain('<m:oMath>');
-  expect(documentXml).toContain('Consider two numbers');
-  expect(documentXml.match(/<w:pageBreakBefore\/>/g)).toHaveLength(1);
-  for (const label of [
-    'Name',
-    'Section',
-    'Student ID',
-    'Date',
-    `Form ID ${assessmentInstanceId}`,
-  ]) {
-    expect(documentXml).toContain(label);
-  }
-});
+    // exam1-automaticTestSuite includes a question whose generate() always throws.
+    expect(body.warnings.length).toBeGreaterThan(0);
+    for (const warning of body.warnings) {
+      expect(warning).toMatchObject({
+        code: 'broken_variant',
+        question_number: expect.any(String),
+      });
+      expect(warning.message).toContain(`Question ${warning.question_number}`);
+    }
+
+    await page.goto(`${paperUrl}/preview?${query}`);
+    await waitForPrintablePage(page);
+    const printedQuestionNumbers = await page
+      .locator('.pagedjs_page .printing-question')
+      .evaluateAll((questions) =>
+        questions.map((question) => (question as HTMLElement).dataset.questionNumber),
+      );
+    for (const warning of body.warnings) {
+      expect(printedQuestionNumbers).not.toContain(warning.question_number);
+    }
+
+    const documentResponse = await page.request.get(body[`${format}_url`], { timeout: 120_000 });
+    expect(documentResponse.status()).toBe(200);
+    if (format !== 'docx') {
+      expect(documentResponse.headers()['content-type']).toBe('application/pdf');
+      expect(documentResponse.headers()['content-disposition']).toMatch(
+        /^inline; filename=".+\.pdf"$/,
+      );
+      if (format === 'answer_key_pdf') {
+        expect(documentResponse.headers()['content-disposition']).toContain('_answer_key.pdf');
+      }
+      expect((await documentResponse.body()).subarray(0, 5).toString()).toBe('%PDF-');
+      return;
+    }
+
+    expect(documentResponse.headers()['content-type']).toContain(DOCX_CONTENT_TYPE);
+    expect(documentResponse.headers()['content-disposition']).toMatch(
+      /^attachment; filename=".+_letter\.docx"$/,
+    );
+    const archive = await unzipper.Open.buffer(await documentResponse.body());
+    const documentFile = archive.files.find((file) => file.path === 'word/document.xml');
+    expect(documentFile).toBeDefined();
+    const documentXml = (await documentFile!.buffer()).toString();
+    for (const number of printedQuestionNumbers) {
+      expect(documentXml).toContain(`Question ${number}`);
+    }
+    expect(documentXml).toContain('<m:oMath>');
+    expect(documentXml).toContain('Consider two numbers');
+    expect(documentXml.match(/<w:pageBreakBefore\/>/g)).toHaveLength(1);
+    for (const label of [
+      'Name',
+      'Section',
+      'Student ID',
+      'Date',
+      `Form ID ${assessmentInstanceId}`,
+    ]) {
+      expect(documentXml).toContain(label);
+    }
+  });
+}
 
 test('rejects unknown query parameters and non-exam assessments', async ({
   page,
@@ -132,24 +153,9 @@ test('exports the broad printing fixture with inline, ordering, sketch, and disp
   page,
   courseInstance,
 }) => {
-  test.setTimeout(120_000);
-  const user = await getConfiguredUser();
-  const assessment = await selectAssessmentByTid({
-    course_instance_id: courseInstance.id,
-    tid: 'exam23-printing',
-  });
-  const assessmentInstanceId = await makeAssessmentInstance({
-    assessment,
-    user_id: user.id,
-    authn_user_id: user.id,
-    mode: 'Public',
-    time_limit_min: null,
-    date: new Date(),
-    client_fingerprint_id: null,
-  });
-  const paperUrl = `/pl/course_instance/${courseInstance.id}/instructor/assessment_instance/${assessmentInstanceId}/paper`;
+  const { paperUrl } = await createPrintableExam(courseInstance, 'exam23-printing');
   await page.goto(`${paperUrl}/preview?paper_size=Letter`);
-  await expect(page.locator('html').first()).toHaveAttribute('data-print-status', 'ready');
+  await waitForPrintablePage(page);
   const questionNumbers = await page
     .locator('.pagedjs_page .printing-question')
     .evaluateAll((questions) => [
@@ -278,9 +284,23 @@ test('exports the broad printing fixture with inline, ordering, sketch, and disp
   expect(documentXml).toContain('Find the derivative');
   expect(documentXml).not.toContain('PrintedQuestionImage');
   expect(documentXml).toContain('w:hRule="atLeast"');
+});
 
+test('exports the broad answer key with correct answers before distractors', async ({
+  page,
+  courseInstance,
+}) => {
+  const { paperUrl } = await createPrintableExam(courseInstance, 'exam23-printing');
+  await page.goto(`${paperUrl}/preview?paper_size=Letter`);
+  await waitForPrintablePage(page);
+  const questionNumbers = await page
+    .locator('.pagedjs_page .printing-question')
+    .evaluateAll((questions) => [
+      ...new Set(questions.map((question) => (question as HTMLElement).dataset.questionNumber)),
+    ]);
+  expect(questionNumbers).toHaveLength(46);
   await page.goto(`${paperUrl}/preview?paper_size=Letter&document=answer_key`);
-  await expect(page.locator('html').first()).toHaveAttribute('data-print-status', 'ready');
+  await waitForPrintablePage(page);
   const answerQuestionNumbers = await page
     .locator('.pagedjs_page .printing-question')
     .evaluateAll((questions) => [

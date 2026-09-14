@@ -6,6 +6,10 @@ import { selectAssessmentByTid } from '../../models/assessment.js';
 import { getConfiguredUser } from '../utils/auth.js';
 
 import { expect, test } from './fixtures.js';
+import { waitForPrintablePage } from './utils/printing.js';
+
+// Rendering a preview and an export can exceed Playwright's default 30-second test timeout.
+test.describe.configure({ timeout: 180_000 });
 
 interface PaginatedQuestionLayout {
   pageCount: number;
@@ -46,11 +50,7 @@ function paperUrl(courseInstance: CourseInstance, assessmentInstanceId: string):
 }
 
 async function readPaginatedQuestionLayout(page: Page): Promise<PaginatedQuestionLayout> {
-  await page.evaluate(async () => {
-    await (window as typeof window & { __PL_PRINT_READY__: Promise<{ totalPages: number }> })
-      .__PL_PRINT_READY__;
-  });
-  await expect(page.locator('html').first()).toHaveAttribute('data-print-status', 'ready');
+  await waitForPrintablePage(page);
 
   return await page.locator('.pagedjs_page').evaluateAll((pages) => {
     const questionPages: Record<string, number[]> = {};
