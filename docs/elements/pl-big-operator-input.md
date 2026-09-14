@@ -212,7 +212,7 @@ def generate(data):
     data["correct_answers"]["total"] = psu.sympy_to_json(answer)
 ```
 
-Use `pl.big_operator_to_json()` when you want to provide the operator, indexing, and mathematical values separately. This is particularly useful for custom operators:
+Use `pl.big_operator_to_json()` when you want to provide the operator, indexing, and mathematical values separately. Mathematical fields accept SymPy values, strings, Python integers, and Python sets. This is particularly useful for custom operators:
 
 <!-- doctest-visible: before-next -->
 
@@ -227,7 +227,7 @@ def generate(data):
         operator="custom",
         indexing="approaches",
         index=x,
-        target="0",
+        target=0,
         direction="two-sided",
         body=sympy.Function("f")(x),
     )
