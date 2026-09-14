@@ -114,7 +114,7 @@ Unlike `pl-symbolic-input`, this element does not have an `allowed-types` attrib
 
 Use `Limit(body, (index, target, direction))`, where direction is `"+"` (from the right), `"-"` (from the left), or `"+-"` (two-sided).
 
-By default, students must choose the direction. The initial red `?` does not reveal the correct choice.
+By default, students must choose the direction. The initial `?` does not reveal the correct choice.
 
 ![A limit with a target field, an unanswered direction selector, and a body field](pl-big-operator-input-limit.png)
 
