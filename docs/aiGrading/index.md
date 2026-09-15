@@ -187,7 +187,7 @@ API keys are encrypted at rest — PrairieLearn never stores them in plaintext.
 
     2. Check **Use custom API keys**.
 
-    3. Click **Add key** and provide one.
+    3. Click **Add key** and provide one, or **Add endpoint** for an OpenAI-compatible base URL (for example a university LLM gateway). Custom endpoints must use HTTPS. PrairieLearn lists models from `/models` and cannot show per-token pricing for them. Models need to support structured outputs; image and file grading may fail on some providers.
 
     When using custom API keys, instructors are responsible for the provider terms and account configuration.
 

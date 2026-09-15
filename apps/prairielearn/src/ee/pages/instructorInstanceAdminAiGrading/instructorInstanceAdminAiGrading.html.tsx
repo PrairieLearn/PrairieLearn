@@ -17,7 +17,7 @@ import {
 
 import { PurchaseCreditsModal } from './PurchaseCreditsModal.js';
 import { RedeemFreeCreditModal } from './RedeemFreeCreditModal.js';
-import type { AiGradingApiKeyCredential } from './utils/format.js';
+import type { AiGradingApiKeyCredential, AiGradingCustomEndpoint } from './utils/format.js';
 import { createAiGradingSettingsTrpcClient } from './utils/trpc-client.js';
 import { TRPCProvider, useTRPC } from './utils/trpc-context.js';
 
@@ -205,10 +205,181 @@ function DeleteApiKeyModal({
   );
 }
 
+function AddCustomEndpointModal({
+  show,
+  onHide,
+  onExited,
+  onSuccess,
+}: {
+  show: boolean;
+  onHide: () => void;
+  onExited: () => void;
+  onSuccess: (endpoint: AiGradingCustomEndpoint) => void;
+}) {
+  const trpc = useTRPC();
+  const addMutation = useMutation({
+    ...trpc.addCustomEndpoint.mutationOptions(),
+    onSuccess: (data) => {
+      onSuccess(data.endpoint);
+    },
+  });
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<{ name: string; baseUrl: string; apiKey: string }>({
+    defaultValues: { name: '', baseUrl: '', apiKey: '' },
+  });
+
+  return (
+    <Modal
+      show={show}
+      backdrop="static"
+      onHide={onHide}
+      onExited={() => {
+        reset();
+        addMutation.reset();
+        onExited();
+      }}
+    >
+      <Modal.Header closeButton>
+        <Modal.Title>Add custom endpoint</Modal.Title>
+      </Modal.Header>
+      <form
+        onSubmit={handleSubmit((data) =>
+          addMutation.mutate({
+            name: data.name.trim(),
+            base_url: data.baseUrl.trim(),
+            secret_key: data.apiKey.trim(),
+          }),
+        )}
+      >
+        <Modal.Body>
+          {addMutation.isError && (
+            <Alert variant="danger" dismissible onClose={() => addMutation.reset()}>
+              {addMutation.error.message}
+            </Alert>
+          )}
+          <Form.Group className="mb-3">
+            <Form.Label htmlFor="add-endpoint-name">Display name</Form.Label>
+            <Form.Control
+              id="add-endpoint-name"
+              placeholder="Campus LLM"
+              className={clsx(errors.name && 'is-invalid')}
+              {...register('name', { required: 'Name is required' })}
+            />
+            {errors.name && <div className="invalid-feedback">{errors.name.message}</div>}
+          </Form.Group>
+          <Form.Group className="mb-3">
+            <Form.Label htmlFor="add-endpoint-url">Base URL</Form.Label>
+            <Form.Control
+              id="add-endpoint-url"
+              placeholder="https://llm.example.edu/v1"
+              className={clsx(errors.baseUrl && 'is-invalid')}
+              {...register('baseUrl', { required: 'Base URL is required' })}
+            />
+            {errors.baseUrl && <div className="invalid-feedback">{errors.baseUrl.message}</div>}
+            <div className="form-text">
+              Use an HTTPS OpenAI-compatible root, including <code>/v1</code> when the provider
+              requires it. Private and loopback addresses are not allowed.
+            </div>
+          </Form.Group>
+          <Form.Group className="mb-0">
+            <Form.Label htmlFor="add-endpoint-key">API key</Form.Label>
+            <Form.Control
+              id="add-endpoint-key"
+              type="password"
+              autoComplete="off"
+              className={clsx(errors.apiKey && 'is-invalid')}
+              {...register('apiKey', { required: 'API key is required' })}
+            />
+            {errors.apiKey && <div className="invalid-feedback">{errors.apiKey.message}</div>}
+          </Form.Group>
+        </Modal.Body>
+        <Modal.Footer>
+          <button
+            type="button"
+            className="btn btn-outline-secondary"
+            disabled={addMutation.isPending}
+            onClick={onHide}
+          >
+            Cancel
+          </button>
+          <button type="submit" className="btn btn-primary" disabled={addMutation.isPending}>
+            {addMutation.isPending ? 'Saving...' : 'Save endpoint'}
+          </button>
+        </Modal.Footer>
+      </form>
+    </Modal>
+  );
+}
+
+function DeleteCustomEndpointModal({
+  data,
+  show,
+  onHide,
+  onExited,
+  onSuccess,
+}: {
+  data: AiGradingCustomEndpoint | null;
+  show: boolean;
+  onHide: () => void;
+  onExited: () => void;
+  onSuccess: () => void;
+}) {
+  const trpc = useTRPC();
+  const deleteMutation = useMutation({
+    ...trpc.deleteCustomEndpoint.mutationOptions(),
+    onSuccess,
+  });
+
+  return (
+    <Modal show={show} onHide={onHide} onExited={onExited}>
+      <Modal.Header closeButton>
+        <Modal.Title>Delete custom endpoint</Modal.Title>
+      </Modal.Header>
+      <Modal.Body>
+        {deleteMutation.isError && (
+          <Alert variant="danger" dismissible onClose={() => deleteMutation.reset()}>
+            {deleteMutation.error.message}
+          </Alert>
+        )}
+        <p>
+          Are you sure you want to delete <strong>{data?.name ?? ''}</strong>? This cannot be
+          undone.
+        </p>
+      </Modal.Body>
+      <Modal.Footer>
+        <button
+          type="button"
+          className="btn btn-outline-secondary"
+          disabled={deleteMutation.isPending}
+          onClick={onHide}
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          className="btn btn-danger"
+          disabled={deleteMutation.isPending}
+          onClick={() => {
+            if (!data) return;
+            deleteMutation.mutate({ endpoint_id: data.id });
+          }}
+        >
+          {deleteMutation.isPending ? 'Deleting...' : 'Delete'}
+        </button>
+      </Modal.Footer>
+    </Modal>
+  );
+}
+
 export function InstructorInstanceAdminAiGrading({
   trpcCsrfToken,
   initialUseCustomApiKeys,
   initialApiKeyCredentials,
+  initialCustomEndpoints,
   canEdit,
   stripePurchasingEnabled,
   initialCheckoutStatus,
@@ -218,6 +389,7 @@ export function InstructorInstanceAdminAiGrading({
   trpcCsrfToken: string;
   initialUseCustomApiKeys: boolean;
   initialApiKeyCredentials: AiGradingApiKeyCredential[];
+  initialCustomEndpoints: AiGradingCustomEndpoint[];
   canEdit: boolean;
   stripePurchasingEnabled: boolean;
   initialCheckoutStatus: 'success' | 'cancelled' | null;
@@ -235,6 +407,7 @@ export function InstructorInstanceAdminAiGrading({
         <AiGradingSettingsContent
           initialUseCustomApiKeys={initialUseCustomApiKeys}
           initialApiKeyCredentials={initialApiKeyCredentials}
+          initialCustomEndpoints={initialCustomEndpoints}
           canEdit={canEdit}
           stripePurchasingEnabled={stripePurchasingEnabled}
           initialCheckoutStatus={initialCheckoutStatus}
@@ -251,6 +424,7 @@ InstructorInstanceAdminAiGrading.displayName = 'InstructorInstanceAdminAiGrading
 function AiGradingSettingsContent({
   initialUseCustomApiKeys,
   initialApiKeyCredentials,
+  initialCustomEndpoints,
   canEdit,
   stripePurchasingEnabled,
   initialCheckoutStatus,
@@ -259,6 +433,7 @@ function AiGradingSettingsContent({
 }: {
   initialUseCustomApiKeys: boolean;
   initialApiKeyCredentials: AiGradingApiKeyCredential[];
+  initialCustomEndpoints: AiGradingCustomEndpoint[];
   canEdit: boolean;
   stripePurchasingEnabled: boolean;
   initialCheckoutStatus: 'success' | 'cancelled' | null;
@@ -269,9 +444,12 @@ function AiGradingSettingsContent({
 
   const [useCustomApiKeys, setUseCustomApiKeys] = useState(initialUseCustomApiKeys);
   const [credentials, setCredentials] = useState(initialApiKeyCredentials);
+  const [customEndpoints, setCustomEndpoints] = useState(initialCustomEndpoints);
 
   const addModalState = useModalState();
   const deleteModalState = useModalState<AiGradingApiKeyCredential>();
+  const addEndpointModalState = useModalState();
+  const deleteEndpointModalState = useModalState<AiGradingCustomEndpoint>();
 
   const toggleMutation = useMutation({
     ...trpc.updateUseCustomApiKeys.mutationOptions(),
@@ -380,6 +558,83 @@ function AiGradingSettingsContent({
                 You must be a course owner to edit provider API keys.
               </Alert>
             )}
+
+            <div className="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3 mt-4">
+              <div>
+                <h2 className="h5 mb-1">Custom OpenAI-compatible endpoints</h2>
+                <p className="text-muted small mb-0">
+                  Add university or other OpenAI-compatible providers. Models are discovered from
+                  <code className="mx-1">/models</code> and do not include PrairieLearn pricing.
+                  They must support structured outputs; image and file grading may not work on every
+                  provider.
+                </p>
+              </div>
+              {canEdit && (
+                <button
+                  type="button"
+                  className="btn btn-sm btn-primary d-flex align-items-center gap-2"
+                  onClick={() => addEndpointModalState.showWithData(null)}
+                >
+                  <i className="bi-plus" aria-hidden="true" />
+                  Add endpoint
+                </button>
+              )}
+            </div>
+
+            <div className="table-responsive border rounded overflow-hidden">
+              <table
+                className="table table-sm table-hover mb-0"
+                aria-label="Custom OpenAI-compatible endpoints"
+              >
+                <thead>
+                  <tr>
+                    <th className="px-3 py-2">Name</th>
+                    <th className="px-3 py-2">Base URL</th>
+                    <th className="px-3 py-2">API key</th>
+                    <th className="px-3 py-2">Date added</th>
+                    {canEdit && (
+                      <th className="px-3 py-2" style={{ width: '1%' }}>
+                        <span className="visually-hidden">Actions</span>
+                      </th>
+                    )}
+                  </tr>
+                </thead>
+                <tbody>
+                  {customEndpoints.length === 0 ? (
+                    <tr>
+                      <td colSpan={canEdit ? 5 : 4} className="text-muted text-center py-4 px-3">
+                        No custom endpoints added yet.
+                      </td>
+                    </tr>
+                  ) : (
+                    customEndpoints.map((endpoint) => (
+                      <tr key={endpoint.id}>
+                        <td className="align-middle fw-bold px-3 py-2">{endpoint.name}</td>
+                        <td className="align-middle font-monospace px-3 py-2">
+                          {endpoint.baseUrl}
+                        </td>
+                        <td className="align-middle font-monospace px-3 py-2">
+                          {endpoint.apiKeyMasked}
+                        </td>
+                        <td className="align-middle px-3 py-2">{endpoint.dateAdded}</td>
+                        {canEdit && (
+                          <td className="align-middle px-3 py-2">
+                            <button
+                              type="button"
+                              className="btn btn-sm btn-outline-danger"
+                              aria-label={`Delete ${endpoint.name} endpoint`}
+                              onClick={() => deleteEndpointModalState.showWithData(endpoint)}
+                            >
+                              <i className="bi-trash" aria-hidden="true" />
+                            </button>
+                          </td>
+                        )}
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
 
@@ -417,6 +672,25 @@ function AiGradingSettingsContent({
             setCredentials((prev) => prev.filter((c) => c.id !== target.id));
           }
           deleteModalState.hide();
+        }}
+      />
+
+      <AddCustomEndpointModal
+        {...addEndpointModalState}
+        onSuccess={(endpoint) => {
+          setCustomEndpoints((prev) => [...prev, endpoint]);
+          addEndpointModalState.hide();
+        }}
+      />
+
+      <DeleteCustomEndpointModal
+        {...deleteEndpointModalState}
+        onSuccess={() => {
+          const target = deleteEndpointModalState.data;
+          if (target) {
+            setCustomEndpoints((prev) => prev.filter((e) => e.id !== target.id));
+          }
+          deleteEndpointModalState.hide();
         }}
       />
     </div>

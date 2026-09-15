@@ -14,6 +14,7 @@ import { typedAsyncHandler } from '../../../lib/res-locals.js';
 import { handleTrpcError } from '../../../lib/trpc.js';
 import { createAuthzMiddleware } from '../../../middlewares/authzHelper.js';
 import { selectCredentials } from '../../../models/ai-grading-credentials.js';
+import { selectCustomEndpoints } from '../../../models/ai-grading-custom-endpoints.js';
 import { getStripeClient } from '../../lib/billing/stripe.js';
 import {
   getCreditCheckoutSessionByStripeId,
@@ -22,7 +23,12 @@ import {
 
 import { InstructorInstanceAdminAiGrading } from './instructorInstanceAdminAiGrading.html.js';
 import { aiGradingSettingsRouter, createContext } from './trpc.js';
-import { formatCredential, formatCredentialRedacted } from './utils/format.js';
+import {
+  formatCredential,
+  formatCredentialRedacted,
+  formatCustomEndpoint,
+  formatCustomEndpointRedacted,
+} from './utils/format.js';
 
 const router = Router();
 
@@ -55,6 +61,12 @@ router.get(
       canEdit
         ? formatCredential(c, courseInstance.display_timezone)
         : formatCredentialRedacted(c, courseInstance.display_timezone),
+    );
+    const dbCustomEndpoints = await selectCustomEndpoints(courseInstance.id);
+    const customEndpoints = dbCustomEndpoints.map((endpoint) =>
+      canEdit
+        ? formatCustomEndpoint(endpoint, courseInstance.display_timezone)
+        : formatCustomEndpointRedacted(endpoint, courseInstance.display_timezone),
     );
 
     // Generate a prefix-based CSRF token scoped to the tRPC endpoint for this page.
@@ -119,6 +131,7 @@ router.get(
               trpcCsrfToken={trpcCsrfToken}
               initialUseCustomApiKeys={courseInstance.ai_grading_use_custom_api_keys}
               initialApiKeyCredentials={credentials}
+              initialCustomEndpoints={customEndpoints}
               canEdit={!!canEdit}
               stripePurchasingEnabled={stripePurchasingEnabled}
               initialCheckoutStatus={checkoutStatus}

@@ -10,8 +10,11 @@ import { OverlayTrigger } from '@prairielearn/ui';
 import { assertNever } from '@prairielearn/utils';
 
 import {
+  encodeAiGradingModelSelection,
+  parseAiGradingModelSelection,
+} from '../../../../ee/lib/ai-grading/ai-grading-model-selection.js';
+import {
   AI_GRADING_MODELS,
-  type AiGradingModelId,
   DEFAULT_AI_GRADING_MODEL,
 } from '../../../../ee/lib/ai-grading/ai-grading-models.shared.js';
 import { FREE_AI_GRADING_CREDIT_MILLI_DOLLARS_PER_REDEMPTION } from '../../../../ee/lib/ai-grading-free-credit-constants.js';
@@ -48,15 +51,26 @@ function getSelection(state: AiGradingModelSelectionModalState): 'all' | 'human_
 function getDefaultModel(
   aiGradingLastSelectedModel: string | null,
   availableProviders: EnumAiGradingProvider[],
-): AiGradingModelId {
-  const preferred = AI_GRADING_MODELS.find((m) => m.modelId === aiGradingLastSelectedModel);
-  if (preferred && availableProviders.includes(preferred.provider)) {
-    return preferred.modelId;
+  customEndpointModelIds: string[],
+): string {
+  const parsed = aiGradingLastSelectedModel
+    ? parseAiGradingModelSelection(aiGradingLastSelectedModel)
+    : null;
+  if (parsed?.kind === 'first_party') {
+    const preferred = AI_GRADING_MODELS.find((m) => m.modelId === parsed.modelId);
+    if (preferred && availableProviders.includes(preferred.provider)) {
+      return preferred.modelId;
+    }
+  }
+  if (
+    parsed?.kind === 'openai_compatible' &&
+    customEndpointModelIds.includes(aiGradingLastSelectedModel ?? '')
+  ) {
+    return aiGradingLastSelectedModel ?? DEFAULT_AI_GRADING_MODEL;
   }
   const firstAvailable = AI_GRADING_MODELS.find((m) => availableProviders.includes(m.provider));
-  if (firstAvailable) {
-    return firstAvailable.modelId;
-  }
+  if (firstAvailable) return firstAvailable.modelId;
+  if (customEndpointModelIds[0]) return customEndpointModelIds[0];
   return DEFAULT_AI_GRADING_MODEL;
 }
 
@@ -134,11 +148,11 @@ function ModelList({
   relativeCosts,
   onSelect,
 }: {
-  selectedModel: AiGradingModelId;
+  selectedModel: string;
   availableProviders: EnumAiGradingProvider[];
   aiGradingEnabled: boolean;
   relativeCosts: Record<string, string>;
-  onSelect: (modelId: AiGradingModelId) => void;
+  onSelect: (modelId: string) => void;
 }) {
   const recommended = AI_GRADING_MODELS.filter((m) => m.recommended);
   const other = AI_GRADING_MODELS.filter((m) => !m.recommended);
@@ -536,7 +550,7 @@ export function AiGradingModelSelectionModal({
   onSelectFirstSubmissions?: (n: number) => void;
   onSuccess: (
     data: { job_sequence_id: string; job_sequence_token: string },
-    modelId: AiGradingModelId,
+    modelId: string,
   ) => void;
   onHide: () => void;
   onExited: () => void;
@@ -571,8 +585,25 @@ export function AiGradingModelSelectionModal({
     enabled: show,
     refetchOnMount: 'always',
   });
-  const defaultModel = getDefaultModel(aiGradingLastSelectedModel, availableProviders);
-  const [selectedModel, setSelectedModel] = useState<AiGradingModelId>(defaultModel);
+  const { data: customAiGradingModels } = useQuery({
+    ...trpc.manualGrading.customAiGradingModels.queryOptions(),
+    enabled: show && useCustomApiKeys,
+  });
+  const customEndpointModelIds = (customAiGradingModels?.endpoints ?? []).flatMap((endpoint) =>
+    endpoint.models.map((modelId) =>
+      encodeAiGradingModelSelection({
+        kind: 'openai_compatible',
+        endpointId: endpoint.id,
+        modelId,
+      }),
+    ),
+  );
+  const defaultModel = getDefaultModel(
+    aiGradingLastSelectedModel,
+    availableProviders,
+    customEndpointModelIds,
+  );
+  const [selectedModel, setSelectedModel] = useState<string>(defaultModel);
 
   const handleClose = useCallback(() => {
     setSelectedModel(defaultModel);
@@ -607,13 +638,18 @@ export function AiGradingModelSelectionModal({
     [modalState, selectedModel, mutate, onSuccess, onHide],
   );
 
-  const selectedModelProvider = AI_GRADING_MODELS.find(
-    (m) => m.modelId === selectedModel,
-  )?.provider;
+  const selectedModelParsed = parseAiGradingModelSelection(selectedModel);
+  const selectedModelProvider =
+    selectedModelParsed?.kind === 'first_party'
+      ? AI_GRADING_MODELS.find((m) => m.modelId === selectedModelParsed.modelId)?.provider
+      : undefined;
 
-  const isSelectedModelAvailable = selectedModelProvider
-    ? availableProviders.includes(selectedModelProvider)
-    : false;
+  const isSelectedModelAvailable =
+    selectedModelParsed?.kind === 'openai_compatible'
+      ? customEndpointModelIds.includes(selectedModel)
+      : selectedModelProvider
+        ? availableProviders.includes(selectedModelProvider)
+        : false;
 
   const aiGradingAvailabilityState = run<AiGradingAvailabilityState>(() => {
     // Show the spinner while a refetch is in flight so the error UI doesn't
@@ -632,7 +668,8 @@ export function AiGradingModelSelectionModal({
       return { kind: 'concurrency_limit', maxConcurrentJobs: max_concurrent_jobs };
     }
     if (useCustomApiKeys) {
-      if (availableProviders.length === 0) return { kind: 'no_keys' };
+      const hasCustomModels = customEndpointModelIds.length > 0;
+      if (availableProviders.length === 0 && !hasCustomModels) return { kind: 'no_keys' };
       return { kind: 'ready_with_keys' };
     }
     if (credit_balance_milli_dollars <= 0) {
@@ -701,6 +738,64 @@ export function AiGradingModelSelectionModal({
             relativeCosts={relativeCosts}
             onSelect={setSelectedModel}
           />
+          {useCustomApiKeys && (customAiGradingModels?.endpoints.length ?? 0) > 0 && (
+            <div className="mt-4">
+              <div className="d-flex flex-wrap justify-content-between align-items-baseline gap-2 mb-2">
+                <span className="fw-semibold">Custom endpoints</span>
+                <span className="text-muted small text-end">Pricing unavailable</span>
+              </div>
+              <p className="text-muted small">
+                Models are listed from each provider&apos;s <code>/models</code> endpoint. Choose a
+                model that supports structured outputs. Image and file grading may fail on some
+                providers; text grading should still succeed when the model can return JSON.
+              </p>
+              <div className="d-flex flex-column gap-3">
+                {customAiGradingModels?.endpoints.map((endpoint) => (
+                  <div key={endpoint.id}>
+                    <div className="fw-medium mb-1">{endpoint.name}</div>
+                    {endpoint.error ? (
+                      <div className="text-danger small">{endpoint.error}</div>
+                    ) : endpoint.models.length === 0 ? (
+                      <div className="text-muted small">No models returned by this endpoint.</div>
+                    ) : (
+                      <div className="d-flex flex-column gap-1">
+                        {endpoint.models.map((modelId) => {
+                          const value = encodeAiGradingModelSelection({
+                            kind: 'openai_compatible',
+                            endpointId: endpoint.id,
+                            modelId,
+                          });
+                          return (
+                            <label
+                              key={value}
+                              htmlFor={`model-${value}`}
+                              className={clsx('rounded-2 px-3 py-2 mb-0 border', {
+                                'border-primary bg-primary bg-opacity-10': selectedModel === value,
+                                'border-transparent': selectedModel !== value && aiGradingEnabled,
+                                'opacity-75 border-transparent': !aiGradingEnabled,
+                              })}
+                              style={{ cursor: aiGradingEnabled ? 'pointer' : 'default' }}
+                            >
+                              <Form.Check
+                                type="radio"
+                                id={`model-${value}`}
+                                name="ai-grading-model"
+                                className="mb-0"
+                                disabled={!aiGradingEnabled}
+                                checked={selectedModel === value}
+                                label={modelId}
+                                onChange={() => setSelectedModel(value)}
+                              />
+                            </label>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
           <BeforeYouGradeSection items={beforeYouGradeItems} />
         </Modal.Body>
 

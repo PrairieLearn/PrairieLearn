@@ -10,6 +10,12 @@ const encryptedColumns = [
     ciphertextColumnName: 'encrypted_secret_key',
     nullable: false,
   },
+  {
+    tableName: 'course_instance_ai_grading_custom_endpoints',
+    primaryKeyColumnName: 'id',
+    ciphertextColumnName: 'encrypted_secret_key',
+    nullable: false,
+  },
 ] as const;
 
 export async function runDatabaseEncryptionOperation({

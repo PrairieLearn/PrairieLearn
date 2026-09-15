@@ -5,14 +5,25 @@ import { z } from 'zod';
 
 import { config } from '../../../lib/config.js';
 import { EnumAiGradingProviderSchema } from '../../../lib/db-types.js';
-import { encryptForStorage } from '../../../lib/encrypted-storage.js';
+import { decryptFromStorage, encryptForStorage } from '../../../lib/encrypted-storage.js';
 import type { ResLocalsForPage } from '../../../lib/res-locals.js';
 import {
   deleteCredential,
   updateUseCustomApiKeys,
   upsertCredential,
 } from '../../../models/ai-grading-credentials.js';
+import {
+  deleteCustomEndpoint,
+  insertCustomEndpoint,
+  selectCustomEndpoint,
+} from '../../../models/ai-grading-custom-endpoints.js';
 import { selectInstitutionForCourse } from '../../../models/institution.js';
+import { listOpenAiCompatibleModels } from '../../lib/ai-grading/ai-grading-openai-compatible.js';
+import {
+  UnsafeAiEndpointUrlError,
+  assertSafeAiEndpointUrl,
+  normalizeAiEndpointBaseUrl,
+} from '../../lib/ai-grading/ssrf-safe-fetch.js';
 import {
   MAX_PURCHASE_MILLI_DOLLARS,
   MIN_PURCHASE_MILLI_DOLLARS,
@@ -28,7 +39,7 @@ import {
   selectCourseFreeCreditRedemptionsUsed,
 } from '../../models/ai-grading-free-credit-redemption.js';
 
-import { formatCredential } from './utils/format.js';
+import { formatCredential, formatCustomEndpoint } from './utils/format.js';
 
 export function createContext({ req, res }: CreateExpressContextOptions) {
   const locals = res.locals as ResLocalsForPage<'course-instance'>;
@@ -92,6 +103,86 @@ const addCredentialMutation = t.procedure
     return {
       credential: formatCredential(row, opts.ctx.course_instance.display_timezone),
     };
+  });
+
+const addCustomEndpointMutation = t.procedure
+  .use(requireEditPermission)
+  .concat(aiGradingFeatureProcedure)
+  .input(
+    z.object({
+      name: z.string().trim().min(1).max(100),
+      base_url: z.string().trim().min(1).max(2048),
+      secret_key: z.string().trim().min(1),
+    }),
+  )
+  .mutation(async (opts) => {
+    try {
+      await assertSafeAiEndpointUrl(opts.input.base_url);
+    } catch (err) {
+      if (err instanceof UnsafeAiEndpointUrlError) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: err.message });
+      }
+      throw err;
+    }
+
+    const base_url = normalizeAiEndpointBaseUrl(opts.input.base_url);
+    try {
+      const row = await insertCustomEndpoint({
+        course_instance_id: opts.ctx.course_instance.id,
+        name: opts.input.name,
+        base_url,
+        encrypted_secret_key: encryptForStorage(opts.input.secret_key),
+        created_by: opts.ctx.authn_user.id,
+      });
+      return {
+        endpoint: formatCustomEndpoint(row, opts.ctx.course_instance.display_timezone),
+      };
+    } catch (err) {
+      if (typeof err === 'object' && err !== null && 'code' in err && err.code === '23505') {
+        throw new TRPCError({
+          code: 'CONFLICT',
+          message: 'An endpoint with this name already exists for this course instance.',
+        });
+      }
+      throw err;
+    }
+  });
+
+const deleteCustomEndpointMutation = t.procedure
+  .use(requireEditPermission)
+  .concat(aiGradingFeatureProcedure)
+  .input(z.object({ endpoint_id: z.string() }))
+  .mutation(async (opts) => {
+    await deleteCustomEndpoint({
+      endpoint_id: opts.input.endpoint_id,
+      course_instance_id: opts.ctx.course_instance.id,
+      authn_user_id: opts.ctx.authn_user.id,
+    });
+  });
+
+const listCustomEndpointModelsQuery = t.procedure
+  .concat(aiGradingFeatureProcedure)
+  .input(z.object({ endpoint_id: z.string() }))
+  .query(async (opts) => {
+    const endpoint = await selectCustomEndpoint({
+      endpoint_id: opts.input.endpoint_id,
+      course_instance_id: opts.ctx.course_instance.id,
+    });
+    if (!endpoint) {
+      throw new TRPCError({ code: 'NOT_FOUND', message: 'Custom endpoint not found.' });
+    }
+    try {
+      const models = await listOpenAiCompatibleModels({
+        baseURL: endpoint.base_url,
+        apiKey: decryptFromStorage(endpoint.encrypted_secret_key),
+      });
+      return { models };
+    } catch (err) {
+      throw new TRPCError({
+        code: 'BAD_GATEWAY',
+        message: err instanceof Error ? err.message : 'Could not list models from this endpoint.',
+      });
+    }
   });
 
 const deleteCredentialMutation = t.procedure
@@ -237,6 +328,9 @@ export const aiGradingSettingsRouter = t.router({
   updateUseCustomApiKeys: updateUseCustomApiKeysMutation,
   addCredential: addCredentialMutation,
   deleteCredential: deleteCredentialMutation,
+  addCustomEndpoint: addCustomEndpointMutation,
+  deleteCustomEndpoint: deleteCustomEndpointMutation,
+  listCustomEndpointModels: listCustomEndpointModelsQuery,
   createCheckout: createCheckoutMutation,
   freeCreditStatus: freeCreditStatusQuery,
   redeemFreeCredit: redeemFreeCreditMutation,

@@ -26,7 +26,7 @@ The trace-sampling cookie generator accepts a scalar or array-valued `secretKey`
 
 ## `databaseEncryptionKey`
 
-The known persisted use of `databaseEncryptionKey` is `course_instance_ai_grading_credentials.encrypted_secret_key`. PrairieLearn continues to use its existing authenticated AES-256-GCM ciphertext format. It encrypts new values with the first configured key and attempts decryption with each key in order.
+The known persisted uses of `databaseEncryptionKey` are `course_instance_ai_grading_credentials.encrypted_secret_key` and `course_instance_ai_grading_custom_endpoints.encrypted_secret_key`. PrairieLearn continues to use its existing authenticated AES-256-GCM ciphertext format. It encrypts new values with the first configured key and attempts decryption with each key in order.
 
 After every PrairieLearn instance is using `[new, old]`, run the normal server entrypoint with `--database-encryption check` to count values requiring rotation. Run it with `--database-encryption rotate` to acquire a database-backed named lock, process bounded batches, and replace each value only if it has not changed concurrently. Rotation makes up to three passes to resolve concurrent-update conflicts and then rereads and authenticates every value with the primary key; it fails unless every row observed by the final scan is current. The operation is idempotent and may be rerun after a failure.
 

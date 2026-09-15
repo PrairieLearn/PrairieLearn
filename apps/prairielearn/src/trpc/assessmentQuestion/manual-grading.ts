@@ -4,10 +4,8 @@ import { z } from 'zod';
 import { run } from '@prairielearn/run';
 import { IdSchema } from '@prairielearn/zod';
 
-import {
-  AI_GRADING_MODEL_IDS,
-  type AiGradingModelId,
-} from '../../ee/lib/ai-grading/ai-grading-models.shared.js';
+import { AiGradingModelSelectionSchema } from '../../ee/lib/ai-grading/ai-grading-model-selection.js';
+import { listOpenAiCompatibleModels } from '../../ee/lib/ai-grading/ai-grading-openai-compatible.js';
 import { fillInstanceQuestionColumnEntries } from '../../ee/lib/ai-grading/ai-grading-stats.js';
 import {
   deleteAiGradingJobs,
@@ -28,11 +26,13 @@ import {
   redeemFreeAiGradingCredit,
   selectCourseFreeCreditRedemptionsUsed,
 } from '../../ee/models/ai-grading-free-credit-redemption.js';
+import { decryptFromStorage } from '../../lib/encrypted-storage.js';
 import { features } from '../../lib/features/index.js';
 import { generateJobSequenceToken } from '../../lib/generateJobSequenceToken.js';
 import { idsEqual } from '../../lib/id.js';
 import { stopJobSequence } from '../../lib/server-jobs.js';
 import { selectCreditPool } from '../../models/ai-grading-credit-pool.js';
+import { selectCustomEndpoints } from '../../models/ai-grading-custom-endpoints.js';
 import { selectCourseInstanceGraderStaff } from '../../models/course-instances.js';
 import { InstanceQuestionRowWithAIGradingStatsSchema } from '../../pages/instructorAssessmentManualGrading/assessmentQuestion/assessmentQuestion.types.js';
 import {
@@ -160,7 +160,7 @@ const aiGradeInstanceQuestionsMutation = t.procedure
   .input(
     z.object({
       selection: z.union([z.literal('all'), z.literal('human_graded'), z.string().array()]),
-      model_id: z.enum(AI_GRADING_MODEL_IDS as [AiGradingModelId, ...AiGradingModelId[]]),
+      model_id: AiGradingModelSelectionSchema,
     }),
   )
   .output(z.object({ job_sequence_id: z.string(), job_sequence_token: z.string() }))
@@ -313,9 +313,52 @@ const redeemFreeCreditMutation = t.procedure
     }
   });
 
+const customAiGradingModelsQuery = t.procedure
+  .use(requireCourseInstancePermissionView)
+  .use(requireAiGradingFeature)
+  .output(
+    z.object({
+      endpoints: z.array(
+        z.object({
+          id: z.string(),
+          name: z.string(),
+          models: z.array(z.string()),
+          error: z.string().nullable(),
+        }),
+      ),
+    }),
+  )
+  .query(async (opts) => {
+    if (!opts.ctx.course_instance.ai_grading_use_custom_api_keys) {
+      return { endpoints: [] };
+    }
+
+    const endpoints = await selectCustomEndpoints(opts.ctx.course_instance.id);
+    const listed = await Promise.all(
+      endpoints.map(async (endpoint) => {
+        try {
+          const models = await listOpenAiCompatibleModels({
+            baseURL: endpoint.base_url,
+            apiKey: decryptFromStorage(endpoint.encrypted_secret_key),
+          });
+          return { id: endpoint.id, name: endpoint.name, models, error: null };
+        } catch (err) {
+          return {
+            id: endpoint.id,
+            name: endpoint.name,
+            models: [],
+            error: err instanceof Error ? err.message : 'Could not list models from this endpoint.',
+          };
+        }
+      }),
+    );
+    return { endpoints: listed };
+  });
+
 export const manualGradingRouter = t.router({
   instances,
   aiGradingAvailabilityInfo,
+  customAiGradingModels: customAiGradingModelsQuery,
   setAiGradingMode: setAiGradingModeMutation,
   deleteAiGradingJobs: deleteAiGradingJobsMutation,
   deleteAiInstanceQuestionGroupings: deleteAiInstanceQuestionGroupingsMutation,
