@@ -418,7 +418,6 @@ function SettingsStep({
         className={clsx('mb-3', !selfEnrollmentEnabled && 'd-none')}
         type="checkbox"
         id="copy-self-enrollment-restrict-to-institution"
-        disabled={!selfEnrollmentEnabled}
         defaultChecked={selfEnrollmentRestrictToInstitution}
         {...register('self_enrollment_restrict_to_institution')}
         label={`Restrict self-enrollment to institution "${institutionLongName}"`}
