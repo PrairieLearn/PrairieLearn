@@ -3,7 +3,7 @@ import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import type { ReadableStream as NodeReadableStream } from 'node:stream/web';
 
-import type { HarnessAgentSession } from '@ai-sdk/harness/agent';
+import { type HarnessAgentSession, getHarnessErrorMessage } from '@ai-sdk/harness/agent';
 import {
   consumeStream,
   createUIMessageStream,
@@ -35,13 +35,16 @@ export async function streamConversation(
       conversationId: conversation.id,
       errorName: error instanceof Error ? error.name : 'UnknownError',
     });
-    return 'The agent could not finish. Start over to try again.';
+    const message = getHarnessErrorMessage(error);
+    return message === 'An error occurred.'
+      ? 'The agent could not finish. Start over to try again.'
+      : message;
   };
   try {
     const streamResponse = createUIMessageStreamResponse({
       stream: createUIMessageStream({
         execute: async ({ writer }) => {
-          conversation.runtime ??= await createSandboxAgent();
+          conversation.runtime ??= await createSandboxAgent(conversation.repository);
           abort.signal.throwIfAborted();
           const { agent } = conversation.runtime;
           session = await agent.createSession({

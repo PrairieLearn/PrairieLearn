@@ -1,3 +1,6 @@
+import { updateCourseColumn } from '../../models/course.js';
+import { selectUserByUid } from '../../models/user.js';
+
 import { createTest, expect } from './fixtures.js';
 
 const test = createTest({ isEnterprise: true, features: { 'vercel-course-agent': true } });
@@ -26,6 +29,13 @@ test('course agent streams replies, starts over, and collapses on desktop and mo
           .map((part) => `data: ${JSON.stringify(part)}\n\n`)
           .join('') + 'data: [DONE]\n\n',
     });
+  });
+  const user = await selectUserByUid('dev@example.com');
+  await updateCourseColumn({
+    courseId: courseInstance.course_id,
+    columnName: 'repository',
+    value: 'https://github.com/example/course.git',
+    authnUserId: user.id,
   });
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto(`/pl/course/${courseInstance.course_id}/course_admin/questions`);

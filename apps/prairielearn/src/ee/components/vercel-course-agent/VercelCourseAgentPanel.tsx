@@ -90,7 +90,9 @@ function Conversation({
               <div className="course-agent-empty text-center text-muted px-3 py-5">
                 <i className="bi bi-stars fs-2 text-primary" aria-hidden="true" />
                 <p className="fw-semibold text-body mt-3 mb-1">What would you like to build?</p>
-                <p className="small mb-0">Try creating course content in a temporary workspace.</p>
+                <p className="small mb-0">
+                  Ask the agent to create or improve PrairieLearn course content.
+                </p>
               </div>
             )}
             {messages.map((message) =>
@@ -135,7 +137,7 @@ function Conversation({
                   ? renderAppError(createError, { UNKNOWN: ({ message }) => message })
                   : stopped
                     ? 'Generation stopped. Start over to continue.'
-                    : 'The agent could not finish. Start over to try again.'}
+                    : error?.message}
               </Alert>
             )}
             {showDiagnostics && (

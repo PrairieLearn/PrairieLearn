@@ -45,6 +45,7 @@ beforeEach(() => {
 afterEach(() => vi.resetAllMocks());
 
 const owner = { courseId: '1', userId: '2', authnUserId: '3' };
+const course = { repository: 'git@github.com:example/course.git', branch: 'main' };
 
 async function runTurn(conversationId: string, prompt: string) {
   const conversation = claimConversation(conversationId, owner);
@@ -68,7 +69,7 @@ async function runTurn(conversationId: string, prompt: string) {
 }
 
 test('streams native SDK output, releases the claim after draining, and resumes with only new text', async () => {
-  const { conversationId } = createConversation(owner);
+  const { conversationId } = createConversation(owner, course);
   const first = await runTurn(conversationId, 'First message');
   expect(first.text).toContain('Hello from Codex');
   expect(first.conversation.busy).toBe(false);
@@ -87,7 +88,7 @@ test('streams native SDK output, releases the claim after draining, and resumes 
 
 test('redacts provider errors and stops failed sandboxes', async () => {
   fake.stream.mockRejectedValue(new Error('secret-provider-credential'));
-  const { conversationId } = createConversation(owner);
+  const { conversationId } = createConversation(owner, course);
   const { conversation, text } = await runTurn(conversationId, 'Hello');
   expect(text).toContain('Start over');
   expect(text).not.toContain('secret-provider-credential');
@@ -106,7 +107,7 @@ test('aborts the native turn and stops the sandbox when the browser disconnects'
       },
     }),
   }));
-  const { conversationId } = createConversation(owner);
+  const { conversationId } = createConversation(owner, course);
   const conversation = claimConversation(conversationId, owner);
   let finished = Promise.resolve();
   const server = createServer((_req, res) => {
