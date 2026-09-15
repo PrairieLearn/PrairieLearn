@@ -54,7 +54,6 @@ export function StickySaveBar({
         <button
           type="submit"
           className="btn btn-sm btn-outline-secondary opacity-50 d-inline-flex align-items-center gap-1"
-          aria-label="Why saving is unavailable"
           aria-disabled="true"
           form={formId}
           onClick={(event) => event.preventDefault()}
