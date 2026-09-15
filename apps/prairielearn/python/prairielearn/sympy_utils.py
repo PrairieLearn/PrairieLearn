@@ -1386,7 +1386,7 @@ def try_parse_string_as_sympy(
             print(result.expr)
     """
     if allowed_types is None:
-        allowed_types = {"expression"}
+        allowed_types = {"all"} if allow_sets else {"expression"}
 
     try:
         expr_parsed = convert_string_to_sympy(
