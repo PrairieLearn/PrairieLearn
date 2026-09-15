@@ -1,5 +1,12 @@
 # @prairielearn/encrypted-storage
 
+## 1.1.2
+
+### Patch Changes
+
+- Updated dependencies [fce4634]
+  - @prairielearn/postgres@8.0.0
+
 ## 1.1.1
 
 ### Patch Changes
