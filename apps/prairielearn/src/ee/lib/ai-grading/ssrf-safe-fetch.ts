@@ -41,7 +41,7 @@ export function isBlockedIpAddress(address: string): boolean {
   return true;
 }
 
-export function parseAiEndpointUrl(raw: string): URL {
+function parseAiEndpointUrl(raw: string): URL {
   let url: URL;
   try {
     url = new URL(raw.trim());

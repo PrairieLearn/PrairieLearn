@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 import { AI_GRADING_MODEL_IDS, type AiGradingModelId } from './ai-grading-models.shared.js';
 
-export const CUSTOM_AI_GRADING_MODEL_PREFIX = 'openai-compatible:';
+const CUSTOM_AI_GRADING_MODEL_PREFIX = 'openai-compatible:';
 
 export type AiGradingModelSelection =
   | { kind: 'first_party'; modelId: AiGradingModelId }
@@ -26,10 +26,6 @@ export function parseAiGradingModelSelection(raw: string): AiGradingModelSelecti
   const modelId = rest.slice(separator + 1);
   if (!/^\d+$/.test(endpointId) || modelId.length === 0) return null;
   return { kind: 'openai_compatible', endpointId, modelId };
-}
-
-export function isFirstPartyAiGradingModel(raw: string): raw is AiGradingModelId {
-  return parseAiGradingModelSelection(raw)?.kind === 'first_party';
 }
 
 export const AiGradingModelSelectionSchema = z
