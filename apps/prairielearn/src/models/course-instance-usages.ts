@@ -29,7 +29,7 @@ import { execute, loadSqlEquiv } from '@prairielearn/postgres';
 
 import type { CounterClockwiseRotationDegrees } from '../ee/lib/ai-grading/types.js';
 import { calculateResponseCost } from '../lib/ai-util.js';
-import type { Config, config } from '../lib/config.js';
+import { type Config, config } from '../lib/config.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -129,7 +129,7 @@ export async function updateCourseInstanceUsagesForAiGradingResponses({
 }: {
   courseInstanceId: string;
   authnUserId: string;
-  model: keyof Config['costPerMillionTokens'];
+  model: string;
   gradingResponseWithRotationIssue?: GenerateTextResult<any, any, any>;
   rotationCorrections?: Record<
     string,
@@ -150,10 +150,17 @@ export async function updateCourseInstanceUsagesForAiGradingResponses({
 
   // A single upsert per grading operation avoids repeatedly contending on the
   // same daily usage row when a submission generates multiple AI responses.
-  const costAiGrading = responses.reduce(
-    (total, response) => total + calculateResponseCost({ model, usage: response.usage }),
-    0,
-  );
+  const costAiGrading = Object.hasOwn(config.costPerMillionTokens, model)
+    ? responses.reduce(
+        (total, response) =>
+          total +
+          calculateResponseCost({
+            model: model as keyof Config['costPerMillionTokens'],
+            usage: response.usage,
+          }),
+        0,
+      )
+    : 0;
 
   await updateCourseInstanceUsagesForAiGrading({
     courseInstanceId,
