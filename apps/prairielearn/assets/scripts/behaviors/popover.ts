@@ -114,7 +114,7 @@ onDocumentReady(() => {
       event.stopPropagation();
       closeOpenPopovers();
     },
-    true,
+    { capture: true },
   );
 
   on('click', 'body', (e) => {

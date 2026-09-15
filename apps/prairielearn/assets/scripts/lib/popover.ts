@@ -17,9 +17,8 @@ export function getPopoverTriggerForContainer(container: HTMLElement): HTMLEleme
   const popoverId = container.getAttribute('id');
   if (!popoverId) return null;
 
-  const escapedId = CSS.escape(popoverId);
   const popoverTrigger = document.querySelector<HTMLElement>(
-    `[aria-controls="${escapedId}"], [aria-describedby="${escapedId}"]`,
+    `[aria-controls="${CSS.escape(popoverId)}"], [aria-describedby="${CSS.escape(popoverId)}"]`,
   );
   return popoverTrigger;
 }
