@@ -62,7 +62,9 @@ function InstanceQuestionGradingPanelInner({
 
   const maxPoints = data.assessmentQuestion.maxPoints;
   const usePercentage = maxPoints > 0 && preferPercentage;
-  const maxRubricPoints = data.assessmentQuestion.maxManualPoints || maxPoints;
+  const maxRubricPoints = data.rubricData?.replaceAutoPoints
+    ? maxPoints
+    : data.assessmentQuestion.maxManualPoints || maxPoints;
   const showAutoPoints =
     data.assessmentQuestion.maxAutoPoints !== 0 ||
     Number(formState.autoPoints) !== 0 ||
@@ -105,6 +107,9 @@ function InstanceQuestionGradingPanelInner({
     if (data.context !== 'main') return;
     return subscribeToInstanceQuestionGradingPanelUpdates<InstanceQuestionGradingPanelProps>(
       ({ gradingPanelProps, preserveValues }) => {
+        // Keep the refreshed modifiedAt even when preserving unsaved values. Saving rubric
+        // settings can recompute the instance question, so restoring the old timestamp would make
+        // the next grade conflict with the grader's own rubric update.
         setData((current) => ({
           ...gradingPanelProps,
           context: current.context,

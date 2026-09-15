@@ -24,8 +24,9 @@ export function createFormState(
   data: InstanceQuestionGradingPanelProps,
   current?: GradingFormState,
 ): GradingFormState {
-  const maxRubricPoints =
-    data.assessmentQuestion.maxManualPoints || data.assessmentQuestion.maxPoints;
+  const maxRubricPoints = data.rubricData?.replaceAutoPoints
+    ? data.assessmentQuestion.maxPoints
+    : data.assessmentQuestion.maxManualPoints || data.assessmentQuestion.maxPoints;
   const rubricItemIds = new Set(data.rubricData?.items.map((item) => item.id));
   const selectedRubricItemIds = current
     ? new Set([...current.selectedRubricItemIds].filter((id) => rubricItemIds.has(id)))
