@@ -82,6 +82,7 @@ referenced by
     team_user_roles: FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
     team_users: FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
     user_sessions: FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
+    user_settings: FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
     variants: FOREIGN KEY (authn_user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
     variants: FOREIGN KEY (broken_by) REFERENCES users(id)
     variants: FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE

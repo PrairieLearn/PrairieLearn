@@ -16,16 +16,16 @@ import { parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs';
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 
 import { run } from '@prairielearn/run';
+import { getAppError } from '@prairielearn/trpc/client';
+import { QueryClientProviderDebug } from '@prairielearn/trpc/react';
 import { NuqsAdapter, OverlayTrigger, SplitPane, useModalState } from '@prairielearn/ui';
 
 import type { StaffAssessmentQuestionRow } from '../../../lib/assessment-question.shared.js';
-import { getAppError } from '../../../lib/client/errors.js';
 import type {
   StaffAssessment,
   StaffCourse,
   StaffCourseInstance,
 } from '../../../lib/client/safe-db-types.js';
-import { QueryClientProviderDebug } from '../../../lib/client/tanstackQuery.js';
 import { getQuestionCreateUrl } from '../../../lib/client/url.js';
 import type { EnumAssessmentTool, ZoneAssessmentJson } from '../../../schemas/infoAssessment.js';
 import type { AssessmentQuestionsError } from '../../../trpc/assessment/assessment-questions.js';

@@ -1,6 +1,8 @@
-import type { ColumnFiltersState, Table } from '@tanstack/react-table';
+import type { ColumnFiltersState, RowData } from '@tanstack/react-table';
 import { useMemo } from 'react';
 import { ButtonGroup, Dropdown } from 'react-bootstrap';
+
+import type { TanstackTableInstance } from '../tanstack-table.js';
 
 /**
  * Compares two filter values for deep equality using JSON serialization.
@@ -25,11 +27,11 @@ function getRelevantColumnIds(options: Record<string, ColumnFiltersState>): Set<
 /**
  * Gets the current filter values for the relevant columns from the table.
  */
-function getRelevantFilters<TData>(
-  table: Table<TData>,
+function getRelevantFilters<TData extends RowData>(
+  table: TanstackTableInstance<TData>,
   relevantColumnIds: Set<string>,
 ): ColumnFiltersState {
-  const allFilters = table.getState().columnFilters;
+  const allFilters = table.state.columnFilters;
   return allFilters.filter((f) => relevantColumnIds.has(f.id));
 }
 
@@ -66,14 +68,14 @@ function filtersMatchPreset(current: ColumnFiltersState, preset: ColumnFiltersSt
  * params) should treat a column missing from `onColumnFiltersChange`'s argument
  * as "reset to default".
  */
-export function PresetFilterDropdown<OptionName extends string, TData>({
+export function PresetFilterDropdown<OptionName extends string, TData extends RowData>({
   table,
   options,
   label = 'Filter',
   onSelect,
 }: {
   /** The TanStack Table instance */
-  table: Table<TData>;
+  table: TanstackTableInstance<TData>;
   /** Mapping of option names to their filter configurations */
   options: Record<OptionName, ColumnFiltersState>;
   /** Label prefix for the dropdown button (e.g., "Filter") */
@@ -101,7 +103,7 @@ export function PresetFilterDropdown<OptionName extends string, TData>({
   const handleOptionClick = (optionName: OptionName) => {
     const presetFilters = options[optionName];
 
-    const currentFilters = table.getState().columnFilters;
+    const currentFilters = table.state.columnFilters;
     const preservedFilters = currentFilters.filter((f) => !relevantColumnIds.has(f.id));
 
     table.setColumnFilters([...preservedFilters, ...presetFilters]);

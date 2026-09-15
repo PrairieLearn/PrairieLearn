@@ -5,8 +5,10 @@ import { pipeline } from 'node:stream/promises';
 
 import { ZipArchive } from 'archiver';
 
-import { getCourseAdminQuestionsUrl } from '../../lib/client/url.js';
+import { getCourseAdminQtiImportUrl, getCourseAdminQuestionsUrl } from '../../lib/client/url.js';
 import { deleteQtiImportDraft } from '../../lib/qti-import-drafts.js';
+import { selectCourseInstanceByShortName } from '../../models/course-instances.js';
+import { selectCourseByShortName } from '../../models/course.js';
 import type { UploadResponse } from '../../pages/instructorQtiImport/instructorQtiImport.types.js';
 
 import { expect, test } from './fixtures.js';
@@ -17,13 +19,22 @@ import { expect, test } from './fixtures.js';
  */
 async function buildQtiZip(
   destPath: string,
-  options?: { includeManifest?: boolean; resourceType?: string },
+  options?: {
+    assessmentId?: string;
+    assessmentTitle?: string;
+    includeManifest?: boolean;
+    questionId?: string;
+    resourceType?: string;
+  },
 ): Promise<void> {
+  const assessmentId = options?.assessmentId ?? 'test_assess_1';
+  const assessmentTitle = options?.assessmentTitle ?? 'E2E Import Quiz';
+  const questionId = options?.questionId ?? 'q_mc_1';
   const qtiXml = `<?xml version="1.0" encoding="UTF-8"?>
 <questestinterop xmlns="http://www.imsglobal.org/xsd/ims_qtiasiv1p2">
-  <assessment ident="test_assess_1" title="E2E Import Quiz">
+  <assessment ident="${assessmentId}" title="${assessmentTitle}">
     <section ident="root_section">
-      <item ident="q_mc_1" title="Sample MC Question">
+      <item ident="${questionId}" title="Sample MC Question">
         <itemmetadata>
           <qtimetadata>
             <qtimetadatafield>
@@ -70,8 +81,8 @@ async function buildQtiZip(
   const manifest = `<?xml version="1.0" encoding="UTF-8"?>
 <manifest identifier="test_manifest" xmlns="http://www.imsglobal.org/xsd/imsccv1p1/imscp_v1p1">
   <resources>
-    <resource identifier="test_assess_1" type="${options?.resourceType ?? 'imsqti_xmlv1p2/imscc_xmlv1p1/assessment'}">
-      <file href="test_assess_1/test_assess_1.xml"/>
+    <resource identifier="${assessmentId}" type="${options?.resourceType ?? 'imsqti_xmlv1p2/imscc_xmlv1p1/assessment'}">
+      <file href="${assessmentId}/${assessmentId}.xml"/>
     </resource>
   </resources>
 </manifest>`;
@@ -80,9 +91,9 @@ async function buildQtiZip(
   const output = createWriteStream(destPath);
   if (options?.includeManifest !== false) {
     archive.append(manifest, { name: 'imsmanifest.xml' });
-    archive.append(qtiXml, { name: 'test_assess_1/test_assess_1.xml' });
+    archive.append(qtiXml, { name: `${assessmentId}/${assessmentId}.xml` });
   } else {
-    archive.append(qtiXml, { name: 'test_assess_1.xml' });
+    archive.append(qtiXml, { name: `${assessmentId}.xml` });
   }
   void archive.finalize();
   await pipeline(archive, output);
@@ -386,14 +397,20 @@ async function buildQuestionBankZip(
 
 test.describe('QTI Import', () => {
   test('can navigate to the import page', async ({ page, courseInstance }) => {
-    await page.goto(
-      `/pl/course_instance/${courseInstance.id}/instructor/instance_admin/qti_import`,
-    );
+    await page.goto(getCourseAdminQtiImportUrl({ courseInstanceId: courseInstance.id }));
     await expect(page).toHaveTitle(/Import QTI content/);
     await page.waitForSelector('.js-hydrated-component');
 
     await expect(page.getByText('Import QTI content')).toBeVisible();
     await expect(page.getByLabel('Export file')).toBeVisible();
+  });
+
+  test('redirects the old instance admin import URL', async ({ page, courseInstance }) => {
+    await page.goto(
+      `/pl/course_instance/${courseInstance.id}/instructor/instance_admin/qti_import?return_to=questions`,
+    );
+    await expect(page).toHaveURL(/\/instructor\/course_admin\/qti_import\?return_to=questions$/);
+    await expect(page).toHaveTitle(/Import QTI content/);
   });
 
   test('import button appears on assessments page', async ({ page, courseInstance }) => {
@@ -409,7 +426,7 @@ test.describe('QTI Import', () => {
     const link = page.getByRole('link', { name: 'Import questions' });
 
     await expect(link).toBeVisible();
-    await expect(link).toHaveAttribute('href', /\/instance_admin\/qti_import\?return_to=questions/);
+    await expect(link).toHaveAttribute('href', /\/course_admin\/qti_import\?return_to=questions/);
   });
 
   test('can upload a QTI zip and see the review step', async ({
@@ -420,9 +437,7 @@ test.describe('QTI Import', () => {
     const zipPath = path.join(testCoursePath, 'qti-test-fixture.zip');
     await buildQtiZip(zipPath);
 
-    await page.goto(
-      `/pl/course_instance/${courseInstance.id}/instructor/instance_admin/qti_import`,
-    );
+    await page.goto(getCourseAdminQtiImportUrl({ courseInstanceId: courseInstance.id }));
     await page.waitForSelector('.js-hydrated-component');
 
     await page.getByLabel('Export file').setInputFiles(zipPath);
@@ -448,9 +463,7 @@ test.describe('QTI Import', () => {
     const zipPath = path.join(testCoursePath, 'qti-no-manifest-fixture.zip');
     await buildQtiZip(zipPath, { includeManifest: false });
 
-    await page.goto(
-      `/pl/course_instance/${courseInstance.id}/instructor/instance_admin/qti_import`,
-    );
+    await page.goto(getCourseAdminQtiImportUrl({ courseInstanceId: courseInstance.id }));
     await page.waitForSelector('.js-hydrated-component');
 
     await page.getByLabel('Export file').setInputFiles(zipPath);
@@ -468,9 +481,7 @@ test.describe('QTI Import', () => {
     const zipPath = path.join(testCoursePath, 'qti-unused-asset-fixture.zip');
     await buildQtiZipWithUnusedAsset(zipPath);
 
-    await page.goto(
-      `/pl/course_instance/${courseInstance.id}/instructor/instance_admin/qti_import`,
-    );
+    await page.goto(getCourseAdminQtiImportUrl({ courseInstanceId: courseInstance.id }));
     await page.waitForSelector('.js-hydrated-component');
 
     await page.getByLabel('Export file').setInputFiles(zipPath);
@@ -494,9 +505,7 @@ test.describe('QTI Import', () => {
     const zipPath = path.join(testCoursePath, 'qti-plain-imsqti-fixture.zip');
     await buildQtiZip(zipPath, { resourceType: 'imsqti_xmlv1p2' });
 
-    await page.goto(
-      `/pl/course_instance/${courseInstance.id}/instructor/instance_admin/qti_import`,
-    );
+    await page.goto(getCourseAdminQtiImportUrl({ courseInstanceId: courseInstance.id }));
     await page.waitForSelector('.js-hydrated-component');
 
     await page.getByLabel('Export file').setInputFiles(zipPath);
@@ -515,9 +524,7 @@ test.describe('QTI Import', () => {
     const zipPath = path.join(testCoursePath, 'qti-embedded-bank-course-fixture.imscc');
     await buildEmbeddedBankCourseZip(zipPath);
 
-    await page.goto(
-      `/pl/course_instance/${courseInstance.id}/instructor/instance_admin/qti_import`,
-    );
+    await page.goto(getCourseAdminQtiImportUrl({ courseInstanceId: courseInstance.id }));
     await page.waitForSelector('.js-hydrated-component');
 
     await page.getByLabel('Export file').setInputFiles(zipPath);
@@ -540,9 +547,7 @@ test.describe('QTI Import', () => {
     await buildExternalBankAssessmentZip(assessmentZipPath, { includeCourseId: false });
     await buildQuestionBankZip(bankZipPath);
 
-    await page.goto(
-      `/pl/course_instance/${courseInstance.id}/instructor/instance_admin/qti_import`,
-    );
+    await page.goto(getCourseAdminQtiImportUrl({ courseInstanceId: courseInstance.id }));
     await page.waitForSelector('.js-hydrated-component');
 
     await page.getByLabel('Export file').setInputFiles(assessmentZipPath);
@@ -580,9 +585,7 @@ test.describe('QTI Import', () => {
     await buildExternalBankAssessmentZip(assessmentZipPath);
     await buildQuestionBankZip(bankZipPath);
 
-    await page.goto(
-      `/pl/course_instance/${courseInstance.id}/instructor/instance_admin/qti_import`,
-    );
+    await page.goto(getCourseAdminQtiImportUrl({ courseInstanceId: courseInstance.id }));
     await page.waitForSelector('.js-hydrated-component');
 
     await page.getByLabel('Export file').setInputFiles(assessmentZipPath);
@@ -634,9 +637,7 @@ test.describe('QTI Import', () => {
       questionTitle: 'Unmatched Question',
     });
 
-    await page.goto(
-      `/pl/course_instance/${courseInstance.id}/instructor/instance_admin/qti_import`,
-    );
+    await page.goto(getCourseAdminQtiImportUrl({ courseInstanceId: courseInstance.id }));
     await page.waitForSelector('.js-hydrated-component');
 
     await page.getByLabel('Export file').setInputFiles(assessmentZipPath);
@@ -683,7 +684,7 @@ test.describe('QTI Import', () => {
     const bankUploadStartedPromise = new Promise<void>((resolve) => {
       bankUploadStarted = resolve;
     });
-    await page.route('**/instructor/instance_admin/qti_import/upload', async (route) => {
+    await page.route('**/course_admin/qti_import/upload', async (route) => {
       bankUploadStarted();
       await continueBankUploadPromise;
       await route.fallback();
@@ -702,7 +703,7 @@ test.describe('QTI Import', () => {
     await expect(secondBankUploadButton).not.toContainText('Uploading');
 
     continueBankUpload!();
-    await page.unroute('**/instructor/instance_admin/qti_import/upload');
+    await page.unroute('**/course_admin/qti_import/upload');
 
     await expect(page.getByText('Matched 1 question bank from that upload.')).toBeVisible({
       timeout: 15000,
@@ -729,9 +730,7 @@ test.describe('QTI Import', () => {
     const zipPath = path.join(testCoursePath, 'qti-test-fixture.zip');
     await buildQtiZip(zipPath);
 
-    await page.goto(
-      `/pl/course_instance/${courseInstance.id}/instructor/instance_admin/qti_import`,
-    );
+    await page.goto(getCourseAdminQtiImportUrl({ courseInstanceId: courseInstance.id }));
     await page.waitForSelector('.js-hydrated-component');
 
     // Upload and review the export before creating the PrairieLearn assessment.
@@ -791,6 +790,49 @@ test.describe('QTI Import', () => {
     });
   });
 
+  test('returns to the questions page of the selected course instance', async ({
+    page,
+    courseInstance,
+    testCoursePath,
+  }) => {
+    const zipPath = path.join(testCoursePath, 'qti-target-fixture.zip');
+    await buildQtiZip(zipPath, {
+      assessmentId: 'target_assess_1',
+      assessmentTitle: 'E2E Target Quiz',
+      questionId: 'target_q_mc_1',
+    });
+    const course = await selectCourseByShortName('QA 101');
+    const target = await selectCourseInstanceByShortName({ course, shortName: 'public' });
+    const targetQuestionsUrl = getCourseAdminQuestionsUrl({ courseInstanceId: target.id });
+
+    // Start from one instance's questions page but target a different instance.
+    await page.goto(
+      getCourseAdminQtiImportUrl({ courseInstanceId: courseInstance.id, returnTo: 'questions' }),
+    );
+    await page.waitForSelector('.js-hydrated-component');
+    await page.getByLabel('Target course instance').selectOption(target.id);
+    await page.getByLabel('Export file').setInputFiles(zipPath);
+    await page.getByRole('button', { name: 'Import content' }).click();
+    await expect(page.getByRole('button', { name: 'Import 1 assessment' })).toBeEnabled({
+      timeout: 15000,
+    });
+
+    await page.getByRole('button', { name: 'Import 1 assessment' }).click();
+    await page.waitForURL((url) => url.pathname === targetQuestionsUrl, { timeout: 30000 });
+    await expect(page.getByText('1 assessment imported successfully.')).toBeVisible();
+
+    const assessmentInfo = JSON.parse(
+      await readFile(
+        path.join(
+          testCoursePath,
+          'courseInstances/public/assessments/e2e-target-quiz/infoAssessment.json',
+        ),
+        'utf8',
+      ),
+    );
+    expect(assessmentInfo.title).toBe('E2E Target Quiz');
+  });
+
   test('shows a clear error when review draft files have expired', async ({
     page,
     courseInstance,
@@ -799,14 +841,12 @@ test.describe('QTI Import', () => {
     const zipPath = path.join(testCoursePath, 'qti-expired-draft-fixture.zip');
     await buildQtiZip(zipPath);
 
-    await page.goto(
-      `/pl/course_instance/${courseInstance.id}/instructor/instance_admin/qti_import`,
-    );
+    await page.goto(getCourseAdminQtiImportUrl({ courseInstanceId: courseInstance.id }));
     await page.waitForSelector('.js-hydrated-component');
 
     const uploadResponsePromise = page.waitForResponse(
       (response) =>
-        response.url().includes('/instructor/instance_admin/qti_import/upload') &&
+        response.url().includes('/course_admin/qti_import/upload') &&
         response.request().method() === 'POST',
     );
     await page.getByLabel('Export file').setInputFiles(zipPath);
@@ -833,9 +873,7 @@ test.describe('QTI Import', () => {
     const zipPath = path.join(testCoursePath, 'qti-test-fixture.zip');
     await buildQtiZip(zipPath);
 
-    await page.goto(
-      `/pl/course_instance/${courseInstance.id}/instructor/instance_admin/qti_import`,
-    );
+    await page.goto(getCourseAdminQtiImportUrl({ courseInstanceId: courseInstance.id }));
     await page.waitForSelector('.js-hydrated-component');
 
     await page.getByLabel('Export file').setInputFiles(zipPath);
@@ -861,9 +899,7 @@ test.describe('QTI Import', () => {
     await buildQtiZip(zipPath);
 
     // Seed the course with the imported question.
-    await page.goto(
-      `/pl/course_instance/${courseInstance.id}/instructor/instance_admin/qti_import`,
-    );
+    await page.goto(getCourseAdminQtiImportUrl({ courseInstanceId: courseInstance.id }));
     await page.waitForSelector('.js-hydrated-component');
     await page.getByLabel('Export file').setInputFiles(zipPath);
     await page.getByRole('button', { name: 'Import content' }).click();
@@ -872,9 +908,7 @@ test.describe('QTI Import', () => {
     await page.waitForURL(/\/instance_admin\/assessments/, { timeout: 30000 });
 
     // Uploading the same export again should surface conflict controls.
-    await page.goto(
-      `/pl/course_instance/${courseInstance.id}/instructor/instance_admin/qti_import`,
-    );
+    await page.goto(getCourseAdminQtiImportUrl({ courseInstanceId: courseInstance.id }));
     await page.waitForSelector('.js-hydrated-component');
     await page.getByLabel('Export file').setInputFiles(zipPath);
     await page.getByRole('button', { name: 'Import content' }).click();
@@ -889,9 +923,7 @@ test.describe('QTI Import', () => {
     const zipPath = path.join(testCoursePath, 'qti-test-fixture.zip');
     await buildQtiZip(zipPath);
 
-    await page.goto(
-      `/pl/course_instance/${courseInstance.id}/instructor/instance_admin/qti_import`,
-    );
+    await page.goto(getCourseAdminQtiImportUrl({ courseInstanceId: courseInstance.id }));
     await page.waitForSelector('.js-hydrated-component');
 
     await page.getByLabel('Export file').setInputFiles(zipPath);

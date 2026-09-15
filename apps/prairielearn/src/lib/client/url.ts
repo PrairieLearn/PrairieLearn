@@ -322,6 +322,7 @@ export const QUESTION_TABLE_FILTER_URL_KEYS = {
   external_grading_image: 'extImage',
   workspace_image: 'wsImage',
   single_variant: 'singleVariant',
+  partial_credit: 'partialCredit',
   has_preferences: 'preferences',
 } as const;
 
@@ -350,6 +351,13 @@ export function getCourseAdminQuestionsUrl(
   );
 
   return `${baseUrl}?${searchParams.toString()}`;
+}
+
+export function getCourseAdminQtiImportUrl(
+  parts: CourseAdminUrlParts & { returnTo?: 'questions' | 'assessments' },
+): string {
+  const baseUrl = `${getCourseAdminUrl(parts)}/qti_import`;
+  return parts.returnTo === 'questions' ? `${baseUrl}?return_to=questions` : baseUrl;
 }
 
 export function getQuestionUrl({
@@ -403,6 +411,10 @@ export function getEndExamExitUrl(): string {
 }
 
 // tRPC scope URLs
+
+export function getUserTrpcUrl(): string {
+  return '/pl/user/trpc';
+}
 
 export function getAdministratorTrpcUrl(): string {
   return '/pl/administrator/trpc';

@@ -1,8 +1,8 @@
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
+import { getAppError } from '@prairielearn/trpc/client';
 
-import { getAppError } from '../lib/client/errors.js';
 import { getAssessmentTrpcUrl } from '../lib/client/url.js';
 import { config } from '../lib/config.js';
 import { selectAssessmentByTid } from '../models/assessment.js';

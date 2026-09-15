@@ -3,21 +3,22 @@ CREATE FUNCTION
         IN assessment_id bigint,
         IN authz_data jsonb,
         IN req_date timestamptz,
-        IN display_timezone text,
         OUT authorized boolean,      -- Is this assessment available for the given user?
         OUT exam_access_end timestamptz, -- If in exam mode, when will access end?
         OUT credit integer,          -- How much credit will they receive?
-        OUT credit_date_string text, -- For display to the user.
+        OUT credit_end_date timestamptz,
+        OUT next_active_date timestamptz,
+        OUT next_active_credit integer,
         OUT time_limit_min integer,  -- The time limit (if any) for this assessment.
         OUT password text,           -- The password (if any) for this assessment.
         OUT mode enum_mode,          -- The mode for this assessment.
         OUT show_closed_assessment boolean, -- If students can view the assessment after it is closed.
         OUT show_closed_assessment_score boolean, -- If students can view their grade after the assessment is closed
         OUT active boolean,         -- If the assessment is active
-        OUT next_active_time text,  -- The next time the assessment becomes active. This is non-null only if the assessment is not currently active but will be later.
-        OUT access_rules jsonb,      -- For display to the user. The currently active rule is marked by 'active' = TRUE.
+        OUT access_rules jsonb,      -- Raw access rule data. The currently active rule is marked by 'active' = TRUE.
         OUT show_before_release boolean, -- Always false for the legacy path; the modern path overrides this.
-        OUT access_timeline jsonb    -- Always empty for the legacy path; the modern path populates this.
+        OUT access_timeline jsonb,   -- Always empty for the legacy path; the modern path populates this.
+        OUT staff_override boolean
     )
 AS $$
 DECLARE
@@ -34,8 +35,7 @@ BEGIN
             (authz_data->>'course_instance_role')::enum_course_instance_role,
             (authz_data->'user'->>'id')::bigint,
             authz_data->'user'->>'uid',
-            req_date,
-            display_timezone
+            req_date
         );
 
     -- Assessment access is granted based only on effective user permissions.
@@ -87,7 +87,9 @@ BEGIN
     -- all other variables are from the effective user authorization
     exam_access_end := user_result.exam_access_end;
     credit := user_result.credit;
-    credit_date_string := user_result.credit_date_string;
+    credit_end_date := user_result.credit_end_date;
+    next_active_date := user_result.next_active_date;
+    next_active_credit := user_result.next_active_credit;
     time_limit_min := user_result.time_limit_min;
     password := user_result.password;
     access_rules := user_result.access_rules;
@@ -95,7 +97,7 @@ BEGIN
     show_closed_assessment := user_result.show_closed_assessment;
     show_closed_assessment_score := user_result.show_closed_assessment_score;
     active := user_result.active;
-    next_active_time := user_result.next_active_time;
+    staff_override := user_result.staff_override;
     show_before_release := false;
     access_timeline := '[]'::jsonb;
 END;

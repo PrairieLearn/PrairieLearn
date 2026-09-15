@@ -3,6 +3,7 @@ import asyncHandler from 'express-async-handler';
 
 import * as error from '@prairielearn/error';
 import { Hydrate } from '@prairielearn/react/server';
+import { isTrpcRequest } from '@prairielearn/trpc/express';
 
 import { PageLayout } from '../components/PageLayout.js';
 import {
@@ -10,7 +11,6 @@ import {
   CoursePageAuthzDataSchema,
 } from '../lib/authz-data-lib.js';
 import { extractPageContext } from '../lib/client/page-context.js';
-import { isTrpcRequest } from '../lib/trpc.js';
 
 import {
   AuthzAccessMismatch,

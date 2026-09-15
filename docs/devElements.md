@@ -124,6 +124,10 @@ All functions above have equivalents in [question code](question/server.md) (i.e
 
 It's likely that your element will depend on certain client-side assets, such as scripts or stylesheets. To keep clean separation of HTML, CSS, and JS, you can place those dependencies in other files. If you depend on libraries like `lodash` or `d3`, you can also link to node modules containing these libraries. PrairieLearn will compile a list of all dependencies needed by all elements on a page, deduplicate the dependencies, and ensure they are loaded on the page.
 
+!!! warning
+
+    Files referenced from an element's `dependencies` or `dynamicDependencies` must be browser-loadable as standalone assets. They must be bundled or otherwise self-contained, and should not rely on additional `import`/`require` resolution from the browser runtime.
+
 Dependencies are listed in your element's `info.json`. You can configure them for your element as follows:
 
 ```json title="info.json"

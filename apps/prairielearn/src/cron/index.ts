@@ -286,12 +286,7 @@ async function runJobs(jobsList: CronJob[]) {
           span.setStatus({ code: SpanStatusCode.OK });
         } catch (err: any) {
           debug(`runJobs(): error running ${job.name}: ${err}`);
-          logger.error(`cron: ${job.name} failure: ` + String(err), {
-            message: err.message,
-            stack: err.stack,
-            data: JSON.stringify(err.data),
-            cronUuid,
-          });
+          logger.error(`cron: ${job.name} failure`, { err, cronUuid });
 
           Sentry.captureException(err, {
             tags: {

@@ -130,15 +130,15 @@ export async function updateCourseInstanceUsagesForAiGradingResponses({
   courseInstanceId: string;
   authnUserId: string;
   model: keyof Config['costPerMillionTokens'];
-  gradingResponseWithRotationIssue?: GenerateTextResult<any, any>;
+  gradingResponseWithRotationIssue?: GenerateTextResult<any, any, any>;
   rotationCorrections?: Record<
     string,
     {
       degreesRotated: CounterClockwiseRotationDegrees;
-      response: GenerateTextResult<any, any>;
+      response: GenerateTextResult<any, any, any>;
     }
   >;
-  finalGradingResponse: GenerateTextResult<any, any>;
+  finalGradingResponse: GenerateTextResult<any, any, any>;
 }) {
   const responses = [
     ...(gradingResponseWithRotationIssue ? [gradingResponseWithRotationIssue] : []),

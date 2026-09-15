@@ -23,6 +23,7 @@ import {
 import { config } from '../lib/config.js';
 import { clearCookie } from '../lib/cookie.js';
 import { InstitutionSchema, UserSchema } from '../lib/db-types.js';
+import { getModeForRequest } from '../lib/exam-mode.js';
 import { features } from '../lib/features/index.js';
 import { idsEqual } from '../lib/id.js';
 import { selectCourseHasCourseInstances } from '../models/course-instances.js';
@@ -375,7 +376,7 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
     overrides: {
       // We allow unit tests to override the req_mode. Unit tests may also override
       // the user (middlewares/authn.ts) and the req_date (middlewares/date.ts).
-      mode: config.devMode ? req.cookies.pl_test_mode : null,
+      mode: await getModeForRequest(req, res),
     },
   });
 

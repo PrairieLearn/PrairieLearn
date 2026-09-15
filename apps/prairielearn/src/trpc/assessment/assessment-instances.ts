@@ -1,16 +1,16 @@
-import { Temporal } from '@js-temporal/polyfill';
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
 import { formatDate, formatInterval } from '@prairielearn/formatter';
 import * as sqldb from '@prairielearn/postgres';
-import { IdSchema } from '@prairielearn/zod';
+import { DatetimeLocalStringSchema, IdSchema } from '@prairielearn/zod';
 
 import {
   deleteAllAssessmentInstancesForAssessment,
   gradeAllAssessmentInstances,
 } from '../../lib/assessment.js';
 import { regradeAllAssessmentInstances } from '../../lib/regrading.js';
+import { parseLocalDateTime } from '../../lib/timezones.js';
 import {
   type TimeLimitBaseTime,
   updateAssessmentInstancesTimeLimit,
@@ -94,7 +94,7 @@ const setTimeLimit = t.procedure
     AssessmentInstanceIdsInputSchema.extend({
       action: TimeLimitActionSchema,
       time_add: z.number().optional(),
-      date: z.string().optional(),
+      date: DatetimeLocalStringSchema.optional(),
       reopen_closed: z.boolean().optional(),
     }),
   )
@@ -127,11 +127,10 @@ const setTimeLimit = t.procedure
         }
         base_time = 'exact_date';
         time_add = 0;
-        exact_date = new Date(
-          Temporal.PlainDateTime.from(input.date).toZonedDateTime(
-            ctx.course_instance.display_timezone,
-          ).epochMilliseconds,
-        );
+        // A datetime-local value cannot distinguish repeated times during fall-back.
+        // Choose the later occurrence, such as 01:30 CST rather than 01:30 CDT in
+        // America/Chicago, so the deadline does not expire while that time recurs.
+        exact_date = parseLocalDateTime(input.date, ctx.course_instance.display_timezone);
         break;
       case 'subtract':
         time_add *= -1;

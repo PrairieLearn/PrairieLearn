@@ -1,5 +1,11 @@
 # @prairielearn/flash
 
+## 3.0.9
+
+### Patch Changes
+
+- df28e68: Bump dependencies
+
 ## 3.0.8
 
 ### Patch Changes

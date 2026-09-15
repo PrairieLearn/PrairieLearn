@@ -10,6 +10,7 @@ import { cache } from '@prairielearn/cache';
 import { HttpStatusError } from '@prairielearn/error';
 import { execute, loadSqlEquiv } from '@prairielearn/postgres';
 import { assertNever } from '@prairielearn/utils';
+import { parseRequestBody } from '@prairielearn/zod';
 
 import * as authnLib from '../../../lib/authn.js';
 import { clearCookie, setCookie } from '../../../lib/cookie.js';
@@ -168,7 +169,7 @@ const OIDCAuthResponseSchema = z.union([
 router.post(
   '/callback',
   asyncHandler(async (req, res) => {
-    const authResponse = OIDCAuthResponseSchema.parse(req.body);
+    const authResponse = parseRequestBody(req, OIDCAuthResponseSchema);
 
     if ('error' in authResponse) {
       // e.g. launch_no_longer_valid

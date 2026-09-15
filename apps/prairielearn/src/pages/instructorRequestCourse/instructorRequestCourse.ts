@@ -14,8 +14,8 @@ import {
   isValidGithubUsername,
 } from '../../lib/github-utils.js';
 import { isEnterprise } from '../../lib/license.js';
-import * as opsbot from '../../lib/opsbot.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
+import * as slack from '../../lib/slack.js';
 import {
   checkCourseShortNameInInstitution,
   checkCourseTitleInInstitution,
@@ -223,7 +223,7 @@ router.post(
 
     // Do this in the background once we've redirected the response.
     try {
-      await opsbot.sendCourseRequestMessage(
+      await slack.sendCourseRequestMessage(
         '*Incoming course request*\n' +
           `Course rubric: ${short_name}\n` +
           `Course title: ${title}\n` +

@@ -60,7 +60,7 @@ export function compactPoints(pts: number[]): string {
     .flatMap((r) =>
       r.count > 2
         ? [`${r.value}×${r.count}`]
-        : Array.from<string>({ length: r.count }).fill(`${r.value}`),
+        : Array.from({ length: r.count }, () => r.value.toString()),
     )
     .join(', ');
 }

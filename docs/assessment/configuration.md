@@ -111,14 +111,11 @@ For more information about how to create your own assessment modules, see the [c
 
 ## Question order randomization
 
-The `shuffleQuestions` parameter controls whether questions on an assessment appear in the same order for all students, or whether this order is randomized for each student. The default value depends on the `type` of the assessment:
+The `shuffleQuestions` option controls the order of questions after [PrairieLearn selects them for an assessment instance](#assessment-instances-question-selection-and-question-order); it does not affect which questions are selected. When `true`, PrairieLearn randomizes question order within each zone for each assessment instance. When `false`, it preserves the relative order of the selected questions from `infoAssessment.json`. The zones themselves always retain their configured order, so questions can change position relative to one another only within the same zone.
 
-| Assessment type | `shuffleQuestions` default | Meaning                                                                                                                                                                                                                        |
-| --------------- | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `Homework`      | `false`                    | Homeworks default to using the same question order as in `infoAssessment.json` for all students.                                                                                                                               |
-| `Exam`          | `true`                     | Exams default to randomizing the question order individually for each student. This randomization happens within each zone, but the zones themselves always appear in the same order and there is no cross-zone randomization. |
+If `shuffleQuestions` is omitted, it defaults to `false` for `Homework` assessments and `true` for `Exam` assessments.
 
-If a `Homework` is set to shuffle the question order, it will use a unique-per-course number for each question, so that all students will still get the same question numbers (like #427), but they will not be in order. This makes it easy for students to discuss questions with course staff; they can say "I don't know how to do #427" and everyone will be seeing the same question #427. The main advantage of randomizing question order on Homeworks is to enable data collection on question difficulty and student behavior that is independent of the order in which questions are listed on the assessment.
+When shuffling is enabled for a `Homework` assessment, PrairieLearn also uses each question's course-wide number rather than a number based on its position in the assessment. `#427`, for example, refers to the same course question wherever it appears, giving students and course staff a consistent reference. Varying question order across assessment instances can also make analyses of question difficulty and student behavior less dependent on question position.
 
 ## Question specification
 

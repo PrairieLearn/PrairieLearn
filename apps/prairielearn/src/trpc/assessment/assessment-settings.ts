@@ -7,6 +7,7 @@ import { z } from 'zod';
 import { HttpStatusError } from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import { run } from '@prairielearn/run';
+import { throwAppError } from '@prairielearn/trpc/server';
 
 import { StaffAssessmentSchema } from '../../lib/client/safe-db-types.js';
 import { type EnumAssessmentType, EnumAssessmentTypeSchema } from '../../lib/db-types.js';
@@ -33,7 +34,6 @@ import {
   type AssessmentJsonInput,
   EnumAssessmentToolSchema,
 } from '../../schemas/infoAssessment.js';
-import { throwAppError } from '../app-errors.js';
 
 import { requireCoursePermissionEdit, t } from './init.js';
 

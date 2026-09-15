@@ -5,6 +5,7 @@ import z from 'zod';
 import * as sqldb from '@prairielearn/postgres';
 import { Hydrate } from '@prairielearn/react/server';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
+import { getCanonicalTimezones } from '@prairielearn/utils/timezone';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { getSupportedAuthenticationProviders } from '../../lib/authn-providers.js';
@@ -17,7 +18,6 @@ import { getAdministratorTrpcUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
 import { AuthnProviderSchema } from '../../lib/db-types.js';
 import { isEnterprise } from '../../lib/license.js';
-import { getCanonicalTimezones } from '../../lib/timezones.js';
 
 import { AdministratorInstitutionsTable } from './components/AdministratorInstitutionsTable.js';
 
@@ -38,7 +38,7 @@ router.get(
       withAuthzData: false,
     });
     const institutions = await sqldb.queryRows(sql.select_institutions, InstitutionRowSchema);
-    const availableTimezones = await getCanonicalTimezones();
+    const availableTimezones = getCanonicalTimezones();
     const allSupportedProviders = await getSupportedAuthenticationProviders();
 
     // Only show Google and Microsoft for institution creation. Other providers

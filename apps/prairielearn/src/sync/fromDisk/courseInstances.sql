@@ -180,19 +180,12 @@ WITH
       display_timezone = src.display_timezone,
       json_comment = (src.data ->> 'comment')::jsonb,
       modern_publishing = (src.data ->> 'modern_publishing')::boolean,
-      publishing_start_date = input_date (
-        src.data ->> 'publishing_start_date',
-        src.display_timezone
-      ),
-      publishing_end_date = input_date (
-        src.data ->> 'publishing_end_date',
-        src.display_timezone
-      ),
+      publishing_start_date = (src.data ->> 'publishing_start_date')::timestamptz,
+      publishing_end_date = (src.data ->> 'publishing_end_date')::timestamptz,
       self_enrollment_enabled = (src.data ->> 'self_enrollment_enabled')::boolean,
-      self_enrollment_enabled_before_date = input_date (
-        src.data ->> 'self_enrollment_enabled_before_date',
-        src.display_timezone
-      ),
+      self_enrollment_enabled_before_date = (
+        src.data ->> 'self_enrollment_enabled_before_date'
+      )::timestamptz,
       self_enrollment_restrict_to_institution = (
         src.data ->> 'self_enrollment_restrict_to_institution'
       )::boolean,
@@ -224,8 +217,8 @@ WITH
       ci.course_instance_id,
       number,
       jsonb_array_to_text_array (access_rule -> 'uids'),
-      input_date (access_rule ->> 'start_date', ci.display_timezone),
-      input_date (access_rule ->> 'end_date', ci.display_timezone),
+      (access_rule ->> 'start_date')::timestamptz,
+      (access_rule ->> 'end_date')::timestamptz,
       access_rule ->> 'institution',
       access_rule -> 'comment'
     FROM

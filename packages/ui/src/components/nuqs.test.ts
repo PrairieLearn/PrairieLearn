@@ -1,4 +1,4 @@
-import type { SortingState } from '@tanstack/table-core';
+import type { SortingState } from '@tanstack/react-table';
 import { describe, expect, it } from 'vitest';
 
 import {
@@ -146,26 +146,26 @@ describe('parseAsColumnPinningState', () => {
   const parser = parseAsColumnPinningState;
 
   it('parses empty string as no pinned columns', () => {
-    expect(parser.parse('')).toEqual({ left: [], right: [] });
+    expect(parser.parse('')).toEqual({ start: [], end: [] });
   });
 
-  it('parses comma-separated columns as left-pinned', () => {
-    expect(parser.parse('a,b')).toEqual({ left: ['a', 'b'], right: [] });
-    expect(parser.parse('c')).toEqual({ left: ['c'], right: [] });
+  it('parses comma-separated columns as start-pinned', () => {
+    expect(parser.parse('a,b')).toEqual({ start: ['a', 'b'], end: [] });
+    expect(parser.parse('c')).toEqual({ start: ['c'], end: [] });
   });
 
-  it('serializes left-pinned columns as comma-separated string', () => {
-    expect(parser.serialize({ left: ['a', 'b'], right: [] })).toBe('a,b');
-    expect(parser.serialize({ left: [], right: [] })).toBe('');
+  it('serializes start-pinned columns as comma-separated string', () => {
+    expect(parser.serialize({ start: ['a', 'b'], end: [] })).toBe('a,b');
+    expect(parser.serialize({ start: [], end: [] })).toBe('');
   });
 
   it('eq returns true for equal pinning', () => {
-    expect(parser.eq({ left: ['a', 'b'], right: [] }, { left: ['a', 'b'], right: [] })).toBe(true);
+    expect(parser.eq({ start: ['a', 'b'], end: [] }, { start: ['a', 'b'], end: [] })).toBe(true);
   });
 
   it('eq returns false for different pinning', () => {
-    expect(parser.eq({ left: ['a', 'b'], right: [] }, { left: ['b', 'a'], right: [] })).toBe(false);
-    expect(parser.eq({ left: ['a'], right: [] }, { left: ['a', 'b'], right: [] })).toBe(false);
+    expect(parser.eq({ start: ['a', 'b'], end: [] }, { start: ['b', 'a'], end: [] })).toBe(false);
+    expect(parser.eq({ start: ['a'], end: [] }, { start: ['a', 'b'], end: [] })).toBe(false);
   });
 });
 

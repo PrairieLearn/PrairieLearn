@@ -7,6 +7,34 @@ WHERE
   id = $assessment_id
 FOR NO KEY UPDATE;
 
+-- BLOCK invalidate_statistics_for_course_instance
+UPDATE assessments AS a
+SET
+  statistics_last_updated_at = now() - interval '100 years'
+WHERE
+  a.course_instance_id = $course_instance_id
+  AND EXISTS (
+    SELECT
+      1
+    FROM
+      assessment_instances AS ai
+    WHERE
+      ai.assessment_id = a.id
+  )
+  -- This intentionally avoids locking assessments without instances or whose statistics are
+  -- already stale. A concurrent statistics refresh can therefore race with an enrollment change,
+  -- but we accept that narrow race to avoid locking every assessment for every enrollment changed
+  -- by a large roster sync.
+  AND NOT EXISTS (
+    SELECT
+      1
+    FROM
+      assessment_instances AS ai
+    WHERE
+      ai.assessment_id = a.id
+      AND ai.modified_at > a.statistics_last_updated_at - interval '1 minute'
+  );
+
 -- BLOCK select_assessment_by_id
 SELECT
   *

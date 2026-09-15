@@ -108,16 +108,16 @@ export function DefaultReleaseDateField({ displayTimezone }: { displayTimezone: 
     name: 'defaultRule.release.date',
   });
 
-  // Re-run the validator when dateControlEnabled changes so the
-  // "required" error appears/disappears immediately on toggle.
-  useEffect(() => {
-    void trigger('defaultRule.release.date');
-  }, [dateControlEnabled, trigger]);
-
   const { field: releasedField } = useController<
     AccessControlFormData,
     'defaultRule.release.released'
   >({ name: 'defaultRule.release.released' });
+
+  // Re-validate the release date when date control or the release mode changes
+  // because errors for both settings are stored on the date field.
+  useEffect(() => {
+    void trigger('defaultRule.release.date');
+  }, [dateControlEnabled, releasedField.value, trigger]);
 
   return (
     <div>
@@ -142,6 +142,7 @@ export function OverrideReleaseDateField({
   index: number;
   displayTimezone: string;
 }) {
+  const { trigger } = useFormContext<AccessControlFormData>();
   const defaultRuleValue = useWatch<AccessControlFormData, 'defaultRule.release.date'>({
     name: 'defaultRule.release.date',
   });
@@ -159,6 +160,12 @@ export function OverrideReleaseDateField({
   >({
     name: `overrides.${index}.release.released`,
   });
+
+  // Re-validate the release date when the release mode changes because the
+  // cross-field error is stored on the date field.
+  useEffect(() => {
+    void trigger(`overrides.${index}.release.date`);
+  }, [index, releasedField.value, trigger]);
 
   const { isOverridden, addOverride, removeOverride } = useOverrideField(index, 'release');
 

@@ -17,11 +17,13 @@ const MAX_UIDS = 1000;
 export function InviteStudentsModal({
   show,
   courseInstance,
+  selfEnrollLink,
   onHide,
   onSubmit,
 }: {
   show: boolean;
   courseInstance: StaffCourseInstance;
+  selfEnrollLink: string;
   onHide: () => void;
   onSubmit: (uids: string[]) => Promise<void>;
 }) {
@@ -122,7 +124,16 @@ export function InviteStudentsModal({
               </div>
             )}
             <div className="form-text" id="invite-uids-help">
-              One UID per line, or comma/space separated.
+              One UID per line, or comma/space separated. Students are not notified about the
+              invitation: you must instruct them to visit{' '}
+              <a href="/" target="_blank" rel="noopener noreferrer">
+                the PrairieLearn homepage
+              </a>{' '}
+              or{' '}
+              <a href={selfEnrollLink} target="_blank" rel="noopener noreferrer">
+                the course instance enrollment link
+              </a>{' '}
+              to accept the invitation.
             </div>
           </div>
         </Modal.Body>

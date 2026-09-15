@@ -219,8 +219,15 @@ export async function syncDiskToSqlWithLock(
         3,
         async ([ciid, courseInstanceData]) => {
           const courseInstanceId = courseInstanceIds[ciid];
+          const courseInstance = await selectCourseInstanceById(courseInstanceId);
           const assessmentIds = await timed(`Synced assessments for ${ciid}`, () =>
-            syncAssessments.sync(course.id, courseInstanceId, courseInstanceData, questionIds),
+            syncAssessments.sync(
+              course.id,
+              courseInstanceId,
+              courseInstance.display_timezone,
+              courseInstanceData,
+              questionIds,
+            ),
           );
 
           if (assessmentIds.name_to_id_map) {
@@ -237,7 +244,7 @@ export async function syncDiskToSqlWithLock(
                 inputs.push({ assessmentId, rules: assessment.data?.accessControl ?? [] });
               }
 
-              await syncAccessControl(courseInstanceId, inputs);
+              await syncAccessControl(courseInstanceId, courseInstance.display_timezone, inputs);
             });
           }
         },

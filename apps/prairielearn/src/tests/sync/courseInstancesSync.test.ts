@@ -312,6 +312,37 @@ describe('Course instance syncing', () => {
     }
   });
 
+  it.skipIf((process.versions.tz ?? '') < '2026b')(
+    'syncs Vancouver publishing dates using the server timezone data',
+    async () => {
+      const courseData = util.getCourseData();
+      const courseInstance = courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance;
+      courseInstance.timezone = 'America/Vancouver';
+      courseInstance.allowAccess = undefined;
+      courseInstance.publishing = {
+        startDate: '2026-11-02T16:30:00',
+        endDate: '2026-11-02T17:30:00',
+      };
+
+      const courseDir = await util.writeCourseToTempDirectory(courseData);
+      const results = await util.syncCourseData(courseDir);
+      assert.equal(results.status, 'complete');
+
+      const syncedCourseInstance = await selectCourseInstanceByUuid({
+        course: await selectCourseById(results.courseId),
+        uuid: courseInstance.uuid,
+      });
+      assert.equal(
+        syncedCourseInstance.publishing_start_date?.toISOString(),
+        '2026-11-02T23:30:00.000Z',
+      );
+      assert.equal(
+        syncedCourseInstance.publishing_end_date?.toISOString(),
+        '2026-11-03T00:30:00.000Z',
+      );
+    },
+  );
+
   it('soft-deletes and restores course instances', async () => {
     const { courseData, courseDir } = await util.createAndSyncCourseData();
     const originalCourseInstance = courseData.courseInstances[util.COURSE_INSTANCE_ID];

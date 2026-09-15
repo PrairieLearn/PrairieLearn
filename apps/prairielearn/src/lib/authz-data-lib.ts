@@ -122,13 +122,13 @@ export interface ConstructedCourseOrInstanceSuccessContext {
 }
 
 export type ConstructedCourseOrInstanceContext =
+  | ConstructedCourseOrInstanceSuccessContext
   | {
       authzData: null;
       course: null;
       institution: null;
       courseInstance: null;
-    }
-  | ConstructedCourseOrInstanceSuccessContext;
+    };
 
 export type AuthzDataWithoutEffectiveUser = PlainAuthzData | DangerousSystemAuthzData;
 

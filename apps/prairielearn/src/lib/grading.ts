@@ -380,21 +380,28 @@ export async function gradeVariant({
 }): Promise<void> {
   const question_course = await getQuestionCourse(question, variant_course);
 
-  const submission = await selectSubmissionForGrading(
-    variant.id,
-    check_submission_id,
-    ignoreRealTimeGradingDisabled,
-  );
-  if (submission == null) return;
+  // Keep the selection lock until the job exists so a newer submission's
+  // cancellation pass cannot miss it.
+  const gradingData = await sqldb.runInTransactionAsync(async () => {
+    const submission = await selectSubmissionForGrading(
+      variant.id,
+      check_submission_id,
+      ignoreRealTimeGradingDisabled,
+    );
+    if (submission == null) return null;
 
-  if (!ignoreGradeRateLimit && variant.instance_question_id != null) {
-    const nextGradingAllowedMs = await computeNextAllowedGradingTimeMs({
-      instanceQuestionId: variant.instance_question_id,
-    });
-    if (nextGradingAllowedMs > 0) return;
-  }
+    if (!ignoreGradeRateLimit && variant.instance_question_id != null) {
+      const nextGradingAllowedMs = await computeNextAllowedGradingTimeMs({
+        instanceQuestionId: variant.instance_question_id,
+      });
+      if (nextGradingAllowedMs > 0) return null;
+    }
 
-  const grading_job = await insertGradingJob({ submission_id: submission.id, authn_user_id });
+    const grading_job = await insertGradingJob({ submission_id: submission.id, authn_user_id });
+    return { submission, grading_job };
+  });
+  if (gradingData == null) return;
+  const { submission, grading_job } = gradingData;
 
   if (question.grading_method === 'External') {
     // For external grading we just need to trigger the grading job to start.

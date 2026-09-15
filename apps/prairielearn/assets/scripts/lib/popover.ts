@@ -6,7 +6,7 @@ export function getPopoverContainerForTrigger(trigger: HTMLElement): HTMLElement
     trigger.getAttribute('aria-controls') ?? trigger.getAttribute('aria-describedby');
   if (!popoverId) return null;
 
-  const popoverContainer = document.querySelector<HTMLElement>(`#${popoverId}`);
+  const popoverContainer = document.querySelector<HTMLElement>(`#${CSS.escape(popoverId)}`);
   return popoverContainer;
 }
 

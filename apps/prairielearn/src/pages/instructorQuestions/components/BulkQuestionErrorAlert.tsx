@@ -1,4 +1,7 @@
-import { type AppError, AppErrorAlert, syncJobFailedRenderer } from '../../../lib/client/errors.js';
+import type { AppError } from '@prairielearn/trpc/client';
+import { AppErrorAlert } from '@prairielearn/trpc/react';
+
+import { syncJobFailedRenderer } from '../../../lib/client/syncJobFailedRenderer.js';
 import type { QuestionsError } from '../../../trpc/course/questions.js';
 
 type BulkQuestionError = QuestionsError[

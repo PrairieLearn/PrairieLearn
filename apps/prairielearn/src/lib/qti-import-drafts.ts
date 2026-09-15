@@ -10,7 +10,6 @@ const DRAFT_KEY_PREFIX = 'qti-import-drafts/';
 
 const QtiImportDraftDataSchema = z.object({
   courseId: z.string(),
-  courseInstanceId: z.string(),
   userId: z.string(),
   results: z.array(z.unknown()),
 });
@@ -19,7 +18,6 @@ type QtiImportDraftData = z.infer<typeof QtiImportDraftDataSchema>;
 
 interface CreateQtiImportDraftData {
   courseId: string;
-  courseInstanceId: string;
   userId: string;
   results: unknown[];
 }
@@ -43,22 +41,16 @@ export async function createQtiImportDraft(data: CreateQtiImportDraftData): Prom
 export async function readQtiImportDraft({
   draftId,
   courseId,
-  courseInstanceId,
   userId,
 }: {
   draftId: string;
   courseId: string;
-  courseInstanceId: string;
   userId: string;
 }): Promise<QtiImportDraftData> {
   const buffer = await getFromS3(getFileStoreS3Bucket(), draftKey(draftId), true);
   const data = QtiImportDraftDataSchema.parse(JSON.parse(buffer.toString('utf8')));
-  if (
-    data.courseId !== courseId ||
-    data.courseInstanceId !== courseInstanceId ||
-    data.userId !== userId
-  ) {
-    throw new Error('QTI import draft does not belong to this course instance or user');
+  if (data.courseId !== courseId || data.userId !== userId) {
+    throw new Error('QTI import draft does not belong to this course or user');
   }
   return data;
 }

@@ -6,6 +6,7 @@ import fs from 'fs-extra';
 import { compiledScriptTag } from '@prairielearn/compiled-assets';
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
+import { getCanonicalTimezones } from '@prairielearn/utils/timezone';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
@@ -16,7 +17,6 @@ import { courseRepoContentUrl } from '../../lib/github.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { computeStableHash } from '../../lib/json.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
-import { getCanonicalTimezones } from '../../lib/timezones.js';
 import {
   updateCourseQuestionsReceiveUserData,
   updateCourseShowGettingStarted,
@@ -34,7 +34,9 @@ router.get(
     const courseInfoExists = await fs.pathExists(
       path.join(res.locals.course.path, 'infoCourse.json'),
     );
-    const availableTimezones = await getCanonicalTimezones([res.locals.course.display_timezone]);
+    const availableTimezones = getCanonicalTimezones({
+      alwaysInclude: [res.locals.course.display_timezone],
+    });
 
     const { authz_data } = extractPageContext(res.locals, {
       pageType: 'course',

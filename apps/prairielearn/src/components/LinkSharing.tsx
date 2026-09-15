@@ -19,7 +19,7 @@ export function PublicLinkSharing({
   return (
     <>
       <p>
-        <span className="badge color-green3 me-1">Public source</span>
+        <span className="badge color-green3 me-1">Public</span>
         {sharingMessage}
       </p>
       <div className="mb-3">

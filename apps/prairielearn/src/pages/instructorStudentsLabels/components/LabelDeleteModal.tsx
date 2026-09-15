@@ -1,7 +1,8 @@
 import { useMutation } from '@tanstack/react-query';
 import { Alert, Button, Modal } from 'react-bootstrap';
 
-import { getAppError } from '../../../lib/client/errors.js';
+import { getAppError } from '@prairielearn/trpc/client';
+
 import { getCourseInstanceJobSequenceUrl } from '../../../lib/client/url.js';
 import { useTRPC } from '../../../trpc/courseInstance/context.js';
 import type { StudentLabelError } from '../../../trpc/courseInstance/student-labels.js';
