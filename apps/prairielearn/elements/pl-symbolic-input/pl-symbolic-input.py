@@ -102,7 +102,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         element, "allow-trig-functions", ALLOW_TRIG_FUNCTIONS_DEFAULT
     )
     allowed_types = _get_allowed_types(element)
-    allow_sets = psu.allowed_sympy_types_include_sets(allowed_types)
+    allow_sets = psi.allowed_sympy_types_include_sets(allowed_types)
     simplify_expression = pl.get_boolean_attrib(
         element,
         "display-simplified-expression",
@@ -314,7 +314,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     if isinstance(a_tru, dict):
         assumptions_dict = a_tru.get("_assumptions")
 
-    result = psu.try_parse_symbolic_submission(
+    result = psi.try_parse_symbolic_submission(
         submitted_answer,
         variables,
         formula_editor=formula_editor,
@@ -350,7 +350,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
         element, "allow-complex", ALLOW_COMPLEX_DEFAULT
     )
     allowed_types = _get_allowed_types(element)
-    allow_sets = psu.allowed_sympy_types_include_sets(allowed_types)
+    allow_sets = psi.allowed_sympy_types_include_sets(allowed_types)
     allow_trig = pl.get_boolean_attrib(
         element, "allow-trig-functions", ALLOW_TRIG_FUNCTIONS_DEFAULT
     )
@@ -478,7 +478,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
         element, "imaginary-unit-for-display", IMAGINARY_UNIT_FOR_DISPLAY_DEFAULT
     )
     allowed_types = _get_allowed_types(element)
-    allow_sets = psu.allowed_sympy_types_include_sets(allowed_types)
+    allow_sets = psi.allowed_sympy_types_include_sets(allowed_types)
     allow_trig = pl.get_boolean_attrib(
         element, "allow-trig-functions", ALLOW_TRIG_FUNCTIONS_DEFAULT
     )
