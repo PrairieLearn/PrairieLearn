@@ -1,10 +1,9 @@
 import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import clsx from 'clsx';
-import { useId } from 'react';
 
 import { run } from '@prairielearn/run';
-import { OverlayTrigger } from '@prairielearn/ui';
+import { Popover } from '@prairielearn/ui';
 
 import type { EnumAssessmentType } from '../../../../lib/db-types.js';
 import type { TreeActions, TreeState, ZoneAssessmentForm } from '../../types.js';
@@ -44,7 +43,6 @@ export function TreeZoneNode({
 }) {
   const { editMode, selectedItem, collapsedZones, changeTracking, assessmentType } = state;
   const { setSelectedItem, dispatch, onAddQuestion, onAddAltPool, onDeleteZone } = actions;
-  const badgeTooltipId = useId();
   const isCollapsed = collapsedZones.has(zone.trackingId);
   const zonePointsMismatch = getZonePointsMismatch(zone, assessmentType);
   // This warning triggers when questions are deleted from a zone, reducing
@@ -144,15 +142,10 @@ export function TreeZoneNode({
           </span>
           <span className="d-inline-flex align-items-center gap-1 flex-wrap ms-2">
             {zonePointsMismatch && (
-              <WarningIndicator
-                tooltipId={`points-mismatch-${zone.trackingId}`}
-                label={zonePointsMismatch.label}
-                body={zonePointsMismatch.body}
-              />
+              <WarningIndicator label={zonePointsMismatch.label} body={zonePointsMismatch.body} />
             )}
             {zoneChooseExceeds && (
               <WarningIndicator
-                tooltipId={`choose-exceeds-${zone.trackingId}`}
                 label="Choose exceeds count"
                 body="Number to choose or best questions exceeds the number of questions in this zone"
               />
@@ -162,76 +155,74 @@ export function TreeZoneNode({
               // ZonePointsBadge already shows "No questions" when the zone is empty.
               if (count === 0) return null;
               return (
-                <OverlayTrigger
-                  placement="top"
-                  tooltip={{
-                    props: { id: `${badgeTooltipId}-count` },
-                    body: 'Total questions in this zone',
-                  }}
-                >
-                  <button type="button" className="btn btn-badge color-blue3">
+                <Popover content="Total questions in this zone" placement="top">
+                  <button
+                    type="button"
+                    className="btn btn-badge color-blue3"
+                    onClick={(event) => event.stopPropagation()}
+                  >
                     {count} question{count !== 1 ? 's' : ''}
                   </button>
-                </OverlayTrigger>
+                </Popover>
               );
             })}
             {zone.numberChoose != null && (
-              <OverlayTrigger
+              <Popover
+                content={`${zone.numberChoose} question${zone.numberChoose !== 1 ? 's are' : ' is'} randomly selected from this zone, spread across pools as evenly as possible.`}
                 placement="top"
-                tooltip={{
-                  props: { id: `${badgeTooltipId}-choose` },
-                  body: `${zone.numberChoose} question${zone.numberChoose !== 1 ? 's are' : ' is'} randomly selected from this zone, spread across pools as evenly as possible.`,
-                }}
               >
-                <button type="button" className="btn btn-badge color-blue3">
+                <button
+                  type="button"
+                  className="btn btn-badge color-blue3"
+                  onClick={(event) => event.stopPropagation()}
+                >
                   Choose {zone.numberChoose}
                 </button>
-              </OverlayTrigger>
+              </Popover>
             )}
-            <ZonePointsBadge
-              zone={zone}
-              assessmentType={assessmentType}
-              tooltipId={`${badgeTooltipId}-points`}
-            />
+            <ZonePointsBadge zone={zone} assessmentType={assessmentType} />
             {zone.maxPoints != null && (
-              <OverlayTrigger
+              <Popover
+                content="Maximum total points from this zone that count toward the assessment"
                 placement="top"
-                tooltip={{
-                  props: { id: `${badgeTooltipId}-max` },
-                  body: 'Maximum total points from this zone that count toward the assessment',
-                }}
               >
-                <button type="button" className="btn btn-badge color-blue3">
+                <button
+                  type="button"
+                  className="btn btn-badge color-blue3"
+                  onClick={(event) => event.stopPropagation()}
+                >
                   Max {zone.maxPoints} pts
                 </button>
-              </OverlayTrigger>
+              </Popover>
             )}
             {zone.bestQuestions != null && (
-              <OverlayTrigger
+              <Popover
+                content="Only the highest-scoring questions in this zone count toward the total"
                 placement="top"
-                tooltip={{
-                  props: { id: `${badgeTooltipId}-best` },
-                  body: 'Only the highest-scoring questions in this zone count toward the total',
-                }}
               >
-                <button type="button" className="btn btn-badge color-blue3">
+                <button
+                  type="button"
+                  className="btn btn-badge color-blue3"
+                  onClick={(event) => event.stopPropagation()}
+                >
                   Best {zone.bestQuestions}
                 </button>
-              </OverlayTrigger>
+              </Popover>
             )}
             {zone.lockpoint && (
-              <OverlayTrigger
+              <Popover
+                content="Students must complete this zone before proceeding to the next"
                 placement="top"
-                tooltip={{
-                  props: { id: `${badgeTooltipId}-lock` },
-                  body: 'Students must complete this zone before proceeding to the next',
-                }}
               >
-                <button type="button" className="btn btn-badge color-blue3">
+                <button
+                  type="button"
+                  className="btn btn-badge color-blue3"
+                  onClick={(event) => event.stopPropagation()}
+                >
                   <i className="bi bi-lock-fill me-1" aria-hidden="true" />
                   Lockpoint
                 </button>
-              </OverlayTrigger>
+              </Popover>
             )}
           </span>
           <span className="flex-grow-1" />
@@ -309,11 +300,9 @@ export function TreeZoneNode({
 function ZonePointsBadge({
   zone,
   assessmentType,
-  tooltipId,
 }: {
   zone: ZoneAssessmentForm;
   assessmentType: EnumAssessmentType;
-  tooltipId: string;
 }) {
   const { autoPoints, manualPoints } = computeZonePointTotals(zone.questions, {
     bestQuestions: zone.bestQuestions,
@@ -335,16 +324,14 @@ function ZonePointsBadge({
   });
 
   return (
-    <OverlayTrigger
-      placement="top"
-      tooltip={{
-        props: { id: tooltipId },
-        body: 'Total points a student can earn in this zone',
-      }}
-    >
-      <button type="button" className="btn btn-badge color-blue3">
+    <Popover content="Total points a student can earn in this zone" placement="top">
+      <button
+        type="button"
+        className="btn btn-badge color-blue3"
+        onClick={(event) => event.stopPropagation()}
+      >
         {label}
       </button>
-    </OverlayTrigger>
+    </Popover>
   );
 }

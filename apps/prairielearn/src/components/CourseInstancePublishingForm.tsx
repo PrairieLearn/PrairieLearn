@@ -256,7 +256,7 @@ export function CourseInstancePublishingForm({
                     <FriendlyDate
                       date={plainDateTimeStringToDate(endDate, displayTimezone)}
                       timezone={displayTimezone}
-                      tooltip={true}
+                      withPopover={true}
                       options={{ timeFirst: true }}
                     />
                     .
@@ -297,14 +297,14 @@ export function CourseInstancePublishingForm({
                   <FriendlyDate
                     date={Temporal.PlainDateTime.from(startDate)}
                     timezone={displayTimezone}
-                    tooltip={true}
+                    withPopover={true}
                     options={{ timeFirst: true }}
                   />{' '}
                   and will be unpublished at{' '}
                   <FriendlyDate
                     date={Temporal.PlainDateTime.from(endDate)}
                     timezone={displayTimezone}
-                    tooltip={true}
+                    withPopover={true}
                     options={{ timeFirst: true }}
                   />
                   .
@@ -432,14 +432,14 @@ export function CourseInstancePublishingForm({
                   <FriendlyDate
                     date={Temporal.PlainDateTime.from(startDate)}
                     timezone={displayTimezone}
-                    tooltip={true}
+                    withPopover={true}
                     options={{ timeFirst: true }}
                   />{' '}
                   and will be unpublished at{' '}
                   <FriendlyDate
                     date={Temporal.PlainDateTime.from(endDate)}
                     timezone={displayTimezone}
-                    tooltip={true}
+                    withPopover={true}
                     options={{ timeFirst: true }}
                   />
                   .

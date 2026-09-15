@@ -1,28 +1,20 @@
-import { OverlayTrigger } from '@prairielearn/ui';
+import { Popover } from '@prairielearn/ui';
 
 export function WarningIndicator({
-  tooltipId,
   label,
   body,
   variant = 'warning',
 }: {
-  tooltipId: string;
   label: string;
   body: string;
   variant?: 'warning' | 'error';
 }) {
   return (
-    <OverlayTrigger
-      placement="top"
-      tooltip={{
-        props: { id: tooltipId },
-        body,
-      }}
-    >
+    <Popover content={body} placement="top">
       <button
         type="button"
         className={`btn btn-badge ${variant === 'error' ? 'color-red2' : 'color-yellow2'}`}
-        aria-label={body}
+        aria-label={`View details for ${label}`}
         onClick={(e) => e.stopPropagation()}
         onKeyDown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') e.stopPropagation();
@@ -31,6 +23,6 @@ export function WarningIndicator({
         <i className="bi bi-exclamation-triangle-fill me-1" aria-hidden="true" />
         {label}
       </button>
-    </OverlayTrigger>
+    </Popover>
   );
 }

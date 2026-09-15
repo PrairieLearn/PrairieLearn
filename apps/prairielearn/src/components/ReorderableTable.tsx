@@ -17,7 +17,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { type ReactNode, useMemo } from 'react';
 
-import { OverlayTrigger } from '@prairielearn/ui';
+import { Popover } from '@prairielearn/ui';
 
 /**
  * Drag-and-drop context for a table whose rows can be reordered. Rows are
@@ -83,11 +83,10 @@ type ReorderableRowHandle = ReturnType<typeof useReorderableRow>;
 
 /**
  * The drag/edit/delete actions cell of a reorderable row. When
- * `deleteDisabledReason` is set, the delete button is inert and explains why
- * in a click tooltip instead.
+ * `deleteDisabledReason` is set, the delete action is unavailable and its
+ * button explains why in a popover instead.
  */
 export function ReorderableRowActionsCell({
-  trackingId,
   dragHandleProps,
   editLabel,
   deleteLabel,
@@ -95,7 +94,6 @@ export function ReorderableRowActionsCell({
   onEdit,
   onDelete,
 }: {
-  trackingId: string;
   dragHandleProps: ReorderableRowHandle['dragHandleProps'];
   editLabel: string;
   deleteLabel: string;
@@ -124,22 +122,15 @@ export function ReorderableRowActionsCell({
           <i className="fa fa-edit" aria-hidden="true" />
         </button>
         {deleteDisabledReason ? (
-          <OverlayTrigger
-            trigger="click"
-            tooltip={{
-              body: deleteDisabledReason,
-              props: { id: `delete-tooltip-${trackingId}` },
-            }}
-            rootClose
-          >
+          <Popover content={deleteDisabledReason}>
             <button
-              className="btn btn-sm btn-ghost"
+              className="btn btn-sm btn-ghost opacity-50"
               type="button"
-              aria-label={deleteDisabledReason}
+              aria-label={`Why ${deleteLabel} is unavailable`}
             >
               <i className="fa fa-trash text-muted" aria-hidden="true" />
             </button>
-          </OverlayTrigger>
+          </Popover>
         ) : (
           <button
             className="btn btn-sm btn-ghost"

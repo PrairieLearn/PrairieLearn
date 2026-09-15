@@ -6,7 +6,7 @@ import ReactMarkdown from 'react-markdown';
 
 import { getAppError } from '@prairielearn/trpc/client';
 import { AppErrorAlert } from '@prairielearn/trpc/react';
-import { OverlayTrigger } from '@prairielearn/ui';
+import { Popover } from '@prairielearn/ui';
 import { type Timezone, formatTimezone } from '@prairielearn/utils/timezone';
 
 import type { StaffAuthnProvider } from '../../../lib/client/safe-db-types.js';
@@ -78,6 +78,11 @@ export function AddInstitutionModal({
   });
 
   const validTimezoneNames = new Set(availableTimezones.map((tz) => tz.name));
+  const suggestTimezoneDisabledReason = !aiSecretsConfigured
+    ? 'AI features require the corresponding OpenAI key to be configured.'
+    : !institutionName || !emailDomain
+      ? 'Fill in the short name and long name first.'
+      : null;
 
   async function handleSuggestTimezone() {
     const { data } = await timezoneQuery.refetch();
@@ -162,34 +167,28 @@ export function AddInstitutionModal({
                   </option>
                 ))}
               </select>
-              <OverlayTrigger
-                trigger={['hover', 'focus']}
-                placement="top"
-                tooltip={{
-                  body: aiSecretsConfigured
-                    ? 'Uses AI web search to suggest the correct timezone based on the institution name and domain. Fill in the short name and long name first.'
-                    : 'AI features require the corresponding OpenAI key to be configured.',
-                  props: { id: 'suggest-timezone-tooltip' },
-                }}
-              >
-                <span className="d-inline-block">
+              {suggestTimezoneDisabledReason ? (
+                <Popover content={suggestTimezoneDisabledReason} placement="top">
                   <button
                     type="button"
-                    className="btn btn-secondary"
-                    aria-label="Suggest timezone"
-                    aria-busy={timezoneQuery.isFetching}
-                    disabled={
-                      timezoneQuery.isFetching ||
-                      !aiSecretsConfigured ||
-                      !institutionName ||
-                      !emailDomain
-                    }
-                    onClick={handleSuggestTimezone}
+                    className="btn btn-secondary opacity-50"
+                    aria-label="Why suggesting a timezone is unavailable"
                   >
-                    {timezoneQuery.isFetching ? 'Suggesting...' : 'Suggest'}
+                    Suggest
                   </button>
-                </span>
-              </OverlayTrigger>
+                </Popover>
+              ) : (
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  aria-label="Suggest timezone"
+                  aria-busy={timezoneQuery.isFetching}
+                  disabled={timezoneQuery.isFetching}
+                  onClick={handleSuggestTimezone}
+                >
+                  {timezoneQuery.isFetching ? 'Suggesting...' : 'Suggest'}
+                </button>
+              )}
             </div>
             {errors.display_timezone && (
               <div id="display_timezone-error" className="invalid-feedback d-block">

@@ -20,6 +20,7 @@ import {
   NuqsAdapter,
   OverlayTrigger,
   type OverlayTriggerProps,
+  Popover,
   TanstackTableCard,
   type TanstackTableCoreInstance,
   type TanstackTableHeader,
@@ -980,15 +981,19 @@ function StaffTableInner({
             return name ? (
               <span>{name}</span>
             ) : (
-              <OverlayTrigger
+              <Popover
+                content={
+                  'Users with name "Unknown user" either have never logged in or have an incorrect UID.'
+                }
                 placement="top"
-                tooltip={{
-                  body: 'Users with name "Unknown user" either have never logged in or have an incorrect UID.',
-                  props: { id: `staff-unknown-user-tooltip-${info.row.original.user.id}` },
-                }}
               >
-                <span className="text-danger">Unknown user</span>
-              </OverlayTrigger>
+                <button
+                  type="button"
+                  className="btn btn-link text-danger text-decoration-none p-0 border-0"
+                >
+                  Unknown user
+                </button>
+              </Popover>
             );
           },
         }),

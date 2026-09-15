@@ -272,9 +272,9 @@ function IssueRow({
               <button
                 type="button"
                 className="badge text-bg-warning badge-sm"
-                data-bs-toggle="tooltip"
+                data-bs-toggle="popover"
                 data-bs-html="true"
-                title={
+                data-bs-content={
                   "This issue was not raised in an assessment. You do not have access to this question outside of an assessment, so you can't view some of the issue details. Course permissions can be granted by a course owner on the Staff page."
                 }
               >
@@ -315,9 +315,9 @@ function IssueRow({
               <button
                 type="button"
                 className="badge text-bg-warning badge-sm"
-                data-bs-toggle="tooltip"
+                data-bs-toggle="popover"
                 data-bs-html="true"
-                title={`This issue was raised in course instance <strong>${issue.course_instance_short_name}</strong>. You do not have student data access for ${issue.course_instance_short_name}, so you can't view some of the issue details. Student data access can be granted by a course owner on the Staff page.`}
+                data-bs-content={`This issue was raised in course instance <strong>${issue.course_instance_short_name}</strong>. You do not have student data access for ${issue.course_instance_short_name}, so you can't view some of the issue details. Student data access can be granted by a course owner on the Staff page.`}
               >
                 No student data access
               </button>

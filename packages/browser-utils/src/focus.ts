@@ -73,6 +73,14 @@ export function trapFocus(element: Element): FocusTrap {
     if (e.key !== 'Tab') return;
 
     const focusable = focusableChildren(element);
+    if (focusable.length === 0) {
+      if (element instanceof HTMLElement && element.contains(document.activeElement)) {
+        element.focus();
+        e.preventDefault();
+      }
+      return;
+    }
+
     const firstFocusable = focusable[0];
     const lastFocusable = focusable[focusable.length - 1];
 

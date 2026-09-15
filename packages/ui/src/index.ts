@@ -38,6 +38,7 @@ export {
 } from './components/NumericInputColumnFilter.js';
 export { useAutoSizeColumns } from './components/useAutoSizeColumns.js';
 export { OverlayTrigger, type OverlayTriggerProps } from './components/OverlayTrigger.js';
+export { Popover, type PopoverProps } from './components/Popover.js';
 export { PresetFilterDropdown } from './components/PresetFilterDropdown.js';
 export {
   NuqsAdapter,

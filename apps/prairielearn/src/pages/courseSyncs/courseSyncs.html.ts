@@ -91,17 +91,16 @@ export function CourseSyncs({
                 <td>
                   ${config.devMode
                     ? html`
-                        <span
-                          class="d-inline-block"
-                          tabindex="0"
-                          data-bs-toggle="tooltip"
-                          data-bs-title="Pulling from a remote repository is not supported in development mode."
+                        <button
+                          type="button"
+                          class="btn btn-sm btn-primary opacity-50"
+                          aria-label="Why pulling from the remote git repository is unavailable"
+                          data-bs-toggle="popover"
+                          data-bs-content="Pulling from a remote repository is not supported in development mode."
                         >
-                          <button type="button" class="btn btn-sm btn-primary" disabled>
-                            <i class="fa fa-cloud-download-alt" aria-hidden="true"></i>
-                            Pull from remote git repository
-                          </button>
-                        </span>
+                          <i class="fa fa-cloud-download-alt" aria-hidden="true"></i>
+                          Pull from remote git repository
+                        </button>
                       `
                     : html`
                         <form name="confirm-form" method="POST">

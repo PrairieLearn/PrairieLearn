@@ -433,7 +433,7 @@ export function AssessmentInstancesTable({
           if (!date) return null;
           return (
             <span className="text-nowrap">
-              <FriendlyDate date={date} timezone={courseInstance.display_timezone} tooltip />
+              <FriendlyDate date={date} timezone={courseInstance.display_timezone} withPopover />
             </span>
           );
         },

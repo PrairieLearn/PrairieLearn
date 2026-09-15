@@ -6,7 +6,7 @@ import { Alert, Button, Form, Modal, Spinner } from 'react-bootstrap';
 import { run } from '@prairielearn/run';
 import { type AppError, getAppError } from '@prairielearn/trpc/client';
 import { AppErrorAlert } from '@prairielearn/trpc/react';
-import { OverlayTrigger } from '@prairielearn/ui';
+import { Popover } from '@prairielearn/ui';
 import { assertNever } from '@prairielearn/utils';
 
 import {
@@ -99,6 +99,7 @@ function ModelOption({
             <div>
               <span className="fw-medium">{model.name}</span>
               <div className="text-muted small">{model.sublabel}</div>
+              {!isAvailable && <div className="text-danger small">API key not configured</div>}
               {/* Cost shown below sublabel on xs viewports */}
               <div className="text-muted small d-sm-none">{relativeCost}</div>
             </div>
@@ -111,20 +112,7 @@ function ModelOption({
     </label>
   );
 
-  return isAvailable ? (
-    option
-  ) : (
-    <OverlayTrigger
-      key={model.modelId}
-      placement="top"
-      tooltip={{
-        props: { id: `model-tooltip-${model.modelId}` },
-        body: 'No API key configured for this provider',
-      }}
-    >
-      {option}
-    </OverlayTrigger>
-  );
+  return option;
 }
 
 function ModelList({
@@ -152,15 +140,18 @@ function ModelList({
           <span className="fw-semibold">Recommended</span>
           <span className="text-muted small text-end">
             Relative cost{' '}
-            <OverlayTrigger
+            <Popover
+              content="Relative cost compared to the default model, based on standard token usage."
               placement="top"
-              tooltip={{
-                props: { id: 'cost-tooltip' },
-                body: 'Relative cost compared to the default model, based on standard token usage.',
-              }}
             >
-              <i className="bi bi-question-circle" aria-hidden="true" />
-            </OverlayTrigger>
+              <button
+                type="button"
+                className="btn btn-xs btn-ghost btn-icon border-0"
+                aria-label="More information about relative cost"
+              >
+                <i className="bi bi-question-circle" aria-hidden="true" />
+              </button>
+            </Popover>
           </span>
         </div>
         <div className="d-flex flex-column gap-1">
