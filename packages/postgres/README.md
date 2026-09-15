@@ -103,7 +103,7 @@ const users = await queryRows(sql.select_users, { user_ids: userIds }, UserSchem
 
 Specify the SQL array type, such as `::bigint[]` or `::text[]`, when the query cannot infer it. In particular, use `unnest($user_ids::bigint[])` instead of `unnest($user_ids)`. Empty arrays are supported with the same type-inference rules.
 
-Array serialization follows the [node-postgres parameter conversion rules](https://node-postgres.com/features/queries). If a value represents JSON rather than a PostgreSQL array, pass `JSON.stringify(value)` and use the appropriate `::json` or `::jsonb` cast.
+Array serialization follows the [node-postgres parameter conversion rules](https://node-postgres.com/features/queries). If a value represents JSON rather than a PostgreSQL array, pass `JSON.stringify(value)` and use the appropriate `::jsonb` cast.
 
 ### Stored procedures (sprocs)
 
