@@ -146,13 +146,16 @@ describe('AI grading credentials', { concurrent: false }, () => {
     });
 
     test('rejects a loopback custom endpoint URL', async () => {
-      await assert.isRejected(
-        client.addCustomEndpoint.mutate({
+      try {
+        await client.addCustomEndpoint.mutate({
           name: 'Local',
           base_url: 'https://127.0.0.1/v1',
           secret_key: 'sk-local',
-        }),
-      );
+        });
+        assert.fail('Expected addCustomEndpoint to reject a loopback URL');
+      } catch (e) {
+        assert.instanceOf(e, TRPCClientError);
+      }
     });
 
     test('delete a custom endpoint', async () => {

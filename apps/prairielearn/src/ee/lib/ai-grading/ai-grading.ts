@@ -356,6 +356,10 @@ export async function aiGrade({
   }
 
   const resolvedKeys = await resolveAiGradingKeys(course_instance);
+  const provider =
+    selection.kind === 'openai_compatible'
+      ? 'openai'
+      : AI_GRADING_MODEL_PROVIDERS[selection.modelId];
 
   const model = await run(async () => {
     if (selection.kind === 'openai_compatible') {
@@ -379,7 +383,7 @@ export async function aiGrade({
       }).chat(selection.modelId);
     }
 
-    const provider = AI_GRADING_MODEL_PROVIDERS[selection.modelId];
+    const firstPartyModelId = selection.modelId;
     if (provider === 'openai') {
       if (!resolvedKeys.openai) {
         throw new error.HttpStatusError(403, 'Model not available (OpenAI API key not provided)');
@@ -387,14 +391,14 @@ export async function aiGrade({
       return createAiGradingOpenAI({
         apiKey: resolvedKeys.openai.apiKey,
         organization: resolvedKeys.openai.organization ?? undefined,
-      })(selection.modelId);
+      })(firstPartyModelId);
     } else if (provider === 'google') {
       if (!resolvedKeys.google) {
         throw new error.HttpStatusError(403, 'Model not available (Google API key not provided)');
       }
       return createGoogle({
         apiKey: resolvedKeys.google.apiKey,
-      })(selection.modelId);
+      })(firstPartyModelId);
     } else {
       if (!resolvedKeys.anthropic) {
         throw new error.HttpStatusError(
@@ -404,7 +408,7 @@ export async function aiGrade({
       }
       return createAnthropic({
         apiKey: resolvedKeys.anthropic.apiKey,
-      })(selection.modelId);
+      })(firstPartyModelId);
     }
   });
 

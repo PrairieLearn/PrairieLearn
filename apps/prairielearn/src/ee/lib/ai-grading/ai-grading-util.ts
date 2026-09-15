@@ -54,7 +54,6 @@ import { safeMustacheRender } from '../../../lib/mustache.js';
 import { formatJsonWithPrettier } from '../../../lib/prettier.js';
 import { RedisRateLimiter } from '../../../lib/redis-rate-limiter.js';
 
-import { isFirstPartyAiGradingModel } from './ai-grading-model-selection.js';
 import {
   type CounterClockwiseRotationDegrees,
   type InstanceQuestionAIGradingInfo,
@@ -68,8 +67,11 @@ function costForAiGradingModel(
   model_id: string,
   usage?: Parameters<typeof calculateResponseCost>[0]['usage'],
 ) {
-  if (!isFirstPartyAiGradingModel(model_id)) return 0;
-  return calculateResponseCost({ model: model_id, usage });
+  if (!Object.hasOwn(config.costPerMillionTokens, model_id)) return 0;
+  return calculateResponseCost({
+    model: model_id as keyof (typeof config)['costPerMillionTokens'],
+    usage,
+  });
 }
 
 const SubmissionVariantSchema = z.object({
