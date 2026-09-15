@@ -52,9 +52,12 @@ export function StickySaveBar({
     saveDisabledReason && !isSaving ? (
       <Popover content={saveDisabledReason} placement="top">
         <button
-          type="button"
+          type="submit"
           className="btn btn-sm btn-outline-secondary opacity-50 d-inline-flex align-items-center gap-1"
           aria-label="Why saving is unavailable"
+          aria-disabled="true"
+          form={formId}
+          onClick={(event) => event.preventDefault()}
         >
           <i className="bi bi-floppy" aria-hidden="true" />
           Save
