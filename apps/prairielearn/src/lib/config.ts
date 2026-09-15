@@ -611,6 +611,7 @@ export const ConfigSchema = z.object({
       teamId: z.string().min(1),
       projectId: z.string().min(1),
       openAiApiKey: z.string().min(1),
+      githubPat: z.string().min(1),
       model: z.string().min(1).optional(),
     })
     .nullable()

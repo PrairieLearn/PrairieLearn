@@ -17,29 +17,43 @@ Enable Enterprise Edition for local development and add these fields to `config.
     "token": "VERCEL_TOKEN",
     "teamId": "VERCEL_TEAM_ID",
     "projectId": "VERCEL_PROJECT_ID",
-    "openAiApiKey": "OPENAI_API_KEY"
+    "openAiApiKey": "OPENAI_API_KEY",
+    "githubPat": "READ_ONLY_GITHUB_PAT"
   }
 }
 ```
 
 An optional `model` overrides the native Codex default. AI Gateway is not required.
 Do not commit credentials. Open a non-example course as a course owner. Both the
-signed-in and effective user must have owner permission.
+signed-in and effective user must have owner permission. Set the course's repository
+and branch in its existing course settings; no separate agent repository URL is needed.
+The PAT should have **Contents: read-only** access to the selected repositories.
 
 ## Code path
 
 1. The panel creates a process-local conversation through course tRPC.
 2. AI SDK's `DefaultChatTransport` posts the new prompt to the course stream endpoint.
 3. `streamConversation` claims the conversation and creates its sandbox on the first turn.
-4. `HarnessAgent` on the PL webserver starts native Codex in `workspace/` inside Vercel Sandbox.
+4. `HarnessAgent` on the PL webserver starts native Codex in `course/` inside Vercel Sandbox.
    Codex calls OpenAI through the SDK's credential injection. Provider keys stay outside the VM.
 5. Native events become an AI SDK UI stream. The browser renders text and tool activity.
 6. After draining the stream, PL detaches the native session and retains its resume payload
    in memory. The next turn attaches to the same sandbox and sends only the new prompt.
 
-The sandbox contains a seed `workspace/README.md`. There is no course checkout or
-publishing in this base layer. Native Codex owns agent history inside the sandbox;
-the browser holds the displayed transcript. Neither survives starting over.
+On first use, PL shallow-clones the course's configured branch into
+`/vercel/sandbox/course`. SSH course remotes are converted to credential-free HTTPS.
+The checkout has a local Git identity so the agent can edit and create local commits.
+
+Vercel injects the read-only PAT outside the sandbox for that repository's
+`info/refs?service=git-upload-pack` and `git-upload-pack` requests. This supports clone,
+fetch, and pull. Git push uses `git-receive-pack`, which receives no credential.
+Other internet traffic stays allowed. The PAT is never written to Git config,
+command arguments, environment variables, or course files. `withGitAuth` reapplies
+Git rules alongside OpenAI rules whenever native Codex attaches to its session.
+
+There is no publishing or PrairieLearn sync. Native Codex owns agent history inside
+the sandbox; the browser holds the displayed transcript. Unpublished edits, local
+commits, and history are lost when the ephemeral sandbox expires.
 
 ## Deliberate limits
 

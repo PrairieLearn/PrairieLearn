@@ -4,6 +4,9 @@ import type { HarnessAgentResumeSessionState } from '@ai-sdk/harness/agent';
 
 import { HttpStatusError } from '@prairielearn/error';
 
+import type { Course } from '../../../lib/db-types.js';
+
+import { courseRepository } from './course-repository.js';
 import { type createSandboxAgent, sandboxLifetimeMs } from './sandbox.js';
 
 interface Owner {
@@ -13,6 +16,7 @@ interface Owner {
 }
 type Conversation = Owner & {
   id: string;
+  repository: ReturnType<typeof courseRepository>;
   busy: boolean;
   failed: boolean;
   runtime?: Awaited<ReturnType<typeof createSandboxAgent>>;
@@ -22,9 +26,10 @@ type Conversation = Owner & {
 // Deliberately process-local: reloads, server changes, and expiry require starting over.
 const conversations = new Map<string, Conversation>();
 
-export function createConversation(owner: Owner) {
+export function createConversation(owner: Owner, course: Pick<Course, 'repository' | 'branch'>) {
+  const repository = courseRepository(course);
   const id = randomUUID();
-  conversations.set(id, { ...owner, id, busy: false, failed: false });
+  conversations.set(id, { ...owner, id, repository, busy: false, failed: false });
   // This only bounds host memory. Vercel owns sandbox expiry; there is no renewal loop.
   setTimeout(() => conversations.delete(id), sandboxLifetimeMs).unref();
   return { conversationId: id };

@@ -4,6 +4,7 @@ import { claimConversation, createConversation } from './conversations.js';
 import { sandboxLifetimeMs } from './sandbox.js';
 
 const owner = { courseId: '1', userId: '2', authnUserId: '3' };
+const course = { repository: 'git@github.com:example/course.git', branch: 'main' };
 beforeEach(() => vi.useFakeTimers());
 afterEach(() => {
   vi.runAllTimers();
@@ -13,7 +14,7 @@ afterEach(() => {
 test.each(['courseId', 'userId', 'authnUserId'] as const)(
   'rejects a different %s without claiming the conversation',
   (field) => {
-    const { conversationId } = createConversation(owner);
+    const { conversationId } = createConversation(owner, course);
     expect(() => claimConversation(conversationId, { ...owner, [field]: '99' })).toThrow(
       'Conversation unavailable',
     );
@@ -22,7 +23,7 @@ test.each(['courseId', 'userId', 'authnUserId'] as const)(
 );
 
 test('allows only one in-flight turn and rejects interrupted conversations', () => {
-  const { conversationId } = createConversation(owner);
+  const { conversationId } = createConversation(owner, course);
   const conversation = claimConversation(conversationId, owner);
   expect(() => claimConversation(conversationId, owner)).toThrow('already responding');
   conversation.busy = false;
@@ -33,7 +34,7 @@ test('allows only one in-flight turn and rejects interrupted conversations', () 
 });
 
 test('forgets expired conversations instead of replaying prompts', () => {
-  const { conversationId } = createConversation(owner);
+  const { conversationId } = createConversation(owner, course);
   vi.advanceTimersByTime(sandboxLifetimeMs);
   expect(() => claimConversation(conversationId, owner)).toThrow('Start over');
 });

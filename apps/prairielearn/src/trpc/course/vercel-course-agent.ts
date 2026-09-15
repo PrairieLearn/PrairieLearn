@@ -15,10 +15,13 @@ export const vercelCourseAgentRouter = t.router({
     }
     const { createConversation } =
       await import('../../ee/lib/vercel-course-agent/conversations.js');
-    return createConversation({
-      courseId: ctx.course.id,
-      userId: ctx.locals.user.id,
-      authnUserId: ctx.locals.authn_user.id,
-    });
+    return createConversation(
+      {
+        courseId: ctx.course.id,
+        userId: ctx.locals.user.id,
+        authnUserId: ctx.locals.authn_user.id,
+      },
+      ctx.course,
+    );
   }),
 });
