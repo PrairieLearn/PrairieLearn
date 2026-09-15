@@ -205,7 +205,6 @@ export function generateDefaultRuleDateTableRows(
           date={Temporal.PlainDateTime.from(releaseDate)}
           timezone={displayTimezone}
           options={{ includeTz: false }}
-          withPopover
         />
       ) : (
         'No date set'
@@ -225,7 +224,6 @@ export function generateDefaultRuleDateTableRows(
           date={Temporal.PlainDateTime.from(deadline.date)}
           timezone={displayTimezone}
           options={{ includeTz: false }}
-          withPopover
         />
       ) : (
         'No date set'
@@ -249,7 +247,6 @@ export function generateDefaultRuleDateTableRows(
           date={Temporal.PlainDateTime.from(dueDate)}
           timezone={displayTimezone}
           options={{ includeTz: false }}
-          withPopover
         />
       ),
       label: 'Due',
@@ -286,7 +283,6 @@ export function generateDefaultRuleDateTableRows(
           date={Temporal.PlainDateTime.from(deadline.date)}
           timezone={displayTimezone}
           options={{ includeTz: false }}
-          withPopover
         />
       ) : (
         'No date set'
@@ -395,7 +391,6 @@ function AfterCompleteTimeRange({
         date={Temporal.PlainDateTime.from(date)}
         timezone={displayTimezone}
         options={{ includeTz: false }}
-        withPopover
       />
     </>
   );
@@ -518,7 +513,6 @@ function formatDeadlineEntries(
           date={Temporal.PlainDateTime.from(entry.date)}
           timezone={displayTimezone}
           options={{ includeTz: false }}
-          withPopover
         />{' '}
         ({formatCreditPercent(entry.credit)} credit)
       </>
@@ -565,14 +559,12 @@ function HiddenAfterCompletionVisibility({
           date={Temporal.PlainDateTime.from(visibleFromDate)}
           timezone={displayTimezone}
           options={{ includeTz: false }}
-          withPopover
         />{' '}
         until{' '}
         <FriendlyDate
           date={Temporal.PlainDateTime.from(visibleUntilDate)}
           timezone={displayTimezone}
           options={{ includeTz: false }}
-          withPopover
         />
       </>
     );
@@ -586,7 +578,6 @@ function HiddenAfterCompletionVisibility({
           date={Temporal.PlainDateTime.from(visibleFromDate)}
           timezone={displayTimezone}
           options={{ includeTz: false }}
-          withPopover
         />
       </>
     );
@@ -613,7 +604,6 @@ function generateOverrideFieldItems(
           date={Temporal.PlainDateTime.from(rule.release.date)}
           timezone={displayTimezone}
           options={{ includeTz: false }}
-          withPopover
         />
       ) : (
         'Not released'
@@ -651,7 +641,6 @@ function generateOverrideFieldItems(
             date={Temporal.PlainDateTime.from(rule.due.date)}
             timezone={displayTimezone}
             options={{ includeTz: false }}
-            withPopover
           />
           {creditLabel}
         </>
@@ -1046,12 +1035,7 @@ function buildDefaultRuleCurrentIndicator(
   }
 
   const friendlyDate = (date: Date) => (
-    <FriendlyDate
-      date={date}
-      timezone={displayTimezone}
-      options={{ includeTz: false }}
-      withPopover
-    />
+    <FriendlyDate date={date} timezone={displayTimezone} options={{ includeTz: false }} />
   );
 
   if (segment.kind === 'beforeRelease') {

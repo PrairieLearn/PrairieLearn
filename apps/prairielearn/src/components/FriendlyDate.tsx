@@ -2,12 +2,10 @@ import { type Temporal } from '@js-temporal/polyfill';
 import { type FC, createContext, use } from 'react';
 
 import { formatDate, formatDateFriendly } from '@prairielearn/formatter';
-import { Popover } from '@prairielearn/ui';
 
 interface FriendlyDateProps {
   date: Date | Temporal.PlainDateTime;
   timezone?: string;
-  withPopover?: boolean;
   options?: Parameters<typeof formatDateFriendly>[2];
   fullOptions?: Parameters<typeof formatDate>[2];
 }
@@ -15,7 +13,6 @@ interface FriendlyDateProps {
 export const FriendlyDate: FC<FriendlyDateProps> = ({
   date,
   timezone = null,
-  withPopover = false,
   options,
   fullOptions,
 }) => {
@@ -24,19 +21,13 @@ export const FriendlyDate: FC<FriendlyDateProps> = ({
 
   const friendlyString = formatDateFriendly(date, timezone, options);
   const fullString = formatDate(date, timezone, fullOptions);
-  if (!withPopover) {
-    return <span style={{ fontVariantNumeric: 'tabular-nums' }}>{friendlyString}</span>;
-  }
+  const dateTime =
+    date instanceof Date ? date.toISOString() : date.toString({ calendarName: 'never' });
+
   return (
-    <Popover content={fullString} placement="top">
-      <button
-        type="button"
-        className="btn btn-link link-body-emphasis border-0 p-0 align-baseline text-decoration-none"
-        style={{ fontVariantNumeric: 'tabular-nums' }}
-      >
-        {friendlyString}
-      </button>
-    </Popover>
+    <time dateTime={dateTime} title={fullString} style={{ fontVariantNumeric: 'tabular-nums' }}>
+      {friendlyString}
+    </time>
   );
 };
 

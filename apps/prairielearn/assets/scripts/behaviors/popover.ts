@@ -13,6 +13,8 @@ function usesDialogSemantics(trigger: HTMLElement) {
 }
 
 function configureDialogSemantics(trigger: HTMLElement, container: HTMLElement) {
+  // Bootstrap links popovers to their triggers with `aria-describedby`. Press-triggered
+  // contextual popovers use `aria-controls` instead because we present them as dialogs.
   trigger.setAttribute('aria-haspopup', 'dialog');
   trigger.setAttribute('aria-expanded', 'true');
   trigger.setAttribute('aria-controls', container.id);
@@ -45,7 +47,10 @@ function closeOpenPopovers() {
 function getPopoverTriggerModes(trigger: HTMLElement): string[] {
   const instance = window.bootstrap.Popover.getInstance(trigger);
   if (instance) {
-    return (instance as any)._config.trigger.split(' ') ?? [];
+    // Bootstrap doesn't expose its normalized configuration publicly. Reading it
+    // from the instance also covers triggers supplied programmatically in JavaScript.
+    const config = (instance as unknown as { _config: { trigger: string } })._config;
+    return config.trigger.split(' ');
   }
 
   return [];
