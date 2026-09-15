@@ -30,7 +30,6 @@ if TYPE_CHECKING:
     from prairielearn.question_utils import QuestionData
     from prairielearn.sympy_utils import (
         AllowedSympyType,
-        SymbolicSubmissionParseResult,
         SympyJson,
     )
 
@@ -1118,13 +1117,13 @@ def _parse_component_submission(
     component: Component,
     source: str | None,
     assumptions: psu.AssumptionsDictT | None = None,
-) -> SymbolicSubmissionParseResult:
+) -> psi.SymbolicSubmissionParseResult:
     variables = (
         tuple(dict.fromkeys((*config.variables, config.index)))
         if component == "body"
         else config.variables
     )
-    return psu.try_parse_symbolic_submission(
+    return psi.try_parse_symbolic_submission(
         source,
         variables,
         formula_editor=True,
