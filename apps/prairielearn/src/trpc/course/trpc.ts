@@ -8,8 +8,10 @@ import { createContext, t } from './init.js';
 import { qtiImportRouter } from './qti-import.js';
 import { questionsRouter } from './questions.js';
 import { sharingRouter } from './sharing.js';
+import { vercelCourseAgentRouter } from './vercel-course-agent.js';
 
 const courseRouter = t.router({
+  vercelCourseAgent: vercelCourseAgentRouter,
   assessmentModules: assessmentModulesRouter,
   courseStaff: courseStaffRouter,
   qtiImport: qtiImportRouter,

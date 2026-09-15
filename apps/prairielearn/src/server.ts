@@ -1737,6 +1737,10 @@ export async function initExpress(): Promise<Express> {
   );
   if (isEnterprise()) {
     app.use(
+      '/pl/course/:course_id(\\d+)/vercel_course_agent',
+      (await import('./ee/pages/vercelCourseAgent/vercelCourseAgent.js')).default,
+    );
+    app.use(
       '/pl/course/:course_id(\\d+)/ai_generate_editor/:question_id(\\d+)',
       (
         await import('./ee/pages/instructorAiGenerateDraftEditor/instructorAiGenerateDraftEditor.js')
