@@ -65,6 +65,7 @@ class HoverableTooltipController {
   constructor(
     private trigger: HTMLElement,
     private tooltip: BootstrapTooltip,
+    private wasLastInteractionTouch: () => boolean,
     private showDelay = getTooltipShowDelay(trigger),
   ) {
     trigger.addEventListener('pointerenter', this.handleTriggerPointerEnter);
@@ -110,12 +111,12 @@ class HoverableTooltipController {
   };
 
   private handleTriggerFocusIn = () => {
-    // Touch activation can synthesize focus and mouse events. `:focus-visible`
-    // limits focus-triggered tooltips to keyboard-style navigation, matching
-    // React Aria's intentional omission of tooltips on touch devices.
+    // Touch activation can focus text-entry controls that match `:focus-visible`,
+    // so track modality separately to match React Aria's omission on touch devices.
     if (
-      !this.trigger.matches(':focus-visible') &&
-      !this.trigger.querySelector<HTMLElement>(':focus-visible')
+      this.wasLastInteractionTouch() ||
+      (!this.trigger.matches(':focus-visible') &&
+        !this.trigger.querySelector<HTMLElement>(':focus-visible'))
     ) {
       return;
     }
@@ -256,6 +257,20 @@ export function installBootstrapTooltipBehavior({
   if (activeUninstall) return activeUninstall;
 
   const insertedListeners = new WeakMap<HTMLElement, () => void>();
+  const observedTriggers = new Set<HTMLElement>();
+  let lastInteractionWasTouch = false;
+
+  const disposeTooltipTrigger = (el: HTMLElement) => {
+    tooltipControllers.get(el)?.dispose();
+    tooltipControllers.delete(el);
+    const handleTooltipInserted = insertedListeners.get(el);
+    if (handleTooltipInserted) {
+      el.removeEventListener('inserted.bs.tooltip', handleTooltipInserted);
+      insertedListeners.delete(el);
+    }
+    observedTriggers.delete(el);
+  };
+
   const tooltipObserver = observe('[data-bs-toggle~="tooltip"], [data-bs-toggle-tooltip="true"]', {
     constructor: HTMLElement,
     add(el: HTMLElement) {
@@ -280,8 +295,9 @@ export function installBootstrapTooltipBehavior({
         // data-bs-title without disposing and recreating the instance.
         title: () => getTooltipTitle(el),
       });
-      const controller = new HoverableTooltipController(el, tooltip);
+      const controller = new HoverableTooltipController(el, tooltip, () => lastInteractionWasTouch);
       tooltipControllers.set(el, controller);
+      observedTriggers.add(el);
 
       // Bootstrap doesn't support a single element triggering multiple things.
       // There are cases where we want this behavior, e.g. to have a tooltip
@@ -320,15 +336,14 @@ export function installBootstrapTooltipBehavior({
       }
     },
     remove(el: HTMLElement) {
-      tooltipControllers.get(el)?.dispose();
-      tooltipControllers.delete(el);
-      const handleTooltipInserted = insertedListeners.get(el);
-      if (handleTooltipInserted) {
-        el.removeEventListener('inserted.bs.tooltip', handleTooltipInserted);
-        insertedListeners.delete(el);
-      }
+      disposeTooltipTrigger(el);
     },
   });
+
+  const handlePointerDown = (event: PointerEvent) => {
+    lastInteractionWasTouch = event.pointerType === 'touch';
+  };
+  document.addEventListener('pointerdown', handlePointerDown, { capture: true });
 
   // WCAG 1.4.13: content shown on hover/focus must be dismissible without
   // moving the pointer or focus. Bootstrap tooltips don't do this on their own,
@@ -336,16 +351,21 @@ export function installBootstrapTooltipBehavior({
   // This can be removed after upgrading to Bootstrap 6:
   // https://github.com/twbs/bootstrap/pull/42472
   const handleKeyDown = (event: KeyboardEvent) => {
+    lastInteractionWasTouch = false;
     if (event.key !== 'Escape' || openTooltipControllers.size === 0) return;
     event.preventDefault();
     event.stopPropagation();
     closeOpenTooltips();
   };
-  document.addEventListener('keydown', handleKeyDown, true);
+  document.addEventListener('keydown', handleKeyDown, { capture: true });
 
   const uninstall = () => {
     if (activeUninstall !== uninstall) return;
     tooltipObserver.abort();
+    // selector-observer 2.1.6 mutates its element list while aborting and may
+    // skip remove callbacks, so explicitly dispose any controllers it missed.
+    for (const el of observedTriggers) disposeTooltipTrigger(el);
+    document.removeEventListener('pointerdown', handlePointerDown, true);
     document.removeEventListener('keydown', handleKeyDown, true);
     activeUninstall = null;
   };
