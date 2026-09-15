@@ -34,9 +34,8 @@ type BigOperatorIndexing = Literal["bounds", "domain", "approaches"]
 type BigOperatorDirection = Literal["two-sided", "from-left", "from-right"]
 """The direction of an approaches big-operator answer."""
 
-type _BigOperatorSetItem = sympy.Expr | sympy.Set | str | int
 type BigOperatorValue = (
-    sympy.Expr | sympy.Set | str | int | AbstractSet[_BigOperatorSetItem]
+    sympy.Expr | sympy.Set | str | int | AbstractSet[BigOperatorValue]
 )
 """A mathematical value or coercible Python value stored in a big-operator answer."""
 
