@@ -286,6 +286,8 @@ def test_encode_rejects_inconsistent_fields(kwargs: dict[str, Any], match: str) 
     ("operator", "indexing", "indexing_fields"),
     [
         ("Limit", "bounds", {"lower": 1, "upper": 2}),
+        ("Min", "bounds", {"lower": 1, "upper": 2}),
+        ("Max", "bounds", {"lower": 1, "upper": 2}),
         (
             "Sum",
             "approaches",
@@ -309,6 +311,8 @@ def test_encode_rejects_incompatible_operator_and_indexing(
 def test_get_valid_big_operator_indexing() -> None:
     assert pbo.get_valid_big_operator_indexing("Sum") == {"bounds", "domain"}
     assert pbo.get_valid_big_operator_indexing("Limit") == {"approaches"}
+    assert pbo.get_valid_big_operator_indexing("Min") == {"domain"}
+    assert pbo.get_valid_big_operator_indexing("Max") == {"domain"}
     assert pbo.get_valid_big_operator_indexing("Custom") == {
         "bounds",
         "domain",

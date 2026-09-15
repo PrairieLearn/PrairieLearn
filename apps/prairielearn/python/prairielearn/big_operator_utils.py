@@ -114,6 +114,7 @@ type BigOperator = BigBoundsOperator | BigDomainOperator | BigApproachesOperator
 
 
 _BOUNDS_DOMAIN: frozenset[BigOperatorIndexing] = frozenset(("bounds", "domain"))
+_DOMAIN: frozenset[BigOperatorIndexing] = frozenset(("domain",))
 _VALID_INDEXING_BY_OPERATOR: dict[BigOperatorName, frozenset[BigOperatorIndexing]] = {
     "Sum": _BOUNDS_DOMAIN,
     "Product": _BOUNDS_DOMAIN,
@@ -122,8 +123,8 @@ _VALID_INDEXING_BY_OPERATOR: dict[BigOperatorName, frozenset[BigOperatorIndexing
     "Union": _BOUNDS_DOMAIN,
     "Intersection": _BOUNDS_DOMAIN,
     "DisjointUnion": _BOUNDS_DOMAIN,
-    "Min": _BOUNDS_DOMAIN,
-    "Max": _BOUNDS_DOMAIN,
+    "Min": _DOMAIN,
+    "Max": _DOMAIN,
     "Custom": frozenset(("bounds", "domain", "approaches")),
 }
 _INDEXING_MODES: frozenset[str] = frozenset(("bounds", "domain", "approaches"))
@@ -252,8 +253,6 @@ def big_operator_to_json(
         "Union",
         "Intersection",
         "DisjointUnion",
-        "Min",
-        "Max",
         "Custom",
     ],
     indexing: Literal["bounds"],
