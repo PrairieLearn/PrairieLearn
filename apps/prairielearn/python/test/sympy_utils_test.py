@@ -408,7 +408,6 @@ class TestSympy:
                 self.SYMBOL_NAMES,
                 allow_sets=True,
                 custom_functions=list(self.FUNCTION_NAMES),
-                allowed_types={"all"},
             )
             is None
         )
@@ -441,20 +440,19 @@ class TestSympy:
             self.SYMBOL_NAMES,
             allow_sets=True,
             custom_functions=list(self.FUNCTION_NAMES),
-            allowed_types={"all"},
         )
 
-    def test_try_parse_string_as_sympy_defaults_to_expression_type(self) -> None:
-        result = psu.try_parse_string_as_sympy(
-            "{1, 2}",
-            self.SYMBOL_NAMES,
-            allow_sets=True,
-        )
+    def test_try_parse_string_as_sympy_defaults_to_all_types_with_sets(self) -> None:
+        result = psu.try_parse_string_as_sympy("{1, 2}", None, allow_sets=True)
 
-        assert result == psu.SympyParseFailure(
-            "Your answer uses finite-set, which this input does not accept. "
-            "Allowed types: expression."
-        )
+        assert result == psu.SympyParseSuccess(sympy.FiniteSet(1, 2))
+
+    def test_try_parse_string_as_sympy_defaults_to_expression_without_sets(
+        self,
+    ) -> None:
+        result = psu.try_parse_string_as_sympy("1", None)
+
+        assert result == psu.SympyParseSuccess(sympy.Integer(1))
 
     @pytest.mark.parametrize("simplify_expression", [True, False])
     @pytest.mark.parametrize(
