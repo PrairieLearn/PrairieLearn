@@ -45,6 +45,7 @@ export function QuestionContainer({
   renderSubmissionSearchParams,
   questionCopyTargets = null,
   aiGradingInfo,
+  renderAiGradingSlots = true,
 }: {
   resLocals: UntypedResLocals;
   questionContext: QuestionContext;
@@ -55,6 +56,7 @@ export function QuestionContainer({
   renderSubmissionSearchParams?: URLSearchParams;
   questionCopyTargets?: CopyTarget[] | null;
   aiGradingInfo?: InstanceQuestionAIGradingInfo;
+  renderAiGradingSlots?: boolean;
 }) {
   const {
     question,
@@ -117,7 +119,7 @@ export function QuestionContainer({
             `
           : ''
       }
-      ${['instructor', 'manual_grading'].includes(questionContext)
+      ${['instructor', 'manual_grading'].includes(questionContext) && renderAiGradingSlots
         ? html`
             <div class="js-ai-grading-explanation-slot">
               ${aiGradingInfo

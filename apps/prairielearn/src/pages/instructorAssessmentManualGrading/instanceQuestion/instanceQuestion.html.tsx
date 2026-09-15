@@ -1,6 +1,5 @@
 import { z } from 'zod';
 
-import { EncodedData } from '@prairielearn/browser-utils';
 import { formatDateYMDHM } from '@prairielearn/formatter';
 import { html, unsafeHtml } from '@prairielearn/html';
 import { hydrateHtml } from '@prairielearn/react/server';
@@ -16,16 +15,17 @@ import type {
 } from '../../../ee/lib/ai-grading/types.js';
 import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../../../lib/assets.js';
 import { StaffAssessmentQuestionSchema } from '../../../lib/client/safe-db-types.js';
-import { getAssessmentManualGradingUrl } from '../../../lib/client/url.js';
 import { GradingJobSchema, type InstanceQuestionGroup, type User } from '../../../lib/db-types.js';
 import type { ResLocalsInstanceQuestionRender } from '../../../lib/question-render.types.js';
 import type { ResLocalsForPage } from '../../../lib/res-locals.js';
 
+import { AiGradingInfoSlots } from './components/AiGradingInfoSlots.js';
+import { GradingPanel } from './components/GradingPanel.js';
 import {
   InstanceQuestionAiGrade,
   type InstanceQuestionAiGradeProps,
 } from './components/InstanceQuestionAiGrade.js';
-import { GradingPanel } from './gradingPanel.html.js';
+import { buildGradingPanelProps } from './components/buildGradingPanelProps.js';
 
 export const GradingJobDataSchema = GradingJobSchema.extend({
   score_perc: z.number().nullable(),
@@ -130,16 +130,6 @@ export function InstanceQuestion({
         : ''}
       ${unsafeHtml(resLocals.extraHeadersHtml)}
       ${compiledScriptTag('instructorAssessmentManualGradingInstanceQuestion.js')}
-      ${EncodedData(
-        {
-          instanceQuestionGroupsExist,
-          manualInstanceQuestionGroupUrl: `${getAssessmentManualGradingUrl({
-            courseInstanceId: resLocals.course_instance.id,
-            assessmentId: resLocals.assessment.id,
-          })}/instance_question/${resLocals.instance_question.id}/manual_instance_question_group`,
-        },
-        'instance-question-data',
-      )}
     `,
     content: html`
       <h1 class="visually-hidden">Instance Question Manual Grading</h1>
@@ -269,27 +259,33 @@ export function InstanceQuestion({
             questionContext: 'manual_grading',
             showFooter: false,
             aiGradingInfo,
+            renderAiGradingSlots: false,
           })}
+          ${hydrateHtml(<AiGradingInfoSlots initialAiGradingInfo={aiGradingInfo} />)}
         </div>
 
         <div class="col-lg-4 col-12">
           <div class="card mb-4 border-info">
             <div class="card-header bg-info">Grading</div>
             <div class="js-main-grading-panel">
-              ${GradingPanel({
-                resLocals,
-                context: 'main',
-                graders,
-                aiGradingInfo,
-                aiGradingMode,
-                selectedInstanceQuestionGroup,
-                showInstanceQuestionGroup: instanceQuestionGroupsExist && aiGradingMode,
-                instanceQuestionGroups,
-                skip_graded_submissions: skipGradedSubmissions,
-                show_submissions_assigned_to_me_only: showSubmissionsAssignedToMeOnly,
-                gradedByHumanName: lastHumanGraderName,
-                enable_single_key_shortcuts,
-              })}
+              ${hydrateHtml(
+                <GradingPanel
+                  data={buildGradingPanelProps({
+                    resLocals,
+                    context: 'main',
+                    graders,
+                    aiGradingInfo,
+                    aiGradingMode,
+                    selectedInstanceQuestionGroup,
+                    showInstanceQuestionGroup: instanceQuestionGroupsExist && aiGradingMode,
+                    instanceQuestionGroups,
+                    skip_graded_submissions: skipGradedSubmissions,
+                    show_submissions_assigned_to_me_only: showSubmissionsAssignedToMeOnly,
+                    gradedByHumanName: lastHumanGraderName,
+                    enable_single_key_shortcuts,
+                  })}
+                />,
+              )}
             </div>
           </div>
 
@@ -377,16 +373,20 @@ function ConflictGradingJobModal({
                   by ${lastGraderName}
                 </div>
                 <div class="card">
-                  ${GradingPanel({
-                    resLocals,
-                    disable: true,
-                    skip_text: 'Accept existing score',
-                    context: 'existing',
-                    showInstanceQuestionGroup: false,
-                    skip_graded_submissions: skipGradedSubmissions,
-                    show_submissions_assigned_to_me_only: showSubmissionsAssignedToMeOnly,
-                    enable_single_key_shortcuts,
-                  })}
+                  ${hydrateHtml(
+                    <GradingPanel
+                      data={buildGradingPanelProps({
+                        resLocals,
+                        disable: true,
+                        skip_text: 'Accept existing score',
+                        context: 'existing',
+                        showInstanceQuestionGroup: false,
+                        skip_graded_submissions: skipGradedSubmissions,
+                        show_submissions_assigned_to_me_only: showSubmissionsAssignedToMeOnly,
+                        enable_single_key_shortcuts,
+                      })}
+                    />,
+                  )}
                 </div>
               </div>
               <div class="col-lg-6 col-12">
@@ -401,21 +401,25 @@ function ConflictGradingJobModal({
                   by ${conflict_grading_job.grader_name}
                 </div>
                 <div class="card">
-                  ${GradingPanel({
-                    resLocals,
-                    custom_points:
-                      (conflict_grading_job.score ?? 0) *
-                      (resLocals.assessment_question.max_points ?? 0),
-                    custom_auto_points: conflict_grading_job.auto_points ?? 0,
-                    custom_manual_points: conflict_grading_job.manual_points ?? 0,
-                    grading_job: conflict_grading_job,
-                    context: 'conflicting',
-                    graders,
-                    showInstanceQuestionGroup: false,
-                    skip_graded_submissions: skipGradedSubmissions,
-                    show_submissions_assigned_to_me_only: showSubmissionsAssignedToMeOnly,
-                    enable_single_key_shortcuts,
-                  })}
+                  ${hydrateHtml(
+                    <GradingPanel
+                      data={buildGradingPanelProps({
+                        resLocals,
+                        custom_points:
+                          (conflict_grading_job.score ?? 0) *
+                          (resLocals.assessment_question.max_points ?? 0),
+                        custom_auto_points: conflict_grading_job.auto_points ?? 0,
+                        custom_manual_points: conflict_grading_job.manual_points ?? 0,
+                        grading_job: conflict_grading_job,
+                        context: 'conflicting',
+                        graders,
+                        showInstanceQuestionGroup: false,
+                        skip_graded_submissions: skipGradedSubmissions,
+                        show_submissions_assigned_to_me_only: showSubmissionsAssignedToMeOnly,
+                        enable_single_key_shortcuts,
+                      })}
+                    />,
+                  )}
                 </div>
               </div>
             </div>

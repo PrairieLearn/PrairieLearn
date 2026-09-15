@@ -9,7 +9,6 @@ import { run } from '@prairielearn/run';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 import { DateFromISOString, IdSchema, parseRequestBody } from '@prairielearn/zod';
 
-import { AIGradingExplanation, AIGradingPrompt } from '../../../components/QuestionContainer.js';
 import { getAvailableAiGradingProviders } from '../../../ee/lib/ai-grading/ai-grading-credentials.js';
 import { computeAiGradingRelativeCosts } from '../../../ee/lib/ai-grading/ai-grading-models.shared.js';
 import { calculateAiGradingStats } from '../../../ee/lib/ai-grading/ai-grading-stats.js';
@@ -40,7 +39,7 @@ import { selectUserSettings } from '../../../models/user-settings.js';
 import { selectUserById } from '../../../models/user.js';
 import { selectAndAuthzVariant } from '../../../models/variant.js';
 
-import { GradingPanel } from './gradingPanel.html.js';
+import { buildGradingPanelProps } from './components/buildGradingPanelProps.js';
 import {
   type GradingJobData,
   GradingJobDataSchema,
@@ -363,8 +362,9 @@ router.get(
 
         const userSettings = await selectUserSettings({ user_id: res.locals.authn_user.id });
 
-        const gradingPanel = GradingPanel({
-          ...locals,
+        const panel = buildGradingPanelProps({
+          resLocals: { ...locals.resLocals, rubric_data },
+          graders: locals.graders,
           context: 'main',
           aiGradingInfo,
           aiGradingMode: shared.aiGradingMode,
@@ -377,24 +377,11 @@ router.get(
             req.session.show_submissions_assigned_to_me_only ?? true,
           gradedByHumanName: shared.lastHumanGraderName,
           enable_single_key_shortcuts: userSettings.enable_single_key_shortcuts,
-        }).toString();
-
-        const aiGradingExplanation = aiGradingInfo
-          ? AIGradingExplanation({
-              explanation: aiGradingInfo.explanation,
-              hasImage: aiGradingInfo.hasImage,
-              rotationCorrectionDegrees: aiGradingInfo.rotationCorrectionDegrees,
-            }).toString()
-          : '';
-
-        const aiGradingPrompt = aiGradingInfo?.prompt
-          ? AIGradingPrompt({ prompt: aiGradingInfo.prompt }).toString()
-          : '';
+        });
 
         res.json({
-          gradingPanel,
-          aiGradingExplanation,
-          aiGradingPrompt,
+          panel,
+          aiGradingInfo,
           rubric_data,
           submissionPanel: panels.submissionPanel,
           submissionId: submission.id,

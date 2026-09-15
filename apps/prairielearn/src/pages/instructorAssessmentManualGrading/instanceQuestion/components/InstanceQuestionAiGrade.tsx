@@ -7,6 +7,7 @@ import { useModalState } from '@prairielearn/ui';
 
 import { AiGradingProgressInfo } from '../../../../components/ServerJobProgress/AiGradingProgressInfo.js';
 import { useServerJobProgress } from '../../../../components/ServerJobProgress/useServerJobProgress.js';
+import { getManualGradingInstanceQuestionRubricPanelsUrl } from '../../../../lib/client/url.js';
 import type { EnumAiGradingProvider } from '../../../../lib/db-types.js';
 import { JobItemStatus } from '../../../../lib/serverJobProgressSocket.shared.js';
 import { createAssessmentQuestionTrpcClient } from '../../../../trpc/assessmentQuestion/client.js';
@@ -17,7 +18,7 @@ import {
 } from '../../assessmentQuestion/components/AiGradingModelSelectionModal.js';
 import { AI_GRADING_MODAL_OPEN_EVENT } from '../instanceQuestion.shared.js';
 
-import { reloadGradingPanel } from './reloadGradingPanel.js';
+import { fetchAndApplyGradingPanelRefresh } from './gradingPanelRefresh.js';
 
 interface InstanceQuestionAiGradeInnerProps {
   courseInstanceId: string;
@@ -86,15 +87,19 @@ function InstanceQuestionAiGradeInner({
     if (!expectReloadRef.current) return;
     expectReloadRef.current = false;
     if (submissionStatus === JobItemStatus.complete) {
-      void reloadGradingPanel({ courseInstanceId, assessmentId, instanceQuestionId }).then((ok) => {
+      void fetchAndApplyGradingPanelRefresh({
+        url: getManualGradingInstanceQuestionRubricPanelsUrl({
+          courseInstanceId,
+          assessmentId,
+          instanceQuestionId,
+        }),
+      }).then((ok) => {
         if (!ok) setShowReloadError(true);
       });
     }
   }, [submissionStatus, courseInstanceId, assessmentId, instanceQuestionId]);
 
-  // Imperatively toggle the AI grade button's disabled state because the
-  // button lives in the server-rendered grading panel — making this
-  // declarative would require porting the entire grading panel to React.
+  // Keep the AI grade button disabled while a job is running.
   useEffect(() => {
     const button = document.getElementById('ai-grade-button') as HTMLButtonElement | null;
     if (!button) return;
