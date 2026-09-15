@@ -7,6 +7,7 @@ import Dropdown from 'react-bootstrap/Dropdown';
 import type { TanstackTableColumn, TanstackTableInstance } from '../tanstack-table.js';
 
 import { ExpandableCheckboxGroup } from './ExpandableCheckboxGroup.js';
+import { Tooltip } from './Tooltip.js';
 
 interface ColumnMenuItemProps<RowDataModel extends RowData> {
   column: TanstackTableColumn<RowDataModel>;
@@ -47,24 +48,24 @@ function ColumnLeafItem<RowDataModel extends RowData>({
           {header}
         </span>
       </label>
-      <button
-        type="button"
-        // Since the HTML changes, but we want to refocus the pin button, we track
-        // the active pin button and refocuses it when the column manager is rerendered.
-        id={`${column.id}-pin`}
-        className={clsx(
-          'btn btn-sm btn-ghost ms-2',
-          (!column.getCanPin() || !onPinningBoundary) && 'invisible',
-        )}
-        aria-label={
-          column.getIsPinned() ? `Unfreeze '${header}' column` : `Freeze '${header}'  column`
-        }
-        title={column.getIsPinned() ? 'Unfreeze column' : 'Freeze column'}
-        data-bs-toggle="tooltip"
-        onClick={() => onTogglePin(column.id)}
-      >
-        <i className={`bi ${column.getIsPinned() ? 'bi-x' : 'bi-snow'}`} aria-hidden="true" />
-      </button>
+      <Tooltip content={column.getIsPinned() ? 'Unfreeze column' : 'Freeze column'}>
+        <button
+          type="button"
+          // Since the HTML changes, but we want to refocus the pin button, we track
+          // the active pin button and refocuses it when the column manager is rerendered.
+          id={`${column.id}-pin`}
+          className={clsx(
+            'btn btn-sm btn-ghost ms-2',
+            (!column.getCanPin() || !onPinningBoundary) && 'invisible',
+          )}
+          aria-label={
+            column.getIsPinned() ? `Unfreeze '${header}' column` : `Freeze '${header}'  column`
+          }
+          onClick={() => onTogglePin(column.id)}
+        >
+          <i className={`bi ${column.getIsPinned() ? 'bi-x' : 'bi-snow'}`} aria-hidden="true" />
+        </button>
+      </Tooltip>
     </div>
   );
 }
