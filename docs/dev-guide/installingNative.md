@@ -172,6 +172,18 @@ Most of these prerequisites can be installed using the package manager of your O
 
   You may need to restart the PostgreSQL server after changing the file above.
 
+- Configure PostgreSQL to use UTC, matching production. PrairieLearn expects database timestamps to be serialized in UTC; historical dates in some local timezones have offsets with seconds that JavaScript's date parser cannot read.
+
+  Run these commands as a PostgreSQL superuser:
+
+  ```sh
+  psql -U postgres -d postgres -c "ALTER SYSTEM SET timezone = 'UTC';"
+  psql -U postgres -d postgres -c "SELECT pg_reload_conf();"
+  psql -U postgres -d postgres -c "SHOW timezone;"
+  ```
+
+  The last command should return `UTC`. Reconnect any running PrairieLearn processes so their database connections use the updated setting. Database or role timezone overrides take precedence over the server default; remove or update any non-UTC overrides.
+
 ## Configuration
 
 If you have your own [PrairieLearn course repository](../requestCourse/index.md), you will need to create the file `PrairieLearn/config.json` with the path of your local course repository. If you need support for the in-browser file editor or file uploads, you should set `filesRoot`. If you need support for workspaces, you should provide a path to a directory into which temporary files will be saved. Here is a sample configuration:

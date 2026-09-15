@@ -32,7 +32,7 @@ fi
 
 # Only locally start postgres if we weren't given a PGHOST environment variable
 if [[ -z "$PGHOST" ]]; then
-    su postgres -c "pg_ctl --silent --log=${PGDATA}/postgresql.log ${ACTION}"
+    su postgres -c "pg_ctl --silent --log=${PGDATA}/postgresql.log -o '-c timezone=UTC' ${ACTION}"
 fi
 
 if [[ "$ACTION" == "start" ]]; then
