@@ -21,6 +21,7 @@ import {
 import { extractPageContext } from '../../../lib/client/page-context.js';
 import {
   StaffInstanceQuestionGroupSchema,
+  StaffStudentLabelSchema,
   StaffUserSchema,
 } from '../../../lib/client/safe-db-types.js';
 import { getAssessmentQuestionTrpcUrl } from '../../../lib/client/url.js';
@@ -34,6 +35,7 @@ import { getUrl } from '../../../lib/url.js';
 import { createAuthzMiddleware } from '../../../middlewares/authzHelper.js';
 import { selectAssessmentQuestionById } from '../../../models/assessment-question.js';
 import { selectCourseInstanceGraderStaff } from '../../../models/course-instances.js';
+import { selectStudentLabelsInCourseInstance } from '../../../models/student-label.js';
 
 import { AssessmentQuestionManualGrading } from './AssessmentQuestionManualGrading.html.js';
 import {
@@ -55,6 +57,9 @@ router.get(
         courseInstance: res.locals.course_instance,
       }),
     );
+    const studentLabels = z
+      .array(StaffStudentLabelSchema)
+      .parse(await selectStudentLabelsInCourseInstance(res.locals.course_instance));
     const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
     const aiSubmissionGroupingEnabled = await features.enabledFromLocals(
       'ai-submission-grouping',
@@ -190,6 +195,7 @@ router.get(
                 rubricData={rubric_data}
                 instanceQuestionGroups={instanceQuestionGroups}
                 courseStaff={courseStaff}
+                studentLabels={studentLabels}
                 aiGradingStats={
                   aiGradingEnabled && assessment_question.ai_grading_mode
                     ? await calculateAiGradingStats(assessment_question)
