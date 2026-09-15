@@ -184,6 +184,13 @@ class TestConfigurationUnits:
         with pytest.raises(TypeError, match="must be a mapping"):
             big_operator_input._config(html(), {"correct_answers": []})
 
+    @pytest.mark.parametrize("operator", ["Min", "Max"])
+    def test_min_max_reject_bounds_indexing(self, operator: str) -> None:
+        with pytest.raises(ValueError, match="does not support"):
+            big_operator_input._config(
+                html(**{"correct-answer": f"{operator}(k, (k, 1, 2))"})
+            )
+
     def test_inferred_operator_rejects_unsupported_indexing(self) -> None:
         correct_answer = {
             "_type": "big_operator",
@@ -963,9 +970,7 @@ class TestGradeUnits:
             ("Intersection", "domain"),
             ("DisjointUnion", "bounds"),
             ("DisjointUnion", "domain"),
-            ("Min", "bounds"),
             ("Min", "domain"),
-            ("Max", "bounds"),
             ("Max", "domain"),
         ],
     )
@@ -2061,7 +2066,7 @@ class TestDocSmoke:
             index=x,
             target=0,
             direction="two-sided",
-            body=cast(sympy.Expr, sympy.Function("f")(x)),
+            body=sympy.Function("f")(x),  # type: ignore
         )
         markup = html(**{
             "answers-name": "evaluation",
