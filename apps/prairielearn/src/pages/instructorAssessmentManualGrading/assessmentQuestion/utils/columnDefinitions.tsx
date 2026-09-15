@@ -9,7 +9,8 @@ import {
   numericColumnFilterFn,
 } from '@prairielearn/ui';
 
-import type { StaffAssessment } from '../../../../lib/client/safe-db-types.js';
+import { StudentLabelBadge } from '../../../../components/StudentLabelBadge.js';
+import type { StaffAssessment, StaffStudentLabel } from '../../../../lib/client/safe-db-types.js';
 import { getStudentEnrollmentUrl } from '../../../../lib/client/url.js';
 import type { AssessmentQuestion, InstanceQuestionGroup } from '../../../../lib/db-types.js';
 import { formatPoints } from '../../../../lib/format.js';
@@ -43,6 +44,7 @@ interface CreateColumnsParams {
   csrfToken: string;
   assessment: StaffAssessment;
   courseInstanceId: string;
+  studentLabels: StaffStudentLabel[];
   onEditPointsSuccess: () => void;
   onEditPointsConflict: (conflictDetailsUrl: string) => void;
   scrollRef: React.RefObject<HTMLDivElement | null> | null;
@@ -59,10 +61,12 @@ export function createColumns({
   urlPrefix,
   csrfToken,
   courseInstanceId,
+  studentLabels,
   onEditPointsSuccess,
   onEditPointsConflict,
   scrollRef,
 }: CreateColumnsParams) {
+  const studentLabelsById = new Map(studentLabels.map((label) => [label.id, label]));
   const renderPointsCell = (
     row: InstanceQuestionRow,
     field: 'manual_points' | 'auto_points' | 'points',
@@ -220,6 +224,43 @@ export function createColumns({
         return uid;
       },
     }),
+
+    ...(!assessment.team_work
+      ? [
+          columnHelper.accessor('student_label_ids', {
+            id: 'student_labels',
+            header: () => (
+              <span className="d-inline-flex align-items-center gap-1">
+                <span>Labels</span>
+                <i className="bi bi-people" aria-hidden="true" />
+              </span>
+            ),
+            meta: { label: 'Labels' },
+            cell: (info) => {
+              const labelIds = info.getValue();
+              if (labelIds.length === 0) return '—';
+              const labels = labelIds
+                .map((id) => studentLabelsById.get(id))
+                .filter((label): label is StaffStudentLabel => label != null);
+              return (
+                <div className="d-flex flex-wrap gap-1">
+                  {labels.map((label) => (
+                    <StudentLabelBadge key={label.id} label={label} />
+                  ))}
+                </div>
+              );
+            },
+            enableSorting: false,
+            enableGlobalFilter: false,
+            filterFn: (row, _columnId, filter: MultiSelectFilterValue) => {
+              const labelIds = new Set(row.original.student_label_ids);
+              return applyMultiSelectFilter(filter, (values) =>
+                values.some((id) => labelIds.has(id)),
+              );
+            },
+          }),
+        ]
+      : []),
 
     columnHelper.accessor((row) => row.instance_question.requires_manual_grading, {
       id: 'requires_manual_grading',
