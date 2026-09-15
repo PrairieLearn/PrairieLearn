@@ -1,7 +1,7 @@
 import clsx from 'clsx';
-import { useCallback, useEffect, useId, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { OverlayTrigger } from '@prairielearn/ui';
+import { Tooltip } from '@prairielearn/ui';
 
 export function CopyButton({
   text,
@@ -15,8 +15,8 @@ export function CopyButton({
   className?: string;
 }) {
   const [copied, setCopied] = useState(false);
+  const [showCopiedTooltip, setShowCopiedTooltip] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const tooltipId = useId();
 
   useEffect(() => {
     return () => {
@@ -27,16 +27,21 @@ export function CopyButton({
   const handleCopy = useCallback(async () => {
     await navigator.clipboard.writeText(text);
     setCopied(true);
+    setShowCopiedTooltip(true);
     if (timerRef.current != null) clearTimeout(timerRef.current);
-    timerRef.current = setTimeout(() => setCopied(false), 1000);
+    timerRef.current = setTimeout(() => {
+      setCopied(false);
+      setShowCopiedTooltip(false);
+    }, 1000);
   }, [text]);
 
   return (
     <>
-      <OverlayTrigger
-        tooltip={{
-          body: copied ? 'Copied!' : 'Copy',
-          props: { id: tooltipId },
+      <Tooltip
+        content={copied ? 'Copied!' : 'Copy'}
+        isOpen={showCopiedTooltip ? true : undefined}
+        onOpenChange={(open) => {
+          if (!open) setShowCopiedTooltip(false);
         }}
       >
         <button
@@ -50,7 +55,7 @@ export function CopyButton({
         >
           <i className={copied ? 'bi bi-check' : 'bi bi-clipboard'} aria-hidden="true" /> {label}
         </button>
-      </OverlayTrigger>
+      </Tooltip>
       <span className="visually-hidden" role="status">
         {copied ? 'Copied.' : ''}
       </span>

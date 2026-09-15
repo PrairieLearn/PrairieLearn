@@ -2,8 +2,6 @@ import { type RowData, flexRender } from '@tanstack/react-table';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import clsx from 'clsx';
 import { type ComponentProps, type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
-import OverlayTrigger from 'react-bootstrap/OverlayTrigger';
-import Tooltip from 'react-bootstrap/Tooltip';
 import { useDebouncedCallback } from 'use-debounce';
 
 import { run } from '@prairielearn/run';
@@ -21,6 +19,7 @@ import {
   type TanstackTableDownloadButtonProps,
 } from './TanstackTableDownloadButton.js';
 import { TanstackTableHeaderCell } from './TanstackTableHeaderCell.js';
+import { Tooltip } from './Tooltip.js';
 import { useAutoSizeColumns } from './useAutoSizeColumns.js';
 
 function TableCell<RowDataModel extends RowData>({
@@ -602,7 +601,7 @@ export function TanstackTableCard<RowDataModel extends RowData>({
             }}
           />
           {inputValue && (
-            <OverlayTrigger overlay={<Tooltip>Clear search</Tooltip>}>
+            <Tooltip content="Clear search">
               <button
                 type="button"
                 className="btn btn-floating-icon"
@@ -615,7 +614,7 @@ export function TanstackTableCard<RowDataModel extends RowData>({
               >
                 <i className="bi bi-x-circle-fill" aria-hidden="true" />
               </button>
-            </OverlayTrigger>
+            </Tooltip>
           )}
         </div>
         <div className="d-flex flex-wrap flex-row align-items-center gap-2">
@@ -624,7 +623,7 @@ export function TanstackTableCard<RowDataModel extends RowData>({
         </div>
         <div className="ms-auto d-flex align-items-center gap-1 text-muted text-nowrap">
           {onResetColumnFilters && (
-            <OverlayTrigger overlay={<Tooltip>Clear filters</Tooltip>}>
+            <Tooltip content="Clear filters">
               <button
                 type="button"
                 className="btn btn-link btn-sm text-muted p-0"
@@ -633,7 +632,7 @@ export function TanstackTableCard<RowDataModel extends RowData>({
               >
                 <i className="bi bi-x-circle" aria-hidden="true" />
               </button>
-            </OverlayTrigger>
+            </Tooltip>
           )}
           {statusContent ?? (
             <>

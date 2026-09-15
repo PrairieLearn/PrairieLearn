@@ -3,6 +3,7 @@ import { useCallback, useMemo, useRef, useState } from 'react';
 
 import { run } from '@prairielearn/run';
 import { QueryClientProviderDebug } from '@prairielearn/trpc/react';
+import { Tooltip } from '@prairielearn/ui';
 
 import { b64DecodeUnicode } from '../../../../lib/base64-util.js';
 import type { StaffQuestion } from '../../../../lib/client/safe-db-types.js';
@@ -144,17 +145,17 @@ function AiQuestionGenerationEditorInner({
           </ul>
           <div className="d-flex align-items-center justify-content-end flex-grow-1 border-bottom pe-2">
             {!isQuestionEmpty && (
-              <button
-                type="button"
-                className="btn btn-sm btn-primary"
-                data-bs-toggle="tooltip"
-                data-bs-title="Finalize a question to use it on assessments and make manual edits"
-                disabled={isGenerating}
-                onClick={() => setShowFinalizeModal(true)}
-              >
-                <i className="fa fa-check" aria-hidden="true" />
-                Finalize question
-              </button>
+              <Tooltip content="Finalize a question to use it on assessments and make manual edits">
+                <button
+                  type="button"
+                  className="btn btn-sm btn-primary"
+                  disabled={isGenerating}
+                  onClick={() => setShowFinalizeModal(true)}
+                >
+                  <i className="fa fa-check" aria-hidden="true" />
+                  Finalize question
+                </button>
+              </Tooltip>
             )}
           </div>
         </div>
