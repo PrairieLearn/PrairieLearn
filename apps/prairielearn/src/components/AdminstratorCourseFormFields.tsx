@@ -254,6 +254,29 @@ export function AdministratorCourseFormFields({
       </div>
 
       <div className="col-md-6">
+        <label className="form-label" htmlFor="courseFormTitle">
+          Title
+        </label>
+        <input
+          type="text"
+          className={clsx('form-control', errors.title && 'is-invalid')}
+          id="courseFormTitle"
+          placeholder="Template course title"
+          aria-invalid={errors.title ? true : undefined}
+          aria-errormessage={errors.title ? 'courseFormTitle-error' : undefined}
+          maxLength={75}
+          {...register('title', {
+            required: 'Enter a title',
+            maxLength: { value: 75, message: 'Title must be at most 75 characters' },
+          })}
+        />
+        {errors.title && (
+          <div id="courseFormTitle-error" className="invalid-feedback">
+            {errors.title.message}
+          </div>
+        )}
+      </div>
+      <div className="col-md-6">
         <label className="form-label" htmlFor="courseFormShortName">
           Short name
         </label>
@@ -280,29 +303,6 @@ export function AdministratorCourseFormFields({
             </div>
           )}
         </div>
-      </div>
-      <div className="col-md-6">
-        <label className="form-label" htmlFor="courseFormTitle">
-          Title
-        </label>
-        <input
-          type="text"
-          className={clsx('form-control', errors.title && 'is-invalid')}
-          id="courseFormTitle"
-          placeholder="Template course title"
-          aria-invalid={errors.title ? true : undefined}
-          aria-errormessage={errors.title ? 'courseFormTitle-error' : undefined}
-          maxLength={75}
-          {...register('title', {
-            required: 'Enter a title',
-            maxLength: { value: 75, message: 'Title must be at most 75 characters' },
-          })}
-        />
-        {errors.title && (
-          <div id="courseFormTitle-error" className="invalid-feedback">
-            {errors.title.message}
-          </div>
-        )}
       </div>
 
       <div className="col-md-6">
