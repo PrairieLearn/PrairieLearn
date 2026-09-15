@@ -108,9 +108,10 @@ export function EditModeToolbar({
         saveButtonDisabled ? 'btn-outline-secondary' : 'btn-primary',
         saveButtonDisabledReason && 'opacity-50',
       )}
-      type={saveButtonDisabledReason ? 'button' : 'submit'}
+      type="submit"
       disabled={saveButtonDisabled && !saveButtonDisabledReason}
-      aria-label={saveButtonDisabledReason ? 'Why saving is unavailable' : 'Save'}
+      aria-disabled={saveButtonDisabledReason ? true : undefined}
+      onClick={saveButtonDisabledReason ? (event) => event.preventDefault() : undefined}
     >
       <i className="bi bi-floppy" aria-hidden="true" />{' '}
       <span className="toolbar-btn-label">Save</span>
