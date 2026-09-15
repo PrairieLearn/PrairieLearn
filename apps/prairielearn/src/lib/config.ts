@@ -604,6 +604,17 @@ export const ConfigSchema = z.object({
    * refund buttons are hidden and the server rejects all refund requests.
    */
   stripeAiGradingCreditsRefundsEnabled: z.boolean().default(false),
+  // Credentials are used only by the independent Vercel course-agent prototype.
+  vercelCourseAgent: z
+    .object({
+      token: z.string().min(1),
+      teamId: z.string().min(1),
+      projectId: z.string().min(1),
+      openAiApiKey: z.string().min(1),
+      model: z.string().min(1).optional(),
+    })
+    .nullable()
+    .default(null),
   aiGradingOpenAiApiKey: z.string().nullable().default(null),
   aiGradingOpenAiOrganization: z.string().nullable().default(null),
   aiQuestionGenerationOpenAiApiKey: z.string().nullable().default(null),
