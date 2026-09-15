@@ -63,6 +63,7 @@ import { canonicalLoggerMiddleware } from './lib/canonical-logger.js';
 import { getCourseAdminQtiImportUrl } from './lib/client/url.js';
 import * as codeCaller from './lib/code-caller/index.js';
 import { DEV_EXECUTION_MODE, config, loadConfig, setLocalsFromConfig } from './lib/config.js';
+import { assertCourseAgentDataExposureMatchesDatabase } from './lib/course-agent/data-exposure/index.js';
 import { pullAndUpdateCourse } from './lib/course.js';
 import { runDatabaseEncryptionOperation } from './lib/database-encryption-rotation.js';
 import { UserSchema } from './lib/db-types.js';
@@ -2524,6 +2525,7 @@ if (shouldStartServer) {
 
     await sqldb.setRandomSearchSchemaAsync(schemaPrefix);
     await sprocs.init();
+    await assertCourseAgentDataExposureMatchesDatabase();
 
     if (argv['migrate-and-exit']) {
       logger.info('option --migrate-and-exit passed, running DB setup and exiting');
