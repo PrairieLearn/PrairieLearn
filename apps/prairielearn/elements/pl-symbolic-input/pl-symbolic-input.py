@@ -544,6 +544,9 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
                 if not allow_sets and a_tru_str != "":
                     candidate = f"{a_tru_str} + {offset:d}"
                     candidate_sympy = a_tru + sympy.Integer(offset)
+                    if candidate_sympy == a_tru:
+                        candidate = f"{offset:d}"
+                        candidate_sympy = sympy.Integer(offset)
                 elif "all" in allowed_types or "expression" in allowed_types:
                     candidate = f"{offset:d}"
                     candidate_sympy = sympy.Integer(offset)

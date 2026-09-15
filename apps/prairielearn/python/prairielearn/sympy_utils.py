@@ -47,6 +47,9 @@ _SET_DOMAIN_NAMES = frozenset({
     "Rationals",
     "Reals",
 })
+_SET_DOMAINS: frozenset[sympy.Set] = frozenset(
+    getattr(sympy.S, name) for name in _SET_DOMAIN_NAMES
+)
 
 SympyMapT = dict[str, sympy.Basic | complex]
 _FrozenSympyMapT = FrozenDict[str, sympy.Basic | complex]
@@ -92,6 +95,8 @@ type AllowedSympyType = Literal["all"] | _SympyValueType
 def _used_sympy_types(expr: sympy.Basic) -> set[_UsedSympyType]:
     if expr is sympy.EmptySet:
         return {"empty-set"}
+    if expr in _SET_DOMAINS:
+        return {"set"}
     if isinstance(expr, sympy.Interval):
         return {"interval"}
     if isinstance(expr, sympy.Set) and expr.is_finite_set:
@@ -583,8 +588,6 @@ class CheckAST(ast.NodeVisitor):
                 raise FunctionNameWithoutArgumentsError(
                     err_node.col_offset, err_node.id
                 )
-            if self.allow_sets and node.id in _SET_DOMAIN_NAMES:
-                raise HasInvalidSymbolError(node.id)
             return self._set_type(node, None)
 
         if node.id in self.variables:
@@ -1194,12 +1197,7 @@ def convert_string_to_sympy_with_source(
     for name, (is_var, raw_name) in valid_names.items():
         if is_var:
             var_assumptions = (assumptions and assumptions.get(raw_name)) or {}
-            variable = sympy.Symbol(name, **var_assumptions)
-            locals_for_eval["variables"][name] = (
-                sympy.Set(variable)
-                if allow_sets and raw_name in _SET_DOMAIN_NAMES
-                else variable
-            )
+            locals_for_eval["variables"][name] = sympy.Symbol(name, **var_assumptions)
         else:
             locals_for_eval["functions"][name] = sympy.Function(name)
 
@@ -1396,7 +1394,7 @@ def try_parse_string_as_sympy(
             print(result.expr)
     """
     if allowed_types is None:
-        allowed_types = {"expression"}
+        allowed_types = {"all"} if allow_sets else {"expression"}
 
     try:
         expr_parsed = convert_string_to_sympy(

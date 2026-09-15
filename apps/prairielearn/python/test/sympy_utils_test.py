@@ -334,7 +334,6 @@ class TestSympy:
                 self.SYMBOL_NAMES,
                 allow_sets=True,
                 custom_functions=list(self.FUNCTION_NAMES),
-                allowed_types={"all"},
             )
             is None
         )
@@ -367,20 +366,20 @@ class TestSympy:
             self.SYMBOL_NAMES,
             allow_sets=True,
             custom_functions=list(self.FUNCTION_NAMES),
-            allowed_types={"all"},
         )
 
-    def test_try_parse_string_as_sympy_defaults_to_expression_type(self) -> None:
-        result = psu.try_parse_string_as_sympy(
-            "{1, 2}",
-            self.SYMBOL_NAMES,
-            allow_sets=True,
-        )
+    def test_try_parse_string_as_sympy_defaults_to_all_types_with_sets(self) -> None:
+        result = psu.try_parse_string_as_sympy("{1, 2}", None, allow_sets=True)
 
-        assert result == psu.SympyParseFailure(
-            "Your answer uses finite-set, which this input does not accept. "
-            "Allowed types: expression."
-        )
+        assert isinstance(result, psu.SympyParseSuccess)
+        assert result.expr == sympy.FiniteSet(1, 2)
+
+    def test_try_parse_string_as_sympy_defaults_to_expression_without_sets(
+        self,
+    ) -> None:
+        result = psu.try_parse_string_as_sympy("1", None)
+
+        assert result == psu.SympyParseSuccess(sympy.Integer(1))
 
     def test_try_parse_string_as_sympy_returns_failure(self) -> None:
         result = psu.try_parse_string_as_sympy("0.1", self.SYMBOL_NAMES)
@@ -516,7 +515,9 @@ class TestSympy:
         "domain_name",
         ["Complexes", "Integers", "Naturals", "Naturals0", "Rationals", "Reals"],
     )
-    def test_set_domains_must_be_declared_as_variables(self, domain_name: str) -> None:
+    def test_undeclared_set_domains_resolve_to_sympy_domains(
+        self, domain_name: str
+    ) -> None:
         result = psu.try_parse_string_as_sympy(
             domain_name,
             None,
@@ -524,12 +525,29 @@ class TestSympy:
             allowed_types={"set"},
         )
 
-        assert isinstance(result, psu.SympyParseFailure)
-        assert f'invalid symbol "{domain_name}"' in result.error
+        assert result == psu.SympyParseSuccess(getattr(sympy.S, domain_name))
 
-        assert psu.convert_string_to_sympy(
-            domain_name, [domain_name], allow_sets=True
-        ) == sympy.Set(sympy.Symbol(domain_name))
+    @pytest.mark.parametrize(
+        "domain_name",
+        ["Complexes", "Integers", "Naturals", "Naturals0", "Rationals", "Reals"],
+    )
+    def test_declared_set_domain_names_are_scalar_variables_with_sets(
+        self, domain_name: str
+    ) -> None:
+        symbol = sympy.Symbol(domain_name)
+
+        assert psu.try_parse_string_as_sympy(
+            domain_name,
+            [domain_name],
+            allow_sets=True,
+            allowed_types={"expression"},
+        ) == psu.SympyParseSuccess(symbol)
+        assert psu.try_parse_string_as_sympy(
+            f"{domain_name} + 1",
+            [domain_name],
+            allow_sets=True,
+            allowed_types={"expression"},
+        ) == psu.SympyParseSuccess(symbol + 1)
 
     @pytest.mark.parametrize(
         "domain_name",
@@ -552,48 +570,44 @@ class TestSympy:
         ) == psu.SympyParseSuccess(symbol + 1)
 
     @pytest.mark.parametrize(
-        ("operation", "expected_type"),
+        ("operation", "expected"),
         [
-            ("Reals - Naturals", sympy.Complement),
-            ("Reals U Naturals", sympy.Union),
-            ("Reals & Naturals", sympy.Intersection),
-            ("Complement(Reals, Naturals)", sympy.Complement),
-            ("Union(Reals, Naturals)", sympy.Union),
-            ("Intersection(Reals, Naturals)", sympy.Intersection),
+            ("Reals - Naturals", sympy.Complement(sympy.S.Reals, sympy.S.Naturals)),
+            ("Reals U Naturals", sympy.S.Reals),
+            ("Reals & Naturals", sympy.S.Naturals),
+            (
+                "Complement(Reals, Naturals)",
+                sympy.Complement(sympy.S.Reals, sympy.S.Naturals),
+            ),
+            ("Union(Reals, Naturals)", sympy.S.Reals),
+            ("Intersection(Reals, Naturals)", sympy.S.Naturals),
         ],
     )
     @pytest.mark.parametrize(
-        ("variables", "allowed_types", "expected_error"),
+        ("allowed_types", "expected_error"),
         [
-            (("Reals", "Naturals"), {"set"}, None),
-            (("Reals", "Naturals"), {"all"}, None),
-            (("Reals", "Naturals"), {"finite-set", "interval"}, "uses set"),
-            (("Reals",), {"set"}, 'invalid symbol "Naturals"'),
-            (("Naturals",), {"set"}, 'invalid symbol "Reals"'),
+            ({"set"}, None),
+            ({"all"}, None),
+            ({"finite-set", "interval"}, "uses set"),
         ],
     )
-    def test_infinite_set_operations_require_declared_names_and_set_type(
+    def test_infinite_set_operations_require_set_type(
         self,
         operation: str,
-        expected_type: type[sympy.Basic],
-        variables: tuple[str, ...],
+        expected: sympy.Set,
         allowed_types: set[psu.AllowedSympyType],
         expected_error: str | None,
     ) -> None:
         result = psu.try_parse_string_as_sympy(
             operation,
-            variables,
+            None,
             allow_sets=True,
             allowed_types=allowed_types,
         )
 
         if expected_error is None:
             assert isinstance(result, psu.SympyParseSuccess)
-            assert isinstance(result.expr, expected_type)
-            assert {str(symbol) for symbol in result.expr.free_symbols} == {
-                "Reals",
-                "Naturals",
-            }
+            assert result.expr == expected
         else:
             assert isinstance(result, psu.SympyParseFailure)
             assert expected_error in result.error
@@ -701,6 +715,22 @@ class TestSympy:
 
     @pytest.mark.parametrize("sympy_expr", [out for _, out in SET_EXPR_PAIRS])
     def test_sets_json_conversion(self, sympy_expr: sympy.Set) -> None:
+        assert sympy_expr == psu.json_to_sympy(
+            psu.sympy_to_json(sympy_expr, allow_sets=True), allow_sets=True
+        )
+
+    @pytest.mark.parametrize(
+        "sympy_expr",
+        [
+            sympy.S.Complexes,
+            sympy.S.Integers,
+            sympy.S.Naturals,
+            sympy.S.Naturals0,
+            sympy.S.Rationals,
+            sympy.S.Reals,
+        ],
+    )
+    def test_set_domains_json_conversion(self, sympy_expr: sympy.Set) -> None:
         assert sympy_expr == psu.json_to_sympy(
             psu.sympy_to_json(sympy_expr, allow_sets=True), allow_sets=True
         )

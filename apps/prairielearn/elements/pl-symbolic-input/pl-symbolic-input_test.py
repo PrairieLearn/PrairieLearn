@@ -109,14 +109,32 @@ def test_parse_accepts_allowed_value_types(allowed_types: str, submission: str) 
     "submission",
     ["Complexes", "Integers", "Naturals", "Naturals0", "Rationals", "Reals"],
 )
-def test_parse_rejects_undeclared_set_domains(attributes: str, submission: str) -> None:
+def test_parse_accepts_undeclared_set_domains(attributes: str, submission: str) -> None:
     element_html = build_element_html(attributes)
     data = make_question_data(submitted_answers={"test": submission})
 
     symbolic_input.parse(element_html, data)
 
-    assert data["submitted_answers"]["test"] is None
-    assert f'invalid symbol "{submission}"' in data["format_errors"]["test"]
+    assert "test" not in data["format_errors"]
+    assert psu.json_to_sympy(
+        data["submitted_answers"]["test"], allow_sets=True
+    ) == getattr(sympy.S, submission)
+
+
+def test_parse_treats_declared_set_domain_names_as_scalar_variables() -> None:
+    element_html = build_element_html(
+        'allow-sets="true"',
+        'variables="Reals"',
+    )
+    data = make_question_data(submitted_answers={"test": "Reals + 1"})
+
+    symbolic_input.parse(element_html, data)
+
+    assert "test" not in data["format_errors"]
+    assert (
+        psu.json_to_sympy(data["submitted_answers"]["test"], allow_sets=True)
+        == sympy.Symbol("Reals") + 1
+    )
 
 
 @pytest.mark.parametrize(
@@ -131,23 +149,19 @@ def test_parse_rejects_undeclared_set_domains(attributes: str, submission: str) 
     ],
 )
 @pytest.mark.parametrize(
-    ("variables", "allowed_types", "expected_error"),
+    ("allowed_types", "expected_error"),
     [
-        ("Reals,Naturals", "set", None),
-        ("Reals,Naturals", "all", None),
-        ("Reals,Naturals", "finite-set, interval", "uses set"),
-        ("Reals", "set", 'invalid symbol "Naturals"'),
-        ("Naturals", "set", 'invalid symbol "Reals"'),
+        ("set", None),
+        ("all", None),
+        ("finite-set, interval", "uses set"),
     ],
 )
-def test_parse_infinite_set_operations_require_declared_names_and_set_type(
+def test_parse_infinite_set_operations_require_set_type(
     submission: str,
-    variables: str,
     allowed_types: str,
     expected_error: str | None,
 ) -> None:
     element_html = build_element_html(
-        f'variables="{variables}"',
         f'allowed-types="{allowed_types}"',
     )
     data = make_question_data(submitted_answers={"test": submission})
@@ -248,10 +262,32 @@ def test_incorrect_answer_uses_an_allowed_type(
     assert data["partial_scores"]["test"]["score"] == 0
 
 
+def test_correct_answer_generation_round_trips_set_domains() -> None:
+    element_html = build_element_html('allow-sets="true"')
+    data = make_question_data(
+        correct_answers={
+            "test": psu.sympy_to_json(sympy.S.Reals, allow_sets=True),
+        }
+    )
+    data["test_type"] = "correct"
+
+    symbolic_input.test(element_html, data)
+    data["submitted_answers"] = data["raw_submitted_answers"].copy()
+    symbolic_input.parse(element_html, data)
+
+    assert "test" not in data["format_errors"]
+    assert (
+        psu.json_to_sympy(data["submitted_answers"]["test"], allow_sets=True)
+        == sympy.S.Reals
+    )
+
+
 @pytest.mark.parametrize(
     ("allowed_types", "correct_answer"),
     [
         ("all", "5"),
+        ("expression", "infty"),
+        ("expression", "-infty"),
         ("finite-set", "{5}"),
         ("interval", "(5, 6)"),
     ],
