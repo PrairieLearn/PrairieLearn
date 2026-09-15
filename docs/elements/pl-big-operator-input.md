@@ -50,29 +50,28 @@ In `question.html`, the `Func(...)` answer configures the operator and its index
 
 <div class="big-operator-formats" markdown>
 
-| Function        | Bounds                                          | Domain                                                       | Approaches                                                    |
-| --------------- | ----------------------------------------------- | ------------------------------------------------------------ | ------------------------------------------------------------- |
-| `Sum`           | $\displaystyle\sum_{k=1}^{n} k^2$               | $\displaystyle\sum_{k\in S}^{\phantom{n}} k^2$               | Not Supported                                                 |
-| `Product`       | $\displaystyle\prod_{k=1}^{n} k$                | $\displaystyle\prod_{k\in S}^{\phantom{n}} k$                | Not Supported                                                 |
-| `Integral`      | $\displaystyle\int_0^1 x^2\,\mathrm dx$         | $\displaystyle\int_\Gamma^{\phantom{1}} z^2\,\mathrm dz$     | Not Supported                                                 |
-| `Union`         | $\displaystyle\bigcup_{k=1}^{n} A_k$            | $\displaystyle\bigcup_{k\in S}^{\phantom{n}} A_k$            | Not Supported                                                 |
-| `Intersection`  | $\displaystyle\bigcap_{k=1}^{n} A_k$            | $\displaystyle\bigcap_{k\in S}^{\phantom{n}} A_k$            | Not Supported                                                 |
-| `DisjointUnion` | $\displaystyle\bigsqcup_{k=1}^{n} A_k$          | $\displaystyle\bigsqcup_{k\in S}^{\phantom{n}} A_k$          | Not Supported                                                 |
-| `Min`           | Not Supported                                   | $\displaystyle\min_{k\in S}^{\phantom{n}} a_k$               | Not Supported                                                 |
-| `Max`           | Not Supported                                   | $\displaystyle\max_{k\in S}^{\phantom{n}} a_k$               | Not Supported                                                 |
-| `Limit`         | Not Supported                                   | Not Supported                                                | $\displaystyle\lim_{x\to 0} f(x)$                             |
-| `Custom`        | $\displaystyle\mathop{\Huge\star}_{k=1}^{n}a_k$ | $\displaystyle\mathop{\Huge\star}_{k\in S}^{\phantom{n}}a_k$ | $\displaystyle\mathop{\Huge\star}_{x\to 0}^{\phantom{n}}f(x)$ |
+| Function        | Bounds                                                  | Domain                                                              | Approaches                                                    |
+| --------------- | ------------------------------------------------------- | ------------------------------------------------------------------- | ------------------------------------------------------------- |
+| `Sum`           | $\displaystyle\sum_{k=1}^{n} k^2$                       | $\displaystyle\sum_{k\in S}^{\phantom{n}} k^2$                      | —                                                             |
+| `Product`       | $\displaystyle\prod_{k=1}^{n} k$                        | $\displaystyle\prod_{k\in S}^{\phantom{n}} k$                       | —                                                             |
+| `Integral`      | $\displaystyle\int_1^\infty \dfrac 1 {x^2}\,\mathrm dx$ | $\displaystyle\int_\Gamma^{\phantom{1}} \dfrac 1 {z^2}\,\mathrm dz$ | —                                                             |
+| `Union`         | $\displaystyle\bigcup_{k=1}^{n} A_k$                    | $\displaystyle\bigcup_{k\in S}^{\phantom{n}} A_k$                   | —                                                             |
+| `Intersection`  | $\displaystyle\bigcap_{k=1}^{n} A_k$                    | $\displaystyle\bigcap_{k\in S}^{\phantom{n}} A_k$                   | —                                                             |
+| `DisjointUnion` | $\displaystyle\bigsqcup_{k=1}^{n} A_k$                  | $\displaystyle\bigsqcup_{k\in S}^{\phantom{n}} A_k$                 | —                                                             |
+| `Min`           | —                                                       | $\displaystyle\min_{k\in S}^{\phantom{n}} a_k$                      | —                                                             |
+| `Max`           | —                                                       | $\displaystyle\max_{k\in S}^{\phantom{n}} a_k$                      | —                                                             |
+| `Limit`         | —                                                       | —                                                                   | $\displaystyle\lim_{x\to 0} f(x)$                             |
+| `Custom`        | $\displaystyle\mathop{\Huge\star}_{k=1}^{n}a_k$         | $\displaystyle\mathop{\Huge\star}_{k\in S}^{\phantom{n}}a_k$        | $\displaystyle\mathop{\Huge\star}_{x\to 0}^{\phantom{n}}f(x)$ |
 
 </div>
 
 The tuple in the second argument configures the index fields:
 
-| Index format | Correct answer pattern                     | Student input fields               |
-| ------------ | ------------------------------------------ | ---------------------------------- |
-| Bounds       | `Func(body, (index, lower, upper))`        | Lower bound, upper bound, and body |
-| Domain       | `Func(body, (index, domain))`              | Domain and body                    |
-| Approaches   | `Limit(body, (index, target, direction))`  | Target, direction, and body        |
-| Approaches   | `Custom(body, (index, target, direction))` | Target, direction, and body        |
+| Index format | Correct answer pattern                   | Student input fields               |
+| ------------ | ---------------------------------------- | ---------------------------------- |
+| Bounds       | `Func(body, (index, lower, upper))`      | Lower bound, upper bound, and body |
+| Domain       | `Func(body, (index, domain))`            | Domain and body                    |
+| Approaches   | `Func(body, (index, target, direction))` | Target, direction, and body        |
 
 For example, this bounded product has index `k`, lower bound `1`, upper bound `4`, and body `k + 1`:
 
