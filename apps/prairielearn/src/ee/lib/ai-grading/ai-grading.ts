@@ -32,6 +32,7 @@ import {
   type InstanceQuestion,
   type Question,
 } from '../../../lib/db-types.js';
+import { decryptFromStorage } from '../../../lib/encrypted-storage.js';
 import * as manualGrading from '../../../lib/manualGrading.js';
 import { safeMustacheRender } from '../../../lib/mustache.js';
 import { buildQuestionUrls } from '../../../lib/question-render.js';
@@ -43,12 +44,15 @@ import {
   insertAiGradingJobAndDeductCreditsIfNeeded,
   selectCreditPool,
 } from '../../../models/ai-grading-credit-pool.js';
+import { selectCustomEndpoint } from '../../../models/ai-grading-custom-endpoints.js';
 import { updateCourseInstanceUsagesForAiGradingResponses } from '../../../models/course-instance-usages.js';
 import { selectCompleteRubric } from '../../../models/rubrics.js';
 import * as questionServers from '../../../question-servers/index.js';
 
 import { resolveAiGradingKeys } from './ai-grading-credentials.js';
+import { parseAiGradingModelSelection } from './ai-grading-model-selection.js';
 import { AI_GRADING_MODEL_PROVIDERS, type AiGradingModelId } from './ai-grading-models.shared.js';
+import { createAiGradingOpenAICompatible } from './ai-grading-openai-compatible.js';
 import { createAiGradingOpenAI } from './ai-grading-openai-provider.js';
 import { selectGradingJobsInfo } from './ai-grading-stats.js';
 import {
@@ -75,7 +79,7 @@ import {
 const sql = loadSqlEquiv(import.meta.url);
 
 type AiGradingResponsesForPersistence = {
-  model_id: AiGradingModelId;
+  model_id: string;
   finalGradingResponse: GenerateTextResult<any, any, any>;
 } & (
   | {
@@ -119,17 +123,24 @@ function calculateTotalGradingCostMilliDollars({
   rotationCorrections,
   finalGradingResponse,
 }: AiGradingResponsesForPersistence): number {
-  let totalRawCost = calculateResponseCost({ model: model_id, usage: finalGradingResponse.usage });
+  if (!Object.hasOwn(config.costPerMillionTokens, model_id)) {
+    return 0;
+  }
+  const pricedModelId = model_id as AiGradingModelId;
+  let totalRawCost = calculateResponseCost({
+    model: pricedModelId,
+    usage: finalGradingResponse.usage,
+  });
   if (gradingResponseWithRotationIssue) {
     totalRawCost += calculateResponseCost({
-      model: model_id,
+      model: pricedModelId,
       usage: gradingResponseWithRotationIssue.usage,
     });
   }
   if (rotationCorrections) {
     for (const correction of Object.values(rotationCorrections)) {
       totalRawCost += calculateResponseCost({
-        model: model_id,
+        model: pricedModelId,
         usage: correction.response.usage,
       });
     }
@@ -330,7 +341,7 @@ export async function aiGrade({
    * Only use when mode is 'selected'.
    */
   instance_question_ids?: string[];
-  model_id: AiGradingModelId;
+  model_id: string;
 }): Promise<string> {
   if (!assessment_question.max_manual_points) {
     throw new error.HttpStatusError(
@@ -339,10 +350,40 @@ export async function aiGrade({
     );
   }
 
-  const provider = AI_GRADING_MODEL_PROVIDERS[model_id];
-  const resolvedKeys = await resolveAiGradingKeys(course_instance);
+  const selection = parseAiGradingModelSelection(model_id);
+  if (!selection) {
+    throw new error.HttpStatusError(400, 'Invalid AI grading model specified');
+  }
 
-  const model = run(() => {
+  const resolvedKeys = await resolveAiGradingKeys(course_instance);
+  const provider =
+    selection.kind === 'openai_compatible'
+      ? 'openai'
+      : AI_GRADING_MODEL_PROVIDERS[selection.modelId];
+
+  const model = await run(async () => {
+    if (selection.kind === 'openai_compatible') {
+      if (!course_instance.ai_grading_use_custom_api_keys) {
+        throw new error.HttpStatusError(
+          403,
+          'Custom AI endpoints require custom API keys to be enabled.',
+        );
+      }
+      const endpoint = await selectCustomEndpoint({
+        endpoint_id: selection.endpointId,
+        course_instance_id: course_instance.id,
+      });
+      if (!endpoint) {
+        throw new error.HttpStatusError(403, 'Custom AI endpoint is not available');
+      }
+      return createAiGradingOpenAICompatible({
+        name: `custom-endpoint-${endpoint.id}`,
+        baseURL: endpoint.base_url,
+        apiKey: decryptFromStorage(endpoint.encrypted_secret_key),
+      }).chat(selection.modelId);
+    }
+
+    const firstPartyModelId = selection.modelId;
     if (provider === 'openai') {
       if (!resolvedKeys.openai) {
         throw new error.HttpStatusError(403, 'Model not available (OpenAI API key not provided)');
@@ -350,14 +391,14 @@ export async function aiGrade({
       return createAiGradingOpenAI({
         apiKey: resolvedKeys.openai.apiKey,
         organization: resolvedKeys.openai.organization ?? undefined,
-      })(model_id);
+      })(firstPartyModelId);
     } else if (provider === 'google') {
       if (!resolvedKeys.google) {
         throw new error.HttpStatusError(403, 'Model not available (Google API key not provided)');
       }
       return createGoogle({
         apiKey: resolvedKeys.google.apiKey,
-      })(model_id);
+      })(firstPartyModelId);
     } else {
       if (!resolvedKeys.anthropic) {
         throw new error.HttpStatusError(
@@ -367,7 +408,7 @@ export async function aiGrade({
       }
       return createAnthropic({
         apiKey: resolvedKeys.anthropic.apiKey,
-      })(model_id);
+      })(firstPartyModelId);
     }
   });
 
@@ -851,7 +892,7 @@ export async function aiGrade({
             ]) {
               await addAiGradingCostToIntervalUsage({
                 courseInstance: course_instance,
-                model: model_id,
+                model: model_id as AiGradingModelId,
                 usage: response.usage,
               });
             }
@@ -861,7 +902,7 @@ export async function aiGrade({
           if (trackRateLimitAndCost) {
             await addAiGradingCostToIntervalUsage({
               courseInstance: course_instance,
-              model: model_id,
+              model: model_id as AiGradingModelId,
               usage: finalGradingResponse.usage,
             });
           }
@@ -1079,7 +1120,7 @@ export async function aiGrade({
             ]) {
               await addAiGradingCostToIntervalUsage({
                 courseInstance: course_instance,
-                model: model_id,
+                model: model_id as AiGradingModelId,
                 usage: response.usage,
               });
             }
@@ -1089,7 +1130,7 @@ export async function aiGrade({
           if (trackRateLimitAndCost) {
             await addAiGradingCostToIntervalUsage({
               courseInstance: course_instance,
-              model: model_id,
+              model: model_id as AiGradingModelId,
               usage: finalGradingResponse.usage,
             });
           }

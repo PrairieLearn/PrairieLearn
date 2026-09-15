@@ -10,6 +10,7 @@ export const requiredTableFields = {
   ai_grading_credit_checkout_sessions: ['course_instance_id'],
   course_instances: ['course_instance_id'],
   course_instance_ai_grading_credentials: ['course_instance_id'],
+  course_instance_ai_grading_custom_endpoints: ['course_instance_id'],
   courses: ['course_id'],
   users: ['subject_user_id'],
   teams: ['team_id'],
@@ -39,6 +40,10 @@ export type SupportedTableActionCombination =
     }
   | {
       tableName: 'course_instance_ai_grading_credentials';
+      actionDetail?: null;
+    }
+  | {
+      tableName: 'course_instance_ai_grading_custom_endpoints';
       actionDetail?: null;
     }
   | {

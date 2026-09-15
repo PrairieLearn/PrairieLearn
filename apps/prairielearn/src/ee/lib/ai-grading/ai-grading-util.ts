@@ -54,7 +54,6 @@ import { safeMustacheRender } from '../../../lib/mustache.js';
 import { formatJsonWithPrettier } from '../../../lib/prettier.js';
 import { RedisRateLimiter } from '../../../lib/redis-rate-limiter.js';
 
-import type { AiGradingModelId } from './ai-grading-models.shared.js';
 import {
   type CounterClockwiseRotationDegrees,
   type InstanceQuestionAIGradingInfo,
@@ -63,6 +62,17 @@ import {
 } from './types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
+
+function costForAiGradingModel(
+  model_id: string,
+  usage?: Parameters<typeof calculateResponseCost>[0]['usage'],
+) {
+  if (!Object.hasOwn(config.costPerMillionTokens, model_id)) return 0;
+  return calculateResponseCost({
+    model: model_id as keyof (typeof config)['costPerMillionTokens'],
+    usage,
+  });
+}
 
 const SubmissionVariantSchema = z.object({
   variant: VariantSchema,
@@ -522,7 +532,7 @@ export async function insertAiGradingJob({
 }: {
   grading_job_id: string;
   job_sequence_id: string;
-  model_id: AiGradingModelId;
+  model_id: string;
   prompt: ModelMessage[];
   response: GenerateTextResult<any, any, any>;
   course_id: string;
@@ -539,7 +549,7 @@ export async function insertAiGradingJob({
       model: model_id,
       prompt_tokens: response.usage.inputTokens ?? 0,
       completion_tokens: response.usage.outputTokens ?? 0,
-      cost: calculateResponseCost({ model: model_id, usage: response.usage }),
+      cost: costForAiGradingModel(model_id, response.usage),
       course_id,
       course_instance_id,
     },
@@ -576,7 +586,7 @@ export async function insertAiGradingJobWithRotationCorrection({
 }: {
   grading_job_id: string;
   job_sequence_id: string;
-  model_id: AiGradingModelId;
+  model_id: string;
   prompt: ModelMessage[];
   gradingResponseWithRotationIssue: GenerateTextResult<any, any, any>;
   rotationCorrections: Record<
@@ -597,20 +607,14 @@ export async function insertAiGradingJobWithRotationCorrection({
     (gradingResponseWithRotationIssue.usage.outputTokens ?? 0) +
     (gradingResponseWithRotationCorrection.usage.outputTokens ?? 0);
   let cost =
-    calculateResponseCost({
-      model: model_id,
-      usage: gradingResponseWithRotationIssue.usage,
-    }) +
-    calculateResponseCost({
-      model: model_id,
-      usage: gradingResponseWithRotationCorrection.usage,
-    });
+    costForAiGradingModel(model_id, gradingResponseWithRotationIssue.usage) +
+    costForAiGradingModel(model_id, gradingResponseWithRotationCorrection.usage);
 
   const rotationCorrectionDegrees: Record<string, CounterClockwiseRotationDegrees> = {};
   for (const [filename, { degreesRotated, response }] of Object.entries(rotationCorrections)) {
     prompt_tokens += response.usage.inputTokens ?? 0;
     completion_tokens += response.usage.outputTokens ?? 0;
-    cost += calculateResponseCost({ model: model_id, usage: response.usage });
+    cost += costForAiGradingModel(model_id, response.usage);
     rotationCorrectionDegrees[filename] = degreesRotated;
   }
 
@@ -723,7 +727,7 @@ export async function setAiGradingMode(assessment_question_id: string, ai_gradin
 
 export async function setAiGradingLastSelectedModel(
   assessment_question_id: string,
-  model_id: AiGradingModelId,
+  model_id: string,
 ) {
   await execute(sql.set_ai_grading_last_selected_model, { assessment_question_id, model_id });
 }
