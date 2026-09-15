@@ -249,14 +249,10 @@ Most questions should use one of the built-in grading methods. For custom gradin
 
 ```python title="server.py"
 import prairielearn as pl
-import prairilearn.big_operator_utils as pbo
 
 
 def grade(data):
     submitted_json = data["submitted_answers"].get("total")
-    if not pbo.is_big_operator_json(submitted_json):
-        return
-
     submitted = pl.from_json(submitted_json)
     correct = pl.from_json(data["correct_answers"]["total"])
 
