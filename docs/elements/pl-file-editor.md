@@ -46,8 +46,6 @@ The `focus` attribute defaults to `false`. Setting this to true will cause the f
 
 The contents of the file editor are only displayed by default in the question panel. If the contents are expected to be listed in the submission panel, they should be explicitly added using other elements such as [`pl-file-preview`](pl-file-preview.md) or [`pl-xss-safe`](pl-xss-safe.md).
 
-When a preview is enabled, it updates after a 200 ms pause in typing. The previous preview remains visible until the new content, including math, is ready. This delay affects only the preview; submitted file contents are synchronized immediately.
-
 ### Editor modes
 
 The `ace-mode` attribute is typically set to `ace/mode/<language_name>`, where `<language_name>` is the name of a language supported by the Ace editor (e.g., `ace/mode/python`, `ace/mode/c_cpp`, `ace/mode/java`, etc.). Ace supports a number of built-in modes from the list of modes in the [Ace GitHub repository](https://github.com/ajaxorg/ace/tree/master/src/mode).
@@ -57,8 +55,6 @@ Alternatively, instructors may define a custom mode, which can be an alternative
 ### Custom preview options
 
 This element supports additional preview options through [element extensions](../elementExtensions.md). To provide this functionality, the extension must assign, to `window.PLFileEditor.prototype.preview.PREVIEW_TYPE` (where `PREVIEW_TYPE` is the value of the `preview` attribute), a function that converts a string representing the editor's content into suitable HTML content.
-
-The function may return an HTML string or a promise that resolves to one. Preview updates are serialized, and results superseded by newer edits are discarded. If rendering fails, the last completed preview remains visible, and the next edit retries rendering. Returned HTML is sanitized before display.
 
 ## Example implementations
 
