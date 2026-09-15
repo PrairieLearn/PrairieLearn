@@ -60,6 +60,7 @@ export function UserMessage({
     </div>
   );
 }
+
 function MessageMetadata({ author, createdAt }: { author: string; createdAt?: string }) {
   return (
     <div className="d-flex flex-wrap align-items-center gap-2 small text-muted mb-1 px-1">
