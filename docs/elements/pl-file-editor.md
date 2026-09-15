@@ -58,7 +58,7 @@ This element supports additional preview options through [element extensions](..
 
 ## AI grading
 
-Submitted code is included in [AI grading](../aiGrading/index.md) as text labeled with its filename, preserving indentation and Unicode. A `pl-file-preview` element is not required. Questions can combine the editor with file uploads and image capture; each distinct submitted file is sent once.
+Submitted code is included in [AI grading](../aiGrading/index.md) as text labeled with its filename, preserving indentation and line breaks. Unicode is preserved when `normalize-to-ascii` is disabled (the default); enabling it normalizes non-ASCII characters before submission. A [`pl-file-preview`](pl-file-preview.md) element is not required for AI grading, but is recommended so students can check their submitted files. Questions can combine the editor with file uploads and image capture; each distinct submitted file is sent once.
 
 ## Example implementations
 
