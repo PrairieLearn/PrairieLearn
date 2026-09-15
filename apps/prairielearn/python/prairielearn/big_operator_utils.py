@@ -177,7 +177,7 @@ def _validate_operator_indexing(
         raise ValueError("Big operator has an unsupported operator.")
     if not isinstance(indexing, str) or indexing not in _INDEXING_MODES:
         raise ValueError("Big operator has unsupported indexing.")
-    typed_operator = operator
+    typed_operator: BigOperatorName = operator
     typed_indexing = cast(BigOperatorIndexing, indexing)
     if typed_indexing not in get_valid_big_operator_indexing(typed_operator):
         raise ValueError(
