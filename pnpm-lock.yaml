@@ -856,7 +856,7 @@ importers:
         specifier: ^9.6.1
         version: 9.6.1
       express:
-        specifier: ^4.22.2 <5
+        specifier: ^4.22.3 <5
         version: 4.22.3(supports-color@7.2.0)
       express-async-handler:
         specifier: ^1.2.0
@@ -1421,7 +1421,7 @@ importers:
         specifier: ^5.0.1
         version: 5.0.1(supports-color@7.2.0)
       express:
-        specifier: ^4.22.2 <5
+        specifier: ^4.22.3 <5
         version: 4.22.3(supports-color@7.2.0)
       express-async-handler:
         specifier: ^1.2.0
@@ -1679,7 +1679,7 @@ importers:
         specifier: ^4.1.10
         version: 4.1.10(vitest@4.1.10)
       express:
-        specifier: ^4.22.2 <5
+        specifier: ^4.22.3 <5
         version: 4.22.3(supports-color@7.2.0)
       get-port:
         specifier: ^7.2.0
@@ -1980,7 +1980,7 @@ importers:
         specifier: ^4.1.10
         version: 4.1.10(vitest@4.1.10)
       express:
-        specifier: ^4.22.2 <5
+        specifier: ^4.22.3 <5
         version: 4.22.3(supports-color@7.2.0)
       vitest:
         specifier: ^4.1.10
@@ -2698,7 +2698,7 @@ importers:
         specifier: ^4.1.10
         version: 4.1.10(vitest@4.1.10)
       express:
-        specifier: ^4.22.2 <5
+        specifier: ^4.22.3 <5
         version: 4.22.3(supports-color@7.2.0)
       fetch-cookie:
         specifier: ^3.2.0

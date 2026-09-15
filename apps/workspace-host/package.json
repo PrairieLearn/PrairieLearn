@@ -34,7 +34,7 @@
     "body-parser": "^1.20.6 <2",
     "debug": "^4.4.3",
     "dockerode": "^5.0.1",
-    "express": "^4.22.2 <5",
+    "express": "^4.22.3 <5",
     "express-async-handler": "^1.2.0",
     "ioredis": "^6.0.0",
     "minimist": "^1.2.8",

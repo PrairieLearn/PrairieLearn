@@ -157,7 +157,7 @@
     "es-main": "^1.4.0",
     "es-toolkit": "^1.50.0",
     "execa": "^9.6.1",
-    "express": "^4.22.2 <5",
+    "express": "^4.22.3 <5",
     "express-async-handler": "^1.2.0",
     "fabric": "4.6.0-browser",
     "fast-glob": "^3.3.3",
