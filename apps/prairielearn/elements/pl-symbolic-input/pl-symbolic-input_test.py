@@ -329,6 +329,8 @@ def test_correct_answer_generation_round_trips_set_domains() -> None:
     ("allowed_types", "correct_answer"),
     [
         ("all", "5"),
+        ("expression", "infty"),
+        ("expression", "-infty"),
         ("finite-set", "{5}"),
         ("interval", "(5, 6)"),
     ],
