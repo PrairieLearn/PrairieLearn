@@ -3,9 +3,9 @@ import { useEffect, useState } from 'react';
 import { Alert } from 'react-bootstrap';
 
 import { run } from '@prairielearn/run';
+import { QueryClientProviderDebug } from '@prairielearn/trpc/react';
 
 import { type CreditPoolLimits, formatMilliDollars } from '../../../lib/ai-grading-credits.js';
-import { QueryClientProviderDebug } from '../../../lib/client/tanstackQuery.js';
 import { CreditPoolDashboard } from '../../components/ai-grading-credits/CreditPoolDashboard.js';
 
 import { createAdminCreditPoolTrpcClient } from './utils/trpc-client.js';

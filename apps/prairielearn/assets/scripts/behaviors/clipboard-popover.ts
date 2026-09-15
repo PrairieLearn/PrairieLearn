@@ -11,9 +11,9 @@ observe('.js-copy-button[data-clipboard-text], .js-copy-button[data-clipboard-ta
       if (clipboardText) {
         text = clipboardText;
       } else if (clipboardTarget) {
-        text = Array.from(document.querySelectorAll(clipboardTarget))
-          .map((el) => el.textContent)
-          .join('');
+        text = Array.from(document.querySelectorAll(clipboardTarget), (el) => el.textContent).join(
+          '',
+        );
       } else {
         return;
       }

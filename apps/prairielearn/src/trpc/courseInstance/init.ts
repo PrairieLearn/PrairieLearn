@@ -2,10 +2,11 @@ import { TRPCError, initTRPC } from '@trpc/server';
 import type { CreateExpressContextOptions } from '@trpc/server/adapters/express';
 import superjson from 'superjson';
 
+import { appErrorFormatter } from '@prairielearn/trpc/server';
+
 import type { CourseInstance, StudentLabel } from '../../lib/db-types.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
 import { selectOptionalStudentLabelById } from '../../models/student-label.js';
-import { appErrorFormatter } from '../app-errors.js';
 
 export async function selectStudentLabelByIdOrNotFound({
   id,

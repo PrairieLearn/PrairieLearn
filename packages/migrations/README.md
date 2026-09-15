@@ -117,12 +117,28 @@ In most cases, you'll want to do your best to ensure that the given batched migr
 
 ### Server setup
 
-To execute any pending regular migrations, call `init()` early on in your application startup code. The first argument is an array of directory paths containing migration files as described above. The second argument is a project identifier, which is used to isolate multiple migration sequences from each other when two or more applications share a single database.
+To execute any pending regular migrations, call `init()` early on in your application startup code. The `directories` option contains paths with migration files as described above. The `project` option identifies the application's migration sequence, isolating it from other applications that share the same database.
 
 ```ts
 import { init } from '@prairielearn/migrations';
 
-await init([path.join(__dirname, 'migrations')], 'prairielearn');
+await init({
+  directories: [path.join(__dirname, 'migrations')],
+  project: 'prairielearn',
+});
+```
+
+### Inspecting pending migrations
+
+To inspect pending migrations without creating or altering tables, call `getPendingMigrations()` after initializing `@prairielearn/postgres`. The result includes only migration filenames and timestamps, so applications can safely serialize it without exposing database configuration. If the migrations table does not exist yet, all discovered migrations are reported as pending.
+
+```ts
+import { getPendingMigrations } from '@prairielearn/migrations';
+
+const pendingMigrations = await getPendingMigrations({
+  directories: [path.join(__dirname, 'migrations')],
+  project: 'prairielearn',
+});
 ```
 
 If you want to make use of batched migrations, you'll need to do some additional setup. Since batched migrations are typically used with regular migrations, you'll need to take care to call `init()` after `initBatchedMigrations()` but before `startBatchedMigrations()`.
@@ -143,7 +159,10 @@ runner.on('error', (error) => {
   // Handle error, e.g. by reporting to Sentry.
 });
 
-await init([path.join(__dirname, 'migrations')], 'prairielearn');
+await init({
+  directories: [path.join(__dirname, 'migrations')],
+  project: 'prairielearn',
+});
 
 startBatchedMigrations({
   workDurationMs: 60_000,

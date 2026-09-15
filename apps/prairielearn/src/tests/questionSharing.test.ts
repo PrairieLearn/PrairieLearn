@@ -7,9 +7,9 @@ import { afterAll, assert, beforeAll, describe, expect, test } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
+import { getAppError } from '@prairielearn/trpc/client';
 import { IdSchema } from '@prairielearn/zod';
 
-import { getAppError } from '../lib/client/errors.js';
 import { getCourseTrpcUrl } from '../lib/client/url.js';
 import { config } from '../lib/config.js';
 import { pullAndUpdateCourse } from '../lib/course.js';

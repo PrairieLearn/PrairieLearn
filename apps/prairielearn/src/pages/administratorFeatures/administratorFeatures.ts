@@ -3,7 +3,7 @@ import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import { execute, loadSqlEquiv, queryRows } from '@prairielearn/postgres';
-import { IdSchema } from '@prairielearn/zod';
+import { IdSchema, parseRequestBody, parseRequestQuery } from '@prairielearn/zod';
 
 import { config } from '../../lib/config.js';
 import {
@@ -139,7 +139,7 @@ router.get(
   typedAsyncHandler<'plain'>(async (req, res) => {
     const feature = validateFeature(req.params.feature);
 
-    const query = AddFeatureGrantModalParamsSchema.parse(req.query);
+    const query = parseRequestQuery(req, AddFeatureGrantModalParamsSchema);
     const { institutions, institution, courses, course, course_instances, course_instance } =
       await getEntitiesFromParams(query);
 
@@ -164,8 +164,8 @@ router.post(
     if (req.body.__action === 'add_feature_grant') {
       const feature = validateFeature(req.params.feature);
 
-      const params = AddFeatureGrantModalParamsSchema.parse(req.body);
-      const { institution, course, course_instance, user } = await getEntitiesFromParams(params);
+      const body = parseRequestBody(req, AddFeatureGrantModalParamsSchema);
+      const { institution, course, course_instance, user } = await getEntitiesFromParams(body);
 
       const context = features.validateContext({
         institution_id: institution?.id ?? null,
@@ -174,7 +174,7 @@ router.post(
         user_id: user?.id ?? null,
       });
 
-      if (params.enabled) {
+      if (body.enabled) {
         await features.enable(feature, context);
       } else {
         await features.disable(feature, context);

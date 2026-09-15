@@ -16,7 +16,6 @@ async function checkAssessmentAccess(params: {
   user_id: string;
   uid: string;
   date: string;
-  display_timezone: string;
 }): Promise<boolean> {
   const result = await sqldb.callRow(
     'check_assessment_access',
@@ -28,7 +27,6 @@ async function checkAssessmentAccess(params: {
       params.user_id,
       params.uid,
       params.date,
-      params.display_timezone,
     ],
     z.object({ authorized: z.boolean() }),
   );
@@ -53,7 +51,6 @@ describe('sproc check_assessment_access* tests', function () {
         user_id: '1000',
         uid: 'valid@example.com',
         date: '2010-07-07 06:06:06-00',
-        display_timezone: 'America/Chicago',
       });
       assert.isTrue(authorized);
     });
@@ -67,7 +64,6 @@ describe('sproc check_assessment_access* tests', function () {
         user_id: '1000',
         uid: 'valid@example.com',
         date: '2010-07-07 06:06:06-00',
-        display_timezone: 'America/Chicago',
       });
       assert.isFalse(authorized);
     });
@@ -81,7 +77,6 @@ describe('sproc check_assessment_access* tests', function () {
         user_id: '1000',
         uid: 'valid@example.com',
         date: '2010-07-07 06:06:06-00',
-        display_timezone: 'America/Chicago',
       });
       assert.isFalse(authorized);
     });
@@ -95,7 +90,6 @@ describe('sproc check_assessment_access* tests', function () {
         user_id: '1000',
         uid: 'invalid@example.com',
         date: '2010-07-07 06:06:06-00',
-        display_timezone: 'America/Chicago',
       });
       assert.isFalse(authorized);
     });
@@ -109,7 +103,6 @@ describe('sproc check_assessment_access* tests', function () {
         user_id: '1000',
         uid: 'valid@example.com',
         date: '2008-07-07 06:06:06-00',
-        display_timezone: 'America/Chicago',
       });
       assert.isFalse(authorized);
     });
@@ -123,7 +116,6 @@ describe('sproc check_assessment_access* tests', function () {
         user_id: '1000',
         uid: 'valid@example.com',
         date: '2012-07-07 06:06:06-00',
-        display_timezone: 'America/Chicago',
       });
       assert.isFalse(authorized);
     });
@@ -137,7 +129,6 @@ describe('sproc check_assessment_access* tests', function () {
         user_id: '1000',
         uid: 'valid@example.com',
         date: '2010-07-07 06:06:06-00',
-        display_timezone: 'America/Chicago',
       });
       assert.isFalse(authorized);
     });
@@ -154,7 +145,6 @@ describe('sproc check_assessment_access* tests', function () {
           user_id: '1000',
           uid: 'valid@example.com',
           date: '2010-07-07 06:06:06-00',
-          display_timezone: 'America/Chicago',
         });
         assert.isFalse(authorized);
       });
@@ -168,7 +158,6 @@ describe('sproc check_assessment_access* tests', function () {
           user_id: '1000',
           uid: 'valid@example.com',
           date: '2010-07-07 06:06:06-00',
-          display_timezone: 'America/Chicago',
         });
         assert.isFalse(authorized);
       });
@@ -193,7 +182,6 @@ describe('sproc check_assessment_access* tests', function () {
           user_id: '1000',
           uid: 'valid@example.com',
           date: '2010-07-07 06:06:06-00',
-          display_timezone: 'America/Chicago',
         });
         assert.isFalse(authorized);
       });
@@ -207,7 +195,6 @@ describe('sproc check_assessment_access* tests', function () {
           user_id: '1000',
           uid: 'valid@example.com',
           date: '2010-07-07 06:06:06-00',
-          display_timezone: 'America/Chicago',
         });
         assert.isTrue(authorized);
       });
@@ -221,7 +208,6 @@ describe('sproc check_assessment_access* tests', function () {
           user_id: '1000',
           uid: 'valid@example.com',
           date: '2010-07-07 06:06:06-00',
-          display_timezone: 'America/Chicago',
         });
         assert.isFalse(authorized);
       });
@@ -235,7 +221,6 @@ describe('sproc check_assessment_access* tests', function () {
           user_id: '1000',
           uid: 'valid@example.com',
           date: '2010-07-07 06:06:06-00',
-          display_timezone: 'America/Chicago',
         });
         assert.isFalse(authorized);
       });
@@ -249,7 +234,6 @@ describe('sproc check_assessment_access* tests', function () {
           user_id: '1000',
           uid: 'valid@example.com',
           date: '2010-07-07 06:06:06-00',
-          display_timezone: 'America/Chicago',
         });
         assert.isFalse(authorized);
       });

@@ -2,7 +2,10 @@ import * as assert from 'node:assert';
 
 import { AutoScaling } from '@aws-sdk/client-auto-scaling';
 
-import { waitForAutoScalingTerminationLifecycleAction } from '@prairielearn/aws';
+import {
+  completeAutoScalingTerminationLifecycleAction,
+  waitForAutoScalingTerminationLifecycleAction,
+} from '@prairielearn/aws';
 import {
   type AutoScalingTargetLifecycleState,
   watchAutoScalingTargetLifecycleState,
@@ -137,13 +140,6 @@ export async function completeTermination(signal: AbortSignal) {
   }
 
   const autoscaling = new AutoScaling(makeAwsClientConfig());
-  const params = {
-    AutoScalingGroupName: config.autoScalingGroupName,
-    LifecycleActionResult: 'CONTINUE',
-    LifecycleHookName: config.autoScalingTerminatingLifecycleHookName,
-    InstanceId: config.instanceId,
-  };
-
   try {
     // Graders begin draining as soon as IMDS reports `Terminated`. Wait until
     // the regional state reaches `Terminating:Wait` before using the lifecycle
@@ -162,9 +158,22 @@ export async function completeTermination(signal: AbortSignal) {
     if (signal.aborted) return;
 
     logger.info('lifecycle.completeTermination(): lifecycle action is ready');
-    logger.info('lifecycle.completeTermination(): completing lifecycle action', params);
-    await autoscaling.completeLifecycleAction(params, { abortSignal: signal });
-    logger.info('lifecycle.completeTermination(): completed lifecycle action', params);
+    logger.info('lifecycle.completeTermination(): completing lifecycle action');
+    const result = await completeAutoScalingTerminationLifecycleAction({
+      client: autoscaling,
+      autoScalingGroupName: config.autoScalingGroupName,
+      lifecycleHookName: config.autoScalingTerminatingLifecycleHookName,
+      instanceId: config.instanceId,
+      signal,
+      onError(error) {
+        logger.error('lifecycle.completeTermination(): error completing action; retrying', error);
+      },
+    });
+    if (result === 'completed') {
+      logger.info('lifecycle.completeTermination(): completed lifecycle action');
+    } else {
+      logger.info('lifecycle.completeTermination(): lifecycle action was already resolved');
+    }
   } catch (error) {
     if (!signal.aborted) throw error;
   } finally {

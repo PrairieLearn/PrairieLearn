@@ -165,7 +165,7 @@ describe('Manual grading export query', { timeout: 60_000 }, () => {
     assert.equal(row.user, null);
     assert.lengthOf(row.group_members, 3);
     const memberUids = row.group_members.map((m) => m.uid);
-    const expectedUids = [...members.map((m) => m.uid)].sort();
+    const expectedUids = members.map((m) => m.uid).sort();
     assert.deepEqual(memberUids, expectedUids);
   });
 });

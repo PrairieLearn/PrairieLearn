@@ -1,0 +1,2 @@
+ALTER TABLE saml_providers
+ADD COLUMN allow_missing_name BOOLEAN NOT NULL DEFAULT FALSE;

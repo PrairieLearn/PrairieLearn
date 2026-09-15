@@ -1,7 +1,7 @@
 import { formatDateYMD } from '@prairielearn/formatter';
 
 import type { EnumAiGradingProvider } from '../../../../lib/db-types.js';
-import { decryptFromStorage } from '../../../../lib/storage-crypt.js';
+import { decryptFromStorage } from '../../../../lib/encrypted-storage.js';
 
 export interface AiGradingApiKeyCredential {
   id: string;

@@ -35,6 +35,7 @@ WITH
       LEFT JOIN questions AS q ON (q.id = i.question_id)
       LEFT JOIN users AS u ON (u.id = i.user_id)
       LEFT JOIN assessments AS a ON (a.id = i.assessment_id)
+      LEFT JOIN course_instances AS ci ON (ci.id = i.course_instance_id)
     WHERE
       i.course_id = $course_id
       AND (
@@ -59,7 +60,7 @@ WITH
       )
       AND (
         $filter_not_qids::text[] IS NULL
-        OR q.qid NOT ILIKE ANY ($filter_not_qids::text[])
+        OR q.qid NOT ILIKE ALL ($filter_not_qids::text[])
       )
       AND (
         $filter_users::text[] IS NULL
@@ -67,7 +68,8 @@ WITH
       )
       AND (
         $filter_not_users::text[] IS NULL
-        OR u.uid NOT ILIKE ANY ($filter_not_users::text[])
+        OR u.uid IS NULL
+        OR u.uid NOT ILIKE ALL ($filter_not_users::text[])
       )
       AND (
         $filter_assessments::text[] IS NULL
@@ -75,11 +77,49 @@ WITH
       )
       AND (
         $filter_not_assessments::text[] IS NULL
-        OR a.tid NOT ILIKE ANY ($filter_not_assessments::text[])
+        OR a.tid IS NULL
+        OR a.tid NOT ILIKE ALL ($filter_not_assessments::text[])
+      )
+      AND (
+        $filter_course_instances::text[] IS NULL
+        OR ci.short_name ILIKE ANY ($filter_course_instances::text[])
+      )
+      AND (
+        $filter_not_course_instances::text[] IS NULL
+        OR ci.short_name IS NULL
+        OR ci.short_name NOT ILIKE ALL ($filter_not_course_instances::text[])
+      )
+      AND (
+        -- We only filter by course instance if the user filter has been set,
+        -- since in that case we don't want to enable search by information the
+        -- user does not have access to.
+        (
+          $filter_users::text[] IS NULL
+          AND $filter_not_users::text[] IS NULL
+        )
+        -- We don't use = ANY because we may have nulls in the array, and = ANY does not match nulls.
+        OR array_position(
+          $course_instances_show_user_info::bigint[],
+          i.course_instance_id::bigint
+        ) IS NOT NULL
       )
       AND (
         $filter_query_text::text IS NULL
-        OR to_tsvector(concat_ws(' ', q.qid, u.uid, i.student_message)) @@ plainto_tsquery($filter_query_text::text)
+        OR to_tsvector(
+          concat_ws(
+            ' ',
+            q.qid,
+            -- The UID is only included in the search if the current user has
+            -- permission to view student data.
+            CASE
+              WHEN array_position(
+                $course_instances_show_user_info::bigint[],
+                i.course_instance_id::bigint
+              ) IS NOT NULL THEN u.uid
+            END,
+            i.student_message
+          )
+        ) @@ plainto_tsquery($filter_query_text::text)
       )
   )
 SELECT

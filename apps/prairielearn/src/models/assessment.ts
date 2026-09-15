@@ -255,6 +255,19 @@ export async function lockAssessment(assessment: Assessment): Promise<void> {
   await execute(sql.lock_assessment_row, { assessment_id: assessment.id });
 }
 
+/**
+ * Best-effort invalidation of cached statistics for assessments with instances in the course
+ * instance. This must be called in the same transaction as the change that invalidated the cache.
+ * See the SQL query for the deliberately accepted concurrent-refresh race.
+ */
+export async function invalidateAssessmentStatisticsForCourseInstance({
+  course_instance_id,
+}: {
+  course_instance_id: string;
+}): Promise<void> {
+  await execute(sql.invalidate_statistics_for_course_instance, { course_instance_id });
+}
+
 export function selectAssessmentsCursor({
   course_instance_id,
 }: {

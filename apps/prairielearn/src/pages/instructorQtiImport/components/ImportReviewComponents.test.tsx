@@ -1,12 +1,15 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 
-import type { SerializedQuestionOutput } from '../instructorQtiImport.types.js';
+import type {
+  CourseInstanceOption,
+  SerializedQuestionOutput,
+} from '../instructorQtiImport.types.js';
 
 import {
   NonRubricWarnings,
   QuestionBankDeduplicationWarning,
-  REMOTE_IMAGE_URL_WARNING,
+  UploadStep,
   buildQuestionWarningsByDirectoryName,
   findDuplicateQuestionTitles,
 } from './ImportReviewComponents.js';
@@ -35,30 +38,11 @@ function makeQuestion({
     questionHtml: '<pl-question-panel></pl-question-panel>',
     clientFiles: {},
     skippedVideos: [],
+    copiedExternalImageFileCount: 0,
   };
 }
 
 describe('NonRubricWarnings', () => {
-  it('collapses remote image URL warnings in the overview', () => {
-    const html = renderToStaticMarkup(
-      <NonRubricWarnings
-        questions={[
-          makeQuestion({ directoryName: 'imported/quiz/q1', sourceId: 'q1' }),
-          makeQuestion({ directoryName: 'imported/quiz/q2', sourceId: 'q2' }),
-        ]}
-        warnings={[
-          { questionId: 'imported/quiz/q1', message: REMOTE_IMAGE_URL_WARNING },
-          { questionId: 'imported/quiz/q2', message: REMOTE_IMAGE_URL_WARNING },
-        ]}
-      />,
-    );
-
-    expect(
-      html.match(/One or more questions contain an image reference to a remote URL/g),
-    ).toHaveLength(1);
-    expect(html).not.toContain(REMOTE_IMAGE_URL_WARNING);
-  });
-
   it('includes duplicate question title warnings in the overview', () => {
     const html = renderToStaticMarkup(
       <NonRubricWarnings
@@ -100,12 +84,12 @@ describe('NonRubricWarnings', () => {
           makeQuestion({ directoryName: 'imported/quiz/q1', sourceId: 'q1', title: 'Question' }),
           makeQuestion({ directoryName: 'imported/quiz/q2', sourceId: 'q2', title: 'Question' }),
         ]}
-        warnings={[{ questionId: 'imported/quiz/q1', message: REMOTE_IMAGE_URL_WARNING }]}
+        warnings={[{ questionId: 'imported/quiz/q1', message: 'Missing asset file: diagram.png' }]}
       />,
     );
 
     expect(html.match(/alert-warning/g)).toHaveLength(1);
-    expect(html).toContain('One or more questions contain an image reference to a remote URL');
+    expect(html).toContain('Missing asset file: diagram.png');
     expect(html).toContain('We detected several questions named');
   });
 });
@@ -187,14 +171,59 @@ describe('buildQuestionWarningsByDirectoryName', () => {
     const warnings = buildQuestionWarningsByDirectoryName(
       [question],
       [
-        { questionId: 'imported/quiz/q1', message: REMOTE_IMAGE_URL_WARNING },
+        { questionId: 'imported/quiz/q1', message: 'Missing asset file: diagram.png' },
         { questionId: 'source-q1', message: 'Unsupported question type "magic_question"' },
       ],
     );
 
     expect(warnings.get('imported/quiz/q1')?.map((warning) => warning.message)).toEqual([
-      REMOTE_IMAGE_URL_WARNING,
+      'Missing asset file: diagram.png',
       'Unsupported question type "magic_question"',
     ]);
+  });
+});
+
+describe('UploadStep', () => {
+  const courseInstances: CourseInstanceOption[] = [
+    { id: '1', shortName: 'Sp15', longName: 'Spring 2015' },
+    { id: '2', shortName: 'Fa15', longName: 'Fall 2015' },
+  ];
+
+  function render(instances: CourseInstanceOption[]) {
+    return renderToStaticMarkup(
+      <UploadStep
+        uploading={false}
+        processingPhase="idle"
+        courseInstances={instances}
+        courseInstancesUrl="/pl/course/1/course_admin/instances"
+        selectedCourseInstanceId={instances[0]?.id ?? null}
+        onSubmit={() => {}}
+        onCourseInstanceChange={() => {}}
+      />,
+    );
+  }
+
+  it('explains that quizzes become standalone questions without a course instance', () => {
+    const html = render([]);
+
+    expect(html).toContain('have any course instances yet');
+    expect(html).toContain('href="/pl/course/1/course_admin/instances"');
+    expect(html).not.toContain('Target course instance');
+  });
+
+  it('shows the only course instance as read-only text', () => {
+    const html = render(courseInstances.slice(0, 1));
+
+    expect(html).toContain('Target course instance');
+    expect(html).toContain('Sp15: Spring 2015');
+    expect(html).not.toContain('<select');
+  });
+
+  it('lets the user choose between multiple course instances', () => {
+    const html = render(courseInstances);
+
+    expect(html).toContain('<select');
+    expect(html).toContain('Sp15: Spring 2015');
+    expect(html).toContain('Fa15: Fall 2015');
   });
 });

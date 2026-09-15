@@ -76,7 +76,7 @@ async function testRemove(entityName: 'tags' | 'topics') {
   const oldEntity = makeEntity();
   courseData.course[entityName].unshift(oldEntity);
   const { courseDir } = await util.writeAndSyncCourseData(courseData);
-  courseData.course[entityName].splice(0, 1);
+  courseData.course[entityName].shift();
   await util.overwriteAndSyncCourseData(courseData, courseDir);
   const schema = entityName === 'tags' ? TagSchema : TopicSchema;
   const syncedEntities = await util.dumpTableWithSchema(entityName, schema);

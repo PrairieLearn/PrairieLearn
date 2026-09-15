@@ -21,8 +21,3 @@
   border-top-right-radius: 0;
   border-top-left-radius: 0;
 }
-
-[id^='file-preview'] .nb-input pre {
-  padding: 1rem;
-  background-color: #f5f2f0;
-}

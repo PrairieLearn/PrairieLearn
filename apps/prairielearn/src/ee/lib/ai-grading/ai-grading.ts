@@ -1,8 +1,8 @@
 import assert from 'node:assert';
 
 import { createAnthropic } from '@ai-sdk/anthropic';
-import { createGoogleGenerativeAI } from '@ai-sdk/google';
-import { type OpenAIResponsesProviderOptions, createOpenAI } from '@ai-sdk/openai';
+import { createGoogle } from '@ai-sdk/google';
+import { type OpenAIResponsesProviderOptions } from '@ai-sdk/openai';
 import { type GenerateTextResult, type ModelMessage, Output, generateText } from 'ai';
 import * as async from 'async';
 import { z } from 'zod';
@@ -49,10 +49,12 @@ import * as questionServers from '../../../question-servers/index.js';
 
 import { resolveAiGradingKeys } from './ai-grading-credentials.js';
 import { AI_GRADING_MODEL_PROVIDERS, type AiGradingModelId } from './ai-grading-models.shared.js';
+import { createAiGradingOpenAI } from './ai-grading-openai-provider.js';
 import { selectGradingJobsInfo } from './ai-grading-stats.js';
 import {
+  type AiGradingPrompt,
   addAiGradingCostToIntervalUsage,
-  containsImageCapture,
+  containsSubmissionAttachment,
   correctImagesOrientation,
   extractSubmissionImages,
   generatePrompt,
@@ -74,16 +76,16 @@ const sql = loadSqlEquiv(import.meta.url);
 
 type AiGradingResponsesForPersistence = {
   model_id: AiGradingModelId;
-  finalGradingResponse: GenerateTextResult<any, any>;
+  finalGradingResponse: GenerateTextResult<any, any, any>;
 } & (
   | {
       rotationCorrectionApplied: true;
-      gradingResponseWithRotationIssue: GenerateTextResult<any, any>;
+      gradingResponseWithRotationIssue: GenerateTextResult<any, any, any>;
       rotationCorrections: Record<
         string,
         {
           degreesRotated: CounterClockwiseRotationDegrees;
-          response: GenerateTextResult<any, any>;
+          response: GenerateTextResult<any, any, any>;
         }
       >;
     }
@@ -101,6 +103,10 @@ interface AiGradingPersistenceContext {
   /** Persisted AI grading actions are attributed to the authenticated user, even with a different effective user. */
   authn_user_id: string;
   job_sequence_id: string;
+}
+
+function getPersistedAiGradingPrompt({ instructions, messages }: AiGradingPrompt): ModelMessage[] {
+  return [{ role: 'system', content: instructions }, ...messages];
 }
 
 /**
@@ -341,7 +347,7 @@ export async function aiGrade({
       if (!resolvedKeys.openai) {
         throw new error.HttpStatusError(403, 'Model not available (OpenAI API key not provided)');
       }
-      return createOpenAI({
+      return createAiGradingOpenAI({
         apiKey: resolvedKeys.openai.apiKey,
         organization: resolvedKeys.openai.organization ?? undefined,
       })(model_id);
@@ -349,7 +355,7 @@ export async function aiGrade({
       if (!resolvedKeys.google) {
         throw new error.HttpStatusError(403, 'Model not available (Google API key not provided)');
       }
-      return createGoogleGenerativeAI({
+      return createGoogle({
         apiKey: resolvedKeys.google.apiKey,
       })(model_id);
     } else {
@@ -611,7 +617,14 @@ export async function aiGrade({
       });
       const submission_text = render_submission_results.data.submissionHtmls[0];
 
-      const hasImage = containsImageCapture(submission_text);
+      const submittedImages = submission.submitted_answer
+        ? extractSubmissionImages({
+            submission_text,
+            submitted_answer: submission.submitted_answer,
+          })
+        : {};
+      const hasImage = Object.keys(submittedImages).length > 0;
+      const hasAttachment = containsSubmissionAttachment(submission_text);
 
       const { rubric, rubric_items } = await selectCompleteRubric(assessment_question.id);
 
@@ -656,7 +669,7 @@ export async function aiGrade({
         );
       }
 
-      let input = await generatePrompt({
+      let gradingPrompt = await generatePrompt({
         questionPrompt,
         questionAnswer,
         submission_text,
@@ -665,24 +678,16 @@ export async function aiGrade({
         grader_guidelines: rubric?.grader_guidelines ?? null,
         params: variant.params ?? {},
         true_answer: variant.true_answer ?? {},
-        model_id,
       });
 
-      const submittedImages = submission.submitted_answer
-        ? extractSubmissionImages({
-            submission_text,
-            submitted_answer: submission.submitted_answer,
-          })
-        : {};
-
-      // If the submission contains images, prompt the model to transcribe any relevant information
-      // out of the image.
+      // If the submission contains attachments, prompt the model to transcribe any relevant
+      // information out of them.
       const explanationDescription = run(() => {
         const parts = ['Instructor-facing explanation of the grading decision.'];
-        if (hasImage) {
+        if (hasAttachment) {
           parts.push(
-            'You MUST include a complete transcription of all relevant text, numbers, and information from any images the student submitted.',
-            'You MUST transcribe the final answer(s) from the images.',
+            'You MUST include a complete transcription of all relevant text, numbers, and information from any files or images the student submitted.',
+            'You MUST transcribe the final answer(s) from the files and images.',
             'You MUST use LaTeX formatting for mathematical expressions, equations, and formulas.',
             'You MUST wrap inline LaTeX in dollar signs ($).',
             'You MUST wrap block LaTeX in double dollar signs ($$).',
@@ -755,13 +760,7 @@ export async function aiGrade({
               finalGradingResponse: await generateText({
                 model,
                 output: Output.object({ schema: RubricGradingResultSchema }),
-                messages: input,
-                // The AI grading prompts in `generatePrompt` (ai-grading-util.ts)
-                // intentionally interleave `role: 'system'` and `role: 'user'`
-                // messages. All system-role content is hard-coded authored strings;
-                // no user-supplied text is ever placed in a system message, so the
-                // SDK's prompt-injection warning does not apply here.
-                allowSystemInMessages: true,
+                ...gradingPrompt,
                 providerOptions: {
                   openai: openaiProviderOptions,
                 },
@@ -773,9 +772,7 @@ export async function aiGrade({
           const initialResponse = await generateText({
             model,
             output: Output.object({ schema: RubricImageGradingResultSchema }),
-            messages: input,
-            // System messages in `messages` are hard-coded authored strings; safe to allow.
-            allowSystemInMessages: true,
+            ...gradingPrompt,
             providerOptions: {
               openai: openaiProviderOptions,
             },
@@ -807,7 +804,7 @@ export async function aiGrade({
           // TODO: Return initialResponse if rotationCorrected == false, and modify corresponding cost tracking/rate limiting logic.
 
           // Regenerate the prompt with the rotation-corrected images.
-          input = await generatePrompt({
+          gradingPrompt = await generatePrompt({
             questionPrompt,
             questionAnswer,
             rotationCorrected,
@@ -817,16 +814,13 @@ export async function aiGrade({
             grader_guidelines: rubric?.grader_guidelines ?? null,
             params: variant.params ?? {},
             true_answer: variant.true_answer ?? {},
-            model_id,
           });
 
           // Perform grading with the rotation-corrected images.
           const finalResponse = await generateText({
             model,
             output: Output.object({ schema: RubricImageGradingResultSchema }),
-            messages: input,
-            // System messages in `messages` are hard-coded authored strings; safe to allow.
-            allowSystemInMessages: true,
+            ...gradingPrompt,
             providerOptions: {
               openai: openaiProviderOptions,
             },
@@ -894,7 +888,7 @@ export async function aiGrade({
             }
           : { model_id, rotationCorrectionApplied, finalGradingResponse };
         const persistenceContext = {
-          prompt: input,
+          prompt: getPersistedAiGradingPrompt(gradingPrompt),
           course_instance,
           instance_question,
           authn_user_id,
@@ -1005,9 +999,7 @@ export async function aiGrade({
               finalGradingResponse: await generateText({
                 model,
                 output: Output.object({ schema: GradingResultSchema }),
-                messages: input,
-                // System messages in `messages` are hard-coded authored strings; safe to allow.
-                allowSystemInMessages: true,
+                ...gradingPrompt,
                 providerOptions: {
                   openai: openaiProviderOptions,
                 },
@@ -1019,9 +1011,7 @@ export async function aiGrade({
           const initialResponse = await generateText({
             model,
             output: Output.object({ schema: ImageGradingResultSchema }),
-            messages: input,
-            // System messages in `messages` are hard-coded authored strings; safe to allow.
-            allowSystemInMessages: true,
+            ...gradingPrompt,
             providerOptions: {
               openai: openaiProviderOptions,
             },
@@ -1043,7 +1033,7 @@ export async function aiGrade({
           });
 
           // Regenerate the prompt with the rotation-corrected images.
-          input = await generatePrompt({
+          gradingPrompt = await generatePrompt({
             questionPrompt,
             questionAnswer,
             submission_text,
@@ -1052,16 +1042,13 @@ export async function aiGrade({
             grader_guidelines: rubric?.grader_guidelines ?? null,
             params: variant.params ?? {},
             true_answer: variant.true_answer ?? {},
-            model_id,
           });
 
           // Perform grading with the rotation-corrected images.
           const finalResponse = await generateText({
             model,
             output: Output.object({ schema: ImageGradingResultSchema }),
-            messages: input,
-            // System messages in `messages` are hard-coded authored strings; safe to allow.
-            allowSystemInMessages: true,
+            ...gradingPrompt,
             providerOptions: {
               openai: openaiProviderOptions,
             },
@@ -1120,7 +1107,7 @@ export async function aiGrade({
             }
           : { model_id, rotationCorrectionApplied, finalGradingResponse };
         const persistenceContext = {
-          prompt: input,
+          prompt: getPersistedAiGradingPrompt(gradingPrompt),
           course_instance,
           instance_question,
           authn_user_id,

@@ -42,4 +42,5 @@ supportedArchitectures:
     - gnu
 
 minimumReleaseAgeExclude:
-  - '@prairielearn/tree-sitter-htmlmustache@1.4.3'
+  - 'typescript-cp@0.1.11'
+  - express@4.22.3

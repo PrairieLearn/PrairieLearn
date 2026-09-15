@@ -1,0 +1,45 @@
+{
+  "name": "@prairielearn/trpc",
+  "version": "1.0.0",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/PrairieLearn/PrairieLearn.git",
+    "directory": "packages/trpc"
+  },
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "exports": {
+    "./client": "./dist/client.js",
+    "./express": "./dist/express.js",
+    "./react": "./dist/react.js",
+    "./server": "./dist/server.js"
+  },
+  "scripts": {
+    "build": "tsgo",
+    "dev": "tsgo --watch --preserveWatchOutput",
+    "test": "vitest run --coverage"
+  },
+  "peerDependencies": {
+    "@tanstack/react-query": "^5.101.4",
+    "@trpc/client": "^11.18.0",
+    "@trpc/server": "^11.18.0",
+    "react": "^19.2.8",
+    "react-bootstrap": "3.0.0-beta.5"
+  },
+  "dependencies": {
+    "@types/react": "^19.2.18"
+  },
+  "devDependencies": {
+    "@prairielearn/tsconfig": "workspace:^",
+    "@types/node": "^24.13.3",
+    "@types/react-dom": "^19.2.4",
+    "@typescript/native-preview": "beta",
+    "@vitest/coverage-v8": "^4.1.10",
+    "jsdom": "^29.1.1",
+    "react-dom": "^19.2.8",
+    "vitest": "^4.1.10"
+  },
+  "sideEffects": false
+}

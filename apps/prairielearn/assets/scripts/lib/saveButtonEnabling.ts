@@ -15,9 +15,7 @@ export function saveButtonEnabling(form: HTMLFormElement, saveButton: HTMLButton
   // input element.
   const selectDefaultValues: Record<string, any> = {};
   form.querySelectorAll('select').forEach((element) => {
-    selectDefaultValues[element.id] = Array.from(element.selectedOptions).map(
-      (option) => option.value,
-    );
+    selectDefaultValues[element.id] = Array.from(element.selectedOptions, (option) => option.value);
   });
 
   // Add event listeners to inputs. If the value is different from the default value,
@@ -50,7 +48,7 @@ export function saveButtonEnabling(form: HTMLFormElement, saveButton: HTMLButton
   form.addEventListener('change', (e) => {
     if (!(e.target instanceof HTMLSelectElement)) return;
 
-    const selectedOptions = Array.from(e.target.selectedOptions).map((option) => option.value);
+    const selectedOptions = Array.from(e.target.selectedOptions, (option) => option.value);
 
     valueHasChanged[e.target.id] =
       JSON.stringify(selectedOptions.sort()) !==

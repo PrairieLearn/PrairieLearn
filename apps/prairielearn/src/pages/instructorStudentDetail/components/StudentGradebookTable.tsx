@@ -43,7 +43,7 @@ export function StudentGradebookTable({ rows, urlPrefix }: StudentGradebookTable
           <th className="text-center">Points</th>
         </tr>
       </thead>
-      {Array.from(rowsBySet.entries()).map(([setHeading, setAssessments]) => (
+      {Array.from(rowsBySet.entries(), ([setHeading, setAssessments]) => (
         <tbody key={setHeading}>
           <tr>
             <th colSpan={4} scope="rowgroup">

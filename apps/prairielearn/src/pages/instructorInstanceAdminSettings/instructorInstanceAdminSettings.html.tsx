@@ -5,16 +5,16 @@ import { useState } from 'react';
 import { Button, Form } from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
 
+import { QueryClientProviderDebug } from '@prairielearn/trpc/react';
 import { StickySaveBar } from '@prairielearn/ui';
+import { type Timezone, formatTimezone } from '@prairielearn/utils/timezone';
 
 import { GitHubButton } from '../../components/GitHubButton.js';
 import { ShareSourcePubliclyCard } from '../../components/ShareSourcePubliclyCard.js';
 import { CourseInstanceShortNameDescription } from '../../components/ShortNameDescriptions.js';
 import type { PageContext } from '../../lib/client/page-context.js';
-import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
 import { getAssessmentSettingsUrl } from '../../lib/client/url.js';
 import { validateShortName } from '../../lib/short-name.js';
-import { type Timezone, formatTimezone } from '../../lib/timezone.shared.js';
 import { createCourseInstanceTrpcClient } from '../../trpc/courseInstance/client.js';
 import { TRPCProvider } from '../../trpc/courseInstance/context.js';
 
@@ -36,7 +36,6 @@ interface InstructorInstanceAdminSettingsProps {
   studentLink: string;
   publicLink: string;
   selfEnrollLink: string;
-  isDevMode: boolean;
   isAdministrator: boolean;
   nonPublicAssessmentsInCourseInstance: { id: string; tid: string }[];
   questionSharingEnabled: boolean;
@@ -45,7 +44,6 @@ interface InstructorInstanceAdminSettingsProps {
 
 export function InstructorInstanceAdminSettings({
   trpcCsrfToken,
-  isDevMode,
   courseInstance,
   ...rest
 }: InstructorInstanceAdminSettingsProps) {
@@ -58,7 +56,7 @@ export function InstructorInstanceAdminSettings({
   );
 
   return (
-    <QueryClientProviderDebug client={queryClient} isDevMode={isDevMode}>
+    <QueryClientProviderDebug client={queryClient}>
       <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
         <InstructorInstanceAdminSettingsInner courseInstance={courseInstance} {...rest} />
       </TRPCProvider>
@@ -85,7 +83,7 @@ function InstructorInstanceAdminSettingsInner({
   nonPublicAssessmentsInCourseInstance,
   questionSharingEnabled,
   accessControlMigrationNeeded,
-}: Omit<InstructorInstanceAdminSettingsProps, 'trpcCsrfToken' | 'isDevMode'>) {
+}: Omit<InstructorInstanceAdminSettingsProps, 'trpcCsrfToken'>) {
   const [showCopyModal, setShowCopyModal] = useState(false);
 
   const shortNames = new Set(names.map((name) => name.short_name.toLowerCase()));
@@ -139,8 +137,8 @@ function InstructorInstanceAdminSettingsInner({
         name="edit-course-instance-settings-form"
         onSubmit={async (e) => {
           if (!isValid) {
-            await trigger();
             e.preventDefault();
+            await trigger();
             return;
           }
         }}

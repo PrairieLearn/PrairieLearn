@@ -545,19 +545,20 @@ function computeKeptPaths(
       }
     }
 
-    let changed = true;
-    while (changed) {
-      changed = false;
-      for (const id of keepIds) {
+    let resourceIdsToVisit = [...keepIds];
+    while (resourceIdsToVisit.length > 0) {
+      const nextResourceIds: string[] = [];
+      for (const id of resourceIdsToVisit) {
         const resource = manifest.byId.get(id);
         if (!resource) continue;
         for (const depId of dependencies(resource)) {
           if (!keepIds.has(depId)) {
             keepIds.add(depId);
-            changed = true;
+            nextResourceIds.push(depId);
           }
         }
       }
+      resourceIdsToVisit = nextResourceIds;
     }
 
     manifest.keepIds = keepIds;
@@ -598,13 +599,13 @@ async function buildTextRewrites(analysis: QtiArchiveAnalysis): Promise<Map<stri
 
     for (const [oldRef, newRef] of analysis.localAssets.rewrites) {
       if (text.includes(oldRef)) {
-        text = text.split(oldRef).join(newRef);
+        text = text.replaceAll(oldRef, newRef);
         changed = true;
       }
     }
 
     if (text.includes('$IMS-CC-FILEBASE$/@X@')) {
-      text = text.split('$IMS-CC-FILEBASE$/@X@').join('@X@');
+      text = text.replaceAll('$IMS-CC-FILEBASE$/@X@', '@X@');
       changed = true;
     }
 

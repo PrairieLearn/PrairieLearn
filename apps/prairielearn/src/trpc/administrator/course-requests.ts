@@ -1,6 +1,7 @@
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
+import { throwAppError } from '@prairielearn/trpc/server';
 import { IdSchema } from '@prairielearn/zod';
 
 import { type StaffCourse, StaffCourseSchema } from '../../lib/client/safe-db-types.js';
@@ -24,7 +25,6 @@ import {
   selectOptionalCourseByGithubRepository,
   selectOptionalCourseByPath,
 } from '../../models/course.js';
-import { throwAppError } from '../app-errors.js';
 
 import { normalizeCoursePathInput } from './course-path.js';
 import { requireAdministrator, t } from './init.js';

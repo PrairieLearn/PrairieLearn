@@ -1,24 +1,20 @@
--- BLOCK enroll_user_in_example_course
-INSERT INTO
-  enrollments (
-    user_id,
-    course_instance_id,
-    status,
-    first_joined_at
-  ) (
+-- BLOCK select_load_test_course_instance
+SELECT
+  ci.id AS course_instance_id,
+  EXISTS (
     SELECT
-      u.id AS user_id,
-      ci.id,
-      'joined',
-      now()
+      1
     FROM
-      users AS u,
-      course_instances AS ci
-      JOIN courses AS c ON (c.id = ci.course_id)
+      enrollments AS e
     WHERE
-      u.id = $user_id
-      AND c.example_course IS TRUE
-  )
-ON CONFLICT DO NOTHING
-RETURNING
-  *;
+      e.user_id = $user_id
+      AND e.course_instance_id = ci.id
+      AND e.status = 'joined'
+  ) AS has_joined_enrollment
+FROM
+  course_instances AS ci
+  JOIN courses AS c ON (c.id = ci.course_id)
+WHERE
+  c.example_course IS TRUE
+  AND c.deleted_at IS NULL
+  AND ci.deleted_at IS NULL;

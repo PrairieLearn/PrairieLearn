@@ -1,5 +1,28 @@
 # @prairielearn/postgres
 
+## 8.0.0
+
+### Major Changes
+
+- fce4634: Bind named array values as a single parameter, matching positional parameters and avoiding PostgreSQL's parameter count limit for large arrays.
+
+  Previously, named arrays expanded into `ARRAY[$1,$2,...]`. Queries relying on the constructor's type inference must now specify an array type, for example `unnest($ids::bigint[])` instead of `unnest($ids)`, or `SELECT $names::text[]` instead of `SELECT $names`. When converting an array to text, cast to the array type first: `$names::text[]::text`.
+
+  Named arrays now use node-postgres array serialization, just like positional arrays. For JSON values, pass `JSON.stringify(value)` and use the appropriate `::jsonb` cast. Positional parameter behavior is unchanged.
+
+## 7.1.3
+
+### Patch Changes
+
+- b98ca1c: Update Unicorn overrides for v73 and address selected correctness-focused lint findings.
+
+## 7.1.2
+
+### Patch Changes
+
+- 38ef3b6: Honor downstream backpressure when streaming rows from a PostgreSQL cursor.
+- df28e68: Bump dependencies
+
 ## 7.1.1
 
 ### Patch Changes

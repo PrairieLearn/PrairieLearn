@@ -1,11 +1,17 @@
-import { flexRender } from '@tanstack/react-table';
+import { type RowData, flexRender } from '@tanstack/react-table';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import type { Cell, Header, Row, Table } from '@tanstack/table-core';
 import clsx from 'clsx';
 import { type ComponentProps, type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import { useDebouncedCallback } from 'use-debounce';
 
 import { run } from '@prairielearn/run';
+
+import type {
+  TanstackTableCell,
+  TanstackTableHeader,
+  TanstackTableInstance,
+  TanstackTableRow,
+} from '../tanstack-table.js';
 
 import { ColumnManager } from './ColumnManager.js';
 import {
@@ -16,7 +22,7 @@ import { TanstackTableHeaderCell } from './TanstackTableHeaderCell.js';
 import { Tooltip } from './Tooltip.js';
 import { useAutoSizeColumns } from './useAutoSizeColumns.js';
 
-function TableCell<RowDataModel>({
+function TableCell<RowDataModel extends RowData>({
   cell,
   rowIdx,
   colIdx,
@@ -25,7 +31,7 @@ function TableCell<RowDataModel>({
   wrapText,
   handleGridKeyDown,
 }: {
-  cell: Cell<RowDataModel, unknown>;
+  cell: TanstackTableCell<RowDataModel>;
   rowIdx: number;
   colIdx: number;
   canSort: boolean;
@@ -46,8 +52,9 @@ function TableCell<RowDataModel>({
         minWidth: 0,
         maxWidth: cell.column.getSize(),
         flexShrink: 0,
-        position: cell.column.getIsPinned() === 'left' ? 'sticky' : undefined,
-        left: cell.column.getIsPinned() === 'left' ? cell.column.getStart() : undefined,
+        position: cell.column.getIsPinned() === 'start' ? 'sticky' : undefined,
+        insetInlineStart:
+          cell.column.getIsPinned() === 'start' ? cell.column.getStart() : undefined,
         verticalAlign: 'middle',
       }}
       onKeyDown={(e) => handleGridKeyDown(e, rowIdx, colIdx)}
@@ -80,10 +87,10 @@ const DefaultEmptyState = (
   <TanstackTableEmptyState iconName="bi-eye-slash">No results found.</TanstackTableEmptyState>
 );
 
-interface TanstackTableProps<RowDataModel> {
-  table: Table<RowDataModel>;
+interface TanstackTableProps<RowDataModel extends RowData> {
+  table: TanstackTableInstance<RowDataModel>;
   title: string;
-  filters?: Record<string, (props: { header: Header<RowDataModel, unknown> }) => ReactNode>;
+  filters?: Record<string, (props: { header: TanstackTableHeader<RowDataModel> }) => ReactNode>;
   rowHeight?: number;
   noResultsState?: ReactNode;
   emptyState?: ReactNode;
@@ -103,7 +110,7 @@ const DEFAULT_FILTER_MAP = {};
  * @param params.emptyState - The empty state for the table
  * @param params.scrollRef - Optional ref that will be attached to the scroll container element.
  */
-export function TanstackTable<RowDataModel>({
+export function TanstackTable<RowDataModel extends RowData>({
   table,
   title,
   filters = DEFAULT_FILTER_MAP,
@@ -116,7 +123,7 @@ export function TanstackTable<RowDataModel>({
   const tableRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = scrollRef ?? parentRef;
 
-  const rows = [...table.getTopRows(), ...table.getCenterRows()];
+  const rows = [...table.getTopRows(), ...table.getCenterRows(), ...table.getBottomRows()];
   const rowVirtualizer = useVirtualizer({
     count: rows.length,
     getScrollElement: () => scrollContainerRef.current,
@@ -165,8 +172,8 @@ export function TanstackTable<RowDataModel>({
     return () => rowVirtualizer.measure();
   }, [hasWrappedColumns, rowVirtualizer]);
 
-  const getVisibleCells = (row: Row<RowDataModel>) => [
-    ...row.getLeftVisibleCells(),
+  const getVisibleCells = (row: TanstackTableRow<RowDataModel>) => [
+    ...row.getStartVisibleCells(),
     ...row.getCenterVisibleCells(),
   ];
 
@@ -228,8 +235,8 @@ export function TanstackTable<RowDataModel>({
 
   const leafHeaderGroup = headerGroups[headerGroups.length - 1];
 
-  const leftPinnedHeaders = leafHeaderGroup.headers.filter(
-    (header) => header.column.getIsPinned() === 'left',
+  const startPinnedHeaders = leafHeaderGroup.headers.filter(
+    (header) => header.column.getIsPinned() === 'start',
   );
   const centerHeaders = leafHeaderGroup.headers.filter((header) => !header.column.getIsPinned());
 
@@ -294,8 +301,8 @@ export function TanstackTable<RowDataModel>({
                 className="d-flex w-100"
                 style={{ minWidth: `${table.getTotalSize()}px` }}
               >
-                {/* Left pinned columns */}
-                {leftPinnedHeaders.map((header) => {
+                {/* Start-pinned columns */}
+                {startPinnedHeaders.map((header) => {
                   return (
                     <TanstackTableHeaderCell
                       key={header.id}
@@ -303,12 +310,12 @@ export function TanstackTable<RowDataModel>({
                       filters={filters}
                       table={table}
                       handleResizeEnd={handleResizeEnd}
-                      isPinned="left"
+                      isPinned="start"
                     />
                   );
                 })}
 
-                {/* Virtual padding for left side of center columns */}
+                {/* Virtual padding for the start side of center columns */}
                 {virtualPaddingLeft ? (
                   <th style={{ display: 'flex', width: virtualPaddingLeft }} />
                 ) : null}
@@ -330,7 +337,7 @@ export function TanstackTable<RowDataModel>({
                   );
                 })}
 
-                {/* Virtual padding for right side of center columns */}
+                {/* Virtual padding for the end side of center columns */}
                 {virtualPaddingRight ? (
                   <th style={{ display: 'flex', width: virtualPaddingRight }} />
                 ) : null}
@@ -354,7 +361,7 @@ export function TanstackTable<RowDataModel>({
               {virtualRows.map((virtualRow) => {
                 const row = rows[virtualRow.index];
                 const rowIdx = virtualRow.index;
-                const leftPinnedCells = row.getLeftVisibleCells();
+                const startPinnedCells = row.getStartVisibleCells();
                 const centerCells = row.getCenterVisibleCells();
 
                 let currentColIdx = 0;
@@ -370,7 +377,7 @@ export function TanstackTable<RowDataModel>({
                       minWidth: `${table.getTotalSize()}px`,
                     }}
                   >
-                    {leftPinnedCells.map((cell) => {
+                    {startPinnedCells.map((cell) => {
                       const colIdx = currentColIdx++;
                       const canSort = cell.column.getCanSort();
                       const canFilter = cell.column.getCanFilter();
@@ -497,7 +504,7 @@ export function TanstackTable<RowDataModel>({
  * @param params.statusContent - Optional content to replace the default "Showing X of Y" status text.
  * @param params.onResetColumnFilters - Callback that if provided, adds a clear filters control.
  */
-export function TanstackTableCard<RowDataModel>({
+export function TanstackTableCard<RowDataModel extends RowData>({
   table,
   title,
   singularLabel,
@@ -512,7 +519,7 @@ export function TanstackTableCard<RowDataModel>({
   className,
   ...divProps
 }: {
-  table: Table<RowDataModel>;
+  table: TanstackTableInstance<RowDataModel>;
   title: string;
   singularLabel: string;
   pluralLabel: string;
@@ -534,9 +541,7 @@ export function TanstackTableCard<RowDataModel>({
 } & Omit<ComponentProps<'div'>, 'class'>) {
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  const [inputValue, setInputValue] = useState(
-    () => (table.getState().globalFilter as string) ?? '',
-  );
+  const [inputValue, setInputValue] = useState(() => (table.state.globalFilter as string) ?? '');
 
   // Debounce the filter update
   const debouncedSetFilter = useDebouncedCallback((value: string) => {

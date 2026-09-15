@@ -23,8 +23,7 @@ export function EditTagsTopicsModal<Entity extends StaffTopic | StaffTag>({
   onSave: (entity: Entity) => void;
 }) {
   // Extract the entity to edit/create, or null if closed
-  const entityToEdit =
-    state.type === 'create' ? state.entity : state.type === 'edit' ? state.entity : null;
+  const entityToEdit = state.type === 'create' || state.type === 'edit' ? state.entity : null;
 
   const [entity, setEntity] = useState<Entity | null>(entityToEdit);
   const [invalidName, setInvalidName] = useState(false);

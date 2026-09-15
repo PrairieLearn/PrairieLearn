@@ -106,8 +106,8 @@ function findLastActiveCreditEndDate(rules: AssessmentAccessRuleJson[]): string 
   return endDates[endDates.length - 1];
 }
 
-function normalizeDateForInputDate(date: string): string {
-  // Match the `input_date` sproc behavior: only the date and whole-second time
+function normalizeLocalDateTime(date: string): string {
+  // Match the course sync parser behavior: only the date and whole-second time
   // are used, so fractional seconds and trailing timezone markers are ignored.
   const dateParts = /([0-9]{4}-[0-9]{2}-[0-9]{2})[ T]([0-9]{2}:[0-9]{2}:[0-9]{2})/.exec(date);
   if (!dateParts) return date;
@@ -121,8 +121,8 @@ function addOneSecondToInputDate(date: string): string {
 function normalizeRuleDates(rule: AssessmentAccessRuleJson): AssessmentAccessRuleJson {
   return {
     ...rule,
-    ...(rule.startDate ? { startDate: normalizeDateForInputDate(rule.startDate) } : {}),
-    ...(rule.endDate ? { endDate: normalizeDateForInputDate(rule.endDate) } : {}),
+    ...(rule.startDate ? { startDate: normalizeLocalDateTime(rule.startDate) } : {}),
+    ...(rule.endDate ? { endDate: normalizeLocalDateTime(rule.endDate) } : {}),
   };
 }
 
@@ -461,9 +461,10 @@ function normalizeCreditDeadlines(
     }
   }
 
-  const sorted = Array.from(bestCreditByDate.entries())
-    .map(([date, credit]) => ({ date, credit }))
-    .sort((a, b) => a.date.localeCompare(b.date));
+  const sorted = Array.from(bestCreditByDate.entries(), ([date, credit]) => ({
+    date,
+    credit,
+  })).sort((a, b) => a.date.localeCompare(b.date));
 
   const kept: { date: string; credit: number }[] = [];
   let maxCreditSeen = -Infinity;

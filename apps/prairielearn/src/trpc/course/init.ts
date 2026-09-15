@@ -2,9 +2,10 @@ import { TRPCError, initTRPC } from '@trpc/server';
 import type { CreateExpressContextOptions } from '@trpc/server/adapters/express';
 import superjson from 'superjson';
 
+import { appErrorFormatter } from '@prairielearn/trpc/server';
+
 import { extractPageContext } from '../../lib/client/page-context.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
-import { appErrorFormatter } from '../app-errors.js';
 
 export function createContext({ res }: CreateExpressContextOptions) {
   const locals = res.locals as ResLocalsForPage<'course'>;

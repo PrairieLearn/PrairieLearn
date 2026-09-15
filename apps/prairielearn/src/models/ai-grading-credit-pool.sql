@@ -164,26 +164,30 @@ OFFSET
 WITH
   daily_totals AS (
     SELECT
-      c.created_at::date AS day,
+      (c.created_at AT TIME ZONE 'UTC')::date AS day,
       SUM(ABS(c.delta_milli_dollars)) AS total
     FROM
       ai_grading_credit_pool_changes AS c
     WHERE
       c.course_instance_id = $course_instance_id
-      AND c.created_at >= $start_date::date
-      AND c.created_at < ($end_date::date + '1 day'::interval)
+      AND c.created_at >= $start_date
+      AND c.created_at < (
+        (
+          ($end_date AT TIME ZONE 'UTC')::date + '1 day'::interval
+        ) AT TIME ZONE 'UTC'
+      )
       AND c.delta_milli_dollars < 0
       AND c.ai_grading_job_id IS NOT NULL
     GROUP BY
-      c.created_at::date
+      (c.created_at AT TIME ZONE 'UTC')::date
   )
 SELECT
   d::date AS date,
   COALESCE(daily_totals.total, 0)::bigint AS spending_milli_dollars
 FROM
   generate_series(
-    $start_date::date,
-    $end_date::date,
+    (($start_date AT TIME ZONE 'UTC')::date)::timestamp without time zone,
+    (($end_date AT TIME ZONE 'UTC')::date)::timestamp without time zone,
     '1 day'::interval
   ) AS d
   LEFT JOIN daily_totals ON daily_totals.day = d::date
@@ -192,7 +196,7 @@ ORDER BY
 
 -- BLOCK select_daily_spending_grouped
 SELECT
-  DATE_TRUNC('day', c.created_at)::date AS date,
+  (c.created_at AT TIME ZONE 'UTC')::date AS date,
   CASE $group_by
     WHEN 'user' THEN COALESCE(u.name, u.uid, 'User ' || c.user_id::text)
     WHEN 'assessment' THEN COALESCE(
@@ -218,11 +222,15 @@ FROM
 WHERE
   c.course_instance_id = $course_instance_id
   AND c.created_at >= $start_date
-  AND c.created_at::date <= $end_date::date
+  AND c.created_at < (
+    (
+      ($end_date AT TIME ZONE 'UTC')::date + '1 day'::interval
+    ) AT TIME ZONE 'UTC'
+  )
   AND c.delta_milli_dollars < 0
   AND c.ai_grading_job_id IS NOT NULL
 GROUP BY
-  DATE_TRUNC('day', c.created_at)::date,
+  (c.created_at AT TIME ZONE 'UTC')::date,
   group_label
 ORDER BY
   date ASC,

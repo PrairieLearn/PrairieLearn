@@ -1,4 +1,5 @@
 export {
+  completeAutoScalingTerminationLifecycleAction,
   getAutoScalingInstanceLifecycleState,
   waitForAutoScalingTerminationLifecycleAction,
 } from './autoscaling.js';

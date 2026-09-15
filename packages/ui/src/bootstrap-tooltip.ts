@@ -259,6 +259,16 @@ export function installBootstrapTooltipBehavior({
   const tooltipObserver = observe('[data-bs-toggle~="tooltip"], [data-bs-toggle-tooltip="true"]', {
     constructor: HTMLElement,
     add(el: HTMLElement) {
+      const tooltipTitle = getTooltipTitle(el);
+      const tooltipProvidesAccessibleName =
+        Boolean(tooltipTitle) &&
+        !el.hasAttribute('aria-label') &&
+        !el.hasAttribute('aria-labelledby') &&
+        !el.textContent.trim();
+      if (tooltipProvidesAccessibleName) {
+        el.setAttribute('aria-label', tooltipTitle);
+      }
+
       const tooltip = new Tooltip(el, {
         // Interaction is managed by HoverableTooltipController so that the tooltip
         // itself can be hovered and Escape can dismiss it without moving focus.
@@ -294,21 +304,14 @@ export function installBootstrapTooltipBehavior({
         el.dataset.bsToggleTooltip = 'true';
       }
 
-      // By default, Bootstrap will copy the `title` attribute to the `aria-label`
-      // attribute if the trigger doesn't have any visible text. It will _also_
-      // add an `aria-describedby` attribute that points to the tooltip when it's
-      // shown. This is problematic for screen readers, because it means that the
-      // screen reader will announce the tooltip's text twice.
+      // By default, Bootstrap copies a `title` attribute to `aria-label` when the
+      // trigger doesn't have visible text. It also adds `aria-describedby` when
+      // the tooltip is shown, causing screen readers to announce the same text twice.
       //
-      // We define our own convention: if `data-bs-title` is set and the tooltip
-      // trigger doesn't have any text content or existing `aria-label`, we'll
-      // use the `data-bs-title` as the `aria-label`. We'll also immediately
-      // remove the `aria-describedby` attribute when the tooltip is shown.
-      if (!el.hasAttribute('aria-label')) {
-        const title = el.dataset.bsTitle;
-        if (title && !el.textContent.trim()) {
-          el.setAttribute('aria-label', title);
-        }
+      // For an otherwise unnamed trigger, use the tooltip text as its accessible
+      // name and remove the redundant description. Named triggers keep the
+      // description because their tooltip content may provide additional context.
+      if (tooltipProvidesAccessibleName) {
         const handleTooltipInserted = () => {
           el.removeAttribute('aria-describedby');
         };

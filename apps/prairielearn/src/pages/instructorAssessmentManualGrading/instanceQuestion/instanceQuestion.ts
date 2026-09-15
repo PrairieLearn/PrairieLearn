@@ -7,7 +7,7 @@ import { flash } from '@prairielearn/flash';
 import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
-import { DateFromISOString, IdSchema } from '@prairielearn/zod';
+import { DateFromISOString, IdSchema, parseRequestBody } from '@prairielearn/zod';
 
 import { AIGradingExplanation, AIGradingPrompt } from '../../../components/QuestionContainer.js';
 import { getAvailableAiGradingProviders } from '../../../ee/lib/ai-grading/ai-grading-credentials.js';
@@ -36,6 +36,7 @@ import { type ResLocalsForPage, typedAsyncHandler } from '../../../lib/res-local
 import { getOngoingJobSequenceIds } from '../../../lib/server-jobs.js';
 import { createAuthzMiddleware } from '../../../middlewares/authzHelper.js';
 import { selectCourseInstanceGraderStaff } from '../../../models/course-instances.js';
+import { selectUserSettings } from '../../../models/user-settings.js';
 import { selectUserById } from '../../../models/user.js';
 import { selectAndAuthzVariant } from '../../../models/variant.js';
 
@@ -223,7 +224,6 @@ router.get(
           assessmentQuestionId: res.locals.assessment_question.id,
           instanceQuestionId: res.locals.instance_question.id,
           trpcCsrfToken,
-          isDevMode: process.env.NODE_ENV === 'development',
           hasRubric: res.locals.assessment_question.manual_rubric_id != null,
           useCustomApiKeys: res.locals.course_instance.ai_grading_use_custom_api_keys,
           aiGradingSettingsUrl: getAiGradingSettingsUrl(res.locals.course_instance.id),
@@ -238,6 +238,8 @@ router.get(
             res.locals.authz_data.has_course_instance_permission_edit,
         };
       });
+
+      const userSettings = await selectUserSettings({ user_id: res.locals.authn_user.id });
 
       res.send(
         InstanceQuestionPage({
@@ -257,6 +259,7 @@ router.get(
           showSubmissionsAssignedToMeOnly: req.session.show_submissions_assigned_to_me_only,
           submissionCredits,
           instanceQuestionAiGradeProps,
+          enable_single_key_shortcuts: userSettings.enable_single_key_shortcuts,
         }),
       );
     },
@@ -358,6 +361,8 @@ router.get(
             })) ?? undefined)
           : undefined;
 
+        const userSettings = await selectUserSettings({ user_id: res.locals.authn_user.id });
+
         const gradingPanel = GradingPanel({
           ...locals,
           context: 'main',
@@ -371,6 +376,7 @@ router.get(
           show_submissions_assigned_to_me_only:
             req.session.show_submissions_assigned_to_me_only ?? true,
           gradedByHumanName: shared.lastHumanGraderName,
+          enable_single_key_shortcuts: userSettings.enable_single_key_shortcuts,
         }).toString();
 
         const aiGradingExplanation = aiGradingInfo
@@ -476,7 +482,7 @@ const PostBodySchema = z.union([
 router.post(
   '/',
   asyncHandler(async (req, res) => {
-    const body = PostBodySchema.parse(req.body);
+    const body = parseRequestBody(req, PostBodySchema);
     if (body.__action === 'next_instance_question') {
       if (!res.locals.authz_data.has_course_instance_permission_view) {
         throw new error.HttpStatusError(403, 'Access denied (must be a student data viewer)');

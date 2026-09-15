@@ -226,7 +226,6 @@ typecheck-sql:
 
 changeset:
 	@pnpm changeset
-	@pnpm prettier --write ".changeset/**/*.md"
 
 lint-docs: lint-d2 lint-links lint-markdown lint-docs-links
 

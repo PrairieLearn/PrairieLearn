@@ -17,13 +17,9 @@ import {
   StudentAccessTimelinePopover,
 } from '../../components/StudentAccessPopovers.js';
 import { TimeLimitExpiredModal } from '../../components/TimeLimitExpiredModal.js';
+import type { AssessmentInstanceAuthzResult } from '../../lib/assessment-access-control/authz-result.js';
 import { compiledScriptTag } from '../../lib/assets.js';
-import {
-  type Assessment,
-  type AssessmentInstance,
-  type GroupConfig,
-  type SprocAuthzAssessmentInstance,
-} from '../../lib/db-types.js';
+import { type Assessment, type AssessmentInstance, type GroupConfig } from '../../lib/db-types.js';
 import { formatPoints } from '../../lib/format.js';
 import { type GroupInfo, getRoleNamesForUser } from '../../lib/groups.shared.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
@@ -450,7 +446,7 @@ function AssessmentStatus({
   assessment: Assessment;
   assessment_instance: AssessmentInstance;
   displayTimezone: string;
-  authz_result: SprocAuthzAssessmentInstance;
+  authz_result: AssessmentInstanceAuthzResult;
 }) {
   if (assessment_instance.open && authz_result.active) {
     return html`

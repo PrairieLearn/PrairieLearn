@@ -4,11 +4,13 @@ import 'htmx-ext-loading-states/dist/loading-states.js';
 import { onDocumentReady } from '@prairielearn/browser-utils';
 
 import { removeCookieClient, setCookieClient } from '../../src/lib/client/cookie.js';
+import { setupReportCheatingModal } from '../../src/lib/client/reportCheatingModal.js';
 
 import { setupEndExamModal } from './lib/endExamModal.js';
 
 onDocumentReady(() => {
   setupEndExamModal();
+  setupReportCheatingModal();
 
   const usernameNav = document.getElementById('username-nav');
   // The navbar is not present in some pages (e.g., workspace pages), in that case we do nothing.
@@ -33,11 +35,10 @@ onDocumentReady(() => {
   document.querySelector('#navbar-administrator-toggle')?.addEventListener('click', () => {
     if (accessAsAdministrator) {
       setCookieClient(['pl_access_as_administrator', 'pl2_access_as_administrator'], 'inactive');
-      setCookieClient(['pl_requested_data_changed', 'pl2_requested_data_changed'], 'true');
     } else {
       setCookieClient(['pl_access_as_administrator', 'pl2_access_as_administrator'], 'active');
-      setCookieClient(['pl_requested_data_changed', 'pl2_requested_data_changed'], 'true');
     }
+    setCookieClient(['pl_requested_data_changed', 'pl2_requested_data_changed'], 'true');
     location.reload();
   });
 

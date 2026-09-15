@@ -5,10 +5,10 @@ import { Alert, Modal } from 'react-bootstrap';
 import { Controller, useForm } from 'react-hook-form';
 
 import { run } from '@prairielearn/run';
+import { getAppError } from '@prairielearn/trpc/client';
 import { assertNever } from '@prairielearn/utils';
 
 import { ColorPicker } from '../../../components/ColorPicker.js';
-import { getAppError } from '../../../lib/client/errors.js';
 import { getCourseInstanceJobSequenceUrl } from '../../../lib/client/url.js';
 import { parseUniqueValuesFromString } from '../../../lib/string-util.js';
 import { ColorJsonSchema } from '../../../schemas/infoCourse.js';

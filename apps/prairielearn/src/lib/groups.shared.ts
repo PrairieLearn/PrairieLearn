@@ -133,7 +133,6 @@ export function getGroupRoleReassignmentsAfterLeave(
         user_id: assigneeUserId,
         team_role_id: roleId,
       });
-      continue;
     }
   }
 

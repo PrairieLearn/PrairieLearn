@@ -1,15 +1,9 @@
 import {
   type ColumnSizingState,
-  type Header,
+  type ColumnVisibilityState,
   type SortingState,
-  type VisibilityState,
-  createColumnHelper,
-  getCoreRowModel,
-  getFilteredRowModel,
-  getSortedRowModel,
-  useReactTable,
 } from '@tanstack/react-table';
-import { useMemo, useState } from 'react';
+import { type ReactNode, useMemo, useState } from 'react';
 import { z } from 'zod';
 
 import { formatDate } from '@prairielearn/formatter';
@@ -20,9 +14,12 @@ import {
   NuqsAdapter,
   TanstackTableCard,
   TanstackTableEmptyState,
+  type TanstackTableHeader,
   applyMultiSelectFilter,
+  createTanstackTableColumnHelper,
   parseAsMultiSelectFilter,
   useColumnFilters,
+  useTanstackTable,
 } from '@prairielearn/ui';
 
 import { JobStatus } from '../../components/JobStatus.js';
@@ -67,6 +64,7 @@ type AssessmentLogQueryRow = z.infer<typeof AssessmentLogQueryRowSchema>;
 /** A log row enriched with its category, which is derived in TS from the job sequence type. */
 export type AssessmentLogRow = AssessmentLogQueryRow & { category: CategoryValue };
 
+type ColumnFilter = (props: { header: TanstackTableHeader<AssessmentLogRow> }) => ReactNode;
 type StatusValue = NonNullable<AssessmentLogRow['job_sequence']['status']>;
 
 const CATEGORY_LABELS: Record<CategoryValue, string> = {
@@ -103,7 +101,7 @@ function sampleWidest(rows: AssessmentLogRow[], measure: (row: AssessmentLogRow)
     .map(({ index }) => index);
 }
 
-const columnHelper = createColumnHelper<AssessmentLogRow>();
+const columnHelper = createTanstackTableColumnHelper<AssessmentLogRow>();
 
 export function AssessmentLogsTable({
   logs,
@@ -140,7 +138,7 @@ function AssessmentLogsTableInner({
 }) {
   const [sorting, setSorting] = useState<SortingState>([{ id: 'date', desc: true }]);
   const [globalFilter, setGlobalFilter] = useState('');
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
+  const [columnVisibility, setColumnVisibility] = useState<ColumnVisibilityState>({});
   const [columnSizing, setColumnSizing] = useState<ColumnSizingState>({});
 
   const filterRegistry = useMemo(() => {
@@ -164,123 +162,126 @@ function AssessmentLogsTableInner({
     useColumnFilters(filterRegistry);
 
   const columns = useMemo(
-    () => [
-      columnHelper.accessor((row) => CATEGORY_LABELS[row.category], {
-        id: 'category',
-        header: 'Type',
-        meta: {
-          label: 'Type',
-          autoSize: true,
-          autoSizeSample: (rows) => sampleWidest(rows, (r) => CATEGORY_LABELS[r.category].length),
-        },
-        filterFn: (row, _columnId, filter: MultiSelectFilterValue<CategoryValue>) =>
-          applyMultiSelectFilter(filter, (values) => values.includes(row.original.category)),
-        cell: (info) => {
-          const { category } = info.row.original;
-          return (
-            <span className={`badge color-${CATEGORY_COLORS[category]}`}>
-              {CATEGORY_LABELS[category]}
-            </span>
-          );
-        },
-      }),
-      columnHelper.accessor((row) => row.job_sequence.number, {
-        id: 'number',
-        header: 'Number',
-        size: 100,
-      }),
-      columnHelper.accessor((row) => row.job_sequence.start_date, {
-        id: 'date',
-        header: 'Date',
-        sortingFn: 'datetime',
-        enableGlobalFilter: false,
-        meta: {
-          autoSize: true,
-          autoSizeSample: (rows) => rows.slice(0, 5).map((_, index) => index),
-        },
-        cell: (info) => {
-          const date = info.getValue();
-          return date ? formatDate(date, timezone) : '—';
-        },
-      }),
-      columnHelper.accessor((row) => row.job_sequence.description ?? '', {
-        id: 'description',
-        header: 'Description',
-        meta: {
-          autoSize: true,
-          autoSizeSample: (rows) =>
-            sampleWidest(rows, (r) => (r.job_sequence.description ?? '').length),
-        },
-      }),
-      columnHelper.accessor((row) => row.user_uid, {
-        id: 'user',
-        header: 'User',
-        meta: {
-          autoSize: true,
-          autoSizeSample: (rows) => sampleWidest(rows, (r) => r.user_uid.length),
-        },
-      }),
-      columnHelper.accessor((row) => row.job_sequence.status, {
-        id: 'status',
-        header: 'Status',
-        meta: {
-          label: 'Status',
-          autoSize: true,
-          autoSizeSample: (rows) => sampleWidest(rows, (r) => (r.job_sequence.status ?? '').length),
-        },
-        filterFn: (row, _columnId, filter: MultiSelectFilterValue<StatusValue>) =>
-          applyMultiSelectFilter(filter, (values) => {
-            const status = row.original.job_sequence.status;
-            return status != null && values.includes(status);
-          }),
-        cell: (info) => <JobStatus status={info.getValue()} />,
-      }),
-      columnHelper.display({
-        id: 'actions',
-        header: 'Actions',
-        enableSorting: false,
-        enableHiding: false,
-        meta: {
-          autoSize: true,
-          autoSizeSample: (rows) => rows.slice(0, 1).map((_, index) => index),
-        },
-        cell: (info) => (
-          <a
-            href={getCourseInstanceJobSequenceUrl(
-              courseInstanceId,
-              info.row.original.job_sequence.id,
-            )}
-            className="btn btn-xs btn-info"
-          >
-            Details
-          </a>
-        ),
-      }),
-    ],
+    () =>
+      columnHelper.columns([
+        columnHelper.accessor((row) => CATEGORY_LABELS[row.category], {
+          id: 'category',
+          header: 'Type',
+          meta: {
+            label: 'Type',
+            autoSize: true,
+            autoSizeSample: (rows) => sampleWidest(rows, (r) => CATEGORY_LABELS[r.category].length),
+          },
+          filterFn: (row, _columnId, filter: MultiSelectFilterValue<CategoryValue>) =>
+            applyMultiSelectFilter(filter, (values) => values.includes(row.original.category)),
+          cell: (info) => {
+            const { category } = info.row.original;
+            return (
+              <span className={`badge color-${CATEGORY_COLORS[category]}`}>
+                {CATEGORY_LABELS[category]}
+              </span>
+            );
+          },
+        }),
+        columnHelper.accessor((row) => row.job_sequence.number, {
+          id: 'number',
+          header: 'Number',
+          size: 100,
+        }),
+        columnHelper.accessor((row) => row.job_sequence.start_date, {
+          id: 'date',
+          header: 'Date',
+          sortFn: 'datetime',
+          enableGlobalFilter: false,
+          meta: {
+            autoSize: true,
+            autoSizeSample: (rows) => rows.slice(0, 5).map((_, index) => index),
+          },
+          cell: (info) => {
+            const date = info.getValue();
+            return date ? formatDate(date, timezone) : '—';
+          },
+        }),
+        columnHelper.accessor((row) => row.job_sequence.description ?? '', {
+          id: 'description',
+          header: 'Description',
+          meta: {
+            autoSize: true,
+            autoSizeSample: (rows) =>
+              sampleWidest(rows, (r) => (r.job_sequence.description ?? '').length),
+          },
+        }),
+        columnHelper.accessor((row) => row.user_uid, {
+          id: 'user',
+          header: 'User',
+          meta: {
+            autoSize: true,
+            autoSizeSample: (rows) => sampleWidest(rows, (r) => r.user_uid.length),
+          },
+        }),
+        columnHelper.accessor((row) => row.job_sequence.status, {
+          id: 'status',
+          header: 'Status',
+          meta: {
+            label: 'Status',
+            autoSize: true,
+            autoSizeSample: (rows) =>
+              sampleWidest(rows, (r) => (r.job_sequence.status ?? '').length),
+          },
+          filterFn: (row, _columnId, filter: MultiSelectFilterValue<StatusValue>) =>
+            applyMultiSelectFilter(filter, (values) => {
+              const status = row.original.job_sequence.status;
+              return status != null && values.includes(status);
+            }),
+          cell: (info) => <JobStatus status={info.getValue()} />,
+        }),
+        columnHelper.display({
+          id: 'actions',
+          header: 'Actions',
+          enableSorting: false,
+          enableHiding: false,
+          meta: {
+            autoSize: true,
+            autoSizeSample: (rows) => rows.slice(0, 1).map((_, index) => index),
+          },
+          cell: (info) => (
+            <a
+              href={getCourseInstanceJobSequenceUrl(
+                courseInstanceId,
+                info.row.original.job_sequence.id,
+              )}
+              className="btn btn-xs btn-info"
+            >
+              Details
+            </a>
+          ),
+        }),
+      ]),
     [courseInstanceId, timezone],
   );
 
   const filters = useMemo(
-    () => ({
-      category: ({ header }: { header: Header<AssessmentLogRow, unknown> }) => (
-        <MultiSelectColumnFilter
-          column={header.column}
-          allColumnValues={CATEGORY_VALUES}
-          renderValueLabel={({ value }) => <span>{CATEGORY_LABELS[value]}</span>}
-        />
-      ),
-      status: ({ header }: { header: Header<AssessmentLogRow, unknown> }) => (
-        <MultiSelectColumnFilter
-          column={header.column}
-          allColumnValues={STATUS_VALUES}
-          renderValueLabel={({ value }) => <JobStatus status={value} />}
-        />
-      ),
-    }),
+    () =>
+      ({
+        category: ({ header }) => (
+          <MultiSelectColumnFilter
+            column={header.column}
+            allColumnValues={CATEGORY_VALUES}
+            renderValueLabel={({ value }) => <span>{CATEGORY_LABELS[value]}</span>}
+          />
+        ),
+        status: ({ header }) => (
+          <MultiSelectColumnFilter
+            column={header.column}
+            allColumnValues={STATUS_VALUES}
+            renderValueLabel={({ value }) => <JobStatus status={value} />}
+          />
+        ),
+      }) satisfies Record<string, ColumnFilter>,
     [],
   );
 
-  const table = useReactTable({
+  const table = useTanstackTable({
     data: logs,
     columns,
     columnResizeMode: 'onChange',
@@ -291,9 +292,6 @@ function AssessmentLogsTableInner({
     onColumnVisibilityChange: setColumnVisibility,
     onColumnFiltersChange,
     onColumnSizingChange: setColumnSizing,
-    getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
     defaultColumn: {
       minSize: 80,
       size: 150,

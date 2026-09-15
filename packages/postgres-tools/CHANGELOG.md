@@ -1,5 +1,30 @@
 # @prairielearn/postgres-tools
 
+## 3.0.14
+
+### Patch Changes
+
+- Updated dependencies [fce4634]
+  - @prairielearn/postgres@8.0.0
+
+## 3.0.13
+
+### Patch Changes
+
+- 057d37b: Update dependency on typescript-cp
+
+## 3.0.12
+
+### Patch Changes
+
+- df28e68: Bump dependencies
+
+## 3.0.11
+
+### Patch Changes
+
+- 81ad435: Update typescript-cp to remove its transitive tar dependency.
+
 ## 3.0.10
 
 ### Patch Changes

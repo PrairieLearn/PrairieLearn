@@ -9,7 +9,6 @@ export function getAzureStrategy() {
       clientID: config.azureClientID,
       redirectUrl: config.azureRedirectUrl,
       allowHttpForRedirectUrl: config.azureAllowHttpForRedirectUrl,
-      clientSecret: config.azureClientSecret,
       cookieEncryptionKeys: config.azureCookieEncryptionKeys,
       loggingLevel: config.azureLoggingLevel,
       scope: ['openid', 'profile', 'email'],

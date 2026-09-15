@@ -18,7 +18,7 @@ import * as tmp from 'tmp-promise';
 import z from 'zod';
 
 import { DockerName, setupDockerAuth } from '@prairielearn/docker-utils';
-import { contains } from '@prairielearn/path-utils';
+import { FileSizeLimitError, contains, readFileWithinDirectory } from '@prairielearn/path-utils';
 import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 import { sanitizeObject } from '@prairielearn/sanitize';
@@ -216,7 +216,7 @@ async.series(
 
       // Start an appropriate number of workers
       workersFinished = Promise.all(
-        Array.from({ length: config.maxConcurrentJobs }).map(() => worker()),
+        Array.from({ length: config.maxConcurrentJobs }, () => worker()),
       ).then(() => {});
       await workersFinished;
     },
@@ -620,33 +620,34 @@ async function runJob(
     // Now that the job has completed, let's extract the results
     // First up: results.json
     if (results.succeeded) {
-      await fs.readFile(path.join(tempDir, 'results', 'results.json')).then(
-        (data) => {
-          if (Buffer.byteLength(data) > 1024 * 1024) {
-            // Cap output at 1MB
-            results.succeeded = false;
-            results.message =
-              'The grading results were larger than 1MB. ' +
-              'If the problem persists, please contact course staff or a proctor.';
-            return;
-          }
-
-          try {
-            const parsedResults = JSON.parse(data.toString());
-            results.results = sanitizeObject(parsedResults);
-            results.succeeded = true;
-          } catch (e) {
-            logger.error('Could not parse results.json:', e);
-            results.succeeded = false;
-            results.message = 'Could not parse the grading results.';
-          }
-        },
-        (err) => {
+      const data = await readFileWithinDirectory(
+        tempDir,
+        'results/results.json',
+        1024 * 1024,
+      ).catch((err: unknown) => {
+        results.succeeded = false;
+        if (err instanceof FileSizeLimitError) {
+          results.message =
+            'The grading results were larger than 1MB. ' +
+            'If the problem persists, please contact course staff or a proctor.';
+        } else {
           logger.error('Could not read results.json', err);
-          results.succeeded = false;
           results.message = 'Could not read grading results.';
-        },
-      );
+        }
+        return null;
+      });
+
+      if (data === null) return;
+
+      try {
+        const parsedResults = JSON.parse(data.toString());
+        results.results = sanitizeObject(parsedResults);
+        results.succeeded = true;
+      } catch (e) {
+        logger.error('Could not parse results.json:', e);
+        results.succeeded = false;
+        results.message = 'Could not parse the grading results.';
+      }
     } else {
       if (results.timedOut) {
         results.message = `Your grading job did not complete within the time limit of ${timeout} seconds.\nPlease fix your code before submitting again.`;

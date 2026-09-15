@@ -82,6 +82,7 @@ export function InstructorInfoPanel({
           variant,
           question_is_shared,
           questionContext,
+          hasCoursePermissionPreview: authz_data.has_course_permission_preview,
         }),
         VariantInfo({ variant, timeZone, questionContext }),
         IssueReportButton({ variant, csrfToken, questionContext }),
@@ -152,6 +153,7 @@ function QuestionInfo({
   variant,
   question_is_shared,
   questionContext,
+  hasCoursePermissionPreview,
 }: {
   course: Course;
   course_instance?: CourseInstance;
@@ -159,6 +161,7 @@ function QuestionInfo({
   variant?: Variant;
   question_is_shared?: boolean;
   questionContext: QuestionContext;
+  hasCoursePermissionPreview: boolean;
 }) {
   if (question == null || variant == null) return '';
 
@@ -190,11 +193,16 @@ function QuestionInfo({
           ? html`<a href="${publicPreviewUrl}?variant_seed=${variant.variant_seed}">
               ${sharingQid}
             </a>`
-          : html`<a href="${questionPreviewUrl}">${question.qid}</a>`}
+          : hasCoursePermissionPreview
+            ? html`<a href="${questionPreviewUrl}">${question.qid}</a>`
+            : html`<span>${question.qid}</span>`}
       </div>
     </div>
 
-    ${question_is_shared && course.sharing_name && questionContext !== 'public'
+    ${question_is_shared &&
+    course.sharing_name &&
+    questionContext !== 'public' &&
+    hasCoursePermissionPreview
       ? html`
           <div class="d-flex flex-wrap">
             <div class="pe-1">Shared As:</div>

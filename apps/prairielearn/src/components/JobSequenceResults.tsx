@@ -32,7 +32,7 @@ function redirectWithReferrer() {
     // parameter.
     redirectUrl.searchParams.set('referrer', '');
   }
-  window.location.replace(redirectUrl.toString());
+  window.location.replace(redirectUrl.href);
 }
 
 function JobSequenceResultsJobItem({

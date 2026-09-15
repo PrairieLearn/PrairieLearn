@@ -9,6 +9,7 @@ import he from 'he';
 import multer from 'multer';
 import onFinished from 'on-finished';
 import * as tmp from 'tmp-promise';
+import { z } from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
 import { html } from '@prairielearn/html';
@@ -20,6 +21,7 @@ import {
   PLEmitter,
   QTI12ItemContainerParser,
   type QtiFileEntry,
+  QtiImportRemoteImageCopier,
   findQtiFilesFromManifest,
   findQtiXmlFiles,
   normalizeImsFilePath,
@@ -31,13 +33,15 @@ import { Hydrate } from '@prairielearn/react/server';
 import { run } from '@prairielearn/run';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 import { ZipArchiveValidationError, extractZipArchive } from '@prairielearn/utils/zip';
+import { IdSchema, parseRequestBody } from '@prairielearn/zod';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { nodeModulesAssetPath } from '../../lib/assets.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
-import { getCourseInstanceTrpcUrl } from '../../lib/client/url.js';
+import { getCourseTrpcUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
 import { discoverInfoDirs } from '../../lib/discover-info-dirs.js';
+import { idsEqual } from '../../lib/id.js';
 import { createQtiImportDraft } from '../../lib/qti-import-drafts.js';
 import { lintQuestionHtml } from '../../lib/question-html-linter.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
@@ -98,7 +102,7 @@ const qtiImportUploadSingle: RequestHandler = (req, res, next) => {
 
 // Require edit permissions for all routes.
 router.use(
-  typedAsyncHandler<'course-instance'>(async (req, res, next) => {
+  typedAsyncHandler<'course' | 'course-instance'>(async (req, res, next) => {
     const { authz_data: authzData, course } = extractPageContext(res.locals, {
       pageType: 'course',
       accessType: 'instructor',
@@ -115,10 +119,12 @@ router.use(
 
 router.get(
   '/',
-  typedAsyncHandler<'course-instance'>(async (req, res) => {
-    const returnTo = req.query.return_to === 'questions' ? 'questions' : 'assessments';
-
-    const { authz_data: authzData, course } = extractPageContext(res.locals, {
+  typedAsyncHandler<'course' | 'course-instance'>(async (req, res) => {
+    const {
+      authz_data: authzData,
+      course,
+      urlPrefix,
+    } = extractPageContext(res.locals, {
       pageType: 'course',
       accessType: 'instructor',
     });
@@ -127,22 +133,22 @@ router.get(
       authzData,
     });
 
-    // Generate per-CI CSRF tokens so the client can switch target CI without
-    // a page reload. Each CI needs its own upload prefix token and tRPC token.
-    const csrfTokensByCourseInstance: Record<string, { upload: string; trpc: string }> = {};
-    for (const ci of courseInstances) {
-      const uploadBase = `/pl/course_instance/${ci.id}/instructor/instance_admin/qti_import`;
-      csrfTokensByCourseInstance[ci.id] = {
-        upload: generatePrefixCsrfToken(
-          { url: uploadBase, authn_user_id: res.locals.authn_user.id },
-          config.secretKey,
-        ),
-        trpc: generatePrefixCsrfToken(
-          { url: getCourseInstanceTrpcUrl(ci.id), authn_user_id: res.locals.authn_user.id },
-          config.secretKey,
-        ),
-      };
-    }
+    // The assessments page only exists within a course instance.
+    const returnTo =
+      req.query.return_to === 'questions' || !res.locals.course_instance
+        ? 'questions'
+        : 'assessments';
+
+    const csrfTokens = {
+      upload: generatePrefixCsrfToken(
+        { url: `${urlPrefix}/course_admin/qti_import`, authn_user_id: res.locals.authn_user.id },
+        config.secretKey,
+      ),
+      trpc: generatePrefixCsrfToken(
+        { url: getCourseTrpcUrl(course.id), authn_user_id: res.locals.authn_user.id },
+        config.secretKey,
+      ),
+    };
 
     const ciOptions: CourseInstanceOption[] = courseInstances.map((ci) => ({
       id: ci.id,
@@ -170,9 +176,13 @@ router.get(
         content: (
           <Hydrate>
             <QtiImportForm
-              courseInstanceId={res.locals.course_instance.id}
+              courseId={course.id}
+              urlPrefix={urlPrefix}
               courseInstances={ciOptions}
-              csrfTokensByCourseInstance={csrfTokensByCourseInstance}
+              initialCourseInstanceId={
+                res.locals.course_instance?.id ?? courseInstances.at(0)?.id ?? null
+              }
+              csrfTokens={csrfTokens}
               returnTo={returnTo}
             />
           </Hydrate>
@@ -182,10 +192,31 @@ router.get(
   }),
 );
 
+const UploadPostBodySchema = z.object({
+  course_instance_id: IdSchema.optional(),
+});
+
 router.post(
   '/upload',
   qtiImportUploadSingle,
-  typedAsyncHandler<'course-instance'>(async (req, res) => {
+  typedAsyncHandler<'course' | 'course-instance'>(async (req, res) => {
+    const body = parseRequestBody(req, UploadPostBodySchema);
+    const { authz_data: authzData, course } = extractPageContext(res.locals, {
+      pageType: 'course',
+      accessType: 'instructor',
+    });
+
+    const courseInstance = await run(async () => {
+      const courseInstanceId = body.course_instance_id;
+      if (courseInstanceId == null) return null;
+      const courseInstances = await selectCourseInstancesWithStaffAccess({ course, authzData });
+      const courseInstance = courseInstances.find((ci) => idsEqual(ci.id, courseInstanceId));
+      if (!courseInstance) {
+        throw new HttpStatusError(400, 'Invalid course instance');
+      }
+      return courseInstance;
+    });
+
     const file = req.file;
     if (!file) {
       throw new HttpStatusError(400, 'No file uploaded');
@@ -251,10 +282,11 @@ router.post(
       // Convert each QTI entry, assigning unique slugs so same-titled entries
       // (e.g. two "Quiz 1") don't collide on question prefixes.
       const usedSlugs = new Set<string>();
+      const remoteImageCopier = new QtiImportRemoteImageCopier();
       const convertedEntries: SerializedEntryResult[] = [];
       const parseWarnings: ParseWarning[] = [];
       for (const entry of entries) {
-        const result = await convertEntry(entry, rubricsXml, usedSlugs);
+        const result = await convertEntry(entry, rubricsXml, usedSlugs, remoteImageCopier);
         if (result.ok) {
           convertedEntries.push(result.value);
         } else {
@@ -300,13 +332,12 @@ router.post(
       }
 
       const [assessmentSets, assessmentRows] = await Promise.all([
-        selectAssessmentSetsForCourse(res.locals.course.id),
-        selectAssessments({ course_instance_id: res.locals.course_instance.id }),
+        selectAssessmentSetsForCourse(course.id),
+        courseInstance ? selectAssessments({ course_instance_id: courseInstance.id }) : [],
       ]);
 
       const draftId = await createQtiImportDraft({
-        courseId: res.locals.course.id,
-        courseInstanceId: res.locals.course_instance.id,
+        courseId: course.id,
         userId: res.locals.authn_user.id,
         results,
       });
@@ -356,6 +387,7 @@ async function convertEntry(
   entry: QtiFileEntry,
   rubricsXml: string | undefined,
   usedSlugs: Set<string>,
+  remoteImageCopier: QtiImportRemoteImageCopier,
 ): Promise<ConvertEntryResult> {
   const xmlContent = await readFile(entry.qtiPath, 'utf-8');
 
@@ -406,10 +438,11 @@ async function convertEntry(
   usedSlugs.add(assessmentSlug);
 
   const emitter = new PLEmitter();
-  const result = emitter.emit(ir, {
+  const result = await emitter.emitProcessed(ir, {
     ...baseOptions,
     tags: ['imported'],
     questionIdPrefix: `imported/${assessmentSlug}`,
+    processors: [remoteImageCopier],
   });
 
   return {
@@ -453,8 +486,18 @@ export async function serializeConversionResult(
           level: 'warn',
         });
       }
+      const hasRemoteImageCopyWarning = result.warnings.some(
+        (warning) =>
+          warning.questionId === q.sourceId && warning.code === 'remote-image-copy-failed',
+      );
+      const remoteImageCopyReport = result.reports.find(
+        (report) => report.questionId === q.sourceId,
+      );
       const seenMessages = new Set<string>();
       for (const d of await lintQuestionHtml(q.questionHtml)) {
+        if (hasRemoteImageCopyWarning && d.ruleName === 'pl-remote-image-url') {
+          continue;
+        }
         if (seenMessages.has(d.message)) continue;
         seenMessages.add(d.message);
         extraWarnings.push({ questionId, message: d.message, level: 'warn' });
@@ -467,6 +510,7 @@ export async function serializeConversionResult(
         serverPy: q.serverPy,
         clientFiles: files,
         skippedVideos: q.skippedFiles,
+        copiedExternalImageFileCount: remoteImageCopyReport?.filesCreated ?? 0,
       };
     }),
   );

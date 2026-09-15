@@ -121,7 +121,7 @@ export function makeWorkspaceProxyMiddleware(containerPathRegex: RegExp) {
         const newPath = '/' + pathSuffix;
         return newPath;
       } catch (err: any) {
-        logger.error(`Error in pathRewrite for path=${path}: ${err}`);
+        logger.error('Error in workspace path rewrite', { err, path });
         return path;
       }
     },
@@ -151,7 +151,7 @@ export function makeWorkspaceProxyMiddleware(containerPathRegex: RegExp) {
         stripSensitiveCookies(proxyReq);
       },
       error: (err, req, res) => {
-        logger.error(`Error proxying workspace request: ${err}`, {
+        logger.error('Error proxying workspace request', {
           err,
           url: req.url,
           originalUrl: req.originalUrl,

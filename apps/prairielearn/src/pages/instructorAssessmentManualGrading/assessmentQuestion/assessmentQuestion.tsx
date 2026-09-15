@@ -197,7 +197,6 @@ router.get(
                 }
                 initialOngoingJobSequenceTokens={initialOngoingJobSequenceTokens}
                 numOpenInstances={num_open_instances}
-                isDevMode={process.env.NODE_ENV === 'development'}
                 questionTitle={question.title ?? ''}
                 questionNumber={Number(number_in_alternative_group)}
                 availableAiGradingProviders={availableAiGradingProviders}

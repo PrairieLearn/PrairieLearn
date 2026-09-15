@@ -17,6 +17,7 @@ BEGIN
             e.user_id = users_get_displayed_role.user_id
             AND e.course_instance_id = users_get_displayed_role.course_instance_id;
 
+        -- Current and former enrollments are displayed as Student so historical records retain their role.
         IF FOUND THEN displayed_role := 'Student';
         ELSE displayed_role := 'None';
         END IF;

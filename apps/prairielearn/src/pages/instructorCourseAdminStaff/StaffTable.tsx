@@ -1,22 +1,17 @@
 import { QueryClient, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   type ColumnPinningState,
-  type Header,
   type RowSelectionState,
   type SortingState,
-  type Table,
-  createColumnHelper,
-  getCoreRowModel,
-  getFilteredRowModel,
-  getSortedRowModel,
-  useReactTable,
 } from '@tanstack/react-table';
 import clsx from 'clsx';
 import { parseAsString, useQueryState } from 'nuqs';
-import { useMemo, useState } from 'react';
+import { type ReactNode, useMemo, useState } from 'react';
 import { Button, ButtonGroup, Dropdown, Modal } from 'react-bootstrap';
 
 import { run } from '@prairielearn/run';
+import { getAppError } from '@prairielearn/trpc/client';
+import { QueryClientProviderDebug } from '@prairielearn/trpc/react';
 import {
   type ColumnFilterEntry,
   IndeterminateCheckbox,
@@ -24,24 +19,29 @@ import {
   type MultiSelectFilterValue,
   NuqsAdapter,
   OverlayTrigger,
+  type OverlayTriggerProps,
   Popover,
   TanstackTableCard,
+  type TanstackTableCoreInstance,
+  type TanstackTableHeader,
   applyMultiSelectFilter,
+  createTanstackTableColumnHelper,
   parseAsColumnPinningState,
   parseAsMultiSelectFilter,
   parseAsSortingState,
   useColumnFilters,
   useColumnVisibilityQueryState,
-  useShiftClickCheckbox,
+  usePruneRowSelection,
+  useTanstackTable,
 } from '@prairielearn/ui';
 
-import { getAppError } from '../../lib/client/errors.js';
-import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
 import type { CourseInstanceAuthz } from '../../models/course-instances.js';
 import type { CourseUsersRow } from '../../models/course-permissions.js';
 import { createCourseTrpcClient } from '../../trpc/course/client.js';
 import { TRPCProvider, useTRPC } from '../../trpc/course/context.js';
 import type { CourseStaffError } from '../../trpc/course/course-staff.js';
+
+type ColumnFilter = (props: { header: TanstackTableHeader<CourseUsersRow> }) => ReactNode;
 
 function useInvalidateStaffList() {
   const queryClient = useQueryClient();
@@ -89,24 +89,41 @@ const INSTANCE_ROLE_DESCRIPTIONS: Record<InstanceRole, string> = {
     'Can see all assessments, questions, and issues. Can view and edit student data, including grading.',
 };
 
-function SelectAllCheckbox({ table }: { table: Table<CourseUsersRow> }) {
+const PERMISSION_POPOVER_CONFIG: OverlayTriggerProps['popperConfig'] = {
+  modifiers: [
+    {
+      name: 'resize',
+      enabled: true,
+      phase: 'write',
+      // Role descriptions and error messages can change the popover's size while it's open.
+      effect: ({ state, instance }) => {
+        const observer = new ResizeObserver(() => void instance.update());
+        observer.observe(state.elements.popper);
+        return () => observer.disconnect();
+      },
+    },
+  ],
+};
+
+function SelectAllCheckbox({ table }: { table: TanstackTableCoreInstance<CourseUsersRow> }) {
+  const allSelected = table.getIsAllPageRowsSelected();
   return (
     <IndeterminateCheckbox
-      checked={table.getIsAllPageRowsSelected()}
-      indeterminate={table.getIsSomePageRowsSelected()}
+      checked={allSelected}
+      indeterminate={table.getIsSomePageRowsSelected() && !allSelected}
       aria-label="Select all staff"
-      onChange={() => table.toggleAllPageRowsSelected()}
+      onChange={table.getToggleAllPageRowsSelectedHandler()}
     />
   );
 }
 
-const columnHelper = createColumnHelper<CourseUsersRow>();
+const columnHelper = createTanstackTableColumnHelper<CourseUsersRow>();
 
 const DEFAULT_SORT: SortingState = [
   { id: 'course_role', desc: true },
   { id: 'uid', desc: false },
 ];
-const DEFAULT_PINNING: ColumnPinningState = { left: ['select', 'uid'], right: [] };
+const DEFAULT_PINNING: ColumnPinningState = { start: ['select', 'uid'], end: [] };
 
 const EMPTY_COURSE_ROLE_FILTER: MultiSelectFilterValue<CourseRole> = {
   values: [],
@@ -192,7 +209,8 @@ function CoursePermissionCell({
     <OverlayTrigger
       show={show}
       trigger="click"
-      placement="right"
+      placement="auto"
+      popperConfig={PERMISSION_POPOVER_CONFIG}
       popover={{
         props: {
           id: `course-permission-popover-${courseUser.user.id}`,
@@ -297,7 +315,8 @@ function CourseInstanceAccessCell({
     <OverlayTrigger
       show={show}
       trigger="click"
-      placement="bottom"
+      placement="auto"
+      popperConfig={PERMISSION_POPOVER_CONFIG}
       popover={{
         props: {
           id: `ci-permission-popover-${courseUser.user.id}-${courseInstance.id}`,
@@ -882,17 +901,27 @@ function StaffTableInner({
   const { columnFilters, onColumnFiltersChange, onResetColumnFilters } =
     useColumnFilters(filterRegistry);
 
-  const activeCourseInstanceIds = useMemo(() => {
+  const { activeCourseInstanceIds, upcomingCourseInstanceIds } = useMemo(() => {
     const now = new Date();
-    return new Set(
-      courseInstances
-        .filter((ci) => {
-          const hasStarted = !ci.start_date || ci.start_date <= now;
-          const hasNotEnded = !ci.end_date || ci.end_date >= now;
-          return hasStarted && hasNotEnded;
-        })
-        .map((ci) => ci.id),
-    );
+    const activeIds = new Set<string>();
+    const upcomingIds = new Set<string>();
+
+    for (const courseInstance of courseInstances) {
+      const hasStarted = !courseInstance.start_date || courseInstance.start_date <= now;
+      const hasNotEnded = !courseInstance.end_date || courseInstance.end_date >= now;
+      const isUndated = !courseInstance.start_date && !courseInstance.end_date;
+
+      if (!isUndated && hasStarted && hasNotEnded) {
+        activeIds.add(courseInstance.id);
+      } else if (hasNotEnded && (!hasStarted || isUndated)) {
+        upcomingIds.add(courseInstance.id);
+      }
+    }
+
+    return {
+      activeCourseInstanceIds: activeIds,
+      upcomingCourseInstanceIds: upcomingIds,
+    };
   }, [courseInstances]);
 
   const allColumnIds = useMemo(
@@ -909,126 +938,128 @@ function StaffTableInner({
     useColumnVisibilityQueryState(allColumnIds);
 
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
-  const { createCheckboxProps } = useShiftClickCheckbox<CourseUsersRow>();
 
   const columns = useMemo(
-    () => [
-      columnHelper.display({
-        id: 'select',
-        header: ({ table }) => <SelectAllCheckbox table={table} />,
-        cell: ({ row, table }) => {
-          const uid = row.original.user.uid;
-          return (
-            <input
-              type="checkbox"
-              aria-label={`Select ${uid}`}
-              {...createCheckboxProps(row, table)}
-            />
-          );
-        },
-        size: 40,
-        minSize: 40,
-        maxSize: 40,
-        enableSorting: false,
-        enableHiding: false,
-      }),
-      columnHelper.accessor((row) => row.user.uid, {
-        id: 'uid',
-        header: 'UID',
-        size: 220,
-        enableHiding: true,
-        enableGlobalFilter: true,
-      }),
-      columnHelper.accessor((row) => row.user.name ?? '', {
-        id: 'user_name',
-        header: 'Name',
-        size: 180,
-        enableHiding: true,
-        enableGlobalFilter: true,
-        cell: (info) => {
-          const name = info.row.original.user.name;
-          return name ? (
-            <span>{name}</span>
-          ) : (
-            <Popover
-              content={
-                'Users with name "Unknown user" either have never logged in or have an incorrect UID.'
-              }
-              placement="top"
-            >
-              <button
-                type="button"
-                className="btn btn-link text-danger text-decoration-none p-0 border-0"
-              >
-                Unknown user
-              </button>
-            </Popover>
-          );
-        },
-      }),
-      columnHelper.accessor((row) => row.course_permission.course_role, {
-        id: 'course_role',
-        header: 'Course content',
-        size: 190,
-        enableHiding: true,
-        enableGlobalFilter: false,
-        meta: { label: 'Course content access' },
-        filterFn: (row, _columnId, filter: MultiSelectFilterValue<CourseRole>) => {
-          const role = row.original.course_permission.course_role ?? 'None';
-          return applyMultiSelectFilter(filter, (values) => values.includes(role));
-        },
-        sortingFn: (rowA, rowB) => {
-          const indexA = COURSE_ROLE_VALUES.indexOf(
-            rowA.original.course_permission.course_role ?? 'None',
-          );
-          const indexB = COURSE_ROLE_VALUES.indexOf(
-            rowB.original.course_permission.course_role ?? 'None',
-          );
-          return indexA - indexB;
-        },
-        cell: (info) => (
-          <div className="text-center">
-            <CoursePermissionCell
-              courseUser={info.row.original}
-              canChangeCourseRole={
-                (info.row.original.user.id !== authnUserId &&
-                  info.row.original.user.id !== userId) ||
-                isAdministrator
-              }
-            />
-          </div>
-        ),
-      }),
-      ...courseInstances.map((ci) =>
-        columnHelper.accessor(
-          (row): InstanceRole =>
-            row.course_instance_roles?.find((cir) => cir.id === ci.id)?.course_instance_role ??
-            'None',
-          {
-            id: `ci_${ci.id}`,
-            header: () => <code>{ci.short_name}</code>,
-            meta: { label: ci.short_name },
-            size: 120,
-            enableGlobalFilter: false,
-            enableSorting: false,
-            enableHiding: true,
-            filterFn: (row, columnId, filter: MultiSelectFilterValue<InstanceRole>) => {
-              const role = row.getValue<InstanceRole>(columnId);
-              return applyMultiSelectFilter(filter, (values) => values.includes(role));
-            },
-            cell: (info) => (
-              <div className="text-center">
-                <CourseInstanceAccessCell courseUser={info.row.original} courseInstance={ci} />
-              </div>
-            ),
+    () =>
+      columnHelper.columns([
+        columnHelper.display({
+          id: 'select',
+          header: ({ table }) => <SelectAllCheckbox table={table} />,
+          cell: ({ row }) => {
+            const uid = row.original.user.uid;
+            return (
+              <input
+                type="checkbox"
+                aria-label={`Select ${uid}`}
+                checked={row.getIsSelected()}
+                disabled={!row.getCanSelect()}
+                onChange={row.getToggleSelectedHandler()}
+              />
+            );
           },
+          size: 40,
+          minSize: 40,
+          maxSize: 40,
+          enableSorting: false,
+          enableHiding: false,
+        }),
+        columnHelper.accessor((row) => row.user.uid, {
+          id: 'uid',
+          header: 'UID',
+          size: 220,
+          enableHiding: true,
+          enableGlobalFilter: true,
+        }),
+        columnHelper.accessor((row) => row.user.name ?? '', {
+          id: 'user_name',
+          header: 'Name',
+          size: 180,
+          enableHiding: true,
+          enableGlobalFilter: true,
+          cell: (info) => {
+            const name = info.row.original.user.name;
+            return name ? (
+              <span>{name}</span>
+            ) : (
+              <Popover
+                content={
+                  'Users with name "Unknown user" either have never logged in or have an incorrect UID.'
+                }
+                placement="top"
+              >
+                <button
+                  type="button"
+                  className="btn btn-link text-danger text-decoration-none p-0 border-0"
+                >
+                  Unknown user
+                </button>
+              </Popover>
+            );
+          },
+        }),
+        columnHelper.accessor((row) => row.course_permission.course_role, {
+          id: 'course_role',
+          header: 'Course content',
+          size: 190,
+          enableHiding: true,
+          enableGlobalFilter: false,
+          meta: { label: 'Course content access' },
+          filterFn: (row, _columnId, filter: MultiSelectFilterValue<CourseRole>) => {
+            const role = row.original.course_permission.course_role ?? 'None';
+            return applyMultiSelectFilter(filter, (values) => values.includes(role));
+          },
+          sortFn: (rowA, rowB) => {
+            const indexA = COURSE_ROLE_VALUES.indexOf(
+              rowA.original.course_permission.course_role ?? 'None',
+            );
+            const indexB = COURSE_ROLE_VALUES.indexOf(
+              rowB.original.course_permission.course_role ?? 'None',
+            );
+            return indexA - indexB;
+          },
+          cell: (info) => (
+            <div className="text-center">
+              <CoursePermissionCell
+                courseUser={info.row.original}
+                canChangeCourseRole={
+                  (info.row.original.user.id !== authnUserId &&
+                    info.row.original.user.id !== userId) ||
+                  isAdministrator
+                }
+              />
+            </div>
+          ),
+        }),
+        ...courseInstances.map((ci) =>
+          columnHelper.accessor(
+            (row): InstanceRole =>
+              row.course_instance_roles?.find((cir) => cir.id === ci.id)?.course_instance_role ??
+              'None',
+            {
+              id: `ci_${ci.id}`,
+              header: () => <code>{ci.short_name}</code>,
+              meta: { label: ci.short_name },
+              size: 120,
+              enableGlobalFilter: false,
+              enableSorting: false,
+              enableHiding: true,
+              filterFn: (row, columnId, filter: MultiSelectFilterValue<InstanceRole>) => {
+                const role = row.getValue<InstanceRole>(columnId);
+                return applyMultiSelectFilter(filter, (values) => values.includes(role));
+              },
+              cell: (info) => (
+                <div className="text-center">
+                  <CourseInstanceAccessCell courseUser={info.row.original} courseInstance={ci} />
+                </div>
+              ),
+            },
+          ),
         ),
-      ),
-    ],
-    [authnUserId, userId, isAdministrator, courseInstances, createCheckboxProps],
+      ]),
+    [authnUserId, userId, isAdministrator, courseInstances],
   );
 
-  const table = useReactTable({
+  const table = useTanstackTable({
     data: liveUsers,
     columns,
     columnResizeMode: 'onChange',
@@ -1052,9 +1083,6 @@ function StaffTableInner({
     onColumnPinningChange: setColumnPinning,
     onColumnVisibilityChange: setColumnVisibility,
     onRowSelectionChange: setRowSelection,
-    getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
     defaultColumn: {
       minSize: 100,
       size: 150,
@@ -1063,6 +1091,8 @@ function StaffTableInner({
       enableHiding: false,
     },
   });
+
+  usePruneRowSelection(table);
 
   const selectedUsers = table.getFilteredSelectedRowModel().rows.map((row) => row.original);
   const displayedCount = table.getRowModel().rows.length;
@@ -1086,30 +1116,26 @@ function StaffTableInner({
     );
   });
 
-  const filters = useMemo(
-    () => ({
-      course_role: ({ header }: { header: Header<CourseUsersRow, unknown> }) => (
+  const filters = useMemo(() => {
+    const instanceRoleFilter: ColumnFilter = ({ header }) => (
+      <MultiSelectColumnFilter
+        column={header.column}
+        allColumnValues={[...INSTANCE_ROLE_VALUES]}
+        renderValueLabel={({ value }) => <span>{INSTANCE_ROLE_LABELS[value]}</span>}
+      />
+    );
+
+    return {
+      course_role: ({ header }) => (
         <MultiSelectColumnFilter
           column={header.column}
           allColumnValues={[...COURSE_ROLE_VALUES]}
           renderValueLabel={({ value }) => <span>{value}</span>}
         />
       ),
-      ...Object.fromEntries(
-        courseInstances.map((ci) => [
-          `ci_${ci.id}`,
-          ({ header }: { header: Header<CourseUsersRow, unknown> }) => (
-            <MultiSelectColumnFilter
-              column={header.column}
-              allColumnValues={[...INSTANCE_ROLE_VALUES]}
-              renderValueLabel={({ value }) => <span>{INSTANCE_ROLE_LABELS[value]}</span>}
-            />
-          ),
-        ]),
-      ),
-    }),
-    [courseInstances],
-  );
+      ...Object.fromEntries(courseInstances.map((ci) => [`ci_${ci.id}`, instanceRoleFilter])),
+    } satisfies Record<string, ColumnFilter>;
+  }, [courseInstances]);
 
   const headerButtons = (
     <>
@@ -1131,12 +1157,15 @@ function StaffTableInner({
       'Active instances': Object.fromEntries(
         courseInstances.map((ci) => [`ci_${ci.id}`, activeCourseInstanceIds.has(ci.id)]),
       ),
+      'Upcoming instances': Object.fromEntries(
+        courseInstances.map((ci) => [`ci_${ci.id}`, upcomingCourseInstanceIds.has(ci.id)]),
+      ),
       'All instances': Object.fromEntries(courseInstances.map((ci) => [`ci_${ci.id}`, true])),
     }),
-    [courseInstances, activeCourseInstanceIds],
+    [courseInstances, activeCourseInstanceIds, upcomingCourseInstanceIds],
   );
 
-  const selectedViewPreset = useMemo(() => {
+  const selectedInstancePreset = useMemo(() => {
     for (const [name, preset] of Object.entries(instanceVisibilityPresets)) {
       const matches = Object.entries(preset).every(
         ([colId, visible]) => (columnVisibility[colId] ?? true) === visible,
@@ -1146,30 +1175,30 @@ function StaffTableInner({
     return null;
   }, [instanceVisibilityPresets, columnVisibility]);
 
-  const handleViewPresetSelect = (presetName: string) => {
+  const handleInstancePresetSelect = (presetName: string) => {
     const preset = instanceVisibilityPresets[presetName as keyof typeof instanceVisibilityPresets];
     void setColumnVisibility((prev) => ({ ...prev, ...preset }));
   };
 
   const allInstancesAreActive = activeCourseInstanceIds.size === courseInstances.length;
 
-  const viewPresetDropdown =
+  const instancePresetDropdown =
     courseInstances.length > 0 && !allInstancesAreActive ? (
       <Dropdown as={ButtonGroup}>
         <Dropdown.Toggle variant="tanstack-table">
           <i className="bi bi-funnel me-2" aria-hidden="true" />
-          View: {selectedViewPreset ?? 'Custom'}
+          {selectedInstancePreset ?? 'Custom'}
         </Dropdown.Toggle>
         <Dropdown.Menu>
           {Object.keys(instanceVisibilityPresets).map((name) => {
-            const isSelected = selectedViewPreset === name;
+            const isSelected = selectedInstancePreset === name;
             return (
               <Dropdown.Item
                 key={name}
                 as="button"
                 type="button"
                 active={isSelected}
-                onClick={() => handleViewPresetSelect(name)}
+                onClick={() => handleInstancePresetSelect(name)}
               >
                 <i
                   className={`bi ${isSelected ? 'bi-check-circle-fill' : 'bi-circle'} me-2`}
@@ -1179,7 +1208,7 @@ function StaffTableInner({
               </Dropdown.Item>
             );
           })}
-          {selectedViewPreset === null && (
+          {selectedInstancePreset === null && (
             <Dropdown.Item as="button" type="button" active disabled>
               <i className="bi bi-check-circle-fill me-2" aria-hidden="true" />
               Custom
@@ -1201,7 +1230,7 @@ function StaffTableInner({
           globalFilter={{ placeholder: 'Search by UID or name...' }}
           tableOptions={{ filters, rowHeight: 72 }}
           headerButtons={headerButtons}
-          columnManager={{ buttons: viewPresetDropdown }}
+          columnManager={{ buttons: instancePresetDropdown }}
           statusContent={statusContent}
           onResetColumnFilters={onResetColumnFilters}
         />
@@ -1223,7 +1252,7 @@ export function StaffTable({ search, trpcCsrfToken, courseId, ...props }: StaffT
   );
 
   return (
-    <QueryClientProviderDebug client={queryClient} isDevMode={false}>
+    <QueryClientProviderDebug client={queryClient}>
       <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
         <NuqsAdapter search={search}>
           <StaffTableInner {...props} />
