@@ -1,5 +1,12 @@
 # @prairielearn/postgres-tools
 
+## 3.0.14
+
+### Patch Changes
+
+- Updated dependencies [fce4634]
+  - @prairielearn/postgres@8.0.0
+
 ## 3.0.13
 
 ### Patch Changes

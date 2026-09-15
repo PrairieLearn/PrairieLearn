@@ -1,5 +1,12 @@
 # @prairielearn/migrations
 
+## 5.2.3
+
+### Patch Changes
+
+- Updated dependencies [fce4634]
+  - @prairielearn/postgres@8.0.0
+
 ## 5.2.2
 
 ### Patch Changes
