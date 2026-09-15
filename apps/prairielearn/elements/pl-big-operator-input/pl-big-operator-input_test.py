@@ -7,6 +7,7 @@ from dataclasses import replace
 from typing import Any, Literal, cast, get_args
 
 import lxml.html
+import prairielearn as pl
 import prairielearn.big_operator_utils as pbo
 import prairielearn.sympy_utils as psu
 import pytest
@@ -2050,7 +2051,7 @@ class TestDocSmoke:
         data = question_data()
         k = sympy.Symbol("k")
         answer = cast(sympy.Expr, sympy.Product(k + 1, (k, 1, 4)))
-        data["correct_answers"]["total"] = psu.sympy_to_json(answer)
+        data["correct_answers"]["total"] = pl.to_json(answer)
 
         prepared = self._prepare_parse_render(html(**{"answers-name": "total"}), data)
 
@@ -2066,7 +2067,7 @@ class TestDocSmoke:
             index=x,
             target=0,
             direction="two-sided",
-            body=sympy.Function("f")(x),  # type: ignore
+            body=sympy.Function("f")(x),
         )
         markup = html(**{
             "answers-name": "evaluation",
@@ -2102,8 +2103,8 @@ class TestDocSmoke:
         data["correct_answers"]["total"] = correct_answer
 
         prepared = self._prepare_parse_render(markup, data)
-        submitted = pbo.json_to_big_operator(prepared["submitted_answers"]["total"])
-        correct = pbo.json_to_big_operator(prepared["correct_answers"]["total"])
+        submitted = pl.from_json(prepared["submitted_answers"]["total"])
+        correct = pl.from_json(prepared["correct_answers"]["total"])
 
         assert submitted["indexing"] == "bounds"
         assert correct["indexing"] == "bounds"
