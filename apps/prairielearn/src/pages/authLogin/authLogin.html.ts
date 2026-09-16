@@ -247,12 +247,21 @@ export function AuthLogin({
                 `,
               )}
             </div>
+            <div id="js-institution-no-results" class="text-muted d-none mt-2">
+              No matching institutions found
+            </div>
             <script>
               document.getElementById('js-institution-search').addEventListener('input', (e) => {
                 const query = e.target.value.trim().toLowerCase();
+                let visibleCount = 0;
                 document.querySelectorAll('.js-institution-option').forEach((el) => {
-                  el.classList.toggle('d-none', !el.dataset.institutionName.includes(query));
+                  const isVisible = el.dataset.institutionName.includes(query);
+                  el.classList.toggle('d-none', !isVisible);
+                  if (isVisible) visibleCount++;
                 });
+                document
+                  .getElementById('js-institution-no-results')
+                  .classList.toggle('d-none', visibleCount > 0);
               });
             </script>
           `
