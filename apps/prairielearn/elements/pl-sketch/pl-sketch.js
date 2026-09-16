@@ -13,7 +13,6 @@ window.SketchInput = function (id, overlay_solution = false) {
         const canvas = document.getElementById(id + '-si-canvas');
         // Preserve the coordinate system used by saved drawings while scaling their display.
         canvas.setAttribute('viewBox', `0 0 ${config.width} ${config.height}`);
-        container.style.setProperty('--pl-sketch-width', `${config.width}px`);
         container.classList.add('pl-sketch-readonly');
       });
     }
