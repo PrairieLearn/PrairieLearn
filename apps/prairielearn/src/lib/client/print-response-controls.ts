@@ -173,7 +173,7 @@ function expandSelectOptions(source: HTMLElement): void {
       : 'printing-select-options';
     options.type = 'A';
     for (const option of select.options) {
-      if (!option.value || option.getAttribute('aria-label') === 'Blank') continue;
+      if (!option.value.trim() || option.getAttribute('aria-label') === 'Blank') continue;
       const item = document.createElement('li');
       item.textContent = option.textContent;
       options.append(item);

@@ -84,6 +84,34 @@ it('separates answer key labels from inline prompts and keeps labels with their 
   expect(paragraphs.map((node) => word(node).find('w\\:t').text())).toContain('number ±1%');
 });
 
+it('keeps dropdown option banks as separate lettered paragraphs inside inline wrappers', async () => {
+  const html = `<article class="printing-question" data-question-number="1"><div class="question-body">
+    <span class="d-inline-block">
+      <span data-print-response-line></span>
+      <ol class="printing-select-options" type="A"><li>Positive association</li><li>Negative association</li></ol>
+    </span>
+  </div></article>`;
+  const content = buildDocxContent(html, [], 700);
+  const zip = await JSZip.loadAsync(
+    await Packer.toBuffer(
+      new Document({
+        numbering: { config: content.numbering },
+        sections: [{ children: content.children }],
+      }),
+    ),
+  );
+  const word = load(await zip.file('word/document.xml')!.async('string'), { xmlMode: true });
+  const options = word('w\\:p')
+    .toArray()
+    .filter((node) => word(node).find('w\\:numPr').length > 0);
+  expect(options.map((node) => word(node).find('w\\:t').text())).toEqual([
+    'Positive association',
+    'Negative association',
+  ]);
+  const numbering = load(await zip.file('word/numbering.xml')!.async('string'), { xmlMode: true });
+  expect(numbering('w\\:numFmt[w\\:val="upperLetter"]')).toHaveLength(1);
+});
+
 it('preserves ordering solution indentation without adding list bullets', async () => {
   const html = `<article class="printing-question" data-question-number="1"><div class="question-body">
     <ul><li class="pl-order-block" data-docx-indent="0" data-docx-mono="true">def sum(a, b):</li>

@@ -483,7 +483,9 @@ export function buildDocxContent(
         continue;
       }
       if (
-        $(node).find('.printing-selection-option, .input-group, .printing-answer-key').length > 0
+        $(node).find(
+          '.printing-selection-option, .printing-select-options, .input-group, .printing-answer-key',
+        ).length > 0
       ) {
         flush();
         blocks.push(...walk(node.children, format, maxWidth));
