@@ -1,3 +1,5 @@
+import { Badge } from 'react-bootstrap';
+
 import { run } from '@prairielearn/run';
 import {
   IndeterminateCheckbox,
@@ -105,6 +107,7 @@ export function createColumns({
     columnHelper.accessor((row, index) => index, {
       id: 'index',
       header: 'Instance',
+      size: 200,
       cell: (info) => {
         const row = info.row.original;
         const rowId = row.instance_question.id;
@@ -133,28 +136,9 @@ export function createColumns({
               </OverlayTrigger>
             ) : null}
             {row.assessment_open ? (
-              <OverlayTrigger
-                tooltip={{
-                  body: 'Assessment instance is still open',
-                  props: { id: `assessment-instance-${rowId}-open-tooltip` },
-                }}
-              >
-                <button
-                  // This is a tricky case: we need an interactive element to trigger the tooltip
-                  // for keyboard users, but we don't want it to be announced as a button by screen
-                  // readers. So we give it role="status" to indicate that it's just a status indicator.
-                  // It's possible there are better ways to handle this?
-                  // eslint-disable-next-line jsx-a11y-x/no-interactive-element-to-noninteractive-role
-                  role="status"
-                  className="btn btn-xs btn-ghost"
-                  aria-label="Assessment instance is still open"
-                >
-                  <i
-                    className="fas fa-exclamation-triangle fa-width-auto text-warning"
-                    aria-hidden="true"
-                  />
-                </button>
-              </OverlayTrigger>
+              <Badge bg="warning" text="dark">
+                <i className="bi bi-exclamation-triangle-fill" aria-hidden="true" /> Open
+              </Badge>
             ) : null}
           </div>
         );
