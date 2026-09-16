@@ -535,14 +535,7 @@ function StudentsCard({
           cell: (info) => {
             const date = info.getValue();
             if (date == null) return '—';
-            return (
-              <FriendlyDate
-                date={date}
-                timezone={timezone}
-                options={{ includeTz: false }}
-                tooltip
-              />
-            );
+            return <FriendlyDate date={date} timezone={timezone} options={{ includeTz: false }} />;
           },
         }),
       ]),
