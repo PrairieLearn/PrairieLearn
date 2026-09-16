@@ -146,7 +146,7 @@ function ModelList({
             >
               <button
                 type="button"
-                className="btn btn-xs btn-ghost btn-icon border-0"
+                className="btn btn-xs btn-ghost btn-icon"
                 aria-label="More information about relative cost"
               >
                 <i className="bi bi-question-circle" aria-hidden="true" />

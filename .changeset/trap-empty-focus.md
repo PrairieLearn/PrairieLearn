@@ -2,4 +2,4 @@
 '@prairielearn/browser-utils': patch
 ---
 
-Keep focus contained in dialogs without focusable descendants.
+Improve keyboard focus management for dialogs and non-modal overlays.

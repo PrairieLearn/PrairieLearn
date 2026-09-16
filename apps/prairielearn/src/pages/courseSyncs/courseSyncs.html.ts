@@ -94,7 +94,7 @@ export function CourseSyncs({
                         <button
                           type="button"
                           class="btn btn-sm btn-primary opacity-50"
-                          aria-label="Why pulling from the remote git repository is unavailable"
+                          aria-disabled="true"
                           data-bs-toggle="popover"
                           data-bs-content="Pulling from a remote repository is not supported in development mode."
                         >

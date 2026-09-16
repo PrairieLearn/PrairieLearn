@@ -2,7 +2,11 @@ import { type Popover } from 'bootstrap';
 import { on } from 'delegated-events';
 import { observe } from 'selector-observer';
 
-import { focusFirstFocusableChild, onDocumentReady, trapFocus } from '@prairielearn/browser-utils';
+import {
+  focusFirstFocusableChild,
+  isTabLeavingElement,
+  onDocumentReady,
+} from '@prairielearn/browser-utils';
 
 import { getPopoverContainerForTrigger, getPopoverTriggerForContainer } from '../lib/popover.js';
 
@@ -166,19 +170,31 @@ onDocumentReady(() => {
 
     const container = getPopoverContainerForTrigger(target);
 
-    // If the popover is focus-triggered, we'll skip the focus trap and
-    // autofocus logic. If we move the focus off the trigger, the popover
-    // will immediately close, which we don't want.
-    if (container && usesDialogSemantics(target)) {
-      // Trap focus inside this new popover.
-      const trap = trapFocus(container);
+    // If the popover is focus-triggered, we'll skip the focus management. If
+    // we move focus off the trigger, the popover will immediately close.
+    if (container && popover && usesDialogSemantics(target)) {
+      const controller = new AbortController();
 
-      // Remove focus trap when this popover is ultimately hidden.
-      const removeFocusTrap = () => {
-        trap.deactivate();
-        target.removeEventListener('hide.bs.popover', removeFocusTrap);
-      };
-      target.addEventListener('hide.bs.popover', removeFocusTrap);
+      // Bootstrap appends popovers to the end of the document, so allowing the
+      // browser to Tab directly out of one would not resume after its trigger.
+      // Move focus back to the trigger first; the browser's default Tab action
+      // will then continue in the expected document order.
+      container.addEventListener(
+        'keydown',
+        (event) => {
+          if (isTabLeavingElement(container, event)) popover.hide();
+        },
+        { signal: controller.signal },
+      );
+
+      target.addEventListener(
+        'hide.bs.popover',
+        () => {
+          controller.abort();
+          if (container.contains(document.activeElement)) target.focus({ preventScroll: true });
+        },
+        { once: true },
+      );
 
       // Attempt to place focus on the correct item inside the popover.
       focusFirstFocusableChild(container);

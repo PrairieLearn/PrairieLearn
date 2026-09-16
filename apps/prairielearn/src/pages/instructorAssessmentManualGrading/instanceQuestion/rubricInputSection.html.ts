@@ -143,7 +143,7 @@ function RubricItems({
           ? html`
               <button
                 type="button"
-                class="btn btn-xs btn-ghost btn-icon border-0 text-secondary"
+                class="btn btn-xs btn-ghost btn-icon text-secondary"
                 data-bs-toggle="popover"
                 data-bs-content="AI grading"
                 aria-label="View AI grading source"
@@ -152,7 +152,7 @@ function RubricItems({
               </button>
               <button
                 type="button"
-                class="btn btn-xs btn-ghost btn-icon border-0 text-secondary"
+                class="btn btn-xs btn-ghost btn-icon text-secondary"
                 data-bs-toggle="popover"
                 data-bs-content="Human grading"
                 aria-label="View human grading source"

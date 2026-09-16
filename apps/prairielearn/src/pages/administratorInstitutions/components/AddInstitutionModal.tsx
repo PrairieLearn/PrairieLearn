@@ -172,7 +172,7 @@ export function AddInstitutionModal({
                   <button
                     type="button"
                     className="btn btn-secondary opacity-50"
-                    aria-label="Why suggesting a timezone is unavailable"
+                    aria-disabled="true"
                   >
                     Suggest
                   </button>

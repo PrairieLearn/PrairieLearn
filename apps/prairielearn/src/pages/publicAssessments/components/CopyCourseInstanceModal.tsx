@@ -103,7 +103,8 @@ export function CopyCourseInstanceModal({
           <button
             className="btn btn-sm btn-outline-light opacity-50"
             type="button"
-            aria-label="Why copying this course instance is unavailable"
+            aria-disabled="true"
+            aria-label="Copy course instance"
           >
             <i className="fa fa-clone" aria-hidden="true" />
             <span className="d-none d-sm-inline">Copy course instance</span>

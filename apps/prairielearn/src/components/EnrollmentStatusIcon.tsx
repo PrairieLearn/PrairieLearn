@@ -93,7 +93,7 @@ export function EnrollmentStatusIcon({
         <Popover content="This student has rejected the invitation to join the course. They can still join while self-enrollment is enabled.">
           <button
             type="button"
-            className="btn btn-xs btn-ghost btn-icon border-0"
+            className="btn btn-xs btn-ghost btn-icon"
             aria-label="More information about rejected enrollment"
           >
             <i className="bi bi-info-circle" aria-hidden="true" />

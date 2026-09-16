@@ -178,7 +178,7 @@ function StudentInformationUnavailable() {
     <Popover content="Student information is not yet available.">
       <button
         type="button"
-        className="btn btn-xs btn-ghost btn-icon border-0"
+        className="btn btn-xs btn-ghost btn-icon"
         aria-label="Why student information is unavailable"
       >
         <i className="bi bi-question-circle" aria-hidden="true" />
@@ -682,7 +682,7 @@ function StudentsCard({
                       <button
                         type="button"
                         className="btn btn-light btn-sm opacity-50"
-                        aria-label="Why labeling is unavailable"
+                        aria-disabled="true"
                       >
                         Labels
                       </button>

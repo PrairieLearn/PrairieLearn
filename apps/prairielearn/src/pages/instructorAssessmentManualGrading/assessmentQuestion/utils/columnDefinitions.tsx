@@ -397,7 +397,7 @@ export function createColumns({
             <Popover content="AI and human grading are in agreement">
               <button
                 type="button"
-                className="btn btn-xs btn-ghost btn-icon border-0"
+                className="btn btn-xs btn-ghost btn-icon"
                 aria-label="View AI grading comparison"
               >
                 <i className="bi bi-check-square-fill text-success" aria-hidden="true" />
@@ -414,7 +414,7 @@ export function createColumns({
                   <Popover content="Selected by AI but not by human">
                     <button
                       type="button"
-                      className="btn btn-xs btn-ghost btn-icon border-0"
+                      className="btn btn-xs btn-ghost btn-icon"
                       aria-label="View AI grading difference"
                     >
                       <i className="bi bi-plus-square-fill text-danger" aria-hidden="true" />
@@ -424,7 +424,7 @@ export function createColumns({
                   <Popover content="Selected by human but not by AI">
                     <button
                       type="button"
-                      className="btn btn-xs btn-ghost btn-icon border-0"
+                      className="btn btn-xs btn-ghost btn-icon"
                       aria-label="View AI grading difference"
                     >
                       <i className="bi bi-dash-square-fill text-danger" aria-hidden="true" />

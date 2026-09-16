@@ -750,7 +750,8 @@ export function AssessmentQuestionTable({
                         variant="light"
                         size="sm"
                         className="opacity-50"
-                        aria-label="Why AI submission grouping is unavailable"
+                        aria-disabled="true"
+                        aria-label="AI submission grouping"
                       >
                         <i className="bi bi-stars" aria-hidden="true" />
                         <span className="d-none d-sm-inline">AI submission grouping</span>
@@ -812,7 +813,7 @@ export function AssessmentQuestionTable({
                     <Popover content="Only staff with student data editor permissions can be assigned as graders">
                       <button
                         type="button"
-                        className="btn btn-xs btn-ghost btn-icon border-0"
+                        className="btn btn-xs btn-ghost btn-icon"
                         aria-label="More information about assigning graders"
                       >
                         <i className="fas fa-question-circle text-secondary" aria-hidden="true" />

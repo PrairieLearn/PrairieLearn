@@ -61,6 +61,19 @@ function focusableChildren(element: Element): HTMLElement[] {
   return Array.from(focusableChildren).filter((child) => !isDisabled(child) && isVisible(child));
 }
 
+/**
+ * Returns whether a Tab key event will move focus outside an element.
+ */
+export function isTabLeavingElement(element: Element, event: KeyboardEvent): boolean {
+  if (event.key !== 'Tab' || !element.contains(document.activeElement)) return false;
+
+  const focusable = focusableChildren(element);
+  if (focusable.length === 0) return element === document.activeElement;
+
+  const boundary = event.shiftKey ? focusable[0] : focusable[focusable.length - 1];
+  return isSameFocusContext(document.activeElement, boundary);
+}
+
 export interface FocusTrap {
   deactivate(): void;
 }
@@ -74,6 +87,8 @@ export function trapFocus(element: Element): FocusTrap {
 
     const focusable = focusableChildren(element);
     if (focusable.length === 0) {
+      // Static dialogs may have no focusable descendants. Keep focus on their
+      // programmatically focusable container so Tab cannot escape the trap.
       if (element instanceof HTMLElement && element.contains(document.activeElement)) {
         element.focus();
         e.preventDefault();

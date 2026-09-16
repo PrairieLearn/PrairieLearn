@@ -41,7 +41,7 @@ function MarkedBadge({
       <Popover content={tooltipLabel} placement="top">
         <button
           type="button"
-          className="btn btn-xs btn-ghost btn-icon text-warning border-0"
+          className="btn btn-xs btn-ghost btn-icon text-warning"
           aria-label="View assessment warning"
         >
           <i className="bi bi-exclamation-triangle-fill" aria-hidden="true" />

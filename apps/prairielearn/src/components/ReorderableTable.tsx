@@ -126,7 +126,8 @@ export function ReorderableRowActionsCell({
             <button
               className="btn btn-sm btn-ghost opacity-50"
               type="button"
-              aria-label={`Why ${deleteLabel} is unavailable`}
+              aria-disabled="true"
+              aria-label={deleteLabel}
             >
               <i className="fa fa-trash text-muted" aria-hidden="true" />
             </button>
