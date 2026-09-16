@@ -332,6 +332,9 @@ router.get(
     const { assessmentTextHtml, honorCodeHtml } = getCoverHtml(res.locals);
 
     res.setHeader('Cache-Control', 'private, no-store');
+    // The assessment's printable-exam editor embeds this preview on the same origin.
+    res.setHeader('Content-Security-Policy', "frame-ancestors 'self';");
+    res.setHeader('X-Frame-Options', 'SAMEORIGIN');
     res.send(
       InstructorAssessmentInstancePrint({
         resLocals: res.locals,
