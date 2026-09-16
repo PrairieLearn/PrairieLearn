@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { execute, loadSqlEquiv, queryRow, queryScalar } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, queryRow, queryRows, queryScalar } from '@prairielearn/postgres';
 
 import { type AssessmentInstance, AssessmentInstanceSchema } from '../lib/db-types.js';
 
@@ -60,6 +60,20 @@ export async function selectAssessmentInstanceById(
 
 export async function selectAssessmentHasInstances(assessment_id: string): Promise<boolean> {
   return await queryScalar(sql.select_assessment_has_instances, { assessment_id }, z.boolean());
+}
+
+export async function selectAssessmentInstancesForUser({
+  assessment_id,
+  user_id,
+}: {
+  assessment_id: string;
+  user_id: string;
+}): Promise<AssessmentInstance[]> {
+  return await queryRows(
+    sql.select_assessment_instances_for_user,
+    { assessment_id, user_id },
+    AssessmentInstanceSchema,
+  );
 }
 
 export async function insertGroupAssessmentInstance({

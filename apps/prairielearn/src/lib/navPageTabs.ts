@@ -158,6 +158,14 @@ export function getNavPageTabs() {
         tabLabel: 'Questions',
       },
       {
+        activeSubPage: 'print_preparation',
+        urlSuffix: ({ assessment }) => `/assessment/${assessment.id}/print_preparation`,
+        iconClasses: 'bi bi-printer',
+        tabLabel: 'Print preparation',
+        renderCondition: ({ assessment, authz_data }) =>
+          assessment.type === 'Exam' && authz_data.has_course_permission_preview,
+      },
+      {
         activeSubPage: 'settings',
         urlSuffix: ({ assessment }) => `/assessment/${assessment.id}/settings`,
         iconClasses: 'fas fa-cog',
