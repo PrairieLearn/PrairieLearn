@@ -1,5 +1,11 @@
 # @prairielearn/compiled-assets
 
+## 4.1.13
+
+### Patch Changes
+
+- 73ca8ef: Bump express dependency
+
 ## 4.1.12
 
 ### Patch Changes

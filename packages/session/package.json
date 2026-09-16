@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/session",
-  "version": "4.0.10",
+  "version": "4.0.11",
   "type": "module",
   "repository": {
     "type": "git",
@@ -34,7 +34,7 @@
     "@types/uid-safe": "^2.1.5",
     "@typescript/native-preview": "beta",
     "@vitest/coverage-v8": "^4.1.10",
-    "express": "^4.22.2 <5",
+    "express": "^4.22.3 <5",
     "fetch-cookie": "^3.2.0",
     "set-cookie-parser": "^3.1.2",
     "vitest": "^4.1.10"

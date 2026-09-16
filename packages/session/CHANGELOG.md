@@ -1,5 +1,11 @@
 # @prairielearn/session
 
+## 4.0.11
+
+### Patch Changes
+
+- 73ca8ef: Bump express dependency
+
 ## 4.0.10
 
 ### Patch Changes

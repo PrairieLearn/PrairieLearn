@@ -84,6 +84,19 @@ describe('@prairielearn/postgres', function () {
       const rows = execute('SELECT 33;', { unsed_parameter: true });
       await expect(rows).rejects.toThrow('Unused parameter');
     });
+
+    it.each([0, 70_000])(
+      'binds an array with %i elements as one named parameter',
+      async (length) => {
+        const ids = Array.from({ length }, (_, i) => i + 1);
+        const row = await queryRow(
+          'SELECT cardinality($ids::bigint[]) AS count, $marker::int AS marker, cardinality($ids::bigint[]) AS repeated_count',
+          { ids, marker: 42 },
+          z.object({ count: z.number(), marker: z.number(), repeated_count: z.number() }),
+        );
+        assert.deepEqual(row, { count: length, marker: 42, repeated_count: length });
+      },
+    );
   });
 
   describe('queryRows', () => {
