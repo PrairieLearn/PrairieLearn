@@ -123,8 +123,8 @@ test('uses the same selected questions and totals in the exam and answer key', a
     );
     const layout = await readPaginatedQuestionLayout(page);
     expect(Object.keys(layout.questionPages)).toEqual(['2']);
-    await expect(page.locator('html')).toHaveAttribute('data-print-question-count', '1');
-    await expect(page.locator('html')).toHaveAttribute('data-print-max-points', '10');
+    await expect(page.locator(':root')).toHaveAttribute('data-print-question-count', '1');
+    await expect(page.locator(':root')).toHaveAttribute('data-print-max-points', '10');
   }
 });
 
