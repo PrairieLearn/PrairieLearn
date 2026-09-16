@@ -68,6 +68,20 @@ export function captureDocxSource(source: HTMLElement): DocxSource {
 
     const clone = element.cloneNode(false) as Element;
     clone.removeAttribute('style');
+    if (element.tagName.toLowerCase() === 'ol') {
+      const matchingOption = element.querySelector(':scope > .pl-matching-option');
+      const listStyle = matchingOption
+        ? getComputedStyle(matchingOption).getPropertyValue('--pl-matching-counter-type').trim()
+        : style.listStyleType;
+      const type = {
+        'upper-alpha': 'A',
+        'lower-alpha': 'a',
+        'upper-roman': 'I',
+        'lower-roman': 'i',
+        decimal: '1',
+      }[listStyle];
+      if (type) clone.setAttribute('type', type);
+    }
     clone.setAttribute('data-docx-width', String(rect.width));
     clone.setAttribute('data-docx-height', String(rect.height));
     if (element.matches('.printing-answer-key-content .pl-order-block')) {

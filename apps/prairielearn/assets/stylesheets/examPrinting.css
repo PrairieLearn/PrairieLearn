@@ -488,8 +488,10 @@ html[data-print-document='answer_key'] .printing-answer-key-content pre {
 }
 
 .printing-response-lines {
-  /* Hard color stops keep rules solid; a 24pt repeat aligns with CSS pixels. */
-  background-image: repeating-linear-gradient(to bottom, transparent 0 23pt, #333 23pt 24pt);
+  /* Tile one rule to avoid PDF artifacts from repeating gradient shaders. */
+  background-image: linear-gradient(to bottom, transparent 23pt, #333 23pt);
+  background-size: 100% 24pt;
+  background-repeat: repeat-y;
   min-height: var(--printing-response-area-height, 2.15in);
 }
 

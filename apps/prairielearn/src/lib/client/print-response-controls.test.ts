@@ -17,6 +17,23 @@ function printQuestion(html: string): HTMLElement {
 afterEach(() => vi.unstubAllGlobals());
 
 describe('printable response controls', () => {
+  it('omits whitespace-only dropdown placeholders from the printed option bank', () => {
+    const question = printQuestion(`
+      <select name="association" aria-label="Association">
+        <option value=" "> </option>
+        <option value="positive">Positive association</option>
+        <option value="negative">Negative association</option>
+        <option value="0">No association</option>
+      </select>
+    `);
+    expect(
+      [...question.querySelectorAll('.printing-select-options li')].map(
+        (option) => option.textContent,
+      ),
+    ).toEqual(['Positive association', 'Negative association', 'No association']);
+    expect(question.querySelectorAll('[data-print-response-line]')).toHaveLength(1);
+  });
+
   it('keeps subpart prompts and their controls in one group after a horizontal rule', () => {
     const question = printQuestion(
       '<p>Shared introduction</p><hr><p>First subpart</p><input name="first"><hr><p>Second subpart</p><input name="second">',
