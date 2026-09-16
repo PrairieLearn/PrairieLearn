@@ -435,14 +435,8 @@ window.PLFileEditor.prototype.preview = {
         const { Marked } = await import('marked');
         const marked = new Marked();
         await MathJax.startup.promise;
-        (await import('@prairielearn/marked-mathjax')).addMathjaxExtension(marked, MathJax);
-        marked.use({
-          extensions: [
-            {
-              name: 'math',
-              renderer: ({ text }) => `<span class="pl-file-editor-math">${text}</span>`,
-            },
-          ],
+        (await import('@prairielearn/marked-mathjax')).addMathjaxExtension(marked, MathJax, {
+          mathClass: 'pl-file-editor-math',
         });
         return marked;
       })();
