@@ -82,7 +82,25 @@ for (const format of ['pdf', 'answer_key_pdf', 'docx'] as const) {
       expect(printedQuestionNumbers).not.toContain(warning.question_number);
     }
 
-    const documentResponse = await page.request.get(body[`${format}_url`], { timeout: 120_000 });
+    const excludedQuestionNumber = printedQuestionNumbers.at(-1)!;
+    const selectedQuery = new URLSearchParams(query);
+    selectedQuery.append('exclude_question', excludedQuestionNumber);
+    for (const warning of body.warnings) {
+      selectedQuery.append('exclude_question', warning.question_number!);
+    }
+    const selectedResponse = await page.request.get(`${paperUrl}?${selectedQuery}`);
+    expect(selectedResponse.status()).toBe(200);
+    const selectedBody = (await selectedResponse.json()) as PrintableAssessmentInstanceResponse;
+    expect(selectedBody).toEqual({
+      pdf_url: `${paperUrl}/pdf?${selectedQuery}`,
+      answer_key_pdf_url: `${paperUrl}/pdf?${selectedQuery}&document=answer_key`,
+      docx_url: `${paperUrl}/docx?${selectedQuery}`,
+      warnings: [],
+    });
+
+    const documentResponse = await page.request.get(selectedBody[`${format}_url`], {
+      timeout: 120_000,
+    });
     expect(documentResponse.status()).toBe(200);
     if (format !== 'docx') {
       expect(documentResponse.headers()['content-type']).toBe('application/pdf');
@@ -104,9 +122,12 @@ for (const format of ['pdf', 'answer_key_pdf', 'docx'] as const) {
     const documentFile = archive.files.find((file) => file.path === 'word/document.xml');
     expect(documentFile).toBeDefined();
     const documentXml = (await documentFile!.buffer()).toString();
-    for (const number of printedQuestionNumbers) {
+    for (const number of printedQuestionNumbers.filter(
+      (number) => number !== excludedQuestionNumber,
+    )) {
       expect(documentXml).toContain(`Question ${number}`);
     }
+    expect(documentXml).not.toContain(`Question ${excludedQuestionNumber}`);
     expect(documentXml).toContain('<m:oMath>');
     expect(documentXml).toContain('Consider two numbers');
     expect(documentXml.match(/<w:pageBreakBefore\/>/g)).toHaveLength(1);
@@ -147,6 +168,28 @@ test('rejects unknown query parameters and non-exam assessments', async ({
   expect(
     (await page.request.get(`${paperUrl}/pdf?paper_size=Letter&document=solutions`)).status(),
   ).toBe(400);
+});
+
+test('rejects invalid question exclusions on every print endpoint', async ({
+  page,
+  courseInstance,
+}) => {
+  const { paperUrl } = await createPrintableExam(courseInstance, 'exam20-assessmentTools');
+  for (const route of ['', '/preview', '/pdf', '/docx']) {
+    for (const exclusion of [
+      'exclude_question=0',
+      'exclude_question=-1',
+      'exclude_question=1.5',
+      'exclude_question=01',
+      'exclude_question=abc',
+      'exclude_question=1&exclude_question=1',
+      'exclude_question=99',
+      'exclude_question=1&exclude_question=2',
+    ]) {
+      const response = await page.request.get(`${paperUrl}${route}?paper_size=Letter&${exclusion}`);
+      expect(response.status()).toBe(400);
+    }
+  }
 });
 
 test('exports the broad printing fixture with inline, ordering, sketch, and display-only questions', async ({

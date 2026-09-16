@@ -28,7 +28,7 @@ import {
   getPrintRenderer,
   isBrowserRenderingAvailable,
   renderAssessmentInstanceQuestionsForPrinting,
-  validateQuestionBlockSizeOverridesForPrinting,
+  validateQuestionsForPrinting,
 } from '../../lib/printing.js';
 import { type ResLocalsForPage, typedAsyncHandler } from '../../lib/res-locals.js';
 import { assessmentFilenamePrefix, sanitizeString } from '../../lib/sanitize-name.js';
@@ -52,6 +52,7 @@ const PRINT_FORMATS = {
 type PrintFormat = keyof typeof PRINT_FORMATS;
 
 const QuestionBlockSizeSchema = z.enum(QUESTION_BLOCK_SIZES);
+const QuestionNumberSchema = z.string().regex(/^[1-9]\d*$/);
 const IdentityFieldSchema = z.string().trim().min(1).max(40);
 const IdentityFieldsSchema = z
   .union([IdentityFieldSchema, IdentityFieldSchema.array()])
@@ -76,6 +77,10 @@ const LayoutQuerySchema = z.strictObject({
   question_block_size: z
     .union([QuestionBlockSizeOverrideSchema, QuestionBlockSizeOverrideSchema.array()])
     .optional(),
+  exclude_question: z
+    .union([QuestionNumberSchema, QuestionNumberSchema.array()])
+    .transform((numbers) => (Array.isArray(numbers) ? numbers : [numbers]))
+    .default([]),
 });
 const DocumentQuerySchema = LayoutQuerySchema.extend({
   document: z.enum(PRINT_DOCUMENTS).default('exam'),
@@ -87,6 +92,7 @@ interface PrintLayout {
   identityFields: string[];
   blockSize: QuestionBlockSize | undefined;
   questionBlockSizeOverrides: ReadonlyMap<string, QuestionBlockSize>;
+  excludedQuestionNumbers: ReadonlySet<string>;
 }
 
 interface PrintLocals {
@@ -107,6 +113,11 @@ interface PrintableAssessmentInstanceResponse {
 function parsePrintLayout(query: z.infer<typeof LayoutQuerySchema>): PrintLayout {
   if (Array.isArray(query.block_size)) {
     throw new HttpStatusError(400, 'block_size may only be specified once');
+  }
+
+  const excludedQuestionNumbers = new Set(query.exclude_question);
+  if (excludedQuestionNumbers.size !== query.exclude_question.length) {
+    throw new HttpStatusError(400, 'exclude_question may only be specified once for each question');
   }
 
   const questionBlockSizeOverrides = new Map<string, QuestionBlockSize>();
@@ -130,6 +141,7 @@ function parsePrintLayout(query: z.infer<typeof LayoutQuerySchema>): PrintLayout
     identityFields: query.identity_field,
     blockSize: query.block_size,
     questionBlockSizeOverrides,
+    excludedQuestionNumbers,
   };
 }
 
@@ -157,6 +169,9 @@ function buildPrintSearchParams(layout: PrintLayout, document: PrintDocument): U
   if (layout.blockSize) params.set('block_size', layout.blockSize);
   for (const [questionNumber, blockSize] of layout.questionBlockSizeOverrides) {
     params.append('question_block_size', `${questionNumber}:${blockSize}`);
+  }
+  for (const questionNumber of layout.excludedQuestionNumbers) {
+    params.append('exclude_question', questionNumber);
   }
   if (document !== 'exam') params.set('document', document);
   return params;
@@ -191,9 +206,10 @@ function createDocumentHandler(format: PrintFormat) {
       );
     }
     const { printLayout: layout, printDocument: document } = res.locals;
-    await validateQuestionBlockSizeOverridesForPrinting(
+    await validateQuestionsForPrinting(
       res.locals.assessment_instance.id,
       layout.questionBlockSizeOverrides,
+      layout.excludedQuestionNumbers,
     );
 
     // The renderer loads the HTML preview of this same document through the application.
@@ -295,6 +311,7 @@ router.get(
     const printingResult = await renderAssessmentInstanceQuestionsForPrinting(res.locals, {
       defaultQuestionBlockSize: layout.blockSize ?? 'auto',
       questionBlockSizeOverrides: layout.questionBlockSizeOverrides,
+      excludedQuestionNumbers: layout.excludedQuestionNumbers,
       document: 'exam',
     });
     const warnings: PrintWarning[] = describeOmittedQuestions(printingResult.questionResults);
@@ -327,6 +344,7 @@ router.get(
     const printingResult = await renderAssessmentInstanceQuestionsForPrinting(res.locals, {
       defaultQuestionBlockSize: layout.blockSize ?? 'auto',
       questionBlockSizeOverrides: layout.questionBlockSizeOverrides,
+      excludedQuestionNumbers: layout.excludedQuestionNumbers,
       document,
     });
     const { assessmentTextHtml, honorCodeHtml } = getCoverHtml(res.locals);

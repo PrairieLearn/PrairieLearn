@@ -217,19 +217,47 @@ function assertQuestionBlockSizeOverridesExist(
   }
 }
 
-export async function validateQuestionBlockSizeOverridesForPrinting(
+function selectIncludedQuestions(
+  questions: PrintableQuestion[],
+  excludedQuestionNumbers: ReadonlySet<string>,
+) {
+  if (excludedQuestionNumbers.size === 0) return questions;
+
+  const questionNumbers = new Set(questions.map((question) => question.question_number));
+  const unknownQuestionNumbers = [...excludedQuestionNumbers].filter(
+    (questionNumber) => !questionNumbers.has(questionNumber),
+  );
+  if (unknownQuestionNumbers.length > 0) {
+    throw new HttpStatusError(
+      400,
+      `Question exclusion references nonexistent question numbers: ${unknownQuestionNumbers.join(', ')}`,
+    );
+  }
+  const includedQuestions = questions.filter(
+    (question) => !excludedQuestionNumbers.has(question.question_number),
+  );
+  if (includedQuestions.length === 0) {
+    throw new HttpStatusError(400, 'Include at least one question in the printable exam');
+  }
+  return includedQuestions;
+}
+
+export async function validateQuestionsForPrinting(
   assessmentInstanceId: string,
   questionBlockSizeOverrides: ReadonlyMap<string, QuestionBlockSize>,
+  excludedQuestionNumbers: ReadonlySet<string>,
 ): Promise<void> {
-  if (questionBlockSizeOverrides.size === 0) return;
+  if (questionBlockSizeOverrides.size === 0 && excludedQuestionNumbers.size === 0) return;
 
   const questions = await selectPrintableQuestions(assessmentInstanceId);
   assertQuestionBlockSizeOverridesExist(questions, questionBlockSizeOverrides);
+  selectIncludedQuestions(questions, excludedQuestionNumbers);
 }
 
 export interface RenderAssessmentInstanceQuestionsForPrintingOptions {
   defaultQuestionBlockSize?: QuestionBlockSize;
   questionBlockSizeOverrides?: ReadonlyMap<string, QuestionBlockSize>;
+  excludedQuestionNumbers?: ReadonlySet<string>;
   document?: PrintDocument;
 }
 
@@ -238,6 +266,7 @@ export async function renderAssessmentInstanceQuestionsForPrinting(
   {
     defaultQuestionBlockSize = 'auto',
     questionBlockSizeOverrides = new Map(),
+    excludedQuestionNumbers = new Set(),
     document = 'exam',
   }: RenderAssessmentInstanceQuestionsForPrintingOptions = {},
 ): Promise<{
@@ -249,6 +278,7 @@ export async function renderAssessmentInstanceQuestionsForPrinting(
 }> {
   const questions = await selectPrintableQuestions(resLocals.assessment_instance.id);
   assertQuestionBlockSizeOverridesExist(questions, questionBlockSizeOverrides);
+  const includedQuestions = selectIncludedQuestions(questions, excludedQuestionNumbers);
   const extraHeaderHtmls = new Set<string>();
   const questionTransformers = createQuestionTransformers(
     (question) =>
@@ -262,7 +292,7 @@ export async function renderAssessmentInstanceQuestionsForPrinting(
     PrintableQuestionType,
     BrokenQuestionFailure
   > = {
-    getQuestions: () => questions,
+    getQuestions: () => includedQuestions,
     getQuestionType: (printableQuestion) => printableQuestion.question.type ?? 'Unknown',
     renderQuestion: async (printableQuestion, assessmentInstance, assessment) => {
       const renderLocals = {

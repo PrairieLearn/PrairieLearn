@@ -109,6 +109,25 @@ for (const document of ['exam', 'answer_key'] as const) {
   });
 }
 
+test('uses the same selected questions and totals in the exam and answer key', async ({
+  page,
+  courseInstance,
+}) => {
+  const assessmentInstanceId = await makePrintableAssessmentInstance(
+    courseInstance,
+    'exam20-assessmentTools',
+  );
+  for (const document of ['exam', 'answer_key'] as const) {
+    await page.goto(
+      `${paperUrl(courseInstance, assessmentInstanceId)}&exclude_question=1&document=${document}`,
+    );
+    const layout = await readPaginatedQuestionLayout(page);
+    expect(Object.keys(layout.questionPages)).toEqual(['2']);
+    await expect(page.locator('html')).toHaveAttribute('data-print-question-count', '1');
+    await expect(page.locator('html')).toHaveAttribute('data-print-max-points', '10');
+  }
+});
+
 test('renders readable answer keys for every student question', async ({
   page,
   courseInstance,

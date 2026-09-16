@@ -1,6 +1,10 @@
 import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { renderAssessmentInstanceQuestionsForPrinting } from './printing.js';
+import {
+  describeOmittedQuestions,
+  renderAssessmentInstanceQuestionsForPrinting,
+  validateQuestionsForPrinting,
+} from './printing.js';
 import type { ResLocalsForPage } from './res-locals.js';
 
 const mocks = vi.hoisted(() => {
@@ -232,5 +236,49 @@ describe('renderAssessmentInstanceQuestionsForPrinting', () => {
         renderMode: 'answer-key',
       },
     );
+  });
+
+  it.each(['exam', 'answer_key'] as const)(
+    'excludes selected questions before rendering the %s and preserves the remaining numbers',
+    async (document) => {
+      const result = await renderAssessmentInstanceQuestionsForPrinting(resLocals, {
+        document,
+        excludedQuestionNumbers: new Set(['1', '2']),
+        questionBlockSizeOverrides: new Map([
+          ['1', 'full'],
+          ['4', 'half'],
+        ]),
+      });
+
+      expect(result.questionResults.map((question) => question.questionNumber)).toEqual(['3', '4']);
+      expect(result.questionHtmls).toHaveLength(2);
+      expect(result.questionHtmls[0]).toContain('data-question-number="3"');
+      expect(result.questionHtmls[0]).toContain('data-instance-question-id="103"');
+      expect(result.questionHtmls[1]).toContain('data-question-number="4"');
+      expect(result.questionHtmls[1]).toContain('data-print-block-size="half"');
+      expect(result.maxPoints).toBe(3);
+      expect(describeOmittedQuestions(result.questionResults)).toEqual([]);
+      expect(result.extraHeadersHtml).not.toContain('data-question-id="201"');
+      expect(result.extraHeadersHtml).not.toContain('data-question-id="202"');
+      expect(
+        mocks.getAndRenderVariant.mock.calls.map(
+          (invocation) => (invocation[2] as { question: { id: string } }).question.id,
+        ),
+      ).toEqual(document === 'exam' ? ['203', '204'] : ['203', '203', '204']);
+    },
+  );
+
+  it.each([
+    { excluded: ['99'], message: 'nonexistent question numbers: 99' },
+    { excluded: ['1', '2', '3', '4'], message: 'Include at least one question' },
+  ])('rejects invalid exclusions before rendering: $excluded', async ({ excluded, message }) => {
+    const excludedQuestionNumbers = new Set(excluded);
+    await expect(
+      renderAssessmentInstanceQuestionsForPrinting(resLocals, { excludedQuestionNumbers }),
+    ).rejects.toThrow(message);
+    await expect(
+      validateQuestionsForPrinting('4', new Map(), excludedQuestionNumbers),
+    ).rejects.toThrow(message);
+    expect(mocks.getAndRenderVariant).not.toHaveBeenCalled();
   });
 });
