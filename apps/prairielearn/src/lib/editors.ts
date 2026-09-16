@@ -5,6 +5,7 @@ import * as path from 'path';
 import { Temporal } from '@js-temporal/polyfill';
 import debugfn from 'debug';
 import fs from 'fs-extra';
+import { isBinaryFileSync } from 'isbinaryfile';
 import { z } from 'zod';
 
 import { AugmentedError, HttpStatusError } from '@prairielearn/error';
@@ -43,8 +44,12 @@ import {
   type User,
 } from './db-types.js';
 import { discoverInfoDirs } from './discover-info-dirs.js';
-import { computeEncodedFileContentHash, computeFileContentHash } from './editorUtil.js';
-import { getNamesForCopy, getUniqueNames } from './editorUtil.shared.js';
+import {
+  computeEncodedFileContentHash,
+  computeFileContentHash,
+  getDetailsForFile,
+} from './editorUtil.js';
+import { FileType, getNamesForCopy, getUniqueNames, parseJsonObject } from './editorUtil.shared.js';
 import { idsEqual } from './id.js';
 import { removeQidsFromAssessment, renameQidInAssessment } from './infoAssessment-edits.js';
 import { computeStableHash } from './json.js';
@@ -2406,7 +2411,7 @@ export class FileUploadEditor extends Editor {
   }
 
   assertCanEdit() {
-    for (const filePath of Object.keys(this.files)) {
+    for (const [filePath, fileContents] of Object.entries(this.files)) {
       if (!contains(this.container.rootPath, filePath)) {
         throw new AugmentedError('Invalid file path', {
           info: html`
@@ -2436,6 +2441,23 @@ export class FileUploadEditor extends Editor {
             <div class="container"><pre class="bg-dark text-white rounded p-2">${found}</pre></div>
           `,
         });
+      }
+
+      const relativePath = path.relative(this.course.path, filePath);
+      if (getDetailsForFile(relativePath).type === FileType.File) continue;
+
+      if (isBinaryFileSync(fileContents)) {
+        throw new HttpStatusError(
+          400,
+          `Cannot upload ${relativePath}: PrairieLearn metadata files must be plaintext JSON.`,
+        );
+      }
+
+      if (parseJsonObject(fileContents.toString('utf8')) == null) {
+        throw new HttpStatusError(
+          400,
+          `Cannot upload ${relativePath}: PrairieLearn metadata files must contain a valid JSON object.`,
+        );
       }
     }
 
