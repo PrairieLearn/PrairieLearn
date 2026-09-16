@@ -117,6 +117,7 @@ const courseInstanceInstanceAdminEditUrl =
   courseInstanceInstanceAdminUrl + `/file_edit/${encodePath(infoCourseInstancePath)}`;
 const assessmentUrl = courseInstanceUrl + '/assessment/1';
 const assessmentEditUrl = assessmentUrl + `/file_edit/${encodePath(infoAssessmentPath)}`;
+const courseQuestionUrl = baseUrl + '/course/1/question/1';
 const courseInstanceQuestionUrl = courseInstanceUrl + '/question/1';
 const courseInstanceQuestionJsonEditUrl =
   courseInstanceUrl + `/question/1/file_edit/${encodePath(questionJsonPath)}`;
@@ -236,6 +237,39 @@ const verifyFileData = [
   },
 ];
 
+const recognizedJsonUploadData = [
+  {
+    title: 'course admin',
+    url: courseAdminUrl + '/file_view',
+    path: infoCoursePath,
+  },
+  {
+    title: 'course admin through a course instance',
+    url: courseInstanceCourseAdminUrl + '/file_view',
+    path: infoCoursePath,
+  },
+  {
+    title: 'course instance admin',
+    url: courseInstanceInstanceAdminUrl + '/file_view',
+    path: infoCourseInstancePath,
+  },
+  {
+    title: 'assessment',
+    url: assessmentUrl + '/file_view',
+    path: infoAssessmentPath,
+  },
+  {
+    title: 'question without a course instance',
+    url: courseQuestionUrl + '/file_view',
+    path: questionJsonPath,
+  },
+  {
+    title: 'question through a course instance',
+    url: courseInstanceQuestionUrl + '/file_view',
+    path: questionJsonPath,
+  },
+];
+
 describe('test file editor', { timeout: 20_000 }, function () {
   describe('not the test course', function () {
     beforeAll(async () => {
@@ -300,6 +334,85 @@ describe('test file editor', { timeout: 20_000 }, function () {
 
     describe('disallow edits in .git directory', function () {
       badGet(gitPathUrl, 500, false);
+    });
+
+    describe('validate recognized JSON file uploads', function () {
+      recognizedJsonUploadData.forEach((data) => {
+        it(`rejects a binary ${data.title} metadata replacement`, async () => {
+          const absolutePath = path.join(courseRepo.courseLiveDir, data.path);
+          const originalContents = await fs.readFile(absolutePath);
+          const res = await uploadFiles({
+            url: data.url,
+            filePath: data.path,
+            files: [{ filename: 'replacement.pdf', contents: Buffer.from('%PDF-1.7\n') }],
+          });
+
+          assert.equal(res.status, 400);
+          assert.include(await res.text(), 'PrairieLearn metadata files must be plaintext JSON');
+          assert.isTrue((await fs.readFile(absolutePath)).equals(originalContents));
+        });
+      });
+
+      it('rejects malformed plaintext JSON', async () => {
+        const absolutePath = path.join(courseRepo.courseLiveDir, infoAssessmentPath);
+        const originalContents = await fs.readFile(absolutePath);
+        const res = await uploadFiles({
+          url: assessmentUrl + '/file_view',
+          filePath: infoAssessmentPath,
+          files: [{ filename: 'replacement.json', contents: Buffer.from('{') }],
+        });
+
+        assert.equal(res.status, 400);
+        assert.include(await res.text(), 'must contain a valid JSON object');
+        assert.isTrue((await fs.readFile(absolutePath)).equals(originalContents));
+      });
+
+      it('accepts valid metadata JSON', async () => {
+        const absolutePath = path.join(courseRepo.courseLiveDir, infoAssessmentPath);
+        const contents = await fs.readFile(absolutePath);
+        const res = await uploadFiles({
+          url: assessmentUrl + '/file_view',
+          filePath: infoAssessmentPath,
+          files: [{ filename: 'replacement.json', contents }],
+        });
+
+        assert.isTrue(res.ok);
+        assert.isTrue((await fs.readFile(absolutePath)).equals(contents));
+      });
+
+      it('allows arbitrary files with a .json extension', async () => {
+        const contents = Buffer.from('not JSON');
+        const res = await uploadFiles({
+          url: assessmentUrl + '/file_view',
+          workingPath: path.join(courseRepo.courseLiveDir, assessmentPath),
+          files: [{ filename: 'arbitrary.json', contents }],
+        });
+
+        assert.isTrue(res.ok);
+        assert.isTrue(
+          (
+            await fs.readFile(path.join(courseRepo.courseLiveDir, assessmentPath, 'arbitrary.json'))
+          ).equals(contents),
+        );
+      });
+
+      it('rejects an invalid batch before writing any files', async () => {
+        const metadataPath = path.join(courseRepo.courseLiveDir, infoAssessmentPath);
+        const originalMetadata = await fs.readFile(metadataPath);
+        const ordinaryPath = path.join(courseRepo.courseLiveDir, assessmentPath, 'ordinary.txt');
+        const res = await uploadFiles({
+          url: assessmentUrl + '/file_view',
+          workingPath: path.join(courseRepo.courseLiveDir, assessmentPath),
+          files: [
+            { filename: 'ordinary.txt', contents: Buffer.from('ordinary file') },
+            { filename: 'infoAssessment.json', contents: Buffer.from('{') },
+          ],
+        });
+
+        assert.equal(res.status, 400);
+        assert.isFalse(await fs.pathExists(ordinaryPath));
+        assert.isTrue((await fs.readFile(metadataPath)).equals(originalMetadata));
+      });
     });
 
     describe('verify file handlers', function () {
@@ -747,6 +860,43 @@ function waitForJobSequence(
       await helperServer.waitForJobSequenceStatus(locals.job_sequence_id!, expectedResult);
     });
   });
+}
+
+async function uploadFiles({
+  url,
+  filePath,
+  workingPath,
+  files,
+}: {
+  url: string;
+  filePath?: string;
+  workingPath?: string;
+  files: { filename: string; contents: Buffer }[];
+}) {
+  const getResponse = await fetch(url);
+  assert.isTrue(getResponse.ok);
+  const $ = cheerio.load(await getResponse.text());
+  const uploadButton =
+    filePath == null
+      ? $('#instructorFileUploadForm-New')
+      : $(`tr:has(a:contains("${path.basename(filePath)}"))`).find(
+          'button[id^="instructorFileUploadForm-"]',
+        );
+  assert.lengthOf(uploadButton, 1);
+  const uploadForm = cheerio.load(uploadButton.attr('data-bs-content')!);
+  const csrfToken = uploadForm('input[name="__csrf_token"]').attr('value')!;
+  assert.isString(csrfToken);
+
+  const formData = new FormData();
+  formData.append('__action', 'upload_file');
+  formData.append('__csrf_token', csrfToken);
+  if (filePath != null) formData.append('file_path', filePath);
+  if (workingPath != null) formData.append('working_path', workingPath);
+  for (const file of files) {
+    formData.append('files', new Blob([Buffer.from(file.contents)]), file.filename);
+  }
+
+  return await fetch(url, { method: 'POST', body: formData });
 }
 
 function doFiles(data: {
