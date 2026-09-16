@@ -82,7 +82,14 @@ for (const format of ['pdf', 'answer_key_pdf', 'docx'] as const) {
       expect(printedQuestionNumbers).not.toContain(warning.question_number);
     }
 
-    const excludedQuestionNumber = printedQuestionNumbers.at(-1)!;
+    const retainedQuestionNumber = await page
+      .locator('.pagedjs_page .printing-question')
+      .filter({ hasText: 'Consider two numbers' })
+      .first()
+      .getAttribute('data-question-number');
+    const excludedQuestionNumber = printedQuestionNumbers.find(
+      (number) => number !== retainedQuestionNumber,
+    )!;
     const selectedQuery = new URLSearchParams(query);
     selectedQuery.append('exclude_question', excludedQuestionNumber);
     for (const warning of body.warnings) {
