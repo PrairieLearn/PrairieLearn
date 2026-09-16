@@ -32,18 +32,18 @@ Use this confidence ladder for each new pattern:
 
 ## Proposed sequence
 
-| Phase | Deliverable                                                 | Relationship                                                      | Expansion gate                                                                |
-| ----- | ----------------------------------------------------------- | ----------------------------------------------------------------- | ----------------------------------------------------------------------------- |
-| 0     | Retire the current PRs and establish clean baselines        | Administrative; no code dependency                                | Replacement plan and salvage inventory agreed                                 |
-| 1     | Small independently justified correctness fixes             | Separate PRs from `master`; not part of a long stack              | Each bug reproduces on `master` and has focused coverage                      |
-| 2     | Permanent vanilla Bootstrap tooltip foundation              | First foundation PR                                               | Real-browser contract passes in PL and against a locally packed package in PT |
-| 3     | React `Tooltip` and `IconButton` foundation                 | Begin after phase 2 merges                                        | One description and one visual-label consumer pass manual and AT checks       |
-| 4     | Tooltip migrations by semantic family                       | Small independent PRs                                             | Prior batch is reviewed and remaining inventory is reclassified               |
-| 5     | Contextual-help prototype and research gate                 | Disposable branch, parallel with phases 2–4                       | One interaction model passes the documented physical-device and AT matrix     |
-| 6     | Shared contextual-help implementation, if justified         | New foundation PR after phase 5                                   | React and vanilla proof consumers satisfy the same contract                   |
-| 7     | PrairieTest anchored-editor prototype                       | Disposable PT branch, parallel after phase 2 API shape stabilizes | Simple edit, Flatpickr, and HTMX replacement cases all pass                   |
-| 8     | Extract shared dialog behavior and migrate typed PT editors | PL package PR and release, then PT PR                             | Typed editor family passes; every custom editor is separately classified      |
-| 9     | Longer-term visible-help/disclosure cleanup                 | Independent product-facing PRs                                    | Each page is reviewed as a workflow, not as a tooltip count                   |
+| Phase | Deliverable                                                 | Relationship                                              | Expansion gate                                                                |
+| ----- | ----------------------------------------------------------- | --------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| 0     | Retire the current PRs and establish clean baselines        | Administrative; no code dependency                        | Replacement plan and salvage inventory agreed                                 |
+| 1     | Small independently justified correctness fixes             | Separate PRs from `master`; not part of a long stack      | Each bug reproduces on `master` and has focused coverage                      |
+| 2     | Permanent vanilla Bootstrap tooltip foundation              | First foundation PR                                       | Real-browser contract passes in PL and against a locally packed package in PT |
+| 3     | React `Tooltip` and `IconButton` foundation                 | Begin after phase 2 merges                                | One description and one visual-label consumer pass manual and AT checks       |
+| 4     | Tooltip migrations by semantic family                       | Small independent PRs                                     | Prior batch is reviewed and remaining inventory is reclassified               |
+| 5     | Contextual-help prototype validation                        | Disposable branch, parallel with phases 2–4               | The selected model passes representative physical-device and AT checks        |
+| 6     | Shared contextual-help implementation, if justified         | New foundation PR after phase 5                           | React and vanilla proof consumers satisfy the same contract                   |
+| 7     | PrairieTest anchored-editor prototype                       | Disposable PT branch after phase 2 integration stabilizes | Simple edit, Flatpickr, and HTMX replacement cases all pass                   |
+| 8     | Extract shared dialog behavior and migrate typed PT editors | PL package PR and release, then PT PR                     | Typed editor family passes; every custom editor is separately classified      |
+| 9     | Longer-term visible-help/disclosure cleanup                 | Independent product-facing PRs                            | Each page is reviewed as a workflow, not as a tooltip count                   |
 
 ## Phase 0: replace rather than restack
 
@@ -59,7 +59,7 @@ Initial inventory from the current branches:
 | ----------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ | ------------------------------- |
 | Vanilla hover retention, modality tracking, transition recovery, instance ownership, teardown, and Bootstrap issue references | Reimplement after review, not wholesale cherry-pick                            | Phase 2                         |
 | React Aria positioning, Bootstrap class mapping, transition styling, and hover-retention experiments                          | Reimplement after review                                                       | Phase 3                         |
-| Moving PL's application bootstrap to a consumer-supplied `@prairielearn/ui` installer                                         | Reimplement with the settled signal and public API                             | Phase 2                         |
+| Moving PL's application bootstrap to a consumer-supplied `@prairielearn/ui` installer                                         | Reimplement with the settled signal and host integration                       | Phase 2                         |
 | `QuestionNavigation` rich-content transport change                                                                            | Reproduce and extract only if current output is wrong                          | Independent phase 1 PR          |
 | Clipboard live announcement and visual “Copied” state                                                                         | Reproduce and extract as status behavior                                       | Independent phase 1 PR          |
 | Legacy popover-inside-modal Escape correction                                                                                 | Reproduce in a real browser, then extract narrowly                             | Independent phase 1 PR          |
@@ -79,6 +79,7 @@ These are not prerequisites for the tooltip foundation and should not be combine
 
 ### Rich HTML transport
 
+- Inventory every surviving HTML-mode Bootstrap popover after first-party callsites are reclassified. For each one, record the trust source and transport boundary: TypeScript `HtmlSafeString` attribute, JSX/React attribute, Mustache/Python rendering, jQuery or programmatic string, direct DOM node, or course/third-party-authored content.
 - Reproduce the exact `HtmlSafeString`-inside-attribute behavior on `master` with plain text, markup, quotes, ampersands, and untrusted text.
 - Define which layer performs HTML escaping and which layer performs HTML-attribute serialization. Test the rendered DOM/content boundary, not private tagged-template calls.
 - Make the smallest correction only if the current output is wrong. Do not globally change Bootstrap HTML popover serialization based on one callsite.
@@ -107,24 +108,23 @@ Each of these may be its own small PR. If a candidate no longer reproduces on `m
 
 This is the first main implementation PR. Its purpose is to provide a durable tooltip path for PrairieLearn, PrairieTest, first-party elements, third-party elements, and course-authored content.
 
-### Contract and API spike
+### Transparent compatibility spike
 
-Resolve the public API before writing the changeset or documentation. Prototype the API against three concrete consumers:
+Resolve the transparent behavior before writing the changeset or documentation. Prototype it against three concrete consumers:
 
 1. A declarative dynamically inserted tooltip.
 2. A PrairieLearn programmatic tooltip with a changing label, such as the side-navigation toggle.
 3. A direct-construction compatibility fixture, plus an existing dynamically rendered PrairieTest declarative tooltip when smoke-testing the packed package.
 
-The package API should have these properties:
+The package integration should have these properties:
 
 - `installBootstrapTooltipBehavior` receives the consumer's `document`, Bootstrap `Tooltip` constructor, and an `AbortSignal`; it does not import or bundle Bootstrap. The signal is the one documented cancellation mechanism rather than being duplicated by an equivalent returned disposer.
 - Installation is idempotent per document. Aborting removes every owned document listener, observer, controller, and generated instance without disposing an externally owned replacement.
-- The returned or separately created behavior handle can create an explicit programmatic label or description tooltip without exposing private controller state.
-- PrairieLearn and PrairieTest may expose that handle through a versioned browser namespace for scripts that cannot import the package. A leading candidate is `window.PrairieLearnUI.v1.tooltips`, but the spike must confirm the name, collision behavior, and minimum stable method surface before it becomes public.
-- Existing direct `new bootstrap.Tooltip(...)` calls continue to receive the compatibility baseline through delegated lifecycle events. New programmatic code uses the explicit API for the stronger label/description contract.
-- Declarative consumers use `data-pl-tooltip-mode="label|description"`. Unannotated markup remains supported as `legacy-auto` but is not the documented path for new first-party code.
+- Existing direct `new bootstrap.Tooltip(...)` calls receive the compatibility baseline through delegated public lifecycle events and `getInstance`, including instances created after installation. Course and third-party scripts do not import a PrairieLearn API.
+- Ordinary declarative Bootstrap markup is the documented authoring surface. The adapter infers label treatment for an icon-only control whose tooltip matches its accessible name and description treatment for a visibly named control with distinct tooltip text. Ambiguous legacy markup remains operational through the compatibility baseline.
+- Do not expose a PrairieLearn browser-global factory or require `data-pl-tooltip-mode`. Add a narrowly typed internal override only if this spike finds a concrete first-party case that ordinary Bootstrap markup and accessible naming cannot express.
 
-Do not expose arbitrary roles, focus policies, or raw overlay hooks through this API. It is a tooltip API, not the eventual contextual-help or dialog API.
+Do not expose arbitrary roles, focus policies, semantic modes, or raw overlay hooks. This is transparent tooltip compatibility, not a second authoring system or the eventual contextual-help/dialog API.
 
 ### Behavior
 
@@ -135,8 +135,8 @@ Do not expose arbitrary roles, focus policies, or raw overlay hooks through this
 - Close on Escape without moving focus or closing an enclosing modal/popover on the same key event.
 - Recover correctly if renewed hover/focus requests opening during the Bootstrap exit transition.
 - Support dynamic insertion, removal, title/name changes, mixed Bootstrap actions on one trigger, external instance disposal/recreation, and installer abort/reinstall.
-- Implement explicit label mode with the trigger's continuously present `aria-label` as the single caller-authored string. Render it visually, hide the duplicate bubble from the accessibility tree, and remove Bootstrap's redundant description.
-- Implement explicit description mode for an independently named control, retaining one nonredundant `aria-describedby` relationship while open.
+- When label treatment is unambiguous, use the trigger's continuously present accessible name as the single caller-authored string. Render it visually, hide the duplicate bubble from the accessibility tree, and remove Bootstrap's redundant description.
+- When description treatment is unambiguous, keep the independently named control and retain one nonredundant `aria-describedby` relationship while open.
 
 ### Proof consumers
 
@@ -146,7 +146,7 @@ Choose one vanilla label tooltip and one vanilla description tooltip already rea
 
 Add a lean Playwright spec that loads the real PrairieLearn application bundle and actual Bootstrap. It may insert fixture triggers into an ordinary page DOM so long as it uses the production installer and browser event system. Cover only behavior owned by this layer:
 
-1. Explicit label versus description accessibility relationships, including a dynamic label update.
+1. Inferred label versus description accessibility relationships, including a dynamic label update.
 2. Real pointer movement from trigger to tooltip, Escape dismissal, and no touch-triggered opening or lost primary activation.
 3. Dynamic insertion and removal, programmatic creation, abort/reinstall, and external instance replacement without stale ownership.
 
@@ -162,7 +162,7 @@ Do not reproduce the matrix with mocked Vitest DOM tests. Keep visual collision,
 - Local-package smoke test in PrairieTest using a packed tarball or isolated dependency override; do not commit a temporary filesystem dependency.
 - Build, targeted typecheck/lint/format, the Playwright spec, and normal CI pass.
 
-The PR includes the required `@prairielearn/ui` changeset and documents both the importable installer and the browser API. It does not add React components, contextual help, dialogs, or bulk callsite migrations.
+The PR includes the required `@prairielearn/ui` changeset and documents the importable host installer plus ordinary Bootstrap authoring for first-party elements, third-party elements, and course content. It does not add a PrairieLearn browser API, React components, contextual help, dialogs, or bulk callsite migrations.
 
 ## Phase 3: React tooltip foundation
 
@@ -196,7 +196,7 @@ Do not convert all existing `OverlayTrigger` or `data-bs-*` usages in one PR. Ma
 
 1. **Icon-action visual labels:** clear, search, close, QR code, regenerate, upload, rename, and similar genuine actions.
 2. **Named-control descriptions:** short optional explanations that supplement visible control labels.
-3. **Status cleanup:** remove focusable status wrappers and preserve compact visible icons/badges with ordinary or visually hidden text.
+3. **Status cleanup:** remove focusable status wrappers and preserve compact static badges with enough visible context to stand alone. For the manual-grading assessment-open state, use a warning badge containing the triangle and visible “Open” text; do not rely on a bare icon, tooltip, or visually hidden expansion.
 4. **Required guidance:** move prerequisites, consequences, validation, and remediation into visible page content or confirmation dialogs.
 5. **Native time titles:** use semantic `<time>` plus redundant `title` only where exact precision is optional.
 
@@ -208,22 +208,22 @@ Each batch should:
 - recount remaining legacy usages after merge;
 - avoid introducing a global lint restriction until the old API has no valid tooltip consumers or the restriction can accurately grandfather them.
 
-## Phase 5: contextual-help research
+## Phase 5: contextual-help prototype validation
 
-Use a disposable development-only prototype rather than production components. Exercise the same content in Carbon-style, Fluent-style, Primer-style, and current React Spectrum-style implementations:
+Use a disposable development-only prototype rather than production components. Implement the selected Carbon-style toggletip interaction, informed by Fluent's content, naming, and density guidance, and exercise actual content shapes:
 
 - one short paragraph;
 - one paragraph plus one documentation link;
 - the current three-link instructor-preview Tools help;
 - a small repeated set in a form or table header.
 
-Test desktop keyboard, VoiceOver, NVDA, physical iOS/VoiceOver, and physical Android/TalkBack. Record DOM placement, announcement on open, browse/swipe discoverability, Tab and Shift+Tab destinations, Escape, outside press, collision, and zoom. The result is a short decision record, not a production PR.
+Use the shared confidence ladder and a proportional manual matrix: keyboard in current Chrome/Firefox, one current desktop screen reader, both sighted mobile platforms, and at least one current physical mobile screen reader. Expand to another AT/platform when a result is inconsistent or exposes a platform-specific risk. Record DOM placement, announcement on open, browse/swipe discoverability, Tab and Shift+Tab destinations, Escape, outside press, collision, and zoom. The result is a short decision record, not a production PR.
 
-If no candidate passes consistently, stop and use visible help or disclosure. If one passes, implement React and vanilla forms of the same frozen contract in one focused foundation PR with the Tools help and one React callsite as proofs. PrairieTest consumes the released package afterward.
+If the selected model does not pass consistently, stop and use visible help or disclosure. If it passes, implement React and vanilla forms of the same frozen contract in one focused foundation PR with the Tools help and one React callsite as proofs. PrairieTest consumes the released package afterward.
 
 ## Phase 6–8: PrairieTest anchored editors
 
-Treat the existing PT inline-edit system as product evidence, not as a set of callsites to migrate mechanically.
+Treat the existing PT inline-edit system as product evidence, not as a set of callsites to migrate mechanically. The audit found no immediate-apply or autosave anchored editor: the typed and custom editor families use explicit Save/Cancel or an explicit action plus Cancel, and the four `onlyCancel` cases are unavailable explanations. Do not design or expose a nonmodal editor variant in these phases.
 
 ### Prototype first in PrairieTest
 
@@ -282,16 +282,16 @@ Record those as a short manual matrix in the relevant PR, with browser/AT versio
 ## Rollback boundaries
 
 - Every installer is abortable, idempotent, and leaves legacy Bootstrap markup operational.
-- Explicit modes are opt-in until their proof consumers pass; unclassified content remains on `legacy-auto` rather than being silently reinterpreted.
+- Transparent enhancements leave ordinary Bootstrap markup and constructors operational; ambiguous content remains on the compatibility baseline rather than being silently reinterpreted.
 - `OverlayTrigger` remains available during React migration.
 - PrairieTest adopts only published package versions and can revert a dependency update independently of PrairieLearn deployment.
 - A failed contextual-help or editor prototype is a valid outcome; visible content, disclosure, modal, or inline editing remain the fallback without stranding a half-public abstraction.
 
 ## Decisions required before phase 2 code freezes
 
-1. Exact importable and browser-global programmatic tooltip API, including its versioning and handle lifetime.
-2. Exact proof callsites for vanilla description mode; do not invent a description merely to exercise the API.
+1. Whether the spike identifies any concrete first-party case that requires a narrow internal semantic override beyond ordinary Bootstrap markup and accessible naming.
+2. Exact proof callsites for inferred vanilla description treatment; do not invent a description merely to exercise the behavior.
 3. The physical trigger-to-tooltip persistence technique that survives slow transit and zoom without intercepting adjacent targets.
 4. Where the integration spec should obtain a React proof consumer so it uses production hydration rather than a test-only React renderer.
 
-The first implementation step should be a clean `master` worktree containing only the phase 2 API spike and baseline browser reproducer. No public documentation or callsite migration should be written until that spike resolves decisions 1 and 3.
+The first implementation step should be a clean `master` worktree containing only the phase 2 compatibility spike and baseline browser reproducer. No public documentation or callsite migration should be written until that spike resolves decisions 1 and 3.
