@@ -24,7 +24,7 @@ import {
 import { JobSequenceResults } from '../../components/JobSequenceResults.js';
 import type { JobSequenceResultsProps } from '../../components/JobSequenceResults.types.js';
 import { b64DecodeUnicode, b64EncodeUnicode } from '../../lib/base64-util.js';
-import { type FileMetadata, FileType } from '../../lib/editorUtil.shared.js';
+import { type FileMetadata, FileType, parseJsonObject } from '../../lib/editorUtil.shared.js';
 import type { EditOutcome } from '../../lib/editors.js';
 
 export interface FileEditorData {
@@ -115,32 +115,26 @@ type SaveIssue =
 function getSaveIssue(contents: string, editorData: FileEditorData): SaveIssue | null {
   if (!editorData.fileMetadata || editorData.fileMetadata.type === FileType.File) return null;
 
-  let parsedContent: unknown;
-  try {
-    parsedContent = JSON.parse(contents);
-  } catch {
-    return { errorCode: SaveErrorCode.INVALID_JSON };
-  }
-  if (typeof parsedContent !== 'object' || parsedContent == null || Array.isArray(parsedContent)) {
+  const parsedContent = parseJsonObject(contents);
+  if (parsedContent == null) {
     return { errorCode: SaveErrorCode.INVALID_JSON };
   }
 
   const originalUuid = editorData.fileMetadata.uuid;
   if (!originalUuid) return null;
 
-  const content = parsedContent as Record<string, unknown>;
-  if (!('uuid' in content)) {
-    return { errorCode: SaveErrorCode.UUID_REMOVED, originalUuid, parsedContent: content };
+  if (!('uuid' in parsedContent)) {
+    return { errorCode: SaveErrorCode.UUID_REMOVED, originalUuid, parsedContent };
   }
-  if (typeof content.uuid !== 'string') {
-    return { errorCode: SaveErrorCode.UUID_CHANGED, originalUuid, parsedContent: content };
+  if (typeof parsedContent.uuid !== 'string') {
+    return { errorCode: SaveErrorCode.UUID_CHANGED, originalUuid, parsedContent };
   }
-  if (content.uuid.toLowerCase() !== originalUuid.toLowerCase()) {
+  if (parsedContent.uuid.toLowerCase() !== originalUuid.toLowerCase()) {
     return {
       errorCode: SaveErrorCode.UUID_CHANGED,
       originalUuid,
-      newUuid: content.uuid,
-      parsedContent: content,
+      newUuid: parsedContent.uuid,
+      parsedContent,
     };
   }
   return null;

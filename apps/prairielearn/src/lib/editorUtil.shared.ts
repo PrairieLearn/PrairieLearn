@@ -4,6 +4,21 @@ import { escapeRegExp } from '@prairielearn/sanitize';
 
 const debug = debugfn('prairielearn:editors');
 
+export function parseJsonObject(contents: string): Record<string, unknown> | null {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(contents);
+  } catch {
+    return null;
+  }
+
+  if (typeof parsed !== 'object' || parsed == null || Array.isArray(parsed)) {
+    return null;
+  }
+
+  return parsed as Record<string, unknown>;
+}
+
 export enum FileType {
   Course = 'course',
   Question = 'question',
