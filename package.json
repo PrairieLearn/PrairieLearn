@@ -54,7 +54,7 @@
     "@prairielearn/tree-sitter-htmlmustache": "^1.4.3",
     "@prairielearn/tsconfig": "workspace:^",
     "@types/node": "^24.13.3",
-    "@typescript/native-preview": "beta",
+    "@typescript/native": "npm:typescript@^7.0.2",
     "@vitest/coverage-v8": "^4.1.10",
     "dependency-cruiser": "^17.4.3",
     "eslint": "^10.8.1",
@@ -75,6 +75,7 @@
     "pyright": "^1.1.411",
     "s3rver": "^3.7.1",
     "turbo": "^2.10.9",
+    "typescript": "npm:@typescript/typescript6@^6.0.2",
     "vitest": "^4.1.10",
     "zod": "^4.4.3"
   }

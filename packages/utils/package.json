@@ -17,8 +17,8 @@
     "./zip": "./dist/zip/index.js"
   },
   "scripts": {
-    "build": "tsgo",
-    "dev": "tsgo --watch --preserveWatchOutput",
+    "build": "tsc",
+    "dev": "tsc --watch --preserveWatchOutput",
     "test": "vitest run --coverage"
   },
   "dependencies": {
@@ -31,7 +31,7 @@
     "@types/archiver": "^8.0.0",
     "@types/node": "^24.13.3",
     "@types/yauzl": "^2.10.3",
-    "@typescript/native-preview": "beta",
+    "@typescript/native": "npm:typescript@^7.0.2",
     "@vitest/coverage-v8": "^4.1.10",
     "archiver": "^8.0.0",
     "vitest": "^4.1.10"
