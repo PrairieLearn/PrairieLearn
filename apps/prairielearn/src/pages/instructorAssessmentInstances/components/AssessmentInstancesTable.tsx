@@ -253,7 +253,7 @@ export function AssessmentInstancesTable({
     }
     return registry;
   }, [roleColumnId]);
-  const { columnFilters, onColumnFiltersChange, onResetColumnFilters } =
+  const { columnFilters, activeColumnFilterIds, onColumnFiltersChange, onResetColumnFilters } =
     useColumnFilters(filterRegistry);
 
   const [columnSizing, setColumnSizing] = useState<ColumnSizingState>({});
@@ -714,6 +714,7 @@ export function AssessmentInstancesTable({
             </TanstackTableEmptyState>
           ),
         }}
+        activeColumnFilterIds={activeColumnFilterIds}
         onResetColumnFilters={onResetColumnFilters}
       />
 
