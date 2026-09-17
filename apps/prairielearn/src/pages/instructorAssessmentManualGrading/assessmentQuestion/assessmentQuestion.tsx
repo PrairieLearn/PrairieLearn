@@ -57,9 +57,11 @@ router.get(
         courseInstance: res.locals.course_instance,
       }),
     );
-    const studentLabels = z
-      .array(StaffStudentLabelSchema)
-      .parse(await selectStudentLabelsInCourseInstance(res.locals.course_instance));
+    const studentLabels = res.locals.assessment.team_work
+      ? []
+      : z
+          .array(StaffStudentLabelSchema)
+          .parse(await selectStudentLabelsInCourseInstance(res.locals.course_instance));
     const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
     const aiSubmissionGroupingEnabled = await features.enabledFromLocals(
       'ai-submission-grouping',
