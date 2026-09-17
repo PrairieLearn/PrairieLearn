@@ -80,21 +80,6 @@ describe('Manual grading export query', { timeout: 60_000 }, () => {
       last_grader: grader.id,
     });
 
-    const rows = await selectInstanceQuestionsForManualGrading({
-      assessment: hw9,
-      assessment_question: aq,
-    });
-
-    const row = rows.find((r) => r.instance_question.id === iqId);
-    assert.ok(row);
-    assert.equal(row.user?.uid, student.uid);
-    assert.equal(row.user?.name, student.name);
-    assert.equal(row.user?.email, student.email);
-    assert.deepEqual(row.group_members, []);
-    assert.equal(row.assigned_grader?.uid, grader.uid);
-    assert.equal(row.assigned_grader?.email, grader.email);
-    assert.equal(row.last_grader?.uid, grader.uid);
-
     const courseInstance = await selectCourseInstanceById(hw9.course_instance_id);
     const enrollment = await selectOptionalEnrollmentByUserId({
       userId: student.id,
@@ -113,19 +98,23 @@ describe('Manual grading export query', { timeout: 60_000 }, () => {
       });
     }
 
-    const labeledRows = await selectInstanceQuestionsForManualGrading({
+    const rows = await selectInstanceQuestionsForManualGrading({
       assessment: hw9,
       assessment_question: aq,
     });
+
+    const row = rows.find((r) => r.instance_question.id === iqId);
+    assert.ok(row);
+    assert.equal(row.user?.uid, student.uid);
+    assert.equal(row.user?.name, student.name);
+    assert.equal(row.user?.email, student.email);
+    assert.deepEqual(row.group_members, []);
+    assert.equal(row.assigned_grader?.uid, grader.uid);
+    assert.equal(row.assigned_grader?.email, grader.email);
+    assert.equal(row.last_grader?.uid, grader.uid);
     assert.deepEqual(
-      labeledRows,
-      rows.map((r) => ({
-        ...r,
-        student_label_ids:
-          r.instance_question.id === iqId
-            ? labels.map((label) => label.id).sort((a, b) => Number(a) - Number(b))
-            : r.student_label_ids,
-      })),
+      row.student_label_ids,
+      labels.map((label) => label.id).sort((a, b) => Number(a) - Number(b)),
     );
   });
 
