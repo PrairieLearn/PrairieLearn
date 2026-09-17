@@ -230,9 +230,9 @@
     "brotli": 368665
   },
   "scripts/esm-bundles/hydrated-components/InstructorStudents.ts": {
-    "raw": 1502233,
-    "gzip": 422882,
-    "brotli": 362578
+    "raw": 1501929,
+    "gzip": 422843,
+    "brotli": 362548
   },
   "scripts/esm-bundles/hydrated-components/InstructorStudentsLabels.ts": {
     "raw": 1328629,
