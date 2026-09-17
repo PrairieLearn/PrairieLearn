@@ -5,9 +5,14 @@ import { compiledScriptTag, compiledStylesheetTag } from '@prairielearn/compiled
 import { formatDateFriendly } from '@prairielearn/formatter';
 import { HtmlSafeString, html, unsafeHtml } from '@prairielearn/html';
 import { renderHtml } from '@prairielearn/react';
+import { Hydrate } from '@prairielearn/react/server';
 import { run } from '@prairielearn/run';
+import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 import { assertNever } from '@prairielearn/utils';
 
+import { VercelCourseAgentPanelServer } from '../ee/components/vercel-course-agent/VercelCourseAgentPanelServer.js';
+import { getCourseTrpcUrl } from '../lib/client/url.js';
+import { config } from '../lib/config.js';
 import { getNavPageTabs } from '../lib/navPageTabs.js';
 import { computeStatus } from '../lib/publishing.js';
 import type { UntypedResLocals } from '../lib/res-locals.types.js';
@@ -280,6 +285,32 @@ export function PageLayout({
   const sideNavExpanded =
     sideNavEnabled && (resolvedOptions.forcedInitialNavToggleState ?? resLocals.side_nav_expanded);
 
+  const courseAgentPanel = run(() => {
+    if (
+      navContext.type !== 'instructor' ||
+      !resLocals.vercel_course_agent_enabled ||
+      !resLocals.course ||
+      !resLocals.authn_user
+    ) {
+      return null;
+    }
+    const courseId = resLocals.course.id;
+    const csrfToken = (url: string) =>
+      generatePrefixCsrfToken({ url, authn_user_id: resLocals.authn_user!.id }, config.secretKey);
+    return (
+      <Hydrate className="course-agent-panel-container">
+        <VercelCourseAgentPanelServer
+          trpcCsrfToken={csrfToken(getCourseTrpcUrl(courseId))}
+          streamCsrfToken={csrfToken(`/pl/course/${courseId}/vercel_course_agent`)}
+          courseId={courseId}
+          userName={resLocals.authn_user.name ?? 'You'}
+          showDiagnostics={resLocals.is_administrator ?? false}
+          initialOpen
+        />
+      </Hydrate>
+    );
+  });
+
   let showContextNavigation = [
     'instructor',
     'administrator_institution',
@@ -330,8 +361,9 @@ export function PageLayout({
           pageTitle,
           pageNote: resolvedOptions.pageNote,
         })}
-        ${compiledStylesheetTag('pageLayout.css')} ${headContentString}
-        ${sideNavEnabled ? compiledScriptTag('pageLayoutClient.ts') : ''}
+        ${compiledStylesheetTag('pageLayout.css')}
+        ${courseAgentPanel ? compiledStylesheetTag('vercelCourseAgentPanel.css') : ''}
+        ${headContentString} ${sideNavEnabled ? compiledScriptTag('pageLayoutClient.ts') : ''}
       </head>
       <body
         class="${clsx({
@@ -481,6 +513,7 @@ export function PageLayout({
               ${postContentString}
             </div>
           </div>
+          ${courseAgentPanel ? renderHtml(courseAgentPanel) : ''}
         </div>
         ${resolvedOptions.showFooter ? renderHtml(<PageFooter />) : ''}
       </body>

@@ -26,6 +26,7 @@ import { InstitutionSchema, UserSchema } from '../lib/db-types.js';
 import { getModeForRequest } from '../lib/exam-mode.js';
 import { features } from '../lib/features/index.js';
 import { idsEqual } from '../lib/id.js';
+import { isEnterprise } from '../lib/license.js';
 import { selectCourseHasCourseInstances } from '../models/course-instances.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -346,6 +347,7 @@ export interface ResLocalsCourse {
   user: ResLocalsCourseAuthz['user'];
   course_has_course_instances: boolean;
   question_sharing_enabled: boolean;
+  vercel_course_agent_enabled: boolean;
   is_administrator: boolean;
 }
 
@@ -700,6 +702,13 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
   res.locals.course_has_course_instances = await selectCourseHasCourseInstances({
     course: res.locals.course,
   });
+
+  res.locals.vercel_course_agent_enabled =
+    isEnterprise() &&
+    authnAuthzData.has_course_permission_own &&
+    effectiveAuthzData.has_course_permission_own &&
+    !authnCourse.example_course &&
+    (await features.enabledFromLocals('vercel-course-agent', res.locals));
 
   res.locals.question_sharing_enabled = await features.enabledFromLocals(
     'question-sharing',
