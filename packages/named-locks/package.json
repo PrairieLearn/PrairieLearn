@@ -12,8 +12,8 @@
   },
   "main": "./dist/index.js",
   "scripts": {
-    "build": "tsgo",
-    "dev": "tsgo --watch --preserveWatchOutput"
+    "build": "tsc",
+    "dev": "tsc --watch --preserveWatchOutput"
   },
   "dependencies": {
     "@prairielearn/postgres": "workspace:^",
@@ -23,6 +23,6 @@
     "@prairielearn/tsconfig": "workspace:^",
     "@types/node": "^24.13.3",
     "@types/pg": "^8.21.0",
-    "@typescript/native-preview": "beta"
+    "@typescript/native": "npm:typescript@^7.0.2"
   }
 }
