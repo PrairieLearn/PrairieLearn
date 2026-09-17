@@ -1,7 +1,9 @@
 import * as sqldb from '@prairielearn/postgres';
-import { IdSchema } from '@prairielearn/zod';
 
+import { selectAssessmentQuestions } from '../../lib/assessment-question.js';
+import { makeAssessmentInstance } from '../../lib/assessment.js';
 import { dangerousFullSystemAuthz } from '../../lib/authz-data-lib.js';
+import { createGroup } from '../../lib/groups.js';
 import { selectAssessmentQuestionById } from '../../models/assessment-question.js';
 import { selectAssessmentByTid } from '../../models/assessment.js';
 import { insertCourseInstancePermissions } from '../../models/course-permissions.js';
@@ -29,11 +31,9 @@ test('manual grading label visibility, filtering, and assignment', async ({
     course_instance_id: courseInstance.id,
     tid: 'hw10-aiGrading',
   });
-  const assessmentQuestionId = await sqldb.queryScalar(
-    sql.select_assessment_question,
-    { assessment_id: assessment.id },
-    IdSchema,
-  );
+  const assessmentQuestionId = (
+    await selectAssessmentQuestions({ assessment_id: assessment.id })
+  )[0].assessment_question.id;
   const assessmentQuestion = await selectAssessmentQuestionById(assessmentQuestionId);
   const students = await generateAndEnrollUsers({
     count: 4,
@@ -57,10 +57,18 @@ test('manual grading label visibility, filtering, and assignment', async ({
         authzData: dangerousFullSystemAuthz(),
       });
     }
-    await sqldb.execute(sql.insert_instance_question, {
-      assessment_id: assessment.id,
-      assessment_question_id: assessmentQuestionId,
+    const assessmentInstanceId = await makeAssessmentInstance({
+      assessment,
       user_id: student.id,
+      authn_user_id: student.id,
+      mode: 'Public',
+      time_limit_min: null,
+      date: new Date(),
+      client_fingerprint_id: null,
+    });
+    await sqldb.execute(sql.mark_instance_question_for_manual_grading, {
+      assessment_instance_id: assessmentInstanceId,
+      assessment_question_id: assessmentQuestionId,
     });
   }
   const grader = await getOrCreateUser({
@@ -156,14 +164,32 @@ test('group manual grading omits student labels', async ({ page, courseInstance 
     course_instance_id: courseInstance.id,
     tid: 'exam14-groupWork',
   });
-  const assessmentQuestionId = await sqldb.queryScalar(
-    sql.select_assessment_question,
-    { assessment_id: assessment.id },
-    IdSchema,
-  );
-  await sqldb.execute(sql.insert_group_instance_question, {
+  const assessmentQuestionId = (
+    await selectAssessmentQuestions({ assessment_id: assessment.id })
+  )[0].assessment_question.id;
+  const [groupUser] = await generateAndEnrollUsers({
+    count: 1,
     course_instance_id: courseInstance.id,
-    assessment_id: assessment.id,
+  });
+  await createGroup({
+    course_instance: courseInstance,
+    assessment,
+    group_name: 'LabelTestGroup',
+    uids: [groupUser.uid],
+    authn_user_id: groupUser.id,
+    authzData: dangerousFullSystemAuthz(),
+  });
+  const assessmentInstanceId = await makeAssessmentInstance({
+    assessment,
+    user_id: groupUser.id,
+    authn_user_id: groupUser.id,
+    mode: 'Public',
+    time_limit_min: null,
+    date: new Date(),
+    client_fingerprint_id: null,
+  });
+  await sqldb.execute(sql.mark_instance_question_for_manual_grading, {
+    assessment_instance_id: assessmentInstanceId,
     assessment_question_id: assessmentQuestionId,
   });
   await page.goto(
