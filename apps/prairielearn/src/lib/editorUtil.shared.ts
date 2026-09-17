@@ -167,7 +167,7 @@ export function getNamesForCopy(
   longNames: string[],
 ): { shortName: string; longName: string } {
   function getBaseShortName(oldname: string): string {
-    const found = oldname.match(/^(.*)_copy[0-9]+$/);
+    const found = oldname.match(/^(.*)_copy[0-9]+$/i);
     if (found) {
       return found[1];
     } else {

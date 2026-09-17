@@ -217,6 +217,15 @@ describe('editor utils', () => {
       assert.equal(names.shortName, 'Fa25_copy2');
       assert.equal(names.longName, 'Fall 2025 (copy 2)');
     });
+
+    it('matches source short name copy suffixes case-insensitively', () => {
+      const names = getNamesForCopy('Fa25_COPY1', ['Fa25', 'Fa25_COPY1'], 'Fall 2025', [
+        'Fall 2025',
+      ]);
+
+      assert.equal(names.shortName, 'Fa25_copy2');
+      assert.equal(names.longName, 'Fall 2025 (copy 2)');
+    });
   });
 
   describe('propertyValueWithDefault', () => {
