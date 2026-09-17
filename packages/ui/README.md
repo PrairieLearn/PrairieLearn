@@ -52,7 +52,7 @@ export function StudentsTable({ students }: { students: StudentRow[] }) {
 
 `columnHelper.columns()` preserves the individual value types when an array contains columns for different fields. Keep the resulting array referentially stable: define static columns outside the component as shown above, or memoize columns that depend on props or state.
 
-`TanstackTable` virtualizes its rows, so its container needs a bounded height. The example uses an explicit height; in a fill-height layout, use `className="h-100"` inside an already sized parent.
+`TanstackTable` virtualizes its rows and columns by default, so its container needs a bounded height. For smaller tables, pass `virtualized: false` in `tableOptions` to render every row and column in normal document flow. The example uses an explicit height; in a fill-height layout, use `className="h-100"` inside an already sized parent.
 
 Include the table styles once in the stylesheet for the page or application:
 
