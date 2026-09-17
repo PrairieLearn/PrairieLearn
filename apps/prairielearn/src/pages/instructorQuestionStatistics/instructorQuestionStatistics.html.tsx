@@ -111,18 +111,20 @@ export function InstructorQuestionStatistics({
                       ${formatFloat(row.first_submission_score_variance, 2)}
                     </td>
                     <td class="text-center">
-                      ${row.first_submission_score_hist !== null
-                        ? html`
-                            <div
-                              class="js-histmini"
-                              data-options="${JSON.stringify({
-                                ...histminiOptions,
-                                normalize: true,
-                              })}"
-                              data-data="${JSON.stringify(row.first_submission_score_hist)}"
-                            ></div>
-                          `
-                        : ''}
+                      ${
+                        row.first_submission_score_hist !== null
+                          ? html`
+                              <div
+                                class="js-histmini"
+                                data-options="${JSON.stringify({
+                                  ...histminiOptions,
+                                  normalize: true,
+                                })}"
+                                data-data="${JSON.stringify(row.first_submission_score_hist)}"
+                              ></div>
+                            `
+                          : ''
+                      }
                     </td>
                     <td class="text-center">
                       ${formatFloat(row.average_last_submission_score, 2)}
@@ -131,36 +133,40 @@ export function InstructorQuestionStatistics({
                       ${formatFloat(row.last_submission_score_variance, 2)}
                     </td>
                     <td class="text-center">
-                      ${row.last_submission_score_hist !== null
-                        ? html`
-                            <div
-                              class="js-histmini"
-                              data-options="${JSON.stringify({
-                                ...histminiOptions,
-                                normalize: true,
-                              })}"
-                              data-data="${JSON.stringify(row.last_submission_score_hist)}"
-                            ></div>
-                          `
-                        : ''}
+                      ${
+                        row.last_submission_score_hist !== null
+                          ? html`
+                              <div
+                                class="js-histmini"
+                                data-options="${JSON.stringify({
+                                  ...histminiOptions,
+                                  normalize: true,
+                                })}"
+                                data-data="${JSON.stringify(row.last_submission_score_hist)}"
+                              ></div>
+                            `
+                          : ''
+                      }
                     </td>
                     <td class="text-center">${formatFloat(row.average_max_submission_score, 2)}</td>
                     <td class="text-center">
                       ${formatFloat(row.max_submission_score_variance, 2)}
                     </td>
                     <td class="text-center">
-                      ${row.max_submission_score_hist !== null
-                        ? html`
-                            <div
-                              class="js-histmini"
-                              data-options="${JSON.stringify({
-                                ...histminiOptions,
-                                normalize: true,
-                              })}"
-                              data-data="${JSON.stringify(row.max_submission_score_hist)}"
-                            ></div>
-                          `
-                        : ''}
+                      ${
+                        row.max_submission_score_hist !== null
+                          ? html`
+                              <div
+                                class="js-histmini"
+                                data-options="${JSON.stringify({
+                                  ...histminiOptions,
+                                  normalize: true,
+                                })}"
+                                data-data="${JSON.stringify(row.max_submission_score_hist)}"
+                              ></div>
+                            `
+                          : ''
+                      }
                     </td>
                     <td class="text-center">
                       ${formatFloat(row.average_average_submission_score, 2)}
@@ -169,92 +175,106 @@ export function InstructorQuestionStatistics({
                       ${formatFloat(row.average_submission_score_variance, 2)}
                     </td>
                     <td class="text-center">
-                      ${row.average_submission_score_hist !== null
-                        ? html`
-                            <div
-                              class="js-histmini"
-                              data-options="${JSON.stringify({
-                                ...histminiOptions,
-                                normalize: true,
-                              })}"
-                              data-data="${JSON.stringify(row.average_submission_score_hist)}"
-                            ></div>
-                          `
-                        : ''}
+                      ${
+                        row.average_submission_score_hist !== null
+                          ? html`
+                              <div
+                                class="js-histmini"
+                                data-options="${JSON.stringify({
+                                  ...histminiOptions,
+                                  normalize: true,
+                                })}"
+                                data-data="${JSON.stringify(row.average_submission_score_hist)}"
+                              ></div>
+                            `
+                          : ''
+                      }
                     </td>
                     <td class="text-center">
-                      ${row.submission_score_array_averages !== null
-                        ? html`
-                            <div
-                              class="js-histmini"
-                              data-options="${JSON.stringify(histminiOptions)}"
-                              data-data="${JSON.stringify(row.submission_score_array_averages)}"
-                            ></div>
-                          `
-                        : ''}
+                      ${
+                        row.submission_score_array_averages !== null
+                          ? html`
+                              <div
+                                class="js-histmini"
+                                data-options="${JSON.stringify(histminiOptions)}"
+                                data-data="${JSON.stringify(row.submission_score_array_averages)}"
+                              ></div>
+                            `
+                          : ''
+                      }
                     </td>
                     <td class="text-center">
-                      ${row.incremental_submission_score_array_averages !== null
-                        ? html`
-                            <div
-                              class="js-histmini"
-                              data-options="${JSON.stringify(histminiOptions)}"
-                              data-data="${JSON.stringify(
-                                row.incremental_submission_score_array_averages,
-                              )}"
-                            ></div>
-                          `
-                        : ''}
+                      ${
+                        row.incremental_submission_score_array_averages !== null
+                          ? html`
+                              <div
+                                class="js-histmini"
+                                data-options="${JSON.stringify(histminiOptions)}"
+                                data-data="${JSON.stringify(
+                                  row.incremental_submission_score_array_averages,
+                                )}"
+                              ></div>
+                            `
+                          : ''
+                      }
                     </td>
                     <td class="text-center">
-                      ${row.assessment_type !== 'Homework'
-                        ? html`
-                            ${row.incremental_submission_points_array_averages != null
-                              ? html`
-                                  <div
-                                    class="js-histmini"
-                                    data-options="${JSON.stringify({
-                                      ...histminiOptions,
-                                      ymax: row.max_points,
-                                    })}"
-                                    data-data="${JSON.stringify(
-                                      row.incremental_submission_points_array_averages,
-                                    )}"
-                                  ></div>
-                                `
-                              : ''}
-                          `
-                        : 'N/A'}
+                      ${
+                        row.assessment_type !== 'Homework'
+                          ? html`
+                              ${
+                                row.incremental_submission_points_array_averages != null
+                                  ? html`
+                                      <div
+                                        class="js-histmini"
+                                        data-options="${JSON.stringify({
+                                          ...histminiOptions,
+                                          ymax: row.max_points,
+                                        })}"
+                                        data-data="${JSON.stringify(
+                                          row.incremental_submission_points_array_averages,
+                                        )}"
+                                      ></div>
+                                    `
+                                  : ''
+                              }
+                            `
+                          : 'N/A'
+                      }
                     </td>
                     <td class="text-center">${formatFloat(row.average_number_submissions, 2)}</td>
                     <td class="text-center">${formatFloat(row.number_submissions_variance, 2)}</td>
                     <td class="text-center">
-                      ${row.number_submissions_hist !== null
-                        ? html`
-                            <div
-                              class="js-histmini"
-                              data-options="${JSON.stringify({
-                                ...histminiOptions,
-                                normalize: true,
-                              })}"
-                              data-data="${JSON.stringify(row.number_submissions_hist)}"
-                            ></div>
-                          `
-                        : ''}
+                      ${
+                        row.number_submissions_hist !== null
+                          ? html`
+                              <div
+                                class="js-histmini"
+                                data-options="${JSON.stringify({
+                                  ...histminiOptions,
+                                  normalize: true,
+                                })}"
+                                data-data="${JSON.stringify(row.number_submissions_hist)}"
+                              ></div>
+                            `
+                          : ''
+                      }
                     </td>
                     <td class="text-center">
-                      ${row.quintile_question_scores !== null
-                        ? html`
-                            <div
-                              class="js-histmini"
-                              data-options="${JSON.stringify({
-                                ...histminiOptions,
-                                ymax: 100,
-                              })}"
-                              data-data="${JSON.stringify(row.quintile_question_scores)}"
-                            ></div>
-                          `
-                        : ''}
+                      ${
+                        row.quintile_question_scores !== null
+                          ? html`
+                              <div
+                                class="js-histmini"
+                                data-options="${JSON.stringify({
+                                  ...histminiOptions,
+                                  ymax: 100,
+                                })}"
+                                data-data="${JSON.stringify(row.quintile_question_scores)}"
+                              ></div>
+                            `
+                          : ''
+                      }
                     </td>
                   </tr>
                 `;
@@ -267,8 +287,9 @@ export function InstructorQuestionStatistics({
           <p>
             Download
             <a
-              href="${resLocals.urlPrefix}/question/${resLocals.question
-                .id}/statistics/${questionStatsCsvFilename}"
+              href="${resLocals.urlPrefix}/question/${
+                resLocals.question.id
+              }/statistics/${questionStatsCsvFilename}"
             >
               ${questionStatsCsvFilename}
             </a>
