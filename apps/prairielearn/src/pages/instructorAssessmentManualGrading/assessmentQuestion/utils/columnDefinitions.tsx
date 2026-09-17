@@ -110,7 +110,6 @@ export function createColumns({
       size: 200,
       cell: (info) => {
         const row = info.row.original;
-        const rowId = row.instance_question.id;
         return (
           <div className="d-flex align-items-center gap-2">
             <a
