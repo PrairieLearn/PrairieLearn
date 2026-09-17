@@ -1,7 +1,7 @@
 import { type Temporal } from '@js-temporal/polyfill';
 import { type FC, createContext, use } from 'react';
 
-import { formatDate, formatDateFriendly } from '@prairielearn/formatter';
+import { formatDate, formatDateFriendly, formatDateISO } from '@prairielearn/formatter';
 
 interface FriendlyDateProps {
   date: Date | Temporal.PlainDateTime;
@@ -23,11 +23,7 @@ export const FriendlyDate: FC<FriendlyDateProps> = ({
   const fullString = formatDate(date, timezone, fullOptions);
   return (
     <time
-      dateTime={
-        date instanceof Date
-          ? date.toISOString()
-          : date.toString({ calendarName: 'never', fractionalSecondDigits: 3 })
-      }
+      dateTime={formatDateISO(date, timezone, { includeMs: true })}
       title={fullString}
       style={{ fontVariantNumeric: 'tabular-nums' }}
     >
