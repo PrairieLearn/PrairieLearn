@@ -1,14 +1,14 @@
 # Overlay interaction patterns plan
 
-Status: proposed. The abandoned [contextual-popover PR](https://github.com/PrairieLearn/PrairieLearn/pull/15552) and [tooltip PR](https://github.com/PrairieLearn/PrairieLearn/pull/15549) remain useful references, but replacement work starts from `master` and follows the [implementation plan](./implementation-plan.md).
+Status: proposed. The abandoned [contextual-popover PR](https://github.com/PrairieLearn/PrairieLearn/pull/15552) and [tooltip PR](https://github.com/PrairieLearn/PrairieLearn/pull/15549) remain useful references, but cleanup starts from `master` and follows the [implementation plan](./implementation-plan.md).
 
-This RFC defines overlay patterns for PrairieLearn and PrairieTest.
+This RFC provides a rubric for removing and classifying overlays in PrairieLearn and PrairieTest. Its replacement components remain provisional until the cleanup identifies what must survive.
 
 ## Executive decision
 
-“Tooltip” and “popover” describe appearance, not behavior. Choose a component based on what the user needs; treat positioning and Bootstrap styling as implementation details.
+“Tooltip” and “popover” describe appearance, not behavior. Start by asking whether the overlay is needed at all. If it is, choose a pattern based on what the user needs; treat positioning and Bootstrap styling as implementation details.
 
-The intended component set is:
+The working taxonomy is:
 
 | User need                                                                                              | Preferred pattern                                                    |
 | ------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------- |
@@ -26,6 +26,8 @@ The intended component set is:
 | Require an exclusive decision or blocking task                                                         | Modal dialog                                                         |
 
 Do not treat every press-triggered popover as a focus-trapped dialog.
+
+Use this taxonomy first to remove overlays whose information belongs in the page. Do not treat every row as a commitment to build a new component. Public APIs will be chosen after every remaining first-party use has been reviewed and justified.
 
 Use this decision path before adding an overlay:
 
@@ -46,6 +48,7 @@ Use this decision path before adding an overlay:
 - Treat vanilla Bootstrap as a permanent compatibility surface for first-party elements, third-party elements, and course content.
 - Keep essential information visible, reserve focus containment for real dialogs, and avoid duplicate announcements or extra tab stops.
 - Define safe rules for rich Bootstrap content.
+- Reduce first-party overlays to a reviewed set of genuine use cases before designing replacement APIs.
 
 ## Non-goals
 
@@ -53,7 +56,7 @@ Use this decision path before adding an overlay:
 - Introducing Radix, Base UI, Floating UI, or another competing overlay stack.
 - Rebuilding every menu, modal, dropdown, date picker, select, and combobox.
 - Converting overlays to the native Popover API.
-- Rewriting every legacy popover before either foundational PR can land.
+- Eliminating third-party, element-owned, or course-authored Bootstrap overlays before compatibility work can land.
 - Designing hover cards, side sheets, coachmarks, or tours; the audit found no current need for them.
 - Treating administrator-only interfaces as exempt from accessibility and interaction-quality requirements.
 
@@ -70,11 +73,11 @@ The reviewed design systems agree that content and purpose should determine the 
 - The native Popover API does not provide semantics or a complete focus policy, and its January 2025 baseline is too recent for this work.
 - GOV.UK, Fluent, USWDS, Atlassian, and Linear all favor visible important guidance, disclosures for longer optional content, and overlays only for secondary information.
 
-The RFC therefore defines content limits before implementation details and requires a prototype for contextual help.
+The RFC therefore defines content limits before implementation details. Cleanup comes first; contextual help requires a prototype only if justified uses remain.
 
 The repository audit found real uses for several separate patterns. PrairieLearn's instructor-preview Tools help has three links. PrairieTest has 26 `IconWithPopover` callsites, about 130 `InlineEdit`/`CustomInlineEdit` callsites, and 20 direct Bootstrap popover constructors. Some are short help, some are navigation, and some are forms. The audit found no current need for hover cards, coachmarks, or tours.
 
-Tooltip timing varies widely across design systems. PrairieLearn will start with a 500 ms hover delay, immediate display on keyboard focus, and a 500 ms close delay. Pointer persistence must come from traversable geometry, not just the close timer.
+Tooltip timing varies widely across design systems. For tooltips that survive, PrairieLearn will start with a 500 ms hover delay, immediate display on keyboard focus, and a 500 ms close delay. Pointer persistence must come from traversable geometry, not just the close timer.
 
 Keep React Aria's warmup behavior: after one tooltip opens, nearby tooltips open immediately for a short time. Vanilla tooltips should behave the same within their own runtime. React and vanilla do not need shared warmup state.
 
@@ -100,7 +103,9 @@ Public components should own their semantics and focus behavior. Keep any low-le
 
 Icon-only controls should derive their accessible name and visual label tooltip from the same required string without exposing that same string again as a duplicate accessible description. Contextual-help triggers should use a subject-first name, such as “Relative cost, more information,” rather than generic or repetitive action-first names. Visible text in an actionable control must remain part of its accessible name for voice control.
 
-## Pattern contracts
+## Provisional pattern contracts
+
+These contracts describe how surviving use cases would behave. They do not authorize a replacement component or migration before the cleanup and survivor review are complete.
 
 ### `Tooltip`
 
@@ -174,9 +179,9 @@ Proposed behavior:
 - The default hit target is about 40–48 CSS pixels. Use the 24-by-24 WCAG minimum only in a compact layout with enough spacing.
 - It uses Bootstrap popover styling, but its DOM placement must preserve the documented sequential focus order.
 
-The selected model combines Carbon's toggletip interaction with Fluent's content and naming guidance: focus stays on the trigger, links join normal tab order, and the help closes when focus leaves. Before publishing the component, test a private prototype with short text, one link, the three-link instructor-preview Tools help, and repeated help in a form or table header. Cover keyboard behavior, outside press, screen-reader discovery, collision, and zoom on representative desktop and mobile setups.
+If justified help cases survive, the leading model combines Carbon's toggletip interaction with Fluent's content and naming guidance: focus stays on the trigger, links join normal tab order, and the help closes when focus leaves. Before publishing a component, test a private prototype with the actual surviving content, including its richest link set and any repeated compact layout. Cover keyboard behavior, outside press, screen-reader discovery, collision, and zoom on representative desktop and mobile setups.
 
-Do not assume that `aria-expanded` and `aria-controls` make revealed text discoverable. If the prototype loses focus, strands the virtual cursor, or hides content from normal reading navigation, use visible help or a disclosure instead. React and vanilla implementations must pass the same contract; the instructor-preview Tools help is the vanilla proof case.
+Do not assume that `aria-expanded` and `aria-controls` make revealed text discoverable. If the prototype loses focus, strands the virtual cursor, or hides content from normal reading navigation, use visible help or a disclosure instead. React and vanilla implementations must pass the same contract. The instructor-preview Tools help is one candidate only if it survives page-level review.
 
 Proposed API:
 
@@ -260,6 +265,8 @@ Do not use `title` as PrairieLearn’s tooltip implementation or add it to contr
 
 ## React architecture
 
+Build this architecture only for the React use cases that survive the cleanup. The names below are design directions, not approved public APIs.
+
 - Keep React Aria as the interaction foundation; do not add another component system.
 - Reimplement the useful tooltip work from `master` instead of carrying the abandoned branch forward. `Tooltip` is a plain-text description; `IconButton` owns visual labels. Both use the shared delay and immediate keyboard behavior.
 - React Aria watches hover on the trigger, not the rendered tooltip. Add hover handling and a traversable path without blocking adjacent controls.
@@ -271,6 +278,8 @@ Do not use `title` as PrairieLearn’s tooltip implementation or add it to contr
 ## Vanilla architecture
 
 Bootstrap is a permanent integration surface for question content. First-party elements, third-party elements, and course questions will continue to use declarative markup and vanilla JavaScript. Today, 17 element templates contain 49 popover triggers, and element JavaScript also constructs popovers directly. `@prairielearn/ui` should own the shared behavior; only version-specific workarounds are temporary.
+
+Application-owned vanilla overlays still go through the same removal loop as React uses. Permanent compatibility is not a reason to retain first-party content that should be visible or use another established pattern.
 
 The following terms are an internal migration glossary, not public modes or a second authoring API:
 
@@ -337,51 +346,75 @@ Rules for long-lived Bootstrap content:
 - Inventory HTML callsites by trust source and serialization boundary. Do not require global removal of `sanitize: false` in a foundation PR. Prefer safe DOM nodes or Bootstrap-sanitized strings for new code, and document trusted legacy paths. Track Python/Mustache, jQuery/programmatic strings, and other non-`@prairielearn/html` paths separately unless this work changes them.
 - Add one DOM-level regression per changed TypeScript serialization boundary. Cover markup, quotes, ampersands, literal entities, and untrusted text without retesting the renderer itself.
 
-## Callsite plan
+## Cleanup backlog
 
-This table classifies current uses; it is not a bulk replacement list. Each migration must preserve the original visible information, accessible name, action semantics, and feedback.
+This table is the starting backlog for the removal loop, not a bulk replacement list. Each PR must review the whole page and preserve the information, accessible name, action semantics, and feedback that users rely on.
 
-| Area                                                       | Proposed treatment                                                                                                                         |
-| ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| Group-role table explanations                              | Add a short visible introduction and, if still useful, one separately named “About group roles” disclosure.                                |
-| Rubric settings help                                       | Put field requirements beside their controls and consolidate general guidance under “How rubric scoring works.”                            |
-| AI model relative cost                                     | Use a visible caption or legend.                                                                                                           |
-| Grader-assignment permission note                          | Put the note beside the menu trigger or in a non-item menu description.                                                                    |
-| Unavailable student name, UIN, and email                   | Show visible “Pending” or “Available after joining” text; do not add a help button to every cell.                                          |
-| Assessment tree labels, counts, and warnings               | Use clear visible names, compact text, and a legend where needed. Put actionable warning detail in the selected item's detail area.        |
-| Manual-grading issue and open-assessment badges            | Keep issue counts as static number badges and show a triangle with visible “Open” text. Neither is a button or tooltip.                    |
-| Manual-grading AI/human comparison                         | Add a visible legend or text labels unless testing shows that the icons are self-explanatory.                                              |
-| Dense-table status explanations                            | Prefer a table legend or nearby explanation over repeated help buttons.                                                                    |
-| Relative dates                                             | Render `<time>`; use a native `title` only when the exact value is optional, otherwise provide a visible or press-accessible exact value.  |
-| Copy confirmation                                          | Show a visible “Copied” state and send one polite live-region update per action.                                                           |
-| Synchronization logs                                       | Use a panel or dedicated log view for unbounded output; use a modal only when inspection should block other work.                          |
-| Locked or unavailable actions                              | Show the reason and remedy near the action. Keep controls disabled where appropriate; do not turn them into explanation buttons.           |
-| Reset and Finalize explanations                            | Keep a description tooltip only when it is optional and the control remains clear on touch; otherwise use supporting or confirmation copy. |
-| Raw HTML editor explanation                                | Keep syntax requirements visible. Optional conceptual background may use contextual help later.                                            |
-| Instructor-preview Tools help                              | Use as the vanilla contextual-help proof case; test its small link set rather than forcing text-only content.                              |
-| PrairieTest `IconWithPopover`                              | Audit all 26 uses: keep short optional help press-accessible, move requirements into visible copy, and move entity lists into the page.    |
-| PrairieTest typed `InlineEdit` controls                    | Use as the anchored-dialog proof set, including Save/Cancel, dirty dismissal, Flatpickr, and HTMX focus.                                   |
-| PrairieTest custom and large editor popovers               | Classify each as an anchored dialog, modal, panel, inline region, page, or visible explanation.                                            |
-| Other popovers containing forms, confirmations, or actions | Classify by purpose rather than migrating by component name.                                                                               |
+| Application  | Area                                                       | Likely treatment                                                                                                                        |
+| ------------ | ---------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| PrairieLearn | Group-role table explanations                              | Clearer headers and one visible introduction; remove the five tooltips and the single-purpose `HelpTooltip` component                   |
+| PrairieLearn | Required modules and referenced assessment sets            | Omit unavailable delete actions and show visible “Required” or “Used by N assessments” state                                            |
+| PrairieLearn | Locked question navigation                                 | Use a disabled action and show the restriction nearby                                                                                   |
+| PrairieLearn | Student access schedules                                   | Use a native disclosure containing the schedule table                                                                                   |
+| PrairieLearn | Zone scoring and points explanations                       | Put the scoring rule in a visible zone summary or table description                                                                     |
+| PrairieLearn | Rubric settings help                                       | Put field requirements beside their controls and consolidate general guidance under “How rubric scoring works”                          |
+| PrairieLearn | AI model relative cost                                     | Use a visible caption or legend                                                                                                         |
+| PrairieLearn | Grader-assignment permission note                          | Put the note beside the menu trigger or in a non-item menu description                                                                  |
+| PrairieLearn | Unavailable student name, UIN, and email                   | Show visible “Pending” or “Available after joining” text                                                                                |
+| PrairieLearn | Assessment tree labels, counts, and warnings               | Use clear visible names, compact text, and a legend; put actionable details in the selected item's detail area                          |
+| PrairieLearn | Manual-grading issue and open-assessment badges            | Keep issue counts as static number badges and show a triangle with visible “Open” text                                                  |
+| PrairieLearn | Manual-grading AI/human comparison                         | Use visible column labels and remove per-checkbox tooltips                                                                              |
+| PrairieLearn | Other static warnings and count badges                     | Prefer self-explanatory text such as “Ignored,” “Not counted,” or “N to grade”                                                          |
+| PrairieLearn | AI credit balance definitions                              | Put short definitions inside the balance cards                                                                                          |
+| PrairieLearn | Relative dates                                             | Render `<time>`; use native `title` only when the exact value is optional                                                               |
+| PrairieLearn | Copy confirmation                                          | Show a visible “Copied” state and send one polite live-region update per action                                                         |
+| PrairieLearn | Synchronization logs                                       | Use a panel or dedicated log view for unbounded output; use a modal only when inspection should block other work                        |
+| PrairieLearn | Other locked or unavailable actions                        | Show the reason and remedy near the action; do not turn the unavailable action into an explanation button                               |
+| PrairieLearn | Reset and Finalize explanations                            | Keep a description tooltip only if it is optional and the control remains clear on touch; otherwise use supporting or confirmation copy |
+| PrairieLearn | Raw HTML editor explanation                                | Keep syntax requirements visible; reconsider optional conceptual help only after cleanup                                                |
+| PrairieLearn | Instructor-preview Tools help                              | Retain as a contextual-help candidate only if visible help or disclosure is worse after page-level review                               |
+| PrairieTest  | Friendly dates and ranges                                  | Use semantic time markup and a redundant native `title`, without Bootstrap                                                              |
+| PrairieTest  | Paper-exam indicators                                      | Use visible “Paper” or “Paper reservations” badges                                                                                      |
+| PrairieTest  | Reservation-extension mismatches                           | Show the mismatch and expected value visibly                                                                                            |
+| PrairieTest  | Invite statuses                                            | Remove explanations that restate visible status; move real workflow guidance above the table                                            |
+| PrairieTest  | Student session availability and location descriptions     | Put slot definitions and location descriptions in the page                                                                              |
+| PrairieTest  | Table-header help                                          | Use a table caption, card introduction, or section-level disclosure                                                                     |
+| PrairieTest  | Prediction errors and minimap legends                      | Use an inline warning and native disclosure                                                                                             |
+| PrairieTest  | Other `IconWithPopover` uses                               | Move requirements into visible copy and entity lists into the page; retain only justified optional contextual help                      |
+| PrairieTest  | Typed `InlineEdit` controls                                | Keep as anchored-dialog candidates after non-editor `onlyCancel` cases are removed                                                      |
+| PrairieTest  | Custom and large editor popovers                           | Classify each as an anchored dialog, modal, panel, inline region, page, or visible explanation                                          |
+| Both         | Other popovers containing forms, confirmations, or actions | Classify by purpose; do not preserve the old component merely because the content already floats                                        |
 
 ## Pull-request and migration sequence
 
-Close the existing implementation PRs rather than restacking them. Start replacement branches from current `master` and consult old commits only for specific implementation details.
+Close the existing implementation PRs rather than restacking them. Start cleanup and replacement branches from current `master` and consult old commits only for specific implementation details.
 
 The [implementation plan](./implementation-plan.md) contains the detailed sequence. At a high level:
 
-1. Revalidate and extract any independent correctness fixes from the abandoned branches.
-2. Land the permanent vanilla Bootstrap tooltip foundation.
-3. Build the React `Tooltip` and `IconButton` foundation from the resulting `master`.
-4. Migrate callsites in small semantic batches while preserving `OverlayTrigger` compatibility.
-5. Validate the selected contextual-help model in parallel and ship it only if the prototype passes representative device and assistive-technology checks.
-6. Prototype representative PrairieTest editors before extracting shared dialog behavior and migrating only the typed editor family.
+1. Establish complete PrairieLearn and PrairieTest inventories, including indirect helpers, native `title`, direct constructors, elements, and generated markup.
+2. Repeatedly remove unnecessary overlays in small, independent PRs. Recount and reclassify the inventory after each family.
+3. Stop only when every remaining first-party overlay has a written justification and no simpler visible or established pattern fits.
+4. Revisit this taxonomy against the survivors and remove proposed components with no clear use cases.
+5. Build the permanent vanilla tooltip foundation, then the React foundation, using actual survivors as their first callsites.
+6. Migrate only the surviving genuine tooltips.
+7. Prototype contextual help and PrairieTest anchored editors only if the survivor inventory still requires them.
+
+The removal loop may extract an independent correctness fix when it still reproduces and remains relevant after reclassification. It should not repair machinery for an overlay that can be deleted instead.
 
 Document only shipped contracts. Each public package change needs a changeset and representative application callsites. PrairieTest production code must consume a published package version.
 
 ## Verification strategy
 
-Keep automated coverage small and test only contracts shipped by the PR:
+For cleanup PRs:
+
+- Capture the same representative page before and after the change.
+- Confirm that all previous information remains visible or has a clear, intentional path.
+- Check keyboard order, touch-size implications, alignment, wrapping, zoom, and responsive layout when affected.
+- Confirm that removing the overlay also removes artificial tab stops, duplicate descriptions, and obsolete initialization code.
+- Add automated coverage only when the PR changes behavior owned by the application; do not test the absence of Bootstrap plumbing for its own sake.
+- Update the inventory and record any newly discovered related uses.
+
+For foundation PRs, keep automated coverage small and test only contracts shipped by that PR:
 
 - Tooltips honor delay, focus, pointer persistence, touch suppression, Escape, and interrupted exit transitions.
 - Label tooltips preserve one accessible name; description tooltips add one nonredundant description.
@@ -409,11 +442,16 @@ Automated accessibility scans are supplemental; they cannot verify focus behavio
 
 ## Acceptance criteria
 
+- Every first-party tooltip and popover in PrairieLearn and PrairieTest has been reviewed by user need, including indirect shared helpers and programmatic construction.
+- No static element is focusable solely to expose a tooltip, and no status depends on hover or focus for its meaning.
+- No essential instruction, prerequisite, consequence, validation message, or remediation exists only in an overlay.
+- No unavailable action is made pressable solely to explain why it is unavailable.
+- No first-party popover remains when visible content, disclosure, an established widget, or a dedicated view is clearly better.
 - New code does not treat every press-triggered popover as a dialog or focus trap.
-- Each migrated callsite is classified by user need, not by its old component name.
+- Each remaining and migrated callsite is classified by user need, not by its old component name.
 - Essential content is visible at the point of need.
 - True tooltip content is optional, concise, plain text, and noninteractive.
-- `IconButton` owns visual labels and stable accessible names; public `Tooltip` supplies only nonredundant descriptions. Vanilla provides the same distinction when ordinary Bootstrap markup makes it clear.
+- If the proposed React tooltip APIs ship, `IconButton` owns visual labels and stable accessible names while public `Tooltip` supplies only nonredundant descriptions. Vanilla provides the same distinction when ordinary Bootstrap markup makes it clear.
 - A pointer can move between trigger and tooltip without relying only on a close timer.
 - If contextual help is shipped, it works on touch and does not make the rest of the page inert.
 - If interactive anchored content is shipped, it has a title, close mechanism, predictable focus entry/exit, and correct nested-overlay behavior.
@@ -424,18 +462,20 @@ Automated accessibility scans are supplemental; they cannot verify focus behavio
 - Changed features keep their meaning, accessible name, feedback, and discoverable path.
 - Changed serialization boundaries follow the documented escaping rules.
 - Documentation covers only shipped contracts and explains what must not be hidden in tooltips.
-- Each PR passes its targeted automated and manual checks before dependent work begins.
+- Each cleanup PR is independently deployable and includes proportional browser verification before the next related batch expands.
+- Replacement foundations are designed from the justified survivor inventory, not from the abandoned implementations.
 
 ## Decision gates and open questions
 
-1. Does the contextual-help prototype work with plain text, one link, a small link set, and repeated triggers on representative desktop and mobile screen readers? What DOM placement does it require?
-2. For simple anchored editors, does contained focus with explicit Save/Cancel work well across representative table, settings, Flatpickr, and HTMX cases?
-3. Which PrairieTest editor families fit the anchored contract, and which must move to a modal, panel, inline region, or page? Has nearest-modal/overlay-root support landed first?
-4. Does the vanilla spike find a first-party case whose label or description semantics cannot be inferred from ordinary Bootstrap markup? If so, what narrow internal override does it need?
+1. Has every first-party overlay been reviewed, and does each survivor have a written reason that visible content, disclosure, or an established widget is worse?
+2. Which surviving controls require visual-label tooltips, and which require nonredundant description tooltips, in React and vanilla?
+3. Do any surviving help cases justify a shared `ContextualHelp` component? If so, does its prototype work with the actual content on representative desktop and mobile screen readers?
+4. Which PrairieTest editor families fit the anchored-dialog contract, and which must move to a modal, panel, inline region, or page?
+5. Does the vanilla prototype find a first-party case whose label or description semantics cannot be inferred from ordinary Bootstrap markup? If so, what narrow internal override does it need?
 
 ## Review record
 
-The plan went through accessibility, product, UX, and architecture review. A later repository audit found missing requirements for linked contextual help, PrairieTest inline editors, form disclosures, and permanent Bootstrap consumers, so the plan was revised and reviewed again. Contextual help and anchored editors still require the prototypes and assistive-technology checks described above.
+The plan went through accessibility, product, UX, and architecture review. A later repository audit found missing requirements for linked contextual help, PrairieTest inline editors, form disclosures, and permanent Bootstrap consumers. The first small cleanup PRs then showed that many apparent component migrations were better solved by deleting the overlay, so the sequence was revised to complete that work before replacement design. Contextual help and anchored editors still require the prototypes and assistive-technology checks described above if justified survivors remain.
 
 ## Research basis
 
