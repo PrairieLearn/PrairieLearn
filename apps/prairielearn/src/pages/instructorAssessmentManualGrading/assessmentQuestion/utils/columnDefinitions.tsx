@@ -218,6 +218,7 @@ export function createColumns({
     columnHelper.accessor((row) => row.instance_question.requires_manual_grading, {
       id: 'requires_manual_grading',
       header: 'Grading status',
+      minSize: aiGradingMode ? 220 : 100,
       cell: (info) => {
         return (
           <GradingStatusCell

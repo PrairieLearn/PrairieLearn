@@ -31,7 +31,7 @@ function AiGradingStatusCell({ aiGradingStatus }: { aiGradingStatus: JobItemStat
       return (
         <span className="d-flex align-items-center gap-2">
           <i className="bi bi-clock text-secondary" aria-hidden="true" />
-          <span>Queued</span>
+          <span>Queued for AI grading</span>
         </span>
       );
     case JobItemStatus.in_progress:
@@ -47,14 +47,14 @@ function AiGradingStatusCell({ aiGradingStatus }: { aiGradingStatus: JobItemStat
       return (
         <span className="d-flex align-items-center gap-2">
           <i className="bi bi-exclamation-octagon-fill text-danger" aria-hidden="true" />
-          <span>Failed</span>
+          <span>AI grading failed</span>
         </span>
       );
     case JobItemStatus.complete:
       return (
         <span className="d-flex align-items-center gap-2">
           <i className="bi bi-check-circle-fill text-success" aria-hidden="true" />
-          <span>Graded</span>
+          <span>AI grading complete</span>
         </span>
       );
     default:
