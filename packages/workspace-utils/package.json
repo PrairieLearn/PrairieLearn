@@ -31,8 +31,8 @@
     "@prairielearn/tsconfig": "workspace:^",
     "@types/node": "^24.13.3",
     "@typescript/native-preview": "beta",
-    "@vitest/coverage-v8": "^4.1.10",
+    "@vitest/coverage-v8": "^5.0.0",
     "typescript-cp": "^0.1.11",
-    "vitest": "^4.1.10"
+    "vitest": "^5.0.0"
   }
 }

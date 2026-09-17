@@ -30,7 +30,7 @@
     "@typescript-eslint/rule-tester": "^8.67.0",
     "@typescript-eslint/types": "^8.67.0",
     "@typescript/native-preview": "beta",
-    "@vitest/coverage-v8": "^4.1.10",
-    "vitest": "^4.1.10"
+    "@vitest/coverage-v8": "^5.0.0",
+    "vitest": "^5.0.0"
   }
 }

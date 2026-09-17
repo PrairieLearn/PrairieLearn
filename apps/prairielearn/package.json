@@ -320,12 +320,12 @@
     "@types/unzipper": "^0.10.11",
     "@types/xml2js": "^0.4.14",
     "@typescript/native-preview": "beta",
-    "@vitest/coverage-v8": "^4.1.10",
+    "@vitest/coverage-v8": "^5.0.0",
     "axe-core": "^4.13.0",
     "get-port": "^7.2.0",
     "jsdom": "^29.1.1",
     "tsx": "^4.23.11",
     "typescript-cp": "^0.1.11",
-    "vitest": "^4.1.10"
+    "vitest": "^5.0.0"
   }
 }

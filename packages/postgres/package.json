@@ -30,7 +30,7 @@
     "@types/pg": "^8.21.0",
     "@types/pg-cursor": "^2.7.2",
     "@typescript/native-preview": "beta",
-    "@vitest/coverage-v8": "^4.1.10",
-    "vitest": "^4.1.10"
+    "@vitest/coverage-v8": "^5.0.0",
+    "vitest": "^5.0.0"
   }
 }

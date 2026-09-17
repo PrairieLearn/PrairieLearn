@@ -103,7 +103,7 @@ packages/*/coverage
 coverage.xml
 
 ## Vitest
-.vitest-reports
+.vitest
 
 ## Playwright
 test-results/
