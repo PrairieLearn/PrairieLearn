@@ -2,7 +2,7 @@
 INSERT INTO
   workspace_hosts (instance_id, state, launched_at, state_changed_at) (
     SELECT
-      unnest($instance_ids),
+      unnest($instance_ids::text[]),
       'launching',
       NOW(),
       NOW()

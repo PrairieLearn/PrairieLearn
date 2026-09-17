@@ -19,6 +19,7 @@ import {
   type MultiSelectFilterValue,
   NuqsAdapter,
   OverlayTrigger,
+  type OverlayTriggerProps,
   TanstackTableCard,
   type TanstackTableCoreInstance,
   type TanstackTableHeader,
@@ -85,6 +86,22 @@ const INSTANCE_ROLE_DESCRIPTIONS: Record<InstanceRole, string> = {
     'Can see all assessments, questions, and issues. Can view student data but cannot make changes.',
   'Student Data Editor':
     'Can see all assessments, questions, and issues. Can view and edit student data, including grading.',
+};
+
+const PERMISSION_POPOVER_CONFIG: OverlayTriggerProps['popperConfig'] = {
+  modifiers: [
+    {
+      name: 'resize',
+      enabled: true,
+      phase: 'write',
+      // Role descriptions and error messages can change the popover's size while it's open.
+      effect: ({ state, instance }) => {
+        const observer = new ResizeObserver(() => void instance.update());
+        observer.observe(state.elements.popper);
+        return () => observer.disconnect();
+      },
+    },
+  ],
 };
 
 function SelectAllCheckbox({ table }: { table: TanstackTableCoreInstance<CourseUsersRow> }) {
@@ -191,7 +208,8 @@ function CoursePermissionCell({
     <OverlayTrigger
       show={show}
       trigger="click"
-      placement="right"
+      placement="auto"
+      popperConfig={PERMISSION_POPOVER_CONFIG}
       popover={{
         props: {
           id: `course-permission-popover-${courseUser.user.id}`,
@@ -296,7 +314,8 @@ function CourseInstanceAccessCell({
     <OverlayTrigger
       show={show}
       trigger="click"
-      placement="bottom"
+      placement="auto"
+      popperConfig={PERMISSION_POPOVER_CONFIG}
       popover={{
         props: {
           id: `ci-permission-popover-${courseUser.user.id}-${courseInstance.id}`,

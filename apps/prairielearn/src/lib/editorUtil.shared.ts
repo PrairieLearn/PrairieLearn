@@ -167,7 +167,7 @@ export function getNamesForCopy(
   longNames: string[],
 ): { shortName: string; longName: string } {
   function getBaseShortName(oldname: string): string {
-    const found = oldname.match(/^(.*)_copy[0-9]+$/);
+    const found = oldname.match(/^(.*)_copy[0-9]+$/i);
     if (found) {
       return found[1];
     } else {
@@ -190,7 +190,7 @@ export function getNamesForCopy(
   function getNumberShortName(basename: string, oldnames: string[]): number {
     let number = 1;
     oldnames.forEach((oldname) => {
-      const found = oldname.match(new RegExp(`^${escapeRegExp(basename)}_copy([0-9]+)$`));
+      const found = oldname.match(new RegExp(`^${escapeRegExp(basename)}_copy([0-9]+)$`, 'i'));
       if (found) {
         const foundNumber = Number.parseInt(found[1]);
         if (foundNumber >= number) {

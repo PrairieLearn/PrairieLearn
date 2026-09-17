@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/compiled-assets",
-  "version": "4.1.12",
+  "version": "4.1.13",
   "type": "module",
   "repository": {
     "type": "git",
@@ -34,7 +34,7 @@
     "@types/node": "^24.13.3",
     "@typescript/native-preview": "beta",
     "@vitest/coverage-v8": "^4.1.10",
-    "express": "^4.22.2 <5",
+    "express": "^4.22.3 <5",
     "get-port": "^7.2.0",
     "vitest": "^4.1.10"
   }

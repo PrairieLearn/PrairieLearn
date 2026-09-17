@@ -107,19 +107,23 @@ export function StudentAssessments({
                           </span>
                         </td>
                         <td class="align-middle">
-                          ${row.authz_result.show_before_release
-                            ? html`<span class="text-muted">${row.title}</span>`
-                            : row.multiple_instance_header ||
-                                (!row.authz_result.active && row.assessment_instance_id == null)
-                              ? row.title
-                              : html`
-                                  <a href="${urlPrefix}${row.link}">
-                                    ${row.title}
-                                    ${row.team_work
-                                      ? html`<i class="fas fa-users" aria-hidden="true"></i>`
-                                      : ''}
-                                  </a>
-                                `}
+                          ${
+                            row.authz_result.show_before_release
+                              ? html`<span class="text-muted">${row.title}</span>`
+                              : row.multiple_instance_header ||
+                                  (!row.authz_result.active && row.assessment_instance_id == null)
+                                ? row.title
+                                : html`
+                                    <a href="${urlPrefix}${row.link}">
+                                      ${row.title}
+                                      ${
+                                        row.team_work
+                                          ? html`<i class="fas fa-users" aria-hidden="true"></i>`
+                                          : ''
+                                      }
+                                    </a>
+                                  `
+                          }
                         </td>
                         <td class="text-center align-middle">
                           ${AvailableCredit({
@@ -128,9 +132,11 @@ export function StudentAssessments({
                           })}
                         </td>
                         <td class="text-center align-middle">
-                          ${row.multiple_instance_header
-                            ? NewInstanceButton({ urlPrefix, row })
-                            : AssessmentScore(row)}
+                          ${
+                            row.multiple_instance_header
+                              ? NewInstanceButton({ urlPrefix, row })
+                              : AssessmentScore(row)
+                          }
                         </td>
                       </tr>
                     `,
@@ -141,15 +147,17 @@ export function StudentAssessments({
           </table>
         </div>
       </div>
-      ${authz_data.mode === 'Exam'
-        ? html`
-            <p>
-              Don't see your exam? Exams for this course are only made available to students with
-              checked-in exam reservations who have clicked the "Start exam" button in PrairieTest.
-              See a proctor for assistance.
-            </p>
-          `
-        : ''}
+      ${
+        authz_data.mode === 'Exam'
+          ? html`
+              <p>
+                Don't see your exam? Exams for this course are only made available to students with
+                checked-in exam reservations who have clicked the "Start exam" button in
+                PrairieTest. See a proctor for assistance.
+              </p>
+            `
+          : ''
+      }
     `,
   });
 }
@@ -189,12 +197,14 @@ function AvailableCredit({
   if (row.assessment_instance_open !== false) {
     return html`
       ${creditDateString}
-      ${row.modern_access_control
-        ? StudentAccessTimelinePopover({
-            accessTimeline: authzResult.access_timeline,
-            displayTimezone,
-          })
-        : StudentAccessRulesPopover({ accessRules: authzResult.access_rules })}
+      ${
+        row.modern_access_control
+          ? StudentAccessTimelinePopover({
+              accessTimeline: authzResult.access_timeline,
+              displayTimezone,
+            })
+          : StudentAccessRulesPopover({ accessRules: authzResult.access_rules })
+      }
     `;
   }
   return html`Assessment closed.`;
