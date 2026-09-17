@@ -1,3 +1,5 @@
+import { Badge } from 'react-bootstrap';
+
 import { run } from '@prairielearn/run';
 import {
   IndeterminateCheckbox,
@@ -116,21 +118,17 @@ export function createColumns({
               Instance {info.getValue() + 1}
             </a>
             {row.open_issue_count ? (
-              <OverlayTrigger
-                tooltip={{
-                  props: { id: `instance-${rowId}-issue-tooltip` },
-                  body: (
-                    <>
-                      Instance question has {row.open_issue_count} open{' '}
-                      {row.open_issue_count > 1 ? 'issues' : 'issue'}
-                    </>
-                  ),
-                }}
+              <Badge
+                bg="danger"
+                title={`${row.open_issue_count} open ${row.open_issue_count > 1 ? 'issues' : 'issue'}`}
+                pill
               >
-                <button className="btn btn-danger badge rounded-pill">
-                  {row.open_issue_count}
-                </button>
-              </OverlayTrigger>
+                {row.open_issue_count}
+                <span className="visually-hidden">
+                  {' '}
+                  open {row.open_issue_count > 1 ? 'issues' : 'issue'}
+                </span>
+              </Badge>
             ) : null}
             {row.assessment_open ? (
               <OverlayTrigger
@@ -224,6 +222,7 @@ export function createColumns({
     columnHelper.accessor((row) => row.instance_question.requires_manual_grading, {
       id: 'requires_manual_grading',
       header: 'Grading status',
+      minSize: aiGradingMode ? 220 : 100,
       cell: (info) => {
         return (
           <GradingStatusCell

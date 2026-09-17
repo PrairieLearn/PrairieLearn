@@ -40,11 +40,11 @@ import { selectUserSettings } from '../../../models/user-settings.js';
 import { selectUserById } from '../../../models/user.js';
 import { selectAndAuthzVariant } from '../../../models/variant.js';
 
-import { GradingPanel } from './gradingPanel.html.js';
 import {
   type GradingJobData,
   GradingJobDataSchema,
   InstanceQuestion as InstanceQuestionPage,
+  buildInstanceQuestionGradingPanelProps,
 } from './instanceQuestion.html.js';
 
 const router = Router();
@@ -363,21 +363,21 @@ router.get(
 
         const userSettings = await selectUserSettings({ user_id: res.locals.authn_user.id });
 
-        const gradingPanel = GradingPanel({
-          ...locals,
+        const gradingPanelProps = buildInstanceQuestionGradingPanelProps({
+          resLocals: locals.resLocals,
           context: 'main',
+          graders: locals.graders,
           aiGradingInfo,
           aiGradingMode: shared.aiGradingMode,
           selectedInstanceQuestionGroup: shared.instanceQuestionGroup,
           showInstanceQuestionGroup:
             shared.instanceQuestionGroups.length > 0 && shared.aiGradingMode,
           instanceQuestionGroups: shared.instanceQuestionGroups,
-          skip_graded_submissions: req.session.skip_graded_submissions ?? true,
-          show_submissions_assigned_to_me_only:
-            req.session.show_submissions_assigned_to_me_only ?? true,
+          skipGradedSubmissions: req.session.skip_graded_submissions ?? true,
+          showSubmissionsAssignedToMeOnly: req.session.show_submissions_assigned_to_me_only ?? true,
           gradedByHumanName: shared.lastHumanGraderName,
-          enable_single_key_shortcuts: userSettings.enable_single_key_shortcuts,
-        }).toString();
+          enableSingleKeyShortcuts: userSettings.enable_single_key_shortcuts,
+        });
 
         const aiGradingExplanation = aiGradingInfo
           ? AIGradingExplanation({
@@ -392,7 +392,7 @@ router.get(
           : '';
 
         res.json({
-          gradingPanel,
+          gradingPanelProps,
           aiGradingExplanation,
           aiGradingPrompt,
           rubric_data,
