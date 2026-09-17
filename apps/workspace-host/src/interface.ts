@@ -918,11 +918,14 @@ async function _createContainer(workspace: Workspace): Promise<Docker.Container>
     throw new Error('Could not access workspace files.', { cause: err });
   }
 
-  await fs.chown(
-    workspaceJobPath,
-    config.workspaceJobsDirectoryOwnerUid,
-    config.workspaceJobsDirectoryOwnerGid,
-  );
+  if (config.workspaceJobsDirectoryChangeOwner) {
+    await fs.chown(
+      workspaceJobPath,
+      config.workspaceJobsDirectoryOwnerUid,
+      config.workspaceJobsDirectoryOwnerGid,
+    );
+  }
+
   const container = await docker.createContainer({
     Image: settings.workspace_image,
     ExposedPorts: {
