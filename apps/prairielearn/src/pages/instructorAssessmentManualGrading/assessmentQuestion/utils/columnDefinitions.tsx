@@ -11,7 +11,12 @@ import {
   numericColumnFilterFn,
 } from '@prairielearn/ui';
 
-import type { StaffAssessment } from '../../../../lib/client/safe-db-types.js';
+import {
+  StudentLabelsCell,
+  StudentLabelsHeader,
+  applyStudentLabelsFilter,
+} from '../../../../components/StudentLabels.js';
+import type { StaffAssessment, StaffStudentLabel } from '../../../../lib/client/safe-db-types.js';
 import { getStudentEnrollmentUrl } from '../../../../lib/client/url.js';
 import type { AssessmentQuestion, InstanceQuestionGroup } from '../../../../lib/db-types.js';
 import { formatPoints } from '../../../../lib/format.js';
@@ -45,6 +50,7 @@ interface CreateColumnsParams {
   csrfToken: string;
   assessment: StaffAssessment;
   courseInstanceId: string;
+  studentLabels: StaffStudentLabel[];
   onEditPointsSuccess: () => void;
   onEditPointsConflict: (conflictDetailsUrl: string) => void;
   scrollRef: React.RefObject<HTMLDivElement | null> | null;
@@ -61,10 +67,12 @@ export function createColumns({
   urlPrefix,
   csrfToken,
   courseInstanceId,
+  studentLabels,
   onEditPointsSuccess,
   onEditPointsConflict,
   scrollRef,
 }: CreateColumnsParams) {
+  const studentLabelsById = new Map(studentLabels.map((label) => [label.id, label]));
   const renderPointsCell = (
     row: InstanceQuestionRow,
     field: 'manual_points' | 'auto_points' | 'points',
@@ -218,6 +226,23 @@ export function createColumns({
         return uid;
       },
     }),
+
+    ...(!assessment.team_work
+      ? [
+          columnHelper.accessor('student_label_ids', {
+            id: 'student_labels',
+            header: StudentLabelsHeader,
+            meta: { label: 'Labels' },
+            cell: (info) => (
+              <StudentLabelsCell labelIds={info.getValue()} studentLabelsById={studentLabelsById} />
+            ),
+            enableSorting: false,
+            enableGlobalFilter: false,
+            filterFn: (row, _columnId, filter: MultiSelectFilterValue) =>
+              applyStudentLabelsFilter(row.original.student_label_ids, filter),
+          }),
+        ]
+      : []),
 
     columnHelper.accessor((row) => row.instance_question.requires_manual_grading, {
       id: 'requires_manual_grading',
