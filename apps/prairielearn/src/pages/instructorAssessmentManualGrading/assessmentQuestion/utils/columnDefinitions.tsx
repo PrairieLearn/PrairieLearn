@@ -118,7 +118,11 @@ export function createColumns({
               Instance {info.getValue() + 1}
             </a>
             {row.open_issue_count ? (
-              <Badge bg="danger" pill>
+              <Badge
+                bg="danger"
+                title={`${row.open_issue_count} open ${row.open_issue_count > 1 ? 'issues' : 'issue'}`}
+                pill
+              >
                 {row.open_issue_count}
                 <span className="visually-hidden">
                   {' '}
