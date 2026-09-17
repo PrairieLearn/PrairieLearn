@@ -350,11 +350,13 @@ const testEditData: EditData[] = [
       end_date: '',
       self_enrollment_enabled: true,
       self_enrollment_use_enrollment_code: false,
+      self_enrollment_restrict_to_institution: false,
       course_instance_permission: 'Student Data Editor',
     },
     isJSON: true,
     info: 'courseInstances/Fa18_copy1/infoCourseInstance.json',
-    validateInfo: async () => {
+    validateInfo: async (infoJson) => {
+      assert.deepEqual(infoJson.selfEnrollment, { restrictToInstitution: false });
       const contents = await fs.readFile(
         path.join(
           courseRepo.courseDevDir,
