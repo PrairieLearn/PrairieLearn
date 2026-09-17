@@ -9,7 +9,11 @@ import {
   numericColumnFilterFn,
 } from '@prairielearn/ui';
 
-import { StudentLabelBadge } from '../../../../components/StudentLabelBadge.js';
+import {
+  StudentLabelsCell,
+  StudentLabelsHeader,
+  applyStudentLabelsFilter,
+} from '../../../../components/StudentLabels.js';
 import type { StaffAssessment, StaffStudentLabel } from '../../../../lib/client/safe-db-types.js';
 import { getStudentEnrollmentUrl } from '../../../../lib/client/url.js';
 import type { AssessmentQuestion, InstanceQuestionGroup } from '../../../../lib/db-types.js';
@@ -229,35 +233,15 @@ export function createColumns({
       ? [
           columnHelper.accessor('student_label_ids', {
             id: 'student_labels',
-            header: () => (
-              <span className="d-inline-flex align-items-center gap-1">
-                <span>Labels</span>
-                <i className="bi bi-people" aria-hidden="true" />
-              </span>
-            ),
+            header: StudentLabelsHeader,
             meta: { label: 'Labels' },
-            cell: (info) => {
-              const labelIds = info.getValue();
-              if (labelIds.length === 0) return '—';
-              const labels = labelIds
-                .map((id) => studentLabelsById.get(id))
-                .filter((label): label is StaffStudentLabel => label != null);
-              return (
-                <div className="d-flex flex-wrap gap-1">
-                  {labels.map((label) => (
-                    <StudentLabelBadge key={label.id} label={label} />
-                  ))}
-                </div>
-              );
-            },
+            cell: (info) => (
+              <StudentLabelsCell labelIds={info.getValue()} studentLabelsById={studentLabelsById} />
+            ),
             enableSorting: false,
             enableGlobalFilter: false,
-            filterFn: (row, _columnId, filter: MultiSelectFilterValue) => {
-              const labelIds = new Set(row.original.student_label_ids);
-              return applyMultiSelectFilter(filter, (values) =>
-                values.some((id) => labelIds.has(id)),
-              );
-            },
+            filterFn: (row, _columnId, filter: MultiSelectFilterValue) =>
+              applyStudentLabelsFilter(row.original.student_label_ids, filter),
           }),
         ]
       : []),

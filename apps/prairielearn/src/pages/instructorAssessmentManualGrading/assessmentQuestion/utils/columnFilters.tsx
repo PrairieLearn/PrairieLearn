@@ -6,6 +6,7 @@ import {
   type TanstackTableHeader,
 } from '@prairielearn/ui';
 
+import { StudentLabelsFilter } from '../../../../components/StudentLabels.js';
 import type { StaffStudentLabel } from '../../../../lib/client/safe-db-types.js';
 import {
   GRADING_STATUS_VALUES,
@@ -25,20 +26,9 @@ export function createColumnFilters({
   allSubmissionGroups: string[];
   allAiAgreementItems: { number: number; description: string }[];
 }) {
-  const studentLabelsById = new Map(studentLabels.map((label) => [label.id, label]));
   return {
     student_labels: ({ header }) => (
-      <MultiSelectColumnFilter
-        column={header.column}
-        allColumnValues={studentLabels.map((label) => label.id)}
-        getSearchText={(value) => studentLabelsById.get(value)?.name ?? value}
-        renderValueLabel={({ value }) => {
-          const label = studentLabelsById.get(value);
-          if (!label) return <span>{value}</span>;
-          return <span>{label.name}</span>;
-        }}
-        showSearch
-      />
+      <StudentLabelsFilter column={header.column} studentLabels={studentLabels} />
     ),
     requires_manual_grading: ({ header }) => (
       <MultiSelectColumnFilter
