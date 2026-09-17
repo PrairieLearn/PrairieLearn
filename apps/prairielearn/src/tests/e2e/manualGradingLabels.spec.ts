@@ -86,6 +86,17 @@ test('manual grading label visibility, filtering, and assignment', async ({
   await page.getByRole('button', { name: 'View', exact: true }).click();
   await page.getByRole('checkbox', { name: 'Show student info', exact: true }).check();
   await expect(labelHeader).toBeVisible();
+
+  const studentRow = (student: (typeof students)[number]) =>
+    table.getByRole('row').filter({ hasText: student.uid });
+  await expect(studentRow(students[0]).getByText(section.name, { exact: true })).toBeVisible();
+  await expect(studentRow(students[0]).getByText(extraTime.name, { exact: true })).toHaveCount(0);
+  await expect(studentRow(students[1]).getByText(extraTime.name, { exact: true })).toBeVisible();
+  await expect(studentRow(students[1]).getByText(section.name, { exact: true })).toHaveCount(0);
+  await expect(studentRow(students[2]).getByText(section.name, { exact: true })).toBeVisible();
+  await expect(studentRow(students[2]).getByText(extraTime.name, { exact: true })).toBeVisible();
+  await expect(studentRow(students[3]).getByText('—', { exact: true })).toHaveCount(1);
+
   await page.getByRole('checkbox', { name: 'Show student info', exact: true }).uncheck();
   await expect(labelHeader).toHaveCount(0);
   await page.getByRole('checkbox', { name: 'Show student info', exact: true }).check();
