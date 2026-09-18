@@ -72,6 +72,10 @@ const QuestionBlockSizeOverrideSchema = z
 
 const LayoutQuerySchema = z.strictObject({
   paper_size: z.enum(PAPER_SIZES),
+  form_label: z
+    .string()
+    .regex(/^[A-Z]$/)
+    .optional(),
   identity_field: IdentityFieldsSchema,
   block_size: z.union([QuestionBlockSizeSchema, QuestionBlockSizeSchema.array()]).optional(),
   question_block_size: z
@@ -89,6 +93,7 @@ const DocumentQuerySchema = LayoutQuerySchema.extend({
 /** The layout choices shared by every printable output of one assessment instance. */
 interface PrintLayout {
   paperSize: PaperSize;
+  formLabel: string | undefined;
   identityFields: string[];
   blockSize: QuestionBlockSize | undefined;
   questionBlockSizeOverrides: ReadonlyMap<string, QuestionBlockSize>;
@@ -138,6 +143,7 @@ function parsePrintLayout(query: z.infer<typeof LayoutQuerySchema>): PrintLayout
 
   return {
     paperSize: query.paper_size,
+    formLabel: query.form_label,
     identityFields: query.identity_field,
     blockSize: query.block_size,
     questionBlockSizeOverrides,
@@ -165,6 +171,7 @@ function assertPrintableAssessment(assessment: Assessment): void {
 
 function buildPrintSearchParams(layout: PrintLayout, document: PrintDocument): URLSearchParams {
   const params = new URLSearchParams({ paper_size: layout.paperSize });
+  if (layout.formLabel) params.set('form_label', layout.formLabel);
   for (const identityField of layout.identityFields) params.append('identity_field', identityField);
   if (layout.blockSize) params.set('block_size', layout.blockSize);
   for (const [questionNumber, blockSize] of layout.questionBlockSizeOverrides) {
@@ -256,6 +263,7 @@ function createDocumentHandler(format: PrintFormat) {
             buildPrintableCover({
               resLocals: res.locals,
               document,
+              formLabel: layout.formLabel,
               identityFields: layout.identityFields,
               questionCount: Number(pageDataset.printQuestionCount),
               maxPoints: Number(pageDataset.printMaxPoints),
@@ -265,6 +273,7 @@ function createDocumentHandler(format: PrintFormat) {
           footerLabel: getPrintFooterLabel({
             document,
             formId: res.locals.assessment_instance.id,
+            formLabel: layout.formLabel,
           }),
         });
       }
@@ -358,8 +367,10 @@ router.get(
         resLocals: res.locals,
         paperSize: layout.paperSize,
         document,
+        formLabel: layout.formLabel,
         identityFields: layout.identityFields,
         questionHtmls: printingResult.questionHtmls,
+        omittedQuestionCount: describeOmittedQuestions(printingResult.questionResults).length,
         extraHeadersHtml: printingResult.extraHeadersHtml,
         hasLegacyQuestions: printingResult.hasLegacyQuestions,
         maxPoints: printingResult.maxPoints,
