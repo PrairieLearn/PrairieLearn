@@ -359,11 +359,18 @@ describe('test file editor', { timeout: 20_000 }, function () {
         const res = await uploadFiles({
           url: assessmentUrl + '/file_view',
           filePath: infoAssessmentPath,
-          files: [{ filename: 'replacement.json', contents: Buffer.from('{') }],
+          files: [
+            {
+              filename: 'replacement.json',
+              contents: Buffer.from('{\n  "title": "Homework 1",\n}\n'),
+            },
+          ],
         });
 
         assert.equal(res.status, 400);
-        assert.include(await res.text(), 'must contain a valid JSON object');
+        const responseText = await res.text();
+        assert.include(responseText, 'must contain a valid JSON object');
+        assert.include(responseText, 'Trailing comma in object at 3:1');
         assert.isTrue((await fs.readFile(absolutePath)).equals(originalContents));
       });
 

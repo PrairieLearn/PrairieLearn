@@ -6,6 +6,7 @@ import { Temporal } from '@js-temporal/polyfill';
 import debugfn from 'debug';
 import fs from 'fs-extra';
 import { isBinaryFileSync } from 'isbinaryfile';
+import jju from 'jju';
 import { z } from 'zod';
 
 import { AugmentedError, HttpStatusError } from '@prairielearn/error';
@@ -2467,9 +2468,16 @@ export class FileUploadEditor extends Editor {
       }
 
       if (parseJsonObject(textContents) == null) {
+        let parseError = '';
+        try {
+          jju.parse(textContents, { mode: 'json' });
+        } catch (err) {
+          const message = err instanceof Error ? err.message : String(err);
+          parseError = ` Error parsing JSON: ${message}`;
+        }
         throw new HttpStatusError(
           400,
-          `Cannot upload ${relativePath}: PrairieLearn metadata files must contain a valid JSON object.`,
+          `Cannot upload ${relativePath}: PrairieLearn metadata files must contain a valid JSON object.${parseError}`,
         );
       }
     }
