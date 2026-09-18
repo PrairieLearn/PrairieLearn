@@ -45,6 +45,8 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
       this.previousCropRotateState = null;
       this.selectedContainerName = 'capture-preview';
       this.handwritingEnhanced = false;
+      this.manualUploadId = 0;
+      this.manualUploadPreview = null;
 
       /** Resizing canvas and context used for image scaling */
       this.resizingCanvas = null;
@@ -150,21 +152,57 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
         });
       }
 
-      manualUploadInput.addEventListener('change', (event) => {
+      manualUploadInput.addEventListener('change', async (event) => {
         const target = event.target;
         const file = target.files && target.files[0];
         if (!file) return;
+        target.value = '';
 
-        const reader = new FileReader();
+        this.manualUploadId++;
+        const uploadId = this.manualUploadId;
+        this.setManualUploadMessage('');
+        const uploadedImageContainer = this.imageCaptureDiv.querySelector(
+          '.js-uploaded-image-container',
+        );
+        // Retain the preview nodes so a failed upload can restore the previous image.
+        this.manualUploadPreview ??= [...uploadedImageContainer.childNodes];
+        this.setLoadingCaptureState(uploadedImageContainer);
 
-        reader.onload = () => {
-          this.loadCapturePreviewFromDataUrl({
-            dataUrl: reader.result,
+        try {
+          let blob = file;
+          if (/^image\/hei[cf](?:-sequence)?$/i.test(file.type) || /\.hei[cf]$/i.test(file.name)) {
+            // Load only for HEIC uploads; subsequent imports reuse the cached module.
+            const { heicTo } = await import('heic-to/csp');
+            blob = await heicTo({ blob: file, type: 'image/jpeg', quality: 1 });
+          }
+
+          const dataUrl = await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = () => reject(reader.error);
+            reader.readAsDataURL(blob);
           });
-        };
 
-        reader.readAsDataURL(file);
+          // A newer upload, capture, or deletion takes precedence over this upload.
+          if (uploadId !== this.manualUploadId) return;
+          await this.loadCapturePreviewFromDataUrl({ dataUrl, uploadId });
+        } catch {
+          if (uploadId !== this.manualUploadId) return;
+          uploadedImageContainer.replaceChildren(...this.manualUploadPreview);
+          this.manualUploadPreview = null;
+          this.setManualUploadMessage(
+            'Could not load this image. Try uploading a JPEG or PNG.',
+            true,
+          );
+        }
       });
+    }
+
+    setManualUploadMessage(message, isError = false) {
+      const status = this.imageCaptureDiv.querySelector('.js-manual-upload-message');
+      status.textContent = message;
+      status.classList.toggle('d-none', !message);
+      status.classList.toggle('text-danger', isError);
     }
 
     createLocalCameraCaptureListeners() {
@@ -626,18 +664,10 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
       }
     }
 
-    async setHiddenCaptureInputValue(dataUrl) {
+    async setHiddenCaptureInputValue(dataUrl, uploadId = this.manualUploadId) {
       const hiddenCaptureInput = this.imageCaptureDiv.querySelector('.js-hidden-capture-input');
 
-      this.ensureElementsExist({
-        hiddenCaptureInput,
-      });
-
-      if (dataUrl && !hiddenCaptureInput.value) {
-        this.updateCaptureButtons(true);
-      } else if (!dataUrl) {
-        this.updateCaptureButtons(false);
-      }
+      this.ensureElementsExist({ hiddenCaptureInput });
 
       if (dataUrl) {
         // Perform scaling to ensure that captured images are not too large.
@@ -645,40 +675,38 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
         // If the image width and height are both less than 2000px, no scaling is applied.
         const image = new Image();
         image.src = dataUrl;
-
-        try {
-          await image.decode();
-        } catch (error) {
-          throw new Error('Failed to decode image', { cause: error });
-        }
+        await image.decode();
+        if (uploadId !== this.manualUploadId) return;
 
         const imageScaleFactor = MAX_IMAGE_SIDE_LENGTH / Math.max(image.width, image.height);
-        if (imageScaleFactor >= 1) {
-          // If we don't need to shrink the image, just use it directly.
-          hiddenCaptureInput.value = dataUrl;
-          return;
-        }
-        const targetWidth = Math.round(image.width * imageScaleFactor);
-        const targetHeight = Math.round(image.height * imageScaleFactor);
+        if (imageScaleFactor < 1) {
+          const targetWidth = Math.round(image.width * imageScaleFactor);
+          const targetHeight = Math.round(image.height * imageScaleFactor);
 
-        if (!this.resizingCanvas) {
-          this.resizingCanvas = document.createElement('canvas');
-        }
-        if (!this.resizingCtx) {
-          this.resizingCtx = this.resizingCanvas.getContext('2d');
-          if (!this.resizingCtx) {
-            throw new Error('Failed to get canvas context');
+          if (!this.resizingCanvas) {
+            this.resizingCanvas = document.createElement('canvas');
           }
+          if (!this.resizingCtx) {
+            this.resizingCtx = this.resizingCanvas.getContext('2d');
+            if (!this.resizingCtx) {
+              throw new Error('Failed to get canvas context');
+            }
+          }
+
+          this.resizingCanvas.width = targetWidth;
+          this.resizingCanvas.height = targetHeight;
+          this.resizingCtx.drawImage(image, 0, 0, targetWidth, targetHeight);
+          dataUrl = this.resizingCanvas.toDataURL('image/jpeg');
         }
-
-        this.resizingCanvas.width = targetWidth;
-        this.resizingCanvas.height = targetHeight;
-        this.resizingCtx.drawImage(image, 0, 0, targetWidth, targetHeight);
-
-        hiddenCaptureInput.value = this.resizingCanvas.toDataURL('image/jpeg');
-      } else {
-        hiddenCaptureInput.value = '';
       }
+
+      if (uploadId !== this.manualUploadId) return;
+      if (dataUrl && !hiddenCaptureInput.value) {
+        this.updateCaptureButtons(true);
+      } else if (!dataUrl) {
+        this.updateCaptureButtons(false);
+      }
+      hiddenCaptureInput.value = dataUrl || '';
     }
 
     /**
@@ -724,6 +752,10 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
      * image that was ready for submission.
      */
     async setHiddenCaptureInputToCapturePreview() {
+      // A pending upload temporarily replaces the preview with a loading indicator.
+      // Keep the last committed answer when cancelling the webcam in that state.
+      if (this.manualUploadPreview !== null) return;
+
       const capturePreviewImg = this.imageCaptureDiv.querySelector(
         '.js-uploaded-image-container .pl-image-capture-preview',
       );
@@ -731,7 +763,25 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
       await this.setHiddenCaptureInputValue(capturePreviewImg ? capturePreviewImg.src : '');
     }
 
-    loadCapturePreviewFromDataUrl({ dataUrl, originalCapture = true }) {
+    async loadCapturePreviewFromDataUrl({ dataUrl, originalCapture = true, uploadId }) {
+      if (uploadId === undefined) {
+        this.manualUploadId++;
+        uploadId = this.manualUploadId;
+      }
+      if (uploadId !== this.manualUploadId) return;
+      if (this.editable) {
+        if (dataUrl) {
+          await this.setHiddenCaptureInputValue(dataUrl, uploadId);
+        } else {
+          // Keep deletion synchronous so the caller can immediately show the empty placeholder.
+          this.setHiddenCaptureInputValue(dataUrl, uploadId);
+        }
+      }
+      if (uploadId !== this.manualUploadId) return;
+      this.manualUploadPreview = null;
+      if (this.editable && this.manual_upload_enabled) {
+        this.setManualUploadMessage('');
+      }
       const uploadedImageContainer = this.imageCaptureDiv.querySelector(
         '.js-uploaded-image-container',
       );
@@ -884,8 +934,6 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
       }
 
       if (this.editable) {
-        this.setHiddenCaptureInputValue(dataUrl);
-
         if (originalCapture) {
           if (dataUrl) {
             this.originalImageCaptureDataUrl = dataUrl;
