@@ -95,8 +95,12 @@ function PrintPreparation({
     register,
     handleSubmit,
     reset,
+    watch,
+    setValue,
     formState: { errors, isDirty, isSubmitting },
   } = useForm<PrintSettings>({ defaultValues: DEFAULT_PRINT_SETTINGS });
+  const excludedQuestions = watch('excludedQuestions');
+  const excludedQuestionNumbers = new Set(excludedQuestions);
   const layout = printLayoutSearch(settings);
   const paperBase = instanceId
     ? `${getAssessmentInstanceUrl({ courseInstanceId, assessmentInstanceId: instanceId })}/paper`
@@ -153,9 +157,16 @@ function PrintPreparation({
       .filter((warning) => warning.question_number)
       .map((warning) => [warning.question_number, warning.message]),
   );
+  const includedQuestions = questions.data?.filter(
+    (question) => !excludedQuestionNumbers.has(question.number),
+  );
+  const includedOmittedCount =
+    includedQuestions?.filter((question) => omitted.has(question.number)).length ?? 0;
   const reviewCount =
-    questions.data?.filter((question) => question.concerns.length || omitted.has(question.number))
-      .length ?? 0;
+    includedQuestions?.filter(
+      (question) => question.concerns.length || omitted.has(question.number),
+    ).length ?? 0;
+  const noQuestionsSelected = questions.isSuccess && includedQuestions?.length === 0;
   const canDownload =
     validInstance &&
     renderingAvailable &&
@@ -219,12 +230,12 @@ function PrintPreparation({
       )}
       {reviewCount > 0 && (
         <Alert
-          variant={omitted.size > 0 ? 'danger' : 'warning'}
+          variant={includedOmittedCount > 0 ? 'danger' : 'warning'}
           className="d-flex flex-wrap align-items-center justify-content-between gap-2"
         >
           <span>
-            {omitted.size > 0
-              ? `${omitted.size} questions could not be included. Fix the rendering errors before downloading.`
+            {includedOmittedCount > 0
+              ? `${includedOmittedCount} questions could not be included. Fix or deselect them before downloading.`
               : `${reviewCount} questions may need adjustments for paper.`}
           </span>
           <Button
@@ -234,7 +245,7 @@ function PrintPreparation({
             onClick={() =>
               window.document
                 .getElementById('print-preparation-questions')
-                ?.scrollIntoView({ behavior: 'smooth' })
+                ?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
             }
           >
             Review questions
@@ -242,173 +253,357 @@ function PrintPreparation({
         </Alert>
       )}
       <form
+        className="print-preparation-form"
         onSubmit={(event) => {
           void handleSubmit(applySettings)(event).catch(() => {});
         }}
       >
         <div className="print-preparation-columns">
           <div className="print-preparation-controls">
-            <Card className="mb-3">
-              <Card.Body>
-                <h2 className="h6 mb-3">Exam form</h2>
-                {instances.data.length > 0 ? (
-                  <Form.Group controlId="print-instance">
-                    <Form.Label>Your saved forms</Form.Label>
-                    <Form.Select
-                      value={instanceId ?? ''}
-                      onChange={(event) => {
-                        void setSelectedInstance(event.target.value);
-                        const next = { ...settings, questionSizes: {} };
-                        setSettings(next);
-                        reset(next);
-                        setSelectedQuestion(null);
+            <div
+              className="print-preparation-controls-scroll"
+              role="region"
+              aria-label="Print settings and questions"
+            >
+              <Card className="mb-3">
+                <Card.Body>
+                  <h2 className="h6 mb-3">Exam form</h2>
+                  {instances.data.length > 0 ? (
+                    <Form.Group controlId="print-instance">
+                      <Form.Label>Your saved forms</Form.Label>
+                      <Form.Select
+                        value={instanceId ?? ''}
+                        onChange={(event) => {
+                          void setSelectedInstance(event.target.value);
+                          const next = { ...settings, questionSizes: {}, excludedQuestions: [] };
+                          setSettings(next);
+                          reset(next);
+                          setSelectedQuestion(null);
+                        }}
+                      >
+                        {!validInstance && <option value={instanceId ?? ''}>Choose a form</option>}
+                        {instances.data.map((instance) => (
+                          <option key={instance.id} value={instance.id}>
+                            Form {instance.id} ·{' '}
+                            {instance.date
+                              ? formatDateYMDHM(instance.date, timezone)
+                              : `Version ${instance.number}`}
+                          </option>
+                        ))}
+                      </Form.Select>
+                      <Form.Text>
+                        Preview and downloads use the same questions and answer choices.
+                      </Form.Text>
+                    </Form.Group>
+                  ) : (
+                    <p className="small text-muted mb-0">
+                      Create a form to choose the question variants for your paper exam. Changing
+                      the layout will keep those variants.
+                    </p>
+                  )}
+                  {multipleInstance && instances.data.length > 0 && !groupWork && (
+                    <Button
+                      type="button"
+                      variant="link"
+                      className="px-0 pb-0 small"
+                      disabled={create.isPending}
+                      onClick={() => {
+                        create.mutate(undefined, {
+                          onSuccess: async ({ assessmentInstanceId }) => {
+                            await instances.refetch();
+                            await setSelectedInstance(assessmentInstanceId);
+                            const next = { ...settings, questionSizes: {}, excludedQuestions: [] };
+                            setSettings(next);
+                            reset(next);
+                            setSelectedQuestion(null);
+                          },
+                        });
                       }}
                     >
-                      {!validInstance && <option value={instanceId ?? ''}>Choose a form</option>}
-                      {instances.data.map((instance) => (
-                        <option key={instance.id} value={instance.id}>
-                          Form {instance.id} ·{' '}
-                          {instance.date
-                            ? formatDateYMDHM(instance.date, timezone)
-                            : `Version ${instance.number}`}
+                      Create another form
+                    </Button>
+                  )}
+                </Card.Body>
+              </Card>
+              <Card className="mb-3">
+                <Card.Body>
+                  <h2 className="h6 mb-3">Paper and layout</h2>
+                  <Form.Group controlId="print-paper-size" className="mb-3">
+                    <Form.Label>Paper size</Form.Label>
+                    <Form.Select
+                      defaultValue={DEFAULT_PRINT_SETTINGS.paperSize}
+                      {...register('paperSize')}
+                    >
+                      <option value="Letter">US Letter · 8.5 × 11 in</option>
+                      <option value="A4">A4 · 210 × 297 mm</option>
+                    </Form.Select>
+                  </Form.Group>
+                  <Form.Group controlId="print-block-size">
+                    <Form.Label>Space per question</Form.Label>
+                    <Form.Select
+                      defaultValue={DEFAULT_PRINT_SETTINGS.blockSize}
+                      {...register('blockSize')}
+                    >
+                      {Object.entries(BLOCK_SIZE_LABELS).map(([value, label]) => (
+                        <option key={value} value={value}>
+                          {label}
                         </option>
                       ))}
                     </Form.Select>
                     <Form.Text>
-                      Preview and downloads use the same questions and answer choices.
+                      Reserve room for written work. Individual questions can override this below.
                     </Form.Text>
                   </Form.Group>
-                ) : (
-                  <p className="small text-muted mb-0">
-                    Create a form to choose the question variants for your paper exam. Changing the
-                    layout will keep those variants.
-                  </p>
-                )}
-                {multipleInstance && instances.data.length > 0 && !groupWork && (
-                  <Button
-                    type="button"
-                    variant="link"
-                    className="px-0 pb-0 small"
-                    disabled={create.isPending}
-                    onClick={() => {
-                      create.mutate(undefined, {
-                        onSuccess: async ({ assessmentInstanceId }) => {
-                          await instances.refetch();
-                          await setSelectedInstance(assessmentInstanceId);
-                          const next = { ...settings, questionSizes: {} };
-                          setSettings(next);
-                          reset(next);
+                </Card.Body>
+              </Card>
+              <Card className="mb-3">
+                <Card.Body>
+                  <h2 className="h6 mb-3">Cover page</h2>
+                  <Form.Group controlId="print-identity-fields">
+                    <Form.Label>Additional student information</Form.Label>
+                    <Form.Control
+                      as="textarea"
+                      rows={2}
+                      defaultValue={DEFAULT_PRINT_SETTINGS.identityFields}
+                      aria-describedby="print-identity-help"
+                      aria-invalid={!!errors.identityFields}
+                      aria-errormessage={errors.identityFields ? 'print-identity-error' : undefined}
+                      isInvalid={!!errors.identityFields}
+                      {...register('identityFields', {
+                        validate: (value) => {
+                          const fields = printIdentityFields(value);
+                          if (fields.length > 6) return 'Use up to six additional fields.';
+                          if (fields.some((field) => field.length > 40)) {
+                            return 'Keep each field to 40 characters or fewer.';
+                          }
+                          if (
+                            fields.some((field) => ['name', 'date'].includes(field.toLowerCase()))
+                          ) {
+                            return 'Name and Date are already included.';
+                          }
+                          if (
+                            new Set(fields.map((field) => field.toLowerCase())).size !==
+                            fields.length
+                          ) {
+                            return 'Use each field only once.';
+                          }
+                          return true;
                         },
-                      });
-                    }}
-                  >
-                    Create another form
-                  </Button>
-                )}
-              </Card.Body>
-            </Card>
-            <Card className="mb-3">
-              <Card.Body>
-                <h2 className="h6 mb-3">Paper and layout</h2>
-                <Form.Group controlId="print-paper-size" className="mb-3">
-                  <Form.Label>Paper size</Form.Label>
-                  <Form.Select
-                    defaultValue={DEFAULT_PRINT_SETTINGS.paperSize}
-                    {...register('paperSize')}
-                  >
-                    <option value="Letter">US Letter · 8.5 × 11 in</option>
-                    <option value="A4">A4 · 210 × 297 mm</option>
-                  </Form.Select>
-                </Form.Group>
-                <Form.Group controlId="print-block-size">
-                  <Form.Label>Space per question</Form.Label>
-                  <Form.Select
-                    defaultValue={DEFAULT_PRINT_SETTINGS.blockSize}
-                    {...register('blockSize')}
-                  >
-                    {Object.entries(BLOCK_SIZE_LABELS).map(([value, label]) => (
-                      <option key={value} value={value}>
-                        {label}
-                      </option>
-                    ))}
-                  </Form.Select>
-                  <Form.Text>
-                    Reserve room for written work. Individual questions can override this below.
-                  </Form.Text>
-                </Form.Group>
-              </Card.Body>
-            </Card>
-            <Card className="mb-3">
-              <Card.Body>
-                <h2 className="h6 mb-3">Cover page</h2>
-                <Form.Group controlId="print-identity-fields">
-                  <Form.Label>Additional student information</Form.Label>
-                  <Form.Control
-                    as="textarea"
-                    rows={2}
-                    defaultValue={DEFAULT_PRINT_SETTINGS.identityFields}
-                    aria-describedby="print-identity-help"
-                    aria-invalid={!!errors.identityFields}
-                    aria-errormessage={errors.identityFields ? 'print-identity-error' : undefined}
-                    isInvalid={!!errors.identityFields}
-                    {...register('identityFields', {
-                      validate: (value) => {
-                        const fields = printIdentityFields(value);
-                        if (fields.length > 6) return 'Use up to six additional fields.';
-                        if (fields.some((field) => field.length > 40)) {
-                          return 'Keep each field to 40 characters or fewer.';
-                        }
-                        if (
-                          fields.some((field) => ['name', 'date'].includes(field.toLowerCase()))
-                        ) {
-                          return 'Name and Date are already included.';
-                        }
-                        if (
-                          new Set(fields.map((field) => field.toLowerCase())).size !== fields.length
-                        ) {
-                          return 'Use each field only once.';
-                        }
-                        return true;
-                      },
-                    })}
+                      })}
+                    />
+                    <Form.Control.Feedback type="invalid" id="print-identity-error">
+                      {errors.identityFields?.message}
+                    </Form.Control.Feedback>
+                    <Form.Text id="print-identity-help">
+                      One label per line. Name and Date are always included. Instructions come from
+                      the assessment.
+                    </Form.Text>
+                  </Form.Group>
+                </Card.Body>
+              </Card>
+              {validInstance && (
+                <Card id="print-preparation-questions">
+                  <Card.Header className="bg-white d-flex flex-wrap align-items-center justify-content-between gap-3 py-3">
+                    <div>
+                      <h2 className="h6 mb-1">
+                        Questions in this form{' '}
+                        {questions.data && (
+                          <span className="text-muted">({questions.data.length})</span>
+                        )}
+                      </h2>
+                      {includedQuestions && (
+                        <p className="small fw-semibold mb-2">
+                          {includedQuestions.length} of {questions.data?.length} selected ·{' '}
+                          {includedQuestions.reduce(
+                            (total, question) => total + question.points,
+                            0,
+                          )}{' '}
+                          points
+                        </p>
+                      )}
+                      <p className="small text-muted mb-0">
+                        Review flags are suggestions based on question content. Check the preview
+                        for layout and complete instructions.
+                      </p>
+                    </div>
+                    {reviewCount > 0 && (
+                      <Form.Check
+                        type="switch"
+                        id="print-review-only"
+                        label={`Show only items to review (${reviewCount})`}
+                        checked={reviewOnly}
+                        onChange={(event) => setReviewOnly(event.target.checked)}
+                      />
+                    )}
+                  </Card.Header>
+                  <AppErrorAlert
+                    error={getAppError<PrintableExamsError['questions']>(questions.error)}
+                    render={{ UNKNOWN: ({ message }) => message }}
                   />
-                  <Form.Control.Feedback type="invalid" id="print-identity-error">
-                    {errors.identityFields?.message}
-                  </Form.Control.Feedback>
-                  <Form.Text id="print-identity-help">
-                    One label per line. Name and Date are always included. Instructions come from
-                    the assessment.
-                  </Form.Text>
-                </Form.Group>
-              </Card.Body>
-            </Card>
-            <Button
-              type="submit"
-              className="w-100"
-              disabled={
-                isSubmitting ||
-                create.isPending ||
-                (groupWork && !instanceId) ||
-                (!!selectedInstance && !validInstance)
-              }
-            >
-              {isSubmitting ? (
-                <>
-                  <Spinner size="sm" className="me-2" />
-                  Preparing…
-                </>
-              ) : (
-                <>
-                  <i className="bi bi-arrow-clockwise me-2" aria-hidden="true" />
-                  {instanceId ? 'Update preview' : 'Create preview'}
-                </>
+                  {questions.isPending && (
+                    <div className="p-3" role="status">
+                      <Spinner size="sm" className="me-2" />
+                      Checking question content…
+                    </div>
+                  )}
+                  {includedOmittedCount > 0 && (
+                    <Alert variant="danger" className="m-3">
+                      {includedOmittedCount}{' '}
+                      {includedOmittedCount === 1 ? 'question was' : 'questions were'} omitted
+                      because of rendering errors. Fix or deselect these questions before using the
+                      exam.
+                    </Alert>
+                  )}
+                  {questions.data
+                    ?.filter(
+                      (question) =>
+                        !reviewOnly ||
+                        reviewCount === 0 ||
+                        (!excludedQuestionNumbers.has(question.number) &&
+                          (question.concerns.length > 0 || omitted.has(question.number))),
+                    )
+                    .map((question) => {
+                      const excluded = excludedQuestionNumbers.has(question.number);
+                      const error = excluded ? undefined : omitted.get(question.number);
+                      return (
+                        <div
+                          key={question.number}
+                          role="group"
+                          aria-label={`Question ${question.number}: ${question.title}`}
+                          className={clsx('print-preparation-question', {
+                            'bg-danger-subtle': error,
+                            'bg-body-tertiary': excluded,
+                            'print-preparation-question-selected':
+                              selectedQuestion?.number === question.number,
+                          })}
+                        >
+                          <Form.Check
+                            type="checkbox"
+                            id={`print-question-include-${question.number}`}
+                            className="print-preparation-question-include"
+                            aria-label={`Include question ${question.number}`}
+                            checked={!excluded}
+                            onChange={(event) => {
+                              setValue(
+                                'excludedQuestions',
+                                event.target.checked
+                                  ? excludedQuestions.filter((number) => number !== question.number)
+                                  : [...excludedQuestions, question.number].sort(
+                                      (a, b) => Number(a) - Number(b),
+                                    ),
+                                { shouldDirty: true },
+                              );
+                              if (selectedQuestion?.number === question.number) {
+                                setSelectedQuestion(null);
+                              }
+                            }}
+                          />
+                          <span className="print-preparation-question-number">
+                            {question.number}
+                          </span>
+                          <div className="print-preparation-question-title">
+                            <Button
+                              type="button"
+                              variant="link"
+                              className="p-0 text-start fw-semibold text-decoration-none"
+                              disabled={!!error || excluded}
+                              onClick={() => {
+                                setSelectedQuestion({ number: question.number });
+                                window.document
+                                  .querySelector('.print-preparation-preview-card')
+                                  ?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                              }}
+                            >
+                              {question.title}
+                            </Button>
+                            <div className="text-muted small mt-1">{question.points} points</div>
+                          </div>
+                          {(error || question.concerns.length > 0) && (
+                            <div className="print-preparation-question-review small">
+                              {error ? (
+                                <>
+                                  <Badge bg="danger" className="mb-1">
+                                    Omitted
+                                  </Badge>
+                                  <div>{error}</div>
+                                </>
+                              ) : (
+                                <>
+                                  <Badge bg="warning" text="dark" className="mb-1">
+                                    Review for paper
+                                  </Badge>
+                                  <div>{question.concerns.join(' ')}</div>
+                                </>
+                              )}
+                            </div>
+                          )}
+                          <Form.Group
+                            controlId={`print-question-space-${question.number}`}
+                            className="print-preparation-question-space"
+                          >
+                            <Form.Label className="small mb-0">Spacing</Form.Label>
+                            <Form.Select
+                              size="sm"
+                              disabled={!!error || excluded}
+                              aria-label={`Spacing for question ${question.number}`}
+                              defaultValue=""
+                              {...register(`questionSizes.${question.number}`)}
+                            >
+                              <option value="">Use overall setting</option>
+                              {Object.entries(BLOCK_SIZE_LABELS).map(([value, label]) => (
+                                <option key={value} value={value}>
+                                  {label}
+                                </option>
+                              ))}
+                            </Form.Select>
+                          </Form.Group>
+                        </div>
+                      );
+                    })}
+                  {questions.data?.length === 0 && (
+                    <p className="p-3 mb-0 text-muted">
+                      There are no questions in this form. Add questions to the assessment before
+                      printing.
+                    </p>
+                  )}
+                </Card>
               )}
-            </Button>
-            <p className="small text-muted mt-2 mb-0">
-              {isDirty
-                ? 'Apply your changes before downloading.'
-                : 'Layout choices apply to the exam and answer key.'}
-            </p>
+            </div>
+            <div className="print-preparation-actions">
+              {noQuestionsSelected && (
+                <p className="small text-danger mb-2" role="alert">
+                  Select at least one question to prepare an exam.
+                </p>
+              )}
+              <Button
+                type="submit"
+                className="w-100"
+                disabled={
+                  isSubmitting ||
+                  create.isPending ||
+                  noQuestionsSelected ||
+                  (groupWork && !instanceId) ||
+                  (!!selectedInstance && !validInstance)
+                }
+              >
+                {isSubmitting ? (
+                  <>
+                    <Spinner size="sm" className="me-2" />
+                    Preparing…
+                  </>
+                ) : (
+                  <>
+                    <i className="bi bi-arrow-clockwise me-2" aria-hidden="true" />
+                    {instanceId ? 'Update preview' : 'Create preview'}
+                  </>
+                )}
+              </Button>
+              <p className="small text-muted mt-2 mb-0">
+                {isDirty
+                  ? 'Apply your changes before downloading.'
+                  : 'Layout choices apply to the exam and answer key.'}
+              </p>
+            </div>
           </div>
           <div className="print-preparation-workspace">
             <Card className="print-preparation-preview-card">
@@ -544,141 +739,6 @@ function PrintPreparation({
             </Card>
           </div>
         </div>
-        {validInstance && (
-          <Card className="mt-4" id="print-preparation-questions">
-            <Card.Header className="bg-white d-flex flex-wrap align-items-center justify-content-between gap-3 py-3">
-              <div>
-                <h2 className="h5 mb-1">
-                  Questions in this form{' '}
-                  {questions.data && <span className="text-muted">({questions.data.length})</span>}
-                </h2>
-                <p className="small text-muted mb-0">
-                  Review flags are suggestions based on question content. Check the preview for
-                  layout and complete instructions.
-                </p>
-              </div>
-              {reviewCount > 0 && (
-                <Form.Check
-                  type="switch"
-                  id="print-review-only"
-                  label={`Show only items to review (${reviewCount})`}
-                  checked={reviewOnly}
-                  onChange={(event) => setReviewOnly(event.target.checked)}
-                />
-              )}
-            </Card.Header>
-            <AppErrorAlert
-              error={getAppError<PrintableExamsError['questions']>(questions.error)}
-              render={{ UNKNOWN: ({ message }) => message }}
-            />
-            {questions.isPending && (
-              <div className="p-3" role="status">
-                <Spinner size="sm" className="me-2" />
-                Checking question content…
-              </div>
-            )}
-            {omitted.size > 0 && (
-              <Alert variant="danger" className="m-3">
-                {omitted.size} {omitted.size === 1 ? 'question was' : 'questions were'} omitted
-                because of rendering errors. Fix these questions before using the exam.
-              </Alert>
-            )}
-            {questions.data
-              ?.filter(
-                (question) =>
-                  !reviewOnly ||
-                  reviewCount === 0 ||
-                  question.concerns.length > 0 ||
-                  omitted.has(question.number),
-              )
-              .map((question) => {
-                const error = omitted.get(question.number);
-                return (
-                  <div
-                    key={question.number}
-                    className={clsx('print-preparation-question', error && 'bg-danger-subtle')}
-                  >
-                    <span className="print-preparation-question-number">{question.number}</span>
-                    <div className="flex-grow-1">
-                      <div className="d-flex flex-wrap align-items-center gap-2 mb-1">
-                        <Button
-                          type="button"
-                          variant="link"
-                          className="p-0 text-start fw-semibold text-decoration-none"
-                          disabled={!!error}
-                          onClick={() => {
-                            setSelectedQuestion({ number: question.number });
-                            window.document
-                              .querySelector('.print-preparation-preview-card')
-                              ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                          }}
-                        >
-                          {question.title}
-                        </Button>
-                        <span className="text-muted small">{question.points} points</span>
-                      </div>
-                      <div className="small">
-                        {error ? (
-                          <>
-                            <Badge bg="danger" className="me-2">
-                              Omitted
-                            </Badge>
-                            {error}
-                          </>
-                        ) : question.concerns.length > 0 ? (
-                          <>
-                            <Badge bg="warning" text="dark" className="me-2">
-                              Review for paper
-                            </Badge>
-                            <span>{question.concerns.join(' ')}</span>
-                          </>
-                        ) : (
-                          <span className="text-muted">
-                            <i className="bi bi-check2 me-1" aria-hidden="true" />
-                            No paper-specific concerns detected
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    <Form.Group
-                      controlId={`print-question-space-${question.number}`}
-                      className="print-preparation-question-space"
-                    >
-                      <Form.Label className="small mb-1">
-                        Question {question.number} space
-                      </Form.Label>
-                      <Form.Select
-                        size="sm"
-                        disabled={!!error}
-                        defaultValue=""
-                        {...register(`questionSizes.${question.number}`)}
-                      >
-                        <option value="">Use overall setting</option>
-                        {Object.entries(BLOCK_SIZE_LABELS).map(([value, label]) => (
-                          <option key={value} value={value}>
-                            {label}
-                          </option>
-                        ))}
-                      </Form.Select>
-                    </Form.Group>
-                  </div>
-                );
-              })}
-            {questions.data?.length === 0 && (
-              <p className="p-3 mb-0 text-muted">
-                There are no questions in this form. Add questions to the assessment before
-                printing.
-              </p>
-            )}
-            {isDirty && (
-              <Card.Footer className="d-flex justify-content-end">
-                <Button type="submit" disabled={isSubmitting}>
-                  Update preview
-                </Button>
-              </Card.Footer>
-            )}
-          </Card>
-        )}
       </form>
     </div>
   );

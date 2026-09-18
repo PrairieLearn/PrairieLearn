@@ -57,9 +57,9 @@ router.get(
         pageTitle: 'Print preparation',
         navContext: { type: 'instructor', page: 'assessment', subPage: 'print_preparation' },
         headContent: [compiledStylesheetTag('instructorAssessmentPrint.css')],
-        options: { fullWidth: true },
+        options: { fullWidth: true, contentContainerClassName: 'print-preparation-container' },
         content: (
-          <Hydrate>
+          <Hydrate className="print-preparation-root">
             <InstructorAssessmentPrint
               assessmentId={assessment.id}
               courseInstanceId={course_instance.id}

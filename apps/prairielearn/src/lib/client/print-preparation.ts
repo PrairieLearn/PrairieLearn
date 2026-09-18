@@ -13,6 +13,7 @@ export interface PrintSettings {
   identityFields: string;
   blockSize: QuestionBlockSize;
   questionSizes: Record<string, QuestionBlockSize | ''>;
+  excludedQuestions: string[];
 }
 
 export type PrintDocument = 'exam' | 'answer_key';
@@ -22,6 +23,7 @@ export const DEFAULT_PRINT_SETTINGS: PrintSettings = {
   identityFields: 'Student ID\nSection',
   blockSize: 'auto',
   questionSizes: {},
+  excludedQuestions: [],
 };
 
 export const BLOCK_SIZE_LABELS: Record<QuestionBlockSize, string> = {
@@ -48,6 +50,9 @@ export function printLayoutSearch(settings: PrintSettings): string {
   }
   for (const [number, size] of Object.entries(settings.questionSizes)) {
     if (size) search.append('question_block_size', `${number}:${size}`);
+  }
+  for (const number of settings.excludedQuestions) {
+    search.append('exclude_question', number);
   }
   return search.toString();
 }
