@@ -1,5 +1,11 @@
 # @prairielearn/utils
 
+## 3.3.1
+
+### Patch Changes
+
+- 8151381: Build with the official TypeScript 7 release instead of the native preview.
+
 ## 3.3.0
 
 ### Minor Changes

@@ -1,5 +1,11 @@
 # @prairielearn/compiled-assets
 
+## 4.1.14
+
+### Patch Changes
+
+- 8151381: Build with the official TypeScript 7 release instead of the native preview.
+
 ## 4.1.13
 
 ### Patch Changes
