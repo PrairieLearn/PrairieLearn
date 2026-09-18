@@ -2446,6 +2446,19 @@ export class FileUploadEditor extends Editor {
       const relativePath = path.relative(this.course.path, filePath);
       if (getDetailsForFile(relativePath).type === FileType.File) continue;
 
+      let textContents: string;
+      try {
+        // Preserve a byte order mark so JSON parsing rejects it, matching sync behavior.
+        textContents = new TextDecoder('utf-8', { fatal: true, ignoreBOM: true }).decode(
+          fileContents,
+        );
+      } catch {
+        throw new HttpStatusError(
+          400,
+          `Cannot upload ${relativePath}: PrairieLearn metadata files must use valid UTF-8 encoding.`,
+        );
+      }
+
       if (isBinaryFileSync(fileContents)) {
         throw new HttpStatusError(
           400,
@@ -2453,7 +2466,7 @@ export class FileUploadEditor extends Editor {
         );
       }
 
-      if (parseJsonObject(fileContents.toString('utf8')) == null) {
+      if (parseJsonObject(textContents) == null) {
         throw new HttpStatusError(
           400,
           `Cannot upload ${relativePath}: PrairieLearn metadata files must contain a valid JSON object.`,

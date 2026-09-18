@@ -367,6 +367,35 @@ describe('test file editor', { timeout: 20_000 }, function () {
         assert.isTrue((await fs.readFile(absolutePath)).equals(originalContents));
       });
 
+      it.each([
+        {
+          description: 'JSON prefixed with a UTF-8 byte order mark',
+          contents: Buffer.concat([Buffer.from([0xef, 0xbb, 0xbf]), Buffer.from('{}')]),
+          error: 'must contain a valid JSON object',
+        },
+        {
+          description: 'malformed UTF-8 that appears to be plaintext',
+          contents: Buffer.concat([
+            Buffer.from(`{"title":"${'a'.repeat(100)}`),
+            Buffer.from([0xff]),
+            Buffer.from('"}'),
+          ]),
+          error: 'must use valid UTF-8 encoding',
+        },
+      ])('rejects $description', async ({ contents, error }) => {
+        const absolutePath = path.join(courseRepo.courseLiveDir, infoAssessmentPath);
+        const originalContents = await fs.readFile(absolutePath);
+        const res = await uploadFiles({
+          url: assessmentUrl + '/file_view',
+          filePath: infoAssessmentPath,
+          files: [{ filename: 'replacement.json', contents }],
+        });
+
+        assert.equal(res.status, 400);
+        assert.include(await res.text(), error);
+        assert.isTrue((await fs.readFile(absolutePath)).equals(originalContents));
+      });
+
       it('accepts valid metadata JSON', async () => {
         const absolutePath = path.join(courseRepo.courseLiveDir, infoAssessmentPath);
         const contents = await fs.readFile(absolutePath);
