@@ -5,8 +5,6 @@ import * as path from 'path';
 import { Temporal } from '@js-temporal/polyfill';
 import debugfn from 'debug';
 import fs from 'fs-extra';
-import { isBinaryFileSync } from 'isbinaryfile';
-import jju from 'jju';
 import { z } from 'zod';
 
 import { AugmentedError, HttpStatusError } from '@prairielearn/error';
@@ -50,10 +48,10 @@ import {
   computeFileContentHash,
   getDetailsForFile,
 } from './editorUtil.js';
-import { FileType, getNamesForCopy, getUniqueNames, parseJsonObject } from './editorUtil.shared.js';
+import { FileType, getNamesForCopy, getUniqueNames } from './editorUtil.shared.js';
 import { idsEqual } from './id.js';
 import { removeQidsFromAssessment, renameQidInAssessment } from './infoAssessment-edits.js';
-import { computeStableHash, formatJsonParseError } from './json.js';
+import { computeStableHash } from './json.js';
 import { EXAMPLE_COURSE_PATH, REPOSITORY_ROOT_PATH } from './paths.js';
 import { formatJsonWithPrettier } from './prettier.js';
 import { qidsToRemoveForQuestions } from './question-deletion-validation.js';
@@ -2444,46 +2442,24 @@ export class FileUploadEditor extends Editor {
         });
       }
 
+      // Metadata lives at the container root; descendants are ordinary assets.
+      if (path.dirname(filePath) !== this.container.rootPath) continue;
       const relativePath = path.relative(this.course.path, filePath);
       if (getDetailsForFile(relativePath).type === FileType.File) continue;
 
-      let textContents: string;
       try {
-        // Preserve a byte order mark so JSON parsing rejects it, matching sync behavior.
-        textContents = new TextDecoder('utf-8', { fatal: true, ignoreBOM: true }).decode(
+        // Preserve a BOM so JSON.parse rejects it, matching course sync.
+        const contents = new TextDecoder('utf-8', { fatal: true, ignoreBOM: true }).decode(
           fileContents,
         );
+        const parsed: unknown = JSON.parse(contents);
+        if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+          throw new Error('Expected a JSON object');
+        }
       } catch {
         throw new HttpStatusError(
           400,
-          `Cannot upload ${relativePath}: PrairieLearn metadata files must use valid UTF-8 encoding.`,
-        );
-      }
-
-      if (isBinaryFileSync(fileContents)) {
-        throw new HttpStatusError(
-          400,
-          `Cannot upload ${relativePath}: PrairieLearn metadata files must be plaintext JSON.`,
-        );
-      }
-
-      if (parseJsonObject(textContents) == null) {
-        try {
-          jju.parse(textContents, { mode: 'json' });
-        } catch (err) {
-          const context = formatJsonParseError(textContents, err);
-          throw new AugmentedError(`Cannot upload ${relativePath}: Invalid JSON`, {
-            status: 400,
-            info: html`
-              <p>PrairieLearn metadata files must contain a valid JSON object.</p>
-              <p><strong>JSON parse error:</strong></p>
-              <pre class="border p-2" aria-label="JSON error">${context}</pre>
-            `,
-          });
-        }
-        throw new HttpStatusError(
-          400,
-          `Cannot upload ${relativePath}: PrairieLearn metadata files must contain a valid JSON object.`,
+          `Cannot upload ${relativePath}: PrairieLearn metadata files must contain a valid UTF-8 JSON object.`,
         );
       }
     }

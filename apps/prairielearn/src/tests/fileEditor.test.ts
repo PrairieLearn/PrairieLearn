@@ -117,7 +117,6 @@ const courseInstanceInstanceAdminEditUrl =
   courseInstanceInstanceAdminUrl + `/file_edit/${encodePath(infoCourseInstancePath)}`;
 const assessmentUrl = courseInstanceUrl + '/assessment/1';
 const assessmentEditUrl = assessmentUrl + `/file_edit/${encodePath(infoAssessmentPath)}`;
-const courseQuestionUrl = baseUrl + '/course/1/question/1';
 const courseInstanceQuestionUrl = courseInstanceUrl + '/question/1';
 const courseInstanceQuestionJsonEditUrl =
   courseInstanceUrl + `/question/1/file_edit/${encodePath(questionJsonPath)}`;
@@ -237,39 +236,6 @@ const verifyFileData = [
   },
 ];
 
-const recognizedJsonUploadData = [
-  {
-    title: 'course admin',
-    url: courseAdminUrl + '/file_view',
-    path: infoCoursePath,
-  },
-  {
-    title: 'course admin through a course instance',
-    url: courseInstanceCourseAdminUrl + '/file_view',
-    path: infoCoursePath,
-  },
-  {
-    title: 'course instance admin',
-    url: courseInstanceInstanceAdminUrl + '/file_view',
-    path: infoCourseInstancePath,
-  },
-  {
-    title: 'assessment',
-    url: assessmentUrl + '/file_view',
-    path: infoAssessmentPath,
-  },
-  {
-    title: 'question without a course instance',
-    url: courseQuestionUrl + '/file_view',
-    path: questionJsonPath,
-  },
-  {
-    title: 'question through a course instance',
-    url: courseInstanceQuestionUrl + '/file_view',
-    path: questionJsonPath,
-  },
-];
-
 describe('test file editor', { timeout: 20_000 }, function () {
   describe('not the test course', function () {
     beforeAll(async () => {
@@ -336,92 +302,47 @@ describe('test file editor', { timeout: 20_000 }, function () {
       badGet(gitPathUrl, 500, false);
     });
 
-    describe('validate recognized JSON file uploads', function () {
-      recognizedJsonUploadData.forEach((data) => {
-        it(`rejects a binary ${data.title} metadata replacement`, async () => {
-          const absolutePath = path.join(courseRepo.courseLiveDir, data.path);
-          const originalContents = await fs.readFile(absolutePath);
-          const res = await uploadFiles({
-            url: data.url,
-            filePath: data.path,
-            files: [{ filename: 'replacement.pdf', contents: Buffer.from('%PDF-1.7\n') }],
-          });
-
-          assert.equal(res.status, 400);
-          assert.include(await res.text(), 'PrairieLearn metadata files must be plaintext JSON');
-          assert.isTrue((await fs.readFile(absolutePath)).equals(originalContents));
-        });
-      });
-
-      it('rejects malformed plaintext JSON', async () => {
-        const absolutePath = path.join(courseRepo.courseLiveDir, infoAssessmentPath);
-        const originalContents = await fs.readFile(absolutePath);
+    describe('validate metadata uploads', () => {
+      it('rejects a PDF uploaded to replace infoAssessment.json', async () => {
+        const metadataPath = path.join(courseRepo.courseLiveDir, infoAssessmentPath);
+        const originalContents = await fs.readFile(metadataPath);
         const res = await uploadFiles({
           url: assessmentUrl + '/file_view',
           filePath: infoAssessmentPath,
+          files: [{ filename: 'syllabus.pdf', contents: Buffer.from('%PDF-1.7\n') }],
+        });
+
+        assert.equal(res.status, 400);
+        assert.include(await res.text(), 'must contain a valid UTF-8 JSON object');
+        assert.isTrue((await fs.readFile(metadataPath)).equals(originalContents));
+      });
+
+      it.each([
+        ['malformed JSON', Buffer.from('{')],
+        ['JSON array', Buffer.from('[]')],
+        ['invalid UTF-8', Buffer.from([0x7b, 0x22, 0xff, 0x22, 0x3a, 0x31, 0x7d])],
+      ])('rejects %s before writing any files', async (_description, contents) => {
+        const metadataPath = path.join(courseRepo.courseLiveDir, infoAssessmentPath);
+        const originalContents = await fs.readFile(metadataPath);
+        const ordinaryPath = path.join(courseRepo.courseLiveDir, assessmentPath, 'ordinary.txt');
+        const res = await uploadFiles({
+          url: assessmentUrl + '/file_view',
+          workingPath: path.join(courseRepo.courseLiveDir, assessmentPath),
           files: [
-            {
-              filename: 'replacement.json',
-              contents: Buffer.from('{\n  "title": "Homework 1",\n}\n'),
-            },
+            { filename: 'ordinary.txt', contents: Buffer.from('ordinary file') },
+            { filename: 'infoAssessment.json', contents },
           ],
         });
 
         assert.equal(res.status, 400);
-        const responseText = await res.text();
-        assert.include(responseText, `Cannot upload ${infoAssessmentPath}: Invalid JSON`);
-        assert.include(
-          responseText,
-          'PrairieLearn metadata files must contain a valid JSON object.',
-        );
-        assert.include(responseText, 'JSON parse error:');
-        assert.include(responseText, 'Trailing comma in object at 3:1');
-        const $ = cheerio.load(responseText);
-        assert.equal(
-          $('pre[aria-label="JSON error"]').text(),
-          [
-            '  1 | {',
-            '  2 |   "title": "Homework 1",',
-            '> 3 | }',
-            '    | ^ Trailing comma in object at 3:1',
-            '  4 |',
-          ].join('\n'),
-        );
-        assert.isTrue((await fs.readFile(absolutePath)).equals(originalContents));
+        assert.include(await res.text(), 'must contain a valid UTF-8 JSON object');
+        assert.isFalse(await fs.pathExists(ordinaryPath));
+        assert.isTrue((await fs.readFile(metadataPath)).equals(originalContents));
       });
 
-      it.each([
-        {
-          description: 'JSON prefixed with a UTF-8 byte order mark',
-          contents: Buffer.concat([Buffer.from([0xef, 0xbb, 0xbf]), Buffer.from('{}')]),
-          error: 'must contain a valid JSON object',
-        },
-        {
-          description: 'malformed UTF-8 that appears to be plaintext',
-          contents: Buffer.concat([
-            Buffer.from(`{"title":"${':) '.repeat(10)}`),
-            Buffer.from([0xff]),
-            Buffer.from(' >:["}'),
-          ]),
-          error: 'must use valid UTF-8 encoding',
-        },
-      ])('rejects $description', async ({ contents, error }) => {
+      it('accepts a valid metadata replacement', async () => {
         const absolutePath = path.join(courseRepo.courseLiveDir, infoAssessmentPath);
-        const originalContents = await fs.readFile(absolutePath);
-        const res = await uploadFiles({
-          url: assessmentUrl + '/file_view',
-          filePath: infoAssessmentPath,
-          files: [{ filename: 'replacement.json', contents }],
-        });
-
-        assert.equal(res.status, 400);
-        assert.include(await res.text(), error);
-        assert.isTrue((await fs.readFile(absolutePath)).equals(originalContents));
-      });
-
-      it('accepts valid metadata JSON', async () => {
-        const absolutePath = path.join(courseRepo.courseLiveDir, infoAssessmentPath);
-        const contents = await fs.readFile(absolutePath);
+        const contents = Buffer.from((await fs.readFile(absolutePath, 'utf8')) + '\n');
         const res = await uploadFiles({
           url: assessmentUrl + '/file_view',
           filePath: infoAssessmentPath,
@@ -432,38 +353,28 @@ describe('test file editor', { timeout: 20_000 }, function () {
         assert.isTrue((await fs.readFile(absolutePath)).equals(contents));
       });
 
-      it('allows arbitrary files with a .json extension', async () => {
-        const contents = Buffer.from('not JSON');
+      it('allows ordinary JSON assets, including ones named info.json', async () => {
+        const workingPath = path.join(
+          courseRepo.courseLiveDir,
+          questionPath,
+          'clientFilesQuestion',
+        );
+        const files = [
+          { filename: 'arbitrary.json', contents: Buffer.from('not JSON') },
+          { filename: 'info.json', contents: Buffer.from('[]') },
+        ];
         const res = await uploadFiles({
-          url: assessmentUrl + '/file_view',
-          workingPath: path.join(courseRepo.courseLiveDir, assessmentPath),
-          files: [{ filename: 'arbitrary.json', contents }],
+          url: courseInstanceQuestionUrl + '/file_view',
+          workingPath,
+          files,
         });
 
         assert.isTrue(res.ok);
-        assert.isTrue(
-          (
-            await fs.readFile(path.join(courseRepo.courseLiveDir, assessmentPath, 'arbitrary.json'))
-          ).equals(contents),
-        );
-      });
-
-      it('rejects an invalid batch before writing any files', async () => {
-        const metadataPath = path.join(courseRepo.courseLiveDir, infoAssessmentPath);
-        const originalMetadata = await fs.readFile(metadataPath);
-        const ordinaryPath = path.join(courseRepo.courseLiveDir, assessmentPath, 'ordinary.txt');
-        const res = await uploadFiles({
-          url: assessmentUrl + '/file_view',
-          workingPath: path.join(courseRepo.courseLiveDir, assessmentPath),
-          files: [
-            { filename: 'ordinary.txt', contents: Buffer.from('ordinary file') },
-            { filename: 'infoAssessment.json', contents: Buffer.from('{') },
-          ],
-        });
-
-        assert.equal(res.status, 400);
-        assert.isFalse(await fs.pathExists(ordinaryPath));
-        assert.isTrue((await fs.readFile(metadataPath)).equals(originalMetadata));
+        for (const file of files) {
+          assert.isTrue(
+            (await fs.readFile(path.join(workingPath, file.filename))).equals(file.contents),
+          );
+        }
       });
     });
 

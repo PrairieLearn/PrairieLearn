@@ -1,30 +1,8 @@
 import { assert, describe, it } from 'vitest';
 
-import {
-  getNamesForCopy,
-  getUniqueNames,
-  parseJsonObject,
-  propertyValueWithDefault,
-} from './editorUtil.shared.js';
+import { getNamesForCopy, getUniqueNames, propertyValueWithDefault } from './editorUtil.shared.js';
 
 describe('editor utils', () => {
-  describe('parseJsonObject', () => {
-    it('parses a JSON object', () => {
-      assert.deepEqual(parseJsonObject('{"value": 1}'), { value: 1 });
-    });
-
-    it.each([
-      ['malformed JSON', '{'],
-      ['an array', '[]'],
-      ['a string', '"value"'],
-      ['a number', '1'],
-      ['a boolean', 'true'],
-      ['null', 'null'],
-    ])('rejects %s', (_description, contents) => {
-      assert.isNull(parseJsonObject(contents));
-    });
-  });
-
   describe('getNamesForAdd', () => {
     describe('No specified short_name and long_name', () => {
       it('should set short_name to New_1 and long_name to New (1)', () => {
