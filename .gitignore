@@ -104,6 +104,7 @@ coverage.xml
 
 ## Vitest
 .vitest
+.vitest-reports
 
 ## Playwright
 test-results/
