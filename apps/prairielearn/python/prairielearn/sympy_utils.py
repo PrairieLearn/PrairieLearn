@@ -38,6 +38,17 @@ from prairielearn.misc_utils import full_unidecode
 
 STANDARD_OPERATORS = ("( )", "+", "-", "*", "/", "^", "**", "!")
 SET_NOTATION_OPERATORS = ("U", "&", "{ }", "[ , ]", "( , ]", "[ , )", "( , )")
+_SET_DOMAIN_NAMES = frozenset({
+    "Complexes",
+    "Integers",
+    "Naturals",
+    "Naturals0",
+    "Rationals",
+    "Reals",
+})
+_SET_DOMAINS: frozenset[sympy.Set] = frozenset(
+    getattr(sympy.S, name) for name in _SET_DOMAIN_NAMES
+)
 
 SympyMapT = dict[str, sympy.Basic | complex]
 _FrozenSympyMapT = FrozenDict[str, sympy.Basic | complex]
@@ -75,6 +86,67 @@ class SympyParseFailure:
 
 
 type SympyParseResult = SympyParseSuccess | SympyParseFailure
+type _SympyValueType = Literal["expression", "set", "finite-set", "interval"]
+type _UsedSympyType = _SympyValueType | Literal["empty-set"]
+type AllowedSympyType = Literal["all"] | _SympyValueType
+
+
+def _used_sympy_types(expr: sympy.Basic) -> set[_UsedSympyType]:
+    if expr is sympy.EmptySet:
+        return {"empty-set"}
+    if expr in _SET_DOMAINS:
+        return {"set"}
+    if isinstance(expr, sympy.Interval):
+        return {"interval"}
+    if isinstance(expr, sympy.Set) and expr.is_finite_set:
+        required_types: set[_UsedSympyType] = {"finite-set"}
+        if isinstance(expr, sympy.FiniteSet):
+            for arg in expr.args:
+                if isinstance(arg, sympy.Set):
+                    required_types.update(_used_sympy_types(arg))
+        return required_types
+    if isinstance(expr, (sympy.Union, sympy.Intersection, sympy.Complement)):
+        required_types: set[_UsedSympyType] = set()
+        for arg in expr.args:
+            arg_types = _used_sympy_types(arg)
+            required_types.update(arg_types)
+        return required_types
+    if isinstance(expr, sympy.Set):
+        return {"set"}
+    return {"expression"}
+
+
+def check_sympy_types(
+    expr: sympy.Basic, allowed_types: set[AllowedSympyType]
+) -> SympyParseFailure | None:
+    """Return a parse failure if the expression uses a disallowed SymPy type."""
+    used_types = _used_sympy_types(expr)
+    matches_allowed_type = (
+        "all" in allowed_types
+        or (isinstance(expr, sympy.Set) and "set" in allowed_types)
+        or all(
+            not {"set", "finite-set", "interval"}.isdisjoint(allowed_types)
+            if used_type == "empty-set"
+            else used_type in allowed_types
+            for used_type in used_types
+        )
+    )
+    if matches_allowed_type:
+        return None
+
+    disallowed_types = {
+        "set" if used_type == "empty-set" else used_type
+        for used_type in used_types
+        if (
+            {"set", "finite-set", "interval"}.isdisjoint(allowed_types)
+            if used_type == "empty-set"
+            else used_type not in allowed_types
+        )
+    }
+    return SympyParseFailure(
+        f"Your answer uses {', '.join(sorted(disallowed_types))}, which this input "
+        f"does not accept. Allowed types: {', '.join(sorted(allowed_types))}."
+    )
 
 
 def is_sympy_json(json: Any) -> TypeGuard[SympyJson]:
@@ -167,6 +239,7 @@ class _Constants:
     })
 
     set_functions: Final[_FrozenSympyFunctionMapT] = FrozenDict({
+        "Complement": sympy.Complement,
         "Interval": sympy.Interval,
         "FiniteSet": sympy.FiniteSet,
         "Union": sympy.Union,
@@ -196,14 +269,33 @@ class _SympyJsonStrPrinter(StrPrinter):
     Callers must deserialize with `allow_sets=True` or the literal forms will be rejected.
     """
 
-    def _print_EmptySet(self, expr: sympy.Set) -> str:  # pyright: ignore[reportIncompatibleMethodOverride] # ruff:ignore[unused-method-argument, invalid-function-name]
-        return "{}"
+    def _print_EmptySet(self, expr: sympy.Set) -> Any:  # ruff: ignore[unused-method-argument, invalid-function-name]
+        return r"{}"
 
-    def _print_Interval(self, i: sympy.Interval) -> str:  # ruff:ignore[invalid-function-name]
-        start, end = self._print(i.start), self._print(i.end)
+    def _print_Interval(self, i: sympy.Interval) -> str:  # ruff: ignore[invalid-function-name]
+        start, end = self.doprint(i.start), self.doprint(i.end)
         left = "(" if i.left_open else "["
         right = ")" if i.right_open else "]"
         return f"{left}{start}, {end}{right}"
+
+    def _print_Set(self, expr: sympy.Set) -> str:  # ruff: ignore[invalid-function-name]
+        if (
+            type(expr) is sympy.Set
+            and len(expr.args) == 1
+            and isinstance(expr.args[0], sympy.Symbol)
+            and expr.args[0].name in _SET_DOMAIN_NAMES
+        ):
+            return self.doprint(expr.args[0])
+        return self.emptyPrinter(expr)
+
+    def _print_Union(self, expr: sympy.Union) -> str:  # ruff: ignore[invalid-function-name]
+        return f"Union({', '.join(map(self.doprint, expr.args))})"
+
+    def _print_Intersection(self, expr: sympy.Intersection) -> str:  # ruff: ignore[invalid-function-name]
+        return f"Intersection({', '.join(map(self.doprint, expr.args))})"
+
+    def _print_Complement(self, expr: sympy.Complement) -> str:  # ruff: ignore[invalid-function-name]
+        return f"Complement({', '.join(map(self.doprint, expr.args))})"
 
 
 # Safe evaluation of user input to convert from string to sympy expression.
@@ -579,6 +671,9 @@ class CheckAST(ast.NodeVisitor):
                     raise HasFunctionArityError(name, len(args), "1+")
                 self._enforce_signature(name, args, len(args) * [ASTSympyType.SET])
                 return ASTSympyType.SET
+            case "Complement":
+                self._enforce_signature(name, args, 2 * [ASTSympyType.SET])
+                return ASTSympyType.SET
             case _:
                 return None
 
@@ -854,6 +949,9 @@ def evaluate_with_source(
         for inner_dict in locals_for_eval.values()
         for k, v in cast(SympyMapT, inner_dict).items()
     }
+    if allow_extra_symbols and not allow_sets:
+        for domain_name in _SET_DOMAIN_NAMES:
+            local_dict.setdefault(domain_name, sympy.Symbol(domain_name))
 
     # Based on code here:
     # https://github.com/sympy/sympy/blob/26f7bdbe3f860e7b4492e102edec2d6b429b5aaf/sympy/parsing/sympy_parser.py#L1086
@@ -1270,6 +1368,7 @@ def try_parse_string_as_sympy(
     imaginary_unit: str | None = None,
     simplify_expression: bool = True,
     assumptions: AssumptionsDictT | None = None,
+    allowed_types: set[AllowedSympyType] | None = None,
 ) -> SympyParseResult:
     """Try to parse expr as a SymPy expression.
 
@@ -1284,6 +1383,9 @@ def try_parse_string_as_sympy(
         else:
             print(result.expr)
     """
+    if allowed_types is None:
+        allowed_types = {"all"} if allow_sets else {"expression"}
+
     try:
         expr_parsed = convert_string_to_sympy(
             expr,
@@ -1421,6 +1523,10 @@ def try_parse_string_as_sympy(
             f"(denoted ${imaginary_unit}$): $${sympy.latex(expr_parsed)}$$"
         )
 
+    type_failure = check_sympy_types(expr_parsed, allowed_types)
+    if type_failure is not None:
+        return type_failure
+
     return SympyParseSuccess(expr_parsed)
 
 
@@ -1436,6 +1542,7 @@ def validate_string_as_sympy(
     imaginary_unit: str | None = None,
     simplify_expression: bool = True,
     assumptions: AssumptionsDictT | None = None,
+    allowed_types: set[AllowedSympyType] | None = None,
 ) -> str | None:
     """Try to parse expr as a SymPy expression.
 
@@ -1453,6 +1560,7 @@ def validate_string_as_sympy(
         imaginary_unit=imaginary_unit,
         simplify_expression=simplify_expression,
         assumptions=assumptions,
+        allowed_types=allowed_types,
     )
 
     if isinstance(result, SympyParseFailure):
