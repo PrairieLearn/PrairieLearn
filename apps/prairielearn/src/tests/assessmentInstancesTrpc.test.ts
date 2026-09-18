@@ -14,6 +14,7 @@ import {
   insertCourseInstancePermissions,
   insertCoursePermissionsByUserUid,
 } from '../models/course-permissions.js';
+import { selectAssessmentInstancesForTable } from '../trpc/assessment/assessment-instances.js';
 import { createAssessmentTrpcClient } from '../trpc/assessment/client.js';
 
 import * as helperClient from './helperClient.js';
@@ -71,6 +72,25 @@ describe('assessmentInstances tRPC router', { timeout: 60_000, concurrent: false
     const rows = await trpcClient.assessmentInstances.list.query();
     assert.lengthOf(rows, 1);
     assert.isTrue(rows[0].assessment_instance.open);
+  });
+
+  test('server-side list query can target one assessment instance', async () => {
+    const [row] = await trpcClient.assessmentInstances.list.query();
+    const courseInstance = await selectCourseInstanceById(courseInstanceId);
+    const matchingRows = await selectAssessmentInstancesForTable({
+      assessment_id: assessmentId,
+      assessment_instance_id: row.assessment_instance.id,
+      timezone: courseInstance.display_timezone,
+    });
+    assert.lengthOf(matchingRows, 1);
+    assert.equal(matchingRows[0].assessment_instance.id, row.assessment_instance.id);
+
+    const nonMatchingRows = await selectAssessmentInstancesForTable({
+      assessment_id: assessmentId,
+      assessment_instance_id: '999999999',
+      timezone: courseInstance.display_timezone,
+    });
+    assert.lengthOf(nonMatchingRows, 0);
   });
 
   test('setTimeLimit (set_rem) applies a time limit', async () => {

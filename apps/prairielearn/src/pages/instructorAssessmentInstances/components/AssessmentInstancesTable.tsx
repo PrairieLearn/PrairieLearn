@@ -38,6 +38,7 @@ import {
   useTanstackTable,
 } from '@prairielearn/ui';
 
+import { TimeLimitEditForm } from '../../../components/AssessmentInstanceActions/TimeLimitEditForm.js';
 import { FriendlyDate } from '../../../components/FriendlyDate.js';
 import { Scorebar } from '../../../components/Scorebar.js';
 import type {
@@ -51,7 +52,6 @@ import type { AssessmentInstanceRow } from '../instructorAssessmentInstances.typ
 
 import { type HelpModalId, HelpModals } from './HelpModals.js';
 import { InstanceSelectionToolbar } from './InstanceSelectionToolbar.js';
-import { TimeLimitEditForm } from './TimeLimitEditForm.js';
 
 type ColumnFilter = (props: { header: TanstackTableHeader<AssessmentInstanceRow> }) => ReactNode;
 

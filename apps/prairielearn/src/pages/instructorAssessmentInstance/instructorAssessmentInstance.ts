@@ -6,6 +6,7 @@ import { stringifyStream } from '@prairielearn/csv';
 import { HttpStatusError } from '@prairielearn/error';
 import { formatDateISO } from '@prairielearn/formatter';
 import * as sqldb from '@prairielearn/postgres';
+import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
 import {
   type InstanceLogEntry,
@@ -14,12 +15,16 @@ import {
   setAssessmentInstancePoints,
   setAssessmentInstanceScore,
 } from '../../lib/assessment.js';
+import { extractPageContext } from '../../lib/client/page-context.js';
+import { getAssessmentTrpcUrl } from '../../lib/client/url.js';
+import { config } from '../../lib/config.js';
 import * as ltiOutcomes from '../../lib/ltiOutcomes.js';
 import { updateInstanceQuestionScore } from '../../lib/manualGrading.js';
 import { type ResLocalsForPage, typedAsyncHandler } from '../../lib/res-locals.js';
 import { assessmentFilenamePrefix, sanitizeString } from '../../lib/sanitize-name.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 import { resetVariantsForInstanceQuestion } from '../../models/variant.js';
+import { selectAssessmentInstancesForTable } from '../../trpc/assessment/assessment-instances.js';
 
 import {
   AssessmentInstanceStatsSchema,
@@ -53,6 +58,27 @@ router.get(
     unauthorizedUsers: 'block',
   }),
   typedAsyncHandler<'assessment-instance'>(async (req, res) => {
+    const { assessment, course_instance, authn_user, authz_data } = extractPageContext(res.locals, {
+      pageType: 'assessment',
+      accessType: 'instructor',
+    });
+    const [actionInstance] = authz_data.has_course_instance_permission_edit
+      ? await selectAssessmentInstancesForTable({
+          assessment_id: assessment.id,
+          assessment_instance_id: res.locals.assessment_instance.id,
+          timezone: course_instance.display_timezone,
+        })
+      : [];
+    const trpcCsrfToken = generatePrefixCsrfToken(
+      {
+        url: getAssessmentTrpcUrl({
+          courseInstanceId: course_instance.id,
+          assessmentId: assessment.id,
+        }),
+        authn_user_id: authn_user.id,
+      },
+      config.secretKey,
+    );
     const logCsvFilename = makeLogCsvFilename(res.locals);
     const assessment_instance_stats = await sqldb.queryRows(
       sql.assessment_instance_stats,
@@ -78,6 +104,8 @@ router.get(
         assessment_instance_stats,
         instance_questions,
         assessmentInstanceLog,
+        actionInstance,
+        trpcCsrfToken,
       }),
     );
   }),

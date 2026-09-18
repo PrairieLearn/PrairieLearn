@@ -1,4 +1,4 @@
-import type { PendingRegradeQuestion } from '../instructorAssessmentInstances.types.js';
+import type { PendingRegradeQuestion } from '../../pages/instructorAssessmentInstances/instructorAssessmentInstances.types.js';
 
 const COLLAPSE_THRESHOLD = 5;
 

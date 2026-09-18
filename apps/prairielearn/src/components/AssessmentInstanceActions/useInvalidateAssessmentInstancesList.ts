@@ -1,6 +1,6 @@
 import { useQueryClient } from '@tanstack/react-query';
 
-import { useTRPC } from '../../../trpc/assessment/context.js';
+import { useTRPC } from '../../trpc/assessment/context.js';
 
 export function useInvalidateAssessmentInstancesList() {
   const queryClient = useQueryClient();

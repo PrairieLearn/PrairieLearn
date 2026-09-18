@@ -46,14 +46,16 @@ export interface AssessmentInstancesError {
  */
 export async function selectAssessmentInstancesForTable({
   assessment_id,
+  assessment_instance_id = null,
   timezone,
 }: {
   assessment_id: string;
+  assessment_instance_id?: string | null;
   timezone: string;
 }): Promise<AssessmentInstanceRow[]> {
   const assessmentInstances = await sqldb.queryRows(
     sql.select_assessment_instances,
-    { assessment_id },
+    { assessment_id, assessment_instance_id },
     AssessmentInstanceRowQuerySchema,
   );
   return assessmentInstances.map((instance) => ({

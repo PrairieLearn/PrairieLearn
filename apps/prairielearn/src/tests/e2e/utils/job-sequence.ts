@@ -5,12 +5,18 @@ import { expect } from '../fixtures.js';
 /**
  * Waits for the job sequence page to show completion and checks for expected text in the job output.
  */
-export async function waitForJobAndCheckOutput(page: Page, expectedTexts: string[]) {
+export async function waitForJobAndCheckOutput(
+  page: Page,
+  expectedTexts: string[],
+  successTimeout = 5_000,
+) {
   // Should be redirected to the job sequence page
   await expect(page).toHaveURL(/\/jobSequence\//);
 
   // Wait for job to complete (status badge shows Success)
-  await expect(page.locator('.badge', { hasText: 'Success' })).toBeVisible();
+  await expect(page.locator('.badge', { hasText: 'Success' })).toBeVisible({
+    timeout: successTimeout,
+  });
 
   // Check for expected text in the job output (rendered in a <pre> element)
   const jobOutput = page.locator('pre');

@@ -111,6 +111,10 @@ FROM
   )
 WHERE
   a.id = $assessment_id
+  AND (
+    $assessment_instance_id::bigint IS NULL
+    OR ai.id = $assessment_instance_id
+  )
   -- Filter out group instances that don't have an undeleted group
   AND (
     ai.team_id IS NULL

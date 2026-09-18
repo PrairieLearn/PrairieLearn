@@ -7,7 +7,7 @@ import { formatDate } from '@prairielearn/formatter';
 import { getAppError } from '@prairielearn/trpc/client';
 import { assertNever } from '@prairielearn/utils';
 
-import { useTRPC } from '../../../trpc/assessment/context.js';
+import { useTRPC } from '../../trpc/assessment/context.js';
 
 import { useInvalidateAssessmentInstancesList } from './useInvalidateAssessmentInstancesList.js';
 
