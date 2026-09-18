@@ -302,6 +302,48 @@ describe('test file editor', { timeout: 20_000 }, function () {
       badGet(gitPathUrl, 500, false);
     });
 
+    describe('disallow uploading a file that is not JSON over an info file', function () {
+      // What an instructor did in practice: upload a PDF over `infoAssessment.json`.
+      const pdfContents = Buffer.concat([
+        Buffer.from('%PDF-1.7\n'),
+        Buffer.from([0xff, 0xfe, 0x00, 0x80]),
+      ]);
+      const url = assessmentUrl + '/file_view';
+
+      it('should offer an upload form for the info file', async () => {
+        const res = await fetch(url);
+        assert.isOk(res.ok);
+        locals.$ = cheerio.load(await res.text());
+
+        const row = locals.$('tr:has(a:contains("infoAssessment.json"))');
+        elemList = row.find('button[id^="instructorFileUploadForm-"]');
+        assert.lengthOf(elemList, 1);
+
+        const $ = cheerio.load(elemList[0].attribs['data-bs-content']);
+        locals.__csrf_token = $('input[name="__csrf_token"]').attr('value');
+        locals.file_path = $('input[name="file_path"]').attr('value');
+        assert.isString(locals.__csrf_token);
+        assert.isString(locals.file_path);
+      });
+
+      it('should reject the upload and leave the file untouched', async () => {
+        const livePath = path.join(courseRepo.courseLiveDir, infoAssessmentPath);
+        const before = await fs.readFile(livePath);
+
+        const formData = new FormData();
+        formData.append('__action', 'upload_file');
+        formData.append('__csrf_token', locals.__csrf_token);
+        formData.append('file_path', locals.file_path);
+        formData.append('files', new Blob([pdfContents]), 'syllabus.pdf');
+
+        const res = await withoutLogging(() => fetch(url, { method: 'POST', body: formData }));
+        assert.equal(res.status, 500);
+        assert.include(await res.text(), 'Invalid JSON file');
+
+        assert.deepEqual(await fs.readFile(livePath), before);
+      });
+    });
+
     describe('verify file handlers', function () {
       verifyFileData.forEach((element) => {
         doFiles(element);

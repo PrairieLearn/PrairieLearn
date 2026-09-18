@@ -1,5 +1,6 @@
 import { assert, describe, it } from 'vitest';
 
+import { validateJsonFileContents } from './editorUtil.js';
 import { getNamesForCopy, getUniqueNames, propertyValueWithDefault } from './editorUtil.shared.js';
 
 describe('editor utils', () => {
@@ -252,6 +253,45 @@ describe('editor utils', () => {
     it('should return the new value if it differs from the default value, even if the values are booleans', () => {
       const property = propertyValueWithDefault(true, false, true);
       assert.equal(property, false);
+    });
+  });
+
+  describe('validateJsonFileContents', () => {
+    it('accepts a valid info file', () => {
+      const contents = Buffer.from(
+        JSON.stringify({ uuid: '5159a291-566f-4463-8f11-b07c931ad2b3', title: 'Homework 1' }),
+      );
+      assert.isNull(validateJsonFileContents(contents));
+    });
+
+    it('accepts non-ASCII text', () => {
+      const contents = Buffer.from(JSON.stringify({ title: 'Analyse numérique 数値解析' }), 'utf8');
+      assert.isNull(validateJsonFileContents(contents));
+    });
+
+    it('rejects contents that are not valid UTF-8', () => {
+      // The first bytes of a PDF, followed by a byte sequence no UTF-8 decoder accepts.
+      const contents = Buffer.concat([
+        Buffer.from('%PDF-1.7\n'),
+        Buffer.from([0xff, 0xfe, 0x00, 0x80]),
+      ]);
+      assert.equal(validateJsonFileContents(contents), 'File is not valid UTF-8 text.');
+    });
+
+    it('rejects malformed JSON and says where the problem is', () => {
+      const contents = Buffer.from('{\n  "title": "Homework 1",\n}\n');
+      const error = validateJsonFileContents(contents);
+      assert.include(error, 'Error parsing JSON');
+      assert.include(error, 'Trailing comma in object at 3:1');
+    });
+
+    it('rejects an empty file', () => {
+      assert.include(validateJsonFileContents(Buffer.alloc(0)), 'Error parsing JSON');
+    });
+
+    it('rejects a byte order mark, which the sync cannot parse either', () => {
+      const contents = Buffer.concat([Buffer.from([0xef, 0xbb, 0xbf]), Buffer.from('{}')]);
+      assert.include(validateJsonFileContents(contents), 'Error parsing JSON');
     });
   });
 });

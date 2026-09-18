@@ -2,6 +2,7 @@ import crypto from 'node:crypto';
 import * as path from 'path';
 
 import fs from 'fs-extra';
+import jju from 'jju';
 import z from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
@@ -121,6 +122,41 @@ export function getDetailsForFile(filePath: string): FileDetails {
   } else {
     return { type: FileType.File };
   }
+}
+
+/**
+ * Checks contents destined for one of the JSON files that configure a course,
+ * the ones `getDetailsForFile` recognizes. The sync reads those files as UTF-8
+ * text and parses them as JSON, so contents that are neither, a PDF saved over
+ * `infoAssessment.json` for instance, only fail once the sync runs, leaving the
+ * course in a state that is awkward to recover from.
+ *
+ * @returns An error message describing what is wrong, or null if the contents parse.
+ */
+export function validateJsonFileContents(contents: Buffer): string | null {
+  let text: string;
+  try {
+    // `ignoreBOM` keeps a byte order mark in the decoded text instead of stripping
+    // it, so that a file carrying one is reported here rather than at sync time,
+    // where the contents are read with `fs.readFile` and keep the mark.
+    text = new TextDecoder('utf-8', { fatal: true, ignoreBOM: true }).decode(contents);
+  } catch {
+    return 'File is not valid UTF-8 text.';
+  }
+
+  try {
+    JSON.parse(text);
+  } catch (err: any) {
+    // As in the sync: `jju` is slower, but it reports where the problem is.
+    try {
+      jju.parse(text, { mode: 'json' });
+    } catch (jjuErr: any) {
+      return `Error parsing JSON: ${jjuErr.message}`;
+    }
+    return `Error parsing JSON: ${err.message}`;
+  }
+
+  return null;
 }
 
 /**

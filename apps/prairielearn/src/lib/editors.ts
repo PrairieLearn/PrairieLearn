@@ -43,8 +43,13 @@ import {
   type User,
 } from './db-types.js';
 import { discoverInfoDirs } from './discover-info-dirs.js';
-import { computeEncodedFileContentHash, computeFileContentHash } from './editorUtil.js';
-import { getNamesForCopy, getUniqueNames } from './editorUtil.shared.js';
+import {
+  computeEncodedFileContentHash,
+  computeFileContentHash,
+  getDetailsForFile,
+  validateJsonFileContents,
+} from './editorUtil.js';
+import { FileType, getNamesForCopy, getUniqueNames } from './editorUtil.shared.js';
 import { idsEqual } from './id.js';
 import { removeQidsFromAssessment, renameQidInAssessment } from './infoAssessment-edits.js';
 import { computeStableHash } from './json.js';
@@ -2436,6 +2441,25 @@ export class FileUploadEditor extends Editor {
             <div class="container"><pre class="bg-dark text-white rounded p-2">${found}</pre></div>
           `,
         });
+      }
+
+      const relativePath = path.relative(this.course.path, filePath);
+      if (getDetailsForFile(relativePath).type !== FileType.File) {
+        const error = validateJsonFileContents(this.files[filePath]);
+        if (error) {
+          throw new AugmentedError('Invalid JSON file', {
+            info: html`
+              <p>The file</p>
+              <div class="container">
+                <pre class="bg-dark text-white rounded p-2">${relativePath}</pre>
+              </div>
+              <p>configures your course, so it must contain valid JSON:</p>
+              <div class="container">
+                <pre class="bg-dark text-white rounded p-2">${error}</pre>
+              </div>
+            `,
+          });
+        }
       }
     }
 
