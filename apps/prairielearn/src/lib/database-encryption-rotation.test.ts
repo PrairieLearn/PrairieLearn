@@ -128,6 +128,11 @@ describe('database encryption rotation', () => {
           total: 1,
           needsRotation: 1,
         },
+        {
+          target: 'course_instance_ai_grading_custom_endpoints.encrypted_secret_key',
+          total: 0,
+          needsRotation: 0,
+        },
       ]);
 
       const result = (await runDatabaseEncryptionOperation({ mode: 'rotate', batchSize: 1 }))[0];

@@ -9,6 +9,7 @@ import { config } from '../lib/config.js';
 import { decryptFromStorage } from '../lib/encrypted-storage.js';
 import { features } from '../lib/features/index.js';
 import { selectCredentials } from '../models/ai-grading-credentials.js';
+import { selectCustomEndpoints } from '../models/ai-grading-custom-endpoints.js';
 import { selectCourseInstanceById } from '../models/course-instances.js';
 
 import * as helperServer from './helperServer.js';
@@ -126,6 +127,42 @@ describe('AI grading credentials', { concurrent: false }, () => {
 
       const remaining = await selectCredentials('1');
       assert.lengthOf(remaining, 1);
+    });
+
+    test('add a custom OpenAI-compatible endpoint', async () => {
+      const result = await client.addCustomEndpoint.mutate({
+        name: 'Campus LLM',
+        base_url: 'https://example.com/v1/',
+        secret_key: 'sk-campus-key',
+      });
+      assert.equal(result.endpoint.name, 'Campus LLM');
+      assert.equal(result.endpoint.baseUrl, 'https://example.com/v1');
+      assert.include(result.endpoint.apiKeyMasked, '...');
+      assert.notInclude(result.endpoint.apiKeyMasked, 'sk-campus-key');
+
+      const endpoints = await selectCustomEndpoints('1');
+      assert.lengthOf(endpoints, 1);
+      assert.equal(decryptFromStorage(endpoints[0].encrypted_secret_key), 'sk-campus-key');
+    });
+
+    test('rejects a loopback custom endpoint URL', async () => {
+      try {
+        await client.addCustomEndpoint.mutate({
+          name: 'Local',
+          base_url: 'https://127.0.0.1/v1',
+          secret_key: 'sk-local',
+        });
+        assert.fail('Expected addCustomEndpoint to reject a loopback URL');
+      } catch (e) {
+        assert.instanceOf(e, TRPCClientError);
+      }
+    });
+
+    test('delete a custom endpoint', async () => {
+      const endpoints = await selectCustomEndpoints('1');
+      assert.lengthOf(endpoints, 1);
+      await client.deleteCustomEndpoint.mutate({ endpoint_id: endpoints[0].id });
+      assert.lengthOf(await selectCustomEndpoints('1'), 0);
     });
 
     test('toggle custom API keys off', async () => {
