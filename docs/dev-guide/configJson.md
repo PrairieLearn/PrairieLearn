@@ -72,7 +72,9 @@ For example, if your IPv4 is `192.168.1.60` and PL is running on port `3000`, yo
 
 ### Running PrairieLearn natively
 
-This section applies to [native installations](installingNative.md), where PrairieLearn runs directly on your computer. If you start PrairieLearn with `docker run`, including on macOS, follow the [Docker instructions for workspaces and external graders](../installing.md#support-for-external-graders-and-workspaces) instead and leave the directory, hostname, and ownership settings below at their defaults.
+!!! note
+
+    This section applies to [native installations](installingNative.md), where PrairieLearn runs directly on your computer. If you start PrairieLearn with `docker run`, follow the [Docker instructions for workspaces and external graders](../installing.md#support-for-external-graders-and-workspaces) instead and leave the directory, hostname, and ownership settings below at their defaults.
 
 Set the directories used to store workspace files in your `config.json`:
 
@@ -83,7 +85,7 @@ Set the directories used to store workspace files in your `config.json`:
 }
 ```
 
-#### Running workspaces / external graders natively on macOS
+#### Running natively on macOS
 
 On macOS, you may also need to change `"workspaceDevContainerHostname"` to `"localhost"`.
 
@@ -127,7 +129,7 @@ In both Docker and native installations, you can use locally built [Docker image
 }
 ```
 
-These options are independent and both default to `true`. If you are testing only a local grader image, set only `externalGradingPullImagesFromDockerHub` to `false`; PrairieLearn will continue to pull the workspace image automatically.
+These options are independent and both default to `true`.
 
 ## Enterprise
 
