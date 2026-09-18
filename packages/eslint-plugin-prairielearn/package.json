@@ -12,8 +12,8 @@
   },
   "main": "./dist/index.js",
   "scripts": {
-    "build": "tsgo",
-    "dev": "tsgo --watch --preserveWatchOutput",
+    "build": "tsc",
+    "dev": "tsc --watch --preserveWatchOutput",
     "test": "vitest run --coverage"
   },
   "peerDependencies": {
@@ -21,7 +21,7 @@
   },
   "dependencies": {
     "@typescript-eslint/utils": "^8.67.0",
-    "typescript": "^6.0.3"
+    "typescript": "npm:@typescript/typescript6@^6.0.2"
   },
   "devDependencies": {
     "@html-eslint/parser": "^0.64.0",
@@ -29,7 +29,7 @@
     "@types/node": "^24.13.3",
     "@typescript-eslint/rule-tester": "^8.67.0",
     "@typescript-eslint/types": "^8.67.0",
-    "@typescript/native-preview": "beta",
+    "@typescript/native": "npm:typescript@^7.0.2",
     "@vitest/coverage-v8": "^5.0.0",
     "vitest": "^5.0.0"
   }

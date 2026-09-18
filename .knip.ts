@@ -86,7 +86,7 @@ const CLI_ONLY_DEPS = [
   'pyright',
   's3rver',
   '@postgres-language-server/cli',
-  '@typescript/native-preview',
+  '@typescript/native',
   '@prairielearn/pin-github-actions',
 ];
 

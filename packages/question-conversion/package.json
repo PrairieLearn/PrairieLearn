@@ -20,8 +20,8 @@
     "./trimmer": "./dist/trimmer/index.js"
   },
   "scripts": {
-    "build": "tsgo",
-    "dev": "tsgo --watch --preserveWatchOutput",
+    "build": "tsc",
+    "dev": "tsc --watch --preserveWatchOutput",
     "test": "vitest run --coverage"
   },
   "dependencies": {
@@ -43,7 +43,7 @@
     "@prairielearn/tsconfig": "workspace:^",
     "@types/he": "^1.2.3",
     "@types/node": "^24.13.3",
-    "@typescript/native-preview": "beta",
+    "@typescript/native": "npm:typescript@^7.0.2",
     "@vitest/coverage-v8": "^5.0.0",
     "undici": "^8.10.0",
     "vitest": "^5.0.0",

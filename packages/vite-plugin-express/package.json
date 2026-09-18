@@ -12,8 +12,8 @@
   },
   "main": "./dist/index.js",
   "scripts": {
-    "build": "tsgo",
-    "dev": "tsgo --watch --preserveWatchOutput"
+    "build": "tsc",
+    "dev": "tsc --watch --preserveWatchOutput"
   },
   "dependencies": {
     "debounce": "^3.0.0",
@@ -25,6 +25,6 @@
     "@prairielearn/tsconfig": "workspace:^",
     "@types/node": "^24.13.3",
     "@types/picomatch": "^4.0.3",
-    "@typescript/native-preview": "beta"
+    "@typescript/native": "npm:typescript@^7.0.2"
   }
 }

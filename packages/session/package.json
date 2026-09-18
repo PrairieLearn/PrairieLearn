@@ -12,8 +12,8 @@
   },
   "main": "dist/index.js",
   "scripts": {
-    "build": "tsgo",
-    "dev": "tsgo --watch --preserveWatchOutput",
+    "build": "tsc",
+    "dev": "tsc --watch --preserveWatchOutput",
     "test": "vitest run --coverage"
   },
   "dependencies": {
@@ -32,7 +32,7 @@
     "@types/node": "^24.13.3",
     "@types/on-headers": "^1.0.4",
     "@types/uid-safe": "^2.1.5",
-    "@typescript/native-preview": "beta",
+    "@typescript/native": "npm:typescript@^7.0.2",
     "@vitest/coverage-v8": "^5.0.0",
     "express": "^4.22.3 <5",
     "fetch-cookie": "^3.2.0",
