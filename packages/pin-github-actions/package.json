@@ -15,11 +15,11 @@
   },
   "main": "dist/cli.js",
   "scripts": {
-    "build": "tsgo"
+    "build": "tsc"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
     "@types/node": "^24.13.3",
-    "@typescript/native-preview": "beta"
+    "@typescript/native": "npm:typescript@^7.0.2"
   }
 }

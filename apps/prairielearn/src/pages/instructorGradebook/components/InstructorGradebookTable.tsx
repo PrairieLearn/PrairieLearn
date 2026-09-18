@@ -35,7 +35,12 @@ import {
 } from '@prairielearn/ui';
 
 import { EnrollmentStatusIcon } from '../../../components/EnrollmentStatusIcon.js';
-import { StudentLabelBadge } from '../../../components/StudentLabelBadge.js';
+import {
+  StudentLabelsCell,
+  StudentLabelsFilter,
+  StudentLabelsHeader,
+  applyStudentLabelsFilter,
+} from '../../../components/StudentLabels.js';
 import type { StaffStudentLabel } from '../../../lib/client/safe-db-types.js';
 import { getStudentEnrollmentUrl } from '../../../lib/client/url.js';
 import { type EnumEnrollmentStatus, EnumEnrollmentStatusSchema } from '../../../lib/db-types.js';
@@ -251,32 +256,12 @@ function GradebookTable({
           meta: {
             label: 'Labels',
           },
-          header: () => (
-            <span className="d-inline-flex align-items-center gap-1">
-              <span>Labels</span>
-              <i className="bi bi-people" aria-hidden="true" />
-            </span>
+          header: StudentLabelsHeader,
+          cell: (info) => (
+            <StudentLabelsCell labelIds={info.getValue()} studentLabelsById={studentLabelsById} />
           ),
-          cell: (info) => {
-            const labelIds = info.getValue();
-            if (labelIds.length === 0) return '—';
-            const labels = labelIds
-              .map((id) => studentLabelsById.get(id))
-              .filter((l): l is StaffStudentLabel => l != null);
-            return (
-              <div className="d-flex flex-wrap gap-1">
-                {labels.map((label) => (
-                  <StudentLabelBadge key={label.id} label={label} />
-                ))}
-              </div>
-            );
-          },
-          filterFn: (row, _columnId, filter: MultiSelectFilterValue) => {
-            const labelIds = new Set(row.original.student_label_ids);
-            return applyMultiSelectFilter(filter, (values) =>
-              values.some((id) => labelIds.has(id)),
-            );
-          },
+          filterFn: (row, _columnId, filter: MultiSelectFilterValue) =>
+            applyStudentLabelsFilter(row.original.student_label_ids, filter),
         }),
 
         ...Array.from(assessmentsBySet.groups.entries(), ([setId, assessments]) =>
@@ -389,8 +374,6 @@ function GradebookTable({
       };
     });
 
-    const labelIds = studentLabels.map((l) => l.id);
-
     return {
       role: ({ header }) => (
         <MultiSelectColumnFilter
@@ -407,21 +390,11 @@ function GradebookTable({
         />
       ),
       student_labels: ({ header }) => (
-        <MultiSelectColumnFilter
-          column={header.column}
-          allColumnValues={labelIds}
-          getSearchText={(value) => studentLabelsById.get(value)?.name ?? value}
-          renderValueLabel={({ value }) => {
-            const label = studentLabelsById.get(value);
-            if (!label) return <span>{value}</span>;
-            return <span>{label.name}</span>;
-          }}
-          showSearch
-        />
+        <StudentLabelsFilter column={header.column} studentLabels={studentLabels} />
       ),
       ...assessmentFilters,
     } satisfies Record<string, ColumnFilter>;
-  }, [courseAssessments, studentLabels, studentLabelsById]);
+  }, [courseAssessments, studentLabels]);
 
   const table = useTanstackTable({
     data: gradebookRows,

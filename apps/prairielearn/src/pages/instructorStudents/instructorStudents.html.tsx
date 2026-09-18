@@ -441,16 +441,7 @@ function StudentsCard({
             if (info.row.original.user) {
               return info.getValue() || '—';
             }
-            return (
-              <OverlayTrigger
-                tooltip={{
-                  body: 'Student information is not yet available.',
-                  props: { id: 'students-name-tooltip' },
-                }}
-              >
-                <i className="bi bi-question-circle" />
-              </OverlayTrigger>
-            );
+            return <span className="text-muted">Not available</span>;
           },
         }),
         columnHelper.accessor((row) => row.enrollment.status, {
@@ -469,16 +460,7 @@ function StudentsCard({
             if (info.row.original.user) {
               return info.getValue() || '—';
             }
-            return (
-              <OverlayTrigger
-                tooltip={{
-                  body: 'Student information is not yet available.',
-                  props: { id: 'students-uin-tooltip' },
-                }}
-              >
-                <i className="bi bi-question-circle" />
-              </OverlayTrigger>
-            );
+            return <span className="text-muted">Not available</span>;
           },
         }),
         columnHelper.accessor((row) => row.user?.email, {
@@ -488,16 +470,7 @@ function StudentsCard({
             if (info.row.original.user) {
               return info.getValue() || '—';
             }
-            return (
-              <OverlayTrigger
-                tooltip={{
-                  body: 'Student information is not yet available.',
-                  props: { id: 'students-email-tooltip' },
-                }}
-              >
-                <i className="bi bi-question-circle" />
-              </OverlayTrigger>
-            );
+            return <span className="text-muted">Not available</span>;
           },
         }),
 
@@ -535,14 +508,7 @@ function StudentsCard({
           cell: (info) => {
             const date = info.getValue();
             if (date == null) return '—';
-            return (
-              <FriendlyDate
-                date={date}
-                timezone={timezone}
-                options={{ includeTz: false }}
-                tooltip
-              />
-            );
+            return <FriendlyDate date={date} timezone={timezone} options={{ includeTz: false }} />;
           },
         }),
       ]),
