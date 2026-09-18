@@ -15,8 +15,8 @@ export const DEFAULT_EXAM_INSTRUCTIONS: readonly string[] = [
   'If you need more room, identify the question number on any additional page.',
 ];
 
-export function answerKeyDescription(formId: string): string {
-  return `Correct answers are shown with the questions for assessment Form ID ${formId}.`;
+export function answerKeyDescription(formId: string, formLabel?: string): string {
+  return `Correct answers are shown with the questions for assessment ${formLabel ? `Form ${formLabel}` : `Form ID ${formId}`}.`;
 }
 
 export function getPrintCoverFields({
@@ -44,11 +44,13 @@ export function getDefaultHonorCodePledge(teamWork: boolean): string[] {
 export function getPrintFooterLabel({
   document,
   formId,
+  formLabel,
 }: {
   document: PrintDocument;
   formId: string;
+  formLabel?: string;
 }): string {
-  return `${document === 'answer_key' ? 'Answer key  |  ' : ''}Form ID ${formId}`;
+  return `${document === 'answer_key' ? 'Answer key  |  ' : ''}${formLabel ? `Form ${formLabel}` : `Form ID ${formId}`}`;
 }
 
 /**
@@ -59,6 +61,7 @@ export function getPrintFooterLabel({
 export function buildPrintableCover({
   resLocals,
   document,
+  formLabel,
   identityFields,
   questionCount,
   maxPoints,
@@ -67,6 +70,7 @@ export function buildPrintableCover({
 }: {
   resLocals: ResLocalsForPage<'assessment-instance'>;
   document: PrintDocument;
+  formLabel?: string;
   identityFields: readonly string[];
   questionCount: number;
   maxPoints: number;
@@ -79,7 +83,7 @@ export function buildPrintableCover({
 
   const instructionBlocks: PrintableTextBlock[] = [
     isAnswerKey
-      ? { type: 'paragraph', text: answerKeyDescription(formId) }
+      ? { type: 'paragraph', text: answerKeyDescription(formId, formLabel) }
       : { type: 'list', ordered: true, items: [...DEFAULT_EXAM_INSTRUCTIONS] },
     ...(assessmentTextHtml ? htmlToTextBlocks(assessmentTextHtml) : []),
   ];
@@ -106,9 +110,9 @@ export function buildPrintableCover({
     summary: [
       { term: 'Questions', value: String(questionCount) },
       { term: 'Points', value: String(maxPoints) },
-      { term: 'Form ID', value: formId },
+      { term: formLabel ? 'Form' : 'Form ID', value: formLabel ?? formId },
     ],
     sections,
-    footer: `${resLocals.course_instance.long_name ?? resLocals.course_instance.short_name}  |  Form ID ${formId}`,
+    footer: `${resLocals.course_instance.long_name ?? resLocals.course_instance.short_name}  |  ${getPrintFooterLabel({ document: 'exam', formId, formLabel })}`,
   };
 }
