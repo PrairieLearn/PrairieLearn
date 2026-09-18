@@ -96,15 +96,9 @@ function paramsToArray(
     const v = result[1];
     if (!(v in map)) {
       if (!(v in params)) throw new Error(`Missing parameter: ${v}`);
-      if (Array.isArray(params[v])) {
-        map[v] = 'ARRAY[' + params[v].map((_, n) => '$' + (n + nParams + 1)).join(',') + ']';
-        nParams += params[v].length;
-        paramsArray.push(...params[v]);
-      } else {
-        nParams++;
-        map[v] = '$' + nParams;
-        paramsArray.push(params[v]);
-      }
+      nParams++;
+      map[v] = '$' + nParams;
+      paramsArray.push(params[v]);
     }
     processedSql += remainingSql.slice(0, result.index) + map[v];
     remainingSql = remainingSql.slice(result.index + result[0].length);

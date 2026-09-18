@@ -115,6 +115,33 @@ FROM
 WHERE
   s.id = $submission_id;
 
+-- BLOCK cancel_grading_job
+WITH
+  canceled_job AS (
+    UPDATE grading_jobs
+    SET
+      grading_request_canceled_at = now(),
+      grading_request_canceled_by = NULL
+    WHERE
+      id = $grading_job_id
+    RETURNING
+      *
+  ),
+  updated_submission AS (
+    UPDATE submissions AS s
+    SET
+      grading_requested_at = NULL,
+      modified_at = now()
+    FROM
+      canceled_job AS cj
+    WHERE
+      s.id = cj.submission_id
+  )
+SELECT
+  *
+FROM
+  canceled_job;
+
 -- BLOCK update_grading_job_after_grading
 WITH
   updated_submission AS (
