@@ -1,0 +1,213 @@
+.print-preparation {
+  max-width: 1600px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.print-preparation-icon {
+  background: var(--bs-primary-bg-subtle);
+  border-radius: 0.65rem;
+  color: var(--bs-primary);
+  display: grid;
+  flex-shrink: 0;
+  font-size: 1.5rem;
+  height: 3rem;
+  place-items: center;
+  width: 3rem;
+}
+
+.print-preparation-columns {
+  display: grid;
+  grid-template-columns: clamp(340px, 34%, 420px) minmax(0, 1fr);
+  gap: 1.5rem;
+}
+
+.print-preparation-controls,
+.print-preparation-workspace {
+  min-width: 0;
+}
+
+.print-preparation-controls-scroll {
+  max-height: 60dvh;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  scrollbar-gutter: stable;
+  padding: 2px;
+}
+
+.print-preparation-actions {
+  background: var(--bs-body-bg);
+  border-top: 1px solid var(--bs-border-color);
+  margin-top: 0.75rem;
+  padding: 0.75rem 2px 2px;
+}
+
+.print-preparation .card {
+  border-color: var(--bs-border-color);
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+.print-preparation-preview {
+  position: relative;
+  overflow: hidden;
+  height: 70dvh;
+  background: #e7eaee;
+}
+
+.print-preparation-frame {
+  position: absolute;
+  top: 0;
+  left: 0;
+  border: 0;
+  transform-origin: top left;
+}
+
+.print-preparation-overlay {
+  position: absolute;
+  inset: 0;
+  background: #e7eaee;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+}
+
+.print-preparation-empty {
+  background: var(--bs-tertiary-bg);
+  min-height: 540px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  padding: 2rem;
+  text-align: center;
+}
+
+.print-preparation-question {
+  display: grid;
+  grid-template-columns: 1rem 2rem minmax(0, 1fr);
+  align-items: start;
+  gap: 0.75rem;
+  padding: 1rem;
+  border-top: 1px solid var(--bs-border-color);
+}
+
+.print-preparation-question-include {
+  display: flex;
+  align-items: center;
+  min-height: 2rem;
+  padding-left: 0;
+  margin-bottom: 0;
+}
+
+.print-preparation-question-include .form-check-input {
+  margin: 0;
+}
+
+.print-preparation-question-selected {
+  box-shadow: inset 3px 0 var(--bs-primary);
+}
+
+.print-preparation-question-title {
+  overflow-wrap: anywhere;
+}
+
+.print-preparation-question-review,
+.print-preparation-question-space {
+  grid-column: 1 / -1;
+}
+
+.print-preparation-question-number {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  background: var(--bs-tertiary-bg);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.print-preparation-question-space {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.print-preparation-question-space .form-label {
+  flex-shrink: 0;
+}
+
+.print-preparation-question-space .form-select {
+  min-width: 0;
+}
+
+@media (min-width: 992px) and (min-height: 600px) {
+  /* Share the shell's remaining height so only the two panels scroll. */
+  .print-preparation-container {
+    overflow: hidden;
+  }
+
+  .print-preparation-container #content,
+  .print-preparation-root,
+  .print-preparation,
+  .print-preparation-form,
+  .print-preparation-controls,
+  .print-preparation-workspace {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+  }
+
+  .print-preparation-container #content > .alert,
+  .print-preparation > .alert {
+    flex-shrink: 0;
+    max-height: 25vh;
+    overflow-y: auto;
+  }
+
+  .print-preparation-columns {
+    flex: 1;
+    min-height: 0;
+    grid-template-rows: minmax(0, 1fr);
+  }
+
+  .print-preparation-controls-scroll {
+    flex: 1;
+    min-height: 0;
+    max-height: none;
+  }
+
+  .print-preparation-actions,
+  .print-preparation-preview-card > :not(.print-preparation-preview, .print-preparation-empty) {
+    flex-shrink: 0;
+  }
+
+  .print-preparation-preview-card,
+  .print-preparation-preview,
+  .print-preparation-empty {
+    flex: 1;
+    min-height: 0;
+  }
+
+  .print-preparation-preview {
+    height: auto;
+  }
+}
+
+@media (max-width: 991.98px) {
+  .print-preparation-columns {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 575.98px) {
+  .print-preparation-question-space {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.25rem;
+  }
+}
