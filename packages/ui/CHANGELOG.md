@@ -1,5 +1,11 @@
 # @prairielearn/ui
 
+## 4.0.1
+
+### Patch Changes
+
+- 8151381: Build with the official TypeScript 7 release instead of the native preview.
+
 ## 4.0.0
 
 ### Major Changes
