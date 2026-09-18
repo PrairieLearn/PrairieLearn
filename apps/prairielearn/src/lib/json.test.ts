@@ -1,7 +1,18 @@
+import { codeFrameColumns } from '@babel/code-frame';
 import jju from 'jju';
 import { assert, describe, it } from 'vitest';
 
 import { applyKeyOrder, formatJsonParseError } from './json.js';
+
+function getMarkedCharacter(codeFrame: string) {
+  const [sourceLine, markerLine] = codeFrame.split('\n');
+  assert.isDefined(sourceLine);
+  assert.isDefined(markerLine);
+
+  const caretIndex = markerLine.indexOf('^');
+  assert.notEqual(caretIndex, -1);
+  return sourceLine[caretIndex];
+}
 
 describe('formatJsonParseError', () => {
   it('formats the parser location as a code frame', () => {
@@ -46,6 +57,41 @@ describe('formatJsonParseError', () => {
         '  4 |',
       ].join('\n'),
     );
+  });
+
+  it('bounds code frames for long single-line documents', () => {
+    const contents = `{"title":"${'a'.repeat(10_000)}",}`;
+
+    let parseError: unknown;
+    try {
+      jju.parse(contents, { mode: 'json' });
+    } catch (error) {
+      parseError = error;
+    }
+
+    const codeFrame = formatJsonParseError(contents, parseError);
+
+    assert.isBelow(codeFrame.length, 500);
+    assert.include(codeFrame, '…');
+    assert.include(codeFrame, '^ Trailing comma in object at 1:10013');
+  });
+
+  it('preserves the character marked by the caret when cropping', () => {
+    const contents = `${'a'.repeat(500)}X${'b'.repeat(500)}`;
+    const parseError = Object.assign(new SyntaxError('Unexpected token at 1:501'), {
+      row: 1,
+      column: 501,
+    });
+
+    const unboundedCodeFrame = codeFrameColumns(
+      contents,
+      { start: { line: parseError.row, column: parseError.column } },
+      { highlightCode: false, message: parseError.message },
+    );
+    const boundedCodeFrame = formatJsonParseError(contents, parseError);
+
+    assert.equal(getMarkedCharacter(boundedCodeFrame), getMarkedCharacter(unboundedCodeFrame));
+    assert.equal(getMarkedCharacter(boundedCodeFrame), 'X');
   });
 });
 
