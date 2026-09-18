@@ -1,3 +1,6 @@
+import * as path from 'node:path';
+
+import fs from 'fs-extra';
 import { afterAll, assert, beforeAll, beforeEach, describe, it } from 'vitest';
 
 import { config } from '../../lib/config.js';
@@ -141,6 +144,43 @@ describe('Course syncing', () => {
       comment2: 'Course comment 2',
     });
   });
+
+  it.each([
+    {
+      description: 'the referenced line still exists',
+      malformedContents: '{\n  "title": "Before",\n}\n',
+      changedContents: '{\n  "title": "After"\n}\n',
+      errorLine: 3,
+    },
+    {
+      description: 'the referenced line no longer exists',
+      malformedContents:
+        '{\n  "name": "TEST 101",\n  "title": "Before",\n  "timezone": "UTC",\n}\n',
+      changedContents: '{"title":"After"}\n',
+      errorLine: 5,
+    },
+  ])(
+    'preserves a persisted JSON error after the file changes when $description',
+    async ({ malformedContents, changedContents, errorLine }) => {
+      const { courseDir } = await util.writeAndSyncCourseData(util.getCourseData());
+      const courseInfoPath = path.join(courseDir, 'infoCourse.json');
+      await fs.writeFile(courseInfoPath, malformedContents);
+      await util.syncCourseData(courseDir);
+
+      const persistedError = [
+        'Error parsing JSON:',
+        `> ${errorLine} | }`,
+        `    | ^ Trailing comma in object at ${errorLine}:1`,
+      ].join('\n');
+      const [syncedCourse] = await util.dumpTableWithSchema('courses', CourseSchema);
+      assert.equal(syncedCourse.sync_errors, persistedError);
+
+      await fs.writeFile(courseInfoPath, changedContents);
+
+      const [courseAfterFileChange] = await util.dumpTableWithSchema('courses', CourseSchema);
+      assert.equal(courseAfterFileChange.sync_errors, persistedError);
+    },
+  );
 
   it('forbids sharing settings when sharing is not enabled', async () => {
     const courseData = util.getCourseData();
