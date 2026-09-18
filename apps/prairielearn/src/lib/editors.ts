@@ -53,7 +53,7 @@ import {
 import { FileType, getNamesForCopy, getUniqueNames, parseJsonObject } from './editorUtil.shared.js';
 import { idsEqual } from './id.js';
 import { removeQidsFromAssessment, renameQidInAssessment } from './infoAssessment-edits.js';
-import { computeStableHash } from './json.js';
+import { computeStableHash, formatJsonParseError } from './json.js';
 import { EXAMPLE_COURSE_PATH, REPOSITORY_ROOT_PATH } from './paths.js';
 import { formatJsonWithPrettier } from './prettier.js';
 import { qidsToRemoveForQuestions } from './question-deletion-validation.js';
@@ -2468,16 +2468,22 @@ export class FileUploadEditor extends Editor {
       }
 
       if (parseJsonObject(textContents) == null) {
-        let parseError = '';
         try {
           jju.parse(textContents, { mode: 'json' });
         } catch (err) {
-          const message = err instanceof Error ? err.message : String(err);
-          parseError = ` Error parsing JSON: ${message}`;
+          const context = formatJsonParseError(textContents, err);
+          throw new AugmentedError(`Cannot upload ${relativePath}: Invalid JSON`, {
+            status: 400,
+            info: html`
+              <p>PrairieLearn metadata files must contain a valid JSON object.</p>
+              <p><strong>JSON parse error:</strong></p>
+              <pre class="border p-2" aria-label="JSON error">${context}</pre>
+            `,
+          });
         }
         throw new HttpStatusError(
           400,
-          `Cannot upload ${relativePath}: PrairieLearn metadata files must contain a valid JSON object.${parseError}`,
+          `Cannot upload ${relativePath}: PrairieLearn metadata files must contain a valid JSON object.`,
         );
       }
     }

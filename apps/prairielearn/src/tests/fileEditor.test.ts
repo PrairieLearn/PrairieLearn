@@ -369,8 +369,24 @@ describe('test file editor', { timeout: 20_000 }, function () {
 
         assert.equal(res.status, 400);
         const responseText = await res.text();
-        assert.include(responseText, 'must contain a valid JSON object');
+        assert.include(responseText, `Cannot upload ${infoAssessmentPath}: Invalid JSON`);
+        assert.include(
+          responseText,
+          'PrairieLearn metadata files must contain a valid JSON object.',
+        );
+        assert.include(responseText, 'JSON parse error:');
         assert.include(responseText, 'Trailing comma in object at 3:1');
+        const $ = cheerio.load(responseText);
+        assert.equal(
+          $('pre[aria-label="JSON error"]').text(),
+          [
+            '  1 | {',
+            '  2 |   "title": "Homework 1",',
+            '> 3 | }',
+            '    | ^ Trailing comma in object at 3:1',
+            '  4 |',
+          ].join('\n'),
+        );
         assert.isTrue((await fs.readFile(absolutePath)).equals(originalContents));
       });
 
@@ -383,9 +399,9 @@ describe('test file editor', { timeout: 20_000 }, function () {
         {
           description: 'malformed UTF-8 that appears to be plaintext',
           contents: Buffer.concat([
-            Buffer.from(`{"title":"${'a'.repeat(100)}`),
+            Buffer.from(`{"title":"${':) '.repeat(10)}`),
             Buffer.from([0xff]),
-            Buffer.from('"}'),
+            Buffer.from(' >:["}'),
           ]),
           error: 'must use valid UTF-8 encoding',
         },

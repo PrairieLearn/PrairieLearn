@@ -122,6 +122,29 @@ describe('course database', () => {
       });
     });
 
+    it('includes a code frame in malformed JSON errors', async () => {
+      await withTempFile(async (file) => {
+        const json = `{\n  "uuid": "${UUID}",\n}\n`;
+        await fs.writeFile(file.path, json);
+        const result = await courseDb.loadInfoFile({
+          coursePath: file.dirname,
+          filePath: file.basename,
+        });
+        assert(result !== null);
+        assert.equal(
+          infofile.stringifyErrors(result),
+          [
+            'Error parsing JSON:',
+            '  1 | {',
+            `  2 |   "uuid": "${UUID}",`,
+            '> 3 | }',
+            '    | ^ Trailing comma in object at 3:1',
+            '  4 |',
+          ].join('\n'),
+        );
+      });
+    });
+
     it('errors if no UUID is found in malformed file', async () => {
       await withTempFile(async (file) => {
         const json = `{{malformed, "uid":"${UUID}"`;

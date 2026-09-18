@@ -1,6 +1,28 @@
 import crypto from 'node:crypto';
 
+import { codeFrameColumns } from '@babel/code-frame';
 import stableStringify from 'fast-json-stable-stringify';
+
+export function formatJsonParseError(contents: string, error: unknown) {
+  const message = error instanceof Error ? error.message : String(error);
+  const [summary] = message.split('\n');
+
+  if (
+    !(error instanceof SyntaxError) ||
+    !('row' in error) ||
+    typeof error.row !== 'number' ||
+    !('column' in error) ||
+    typeof error.column !== 'number'
+  ) {
+    return message;
+  }
+
+  return codeFrameColumns(
+    contents,
+    { start: { line: error.row, column: error.column } },
+    { highlightCode: false, linesAbove: 2, linesBelow: 2, message: summary },
+  );
+}
 
 /**
  * Computes a stable SHA-256 hash of a value, using deterministic key ordering.

@@ -1,6 +1,53 @@
+import jju from 'jju';
 import { assert, describe, it } from 'vitest';
 
-import { applyKeyOrder } from './json.js';
+import { applyKeyOrder, formatJsonParseError } from './json.js';
+
+describe('formatJsonParseError', () => {
+  it('formats the parser location as a code frame', () => {
+    const contents = '{\n  "title": "Homework 1",\n}\n';
+
+    let parseError: unknown;
+    try {
+      jju.parse(contents, { mode: 'json' });
+    } catch (error) {
+      parseError = error;
+    }
+
+    assert.equal(
+      formatJsonParseError(contents, parseError),
+      [
+        '  1 | {',
+        '  2 |   "title": "Homework 1",',
+        '> 3 | }',
+        '    | ^ Trailing comma in object at 3:1',
+        '  4 |',
+      ].join('\n'),
+    );
+  });
+
+  it("preserves jju's one-based column in the code frame", () => {
+    const contents = '{\n  "title":,\n}\n';
+
+    let parseError: unknown;
+    try {
+      jju.parse(contents, { mode: 'json' });
+    } catch (error) {
+      parseError = error;
+    }
+
+    assert.equal(
+      formatJsonParseError(contents, parseError),
+      [
+        '  1 | {',
+        '> 2 |   "title":,',
+        '    |           ^ No value found for key title at 2:11',
+        '  3 | }',
+        '  4 |',
+      ].join('\n'),
+    );
+  });
+});
 
 describe('applyKeyOrder', () => {
   it('works with a string', () => {

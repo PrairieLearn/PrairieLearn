@@ -18,6 +18,7 @@ import { config } from '../lib/config.js';
 import { isDraftQid } from '../lib/draft-question.js';
 import { features } from '../lib/features/index.js';
 import { convertLegacyGroupsToGroupsConfig } from '../lib/group-config.js';
+import { formatJsonParseError } from '../lib/json.js';
 import { validatePreferencesSchema } from '../lib/question-settings/validation.js';
 import { UUID_REGEXP_INLINE } from '../lib/string-util.js';
 import { findCoursesBySharingNames, selectOptionalCourseById } from '../models/course.js';
@@ -500,8 +501,9 @@ export async function loadInfoFile<T = { uuid: string }>({
     try {
       // This should always throw
       jju.parse(contents, { mode: 'json' });
-    } catch (e: any) {
-      result = infofile.makeError(`Error parsing JSON: ${e.message}`);
+    } catch (error) {
+      const context = formatJsonParseError(contents, error);
+      result = infofile.makeError(`Error parsing JSON:\n${context}`);
     }
 
     if (filePath !== 'infoCourse.json') {

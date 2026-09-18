@@ -486,6 +486,9 @@ importers:
       '@aws-sdk/lib-storage':
         specifier: ^3.1106.0
         version: 3.1111.0(@aws-sdk/client-s3@3.1111.0)
+      '@babel/code-frame':
+        specifier: ^7.29.7
+        version: 7.29.7
       '@cortex-js/compute-engine':
         specifier: ^0.102.0
         version: 0.102.0
@@ -1198,6 +1201,9 @@ importers:
       '@types/async':
         specifier: ^3.2.25
         version: 3.2.25
+      '@types/babel__code-frame':
+        specifier: ^7.27.0
+        version: 7.27.0
       '@types/blocked':
         specifier: ^1.3.5
         version: 1.3.5
@@ -5437,6 +5443,9 @@ packages:
 
   '@types/async@3.2.25':
     resolution: {integrity: sha512-O6Th/DI18XjrL9TX8LO9F/g26qAz5vynmQqlXt/qLGrskvzCKXKc5/tATz3G2N6lM8eOf3M8/StB14FncAmocg==}
+
+  '@types/babel__code-frame@7.27.0':
+    resolution: {integrity: sha512-Dwlo+LrxDx/0SpfmJ/BKveHf7QXWvLBLc+x03l5sbzykj3oB9nHygCpSECF1a+s+QIxbghe+KHqC90vGtxLRAA==}
 
   '@types/bindings@1.5.5':
     resolution: {integrity: sha512-y59PRZBTo2/HuN94qRjyJD+465vGoXMsqz9MMJDbtJL9oT5/B+tAL6c3k10epIinC2/BBkLqKzKC6keukl8wdQ==}
@@ -13525,6 +13534,8 @@ snapshots:
       '@types/readdir-glob': 1.1.5
 
   '@types/async@3.2.25': {}
+
+  '@types/babel__code-frame@7.27.0': {}
 
   '@types/bindings@1.5.5':
     dependencies:
