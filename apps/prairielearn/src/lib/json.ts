@@ -3,7 +3,11 @@ import crypto from 'node:crypto';
 import { codeFrameColumns } from '@babel/code-frame';
 import stableStringify from 'fast-json-stable-stringify';
 
-export function formatJsonParseError(contents: string, error: unknown) {
+export function formatJsonParseError(
+  contents: string,
+  error: unknown,
+  { surroundingLines = 2 }: { surroundingLines?: number } = {},
+) {
   const message = error instanceof Error ? error.message : String(error);
   const [summary] = message.split('\n');
 
@@ -20,7 +24,12 @@ export function formatJsonParseError(contents: string, error: unknown) {
   return codeFrameColumns(
     contents,
     { start: { line: error.row, column: error.column } },
-    { highlightCode: false, linesAbove: 2, linesBelow: 2, message: summary },
+    {
+      highlightCode: false,
+      linesAbove: surroundingLines,
+      linesBelow: surroundingLines,
+      message: summary,
+    },
   );
 }
 

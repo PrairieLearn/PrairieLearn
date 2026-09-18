@@ -502,7 +502,7 @@ export async function loadInfoFile<T = { uuid: string }>({
       // This should always throw
       jju.parse(contents, { mode: 'json' });
     } catch (error) {
-      const context = formatJsonParseError(contents, error);
+      const context = formatJsonParseError(contents, error, { surroundingLines: 0 });
       result = infofile.makeError(`Error parsing JSON:\n${context}`);
     }
 

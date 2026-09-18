@@ -133,14 +133,7 @@ describe('course database', () => {
         assert(result !== null);
         assert.equal(
           infofile.stringifyErrors(result),
-          [
-            'Error parsing JSON:',
-            '  1 | {',
-            `  2 |   "uuid": "${UUID}",`,
-            '> 3 | }',
-            '    | ^ Trailing comma in object at 3:1',
-            '  4 |',
-          ].join('\n'),
+          ['Error parsing JSON:', '> 3 | }', '    | ^ Trailing comma in object at 3:1'].join('\n'),
         );
       });
     });
