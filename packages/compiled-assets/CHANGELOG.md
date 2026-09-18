@@ -1,5 +1,11 @@
 # @prairielearn/compiled-assets
 
+## 4.1.15
+
+### Patch Changes
+
+- f61dbe4: Wait for both development asset compiler contexts to finish disposing before `close()` resolves.
+
 ## 4.1.14
 
 ### Patch Changes
