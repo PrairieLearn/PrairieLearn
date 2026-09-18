@@ -4,8 +4,15 @@ import path from 'node:path';
 import { load } from 'cheerio';
 import { z } from 'zod';
 
-import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
+import {
+  loadSqlEquiv,
+  queryRows,
+  queryScalar,
+  runInTransactionAsync,
+} from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
+import { updateAssessmentInstance } from './assessment.js';
 import { ensureChunksForCourseAsync, getRuntimeDirectoryForCourse } from './chunks.js';
 import type { PrintPreparationQuestion } from './client/print-preparation.js';
 import {
@@ -16,6 +23,38 @@ import {
 } from './db-types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
+
+/** Creates an independent preview without changing the student's attempt limit. */
+export async function createPrintPreparationAssessmentInstance({
+  assessmentId,
+  userId,
+  authnUserId,
+}: {
+  assessmentId: string;
+  userId: string;
+  authnUserId: string;
+}): Promise<string> {
+  return await runInTransactionAsync(async () => {
+    // Serialize printable instance creation so simultaneous requests get unique numbers.
+    await queryScalar(sql.lock_assessment, { assessment_id: assessmentId }, IdSchema);
+    const assessmentInstanceId = await queryScalar(
+      sql.insert_printable_assessment_instance,
+      { assessment_id: assessmentId, user_id: userId, authn_user_id: authnUserId },
+      IdSchema,
+    );
+    await updateAssessmentInstance(assessmentInstanceId, authnUserId, false);
+    return assessmentInstanceId;
+  });
+}
+
+/** Only hide instance controls when the configuration guarantees a fixed selection and seed. */
+export async function assessmentHasPrintRandomization(assessmentId: string): Promise<boolean> {
+  return await queryScalar(
+    sql.select_has_randomization,
+    { assessment_id: assessmentId },
+    z.boolean(),
+  );
+}
 
 /** These are review suggestions, not a guarantee that a question will work on paper. */
 export function findPaperConcerns(html: string): string[] {

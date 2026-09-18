@@ -1,18 +1,23 @@
 import { afterAll, beforeAll, describe, expect, test } from 'vitest';
 
+import { execute, loadSqlEquiv } from '@prairielearn/postgres';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
 import { makeAssessmentInstance } from '../lib/assessment.js';
+import { DEFAULT_PRINT_SETTINGS } from '../lib/client/print-preparation.js';
 import { getAssessmentTrpcUrl } from '../lib/client/url.js';
 import { config } from '../lib/config.js';
+import { assessmentHasPrintRandomization } from '../lib/print-preparation.js';
 import { selectAssessmentInstanceById } from '../models/assessment-instance.js';
-import { selectAssessmentByTid } from '../models/assessment.js';
+import { selectAssessmentById, selectAssessmentByTid } from '../models/assessment.js';
 import { createAssessmentTrpcClient } from '../trpc/assessment/client.js';
 
+import { runInTransactionAndRollback } from './helperDb.js';
 import * as helperServer from './helperServer.js';
 import { getOrCreateUser } from './utils/auth.js';
 
 const siteUrl = `http://localhost:${config.serverPort}`;
+const sql = loadSqlEquiv(import.meta.url);
 
 function client(assessmentId: string) {
   return createAssessmentTrpcClient({
@@ -26,22 +31,41 @@ function client(assessmentId: string) {
   });
 }
 
+function packetInput(assessmentInstanceId: string, copies = 1) {
+  const data = new FormData();
+  data.set(
+    'metadata',
+    JSON.stringify({
+      instances: [{ assessmentInstanceId, formLabel: 'A', settings: DEFAULT_PRINT_SETTINGS }],
+      copies,
+      document: 'exam',
+    }),
+  );
+  return data;
+}
+
 describe('print preparation', { timeout: 60_000 }, () => {
   beforeAll(helperServer.before());
   afterAll(helperServer.after);
 
-  test('creates and reuses an instructor form without affecting student statistics', async () => {
+  test('creates independent instructor instances even when students only get one attempt', async () => {
     const assessment = await selectAssessmentByTid({
       course_instance_id: '1',
       tid: 'exam20-assessmentTools',
     });
     const api = client(assessment.id);
+    expect(assessment.multiple_instance).toBe(false);
     const first = await api.printableExams.create.mutate();
     const second = await api.printableExams.create.mutate();
-    expect(second).toEqual(first);
+    expect(second.assessmentInstanceId).not.toBe(first.assessmentInstanceId);
     const instance = await selectAssessmentInstanceById(first.assessmentInstanceId);
+    const secondInstance = await selectAssessmentInstanceById(second.assessmentInstanceId);
     expect(instance.user_id).toBe('1');
     expect(instance.include_in_statistics).toBe(false);
+    expect(instance.auto_close).toBe(false);
+    expect(secondInstance.number).toBe(instance.number + 1);
+    expect(secondInstance.include_in_statistics).toBe(false);
+    expect((await selectAssessmentById(assessment.id)).multiple_instance).toBe(false);
     const questions = await api.printableExams.questions.query(first);
     expect(questions.length).toBeGreaterThan(0);
     expect(questions[0].number).toBe('1');
@@ -50,7 +74,42 @@ describe('print preparation', { timeout: 60_000 }, () => {
     );
   });
 
-  test('does not expose another user’s form or another assessment’s questions', async () => {
+  test('regeneration creates a replacement and preserves the original instance', async () => {
+    const assessment = await selectAssessmentByTid({
+      course_instance_id: '1',
+      tid: 'exam20-assessmentTools',
+    });
+    const api = client(assessment.id);
+    const first = await api.printableExams.create.mutate();
+    const original = await selectAssessmentInstanceById(first.assessmentInstanceId);
+    const originalQuestions = await api.printableExams.questions.query(first);
+    const regenerated = await api.printableExams.regenerate.mutate(first);
+    expect(regenerated.assessmentInstanceId).not.toBe(first.assessmentInstanceId);
+    expect(await selectAssessmentInstanceById(first.assessmentInstanceId)).toEqual(original);
+    expect(await api.printableExams.questions.query(first)).toEqual(originalQuestions);
+    expect(await api.printableExams.questions.query(regenerated)).toHaveLength(
+      originalQuestions.length,
+    );
+    expect(
+      (await selectAssessmentInstanceById(regenerated.assessmentInstanceId)).include_in_statistics,
+    ).toBe(false);
+  });
+
+  test('simultaneous requests create distinct instances', async () => {
+    const assessment = await selectAssessmentByTid({
+      course_instance_id: '1',
+      tid: 'exam20-assessmentTools',
+    });
+    const api = client(assessment.id);
+    const instances = await Promise.all([
+      api.printableExams.create.mutate(),
+      api.printableExams.create.mutate(),
+      api.printableExams.create.mutate(),
+    ]);
+    expect(new Set(instances.map((instance) => instance.assessmentInstanceId)).size).toBe(3);
+  });
+
+  test('does not expose or regenerate another user’s instance or another assessment’s instance', async () => {
     const assessment = await selectAssessmentByTid({
       course_instance_id: '1',
       tid: 'exam20-assessmentTools',
@@ -80,11 +139,74 @@ describe('print preparation', { timeout: 60_000 }, () => {
     ).toBe(false);
     await expect(
       api.printableExams.questions.query({ assessmentInstanceId: studentInstanceId }),
-    ).rejects.toThrow('This exam form is not available.');
+    ).rejects.toThrow('This assessment instance is not available.');
+    await expect(
+      api.printableExams.regenerate.mutate({ assessmentInstanceId: studentInstanceId }),
+    ).rejects.toThrow('This assessment instance is not available.');
+    await expect(
+      api.printableExamExport.pdf.mutate(packetInput(studentInstanceId)),
+    ).rejects.toThrow('An assessment instance is not available.');
     const otherForm = await client(otherAssessment.id).printableExams.create.mutate();
     await expect(api.printableExams.questions.query(otherForm)).rejects.toThrow(
-      'This exam form is not available.',
+      'This assessment instance is not available.',
     );
+    await expect(api.printableExams.regenerate.mutate(otherForm)).rejects.toThrow(
+      'This assessment instance is not available.',
+    );
+    await expect(
+      api.printableExamExport.pdf.mutate(packetInput(otherForm.assessmentInstanceId)),
+    ).rejects.toThrow('An assessment instance is not available.');
+  });
+
+  test('validates packet export settings before rendering', async () => {
+    const assessment = await selectAssessmentByTid({
+      course_instance_id: '1',
+      tid: 'exam20-assessmentTools',
+    });
+    await expect(
+      client(assessment.id).printableExamExport.pdf.mutate(packetInput('1', 0)),
+    ).rejects.toThrow('Invalid print export settings.');
+  });
+
+  test('rejects invalid custom cover PDFs before rendering', async () => {
+    const assessment = await selectAssessmentByTid({
+      course_instance_id: '1',
+      tid: 'exam20-assessmentTools',
+    });
+    const api = client(assessment.id);
+    const instance = await api.printableExams.create.mutate();
+    const data = packetInput(instance.assessmentInstanceId);
+    data.append('coverPages', new File(['invalid PDF'], 'bad.pdf', { type: 'application/pdf' }));
+    await expect(api.printableExamExport.pdf.mutate(data)).rejects.toThrow(
+      'valid PDF without password protection',
+    );
+  });
+
+  test('reports exams with questions that support multiple variants', async () => {
+    const assessment = await selectAssessmentByTid({
+      course_instance_id: '1',
+      tid: 'exam20-assessmentTools',
+    });
+    expect(await client(assessment.id).printableExams.capabilities.query()).toEqual({
+      hasRandomization: true,
+    });
+  });
+
+  test.each([
+    ['question order', sql.enable_shuffle],
+    ['zone selection', sql.enable_zone_selection],
+    ['alternative selection', sql.enable_alternative_selection],
+  ])('detects randomized %s even when all question variants are fixed', async (_, query) => {
+    const assessment = await selectAssessmentByTid({
+      course_instance_id: '1',
+      tid: 'exam20-assessmentTools',
+    });
+    await runInTransactionAndRollback(async () => {
+      await execute(sql.set_static_assessment, { assessment_id: assessment.id });
+      expect(await assessmentHasPrintRandomization(assessment.id)).toBe(false);
+      await execute(query, { assessment_id: assessment.id });
+      expect(await assessmentHasPrintRandomization(assessment.id)).toBe(true);
+    });
   });
 
   test('rejects homework assessments', async () => {
@@ -95,6 +217,9 @@ describe('print preparation', { timeout: 60_000 }, () => {
     await expect(client(assessment.id).printableExams.create.mutate()).rejects.toThrow(
       'Only exams can be printed.',
     );
+    await expect(
+      client(assessment.id).printableExamExport.pdf.mutate(packetInput('1')),
+    ).rejects.toThrow('Only exams can be printed.');
   });
 
   test('requires course preview permission', async () => {
@@ -109,5 +234,24 @@ describe('print preparation', { timeout: 60_000 }, () => {
       },
     );
     expect(response.status).toBe(403);
+    const student = await getOrCreateUser({
+      uid: 'student@example.com',
+      name: 'Student User',
+      uin: '000000001',
+    });
+    const trpcUrl = getAssessmentTrpcUrl({ courseInstanceId: '1', assessmentId: assessment.id });
+    const exportResponse = await fetch(`${siteUrl}${trpcUrl}/printableExamExport.pdf`, {
+      method: 'POST',
+      headers: {
+        'X-TRPC': 'true',
+        'X-CSRF-Token': generatePrefixCsrfToken(
+          { url: trpcUrl, authn_user_id: student.id },
+          config.secretKey,
+        ),
+        cookie: 'pl_test_user=test_student',
+      },
+      body: packetInput('1'),
+    });
+    expect(exportResponse.status).toBe(403);
   });
 });

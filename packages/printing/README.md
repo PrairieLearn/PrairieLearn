@@ -186,6 +186,11 @@ Name field. Identity labels are trimmed and may contain up to 40 characters.
 `form_label=A` through `form_label=Z` gives an assessment instance a short label on its cover and
 footers. Omitting it preserves the assessment instance's existing numeric Form ID label.
 
+The print preparation page can combine multiple assessment instances and uploaded PDF cover
+pages into a class packet. Each student copy contains the standard cover (including any continuation
+pages), the uploaded PDFs in order, and that instance's questions. Copies cycle through the selected
+forms. Generated page numbers and identification codes continue to identify pages within the original
+form; uploaded pages retain their own appearance and have no generated identification codes.
 Automatic blocks are measured at the final printable width after asynchronous question content,
 MathJax, fonts, and images have settled, then packed in question order. Explicit blocks reserve an
 exact fraction of the printable content height, including the question's internal spacing. If a

@@ -1,16 +1,22 @@
 import { QueryClient, useMutation, useQuery } from '@tanstack/react-query';
 import clsx from 'clsx';
-import { parseAsString, useQueryState } from 'nuqs';
-import { useCallback, useState } from 'react';
+import { parseAsArrayOf, parseAsString, useQueryState } from 'nuqs';
+import { type ChangeEvent, useCallback, useState } from 'react';
 import { Alert, Badge, Button, ButtonGroup, Card, Form, Spinner } from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
-import { formatDateYMDHM } from '@prairielearn/formatter';
 import { getAppError } from '@prairielearn/trpc/client';
 import { AppErrorAlert, QueryClientProviderDebug } from '@prairielearn/trpc/react';
 import { NuqsAdapter } from '@prairielearn/ui';
 
+import {
+  MAX_COVER_BYTES,
+  MAX_COVER_FILES,
+  MAX_COVER_PAGES,
+  MAX_PRINT_COPIES,
+  MAX_PRINT_INSTANCES,
+} from '../../lib/client/print-packet.js';
 import {
   BLOCK_SIZE_LABELS,
   DEFAULT_PRINT_SETTINGS,
@@ -23,6 +29,7 @@ import type { StaffAssessmentInstance } from '../../lib/client/safe-db-types.js'
 import { getAssessmentInstanceUrl } from '../../lib/client/url.js';
 import { createAssessmentTrpcClient } from '../../trpc/assessment/client.js';
 import { TRPCProvider, useTRPC } from '../../trpc/assessment/context.js';
+import type { PrintableExamExportError } from '../../trpc/assessment/printable-exam-export.js';
 import type { PrintableExamsError } from '../../trpc/assessment/printable-exams.js';
 
 import { type PreviewState, PrintPreview } from './PrintPreview.js';
@@ -30,10 +37,9 @@ import { type PreviewState, PrintPreview } from './PrintPreview.js';
 interface PrintPreparationProps {
   assessmentId: string;
   courseInstanceId: string;
-  multipleInstance: boolean;
+  hasRandomization: boolean;
   groupWork: boolean;
   instances: StaffAssessmentInstance[];
-  timezone: string;
   renderingAvailable: boolean;
   trpcCsrfToken: string;
   search: string;
@@ -71,11 +77,11 @@ export function InstructorAssessmentPrint(props: PrintPreparationProps) {
 InstructorAssessmentPrint.displayName = 'InstructorAssessmentPrint';
 
 function PrintPreparation({
+  assessmentId,
   courseInstanceId,
-  multipleInstance,
+  hasRandomization,
   groupWork,
   instances: initialInstances,
-  timezone,
   renderingAvailable,
 }: PrintPreparationProps) {
   const trpc = useTRPC();
@@ -83,7 +89,25 @@ function PrintPreparation({
     trpc.printableExams.list.queryOptions(undefined, { initialData: initialInstances }),
   );
   const [selectedInstance, setSelectedInstance] = useQueryState('instance', parseAsString);
-  const instanceId = selectedInstance ?? instances.data.at(0)?.id ?? null;
+  const [selectedInstances, setSelectedInstances] = useQueryState(
+    'instances',
+    parseAsArrayOf(parseAsString),
+  );
+  const savedInstanceIds =
+    selectedInstances ??
+    [selectedInstance ?? initialInstances.at(0)?.id].filter((id): id is string => !!id);
+  const instanceIds = hasRandomization ? savedInstanceIds : savedInstanceIds.slice(0, 1);
+  const instanceId =
+    selectedInstance && instanceIds.includes(selectedInstance)
+      ? selectedInstance
+      : (instanceIds.at(0) ?? null);
+  const formLabel = String.fromCharCode(65 + Math.max(0, instanceIds.indexOf(instanceId ?? '')));
+  const [instanceSettings, setInstanceSettings] = useState<Partial<Record<string, PrintSettings>>>(
+    {},
+  );
+  const [coverPages, setCoverPages] = useState<{ id: string; file: File }[]>([]);
+  const [copies, setCopies] = useState('1');
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const validInstance = instances.data.some((instance) => instance.id === instanceId);
   const [document, setDocument] = useState<PrintDocument>('exam');
   const [settings, setSettings] = useState<PrintSettings>(DEFAULT_PRINT_SETTINGS);
@@ -101,7 +125,7 @@ function PrintPreparation({
   } = useForm<PrintSettings>({ defaultValues: DEFAULT_PRINT_SETTINGS });
   const excludedQuestions = watch('excludedQuestions');
   const excludedQuestionNumbers = new Set(excludedQuestions);
-  const layout = printLayoutSearch(settings);
+  const layout = `${printLayoutSearch(settings)}&form_label=${formLabel}`;
   const paperBase = instanceId
     ? `${getAssessmentInstanceUrl({ courseInstanceId, assessmentInstanceId: instanceId })}/paper`
     : '';
@@ -126,6 +150,77 @@ function PrintPreparation({
     ),
   );
   const create = useMutation(trpc.printableExams.create.mutationOptions());
+  const regenerate = useMutation(trpc.printableExams.regenerate.mutationOptions());
+  const packet = useMutation(trpc.printableExamExport.pdf.mutationOptions());
+  const busy = create.isPending || regenerate.isPending || packet.isPending;
+
+  function saveDownload(blob: Blob, filename: string) {
+    const url = URL.createObjectURL(blob);
+    const link = window.document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    link.click();
+    window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+  }
+
+  function settingsForInstance(id: string): PrintSettings {
+    return {
+      ...settings,
+      questionSizes: instanceSettings[id]?.questionSizes ?? {},
+      excludedQuestions: instanceSettings[id]?.excludedQuestions ?? [],
+    };
+  }
+
+  async function downloadPacket(ids: string[], copyCount: number, outputDocument: PrintDocument) {
+    const input = new FormData();
+    input.set(
+      'metadata',
+      JSON.stringify({
+        instances: ids.map((id) => ({
+          assessmentInstanceId: id,
+          formLabel: String.fromCharCode(65 + instanceIds.indexOf(id)),
+          settings: settingsForInstance(id),
+        })),
+        copies: copyCount,
+        document: outputDocument,
+      }),
+    );
+    for (const { file } of coverPages) input.append('coverPages', file);
+    const result = await packet.mutateAsync(input);
+    const bytes = Uint8Array.from(atob(result.base64), (character) => character.charCodeAt(0));
+    saveDownload(new Blob([bytes], { type: 'application/pdf' }), result.filename);
+  }
+
+  async function switchInstance(id: string) {
+    await setSelectedInstance(id);
+    const next = settingsForInstance(id);
+    setSettings(next);
+    reset(next);
+    setSelectedQuestion(null);
+    setPreview(null);
+  }
+
+  async function addInstance() {
+    const result = await create.mutateAsync();
+    await instances.refetch();
+    await setSelectedInstances([...instanceIds, result.assessmentInstanceId]);
+    await switchInstance(result.assessmentInstanceId);
+  }
+
+  async function regenerateInstance(id: string) {
+    const result = await regenerate.mutateAsync({ assessmentInstanceId: id });
+    await instances.refetch();
+    await setSelectedInstances(
+      instanceIds.map((value) => (value === id ? result.assessmentInstanceId : value)),
+    );
+    await switchInstance(result.assessmentInstanceId);
+  }
+
+  async function removeInstance(id: string) {
+    const nextIds = instanceIds.filter((value) => value !== id);
+    await setSelectedInstances(nextIds);
+    if (id === instanceId) await switchInstance(nextIds[0]);
+  }
   const download = useMutation({
     mutationFn: async ({
       format,
@@ -134,17 +229,18 @@ function PrintPreparation({
       format: 'pdf' | 'docx';
       document: PrintDocument;
     }) => {
+      if (format === 'pdf' && instanceId) {
+        await downloadPacket([instanceId], 1, outputDocument);
+        return;
+      }
       const response = await fetch(`${paperBase}/${format}?${layout}&document=${outputDocument}`);
       if (!response.ok) {
         throw new Error('The download could not be generated. Review the preview and try again.');
       }
-      const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
-      const link = window.document.createElement('a');
-      link.href = url;
-      link.download = `exam-form-${instanceId}${outputDocument === 'answer_key' ? '-answer-key' : ''}.${format}`;
-      link.click();
-      window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+      saveDownload(
+        await response.blob(),
+        `exam-form-${formLabel}${outputDocument === 'answer_key' ? '-answer-key' : ''}.${format}`,
+      );
     },
   });
   const onPreviewState = useCallback(
@@ -175,17 +271,27 @@ function PrintPreparation({
     currentPreview?.status === 'ready' &&
     currentPreview.questions > 0 &&
     omitted.size === 0 &&
-    !download.isPending;
+    !download.isPending &&
+    !busy;
+  const copyCount = Number(copies);
+  const validCopies =
+    Number.isInteger(copyCount) && copyCount >= 1 && copyCount <= MAX_PRINT_COPIES;
+  const allInstancesAvailable = instanceIds.every((id) =>
+    instances.data.some((instance) => instance.id === id),
+  );
 
   async function applySettings(values: PrintSettings) {
     setPreview(null);
     if (!instanceId) {
       const result = await create.mutateAsync();
       await instances.refetch();
+      await setSelectedInstances([result.assessmentInstanceId]);
       await setSelectedInstance(result.assessmentInstanceId);
-    } else if (printLayoutSearch(values) === layout) {
+      setInstanceSettings((previous) => ({ ...previous, [result.assessmentInstanceId]: values }));
+    } else if (printLayoutSearch(values) === printLayoutSearch(settings)) {
       await Promise.all([descriptor.refetch(), questions.refetch()]);
     }
+    if (instanceId) setInstanceSettings((previous) => ({ ...previous, [instanceId]: values }));
     setSettings(values);
     reset(values);
     setRetry((value) => value + 1);
@@ -193,6 +299,12 @@ function PrintPreparation({
 
   return (
     <div className="print-preparation">
+      <a
+        className="small mb-3 align-self-start"
+        href={`/pl/course_instance/${courseInstanceId}/instructor/assessment/${assessmentId}/questions`}
+      >
+        <i className="bi bi-arrow-left me-1" aria-hidden="true" /> Back to Questions
+      </a>
       <div className="d-flex align-items-start gap-3 mb-4">
         <span className="print-preparation-icon">
           <i className="bi bi-printer" aria-hidden="true" />
@@ -214,6 +326,16 @@ function PrintPreparation({
         error={getAppError<PrintableExamsError['list']>(instances.error)}
         render={{ UNKNOWN: ({ message }) => message }}
       />
+      <AppErrorAlert
+        error={getAppError<PrintableExamsError['regenerate']>(regenerate.error)}
+        render={{ UNKNOWN: ({ message }) => message }}
+        onDismiss={() => regenerate.reset()}
+      />
+      <AppErrorAlert
+        error={getAppError<PrintableExamExportError['pdf']>(packet.error)}
+        render={{ UNKNOWN: ({ message }) => message }}
+        onDismiss={() => packet.reset()}
+      />
       {groupWork && (
         <Alert variant="info">Creating printable forms for group exams is not supported yet.</Alert>
       )}
@@ -225,7 +347,7 @@ function PrintPreparation({
       )}
       {selectedInstance && !validInstance && (
         <Alert variant="danger">
-          This saved form is not available. Choose one of your forms below.
+          This assessment instance is not available. Choose another instance below.
         </Alert>
       )}
       {reviewCount > 0 && (
@@ -265,66 +387,97 @@ function PrintPreparation({
               role="region"
               aria-label="Print settings and questions"
             >
-              <Card className="mb-3">
-                <Card.Body>
-                  <h2 className="h6 mb-3">Exam form</h2>
-                  {instances.data.length > 0 ? (
-                    <Form.Group controlId="print-instance">
-                      <Form.Label>Your saved forms</Form.Label>
-                      <Form.Select
-                        value={instanceId ?? ''}
-                        onChange={(event) => {
-                          void setSelectedInstance(event.target.value);
-                          const next = { ...settings, questionSizes: {}, excludedQuestions: [] };
-                          setSettings(next);
-                          reset(next);
-                          setSelectedQuestion(null);
-                        }}
-                      >
-                        {!validInstance && <option value={instanceId ?? ''}>Choose a form</option>}
-                        {instances.data.map((instance) => (
-                          <option key={instance.id} value={instance.id}>
-                            Form {instance.id} ·{' '}
-                            {instance.date
-                              ? formatDateYMDHM(instance.date, timezone)
-                              : `Version ${instance.number}`}
-                          </option>
-                        ))}
-                      </Form.Select>
-                      <Form.Text>
-                        Preview and downloads use the same questions and answer choices.
-                      </Form.Text>
-                    </Form.Group>
-                  ) : (
-                    <p className="small text-muted mb-0">
-                      Create a form to choose the question variants for your paper exam. Changing
-                      the layout will keep those variants.
+              {hasRandomization && (
+                <Card className="mb-3">
+                  <Card.Body>
+                    <h2 className="h6 mb-2">Assessment instances</h2>
+                    <p className="small text-muted">
+                      Each form is a different randomized instance of this exam. Select a form to
+                      preview it. Copies cycle through these forms in order.
                     </p>
-                  )}
-                  {multipleInstance && instances.data.length > 0 && !groupWork && (
+                    <div
+                      className="d-flex flex-column gap-2"
+                      role="group"
+                      aria-label="Assessment instances"
+                    >
+                      {instanceIds.map((id, index) => {
+                        const label = String.fromCharCode(65 + index);
+                        return (
+                          <div key={id} className="d-flex align-items-center gap-2">
+                            <Button
+                              type="button"
+                              size="sm"
+                              className="flex-grow-1 text-start"
+                              variant={id === instanceId ? 'primary' : 'outline-secondary'}
+                              aria-pressed={id === instanceId}
+                              disabled={busy || isDirty || isSubmitting || download.isPending}
+                              onClick={() => void switchInstance(id)}
+                            >
+                              Form {label}
+                              {id === instanceId && <span className="float-end">Previewing</span>}
+                            </Button>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline-secondary"
+                              aria-label={`Regenerate Form ${label}`}
+                              disabled={
+                                busy || isDirty || isSubmitting || download.isPending || groupWork
+                              }
+                              onClick={() => void regenerateInstance(id).catch(() => {})}
+                            >
+                              <i className="bi bi-arrow-clockwise" aria-hidden="true" />
+                            </Button>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline-secondary"
+                              aria-label={`Remove Form ${label}`}
+                              disabled={
+                                instanceIds.length === 1 ||
+                                busy ||
+                                isDirty ||
+                                isSubmitting ||
+                                download.isPending
+                              }
+                              onClick={() => void removeInstance(id)}
+                            >
+                              <i className="bi bi-x-lg" aria-hidden="true" />
+                            </Button>
+                          </div>
+                        );
+                      })}
+                    </div>
                     <Button
                       type="button"
-                      variant="link"
-                      className="px-0 pb-0 small"
-                      disabled={create.isPending}
-                      onClick={() => {
-                        create.mutate(undefined, {
-                          onSuccess: async ({ assessmentInstanceId }) => {
-                            await instances.refetch();
-                            await setSelectedInstance(assessmentInstanceId);
-                            const next = { ...settings, questionSizes: {}, excludedQuestions: [] };
-                            setSettings(next);
-                            reset(next);
-                            setSelectedQuestion(null);
-                          },
-                        });
-                      }}
+                      variant="outline-primary"
+                      size="sm"
+                      className="mt-3"
+                      disabled={
+                        busy ||
+                        isDirty ||
+                        isSubmitting ||
+                        download.isPending ||
+                        groupWork ||
+                        instanceIds.length >= MAX_PRINT_INSTANCES
+                      }
+                      onClick={() => void addInstance().catch(() => {})}
                     >
-                      Create another form
+                      <i className="bi bi-plus-lg me-2" aria-hidden="true" /> Add assessment
+                      instance
                     </Button>
-                  )}
-                </Card.Body>
-              </Card>
+                    {isDirty && (
+                      <p className="small text-muted mt-2 mb-0">
+                        Update the preview to apply your changes before switching forms.
+                      </p>
+                    )}
+                    <p className="small text-muted mt-2 mb-0">
+                      Regenerate replaces that form with new randomization. Review its questions and
+                      selections again before printing.
+                    </p>
+                  </Card.Body>
+                </Card>
+              )}
               <Card className="mb-3">
                 <Card.Body>
                   <h2 className="h6 mb-3">Paper and layout</h2>
@@ -399,6 +552,126 @@ function PrintPreparation({
                       the assessment.
                     </Form.Text>
                   </Form.Group>
+                  <Form.Group controlId="print-cover-pages" className="mt-3">
+                    <Form.Label>Custom cover pages (PDF)</Form.Label>
+                    <Form.Control
+                      type="file"
+                      accept="application/pdf,.pdf"
+                      disabled={packet.isPending || download.isPending}
+                      aria-describedby="print-cover-pages-help"
+                      aria-invalid={!!uploadError}
+                      aria-errormessage={uploadError ? 'print-cover-pages-error' : undefined}
+                      isInvalid={!!uploadError}
+                      multiple
+                      onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                        const next = [
+                          ...coverPages,
+                          ...Array.from(event.target.files ?? [], (file) => ({
+                            id: crypto.randomUUID(),
+                            file,
+                          })),
+                        ];
+                        event.target.value = '';
+                        if (next.some(({ file }) => !file.name.toLowerCase().endsWith('.pdf'))) {
+                          setUploadError(
+                            'Files were not added. Choose PDF files for your custom cover pages.',
+                          );
+                        } else if (
+                          next.length > MAX_COVER_FILES ||
+                          next.reduce((sum, { file }) => sum + file.size, 0) > MAX_COVER_BYTES
+                        ) {
+                          setUploadError(
+                            'Files were not added. Use up to 10 PDFs, totaling no more than 10 MB.',
+                          );
+                        } else {
+                          setCoverPages(next);
+                          setUploadError(null);
+                        }
+                      }}
+                    />
+                    <Form.Control.Feedback type="invalid" id="print-cover-pages-error">
+                      {uploadError}
+                    </Form.Control.Feedback>
+                    <Form.Text id="print-cover-pages-help">
+                      Every exam copy includes all uploaded pages, in this order, after the standard
+                      cover and before the questions. Up to {MAX_COVER_FILES} PDFs, 10 MB total, and{' '}
+                      {MAX_COVER_PAGES} pages.
+                    </Form.Text>
+                  </Form.Group>
+                  {coverPages.length > 0 && (
+                    <>
+                      <ol className="small ps-3 mt-2 mb-1">
+                        {coverPages.map(({ id, file }) => (
+                          <li key={id}>
+                            <div className="d-flex align-items-center gap-2">
+                              <span className="text-break flex-grow-1">{file.name}</span>
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="link"
+                                aria-label={`Remove cover ${file.name}`}
+                                disabled={packet.isPending || download.isPending}
+                                onClick={() =>
+                                  setCoverPages((files) => files.filter((cover) => cover.id !== id))
+                                }
+                              >
+                                Remove
+                              </Button>
+                            </div>
+                          </li>
+                        ))}
+                      </ol>
+                      <p className="small text-muted mb-0">
+                        Files are kept in this tab until export. Re-add them if you reload the page.
+                        The preview below shows the standard cover and questions.
+                      </p>
+                    </>
+                  )}
+                </Card.Body>
+              </Card>
+              <Card className="mb-3">
+                <Card.Body>
+                  <h2 className="h6 mb-3">Class PDF</h2>
+                  <Form.Group controlId="print-copies">
+                    <Form.Label>Number of exam copies</Form.Label>
+                    <Form.Control
+                      type="number"
+                      min={1}
+                      max={MAX_PRINT_COPIES}
+                      step={1}
+                      value={copies}
+                      disabled={packet.isPending || download.isPending}
+                      aria-invalid={!validCopies}
+                      aria-errormessage={!validCopies ? 'print-copies-error' : undefined}
+                      isInvalid={!validCopies}
+                      onChange={(event) => setCopies(event.target.value)}
+                    />
+                    <Form.Control.Feedback type="invalid" id="print-copies-error">
+                      Enter a whole number between 1 and {MAX_PRINT_COPIES}.
+                    </Form.Control.Feedback>
+                  </Form.Group>
+                  <p className="small text-muted mt-2 mb-2">
+                    {instanceIds.length > 1
+                      ? `Forms ${instanceIds.map((_, index) => String.fromCharCode(65 + index)).join(', ')} repeat in order until all ${validCopies ? copyCount : 'requested'} copies are included.`
+                      : 'Each copy includes the same assessment instance.'}{' '}
+                    Each student receives a complete exam with its own cover pages. Print
+                    single-sided.
+                  </p>
+                  <Button
+                    type="button"
+                    className="w-100"
+                    disabled={!canDownload || !validCopies || !allInstancesAvailable}
+                    onClick={() =>
+                      void downloadPacket(instanceIds, copyCount, 'exam').catch(() => {})
+                    }
+                  >
+                    {packet.isPending ? (
+                      <Spinner size="sm" className="me-2" />
+                    ) : (
+                      <i className="bi bi-file-earmark-pdf me-2" aria-hidden="true" />
+                    )}
+                    Download class PDF
+                  </Button>
                 </Card.Body>
               </Card>
               {validInstance && (
@@ -576,15 +849,18 @@ function PrintPreparation({
                 </p>
               )}
               <Button
-                type="submit"
+                type="button"
                 className="w-100"
                 disabled={
                   isSubmitting ||
-                  create.isPending ||
+                  busy ||
                   noQuestionsSelected ||
                   (groupWork && !instanceId) ||
                   (!!selectedInstance && !validInstance)
                 }
+                onClick={(event) => {
+                  void handleSubmit(applySettings)(event).catch(() => {});
+                }}
               >
                 {isSubmitting ? (
                   <>
@@ -609,7 +885,7 @@ function PrintPreparation({
             <Card className="print-preparation-preview-card">
               <Card.Header className="bg-white d-flex flex-wrap align-items-center justify-content-between gap-2 py-3">
                 <div className="d-flex align-items-center gap-3">
-                  <h2 className="h6 mb-0">Preview</h2>
+                  <h2 className="h6 mb-0">Preview · Form {formLabel}</h2>
                   <ButtonGroup size="sm" aria-label="Preview document">
                     <Button
                       type="button"
@@ -699,7 +975,8 @@ function PrintPreparation({
                       Download {document === 'exam' ? 'student exam' : 'answer key'}
                     </div>
                     <div className="text-muted small">
-                      Word content stays editable; pagination may differ.
+                      Downloads below include only Form {formLabel}. Word excludes uploaded cover
+                      pages; pagination may differ.
                     </div>
                   </div>
                   <div className="d-flex gap-2">

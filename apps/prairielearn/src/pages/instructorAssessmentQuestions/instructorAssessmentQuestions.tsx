@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import fs from 'fs-extra';
+import { Button } from 'react-bootstrap';
 import { z } from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
@@ -161,33 +162,47 @@ router.get(
           contentPadding: false,
         },
         content: (
-          <Hydrate>
-            <AssessmentQuestionsEditor
-              course={pageContext.course}
-              courseInstance={pageContext.course_instance}
-              questionRows={questionRows}
-              jsonZones={jsonZones}
-              assessment={pageContext.assessment}
-              assessmentToolDefaults={assessmentToolDefaults}
-              groupsConfigured={groupsConfigured}
-              groupRoles={groupRoles}
-              assessmentCanView={assessmentCanView}
-              assessmentCanSubmit={assessmentCanSubmit}
-              groupsPageUrl={`${pageContext.urlPrefix}/assessment/${res.locals.assessment.id}/groups`}
-              hasCoursePermissionPreview={pageContext.authz_data.has_course_permission_preview}
-              hasCourseInstancePermissionEdit={
-                pageContext.authz_data.has_course_instance_permission_edit
-              }
-              canEdit={canEdit}
-              courseHasQuestions={courseHasQuestions}
-              csrfToken={res.locals.__csrf_token}
-              origHash={origHash}
-              trpcCsrfToken={trpcCsrfToken}
-              search={search}
-              questionSharingEnabled={questionSharingEnabled}
-              consumePublicQuestionsEnabled={consumePublicQuestionsEnabled}
-            />
-          </Hydrate>
+          <>
+            {pageContext.assessment.type === 'Exam' && (
+              <div className="d-flex justify-content-end border-bottom p-2 flex-shrink-0">
+                <Button
+                  variant="outline-primary"
+                  size="sm"
+                  href={`${pageContext.urlPrefix}/assessment/${pageContext.assessment.id}/print_preparation`}
+                >
+                  <i className="bi bi-printer me-2" aria-hidden="true" />
+                  Print preparation
+                </Button>
+              </div>
+            )}
+            <Hydrate>
+              <AssessmentQuestionsEditor
+                course={pageContext.course}
+                courseInstance={pageContext.course_instance}
+                questionRows={questionRows}
+                jsonZones={jsonZones}
+                assessment={pageContext.assessment}
+                assessmentToolDefaults={assessmentToolDefaults}
+                groupsConfigured={groupsConfigured}
+                groupRoles={groupRoles}
+                assessmentCanView={assessmentCanView}
+                assessmentCanSubmit={assessmentCanSubmit}
+                groupsPageUrl={`${pageContext.urlPrefix}/assessment/${res.locals.assessment.id}/groups`}
+                hasCoursePermissionPreview={pageContext.authz_data.has_course_permission_preview}
+                hasCourseInstancePermissionEdit={
+                  pageContext.authz_data.has_course_instance_permission_edit
+                }
+                canEdit={canEdit}
+                courseHasQuestions={courseHasQuestions}
+                csrfToken={res.locals.__csrf_token}
+                origHash={origHash}
+                trpcCsrfToken={trpcCsrfToken}
+                search={search}
+                questionSharingEnabled={questionSharingEnabled}
+                consumePublicQuestionsEnabled={consumePublicQuestionsEnabled}
+              />
+            </Hydrate>
+          </>
         ),
       }),
     );

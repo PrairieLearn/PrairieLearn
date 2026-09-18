@@ -10,6 +10,7 @@ import { assessmentQuestionsRouter } from './assessment-questions.js';
 import { assessmentSettingsRouter } from './assessment-settings.js';
 import { assessmentUploadsRouter } from './assessment-uploads.js';
 import { createContext, t } from './init.js';
+import { printableExamExportRouter } from './printable-exam-export.js';
 import { printableExamsRouter } from './printable-exams.js';
 
 const assessmentRouter = t.router({
@@ -20,6 +21,7 @@ const assessmentRouter = t.router({
   assessmentInstances: assessmentInstancesRouter,
   assessmentUploads: assessmentUploadsRouter,
   printableExams: printableExamsRouter,
+  printableExamExport: printableExamExportRouter,
 });
 
 export type AssessmentRouter = typeof assessmentRouter;

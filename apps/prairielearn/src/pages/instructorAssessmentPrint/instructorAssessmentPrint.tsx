@@ -10,6 +10,7 @@ import { extractPageContext } from '../../lib/client/page-context.js';
 import { StaffAssessmentInstanceSchema } from '../../lib/client/safe-db-types.js';
 import { getAssessmentTrpcUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
+import { assessmentHasPrintRandomization } from '../../lib/print-preparation.js';
 import { isBrowserRenderingAvailable } from '../../lib/printing.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { getUrl } from '../../lib/url.js';
@@ -55,7 +56,7 @@ router.get(
       PageLayout({
         resLocals: res.locals,
         pageTitle: 'Print preparation',
-        navContext: { type: 'instructor', page: 'assessment', subPage: 'print_preparation' },
+        navContext: { type: 'instructor', page: 'assessment', subPage: 'questions' },
         headContent: [compiledStylesheetTag('instructorAssessmentPrint.css')],
         options: { fullWidth: true, contentContainerClassName: 'print-preparation-container' },
         content: (
@@ -63,10 +64,9 @@ router.get(
             <InstructorAssessmentPrint
               assessmentId={assessment.id}
               courseInstanceId={course_instance.id}
-              multipleInstance={assessment.multiple_instance}
+              hasRandomization={await assessmentHasPrintRandomization(assessment.id)}
               groupWork={assessment.team_work}
               instances={instances}
-              timezone={course_instance.display_timezone}
               renderingAvailable={isBrowserRenderingAvailable()}
               trpcCsrfToken={trpcCsrfToken}
               search={getUrl(req).search}
