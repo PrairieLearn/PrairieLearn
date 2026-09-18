@@ -131,6 +131,10 @@ with a `data-print-error` message if pagination fails. The page's CSS `@page` ru
 for the physical paper size; `PAPER_SIZES` contains the `Letter` and `A4` values accepted by the
 PrairieLearn endpoint.
 
+For outputs that also need metadata from the paginated page, use `renderer.render(options, output)`
+with a custom `PrintablePageOutput`. Its `produce(page)` callback can inspect the DOM and then call
+`createPdfOutput(pageCode).produce(page)` to reuse the standard PDF output and identification codes.
+
 ### Word output
 
 The Word document contains native paragraphs, lists, tables, answer spaces, hyperlinks, and
@@ -178,6 +182,10 @@ default for every question to `auto`, `third`, `half`, or `full`; it defaults to
 omitted. Repeat `question_block_size=<question-number>:<size>` to override individual questions.
 Repeat `identity_field=<label>` to add up to six fill-in lines to the cover alongside its built-in
 Name field. Identity labels are trimmed and may contain up to 40 characters.
+
+`form_label=A` through `form_label=Z` gives an assessment instance a short label on its cover and
+footers. Omitting it preserves the assessment instance's existing numeric Form ID label.
+
 Automatic blocks are measured at the final printable width after asynchronous question content,
 MathJax, fonts, and images have settled, then packed in question order. Explicit blocks reserve an
 exact fraction of the printable content height, including the question's internal spacing. If a

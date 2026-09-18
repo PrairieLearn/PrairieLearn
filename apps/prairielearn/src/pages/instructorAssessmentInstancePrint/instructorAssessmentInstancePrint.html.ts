@@ -21,9 +21,11 @@ import {
 export function InstructorAssessmentInstancePrint({
   resLocals,
   document,
+  formLabel,
   paperSize,
   identityFields,
   questionHtmls,
+  omittedQuestionCount = 0,
   extraHeadersHtml,
   hasLegacyQuestions,
   maxPoints,
@@ -32,9 +34,11 @@ export function InstructorAssessmentInstancePrint({
 }: {
   resLocals: ResLocalsForPage<'assessment-instance'>;
   document: 'exam' | 'answer_key';
+  formLabel?: string;
   paperSize: PaperSize;
   identityFields: readonly string[];
   questionHtmls: string[];
+  omittedQuestionCount?: number;
   extraHeadersHtml: string;
   hasLegacyQuestions: boolean;
   maxPoints: number;
@@ -43,15 +47,21 @@ export function InstructorAssessmentInstancePrint({
 }) {
   const isAnswerKey = document === 'answer_key';
   const documentLabel = isAnswerKey ? 'Answer key' : 'Exam';
-  const footerLabel = getPrintFooterLabel({ document, formId: resLocals.assessment_instance.id });
+  const footerLabel = getPrintFooterLabel({
+    document,
+    formId: resLocals.assessment_instance.id,
+    formLabel,
+  });
 
   return html`<!doctype html>
     <html
       lang="en"
       data-print-document="${document}"
+      data-print-form-label="${formLabel ?? ''}"
       data-print-paper-size="${paperSize}"
       data-print-status="loading"
       data-print-question-count="${questionHtmls.length}"
+      data-print-omitted-question-count="${omittedQuestionCount}"
       data-print-max-points="${maxPoints}"
     >
       <head>
@@ -257,8 +267,8 @@ export function InstructorAssessmentInstancePrint({
                 <dd>${maxPoints}</dd>
               </div>
               <div>
-                <dt>Form ID</dt>
-                <dd>${resLocals.assessment_instance.id}</dd>
+                <dt>${formLabel ? 'Form' : 'Form ID'}</dt>
+                <dd>${formLabel ?? resLocals.assessment_instance.id}</dd>
               </div>
             </dl>
 
@@ -267,7 +277,7 @@ export function InstructorAssessmentInstancePrint({
                 ${isAnswerKey ? 'About this answer key' : 'Instructions'}
               </h2>
               ${isAnswerKey
-                ? html`<p>${answerKeyDescription(resLocals.assessment_instance.id)}</p>`
+                ? html`<p>${answerKeyDescription(resLocals.assessment_instance.id, formLabel)}</p>`
                 : html`<ol>
                     ${DEFAULT_EXAM_INSTRUCTIONS.map((instruction) => html`<li>${instruction}</li>`)}
                   </ol>`}
@@ -296,7 +306,13 @@ export function InstructorAssessmentInstancePrint({
 
             <footer>
               ${resLocals.course_instance.long_name ?? resLocals.course_instance.short_name}
-              <span>Form ID ${resLocals.assessment_instance.id}</span>
+              <span
+                >${getPrintFooterLabel({
+                  document: 'exam',
+                  formId: resLocals.assessment_instance.id,
+                  formLabel,
+                })}</span
+              >
             </footer>
           </article>
 
