@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/trpc",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "type": "module",
   "repository": {
     "type": "git",
@@ -17,8 +17,8 @@
     "./server": "./dist/server.js"
   },
   "scripts": {
-    "build": "tsgo",
-    "dev": "tsgo --watch --preserveWatchOutput",
+    "build": "tsc",
+    "dev": "tsc --watch --preserveWatchOutput",
     "test": "vitest run --coverage"
   },
   "peerDependencies": {
@@ -35,7 +35,7 @@
     "@prairielearn/tsconfig": "workspace:^",
     "@types/node": "^24.13.3",
     "@types/react-dom": "^19.2.4",
-    "@typescript/native-preview": "beta",
+    "@typescript/native": "npm:typescript@^7.0.2",
     "@vitest/coverage-v8": "^4.1.10",
     "jsdom": "^29.1.1",
     "react-dom": "^19.2.8",

@@ -44,20 +44,24 @@ export function QuestionScorePanel(
         <h2>Question ${instance_question_info.question_number}</h2>
       </div>
       ${QuestionScorePanelContent(props)}
-      ${variant != null && assessment.allow_issue_reporting
-        ? html`
-            <div class="card-footer">
-              ${authz_result?.authorized_edit === false
-                ? html`
-                    <div class="alert alert-warning mb-0" role="alert">
-                      You are viewing the question instance of a different user and so are not
-                      authorized to report an error.
-                    </div>
-                  `
-                : IssueReportingPanel({ variant, csrfToken })}
-            </div>
-          `
-        : ''}
+      ${
+        variant != null && assessment.allow_issue_reporting
+          ? html`
+              <div class="card-footer">
+                ${
+                  authz_result?.authorized_edit === false
+                    ? html`
+                        <div class="alert alert-warning mb-0" role="alert">
+                          You are viewing the question instance of a different user and so are not
+                          authorized to report an error.
+                        </div>
+                      `
+                    : IssueReportingPanel({ variant, csrfToken })
+                }
+              </div>
+            `
+          : ''
+      }
     </div>
   `;
 }
@@ -85,103 +89,109 @@ export function QuestionScorePanelContent({
       id="question-score-panel-content"
     >
       <tbody>
-        ${assessment.type === 'Exam'
-          ? html`
-              <tr>
-                <td>Status:</td>
-                <td>
-                  ${ExamQuestionStatus({
-                    instance_question,
-                    assessment_question,
-                    allowGradeLeftMs,
-                  })}
-                </td>
-              </tr>
-            `
-          : ''}
-        ${assessment.type === 'Homework'
-          ? html`
-              ${
-                // This condition covers two cases:
-                // - A purely manually-graded question
-                // - A question with no points at all
-                // In both cases, we opt not to display the value, since it
-                // would not be possible to immediately earn any points with
-                // the next submission.
-                assessment_question.max_auto_points
-                  ? html`
-                      <tr>
-                        <td>Value:</td>
-                        <td>${QuestionValue({ instance_question, assessment_question })}</td>
-                      </tr>
-                    `
-                  : ''
-              }
-              ${
-                // Only show previous variants if the question allows multiple variants,
-                // or there are multiple variants (i.e., they were allowed at some point)
-                !question.single_variant ||
-                (instance_question_info.previous_variants?.length ?? 0) > 1
-                  ? html`
-                      <tr>
-                        <td colspan="2" class="text-wrap">
-                          All variants:
-                          ${QuestionVariantHistory({
-                            courseInstanceId: assessment.course_instance_id,
-                            instanceQuestionId: instance_question.id,
-                            previousVariants: instance_question_info.previous_variants,
-                            currentVariantId: variant?.id,
-                          })}
-                        </td>
-                      </tr>
-                    `
-                  : ''
-              }
-            `
-          : assessment_question.max_auto_points
+        ${
+          assessment.type === 'Exam'
             ? html`
                 <tr>
-                  <td>Available points:</td>
+                  <td>Status:</td>
                   <td>
-                    ${ExamQuestionAvailablePoints({
-                      open: !!assessment_instance.open && instance_question.open,
-                      currentWeight:
-                        (instance_question.points_list_original?.[
-                          instance_question.number_attempts
-                        ] ?? 0) - (assessment_question.max_manual_points ?? 0),
-                      pointsList: instance_question.points_list?.map(
-                        (p) => p - (assessment_question.max_manual_points ?? 0),
-                      ),
-                      highestSubmissionScore: instance_question.highest_submission_score,
+                    ${ExamQuestionStatus({
+                      instance_question,
+                      assessment_question,
+                      allowGradeLeftMs,
                     })}
                   </td>
                 </tr>
               `
-            : ''}
-        ${hasAutoAndManualPoints
-          ? html`
-              <tr>
-                <td>Auto-grading:</td>
-                <td>
-                  ${InstanceQuestionPoints({
-                    instance_question,
-                    assessment_question,
-                    component: 'auto',
-                  })}
-                </td>
-              </tr>
-              <tr>
-                <td>Manual grading:</td>
-                <td>
-                  ${InstanceQuestionPoints({
-                    instance_question,
-                    assessment_question,
-                    component: 'manual',
-                  })}
-                </td>
-              </tr>
-            `
-          : ''}
+            : ''
+        }
+        ${
+          assessment.type === 'Homework'
+            ? html`
+                ${
+                  // This condition covers two cases:
+                  // - A purely manually-graded question
+                  // - A question with no points at all
+                  // In both cases, we opt not to display the value, since it
+                  // would not be possible to immediately earn any points with
+                  // the next submission.
+                  assessment_question.max_auto_points
+                    ? html`
+                        <tr>
+                          <td>Value:</td>
+                          <td>${QuestionValue({ instance_question, assessment_question })}</td>
+                        </tr>
+                      `
+                    : ''
+                }
+                ${
+                  // Only show previous variants if the question allows multiple variants,
+                  // or there are multiple variants (i.e., they were allowed at some point)
+                  !question.single_variant ||
+                  (instance_question_info.previous_variants?.length ?? 0) > 1
+                    ? html`
+                        <tr>
+                          <td colspan="2" class="text-wrap">
+                            All variants:
+                            ${QuestionVariantHistory({
+                              courseInstanceId: assessment.course_instance_id,
+                              instanceQuestionId: instance_question.id,
+                              previousVariants: instance_question_info.previous_variants,
+                              currentVariantId: variant?.id,
+                            })}
+                          </td>
+                        </tr>
+                      `
+                    : ''
+                }
+              `
+            : assessment_question.max_auto_points
+              ? html`
+                  <tr>
+                    <td>Available points:</td>
+                    <td>
+                      ${ExamQuestionAvailablePoints({
+                        open: !!assessment_instance.open && instance_question.open,
+                        currentWeight:
+                          (instance_question.points_list_original?.[
+                            instance_question.number_attempts
+                          ] ?? 0) - (assessment_question.max_manual_points ?? 0),
+                        pointsList: instance_question.points_list?.map(
+                          (p) => p - (assessment_question.max_manual_points ?? 0),
+                        ),
+                        highestSubmissionScore: instance_question.highest_submission_score,
+                      })}
+                    </td>
+                  </tr>
+                `
+              : ''
+        }
+        ${
+          hasAutoAndManualPoints
+            ? html`
+                <tr>
+                  <td>Auto-grading:</td>
+                  <td>
+                    ${InstanceQuestionPoints({
+                      instance_question,
+                      assessment_question,
+                      component: 'auto',
+                    })}
+                  </td>
+                </tr>
+                <tr>
+                  <td>Manual grading:</td>
+                  <td>
+                    ${InstanceQuestionPoints({
+                      instance_question,
+                      assessment_question,
+                      component: 'manual',
+                    })}
+                  </td>
+                </tr>
+              `
+            : ''
+        }
         <tr>
           <td>Total points:</td>
           <td>
@@ -192,19 +202,23 @@ export function QuestionScorePanelContent({
             })}
           </td>
         </tr>
-        ${!hasAutoAndManualPoints && assessment_question.max_points
-          ? html`
-              <tr>
-                <td colspan="2" class="text-end">
-                  <small>
-                    ${!assessment_question.max_auto_points
-                      ? 'Manually-graded question'
-                      : 'Auto-graded question'}
-                  </small>
-                </td>
-              </tr>
-            `
-          : ''}
+        ${
+          !hasAutoAndManualPoints && assessment_question.max_points
+            ? html`
+                <tr>
+                  <td colspan="2" class="text-end">
+                    <small>
+                      ${
+                        !assessment_question.max_auto_points
+                          ? 'Manually-graded question'
+                          : 'Auto-graded question'
+                      }
+                    </small>
+                  </td>
+                </tr>
+              `
+            : ''
+        }
       </tbody>
     </table>
   `;
@@ -314,19 +328,21 @@ export function InstanceQuestionPoints({
               : html`<span data-testid="awarded-points">${formatPoints(points)}</span>`
       }
       ${maxPoints ? html`<small>/<span class="text-muted">${maxPoints}</span></small>` : ''}
-      ${instance_question.used_for_grade === false && component === 'total' && (points ?? 0) !== 0
-        ? html`
-            <button
-              type="button"
-              class="btn btn-xs"
-              data-bs-toggle="tooltip"
-              aria-label="Not included in grade"
-              title="This zone uses only the best questions for score, and this question is not included."
-            >
-              <i class="far fa-question-circle" aria-hidden="true"></i>
-            </button>
-          `
-        : ''}
+      ${
+        instance_question.used_for_grade === false && component === 'total' && (points ?? 0) !== 0
+          ? html`
+              <button
+                type="button"
+                class="btn btn-xs"
+                data-bs-toggle="tooltip"
+                aria-label="Not included in grade"
+                title="This zone uses only the best questions for score, and this question is not included."
+              >
+                <i class="far fa-question-circle" aria-hidden="true"></i>
+              </button>
+            `
+          : ''
+      }
     </span>
   `;
 }

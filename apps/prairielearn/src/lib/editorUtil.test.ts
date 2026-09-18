@@ -1,6 +1,11 @@
 import { assert, describe, it } from 'vitest';
 
-import { getUniqueNames, parseJsonObject, propertyValueWithDefault } from './editorUtil.shared.js';
+import {
+  getNamesForCopy,
+  getUniqueNames,
+  parseJsonObject,
+  propertyValueWithDefault,
+} from './editorUtil.shared.js';
 
 describe('editor utils', () => {
   describe('parseJsonObject', () => {
@@ -221,6 +226,27 @@ describe('editor utils', () => {
         assert.equal(names.shortName, 'CalcII_3');
         assert.equal(names.longName, 'Calc I + II (3)');
       });
+    });
+  });
+
+  describe('getNamesForCopy', () => {
+    it('matches existing short names case-insensitively', () => {
+      const names = getNamesForCopy('Fa25', ['Fa25', 'fa25_copy1'], 'Fall 2025', [
+        'Fall 2025',
+        'Different long name',
+      ]);
+
+      assert.equal(names.shortName, 'Fa25_copy2');
+      assert.equal(names.longName, 'Fall 2025 (copy 2)');
+    });
+
+    it('matches source short name copy suffixes case-insensitively', () => {
+      const names = getNamesForCopy('Fa25_COPY1', ['Fa25', 'Fa25_COPY1'], 'Fall 2025', [
+        'Fall 2025',
+      ]);
+
+      assert.equal(names.shortName, 'Fa25_copy2');
+      assert.equal(names.longName, 'Fall 2025 (copy 2)');
     });
   });
 

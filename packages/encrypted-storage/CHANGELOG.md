@@ -1,5 +1,11 @@
 # @prairielearn/encrypted-storage
 
+## 1.1.3
+
+### Patch Changes
+
+- 8151381: Build with the official TypeScript 7 release instead of the native preview.
+
 ## 1.1.2
 
 ### Patch Changes

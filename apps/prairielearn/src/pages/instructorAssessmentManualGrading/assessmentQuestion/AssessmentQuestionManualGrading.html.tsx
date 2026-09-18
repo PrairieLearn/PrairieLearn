@@ -11,6 +11,7 @@ import type {
   StaffAssessment,
   StaffAssessmentQuestion,
   StaffInstanceQuestionGroup,
+  StaffStudentLabel,
   StaffUser,
 } from '../../../lib/client/safe-db-types.js';
 import type { EnumAiGradingProvider } from '../../../lib/db-types.js';
@@ -47,6 +48,7 @@ interface AssessmentQuestionManualGradingProps {
   rubricData: RubricData | null;
   instanceQuestionGroups: StaffInstanceQuestionGroup[];
   courseStaff: StaffUser[];
+  studentLabels: StaffStudentLabel[];
   aiGradingStats: AiGradingGeneralStats | null;
   initialOngoingJobSequenceTokens: Record<string, string> | null;
   numOpenInstances: number;
@@ -79,6 +81,7 @@ function AssessmentQuestionManualGradingInner({
   rubricData: initialRubricData,
   instanceQuestionGroups,
   courseStaff,
+  studentLabels,
   aiGradingStats: initialAiGradingStats,
   initialOngoingJobSequenceTokens,
   numOpenInstances,
@@ -181,6 +184,7 @@ function AssessmentQuestionManualGradingInner({
         rubricData={rubricData}
         instanceQuestionGroups={instanceQuestionGroups}
         courseStaff={courseStaff}
+        studentLabels={studentLabels}
         aiGradingStats={aiGradingStats}
         mutations={mutations}
         initialOngoingJobSequenceTokens={initialOngoingJobSequenceTokens}
