@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=77"]
+requires = ["setuptools>=84.0.0"]
 build-backend = "setuptools.build_meta"
 
 # This package is intended for internal VCS/subdirectory installs:
@@ -14,13 +14,13 @@ readme = "README.md"
 requires-python = ">=3.13,<3.14"
 classifiers = ["Private :: Do Not Upload"]
 dependencies = [
-  "coloraide==8.10",
+  "coloraide==8.12.1",
   "jsonschema==4.26.0",
-  "lxml==6.1.1",
+  "lxml==6.1.3",
   "networkx==3.6.1",
   "numpy==2.4.6",
   "pandas==2.3.3",
-  "pint==0.25.3",
+  "pint==0.26.1",
   "rich==15.0.0",
   "sympy==1.14.0",
   "text-unidecode==1.3",
