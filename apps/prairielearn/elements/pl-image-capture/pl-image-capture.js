@@ -752,6 +752,10 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
      * image that was ready for submission.
      */
     async setHiddenCaptureInputToCapturePreview() {
+      // A pending upload temporarily replaces the preview with a loading indicator.
+      // Keep the last committed answer when cancelling the webcam in that state.
+      if (this.manualUploadPreview !== null) return;
+
       const capturePreviewImg = this.imageCaptureDiv.querySelector(
         '.js-uploaded-image-container .pl-image-capture-preview',
       );

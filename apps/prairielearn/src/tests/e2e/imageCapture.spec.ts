@@ -241,3 +241,63 @@ test('a decoding failure restores the previous preview and submission', async ({
   await expect(hiddenInput).toHaveValue(previousValue);
   await expect(page.getByAltText('Captured image preview').first()).toBeVisible();
 });
+
+test('cancelling the webcam during a failed replacement upload preserves the answer', async ({
+  page,
+}) => {
+  const input = page.getByLabel('Upload image').first();
+  const hiddenInput = page.locator('.js-hidden-capture-input').first();
+  const preview = page.getByAltText('Captured image preview').first();
+  await input.setInputFiles({
+    name: 'image.png',
+    mimeType: 'image/png',
+    buffer: Buffer.from(
+      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=',
+      'base64',
+    ),
+  });
+  await expect(hiddenInput).toHaveValue(/^data:image\/png;/);
+  const previousValue = await hiddenInput.inputValue();
+
+  let releaseConverter!: () => void;
+  const converterGate = new Promise<void>((resolve) => {
+    releaseConverter = resolve;
+  });
+  await page.route('**/heic-to/dist/csp/heic-to.min.js', async (route) => {
+    await converterGate;
+    await route.fulfill({
+      contentType: 'text/javascript',
+      body: 'export async function heicTo() { throw new Error("conversion failed"); }',
+    });
+  });
+  await page.evaluate(() => {
+    navigator.mediaDevices.getUserMedia = async () => {
+      throw new DOMException('Camera unavailable in this test', 'NotAllowedError');
+    };
+  });
+
+  await input.setInputFiles({
+    name: 'replacement.heic',
+    mimeType: 'image/heic',
+    buffer: Buffer.from('invalid'),
+  });
+  await expect(page.locator('.js-uploaded-image-container .spinner-border').first()).toBeVisible();
+  await page.getByRole('button', { name: 'Retake...' }).click();
+  await page
+    .getByRole('button', { name: /Use webcam/ })
+    .first()
+    .click();
+  await expect(
+    page.getByText('Give permission to access your camera to capture an image.'),
+  ).toBeVisible();
+  await page.getByRole('button', { name: 'Cancel', exact: true }).click();
+  await expect(hiddenInput).toHaveValue(previousValue);
+
+  releaseConverter();
+  await expect(page.getByRole('status', { name: 'Image upload' }).first()).toHaveText(
+    'Could not load this image. Try uploading a JPEG or PNG.',
+  );
+  await expect(hiddenInput).toHaveValue(previousValue);
+  await expect(preview).toBeVisible();
+  await expect(preview).toHaveAttribute('src', previousValue);
+});
