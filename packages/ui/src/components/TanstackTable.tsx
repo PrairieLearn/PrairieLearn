@@ -129,6 +129,7 @@ export function TanstackTable<RowDataModel extends RowData>({
 
   const rows = [...table.getTopRows(), ...table.getCenterRows(), ...table.getBottomRows()];
   const rowVirtualizer = useVirtualizer({
+    enabled: virtualized,
     count: rows.length,
     getScrollElement: () => scrollContainerRef.current,
     estimateSize: () => rowHeight,
@@ -140,6 +141,7 @@ export function TanstackTable<RowDataModel extends RowData>({
   const centerColumns = visibleColumns.filter((col) => !col.getIsPinned());
 
   const columnVirtualizer = useVirtualizer({
+    enabled: virtualized,
     count: centerColumns.length,
     estimateSize: (index) => centerColumns[index]?.getSize(),
     // `useAutoSizeColumns` solves a different problem (happens once when the column set changes)
@@ -276,18 +278,17 @@ export function TanstackTable<RowDataModel extends RowData>({
     : rows.map((row, rowIdx) => ({ row, rowIdx, virtualRow: undefined }));
 
   return (
-    <div style={{ position: 'relative' }} className="d-flex flex-column h-100">
+    <div
+      style={{ position: 'relative' }}
+      className={clsx('d-flex flex-column', virtualized && 'h-100')}
+    >
       <div
         ref={scrollContainerRef}
         data-testid="table-scroll-container"
         style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          overflow: 'auto',
-          overflowAnchor: 'none',
+          ...(virtualized ? { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 } : {}),
+          overflowX: 'auto',
+          overflowAnchor: virtualized ? 'none' : undefined,
         }}
       >
         <div
@@ -304,7 +305,7 @@ export function TanstackTable<RowDataModel extends RowData>({
             role="grid"
           >
             <thead
-              className="position-sticky top-0 w-100 border-top"
+              className={clsx('w-100 border-top', virtualized && 'position-sticky top-0')}
               style={{
                 display: 'grid',
                 zIndex: 1,
@@ -457,11 +458,9 @@ export function TanstackTable<RowDataModel extends RowData>({
           <div
             className="d-flex flex-column justify-content-center align-items-center p-4"
             style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
+              ...(virtualized
+                ? { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }
+                : {}),
               // Allow pointer events (e.g. scrolling) to reach the underlying table.
               pointerEvents: 'none',
             }}
@@ -558,7 +557,8 @@ export function TanstackTableCard<RowDataModel extends RowData>({
     table.setGlobalFilter(value);
   }, 150);
 
-  // Focus the search input when Ctrl+F is pressed
+  // Keep Cmd/Ctrl+F consistent across table modes by focusing table search first.
+  // When search is already focused, let the browser handle it so a second press opens native find.
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'f') {

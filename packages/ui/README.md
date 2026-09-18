@@ -52,7 +52,24 @@ export function StudentsTable({ students }: { students: StudentRow[] }) {
 
 `columnHelper.columns()` preserves the individual value types when an array contains columns for different fields. Keep the resulting array referentially stable: define static columns outside the component as shown above, or memoize columns that depend on props or state.
 
-`TanstackTable` virtualizes its rows and columns by default, so its container needs a bounded height. For smaller tables, pass `virtualized: false` in `tableOptions` to render every row and column in normal document flow. The example uses an explicit height; in a fill-height layout, use `className="h-100"` inside an already sized parent.
+`TanstackTable` virtualizes its rows and columns by default, so its container needs a bounded height. The example uses an explicit height; in a fill-height layout, use `className="h-100"` inside an already sized parent.
+
+For smaller tables, pass `virtualized: false` in `tableOptions` and omit the explicit height to render every row and column in normal document flow. The table grows with its content, including empty states, and the page handles vertical scrolling. Wide tables still scroll horizontally, with pinned columns remaining visible. Headers scroll with the page in this mode.
+
+For example, replace the card in `StudentsTable` above with:
+
+```tsx
+<TanstackTableCard
+  table={table}
+  title="Students"
+  singularLabel="student"
+  pluralLabel="students"
+  globalFilter={{ placeholder: 'Search students...' }}
+  tableOptions={{ virtualized: false }}
+/>
+```
+
+`TanstackTableCard` handles Cmd/Ctrl+F consistently in both modes: the first press focuses table search; pressing it again while that input is focused opens native browser find. With virtualization disabled, browser find can search all rows and columns remaining after table filtering and column visibility settings, including content outside the viewport. With virtualization enabled, browser find is limited to the content currently rendered in the DOM.
 
 Include the table styles once in the stylesheet for the page or application:
 
