@@ -6,6 +6,8 @@ import { assert, beforeAll, describe, it } from 'vitest';
 import { addMathjaxExtension } from './index.js';
 
 const marked = new Marked();
+const wrappedMarked = new Marked();
+const quotedClassMarked = new Marked();
 
 async function testMarkdown(original: string, expected: string) {
   const actual = await marked.parse(original);
@@ -25,6 +27,37 @@ describe('Markdown processing', () => {
       loader: { load: ['input/tex'] },
     });
     addMathjaxExtension(marked, MathJax);
+    addMathjaxExtension(wrappedMarked, MathJax, { mathClass: 'preview-math' });
+    addMathjaxExtension(quotedClassMarked, MathJax, { mathClass: 'math"<&\'>' });
+  });
+
+  it('optionally wraps inline and display math', async () => {
+    const actual = await wrappedMarked.parse('Inline $x_1$ and display $$x^2$$.');
+    assert.equal(
+      actual.trim(),
+      '<p>Inline <span class="preview-math">$x_1$</span> and display <span class="preview-math">$$x^2$$</span>.</p>',
+    );
+  });
+
+  it('preserves math escaping inside wrappers', async () => {
+    const actual = await wrappedMarked.parse('$a < b & c > d "e" \'f\'$');
+    assert.equal(
+      actual.trim(),
+      '<p><span class="preview-math">$a &lt; b &amp; c &gt; d &quot;e&quot; &#39;f&#39;$</span></p>',
+    );
+  });
+
+  it('escapes the math wrapper class attribute', async () => {
+    const actual = await quotedClassMarked.parse('$x$');
+    assert.equal(actual.trim(), '<p><span class="math&quot;&lt;&amp;&#39;&gt;">$x$</span></p>');
+  });
+
+  it('keeps escaped delimiters outside math wrappers', async () => {
+    const actual = await wrappedMarked.parse(String.raw`Escaped \$ and $x$.`);
+    assert.equal(
+      actual.trim(),
+      '<p>Escaped <span class="mathjax_ignore">$</span> and <span class="preview-math">$x$</span>.</p>',
+    );
   });
 
   it('renders basic markdown correctly', async () => {
