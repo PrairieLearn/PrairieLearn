@@ -59,7 +59,7 @@ The question's `info.json` should set the `singleVariant` and `workspaceOptions`
     - `WORKSPACE_BASE_URL`: the base URL for the workspace container, which can be used to construct URLs for API requests to the workspace container.
     - `WORKSPACE_NETWORKING_DISABLED`: set when the workspace has networking disabled. This can be used to conditionally enable or disable features in the workspace based on its ability to access the internet.
 
-The `home`, `port` and `rewriteUrl` properties are also available, but they are typically set in the Docker image labels instead of in `info.json`. See [Custom workspace images](#custom-workspace-images) for more information.
+The `home`, `port` and `rewriteUrl` properties are supplied by Docker image labels in the [maintained workspace images](#maintained-workspace-images). When using these images, omit these properties from `info.json` and leave the home directory and port fields blank in the question settings. To configure or override these properties for a custom image, see [Custom workspace images](#custom-workspace-images).
 
 For an ungraded workspace, a full `info.json` file should look something like:
 

@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/session",
-  "version": "4.0.10",
+  "version": "4.0.12",
   "type": "module",
   "repository": {
     "type": "git",
@@ -12,8 +12,8 @@
   },
   "main": "dist/index.js",
   "scripts": {
-    "build": "tsgo",
-    "dev": "tsgo --watch --preserveWatchOutput",
+    "build": "tsc",
+    "dev": "tsc --watch --preserveWatchOutput",
     "test": "vitest run --coverage"
   },
   "dependencies": {
@@ -32,11 +32,11 @@
     "@types/node": "^24.13.3",
     "@types/on-headers": "^1.0.4",
     "@types/uid-safe": "^2.1.5",
-    "@typescript/native-preview": "beta",
-    "@vitest/coverage-v8": "^4.1.10",
-    "express": "^4.22.2 <5",
+    "@typescript/native": "npm:typescript@^7.0.2",
+    "@vitest/coverage-v8": "^5.0.0",
+    "express": "^4.22.3 <5",
     "fetch-cookie": "^3.2.0",
     "set-cookie-parser": "^3.1.2",
-    "vitest": "^4.1.10"
+    "vitest": "^5.0.0"
   }
 }

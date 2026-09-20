@@ -210,33 +210,66 @@ export function AuthLogin({
     service,
     resLocals,
     children: html`
-      ${config.devMode
-        ? html`
-            ${DevModeBypass()}
-            <hr />
-            ${DevModeLogin({ csrfToken: resLocals.__csrf_token })}
-            <hr />
-          `
-        : ''}
+      ${
+        config.devMode
+          ? html`
+              ${DevModeBypass()}
+              <hr />
+              ${DevModeLogin({ csrfToken: resLocals.__csrf_token })}
+              <hr />
+            `
+          : ''
+      }
       <div class="d-flex flex-column gap-2 mt-4">
         ${config.hasShib && !config.hideShibLogin ? ShibLoginButton() : ''}
         ${config.hasOauth ? GoogleLoginButton() : ''}
         ${config.hasAzure && isEnterprise() ? MicrosoftLoginButton() : ''}
       </div>
-      ${institutionAuthnProviders?.length
-        ? html`
-            <div class="institution-header text-muted my-3">Institution sign-on</div>
-            <div class="d-flex flex-column gap-2">
-              ${institutionAuthnProviders.map(
-                (provider) => html`
-                  <a href="${provider.url}" class="btn btn-outline-dark d-block w-100">
-                    <span class="fw-bold">${provider.name}</span>
-                  </a>
-                `,
-              )}
-            </div>
-          `
-        : ''}
+      ${
+        institutionAuthnProviders?.length
+          ? html`
+              <div class="institution-header text-muted my-3">Institution sign-on</div>
+              <input
+                type="search"
+                id="js-institution-search"
+                class="form-control mb-2"
+                placeholder="Search for your institution"
+                aria-label="Search for your institution"
+                autocomplete="off"
+              />
+              <div id="js-institution-list" class="d-flex flex-column gap-2">
+                ${institutionAuthnProviders.map(
+                  (provider) => html`
+                    <a
+                      href="${provider.url}"
+                      class="btn btn-outline-dark d-block w-100 js-institution-option"
+                      data-institution-name="${provider.name.toLowerCase()}"
+                    >
+                      <span class="fw-bold">${provider.name}</span>
+                    </a>
+                  `,
+                )}
+              </div>
+              <div id="js-institution-no-results" class="text-muted d-none mt-2">
+                No matching institutions found
+              </div>
+              <script>
+                document.getElementById('js-institution-search').addEventListener('input', (e) => {
+                  const query = e.target.value.trim().toLowerCase();
+                  let visibleCount = 0;
+                  document.querySelectorAll('.js-institution-option').forEach((el) => {
+                    const isVisible = el.dataset.institutionName.includes(query);
+                    el.classList.toggle('d-none', !isVisible);
+                    if (isVisible) visibleCount++;
+                  });
+                  document
+                    .getElementById('js-institution-no-results')
+                    .classList.toggle('d-none', visibleCount > 0);
+                });
+              </script>
+            `
+          : ''
+      }
     `,
   }).toString();
 }
@@ -352,19 +385,27 @@ export function AuthLoginInstitution({
           `;
         }
       })}
-      ${defaultProviderButton
-        ? html`
-            ${hasNonDefaultProviders
-              ? html`<small class="text-muted text-center d-block mb-2">Preferred method</small>`
-              : ''}
-            ${defaultProviderButton}
-            ${hasNonDefaultProviders
-              ? html`
-                  <small class="text-muted text-center d-block mt-4 mb-2">Other methods</small>
-                `
-              : ''}
-          `
-        : ''}
+      ${
+        defaultProviderButton
+          ? html`
+              ${
+                hasNonDefaultProviders
+                  ? html`<small class="text-muted text-center d-block mb-2"
+                      >Preferred method</small
+                    >`
+                  : ''
+              }
+              ${defaultProviderButton}
+              ${
+                hasNonDefaultProviders
+                  ? html`
+                      <small class="text-muted text-center d-block mt-4 mb-2">Other methods</small>
+                    `
+                  : ''
+              }
+            `
+          : ''
+      }
       <div class="d-flex flex-column gap-2">
         ${[
           showSaml ? SamlLoginButton({ institutionId }) : '',

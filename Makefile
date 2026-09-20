@@ -227,9 +227,9 @@ fix-python:
 
 typecheck: typecheck-js typecheck-python typecheck-contrib typecheck-scripts typecheck-sql
 typecheck-contrib:
-	@pnpm tsgo -p contrib --noEmit
+	@pnpm tsc -p contrib --noEmit
 typecheck-scripts:
-	@pnpm tsgo -p scripts --noEmit
+	@pnpm tsc -p scripts --noEmit
 typecheck-js:
 	@pnpm turbo run build --output-logs=errors-only
 typecheck-python: python-deps
