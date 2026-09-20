@@ -46,6 +46,7 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
       this.selectedContainerName = 'capture-preview';
       this.handwritingEnhanced = false;
       this.manualUploadId = 0;
+      this.cropSaveId = 0;
       this.manualUploadPreview = null;
 
       /** Resizing canvas and context used for image scaling */
@@ -164,8 +165,12 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
         const uploadedImageContainer = this.imageCaptureDiv.querySelector(
           '.js-uploaded-image-container',
         );
-        // Retain the preview nodes so a failed upload can restore the previous image.
-        this.manualUploadPreview ??= [...uploadedImageContainer.childNodes];
+        const hiddenCaptureInput = this.imageCaptureDiv.querySelector('.js-hidden-capture-input');
+        // Keep the preview and submitted value together while showing the loading indicator.
+        this.manualUploadPreview ??= {
+          nodes: [...uploadedImageContainer.childNodes],
+          value: hiddenCaptureInput.value,
+        };
         this.setLoadingCaptureState(uploadedImageContainer);
 
         try {
@@ -188,7 +193,9 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
           await this.loadCapturePreviewFromDataUrl({ dataUrl, uploadId });
         } catch {
           if (uploadId !== this.manualUploadId) return;
-          uploadedImageContainer.replaceChildren(...this.manualUploadPreview);
+          uploadedImageContainer.replaceChildren(...this.manualUploadPreview.nodes);
+          hiddenCaptureInput.value = this.manualUploadPreview.value;
+          this.updateCaptureButtons(!!hiddenCaptureInput.value);
           this.manualUploadPreview = null;
           this.setManualUploadMessage(
             'Could not load this image. Try uploading a JPEG or PNG.',
@@ -664,7 +671,9 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
       }
     }
 
-    async setHiddenCaptureInputValue(dataUrl, uploadId = this.manualUploadId) {
+    async setHiddenCaptureInputValue(dataUrl, uploadId = this.manualUploadId, cropSaveId = null) {
+      const isCurrent = () =>
+        uploadId === this.manualUploadId && (cropSaveId === null || cropSaveId === this.cropSaveId);
       const hiddenCaptureInput = this.imageCaptureDiv.querySelector('.js-hidden-capture-input');
 
       this.ensureElementsExist({ hiddenCaptureInput });
@@ -676,7 +685,7 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
         const image = new Image();
         image.src = dataUrl;
         await image.decode();
-        if (uploadId !== this.manualUploadId) return;
+        if (!isCurrent()) return;
 
         const imageScaleFactor = MAX_IMAGE_SIDE_LENGTH / Math.max(image.width, image.height);
         if (imageScaleFactor < 1) {
@@ -700,7 +709,7 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
         }
       }
 
-      if (uploadId !== this.manualUploadId) return;
+      if (!isCurrent()) return;
       if (dataUrl && !hiddenCaptureInput.value) {
         this.updateCaptureButtons(true);
       } else if (!dataUrl) {
@@ -752,9 +761,13 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
      * image that was ready for submission.
      */
     async setHiddenCaptureInputToCapturePreview() {
-      // A pending upload temporarily replaces the preview with a loading indicator.
-      // Keep the last committed answer when cancelling the webcam in that state.
-      if (this.manualUploadPreview !== null) return;
+      // The loading indicator is not the saved image, and crop autosave may have changed the answer.
+      if (this.manualUploadPreview !== null) {
+        const hiddenCaptureInput = this.imageCaptureDiv.querySelector('.js-hidden-capture-input');
+        hiddenCaptureInput.value = this.manualUploadPreview.value;
+        this.updateCaptureButtons(!!hiddenCaptureInput.value);
+        return;
+      }
 
       const capturePreviewImg = this.imageCaptureDiv.querySelector(
         '.js-uploaded-image-container .pl-image-capture-preview',
@@ -778,6 +791,10 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
         }
       }
       if (uploadId !== this.manualUploadId) return;
+      if (originalCapture && this.selectedContainerName === 'crop-rotate') {
+        this.removeCropperChangeListeners();
+        this.openContainer('capture-preview');
+      }
       this.manualUploadPreview = null;
       if (this.editable && this.manual_upload_enabled) {
         this.setManualUploadMessage('');
@@ -1241,6 +1258,7 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
     /** Remove the cropper change listeners that update the hidden input field. */
     removeCropperChangeListeners() {
       this.ensureCropperExists();
+      this.cancelPendingCropSave();
 
       const cropperSelection = this.cropper.getCropperSelection();
       const cropperImage = this.cropper.getCropperImage();
@@ -1402,6 +1420,12 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
 
     timeoutId = null;
 
+    cancelPendingCropSave() {
+      this.cropSaveId++;
+      clearTimeout(this.timeoutId);
+      this.timeoutId = null;
+    }
+
     /** Retrieve the Base64-encoded image data of the cropper selection and its CropperJS selection object. */
     async getCropperSelection() {
       this.ensureCropperExists();
@@ -1449,10 +1473,14 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
         return;
       }
 
-      clearTimeout(this.timeoutId);
+      this.cancelPendingCropSave();
+      const cropSaveId = this.cropSaveId;
+      const uploadId = this.manualUploadId;
       this.timeoutId = setTimeout(async () => {
+        if (cropSaveId !== this.cropSaveId || uploadId !== this.manualUploadId) return;
         const { dataUrl } = await this.getCropperSelection();
-        await this.setHiddenCaptureInputValue(dataUrl);
+        if (cropSaveId !== this.cropSaveId || uploadId !== this.manualUploadId) return;
+        await this.setHiddenCaptureInputValue(dataUrl, uploadId, cropSaveId);
       }, 200);
     }
 
@@ -1524,10 +1552,6 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
       this.ensureCropperExists();
 
       this.removeCropperChangeListeners();
-
-      // Clear any pending debounced crop/rotate changes that would be saved
-      clearTimeout(this.timeoutId);
-      this.timeoutId = null;
 
       this.revertToPreviousCropRotateState();
 
