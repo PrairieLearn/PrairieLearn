@@ -462,7 +462,23 @@ Access permissions for course staff can be configured on the "Staff" tab. Course
 
 !!! note
 
-    Course content and student data access roles do not affect access to the course's Git repository. To change repository permissions, visit the GitHub access settings page for the course. If you require access to the Git repository, please contact the owner of that repository. If you are an owner and do not have GitHub access, contact us on [Slack](https://prairielearn.slack.com) in `#pl-help`.
+    Course staff permissions and GitHub repository permissions are managed separately. Course Owners can grant themselves Admin access to the course's GitHub repository from the course Settings page. See [Access to the GitHub repository](#access-to-the-github-repository).
+
+### Access to the GitHub repository
+
+On the course **Settings** page, the **Access to GitHub repository** section below **Branch** links to your course's repository.
+
+If you have the **Owner** course content role in PrairieLearn, you can grant yourself **Admin** access on GitHub:
+
+1. Click **Grant myself access**.
+2. Enter your GitHub username. If you do not have an account, [create a free GitHub account](https://github.com/signup) first. You can find your username in the menu opened by your profile picture on GitHub.
+3. Click **Grant access**. If GitHub requires an invitation, follow the link in the success message to accept it while signed in to that GitHub account. Existing collaborators are given Admin access directly.
+
+Once you have Admin access, use **grant other people access on GitHub** to manage collaborators and their permissions. If you are not a course Owner, use **see Staff list** to find an Owner who can grant you access.
+
+This section is available for courses with a GitHub repository, excluding example courses. If the server cannot grant access or GitHub rejects the request, contact [support](https://prairielearn.slack.com) in `#pl-help`.
+
+Changing or removing a person's PrairieLearn role does not change their GitHub access. Remove repository access separately on GitHub when needed.
 
 ### Course content access roles
 

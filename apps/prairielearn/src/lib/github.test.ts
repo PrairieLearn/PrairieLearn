@@ -4,6 +4,7 @@ import { withConfig } from '../tests/utils/config.js';
 
 import { isValidGithubUsername, parseGithubRepository } from './github-utils.js';
 import {
+  addGithubRepositoryAdmin,
   addMachineAccessToRepo,
   checkGithubOrgAccess,
   courseRepoContentUrl,
@@ -12,7 +13,15 @@ import {
 
 const orgsGet = vi.fn();
 const orgsGetMembershipForUser = vi.fn();
-const reposAddCollaborator = vi.fn();
+const { reposAddCollaborator, reposUpdateInvitation } = vi.hoisted(() => ({
+  reposAddCollaborator: vi.fn(),
+  reposUpdateInvitation: vi.fn(),
+}));
+vi.mock('@octokit/rest', () => ({
+  Octokit: class {
+    repos = { addCollaborator: reposAddCollaborator, updateInvitation: reposUpdateInvitation };
+  },
+}));
 const teamsAddOrUpdateRepoPermissionsInOrg = vi.fn();
 
 const orgAccessClient = {
@@ -30,7 +39,62 @@ beforeEach(() => {
   orgsGet.mockReset();
   orgsGetMembershipForUser.mockReset();
   reposAddCollaborator.mockReset();
+  reposUpdateInvitation.mockReset();
   teamsAddOrUpdateRepoPermissionsInOrg.mockReset();
+});
+
+describe('addGithubRepositoryAdmin', () => {
+  it.each([201, 204])('grants admin access and distinguishes invitations (%s)', async (status) => {
+    reposAddCollaborator.mockResolvedValue({ status, data: { id: 123, permissions: 'admin' } });
+    await withConfig({ githubClientToken: 'test-token' }, async () => {
+      expect(await addGithubRepositoryAdmin('Org', 'course', 'instructor')).toEqual({
+        invited: status === 201,
+      });
+    });
+    expect(reposAddCollaborator).toHaveBeenCalledExactlyOnceWith({
+      owner: 'Org',
+      repo: 'course',
+      username: 'instructor',
+      permission: 'admin',
+    });
+    expect(reposUpdateInvitation).not.toHaveBeenCalled();
+  });
+
+  it('upgrades a pending invitation with lower permissions', async () => {
+    reposAddCollaborator.mockResolvedValue({
+      status: 201,
+      data: { id: 123, permissions: 'write' },
+    });
+    await withConfig({ githubClientToken: 'test-token' }, async () => {
+      expect(await addGithubRepositoryAdmin('Org', 'course', 'instructor')).toEqual({
+        invited: true,
+      });
+    });
+    expect(reposUpdateInvitation).toHaveBeenCalledExactlyOnceWith({
+      owner: 'Org',
+      repo: 'course',
+      invitation_id: 123,
+      permissions: 'admin',
+    });
+  });
+
+  it('fails without a GitHub client', async () => {
+    await withConfig({ githubClientToken: null }, async () => {
+      await expect(addGithubRepositoryAdmin('Org', 'course', 'instructor')).rejects.toThrow(
+        'not configured',
+      );
+    });
+    expect(reposAddCollaborator).not.toHaveBeenCalled();
+  });
+
+  it('does not report success when GitHub rejects the grant', async () => {
+    reposAddCollaborator.mockRejectedValue(new Error('GitHub unavailable'));
+    await withConfig({ githubClientToken: 'test-token' }, async () => {
+      await expect(addGithubRepositoryAdmin('Org', 'course', 'instructor')).rejects.toThrow(
+        'GitHub unavailable',
+      );
+    });
+  });
 });
 
 describe('checkGithubOrgAccess', () => {
