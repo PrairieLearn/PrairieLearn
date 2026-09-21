@@ -59,8 +59,7 @@ interface SerializedQuestionBankConversionResult extends SerializedConversionRes
 
 /** Conversion result sent to the browser for review. */
 export type SerializedConversionResult =
-  | SerializedAssessmentConversionResult
-  | SerializedQuestionBankConversionResult;
+  SerializedAssessmentConversionResult | SerializedQuestionBankConversionResult;
 
 type StoredSerializedConversionResultCommon = Omit<
   SerializedConversionResultCommon,
@@ -112,6 +111,15 @@ export interface QuestionOverrides {
   collides: boolean;
   /** How to handle the collision: overwrite existing or rename this question. */
   collisionStrategy: CollisionStrategy;
+}
+
+/** Reviewer edits to a conversion result, indexed in parallel with the results array. */
+export interface AssessmentOverrides {
+  title: string;
+  type: 'Homework' | 'Exam';
+  set: string;
+  number: string;
+  included: boolean;
 }
 
 export const DUPLICATE_ASSESSMENT_QUESTION_WARNING =
@@ -203,7 +211,7 @@ export interface UploadResponse {
   strippedAccessRules: StrippedAccessRules;
   /** Assessment set names defined in the course's infoCourse.json. */
   assessmentSetNames: string[];
-  /** Existing (set, number) pairs in this course instance, for deduplication. */
+  /** Existing (set, number) pairs in the target course instance, for deduplication. Empty without one. */
   existingAssessmentLabels: { set: string; number: string }[];
   /** Count of unique questions that appeared in more than one question bank and were deduplicated. */
   deduplicatedQuestionBankQuestionCount: number;

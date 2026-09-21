@@ -290,6 +290,16 @@ export function createQuestionsTableColumns({
       size: 190,
     }),
 
+    columnHelper.accessor('partial_credit', {
+      id: 'partial_credit',
+      header: 'Partial credit',
+      cell: (info) => (info.getValue() ? 'Yes' : 'No'),
+      filterFn: (row, _columnId, filter: MultiSelectFilterValue<BooleanFilterOption>) => {
+        return applyBooleanFilter(filter, row.original.partial_credit);
+      },
+      size: 190,
+    }),
+
     columnHelper.accessor('has_preferences', {
       id: 'has_preferences',
       header: 'Has preferences',
@@ -507,6 +517,7 @@ export function createQuestionsTableFilters({
       />
     ),
     single_variant: ({ header }) => <BooleanColumnFilter column={header.column} />,
+    partial_credit: ({ header }) => <BooleanColumnFilter column={header.column} />,
     has_preferences: ({ header }) => <BooleanColumnFilter column={header.column} />,
     sharing_sets: ({ header }) => (
       <MultiSelectColumnFilter column={header.column} allColumnValues={allSharingSets} showSearch />

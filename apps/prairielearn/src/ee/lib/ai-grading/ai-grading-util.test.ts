@@ -1,5 +1,6 @@
 import { Output, generateText } from 'ai';
 import { MockLanguageModelV3 } from 'ai/test';
+import sharp from 'sharp';
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
 
@@ -8,8 +9,12 @@ import { sanitizeObject } from '@prairielearn/sanitize';
 import { type RubricItem } from '../../../lib/db-types.js';
 
 import {
+  containsSubmissionAttachment,
+  correctImagesOrientation,
   extractAiGradingExplanationFromCompletion,
+  extractSubmissionImages,
   generatePrompt,
+  generateSubmissionContent,
   parseAiRubricItems,
   parseSubmission,
 } from './ai-grading-util.js';
@@ -73,22 +78,21 @@ describe('parseSubmission', () => {
     ]);
   });
 
-  it('should extract a single image segment', () => {
+  it('should extract a single file segment', () => {
     const result = parseSubmission({
-      submission_text:
-        '<div data-image-capture-uuid="abc123" data-file-name="photo.jpg">Image</div>',
+      submission_text: '<div data-ai-grading-file-name="photo.jpg">photo.jpg</div>',
       submitted_answer: {
         _files: [{ name: 'photo.jpg', contents: 'base64data' }],
       },
     });
-    expect(result).toEqual([{ type: 'image', fileName: 'photo.jpg', fileData: 'base64data' }]);
+    expect(result).toEqual([{ type: 'file', fileName: 'photo.jpg', fileData: 'base64data' }]);
   });
 
-  it('should produce alternating text and image segments', () => {
+  it('should produce alternating text and file segments', () => {
     const result = parseSubmission({
       submission_text: [
         '<p>Before image</p>',
-        '<div data-image-capture-uuid="abc" data-file-name="img.jpg">Image</div>',
+        '<div data-ai-grading-file-name="img.jpg">img.jpg</div>',
         '<p>After image</p>',
       ].join(''),
       submitted_answer: {
@@ -97,35 +101,35 @@ describe('parseSubmission', () => {
     });
     expect(result).toEqual([
       { type: 'text', text: '<p>Before image</p>' },
-      { type: 'image', fileName: 'img.jpg', fileData: 'imgdata' },
+      { type: 'file', fileName: 'img.jpg', fileData: 'imgdata' },
       { type: 'text', text: '<p>After image</p>' },
     ]);
   });
 
-  it('should handle image nested inside other elements', () => {
+  it('should handle a file marker nested inside other elements', () => {
     const result = parseSubmission({
       submission_text:
-        '<div><p>Text</p><div data-image-capture-uuid="abc" data-file-name="nested.jpg">Image</div></div>',
+        '<div><p>Text</p><div data-ai-grading-file-name="nested.jpg">nested.jpg</div></div>',
       submitted_answer: {
         _files: [{ name: 'nested.jpg', contents: 'nesteddata' }],
       },
     });
-    // The image element is replaced with a marker inside the <div>, so the
+    // The attachment element is replaced with a marker inside the <div>, so the
     // surrounding HTML is split at the image boundary.
     expect(result).toEqual([
       { type: 'text', text: '<div><p>Text</p>' },
-      { type: 'image', fileName: 'nested.jpg', fileData: 'nesteddata' },
+      { type: 'file', fileName: 'nested.jpg', fileData: 'nesteddata' },
       { type: 'text', text: '</div>' },
     ]);
   });
 
-  it('should handle multiple images', () => {
+  it('should handle multiple files', () => {
     const result = parseSubmission({
       submission_text: [
         '<p>Start</p>',
-        '<div data-image-capture-uuid="a" data-file-name="first.jpg">Img1</div>',
+        '<div data-ai-grading-file-name="first.jpg">first.jpg</div>',
         '<p>Middle</p>',
-        '<div data-image-capture-uuid="b" data-file-name="second.jpg">Img2</div>',
+        '<div data-ai-grading-file-name="second.jpg">second.jpg</div>',
         '<p>End</p>',
       ].join(''),
       submitted_answer: {
@@ -137,11 +141,72 @@ describe('parseSubmission', () => {
     });
     expect(result).toEqual([
       { type: 'text', text: '<p>Start</p>' },
-      { type: 'image', fileName: 'first.jpg', fileData: 'data1' },
+      { type: 'file', fileName: 'first.jpg', fileData: 'data1' },
       { type: 'text', text: '<p>Middle</p>' },
-      { type: 'image', fileName: 'second.jpg', fileData: 'data2' },
+      { type: 'file', fileName: 'second.jpg', fileData: 'data2' },
       { type: 'text', text: '<p>End</p>' },
     ]);
+  });
+
+  it('should extract a PDF file segment', () => {
+    const result = parseSubmission({
+      submission_text: '<div data-ai-grading-file-name="solution.pdf">solution.pdf</div>',
+      submitted_answer: {
+        _files: [{ name: 'solution.pdf', contents: 'pdfdata' }],
+      },
+    });
+    expect(result).toEqual([{ type: 'file', fileName: 'solution.pdf', fileData: 'pdfdata' }]);
+  });
+
+  it('should send a file only once when multiple elements reference it', () => {
+    const result = parseSubmission({
+      submission_text: [
+        '<div data-ai-grading-file-name="solution.pdf">solution.pdf</div>',
+        '<div data-ai-grading-file-name="capture.jpg">capture.jpg</div>',
+        '<div data-ai-grading-file-name="capture.jpg">capture.jpg</div>',
+      ].join(''),
+      submitted_answer: {
+        _files: [
+          { name: 'solution.pdf', contents: 'pdfdata' },
+          { name: 'capture.jpg', contents: 'imagedata' },
+        ],
+      },
+    });
+    expect(result).toEqual([
+      { type: 'file', fileName: 'solution.pdf', fileData: 'pdfdata' },
+      { type: 'file', fileName: 'capture.jpg', fileData: 'imagedata' },
+    ]);
+  });
+
+  it.each([
+    'data-ai-grading-file-name',
+    'data-file-upload-file-name',
+    'data-image-capture-uuid="capture" data-file-name',
+  ])('preserves distinct filenames with surrounding whitespace in %s', (attribute) => {
+    const files = [
+      { name: ' answer.pdf', contents: 'leading' },
+      { name: 'answer.pdf', contents: 'plain' },
+      { name: 'answer.pdf ', contents: 'trailing' },
+    ];
+    const markers = files.map((file) => `<div ${attribute}="${file.name}"></div>`);
+    const result = parseSubmission({
+      submission_text: [...markers, markers[0]].join(''),
+      submitted_answer: { _files: files },
+    });
+
+    expect(result).toEqual(
+      files.map((file) => ({ type: 'file', fileName: file.name, fileData: file.contents })),
+    );
+  });
+
+  it('falls back to legacy filenames when the current marker is blank', () => {
+    expect(
+      parseSubmission({
+        submission_text:
+          '<div data-ai-grading-file-name="  " data-file-upload-file-name=" answer.pdf"></div>',
+        submitted_answer: { _files: [{ name: ' answer.pdf', contents: 'pdfdata' }] },
+      }),
+    ).toEqual([{ type: 'file', fileName: ' answer.pdf', fileData: 'pdfdata' }]);
   });
 
   it('should handle old-style data-options attribute for file name', () => {
@@ -152,14 +217,35 @@ describe('parseSubmission', () => {
         _files: [{ name: 'old.jpg', contents: 'olddata' }],
       },
     });
-    expect(result).toEqual([{ type: 'image', fileName: 'old.jpg', fileData: 'olddata' }]);
+    expect(result).toEqual([{ type: 'file', fileName: 'old.jpg', fileData: 'olddata' }]);
   });
 
-  it('should include image segment with null fileData when file data is not found', () => {
+  it('should handle the legacy pl-image-capture file-name marker', () => {
+    const result = parseSubmission({
+      submission_text:
+        '<div data-image-capture-uuid="abc" data-file-name="capture.jpg">capture.jpg</div>',
+      submitted_answer: {
+        _files: [{ name: 'capture.jpg', contents: 'imagedata' }],
+      },
+    });
+    expect(result).toEqual([{ type: 'file', fileName: 'capture.jpg', fileData: 'imagedata' }]);
+  });
+
+  it('should handle the legacy pl-file-upload marker', () => {
+    const result = parseSubmission({
+      submission_text: '<div data-file-upload-file-name="old.pdf">old.pdf</div>',
+      submitted_answer: {
+        _files: [{ name: 'old.pdf', contents: 'olddata' }],
+      },
+    });
+    expect(result).toEqual([{ type: 'file', fileName: 'old.pdf', fileData: 'olddata' }]);
+  });
+
+  it('should include a file segment with null fileData when file data is not found', () => {
     const result = parseSubmission({
       submission_text: [
         '<p>Text</p>',
-        '<div data-image-capture-uuid="abc" data-file-name="missing.jpg">Image</div>',
+        '<div data-ai-grading-file-name="missing.jpg">missing.jpg</div>',
       ].join(''),
       submitted_answer: {
         _files: [{ name: 'other.jpg', contents: 'otherdata' }],
@@ -167,26 +253,276 @@ describe('parseSubmission', () => {
     });
     expect(result).toEqual([
       { type: 'text', text: '<p>Text</p>' },
-      { type: 'image', fileName: 'missing.jpg', fileData: null },
+      { type: 'file', fileName: 'missing.jpg', fileData: null },
+      { type: 'file', fileName: 'other.jpg', fileData: 'otherdata' },
     ]);
   });
 
-  it('should throw when image found but no submitted_answer', () => {
+  it('should throw when a file marker is found but there is no submitted answer', () => {
     expect(() =>
       parseSubmission({
-        submission_text: '<div data-image-capture-uuid="abc" data-file-name="img.jpg">Image</div>',
+        submission_text: '<div data-ai-grading-file-name="img.jpg">img.jpg</div>',
         submitted_answer: null,
       }),
     ).toThrow('No submitted answers found.');
   });
 
-  it('should throw when image element has no file name', () => {
+  it('should throw when a file marker has no file name', () => {
     expect(() =>
       parseSubmission({
-        submission_text: '<div data-image-capture-uuid="abc">Image</div>',
+        submission_text: '<div data-ai-grading-file-name>File</div>',
         submitted_answer: { _files: [] },
       }),
     ).toThrow('No file name found.');
+  });
+});
+
+describe('generateSubmissionContent', () => {
+  it.each([
+    'solution.py',
+    'solution.cpp',
+    'Solution.java',
+    'notes.txt',
+    'Makefile',
+    'answer.custom',
+  ])('sends %s as decoded text with its filename', (name) => {
+    const text = '\tα = "<div>& café</div>"\r\n\n    return α\n';
+    expect(
+      generateSubmissionContent({
+        submission_text: `<div data-ai-grading-file-name="${name}">${name}</div>`,
+        submitted_answer: { _files: [{ name, contents: Buffer.from(text).toString('base64') }] },
+      }),
+    ).toEqual([{ type: 'text', text: `Submitted file: ${name}\n\n${text}` }]);
+  });
+
+  it.each([
+    Buffer.from('\ufeffprint("hello")\n', 'utf8'),
+    Buffer.from('\ufeffprint("hello")\n', 'utf16le'),
+    Buffer.from('\ufeffprint("hello")\n', 'utf16le').swap16(),
+  ])('decodes Unicode text with a byte-order mark', (bytes) => {
+    expect(
+      generateSubmissionContent({
+        submission_text: '',
+        submitted_answer: { _files: [{ name: 'answer.py', contents: bytes.toString('base64') }] },
+      }),
+    ).toEqual([{ type: 'text', text: 'Submitted file: answer.py\n\nprint("hello")\n' }]);
+  });
+
+  it('includes empty files without calling them missing', () => {
+    expect(
+      generateSubmissionContent({
+        submission_text: '',
+        submitted_answer: { _files: [{ name: 'empty.txt', contents: '' }] },
+      }),
+    ).toEqual([{ type: 'text', text: 'Submitted file: empty.txt\n\n' }]);
+  });
+
+  it('includes stored workspace files without submission HTML and without truncation', () => {
+    const text = '# comment\n'.repeat(2000) + 'result = 42\n';
+    expect(
+      generateSubmissionContent({
+        submission_text: '',
+        submitted_answer: {
+          _files: [{ name: 'src/answer.py', contents: Buffer.from(text).toString('base64') }],
+        },
+      }),
+    ).toEqual([{ type: 'text', text: `Submitted file: src/answer.py\n\n${text}` }]);
+  });
+
+  it('preserves mixed submission order and appends unmarked files only once', () => {
+    const result = generateSubmissionContent({
+      submission_text: [
+        '<p>Before</p>',
+        '<div data-ai-grading-file-name="answer.cpp">answer.cpp</div>',
+        '<p>Between</p>',
+        '<div data-file-upload-file-name="work.pdf">work.pdf</div>',
+        '<div data-image-capture-uuid="capture" data-file-name="photo.png">photo.png</div>',
+        '<div data-ai-grading-file-name="photo.png">photo.png</div>',
+        '<div data-ai-grading-file-name="answer.cpp">answer.cpp</div>',
+        '<p>After</p>',
+      ].join(''),
+      submitted_answer: {
+        _files: [
+          { name: 'notes.txt', contents: Buffer.from('notes').toString('base64') },
+          { name: 'photo.png', contents: 'imagedata' },
+          { name: 'answer.cpp', contents: Buffer.from('int main() {}').toString('base64') },
+          { name: 'work.pdf', contents: 'pdfdata' },
+          { name: 'notes.txt', contents: Buffer.from('notes').toString('base64') },
+          { name: 'src/helper.py', contents: Buffer.from('pass').toString('base64') },
+        ],
+      },
+    });
+    expect(result).toEqual([
+      { type: 'text', text: '<p>Before</p>' },
+      { type: 'text', text: 'Submitted file: answer.cpp\n\nint main() {}' },
+      { type: 'text', text: '<p>Between</p>' },
+      { type: 'text', text: 'Submitted file: work.pdf' },
+      { type: 'file', filename: 'work.pdf', data: 'pdfdata', mediaType: 'application/pdf' },
+      { type: 'text', text: 'Submitted file: photo.png' },
+      {
+        type: 'file',
+        filename: 'photo.png',
+        data: 'imagedata',
+        mediaType: 'image/png',
+        providerOptions: { openai: { imageDetail: 'auto' } },
+      },
+      { type: 'text', text: '<p>After</p>' },
+      { type: 'text', text: 'Submitted file: notes.txt\n\nnotes' },
+      { type: 'text', text: 'Submitted file: src/helper.py\n\npass' },
+    ]);
+  });
+
+  it.each([
+    Buffer.from([0xc3, 0x28]),
+    Buffer.from([0xff]),
+    Buffer.from([0xff, 0xfe, 0x61]),
+    Buffer.from([0xff, 0xfe, 0x00, 0xd8]),
+  ])('rejects invalid text encodings', (bytes) => {
+    expect(() =>
+      generateSubmissionContent({
+        submission_text: '',
+        submitted_answer: { _files: [{ name: 'answer.py', contents: bytes.toString('base64') }] },
+      }),
+    ).toThrow('AI grading could not read "answer.py" as text');
+  });
+
+  it.each([
+    Buffer.from('PK\u0003\u0004'),
+    Buffer.from('hello\u0000world'),
+    Buffer.from('text without BOM', 'utf16le'),
+    Buffer.from([0xff, 0xfe, 0, 0, 0x61, 0, 0, 0]),
+  ])('rejects binary data even when it can be decoded', (bytes) => {
+    expect(() =>
+      generateSubmissionContent({
+        submission_text: '',
+        submitted_answer: { _files: [{ name: 'answer.txt', contents: bytes.toString('base64') }] },
+      }),
+    ).toThrow('AI grading cannot read binary file "answer.txt"');
+  });
+
+  it('rejects invalid base64 instead of silently losing bytes', () => {
+    expect(() =>
+      generateSubmissionContent({
+        submission_text: '',
+        submitted_answer: { _files: [{ name: 'answer.txt', contents: 'aGVsbG8=!' }] },
+      }),
+    ).toThrow('Submitted file "answer.txt" has invalid base64 data');
+  });
+
+  it('recognizes unmarked attachments for grading explanations', () => {
+    expect(
+      containsSubmissionAttachment({
+        submission_text: '',
+        submitted_answer: { _files: [{ name: 'answer.txt', contents: '' }] },
+      }),
+    ).toBe(true);
+    expect(containsSubmissionAttachment({ submission_text: '', submitted_answer: null })).toBe(
+      false,
+    );
+  });
+
+  it('generates named PDF file parts', () => {
+    const result = generateSubmissionContent({
+      submission_text: '<div data-ai-grading-file-name="solution.pdf">solution.pdf</div>',
+      submitted_answer: {
+        _files: [{ name: 'solution.pdf', contents: 'pdfdata' }],
+      },
+    });
+
+    expect(result).toEqual([
+      { type: 'text', text: 'Submitted file: solution.pdf' },
+      {
+        type: 'file',
+        data: 'pdfdata',
+        filename: 'solution.pdf',
+        mediaType: 'application/pdf',
+      },
+    ]);
+  });
+
+  it('rejects uploaded file types that are not portable across grading providers', () => {
+    expect(() =>
+      generateSubmissionContent({
+        submission_text: '<div data-ai-grading-file-name="solution.zip">solution.zip</div>',
+        submitted_answer: {
+          _files: [
+            { name: 'solution.zip', contents: Buffer.from('PK\u0003\u0004').toString('base64') },
+          ],
+        },
+      }),
+    ).toThrow('AI grading cannot read binary file "solution.zip"');
+  });
+
+  it('includes uploaded images in orientation correction', () => {
+    const result = extractSubmissionImages({
+      submission_text: '<div data-ai-grading-file-name="solution.png">solution.png</div>',
+      submitted_answer: {
+        _files: [
+          { name: 'solution.png', contents: 'imagedata' },
+          { name: 'workspace.jpg', contents: 'workspacedata' },
+          { name: 'answer.py', contents: Buffer.from('pass').toString('base64') },
+          { name: 'work.pdf', contents: 'pdfdata' },
+        ],
+      },
+    });
+
+    expect(result).toEqual({ 'solution.png': 'imagedata', 'workspace.jpg': 'workspacedata' });
+  });
+});
+
+describe('correctImagesOrientation', () => {
+  it('sends PNG and WebP images to the model with matching media types', async () => {
+    const png = await sharp({
+      create: { width: 2, height: 3, channels: 3, background: '#ff0000' },
+    })
+      .png()
+      .toBuffer();
+    const webp = await sharp({
+      create: { width: 2, height: 3, channels: 3, background: '#0000ff' },
+    })
+      .webp()
+      .toBuffer();
+    const model = new MockLanguageModelV3({
+      doGenerate: {
+        content: [{ type: 'text', text: JSON.stringify({ upright_image: '1' }) }],
+        finishReason: { unified: 'stop', raw: undefined },
+        usage: {
+          inputTokens: {
+            total: undefined,
+            noCache: undefined,
+            cacheRead: undefined,
+            cacheWrite: undefined,
+          },
+          outputTokens: { total: undefined, text: undefined, reasoning: undefined },
+        },
+        warnings: [],
+      },
+    });
+
+    await correctImagesOrientation({
+      submittedAnswer: {
+        _files: [
+          { name: 'solution.png', contents: png.toString('base64') },
+          { name: 'solution.webp', contents: webp.toString('base64') },
+        ],
+      },
+      submittedImages: {
+        'solution.png': png.toString('base64'),
+        'solution.webp': webp.toString('base64'),
+      },
+      model,
+    });
+
+    const mediaTypes = model.doGenerateCalls.map(({ prompt }) =>
+      prompt
+        .flatMap((message) => (message.role === 'user' ? message.content : []))
+        .filter((part) => part.type === 'file')
+        .map((part) => part.mediaType),
+    );
+    expect(mediaTypes).toEqual([
+      ['image/png', 'image/png', 'image/png', 'image/png'],
+      ['image/webp', 'image/webp', 'image/webp', 'image/webp'],
+    ]);
   });
 });
 

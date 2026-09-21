@@ -1,11 +1,15 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 
-import type { SerializedQuestionOutput } from '../instructorQtiImport.types.js';
+import type {
+  CourseInstanceOption,
+  SerializedQuestionOutput,
+} from '../instructorQtiImport.types.js';
 
 import {
   NonRubricWarnings,
   QuestionBankDeduplicationWarning,
+  UploadStep,
   buildQuestionWarningsByDirectoryName,
   findDuplicateQuestionTitles,
 } from './ImportReviewComponents.js';
@@ -176,5 +180,50 @@ describe('buildQuestionWarningsByDirectoryName', () => {
       'Missing asset file: diagram.png',
       'Unsupported question type "magic_question"',
     ]);
+  });
+});
+
+describe('UploadStep', () => {
+  const courseInstances: CourseInstanceOption[] = [
+    { id: '1', shortName: 'Sp15', longName: 'Spring 2015' },
+    { id: '2', shortName: 'Fa15', longName: 'Fall 2015' },
+  ];
+
+  function render(instances: CourseInstanceOption[]) {
+    return renderToStaticMarkup(
+      <UploadStep
+        uploading={false}
+        processingPhase="idle"
+        courseInstances={instances}
+        courseInstancesUrl="/pl/course/1/course_admin/instances"
+        selectedCourseInstanceId={instances[0]?.id ?? null}
+        onSubmit={() => {}}
+        onCourseInstanceChange={() => {}}
+      />,
+    );
+  }
+
+  it('explains that quizzes become standalone questions without a course instance', () => {
+    const html = render([]);
+
+    expect(html).toContain('have any course instances yet');
+    expect(html).toContain('href="/pl/course/1/course_admin/instances"');
+    expect(html).not.toContain('Target course instance');
+  });
+
+  it('shows the only course instance as read-only text', () => {
+    const html = render(courseInstances.slice(0, 1));
+
+    expect(html).toContain('Target course instance');
+    expect(html).toContain('Sp15: Spring 2015');
+    expect(html).not.toContain('<select');
+  });
+
+  it('lets the user choose between multiple course instances', () => {
+    const html = render(courseInstances);
+
+    expect(html).toContain('<select');
+    expect(html).toContain('Sp15: Spring 2015');
+    expect(html).toContain('Fa15: Fall 2015');
   });
 });

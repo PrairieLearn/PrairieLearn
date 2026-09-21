@@ -41,13 +41,12 @@ Frequently used packages:
 - ALWAYS create pull requests as drafts unless specifically requested.
 - When creating pull requests, follow the PR template in `.github/PULL_REQUEST_TEMPLATE.md`.
 - In PR descriptions, keep the Testing section high signal. Do not list routine lint/typecheck/test commands just because they were run locally, and do not mention that CI will run. Mention only manual verification, docs rendering, screenshots, special test coverage, or unusual validation that helps reviewers understand the change.
-- In Claude Code remote sessions, if the target branch is not `master`, commit and push directly to the parent/target branch instead of creating a separate feature branch.
 
 ## Building, type checking, and linting
 
-When working on a task, you should typecheck / lint / format individual files as you go. When you are done, you should typecheck / lint / format all changed files.
+Before finishing, typecheck, lint, and format the changed files using the targeted commands below.
 
-Run `make format-changed` from the root directory to format all files changed on the current branch compared to the default branch, including committed, staged, unstaged, and untracked changes.
+`make format-changed` autofixes and formats all branch changes, including untracked files. Use it only when that entire scope belongs to the task.
 
 ### TypeScript
 
@@ -172,7 +171,7 @@ Avoid running the entire test suite unless necessary, as it can be time-consumin
 
 Tests expect Postgres, Redis, and an S3-compatible store to be running, and usually they already are. If you suspect that they're not, run `make start-support` from the root directory.
 
-To test UI code looks correct, you should try to connect to the development server and screenshot the page with `playwright`. The dev server runs on the port specified by the `CONDUCTOR_PORT` environment variable (if set) or `3000`. If you can't determine the port, ask the user.
+Verify UI changes in a browser against the development server, capturing screenshots when useful. The dev server uses `CONDUCTOR_PORT` if set, otherwise port `3000`.
 
 When writing tests:
 

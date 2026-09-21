@@ -70,7 +70,13 @@ For example, if your IPv4 is `192.168.1.60` and PL is running on port `3000`, yo
 
 ## Workspaces and external graders
 
-You should set the workspace host home directory root and home directory root in your `config.json`.
+### Running PrairieLearn natively
+
+!!! note
+
+    This section applies to [native installations](installingNative.md), where PrairieLearn runs directly on your computer. If you start PrairieLearn with `docker run`, follow the [Docker instructions for workspaces and external graders](../installing.md#support-for-external-graders-and-workspaces) instead and leave the directory, hostname, and ownership settings below at their defaults.
+
+Set the directories used to store workspace files in your `config.json`:
 
 ```json title="config.json"
 {
@@ -98,7 +104,7 @@ In all operating systems supported by PrairieLearn, Docker Desktop allows any us
   sudo make dev
   ```
 
-### Running workspaces natively on WSL
+### Running natively on WSL
 
 If you are running workspaces on WSL, since Docker Desktop runs outside the specific WSL instance you are using, you may in some cases need to specify the `"workspaceDevContainerHostname"` in your `config.json` to be the IP address of your Windows host. You can find this by running `ip route` in the WSL instance. For example, if the output of `ip route` starts with `default via 172.30.112.1 dev ...`, you would set the following in your `config.json`:
 
@@ -110,7 +116,7 @@ If you are running workspaces on WSL, since Docker Desktop runs outside the spec
 
 ### Running workspaces natively on macOS
 
-If you are running workspaces natively on macOS, you may need to change `"workspaceDevContainerHostname"` to "localhost".
+On macOS, you may also need to change `"workspaceDevContainerHostname"` to `"localhost"`.
 
 ```json title="config.json"
 {
@@ -134,16 +140,16 @@ sudo make dev-workspace-host
 sudo make dev
 ```
 
-If you don't both of these commands, you will see errors like:
+If you don't run both of these commands, you will see errors like:
 
 ```text
 chown: changing ownership of '/home/coder/workspace': Permission denied
 chown: changing ownership of '/home/coder/workspace/fibonacci.py': Permission denied
 ```
 
-### Testing local docker images
+### Testing local Docker images
 
-When testing [docker images](../dockerImages.md) locally, you may want to force PrairieLearn to use the local version of an image.
+In both Docker and native installations, you can use locally built [Docker images](../dockerImages.md) by disabling image pulls in `config.json`:
 
 ```json title="config.json"
 {
@@ -151,6 +157,8 @@ When testing [docker images](../dockerImages.md) locally, you may want to force 
   "externalGradingPullImagesFromDockerHub": false
 }
 ```
+
+These options are independent and both default to `true`.
 
 ## Enterprise
 

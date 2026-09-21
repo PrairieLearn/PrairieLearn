@@ -4,6 +4,8 @@ import { IdSchema } from '@prairielearn/zod';
 import { makeAssessmentInstance } from '../../lib/assessment.js';
 import { insertIssue } from '../../lib/issues.js';
 import { selectAssessmentByTid } from '../../models/assessment.js';
+import { selectCourseInstanceByShortName } from '../../models/course-instances.js';
+import { selectCourseByShortName } from '../../models/course.js';
 import { selectQuestionByQid } from '../../models/question.js';
 import { type AuthUser, getOrCreateUser } from '../utils/auth.js';
 
@@ -56,6 +58,8 @@ interface TestIssueData {
   studentMessage: string;
   manuallyReported: boolean;
   open: boolean;
+  /** Which course instance (if any) the issue should be associated with. */
+  courseInstance?: 'Sp15' | 'public';
 }
 
 const BASE_TEST_ISSUES: TestIssueData[] = [
@@ -89,9 +93,29 @@ const BASE_TEST_ISSUES: TestIssueData[] = [
     manuallyReported: false,
     open: true,
   },
+  {
+    qid: 'addNumbers',
+    studentMessage: 'Issue 6: addNumbers in Sp15 course instance',
+    manuallyReported: true,
+    open: true,
+    courseInstance: 'Sp15',
+  },
+  {
+    qid: 'addVectors',
+    studentMessage: 'Issue 7: addVectors in public course instance',
+    manuallyReported: true,
+    open: true,
+    courseInstance: 'public',
+  },
 ];
 
-async function createTestIssues(courseId: string) {
+async function createTestIssues({
+  courseId,
+  courseInstanceIdMap,
+}: {
+  courseId: string;
+  courseInstanceIdMap: Record<NonNullable<TestIssueData['courseInstance']>, string>;
+}) {
   const user = await getOrCreateUser(TEST_USER);
 
   const addNumbersQuestion = await selectQuestionByQid({ qid: 'addNumbers', course_id: courseId });
@@ -107,6 +131,9 @@ async function createTestIssues(courseId: string) {
     const variantId = await insertTestVariant({
       questionId: question.id,
       courseId,
+      courseInstanceId: issueData.courseInstance
+        ? courseInstanceIdMap[issueData.courseInstance]
+        : undefined,
       authnUserId: user.id,
       userId: user.id,
     });
@@ -138,7 +165,17 @@ test.describe('Instructor issues page', () => {
 
   test.beforeAll(async ({ courseInstance }) => {
     issuesUrl = `/pl/course/${courseInstance.course_id}/course_admin/issues`;
-    await createTestIssues(courseInstance.course_id);
+
+    const course = await selectCourseByShortName('QA 101');
+    const publicCourseInstance = await selectCourseInstanceByShortName({
+      course,
+      shortName: 'public',
+    });
+
+    await createTestIssues({
+      courseId: courseInstance.course_id,
+      courseInstanceIdMap: { Sp15: courseInstance.id, public: publicCourseInstance.id },
+    });
   });
 
   test.describe('View issues list', () => {
@@ -213,6 +250,60 @@ test.describe('Instructor issues page', () => {
 
       const issueItems = page.getByTestId('issue-list-item');
       await expect(issueItems.first()).toBeVisible();
+    });
+
+    test('excluding both known qids returns no issues', async ({ page }) => {
+      await page.goto(issuesUrl);
+
+      const searchInput = page.getByRole('textbox', { name: 'Search all issues' });
+      await searchInput.fill('-qid:addVectors -qid:addNumbers');
+      await searchInput.press('Enter');
+
+      await expect(page.getByTestId('issue-list-item')).toHaveCount(0);
+    });
+
+    test('can search by ci qualifier for a course instance', async ({ page }) => {
+      await page.goto(issuesUrl);
+
+      const searchInput = page.getByRole('textbox', { name: 'Search all issues' });
+      await searchInput.fill('ci:Sp15');
+      await searchInput.press('Enter');
+
+      const issueItems = page.getByTestId('issue-list-item');
+      await expect(issueItems).toHaveCount(1);
+      await expect(issueItems.first()).toContainText('Issue 6:');
+    });
+
+    test('can search with wildcard ci qualifier', async ({ page }) => {
+      await page.goto(issuesUrl);
+
+      const searchInput = page.getByRole('textbox', { name: 'Search all issues' });
+      await searchInput.fill('ci:Sp*');
+      await searchInput.press('Enter');
+
+      const issueItems = page.getByTestId('issue-list-item');
+      await expect(issueItems).toHaveCount(1);
+      await expect(issueItems.first()).toContainText('Issue 6:');
+    });
+
+    test('excluding a course instance includes issues without one or in other course instances', async ({
+      page,
+    }) => {
+      await page.goto(issuesUrl);
+
+      const searchInput = page.getByRole('textbox', { name: 'Search all issues' });
+      await searchInput.fill('-ci:Sp15');
+      await searchInput.press('Enter');
+
+      await expect(page.getByText('Issue 1:', { exact: false })).toBeVisible();
+      await expect(page.getByText('Issue 7:', { exact: false })).toBeVisible();
+
+      const issueItems = page.getByTestId('issue-list-item');
+      const count = await issueItems.count();
+      for (let i = 0; i < count; i++) {
+        const text = await issueItems.nth(i).textContent();
+        expect(text).not.toContain('Issue 6:');
+      }
     });
 
     test('can clear filters', async ({ page }) => {

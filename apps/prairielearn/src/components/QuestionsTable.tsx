@@ -36,7 +36,7 @@ import { rankSearchText } from '../lib/client/search.js';
 import {
   QUESTION_TABLE_FILTER_URL_KEYS,
   getAiQuestionGenerationDraftsUrl,
-  getCourseInstanceBaseUrl,
+  getCourseAdminQtiImportUrl,
 } from '../lib/client/url.js';
 import type { QuestionsError } from '../trpc/course/questions.js';
 
@@ -58,6 +58,7 @@ const HIDDEN_BY_DEFAULT = new Set([
   'external_grading_image',
   'workspace_image',
   'single_variant',
+  'partial_credit',
   'has_preferences',
 ]);
 
@@ -282,10 +283,13 @@ export function QuestionsTable<TQueryKey extends readonly unknown[]>({
   });
 
   const aiGenerateUrl = getAiQuestionGenerationDraftsUrl({ urlPrefix });
-  const importQuestionsUrl =
-    addQuestionUrl && courseInstances.length > 0
-      ? `${getCourseInstanceBaseUrl(currentCourseInstanceId ?? courseInstances[0].id)}/instructor/instance_admin/qti_import?return_to=questions`
-      : undefined;
+  const importQuestionsUrl = addQuestionUrl
+    ? getCourseAdminQtiImportUrl({
+        courseId,
+        courseInstanceId: currentCourseInstanceId,
+        returnTo: 'questions',
+      })
+    : undefined;
 
   const selectedQuestions = table.getFilteredSelectedRowModel().rows.map((row) => row.original);
   const displayedCount = table.getRowModel().rows.length;
@@ -388,6 +392,7 @@ export function QuestionsTable<TQueryKey extends readonly unknown[]>({
             },
             { name: 'Workspace image', value: row.workspace_image },
             { name: 'Single variant', value: row.single_variant ? 'Yes' : 'No' },
+            { name: 'Partial credit', value: row.partial_credit ? 'Yes' : 'No' },
             { name: 'Has preferences', value: row.has_preferences ? 'Yes' : 'No' },
           ],
           mapRowToJsonData: (row: SafeQuestionsPageData) => ({
@@ -400,6 +405,7 @@ export function QuestionsTable<TQueryKey extends readonly unknown[]>({
             external_grading_image: row.external_grading_image,
             workspace_image: row.workspace_image,
             single_variant: row.single_variant,
+            partial_credit: row.partial_credit,
             has_preferences: row.has_preferences,
           }),
         }}

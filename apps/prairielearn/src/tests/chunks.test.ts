@@ -1,5 +1,6 @@
 import * as path from 'path';
 
+import { execa } from 'execa';
 import fs from 'fs-extra';
 import * as tmp from 'tmp-promise';
 import { afterEach, assert, beforeEach, describe, expect, it } from 'vitest';
@@ -453,6 +454,71 @@ describe('chunks', () => {
       assert.isOk(
         await fs.pathExists(path.join(courseRuntimeDir, 'questions', 'subfolder', 'info.json')),
       );
+    });
+
+    it('rebuilds both chunks when a file is renamed across chunk boundaries', async () => {
+      const courseDir = tempTestCourseDir.path;
+      const courseRuntimeDir = chunksLib.getRuntimeDirectoryForCourse({
+        id: course.id,
+        path: courseDir,
+      });
+      const questionFilePath = path.join(courseDir, 'questions', 'addNumbers', 'helper.py');
+      const serverFilePath = path.join(courseDir, 'serverFilesCourse', 'helper.py');
+
+      await fs.writeFile(questionFilePath, 'def get_value():\n    return 42\n');
+      await execa('git', ['init'], { cwd: courseDir });
+      await execa('git', ['config', 'diff.renames', 'true'], { cwd: courseDir });
+      await execa('git', ['config', 'user.email', 'test@example.com'], { cwd: courseDir });
+      await execa('git', ['config', 'user.name', 'Test User'], { cwd: courseDir });
+      await execa('git', ['add', '-A'], { cwd: courseDir });
+      await execa('git', ['commit', '-m', 'Initial course'], { cwd: courseDir });
+      const oldHash = (await execa('git', ['rev-parse', 'HEAD'], { cwd: courseDir })).stdout;
+
+      await chunksLib.updateChunksForCourse({
+        coursePath: courseDir,
+        courseId: course.id,
+        courseData: await courseDB.loadFullCourse(course.id, courseDir),
+      });
+      const chunksToLoad: chunksLib.Chunk[] = [
+        { type: 'question', questionId },
+        { type: 'serverFilesCourse' },
+      ];
+      await chunksLib.ensureChunksForCourseAsync(course.id, chunksToLoad);
+
+      const runtimeQuestionFilePath = path.join(
+        courseRuntimeDir,
+        'questions',
+        'addNumbers',
+        'helper.py',
+      );
+      const runtimeServerFilePath = path.join(courseRuntimeDir, 'serverFilesCourse', 'helper.py');
+      assert.isOk(await fs.pathExists(runtimeQuestionFilePath));
+      assert.isNotOk(await fs.pathExists(runtimeServerFilePath));
+
+      await fs.move(questionFilePath, serverFilePath);
+      await execa('git', ['add', '-A'], { cwd: courseDir });
+      await execa('git', ['commit', '-m', 'Move helper to server files'], { cwd: courseDir });
+      const newHash = (await execa('git', ['rev-parse', 'HEAD'], { cwd: courseDir })).stdout;
+      const { stdout: nameStatus } = await execa(
+        'git',
+        ['diff', '--name-status', '--find-renames=100%', oldHash, newHash],
+        { cwd: courseDir },
+      );
+      assert.equal(nameStatus, 'R100\tquestions/addNumbers/helper.py\tserverFilesCourse/helper.py');
+
+      const { logger } = makeMockLogger();
+      await syncDiskToSql(course, logger);
+      await chunksLib.updateChunksForCourse({
+        coursePath: courseDir,
+        courseId: course.id,
+        courseData: await courseDB.loadFullCourse(course.id, courseDir),
+        oldHash,
+        newHash,
+      });
+      await chunksLib.ensureChunksForCourseAsync(course.id, chunksToLoad);
+
+      assert.isOk(await fs.pathExists(runtimeServerFilePath));
+      assert.isNotOk(await fs.pathExists(runtimeQuestionFilePath));
     });
 
     it('deletes chunks that are no longer needed', async () => {

@@ -81,6 +81,7 @@ export const HandwritingOrientationsOutputSchema = z.object({
         'Rotated Clockwise 90 degrees: The page is on its side, with the top of the text pointing left.',
         'Rotated Counterclockwise 90 degrees: The page is on its side, with the top of the text pointing right.',
         "Only use the student's handwriting to determine its orientation. Do not use the background or the page.",
+        'Do not include pages from PDF or other document attachments.',
       ].join(' '),
     ),
 });

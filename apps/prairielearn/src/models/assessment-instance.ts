@@ -8,11 +8,7 @@ const sql = loadSqlEquiv(import.meta.url);
 
 /** How the new `date_limit` for an instance is derived in {@link updateAssessmentInstancesTimeLimit}. */
 export type TimeLimitBaseTime =
-  | 'date_limit'
-  | 'null'
-  | 'current_date'
-  | 'start_date'
-  | 'exact_date';
+  'date_limit' | 'null' | 'current_date' | 'start_date' | 'exact_date';
 
 /**
  * Updates the time limit for one or more open assessment instances (re-opening
