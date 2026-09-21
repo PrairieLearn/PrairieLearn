@@ -476,7 +476,7 @@ If the repository belongs to the **PrairieLearn** organization on **github.com**
 
 Once you have Admin access, use **grant other people access on GitHub** to manage collaborators and their permissions. If you are not a course Owner, use **see Staff list** to find an Owner who can grant you access.
 
-PrairieLearn cannot grant access to repositories in other GitHub organizations or on other hosting platforms. Contact the repository administrator for access to those repositories. The section is hidden when Enterprise Edition is disabled, the course has no repository, or the course is an example course.
+PrairieLearn cannot grant access to repositories in other GitHub organizations or on other hosting platforms. Contact the repository administrator for access to those repositories. The section is hidden when Enterprise Edition is disabled, the server has no GitHub API token configured, the course has no repository, or the course is an example course.
 
 If the server cannot grant access to a supported repository or GitHub rejects the request, contact [support](https://prairielearn.slack.com) in `#pl-help`.
 

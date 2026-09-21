@@ -312,16 +312,14 @@ nonEnterpriseTest('GitHub access is hidden without EE', async ({ page, courseIns
 
 const unconfiguredTest = createTest({ isEnterprise: true, githubClientToken: null });
 unconfiguredTest(
-  'Owner sees support guidance when GitHub integration is unavailable',
+  'GitHub access is hidden when the server has no GitHub token',
   async ({ page, courseInstance }) => {
     await setRepository(courseInstance.course_id, 'git@github.com:PrairieLearn/pl-qa101.git');
     await page.setViewportSize({ width: 1200, height: 900 });
     await page.goto(`/pl/course/${courseInstance.course_id}/course_admin/settings`);
     await expect(page.getByRole('button', { name: 'Grant myself access' })).toHaveCount(0);
-    await expect(page.getByRole('alert')).toContainText(
-      'GitHub access cannot be granted on this server.',
-    );
-    await showAccessSection(page);
+    await expect(page.getByRole('heading', { name: 'Access to GitHub repository' })).toHaveCount(0);
+    await page.getByRole('button', { name: 'Save', exact: true }).scrollIntoViewIfNeeded();
     await screenshot(page, '10-unconfigured');
   },
 );

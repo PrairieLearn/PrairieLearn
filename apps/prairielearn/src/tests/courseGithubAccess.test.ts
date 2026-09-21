@@ -69,10 +69,14 @@ describe('Course GitHub access', { concurrent: false }, () => {
     });
   });
   beforeEach(() => {
-    const previous = config.isEnterprise;
+    const previous = {
+      isEnterprise: config.isEnterprise,
+      githubClientToken: config.githubClientToken,
+    };
     config.isEnterprise = true;
+    config.githubClientToken = 'test-token';
     return () => {
-      config.isEnterprise = previous;
+      Object.assign(config, previous);
     };
   });
   beforeEach(async () => {
@@ -219,16 +223,14 @@ describe('Course GitHub access', { concurrent: false }, () => {
     });
   });
 
-  test('explains when GitHub integration is unavailable', async () => {
+  test('hides and blocks GitHub access when the server has no GitHub token', async () => {
     await withUser(owner, async () =>
       withConfig({ githubClientToken: null }, async () => {
         await expect(
           createClient(owner).githubAccess.grant.mutate({ username: 'course-owner' }),
         ).rejects.toMatchObject({ data: { code: 'PRECONDITION_FAILED' } });
         const page = await fetchCheerio(settingsUrl);
-        expect(page.$('section').text()).toContain(
-          'GitHub access cannot be granted on this server',
-        );
+        expect(page.$('#github-access-heading').length).toBe(0);
         expect(grant).not.toHaveBeenCalled();
       }),
     );

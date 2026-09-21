@@ -98,7 +98,10 @@ router.get(
             origHash={origHash}
             urlPrefix={res.locals.urlPrefix}
             githubAccess={
-              isEnterprise() && course.repository && !course.example_course ? (
+              isEnterprise() &&
+              config.githubClientToken !== null &&
+              course.repository &&
+              !course.example_course ? (
                 <Hydrate>
                   <GithubRepositoryAccess
                     courseId={course.id}
@@ -109,7 +112,6 @@ router.get(
                     }
                     isSupportedRepository={githubRepository?.owner.toLowerCase() === 'prairielearn'}
                     isOwner={authz_data.has_course_permission_own}
-                    canGrantAccess={config.githubClientToken !== null}
                     staffUrl={`${res.locals.urlPrefix}/course_admin/staff`}
                     trpcCsrfToken={generatePrefixCsrfToken(
                       { url: getCourseTrpcUrl(course.id), authn_user_id: res.locals.authn_user.id },

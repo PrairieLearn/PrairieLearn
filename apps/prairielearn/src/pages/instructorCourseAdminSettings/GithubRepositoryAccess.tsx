@@ -20,7 +20,6 @@ interface GithubRepositoryAccessProps {
   repositoryUrl: string | null;
   isSupportedRepository: boolean;
   isOwner: boolean;
-  canGrantAccess: boolean;
   staffUrl: string;
   trpcCsrfToken: string;
 }
@@ -45,7 +44,6 @@ function GithubRepositoryAccessInner({
   repositoryUrl,
   isSupportedRepository,
   isOwner,
-  canGrantAccess,
   staffUrl,
 }: GithubRepositoryAccessProps) {
   const trpc = useTRPC();
@@ -109,25 +107,19 @@ function GithubRepositoryAccessInner({
             If you don't have access to the GitHub repository, as a course Owner you can grant
             yourself or other people access.
           </p>
-          {canGrantAccess ? (
-            <Button
-              type="button"
-              variant="outline-primary"
-              className="mb-3"
-              onClick={() => {
-                reset();
-                grantMutation.reset();
-                setSuccess(null);
-                setShowModal(true);
-              }}
-            >
-              Grant myself access
-            </Button>
-          ) : (
-            <Alert variant="warning">
-              GitHub access cannot be granted on this server. Please contact support.
-            </Alert>
-          )}
+          <Button
+            type="button"
+            variant="outline-primary"
+            className="mb-3"
+            onClick={() => {
+              reset();
+              grantMutation.reset();
+              setSuccess(null);
+              setShowModal(true);
+            }}
+          >
+            Grant myself access
+          </Button>
           <p className="mb-0">
             Once you have access, you can{' '}
             <a href={`${repositoryUrl}/settings/access`} target="_blank" rel="noreferrer">
