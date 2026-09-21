@@ -227,6 +227,8 @@ def test_parse_infinite_set_operations_require_set_type(
         ("finite-set", "x + 1", "expression"),
         ("finite-set", "[1, 2]", "interval"),
         ("finite-set", "[1, 2] U [3, 4]", "interval"),
+        ("finite-set", "{[1, 2]} - {[x, y]}", "interval"),
+        ("finite-set", "{[1, 2]} & {[x, y]}", "interval"),
         ("interval", "{1, 2}", "finite-set"),
         ("interval", "x + 1", "expression"),
     ],
@@ -235,7 +237,7 @@ def test_parse_rejects_disallowed_value_types(
     allowed_types: str, submission: str, missing_types: str
 ) -> None:
     element_html = build_element_html(
-        'variables="x"',
+        'variables="x,y"',
         f'allowed-types="{allowed_types}"',
     )
     data = make_question_data(submitted_answers={"test": submission})
@@ -268,6 +270,25 @@ def test_prepare_rejects_disallowed_correct_answer_type() -> None:
     with pytest.raises(
         ValueError,
         match=r"Parsing correct answer.*uses finite-set.*Allowed types: interval",
+    ):
+        symbolic_input.prepare(element_html, make_question_data())
+
+
+@pytest.mark.parametrize(
+    "correct_answer", ["{[1, 2]} - {[x, y]}", "{[1, 2]} & {[x, y]}"]
+)
+def test_prepare_rejects_nested_interval_in_finite_set(
+    correct_answer: str,
+) -> None:
+    element_html = build_element_html(
+        'variables="x,y"',
+        'allowed-types="finite-set"',
+        f'correct-answer="{correct_answer}"',
+    )
+
+    with pytest.raises(
+        ValueError,
+        match=r"Parsing correct answer.*uses interval.*Allowed types: finite-set",
     ):
         symbolic_input.prepare(element_html, make_question_data())
 

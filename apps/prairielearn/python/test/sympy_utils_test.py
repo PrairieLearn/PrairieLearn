@@ -407,6 +407,26 @@ class TestSympy:
                 ),
             ),
             (
+                "{[1, 2]} - {[m, n]}",
+                {"finite-set", "interval"},
+                sympy.Complement(
+                    sympy.FiniteSet(sympy.Interval(1, 2)),
+                    sympy.FiniteSet(
+                        sympy.Interval(sympy.Symbol("m"), sympy.Symbol("n"))
+                    ),
+                ),
+            ),
+            (
+                "{[1, 2]} & {[m, n]}",
+                {"finite-set", "interval"},
+                sympy.Intersection(
+                    sympy.FiniteSet(sympy.Interval(1, 2)),
+                    sympy.FiniteSet(
+                        sympy.Interval(sympy.Symbol("m"), sympy.Symbol("n"))
+                    ),
+                ),
+            ),
+            (
                 "{0, 2} U {2, 4} U {1, 3}",
                 {"finite-set"},
                 sympy.FiniteSet(0, 1, 2, 3, 4),
@@ -472,6 +492,9 @@ class TestSympy:
             ("[0, 1] U [1, 4] & {2, 3}", {"interval"}, "finite-set"),
             ("[1, 2] U {3, 4}", {"finite-set"}, "interval"),
             ("{ [1, 2] }", {"finite-set"}, "interval"),
+            ("{[1, 2]} - {[m, n]}", {"finite-set"}, "interval"),
+            ("{[1, 2]} & {[m, n]}", {"finite-set"}, "interval"),
+            ("{[1, 2]} & {[m, n]}", {"interval"}, "finite-set"),
             ("[0, 5] - {m}", {"finite-set"}, "interval"),
             ("[0, 5] - {m}", {"interval"}, "finite-set"),
         ],

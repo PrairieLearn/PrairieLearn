@@ -92,6 +92,8 @@ The empty set (`{}`) is accepted by `set`, `finite-set`, and `interval`. Multipl
 
 Classification happens after simplification. For example, `[0, 2] U {1}` simplifies to `[0, 2]` and is accepted by `interval`, while `[0, 2] & {1}` simplifies to `{1}` and is accepted by `finite-set`.
 
+When a symbolic set operation remains unevaluated, its nested set types must also be allowed. For example, `{[1, 2]} - {[x, y]}` requires both `finite-set` and `interval`.
+
 ### Migrating from deprecated attributes
 
 The following deprecated attribute is still supported for backward compatibility:
