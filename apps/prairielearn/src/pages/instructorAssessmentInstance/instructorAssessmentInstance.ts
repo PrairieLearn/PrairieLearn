@@ -1,4 +1,3 @@
-import assert from 'assert';
 import { pipeline } from 'node:stream/promises';
 
 import { Router } from 'express';
@@ -25,7 +24,7 @@ import { type ResLocalsForPage, typedAsyncHandler } from '../../lib/res-locals.j
 import { assessmentFilenamePrefix, sanitizeString } from '../../lib/sanitize-name.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 import { resetVariantsForInstanceQuestion } from '../../models/variant.js';
-import { selectAssessmentInstancesForTable } from '../../trpc/assessment/assessment-instances.js';
+import { getAssessmentInstanceTimeFields } from '../../trpc/assessment/assessment-instances.js';
 import type { AssessmentInstanceActionRow } from '../instructorAssessmentInstances/instructorAssessmentInstances.types.js';
 
 import {
@@ -60,12 +59,12 @@ router.get(
     unauthorizedUsers: 'block',
   }),
   typedAsyncHandler<'assessment-instance'>(async (req, res) => {
-    const { assessment, authn_user, authz_data, course_instance } = extractPageContext(res.locals, {
+    const { assessment, authn_user, course_instance } = extractPageContext(res.locals, {
       pageType: 'assessment',
       accessType: 'instructor',
     });
     const logCsvFilename = makeLogCsvFilename(res.locals);
-    const [assessment_instance_stats, instance_questions, assessmentInstanceLog, actionRows] =
+    const [assessment_instance_stats, instance_questions, assessmentInstanceLog] =
       await Promise.all([
         sqldb.queryRows(
           sql.assessment_instance_stats,
@@ -78,42 +77,26 @@ router.get(
           InstanceQuestionRowSchema,
         ),
         selectAssessmentInstanceLog(res.locals.assessment_instance.id, false),
-        authz_data.has_course_instance_permission_edit
-          ? selectAssessmentInstancesForTable({
-              assessment_id: assessment.id,
-              assessment_instance_id: res.locals.assessment_instance.id,
-              timezone: course_instance.display_timezone,
-            })
-          : Promise.resolve(null),
       ]);
 
-    const selectedActionRow = actionRows?.[0];
-    if (actionRows !== null) assert.strictEqual(actionRows.length, 1);
-    const actionRow: AssessmentInstanceActionRow | null = selectedActionRow
-      ? {
-          assessment_instance: {
-            id: selectedActionRow.assessment_instance.id,
-            open: selectedActionRow.assessment_instance.open,
-            date: selectedActionRow.assessment_instance.date,
-          },
-          time_remaining: selectedActionRow.time_remaining,
-          time_remaining_sec: selectedActionRow.time_remaining_sec,
-          total_time: selectedActionRow.total_time,
-          total_time_sec: selectedActionRow.total_time_sec,
-        }
-      : null;
-    const trpcCsrfToken = actionRow
-      ? generatePrefixCsrfToken(
-          {
-            url: getAssessmentTrpcUrl({
-              courseInstanceId: course_instance.id,
-              assessmentId: assessment.id,
-            }),
-            authn_user_id: authn_user.id,
-          },
-          config.secretKey,
-        )
-      : null;
+    const actionRow: AssessmentInstanceActionRow = {
+      assessment_instance: {
+        id: res.locals.assessment_instance.id,
+        open: res.locals.assessment_instance.open,
+        date: res.locals.assessment_instance.date,
+      },
+      ...getAssessmentInstanceTimeFields(res.locals.assessment_instance),
+    };
+    const trpcCsrfToken = generatePrefixCsrfToken(
+      {
+        url: getAssessmentTrpcUrl({
+          courseInstanceId: course_instance.id,
+          assessmentId: assessment.id,
+        }),
+        authn_user_id: authn_user.id,
+      },
+      config.secretKey,
+    );
 
     res.send(
       InstructorAssessmentInstance({

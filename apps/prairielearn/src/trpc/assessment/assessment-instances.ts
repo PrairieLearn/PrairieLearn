@@ -18,6 +18,7 @@ import {
 import {
   type AssessmentInstanceRow,
   AssessmentInstanceRowQuerySchema,
+  type AssessmentInstanceTimeFields,
   PendingRegradeQuestionSchema,
 } from '../../pages/instructorAssessmentInstances/instructorAssessmentInstances.types.js';
 
@@ -28,6 +29,65 @@ import {
 } from './init.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
+
+export function getAssessmentInstanceTimeFields(
+  assessmentInstance: Pick<
+    AssessmentInstanceRow['assessment_instance'],
+    'open' | 'date' | 'date_limit' | 'grading_needed'
+  >,
+  now = new Date(),
+): AssessmentInstanceTimeFields {
+  const isOpen = assessmentInstance.open === true;
+  const dateLimit = assessmentInstance.date_limit;
+  const hasTimeLimit = dateLimit != null;
+  const secondsRemaining =
+    dateLimit != null ? Math.max(0, (dateLimit.getTime() - now.getTime()) / 1000) : null;
+  const totalSeconds =
+    dateLimit == null
+      ? null
+      : assessmentInstance.date == null
+        ? 0
+        : Math.max(0, (dateLimit.getTime() - assessmentInstance.date.getTime()) / 1000);
+
+  let time_remaining: string;
+  if (isOpen && hasTimeLimit) {
+    if (dateLimit.getTime() <= now.getTime()) {
+      time_remaining = 'Expired';
+    } else if (Math.floor(secondsRemaining ?? 0) < 60) {
+      time_remaining = '< 1 min';
+    } else {
+      time_remaining = `${Math.floor((secondsRemaining ?? 0) / 60)} min`;
+    }
+  } else if (isOpen) {
+    time_remaining = 'Open (no time limit)';
+  } else if (assessmentInstance.grading_needed) {
+    time_remaining = 'Closed (pending grading)';
+  } else {
+    time_remaining = 'Closed';
+  }
+
+  let total_time: string;
+  if (isOpen && hasTimeLimit) {
+    if (assessmentInstance.date == null) {
+      total_time = '0 min';
+    } else if (Math.floor(totalSeconds ?? 0) < 60) {
+      total_time = '< 1 min';
+    } else {
+      total_time = `${Math.floor((totalSeconds ?? 0) / 60)} min`;
+    }
+  } else if (isOpen) {
+    total_time = 'Open (no time limit)';
+  } else {
+    total_time = 'Closed';
+  }
+
+  return {
+    time_remaining,
+    time_remaining_sec: isOpen && hasTimeLimit ? secondsRemaining : null,
+    total_time,
+    total_time_sec: isOpen && hasTimeLimit ? totalSeconds : null,
+  };
+}
 
 export interface AssessmentInstancesError {
   list: never;
@@ -41,25 +101,24 @@ export interface AssessmentInstancesError {
 
 /**
  * Loads assessment instances for the table, formatting dates/durations in the
- * course instance's timezone. The optional id filter is used by the instructor
- * instance detail page to load the same action context for a single instance.
+ * course instance's timezone.
  */
 export async function selectAssessmentInstancesForTable({
   assessment_id,
   timezone,
-  assessment_instance_id,
 }: {
   assessment_id: string;
   timezone: string;
-  assessment_instance_id?: string;
 }): Promise<AssessmentInstanceRow[]> {
   const assessmentInstances = await sqldb.queryRows(
     sql.select_assessment_instances,
-    { assessment_id, assessment_instance_id: assessment_instance_id ?? null },
+    { assessment_id },
     AssessmentInstanceRowQuerySchema,
   );
+  const now = new Date();
   return assessmentInstances.map((instance) => ({
     ...instance,
+    ...getAssessmentInstanceTimeFields(instance.assessment_instance, now),
     date_formatted: instance.assessment_instance.date
       ? formatDate(instance.assessment_instance.date, timezone)
       : '',

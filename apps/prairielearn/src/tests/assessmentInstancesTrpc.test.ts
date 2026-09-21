@@ -4,16 +4,21 @@ import { formatDateYMDHM } from '@prairielearn/formatter';
 import * as sqldb from '@prairielearn/postgres';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
+import { dangerousFullSystemAuthz } from '../lib/authz-data-lib.js';
 import { getAssessmentTrpcUrl } from '../lib/client/url.js';
 import { config } from '../lib/config.js';
 import { SprocUsersSelectOrInsertSchema } from '../lib/db-types.js';
+import { createGroup, deleteGroup } from '../lib/groups.js';
 import { selectJobSequenceStatus } from '../lib/server-jobs.js';
+import { insertGroupAssessmentInstance } from '../models/assessment-instance.js';
 import { selectAssessmentByTid } from '../models/assessment.js';
 import { selectCourseInstanceById } from '../models/course-instances.js';
 import {
   insertCourseInstancePermissions,
   insertCoursePermissionsByUserUid,
 } from '../models/course-permissions.js';
+import { generateAndEnrollUsers } from '../models/enrollment.js';
+import { selectAssessmentInstancesForTable } from '../trpc/assessment/assessment-instances.js';
 import { createAssessmentTrpcClient } from '../trpc/assessment/client.js';
 
 import * as helperClient from './helperClient.js';
@@ -196,6 +201,78 @@ describe('assessmentInstances tRPC router', { timeout: 60_000, concurrent: false
     });
     const after = await trpcClient.assessmentInstances.list.query();
     assert.lengthOf(after, 0);
+  });
+
+  test('deleted group instances are hidden from the list and detail actions', async () => {
+    const assessment = await selectAssessmentByTid({
+      course_instance_id: courseInstanceId,
+      tid: 'hw5-templateGroupWork',
+    });
+    const courseInstance = await selectCourseInstanceById(courseInstanceId);
+    const instructor = await insertCoursePermissionsByUserUid({
+      course_id: '1',
+      uid: 'instructor@example.com',
+      course_role: 'Owner',
+      authn_user_id: '1',
+    });
+    await insertCourseInstancePermissions({
+      course_id: '1',
+      course_instance_id: courseInstanceId,
+      user_id: instructor.id,
+      course_instance_role: 'Student Data Editor',
+      authn_user_id: '1',
+    });
+    const [user] = await generateAndEnrollUsers({ count: 1, course_instance_id: courseInstanceId });
+    const group = await createGroup({
+      course_instance: courseInstance,
+      assessment,
+      group_name: `test${Date.now()}`,
+      uids: [user.uid],
+      authn_user_id: '1',
+      authzData: dangerousFullSystemAuthz(),
+    });
+    const instance = await insertGroupAssessmentInstance({
+      assessment_id: assessment.id,
+      team_id: group.id,
+      authn_user_id: '1',
+    });
+
+    const listedBeforeDeletion = await selectAssessmentInstancesForTable({
+      assessment_id: assessment.id,
+      timezone: courseInstance.display_timezone,
+    });
+    assert.isTrue(listedBeforeDeletion.some((row) => row.assessment_instance.id === instance.id));
+    const detailPageBeforeDeletion = await helperClient.fetchCheerio(
+      `${baseUrl}/course_instance/${courseInstanceId}/instructor/assessment_instance/${instance.id}`,
+      {
+        headers: {
+          cookie:
+            'pl_test_user=test_instructor; pl2_requested_course_instance_role=Student Data Editor',
+        },
+      },
+    );
+    assert.equal(detailPageBeforeDeletion.status, 200);
+    assert.lengthOf(detailPageBeforeDeletion.$('#instance-actions'), 1);
+
+    await deleteGroup(assessment.id, group.id, '1');
+
+    const listedAfterDeletion = await selectAssessmentInstancesForTable({
+      assessment_id: assessment.id,
+      timezone: courseInstance.display_timezone,
+    });
+    assert.isFalse(listedAfterDeletion.some((row) => row.assessment_instance.id === instance.id));
+
+    const detailPage = await helperClient.fetchCheerio(
+      `${baseUrl}/course_instance/${courseInstanceId}/instructor/assessment_instance/${instance.id}`,
+      {
+        headers: {
+          cookie:
+            'pl_test_user=test_instructor; pl2_requested_course_instance_role=Student Data Editor',
+        },
+      },
+    );
+    assert.equal(detailPage.status, 200);
+    assert.lengthOf(detailPage.$('#instance-actions'), 0);
   });
 
   describe('list authorization', () => {

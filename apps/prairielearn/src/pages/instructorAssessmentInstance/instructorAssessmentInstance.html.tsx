@@ -90,8 +90,8 @@ export function InstructorAssessmentInstance({
   assessment_instance_stats: AssessmentInstanceStats[];
   instance_questions: InstanceQuestionRow[];
   assessmentInstanceLog: InstanceLogEntry[];
-  actionRow: AssessmentInstanceActionRow | null;
-  trpcCsrfToken: string | null;
+  actionRow: AssessmentInstanceActionRow;
+  trpcCsrfToken: string;
 }) {
   const headingLabel = resLocals.instance_group
     ? html`${resLocals.instance_group.name} <i class="fas fa-users"></i>`
@@ -142,8 +142,7 @@ export function InstructorAssessmentInstance({
           <h2 class="mb-0">${resLocals.assessment_instance_label} Summary: ${headingLabel}</h2>
           ${
             resLocals.authz_data.has_course_instance_permission_edit &&
-            actionRow != null &&
-            trpcCsrfToken != null
+            resLocals.instance_group?.deleted_at == null
               ? hydrateHtml(
                   <InstructorAssessmentInstanceActions
                     instance={actionRow}
@@ -151,7 +150,6 @@ export function InstructorAssessmentInstance({
                     assessmentId={resLocals.assessment.id}
                     trpcCsrfToken={trpcCsrfToken}
                     timezone={resLocals.course_instance.display_timezone}
-                    groupWork={resLocals.assessment.team_work}
                   />,
                 )
               : ''

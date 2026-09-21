@@ -6,7 +6,7 @@ import { QueryClientProviderDebug } from '@prairielearn/trpc/react';
 import { getAssessmentStudentsUrl } from '../../../lib/client/url.js';
 import { createAssessmentTrpcClient } from '../../../trpc/assessment/client.js';
 import { TRPCProvider } from '../../../trpc/assessment/context.js';
-import { InstanceSelectionToolbar } from '../../instructorAssessmentInstances/components/InstanceSelectionToolbar.js';
+import { AssessmentInstanceActions } from '../../instructorAssessmentInstances/components/AssessmentInstanceActions.js';
 import type { AssessmentInstanceActionRow } from '../../instructorAssessmentInstances/instructorAssessmentInstances.types.js';
 
 export function InstructorAssessmentInstanceActions({
@@ -15,14 +15,12 @@ export function InstructorAssessmentInstanceActions({
   assessmentId,
   trpcCsrfToken,
   timezone,
-  groupWork,
 }: {
   instance: AssessmentInstanceActionRow;
   courseInstanceId: string;
   assessmentId: string;
   trpcCsrfToken: string;
   timezone: string;
-  groupWork: boolean;
 }) {
   const [queryClient] = useState(() => new QueryClient());
   const [trpcClient] = useState(() =>
@@ -36,16 +34,12 @@ export function InstructorAssessmentInstanceActions({
   return (
     <QueryClientProviderDebug client={queryClient}>
       <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
-        <InstanceSelectionToolbar
-          selectedRows={[instance]}
+        <AssessmentInstanceActions
+          target={{ kind: 'single', instance }}
           courseInstanceId={courseInstanceId}
           assessmentId={assessmentId}
           timezone={timezone}
-          groupWork={groupWork}
-          isDevMode={false}
-          showUploadDropdown={false}
           showLogsLink={false}
-          singleInstanceMode
           onActionSuccess={(_message, action) => {
             if (action === 'delete') {
               window.location.assign(getAssessmentStudentsUrl({ courseInstanceId, assessmentId }));
