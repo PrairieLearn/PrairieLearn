@@ -114,7 +114,7 @@ If you are running workspaces on WSL, since Docker Desktop runs outside the spec
 }
 ```
 
-### Running workspaces natively on macOS
+### Running natively on macOS
 
 On macOS, you may also need to change `"workspaceDevContainerHostname"` to `"localhost"`.
 
