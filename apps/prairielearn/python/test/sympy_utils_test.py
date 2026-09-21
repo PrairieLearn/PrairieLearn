@@ -383,6 +383,12 @@ class TestSympy:
             ("{1, 2}", {"finite-set", "interval"}, sympy.FiniteSet(1, 2)),
             ("{1, 2} U {3, 4}", {"finite-set"}, sympy.FiniteSet(1, 2, 3, 4)),
             ("[1, 2]", {"expression", "interval"}, sympy.Interval(1, 2)),
+            ("(-infty, infty)", {"interval"}, sympy.Interval(-sympy.oo, sympy.oo)),
+            (
+                "(-infty, 0) U [0, infty)",
+                {"interval"},
+                sympy.Interval(-sympy.oo, sympy.oo),
+            ),
             (
                 "[1, 2] U [3, 4]",
                 {"interval"},
@@ -460,6 +466,7 @@ class TestSympy:
             ("m + 1", {"finite-set", "interval"}, "expression"),
             ("{1, 2}", {"expression", "interval"}, "finite-set"),
             ("[1, 2]", {"expression", "finite-set"}, "interval"),
+            ("Reals", {"interval"}, "set"),
             ("[1, 2] U {2, 3}", {"interval"}, "finite-set"),
             ("[1, 4] & {2, 3}", {"interval"}, "finite-set"),
             ("[0, 1] U [1, 4] & {2, 3}", {"interval"}, "finite-set"),
