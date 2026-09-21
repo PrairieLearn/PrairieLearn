@@ -68,6 +68,13 @@ describe('Course GitHub access', { concurrent: false }, () => {
       authn_user_id: '1',
     });
   });
+  beforeEach(() => {
+    const previous = config.isEnterprise;
+    config.isEnterprise = true;
+    return () => {
+      config.isEnterprise = previous;
+    };
+  });
   beforeEach(async () => {
     grant.mockReset().mockResolvedValue({ invited: false });
     await updateCoursePermissionsRole({
@@ -76,7 +83,7 @@ describe('Course GitHub access', { concurrent: false }, () => {
       course_role: 'Owner',
       authn_user_id: '1',
     });
-    await setRepository('git@github.com:CourseOrg/pl-course.git');
+    await setRepository('git@github.com:PrairieLearn/pl-course.git');
     await execute(sql.update_example_course, { example_course: false });
   });
   afterAll(() => grant.mockRestore());
@@ -90,17 +97,17 @@ describe('Course GitHub access', { concurrent: false }, () => {
           username: '  course-owner  ',
         });
         expect(result).toEqual({ username: 'course-owner', invited });
-        expect(grant).toHaveBeenCalledExactlyOnceWith('CourseOrg', 'pl-course', 'course-owner');
+        expect(grant).toHaveBeenCalledExactlyOnceWith('PrairieLearn', 'pl-course', 'course-owner');
       }),
     );
   });
 
-  test('supports repositories in custom organizations using HTTPS', async () => {
-    await setRepository('https://github.com/University/pl-course.git');
+  test('supports the PrairieLearn organization using HTTPS regardless of case', async () => {
+    await setRepository('https://github.com/prairielearn/pl-course.git');
     await withUser(owner, async () =>
       withConfig({ githubClientToken: 'test-token' }, async () => {
         await createClient(owner).githubAccess.grant.mutate({ username: 'course-owner' });
-        expect(grant).toHaveBeenCalledExactlyOnceWith('University', 'pl-course', 'course-owner');
+        expect(grant).toHaveBeenCalledExactlyOnceWith('prairielearn', 'pl-course', 'course-owner');
       }),
     );
   });
@@ -129,14 +136,6 @@ describe('Course GitHub access', { concurrent: false }, () => {
               .attr('href'),
           ).toBe('/pl/course/1/course_admin/staff');
           expect(page.$('section button').text()).not.toContain('Grant myself access');
-          const staffPage = await fetchCheerio(`${siteUrl}/pl/course/1/course_admin/staff`);
-          expect(staffPage.status).toBe(200);
-          expect(staffPage.$('h1').text()).toBe('Course owners');
-          expect(staffPage.$('tbody').text()).toContain('other-owner@example.com');
-          expect(staffPage.$('tbody').text()).not.toContain('Course Owner');
-          await expect(createClient(owner).courseStaff.list.query()).rejects.toMatchObject({
-            data: { code: 'FORBIDDEN' },
-          });
           expect(grant).not.toHaveBeenCalled();
         }),
       );
@@ -164,20 +163,49 @@ describe('Course GitHub access', { concurrent: false }, () => {
     },
   );
 
-  test.each(['', 'git@gitlab.com:University/pl-course.git'])(
-    'hides and blocks unsupported repository %s',
-    async (repository) => {
-      await setRepository(repository);
-      await withUser(owner, async () => {
+  test.each([
+    'git@gitlab.com:PrairieLearn/pl-course.git',
+    'https://github.com/University/pl-course.git',
+    'git@github.example.com:PrairieLearn/pl-course.git',
+  ])('explains and blocks unsupported repository %s', async (repository) => {
+    await setRepository(repository);
+    await withUser(owner, async () => {
+      await expect(
+        createClient(owner).githubAccess.grant.mutate({ username: 'course-owner' }),
+      ).rejects.toMatchObject({ data: { code: 'BAD_REQUEST' } });
+      const page = await fetchCheerio(settingsUrl);
+      expect(page.$('section').text()).toContain(
+        'PrairieLearn can only grant access to repositories in the PrairieLearn organization on',
+      );
+      expect(page.$('section button').text()).not.toContain('Grant myself access');
+      expect(grant).not.toHaveBeenCalled();
+    });
+  });
+
+  test('hides and blocks access without Enterprise Edition', async () => {
+    await withUser(owner, async () =>
+      withConfig({ isEnterprise: false, githubClientToken: 'test-token' }, async () => {
         await expect(
           createClient(owner).githubAccess.grant.mutate({ username: 'course-owner' }),
-        ).rejects.toMatchObject({ data: { code: 'BAD_REQUEST' } });
+        ).rejects.toMatchObject({ data: { code: 'FORBIDDEN' } });
         const page = await fetchCheerio(settingsUrl);
         expect(page.$('#github-access-heading').length).toBe(0);
         expect(grant).not.toHaveBeenCalled();
-      });
-    },
-  );
+      }),
+    );
+  });
+
+  test('hides and blocks courses without a repository', async () => {
+    await setRepository('');
+    await withUser(owner, async () => {
+      await expect(
+        createClient(owner).githubAccess.grant.mutate({ username: 'course-owner' }),
+      ).rejects.toMatchObject({ data: { code: 'BAD_REQUEST' } });
+      const page = await fetchCheerio(settingsUrl);
+      expect(page.$('#github-access-heading').length).toBe(0);
+      expect(grant).not.toHaveBeenCalled();
+    });
+  });
 
   test('hides and blocks example courses', async () => {
     await execute(sql.update_example_course, { example_course: true });

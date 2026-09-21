@@ -1,4 +1,4 @@
-import { afterAll, assert, beforeAll, describe, test } from 'vitest';
+import { afterAll, assert, beforeAll, describe, expect, test } from 'vitest';
 import z from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
@@ -15,11 +15,15 @@ import {
   SprocUsersSelectOrInsertSchema,
   UserSchema,
 } from '../../lib/db-types.js';
-import { insertCoursePermissionsByUserUid } from '../../models/course-permissions.js';
+import {
+  insertCourseInstancePermissions,
+  insertCoursePermissionsByUserUid,
+} from '../../models/course-permissions.js';
 import { createCourseTrpcClient } from '../../trpc/course/client.js';
 import type { CourseStaffError } from '../../trpc/course/course-staff.js';
 import * as helperClient from '../helperClient.js';
 import * as helperServer from '../helperServer.js';
+import { getOrCreateUser, withUser } from '../utils/auth.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
@@ -86,15 +90,17 @@ interface TestContext {
 function createTrpcClient({
   authnUserId = '2',
   cookie = 'pl_test_user=test_instructor',
-}: { authnUserId?: string; cookie?: string } = {}) {
+  courseInstanceId,
+}: { authnUserId?: string; cookie?: string; courseInstanceId?: string } = {}) {
   const siteUrl = `http://localhost:${config.serverPort}`;
   const csrfToken = generatePrefixCsrfToken(
-    { url: getCourseTrpcUrl('1'), authn_user_id: authnUserId },
+    { url: getCourseTrpcUrl('1', courseInstanceId), authn_user_id: authnUserId },
     config.secretKey,
   );
   return createCourseTrpcClient({
     csrfToken,
     courseId: '1',
+    courseInstanceId,
     urlBase: siteUrl,
     extraHeaders: { cookie },
   });
@@ -103,6 +109,11 @@ function createTrpcClient({
 function runTest(context: TestContext) {
   context.pageUrl = `${context.baseUrl}/course_admin/staff`;
   context.userId = '2';
+  const createClient = (options: Parameters<typeof createTrpcClient>[0] = {}) =>
+    createTrpcClient({
+      courseInstanceId: context.baseUrl.includes('/course_instance/') ? '1' : undefined,
+      ...options,
+    });
 
   const users: TestUser[] = [
     {
@@ -169,7 +180,7 @@ function runTest(context: TestContext) {
   });
 
   test('can add multiple users', async () => {
-    const trpc = createTrpcClient();
+    const trpc = createClient();
     await trpc.courseStaff.insertByUserUids.mutate({
       uids: ['staff03@example.com', 'staff04@example.com'],
       courseRole: 'Viewer',
@@ -180,7 +191,7 @@ function runTest(context: TestContext) {
   });
 
   test('can add valid subset of multiple users', async () => {
-    const trpc = createTrpcClient();
+    const trpc = createClient();
     await trpc.courseStaff.insertByUserUids.mutate({
       uids: ['staff03@example.com', 'staff05@example.com', new_user],
       courseRole: 'None',
@@ -191,7 +202,7 @@ function runTest(context: TestContext) {
   });
 
   test('can add course instance permission', async () => {
-    const trpc = createTrpcClient();
+    const trpc = createClient();
     await trpc.courseStaff.updateInstanceRole.mutate({
       userId: '3',
       courseInstanceId: '1',
@@ -202,14 +213,14 @@ function runTest(context: TestContext) {
   });
 
   test('can delete user', async () => {
-    const trpc = createTrpcClient();
+    const trpc = createClient();
     await trpc.courseStaff.deleteUser.mutate({ userId: '3' });
     updatePermissions(users, 'staff03@example.com', null, null);
     await checkPermissions(users);
   });
 
   test('cannot delete self', async () => {
-    const trpc = createTrpcClient();
+    const trpc = createClient();
     try {
       await trpc.courseStaff.deleteUser.mutate({ userId: context.userId });
       assert.fail('Expected FORBIDDEN error');
@@ -222,7 +233,7 @@ function runTest(context: TestContext) {
   });
 
   test('can change course role', async () => {
-    const trpc = createTrpcClient();
+    const trpc = createClient();
     await trpc.courseStaff.updateCourseRole.mutate({
       userId: '4',
       courseRole: 'Owner',
@@ -232,7 +243,7 @@ function runTest(context: TestContext) {
   });
 
   test('cannot change course role of self', async () => {
-    const trpc = createTrpcClient();
+    const trpc = createClient();
     try {
       await trpc.courseStaff.updateCourseRole.mutate({
         userId: context.userId,
@@ -248,7 +259,7 @@ function runTest(context: TestContext) {
   });
 
   test('cannot delete self even when emulating another owner', async () => {
-    const trpc = createTrpcClient({
+    const trpc = createClient({
       cookie: 'pl_test_user=test_instructor; pl2_requested_uid=staff04@example.com',
     });
     try {
@@ -263,7 +274,7 @@ function runTest(context: TestContext) {
   });
 
   test('cannot change course role of self even when emulating another owner', async () => {
-    const trpc = createTrpcClient({
+    const trpc = createClient({
       cookie: 'pl_test_user=test_instructor; pl2_requested_uid=staff04@example.com',
     });
     try {
@@ -281,7 +292,7 @@ function runTest(context: TestContext) {
   });
 
   test('can change instance role of self', async () => {
-    const trpc = createTrpcClient();
+    const trpc = createClient();
     await trpc.courseStaff.updateInstanceRole.mutate({
       userId: context.userId,
       courseInstanceId: '1',
@@ -292,7 +303,7 @@ function runTest(context: TestContext) {
   });
 
   test('can change instance role of self when emulating another owner', async () => {
-    const trpc = createTrpcClient({
+    const trpc = createClient({
       cookie: 'pl_test_user=test_instructor; pl2_requested_uid=staff04@example.com',
     });
     await trpc.courseStaff.updateInstanceRole.mutate({
@@ -305,7 +316,7 @@ function runTest(context: TestContext) {
   });
 
   test('can revert own instance role after emulation test', async () => {
-    const trpc = createTrpcClient();
+    const trpc = createClient();
     await trpc.courseStaff.updateInstanceRole.mutate({
       userId: context.userId,
       courseInstanceId: '1',
@@ -316,7 +327,7 @@ function runTest(context: TestContext) {
   });
 
   test('can add user', async () => {
-    const trpc = createTrpcClient();
+    const trpc = createClient();
     await trpc.courseStaff.insertByUserUids.mutate({
       uids: ['staff03@example.com'],
       courseRole: 'None',
@@ -326,7 +337,7 @@ function runTest(context: TestContext) {
   });
 
   test('can add course instance permission', async () => {
-    const trpc = createTrpcClient();
+    const trpc = createClient();
     await trpc.courseStaff.updateInstanceRole.mutate({
       userId: '3',
       courseInstanceId: '1',
@@ -337,7 +348,7 @@ function runTest(context: TestContext) {
   });
 
   test('can update course instance permission', async () => {
-    const trpc = createTrpcClient();
+    const trpc = createClient();
     await trpc.courseStaff.updateInstanceRole.mutate({
       userId: '3',
       courseInstanceId: '1',
@@ -348,7 +359,7 @@ function runTest(context: TestContext) {
   });
 
   test('can add course instance permission for another user', async () => {
-    const trpc = createTrpcClient();
+    const trpc = createClient();
     await trpc.courseStaff.updateInstanceRole.mutate({
       userId: '5',
       courseInstanceId: '1',
@@ -359,7 +370,7 @@ function runTest(context: TestContext) {
   });
 
   test('can delete course instance permission', async () => {
-    const trpc = createTrpcClient();
+    const trpc = createClient();
     await trpc.courseStaff.updateInstanceRole.mutate({
       userId: '5',
       courseInstanceId: '1',
@@ -370,7 +381,7 @@ function runTest(context: TestContext) {
   });
 
   test('can bulk edit student data access', async () => {
-    const trpc = createTrpcClient();
+    const trpc = createClient();
     await trpc.courseStaff.bulkEditAccess.mutate({
       userIds: ['3', '5'],
       courseInstanceChanges: [{ courseInstanceId: '1', courseInstanceRole: 'None' }],
@@ -380,7 +391,7 @@ function runTest(context: TestContext) {
   });
 
   test('can bulk edit own instance role', async () => {
-    const trpc = createTrpcClient();
+    const trpc = createClient();
     await trpc.courseStaff.bulkEditAccess.mutate({
       userIds: [context.userId],
       courseInstanceChanges: [{ courseInstanceId: '1', courseInstanceRole: 'Student Data Viewer' }],
@@ -390,7 +401,7 @@ function runTest(context: TestContext) {
   });
 
   test('can bulk edit own instance role back to None', async () => {
-    const trpc = createTrpcClient();
+    const trpc = createClient();
     await trpc.courseStaff.bulkEditAccess.mutate({
       userIds: [context.userId],
       courseInstanceChanges: [{ courseInstanceId: '1', courseInstanceRole: 'None' }],
@@ -400,7 +411,7 @@ function runTest(context: TestContext) {
   });
 
   test('can add back course instance permission', async () => {
-    const trpc = createTrpcClient();
+    const trpc = createClient();
     await trpc.courseStaff.updateInstanceRole.mutate({
       userId: '5',
       courseInstanceId: '1',
@@ -411,7 +422,7 @@ function runTest(context: TestContext) {
   });
 
   test('can delete users with no access', async () => {
-    const trpc = createTrpcClient();
+    const trpc = createClient();
     await trpc.courseStaff.deleteUser.mutate({ userId: '3' });
     updatePermissions(users, 'staff03@example.com', null, null);
 
@@ -426,14 +437,14 @@ function runTest(context: TestContext) {
   });
 
   test('can bulk delete non-owners via bulk delete', async () => {
-    const trpc = createTrpcClient();
+    const trpc = createClient();
     await trpc.courseStaff.bulkDelete.mutate({ userIds: ['5'] });
     updatePermissions(users, 'staff05@example.com', null, null);
     await checkPermissions(users);
   });
 
   test('can change course role via bulk edit', async () => {
-    const trpc = createTrpcClient();
+    const trpc = createClient();
     await trpc.courseStaff.bulkEditAccess.mutate({
       userIds: ['4'],
       courseRole: 'Editor',
@@ -442,13 +453,111 @@ function runTest(context: TestContext) {
     await checkPermissions(users);
   });
 
-  test('cannot GET if not an owner', async () => {
+  test('can GET read-only staff page when not an owner', async () => {
     const response = await helperClient.fetchCheerio(context.pageUrl, {
       headers: {
         cookie: 'pl_test_user=test_instructor; pl2_requested_uid=staff04@example.com',
       },
     });
-    assert.equal(response.status, 403);
+    assert.equal(response.status, 200);
+    assert.notInclude(response.$('body').text(), 'Add users');
+  });
+
+  test.each([
+    { courseRole: 'Previewer', instanceRole: 'None' },
+    { courseRole: 'Viewer', instanceRole: 'None' },
+    { courseRole: 'Editor', instanceRole: 'None' },
+    { courseRole: 'None', instanceRole: 'Student Data Viewer' },
+    { courseRole: 'None', instanceRole: 'Student Data Editor' },
+  ] as const)(
+    '$courseRole / $instanceRole can list staff but cannot edit',
+    async ({ courseRole, instanceRole }) => {
+      const user = await getOrCreateUser({
+        uid: `readonly-${courseRole}-${instanceRole}@example.com`.replaceAll(' ', '-'),
+        name: 'Read-only staff',
+        uin: null,
+      });
+      await insertCoursePermissionsByUserUid({
+        course_id: '1',
+        uid: user.uid,
+        course_role: courseRole,
+        authn_user_id: '1',
+      });
+      if (instanceRole !== 'None') {
+        await insertCourseInstancePermissions({
+          course_id: '1',
+          user_id: user.id,
+          course_instance_id: '1',
+          course_instance_role: instanceRole,
+          authn_user_id: '1',
+        });
+      }
+      await withUser(user, async () => {
+        // Instance-only staff use the course-instance route, as on other course pages.
+        const pageUrl =
+          courseRole === 'None'
+            ? `${context.siteUrl}/pl/course_instance/1/instructor/course_admin/staff`
+            : context.pageUrl;
+        const response = await helperClient.fetchCheerio(pageUrl);
+        expect(response.status).toBe(200);
+        expect(
+          response.$('a').filter((_, a) => response.$(a).text().trim() === 'Staff').length,
+        ).toBeGreaterThan(0);
+        expect(response.$('body').text()).toContain('staff04@example.com');
+        expect(response.$('body').text()).not.toContain('Add users');
+        const trpc = createClient({
+          authnUserId: user.id,
+          cookie: '',
+          ...(courseRole === 'None' ? { courseInstanceId: '1' } : {}),
+        });
+        const staff = await trpc.courseStaff.list.query();
+        expect(staff.some(({ user }) => user.uid === 'instructor@example.com')).toBe(true);
+        expect(staff.some(({ user }) => user.uid === 'staff04@example.com')).toBe(true);
+        const before = staff;
+        for (const mutation of [
+          () =>
+            trpc.courseStaff.insertByUserUids.mutate({
+              uids: ['forbidden@example.com'],
+              courseRole: 'Owner',
+            }),
+          () => trpc.courseStaff.updateCourseRole.mutate({ userId: '4', courseRole: 'Owner' }),
+          () =>
+            trpc.courseStaff.updateInstanceRole.mutate({
+              userId: '4',
+              courseInstanceId: '1',
+              courseInstanceRole: 'Student Data Editor',
+            }),
+          () => trpc.courseStaff.deleteUser.mutate({ userId: '4' }),
+          () => trpc.courseStaff.bulkDelete.mutate({ userIds: ['4'] }),
+          () => trpc.courseStaff.bulkEditAccess.mutate({ userIds: ['4'], courseRole: 'Owner' }),
+        ]) {
+          await expect(mutation()).rejects.toMatchObject({ data: { code: 'FORBIDDEN' } });
+        }
+        expect(await trpc.courseStaff.list.query()).toEqual(before);
+      });
+    },
+  );
+
+  test('users with no staff permissions cannot view the staff page or list', async () => {
+    const user = await getOrCreateUser({
+      uid: 'not-staff@example.com',
+      name: 'Not staff',
+      uin: null,
+    });
+    await insertCoursePermissionsByUserUid({
+      course_id: '1',
+      uid: user.uid,
+      course_role: 'None',
+      authn_user_id: '1',
+    });
+    await withUser(user, async () => {
+      const response = await helperClient.fetchCheerio(context.pageUrl);
+      expect(response.status).toBe(403);
+      const trpc = createClient({ authnUserId: user.id, cookie: '' });
+      await expect(trpc.courseStaff.list.query()).rejects.toMatchObject({
+        data: { code: 'FORBIDDEN' },
+      });
+    });
   });
 }
 

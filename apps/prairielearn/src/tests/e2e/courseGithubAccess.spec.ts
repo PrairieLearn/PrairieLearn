@@ -1,6 +1,7 @@
 import type { Page } from '@playwright/test';
 
 import {
+  insertCourseInstancePermissions,
   insertCoursePermissionsByUserUid,
   updateCoursePermissionsRole,
 } from '../../models/course-permissions.js';
@@ -11,6 +12,7 @@ import { createTest, expect } from './fixtures.js';
 
 const test = createTest({
   githubClientToken: 'test-token',
+  isEnterprise: true,
   authUid: 'github-owner@example.com',
   authName: 'Course Owner',
 });
@@ -175,24 +177,140 @@ test('non-Owner is directed to course staff', async ({ page, courseInstance }) =
   await showAccessSection(page);
   await screenshot(page, '08-non-owner');
   await page.getByRole('link', { name: 'see Staff list' }).click();
-  await expect(page.getByRole('heading', { name: 'Course owners' })).toBeVisible();
+  await expect(page.getByRole('grid', { name: 'Staff', exact: true })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Staff', exact: true })).toBeVisible();
   await expect(
-    page.getByRole('cell', { name: 'instructor@example.com', exact: true }),
+    page.getByRole('gridcell', { name: 'instructor@example.com', exact: true }),
   ).toBeVisible();
   await expect(page.getByRole('button', { name: 'Add users' })).toHaveCount(0);
-  await screenshot(page, '11-owner-list');
+  await expect(
+    page.getByRole('gridcell', { name: 'github-owner@example.com', exact: true }),
+  ).toBeVisible();
+  await expect(page.getByRole('checkbox', { name: /Select/ })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /^(Owner|Editor|Viewer|None)$/ })).toHaveCount(0);
+  await page.getByPlaceholder('Search by UID or name...').fill('instructor@example.com');
+  await expect(
+    page.getByRole('gridcell', { name: 'github-owner@example.com', exact: true }),
+  ).toHaveCount(0);
+  await page.getByPlaceholder('Search by UID or name...').clear();
+  await expect(
+    page.getByRole('gridcell', { name: 'github-owner@example.com', exact: true }),
+  ).toBeVisible();
+  await screenshot(page, '11-readonly-staff');
 });
 
-test('non-GitHub repositories have no GitHub access section', async ({ page, courseInstance }) => {
-  await setRepository(courseInstance.course_id, 'git@gitlab.com:University/pl-qa101.git');
+for (const { repository, name } of [
+  { repository: 'git@gitlab.com:PrairieLearn/pl-qa101.git', name: '09-non-github' },
+  { repository: 'https://github.com/University/pl-qa101.git', name: '12-other-org' },
+  { repository: 'git@github.example.com:PrairieLearn/pl-qa101.git', name: '13-other-host' },
+]) {
+  test(`explains unsupported repository: ${name}`, async ({ page, courseInstance }) => {
+    await setRepository(courseInstance.course_id, repository);
+    await page.setViewportSize({ width: 1200, height: 900 });
+    await page.goto(`/pl/course/${courseInstance.course_id}/course_admin/settings`);
+    await expect(
+      page.getByText('PrairieLearn can only grant access', { exact: false }),
+    ).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Grant myself access' })).toHaveCount(0);
+    await expect(
+      page.getByRole('link', { name: 'grant other people access on GitHub' }),
+    ).toHaveCount(0);
+    await showAccessSection(page);
+    await screenshot(page, name);
+  });
+}
+
+test('Owners retain staff editing controls', async ({ page, courseInstance }) => {
+  await getOrCreateUser({
+    uid: 'instructor@example.com',
+    name: 'Alex Instructor',
+    uin: null,
+    email: 'alex@example.com',
+  });
+  const instructor = await insertCoursePermissionsByUserUid({
+    course_id: courseInstance.course_id,
+    uid: 'instructor@example.com',
+    course_role: 'Editor',
+    authn_user_id: '1',
+  });
+  await updateCoursePermissionsRole({
+    course_id: courseInstance.course_id,
+    user_id: instructor.id,
+    course_role: 'Editor',
+    authn_user_id: '1',
+  });
+  await page.setViewportSize({ width: 1200, height: 900 });
+  await page.goto(`/pl/course/${courseInstance.course_id}/course_admin/staff`);
+  await expect(page.getByRole('button', { name: 'Add users' })).toBeVisible();
+  await expect(page.getByRole('checkbox', { name: 'Select all staff' })).toBeVisible();
+  await page.getByRole('button', { name: 'Editor', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Change access', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Cancel', exact: true }).click();
+  await page.getByRole('checkbox', { name: 'Select instructor@example.com', exact: true }).check();
+  await expect(page.getByRole('button', { name: 'Edit access', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Delete', exact: true })).toBeVisible();
+  await screenshot(page, '15-owner-staff');
+});
+
+test('instance-only staff can navigate to the read-only Staff page', async ({
+  page,
+  courseInstance,
+}) => {
+  await getOrCreateUser({
+    uid: 'instructor@example.com',
+    name: 'Alex Instructor',
+    uin: null,
+    email: 'alex@example.com',
+  });
+  await insertCoursePermissionsByUserUid({
+    course_id: courseInstance.course_id,
+    uid: 'instructor@example.com',
+    course_role: 'Owner',
+    authn_user_id: '1',
+  });
+  const user = await insertCoursePermissionsByUserUid({
+    course_id: courseInstance.course_id,
+    uid: 'github-owner@example.com',
+    course_role: 'Owner',
+    authn_user_id: '1',
+  });
+  await updateCoursePermissionsRole({
+    course_id: courseInstance.course_id,
+    user_id: user.id,
+    course_role: 'None',
+    authn_user_id: '1',
+  });
+  await insertCourseInstancePermissions({
+    course_id: courseInstance.course_id,
+    user_id: user.id,
+    course_instance_id: courseInstance.id,
+    course_instance_role: 'Student Data Viewer',
+    authn_user_id: '1',
+  });
+  await page.setViewportSize({ width: 1200, height: 900 });
+  await page.goto(`/pl/course_instance/${courseInstance.id}/instructor/course_admin/settings`);
+  await page.getByRole('link', { name: 'Staff', exact: true }).click();
+  await expect(page.getByRole('grid', { name: 'Staff', exact: true })).toBeVisible();
+  await expect(
+    page.getByRole('gridcell', { name: 'github-owner@example.com', exact: true }),
+  ).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Add users' })).toHaveCount(0);
+  await expect(page.getByRole('checkbox', { name: /Select/ })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /^(Owner|Editor|Viewer|None)$/ })).toHaveCount(0);
+  await screenshot(page, '16-instance-staff');
+});
+
+const nonEnterpriseTest = createTest({ isEnterprise: false, githubClientToken: 'test-token' });
+nonEnterpriseTest('GitHub access is hidden without EE', async ({ page, courseInstance }) => {
+  await setRepository(courseInstance.course_id, 'git@github.com:PrairieLearn/pl-qa101.git');
   await page.setViewportSize({ width: 1200, height: 900 });
   await page.goto(`/pl/course/${courseInstance.course_id}/course_admin/settings`);
   await expect(page.getByRole('heading', { name: 'Access to GitHub repository' })).toHaveCount(0);
   await page.getByRole('button', { name: 'Save', exact: true }).scrollIntoViewIfNeeded();
-  await screenshot(page, '09-non-github');
+  await screenshot(page, '14-ee-disabled');
 });
 
-const unconfiguredTest = createTest({ githubClientToken: null });
+const unconfiguredTest = createTest({ isEnterprise: true, githubClientToken: null });
 unconfiguredTest(
   'Owner sees support guidance when GitHub integration is unavailable',
   async ({ page, courseInstance }) => {

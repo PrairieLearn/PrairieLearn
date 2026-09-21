@@ -458,17 +458,17 @@ The possible colors for assessment sets, topic, and tags are:
 
 ## Course staff
 
-Access permissions for course staff can be configured on the "Staff" tab. Course staff permissions are separated into _course content roles_ and _student data roles_. These can be mixed and matched arbitrarily, so any combination is possible.
+All course staff can view the "Staff" tab, including staff with only a student data role. Only course Owners can add or remove staff and change access permissions. Course staff permissions are separated into _course content roles_ and _student data roles_. These can be mixed and matched arbitrarily, so any combination is possible.
 
 !!! note
 
-    Course staff permissions and GitHub repository permissions are managed separately. Course Owners can grant themselves Admin access to the course's GitHub repository from the course Settings page. See [Access to the GitHub repository](#access-to-the-github-repository).
+    Course staff permissions and GitHub repository permissions are managed separately. On PrairieLearn Enterprise Edition, course Owners can grant themselves Admin access to repositories in the PrairieLearn organization on github.com from the course Settings page. See [Access to the GitHub repository](#access-to-the-github-repository).
 
 ### Access to the GitHub repository
 
-On the course **Settings** page, the **Access to GitHub repository** section below **Branch** links to your course's repository.
+On servers running PrairieLearn Enterprise Edition, the course **Settings** page includes an **Access to GitHub repository** section below **Branch**. This section links to your course's GitHub repository.
 
-If you have the **Owner** course content role in PrairieLearn, you can grant yourself **Admin** access on GitHub:
+If the repository belongs to the **PrairieLearn** organization on **github.com** and you have the **Owner** course content role in PrairieLearn, you can grant yourself **Admin** access on GitHub:
 
 1. Click **Grant myself access**.
 2. Enter your GitHub username. If you do not have an account, [create a free GitHub account](https://github.com/signup) first. You can find your username in the menu opened by your profile picture on GitHub.
@@ -476,7 +476,9 @@ If you have the **Owner** course content role in PrairieLearn, you can grant you
 
 Once you have Admin access, use **grant other people access on GitHub** to manage collaborators and their permissions. If you are not a course Owner, use **see Staff list** to find an Owner who can grant you access.
 
-This section is available for courses with a GitHub repository, excluding example courses. If the server cannot grant access or GitHub rejects the request, contact [support](https://prairielearn.slack.com) in `#pl-help`.
+PrairieLearn cannot grant access to repositories in other GitHub organizations or on other hosting platforms. Contact the repository administrator for access to those repositories. The section is hidden when Enterprise Edition is disabled, the course has no repository, or the course is an example course.
+
+If the server cannot grant access to a supported repository or GitHub rejects the request, contact [support](https://prairielearn.slack.com) in `#pl-help`.
 
 Changing or removing a person's PrairieLearn role does not change their GitHub access. Remove repository access separately on GitHub when needed.
 

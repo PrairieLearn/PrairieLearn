@@ -20,6 +20,7 @@ import { parseGithubRepository } from '../../lib/github-utils.js';
 import { courseRepoContentUrl } from '../../lib/github.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { computeStableHash } from '../../lib/json.js';
+import { isEnterprise } from '../../lib/license.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import {
   updateCourseQuestionsReceiveUserData,
@@ -97,11 +98,16 @@ router.get(
             origHash={origHash}
             urlPrefix={res.locals.urlPrefix}
             githubAccess={
-              githubRepository && !course.example_course ? (
+              isEnterprise() && course.repository && !course.example_course ? (
                 <Hydrate>
                   <GithubRepositoryAccess
                     courseId={course.id}
-                    repositoryUrl={`https://github.com/${githubRepository.owner}/${githubRepository.repo}`}
+                    repositoryUrl={
+                      githubRepository
+                        ? `https://github.com/${githubRepository.owner}/${githubRepository.repo}`
+                        : null
+                    }
+                    isSupportedRepository={githubRepository?.owner.toLowerCase() === 'prairielearn'}
                     isOwner={authz_data.has_course_permission_own}
                     canGrantAccess={config.githubClientToken !== null}
                     staffUrl={`${res.locals.urlPrefix}/course_admin/staff`}

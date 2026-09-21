@@ -17,7 +17,8 @@ import type { GithubAccessError } from '../../trpc/course/github-access.js';
 
 interface GithubRepositoryAccessProps {
   courseId: string;
-  repositoryUrl: string;
+  repositoryUrl: string | null;
+  isSupportedRepository: boolean;
   isOwner: boolean;
   canGrantAccess: boolean;
   staffUrl: string;
@@ -42,6 +43,7 @@ GithubRepositoryAccess.displayName = 'GithubRepositoryAccess';
 
 function GithubRepositoryAccessInner({
   repositoryUrl,
+  isSupportedRepository,
   isOwner,
   canGrantAccess,
   staffUrl,
@@ -69,13 +71,15 @@ function GithubRepositoryAccessInner({
       <h2 className="h6" id="github-access-heading">
         Access to GitHub repository
       </h2>
-      <p>
-        You can access this repository at{' '}
-        <a href={repositoryUrl} target="_blank" rel="noreferrer">
-          {repositoryUrl}
-        </a>
-        .
-      </p>
+      {repositoryUrl && (
+        <p>
+          You can access this repository at{' '}
+          <a href={repositoryUrl} target="_blank" rel="noreferrer">
+            {repositoryUrl}
+          </a>
+          .
+        </p>
+      )}
       {success && (
         <Alert variant="success" dismissible onClose={() => setSuccess(null)}>
           {success.invited ? (
@@ -93,7 +97,13 @@ function GithubRepositoryAccessInner({
           )}
         </Alert>
       )}
-      {isOwner ? (
+      {!isSupportedRepository ? (
+        <p className="mb-0">
+          PrairieLearn can only grant access to repositories in the PrairieLearn organization on
+          github.com. For repositories in another organization or on another hosting platform,
+          contact the repository administrator to request access.
+        </p>
+      ) : isOwner ? (
         <>
           <p>
             If you don't have access to the GitHub repository, as a course Owner you can grant

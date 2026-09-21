@@ -10,6 +10,7 @@ import {
   parseGithubRepository,
 } from '../../lib/github-utils.js';
 import { addGithubRepositoryAdmin } from '../../lib/github.js';
+import { isEnterprise } from '../../lib/license.js';
 
 import { requireCoursePermissionOwn, requireNotExampleCourse, t } from './init.js';
 
@@ -30,11 +31,18 @@ export const githubAccessRouter = t.router({
       }),
     )
     .mutation(async ({ ctx, input }) => {
+      if (!isEnterprise()) {
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: 'Granting GitHub access requires PrairieLearn Enterprise Edition.',
+        });
+      }
       const repository = parseGithubRepository(ctx.course.repository ?? '');
-      if (!repository) {
+      if (repository?.owner.toLowerCase() !== 'prairielearn') {
         throw new TRPCError({
           code: 'BAD_REQUEST',
-          message: 'This course does not have a GitHub repository.',
+          message:
+            'PrairieLearn can only grant access to repositories in the PrairieLearn organization on github.com.',
         });
       }
       if (config.githubClientToken === null) {
