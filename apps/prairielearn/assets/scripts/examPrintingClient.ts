@@ -1,3 +1,4 @@
+import { fitPrintChoiceImages } from '../../src/lib/client/print-image-layout.js';
 import {
   QuestionBlockSizeOverflowError,
   parsePrintBlockSize,
@@ -205,7 +206,7 @@ function createAnswerKeyArea(answerBody: HTMLElement, responseHeight: number): H
   return answerKey;
 }
 
-function replaceStudentResponsesWithAnswerKeys(source: HTMLElement): void {
+function replaceStudentResponsesWithAnswerKeys(source: HTMLElement, pageHeight: number): void {
   const submissionBlocks = source.querySelectorAll(
     '.printing-question > .question-container > [data-testid="submission-block"]',
   );
@@ -224,6 +225,7 @@ function replaceStudentResponsesWithAnswerKeys(source: HTMLElement): void {
     }
 
     for (const gradingBlock of gradingBlocks) gradingBlock.remove();
+    fitPrintChoiceImages([question], pageHeight);
     normalizeAnswerPresentation(answerBody);
     const studentHeight = question.getBoundingClientRect().height;
     const responseTargets = getAnswerKeyResponseTargets(questionBody);
@@ -284,12 +286,16 @@ function replaceCanvasesWithImages(source: HTMLElement): void {
   }
 }
 
-function keepPrintableGroupsTogether(source: HTMLElement): void {
+function measurePrintablePage(source: HTMLElement): { width: number; height: number } {
   const measure = document.createElement('div');
   measure.className = 'exam-print-page-measure';
   source.append(measure);
-  const pageHeight = measure.getBoundingClientRect().height;
+  const { width, height } = measure.getBoundingClientRect();
   measure.remove();
+  return { width, height };
+}
+
+function keepPrintableGroupsTogether(source: HTMLElement, pageHeight: number): void {
   for (const group of source.querySelectorAll<HTMLElement>(
     '.question-body .card, .printing-order-blocks, .printing-order-choice-group, .sketchresponse, .pl-drawing-container, .printing-subsection, .pl-order-blocks-answer-container, .printing-excalidraw',
   )) {
@@ -377,12 +383,7 @@ function layoutQuestions(source: HTMLElement): PrintLayout {
   const questions = [
     ...questionsContainer.querySelectorAll<HTMLElement>(':scope > .printing-question'),
   ];
-  const pageMeasure = document.createElement('div');
-  pageMeasure.className = 'exam-print-page-measure';
-  pageMeasure.ariaHidden = 'true';
-  source.append(pageMeasure);
-  const { height: pageHeight, width: contentWidth } = pageMeasure.getBoundingClientRect();
-  pageMeasure.remove();
+  const { height: pageHeight, width: contentWidth } = measurePrintablePage(source);
 
   if (Math.abs(source.getBoundingClientRect().width - contentWidth) > 0.5) {
     throw new Error('Printable questions could not be measured at the paper content width');
@@ -530,10 +531,13 @@ async function paginateExam(): Promise<{ totalPages: number }> {
   await document.fonts.ready;
   replaceCanvasesWithImages(source);
   await waitForImages(source);
+  const { height: pageHeight } = measurePrintablePage(source);
   if (document.documentElement.dataset.printDocument === 'answer_key') {
-    replaceStudentResponsesWithAnswerKeys(source);
+    replaceStudentResponsesWithAnswerKeys(source, pageHeight);
+  } else {
+    fitPrintChoiceImages(source.querySelectorAll<HTMLElement>('.printing-question'), pageHeight);
   }
-  keepPrintableGroupsTogether(source);
+  keepPrintableGroupsTogether(source, pageHeight);
   if (window.__PL_PRINT_CAPTURE_SOURCE__) {
     window.__PL_PRINT_DOCX_SOURCE__ = window.__PL_PRINT_CAPTURE_SOURCE__(source);
   }
