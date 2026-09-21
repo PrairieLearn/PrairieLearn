@@ -101,10 +101,9 @@ def _used_sympy_types(expr: sympy.Basic) -> set[_UsedSympyType]:
         return {"interval"}
     if isinstance(expr, sympy.Set) and expr.is_finite_set:
         required_types: set[_UsedSympyType] = {"finite-set"}
-        if isinstance(expr, sympy.FiniteSet):
-            for arg in expr.args:
-                if isinstance(arg, sympy.Set):
-                    required_types.update(_used_sympy_types(arg))
+        for arg in expr.args:
+            if isinstance(arg, sympy.Set):
+                required_types.update(_used_sympy_types(arg))
         return required_types
     if isinstance(expr, (sympy.Union, sympy.Intersection, sympy.Complement)):
         required_types: set[_UsedSympyType] = set()
