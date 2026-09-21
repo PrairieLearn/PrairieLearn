@@ -111,9 +111,15 @@ FROM
   )
 WHERE
   a.id = $assessment_id
-  -- Filter out group instances that don't have an undeleted group
   AND (
-    ai.team_id IS NULL
+    $assessment_instance_id::bigint IS NULL
+    OR ai.id = $assessment_instance_id
+  )
+  -- Filter out deleted-group rows in the table, but include them for a direct
+  -- instance lookup so the detail page can still act on the instance it shows.
+  AND (
+    $assessment_instance_id::bigint IS NOT NULL
+    OR ai.team_id IS NULL
     OR g.id IS NOT NULL
   )
 ORDER BY

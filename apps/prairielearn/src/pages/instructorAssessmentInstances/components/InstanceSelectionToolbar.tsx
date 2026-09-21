@@ -8,7 +8,7 @@ import { AppErrorAlert } from '@prairielearn/trpc/react';
 import { getAssessmentLogsUrl, getCourseInstanceJobSequenceUrl } from '../../../lib/client/url.js';
 import type { AssessmentInstancesError } from '../../../trpc/assessment/assessment-instances.js';
 import { useTRPC } from '../../../trpc/assessment/context.js';
-import type { AssessmentInstanceRow } from '../instructorAssessmentInstances.types.js';
+import type { AssessmentInstanceActionRow } from '../instructorAssessmentInstances.types.js';
 
 import { PendingRegradeQuestionList } from './PendingRegradeQuestionList.js';
 import { TimeLimitEditForm } from './TimeLimitEditForm.js';
@@ -18,43 +18,66 @@ import { useInvalidateAssessmentInstancesList } from './useInvalidateAssessmentI
 type JobAction = 'grade' | 'gradeAndClose';
 type OpenModal = JobAction | 'regrade' | 'delete' | 'timeLimit' | null;
 
-function describeTargetInstances(assessmentInstanceIds: string[] | null): string {
+function describeTargetInstances(
+  assessmentInstanceIds: string[] | null,
+  isSingleInstanceTarget: boolean,
+): string {
+  if (isSingleInstanceTarget) return 'this instance';
   if (assessmentInstanceIds == null) return 'all instances';
   const count = assessmentInstanceIds.length;
   return `${count} ${count === 1 ? 'instance' : 'instances'}`;
 }
 
-function describeTargetAssessmentInstances(assessmentInstanceIds: string[] | null): string {
+function describeTargetAssessmentInstances(
+  assessmentInstanceIds: string[] | null,
+  isSingleInstanceTarget: boolean,
+): string {
+  if (isSingleInstanceTarget) return 'this assessment instance';
   if (assessmentInstanceIds == null) return 'all assessment instances';
   const count = assessmentInstanceIds.length;
   return `${count} assessment ${count === 1 ? 'instance' : 'instances'}`;
 }
 
-export function InstanceSelectionToolbar({
-  selectedRows,
-  allRows,
-  clearSelection,
-  courseInstanceId,
-  assessmentId,
-  timezone,
-  groupWork,
-  isDevMode,
-  onActionSuccess,
-}: {
-  selectedRows: AssessmentInstanceRow[];
-  allRows: AssessmentInstanceRow[];
-  clearSelection: () => void;
+interface InstanceSelectionToolbarBaseProps {
+  selectedRows: AssessmentInstanceActionRow[];
   courseInstanceId: string;
   assessmentId: string;
   timezone: string;
   groupWork: boolean;
   isDevMode: boolean;
-  onActionSuccess: (message: string) => void;
-}) {
+  onActionSuccess: (message: string, action: 'delete' | 'timeLimit') => void;
+  singleInstanceMode?: boolean;
+  showUploadDropdown?: boolean;
+  showLogsLink?: boolean;
+}
+
+type InstanceSelectionToolbarProps = InstanceSelectionToolbarBaseProps &
+  (
+    | { singleInstanceMode: true; allRows?: never; clearSelection?: never }
+    | {
+        singleInstanceMode?: false;
+        allRows: AssessmentInstanceActionRow[];
+        clearSelection: () => void;
+      }
+  );
+
+export function InstanceSelectionToolbar(props: InstanceSelectionToolbarProps) {
+  const {
+    selectedRows,
+    courseInstanceId,
+    assessmentId,
+    timezone,
+    groupWork,
+    isDevMode,
+    onActionSuccess,
+    singleInstanceMode = false,
+    showUploadDropdown = true,
+    showLogsLink = true,
+  } = props;
   const [openModal, setOpenModal] = useState<OpenModal>(null);
   const logsUrl = getAssessmentLogsUrl({ courseInstanceId, assessmentId });
-  const isAllInstancesTarget = selectedRows.length === 0;
-  const targetRows = isAllInstancesTarget ? allRows : selectedRows;
+  const isAllInstancesTarget = !singleInstanceMode && selectedRows.length === 0;
+  const targetRows = isAllInstancesTarget ? (props.allRows ?? []) : selectedRows;
   const assessmentInstanceIds = isAllInstancesTarget
     ? null
     : selectedRows.map((row) => row.assessment_instance.id);
@@ -96,19 +119,25 @@ export function InstanceSelectionToolbar({
               <i className="bi bi-trash3 me-2" aria-hidden="true" />
               Delete
             </Dropdown.Item>
-            <Dropdown.Divider />
-            <Dropdown.Item as="a" href={logsUrl}>
-              <i className="bi bi-card-list me-2" aria-hidden="true" />
-              View logs
-            </Dropdown.Item>
+            {showLogsLink && (
+              <>
+                <Dropdown.Divider />
+                <Dropdown.Item as="a" href={logsUrl}>
+                  <i className="bi bi-card-list me-2" aria-hidden="true" />
+                  View logs
+                </Dropdown.Item>
+              </>
+            )}
           </Dropdown.Menu>
         </Dropdown>
-        <UploadDropdown
-          courseInstanceId={courseInstanceId}
-          assessmentId={assessmentId}
-          groupWork={groupWork}
-          isDevMode={isDevMode}
-        />
+        {showUploadDropdown && (
+          <UploadDropdown
+            courseInstanceId={courseInstanceId}
+            assessmentId={assessmentId}
+            groupWork={groupWork}
+            isDevMode={isDevMode}
+          />
+        )}
       </div>
 
       <JobActionModalWithIds
@@ -116,6 +145,7 @@ export function InstanceSelectionToolbar({
         show={openModal === 'grade'}
         assessmentInstanceIds={assessmentInstanceIds}
         isAllInstancesTarget={isAllInstancesTarget}
+        isSingleInstanceTarget={singleInstanceMode}
         courseInstanceId={courseInstanceId}
         onHide={() => setOpenModal(null)}
       />
@@ -124,6 +154,7 @@ export function InstanceSelectionToolbar({
         show={openModal === 'gradeAndClose'}
         assessmentInstanceIds={assessmentInstanceIds}
         isAllInstancesTarget={isAllInstancesTarget}
+        isSingleInstanceTarget={singleInstanceMode}
         courseInstanceId={courseInstanceId}
         onHide={() => setOpenModal(null)}
       />
@@ -132,6 +163,7 @@ export function InstanceSelectionToolbar({
         show={openModal === 'regrade'}
         assessmentInstanceIds={assessmentInstanceIds}
         isAllInstancesTarget={isAllInstancesTarget}
+        isSingleInstanceTarget={singleInstanceMode}
         courseInstanceId={courseInstanceId}
         onHide={() => setOpenModal(null)}
       />
@@ -140,26 +172,30 @@ export function InstanceSelectionToolbar({
         show={openModal === 'delete'}
         assessmentInstanceIds={assessmentInstanceIds}
         isAllInstancesTarget={isAllInstancesTarget}
+        isSingleInstanceTarget={singleInstanceMode}
         onHide={() => setOpenModal(null)}
         onSuccess={() => {
           onActionSuccess(
             isAllInstancesTarget
               ? 'Deleted all instances.'
               : `Deleted ${count} ${count === 1 ? 'instance' : 'instances'}.`,
+            'delete',
           );
-          clearSelection();
+          props.clearSelection?.();
           setOpenModal(null);
         }}
       />
 
       <Modal show={openModal === 'timeLimit'} onHide={() => setOpenModal(null)}>
         <Modal.Header closeButton>
-          <Modal.Title>Change time limit</Modal.Title>
+          <Modal.Title>
+            {singleInstanceMode && hasClosedInstance ? 'Re-open instance' : 'Change time limit'}
+          </Modal.Title>
         </Modal.Header>
         <Modal.Body>
           {openModal === 'timeLimit' && (
             <TimeLimitEditForm
-              mode="bulk"
+              mode={singleInstanceMode ? 'single' : 'bulk'}
               assessmentInstanceIds={assessmentInstanceIds}
               targetDescription={
                 isAllInstancesTarget
@@ -169,6 +205,21 @@ export function InstanceSelectionToolbar({
               hasOpenInstance={hasOpenInstance}
               hasClosedInstance={hasClosedInstance}
               hasTimeLimitInstance={hasTimeLimitInstance}
+              singleRow={
+                singleInstanceMode
+                  ? {
+                      open: targetRows[0].assessment_instance.open === true,
+                      total_time: targetRows[0].total_time,
+                      total_time_sec: targetRows[0].total_time_sec,
+                      time_remaining: targetRows[0].time_remaining,
+                      time_remaining_sec: targetRows[0].time_remaining_sec,
+                      date:
+                        targetRows[0].assessment_instance.date == null
+                          ? ''
+                          : new Date(targetRows[0].assessment_instance.date).toISOString(),
+                    }
+                  : undefined
+              }
               timezone={timezone}
               onCancel={() => setOpenModal(null)}
               onSuccess={() => {
@@ -176,8 +227,9 @@ export function InstanceSelectionToolbar({
                   isAllInstancesTarget
                     ? 'Updated the time limit for all instances.'
                     : `Updated the time limit for ${count} ${count === 1 ? 'instance' : 'instances'}.`,
+                  'timeLimit',
                 );
-                clearSelection();
+                props.clearSelection?.();
                 setOpenModal(null);
               }}
             />
@@ -192,6 +244,7 @@ function JobActionModalWithIds({
   action,
   assessmentInstanceIds,
   isAllInstancesTarget,
+  isSingleInstanceTarget,
   courseInstanceId,
   show,
   onHide,
@@ -199,6 +252,7 @@ function JobActionModalWithIds({
   action: JobAction;
   assessmentInstanceIds: string[] | null;
   isAllInstancesTarget: boolean;
+  isSingleInstanceTarget: boolean;
   courseInstanceId: string;
   show: boolean;
   onHide: () => void;
@@ -210,14 +264,20 @@ function JobActionModalWithIds({
   }[action];
   const labels = {
     grade: {
-      title: isAllInstancesTarget ? 'Grade all instances' : 'Grade selected instances',
+      title: isSingleInstanceTarget
+        ? 'Grade this instance'
+        : isAllInstancesTarget
+          ? 'Grade all instances'
+          : 'Grade selected instances',
       body: 'grade pending submissions for',
       confirm: 'Grade',
     },
     gradeAndClose: {
-      title: isAllInstancesTarget
-        ? 'Grade and close all instances'
-        : 'Grade and close selected instances',
+      title: isSingleInstanceTarget
+        ? 'Grade and close this instance'
+        : isAllInstancesTarget
+          ? 'Grade and close all instances'
+          : 'Grade and close selected instances',
       body: 'grade and close',
       confirm: 'Grade and close',
     },
@@ -239,7 +299,8 @@ function JobActionModalWithIds({
       <Modal.Body>
         <p>
           Are you sure you want to {labels.body}{' '}
-          <strong>{describeTargetInstances(assessmentInstanceIds)}</strong>? This cannot be undone.
+          <strong>{describeTargetInstances(assessmentInstanceIds, isSingleInstanceTarget)}</strong>?
+          This cannot be undone.
         </p>
         <AppErrorAlert
           error={appError}
@@ -266,12 +327,14 @@ function JobActionModalWithIds({
 function RegradeInstancesModal({
   assessmentInstanceIds,
   isAllInstancesTarget,
+  isSingleInstanceTarget,
   courseInstanceId,
   show,
   onHide,
 }: {
   assessmentInstanceIds: string[] | null;
   isAllInstancesTarget: boolean;
+  isSingleInstanceTarget: boolean;
   courseInstanceId: string;
   show: boolean;
   onHide: () => void;
@@ -294,15 +357,19 @@ function RegradeInstancesModal({
     <Modal show={show} onHide={onHide} onExited={() => mutation.reset()}>
       <Modal.Header closeButton>
         <Modal.Title>
-          {isAllInstancesTarget ? 'Regrade all instances' : 'Regrade selected instances'}
+          {isSingleInstanceTarget
+            ? 'Regrade this instance'
+            : isAllInstancesTarget
+              ? 'Regrade all instances'
+              : 'Regrade selected instances'}
         </Modal.Title>
       </Modal.Header>
       <Modal.Body>
         <p>
           Regrading recomputes the score for{' '}
-          <strong>{describeTargetInstances(assessmentInstanceIds)}</strong> and awards full credit
-          for questions configured with <code>forceMaxPoints</code>. This updates stored scores
-          without re-evaluating student submissions.
+          <strong>{describeTargetInstances(assessmentInstanceIds, isSingleInstanceTarget)}</strong>{' '}
+          and awards full credit for questions configured with <code>forceMaxPoints</code>. This
+          updates stored scores without re-evaluating student submissions.
         </p>
         {previewQuery.isPending ? (
           <div className="d-flex align-items-center gap-2 text-muted">
@@ -314,8 +381,14 @@ function RegradeInstancesModal({
           <PendingRegradeQuestionList questions={questions} />
         ) : (
           <p className="text-muted mb-0">
-            None of the {isAllInstancesTarget ? 'instances' : 'selected instances'} have questions
-            awaiting full credit.
+            {isSingleInstanceTarget ? (
+              'This instance has no questions awaiting full credit.'
+            ) : (
+              <>
+                None of the {isAllInstancesTarget ? 'instances' : 'selected instances'} have
+                questions awaiting full credit.
+              </>
+            )}
           </p>
         )}
         <p className="mt-3 mb-0">This cannot be undone.</p>
@@ -345,12 +418,14 @@ function RegradeInstancesModal({
 function DeleteInstancesModal({
   assessmentInstanceIds,
   isAllInstancesTarget,
+  isSingleInstanceTarget,
   show,
   onHide,
   onSuccess,
 }: {
   assessmentInstanceIds: string[] | null;
   isAllInstancesTarget: boolean;
+  isSingleInstanceTarget: boolean;
   show: boolean;
   onHide: () => void;
   onSuccess: () => void;
@@ -370,14 +445,20 @@ function DeleteInstancesModal({
     <Modal show={show} onHide={onHide} onExited={() => mutation.reset()}>
       <Modal.Header closeButton>
         <Modal.Title>
-          {isAllInstancesTarget ? 'Delete all instances' : 'Delete selected instances'}
+          {isSingleInstanceTarget
+            ? 'Delete this instance'
+            : isAllInstancesTarget
+              ? 'Delete all instances'
+              : 'Delete selected instances'}
         </Modal.Title>
       </Modal.Header>
       <Modal.Body>
         <p>
           Are you sure you want to delete{' '}
-          <strong>{describeTargetAssessmentInstances(assessmentInstanceIds)}</strong>? This cannot
-          be undone.
+          <strong>
+            {describeTargetAssessmentInstances(assessmentInstanceIds, isSingleInstanceTarget)}
+          </strong>
+          ? This cannot be undone.
         </p>
         <AppErrorAlert
           error={appError}
@@ -396,9 +477,11 @@ function DeleteInstancesModal({
         >
           {mutation.isPending
             ? 'Deleting...'
-            : isAllInstancesTarget
-              ? 'Delete all'
-              : `Delete ${describeTargetInstances(assessmentInstanceIds)}`}
+            : isSingleInstanceTarget
+              ? 'Delete instance'
+              : isAllInstancesTarget
+                ? 'Delete all'
+                : `Delete ${describeTargetInstances(assessmentInstanceIds, false)}`}
         </Button>
       </Modal.Footer>
     </Modal>

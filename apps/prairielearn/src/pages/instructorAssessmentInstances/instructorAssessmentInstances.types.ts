@@ -36,6 +36,14 @@ export type AssessmentInstanceRow = AssessmentInstanceRowQuery & {
   duration_formatted: string;
 };
 
+export interface AssessmentInstanceActionRow {
+  assessment_instance: Pick<AssessmentInstanceRow['assessment_instance'], 'id' | 'open' | 'date'>;
+  time_remaining: string;
+  time_remaining_sec: number | null;
+  total_time: string;
+  total_time_sec: number | null;
+}
+
 // A question that a regrade of the selected instances would set to full credit:
 // its assessment question has `forceMaxPoints` and at least one selected instance
 // is currently below the maximum. `instance_count` is how many of the selected

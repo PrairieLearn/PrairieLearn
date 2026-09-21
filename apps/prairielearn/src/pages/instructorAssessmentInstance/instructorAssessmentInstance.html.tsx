@@ -3,6 +3,7 @@ import { z } from 'zod';
 
 import { formatDate, formatInterval } from '@prairielearn/formatter';
 import { escapeHtml, html } from '@prairielearn/html';
+import { hydrateHtml } from '@prairielearn/react/server';
 import { run } from '@prairielearn/run';
 import { DateFromISOString, IdSchema } from '@prairielearn/zod';
 
@@ -24,6 +25,9 @@ import {
 import { formatFloat, formatPoints } from '../../lib/format.js';
 import { idsEqual } from '../../lib/id.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
+import type { AssessmentInstanceActionRow } from '../instructorAssessmentInstances/instructorAssessmentInstances.types.js';
+
+import { InstructorAssessmentInstanceActions } from './components/InstructorAssessmentInstanceActions.js';
 
 export const AssessmentInstanceStatsSchema = z.object({
   assessment_instance_id: IdSchema,
@@ -78,12 +82,16 @@ export function InstructorAssessmentInstance({
   assessment_instance_stats,
   instance_questions,
   assessmentInstanceLog,
+  actionRow,
+  trpcCsrfToken,
 }: {
   resLocals: ResLocalsForPage<'assessment-instance'>;
   logCsvFilename: string;
   assessment_instance_stats: AssessmentInstanceStats[];
   instance_questions: InstanceQuestionRow[];
   assessmentInstanceLog: InstanceLogEntry[];
+  actionRow: AssessmentInstanceActionRow | null;
+  trpcCsrfToken: string | null;
 }) {
   const headingLabel = resLocals.instance_group
     ? html`${resLocals.instance_group.name} <i class="fas fa-users"></i>`
@@ -128,8 +136,26 @@ export function InstructorAssessmentInstance({
       })}
       ${ExamResetNotSupportedModal({ assessment: resLocals.assessment })}
       <div class="card mb-4">
-        <div class="card-header bg-primary text-white">
-          <h2>${resLocals.assessment_instance_label} Summary: ${headingLabel}</h2>
+        <div
+          class="card-header bg-primary text-white d-flex align-items-center justify-content-between"
+        >
+          <h2 class="mb-0">${resLocals.assessment_instance_label} Summary: ${headingLabel}</h2>
+          ${
+            resLocals.authz_data.has_course_instance_permission_edit &&
+            actionRow != null &&
+            trpcCsrfToken != null
+              ? hydrateHtml(
+                  <InstructorAssessmentInstanceActions
+                    instance={actionRow}
+                    courseInstanceId={resLocals.course_instance.id}
+                    assessmentId={resLocals.assessment.id}
+                    trpcCsrfToken={trpcCsrfToken}
+                    timezone={resLocals.course_instance.display_timezone}
+                    groupWork={resLocals.assessment.team_work}
+                  />,
+                )
+              : ''
+          }
         </div>
         <div class="table-responsive">
           <table

@@ -40,20 +40,22 @@ export interface AssessmentInstancesError {
 }
 
 /**
- * Loads the assessment instances for the table, formatting dates/durations in
- * the course instance's timezone. Shared between the page's initial server
- * render and the `list` query so both produce identical row shapes.
+ * Loads assessment instances for the table, formatting dates/durations in the
+ * course instance's timezone. The optional id filter is used by the instructor
+ * instance detail page to load the same action context for a single instance.
  */
 export async function selectAssessmentInstancesForTable({
   assessment_id,
   timezone,
+  assessment_instance_id,
 }: {
   assessment_id: string;
   timezone: string;
+  assessment_instance_id?: string;
 }): Promise<AssessmentInstanceRow[]> {
   const assessmentInstances = await sqldb.queryRows(
     sql.select_assessment_instances,
-    { assessment_id },
+    { assessment_id, assessment_instance_id: assessment_instance_id ?? null },
     AssessmentInstanceRowQuerySchema,
   );
   return assessmentInstances.map((instance) => ({

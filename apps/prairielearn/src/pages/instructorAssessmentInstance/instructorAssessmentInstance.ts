@@ -1,3 +1,4 @@
+import assert from 'assert';
 import { pipeline } from 'node:stream/promises';
 
 import { Router } from 'express';
@@ -6,6 +7,7 @@ import { stringifyStream } from '@prairielearn/csv';
 import { HttpStatusError } from '@prairielearn/error';
 import { formatDateISO } from '@prairielearn/formatter';
 import * as sqldb from '@prairielearn/postgres';
+import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
 import {
   type InstanceLogEntry,
@@ -14,12 +16,17 @@ import {
   setAssessmentInstancePoints,
   setAssessmentInstanceScore,
 } from '../../lib/assessment.js';
+import { extractPageContext } from '../../lib/client/page-context.js';
+import { getAssessmentTrpcUrl } from '../../lib/client/url.js';
+import { config } from '../../lib/config.js';
 import * as ltiOutcomes from '../../lib/ltiOutcomes.js';
 import { updateInstanceQuestionScore } from '../../lib/manualGrading.js';
 import { type ResLocalsForPage, typedAsyncHandler } from '../../lib/res-locals.js';
 import { assessmentFilenamePrefix, sanitizeString } from '../../lib/sanitize-name.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 import { resetVariantsForInstanceQuestion } from '../../models/variant.js';
+import { selectAssessmentInstancesForTable } from '../../trpc/assessment/assessment-instances.js';
+import type { AssessmentInstanceActionRow } from '../instructorAssessmentInstances/instructorAssessmentInstances.types.js';
 
 import {
   AssessmentInstanceStatsSchema,
@@ -53,23 +60,60 @@ router.get(
     unauthorizedUsers: 'block',
   }),
   typedAsyncHandler<'assessment-instance'>(async (req, res) => {
+    const { assessment, authn_user, authz_data, course_instance } = extractPageContext(res.locals, {
+      pageType: 'assessment',
+      accessType: 'instructor',
+    });
     const logCsvFilename = makeLogCsvFilename(res.locals);
-    const assessment_instance_stats = await sqldb.queryRows(
-      sql.assessment_instance_stats,
-      { assessment_instance_id: res.locals.assessment_instance.id },
-      AssessmentInstanceStatsSchema,
-    );
+    const [assessment_instance_stats, instance_questions, assessmentInstanceLog, actionRows] =
+      await Promise.all([
+        sqldb.queryRows(
+          sql.assessment_instance_stats,
+          { assessment_instance_id: res.locals.assessment_instance.id },
+          AssessmentInstanceStatsSchema,
+        ),
+        sqldb.queryRows(
+          sql.select_instance_questions,
+          { assessment_instance_id: res.locals.assessment_instance.id },
+          InstanceQuestionRowSchema,
+        ),
+        selectAssessmentInstanceLog(res.locals.assessment_instance.id, false),
+        authz_data.has_course_instance_permission_edit
+          ? selectAssessmentInstancesForTable({
+              assessment_id: assessment.id,
+              assessment_instance_id: res.locals.assessment_instance.id,
+              timezone: course_instance.display_timezone,
+            })
+          : Promise.resolve(null),
+      ]);
 
-    const instance_questions = await sqldb.queryRows(
-      sql.select_instance_questions,
-      { assessment_instance_id: res.locals.assessment_instance.id },
-      InstanceQuestionRowSchema,
-    );
-
-    const assessmentInstanceLog = await selectAssessmentInstanceLog(
-      res.locals.assessment_instance.id,
-      false,
-    );
+    const selectedActionRow = actionRows?.[0];
+    if (actionRows !== null) assert.strictEqual(actionRows.length, 1);
+    const actionRow: AssessmentInstanceActionRow | null = selectedActionRow
+      ? {
+          assessment_instance: {
+            id: selectedActionRow.assessment_instance.id,
+            open: selectedActionRow.assessment_instance.open,
+            date: selectedActionRow.assessment_instance.date,
+          },
+          time_remaining: selectedActionRow.time_remaining,
+          time_remaining_sec: selectedActionRow.time_remaining_sec,
+          total_time: selectedActionRow.total_time,
+          total_time_sec: selectedActionRow.total_time_sec,
+        }
+      : null;
+    const trpcCsrfToken = actionRow
+      ? generatePrefixCsrfToken(
+          {
+            url: getAssessmentTrpcUrl({
+              courseInstanceId: course_instance.id,
+              assessmentId: assessment.id,
+            }),
+            authn_user_id: authn_user.id,
+          },
+          config.secretKey,
+        )
+      : null;
 
     res.send(
       InstructorAssessmentInstance({
@@ -78,6 +122,8 @@ router.get(
         assessment_instance_stats,
         instance_questions,
         assessmentInstanceLog,
+        actionRow,
+        trpcCsrfToken,
       }),
     );
   }),
