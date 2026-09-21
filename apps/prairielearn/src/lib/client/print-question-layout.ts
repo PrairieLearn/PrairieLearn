@@ -33,6 +33,10 @@ const BLOCK_SIZE_FRACTIONS: Record<Exclude<QuestionBlockSize, 'auto'>, number> =
   full: 1,
 };
 
+export function getPrintBlockHeight(blockSize: QuestionBlockSize, pageHeight: number): number {
+  return blockSize === 'auto' ? pageHeight : pageHeight * BLOCK_SIZE_FRACTIONS[blockSize];
+}
+
 export class QuestionBlockSizeOverflowError extends Error {
   constructor(message: string) {
     super(message);
@@ -85,7 +89,7 @@ export function planPrintQuestionPages({
     const reservedHeight =
       question.blockSize === 'auto'
         ? question.naturalHeight
-        : pageHeight * BLOCK_SIZE_FRACTIONS[question.blockSize];
+        : getPrintBlockHeight(question.blockSize, pageHeight);
 
     if (
       question.blockSize !== 'auto' &&

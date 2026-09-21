@@ -240,6 +240,8 @@ Attributions embedded in a question are arbitrary authored HTML, not reliably di
 
 Long questions start on a fresh page. Subparts that fit on one page receive explicit page boundaries when necessary: Paged.js does not reliably honor nested `break-inside: avoid` rules for all cards and SVGs. Keep the same content width for measurement, HTML, PDF, and DOCX capture.
 
+When image answer choices make a question taller than its page or selected question block, reduce the choice images by a common scale before pagination. Preserve their proportions and relative sizes, leave fitting images unchanged, and keep question text and answer markers at their original size. If the remaining content cannot fit even without the images, retain the authored image sizes and apply the usual long-question layout or block-size error.
+
 Do not use comma-containing functional selectors such as `:is(h2, h3)` on `break-before` or `break-after` rules. Paged.js splits those selector lists on commas without parsing the function.
 
 Answer keys use the question's authored answer panel. Simple questions retain their prompt; compound answer panels render their authored sections once. Answers stay at a readable font size and may use different page counts from the student document. Never hide overflow or shrink a whole answer panel to fit a short response line.
