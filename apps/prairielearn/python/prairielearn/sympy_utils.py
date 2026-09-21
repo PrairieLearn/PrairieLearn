@@ -94,7 +94,8 @@ type AllowedSympyType = Literal["all"] | _SympyValueType
 def _used_sympy_types(expr: sympy.Basic) -> set[_UsedSympyType]:
     if expr is sympy.EmptySet:
         return {"empty-set"}
-    if expr in _SET_DOMAINS:
+    # Reals compares equal to Interval(-oo, oo), but only the domain object is a named set.
+    if any(expr is domain for domain in _SET_DOMAINS):
         return {"set"}
     if isinstance(expr, sympy.Interval):
         return {"interval"}
