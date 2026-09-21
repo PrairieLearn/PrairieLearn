@@ -803,7 +803,7 @@ function PrintPreparation({
                               ) : (
                                 <>
                                   <Badge bg="warning" text="dark" className="mb-1">
-                                    Review for paper
+                                    Review printability
                                   </Badge>
                                   <div>{question.concerns.join(' ')}</div>
                                 </>

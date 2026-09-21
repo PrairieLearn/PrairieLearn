@@ -252,7 +252,7 @@ test('distinguishes paper review flags from broken questions omitted from the do
   );
   await instancesLoaded;
   await page.getByRole('button', { name: /^(Create|Update) preview$/ }).click();
-  await expect(page.getByText('Review for paper', { exact: true }).first()).toBeVisible({
+  await expect(page.getByText('Review printability', { exact: true }).first()).toBeVisible({
     timeout: 120_000,
   });
   await expect(page.getByText('Omitted', { exact: true }).first()).toBeVisible({
