@@ -330,14 +330,14 @@
     "brotli": 302905
   },
   "scripts/esm-bundles/hydrated-components/InstanceQuestionGradingConflictModal.ts": {
-    "raw": 864440,
-    "gzip": 267225,
-    "brotli": 229752
+    "raw": 864563,
+    "gzip": 267251,
+    "brotli": 229779
   },
   "scripts/esm-bundles/hydrated-components/InstanceQuestionGradingPanel.ts": {
-    "raw": 862951,
-    "gzip": 266622,
-    "brotli": 229240
+    "raw": 863074,
+    "gzip": 266649,
+    "brotli": 229261
   },
   "scripts/esm-bundles/hydrated-components/InstructorAssessmentDownloads.ts": {
     "raw": 361593,
