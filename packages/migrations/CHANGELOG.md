@@ -1,5 +1,18 @@
 # @prairielearn/migrations
 
+## 5.2.4
+
+### Patch Changes
+
+- 8151381: Build with the official TypeScript 7 release instead of the native preview.
+
+## 5.2.3
+
+### Patch Changes
+
+- Updated dependencies [fce4634]
+  - @prairielearn/postgres@8.0.0
+
 ## 5.2.2
 
 ### Patch Changes

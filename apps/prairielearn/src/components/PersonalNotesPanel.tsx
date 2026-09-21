@@ -33,65 +33,73 @@ export function PersonalNotesPanel({
         <i class="fas fa-paperclip"></i>
         <h2>&nbsp;Personal Notes</h2>
       </div>
-      ${fileList.length === 0
-        ? html`<div class="card-body"><i>No attached notes</i></div>`
-        : html`
-            <ul class="list-group list-group-flush">
-              ${fileList.map(
-                (file) => html`
-                  <li class="list-group-item d-flex align-items-center">
-                    <a
-                      class="text-break me-2"
-                      href="/pl/course_instance/${courseInstanceId}/assessment_instance/${assessment_instance.id}/file/${file.id}/${file.display_filename}"
-                      data-testid="attached-file"
-                    >
-                      ${file.display_filename}
-                    </a>
-                    ${assessment_instance.open &&
-                    authz_result.active &&
-                    authz_result.authorized_edit &&
-                    allowNewUploads &&
-                    file.type === 'student_upload'
+      ${
+        fileList.length === 0
+          ? html`<div class="card-body"><i>No attached notes</i></div>`
+          : html`
+              <ul class="list-group list-group-flush">
+                ${fileList.map(
+                  (file) => html`
+                    <li class="list-group-item d-flex align-items-center">
+                      <a
+                        class="text-break me-2"
+                        href="/pl/course_instance/${courseInstanceId}/assessment_instance/${assessment_instance.id}/file/${file.id}/${file.display_filename}"
+                        data-testid="attached-file"
+                      >
+                        ${file.display_filename}
+                      </a>
+                      ${
+                        assessment_instance.open &&
+                        authz_result.active &&
+                        authz_result.authorized_edit &&
+                        allowNewUploads &&
+                        file.type === 'student_upload'
+                          ? html`
+                              <div class="ms-auto">
+                                ${DeletePersonalNoteButton({ file, variantId, csrfToken })}
+                              </div>
+                            `
+                          : ''
+                      }
+                    </li>
+                  `,
+                )}
+              </ul>
+            `
+      }
+      ${
+        allowNewUploads
+          ? html`
+              <div class="card-footer">
+                ${
+                  !assessment_instance.open || !authz_result.active
+                    ? html`
+                        <p class="small mb-0">
+                          Notes can't be added or deleted because the assessment is closed.
+                        </p>
+                      `
+                    : !authz_result.authorized_edit
                       ? html`
-                          <div class="ms-auto">
-                            ${DeletePersonalNoteButton({ file, variantId, csrfToken })}
+                          <div class="alert alert-warning mb-0" role="alert">
+                            You are viewing the ${context} instance of a different user and so are
+                            not authorized to add or delete personal notes.
                           </div>
                         `
-                      : ''}
-                  </li>
-                `,
-              )}
-            </ul>
-          `}
-      ${allowNewUploads
-        ? html`
-            <div class="card-footer">
-              ${!assessment_instance.open || !authz_result.active
-                ? html`
-                    <p class="small mb-0">
-                      Notes can't be added or deleted because the assessment is closed.
-                    </p>
-                  `
-                : !authz_result.authorized_edit
-                  ? html`
-                      <div class="alert alert-warning mb-0" role="alert">
-                        You are viewing the ${context} instance of a different user and so are not
-                        authorized to add or delete personal notes.
-                      </div>
-                    `
-                  : html`
-                      ${lockdownBrowser ? '' : AttachFileForm({ variantId, csrfToken })}
-                      ${UploadTextForm({
-                        variantId,
-                        csrfToken,
-                        defaultFilename: getAvailableFilename(
-                          fileList.map((file) => file.display_filename),
-                        ),
-                      })}
-                    `}
-            </div>
-          `
-        : ''}
+                      : html`
+                          ${lockdownBrowser ? '' : AttachFileForm({ variantId, csrfToken })}
+                          ${UploadTextForm({
+                            variantId,
+                            csrfToken,
+                            defaultFilename: getAvailableFilename(
+                              fileList.map((file) => file.display_filename),
+                            ),
+                          })}
+                        `
+                }
+              </div>
+            `
+          : ''
+      }
     </div>
   `;
 }
@@ -129,9 +137,11 @@ function AttachFileForm({ variantId, csrfToken }: { variantId?: string; csrfToke
           </div>
           <div class="mb-3">
             <input type="hidden" name="__action" value="attach_file" />
-            ${variantId != null
-              ? html`<input type="hidden" name="__variant_id" value="${variantId}" />`
-              : ''}
+            ${
+              variantId != null
+                ? html`<input type="hidden" name="__variant_id" value="${variantId}" />`
+                : ''
+            }
             <input type="hidden" name="__csrf_token" value="${csrfToken}" />
             <button type="submit" class="btn btn-primary" disabled>Attach file</button>
           </div>
@@ -195,9 +205,11 @@ function UploadTextForm({
               placeholder="Type or paste text here"
             ></textarea>
           </div>
-          ${variantId != null
-            ? html`<input type="hidden" name="__variant_id" value="${variantId}" />`
-            : ''}
+          ${
+            variantId != null
+              ? html`<input type="hidden" name="__variant_id" value="${variantId}" />`
+              : ''
+          }
           <input type="hidden" name="__csrf_token" value="${csrfToken}" />
           <button type="submit" class="btn btn-sm btn-primary" name="__action" value="attach_text">
             Add note
@@ -222,9 +234,11 @@ function DeletePersonalNoteButton({
       <p>Are you sure you want to delete <strong>${file.display_filename}</strong>?</p>
       <input type="hidden" name="__action" value="delete_file" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-      ${variantId != null
-        ? html`<input type="hidden" name="__variant_id" value="${variantId}" />`
-        : ''}
+      ${
+        variantId != null
+          ? html`<input type="hidden" name="__variant_id" value="${variantId}" />`
+          : ''
+      }
       <input type="hidden" name="file_id" value="${file.id}" />
       <div class="text-end">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>

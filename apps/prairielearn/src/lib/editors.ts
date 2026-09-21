@@ -43,8 +43,12 @@ import {
   type User,
 } from './db-types.js';
 import { discoverInfoDirs } from './discover-info-dirs.js';
-import { computeEncodedFileContentHash, computeFileContentHash } from './editorUtil.js';
-import { getNamesForCopy, getUniqueNames } from './editorUtil.shared.js';
+import {
+  computeEncodedFileContentHash,
+  computeFileContentHash,
+  getDetailsForFile,
+} from './editorUtil.js';
+import { FileType, getNamesForCopy, getUniqueNames } from './editorUtil.shared.js';
 import { idsEqual } from './id.js';
 import { removeQidsFromAssessment, renameQidInAssessment } from './infoAssessment-edits.js';
 import { computeStableHash } from './json.js';
@@ -2406,7 +2410,7 @@ export class FileUploadEditor extends Editor {
   }
 
   assertCanEdit() {
-    for (const filePath of Object.keys(this.files)) {
+    for (const [filePath, fileContents] of Object.entries(this.files)) {
       if (!contains(this.container.rootPath, filePath)) {
         throw new AugmentedError('Invalid file path', {
           info: html`
@@ -2436,6 +2440,27 @@ export class FileUploadEditor extends Editor {
             <div class="container"><pre class="bg-dark text-white rounded p-2">${found}</pre></div>
           `,
         });
+      }
+
+      // Metadata lives at the container root; descendants are ordinary assets.
+      if (path.dirname(filePath) !== this.container.rootPath) continue;
+      const relativePath = path.relative(this.course.path, filePath);
+      if (getDetailsForFile(relativePath).type === FileType.File) continue;
+
+      try {
+        // Preserve a BOM so JSON.parse rejects it, matching course sync.
+        const contents = new TextDecoder('utf-8', { fatal: true, ignoreBOM: true }).decode(
+          fileContents,
+        );
+        const parsed: unknown = JSON.parse(contents);
+        if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+          throw new Error('Expected a JSON object');
+        }
+      } catch {
+        throw new HttpStatusError(
+          400,
+          `Cannot upload ${relativePath}: PrairieLearn metadata files must contain a valid UTF-8 JSON object.`,
+        );
       }
     }
 

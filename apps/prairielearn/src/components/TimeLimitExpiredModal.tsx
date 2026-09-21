@@ -12,14 +12,16 @@ export function TimeLimitExpiredModal({ showAutomatically }: { showAutomatically
         <button type="button" class="btn btn-primary" data-bs-dismiss="modal">OK</button>
       `,
     })}
-    ${showAutomatically
-      ? html`
-          <script type="module">
-            // This script is type="module" so that it is deferred and runs after the DOM is ready.
-            const modalElement = document.getElementById('timeLimitExpiredModal');
-            window.bootstrap.Modal.getOrCreateInstance(modalElement).show();
-          </script>
-        `
-      : ''}
+    ${
+      showAutomatically
+        ? html`
+            <script type="module">
+              // This script is type="module" so that it is deferred and runs after the DOM is ready.
+              const modalElement = document.getElementById('timeLimitExpiredModal');
+              window.bootstrap.Modal.getOrCreateInstance(modalElement).show();
+            </script>
+          `
+        : ''
+    }
   `;
 }

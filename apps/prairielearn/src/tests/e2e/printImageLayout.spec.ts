@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
-import { createPrintPreparationAssessmentInstance } from '../../lib/print-preparation.js';
+import { makeAssessmentInstance } from '../../lib/assessment.js';
 import { selectAssessmentByTid } from '../../models/assessment.js';
 import { syncCourse } from '../helperCourse.js';
 import { getConfiguredUser } from '../utils/auth.js';
@@ -15,7 +15,17 @@ const test = base.extend<{
   imageQuestion: async ({ testCoursePath, courseInstance }, use) => {
     const questionPath = path.join(testCoursePath, 'questions/addNumbers/question.html');
     const original = await fs.readFile(questionPath, 'utf8');
+    const assessmentPath = path.join(
+      testCoursePath,
+      'courseInstances/Sp15/assessments/exam20-assessmentTools/infoAssessment.json',
+    );
+    const originalAssessment = await fs.readFile(assessmentPath, 'utf8');
     try {
+      // Each template needs fresh variants, even when these tests share a worker.
+      await fs.writeFile(
+        assessmentPath,
+        JSON.stringify({ ...JSON.parse(originalAssessment), multipleInstance: true }),
+      );
       await use(async (html) => {
         await fs.writeFile(questionPath, html);
         await syncCourse(testCoursePath);
@@ -24,15 +34,20 @@ const test = base.extend<{
           course_instance_id: courseInstance.id,
           tid: 'exam20-assessmentTools',
         });
-        const instanceId = await createPrintPreparationAssessmentInstance({
-          assessmentId: assessment.id,
-          userId: user.id,
-          authnUserId: user.id,
+        const instanceId = await makeAssessmentInstance({
+          assessment,
+          user_id: user.id,
+          authn_user_id: user.id,
+          mode: 'Public',
+          time_limit_min: null,
+          date: new Date(),
+          client_fingerprint_id: null,
         });
         return `/pl/course_instance/${courseInstance.id}/instructor/assessment_instance/${instanceId}/paper/preview`;
       });
     } finally {
       await fs.writeFile(questionPath, original);
+      await fs.writeFile(assessmentPath, originalAssessment);
       await syncCourse(testCoursePath);
     }
   },

@@ -9,6 +9,7 @@ import { sanitizeObject } from '@prairielearn/sanitize';
 import { type RubricItem } from '../../../lib/db-types.js';
 
 import {
+  containsSubmissionAttachment,
   correctImagesOrientation,
   extractAiGradingExplanationFromCompletion,
   extractSubmissionImages,
@@ -253,6 +254,7 @@ describe('parseSubmission', () => {
     expect(result).toEqual([
       { type: 'text', text: '<p>Text</p>' },
       { type: 'file', fileName: 'missing.jpg', fileData: null },
+      { type: 'file', fileName: 'other.jpg', fileData: 'otherdata' },
     ]);
   });
 
@@ -276,6 +278,149 @@ describe('parseSubmission', () => {
 });
 
 describe('generateSubmissionContent', () => {
+  it.each([
+    'solution.py',
+    'solution.cpp',
+    'Solution.java',
+    'notes.txt',
+    'Makefile',
+    'answer.custom',
+  ])('sends %s as decoded text with its filename', (name) => {
+    const text = '\tα = "<div>& café</div>"\r\n\n    return α\n';
+    expect(
+      generateSubmissionContent({
+        submission_text: `<div data-ai-grading-file-name="${name}">${name}</div>`,
+        submitted_answer: { _files: [{ name, contents: Buffer.from(text).toString('base64') }] },
+      }),
+    ).toEqual([{ type: 'text', text: `Submitted file: ${name}\n\n${text}` }]);
+  });
+
+  it.each([
+    Buffer.from('\ufeffprint("hello")\n', 'utf8'),
+    Buffer.from('\ufeffprint("hello")\n', 'utf16le'),
+    Buffer.from('\ufeffprint("hello")\n', 'utf16le').swap16(),
+  ])('decodes Unicode text with a byte-order mark', (bytes) => {
+    expect(
+      generateSubmissionContent({
+        submission_text: '',
+        submitted_answer: { _files: [{ name: 'answer.py', contents: bytes.toString('base64') }] },
+      }),
+    ).toEqual([{ type: 'text', text: 'Submitted file: answer.py\n\nprint("hello")\n' }]);
+  });
+
+  it('includes empty files without calling them missing', () => {
+    expect(
+      generateSubmissionContent({
+        submission_text: '',
+        submitted_answer: { _files: [{ name: 'empty.txt', contents: '' }] },
+      }),
+    ).toEqual([{ type: 'text', text: 'Submitted file: empty.txt\n\n' }]);
+  });
+
+  it('includes stored workspace files without submission HTML and without truncation', () => {
+    const text = '# comment\n'.repeat(2000) + 'result = 42\n';
+    expect(
+      generateSubmissionContent({
+        submission_text: '',
+        submitted_answer: {
+          _files: [{ name: 'src/answer.py', contents: Buffer.from(text).toString('base64') }],
+        },
+      }),
+    ).toEqual([{ type: 'text', text: `Submitted file: src/answer.py\n\n${text}` }]);
+  });
+
+  it('preserves mixed submission order and appends unmarked files only once', () => {
+    const result = generateSubmissionContent({
+      submission_text: [
+        '<p>Before</p>',
+        '<div data-ai-grading-file-name="answer.cpp">answer.cpp</div>',
+        '<p>Between</p>',
+        '<div data-file-upload-file-name="work.pdf">work.pdf</div>',
+        '<div data-image-capture-uuid="capture" data-file-name="photo.png">photo.png</div>',
+        '<div data-ai-grading-file-name="photo.png">photo.png</div>',
+        '<div data-ai-grading-file-name="answer.cpp">answer.cpp</div>',
+        '<p>After</p>',
+      ].join(''),
+      submitted_answer: {
+        _files: [
+          { name: 'notes.txt', contents: Buffer.from('notes').toString('base64') },
+          { name: 'photo.png', contents: 'imagedata' },
+          { name: 'answer.cpp', contents: Buffer.from('int main() {}').toString('base64') },
+          { name: 'work.pdf', contents: 'pdfdata' },
+          { name: 'notes.txt', contents: Buffer.from('notes').toString('base64') },
+          { name: 'src/helper.py', contents: Buffer.from('pass').toString('base64') },
+        ],
+      },
+    });
+    expect(result).toEqual([
+      { type: 'text', text: '<p>Before</p>' },
+      { type: 'text', text: 'Submitted file: answer.cpp\n\nint main() {}' },
+      { type: 'text', text: '<p>Between</p>' },
+      { type: 'text', text: 'Submitted file: work.pdf' },
+      { type: 'file', filename: 'work.pdf', data: 'pdfdata', mediaType: 'application/pdf' },
+      { type: 'text', text: 'Submitted file: photo.png' },
+      {
+        type: 'file',
+        filename: 'photo.png',
+        data: 'imagedata',
+        mediaType: 'image/png',
+        providerOptions: { openai: { imageDetail: 'auto' } },
+      },
+      { type: 'text', text: '<p>After</p>' },
+      { type: 'text', text: 'Submitted file: notes.txt\n\nnotes' },
+      { type: 'text', text: 'Submitted file: src/helper.py\n\npass' },
+    ]);
+  });
+
+  it.each([
+    Buffer.from([0xc3, 0x28]),
+    Buffer.from([0xff]),
+    Buffer.from([0xff, 0xfe, 0x61]),
+    Buffer.from([0xff, 0xfe, 0x00, 0xd8]),
+  ])('rejects invalid text encodings', (bytes) => {
+    expect(() =>
+      generateSubmissionContent({
+        submission_text: '',
+        submitted_answer: { _files: [{ name: 'answer.py', contents: bytes.toString('base64') }] },
+      }),
+    ).toThrow('AI grading could not read "answer.py" as text');
+  });
+
+  it.each([
+    Buffer.from('PK\u0003\u0004'),
+    Buffer.from('hello\u0000world'),
+    Buffer.from('text without BOM', 'utf16le'),
+    Buffer.from([0xff, 0xfe, 0, 0, 0x61, 0, 0, 0]),
+  ])('rejects binary data even when it can be decoded', (bytes) => {
+    expect(() =>
+      generateSubmissionContent({
+        submission_text: '',
+        submitted_answer: { _files: [{ name: 'answer.txt', contents: bytes.toString('base64') }] },
+      }),
+    ).toThrow('AI grading cannot read binary file "answer.txt"');
+  });
+
+  it('rejects invalid base64 instead of silently losing bytes', () => {
+    expect(() =>
+      generateSubmissionContent({
+        submission_text: '',
+        submitted_answer: { _files: [{ name: 'answer.txt', contents: 'aGVsbG8=!' }] },
+      }),
+    ).toThrow('Submitted file "answer.txt" has invalid base64 data');
+  });
+
+  it('recognizes unmarked attachments for grading explanations', () => {
+    expect(
+      containsSubmissionAttachment({
+        submission_text: '',
+        submitted_answer: { _files: [{ name: 'answer.txt', contents: '' }] },
+      }),
+    ).toBe(true);
+    expect(containsSubmissionAttachment({ submission_text: '', submitted_answer: null })).toBe(
+      false,
+    );
+  });
+
   it('generates named PDF file parts', () => {
     const result = generateSubmissionContent({
       submission_text: '<div data-ai-grading-file-name="solution.pdf">solution.pdf</div>',
@@ -300,21 +445,28 @@ describe('generateSubmissionContent', () => {
       generateSubmissionContent({
         submission_text: '<div data-ai-grading-file-name="solution.zip">solution.zip</div>',
         submitted_answer: {
-          _files: [{ name: 'solution.zip', contents: 'zipdata' }],
+          _files: [
+            { name: 'solution.zip', contents: Buffer.from('PK\u0003\u0004').toString('base64') },
+          ],
         },
       }),
-    ).toThrow('AI grading only supports PDF, JPEG, PNG, and WebP files');
+    ).toThrow('AI grading cannot read binary file "solution.zip"');
   });
 
   it('includes uploaded images in orientation correction', () => {
     const result = extractSubmissionImages({
       submission_text: '<div data-ai-grading-file-name="solution.png">solution.png</div>',
       submitted_answer: {
-        _files: [{ name: 'solution.png', contents: 'imagedata' }],
+        _files: [
+          { name: 'solution.png', contents: 'imagedata' },
+          { name: 'workspace.jpg', contents: 'workspacedata' },
+          { name: 'answer.py', contents: Buffer.from('pass').toString('base64') },
+          { name: 'work.pdf', contents: 'pdfdata' },
+        ],
       },
     });
 
-    expect(result).toEqual({ 'solution.png': 'imagedata' });
+    expect(result).toEqual({ 'solution.png': 'imagedata', 'workspace.jpg': 'workspacedata' });
   });
 });
 

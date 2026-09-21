@@ -624,7 +624,10 @@ export async function aiGrade({
           })
         : {};
       const hasImage = Object.keys(submittedImages).length > 0;
-      const hasAttachment = containsSubmissionAttachment(submission_text);
+      const hasAttachment = containsSubmissionAttachment({
+        submission_text,
+        submitted_answer: submission.submitted_answer,
+      });
 
       const { rubric, rubric_items } = await selectCompleteRubric(assessment_question.id);
 

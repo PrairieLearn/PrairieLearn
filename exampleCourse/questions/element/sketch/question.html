@@ -67,6 +67,25 @@
 
 <pl-card>
   <pl-question-panel>
+    <p>
+      A canvas can be set up as read-only, for example to serve as a reference where students use a different question element to submit their answer. Read-only graphs contain only the initial drawings and have no toolbar. They shrink to fit the available space if necessary while preserving their original aspect ratio.
+    </p>
+    <pl-sketch
+      answers-name="sketch-readonly"
+      read-only="true"
+      width="600"
+      height="300"
+      x-range="-3,3"
+      y-range="-1,5"
+    >
+      <pl-sketch-tool id="curve" type="spline"></pl-sketch-tool>
+      <pl-sketch-initial tool-id="curve" function="x**2" x-range="-2,2"></pl-sketch-initial>
+    </pl-sketch>
+  </pl-question-panel>
+</pl-card>
+
+<pl-card>
+  <pl-question-panel>
     <p>Drawings can be auto-graded based on different grading criteria, some of which are specific to certain drawing tool 
       types. For tools like points and asymptote lines, common grading criteria are the number of placed objects per type 
       and their position.</p>

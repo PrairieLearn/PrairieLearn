@@ -25,8 +25,7 @@ interface HistoryItem {
 }
 
 type CalculatorDefinition =
-  | { name: string; value: string }
-  | { name: string; function: MathJsonExpression };
+  { name: string; value: string } | { name: string; function: MathJsonExpression };
 
 interface CalculatorLocalData {
   variable: CalculatorDefinition[];

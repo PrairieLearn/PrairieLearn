@@ -1,3 +1,5 @@
+import assert from 'node:assert/strict';
+
 import {
   type GenerateTextResult,
   type LanguageModel,
@@ -72,7 +74,7 @@ const SubmissionVariantSchema = z.object({
 type UserContentParts = Exclude<UserContent, string>;
 
 // Keep this to media types supported as inline file parts by every AI-grading provider.
-const SUPPORTED_AI_GRADING_FILE_MEDIA_TYPES = new Set([
+const AI_GRADING_BINARY_FILE_MEDIA_TYPES = new Set([
   'application/pdf',
   'image/jpeg',
   'image/png',
@@ -232,8 +234,17 @@ function getAiGradingFileName($: cheerio.CheerioAPI, el: AnyNode): string | unde
   return options?.submitted_file_name;
 }
 
-export function containsSubmissionAttachment(submission_text: string): boolean {
-  return cheerio.load(submission_text)(AI_GRADING_FILE_SELECTOR).length > 0;
+export function containsSubmissionAttachment({
+  submission_text,
+  submitted_answer,
+}: {
+  submission_text: string;
+  submitted_answer: Record<string, any> | null;
+}): boolean {
+  return (
+    (submitted_answer?._files?.length ?? 0) > 0 ||
+    cheerio.load(submission_text)(AI_GRADING_FILE_SELECTOR).length > 0
+  );
 }
 
 function containsSubmissionImage(submission_text: string): boolean {
@@ -248,13 +259,47 @@ function containsSubmissionImage(submission_text: string): boolean {
   return false;
 }
 
-function getAiGradingFileMediaType(fileName: string): string {
+function getAiGradingFileMediaType(fileName: string): string | null {
   const mediaType = mime.getType(fileName);
-  if (mediaType && SUPPORTED_AI_GRADING_FILE_MEDIA_TYPES.has(mediaType)) {
+  if (mediaType && AI_GRADING_BINARY_FILE_MEDIA_TYPES.has(mediaType)) {
     return mediaType;
   }
 
-  throw new Error(`AI grading only supports PDF, JPEG, PNG, and WebP files; found "${fileName}".`);
+  return null;
+}
+
+function decodeAiGradingTextFile(fileName: string, fileData: string): string {
+  const bytes = Buffer.from(fileData, 'base64');
+  if (bytes.toString('base64') !== fileData) {
+    throw new Error(`Submitted file "${fileName}" has invalid base64 data.`);
+  }
+
+  // File extensions cannot reliably distinguish source code from binary files.
+  // Decode strictly so invalid bytes are never silently replaced in the student's work.
+  const encoding =
+    bytes[0] === 0xff && bytes[1] === 0xfe
+      ? 'utf-16le'
+      : bytes[0] === 0xfe && bytes[1] === 0xff
+        ? 'utf-16be'
+        : 'utf-8';
+  let text: string;
+  try {
+    text = new TextDecoder(encoding, { fatal: true }).decode(bytes);
+  } catch (cause) {
+    throw new Error(
+      `AI grading could not read "${fileName}" as text. Use UTF-8 or UTF-16 with a byte-order mark, or submit a PDF, JPEG, PNG, or WebP file.`,
+      { cause },
+    );
+  }
+
+  // Binary files can contain valid Unicode but still include non-text control characters.
+  // eslint-disable-next-line no-control-regex
+  if (/[\u0000-\u0008\u000e-\u001f\u007f-\u009f]/u.test(text)) {
+    throw new Error(
+      `AI grading cannot read binary file "${fileName}". Submit its contents as text, PDF, JPEG, PNG, or WebP instead.`,
+    );
+  }
+  return text;
 }
 
 /**
@@ -281,7 +326,7 @@ export function generateSubmissionContent({
       case 'text':
         return [segment];
       case 'file': {
-        if (!segment.fileData) {
+        if (segment.fileData === null) {
           return [
             {
               type: 'text',
@@ -291,6 +336,14 @@ export function generateSubmissionContent({
         }
 
         const mediaType = getAiGradingFileMediaType(segment.fileName);
+        if (!mediaType) {
+          return [
+            {
+              type: 'text',
+              text: `Submitted file: ${segment.fileName}\n\n${decodeAiGradingTextFile(segment.fileName, segment.fileData)}`,
+            },
+          ];
+        }
         return [
           {
             type: 'text',
@@ -344,7 +397,8 @@ type SubmissionHTMLSegment =
  * preserves the full HTML structure for text segments, ensuring the prompt matches what the
  * instructor sees on the AI grading preview page. Attachments are identified by an internal marker
  * emitted by supported elements and returned as separate segments. Legacy markers emitted by
- * `pl-image-capture` and `pl-file-upload` are also recognized.
+ * `pl-image-capture` and `pl-file-upload` are also recognized. Files without a marker
+ * (for example, workspace files) are appended in their stored order.
  */
 export function parseSubmission({
   submission_text,
@@ -355,13 +409,6 @@ export function parseSubmission({
 }): SubmissionHTMLSegment[] {
   const $ = cheerio.load(submission_text);
   const attachmentElements = $(AI_GRADING_FILE_SELECTOR);
-
-  // If there are no attachments, return the full HTML as a single text segment.
-  if (attachmentElements.length === 0) {
-    const text = $('body').html()?.trim();
-    if (!text) return [];
-    return [{ type: 'text', text }];
-  }
 
   // Extract attachment data and replace each element with a unique marker so we can split the
   // HTML into alternating text/attachment segments.
@@ -419,11 +466,19 @@ export function parseSubmission({
     }
   }
 
+  // Some submission paths do not render file markers. Include their files too,
+  // while preserving the positions of marked files and avoiding duplicates.
+  for (const file of submitted_answer?._files ?? []) {
+    if (includedFileNames.has(file.name)) continue;
+    includedFileNames.add(file.name);
+    segments.push({ type: 'file', fileName: file.name, fileData: file.contents });
+  }
+
   return segments;
 }
 
 /**
- * Returns all images referenced by AI-grading file markers in the rendered submission.
+ * Returns all supported images in the submission, including files without markers.
  * Returns a mapping from an image's filename to its base64-encoded contents.
  */
 export function extractSubmissionImages({
@@ -442,7 +497,7 @@ export function extractSubmissionImages({
     (acc, segment) => {
       if (segment.type === 'text' || !segment.fileData) return acc;
 
-      if (getAiGradingFileMediaType(segment.fileName).startsWith('image/')) {
+      if (getAiGradingFileMediaType(segment.fileName)?.startsWith('image/')) {
         acc[segment.fileName] = segment.fileData;
       }
       return acc;
@@ -925,9 +980,11 @@ export async function correctImagesOrientation({
   > = {};
 
   for (const [filename, image] of Object.entries(submittedImages)) {
+    const mediaType = getAiGradingFileMediaType(filename);
+    assert(mediaType);
     const { correctedImage, degreesRotated, response } = await correctImageOrientation({
       image,
-      mediaType: getAiGradingFileMediaType(filename),
+      mediaType,
       model,
     });
 

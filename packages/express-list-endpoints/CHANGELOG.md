@@ -1,5 +1,17 @@
 # @prairielearn/express-list-endpoints
 
+## 2.0.10
+
+### Patch Changes
+
+- 8151381: Build with the official TypeScript 7 release instead of the native preview.
+
+## 2.0.9
+
+### Patch Changes
+
+- 73ca8ef: Bump express dependency
+
 ## 2.0.8
 
 ### Patch Changes
