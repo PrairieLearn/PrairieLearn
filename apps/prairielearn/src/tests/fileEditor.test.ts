@@ -302,6 +302,82 @@ describe('test file editor', { timeout: 20_000 }, function () {
       badGet(gitPathUrl, 500, false);
     });
 
+    describe('validate metadata uploads', () => {
+      it('rejects a PDF uploaded to replace infoAssessment.json', async () => {
+        const metadataPath = path.join(courseRepo.courseLiveDir, infoAssessmentPath);
+        const originalContents = await fs.readFile(metadataPath);
+        const res = await uploadFiles({
+          url: assessmentUrl + '/file_view',
+          filePath: infoAssessmentPath,
+          files: [{ filename: 'syllabus.pdf', contents: Buffer.from('%PDF-1.7\n') }],
+        });
+
+        assert.equal(res.status, 400);
+        assert.include(await res.text(), 'must contain a valid UTF-8 JSON object');
+        assert.isTrue((await fs.readFile(metadataPath)).equals(originalContents));
+      });
+
+      it.each([
+        ['malformed JSON', Buffer.from('{')],
+        ['JSON array', Buffer.from('[]')],
+        ['invalid UTF-8', Buffer.from([0x7b, 0x22, 0xff, 0x22, 0x3a, 0x31, 0x7d])],
+      ])('rejects %s before writing any files', async (_description, contents) => {
+        const metadataPath = path.join(courseRepo.courseLiveDir, infoAssessmentPath);
+        const originalContents = await fs.readFile(metadataPath);
+        const ordinaryPath = path.join(courseRepo.courseLiveDir, assessmentPath, 'ordinary.txt');
+        const res = await uploadFiles({
+          url: assessmentUrl + '/file_view',
+          workingPath: path.join(courseRepo.courseLiveDir, assessmentPath),
+          files: [
+            { filename: 'ordinary.txt', contents: Buffer.from('ordinary file') },
+            { filename: 'infoAssessment.json', contents },
+          ],
+        });
+
+        assert.equal(res.status, 400);
+        assert.include(await res.text(), 'must contain a valid UTF-8 JSON object');
+        assert.isFalse(await fs.pathExists(ordinaryPath));
+        assert.isTrue((await fs.readFile(metadataPath)).equals(originalContents));
+      });
+
+      it('accepts a valid metadata replacement', async () => {
+        const absolutePath = path.join(courseRepo.courseLiveDir, infoAssessmentPath);
+        const contents = Buffer.from((await fs.readFile(absolutePath, 'utf8')) + '\n');
+        const res = await uploadFiles({
+          url: assessmentUrl + '/file_view',
+          filePath: infoAssessmentPath,
+          files: [{ filename: 'replacement.json', contents }],
+        });
+
+        assert.isTrue(res.ok);
+        assert.isTrue((await fs.readFile(absolutePath)).equals(contents));
+      });
+
+      it('allows ordinary JSON assets, including ones named info.json', async () => {
+        const workingPath = path.join(
+          courseRepo.courseLiveDir,
+          questionPath,
+          'clientFilesQuestion',
+        );
+        const files = [
+          { filename: 'arbitrary.json', contents: Buffer.from('not JSON') },
+          { filename: 'info.json', contents: Buffer.from('[]') },
+        ];
+        const res = await uploadFiles({
+          url: courseInstanceQuestionUrl + '/file_view',
+          workingPath,
+          files,
+        });
+
+        assert.isTrue(res.ok);
+        for (const file of files) {
+          assert.isTrue(
+            (await fs.readFile(path.join(workingPath, file.filename))).equals(file.contents),
+          );
+        }
+      });
+    });
+
     describe('verify file handlers', function () {
       verifyFileData.forEach((element) => {
         doFiles(element);
@@ -747,6 +823,43 @@ function waitForJobSequence(
       await helperServer.waitForJobSequenceStatus(locals.job_sequence_id!, expectedResult);
     });
   });
+}
+
+async function uploadFiles({
+  url,
+  filePath,
+  workingPath,
+  files,
+}: {
+  url: string;
+  filePath?: string;
+  workingPath?: string;
+  files: { filename: string; contents: Buffer }[];
+}) {
+  const getResponse = await fetch(url);
+  assert.isTrue(getResponse.ok);
+  const $ = cheerio.load(await getResponse.text());
+  const uploadButton =
+    filePath == null
+      ? $('#instructorFileUploadForm-New')
+      : $(`tr:has(a:contains("${path.basename(filePath)}"))`).find(
+          'button[id^="instructorFileUploadForm-"]',
+        );
+  assert.lengthOf(uploadButton, 1);
+  const uploadForm = cheerio.load(uploadButton.attr('data-bs-content')!);
+  const csrfToken = uploadForm('input[name="__csrf_token"]').attr('value')!;
+  assert.isString(csrfToken);
+
+  const formData = new FormData();
+  formData.append('__action', 'upload_file');
+  formData.append('__csrf_token', csrfToken);
+  if (filePath != null) formData.append('file_path', filePath);
+  if (workingPath != null) formData.append('working_path', workingPath);
+  for (const file of files) {
+    formData.append('files', new Blob([Buffer.from(file.contents)]), file.filename);
+  }
+
+  return await fetch(url, { method: 'POST', body: formData });
 }
 
 function doFiles(data: {
