@@ -123,6 +123,8 @@ def test_set_notation_is_rejected_by_default() -> None:
         ("finite-set", "{1, 2}"),
         ("finite-set", "{}"),
         ("interval", "[1, 2]"),
+        ("interval", "(-infty, infty)"),
+        ("interval", "(-infty, 0) U [0, infty)"),
         ("interval", "{}"),
         ("finite-set, expression", "{1, 2}"),
         ("finite-set, expression", "x + 1"),
@@ -270,16 +272,20 @@ def test_prepare_rejects_disallowed_correct_answer_type() -> None:
         symbolic_input.prepare(element_html, make_question_data())
 
 
-def test_prepare_accepts_allowed_correct_answer_type() -> None:
+@pytest.mark.parametrize(
+    "correct_answer",
+    ["[1, 2] U [3, 4]", "(-infty, infty)", "(-infty, 0) U [0, infty)"],
+)
+def test_prepare_accepts_allowed_correct_answer_type(correct_answer: str) -> None:
     element_html = build_element_html(
         'allowed-types="interval"',
-        'correct-answer="[1, 2] U [3, 4]"',
+        f'correct-answer="{correct_answer}"',
     )
     data = make_question_data()
 
     symbolic_input.prepare(element_html, data)
 
-    assert data["correct_answers"]["test"] == "[1, 2] U [3, 4]"
+    assert data["correct_answers"]["test"] == correct_answer
 
 
 @pytest.mark.parametrize(
