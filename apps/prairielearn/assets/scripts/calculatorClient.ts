@@ -10,6 +10,15 @@ import { type Mathfield, MathfieldElement, convertLatexToAsciiMath } from 'mathl
 
 import { onDocumentReady } from '@prairielearn/browser-utils';
 
+import {
+  type RestrictedCalculatorMode,
+  isSupportedCalculatorExpression,
+  isSupportedCalculatorInput,
+  parseCalculatorExpression,
+} from '../../src/lib/client/calculatorRestrictions.js';
+
+import { configureCalculatorInput, guardCalculatorInput } from './calculatorInput.js';
+
 interface DrawerElements {
   drawer: HTMLElement;
   fab: HTMLElement;
@@ -42,19 +51,28 @@ const DEFAULT_CALCULATOR_DATA: CalculatorLocalData = {
   isOpen: false,
 };
 
-function getCalculatorData(storageKey: string): CalculatorLocalData {
-  const raw = localStorage.getItem(storageKey);
+type CalculatorStorage = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>;
+
+function getCalculatorData(
+  storageKey: string,
+  storage: CalculatorStorage = localStorage,
+): CalculatorLocalData {
+  const raw = storage.getItem(storageKey);
   if (!raw) return { ...DEFAULT_CALCULATOR_DATA };
   try {
     return JSON.parse(raw);
   } catch {
-    localStorage.removeItem(storageKey);
+    storage.removeItem(storageKey);
     return { ...DEFAULT_CALCULATOR_DATA };
   }
 }
 
-function setCalculatorData(storageKey: string, data: CalculatorLocalData) {
-  localStorage.setItem(storageKey, JSON.stringify(data));
+function setCalculatorData(
+  storageKey: string,
+  data: CalculatorLocalData,
+  storage: CalculatorStorage,
+) {
+  storage.setItem(storageKey, JSON.stringify(data));
 }
 
 const clipboardSyntax = new LatexSyntax();
@@ -113,10 +131,17 @@ export function withCalculatorTimeLimit<T>(
   return ce.withTimeLimit({ ms: 500, label: 'prairielearn:calculator' }, callback);
 }
 
-export function initCalculator(storageKey: string, { drawer, fab, fabClose }: DrawerElements) {
-  showPanel('main', drawer);
+export function initCalculator(
+  storageKey: string,
+  { drawer, fab, fabClose }: DrawerElements,
+  restrictedMode?: RestrictedCalculatorMode,
+  storage: CalculatorStorage = localStorage,
+) {
+  const initialPanel =
+    drawer.querySelector<HTMLInputElement>('[data-panel]:checked')?.dataset.panel;
+  if (initialPanel) showPanel(initialPanel, drawer);
   initColumnNavigation(drawer);
-  initDrawerUI(drawer, fab, fabClose, storageKey);
+  const disposeDrawer = initDrawerUI(drawer, fab, fabClose, storageKey, storage);
   const ce = new ComputeEngine();
   ce.pushScope();
   const calculatorInputElement = ensureElement(
@@ -139,6 +164,10 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
   const displayModeSwitch = ensureElement(drawer.querySelector<HTMLElement>('#displayModeSwitch'));
   const angleModeSwitch = ensureElement(drawer.querySelector<HTMLElement>('#angleModeSwitch'));
 
+  if (restrictedMode) {
+    guardCalculatorInput(calculatorInputElement, restrictedMode, showCalculationError);
+  }
+
   const latexFieldOnExport = (_mf: Mathfield, latex: string) => clipboardOutput(latex);
 
   calculatorInputElement.onExport = latexFieldOnExport;
@@ -146,6 +175,7 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
 
   MathfieldElement.soundsDirectory = null;
   calculatorInputElement.menuItems = [];
+  calculatorInputElement.popoverPolicy = restrictedMode ? 'off' : 'auto';
   // Prevent MathLive's built-in virtual keyboard from appearing on touch devices,
   // since the calculator provides its own custom on-screen keyboard.
   // Note: the HTML attribute `math-virtual-keyboard-policy` doesn't seem to work, so we set it here via JS.
@@ -205,16 +235,15 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
     }, delay);
   });
 
-  // Data from localStorage
-  const calculatorLocalData = localStorage.getItem(storageKey);
+  const calculatorLocalData = storage.getItem(storageKey);
   if (!calculatorLocalData) {
-    setCalculatorData(storageKey, { ...DEFAULT_CALCULATOR_DATA, isOpen: true });
+    setCalculatorData(storageKey, { ...DEFAULT_CALCULATOR_DATA, isOpen: true }, storage);
   } else {
-    const data = getCalculatorData(storageKey);
-    for (const historyItem of data.history) {
-      addHistoryItem(historyItem);
-    }
-    restoreCalculatorDefinitions(data.variable);
+    const data = getCalculatorData(storageKey, storage);
+    // Stored and displayed history must have matching indexes for angle-mode edits.
+    data.history = data.history.filter(addHistoryItem);
+    setCalculatorData(storageKey, data, storage);
+    if (!restrictedMode) restoreCalculatorDefinitions(data.variable);
 
     // Set ans to the last history item's result, or \bot if no history
     const items = Array.from(historyPanel.querySelectorAll<HTMLElement>('.history-item'));
@@ -318,6 +347,11 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
 
     try {
       return withCalculatorTimeLimit(ce, () => {
+        if (restrictedMode) {
+          const raw = parseCalculatorExpression(input, restrictedMode);
+          const supported = isSupportedCalculatorExpression(raw, restrictedMode);
+          if (!supported) return null;
+        }
         const savedVariables = getCalculatorDefinitions();
         const savedAns = ce.symbol('ans', { autoDeclare: false }).valueDefinition?.value;
 
@@ -418,7 +452,7 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
       return;
     }
 
-    const data = getCalculatorData(storageKey);
+    const data = getCalculatorData(storageKey, storage);
 
     // Reject expressions using `ans` when there is no prior history
     if (data.history.length === 0 && input.includes('{ans}')) {
@@ -452,6 +486,16 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
 
     // Add to history
     if (addToHistory) {
+      const historyItem: HistoryItem = {
+        input,
+        displayed,
+        angleMode,
+      };
+      if (!addHistoryItem(historyItem)) {
+        showCalculationError();
+        return;
+      }
+
       try {
         data.variable = variables;
         restoreCalculatorDefinitions(variables);
@@ -461,19 +505,13 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
         console.error('Failed to update calculator state:', e);
       }
 
-      const historyItem: HistoryItem = {
-        input,
-        displayed,
-        angleMode,
-      };
-      addHistoryItem(historyItem);
       data.history.push(historyItem);
 
       calculatorInputElement.value = '';
       calculatorOutput.value = '';
     }
     data.temp_input = calculatorInputElement.value;
-    setCalculatorData(storageKey, data);
+    setCalculatorData(storageKey, data, storage);
   }
 
   // Clear history button
@@ -481,11 +519,11 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
     historyPanel.innerHTML = '';
     clearHistoryBtn.classList.add('d-none');
 
-    const data = getCalculatorData(storageKey);
+    const data = getCalculatorData(storageKey, storage);
     data.history = [];
     data.variable = [];
     data.temp_input = null;
-    setCalculatorData(storageKey, data);
+    setCalculatorData(storageKey, data, storage);
 
     ce.popScope();
     ce.pushScope();
@@ -608,7 +646,7 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
 
   setupButtonEvents(buttonActions);
 
-  // Panel switching (main / abc / func keyboards)
+  // Panel switching
   drawer.querySelectorAll<HTMLInputElement>('[data-panel]').forEach((radio) => {
     radio.addEventListener('click', () => {
       const panel = radio.dataset.panel;
@@ -652,6 +690,8 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
     }
   }
   calculatorInputElement.addEventListener('keydown', (ev) => {
+    // Enter can accept an IME candidate without submitting the calculation.
+    if (ev.isComposing) return;
     if (
       shouldAutoInsertAns &&
       calculatorInputElement.value.length === 0 &&
@@ -684,6 +724,8 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
     '**': '#@^{(#?)}',
     '^': '#@^{(#?)}',
   };
+
+  if (restrictedMode) configureCalculatorInput(calculatorInputElement, restrictedMode);
 
   function hasError(json: MathJsonExpression): boolean {
     if (!Array.isArray(json)) return false;
@@ -749,8 +791,22 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
     }
   }
 
-  function addHistoryItem(dataHistoryItem: HistoryItem) {
+  // Previews can be replaced when their panel composition changes.
+  return () => {
+    clearTimeout(typingTimer);
+    disposeDrawer();
+  };
+
+  function addHistoryItem(dataHistoryItem: HistoryItem): boolean {
     const { input, displayed, angleMode } = dataHistoryItem;
+
+    if (
+      restrictedMode &&
+      (!isSupportedCalculatorInput(input, restrictedMode) ||
+        !isSupportedCalculatorInput(displayed, 'scientific'))
+    ) {
+      return false;
+    }
 
     const clone = document.importNode(historyTemplate.content, true);
 
@@ -826,17 +882,18 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
       // Persist the angle mode change to localStorage
       const items = Array.from(historyPanel.querySelectorAll<HTMLElement>('.history-item'));
       const domIndex = items.indexOf(historyItem);
-      const data = getCalculatorData(storageKey);
+      const data = getCalculatorData(storageKey, storage);
       const storageIndex = data.history.length - 1 - domIndex;
       if (storageIndex >= 0 && storageIndex < data.history.length) {
         data.history[storageIndex].angleMode = newMode;
-        setCalculatorData(storageKey, data);
+        setCalculatorData(storageKey, data, storage);
       }
     });
 
     historyPanel.insertBefore(clone, historyPanel.firstChild);
     historyPanel.scrollTop = 0;
     clearHistoryBtn.classList.remove('d-none');
+    return true;
   }
 }
 
@@ -844,25 +901,20 @@ function showPanel(panelClass: string, container: HTMLElement) {
   const panels = container.querySelectorAll<HTMLElement>('.keyboard');
   panels.forEach((panel) => (panel.style.display = 'none'));
 
-  const panelToShow = container.querySelectorAll<HTMLElement>(`.${panelClass}`);
+  const panelToShow = container.querySelectorAll<HTMLElement>(`#${panelClass}-keyboard`);
   panelToShow.forEach((panel) => (panel.style.display = 'flex'));
 }
 
 function initColumnNavigation(container: HTMLElement) {
-  setupKeyboardNav('main-keyboard', 'show-functions');
-  setupKeyboardNav('func-keyboard', 'show-trig');
-
-  function setupKeyboardNav(keyboardId: string, toggleClass: string) {
-    const keyboard = container.querySelector<HTMLElement>(`#${keyboardId}`);
-    if (!keyboard) return;
-
+  container.querySelectorAll<HTMLElement>('.keyboard').forEach((keyboard) => {
+    const toggleClass = keyboard.classList.contains('func') ? 'show-trig' : 'show-functions';
     keyboard.querySelectorAll('.col-nav').forEach((btn) => {
       btn.addEventListener('click', (e) => {
         e.preventDefault();
         keyboard.classList.toggle(toggleClass);
       });
     });
-  }
+  });
 }
 
 function initDrawerUI(
@@ -870,11 +922,14 @@ function initDrawerUI(
   fab: HTMLElement,
   fabClose: HTMLElement | null,
   storageKey: string,
+  storage: CalculatorStorage,
 ) {
+  const controller = new AbortController();
+
   function setIsOpen(value: boolean) {
-    const data = getCalculatorData(storageKey);
+    const data = getCalculatorData(storageKey, storage);
     data.isOpen = value;
-    setCalculatorData(storageKey, data);
+    setCalculatorData(storageKey, data, storage);
   }
 
   function openDrawer() {
@@ -928,8 +983,8 @@ function initDrawerUI(
       ev.preventDefault();
       startX = ev.clientX;
       startWidth = drawer.offsetWidth;
-      document.addEventListener('pointermove', onPointerMove);
-      document.addEventListener('pointerup', onPointerUp);
+      document.addEventListener('pointermove', onPointerMove, { signal: controller.signal });
+      document.addEventListener('pointerup', onPointerUp, { signal: controller.signal });
     });
   }
 
@@ -944,6 +999,7 @@ function initDrawerUI(
       }
     });
   }
+  return () => controller.abort();
 }
 
 export function registerCustomFunctions(ce: InstanceType<typeof ComputeEngine>) {
@@ -1028,7 +1084,7 @@ onDocumentReady(() => {
   const drawer = document.getElementById('calculatorDrawer');
   const fab = document.getElementById('calculatorFab');
   const fabClose = document.getElementById('calculatorFabClose');
-  if (!drawer || !fab) return;
+  if (!drawer || !fab || drawer.closest('[data-calculator-preview]')) return;
 
   const storageKey = drawer.dataset.storageKey ?? 'pl-calculator';
   let initialized = false;
@@ -1036,7 +1092,12 @@ onDocumentReady(() => {
   const initIfNeeded = () => {
     if (!initialized) {
       try {
-        initCalculator(storageKey, { drawer, fab, fabClose });
+        const mode = drawer.dataset.calculatorMode;
+        initCalculator(
+          storageKey,
+          { drawer, fab, fabClose },
+          mode === 'basic' || mode === 'scientific' ? mode : undefined,
+        );
         initialized = true;
       } catch (e) {
         console.error('Failed to initialize calculator:', e);

@@ -18,6 +18,15 @@ function uniqueArray<T extends z.ZodType>(schema: T) {
     .meta({ uniqueItems: true });
 }
 
+// TODO: added 'custom' type and more customizable options
+export const CalculatorTypeSchema = z
+  .enum(['basic', 'scientific', 'advanced'])
+  .describe('Calculator preset. Defaults to advanced, the unrestricted calculator.');
+export type CalculatorType = z.infer<typeof CalculatorTypeSchema>;
+export const CalculatorSettingsSchema = z.object({
+  type: CalculatorTypeSchema.optional(),
+});
+
 // TODO: This schema is being deprecated
 // https://github.com/PrairieLearn/PrairieLearn/issues/13545
 export const LegacyGroupRoleJsonSchema = z
@@ -321,7 +330,7 @@ export type ZoneQuestionBlockJsonInput = z.input<typeof ZoneQuestionBlockJsonSch
 
 const AssessmentToolJsonSchema = z.object({
   enabled: z.boolean().describe('Whether this assessment tool is enabled.'),
-  // leave room for additional keys in the future
+  type: CalculatorTypeSchema.optional(),
 });
 
 export const ZoneAssessmentJsonSchema = z.object({

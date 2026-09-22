@@ -609,6 +609,8 @@ async function syncAssessmentTools(
     const assessmentId = nameToIdMap?.[tid];
     if (!assessmentId) continue;
 
+    // Preserve existing tools when assessment syncing is skipped due to errors.
+    if (infofile.hasErrors(assessment)) continue;
     assessmentIds.push(assessmentId);
 
     if (assessment.data?.tools) {

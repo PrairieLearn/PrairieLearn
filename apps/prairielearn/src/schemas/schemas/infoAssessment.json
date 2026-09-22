@@ -302,6 +302,11 @@
           "enabled": {
             "type": "boolean",
             "description": "Whether this assessment tool is enabled."
+          },
+          "type": {
+            "type": "string",
+            "enum": ["basic", "scientific", "advanced"],
+            "description": "Calculator preset. Defaults to advanced, the unrestricted calculator."
           }
         },
         "required": ["enabled"]
@@ -799,6 +804,11 @@
               "enabled": {
                 "type": "boolean",
                 "description": "Whether this assessment tool is enabled."
+              },
+              "type": {
+                "type": "string",
+                "enum": ["basic", "scientific", "advanced"],
+                "description": "Calculator preset. Defaults to advanced, the unrestricted calculator."
               }
             },
             "required": ["enabled"]

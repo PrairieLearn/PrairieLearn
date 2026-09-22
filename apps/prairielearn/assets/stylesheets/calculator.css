@@ -97,12 +97,15 @@ math-field.force-light {
     visibility 0.3s;
   visibility: hidden;
   max-height: 80vh;
-  min-width: 460px;
+  min-width: min(460px, calc(100vw - 32px));
+  max-width: calc(100vw - 32px);
   border-radius: 8px 8px 0 0;
 }
 
 .calculator-drawer.open {
-  transform: translateY(0);
+  /* MathLive positions its fixed IME input using viewport coordinates. A transform
+   * here makes them drawer-relative and causes the browser to scroll its contents away. */
+  transform: none;
   visibility: visible;
 }
 
@@ -241,6 +244,12 @@ math-field.pl-calculator-output:focus {
   outline: none;
 }
 
+math-field.pl-calculator-output::part(placeholder) {
+  /* Match MathLive's math line-height instead of the inherited 1.5 so replacing
+   * the placeholder with a result doesn't shrink the output field. */
+  line-height: 1.2;
+}
+
 /* #endregion */
 
 /* #region History panel */
@@ -311,18 +320,13 @@ math-field.pl-calculator-history-text:focus {
   font-size: 0.85rem;
 }
 
-/* Hide abc and func keyboards by default, show only main */
-#abc-keyboard,
-#func-keyboard {
+/* The client selects the configured initial keyboard. */
+.keyboard {
   display: none;
 }
 
-#main-keyboard {
-  display: flex;
-}
-
 /* Shared keyboard dimensions */
-#main-keyboard,
+.arithmetic-keyboard,
 #abc-keyboard,
 #func-keyboard {
   height: 200px;
@@ -348,7 +352,7 @@ math-field.pl-calculator-history-text:focus {
   text-transform: uppercase;
 }
 
-#main-keyboard .btn,
+.arithmetic-keyboard .btn,
 #func-keyboard .btn {
   min-width: 50px;
   flex: 1;
@@ -402,35 +406,35 @@ math-field.pl-calculator-history-text:focus {
 
 /* #region Keyboard column sizing & responsive breakpoints */
 
-#main-keyboard .col-functions,
-#main-keyboard .col-numbers {
+.arithmetic-keyboard .col-functions,
+.arithmetic-keyboard .col-numbers {
   width: 280px;
 }
 
-#main-keyboard .col-extras {
+.arithmetic-keyboard .col-extras {
   width: 130px;
 }
 
 /* Breakpoint: hide functions column, show chevron to toggle */
 @container calculator (max-width: 740px) {
-  #main-keyboard .col-functions {
+  .arithmetic-keyboard .col-functions {
     display: none !important;
   }
 
-  #main-keyboard .col-nav-left {
+  .arithmetic-keyboard .col-nav-left {
     display: flex;
   }
 
-  #main-keyboard.show-functions .col-functions {
+  .arithmetic-keyboard.show-functions .col-functions {
     display: flex !important;
   }
-  #main-keyboard.show-functions .col-numbers {
+  .arithmetic-keyboard.show-functions .col-numbers {
     display: none !important;
   }
-  #main-keyboard.show-functions .col-nav-left {
+  .arithmetic-keyboard.show-functions .col-nav-left {
     display: none;
   }
-  #main-keyboard.show-functions .col-nav-right {
+  .arithmetic-keyboard.show-functions .col-nav-right {
     display: flex;
   }
 }
@@ -473,3 +477,29 @@ math-field.pl-calculator-history-text:focus {
 }
 
 /* #endregion */
+
+@container calculator (max-width: 460px) {
+  .arithmetic-keyboard .col-functions,
+  .arithmetic-keyboard .col-numbers {
+    width: auto;
+    min-width: 0;
+    flex: 2 1 0 !important;
+  }
+
+  .arithmetic-keyboard .col-extras {
+    width: auto;
+    min-width: 0;
+    flex: 1 1 0 !important;
+  }
+
+  .arithmetic-keyboard .btn {
+    min-width: 0;
+    margin: 2px;
+    padding-inline: 2px;
+    font-size: 0.9rem;
+  }
+}
+[data-calculator-preview] .calculator-fab,
+[data-calculator-preview] .calculator-drawer {
+  bottom: var(--calculator-preview-bottom, 0px);
+}

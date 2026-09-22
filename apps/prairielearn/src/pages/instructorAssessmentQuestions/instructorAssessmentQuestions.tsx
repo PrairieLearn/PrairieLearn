@@ -8,6 +8,7 @@ import { Hydrate } from '@prairielearn/react/server';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 import { JsonFromStringSchema, parseRequestBody } from '@prairielearn/zod';
 
+import { CalculatorPreviewAssets } from '../../components/CalculatorAssets.js';
 import { InsufficientCoursePermissionsCardPage } from '../../components/InsufficientCoursePermissionsCard.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { selectAssessmentQuestions } from '../../lib/assessment-question.js';
@@ -31,7 +32,11 @@ import {
 } from '../../models/group.js';
 import { selectCourseHasQuestions } from '../../models/questions.js';
 import { resetVariantsForAssessmentQuestion } from '../../models/variant.js';
-import { type EnumAssessmentTool, ZoneAssessmentJsonSchema } from '../../schemas/infoAssessment.js';
+import {
+  CalculatorSettingsSchema,
+  type EnumAssessmentTool,
+  ZoneAssessmentJsonSchema,
+} from '../../schemas/infoAssessment.js';
 
 import { AssessmentQuestionsEditor } from './components/AssessmentEditor.js';
 import { serializeZonesForJson } from './utils/dataTransform.js';
@@ -106,7 +111,10 @@ router.get(
     for (const row of zoneToolRows) {
       const zone = jsonZones[row.zone_number - 1];
       zone.tools ??= {};
-      zone.tools[row.tool] = { enabled: row.enabled };
+      zone.tools[row.tool] = {
+        enabled: row.enabled,
+        ...CalculatorSettingsSchema.parse(row.settings),
+      };
     }
 
     // Load assessment-level tool defaults for zone inheritance display.
@@ -145,6 +153,7 @@ router.get(
     res.send(
       PageLayout({
         resLocals: res.locals,
+        postContent: CalculatorPreviewAssets(),
         pageTitle: 'Questions',
         headContent: [
           compiledScriptTag('instructorAssessmentQuestionsClient.ts'),
@@ -169,6 +178,13 @@ router.get(
               jsonZones={jsonZones}
               assessment={pageContext.assessment}
               assessmentToolDefaults={assessmentToolDefaults}
+              assessmentCalculatorType={
+                CalculatorSettingsSchema.parse(
+                  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+                  assessmentToolDefaultRows.find((row) => row.tool === 'calculator')?.settings ??
+                    {},
+                ).type
+              }
               groupsConfigured={groupsConfigured}
               groupRoles={groupRoles}
               assessmentCanView={assessmentCanView}

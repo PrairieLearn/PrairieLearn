@@ -2,11 +2,8 @@ import assert from 'node:assert';
 
 import { html, unsafeHtml } from '@prairielearn/html';
 
-import {
-  CalculatorDrawer,
-  CalculatorDrawerHeadScripts,
-  CalculatorDrawerToggle,
-} from '../../components/CalculatorDrawer.js';
+import { CalculatorDrawerHeadScripts } from '../../components/CalculatorAssets.js';
+import { CalculatorDrawer, CalculatorDrawerToggle } from '../../components/CalculatorDrawer.js';
 import { InstructorInfoPanel } from '../../components/InstructorInfoPanel.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { QuestionContainer } from '../../components/QuestionContainer.js';
