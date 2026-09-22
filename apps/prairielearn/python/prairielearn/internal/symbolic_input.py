@@ -22,7 +22,7 @@ class DisplayType(Enum):
 
 @dataclass(frozen=True, slots=True)
 class SymbolicSubmissionParseSuccess:
-    expr: sympy.Expr | Literal[""]
+    expr: psu.SympyValue | Literal[""]
     json: psu.SympyJson | Literal[""]
 
 
@@ -46,11 +46,7 @@ def _format_submission_for_sympy(
         r"(\|\s*[a-zA-Z0-9(+\-]([^|]*[a-zA-Z0-9!)])\s*\|)|(\|\s*[a-zA-Z0-9]\s*\|)"
     )
     search_from = 0
-    while True:
-        match = pattern.search(submission, search_from)
-        if not match:
-            break
-
+    while match := pattern.search(submission, search_from):
         content = match.group(0)[1:-1]
         if allow_sets and "," in content:
             search_from = match.start() + 1
@@ -267,7 +263,9 @@ class RenderConfig:
         return allowed_sympy_types_include_sets(self.allowed_types)
 
 
-def replace_imaginary_for_display(expr: sympy.Expr, imaginary_unit: str) -> sympy.Basic:
+def replace_imaginary_for_display(
+    expr: psu.SympyValue, imaginary_unit: str
+) -> sympy.Basic:
     return expr.subs(sympy.I, sympy.Symbol(imaginary_unit))
 
 
