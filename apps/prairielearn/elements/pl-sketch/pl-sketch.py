@@ -1267,17 +1267,16 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
         json.dumps({"gradeable": gradeable}).encode("utf-8")
     ).decode("utf-8")
 
-    # Setting submitted_answers because it is needed for invoking grading below
-    submitted_answers = data.setdefault("submitted_answers", {})
-    submitted_answers[key] = data["raw_submitted_answers"][key]
+    # submitted_answers is not valid test-phase data, so provide it only to the grader.
+    grading_data: pl.QuestionData = copy.copy(data)
+    grading_data["submitted_answers"] = {
+        key: data["raw_submitted_answers"][key],
+    }
 
     # Determine expected grading result by actually running the grading logic
     # Note that depending on the grading criteria and provided solution, it is both possible that the incorrect
     # submission gets some (or all) points, and that the supposedly correct solution gets less than full points
-    data["partial_scores"][name] = _grade_with_staging(name, data, weight)
-
-    # Remove only the key we added, since we are not allowed to set submitted_answers in test()
-    submitted_answers.pop(key, None)
+    data["partial_scores"][name] = _grade_with_staging(name, grading_data, weight)
 
 
 def _solution_to_gradeable(
