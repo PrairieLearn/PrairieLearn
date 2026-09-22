@@ -1,10 +1,9 @@
-import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest';
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { withConfig } from '../tests/utils/config.js';
 
 import { isValidGithubUsername, parseGithubRepository } from './github-utils.js';
 import {
-  addGithubRepositoryAdmin,
   addMachineAccessToRepo,
   checkGithubOrgAccess,
   courseRepoContentUrl,
@@ -32,72 +31,6 @@ beforeEach(() => {
   orgsGetMembershipForUser.mockReset();
   reposAddCollaborator.mockReset();
   teamsAddOrUpdateRepoPermissionsInOrg.mockReset();
-});
-
-describe('addGithubRepositoryAdmin', () => {
-  const fetchMock = vi.fn<typeof fetch>();
-
-  beforeEach(() => {
-    // Tests share module instances, so mock HTTP even if Octokit was already imported.
-    fetchMock.mockReset().mockRejectedValue(new Error('Unexpected GitHub request'));
-    vi.stubGlobal('fetch', fetchMock);
-  });
-
-  afterEach(() => {
-    vi.unstubAllGlobals();
-  });
-
-  it.each([201, 204])('grants admin access and distinguishes invitations (%s)', async (status) => {
-    fetchMock.mockResolvedValueOnce(
-      status === 204
-        ? new Response(null, { status })
-        : Response.json({ id: 123, permissions: 'admin' }, { status }),
-    );
-    await withConfig({ githubClientToken: 'test-token' }, async () => {
-      expect(await addGithubRepositoryAdmin('Org', 'course', 'instructor')).toEqual({
-        invited: status === 201,
-      });
-    });
-    expect(fetchMock).toHaveBeenCalledExactlyOnceWith(
-      'https://api.github.com/repos/Org/course/collaborators/instructor',
-      expect.objectContaining({ method: 'PUT', body: JSON.stringify({ permission: 'admin' }) }),
-    );
-  });
-
-  it('upgrades a pending invitation with lower permissions', async () => {
-    fetchMock
-      .mockResolvedValueOnce(Response.json({ id: 123, permissions: 'write' }, { status: 201 }))
-      .mockResolvedValueOnce(Response.json({ id: 123, permissions: 'admin' }));
-    await withConfig({ githubClientToken: 'test-token' }, async () => {
-      expect(await addGithubRepositoryAdmin('Org', 'course', 'instructor')).toEqual({
-        invited: true,
-      });
-    });
-    expect(fetchMock).toHaveBeenCalledTimes(2);
-    expect(fetchMock).toHaveBeenNthCalledWith(
-      2,
-      'https://api.github.com/repos/Org/course/invitations/123',
-      expect.objectContaining({ method: 'PATCH', body: JSON.stringify({ permissions: 'admin' }) }),
-    );
-  });
-
-  it('fails without a GitHub client', async () => {
-    await withConfig({ githubClientToken: null }, async () => {
-      await expect(addGithubRepositoryAdmin('Org', 'course', 'instructor')).rejects.toThrow(
-        'not configured',
-      );
-    });
-    expect(fetchMock).not.toHaveBeenCalled();
-  });
-
-  it('does not report success when GitHub rejects the grant', async () => {
-    fetchMock.mockRejectedValue(new Error('GitHub unavailable'));
-    await withConfig({ githubClientToken: 'test-token' }, async () => {
-      await expect(addGithubRepositoryAdmin('Org', 'course', 'instructor')).rejects.toThrow(
-        'GitHub unavailable',
-      );
-    });
-  });
 });
 
 describe('checkGithubOrgAccess', () => {

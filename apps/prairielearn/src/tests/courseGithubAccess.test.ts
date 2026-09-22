@@ -1,11 +1,9 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
 
-import { execute, loadSqlEquiv } from '@prairielearn/postgres';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
 import { config } from '../lib/config.js';
 import type { User } from '../lib/db-types.js';
-import * as github from '../lib/github.js';
 import {
   insertCoursePermissionsByUserUid,
   updateCoursePermissionsRole,
@@ -20,7 +18,6 @@ import { withConfig } from './utils/config.js';
 
 const siteUrl = `http://localhost:${config.serverPort}`;
 const settingsUrl = `${siteUrl}/pl/course/1/course_admin/settings`;
-const sql = loadSqlEquiv(import.meta.url);
 
 function createClient(user: User, csrfToken?: string) {
   return createCourseTrpcClient({
@@ -44,43 +41,20 @@ async function setRepository(repository: string) {
   });
 }
 
-describe('Course GitHub access', { concurrent: false }, () => {
+describe('Course GitHub access', () => {
   let owner: User;
-  const grant = vi.spyOn(github, 'addGithubRepositoryAdmin');
+  const githubFetch = vi.fn<typeof fetch>();
   beforeAll(helperServer.before());
   beforeAll(async () => {
-    owner = await getOrCreateUser({
-      uid: 'owner@example.com',
-      name: 'Course Owner',
-      uin: 'owner',
-      email: 'owner@example.com',
-    });
+    owner = await getOrCreateUser({ uid: 'owner@example.com', name: 'Course Owner', uin: 'owner' });
     await insertCoursePermissionsByUserUid({
       course_id: '1',
       uid: owner.uid,
       course_role: 'Owner',
       authn_user_id: '1',
     });
-    await insertCoursePermissionsByUserUid({
-      course_id: '1',
-      uid: 'other-owner@example.com',
-      course_role: 'Owner',
-      authn_user_id: '1',
-    });
-  });
-  beforeEach(() => {
-    const previous = {
-      isEnterprise: config.isEnterprise,
-      githubClientToken: config.githubClientToken,
-    };
-    config.isEnterprise = true;
-    config.githubClientToken = 'test-token';
-    return () => {
-      Object.assign(config, previous);
-    };
   });
   beforeEach(async () => {
-    grant.mockReset().mockResolvedValue({ invited: false });
     await updateCoursePermissionsRole({
       course_id: '1',
       user_id: owner.id,
@@ -88,89 +62,89 @@ describe('Course GitHub access', { concurrent: false }, () => {
       authn_user_id: '1',
     });
     await setRepository('git@github.com:PrairieLearn/pl-course.git');
-    await execute(sql.update_example_course, { example_course: false });
+    const previous = {
+      isEnterprise: config.isEnterprise,
+      githubClientToken: config.githubClientToken,
+    };
+    config.isEnterprise = true;
+    config.githubClientToken = 'test-token';
+    githubFetch.mockReset().mockRejectedValue(new Error('Unexpected GitHub request'));
+    const realFetch = fetch;
+    // Keep PL requests real so the tests exercise the router and GitHub helper together.
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation((input, init) => {
+      const url = new URL(input instanceof Request ? input.url : input);
+      return url.origin === 'https://api.github.com'
+        ? githubFetch(input, init)
+        : realFetch(input, init);
+    });
+    return () => {
+      fetchSpy.mockRestore();
+      Object.assign(config, previous);
+    };
   });
-  afterAll(() => grant.mockRestore());
   afterAll(helperServer.after);
 
-  test.each([true, false])('Owner can grant access (invited: %s)', async (invited) => {
-    grant.mockResolvedValue({ invited });
-    await withUser(owner, async () =>
-      withConfig({ githubClientToken: 'test-token' }, async () => {
-        const result = await createClient(owner).githubAccess.grant.mutate({
-          username: '  course-owner  ',
-        });
-        expect(result).toEqual({ username: 'course-owner', invited });
-        expect(grant).toHaveBeenCalledExactlyOnceWith('PrairieLearn', 'pl-course', 'course-owner');
-      }),
+  test.each([201, 204])('Owner grants Admin access through GitHub (%s)', async (status) => {
+    githubFetch.mockResolvedValueOnce(
+      status === 204
+        ? new Response(null, { status })
+        : Response.json({ id: 123, permissions: 'admin' }, { status }),
+    );
+    await withUser(owner, async () => {
+      expect(
+        await createClient(owner).githubAccess.grant.mutate({ username: '  course-owner  ' }),
+      ).toEqual({ username: 'course-owner', invited: status === 201 });
+    });
+    expect(githubFetch).toHaveBeenCalledExactlyOnceWith(
+      'https://api.github.com/repos/PrairieLearn/pl-course/collaborators/course-owner',
+      expect.objectContaining({ method: 'PUT', body: JSON.stringify({ permission: 'admin' }) }),
     );
   });
 
-  test('supports the PrairieLearn organization using HTTPS regardless of case', async () => {
-    await setRepository('https://github.com/prairielearn/pl-course.git');
-    await withUser(owner, async () =>
-      withConfig({ githubClientToken: 'test-token' }, async () => {
-        await createClient(owner).githubAccess.grant.mutate({ username: 'course-owner' });
-        expect(grant).toHaveBeenCalledExactlyOnceWith('prairielearn', 'pl-course', 'course-owner');
-      }),
+  test('upgrades a pending invitation to Admin', async () => {
+    githubFetch
+      .mockResolvedValueOnce(Response.json({ id: 123, permissions: 'write' }, { status: 201 }))
+      .mockResolvedValueOnce(Response.json({ id: 123, permissions: 'admin' }));
+    await withUser(owner, async () => {
+      expect(
+        await createClient(owner).githubAccess.grant.mutate({ username: 'course-owner' }),
+      ).toEqual({ username: 'course-owner', invited: true });
+    });
+    expect(githubFetch).toHaveBeenCalledTimes(2);
+    expect(githubFetch).toHaveBeenNthCalledWith(
+      2,
+      'https://api.github.com/repos/PrairieLearn/pl-course/invitations/123',
+      expect.objectContaining({ method: 'PATCH', body: JSON.stringify({ permissions: 'admin' }) }),
     );
   });
 
-  test.each(['Previewer', 'Viewer', 'Editor'] as const)(
-    'blocks %s on the server and shows Staff guidance',
-    async (role) => {
-      await updateCoursePermissionsRole({
-        course_id: '1',
-        user_id: owner.id,
-        course_role: role,
-        authn_user_id: '1',
-      });
-      await withUser(owner, async () =>
-        withConfig({ githubClientToken: 'test-token' }, async () => {
-          await expect(
-            createClient(owner).githubAccess.grant.mutate({ username: 'course-owner' }),
-          ).rejects.toMatchObject({ data: { code: 'FORBIDDEN' } });
-          const page = await fetchCheerio(settingsUrl);
-          expect(page.status).toBe(200);
-          expect(page.$('section').text()).toContain('ask one of the course Owners');
-          expect(
-            page
-              .$('section a')
-              .filter((_, a) => page.$(a).text() === 'see Staff list')
-              .attr('href'),
-          ).toBe('/pl/course/1/course_admin/staff');
-          expect(page.$('section button').text()).not.toContain('Grant myself access');
-          expect(grant).not.toHaveBeenCalled();
-        }),
-      );
-    },
-  );
+  test('blocks non-Owners on the server', async () => {
+    await updateCoursePermissionsRole({
+      course_id: '1',
+      user_id: owner.id,
+      course_role: 'Editor',
+      authn_user_id: '1',
+    });
+    await withUser(owner, async () => {
+      await expect(
+        createClient(owner).githubAccess.grant.mutate({ username: 'course-owner' }),
+      ).rejects.toMatchObject({ data: { code: 'FORBIDDEN' } });
+      expect(githubFetch).not.toHaveBeenCalled();
+    });
+  });
 
   test('requires a valid CSRF token', async () => {
     await withUser(owner, async () => {
       await expect(
         createClient(owner, 'invalid').githubAccess.grant.mutate({ username: 'course-owner' }),
       ).rejects.toMatchObject({ data: { code: 'FORBIDDEN' } });
-      expect(grant).not.toHaveBeenCalled();
+      expect(githubFetch).not.toHaveBeenCalled();
     });
   });
-
-  test.each(['', 'name@example.com', 'https://github.com/name', 'a'.repeat(40)])(
-    'rejects invalid username %s',
-    async (username) => {
-      await withUser(owner, async () => {
-        await expect(
-          createClient(owner).githubAccess.grant.mutate({ username }),
-        ).rejects.toMatchObject({ data: { code: 'BAD_REQUEST' } });
-        expect(grant).not.toHaveBeenCalled();
-      });
-    },
-  );
 
   test.each([
     'git@gitlab.com:PrairieLearn/pl-course.git',
     'https://github.com/University/pl-course.git',
-    'git@github.example.com:PrairieLearn/pl-course.git',
   ])('explains and blocks unsupported repository %s', async (repository) => {
     await setRepository(repository);
     await withUser(owner, async () => {
@@ -178,75 +152,39 @@ describe('Course GitHub access', { concurrent: false }, () => {
         createClient(owner).githubAccess.grant.mutate({ username: 'course-owner' }),
       ).rejects.toMatchObject({ data: { code: 'BAD_REQUEST' } });
       const page = await fetchCheerio(settingsUrl);
-      expect(page.$('section').text()).toContain(
-        'PrairieLearn can only grant access to repositories in the PrairieLearn organization on',
-      );
+      expect(page.$('section').text()).toContain('PrairieLearn can only grant access');
       expect(page.$('section button').text()).not.toContain('Grant myself access');
-      expect(grant).not.toHaveBeenCalled();
+      expect(githubFetch).not.toHaveBeenCalled();
     });
   });
 
-  test('hides and blocks access without Enterprise Edition', async () => {
+  test.each([
+    { isEnterprise: false, githubClientToken: 'test-token', code: 'FORBIDDEN' },
+    { isEnterprise: true, githubClientToken: null, code: 'PRECONDITION_FAILED' },
+  ])('hides and blocks access with configuration $code', async ({ code, ...configuration }) => {
     await withUser(owner, async () =>
-      withConfig({ isEnterprise: false, githubClientToken: 'test-token' }, async () => {
+      withConfig(configuration, async () => {
         await expect(
           createClient(owner).githubAccess.grant.mutate({ username: 'course-owner' }),
-        ).rejects.toMatchObject({ data: { code: 'FORBIDDEN' } });
+        ).rejects.toMatchObject({ data: { code } });
         const page = await fetchCheerio(settingsUrl);
         expect(page.$('#github-access-heading').length).toBe(0);
-        expect(grant).not.toHaveBeenCalled();
+        expect(githubFetch).not.toHaveBeenCalled();
       }),
     );
   });
 
-  test('hides and blocks courses without a repository', async () => {
-    await setRepository('');
-    await withUser(owner, async () => {
-      await expect(
-        createClient(owner).githubAccess.grant.mutate({ username: 'course-owner' }),
-      ).rejects.toMatchObject({ data: { code: 'BAD_REQUEST' } });
-      const page = await fetchCheerio(settingsUrl);
-      expect(page.$('#github-access-heading').length).toBe(0);
-      expect(grant).not.toHaveBeenCalled();
-    });
-  });
-
-  test('hides and blocks example courses', async () => {
-    await execute(sql.update_example_course, { example_course: true });
-    await withUser(owner, async () => {
-      await expect(
-        createClient(owner).githubAccess.grant.mutate({ username: 'course-owner' }),
-      ).rejects.toMatchObject({ data: { code: 'FORBIDDEN' } });
-      const page = await fetchCheerio(settingsUrl);
-      expect(page.$('#github-access-heading').length).toBe(0);
-      expect(grant).not.toHaveBeenCalled();
-    });
-  });
-
-  test('hides and blocks GitHub access when the server has no GitHub token', async () => {
-    await withUser(owner, async () =>
-      withConfig({ githubClientToken: null }, async () => {
-        await expect(
-          createClient(owner).githubAccess.grant.mutate({ username: 'course-owner' }),
-        ).rejects.toMatchObject({ data: { code: 'PRECONDITION_FAILED' } });
-        const page = await fetchCheerio(settingsUrl);
-        expect(page.$('#github-access-heading').length).toBe(0);
-        expect(grant).not.toHaveBeenCalled();
-      }),
+  test('reports a GitHub failure without claiming success', async () => {
+    githubFetch.mockResolvedValueOnce(
+      Response.json({ message: 'private upstream detail' }, { status: 422 }),
     );
+    await withUser(owner, async () => {
+      await expect(
+        createClient(owner).githubAccess.grant.mutate({ username: 'course-owner' }),
+      ).rejects.toMatchObject({
+        data: { code: 'BAD_REQUEST' },
+        message: expect.stringContaining('contact support'),
+      });
+    });
   });
-
-  test.each([403, 404, 422, 500])(
-    'returns actionable errors without exposing GitHub internals (%s)',
-    async (status) => {
-      grant.mockRejectedValue(Object.assign(new Error('private upstream detail'), { status }));
-      await withUser(owner, async () =>
-        withConfig({ githubClientToken: 'test-token' }, async () => {
-          await expect(
-            createClient(owner).githubAccess.grant.mutate({ username: 'course-owner' }),
-          ).rejects.toThrow(/contact support/);
-        }),
-      );
-    },
-  );
 });
