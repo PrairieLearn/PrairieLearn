@@ -1473,7 +1473,15 @@ def grade(element_html: str, data: QuestionData) -> None:
             return 0.0, None
         match grading:
             case "exact":
-                score = float(submitted_json == correct_json)
+                score = float(
+                    all(submitted[c] == correct[c] for c in config.components)
+                    and (
+                        config.index != "approach"
+                        or not config.allow_direction_input
+                        or submitted_json.get("direction")
+                        == correct_json.get("direction")
+                    )
+                )
             case "component":
                 earned = sum(
                     config.body_weight if component == "body" else 1
