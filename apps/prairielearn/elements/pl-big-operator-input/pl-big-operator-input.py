@@ -178,7 +178,7 @@ def _raw_correct_answer(
     return correct_answers.get(answer)
 
 
-def _binder_indexing(value: Any) -> Indexing | None:
+def _binder_indexing(value: sympy.Basic) -> Indexing | None:
     match value:
         case sympy.Limit():
             return "approaches"
@@ -499,7 +499,7 @@ def _config(html: str, data: QuestionData | None = None) -> RenderConfig:
     )
 
 
-def _coerce_sympy(value: Any) -> sympy.Expr:
+def _coerce_sympy(value: Any) -> psu.SympyValue:
     match value:
         case dict(d) if psu.is_sympy_json(d):
             serialized_variables = value.get("_variables")
@@ -514,7 +514,7 @@ def _coerce_sympy(value: Any) -> sympy.Expr:
                 allow_trig_functions=True,
             )
 
-        case sympy.Expr():
+        case sympy.Expr() | sympy.Set():
             return value
 
         case _:
@@ -523,7 +523,7 @@ def _coerce_sympy(value: Any) -> sympy.Expr:
             )
 
 
-def _as_sympy(value: Any) -> sympy.Expr | None:
+def _as_sympy(value: Any) -> psu.SympyValue | None:
     try:
         return _coerce_sympy(value)
     except (TypeError, ValueError):
