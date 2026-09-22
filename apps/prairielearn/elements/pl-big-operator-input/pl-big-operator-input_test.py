@@ -1787,6 +1787,38 @@ class TestCorrectAnswerRegressions:
 
 
 class TestLifecycleRegressions:
+    @pytest.mark.parametrize("representation", ["sympy", "big_operator"])
+    def test_positive_symbol_assumptions_survive_correct_answer_conversion(
+        self, representation: str
+    ) -> None:
+        k = sympy.Symbol("k")
+        a = sympy.Symbol("a", positive=True)
+        answer = (
+            pl.to_json(sympy.Sum(a, (k, 1, 2)))
+            if representation == "sympy"
+            else pbo.big_operator_to_json(
+                operator="Sum",
+                indexing="bounds",
+                index=k,
+                lower=1,
+                upper=2,
+                body=a,
+            )
+        )
+        markup = html(variables="a", **{"grading-method": "component"})
+        data = question_data(
+            answer,
+            raw_submitted_answers={
+                "op-lower": "1",
+                "op-upper": "2",
+                "op-body": "sqrt(a^2)",
+            },
+        )
+
+        prepare_parse_grade(markup, data)
+
+        assert data["partial_scores"]["op"] == {"score": 1.0, "weight": 1}
+
     @pytest.mark.parametrize(
         "assumed_symbol",
         ["index", "variable"],
