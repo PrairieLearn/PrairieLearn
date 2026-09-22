@@ -1485,7 +1485,7 @@ def grade(element_html: str, data: QuestionData) -> None:
                 score = float(
                     all(submitted[c] == correct[c] for c in config.components)
                     and (
-                        config.index != "approach"
+                        config.indexing != "approaches"
                         or not config.allow_direction_input
                         or submitted_json.get("direction")
                         == correct_json.get("direction")

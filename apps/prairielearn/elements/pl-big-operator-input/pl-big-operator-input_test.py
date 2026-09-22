@@ -1169,6 +1169,32 @@ class TestGradeUnits:
         )
         assert scores["direction"] == expected_score
 
+    @pytest.mark.parametrize(
+        ("submitted_direction", "expected_score"),
+        [("from-right", 1.0), ("from-left", 0.0)],
+    )
+    def test_exact_grading_checks_limit_direction(
+        self, submitted_direction: str, expected_score: float
+    ) -> None:
+        markup = html(**{
+            "correct-answer": "Limit(1/k, (k, 0, '+'))",
+            "grading-method": "exact",
+        })
+        data = question_data(
+            raw_submitted_answers={
+                "op-target": "0",
+                "op-body": "1/k",
+                "op-direction": submitted_direction,
+            }
+        )
+
+        prepare_parse_grade(markup, data)
+
+        assert data["partial_scores"]["op"] == {
+            "score": expected_score,
+            "weight": 1,
+        }
+
     def test_element_test_submission_round_trips(self) -> None:
         markup = html(**{"correct-answer": "Sum(k**2, (k, 1, 4))"})
         data = question_data()
