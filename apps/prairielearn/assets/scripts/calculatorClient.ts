@@ -2,6 +2,7 @@ import {
   CancellationError,
   ComputeEngine,
   type Expression,
+  LatexSyntax,
   type MathJsonExpression,
   isTensor,
 } from '@cortex-js/compute-engine';
@@ -56,9 +57,22 @@ function setCalculatorData(storageKey: string, data: CalculatorLocalData) {
   localStorage.setItem(storageKey, JSON.stringify(data));
 }
 
+const clipboardSyntax = new LatexSyntax();
+
 function clipboardOutput(latex: string) {
   // Remove all thousands separators, represented by \, in between digits
-  return convertLatexToAsciiMath(latex.replaceAll(/(?<=\d)\\,(?=\d)/g, ''));
+  latex = latex.replaceAll(/(?<=\d)\\,(?=\d)/g, '');
+  // MathLive's ASCII conversion drops overlined digits. Expand recurring decimals
+  // for the clipboard without changing their display or evaluating the expression.
+  latex = latex.replaceAll(
+    /(\d+\.\d*)\\overline(?:\{(\d+)\}|(\d))/g,
+    (_match, prefix: string, digits: string | undefined, digit: string | undefined) =>
+      clipboardSyntax.serialize(
+        { num: `${prefix}(${digits ?? digit})` },
+        { repeatingDecimal: 'none', digitGroupSeparator: '', truncationMarker: '' },
+      ),
+  );
+  return convertLatexToAsciiMath(latex);
 }
 
 const TRIG_FUNCTIONS = new Set([
