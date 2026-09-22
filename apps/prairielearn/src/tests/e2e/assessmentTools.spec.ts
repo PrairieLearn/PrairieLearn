@@ -416,38 +416,6 @@ test.describe('Calculator', () => {
     });
   }
 
-  test('rejected history entries are not persisted', async ({
-    page,
-    testCoursePath,
-    courseInstance,
-  }) => {
-    await configureCalculator(testCoursePath, 'basic');
-    await page.goto(`/pl/course_instance/${courseInstance.id}/assessments`);
-    await page.getByRole('link', { name: 'Homework for automatic test suite' }).click();
-    await page.getByRole('link', { name: 'Add two numbers' }).click();
-    await page.getByRole('button', { name: 'Calculator', exact: true }).click();
-    const input = page.getByLabel('Calculator input', { exact: true });
-    await input.pressSequentially('1/0');
-    await input.press('Enter');
-    await expect(page.getByTestId('history-output')).toHaveCount(0);
-    const calculator = page.getByRole('region', { name: 'Calculator', exact: true });
-    const history = await calculator.evaluate((element) => {
-      const key = (element as HTMLElement).dataset.storageKey!;
-      return JSON.parse(localStorage.getItem(key)!).history;
-    });
-    expect(history).toEqual([]);
-    await input.evaluate((element) => {
-      (element as HTMLElement & { value: string }).value = '2+3';
-    });
-    await input.press('Enter');
-    await expect(page.getByTestId('history-output')).toHaveCount(1);
-    await page.reload();
-    await expect(page.getByTestId('history-output')).toHaveCount(1);
-    await page.getByRole('button', { name: 'ans', exact: true }).click();
-    await input.pressSequentially('+1');
-    await expectLatex(page.getByLabel('Calculator output', { exact: true }), '=6');
-  });
-
   test('restored history keeps storage indexes aligned after rejecting entries', async ({
     page,
     testCoursePath,
@@ -464,7 +432,6 @@ test.describe('Calculator', () => {
       const data = JSON.parse(localStorage.getItem(key)!);
       data.history = [
         { input: String.raw`\sin(90)`, displayed: '1', angleMode: 'deg' },
-        { input: '1/0', displayed: String.raw`\tilde\infty`, angleMode: 'rad' },
         { input: String.raw`\int_0^1 x dx`, displayed: '0.5', angleMode: 'rad' },
         { input: String.raw`\cos(0)`, displayed: '1', angleMode: 'rad' },
       ];

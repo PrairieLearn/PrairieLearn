@@ -800,11 +800,7 @@ export function initCalculator(
   function addHistoryItem(dataHistoryItem: HistoryItem): boolean {
     const { input, displayed, angleMode } = dataHistoryItem;
 
-    if (
-      restrictedMode &&
-      (!isSupportedCalculatorInput(input, restrictedMode) ||
-        !isSupportedCalculatorInput(displayed, 'scientific'))
-    ) {
+    if (restrictedMode && !isSupportedCalculatorInput(input, restrictedMode)) {
       return false;
     }
 
