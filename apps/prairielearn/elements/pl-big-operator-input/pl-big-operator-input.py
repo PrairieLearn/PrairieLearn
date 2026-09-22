@@ -671,7 +671,11 @@ def _sympy_to_big_operator_json(
             )
 
 
-def _answer_json(config: RenderConfig, source: str) -> BigOperatorJson | None:
+def _answer_json(
+    config: RenderConfig,
+    source: str,
+    assumptions: psu.AssumptionsDictT | None = None,
+) -> BigOperatorJson | None:
     formatted = _formatted_call(source, config.operator)
     if formatted is None and config.operator == "Limit":
         formatted = _parse_sympy_limit_call(source)
@@ -694,6 +698,7 @@ def _answer_json(config: RenderConfig, source: str) -> BigOperatorJson | None:
             tuple(dict.fromkeys((*config.variables, config.index))),
             config.custom_functions,
             allow_complex=config.allow_complex,
+            assumptions=assumptions,
         )
     except _ParseError as exc:
         raise ValueError(
@@ -712,6 +717,7 @@ def _answer_json(config: RenderConfig, source: str) -> BigOperatorJson | None:
                         config.variables,
                         config.custom_functions,
                         allow_complex=config.allow_complex,
+                        assumptions=assumptions,
                     ),
                     "body": body,
                 }
@@ -722,12 +728,14 @@ def _answer_json(config: RenderConfig, source: str) -> BigOperatorJson | None:
                         config.variables,
                         config.custom_functions,
                         allow_complex=config.allow_complex,
+                        assumptions=assumptions,
                     ),
                     "upper": _unchecked_parse_sympy(
                         indexing_args[2],
                         config.variables,
                         config.custom_functions,
                         allow_complex=config.allow_complex,
+                        assumptions=assumptions,
                     ),
                     "body": body,
                 }
@@ -738,6 +746,7 @@ def _answer_json(config: RenderConfig, source: str) -> BigOperatorJson | None:
                         config.variables,
                         config.custom_functions,
                         allow_complex=config.allow_complex,
+                        assumptions=assumptions,
                     ),
                     "body": body,
                 }
@@ -745,7 +754,8 @@ def _answer_json(config: RenderConfig, source: str) -> BigOperatorJson | None:
         raise ValueError(
             "The correct answer contains invalid SymPy data."
         ) from exc._src
-    return _canonical_json(config, values)
+    index = sympy.Symbol(config.index, **(assumptions or {}).get(config.index, {}))
+    return _canonical_json(config, values, index=index)
 
 
 def _validate_correct(
@@ -773,16 +783,10 @@ def _correct(config: RenderConfig, data: QuestionData) -> BigOperatorJson:
             big_op = pbo.json_to_big_operator(raw)
             values = _get_values(config, big_op)
             json = _canonical_json(config, values, index=big_op["index"])
-        case str(src) | {"_type": "sympy", "_value": str(src)} if json := _answer_json(
-            config, src
-        ):
-            pass
-        case str(src):
-            if config.operator == "Limit" and re.match(r"^\s*Limit\s*\(", src):
-                raise ValueError("The correct answer has an invalid Limit wrapper.")
-            raise TypeError(
-                f'Correct answer "{config.answer_name}" must be a matching formatted object or canonical structured dictionary.'
-            )
+        case dict() if psu.is_sympy_json(raw):
+            json = _answer_json(config, raw["_value"], raw.get("_assumptions"))
+        case str():
+            json = _answer_json(config, raw)
         case _:
             json = _sympy_to_big_operator_json(config, _coerce_sympy(raw))
 
@@ -1199,6 +1203,7 @@ def _unchecked_parse_sympy(
     custom_functions: tuple[str, ...] = (),
     *,
     allow_complex: bool = False,
+    assumptions: psu.AssumptionsDictT | None = None,
 ) -> sympy.Basic:
     source = re.sub(r"\binfinity\b", "infty", source)
     for name in ("sin", "cos", "tan", "sec", "csc", "cot"):
@@ -1212,6 +1217,7 @@ def _unchecked_parse_sympy(
             allow_sets=True,
             allow_trig_functions=True,
             custom_functions=custom_functions,
+            assumptions=assumptions,
         )
     except psu.BaseSympyError as exc:
         raise _ParseError(exc) from None
