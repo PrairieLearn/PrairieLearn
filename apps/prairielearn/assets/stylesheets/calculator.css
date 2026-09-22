@@ -1,5 +1,10 @@
 /* #region Math field overrides */
 
+/* MathLive mounts its shared menu under body, outside the calculator drawer. */
+body:has(.pl-calculator-input:focus-within) #mathlive-suggestion-popover {
+  --suggestion-zindex: 1050;
+}
+
 math-field.pl-calculator-input::part(menu-toggle),
 math-field.pl-calculator-output::part(menu-toggle),
 math-field.pl-calculator-history-text::part(menu-toggle),
