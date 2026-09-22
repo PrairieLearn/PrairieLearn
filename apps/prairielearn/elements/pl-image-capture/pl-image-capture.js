@@ -194,7 +194,10 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
         } catch {
           if (uploadId !== this.manualUploadId) return;
           uploadedImageContainer.replaceChildren(...this.manualUploadPreview.nodes);
-          hiddenCaptureInput.value = this.manualUploadPreview.value;
+          // Preserve autosaved edits if the user is still cropping the previous image.
+          if (this.selectedContainerName !== 'crop-rotate') {
+            hiddenCaptureInput.value = this.manualUploadPreview.value;
+          }
           this.updateCaptureButtons(!!hiddenCaptureInput.value);
           this.manualUploadPreview = null;
           this.setManualUploadMessage(

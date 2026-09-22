@@ -328,47 +328,66 @@ async function uploadCropTestImage(page: Page) {
   await expect(page.getByAltText('Captured image preview').first()).toBeVisible();
 }
 
-test('cancelling crop during a failed replacement restores the original answer', async ({
-  page,
-}) => {
-  await uploadCropTestImage(page);
-  const hiddenInput = page.locator('.js-hidden-capture-input').first();
-  const previousValue = await hiddenInput.inputValue();
-  let releaseConverter!: () => void;
-  const gate = new Promise<void>((resolve) => {
-    releaseConverter = resolve;
-  });
-  await page.route('**/heic-to/dist/csp/heic-to.min.js', async (route) => {
-    await gate;
-    await route.fulfill({
-      contentType: 'text/javascript',
-      body: 'export async function heicTo() { throw new Error("conversion failed"); }',
+for (const action of ['cancel before failure', 'cancel after failure', 'save crop'] as const) {
+  test(`failed replacement preserves the answer: ${action}`, async ({ page }) => {
+    await uploadCropTestImage(page);
+    const hiddenInput = page.locator('.js-hidden-capture-input').first();
+    const previousValue = await hiddenInput.inputValue();
+    let releaseConverter!: () => void;
+    const gate = new Promise<void>((resolve) => {
+      releaseConverter = resolve;
     });
-  });
-  await page
-    .getByLabel('Upload image')
-    .first()
-    .setInputFiles({
-      name: 'replacement.heic',
-      mimeType: 'image/heic',
-      buffer: Buffer.from('invalid'),
+    await page.route('**/heic-to/dist/csp/heic-to.min.js', async (route) => {
+      await gate;
+      await route.fulfill({
+        contentType: 'text/javascript',
+        body: 'export async function heicTo() { throw new Error("conversion failed"); }',
+      });
     });
-  await expect(page.locator('.js-uploaded-image-container .spinner-border').first()).toBeVisible();
-  await page.getByRole('button', { name: 'Crop/rotate' }).first().click();
-  await page.getByRole('button', { name: 'Rotate clockwise', exact: true }).click();
-  await expect(hiddenInput).toHaveValue(/^data:image\/jpeg;/);
-  await page.getByRole('button', { name: 'Cancel', exact: true }).click();
-  await expect(hiddenInput).toHaveValue(previousValue);
-  releaseConverter();
-  await expect(page.getByRole('status', { name: 'Image upload' }).first()).toHaveText(
-    'Could not load this image. Try uploading a JPEG or PNG.',
-  );
-  await expect(hiddenInput).toHaveValue(previousValue);
-  await expect(page.getByAltText('Captured image preview').first()).toHaveAttribute(
-    'src',
-    previousValue,
-  );
-});
+    await page
+      .getByLabel('Upload image')
+      .first()
+      .setInputFiles({
+        name: 'replacement.heic',
+        mimeType: 'image/heic',
+        buffer: Buffer.from('invalid'),
+      });
+    await expect(
+      page.locator('.js-uploaded-image-container .spinner-border').first(),
+    ).toBeVisible();
+    await page.getByRole('button', { name: 'Crop/rotate' }).first().click();
+    await page.getByRole('button', { name: 'Rotate clockwise', exact: true }).click();
+    await expect(hiddenInput).toHaveValue(/^data:image\/jpeg;/);
+    const croppedValue = await hiddenInput.inputValue();
+    if (action === 'cancel before failure') {
+      await page.getByRole('button', { name: 'Cancel', exact: true }).click();
+      await expect(hiddenInput).toHaveValue(previousValue);
+    }
+    releaseConverter();
+    await expect(
+      page.getByRole('status', { name: 'Image upload', includeHidden: true }).first(),
+    ).toHaveText('Could not load this image. Try uploading a JPEG or PNG.');
+    if (action === 'save crop') {
+      await expect(hiddenInput).toHaveValue(croppedValue);
+      await page.getByRole('button', { name: 'Save', exact: true }).click();
+      await expect(hiddenInput).toHaveValue(croppedValue);
+      await expect(page.getByAltText('Captured image preview').first()).toHaveAttribute(
+        'src',
+        croppedValue,
+      );
+    } else {
+      if (action === 'cancel after failure') {
+        await expect(hiddenInput).toHaveValue(croppedValue);
+        await page.getByRole('button', { name: 'Cancel', exact: true }).click();
+      }
+      await expect(hiddenInput).toHaveValue(previousValue);
+      await expect(page.getByAltText('Captured image preview').first()).toHaveAttribute(
+        'src',
+        previousValue,
+      );
+    }
+  });
+}
 
 for (const stage of ['render', 'decode'] as const) {
   for (const action of ['cancel', 'replace'] as const) {
