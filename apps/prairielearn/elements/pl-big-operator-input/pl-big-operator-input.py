@@ -1437,6 +1437,9 @@ def _expressions_equivalent(left: sympy.Basic, right: sympy.Basic) -> bool:
         if left == right:
             return True
 
+        if isinstance(left, sympy.Set) or isinstance(right, sympy.Set):
+            return False
+
         difference = sympy.simplify(sympy.expand(left - right))  # type: ignore
         if difference == 0 or difference.equals(0) is True:
             return True
