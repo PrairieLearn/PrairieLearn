@@ -1000,6 +1000,25 @@ class TestGradeUnits:
         assert data["partial_scores"]["op"] == {"score": 1.0, "weight": 1}
 
     @pytest.mark.parametrize(
+        ("grading_method", "expected_score"),
+        [("component", 0.75), ("equivalent", 0.0)],
+    )
+    def test_set_grading_handles_incorrect_domain(
+        self, grading_method: str, expected_score: float
+    ) -> None:
+        markup = html(**{
+            "correct-answer": "Union({k}, (k, {1, 2}))",
+            "grading-method": grading_method,
+        })
+        data = question_data(
+            raw_submitted_answers={"op-domain": "{1, 3}", "op-body": "{k}"}
+        )
+
+        prepare_parse_grade(markup, data)
+
+        assert data["partial_scores"]["op"]["score"] == pytest.approx(expected_score)
+
+    @pytest.mark.parametrize(
         ("correct_answer", "variables", "match"),
         [
             (
