@@ -4,6 +4,7 @@ import {
   type RowSelectionState,
   type SortingState,
 } from '@tanstack/react-table';
+import type { inferRouterOutputs } from '@trpc/server';
 import clsx from 'clsx';
 import { parseAsString, useQueryState } from 'nuqs';
 import { type ReactNode, useMemo, useState } from 'react';
@@ -35,11 +36,12 @@ import {
 } from '@prairielearn/ui';
 
 import type { CourseInstanceAuthz } from '../../models/course-instances.js';
-import type { CourseUsersRow } from '../../models/course-permissions.js';
 import { createCourseTrpcClient } from '../../trpc/course/client.js';
 import { TRPCProvider, useTRPC } from '../../trpc/course/context.js';
 import type { CourseStaffError } from '../../trpc/course/course-staff.js';
+import type { CourseRouter } from '../../trpc/course/trpc.js';
 
+type CourseUsersRow = inferRouterOutputs<CourseRouter>['courseStaff']['list'][number];
 type ColumnFilter = (props: { header: TanstackTableHeader<CourseUsersRow> }) => ReactNode;
 
 function useInvalidateStaffList() {

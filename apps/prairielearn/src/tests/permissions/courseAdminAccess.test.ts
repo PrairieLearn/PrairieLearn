@@ -1,3 +1,4 @@
+import superjson from 'superjson';
 import { afterAll, assert, beforeAll, describe, expect, test } from 'vitest';
 import z from 'zod';
 
@@ -106,6 +107,29 @@ function createTrpcClient({
   });
 }
 
+function expectSafeStaffUsers(rows: { user: Record<string, unknown> }[]) {
+  for (const { user } of rows) {
+    expect(Object.keys(user).sort()).toEqual([
+      'email',
+      'id',
+      'institution_id',
+      'name',
+      'uid',
+      'uin',
+    ]);
+  }
+  expect(rows.find(({ user }) => user.uid === 'instructor@example.com')).toMatchObject({
+    user: { name: 'Instructor User', uin: '100000000' },
+  });
+}
+
+function expectSafeStaffPage(response: Awaited<ReturnType<typeof helperClient.fetchCheerio>>) {
+  const props = superjson.parse<{ courseUsers: { user: Record<string, unknown> }[] }>(
+    response.$('script[data-component-props][data-component="StaffTable"]').text(),
+  );
+  expectSafeStaffUsers(props.courseUsers);
+}
+
 function runTest(context: TestContext) {
   context.pageUrl = `${context.baseUrl}/course_admin/staff`;
   context.userId = '2';
@@ -177,6 +201,15 @@ function runTest(context: TestContext) {
 
   test('permissions should match', async () => {
     await checkPermissions(users);
+  });
+
+  test('owners receive client-safe staff users on the page and API', async () => {
+    const response = await helperClient.fetchCheerio(context.pageUrl, {
+      headers: { cookie: 'pl_test_user=test_instructor' },
+    });
+    expect(response.status).toBe(200);
+    expectSafeStaffPage(response);
+    expectSafeStaffUsers(await createClient().courseStaff.list.query());
   });
 
   test('can add multiple users', async () => {
@@ -505,12 +538,14 @@ function runTest(context: TestContext) {
         ).toBeGreaterThan(0);
         expect(response.$('body').text()).toContain('staff04@example.com');
         expect(response.$('body').text()).not.toContain('Add users');
+        expectSafeStaffPage(response);
         const trpc = createClient({
           authnUserId: user.id,
           cookie: '',
           ...(courseRole === 'None' ? { courseInstanceId: '1' } : {}),
         });
         const staff = await trpc.courseStaff.list.query();
+        expectSafeStaffUsers(staff);
         expect(staff.some(({ user }) => user.uid === 'instructor@example.com')).toBe(true);
         expect(staff.some(({ user }) => user.uid === 'staff04@example.com')).toBe(true);
         const before = staff;

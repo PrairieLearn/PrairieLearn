@@ -5,6 +5,7 @@ import { logger } from '@prairielearn/logger';
 import { runInTransactionAsync } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
+import { StaffUserSchema } from '../../lib/client/safe-db-types.js';
 import {
   type EnumCourseInstanceRole,
   EnumCourseInstanceRoleSchema,
@@ -129,7 +130,10 @@ async function upsertOrDeleteInstancePermission({
 const list = t.procedure
   .use(requireCoursePermissionPreviewOrCourseInstancePermissionView)
   .query(async ({ ctx }) => {
-    return selectCourseUsers({ course_id: ctx.course.id });
+    return (await selectCourseUsers({ course_id: ctx.course.id })).map((row) => ({
+      ...row,
+      user: StaffUserSchema.parse(row.user),
+    }));
   });
 
 const updateCourseRole = t.procedure

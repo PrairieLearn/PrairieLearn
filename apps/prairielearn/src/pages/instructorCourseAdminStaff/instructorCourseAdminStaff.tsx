@@ -5,6 +5,7 @@ import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
+import { StaffUserSchema } from '../../lib/client/safe-db-types.js';
 import { getCourseTrpcUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
@@ -31,7 +32,10 @@ router.get(
       accessType: 'instructor',
     });
 
-    const courseUsers = await selectCourseUsers({ course_id: course.id });
+    const courseUsers = (await selectCourseUsers({ course_id: course.id })).map((row) => ({
+      ...row,
+      user: StaffUserSchema.parse(row.user),
+    }));
 
     const courseInstances = await selectCourseInstancesWithStaffAccess({
       course,
