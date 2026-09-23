@@ -179,6 +179,59 @@ def test_round_trips_sympy_sets_to_raw_mathjson() -> None:
 @pytest.mark.parametrize(
     ("expr", "expected_mathjson"),
     [
+        (sympy.Tuple(1, 2), ["Tuple", 1, 2]),
+        (sympy.Eq(sympy.Symbol("x"), 1), ["Equal", "x", 1]),
+        (
+            sympy.Derivative(sympy.Symbol("x") ** 2, (sympy.Symbol("x"), 2)),
+            ["D", ["Power", "x", 2], "x", "x"],
+        ),
+        (sympy.Integral(sympy.Symbol("x"), sympy.Symbol("x")), ["Integrate", "x", "x"]),
+        (
+            sympy.Integral(sympy.Symbol("x"), (sympy.Symbol("x"), 0, 1)),
+            ["Integrate", "x", ["Tuple", "x", 0, 1]],
+        ),
+        (
+            sympy.Complement(sympy.Interval(0, 1), sympy.FiniteSet(sympy.Symbol("x"))),
+            ["SetMinus", ["Interval", 0, 1], ["Set", "x"]],
+        ),
+    ],
+)
+def test_round_trips_structured_sympy_expressions(
+    expr: sympy.Basic,
+    expected_mathjson: MathJsonExpression,
+) -> None:
+    raw = sympy_expr_to_raw_mathjson(expr)
+
+    assert json.loads(raw) == expected_mathjson
+    assert raw_mathjson_to_sympy_expr(raw) == expr
+
+
+def test_round_trips_boolean_expression() -> None:
+    x = sympy.Symbol("x")
+    expr = sympy.And(x > 0, x < 1)
+
+    assert raw_mathjson_to_sympy_expr(sympy_expr_to_raw_mathjson(expr)) == expr
+
+
+@pytest.mark.parametrize("head", ["D", "Integrate"])
+def test_calculus_preserves_unsimplified_body(head: str) -> None:
+    x = sympy.Symbol("x")
+    body = sympy.Add(x, x, evaluate=False)
+    expected = (
+        sympy.Derivative(body, (x, 2)) if head == "D" else sympy.Integral(body, x)
+    )
+
+    assert (
+        raw_mathjson_to_sympy_expr(
+            sympy_expr_to_raw_mathjson(expected), simplify_expression=False
+        )
+        == expected
+    )
+
+
+@pytest.mark.parametrize(
+    ("expr", "expected_mathjson"),
+    [
         (sympy.Interval.Lopen(1, 2), ["Interval", ["Open", 1], 2]),
         (sympy.Interval.Ropen(1, 2), ["Interval", 1, ["Open", 2]]),
         (

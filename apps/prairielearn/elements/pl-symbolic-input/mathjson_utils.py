@@ -140,6 +140,11 @@ _RELATIONS: dict[str, Callable[[sympy.Expr, sympy.Expr], sympy.Basic]] = {
 }
 
 _SYMPY_FUNCTIONS: dict[object, str] = {
+    **{function: name for name, function in _RELATIONS.items()},
+    sympy.And: "And",
+    sympy.Or: "Or",
+    sympy.Not: "Not",
+    sympy.Xor: "Xor",
     sympy.Abs: "Abs",
     sympy.acos: "Arccos",
     sympy.acot: "Arccot",
@@ -310,6 +315,39 @@ def _sympy_expr_to_mathjson(expr: sympy.Basic) -> MathJsonExpression:
             return {"num": str(expr)}
         case sympy.Symbol():
             return _sympy_symbol_to_mathjson(expr.name)
+        case sympy.Tuple():
+            return _mathjson_function(
+                "Tuple", *(_sympy_expr_to_mathjson(arg) for arg in expr.args)
+            )
+        case sympy.Derivative():
+            variables: list[MathJsonExpression] = []
+            for variable_count in expr.variable_count:
+                variable, count = variable_count.args
+                if not isinstance(count, sympy.Integer):
+                    raise TypeError("Symbolic derivative orders are not supported.")
+                variables.extend([_sympy_expr_to_mathjson(variable)] * int(count))
+            return _mathjson_function(
+                "D", _sympy_expr_to_mathjson(expr.expr), *variables
+            )
+        case sympy.Integral():
+            limits: list[MathJsonExpression] = []
+            for limit_tuple in expr.limits:
+                limit = limit_tuple.args
+                if len(limit) == 1:
+                    limits.append(_sympy_expr_to_mathjson(limit[0]))
+                elif len(limit) == 3:
+                    limits.append(
+                        _mathjson_function(
+                            "Tuple", *(_sympy_expr_to_mathjson(arg) for arg in limit)
+                        )
+                    )
+                else:
+                    raise TypeError(
+                        "Integrals with a single endpoint are not supported."
+                    )
+            return _mathjson_function(
+                "Integrate", _sympy_expr_to_mathjson(expr.function), *limits
+            )
         case sympy.Add():
             return _mathjson_function(
                 "Add", *(_sympy_expr_to_mathjson(arg) for arg in expr.args)
@@ -337,6 +375,10 @@ def _sympy_expr_to_mathjson(expr: sympy.Basic) -> MathJsonExpression:
                 "Intersection",
                 *(_sympy_expr_to_mathjson(arg) for arg in expr.args),
             )
+        case sympy.Complement():
+            return _mathjson_function(
+                "SetMinus", *(_sympy_expr_to_mathjson(arg) for arg in expr.args)
+            )
         case sympy.Interval():
             return _mathjson_function(
                 "Interval",
@@ -347,7 +389,7 @@ def _sympy_expr_to_mathjson(expr: sympy.Basic) -> MathJsonExpression:
                 if expr.right_open
                 else _sympy_expr_to_mathjson(expr.end),
             )
-        case _ if expr.is_Function:
+        case _ if expr.func in _SYMPY_FUNCTIONS or expr.is_Function:
             head = _SYMPY_FUNCTIONS.get(expr.func)
             args = tuple(_sympy_expr_to_mathjson(arg) for arg in expr.args)
             if head is not None:
@@ -582,6 +624,16 @@ def _function(
         case "Not":
             _require_arity(head, args, 1)
             return sympy.Not(_as_boolean(args[0]))
+        case "D":
+            _require_arity(head, args, 2, None)
+            # Evaluate constructor bookkeeping (such as derivative counts),
+            # while keeping the already-parsed body and the derivative unevaluated.
+            with sympy.evaluate(True):
+                return sympy.Derivative(_as_expr(args[0]), *args[1:], evaluate=False)
+        case "Integrate":
+            _require_arity(head, args, 2, None)
+            with sympy.evaluate(True):
+                return sympy.Integral(_as_expr(args[0]), *args[1:])
         case "List" | "Tuple":
             return sympy.Tuple(*args)
         case "Single":
@@ -601,6 +653,9 @@ def _function(
         case "Intersection":
             _require_arity(head, args, 1, None)
             return sympy.Intersection(*args)
+        case "SetMinus":
+            _require_arity(head, args, 2)
+            return sympy.Complement(args[0], args[1])
         case _:
             pass
 
