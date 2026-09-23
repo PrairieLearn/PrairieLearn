@@ -11,6 +11,7 @@ import { getRuntimeDirectoryForCourse } from '../lib/chunks.js';
 import { DEFAULT_PRINT_SETTINGS } from '../lib/client/print-preparation.js';
 import { getAssessmentTrpcUrl } from '../lib/client/url.js';
 import { config } from '../lib/config.js';
+import { PrintPacketMetadataSchema } from '../lib/print-packet-schema.js';
 import {
   assessmentHasPrintRandomization,
   inspectPrintPreparationQuestions,
@@ -271,6 +272,25 @@ describe('print preparation', { timeout: 60_000 }, () => {
       await fs.writeFile(filename, original);
     }
   });
+
+  test.each(['Name', 'Section\nsection', 'x'.repeat(41)])(
+    'returns actionable errors for invalid cover labels: %s',
+    async (identityFields) => {
+      const assessment = await selectAssessmentByTid({
+        course_instance_id: '1',
+        tid: 'exam20-assessmentTools',
+      });
+      const input = packetInput('1');
+      const metadata = PrintPacketMetadataSchema.parse(
+        JSON.parse(input.get('metadata')!.toString()),
+      );
+      metadata.instances[0].settings.identityFields = identityFields;
+      input.set('metadata', JSON.stringify(metadata));
+      await expect(client(assessment.id).printableExamExport.pdf.mutate(input)).rejects.toThrow(
+        /Name and Date|different label|40 characters/,
+      );
+    },
+  );
 
   test('validates packet export settings before rendering', async () => {
     const assessment = await selectAssessmentByTid({

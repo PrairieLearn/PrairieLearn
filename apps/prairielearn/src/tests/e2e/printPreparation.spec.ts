@@ -3,6 +3,8 @@ import fs from 'node:fs/promises';
 import axe from 'axe-core';
 import { PDFDocument } from 'pdf-lib';
 
+import { withResolvers } from '@prairielearn/utils';
+
 import { PrintPacketMetadataSchema } from '../../lib/print-packet-schema.js';
 import { selectAssessmentInstanceById } from '../../models/assessment-instance.js';
 import { selectAssessmentByTid } from '../../models/assessment.js';
@@ -50,12 +52,17 @@ test('prepares an exam and key with consistent variants and downloads', async ({
   await expect(page.getByRole('heading', { name: /Questions in this form/ })).toBeVisible();
   await expect(page.getByText('No paper-specific concerns detected')).toHaveCount(0);
   await page.getByLabel('Paper size').selectOption('A4');
-  await page.getByLabel('Additional student information').fill('Section\nStudent ID');
+  await page
+    .getByLabel('Additional student information')
+    .fill(`${' '.repeat(301)}Section\n Student ID \n`);
   await expect(page.getByRole('button', { name: 'PDF', exact: true })).toBeDisabled();
   await page.getByRole('button', { name: 'Update preview', exact: true }).first().click();
   await expect(page.getByRole('button', { name: 'PDF', exact: true })).toBeEnabled({
     timeout: 120_000,
   });
+  await expect(page.getByLabel('Additional student information')).toHaveValue(
+    'Section\nStudent ID',
+  );
   await expect(frame.locator(':root')).toHaveAttribute('data-print-paper-size', 'A4');
   expect(new URL(page.url()).searchParams.get('instance')).toBe(form);
   await page.getByLabel('Spacing for question 1', { exact: true }).selectOption('full');
@@ -303,4 +310,57 @@ test('distinguishes paper review flags from broken questions omitted from the do
     timeout: 120_000,
   });
   await expect(page.getByText('Omitted', { exact: true })).toHaveCount(0);
+});
+
+test('protects pending preview settings and shows a PDF export error once', async ({
+  page,
+  courseInstance,
+}) => {
+  const assessment = await selectAssessmentByTid({
+    course_instance_id: courseInstance.id,
+    tid: 'exam20-assessmentTools',
+  });
+  await page.goto(
+    `/pl/course_instance/${courseInstance.id}/instructor/assessment/${assessment.id}/print_preparation?instances=`,
+  );
+  await page.getByLabel('Additional student information').fill('Section');
+  await page.getByRole('button', { name: 'Create preview', exact: true }).click();
+  const pdfButton = page.getByRole('button', { name: 'PDF', exact: true });
+  await expect(pdfButton).toBeEnabled({ timeout: 120_000 });
+  const requested = withResolvers<undefined>();
+  const resume = withResolvers<undefined>();
+  await page.route('**/assessment_instance/*/paper?*', async (route) => {
+    requested.resolve(undefined);
+    await resume.promise;
+    await route.continue();
+  });
+  await page.getByRole('button', { name: 'Update preview', exact: true }).click();
+  await requested.promise;
+  try {
+    await expect(page.getByLabel('Additional student information')).toBeDisabled();
+    await expect(page.getByLabel('Paper size')).toBeDisabled();
+    await expect(page.getByLabel('Spacing for question 1', { exact: true })).toBeDisabled();
+    await expect(
+      page.getByRole('checkbox', { name: 'Include question 1', exact: true }),
+    ).toBeDisabled();
+  } finally {
+    resume.resolve(undefined);
+  }
+  await expect(pdfButton).toBeEnabled({ timeout: 120_000 });
+  await page.unroute('**/assessment_instance/*/paper?*');
+  await expect(page.getByLabel('Additional student information')).toHaveValue('Section');
+  await page.getByLabel('Additional student information').fill('Room');
+  await page.getByRole('button', { name: 'Update preview', exact: true }).click();
+  await expect(pdfButton).toBeEnabled({ timeout: 120_000 });
+  await expect(page.getByLabel('Additional student information')).toHaveValue('Room');
+  await page.getByRole('button', { name: 'Regenerate Form A', exact: true }).focus();
+  await expect(page.getByRole('tooltip')).toContainText('Regenerate Form A with new randomization');
+  await page.getByLabel('Custom cover pages (PDF)', { exact: true }).setInputFiles({
+    name: 'invalid-cover.pdf',
+    mimeType: 'application/pdf',
+    buffer: Buffer.from('invalid PDF'),
+  });
+  await pdfButton.click();
+  await expect(page.getByText(/valid PDF without password protection/)).toHaveCount(1);
+  await expect(pdfButton).toBeEnabled();
 });

@@ -4,18 +4,12 @@ import { PAPER_SIZES, QUESTION_BLOCK_SIZES } from '@prairielearn/printing';
 import { IdSchema } from '@prairielearn/zod';
 
 import { MAX_PRINT_COPIES, MAX_PRINT_INSTANCES } from './client/print-packet.js';
-import { printIdentityFields } from './client/print-preparation.js';
+import { PrintIdentityFieldsTextSchema } from './client/print-preparation.js';
 
 const QuestionNumberSchema = z.string().regex(/^[1-9]\d*$/);
 const PrintSettingsSchema = z.strictObject({
   paperSize: z.enum(PAPER_SIZES),
-  identityFields: z
-    .string()
-    .max(300)
-    .refine((value) => {
-      const fields = printIdentityFields(value);
-      return fields.length <= 6 && fields.every((field) => field.length <= 40);
-    }, 'Use at most six identity fields, with at most 40 characters each.'),
+  identityFields: PrintIdentityFieldsTextSchema,
   blockSize: z.enum(QUESTION_BLOCK_SIZES),
   questionSizes: z.record(
     QuestionNumberSchema,

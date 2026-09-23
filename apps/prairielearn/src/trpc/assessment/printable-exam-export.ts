@@ -46,7 +46,10 @@ export const printableExamExportRouter = t.router({
       } catch (error) {
         throw new TRPCError({
           code: 'BAD_REQUEST',
-          message: 'Invalid print export settings.',
+          message:
+            (error instanceof z.ZodError
+              ? error.issues.find((issue) => issue.path.includes('identityFields'))?.message
+              : undefined) ?? 'Invalid print export settings.',
           cause: error,
         });
       }

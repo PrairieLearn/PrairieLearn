@@ -21,8 +21,8 @@ import {
   BLOCK_SIZE_LABELS,
   DEFAULT_PRINT_SETTINGS,
   type PrintDocument,
+  PrintIdentityFieldsTextSchema,
   type PrintSettings,
-  printIdentityFields,
   printLayoutSearch,
 } from '../../lib/client/print-preparation.js';
 import type { StaffAssessmentInstance } from '../../lib/client/safe-db-types.js';
@@ -149,8 +149,20 @@ function PrintPreparation({
       { enabled: validInstance },
     ),
   );
-  const create = useMutation(trpc.printableExams.create.mutationOptions());
-  const regenerate = useMutation(trpc.printableExams.regenerate.mutationOptions());
+  const create = useMutation(
+    trpc.printableExams.create.mutationOptions({
+      onSuccess: async () => {
+        await instances.refetch();
+      },
+    }),
+  );
+  const regenerate = useMutation(
+    trpc.printableExams.regenerate.mutationOptions({
+      onSuccess: async () => {
+        await instances.refetch();
+      },
+    }),
+  );
   const packet = useMutation(trpc.printableExamExport.pdf.mutationOptions());
   const busy = create.isPending || regenerate.isPending || packet.isPending;
 
@@ -195,8 +207,8 @@ function PrintPreparation({
     saveDownload(new Blob([bytes], { type: 'application/pdf' }), result.filename);
   }
 
-  async function switchInstance(id: string) {
-    await setSelectedInstance(id);
+  function switchInstance(id: string) {
+    void setSelectedInstance(id);
     const next = settingsForInstance(id);
     setSettings(next);
     reset(next);
@@ -206,44 +218,32 @@ function PrintPreparation({
 
   async function addInstance() {
     const result = await create.mutateAsync();
-    await instances.refetch();
-    await setSelectedInstances([...instanceIds, result.assessmentInstanceId]);
-    await switchInstance(result.assessmentInstanceId);
+    void setSelectedInstances([...instanceIds, result.assessmentInstanceId]);
+    switchInstance(result.assessmentInstanceId);
   }
 
   async function regenerateInstance(id: string) {
     const result = await regenerate.mutateAsync({ assessmentInstanceId: id });
-    await instances.refetch();
-    await setSelectedInstances(
+    void setSelectedInstances(
       instanceIds.map((value) => (value === id ? result.assessmentInstanceId : value)),
     );
-    await switchInstance(result.assessmentInstanceId);
+    switchInstance(result.assessmentInstanceId);
   }
 
-  async function removeInstance(id: string) {
+  function removeInstance(id: string) {
     const nextIds = instanceIds.filter((value) => value !== id);
-    await setSelectedInstances(nextIds);
-    if (id === instanceId) await switchInstance(nextIds[0]);
+    void setSelectedInstances(nextIds);
+    if (id === instanceId) switchInstance(nextIds[0]);
   }
   const download = useMutation({
-    mutationFn: async ({
-      format,
-      document: outputDocument,
-    }: {
-      format: 'pdf' | 'docx';
-      document: PrintDocument;
-    }) => {
-      if (format === 'pdf' && instanceId) {
-        await downloadPacket([instanceId], 1, outputDocument);
-        return;
-      }
-      const response = await fetch(`${paperBase}/${format}?${layout}&document=${outputDocument}`);
+    mutationFn: async (outputDocument: PrintDocument) => {
+      const response = await fetch(`${paperBase}/docx?${layout}&document=${outputDocument}`);
       if (!response.ok) {
         throw new Error('The download could not be generated. Review the preview and try again.');
       }
       saveDownload(
         await response.blob(),
-        `exam-form-${formLabel}${outputDocument === 'answer_key' ? '-answer-key' : ''}.${format}`,
+        `exam-form-${formLabel}${outputDocument === 'answer_key' ? '-answer-key' : ''}.docx`,
       );
     },
   });
@@ -285,12 +285,15 @@ function PrintPreparation({
   );
 
   async function applySettings(values: PrintSettings) {
+    values = {
+      ...values,
+      identityFields: PrintIdentityFieldsTextSchema.parse(values.identityFields),
+    };
     setPreview(null);
     if (!instanceId) {
       const result = await create.mutateAsync();
-      await instances.refetch();
-      await setSelectedInstances([result.assessmentInstanceId]);
-      await setSelectedInstance(result.assessmentInstanceId);
+      void setSelectedInstances([result.assessmentInstanceId]);
+      void setSelectedInstance(result.assessmentInstanceId);
       setInstanceSettings((previous) => ({ ...previous, [result.assessmentInstanceId]: values }));
     } else if (printLayoutSearch(values) === printLayoutSearch(settings)) {
       await Promise.all([descriptor.refetch(), questions.refetch()]);
@@ -385,7 +388,10 @@ function PrintPreparation({
           void handleSubmit(applySettings)(event).catch(() => {});
         }}
       >
-        <div className="print-preparation-columns">
+        <fieldset
+          className="print-preparation-columns"
+          disabled={isSubmitting || busy || download.isPending}
+        >
           <div className="print-preparation-controls">
             <section
               className="print-preparation-controls-scroll"
@@ -536,23 +542,8 @@ function PrintPreparation({
                       isInvalid={!!errors.identityFields}
                       {...register('identityFields', {
                         validate: (value) => {
-                          const fields = printIdentityFields(value);
-                          if (fields.length > 6) return 'Use up to six additional fields.';
-                          if (fields.some((field) => field.length > 40)) {
-                            return 'Keep each field to 40 characters or fewer.';
-                          }
-                          if (
-                            fields.some((field) => ['name', 'date'].includes(field.toLowerCase()))
-                          ) {
-                            return 'Name and Date are already included.';
-                          }
-                          if (
-                            new Set(fields.map((field) => field.toLowerCase())).size !==
-                            fields.length
-                          ) {
-                            return 'Use each field only once.';
-                          }
-                          return true;
+                          const result = PrintIdentityFieldsTextSchema.safeParse(value);
+                          return result.success || result.error.issues[0].message;
                         },
                       })}
                     />
@@ -1006,7 +997,7 @@ function PrintPreparation({
                       variant="outline-primary"
                       size="sm"
                       disabled={!canDownload}
-                      onClick={() => download.mutate({ format: 'docx', document })}
+                      onClick={() => download.mutate(document)}
                     >
                       <i className="bi bi-file-earmark-word me-2" aria-hidden="true" />
                       Word (.docx)
@@ -1015,14 +1006,16 @@ function PrintPreparation({
                       type="button"
                       size="sm"
                       disabled={!canDownload}
-                      onClick={() => download.mutate({ format: 'pdf', document })}
+                      onClick={() =>
+                        void downloadPacket([instanceId!], 1, document).catch(() => {})
+                      }
                     >
                       <i className="bi bi-download me-2" aria-hidden="true" />
                       PDF
                     </Button>
                   </div>
                 </div>
-                {download.isPending && (
+                {(download.isPending || packet.isPending) && (
                   <div className="small mt-2" role="status">
                     <Spinner size="sm" className="me-2" />
                     Generating your download…
@@ -1036,7 +1029,7 @@ function PrintPreparation({
               </Card.Footer>
             </Card>
           </div>
-        </div>
+        </fieldset>
       </form>
     </div>
   );
