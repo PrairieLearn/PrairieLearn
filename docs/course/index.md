@@ -462,7 +462,7 @@ Access permissions for course staff can be configured on the "Staff" tab. Course
 
 !!! note
 
-    Course staff permissions and GitHub repository permissions are managed separately. Course Owners can grant themselves Admin access to the course's GitHub repository from the "Settings" page. If you are not an Owner, ask a course Owner for access. You can find the list of Owners on the "Staff" page.
+    Course staff permissions and GitHub repository permissions are managed separately. Course Owners can grant themselves Admin access to the course's GitHub repository from the "Course settings" page. If you are not an Owner, ask a course Owner for access. You can find the list of Owners on the "Staff" page.
 
 ### Course content access roles
 
