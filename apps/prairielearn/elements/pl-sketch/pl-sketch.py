@@ -1300,6 +1300,8 @@ def _solution_to_gradeable(
                 values = [{"point": [pt["x"], pt["y"]]} for pt in drawings]
 
             case "freeform":
+                # format_drawing() already fits freeform curves to cubic Bézier segments,
+                # so preserve their existing control points.
                 values = [
                     {"spline": [[point["x"], point["y"]] for point in curve]}
                     for curve in drawings
