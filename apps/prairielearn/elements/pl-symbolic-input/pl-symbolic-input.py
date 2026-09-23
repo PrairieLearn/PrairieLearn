@@ -145,32 +145,6 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 
         data["correct_answers"][name] = a_true
 
-    variables = _get_variables_with_fallback(element, data, name)
-
-    formula_editor = pl.get_boolean_attrib(
-        element, "formula-editor", SHOW_FORMULA_EDITOR_DEFAULT
-    )
-    initial_value = pl.get_string_attrib(
-        element, "initial-value", INITIAL_VALUE_DEFAULT
-    )
-    # Don't parse the initial value if it's not a formula editor, so that you can prefill
-    # partial inputs.
-    if formula_editor and initial_value is not None and initial_value.strip() != "":
-        try:
-            psu.convert_string_to_sympy(
-                initial_value,
-                variables,
-                allow_complex=allow_complex,
-                allow_sets=allow_sets,
-                allow_trig_functions=allow_trig,
-                custom_functions=custom_functions,
-                simplify_expression=simplify_expression,
-            )
-        except psu.BaseSympyError as exc:
-            raise ValueError(
-                f'Parsing initial value "{initial_value}" for "{name}" failed.'
-            ) from exc
-
     imaginary_unit = pl.get_string_attrib(
         element, "imaginary-unit-for-display", IMAGINARY_UNIT_FOR_DISPLAY_DEFAULT
     )
@@ -313,29 +287,22 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         name + "-latex", None
     )
     raw_submitted_answer = data["raw_submitted_answers"].get(name, None)
+
+    if (
+        formula_editor
+        and raw_submitted_answer_latex is None
+        and isinstance(raw_submitted_answer, str)
+    ):
+        if raw_submitted_answer.strip() == "":
+            raw_submitted_answer_latex = ""
+        elif a_sub_converted is not None:
+            raw_submitted_answer_latex = a_sub_converted
+        else:
+            # Do not replace an invalid saved answer with initial-value.
+            raw_submitted_answer_latex = ""
+
     if raw_submitted_answer is None:
         raw_submitted_answer = initial_value
-    if (
-        raw_submitted_answer_latex is None
-        and initial_value is not None
-        and initial_value.strip() != ""
-        and formula_editor
-    ):
-        initial_parsed = _replace_imaginary_for_display(
-            psu.convert_string_to_sympy(
-                initial_value,
-                _get_variables_with_fallback(element, data, name),
-                allow_complex=allow_complex,
-                allow_sets=allow_sets,
-                custom_functions=custom_functions,
-                allow_trig_functions=allow_trig,
-                simplify_expression=simplify_expression,
-            ),
-            imaginary_unit,
-        )
-        if display_log_as_ln:
-            initial_parsed = initial_parsed.replace(sympy.log, sympy.Function("ln"))
-        raw_submitted_answer_latex = sympy.latex(initial_parsed)
 
     score = data["partial_scores"].get(name, {}).get("score")
 
@@ -361,6 +328,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "log_as_ln": display_log_as_ln,
             "raw_submitted_answer": raw_submitted_answer,
             "raw_submitted_answer_latex": raw_submitted_answer_latex,
+            "has_submitted_answer_latex": raw_submitted_answer_latex is not None,
+            "initial_value": initial_value,
             "parse_error": parse_error,
             display.value: True,
             "formula_editor": formula_editor,

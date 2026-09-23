@@ -294,25 +294,6 @@ def test_trig_no_crash_with_no_simplify(a_sub: str) -> None:
     assert data["submitted_answers"]["test"] is not None
 
 
-def test_formula_editor_initial_value_respects_display_log_as_ln(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    monkeypatch.chdir(Path(__file__).parent)
-    element_html = build_element_html(
-        'variables="x"',
-        'formula-editor="true"',
-        'display-log-as-ln="true"',
-        'initial-value="log(x)"',
-    )
-    data = make_question_data()
-
-    symbolic_input.prepare(element_html, data)
-    rendered = symbolic_input.render(element_html, data)
-
-    assert "\\ln{\\left(x \\right)}" in rendered
-    assert "\\log{\\left(x \\right)}" not in rendered
-
-
 def test_formula_editor_test_submission_includes_mathjson() -> None:
     x = sympy.Symbol("x")
     # pyright is not smart enough here

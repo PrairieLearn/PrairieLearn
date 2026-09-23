@@ -1533,12 +1533,16 @@
     mf.addEventListener('focus', updateKeyboardLayout);
     mf.addEventListener('selection-change', updateKeyboardLayout);
 
-    const initialLatex = $('#symbolic-input-latex-' + name).val();
+    // An absent value means no saved answer; an empty value is a saved blank answer.
+    const submittedLatex = $('#symbolic-input-latex-' + name).attr('value');
 
     setUpSymbolicInputMacros(mf);
 
-    if (typeof initialLatex === 'string') {
-      mf.value = initialLatex;
+    if (submittedLatex !== undefined) {
+      mf.value = submittedLatex;
+    } else if (mf.dataset.initialValue !== undefined) {
+      // ASCIIMath uses ^ for powers; ** is Python's equivalent notation.
+      mf.setValue(mf.dataset.initialValue.replaceAll('**', '^'), { format: 'ascii-math' });
     }
 
     // Disable auto-complete suggestions for macros

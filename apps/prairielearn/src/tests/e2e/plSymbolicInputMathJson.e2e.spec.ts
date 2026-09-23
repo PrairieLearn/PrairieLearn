@@ -206,6 +206,49 @@ async function submitFormulaEditorMathJson(page: Page, rawMathJson: string): Pro
 }
 
 test.describe('pl-symbolic-input', () => {
+  test('allows completing a partial initial value in the formula editor', async ({
+    page,
+    testCoursePath,
+    courseInstance,
+  }) => {
+    const cleanupQuestion = await openSymbolicInputPreview({
+      courseInstance,
+      page,
+      testCoursePath,
+      questionFiles: {
+        html: `
+<pl-symbolic-input
+  answers-name="editor"
+  formula-editor="true"
+  variables="x"
+  initial-value="x**2+"
+  correct-answer="x**2+1"
+></pl-symbolic-input>
+`,
+        server: '',
+      },
+    });
+
+    try {
+      const editor = getFormulaEditor(page);
+      await expect(page.locator('input[name="editor-latex"]')).toHaveValue('x^2+');
+
+      await editor.press('End');
+      await editor.pressSequentially('1');
+      await page.getByRole('button', { name: /Save & Grade/ }).click();
+
+      await expect(editor.locator('..').getByText('100%', { exact: true })).toBeVisible();
+      await expect(page.locator('input[name="editor-latex"]')).toHaveValue('x^2+1');
+
+      await fillFormulaEditor(editor, '');
+      await page.getByRole('button', { name: /Save & Grade/ }).click();
+      await expect(page.getByText('Invalid', { exact: true }).first()).toBeVisible();
+      await expect(page.locator('input[name="editor-latex"]')).toHaveValue('');
+    } finally {
+      await cleanupQuestion();
+    }
+  });
+
   test('grades custom functions entered through the formula editor', async ({
     page,
     testCoursePath,

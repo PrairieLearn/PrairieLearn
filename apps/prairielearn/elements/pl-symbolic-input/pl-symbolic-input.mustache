@@ -27,7 +27,7 @@
             name="{{name}}-latex"
             id="symbolic-input-latex-{{name}}"
             type="hidden"
-            value="{{raw_submitted_answer_latex}}"
+            {{#has_submitted_answer_latex}}value="{{raw_submitted_answer_latex}}"{{/has_submitted_answer_latex}}
         />
         <math-field
             id="symbolic-input-{{name}}"
@@ -36,6 +36,7 @@
             {{^editable}}contentEditable="false"{{/editable}}
             data-placeholder-text = "{{placeholder}}"
             data-variables="{{variables}}"
+            {{#initial_value}}data-initial-value="{{initial_value}}"{{/initial_value}}
             custom-functions="{{custom_functions}}"
             {{#log_as_ln}}log-as-ln="log-as-ln"{{/log_as_ln}}
             {{#imaginary_unit}}imaginary-unit="{{imaginary_unit}}"{{/imaginary_unit}}
