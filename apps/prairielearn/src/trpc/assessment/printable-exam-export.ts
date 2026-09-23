@@ -5,6 +5,8 @@ import { z } from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
 import { QuestionBlockSizeOverflowError, createPdfOutput } from '@prairielearn/printing';
+import { run } from '@prairielearn/run';
+import { assertNever } from '@prairielearn/utils';
 
 import { encodePrintPageIdentity } from '../../lib/client/print-page-code.js';
 import { type PrintDocument, printLayoutSearch } from '../../lib/client/print-preparation.js';
@@ -85,8 +87,31 @@ export const printableExamExportRouter = t.router({
         const exportId = randomUUID();
         const forms: { pdf: Buffer; coverPageCount: number }[] = [];
         const answerKeys: Buffer[] = [];
-        const isBooklet = metadata.document === 'booklet';
-        const selectedInstances = isBooklet
+        const plan = run(() => {
+          switch (metadata.document) {
+            case 'exam':
+              return {
+                filename: 'exam',
+                documents: ['exam'] as PrintDocument[],
+                appendAnswerKeys: false,
+              };
+            case 'answer_key':
+              return {
+                filename: 'answer_keys',
+                documents: ['answer_key'] as PrintDocument[],
+                appendAnswerKeys: false,
+              };
+            case 'booklet':
+              return {
+                filename: 'booklet',
+                documents: ['exam', 'answer_key'] as PrintDocument[],
+                appendAnswerKeys: true,
+              };
+            default:
+              return assertNever(metadata.document);
+          }
+        });
+        const selectedInstances = plan.appendAnswerKeys
           ? metadata.instances
           : metadata.instances.slice(0, metadata.copies);
         for (const [index, instance] of selectedInstances.entries()) {
@@ -100,11 +125,9 @@ export const printableExamExportRouter = t.router({
             overrides,
             new Set(instance.settings.excludedQuestions),
           );
-          const documents: PrintDocument[] =
-            metadata.document === 'booklet'
-              ? [...(index < metadata.copies ? ['exam' as const] : []), 'answer_key']
-              : [metadata.document];
-          for (const printDocument of documents) {
+          for (const printDocument of plan.documents) {
+            // Every selected form gets a key, even if there are fewer exam copies than forms.
+            if (printDocument === 'exam' && index >= metadata.copies) continue;
             const search = new URLSearchParams(printLayoutSearch(instance.settings));
             search.set('document', printDocument);
             search.set('form_label', instance.formLabel);
@@ -133,7 +156,7 @@ export const printableExamExportRouter = t.router({
             const rendered = await renderer.render(
               { url: previewUrl.href, cookieHeader: ctx.cookieHeader },
               {
-                label: isBooklet ? 'booklet PDF' : 'PDF',
+                label: plan.appendAnswerKeys ? 'booklet PDF' : 'PDF',
                 produce: async (page) => {
                   const state = await page.evaluate(() => {
                     const sheets = [...document.querySelectorAll('.pagedjs_page')];
@@ -160,7 +183,7 @@ export const printableExamExportRouter = t.router({
                 },
               },
             );
-            if (isBooklet && printDocument === 'answer_key') {
+            if (plan.appendAnswerKeys && printDocument === 'answer_key') {
               answerKeys.push(rendered.pdf);
             } else {
               forms.push(rendered);
@@ -181,7 +204,7 @@ export const printableExamExportRouter = t.router({
         );
         return {
           base64: packet.toString('base64'),
-          filename: `${prefix}${isBooklet ? 'booklet' : metadata.document === 'answer_key' ? 'answer_keys' : 'exam'}_${metadata.copies}_copies.pdf`,
+          filename: `${prefix}${plan.filename}_${metadata.copies}_copies.pdf`,
         };
       } catch (error) {
         if (
