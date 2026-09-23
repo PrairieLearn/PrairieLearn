@@ -45,6 +45,9 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
       this.previousCropRotateState = null;
       this.selectedContainerName = 'capture-preview';
       this.handwritingEnhanced = false;
+      this.manualUploadId = 0;
+      this.cropSaveId = 0;
+      this.manualUploadPreview = null;
 
       /** Resizing canvas and context used for image scaling */
       this.resizingCanvas = null;
@@ -150,21 +153,66 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
         });
       }
 
-      manualUploadInput.addEventListener('change', (event) => {
+      manualUploadInput.addEventListener('change', async (event) => {
         const target = event.target;
         const file = target.files && target.files[0];
         if (!file) return;
+        target.value = '';
 
-        const reader = new FileReader();
-
-        reader.onload = () => {
-          this.loadCapturePreviewFromDataUrl({
-            dataUrl: reader.result,
-          });
+        this.manualUploadId++;
+        const uploadId = this.manualUploadId;
+        this.setManualUploadMessage('');
+        const uploadedImageContainer = this.imageCaptureDiv.querySelector(
+          '.js-uploaded-image-container',
+        );
+        const hiddenCaptureInput = this.imageCaptureDiv.querySelector('.js-hidden-capture-input');
+        // Keep the preview and submitted value together while showing the loading indicator.
+        this.manualUploadPreview ??= {
+          nodes: [...uploadedImageContainer.childNodes],
+          value: hiddenCaptureInput.value,
         };
+        this.setLoadingCaptureState(uploadedImageContainer);
 
-        reader.readAsDataURL(file);
+        try {
+          let blob = file;
+          if (/^image\/hei[cf](?:-sequence)?$/i.test(file.type) || /\.hei[cf]$/i.test(file.name)) {
+            // Load only for HEIC uploads; subsequent imports reuse the cached module.
+            const { heicTo } = await import('heic-to/csp');
+            blob = await heicTo({ blob: file, type: 'image/jpeg', quality: 1 });
+          }
+
+          const dataUrl = await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = () => reject(reader.error);
+            reader.readAsDataURL(blob);
+          });
+
+          // A newer upload, capture, or deletion takes precedence over this upload.
+          if (uploadId !== this.manualUploadId) return;
+          await this.loadCapturePreviewFromDataUrl({ dataUrl, uploadId });
+        } catch {
+          if (uploadId !== this.manualUploadId) return;
+          uploadedImageContainer.replaceChildren(...this.manualUploadPreview.nodes);
+          // Preserve autosaved edits if the user is still cropping the previous image.
+          if (this.selectedContainerName !== 'crop-rotate') {
+            hiddenCaptureInput.value = this.manualUploadPreview.value;
+          }
+          this.updateCaptureButtons(!!hiddenCaptureInput.value);
+          this.manualUploadPreview = null;
+          this.setManualUploadMessage(
+            'Could not load this image. Try uploading a JPEG or PNG.',
+            true,
+          );
+        }
       });
+    }
+
+    setManualUploadMessage(message, isError = false) {
+      const status = this.imageCaptureDiv.querySelector('.js-manual-upload-message');
+      status.textContent = message;
+      status.classList.toggle('d-none', !message);
+      status.classList.toggle('text-danger', isError);
     }
 
     createLocalCameraCaptureListeners() {
@@ -626,18 +674,12 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
       }
     }
 
-    async setHiddenCaptureInputValue(dataUrl) {
+    async setHiddenCaptureInputValue(dataUrl, uploadId = this.manualUploadId, cropSaveId = null) {
+      const isCurrent = () =>
+        uploadId === this.manualUploadId && (cropSaveId === null || cropSaveId === this.cropSaveId);
       const hiddenCaptureInput = this.imageCaptureDiv.querySelector('.js-hidden-capture-input');
 
-      this.ensureElementsExist({
-        hiddenCaptureInput,
-      });
-
-      if (dataUrl && !hiddenCaptureInput.value) {
-        this.updateCaptureButtons(true);
-      } else if (!dataUrl) {
-        this.updateCaptureButtons(false);
-      }
+      this.ensureElementsExist({ hiddenCaptureInput });
 
       if (dataUrl) {
         // Perform scaling to ensure that captured images are not too large.
@@ -645,40 +687,38 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
         // If the image width and height are both less than 2000px, no scaling is applied.
         const image = new Image();
         image.src = dataUrl;
-
-        try {
-          await image.decode();
-        } catch (error) {
-          throw new Error('Failed to decode image', { cause: error });
-        }
+        await image.decode();
+        if (!isCurrent()) return;
 
         const imageScaleFactor = MAX_IMAGE_SIDE_LENGTH / Math.max(image.width, image.height);
-        if (imageScaleFactor >= 1) {
-          // If we don't need to shrink the image, just use it directly.
-          hiddenCaptureInput.value = dataUrl;
-          return;
-        }
-        const targetWidth = Math.round(image.width * imageScaleFactor);
-        const targetHeight = Math.round(image.height * imageScaleFactor);
+        if (imageScaleFactor < 1) {
+          const targetWidth = Math.round(image.width * imageScaleFactor);
+          const targetHeight = Math.round(image.height * imageScaleFactor);
 
-        if (!this.resizingCanvas) {
-          this.resizingCanvas = document.createElement('canvas');
-        }
-        if (!this.resizingCtx) {
-          this.resizingCtx = this.resizingCanvas.getContext('2d');
-          if (!this.resizingCtx) {
-            throw new Error('Failed to get canvas context');
+          if (!this.resizingCanvas) {
+            this.resizingCanvas = document.createElement('canvas');
           }
+          if (!this.resizingCtx) {
+            this.resizingCtx = this.resizingCanvas.getContext('2d');
+            if (!this.resizingCtx) {
+              throw new Error('Failed to get canvas context');
+            }
+          }
+
+          this.resizingCanvas.width = targetWidth;
+          this.resizingCanvas.height = targetHeight;
+          this.resizingCtx.drawImage(image, 0, 0, targetWidth, targetHeight);
+          dataUrl = this.resizingCanvas.toDataURL('image/jpeg');
         }
-
-        this.resizingCanvas.width = targetWidth;
-        this.resizingCanvas.height = targetHeight;
-        this.resizingCtx.drawImage(image, 0, 0, targetWidth, targetHeight);
-
-        hiddenCaptureInput.value = this.resizingCanvas.toDataURL('image/jpeg');
-      } else {
-        hiddenCaptureInput.value = '';
       }
+
+      if (!isCurrent()) return;
+      if (dataUrl && !hiddenCaptureInput.value) {
+        this.updateCaptureButtons(true);
+      } else if (!dataUrl) {
+        this.updateCaptureButtons(false);
+      }
+      hiddenCaptureInput.value = dataUrl || '';
     }
 
     /**
@@ -724,6 +764,14 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
      * image that was ready for submission.
      */
     async setHiddenCaptureInputToCapturePreview() {
+      // The loading indicator is not the saved image, and crop autosave may have changed the answer.
+      if (this.manualUploadPreview !== null) {
+        const hiddenCaptureInput = this.imageCaptureDiv.querySelector('.js-hidden-capture-input');
+        hiddenCaptureInput.value = this.manualUploadPreview.value;
+        this.updateCaptureButtons(!!hiddenCaptureInput.value);
+        return;
+      }
+
       const capturePreviewImg = this.imageCaptureDiv.querySelector(
         '.js-uploaded-image-container .pl-image-capture-preview',
       );
@@ -731,7 +779,29 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
       await this.setHiddenCaptureInputValue(capturePreviewImg ? capturePreviewImg.src : '');
     }
 
-    loadCapturePreviewFromDataUrl({ dataUrl, originalCapture = true }) {
+    async loadCapturePreviewFromDataUrl({ dataUrl, originalCapture = true, uploadId }) {
+      if (uploadId === undefined) {
+        this.manualUploadId++;
+        uploadId = this.manualUploadId;
+      }
+      if (uploadId !== this.manualUploadId) return;
+      if (this.editable) {
+        if (dataUrl) {
+          await this.setHiddenCaptureInputValue(dataUrl, uploadId);
+        } else {
+          // Keep deletion synchronous so the caller can immediately show the empty placeholder.
+          this.setHiddenCaptureInputValue(dataUrl, uploadId);
+        }
+      }
+      if (uploadId !== this.manualUploadId) return;
+      if (originalCapture && this.selectedContainerName === 'crop-rotate') {
+        this.removeCropperChangeListeners();
+        this.openContainer('capture-preview');
+      }
+      this.manualUploadPreview = null;
+      if (this.editable && this.manual_upload_enabled) {
+        this.setManualUploadMessage('');
+      }
       const uploadedImageContainer = this.imageCaptureDiv.querySelector(
         '.js-uploaded-image-container',
       );
@@ -884,8 +954,6 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
       }
 
       if (this.editable) {
-        this.setHiddenCaptureInputValue(dataUrl);
-
         if (originalCapture) {
           if (dataUrl) {
             this.originalImageCaptureDataUrl = dataUrl;
@@ -1193,6 +1261,7 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
     /** Remove the cropper change listeners that update the hidden input field. */
     removeCropperChangeListeners() {
       this.ensureCropperExists();
+      this.cancelPendingCropSave();
 
       const cropperSelection = this.cropper.getCropperSelection();
       const cropperImage = this.cropper.getCropperImage();
@@ -1354,6 +1423,12 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
 
     timeoutId = null;
 
+    cancelPendingCropSave() {
+      this.cropSaveId++;
+      clearTimeout(this.timeoutId);
+      this.timeoutId = null;
+    }
+
     /** Retrieve the Base64-encoded image data of the cropper selection and its CropperJS selection object. */
     async getCropperSelection() {
       this.ensureCropperExists();
@@ -1401,10 +1476,14 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
         return;
       }
 
-      clearTimeout(this.timeoutId);
+      this.cancelPendingCropSave();
+      const cropSaveId = this.cropSaveId;
+      const uploadId = this.manualUploadId;
       this.timeoutId = setTimeout(async () => {
+        if (cropSaveId !== this.cropSaveId || uploadId !== this.manualUploadId) return;
         const { dataUrl } = await this.getCropperSelection();
-        await this.setHiddenCaptureInputValue(dataUrl);
+        if (cropSaveId !== this.cropSaveId || uploadId !== this.manualUploadId) return;
+        await this.setHiddenCaptureInputValue(dataUrl, uploadId, cropSaveId);
       }, 200);
     }
 
@@ -1476,10 +1555,6 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
       this.ensureCropperExists();
 
       this.removeCropperChangeListeners();
-
-      // Clear any pending debounced crop/rotate changes that would be saved
-      clearTimeout(this.timeoutId);
-      this.timeoutId = null;
 
       this.revertToPreviousCropRotateState();
 
