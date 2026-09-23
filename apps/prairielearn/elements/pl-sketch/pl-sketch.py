@@ -1296,7 +1296,13 @@ def _solution_to_gradeable(
             # Easy case: just need to convert from {"x": x, "y": y} dict to [x, y] list
             gradeable[tool_id] = [{"point": [pt["x"], pt["y"]]} for pt in drawings]
 
-        elif tool_name in ("spline", "freeform", "polyline", "line-segment"):
+        elif tool_name == "freeform":
+            gradeable[tool_id] = [
+                {"spline": [[point["x"], point["y"]] for point in curve]}
+                for curve in drawings
+            ]
+
+        elif tool_name in ("spline", "polyline", "line-segment"):
             # To convert points into the spline format, we need to add control points in-between each point pair.
             # Note that line-segment is a special case where len(curve) is exactly 2, but the logic works the same
             gradeable[tool_id] = []
