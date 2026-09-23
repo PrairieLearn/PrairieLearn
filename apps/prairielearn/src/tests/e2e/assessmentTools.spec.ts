@@ -335,6 +335,58 @@ test.describe('Calculator', () => {
       await expectLatex(output, '=47');
       await checkPinyinComposition(page);
 
+      for (const [denominator, displayed] of [
+        [3, String.raw`=0.\overline{3}`],
+        [6, String.raw`=0.1\overline{6}`],
+        [19, String.raw`=0.052\,631\,578\,947\,368\,421\,052\ldots`],
+        [100000000, String.raw`=1\cdot10^{-8}`],
+      ] as const) {
+        await page.locator('[name="clear"]:visible').click();
+        await input.pressSequentially(`1/${denominator}`);
+        await expectLatex(output, displayed);
+        await input.press('Enter');
+        if (denominator === 100000000) await page.reload();
+        const historyOutput = page.getByTestId('history-output').first();
+        await expectLatex(historyOutput.locator('math-field'), displayed);
+        await historyOutput.locator('.history-insert-btn').click();
+        await expectLatex(input, `\\frac{1}{${denominator}}`);
+        await input.press('ArrowRight');
+        await input.pressSequentially(`*${denominator}-1`);
+        await expectLatex(output, '=0');
+        await expectLatex(historyOutput.locator('math-field'), displayed);
+      }
+
+      await page.locator('[name="clear"]:visible').click();
+      await input.pressSequentially('0.33333333333333333');
+      await expectLatex(output, String.raw`=0.333\,333\,333\,333\,333\,33`);
+      await input.pressSequentially('*3-1');
+      await expectLatex(output, String.raw`=-1\cdot10^{-17}`);
+
+      await input.evaluate((element) => {
+        (element as HTMLElement & { value: string }).value = '1/0';
+        element.dispatchEvent(new Event('input', { bubbles: true }));
+      });
+      await input.press('Enter');
+      await expect(
+        page.getByTestId('history-output').first().locator('.history-insert-btn'),
+      ).toBeDisabled();
+      const ans = page.getByRole('button', { name: 'ans', exact: true });
+      await expect(ans).toBeDisabled();
+      await input.pressSequentially('+1');
+      await expectLatex(input, '+1');
+      await expectLatex(output, '=1');
+      for (const latex of [String.raw`\operatorname{ans}`, String.raw`0\times\operatorname{ans}`]) {
+        await input.evaluate((element, value) => {
+          (element as HTMLElement & { value: string }).value = value;
+          element.dispatchEvent(new Event('input', { bubbles: true }));
+        }, latex);
+        await input.press('Enter');
+        await expect(page.locator('.calculator-input-group')).toHaveClass(/error/);
+        await expectLatex(output, '');
+        await expect(page.getByTestId('history-output')).toHaveCount(6);
+      }
+      await page.locator('[name="clear"]:visible').click();
+
       const prior = await input.evaluate(
         (element) => (element as HTMLElement & { value: string }).value,
       );
@@ -402,6 +454,9 @@ test.describe('Calculator', () => {
           element.dispatchEvent(new Event('input', { bubbles: true }));
         });
         await expectLatex(output, '=3');
+        await page.locator('[name="clear"]:visible').click();
+        await input.pressSequentially('i*i');
+        await expectLatex(output, '=-1');
         await page.getByRole('button', { name: 'Scroll right', exact: true }).click();
         await expect(page.getByRole('button', { name: '7', exact: true })).toBeVisible();
       }
@@ -412,7 +467,18 @@ test.describe('Calculator', () => {
       expect(box.x + box.width).toBeLessThanOrEqual(320);
       await page.reload();
       await expect(input).toBeVisible();
-      await expect(page.getByTestId('history-output')).toHaveCount(1);
+      await expect(page.getByTestId('history-output')).toHaveCount(6);
+      await expect(
+        page.getByTestId('history-output').first().locator('.history-insert-btn'),
+      ).toBeDisabled();
+      await expect(ans).toBeDisabled();
+      await page.locator('[name="clear"]:visible').click();
+      await input.pressSequentially('2+3');
+      await input.press('Enter');
+      await expect(ans).toBeEnabled();
+      await ans.click();
+      await input.pressSequentially('+1');
+      await expectLatex(output, '=6');
     });
   }
 

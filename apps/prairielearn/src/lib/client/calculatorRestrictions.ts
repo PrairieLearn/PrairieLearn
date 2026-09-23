@@ -57,6 +57,7 @@ const scientificCommands = new Set([
   'lg',
   'pi',
   'exponentialE',
+  'imaginaryI',
   'lvert',
   'rvert',
   'vert',
@@ -67,7 +68,7 @@ export function isSupportedCalculatorInput(latex: string, mode: RestrictedCalcul
   const names =
     mode === 'basic'
       ? []
-      : ['ans', 'sin', 'cos', 'tan', 'sqrt', 'root', 'ln', 'log', 'pi', 'abs', 'e'];
+      : ['ans', 'sin', 'cos', 'tan', 'sqrt', 'root', 'ln', 'log', 'pi', 'abs', 'e', 'i'];
   // Ans is a controlled button insertion, not an editable variable name.
   if (mode === 'basic') {
     // MathLive adds an upright-font wrapper when it edits an existing operator.
@@ -142,7 +143,8 @@ export function isSupportedCalculatorExpression(
   if (typeof expression === 'string') {
     return (
       expression === 'ans' ||
-      (mode === 'scientific' && ['Pi', 'ExponentialE', 'e'].includes(expression))
+      (mode === 'scientific' &&
+        ['Pi', 'ExponentialE', 'e', 'ImaginaryUnit', 'i'].includes(expression))
     );
   }
   if (Array.isArray(expression)) {

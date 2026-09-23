@@ -293,9 +293,14 @@ math-field.pl-calculator-history-text:focus {
   cursor: pointer;
 }
 
-.calculator-action-btn:hover {
+.calculator-action-btn:hover:not(:disabled) {
   background-color: var(--bs-gray-300);
   color: var(--bs-gray-700);
+}
+
+.calculator-action-btn:disabled {
+  cursor: default;
+  opacity: 0.5;
 }
 
 .history-action-btn {

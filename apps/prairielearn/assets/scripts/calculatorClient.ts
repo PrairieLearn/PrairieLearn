@@ -4,6 +4,7 @@ import {
   type Expression,
   LatexSyntax,
   type MathJsonExpression,
+  isNumber,
   isTensor,
 } from '@cortex-js/compute-engine';
 import { type Mathfield, MathfieldElement, convertLatexToAsciiMath } from 'mathlive';
@@ -238,10 +239,11 @@ export function initCalculator(
   const calculatorLocalData = storage.getItem(storageKey);
   if (!calculatorLocalData) {
     setCalculatorData(storageKey, { ...DEFAULT_CALCULATOR_DATA, isOpen: true }, storage);
+    updateAns(null);
   } else {
     const data = getCalculatorData(storageKey, storage);
     // Stored and displayed history must have matching indexes for angle-mode edits.
-    data.history = data.history.filter(addHistoryItem);
+    data.history = data.history.filter((item) => addHistoryItem(item));
     setCalculatorData(storageKey, data, storage);
     if (!restrictedMode) restoreCalculatorDefinitions(data.variable);
 
@@ -250,19 +252,24 @@ export function initCalculator(
     if (items.length > 0) {
       const displayMode = calculatorOutput.dataset.displayMode as DisplayMode;
       const lastResult = resolveAnsAndEvaluate(items, 0, displayMode);
-      if (lastResult) {
-        ce.assign('ans', lastResult.evaluated);
-      } else {
-        ce.assign('ans', ce.parse('\\bot'));
-      }
+      updateAns(lastResult);
     } else {
-      ce.assign('ans', ce.parse('\\bot'));
+      updateAns(null);
     }
 
     if (data.temp_input) {
       calculatorInputElement.value = data.temp_input;
       calculatorInputElement.dispatchEvent(new CustomEvent('input'));
     }
+  }
+
+  function updateAns(result: ReturnType<typeof evaluateExpression>) {
+    ce.assign('ans', result?.evaluated ?? ce.parse('\\bot'));
+    const unavailable = !!restrictedMode && result?.insertableOutput == null;
+    drawer.querySelectorAll<HTMLButtonElement>('[name="ans"]').forEach((button) => {
+      button.disabled = unavailable;
+    });
+    if (unavailable) shouldAutoInsertAns = false;
   }
 
   /**
@@ -311,14 +318,11 @@ export function initCalculator(
     const displayMode = calculatorOutput.dataset.displayMode as DisplayMode;
 
     const result = resolveAnsAndEvaluate(items, domIndex, displayMode);
-    if (result) {
-      const outputField = ensureElement(
-        historyItemEl.querySelector<MathfieldElement>(
-          '.history-output .pl-calculator-history-text',
-        ),
-      );
-      outputField.value = `=${result.displayed}`;
-    }
+    const outputField = ensureElement(
+      historyItemEl.querySelector<MathfieldElement>('.history-output .pl-calculator-history-text'),
+    );
+    outputField.value = result ? `=${result.displayed}` : '';
+    updateHistoryInsertion(historyItemEl, result?.insertableOutput ?? null);
 
     // Forward propagation: if the next item uses ans, re-evaluate it too
     if (domIndex > 0) {
@@ -331,9 +335,7 @@ export function initCalculator(
     // After all re-evaluations, set ans to the last history item's result
     if (updateGlobalAns && items.length > 0) {
       const lastResult = resolveAnsAndEvaluate(items, 0, displayMode);
-      if (lastResult) {
-        ce.assign('ans', lastResult.evaluated);
-      }
+      updateAns(lastResult);
     }
   }
 
@@ -347,13 +349,21 @@ export function initCalculator(
 
     try {
       return withCalculatorTimeLimit(ce, () => {
+        const savedAns = ce.symbol('ans', { autoDeclare: false }).valueDefinition?.value;
         if (restrictedMode) {
           const raw = parseCalculatorExpression(input, restrictedMode);
           const supported = isSupportedCalculatorExpression(raw, restrictedMode);
           if (!supported) return null;
+          // Validate the referenced value before canonicalization can simplify
+          // it away, so ans cannot bypass the history-insertion restrictions.
+          if (
+            containsAns(raw) &&
+            (!savedAns || getInsertableOutput(savedAns, restrictedMode) === null)
+          ) {
+            return null;
+          }
         }
         const savedVariables = getCalculatorDefinitions();
-        const savedAns = ce.symbol('ans', { autoDeclare: false }).valueDefinition?.value;
 
         ce.pushScope();
         try {
@@ -377,9 +387,23 @@ export function initCalculator(
 
           const evaluated = parsed.evaluate();
           const numericValue = displayMode === 'symbolic' ? evaluated : evaluated.N();
-          const displayed = numericValue.toLatex(latexOptions);
+          let displayed = numericValue.toLatex(latexOptions);
+          // Compute Engine guesses recurrence from digit patterns, even for finite
+          // decimals. Keep an overbar only if it round-trips to the exact result;
+          // isSame avoids the tolerance used by numeric equality checks.
+          if (
+            displayed.includes('\\overline') &&
+            (!isNumber(evaluated) ||
+              !evaluated.isExact ||
+              !evaluated.isSame(ce.parse(displayed, { parseNumbers: 'rational' })))
+          ) {
+            displayed = numericValue.toLatex({ ...latexOptions, repeatingDecimal: 'none' });
+          }
 
-          return { displayed, evaluated, variables: getCalculatorDefinitions() };
+          const insertableOutput = restrictedMode
+            ? getInsertableOutput(evaluated, restrictedMode)
+            : displayed;
+          return { displayed, evaluated, insertableOutput, variables: getCalculatorDefinitions() };
         } finally {
           ce.popScope();
         }
@@ -388,6 +412,29 @@ export function initCalculator(
       console.error('Evaluation failed:', e);
       return null;
     }
+  }
+
+  function getInsertableOutput(
+    evaluated: Expression,
+    mode: RestrictedCalculatorMode,
+  ): string | null {
+    // Display LaTeX can contain truncation markers or powers of ten that the
+    // restricted inputs reject. Serialize the value independently, preserving
+    // exact fractions and avoiding display-only number formatting.
+    const options = {
+      repeatingDecimal: 'none',
+      fractionalDigits: 'max',
+      avoidExponentsInRange: [-Infinity, Infinity],
+      digitGroupSeparator: '',
+    } as const;
+    let latex = evaluated.toLatex(options);
+    // Re-inserting a trig expression would reinterpret its arguments in the
+    // current angle mode. Reuse its numeric value instead.
+    if (containsTrigFunction(latex)) latex = evaluated.N().toLatex(options);
+    return isSupportedCalculatorInput(latex, mode) &&
+      isSupportedCalculatorExpression(parseCalculatorExpression(latex, mode), mode)
+      ? latex
+      : null;
   }
 
   function getCalculatorDefinitions() {
@@ -491,7 +538,7 @@ export function initCalculator(
         displayed,
         angleMode,
       };
-      if (!addHistoryItem(historyItem)) {
+      if (!addHistoryItem(historyItem, result.insertableOutput)) {
         showCalculationError();
         return;
       }
@@ -499,8 +546,8 @@ export function initCalculator(
       try {
         data.variable = variables;
         restoreCalculatorDefinitions(variables);
-        ce.assign('ans', evaluated);
-        shouldAutoInsertAns = true;
+        updateAns(result);
+        shouldAutoInsertAns = result.insertableOutput !== null;
       } catch (e) {
         console.error('Failed to update calculator state:', e);
       }
@@ -527,6 +574,7 @@ export function initCalculator(
 
     ce.popScope();
     ce.pushScope();
+    updateAns(null);
     shouldAutoInsertAns = false;
     // Clear the input and output fields
     calculatorInputElement.executeCommand('deleteAll');
@@ -727,6 +775,10 @@ export function initCalculator(
 
   if (restrictedMode) configureCalculatorInput(calculatorInputElement, restrictedMode);
 
+  function containsAns(expression: MathJsonExpression): boolean {
+    return expression === 'ans' || (Array.isArray(expression) && expression.some(containsAns));
+  }
+
   function hasError(json: MathJsonExpression): boolean {
     if (!Array.isArray(json)) return false;
     if (json[0] === 'Error') return true;
@@ -797,7 +849,15 @@ export function initCalculator(
     disposeDrawer();
   };
 
-  function addHistoryItem(dataHistoryItem: HistoryItem): boolean {
+  function updateHistoryInsertion(historyItem: HTMLElement, insertableOutput: string | null) {
+    const button = ensureElement(
+      historyItem.querySelector<HTMLButtonElement>('.history-output .history-insert-btn'),
+    );
+    button.disabled = insertableOutput === null;
+    historyItem.dataset.insertableOutput = insertableOutput ?? '';
+  }
+
+  function addHistoryItem(dataHistoryItem: HistoryItem, insertableOutput?: string | null): boolean {
     const { input, displayed, angleMode } = dataHistoryItem;
 
     if (restrictedMode && !isSupportedCalculatorInput(input, restrictedMode)) {
@@ -861,7 +921,7 @@ export function initCalculator(
     });
     outputInsertBtn.addEventListener('click', () => {
       window.bootstrap.Tooltip.getInstance(outputInsertBtn)?.hide();
-      calculatorInputElement.insert(outputField.value.replace(/^=/, ''));
+      calculatorInputElement.insert(historyItem.dataset.insertableOutput!);
       calculatorInputElement.dispatchEvent(new CustomEvent('input'));
       calculatorInputElement.focus();
     });
@@ -887,6 +947,13 @@ export function initCalculator(
     });
 
     historyPanel.insertBefore(clone, historyPanel.firstChild);
+    if (insertableOutput === undefined) {
+      const items = Array.from(historyPanel.querySelectorAll<HTMLElement>('.history-item'));
+      insertableOutput = restrictedMode
+        ? (resolveAnsAndEvaluate(items, 0, 'symbolic')?.insertableOutput ?? null)
+        : displayed;
+    }
+    updateHistoryInsertion(historyItem, insertableOutput);
     historyPanel.scrollTop = 0;
     clearHistoryBtn.classList.remove('d-none');
     return true;
