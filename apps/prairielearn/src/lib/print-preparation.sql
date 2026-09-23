@@ -36,7 +36,7 @@ WITH
     RETURNING
       *
   ),
-  logged AS (
+  inserted_state_log AS (
     INSERT INTO
       assessment_state_logs (open, assessment_instance_id, auth_user_id)
     SELECT

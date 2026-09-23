@@ -380,15 +380,15 @@ function PrintPreparation({
       )}
       <form
         className="print-preparation-form"
+        noValidate
         onSubmit={(event) => {
           void handleSubmit(applySettings)(event).catch(() => {});
         }}
       >
         <div className="print-preparation-columns">
           <div className="print-preparation-controls">
-            <div
+            <section
               className="print-preparation-controls-scroll"
-              role="region"
               aria-label="Print settings and questions"
             >
               {hasRandomization && (
@@ -865,7 +865,7 @@ function PrintPreparation({
                   </Button>
                 </Card.Body>
               </Card>
-            </div>
+            </section>
             <div className="print-preparation-actions">
               {noQuestionsSelected && (
                 <p className="small text-danger mb-2" role="alert">
@@ -873,7 +873,7 @@ function PrintPreparation({
                 </p>
               )}
               <Button
-                type="button"
+                type="submit"
                 className="w-100"
                 disabled={
                   isSubmitting ||
@@ -882,9 +882,6 @@ function PrintPreparation({
                   (groupWork && !instanceId) ||
                   (!!selectedInstance && !validInstance)
                 }
-                onClick={(event) => {
-                  void handleSubmit(applySettings)(event).catch(() => {});
-                }}
               >
                 {isSubmitting ? (
                   <>

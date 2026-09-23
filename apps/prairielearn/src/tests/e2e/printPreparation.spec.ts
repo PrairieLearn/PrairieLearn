@@ -37,6 +37,9 @@ test('prepares an exam and key with consistent variants and downloads', async ({
   await expect(page.getByRole('button', { name: 'PDF', exact: true })).toBeEnabled({
     timeout: 120_000,
   });
+  // An existing instance can be previewed before a form is selected in the URL.
+  await page.getByRole('button', { name: /^Form A/ }).click();
+  await expect(page).toHaveURL((url) => url.searchParams.has('instance'));
   const form = new URL(page.url()).searchParams.get('instance');
   await expect(page.getByRole('button', { name: /^Form A/ })).toHaveAttribute(
     'aria-pressed',
