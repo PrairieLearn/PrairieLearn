@@ -5,32 +5,16 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { withServer } from '@prairielearn/express-test-utils';
 import { logger } from '@prairielearn/logger';
-import type * as postgres from '@prairielearn/postgres';
+import * as postgres from '@prairielearn/postgres';
 import * as publicFetchModule from '@prairielearn/public-fetch';
 
 import { fetchRetry, getAccessToken, getOpenidClientConfig } from '../ee/lib/lti13.js';
+import * as lti13Instance from '../ee/models/lti13Instance.js';
 import { withConfig } from '../tests/utils/config.js';
 
 import type { Lti13Instance } from './db-types.js';
 import { getLtiFetch } from './lti-fetch.js';
 import { updateScore } from './ltiOutcomes.js';
-
-const fixtures = vi.hoisted(() => ({ url: '', instance: {} }));
-
-vi.mock('@prairielearn/postgres', async (importOriginal) => ({
-  ...(await importOriginal<typeof postgres>()),
-  queryOptionalRow: async () => ({
-    score_perc: 75,
-    lis_result_sourcedid: 'result',
-    date: new Date(),
-    consumer_key: 'key',
-    secret: 'secret',
-    lis_outcome_service_url: fixtures.url,
-  }),
-}));
-vi.mock('../ee/models/lti13Instance.js', () => ({
-  selectLti13Instance: async () => fixtures.instance,
-}));
 
 afterEach(() => vi.restoreAllMocks());
 
@@ -39,7 +23,7 @@ describe('LTI outbound protection', () => {
     'protects grade passback, token, JWKS, and AGS/NRPS requests to %s by default',
     async (address) => {
       await withConfig({ devMode: true, ltiDevAllowedOrigins: [] }, async () => {
-        fixtures.url = `https://${address}/endpoint`;
+        const fixtures = { url: `https://${address}/endpoint`, instance: {} };
         const { privateKey } = await jose.generateKeyPair('RS256', { extractable: true });
         fixtures.instance = {
           id: '1',
@@ -53,6 +37,17 @@ describe('LTI outbound protection', () => {
             keys: [{ ...(await jose.exportJWK(privateKey)), kid: 'test-key', alg: 'RS256' }],
           },
         };
+        vi.spyOn(postgres, 'queryOptionalRow').mockResolvedValue({
+          score_perc: 75,
+          lis_result_sourcedid: 'result',
+          date: new Date(),
+          consumer_key: 'key',
+          secret: 'secret',
+          lis_outcome_service_url: fixtures.url,
+        });
+        vi.spyOn(lti13Instance, 'selectLti13Instance').mockResolvedValue(
+          fixtures.instance as Lti13Instance,
+        );
         const publicFetch = vi.spyOn(publicFetchModule, 'publicFetch');
         const warning = vi.spyOn(logger, 'warn');
         const assertBlocked = async (request: () => Promise<unknown>) => {
