@@ -392,6 +392,7 @@ function PrintPreparation({
           className="print-preparation-columns"
           disabled={isSubmitting || busy || download.isPending}
         >
+          <legend className="visually-hidden">Print preparation settings</legend>
           <div className="print-preparation-controls">
             <section
               className="print-preparation-controls-scroll"
