@@ -525,11 +525,19 @@
             latexTrigger,
             parse: 'PositiveInfinity',
           })),
-          ...customFunctions.map((fun) => ({
-            kind: 'function',
-            latexTrigger: fun,
-            parse: fun,
-          })),
+          ...customFunctions.flatMap((fun) =>
+            [
+              { latexTrigger: fun },
+              { symbolTrigger: fun },
+              // MathLive wraps typed function names in upright text, which would
+              // otherwise change single-letter names (e.g. f becomes f_upright).
+              { latexTrigger: `\\operatorname{\\mathrm{${fun}}}` },
+            ].map((trigger) => ({
+              kind: /** @type {'function'} */ ('function'),
+              ...trigger,
+              parse: fun,
+            })),
+          ),
           ...(allowTrig ? TRIGONOMETRY_DICTIONARY : []),
           ...(allowSets
             ? [

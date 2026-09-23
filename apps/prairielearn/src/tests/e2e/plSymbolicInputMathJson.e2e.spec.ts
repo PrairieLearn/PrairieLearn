@@ -206,6 +206,58 @@ async function submitFormulaEditorMathJson(page: Page, rawMathJson: string): Pro
 }
 
 test.describe('pl-symbolic-input', () => {
+  test('grades custom functions entered through the formula editor', async ({
+    page,
+    testCoursePath,
+    courseInstance,
+  }) => {
+    const cleanupQuestion = await openSymbolicInputPreview({
+      courseInstance,
+      page,
+      testCoursePath,
+      questionFiles: {
+        html: `
+<pl-symbolic-input
+  answers-name="functions"
+  formula-editor="true"
+  variables="x"
+  custom-functions="f,myfun"
+  correct-answer="f(x)+myfun(x)"
+></pl-symbolic-input>
+`,
+        server: '',
+      },
+    });
+
+    try {
+      const editor = page.locator('#symbolic-input-functions');
+      const mathJson = page.locator('input[name="functions-json"]');
+      const expected = JSON.stringify(['Add', ['f', 'x'], ['myfun', 'x']]);
+
+      await fillFormulaEditor(editor, 'f(x)+myfun(x)');
+      await expect(mathJson).toHaveValue(expected);
+
+      await fillFormulaEditor(
+        editor,
+        String.raw`\operatorname{f}(x)+\operatorname{myfun}\left(x\right)`,
+      );
+      await expect(mathJson).toHaveValue(expected);
+
+      await fillFormulaEditor(editor, '');
+      await editor.pressSequentially('f(x)+myfun(x)');
+      await expect(page.locator('input[name="functions-latex"]')).toHaveValue(
+        /\\operatorname\{(?:\\mathrm\{)?myfun\}/,
+      );
+      await expect(mathJson).toHaveValue(expected);
+
+      await page.getByRole('button', { name: /Save & Grade/ }).click();
+      await expect(editor.locator('..').getByText('100%', { exact: true })).toBeVisible();
+      await expect(page.getByText('Invalid', { exact: true })).toHaveCount(0);
+    } finally {
+      await cleanupQuestion();
+    }
+  });
+
   test('grades multi-character variables declared explicitly or inferred from correct answers', async ({
     page,
     testCoursePath,
