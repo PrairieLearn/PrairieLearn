@@ -1,9 +1,8 @@
 import { readQrCode } from '@prairielearn/qr-code';
 
-import { deleteAssessmentInstance } from '../../lib/assessment.js';
+import { deleteAssessmentInstance, makeAssessmentInstance } from '../../lib/assessment.js';
 import { decodePrintPageIdentity } from '../../lib/client/print-page-code.js';
 import type { User } from '../../lib/db-types.js';
-import { createPrintPreparationAssessmentInstance } from '../../lib/print-preparation.js';
 import { selectAssessmentByTid } from '../../models/assessment.js';
 import { getConfiguredUser } from '../utils/auth.js';
 
@@ -19,10 +18,15 @@ const test = base.extend<{
       course_instance_id: courseInstance.id,
       tid: 'exam20-assessmentTools',
     });
-    const instanceId = await createPrintPreparationAssessmentInstance({
-      assessmentId: assessment.id,
-      userId: user.id,
-      authnUserId: user.id,
+    const instanceId = await makeAssessmentInstance({
+      assessment,
+      user_id: user.id,
+      authn_user_id: user.id,
+      mode: 'Public',
+      time_limit_min: null,
+      date: new Date(),
+      client_fingerprint_id: null,
+      forPrinting: true,
     });
     try {
       await use({ instanceId, assessmentId: assessment.id, user });

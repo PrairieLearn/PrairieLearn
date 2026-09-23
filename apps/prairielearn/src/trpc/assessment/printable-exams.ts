@@ -3,10 +3,10 @@ import { z } from 'zod';
 
 import { IdSchema } from '@prairielearn/zod';
 
+import { makeAssessmentInstance } from '../../lib/assessment.js';
 import { StaffAssessmentInstanceSchema } from '../../lib/client/safe-db-types.js';
 import {
   assessmentHasPrintRandomization,
-  createPrintPreparationAssessmentInstance,
   inspectPrintPreparationQuestions,
 } from '../../lib/print-preparation.js';
 import { selectAssessmentInstancesForUser } from '../../models/assessment-instance.js';
@@ -72,10 +72,15 @@ export const printableExamsRouter = t.router({
     ),
   ),
   create: createInstanceProcedure.mutation(async ({ ctx }) => {
-    const assessmentInstanceId = await createPrintPreparationAssessmentInstance({
-      assessmentId: ctx.assessment.id,
-      userId: ctx.locals.user.id,
-      authnUserId: ctx.authn_user.id,
+    const assessmentInstanceId = await makeAssessmentInstance({
+      assessment: ctx.assessment,
+      user_id: ctx.locals.user.id,
+      authn_user_id: ctx.authn_user.id,
+      mode: 'Public',
+      time_limit_min: null,
+      date: new Date(),
+      client_fingerprint_id: null,
+      forPrinting: true,
     });
     return { assessmentInstanceId };
   }),
@@ -86,10 +91,15 @@ export const printableExamsRouter = t.router({
         message: 'Creating printable assessment instances for group exams is not supported yet.',
       });
     }
-    const assessmentInstanceId = await createPrintPreparationAssessmentInstance({
-      assessmentId: ctx.assessment.id,
-      userId: ctx.locals.user.id,
-      authnUserId: ctx.authn_user.id,
+    const assessmentInstanceId = await makeAssessmentInstance({
+      assessment: ctx.assessment,
+      user_id: ctx.locals.user.id,
+      authn_user_id: ctx.authn_user.id,
+      mode: 'Public',
+      time_limit_min: null,
+      date: new Date(),
+      client_fingerprint_id: null,
+      forPrinting: true,
     });
     return { assessmentInstanceId };
   }),

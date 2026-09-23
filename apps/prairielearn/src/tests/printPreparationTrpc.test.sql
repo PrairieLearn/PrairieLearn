@@ -1,3 +1,10 @@
+-- BLOCK set_multiple_instance
+UPDATE assessments
+SET
+  multiple_instance = $multiple_instance
+WHERE
+  id = $assessment_id;
+
 -- BLOCK set_static_assessment
 WITH
   updated_assessment AS (

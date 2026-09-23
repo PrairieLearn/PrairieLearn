@@ -158,6 +158,77 @@ describe('print preparation', { timeout: 60_000 }, () => {
     ).rejects.toThrow('An assessment instance is not available.');
   });
 
+  test('ordinary and printable requests share a number sequence under concurrent creation', async () => {
+    const assessment = await selectAssessmentByTid({
+      course_instance_id: '1',
+      tid: 'exam20-assessmentTools',
+    });
+    await execute(sql.set_multiple_instance, {
+      assessment_id: assessment.id,
+      multiple_instance: true,
+    });
+    try {
+      const api = client(assessment.id);
+      const ids = await Promise.all(
+        Array.from({ length: 6 }, async (_, index) => {
+          if (index % 2 === 0) {
+            return (await api.printableExams.create.mutate()).assessmentInstanceId;
+          }
+          return await makeAssessmentInstance({
+            assessment,
+            user_id: '1',
+            authn_user_id: '1',
+            mode: 'Public',
+            time_limit_min: null,
+            date: new Date(),
+            client_fingerprint_id: null,
+          });
+        }),
+      );
+      expect(new Set(ids).size).toBe(6);
+      const instances = await Promise.all(ids.map(selectAssessmentInstanceById));
+      const numbers = instances.map((instance) => instance.number).sort((a, b) => a - b);
+      expect(numbers).toEqual(Array.from({ length: 6 }, (_, index) => numbers[0] + index));
+      for (const assessmentInstanceId of ids) {
+        expect(await api.printableExams.questions.query({ assessmentInstanceId })).not.toHaveLength(
+          0,
+        );
+      }
+    } finally {
+      await execute(sql.set_multiple_instance, {
+        assessment_id: assessment.id,
+        multiple_instance: assessment.multiple_instance,
+      });
+    }
+  });
+
+  test('concurrent student requests still reuse a single allowed attempt', async () => {
+    const assessment = await selectAssessmentByTid({
+      course_instance_id: '1',
+      tid: 'exam20-assessmentTools',
+    });
+    const user = await getOrCreateUser({
+      uid: 'single-attempt@example.com',
+      name: 'Single attempt',
+      uin: '555555556',
+    });
+    const ids = await Promise.all(
+      Array.from({ length: 3 }, () =>
+        makeAssessmentInstance({
+          assessment,
+          user_id: user.id,
+          authn_user_id: user.id,
+          mode: 'Public',
+          time_limit_min: null,
+          date: new Date(),
+          client_fingerprint_id: null,
+        }),
+      ),
+    );
+    expect(new Set(ids).size).toBe(1);
+    expect((await selectAssessmentInstanceById(ids[0])).number).toBe(1);
+  });
+
   test('validates packet export settings before rendering', async () => {
     const assessment = await selectAssessmentByTid({
       course_instance_id: '1',
