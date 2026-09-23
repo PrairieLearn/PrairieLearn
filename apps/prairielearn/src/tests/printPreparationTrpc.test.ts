@@ -1,15 +1,24 @@
+import fs from 'node:fs/promises';
+import path from 'node:path';
+
 import { afterAll, beforeAll, describe, expect, test } from 'vitest';
 
 import { execute, loadSqlEquiv } from '@prairielearn/postgres';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
 import { makeAssessmentInstance } from '../lib/assessment.js';
+import { getRuntimeDirectoryForCourse } from '../lib/chunks.js';
 import { DEFAULT_PRINT_SETTINGS } from '../lib/client/print-preparation.js';
 import { getAssessmentTrpcUrl } from '../lib/client/url.js';
 import { config } from '../lib/config.js';
-import { assessmentHasPrintRandomization } from '../lib/print-preparation.js';
+import {
+  assessmentHasPrintRandomization,
+  inspectPrintPreparationQuestions,
+} from '../lib/print-preparation.js';
 import { selectAssessmentInstanceById } from '../models/assessment-instance.js';
 import { selectAssessmentById, selectAssessmentByTid } from '../models/assessment.js';
+import { selectCourseById } from '../models/course.js';
+import { selectQuestionById } from '../models/question.js';
 import { createAssessmentTrpcClient } from '../trpc/assessment/client.js';
 
 import { runInTransactionAndRollback } from './helperDb.js';
@@ -229,6 +238,40 @@ describe('print preparation', { timeout: 60_000 }, () => {
     expect((await selectAssessmentInstanceById(ids[0])).number).toBe(1);
   });
 
+  test('warns about missing question files but propagates unexpected inspection failures', async () => {
+    const assessment = await selectAssessmentByTid({
+      course_instance_id: '1',
+      tid: 'exam20-assessmentTools',
+    });
+    const api = client(assessment.id);
+    const instance = await api.printableExams.create.mutate();
+    const questions = await api.printableExams.questions.query(instance);
+    const question = await selectQuestionById(questions[0].questionId);
+    const course = await selectCourseById(question.course_id);
+    const filename = path.join(
+      getRuntimeDirectoryForCourse(course),
+      'questions',
+      question.directory!,
+      'question.html',
+    );
+    const original = await fs.readFile(filename);
+    await fs.unlink(filename);
+    try {
+      const inspected = await api.printableExams.questions.query(instance);
+      expect(inspected[0].concerns).toContain(
+        'Could not inspect this question’s source. Review its preview before printing.',
+      );
+      expect(inspected).toHaveLength(questions.length);
+      await fs.mkdir(filename);
+      await expect(
+        inspectPrintPreparationQuestions(instance.assessmentInstanceId),
+      ).rejects.toMatchObject({ code: 'EISDIR' });
+    } finally {
+      await fs.rm(filename, { recursive: true, force: true });
+      await fs.writeFile(filename, original);
+    }
+  });
+
   test('validates packet export settings before rendering', async () => {
     const assessment = await selectAssessmentByTid({
       course_instance_id: '1',
@@ -258,9 +301,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
       course_instance_id: '1',
       tid: 'exam20-assessmentTools',
     });
-    expect(await client(assessment.id).printableExams.capabilities.query()).toEqual({
-      hasRandomization: true,
-    });
+    expect(await assessmentHasPrintRandomization(assessment.id)).toBe(true);
   });
 
   test.each([

@@ -1,7 +1,9 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
+import * as async from 'async';
 import { load } from 'cheerio';
+import { groupBy } from 'es-toolkit';
 import { z } from 'zod';
 
 import { loadSqlEquiv, queryRows, queryScalar } from '@prairielearn/postgres';
@@ -77,18 +79,31 @@ export async function inspectPrintPreparationQuestions(
       question_number: SprocQuestionOrderSchema.shape.question_number,
     }),
   );
-  return await Promise.all(
-    rows.map(async ({ question, course, assessment_question, question_number }) => {
+  const uniqueQuestions = new Map(rows.map((row) => [row.question.id, row]));
+  const questionsByCourse = groupBy(
+    [...uniqueQuestions.values()].filter(
+      ({ question }) => question.type === 'Freeform' && question.directory,
+    ),
+    ({ course }) => course.id,
+  );
+  // Download each course's chunks together so the chunk downloader can enforce
+  // its concurrency limit across all of the selected questions.
+  for (const [courseId, questions] of Object.entries(questionsByCourse)) {
+    await ensureChunksForCourseAsync(
+      courseId,
+      questions.map(({ question }) => ({ type: 'question', questionId: question.id })),
+    );
+  }
+  const inspected = await async.mapLimit(
+    [...uniqueQuestions.values()],
+    4,
+    async ({ question, course }: (typeof rows)[number]): Promise<[string, string[]]> => {
       const concerns: string[] = [];
       if (question.workspace_image) {
         concerns.push('Requires an online workspace. Provide a paper alternative.');
       }
       if (question.type === 'Freeform' && question.directory) {
         try {
-          await ensureChunksForCourseAsync(course.id, {
-            type: 'question',
-            questionId: question.id,
-          });
           const html = await fs.readFile(
             path.join(
               getRuntimeDirectoryForCourse(course),
@@ -99,8 +114,10 @@ export async function inspectPrintPreparationQuestions(
             'utf8',
           );
           concerns.push(...findPaperConcerns(html));
-        } catch {
-          // Inspection must not hide the rest of the exam when one question has missing files.
+        } catch (error) {
+          if (!(error instanceof Error && 'code' in error && error.code === 'ENOENT')) {
+            throw error;
+          }
           concerns.push(
             'Could not inspect this question’s source. Review its preview before printing.',
           );
@@ -108,13 +125,15 @@ export async function inspectPrintPreparationQuestions(
       } else {
         concerns.push('Uses a legacy question format. Review its layout and answer space.');
       }
-      return {
-        number: question_number,
-        title: question.title ?? question.qid ?? `Question ${question_number}`,
-        questionId: question.id,
-        points: assessment_question.max_points ?? 0,
-        concerns: [...new Set(concerns)],
-      };
-    }),
+      return [question.id, [...new Set(concerns)]];
+    },
   );
+  const concernsByQuestion = new Map(inspected);
+  return rows.map(({ question, assessment_question, question_number }) => ({
+    number: question_number,
+    title: question.title ?? question.qid ?? `Question ${question_number}`,
+    questionId: question.id,
+    points: assessment_question.max_points ?? 0,
+    concerns: concernsByQuestion.get(question.id)!,
+  }));
 }

@@ -5,17 +5,13 @@ import { IdSchema } from '@prairielearn/zod';
 
 import { makeAssessmentInstance } from '../../lib/assessment.js';
 import { StaffAssessmentInstanceSchema } from '../../lib/client/safe-db-types.js';
-import {
-  assessmentHasPrintRandomization,
-  inspectPrintPreparationQuestions,
-} from '../../lib/print-preparation.js';
+import { inspectPrintPreparationQuestions } from '../../lib/print-preparation.js';
 import { selectAssessmentInstancesForUser } from '../../models/assessment-instance.js';
 
 import { requireCoursePermissionPreview, t } from './init.js';
 
 export interface PrintableExamsError {
   list: never;
-  capabilities: never;
   create: never;
   regenerate: never;
   questions: never;
@@ -60,9 +56,6 @@ export const printableExamsRouter = t.router({
   questions: ownedInstanceProcedure.query(async ({ input }) => {
     return await inspectPrintPreparationQuestions(input.assessmentInstanceId);
   }),
-  capabilities: printableExamProcedure.query(async ({ ctx }) => ({
-    hasRandomization: await assessmentHasPrintRandomization(ctx.assessment.id),
-  })),
   list: printableExamProcedure.query(async ({ ctx }) =>
     StaffAssessmentInstanceSchema.array().parse(
       await selectAssessmentInstancesForUser({
