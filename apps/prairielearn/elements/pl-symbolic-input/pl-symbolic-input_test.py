@@ -1,5 +1,6 @@
 import importlib
 import json
+import string
 from pathlib import Path
 from typing import Any, cast
 
@@ -103,6 +104,81 @@ def test_set_union_submission_parses_when_set_notation_is_enabled() -> None:
     assert psu.json_to_sympy(
         data["submitted_answers"]["test"], allow_sets=True
     ) == sympy.FiniteSet(1, 2)
+
+
+@pytest.mark.parametrize(
+    ("sub", "allow_trig", "variables", "custom_functions", "expected"),
+    [
+        # Greek letters
+        ("Α", False, ["Α"], [], " Alpha "),  # ruff:ignore[ambiguous-unicode-character-string]
+        ("ΑΑ0Α0ΑΑ", False, ["Α", "Α0"], [], " Alpha  Alpha0 Alpha0 Alpha  Alpha "),  # ruff:ignore[ambiguous-unicode-character-string]
+        (
+            "t h e t a s i n t h e t a c o s t h e t a",
+            True,
+            ["theta"],
+            [],
+            "theta sin theta cos theta",
+        ),
+        (
+            "a b a b l a b l a b l a a b l a",
+            False,
+            ["bla", "abla", "ab"],
+            [],
+            "ab abla bla bla abla",
+        ),
+        (  # Overlapping-match test
+            "a b a b",
+            False,
+            ["ab", "aba"],
+            [],
+            "aba b",
+        ),
+        (  # Longer-match test
+            "a b c a b d",
+            False,
+            ["ab", "abc"],
+            [],
+            "abc ab d",
+        ),
+        (  # Performance test
+            "a b " * 1000,
+            False,
+            ["ab", *list(string.ascii_lowercase)[2:]],
+            [],
+            "ab " * 1000,
+        ),
+        # Trig functions
+        ("s i n ( x )", True, ["x"], [], "sin ( x )"),
+        ("s i n h ( s i n x )", True, ["x"], [], "sinh ( sin x )"),
+        ("s i n ( x )", False, ["x"], [], "s i n ( x )"),
+        ("s i n ( Α )", False, ["Α"], [], "s i n (  Alpha  )"),  # ruff:ignore[ambiguous-unicode-character-string]
+        # Variables
+        ("t i m e + x", True, ["time", "x"], [], "time + x"),
+        # Prefix test
+        ("a c o s h ( a c o s ( x ) )", True, ["x"], [], "acosh ( acos ( x ) )"),
+        # Number spacing
+        ("x2+x10", False, ["x"], [], "x 2+x 10"),
+        ("e^x2", False, ["x"], [], "e^x 2"),
+        # Custom functions
+        ("m y f u n ( x )", False, ["x"], ["myfun"], "myfun ( x )"),
+        ("f2(x) + x2", False, ["x"], ["f2"], "f2(x) + x 2"),
+        ("Α(x) + x2", False, ["x"], ["Α"], " Alpha (x) + x 2"),  # ruff:ignore[ambiguous-unicode-character-string]
+        ("x2 + x2 + f2(x)", False, ["x"], ["f2"], "x 2 + x 2 + f2(x)"),
+        # Formatting operators
+        ("{:s i n ( x ):}", True, ["x"], [], "sin ( x )"),
+    ],
+)
+def test_format_formula_editor_submission_for_sympy(
+    sub: str,
+    allow_trig: bool,
+    variables: list[str],
+    custom_functions: list[str],
+    expected: str,
+) -> None:
+    out = symbolic_input.format_formula_editor_submission_for_sympy(
+        sub, allow_trig, variables, custom_functions
+    )
+    assert out == expected
 
 
 def test_parse_without_variables_attribute_with_assumptions() -> None:
@@ -392,6 +468,92 @@ def test_blank_mathjson_submission_falls_back_to_string_parser(
 
     assert "test" not in data["format_errors"]
     assert psu.json_to_sympy(data["submitted_answers"]["test"]) == sympy.Symbol("x") + 1
+
+
+@pytest.mark.parametrize(
+    ("submission", "expected"),
+    [
+        (
+            "{:s i n(x) + t i m e + m y f u n(x) + f2(x) + x2:}",
+            "sin(x)+time+myfun(x)+f2(x)+x*2",
+        ),
+        ("max(x,1)", "max(x,1)"),
+        ("[0,1]", "[0,1]"),
+        ("x+x", "x+x"),
+    ],
+)
+def test_legacy_formula_editor_submission_populates_reusable_mathjson(
+    monkeypatch: pytest.MonkeyPatch,
+    submission: str,
+    expected: str,
+) -> None:
+    attributes = (
+        'variables="time,x"',
+        'custom-functions="myfun,f2"',
+        'allow-sets="true"',
+        'display-simplified-expression="false"',
+    )
+    expected_data = make_question_data(submitted_answers={"test": expected})
+    symbolic_input.parse(build_element_html(*attributes), expected_data)
+    assert expected_data["format_errors"] == {}
+
+    raw_answers = {"test": submission}
+    data = make_question_data(
+        submitted_answers=raw_answers.copy(),
+        raw_submitted_answers=raw_answers.copy(),
+    )
+    element_html = build_element_html(*attributes, 'formula-editor="true"')
+
+    symbolic_input.parse(element_html, data)
+
+    assert data["format_errors"] == {}
+    assert data["raw_submitted_answers"] == raw_answers
+    assert (
+        data["submitted_answers"]["test"] == expected_data["submitted_answers"]["test"]
+    )
+
+    def fail_legacy_normalization(*args: object) -> None:
+        pytest.fail("The saved MathJSON should bypass legacy normalization")
+
+    monkeypatch.setattr(
+        symbolic_input,
+        "format_formula_editor_submission_for_sympy",
+        fail_legacy_normalization,
+    )
+    symbolic_input.parse(element_html, data)
+
+    assert data["format_errors"] == {}
+    assert (
+        data["submitted_answers"]["test"] == expected_data["submitted_answers"]["test"]
+    )
+
+
+def test_legacy_formula_editor_submission_uses_inferred_variables() -> None:
+    x, time = sympy.symbols("x time")
+    expected = psu.sympy_to_json(x + time)
+    data = make_question_data(
+        submitted_answers={"test": "t i m e + x"},
+        correct_answers={"test": expected},
+    )
+
+    symbolic_input.parse(build_element_html('formula-editor="true"'), data)
+
+    assert data["format_errors"] == {}
+    assert data["submitted_answers"]["test"] == expected
+    assert "test-json" in data["submitted_answers"]
+
+
+def test_legacy_formatting_wrappers_respect_allow_blank() -> None:
+    data = make_question_data(submitted_answers={"test": "{::}"})
+    element_html = build_element_html(
+        'formula-editor="true"', 'allow-blank="true"', 'blank-value="0"'
+    )
+
+    symbolic_input.parse(element_html, data)
+
+    assert data["format_errors"] == {}
+    assert psu.json_to_sympy(data["submitted_answers"]["test"]) == 0
+    assert json.loads(data["submitted_answers"]["test-json"]) == 0
 
 
 def test_raw_input_ignores_mathjson_submission() -> None:

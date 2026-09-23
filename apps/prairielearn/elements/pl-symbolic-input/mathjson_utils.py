@@ -194,9 +194,9 @@ _SYMBOL_RE = re.compile(r"^[a-zA-Z_][a-zA-Z0-9_]*$")
 def sympy_expr_to_raw_mathjson(expr: sympy.Basic) -> str:
     """Convert a supported SymPy object to raw MathJSON JSON text.
 
-    This is not a complete SymPy-to-MathJSON serializer. It only emits the
-    MathJSON subset needed to generate formula-editor test submissions from the
-    SymPy objects that `pl-symbolic-input.test()` creates.
+    Used for generated formula-editor test submissions and backfilling legacy
+    submissions. This is not a complete SymPy-to-MathJSON serializer; unsupported
+    objects raise ``TypeError`` so legacy answers can retain their string fallback.
 
     Examples:
         ``x + 1`` becomes ``'["Add", 1, "x"]'``.

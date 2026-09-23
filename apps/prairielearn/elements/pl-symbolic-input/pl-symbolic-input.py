@@ -512,6 +512,10 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     use_mathjson = (
         formula_editor and isinstance(raw_mathjson, str) and raw_mathjson.strip() != ""
     )
+    if formula_editor and not use_mathjson:
+        submitted_answer = format_formula_editor_submission_for_sympy(
+            submitted_answer, allow_trig, variables, custom_functions
+        )
 
     if submitted_answer is None:
         data["format_errors"][name] = "No submitted answer."
@@ -631,6 +635,19 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
             f"Your answer was simplified to this, which contains an invalid expression: $${sympy.latex(a_sub_parsed)}$$"
         )
         data["submitted_answers"][name] = None
+        return
+
+    if formula_editor and not use_mathjson:
+        from mathjson_utils import sympy_expr_to_raw_mathjson
+
+        try:
+            converted_mathjson = sympy_expr_to_raw_mathjson(a_sub_parsed)
+        except TypeError:
+            # The serializer supports a subset of SymPy. A valid legacy answer
+            # must remain usable even if it cannot be represented as MathJSON.
+            pass
+        else:
+            data["submitted_answers"][f"{name}-json"] = converted_mathjson
 
 
 def format_submission_for_sympy(
@@ -690,6 +707,184 @@ def format_submission_for_sympy(
         )
 
     return sub, None
+
+
+def format_formula_editor_submission_for_sympy(
+    sub: str | None,
+    allow_trig: bool,
+    variables: list[str],
+    custom_functions: list[str],
+) -> str | None:
+    """
+    Format raw formula editor input to be compatible with SymPy.
+
+    The formula editor outputs text with several quirks that need correction:
+    1. Invisible "{:" and ":}" operators from LaTeX copy-paste
+    2. Multi-character names are space-separated: "s i n" instead of "sin"
+    3. Numbers after variables need spacing: "x2" should be "x 2" for multiplication
+
+    Args:
+        sub: Raw text from the formula editor
+        allow_trig: Whether trig functions (sin, cos, etc.) are available
+        variables: List of allowed variable names
+        custom_functions: List of custom function names
+
+    Returns:
+        Formatted text ready for SymPy parsing, or None if input is None
+    """
+    if sub is None:
+        return None
+
+    # Remove invisible LaTeX formatting operators
+    text = sub.replace("{:", "").replace(":}", "")
+
+    # Build list of all multi-character tokens that should be recognized as units
+    known_tokens = _build_known_tokens(allow_trig, variables, custom_functions)
+
+    # Replace Greek unicode letters with spaced ASCII for consistent handling further on
+    text = "".join(_greek_transform(char) for char in text)
+
+    # Merge space-separated characters into proper tokens (e.g., "s i n" -> "sin")
+    text = _merge_spaced_tokens(text, known_tokens)
+
+    # Add spaces between letters and numbers for implicit multiplication,
+    # but preserve tokens like "f2" that are custom function names
+    text = _add_multiplication_spaces(text, known_tokens)
+
+    return text
+
+
+def _build_known_tokens(
+    allow_trig: bool,
+    variables: list[str],
+    custom_functions: list[str],
+) -> list[str]:
+    """
+    Build a list of all multi-character tokens that should be recognized as single units.
+
+    Returns:
+        List of all multi-character tokens that should be recognized as single units.
+    """
+    constants_class = psu._Constants
+
+    # Include 1-letter tokens here since Greek letters might become multi-letter tokens when transformed
+    tokens = (
+        list(psu.STANDARD_OPERATORS)
+        + list(constants_class.functions.keys())
+        + custom_functions
+        + variables
+    )
+    if allow_trig:
+        tokens += list(constants_class.trig_functions.keys())
+
+    # Add transformed versions of Greek letters
+    tokens += [
+        psu.greek_unicode_transform(token)
+        for token in tokens
+        if psu.greek_unicode_transform(token) != token
+    ]
+
+    # Filter out single-letter tokens
+    tokens = [token for token in tokens if len(token) > 1]
+
+    return tokens
+
+
+def _greek_transform(text: str) -> str:
+    """
+    Replace Greek unicode letters with their English spelling and insert spaces around,
+    every letter so that they are handled equivalently to letters already spelled in English.
+
+    Example: "Α0x" becomes " A l p h a 0 x ", the same as if it was spelled out in the
+    submission (and the consecutive processing steps will correct the spacing)
+
+    Returns:
+        The string with Greek unicode letters replaced by spaced-out English spelling
+    """  # ruff:ignore[ambiguous-unicode-character-docstring]
+    transformed = psu.greek_unicode_transform(text)
+    return (" " + " ".join(transformed) + " ") if transformed != text else text
+
+
+def _merge_spaced_tokens(text: str, tokens: list[str]) -> str:
+    """
+    Replace space-separated versions of tokens with their unspaced form.
+
+    Example: "s i n ( x )" becomes "sin ( x )"
+
+    Returns:
+        The text with spaced tokens merged
+    """
+    result = []
+    i = 0
+    n = len(text)
+
+    # Precompute spaced forms and lengths
+    spaced = [(token, " ".join(token), len(" ".join(token))) for token in tokens]
+
+    # Sort by spaced_token length so longer tokens match first
+    # e.g. "acosh" must be checked before "acos" to avoid partial matches.
+    spaced.sort(key=lambda x: -x[2])
+
+    while i < n:
+        matched = False
+
+        # Try each spaced token
+        for token, spaced_token, length in spaced:
+            if text.startswith(spaced_token, i):
+                result.append(token)
+                i += length
+                matched = True
+                break
+
+        if not matched:
+            result.append(text[i])
+            i += 1
+
+    return "".join(result)
+
+
+def _add_multiplication_spaces(text: str, protected_tokens: list[str]) -> str:
+    """
+    Insert spaces between letter-digit pairs to indicate multiplication.
+
+    Example: "x2" becomes "x 2"
+
+    However, we preserve tokens that naturally contain digits (like "f2" for
+    a custom function) by marking their character positions as protected.
+
+    Returns:
+        The text with multiplication spaces added
+    """
+    # Find all positions that are part of tokens containing digits
+    protected_positions = set()
+    for token in protected_tokens:
+        if not re.search(r"\d", token):
+            continue
+        for match in re.finditer(re.escape(token), text):
+            protected_positions.update(range(match.start(), match.end()))
+
+    # Build result, inserting spaces where appropriate
+    result = []
+    for i, char in enumerate(text):
+        result.append(char)
+
+        # Check if we need a space after this character
+        has_next = i + 1 < len(text)
+        if not has_next:
+            continue
+
+        next_char = text[i + 1]
+        next_position = i + 1
+
+        # Insert space if: letter followed by digit, and next position is not protected
+        if (
+            char.isalpha()
+            and next_char.isdigit()
+            and next_position not in protected_positions
+        ):
+            result.append(" ")
+
+    return "".join(result)
 
 
 def grade(element_html: str, data: pl.QuestionData) -> None:
