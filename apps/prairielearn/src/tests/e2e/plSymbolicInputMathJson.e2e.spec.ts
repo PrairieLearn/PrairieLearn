@@ -81,6 +81,7 @@ const backendErrorCases = [
 
 async function createSymbolicInputQuestion(
   testCoursePath: string,
+  questionFiles?: { html: string; server: string },
 ): Promise<{ cleanup: () => Promise<void>; qid: string }> {
   const questionDir = await tmp.dir({
     dir: path.join(testCoursePath, 'questions'),
@@ -106,7 +107,8 @@ async function createSymbolicInputQuestion(
   );
   await fs.writeFile(
     path.join(questionPath, 'question.html'),
-    `
+    questionFiles?.html ??
+      `
 <pl-question-panel>
   <p>Enter symbolic expressions.</p>
 </pl-question-panel>
@@ -133,6 +135,9 @@ async function createSymbolicInputQuestion(
 ></pl-symbolic-input>
 `,
   );
+  if (questionFiles) {
+    await fs.writeFile(path.join(questionPath, 'server.py'), questionFiles.server);
+  }
   return { cleanup: questionDir.cleanup, qid };
 }
 
@@ -140,12 +145,14 @@ async function openSymbolicInputPreview({
   courseInstance,
   page,
   testCoursePath,
+  questionFiles,
 }: {
   courseInstance: CourseInstance;
   page: Page;
   testCoursePath: string;
+  questionFiles?: { html: string; server: string };
 }): Promise<() => Promise<void>> {
-  const questionDir = await createSymbolicInputQuestion(testCoursePath);
+  const questionDir = await createSymbolicInputQuestion(testCoursePath, questionFiles);
   await syncCourse(testCoursePath);
 
   const question = await selectQuestionByQid({
@@ -199,6 +206,73 @@ async function submitFormulaEditorMathJson(page: Page, rawMathJson: string): Pro
 }
 
 test.describe('pl-symbolic-input', () => {
+  test('grades multi-character variables declared explicitly or inferred from correct answers', async ({
+    page,
+    testCoursePath,
+    courseInstance,
+  }) => {
+    const cleanupQuestion = await openSymbolicInputPreview({
+      courseInstance,
+      page,
+      testCoursePath,
+      questionFiles: {
+        html: `
+<pl-symbolic-input
+  answers-name="declared"
+  formula-editor="true"
+  variables="time,time2,x"
+  correct-answer="time+time2+x"
+></pl-symbolic-input>
+<pl-symbolic-input
+  answers-name="inferred"
+  formula-editor="true"
+></pl-symbolic-input>
+<pl-symbolic-input
+  answers-name="product"
+  formula-editor="true"
+  variables="a,ab,b"
+  correct-answer="a*b"
+></pl-symbolic-input>
+`,
+        server: `
+import prairielearn as pl
+import sympy
+
+def generate(data):
+    position, x = sympy.symbols("position x")
+    data["correct_answers"]["inferred"] = pl.to_json(position + x)
+`,
+      },
+    });
+
+    try {
+      const declared = page.locator('#symbolic-input-declared');
+      const inferred = page.locator('#symbolic-input-inferred');
+      const product = page.locator('#symbolic-input-product');
+      await fillFormulaEditor(declared, 'time+time2+x');
+      await fillFormulaEditor(inferred, 'position+x');
+      await fillFormulaEditor(product, String.raw`a\cdot b`);
+
+      await expect(page.locator('input[name="declared-json"]')).toHaveValue(
+        JSON.stringify(['Add', 'time', 'time2', 'x']),
+      );
+      await expect(page.locator('input[name="inferred-json"]')).toHaveValue(
+        JSON.stringify(['Add', 'position', 'x']),
+      );
+      await expect(page.locator('input[name="product-json"]')).toHaveValue(
+        JSON.stringify(['Multiply', 'a', 'b']),
+      );
+
+      await page.getByRole('button', { name: /Save & Grade/ }).click();
+      for (const editor of [declared, inferred, product]) {
+        await expect(editor.locator('..').getByText('100%', { exact: true })).toBeVisible();
+      }
+      await expect(page.getByText('Invalid', { exact: true })).toHaveCount(0);
+    } finally {
+      await cleanupQuestion();
+    }
+  });
+
   test('reports formula editor parse errors on blur without blocking submission', async ({
     page,
     testCoursePath,

@@ -202,9 +202,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     label = pl.get_string_attrib(element, "label", LABEL_DEFAULT)
     aria_label = pl.get_string_attrib(element, "aria-label", ARIA_LABEL_DEFAULT)
     suffix = pl.get_string_attrib(element, "suffix", SUFFIX_DEFAULT)
-    variables = psu.get_items_list(
-        pl.get_string_attrib(element, "variables", VARIABLES_DEFAULT)
-    )
+    variables = _get_variables_with_fallback(element, data, name)
     custom_functions = psu.get_items_list(
         pl.get_string_attrib(element, "custom-functions", CUSTOM_FUNCTIONS_DEFAULT)
     )
@@ -366,6 +364,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "parse_error": parse_error,
             display.value: True,
             "formula_editor": formula_editor,
+            "variables": ",".join(variables),
             "custom_functions": ",".join(custom_functions),
         }
 

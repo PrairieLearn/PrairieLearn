@@ -469,10 +469,16 @@
    * @returns {import('@cortex-js/compute-engine').LatexSyntax} The LatexSyntax instance
    */
   function createSyntax(el) {
+    const variables = el.dataset.variables?.split(',').filter(Boolean) ?? [];
     const customFunctions = el.getAttribute('custom-functions')?.split(',').filter(Boolean) ?? [];
     const allowTrig = el.hasAttribute('allow-trig');
     const allowSets = el.hasAttribute('allow-sets');
-    const cacheKey = `${allowTrig}:${allowSets}:${customFunctions.toSorted().join(',')}`;
+    const cacheKey = JSON.stringify([
+      allowTrig,
+      allowSets,
+      customFunctions.toSorted(),
+      variables.toSorted(),
+    ]);
     let latexSyntax = latexSyntaxCache.get(cacheKey);
     if (!latexSyntax) {
       const {
@@ -510,6 +516,11 @@
           ...STATISTICS_DICTIONARY,
           ...UNITS_DICTIONARY,
           ...OTHERS_DICTIONARY,
+          ...variables.map((variable) => ({
+            kind: /** @type {'symbol'} */ ('symbol'),
+            latexTrigger: variable,
+            parse: variable,
+          })),
           ...['oo', 'inf', 'infty', 'infinity'].map((latexTrigger) => ({
             latexTrigger,
             parse: 'PositiveInfinity',
