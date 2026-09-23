@@ -297,9 +297,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             raw_submitted_answer_latex = ""
         elif a_sub_converted is not None:
             raw_submitted_answer_latex = a_sub_converted
-        else:
-            # Do not replace an invalid saved answer with initial-value.
-            raw_submitted_answer_latex = ""
 
     if raw_submitted_answer is None:
         raw_submitted_answer = initial_value
@@ -329,7 +326,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "raw_submitted_answer": raw_submitted_answer,
             "raw_submitted_answer_latex": raw_submitted_answer_latex,
             "has_submitted_answer_latex": raw_submitted_answer_latex is not None,
-            "initial_value": initial_value,
             "parse_error": parse_error,
             display.value: True,
             "formula_editor": formula_editor,

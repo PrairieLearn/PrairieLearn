@@ -206,7 +206,7 @@ async function submitFormulaEditorMathJson(page: Page, rawMathJson: string): Pro
 }
 
 test.describe('pl-symbolic-input', () => {
-  test('allows completing a partial initial value in the formula editor', async ({
+  test('restores initial values and legacy text in the formula editor', async ({
     page,
     testCoursePath,
     courseInstance,
@@ -239,6 +239,18 @@ test.describe('pl-symbolic-input', () => {
 
       await expect(editor.locator('..').getByText('100%', { exact: true })).toBeVisible();
       await expect(page.locator('input[name="editor-latex"]')).toHaveValue('x^2+1');
+
+      // A legacy page submits only raw text, without LaTeX or MathJSON fields.
+      await page
+        .locator('input[name="editor-latex"], input[name="editor-json"]')
+        .evaluateAll((els) => {
+          els.forEach((el) => el.remove());
+        });
+      await page.locator('input[name="editor"]').evaluate((el) => {
+        (el as HTMLInputElement).value = 'x**2+2-';
+      });
+      await page.getByRole('button', { name: /Save & Grade/ }).click();
+      await expect(page.locator('input[name="editor-latex"]')).toHaveValue('x^2+2-');
 
       await fillFormulaEditor(editor, '');
       await page.getByRole('button', { name: /Save & Grade/ }).click();
