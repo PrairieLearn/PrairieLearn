@@ -536,6 +536,15 @@ export const ConfigSchema = z.object({
    */
   serverJobsAbandonedTimeoutSec: z.number().default(30),
   devMode: z.boolean().default(DEV_MODE),
+  // Exact origins for local LTI development. Redirects are not followed.
+  ltiDevAllowedOrigins: z
+    .array(
+      z.url().refine((value) => {
+        const url = new URL(value);
+        return ['http:', 'https:'].includes(url.protocol) && value === url.origin;
+      }, 'Expected an exact HTTP(S) origin without a path'),
+    )
+    .default([]),
   /** The client ID of your app in AAD; required. */
   azureClientID: z.string().default('<your_client_id>'),
   /** The reply URL registered in AAD for your app. */
@@ -746,6 +755,10 @@ export async function loadConfig(paths: string[]) {
     makeSecretsManagerConfigSource('ConfSecret'),
     makeKmsConfigSource(),
   ]);
+
+  if (!config.devMode && config.ltiDevAllowedOrigins.length > 0) {
+    logger.warn('Ignoring ltiDevAllowedOrigins because devMode is disabled');
+  }
 
   if (config.questionRenderCacheType !== null) {
     logger.warn(

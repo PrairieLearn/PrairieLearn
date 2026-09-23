@@ -1,8 +1,11 @@
 import express, { type Request, type Response } from 'express';
-import { assert, describe, expect, test } from 'vitest';
+import { assert, describe, expect, test, vi } from 'vitest';
 import { z } from 'zod';
 
 import { withServer } from '@prairielearn/express-test-utils';
+import * as publicFetchModule from '@prairielearn/public-fetch';
+
+import { withConfig } from '../../tests/utils/config.js';
 
 import { fetchRetry, fetchRetryPaginated, findValueByKey } from './lti13.js';
 
@@ -122,13 +125,18 @@ describe('fetchRetry()', { concurrent: false }, () => {
   test('should return the full list by iterating', async () => {
     apiCount = 0;
     await withServer(app, async ({ url }) => {
-      const resultArray = await fetchRetryPaginated(url, {}, { sleepMs: 100 });
-      assert.equal(resultArray.length, 3);
-      // Unwrap to one combined array
-      const products = z.string().array().array().parse(resultArray);
-      const fullList = products.flat();
-      assert.equal(fullList.length, 26);
-      assert.equal(apiCount, 3);
+      return withConfig(
+        { devMode: true, ltiDevAllowedOrigins: [new URL(url).origin] },
+        async () => {
+          const resultArray = await fetchRetryPaginated(url, {}, { sleepMs: 100 });
+          assert.equal(resultArray.length, 3);
+          // Unwrap to one combined array
+          const products = z.string().array().array().parse(resultArray);
+          const fullList = products.flat();
+          assert.equal(fullList.length, 26);
+          assert.equal(apiCount, 3);
+        },
+      );
     });
   });
 
@@ -137,11 +145,16 @@ describe('fetchRetry()', { concurrent: false }, () => {
     relativeAuthorizationHeaders = [];
 
     await withServer(app, async ({ url }) => {
-      await expect(
-        fetchRetryPaginated(`${url}/relative`, {
-          headers: { Authorization: 'Bearer secret' },
-        }),
-      ).resolves.toEqual([{ page: 1 }, { page: 2 }]);
+      return withConfig(
+        { devMode: true, ltiDevAllowedOrigins: [new URL(url).origin] },
+        async () => {
+          await expect(
+            fetchRetryPaginated(`${url}/relative`, {
+              headers: { Authorization: 'Bearer secret' },
+            }),
+          ).resolves.toEqual([{ page: 1 }, { page: 2 }]);
+        },
+      );
     });
 
     expect(relativeAuthorizationHeaders).toEqual(['Bearer secret', 'Bearer secret']);
@@ -150,13 +163,28 @@ describe('fetchRetry()', { concurrent: false }, () => {
 
   test('resolves relative links against the effective response URL after a redirect', async () => {
     apiCount = 0;
-
-    await withServer(app, async ({ url }) => {
-      await expect(fetchRetryPaginated(`${url}/redirect`)).resolves.toEqual([
-        { page: 1 },
-        { page: 2 },
-      ]);
-    });
+    // Exercise the production transport boundary while serving the redirect fixture locally.
+    const publicFetch = vi
+      .spyOn(publicFetchModule, 'publicFetch')
+      .mockImplementation(async (input, init) => {
+        return (await fetch(input as string, init as RequestInit)) as unknown as Awaited<
+          ReturnType<typeof publicFetchModule.publicFetch>
+        >;
+      });
+    try {
+      await withConfig({ devMode: false, ltiDevAllowedOrigins: [] }, async () => {
+        await withServer(app, async ({ url }) => {
+          await expect(fetchRetryPaginated(`${url}/redirect`)).resolves.toEqual([
+            { page: 1 },
+            { page: 2 },
+          ]);
+          expect(publicFetch).toHaveBeenCalledTimes(2);
+          expect(publicFetch).toHaveBeenNthCalledWith(2, `${url}/redirected/2`, undefined);
+        });
+      });
+    } finally {
+      publicFetch.mockRestore();
+    }
 
     assert.equal(apiCount, 3);
   });
@@ -180,11 +208,16 @@ describe('fetchRetry()', { concurrent: false }, () => {
       });
 
       await withServer(source, async ({ url }) => {
-        await expect(
-          fetchRetryPaginated(url, {
-            headers: { Authorization: 'Bearer secret' },
-          }),
-        ).rejects.toThrow('cross-origin pagination link');
+        return withConfig(
+          { devMode: true, ltiDevAllowedOrigins: [new URL(url).origin] },
+          async () => {
+            await expect(
+              fetchRetryPaginated(url, {
+                headers: { Authorization: 'Bearer secret' },
+              }),
+            ).rejects.toThrow('cross-origin pagination link');
+          },
+        );
       });
     });
 
@@ -194,48 +227,76 @@ describe('fetchRetry()', { concurrent: false }, () => {
   test('should return the full list with a large limit', async () => {
     apiCount = 0;
     await withServer(app, async ({ url }) => {
-      const res = await fetchRetry(url + '?limit=100', {}, { sleepMs: 100 });
-      const products = z
-        .string()
-        .array()
-        .parse(await res.json());
-      const fullList = products.flat();
-      assert.equal(fullList.length, 26);
-      assert.equal(apiCount, 1);
+      return withConfig(
+        { devMode: true, ltiDevAllowedOrigins: [new URL(url).origin] },
+        async () => {
+          const res = await fetchRetry(url + '?limit=100', {}, { sleepMs: 100 });
+          const products = z
+            .string()
+            .array()
+            .parse(await res.json());
+          const fullList = products.flat();
+          assert.equal(fullList.length, 26);
+          assert.equal(apiCount, 1);
+        },
+      );
     });
   });
 
   test('should throw an error on all 403s', async () => {
     apiCount = 0;
     await withServer(app, async ({ url }) => {
-      await expect(fetchRetry(url + '/403all', {}, { sleepMs: 100 })).rejects.toThrow(
-        /fetch error/,
+      return withConfig(
+        { devMode: true, ltiDevAllowedOrigins: [new URL(url).origin] },
+        async () => {
+          await expect(fetchRetry(url + '/403all', {}, { sleepMs: 100 })).rejects.toThrow(
+            /fetch error/,
+          );
+          assert.equal(apiCount, 5);
+        },
       );
-      assert.equal(apiCount, 5);
     });
   });
 
   test('should return the full list by iterating with intermittent 403s', async () => {
     apiCount = 0;
     await withServer(app, async ({ url }) => {
-      const resultArray = await fetchRetryPaginated(url + '/403oddAttempt', {}, { sleepMs: 100 });
-      assert.equal(resultArray.length, 3);
-      const products = z.string().array().array().parse(resultArray);
-      const fullList = products.flat();
-      assert.equal(fullList.length, 26);
-      assert.equal(apiCount, 6);
+      return withConfig(
+        { devMode: true, ltiDevAllowedOrigins: [new URL(url).origin] },
+        async () => {
+          const resultArray = await fetchRetryPaginated(
+            url + '/403oddAttempt',
+            {},
+            { sleepMs: 100 },
+          );
+          assert.equal(resultArray.length, 3);
+          const products = z.string().array().array().parse(resultArray);
+          const fullList = products.flat();
+          assert.equal(fullList.length, 26);
+          assert.equal(apiCount, 6);
+        },
+      );
     });
   });
 
   test('should return the full list by iterating with intermittent connection interruptions', async () => {
     apiCount = 0;
     await withServer(app, async ({ url }) => {
-      const resultArray = await fetchRetryPaginated(url + '/socketCloseOdd', {}, { sleepMs: 100 });
-      assert.equal(resultArray.length, 3);
-      const products = z.string().array().array().parse(resultArray);
-      const fullList = products.flat();
-      assert.equal(fullList.length, 26);
-      assert.equal(apiCount, 6);
+      return withConfig(
+        { devMode: true, ltiDevAllowedOrigins: [new URL(url).origin] },
+        async () => {
+          const resultArray = await fetchRetryPaginated(
+            url + '/socketCloseOdd',
+            {},
+            { sleepMs: 100 },
+          );
+          assert.equal(resultArray.length, 3);
+          const products = z.string().array().array().parse(resultArray);
+          const fullList = products.flat();
+          assert.equal(fullList.length, 26);
+          assert.equal(apiCount, 6);
+        },
+      );
     });
   });
 });
