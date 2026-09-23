@@ -8,7 +8,7 @@ import { z } from 'zod';
 
 import { getAppError } from '@prairielearn/trpc/client';
 import { AppErrorAlert, QueryClientProviderDebug } from '@prairielearn/trpc/react';
-import { NuqsAdapter } from '@prairielearn/ui';
+import { NuqsAdapter, OverlayTrigger } from '@prairielearn/ui';
 
 import {
   MAX_COVER_BYTES,
@@ -26,7 +26,7 @@ import {
   printLayoutSearch,
 } from '../../lib/client/print-preparation.js';
 import type { StaffAssessmentInstance } from '../../lib/client/safe-db-types.js';
-import { getAssessmentInstanceUrl } from '../../lib/client/url.js';
+import { getAssessmentInstanceUrl, getQuestionUrl } from '../../lib/client/url.js';
 import { createAssessmentTrpcClient } from '../../trpc/assessment/client.js';
 import { TRPCProvider, useTRPC } from '../../trpc/assessment/context.js';
 import type { PrintableExamExportError } from '../../trpc/assessment/printable-exam-export.js';
@@ -416,18 +416,26 @@ function PrintPreparation({
                               Form {label}
                               {id === instanceId && <span className="float-end">Previewing</span>}
                             </Button>
-                            <Button
-                              type="button"
-                              size="sm"
-                              variant="outline-secondary"
-                              aria-label={`Regenerate Form ${label}`}
-                              disabled={
-                                busy || isDirty || isSubmitting || download.isPending || groupWork
-                              }
-                              onClick={() => void regenerateInstance(id).catch(() => {})}
+                            <OverlayTrigger
+                              placement="top"
+                              tooltip={{
+                                props: { id: `print-regenerate-${id}` },
+                                body: `Regenerate Form ${label} with new randomization`,
+                              }}
                             >
-                              <i className="bi bi-arrow-clockwise" aria-hidden="true" />
-                            </Button>
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="outline-secondary"
+                                aria-label={`Regenerate Form ${label}`}
+                                disabled={
+                                  busy || isDirty || isSubmitting || download.isPending || groupWork
+                                }
+                                onClick={() => void regenerateInstance(id).catch(() => {})}
+                              >
+                                <i className="bi bi-arrow-clockwise" aria-hidden="true" />
+                              </Button>
+                            </OverlayTrigger>
                             <Button
                               type="button"
                               size="sm"
@@ -629,53 +637,8 @@ function PrintPreparation({
                   )}
                 </Card.Body>
               </Card>
-              <Card className="mb-3">
-                <Card.Body>
-                  <h2 className="h6 mb-3">Class PDF</h2>
-                  <Form.Group controlId="print-copies">
-                    <Form.Label>Number of exam copies</Form.Label>
-                    <Form.Control
-                      type="number"
-                      min={1}
-                      max={MAX_PRINT_COPIES}
-                      step={1}
-                      value={copies}
-                      disabled={packet.isPending || download.isPending}
-                      aria-invalid={!validCopies}
-                      aria-errormessage={!validCopies ? 'print-copies-error' : undefined}
-                      isInvalid={!validCopies}
-                      onChange={(event) => setCopies(event.target.value)}
-                    />
-                    <Form.Control.Feedback type="invalid" id="print-copies-error">
-                      Enter a whole number between 1 and {MAX_PRINT_COPIES}.
-                    </Form.Control.Feedback>
-                  </Form.Group>
-                  <p className="small text-muted mt-2 mb-2">
-                    {instanceIds.length > 1
-                      ? `Forms ${instanceIds.map((_, index) => String.fromCharCode(65 + index)).join(', ')} repeat in order until all ${validCopies ? copyCount : 'requested'} copies are included.`
-                      : 'Each copy includes the same assessment instance.'}{' '}
-                    Each student receives a complete exam with its own cover pages. Print
-                    single-sided.
-                  </p>
-                  <Button
-                    type="button"
-                    className="w-100"
-                    disabled={!canDownload || !validCopies || !allInstancesAvailable}
-                    onClick={() =>
-                      void downloadPacket(instanceIds, copyCount, 'exam').catch(() => {})
-                    }
-                  >
-                    {packet.isPending ? (
-                      <Spinner size="sm" className="me-2" />
-                    ) : (
-                      <i className="bi bi-file-earmark-pdf me-2" aria-hidden="true" />
-                    )}
-                    Download class PDF
-                  </Button>
-                </Card.Body>
-              </Card>
               {validInstance && (
-                <Card id="print-preparation-questions">
+                <Card id="print-preparation-questions" className="mb-3">
                   <Card.Header className="bg-white d-flex flex-wrap align-items-center justify-content-between gap-3 py-3">
                     <div>
                       <h2 className="h6 mb-1">
@@ -822,13 +785,25 @@ function PrintPreparation({
                               defaultValue=""
                               {...register(`questionSizes.${question.number}`)}
                             >
-                              <option value="">Use overall setting</option>
+                              <option value="">Automatic</option>
                               {Object.entries(BLOCK_SIZE_LABELS).map(([value, label]) => (
                                 <option key={value} value={value}>
                                   {label}
                                 </option>
                               ))}
                             </Form.Select>
+                            <a
+                              href={getQuestionUrl({
+                                courseInstanceId,
+                                questionId: question.questionId,
+                              })}
+                              className="small text-nowrap"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              aria-label={`Edit question ${question.number} (opens in a new tab)`}
+                            >
+                              Edit question
+                            </a>
                           </Form.Group>
                         </div>
                       );
@@ -841,6 +816,51 @@ function PrintPreparation({
                   )}
                 </Card>
               )}
+              <Card>
+                <Card.Body>
+                  <h2 className="h6 mb-3">Class PDF</h2>
+                  <Form.Group controlId="print-copies">
+                    <Form.Label>Number of exam copies</Form.Label>
+                    <Form.Control
+                      type="number"
+                      min={1}
+                      max={MAX_PRINT_COPIES}
+                      step={1}
+                      value={copies}
+                      disabled={packet.isPending || download.isPending}
+                      aria-invalid={!validCopies}
+                      aria-errormessage={!validCopies ? 'print-copies-error' : undefined}
+                      isInvalid={!validCopies}
+                      onChange={(event) => setCopies(event.target.value)}
+                    />
+                    <Form.Control.Feedback type="invalid" id="print-copies-error">
+                      Enter a whole number between 1 and {MAX_PRINT_COPIES}.
+                    </Form.Control.Feedback>
+                  </Form.Group>
+                  <p className="small text-muted mt-2 mb-2">
+                    {instanceIds.length > 1
+                      ? `Forms ${instanceIds.map((_, index) => String.fromCharCode(65 + index)).join(', ')} repeat in order until all ${validCopies ? copyCount : 'requested'} copies are included.`
+                      : 'Each copy includes the same assessment instance.'}{' '}
+                    Each student receives a complete exam with its own cover pages. Print
+                    single-sided.
+                  </p>
+                  <Button
+                    type="button"
+                    className="w-100"
+                    disabled={!canDownload || !validCopies || !allInstancesAvailable}
+                    onClick={() =>
+                      void downloadPacket(instanceIds, copyCount, 'exam').catch(() => {})
+                    }
+                  >
+                    {packet.isPending ? (
+                      <Spinner size="sm" className="me-2" />
+                    ) : (
+                      <i className="bi bi-file-earmark-pdf me-2" aria-hidden="true" />
+                    )}
+                    Download class PDF
+                  </Button>
+                </Card.Body>
+              </Card>
             </div>
             <div className="print-preparation-actions">
               {noQuestionsSelected && (
