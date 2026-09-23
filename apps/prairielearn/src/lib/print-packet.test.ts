@@ -53,6 +53,24 @@ describe('print packets', () => {
     ]);
   });
 
+  test('appends each answer key once after all student copies, without uploaded covers', async () => {
+    const covers = await readPrintCoverPages([await coverFile([501, 502])]);
+    const result = await PDFDocument.load(
+      await assemblePrintPacket({
+        forms: [
+          { pdf: await pdfWithPages([101, 102]), coverPageCount: 1 },
+          { pdf: await pdfWithPages([201, 202]), coverPageCount: 1 },
+        ],
+        covers,
+        copies: 3,
+        answerKeys: [await pdfWithPages([601, 602]), await pdfWithPages([701, 702, 703])],
+      }),
+    );
+    expect(result.getPages().map((page) => page.getWidth())).toEqual([
+      101, 501, 502, 102, 201, 501, 502, 202, 101, 501, 502, 102, 601, 602, 701, 702, 703,
+    ]);
+  });
+
   test('rejects invalid, empty, and encrypted cover documents', async () => {
     await expect(readPrintCoverPages([new File(['not a PDF'], 'bad.pdf')])).rejects.toThrow(
       'valid PDF without password protection',
@@ -92,14 +110,28 @@ describe('print packets', () => {
       }),
     ).rejects.toThrow('exceeds 10,000 pages');
   });
+
+  test('includes appended answer keys in the total page limit', async () => {
+    await expect(
+      assemblePrintPacket({
+        forms: [
+          { pdf: await pdfWithPages(Array.from({ length: 20 }, () => 100)), coverPageCount: 1 },
+        ],
+        covers: [],
+        copies: 500,
+        answerKeys: [await pdfWithPages([200])],
+      }),
+    ).rejects.toThrow('exceeds 10,000 pages');
+  });
 });
 
 describe('print packet settings', () => {
   const instance = { assessmentInstanceId: '1', formLabel: 'A', settings: DEFAULT_PRINT_SETTINGS };
   const metadata = { instances: [instance], copies: 45, document: 'exam' };
 
-  test('accepts a valid packet request', () => {
-    expect(PrintPacketMetadataSchema.parse(metadata)).toEqual(metadata);
+  test.each(['exam', 'answer_key', 'booklet'])('accepts a valid %s request', (document) => {
+    const input = { ...metadata, document };
+    expect(PrintPacketMetadataSchema.parse(input)).toEqual(input);
   });
 
   test.each([0, 501, 1.5])('rejects invalid copy count %s', (copies) => {

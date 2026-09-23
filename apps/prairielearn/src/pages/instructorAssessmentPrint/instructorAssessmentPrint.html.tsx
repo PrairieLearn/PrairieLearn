@@ -171,7 +171,11 @@ function PrintPreparation({
     };
   }
 
-  async function downloadPacket(ids: string[], copyCount: number, outputDocument: PrintDocument) {
+  async function downloadPacket(
+    ids: string[],
+    copyCount: number,
+    outputDocument: PrintDocument | 'booklet',
+  ) {
     const input = new FormData();
     input.set(
       'metadata',
@@ -818,7 +822,7 @@ function PrintPreparation({
               )}
               <Card>
                 <Card.Body>
-                  <h2 className="h6 mb-3">Class PDF</h2>
+                  <h2 className="h6 mb-3">Booklet PDF</h2>
                   <Form.Group controlId="print-copies">
                     <Form.Label>Number of exam copies</Form.Label>
                     <Form.Control
@@ -841,15 +845,15 @@ function PrintPreparation({
                     {instanceIds.length > 1
                       ? `Forms ${instanceIds.map((_, index) => String.fromCharCode(65 + index)).join(', ')} repeat in order until all ${validCopies ? copyCount : 'requested'} copies are included.`
                       : 'Each copy includes the same assessment instance.'}{' '}
-                    Each student receives a complete exam with its own cover pages. Print
-                    single-sided.
+                    Each student receives a complete exam with its own cover pages. One answer key
+                    for each selected form is appended after all exam copies. Print single-sided.
                   </p>
                   <Button
                     type="button"
                     className="w-100"
                     disabled={!canDownload || !validCopies || !allInstancesAvailable}
                     onClick={() =>
-                      void downloadPacket(instanceIds, copyCount, 'exam').catch(() => {})
+                      void downloadPacket(instanceIds, copyCount, 'booklet').catch(() => {})
                     }
                   >
                     {packet.isPending ? (
@@ -857,7 +861,7 @@ function PrintPreparation({
                     ) : (
                       <i className="bi bi-file-earmark-pdf me-2" aria-hidden="true" />
                     )}
-                    Download class PDF
+                    Download booklet PDF
                   </Button>
                 </Card.Body>
               </Card>

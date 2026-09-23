@@ -49,5 +49,5 @@ export const PrintPacketMetadataSchema = z.strictObject({
       'Each assessment instance must have a different form label.',
     ),
   copies: z.number().int().min(1).max(MAX_PRINT_COPIES),
-  document: z.enum(['exam', 'answer_key']),
+  document: z.enum(['exam', 'answer_key', 'booklet']),
 });

@@ -7,7 +7,7 @@ import { HttpStatusError } from '@prairielearn/error';
 import { QuestionBlockSizeOverflowError, createPdfOutput } from '@prairielearn/printing';
 
 import { encodePrintPageIdentity } from '../../lib/client/print-page-code.js';
-import { printLayoutSearch } from '../../lib/client/print-preparation.js';
+import { type PrintDocument, printLayoutSearch } from '../../lib/client/print-preparation.js';
 import { getAssessmentInstanceUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
 import { PrintPacketMetadataSchema } from '../../lib/print-packet-schema.js';
@@ -81,7 +81,12 @@ export const printableExamExportRouter = t.router({
         const generatedAt = new Date().toISOString();
         const exportId = randomUUID();
         const forms: { pdf: Buffer; coverPageCount: number }[] = [];
-        for (const instance of metadata.instances.slice(0, metadata.copies)) {
+        const answerKeys: Buffer[] = [];
+        const isBooklet = metadata.document === 'booklet';
+        const selectedInstances = isBooklet
+          ? metadata.instances
+          : metadata.instances.slice(0, metadata.copies);
+        for (const [index, instance] of selectedInstances.entries()) {
           const overrides = new Map(
             Object.entries(instance.settings.questionSizes).flatMap(([number, size]) =>
               size ? [[number, size] as const] : [],
@@ -92,36 +97,40 @@ export const printableExamExportRouter = t.router({
             overrides,
             new Set(instance.settings.excludedQuestions),
           );
-          const search = new URLSearchParams(printLayoutSearch(instance.settings));
-          search.set('document', metadata.document);
-          search.set('form_label', instance.formLabel);
-          const previewUrl = new URL(
-            `${getAssessmentInstanceUrl({ courseInstanceId: ctx.course_instance.id, assessmentInstanceId: instance.assessmentInstanceId })}/paper/preview?${search}`,
-            `${config.serverType}://localhost:${config.serverPort}`,
-          );
-          const pdfOutput = createPdfOutput({
-            encodePage: (pageNumber) =>
-              encodePrintPageIdentity({
-                courseId: ctx.course.id,
-                assessmentId: ctx.assessment.id,
-                assessmentInstanceId: instance.assessmentInstanceId,
-                pageNumber,
-                generatedBy: {
-                  userId: ctx.authn_user.id,
-                  uid: ctx.authn_user.uid,
-                  name: ctx.authn_user.name,
-                },
-                generatedAt,
-                exportId,
-                document: metadata.document,
-                format: 'pdf',
-              }),
-          });
-          forms.push(
-            await renderer.render(
+          const documents: PrintDocument[] =
+            metadata.document === 'booklet'
+              ? [...(index < metadata.copies ? ['exam' as const] : []), 'answer_key']
+              : [metadata.document];
+          for (const printDocument of documents) {
+            const search = new URLSearchParams(printLayoutSearch(instance.settings));
+            search.set('document', printDocument);
+            search.set('form_label', instance.formLabel);
+            const previewUrl = new URL(
+              `${getAssessmentInstanceUrl({ courseInstanceId: ctx.course_instance.id, assessmentInstanceId: instance.assessmentInstanceId })}/paper/preview?${search}`,
+              `${config.serverType}://localhost:${config.serverPort}`,
+            );
+            const pdfOutput = createPdfOutput({
+              encodePage: (pageNumber) =>
+                encodePrintPageIdentity({
+                  courseId: ctx.course.id,
+                  assessmentId: ctx.assessment.id,
+                  assessmentInstanceId: instance.assessmentInstanceId,
+                  pageNumber,
+                  generatedBy: {
+                    userId: ctx.authn_user.id,
+                    uid: ctx.authn_user.uid,
+                    name: ctx.authn_user.name,
+                  },
+                  generatedAt,
+                  exportId,
+                  document: printDocument,
+                  format: 'pdf',
+                }),
+            });
+            const rendered = await renderer.render(
               { url: previewUrl.href, cookieHeader: ctx.cookieHeader },
               {
-                label: 'class PDF',
+                label: isBooklet ? 'booklet PDF' : 'PDF',
                 produce: async (page) => {
                   const state = await page.evaluate(() => {
                     const sheets = [...document.querySelectorAll('.pagedjs_page')];
@@ -138,7 +147,7 @@ export const printableExamExportRouter = t.router({
                   if (!state.questionCount || state.omittedCount || state.coverPageCount < 1) {
                     throw new TRPCError({
                       code: 'BAD_REQUEST',
-                      message: `Form ${instance.formLabel} has missing or unprintable questions. Review its preview and exclude or fix those questions before exporting.`,
+                      message: `${printDocument === 'answer_key' ? 'The answer key for Form' : 'Form'} ${instance.formLabel} has missing or unprintable questions. Review its preview and exclude or fix those questions before exporting.`,
                     });
                   }
                   return {
@@ -147,10 +156,20 @@ export const printableExamExportRouter = t.router({
                   };
                 },
               },
-            ),
-          );
+            );
+            if (isBooklet && printDocument === 'answer_key') {
+              answerKeys.push(rendered.pdf);
+            } else {
+              forms.push(rendered);
+            }
+          }
         }
-        const packet = await assemblePrintPacket({ forms, covers, copies: metadata.copies });
+        const packet = await assemblePrintPacket({
+          forms,
+          covers,
+          copies: metadata.copies,
+          answerKeys,
+        });
         const prefix = assessmentFilenamePrefix(
           ctx.assessment,
           ctx.locals.assessment_set,
@@ -159,7 +178,7 @@ export const printableExamExportRouter = t.router({
         );
         return {
           base64: packet.toString('base64'),
-          filename: `${prefix}${metadata.document === 'answer_key' ? 'answer_keys' : 'exam'}_${metadata.copies}_copies.pdf`,
+          filename: `${prefix}${isBooklet ? 'booklet' : metadata.document === 'answer_key' ? 'answer_keys' : 'exam'}_${metadata.copies}_copies.pdf`,
         };
       } catch (error) {
         if (

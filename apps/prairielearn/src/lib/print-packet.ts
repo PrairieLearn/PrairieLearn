@@ -43,15 +43,17 @@ export async function readPrintCoverPages(files: File[]): Promise<PDFDocument[]>
   return covers;
 }
 
-/** Cycle complete student copies, inserting uploaded pages after each standard cover. */
+/** Cycle complete student copies, then append each form's answer key once. */
 export async function assemblePrintPacket({
   forms,
   covers,
   copies,
+  answerKeys = [],
 }: {
   forms: { pdf: Uint8Array; coverPageCount: number }[];
   covers: PDFDocument[];
   copies: number;
+  answerKeys?: Uint8Array[];
 }): Promise<Buffer> {
   const sources = await Promise.all(
     forms.map(async (form) => ({
@@ -59,8 +61,9 @@ export async function assemblePrintPacket({
       coverPageCount: form.coverPageCount,
     })),
   );
+  const answerKeyDocuments = await Promise.all(answerKeys.map((pdf) => PDFDocument.load(pdf)));
   const coverPageCount = covers.reduce((total, cover) => total + cover.getPageCount(), 0);
-  let totalPages = 0;
+  let totalPages = answerKeyDocuments.reduce((total, key) => total + key.getPageCount(), 0);
   for (let copy = 0; copy < copies; copy++) {
     const form = sources[copy % sources.length];
     totalPages += form.document.getPageCount() + coverPageCount;
@@ -93,6 +96,10 @@ export async function assemblePrintPacket({
       const node = page.node.clone();
       packet.addPage(PDFPage.of(node, packet.context.register(node), packet));
     }
+  }
+  for (const key of answerKeyDocuments) {
+    const pages = await packet.copyPages(key, key.getPageIndices());
+    for (const page of pages) packet.addPage(page);
   }
   return Buffer.from(await packet.save());
 }

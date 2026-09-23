@@ -147,7 +147,7 @@ test('prepares an exam and key with consistent variants and downloads', async ({
   expect(new URL(page.url()).searchParams.get('instance')).toBe(form);
 });
 
-test('regenerates and combines assessment instances with custom covers for the class', async ({
+test('combines exam copies with custom covers and appends every form’s answer key', async ({
   page,
   courseInstance,
 }) => {
@@ -195,6 +195,7 @@ test('regenerates and combines assessment instances with custom covers for the c
   }
   expect(new Set(formIds).size).toBe(3);
   const pageCounts: number[] = [];
+  const answerKeyPageCounts: number[] = [];
   const frame = page.frameLocator('iframe[title="Printable document preview"]');
   for (const label of ['A', 'B', 'C']) {
     await page.getByRole('button', { name: new RegExp(`^Form ${label}`) }).click();
@@ -203,6 +204,16 @@ test('regenerates and combines assessment instances with custom covers for the c
     });
     await expect(frame.locator(':root')).toHaveAttribute('data-print-status', 'ready');
     pageCounts.push(await frame.locator('.pagedjs_page').count());
+    await page.getByRole('button', { name: 'Answer key', exact: true }).click();
+    await expect(page.getByRole('button', { name: 'PDF', exact: true })).toBeEnabled({
+      timeout: 120_000,
+    });
+    await expect(frame.locator(':root')).toHaveAttribute('data-print-document', 'answer_key');
+    answerKeyPageCounts.push(await frame.locator('.pagedjs_page').count());
+    await page.getByRole('button', { name: 'Student exam', exact: true }).click();
+    await expect(page.getByRole('button', { name: 'PDF', exact: true })).toBeEnabled({
+      timeout: 120_000,
+    });
   }
 
   const cover = await PDFDocument.create();
@@ -220,19 +231,31 @@ test('regenerates and combines assessment instances with custom covers for the c
     }),
   ).toBeVisible();
   expect(new URL(page.url()).searchParams.get('instances')?.split(',')).toEqual(formIds);
-  const downloaded = page.waitForEvent('download', { timeout: 120_000 });
-  await page.getByRole('button', { name: 'Download class PDF', exact: true }).click();
-  const download = await downloaded;
-  expect(download.suggestedFilename()).toMatch(/exam_45_copies\.pdf$/);
-  expect(await download.failure()).toBeNull();
-  const packet = await PDFDocument.load(await fs.readFile(await download.path()));
-  expect(packet.getPageCount()).toBe(
-    15 * pageCounts.reduce((total, count) => total + count + 1, 0),
-  );
-  let copyStart = 0;
-  for (let copy = 0; copy < 45; copy++) {
-    expect(packet.getPage(copyStart + 1).getSize()).toEqual({ width: 400, height: 600 });
-    copyStart += pageCounts[copy % pageCounts.length] + 1;
+  await expect(page.getByRole('heading', { name: 'Booklet PDF', exact: true })).toBeVisible();
+  await expect(
+    page.getByText('One answer key for each selected form is appended after all exam copies.', {
+      exact: false,
+    }),
+  ).toBeVisible();
+  for (const copies of [45, 1]) {
+    await page.getByLabel('Number of exam copies', { exact: true }).fill(String(copies));
+    const downloaded = page.waitForEvent('download', { timeout: 120_000 });
+    await page.getByRole('button', { name: 'Download booklet PDF', exact: true }).click();
+    const download = await downloaded;
+    expect(download.suggestedFilename()).toMatch(new RegExp(`booklet_${copies}_copies\\.pdf$`));
+    expect(await download.failure()).toBeNull();
+    const packet = await PDFDocument.load(await fs.readFile(await download.path()));
+    let copyStart = 0;
+    for (let copy = 0; copy < copies; copy++) {
+      expect(packet.getPage(copyStart + 1).getSize()).toEqual({ width: 400, height: 600 });
+      copyStart += pageCounts[copy % pageCounts.length] + 1;
+    }
+    expect(packet.getPageCount()).toBe(
+      copyStart + answerKeyPageCounts.reduce((total, count) => total + count, 0),
+    );
+    for (const answerKeyPage of packet.getPages().slice(copyStart)) {
+      expect(answerKeyPage.getSize()).toEqual({ width: 612, height: 792 });
+    }
   }
 });
 
