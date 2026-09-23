@@ -52,6 +52,7 @@ def test_converts_json_number_primitives(
     assert mathjson_to_sympy_expr(mathjson) == expected
 
 
+@pytest.mark.parametrize("simplify_expression", [False, True])
 @pytest.mark.parametrize(
     ("value", "expected"),
     [
@@ -79,9 +80,29 @@ def test_converts_json_number_primitives(
 def test_converts_mathjson_number_strings(
     value: str,
     expected: sympy.Basic,
+    simplify_expression: bool,
 ) -> None:
-    assert mathjson_to_sympy_expr({"num": value}) == expected
-    assert mathjson_to_sympy_expr(value) == expected
+    assert (
+        mathjson_to_sympy_expr({"num": value}, simplify_expression=simplify_expression)
+        == expected
+    )
+    assert (
+        mathjson_to_sympy_expr(value, simplify_expression=simplify_expression)
+        == expected
+    )
+
+
+def test_simplification_setting_does_not_leak_between_conversions() -> None:
+    x = sympy.Symbol("x")
+    raw = _raw_mathjson(["Add", "x", "x"])
+
+    assert raw_mathjson_to_sympy_expr(raw, simplify_expression=False).args == (x, x)
+    assert raw_mathjson_to_sympy_expr(raw) == 2 * x
+
+    with pytest.raises(MathJsonStudentError, match="Expected a numeric expression"):
+        mathjson_to_sympy_expr(["Add", ["Set", 1], 2], simplify_expression=False)
+
+    assert raw_mathjson_to_sympy_expr(raw) == 2 * x
 
 
 @pytest.mark.parametrize(

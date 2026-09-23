@@ -544,7 +544,10 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
             if not isinstance(raw_mathjson, str):
                 raise TypeError("MathJSON submission must be a string.")
             sympy_expr = raw_mathjson_to_sympy_expr(
-                raw_mathjson, allow_sets=allow_sets, allow_trig=allow_trig
+                raw_mathjson,
+                allow_sets=allow_sets,
+                allow_trig=allow_trig,
+                simplify_expression=simplify_expression,
             )
             result = _apply_parse_constraints_to_sympy_expr(
                 sympy_expr,

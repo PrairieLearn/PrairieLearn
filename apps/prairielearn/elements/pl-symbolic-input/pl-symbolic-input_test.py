@@ -1,10 +1,12 @@
 import importlib
+import json
 from pathlib import Path
 from typing import Any, cast
 
 import prairielearn.sympy_utils as psu
 import pytest
 import sympy
+from mathjson import MathJsonExpression
 
 symbolic_input = importlib.import_module("pl-symbolic-input")
 
@@ -268,8 +270,63 @@ def test_formula_editor_test_submission_includes_mathjson() -> None:
     )
 
 
-def test_mathjson_submission_reapplies_variable_checks() -> None:
-    element_html = build_element_html('formula-editor="true"', 'variables="x"')
+@pytest.mark.parametrize("simplify_expression", [False, True])
+@pytest.mark.parametrize(
+    ("submission", "mathjson"),
+    [
+        ("x+x", ["Add", "x", "x"]),
+        ("x*x", ["Multiply", "x", "x"]),
+        ("x*x", ["InvisibleOperator", "x", "x"]),
+        ("x-x", ["Subtract", "x", "x"]),
+        ("x/x", ["Divide", "x", "x"]),
+        ("x^0", ["Power", "x", 0]),
+        ("x-(x+x)", ["Subtract", "x", ["Add", "x", "x"]]),
+        ("-(x+x)", ["Negate", ["Add", "x", "x"]]),
+        ("sin(pi)", ["Sin", "Pi"]),
+        ("sqrt(4)", ["Sqrt", 4]),
+        ("log(1)", ["Log", 1]),
+        ("1/2", ["Divide", 1, 2]),
+        ("sqrt(x+x)", ["Sqrt", ["Add", "x", "x"]]),
+        ("f(x+x)", ["f", ["Add", "x", "x"]]),
+    ],
+)
+def test_mathjson_submission_respects_simplification(
+    submission: str, mathjson: MathJsonExpression, simplify_expression: bool
+) -> None:
+    attributes = (
+        'variables="x"',
+        'custom-functions="f"',
+        f'display-simplified-expression="{str(simplify_expression).lower()}"',
+    )
+    text_data = make_question_data(submitted_answers={"test": submission})
+    symbolic_input.parse(build_element_html(*attributes), text_data)
+    assert text_data["format_errors"] == {}
+
+    formula_data = make_question_data(
+        submitted_answers={"test": submission, "test-json": json.dumps(mathjson)},
+        correct_answers={"test": text_data["submitted_answers"]["test"]},
+    )
+    element_html = build_element_html(*attributes, 'formula-editor="true"')
+    symbolic_input.parse(element_html, formula_data)
+
+    assert formula_data["format_errors"] == {}
+    assert (
+        formula_data["submitted_answers"]["test"]["_value"]
+        == text_data["submitted_answers"]["test"]["_value"]
+    )
+    symbolic_input.grade(element_html, formula_data)
+    assert formula_data["partial_scores"]["test"]["score"] == 1
+
+
+@pytest.mark.parametrize("simplify_expression", [False, True])
+def test_mathjson_submission_reapplies_variable_checks(
+    simplify_expression: bool,
+) -> None:
+    element_html = build_element_html(
+        'formula-editor="true"',
+        'variables="x"',
+        f'display-simplified-expression="{str(simplify_expression).lower()}"',
+    )
     data = make_question_data(submitted_answers={"test": "y", "test-json": '"y"'})
 
     symbolic_input.parse(element_html, data)
@@ -278,8 +335,15 @@ def test_mathjson_submission_reapplies_variable_checks() -> None:
     assert data["submitted_answers"]["test"] is None
 
 
-def test_mathjson_submission_reapplies_custom_function_checks() -> None:
-    element_html = build_element_html('formula-editor="true"', 'variables="x"')
+@pytest.mark.parametrize("simplify_expression", [False, True])
+def test_mathjson_submission_reapplies_custom_function_checks(
+    simplify_expression: bool,
+) -> None:
+    element_html = build_element_html(
+        'formula-editor="true"',
+        'variables="x"',
+        f'display-simplified-expression="{str(simplify_expression).lower()}"',
+    )
     data = make_question_data(
         submitted_answers={"test": "f(x)", "test-json": '["Apply", "f", "x"]'}
     )
@@ -288,6 +352,31 @@ def test_mathjson_submission_reapplies_custom_function_checks() -> None:
 
     assert "test" in data["format_errors"]
     assert data["submitted_answers"]["test"] is None
+
+
+@pytest.mark.parametrize(
+    ("simplify_expression", "expected_latex"), [(False, "x + x"), (True, "2 x")]
+)
+def test_mathjson_submission_display_respects_simplification(
+    monkeypatch: pytest.MonkeyPatch,
+    simplify_expression: bool,
+    expected_latex: str,
+) -> None:
+    monkeypatch.chdir(Path(__file__).parent)
+    element_html = build_element_html(
+        'formula-editor="true"',
+        'variables="x"',
+        f'display-simplified-expression="{str(simplify_expression).lower()}"',
+    )
+    data = make_question_data(
+        submitted_answers={"test": "x+x", "test-json": '["Add", "x", "x"]'},
+        panel="submission",
+    )
+
+    symbolic_input.parse(element_html, data)
+
+    assert data["format_errors"] == {}
+    assert f"${expected_latex}$" in symbolic_input.render(element_html, data)
 
 
 @pytest.mark.parametrize("raw_mathjson", ["", "   "])

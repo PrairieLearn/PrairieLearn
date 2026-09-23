@@ -213,7 +213,11 @@ def sympy_expr_to_raw_mathjson(expr: sympy.Basic) -> str:
 
 
 def raw_mathjson_to_sympy_expr(
-    raw: str, *, allow_sets: bool = False, allow_trig: bool = True
+    raw: str,
+    *,
+    allow_sets: bool = False,
+    allow_trig: bool = True,
+    simplify_expression: bool = True,
 ) -> sympy.Basic:
     """Parse raw MathJSON JSON text and convert it to a SymPy object.
 
@@ -228,17 +232,25 @@ def raw_mathjson_to_sympy_expr(
               ``["Interval", [ "Open", e1], ["Open", e2]]``,
             - ``["Delimiter", ["Sequence", *args], {"str": ","}]`` -> ``["Set", *args]``.
         allow_trig: If false, raises on trig functions.
+        simplify_expression: Whether to evaluate expressions during conversion.
 
     Returns:
         The converted SymPy object.
     """
     return mathjson_to_sympy_expr(
-        json.loads(raw), allow_sets=allow_sets, allow_trig=allow_trig
+        json.loads(raw),
+        allow_sets=allow_sets,
+        allow_trig=allow_trig,
+        simplify_expression=simplify_expression,
     )
 
 
 def mathjson_to_sympy_expr(
-    expr: object, *, allow_sets: bool = False, allow_trig: bool = True
+    expr: object,
+    *,
+    allow_sets: bool = False,
+    allow_trig: bool = True,
+    simplify_expression: bool = True,
 ) -> sympy.Basic:
     """Check a deserialized MathJSON value and convert it to a SymPy object.
 
@@ -254,6 +266,7 @@ def mathjson_to_sympy_expr(
               ``["Interval", [ "Open", e1], ["Open", e2]]``,
             - ``["Delimiter", ["Sequence", *args], {"str": ","}]`` -> ``["Set", *args]``
         allow_trig: If false, raises on trig functions.
+        simplify_expression: Whether to evaluate expressions during conversion.
 
     Returns:
         The converted SymPy object.
@@ -261,7 +274,10 @@ def mathjson_to_sympy_expr(
     # pretend that expr is in the shape of MathJsonExpression
     expr = cast(MathJsonExpression, expr)
     _raise_mathjson_errors(expr, allow_trig=allow_trig)
-    return _mathjson_to_sympy_expr(expr, allow_sets=allow_sets)
+    # Constructors and arithmetic helpers must preserve the expression before
+    # it reaches the existing SymPy validation and serialization pipeline.
+    with sympy.evaluate(simplify_expression):
+        return _mathjson_to_sympy_expr(expr, allow_sets=allow_sets)
 
 
 def _sympy_expr_to_mathjson(expr: sympy.Basic) -> MathJsonExpression:
@@ -417,18 +433,20 @@ def _number(value: str) -> sympy.Basic:
         nonrepeating_scale = 10 ** len(nonrepeating)
         repeating_scale = 10 ** len(repeating_digits) - 1
 
-        ret = sign * (
-            sympy.Integer(whole)
-            + sympy.Rational(nonrepeating_value, nonrepeating_scale)
-            + sympy.Rational(
-                int(repeating_digits), nonrepeating_scale * repeating_scale
+        # This arithmetic decodes a number literal, not a student expression.
+        with sympy.evaluate(True):
+            ret = sign * (
+                sympy.Integer(whole)
+                + sympy.Rational(nonrepeating_value, nonrepeating_scale)
+                + sympy.Rational(
+                    int(repeating_digits), nonrepeating_scale * repeating_scale
+                )
             )
-        )
 
-        exponent = repeating["exponent"]
-        if exponent is not None:
-            ret *= sympy.Integer(10) ** int(exponent[1:])
-        return ret
+            exponent = repeating["exponent"]
+            if exponent is not None:
+                ret *= sympy.Integer(10) ** int(exponent[1:])
+            return ret
 
     return sympy.Number(normalized_value)
 
@@ -535,7 +553,7 @@ def _function(
                 return functools.reduce(sympy.Complement, args)
             left, *rest = args
             return sympy.Add(_as_expr(left), *(-_as_expr(arg) for arg in rest))
-        # Invisible operation is always interpreted as multiplication
+        # Invisible operator is always interpreted as multiplication
         case "Multiply" | "InvisibleOperator":
             _require_arity(head, args, 1, None)
             return sympy.Mul(*_as_exprs(args))
