@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
+import * as tmp from 'tmp-promise';
 import { afterAll, beforeAll, describe, expect, test } from 'vitest';
 
 import { execute, loadSqlEquiv } from '@prairielearn/postgres';
@@ -11,6 +12,7 @@ import { getRuntimeDirectoryForCourse } from '../lib/chunks.js';
 import { DEFAULT_PRINT_SETTINGS } from '../lib/client/print-preparation.js';
 import { getAssessmentTrpcUrl } from '../lib/client/url.js';
 import { config } from '../lib/config.js';
+import { TEST_COURSE_PATH } from '../lib/paths.js';
 import { PrintPacketMetadataSchema } from '../lib/print-packet-schema.js';
 import {
   assessmentHasPrintRandomization,
@@ -55,8 +57,17 @@ function packetInput(assessmentInstanceId: string, copies = 1) {
 }
 
 describe('print preparation', { timeout: 60_000 }, () => {
-  beforeAll(helperServer.before());
-  afterAll(helperServer.after);
+  let courseDirectory: tmp.DirectoryResult;
+  beforeAll(async () => {
+    // File-error tests must not modify the course used by other test workers.
+    courseDirectory = await tmp.dir({ unsafeCleanup: true });
+    await fs.cp(TEST_COURSE_PATH, courseDirectory.path, { recursive: true });
+    await helperServer.before(courseDirectory.path)();
+  });
+  afterAll(async () => {
+    await helperServer.after();
+    await courseDirectory.cleanup();
+  });
 
   test('creates independent instructor instances even when students only get one attempt', async () => {
     const assessment = await selectAssessmentByTid({
