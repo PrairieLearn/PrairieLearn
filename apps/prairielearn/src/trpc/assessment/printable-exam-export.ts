@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { HttpStatusError } from '@prairielearn/error';
 import { QuestionBlockSizeOverflowError, createPdfOutput } from '@prairielearn/printing';
 
+import { encodePrintPageIdentity } from '../../lib/client/print-page-code.js';
 import { printLayoutSearch } from '../../lib/client/print-preparation.js';
 import { getAssessmentInstanceUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
@@ -15,7 +16,6 @@ import {
   assemblePrintPacket,
   readPrintCoverPages,
 } from '../../lib/print-packet.js';
-import { encodePrintPageIdentity } from '../../lib/print-page-code.js';
 import {
   getPrintRenderer,
   isBrowserRenderingAvailable,

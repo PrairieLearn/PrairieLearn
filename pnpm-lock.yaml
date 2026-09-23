@@ -1194,6 +1194,9 @@ importers:
       '@prairielearn/express-list-endpoints':
         specifier: workspace:^
         version: link:../../packages/express-list-endpoints
+      '@prairielearn/qr-code':
+        specifier: workspace:^
+        version: link:../../packages/qr-code
       '@prairielearn/vite-plugin-express':
         specifier: workspace:^
         version: link:../../packages/vite-plugin-express

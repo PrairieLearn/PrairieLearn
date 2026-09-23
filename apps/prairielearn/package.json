@@ -271,6 +271,7 @@
   "devDependencies": {
     "@playwright/test": "^1.62.1",
     "@prairielearn/express-list-endpoints": "workspace:^",
+    "@prairielearn/qr-code": "workspace:^",
     "@prairielearn/tsconfig": "workspace:^",
     "@prairielearn/vite-plugin-express": "workspace:^",
     "@sa11y/format": "^8.0.28",

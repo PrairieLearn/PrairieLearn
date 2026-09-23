@@ -157,6 +157,9 @@ instructions) to headings, paragraphs, and flat lists for the cover.
 `renderPdf` accepts `pageCode: { encodePage(pageNumber) }`. After pagination, it generates a QR
 code for each physical page, including the cover, using the caller's versioned payload. The
 template must reserve a bottom-left margin box and enough space for the code and its quiet zone.
+Browser previews use `addPreviewPageCodes` from `@prairielearn/printing/page-code` to display the
+same codes before reporting that the document is ready. Each preview has its own timestamp and
+export UUID; PDF exports replace those codes with their final export identity.
 The PrairieLearn template reserves 0.7 inches below the content for a 0.35-inch vector code,
 including its four-module quiet zone. This is about 10% of the original 1.1-inch code's area.
 The coverage exam's codes decode from 300 and 600 DPI PDF rasterizations, but not at 150 DPI.

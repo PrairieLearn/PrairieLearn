@@ -17,9 +17,9 @@ import { parseRequestQuery } from '@prairielearn/zod';
 
 import { renderText as renderAssessmentText } from '../../lib/assessment.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
+import { encodePrintPageIdentity } from '../../lib/client/print-page-code.js';
 import { config } from '../../lib/config.js';
 import type { Assessment } from '../../lib/db-types.js';
-import { encodePrintPageIdentity } from '../../lib/print-page-code.js';
 import {
   type OmittedQuestionWarning,
   PRINT_DOCUMENTS,
