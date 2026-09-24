@@ -1,5 +1,6 @@
 import { type Browser, type BrowserContext, chromium } from 'playwright';
 
+import { type DocxOutputOptions, createDocxOutput } from './docxOutput.js';
 import { createPdfOutput } from './pdfOutput.js';
 import type { PrintablePageOutput } from './printablePageOutput.js';
 
@@ -113,6 +114,7 @@ export interface RenderPageOptions {
 }
 
 export type RenderPdfOptions = RenderPageOptions;
+export type RenderDocxOptions = RenderPageOptions & DocxOutputOptions;
 
 /**
  * Renders printable pages with a single, long-lived Chromium. Renders run one at a time so that a
@@ -143,6 +145,10 @@ export class PrintRenderer {
 
   renderPdf(options: RenderPdfOptions): Promise<Buffer> {
     return this.render(options, createPdfOutput());
+  }
+
+  renderDocx({ cover, footerLabel, ...options }: RenderDocxOptions): Promise<Buffer> {
+    return this.render(options, createDocxOutput({ cover, footerLabel }));
   }
 
   render<T>(options: RenderPageOptions, output: PrintablePageOutput<T>): Promise<T> {
