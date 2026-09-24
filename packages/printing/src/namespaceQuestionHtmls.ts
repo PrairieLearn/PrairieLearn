@@ -187,98 +187,43 @@ function reserveUniqueBase(
   return candidate;
 }
 
-function symbolicInputIds(name: string): string[] {
-  return [`symbolic-input-${name}`, `symbolic-input-latex-${name}`, `symbolic-input-sub-${name}`];
-}
-
-function namespaceSymbolicInputs(
+function namespaceInputInitializers(
   $: cheerio.CheerioAPI,
   namespace: string,
   reservedIds: Set<string>,
+  {
+    initializer,
+    idsForBase,
+    namesForBase,
+  }: {
+    initializer: RegExp;
+    idsForBase: (base: string) => string[];
+    namesForBase: (base: string) => string[];
+  },
 ): void {
-  const symbolicInputNames = new Map<string, string>();
-
+  const baseRenames = new Map<string, string>();
   $('script').each((_index, element) => {
     const scriptHtml = $(element).html();
     if (!scriptHtml) return;
-
     $(element).html(
-      scriptHtml.replaceAll(
-        /window\.PLSymbolicInput\(\s*(["'])([^"']+)\1\s*\)/g,
-        (_call, quote: string, name: string) => {
-          let namespacedName = symbolicInputNames.get(name);
-          if (namespacedName === undefined) {
-            namespacedName = reserveUniqueBase(
-              `${namespace}-${name}`,
-              symbolicInputIds,
-              reservedIds,
-            );
-            symbolicInputNames.set(name, namespacedName);
-          }
-          return `window.PLSymbolicInput(${quote}${namespacedName}${quote})`;
-        },
-      ),
+      scriptHtml.replaceAll(initializer, (call, quote: string, base: string) => {
+        let namespacedBase = baseRenames.get(base);
+        if (namespacedBase === undefined) {
+          namespacedBase = reserveUniqueBase(`${namespace}-${base}`, idsForBase, reservedIds);
+          baseRenames.set(base, namespacedBase);
+        }
+        return call.replace(`${quote}${base}${quote}`, () => `${quote}${namespacedBase}${quote}`);
+      }),
     );
   });
 
   const idRenames = new Map<string, string>();
   const nameRenames = new Map<string, string>();
-  for (const [name, namespacedName] of symbolicInputNames) {
-    const ids = symbolicInputIds(name);
-    const namespacedIds = symbolicInputIds(namespacedName);
-    ids.forEach((id, index) => idRenames.set(id, namespacedIds[index]));
-    nameRenames.set(name, namespacedName);
-    nameRenames.set(`${name}-latex`, `${namespacedName}-latex`);
-  }
-  renameIdsAndReferences($, idRenames);
-  $('[name]').each((_index, element) => {
-    const name = $(element).attr('name');
-    const namespacedName = name ? nameRenames.get(name) : undefined;
-    if (namespacedName) $(element).attr('name', namespacedName);
-  });
-}
-
-function sketchInputIdsForBase(id: string): string[] {
-  return [`${id}-si-container`, `${id}-sketchresponse-data`, `${id}-sketchresponse-submission`];
-}
-
-function namespaceSketchInputs(
-  $: cheerio.CheerioAPI,
-  namespace: string,
-  reservedIds: Set<string>,
-): void {
-  const sketchInputNames = new Map<string, string>();
-
-  $('script').each((_index, element) => {
-    const scriptHtml = $(element).html();
-    if (!scriptHtml) return;
-
-    $(element).html(
-      scriptHtml.replaceAll(
-        /window\.SketchInput\(\s*(["'])([^"']+)\1/g,
-        (_call, quote: string, id: string) => {
-          let namespacedId = sketchInputNames.get(id);
-          if (namespacedId === undefined) {
-            namespacedId = reserveUniqueBase(
-              `${namespace}-${id}`,
-              sketchInputIdsForBase,
-              reservedIds,
-            );
-            sketchInputNames.set(id, namespacedId);
-          }
-          return `window.SketchInput(${quote}${namespacedId}${quote}`;
-        },
-      ),
-    );
-  });
-
-  const idRenames = new Map<string, string>();
-  const nameRenames = new Map<string, string>();
-  for (const [id, namespacedId] of sketchInputNames) {
-    const ids = sketchInputIdsForBase(id);
-    const namespacedIds = sketchInputIdsForBase(namespacedId);
-    ids.forEach((inputId, index) => idRenames.set(inputId, namespacedIds[index]));
-    nameRenames.set(`${id}-sketchresponse-submission`, `${namespacedId}-sketchresponse-submission`);
+  for (const [base, namespacedBase] of baseRenames) {
+    const namespacedIds = idsForBase(namespacedBase);
+    idsForBase(base).forEach((id, index) => idRenames.set(id, namespacedIds[index]));
+    const namespacedNames = namesForBase(namespacedBase);
+    namesForBase(base).forEach((name, index) => nameRenames.set(name, namespacedNames[index]));
   }
   renameIdsAndReferences($, idRenames);
   $('[name]').each((_index, element) => {
@@ -312,14 +257,7 @@ function assertNoDuplicateIds($: cheerio.CheerioAPI, namespace: string): void {
 }
 
 function reserveUniqueId(preferredId: string, reservedIds: Set<string>): string {
-  let candidate = preferredId;
-  let suffix = 2;
-  while (reservedIds.has(candidate)) {
-    candidate = `${preferredId}-${suffix}`;
-    suffix += 1;
-  }
-  reservedIds.add(candidate);
-  return candidate;
+  return reserveUniqueBase(preferredId, (id) => [id], reservedIds);
 }
 
 /**
@@ -346,8 +284,24 @@ export function namespaceQuestionHtmls(questions: readonly QuestionHtmlToNamespa
 
   const reservedIds = new Set(fragments.flatMap(({ $ }) => getIds($)));
   for (const { $, namespace } of fragments) {
-    namespaceSymbolicInputs($, namespace, reservedIds);
-    namespaceSketchInputs($, namespace, reservedIds);
+    namespaceInputInitializers($, namespace, reservedIds, {
+      initializer: /window\.PLSymbolicInput\(\s*(["'])([^"']+)\1\s*\)/g,
+      idsForBase: (name) => [
+        `symbolic-input-${name}`,
+        `symbolic-input-latex-${name}`,
+        `symbolic-input-sub-${name}`,
+      ],
+      namesForBase: (name) => [name, `${name}-latex`],
+    });
+    namespaceInputInitializers($, namespace, reservedIds, {
+      initializer: /window\.SketchInput\(\s*(["'])([^"']+)\1/g,
+      idsForBase: (name) => [
+        `${name}-si-container`,
+        `${name}-sketchresponse-data`,
+        `${name}-sketchresponse-submission`,
+      ],
+      namesForBase: (name) => [`${name}-sketchresponse-submission`],
+    });
     assertNoDuplicateIds($, namespace);
   }
 
