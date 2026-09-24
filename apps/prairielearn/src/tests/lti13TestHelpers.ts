@@ -57,10 +57,7 @@ export async function withServer<T>(app: express.Express, port: number, fn: () =
   });
 
   try {
-    return await withConfig(
-      { devMode: true, ltiDevAllowedOrigins: [`http://localhost:${port}`] },
-      fn,
-    );
+    return await withConfig({ devMode: true }, fn);
   } finally {
     await new Promise<void>((resolve, reject) => {
       server.close((err) => (err ? reject(err) : resolve()));

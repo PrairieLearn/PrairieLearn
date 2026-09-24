@@ -1340,14 +1340,6 @@
       "default": true,
       "type": "boolean"
     },
-    "ltiDevAllowedOrigins": {
-      "default": [],
-      "type": "array",
-      "items": {
-        "type": "string",
-        "format": "uri"
-      }
-    },
     "azureClientID": {
       "default": "<your_client_id>",
       "type": "string"

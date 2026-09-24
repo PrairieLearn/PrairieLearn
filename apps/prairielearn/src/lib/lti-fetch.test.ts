@@ -22,7 +22,7 @@ describe('LTI outbound protection', () => {
   it.each(['127.0.0.1', '169.254.169.254'])(
     'protects grade passback, token, JWKS, and AGS/NRPS requests to %s by default',
     async (address) => {
-      await withConfig({ devMode: true, ltiDevAllowedOrigins: [] }, async () => {
+      await withConfig({ devMode: false }, async () => {
         const fixtures = { url: `https://${address}/endpoint`, instance: {} };
         const { privateKey } = await jose.generateKeyPair('RS256', { extractable: true });
         fixtures.instance = {
@@ -80,30 +80,18 @@ describe('LTI outbound protection', () => {
     },
   );
 
-  it('ignores the allowance outside development without repeating the configuration warning', async () => {
-    await withConfig({ devMode: false, ltiDevAllowedOrigins: ['https://127.0.0.1'] }, async () => {
-      const warning = vi.spyOn(logger, 'warn');
-      await expect(ltiFetch('https://127.0.0.1')).rejects.toThrow();
-      expect(warning).not.toHaveBeenCalledWith(
-        'Ignoring ltiDevAllowedOrigins because devMode is disabled',
-      );
-      expect(warning).toHaveBeenCalledWith(expect.stringContaining('SSRF protection'));
-    });
-  });
-
-  it('allows only the exact development origin', async () => {
+  it('allows local requests in development without additional configuration', async () => {
     const app = express();
     app.get('/', (_req, res) => res.send('local LMS'));
     await withServer(app, async ({ url }) => {
-      await withConfig({ devMode: true, ltiDevAllowedOrigins: [new URL(url).origin] }, async () => {
+      await withConfig({ devMode: true }, async () => {
         const response = await ltiFetch(url);
         expect(await response.text()).toBe('local LMS');
-        await expect(ltiFetch('https://127.0.0.1')).rejects.toThrow();
       });
     });
   });
 
-  it.each([302, 307])('does not follow a development redirect with status %s', async (status) => {
+  it.each([302, 307])('follows development redirects with status %s', async (status) => {
     const app = express();
     app.use(express.text());
     app.post('/redirect', (_req, res) => res.redirect(status, '/result'));
@@ -113,71 +101,76 @@ describe('LTI outbound protection', () => {
       res.send('redirect target');
     });
     await withServer(app, async ({ url }) => {
-      await withConfig({ devMode: true, ltiDevAllowedOrigins: [new URL(url).origin] }, async () => {
+      await withConfig({ devMode: true }, async () => {
         const response = await ltiFetch(`${url}/redirect`, {
           method: 'POST',
           headers: { 'Content-Type': 'text/plain' },
           body: 'grade',
         });
-        expect(response.status).toBe(status);
-        expect(response.headers.get('location')).toBe('/result');
-        await response.body?.cancel();
-        expect(redirectedRequests).toBe(0);
+        expect(response.status).toBe(200);
+        expect(await response.text()).toBe('redirect target');
+        expect(redirectedRequests).toBe(1);
       });
     });
   });
 
   it('does not label ordinary network failures as address blocks', async () => {
-    vi.spyOn(publicFetchModule, 'publicFetch').mockRejectedValue(
-      new TypeError('fetch failed', {
-        cause: new Error('ECONNRESET'),
-      }),
-    );
-    const warning = vi.spyOn(logger, 'warn');
-    await expect(ltiFetch('https://lms.example')).rejects.toThrow('fetch failed');
-    expect(warning).not.toHaveBeenCalled();
+    await withConfig({ devMode: false }, async () => {
+      vi.spyOn(publicFetchModule, 'publicFetch').mockRejectedValue(
+        new TypeError('fetch failed', {
+          cause: new Error('ECONNRESET'),
+        }),
+      );
+      const warning = vi.spyOn(logger, 'warn');
+      await expect(ltiFetch('https://lms.example')).rejects.toThrow('fetch failed');
+      expect(warning).not.toHaveBeenCalled();
+    });
   });
 
   it('preserves caller cancellation', async () => {
-    const controller = new AbortController();
-    controller.abort(new Error('Caller cancelled'));
-    await expect(ltiFetch('https://lms.example', { signal: controller.signal })).rejects.toThrow(
-      'Caller cancelled',
-    );
+    await withConfig({ devMode: false }, async () => {
+      const controller = new AbortController();
+      controller.abort(new Error('Caller cancelled'));
+      await expect(ltiFetch('https://lms.example', { signal: controller.signal })).rejects.toThrow(
+        'Caller cancelled',
+      );
+    });
   });
 
   it('adapts Request inputs to Undici with overrides and cancellation intact', async () => {
-    const controller = new AbortController();
-    const originalPublicFetch = publicFetchModule.publicFetch;
-    const publicFetch = vi
-      .spyOn(publicFetchModule, 'publicFetch')
-      .mockImplementation(async (input, init) => {
-        assert(init instanceof Request);
-        const request = init;
-        expect(request.method).toBe('PUT');
-        expect(request.headers.get('content-type')).toBe('text/plain');
-        expect(request.headers.get('x-lti-test')).toBe('override');
-        expect(await request.clone().text()).toBe('grade');
-        expect(request.redirect).toBe('error');
-        controller.abort(new Error('Caller cancelled'));
-        expect(request.signal.aborted).toBe(true);
-        expect(request.signal.reason).toBe(controller.signal.reason);
-        return originalPublicFetch(input, init);
+    await withConfig({ devMode: false }, async () => {
+      const controller = new AbortController();
+      const originalPublicFetch = publicFetchModule.publicFetch;
+      const publicFetch = vi
+        .spyOn(publicFetchModule, 'publicFetch')
+        .mockImplementation(async (input, init) => {
+          assert(init instanceof Request);
+          const request = init;
+          expect(request.method).toBe('PUT');
+          expect(request.headers.get('content-type')).toBe('text/plain');
+          expect(request.headers.get('x-lti-test')).toBe('override');
+          expect(await request.clone().text()).toBe('grade');
+          expect(request.redirect).toBe('error');
+          controller.abort(new Error('Caller cancelled'));
+          expect(request.signal.aborted).toBe(true);
+          expect(request.signal.reason).toBe(controller.signal.reason);
+          return originalPublicFetch(input, init);
+        });
+      const request = new Request('https://lms.example/grades', {
+        method: 'POST',
+        body: 'grade',
+        headers: { 'x-lti-test': 'original' },
+        signal: controller.signal,
+        redirect: 'error',
       });
-    const request = new Request('https://lms.example/grades', {
-      method: 'POST',
-      body: 'grade',
-      headers: { 'x-lti-test': 'original' },
-      signal: controller.signal,
-      redirect: 'error',
+      await expect(
+        ltiFetch(request, {
+          method: 'PUT',
+          headers: { 'content-type': 'text/plain', 'x-lti-test': 'override' },
+        }),
+      ).rejects.toThrow('Caller cancelled');
+      expect(publicFetch).toHaveBeenCalledTimes(1);
+      expect(publicFetch.mock.calls[0][0]).toBe(request.url);
     });
-    await expect(
-      ltiFetch(request, {
-        method: 'PUT',
-        headers: { 'content-type': 'text/plain', 'x-lti-test': 'override' },
-      }),
-    ).rejects.toThrow('Caller cancelled');
-    expect(publicFetch).toHaveBeenCalledTimes(1);
-    expect(publicFetch.mock.calls[0][0]).toBe(request.url);
   });
 });

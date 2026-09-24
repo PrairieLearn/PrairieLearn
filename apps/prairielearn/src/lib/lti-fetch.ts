@@ -4,11 +4,12 @@ import { type PublicFetchInit, publicFetch } from '@prairielearn/public-fetch';
 import { config } from './config.js';
 
 export async function ltiFetch(input: RequestInfo | URL, init?: RequestInit) {
+  if (config.devMode) {
+    return fetch(input, init);
+  }
+
   const request = new Request(input, init);
   const url = new URL(request.url);
-  if (config.devMode && config.ltiDevAllowedOrigins.includes(url.origin)) {
-    return fetch(request, { redirect: 'manual' });
-  }
 
   try {
     // A Request is also a RequestInit dictionary; retain its inherited getters.
