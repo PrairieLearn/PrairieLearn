@@ -138,7 +138,7 @@ interface StaffTableInnerProps {
   courseUsers: CourseUsersRow[];
   authnUserId: string;
   userId: string;
-  isAdministrator: boolean;
+  canAdministerStaff: boolean;
   uidsLimit: number;
 }
 
@@ -795,13 +795,13 @@ function BulkEditAccessModal({
 function SelectionToolbar({
   selectedUsers,
   courseInstances,
-  isAdministrator,
+  canAdministerStaff,
   authnUserId,
   userId,
 }: {
   selectedUsers: CourseUsersRow[];
   courseInstances: CourseInstanceAuthz[];
-  isAdministrator: boolean;
+  canAdministerStaff: boolean;
   authnUserId: string;
   userId: string;
 }) {
@@ -809,11 +809,11 @@ function SelectionToolbar({
   const [showEditAccessModal, setShowEditAccessModal] = useState(false);
 
   const modifiableUsers = selectedUsers.filter(
-    (u) => (u.user.id !== authnUserId && u.user.id !== userId) || isAdministrator,
+    (u) => (u.user.id !== authnUserId && u.user.id !== userId) || canAdministerStaff,
   );
 
   const deletableUsers = modifiableUsers.filter(
-    (u) => isAdministrator || u.course_permission.course_role !== 'Owner',
+    (u) => canAdministerStaff || u.course_permission.course_role !== 'Owner',
   );
 
   return (
@@ -860,7 +860,7 @@ function StaffTableInner({
   courseUsers,
   authnUserId,
   userId,
-  isAdministrator,
+  canAdministerStaff,
   uidsLimit,
 }: StaffTableInnerProps) {
   const trpc = useTRPC();
@@ -1019,7 +1019,7 @@ function StaffTableInner({
                 canChangeCourseRole={
                   (info.row.original.user.id !== authnUserId &&
                     info.row.original.user.id !== userId) ||
-                  isAdministrator
+                  canAdministerStaff
                 }
               />
             </div>
@@ -1051,7 +1051,7 @@ function StaffTableInner({
           ),
         ),
       ]),
-    [authnUserId, userId, isAdministrator, courseInstances],
+    [authnUserId, userId, canAdministerStaff, courseInstances],
   );
 
   const table = useTanstackTable({
@@ -1138,7 +1138,7 @@ function StaffTableInner({
         <SelectionToolbar
           selectedUsers={selectedUsers}
           courseInstances={courseInstances}
-          isAdministrator={isAdministrator}
+          canAdministerStaff={canAdministerStaff}
           authnUserId={authnUserId}
           userId={userId}
         />

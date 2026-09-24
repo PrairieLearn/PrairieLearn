@@ -5,6 +5,7 @@ import { logger } from '@prairielearn/logger';
 import { runInTransactionAsync } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
+import { hasCourseStaffAdministrativeAccess } from '../../lib/course-staff.js';
 import {
   type EnumCourseInstanceRole,
   EnumCourseInstanceRoleSchema,
@@ -44,14 +45,19 @@ type StaffAuthzData = Awaited<ReturnType<typeof createContext>>['authz_data'];
 
 const InsertableInstanceRoleSchema = z.enum(['Student Data Viewer', 'Student Data Editor']);
 
-function assertCanModifyUser(authzData: StaffAuthzData, userId: string, action: string) {
-  if (idsEqual(userId, authzData.user.id) && !authzData.is_administrator) {
+function assertCanModifyUser(
+  authzData: StaffAuthzData,
+  canAdministerStaff: boolean,
+  userId: string,
+  action: string,
+) {
+  if (idsEqual(userId, authzData.user.id) && !canAdministerStaff) {
     throw new TRPCError({
       code: 'FORBIDDEN',
       message: `Only administrators can ${action}`,
     });
   }
-  if (idsEqual(userId, authzData.authn_user.id) && !authzData.is_administrator) {
+  if (idsEqual(userId, authzData.authn_user.id) && !canAdministerStaff) {
     throw new TRPCError({
       code: 'FORBIDDEN',
       message: `Only administrators can ${action} while emulating another user`,
@@ -59,9 +65,19 @@ function assertCanModifyUser(authzData: StaffAuthzData, userId: string, action: 
   }
 }
 
-async function assertCanDeleteUser(authzData: StaffAuthzData, userId: string, courseId: string) {
-  assertCanModifyUser(authzData, userId, 'remove themselves from the course staff');
-  if (!authzData.is_administrator) {
+async function assertCanDeleteUser(
+  authzData: StaffAuthzData,
+  canAdministerStaff: boolean,
+  userId: string,
+  courseId: string,
+) {
+  assertCanModifyUser(
+    authzData,
+    canAdministerStaff,
+    userId,
+    'remove themselves from the course staff',
+  );
+  if (!canAdministerStaff) {
     const role = await selectCoursePermissionForUser({ course_id: courseId, user_id: userId });
     if (role === 'Owner') {
       throw new TRPCError({
@@ -71,6 +87,14 @@ async function assertCanDeleteUser(authzData: StaffAuthzData, userId: string, co
     }
   }
 }
+
+const staffAdministrativeAccess = t.middleware(async ({ ctx, next }) => {
+  const canAdministerStaff = await hasCourseStaffAdministrativeAccess({
+    course: ctx.course,
+    authzData: ctx.authz_data,
+  });
+  return next({ ctx: { canAdministerStaff } });
+});
 
 async function getAccessibleInstances(ctx: Awaited<ReturnType<typeof createContext>>) {
   return selectCourseInstancesWithStaffAccess({
@@ -127,6 +151,7 @@ const list = t.procedure.use(requireCoursePermissionOwn).query(async ({ ctx }) =
 
 const updateCourseRole = t.procedure
   .use(requireCoursePermissionOwn)
+  .use(staffAdministrativeAccess)
   .input(
     z.object({
       userId: IdSchema,
@@ -134,7 +159,12 @@ const updateCourseRole = t.procedure
     }),
   )
   .mutation(async ({ input, ctx }) => {
-    assertCanModifyUser(ctx.authz_data, input.userId, 'change their own course content access');
+    assertCanModifyUser(
+      ctx.authz_data,
+      ctx.canAdministerStaff,
+      input.userId,
+      'change their own course content access',
+    );
     await updateCoursePermissionsRole({
       course_id: ctx.course.id,
       user_id: input.userId,
@@ -145,9 +175,10 @@ const updateCourseRole = t.procedure
 
 const deleteUser = t.procedure
   .use(requireCoursePermissionOwn)
+  .use(staffAdministrativeAccess)
   .input(z.object({ userId: IdSchema }))
   .mutation(async ({ input, ctx }) => {
-    await assertCanDeleteUser(ctx.authz_data, input.userId, ctx.course.id);
+    await assertCanDeleteUser(ctx.authz_data, ctx.canAdministerStaff, input.userId, ctx.course.id);
     await deleteCoursePermissions({
       course_id: ctx.course.id,
       user_id: input.userId,
@@ -263,10 +294,11 @@ const insertByUserUids = t.procedure
 
 const bulkDelete = t.procedure
   .use(requireCoursePermissionOwn)
+  .use(staffAdministrativeAccess)
   .input(z.object({ userIds: z.array(IdSchema).min(1) }))
   .mutation(async ({ input, ctx }) => {
     for (const userId of input.userIds) {
-      await assertCanDeleteUser(ctx.authz_data, userId, ctx.course.id);
+      await assertCanDeleteUser(ctx.authz_data, ctx.canAdministerStaff, userId, ctx.course.id);
     }
     await deleteCoursePermissions({
       course_id: ctx.course.id,
@@ -277,6 +309,7 @@ const bulkDelete = t.procedure
 
 const bulkEditAccess = t.procedure
   .use(requireCoursePermissionOwn)
+  .use(staffAdministrativeAccess)
   .input(
     z.object({
       userIds: z.array(IdSchema).min(1),
@@ -305,7 +338,12 @@ const bulkEditAccess = t.procedure
       // Apply course role changes
       if (input.courseRole) {
         for (const userId of input.userIds) {
-          assertCanModifyUser(ctx.authz_data, userId, 'change their own course content access');
+          assertCanModifyUser(
+            ctx.authz_data,
+            ctx.canAdministerStaff,
+            userId,
+            'change their own course content access',
+          );
           await updateCoursePermissionsRole({
             course_id: ctx.course.id,
             user_id: userId,

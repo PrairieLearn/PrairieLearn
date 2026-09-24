@@ -59,3 +59,15 @@ VALUES
   )
 RETURNING
   id;
+
+-- BLOCK select_is_institution_administrator
+SELECT
+  EXISTS (
+    SELECT
+      1
+    FROM
+      institution_administrators
+    WHERE
+      institution_id = $institution_id
+      AND user_id = $user_id
+  );
