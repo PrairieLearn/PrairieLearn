@@ -502,7 +502,7 @@ export const AssessmentInstanceSchema = z.object({
   mode: EnumModeSchema.nullable(),
   modified_at: DateFromISOString,
   number: z.number(),
-  open: z.boolean().nullable(),
+  open: z.boolean(),
   points: z.number().nullable(),
   score_perc: z.number().nullable(),
   score_perc_pending: z.number(),
