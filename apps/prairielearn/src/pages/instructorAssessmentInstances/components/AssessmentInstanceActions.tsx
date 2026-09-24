@@ -98,39 +98,25 @@ function describeNoRegradeQuestions(target: AssessmentInstanceActionTarget): str
   }
 }
 
-interface AssessmentInstanceActionsBaseProps {
+export function AssessmentInstanceActions({
+  target,
+  courseInstanceId,
+  assessmentId,
+  timezone,
+  onActionSuccess,
+  showLogsLink = true,
+}: {
+  target: AssessmentInstanceActionTarget;
   courseInstanceId: string;
   assessmentId: string;
   timezone: string;
   onActionSuccess: (result: { message: string; action: 'delete' | 'timeLimit' }) => void;
   showLogsLink?: boolean;
-}
-
-export type AssessmentInstanceActionsProps = AssessmentInstanceActionsBaseProps &
-  (
-    | { target: { kind: 'single'; instance: AssessmentInstanceActionRow }; clearSelection?: never }
-    | {
-        target:
-          | { kind: 'selected'; instances: AssessmentInstanceActionRow[] }
-          | { kind: 'all'; instances: AssessmentInstanceActionRow[] };
-        clearSelection: () => void;
-      }
-  );
-
-export function AssessmentInstanceActions(props: AssessmentInstanceActionsProps) {
-  const {
-    target,
-    courseInstanceId,
-    assessmentId,
-    timezone,
-    onActionSuccess,
-    showLogsLink = true,
-  } = props;
+}) {
   const [openModal, setOpenModal] = useState<OpenModal>(null);
   const logsUrl = getAssessmentLogsUrl({ courseInstanceId, assessmentId });
   const isAllInstancesTarget = target.kind === 'all';
   const targetRows = getTargetRows(target);
-  const clearSelection = target.kind === 'single' ? undefined : props.clearSelection;
   const count = targetRows.length;
 
   return (
@@ -207,7 +193,6 @@ export function AssessmentInstanceActions(props: AssessmentInstanceActionsProps)
               : `Deleted ${count} ${count === 1 ? 'instance' : 'instances'}.`,
             action: 'delete',
           });
-          clearSelection?.();
           setOpenModal(null);
         }}
       />
@@ -224,7 +209,6 @@ export function AssessmentInstanceActions(props: AssessmentInstanceActionsProps)
               : `Updated the time limit for ${count} ${count === 1 ? 'instance' : 'instances'}.`,
             action: 'timeLimit',
           });
-          clearSelection?.();
           setOpenModal(null);
         }}
       />

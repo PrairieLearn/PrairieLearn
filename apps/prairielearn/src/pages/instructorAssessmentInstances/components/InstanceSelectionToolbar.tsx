@@ -33,11 +33,13 @@ export function InstanceSelectionToolbar({
     <div className="d-flex align-items-center gap-2">
       <AssessmentInstanceActions
         target={target}
-        clearSelection={clearSelection}
         courseInstanceId={courseInstanceId}
         assessmentId={assessmentId}
         timezone={timezone}
-        onActionSuccess={onActionSuccess}
+        onActionSuccess={(result) => {
+          onActionSuccess(result);
+          clearSelection();
+        }}
       />
       <UploadDropdown
         courseInstanceId={courseInstanceId}
