@@ -244,7 +244,7 @@ export function AssessmentQuestionTable({
     ],
   );
 
-  const { columnFilters, onColumnFiltersChange, onResetColumnFilters } =
+  const { columnFilters, activeColumnFilterIds, onColumnFiltersChange, onResetColumnFilters } =
     useColumnFilters(filterRegistry);
 
   // Mirrors the `rubric_grading_item_ids` registry entry above. Both subscribers
@@ -1009,6 +1009,7 @@ export function AssessmentQuestionTable({
           }),
           hasSelection: true,
         }}
+        activeColumnFilterIds={activeColumnFilterIds}
         onResetColumnFilters={onResetColumnFilters}
       />
 
