@@ -1,3 +1,6 @@
+import { parseHTMLElement } from '@prairielearn/browser-utils';
+import { html } from '@prairielearn/html';
+
 import { moveCheckboxInstructions } from './print-checkbox-instructions.js';
 
 const GENERIC_RESPONSE_PLACEHOLDERS = new Set([
@@ -14,20 +17,13 @@ const GENERIC_RESPONSE_PLACEHOLDERS = new Set([
 ]);
 
 function createResponseArea(label: string): HTMLDivElement {
-  const responseArea = document.createElement('div');
-  responseArea.className = 'printing-response-area';
-  responseArea.dataset.printResponseArea = '';
-
-  const responseLabel = document.createElement('div');
-  responseLabel.className = 'printing-response-label';
-  responseLabel.textContent = label;
-
-  const responseLines = document.createElement('div');
-  responseLines.className = 'printing-response-lines';
-  responseLines.ariaHidden = 'true';
-
-  responseArea.append(responseLabel, responseLines);
-  return responseArea;
+  return parseHTMLElement<HTMLDivElement>(
+    document,
+    html`<div class="printing-response-area" data-print-response-area>
+      <div class="printing-response-label">${label}</div>
+      <div class="printing-response-lines" aria-hidden="true"></div>
+    </div>`,
+  );
 }
 
 function replaceWithResponseArea(element: HTMLElement, label: string): void {
@@ -45,34 +41,27 @@ function decodeBase64Utf8(value: string): string | null {
 
 function replaceFileEditors(source: HTMLElement): void {
   for (const editor of source.querySelectorAll<HTMLElement>('[id^="file-editor-"]')) {
-    const paperEditor = document.createElement('div');
-    paperEditor.className = 'printing-file-editor';
-
     const header = editor.querySelector<HTMLElement>('.card-header')?.cloneNode(true);
+    let fileName = '';
     if (header instanceof HTMLElement) {
       for (const button of header.querySelectorAll('button')) button.remove();
-      const fileName = header.textContent.trim();
-      if (fileName) {
-        const fileNameElement = document.createElement('div');
-        fileNameElement.className = 'printing-file-editor-name';
-        fileNameElement.textContent = fileName;
-        paperEditor.append(fileNameElement);
-      }
+      fileName = header.textContent.trim();
     }
-
     const encodedContents = editor.querySelector<HTMLInputElement>('input[type="hidden"]')?.value;
     const contents = encodedContents == null ? null : decodeBase64Utf8(encodedContents);
+    const paperEditor = parseHTMLElement(
+      document,
+      html`<div class="printing-file-editor">
+        ${fileName ? html`<div class="printing-file-editor-name">${fileName}</div>` : ''}
+        ${contents ? html`<div class="printing-file-editor-starter-label">Starter code</div>` : ''}
+      </div>`,
+    );
     if (contents) {
-      const starterLabel = document.createElement('div');
-      starterLabel.className = 'printing-file-editor-starter-label';
-      starterLabel.textContent = 'Starter code';
-
       const starterContents = document.createElement('pre');
       starterContents.className = 'printing-file-editor-contents';
       starterContents.textContent = contents;
-      paperEditor.append(starterLabel, starterContents);
+      paperEditor.append(starterContents);
     }
-
     paperEditor.append(createResponseArea('Written response'));
     editor.replaceWith(paperEditor);
   }
@@ -243,14 +232,17 @@ function createOrderBlockOptions(
       list = document.createElement('ul');
       list.className = 'printing-order-options';
       if (group) {
-        const choiceGroup = document.createElement('div');
-        choiceGroup.className = 'printing-order-choice-group';
-        choiceGroup.setAttribute('role', 'group');
-        choiceGroup.setAttribute('aria-label', 'Choose only one block from this group');
-        const heading = document.createElement('div');
-        heading.className = 'printing-order-choice-heading';
-        heading.textContent = 'Choose only one block from this group';
-        choiceGroup.append(heading, list);
+        const choiceGroup = parseHTMLElement(
+          document,
+          html`<div
+            class="printing-order-choice-group"
+            role="group"
+            aria-label="Choose only one block from this group"
+          >
+            <div class="printing-order-choice-heading">Choose only one block from this group</div>
+          </div>`,
+        );
+        choiceGroup.append(list);
         paperOptions.append(choiceGroup);
       } else {
         paperOptions.append(list);
