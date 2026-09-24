@@ -4,7 +4,6 @@ import * as client from 'openid-client';
 import { afterEach, assert, describe, expect, it, vi } from 'vitest';
 
 import { withServer } from '@prairielearn/express-test-utils';
-import { logger } from '@prairielearn/logger';
 import * as postgres from '@prairielearn/postgres';
 import * as publicFetchModule from '@prairielearn/public-fetch';
 
@@ -49,14 +48,13 @@ describe('LTI outbound protection', () => {
           fixtures.instance as Lti13Instance,
         );
         const publicFetch = vi.spyOn(publicFetchModule, 'publicFetch');
-        const warning = vi.spyOn(logger, 'warn');
         const assertBlocked = async (request: () => Promise<unknown>) => {
           publicFetch.mockClear();
-          warning.mockClear();
-          await expect(request()).rejects.toThrow();
+          await expect(request()).rejects.toMatchObject({
+            cause: expect.objectContaining({ message: 'Host did not resolve to a public address' }),
+          });
           expect(publicFetch).toHaveBeenCalledTimes(1);
           expect(publicFetch.mock.calls[0][0]).toBe(fixtures.url);
-          expect(warning).toHaveBeenCalledWith(expect.stringContaining('SSRF protection'));
         };
 
         await assertBlocked(() => updateScore('1'));
@@ -114,16 +112,11 @@ describe('LTI outbound protection', () => {
     });
   });
 
-  it('does not label ordinary network failures as address blocks', async () => {
+  it('propagates network errors unchanged', async () => {
     await withConfig({ devMode: false }, async () => {
-      vi.spyOn(publicFetchModule, 'publicFetch').mockRejectedValue(
-        new TypeError('fetch failed', {
-          cause: new Error('ECONNRESET'),
-        }),
-      );
-      const warning = vi.spyOn(logger, 'warn');
-      await expect(ltiFetch('https://lms.example')).rejects.toThrow('fetch failed');
-      expect(warning).not.toHaveBeenCalled();
+      const error = new TypeError('fetch failed', { cause: new Error('ECONNRESET') });
+      vi.spyOn(publicFetchModule, 'publicFetch').mockRejectedValue(error);
+      await expect(ltiFetch('https://lms.example')).rejects.toBe(error);
     });
   });
 

@@ -8,6 +8,7 @@ import * as client from 'openid-client';
 import { z } from 'zod';
 
 import { AugmentedError, HttpStatusError } from '@prairielearn/error';
+import { logger } from '@prairielearn/logger';
 import {
   execute,
   loadSqlEquiv,
@@ -966,6 +967,7 @@ export async function updateLti13Scores({
       counts.success++;
     } catch (error: any) {
       counts.error++;
+      logger.error('Error sending LTI 1.3 score', error);
       job.warn(`\t${error.message}`);
       if (error instanceof AugmentedError && error.data.body) {
         job.verbose(error.data.body);

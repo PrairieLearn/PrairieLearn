@@ -5,6 +5,7 @@ import { z } from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
+import { logger } from '@prairielearn/logger';
 import {
   execute,
   loadSqlEquiv,
@@ -385,12 +386,17 @@ router.post(
       });
 
       serverJob.executeInBackground(async (job) => {
-        await inspectRoster({
-          instance,
-          // An empty selection means a plain roster with no custom claims.
-          rlid: String(req.body.rlid ?? '').trim() || null,
-          job,
-        });
+        try {
+          await inspectRoster({
+            instance,
+            // An empty selection means a plain roster with no custom claims.
+            rlid: String(req.body.rlid ?? '').trim() || null,
+            job,
+          });
+        } catch (err) {
+          logger.error('Error inspecting LTI 1.3 roster', err);
+          throw err;
+        }
       });
 
       return res.redirect(`/pl/administrator/jobSequence/${serverJob.jobSequenceId}`);
