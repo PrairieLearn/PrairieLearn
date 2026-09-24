@@ -238,6 +238,27 @@ describe('renderAssessmentInstanceQuestionsForPrinting', () => {
     );
   });
 
+  it('propagates database failures before rendering any questions', async () => {
+    const error = new Error('Database unavailable');
+    mocks.queryRows.mockRejectedValueOnce(error);
+
+    await expect(renderAssessmentInstanceQuestionsForPrinting(resLocals)).rejects.toBe(error);
+    expect(mocks.getAndRenderVariant).not.toHaveBeenCalled();
+  });
+
+  it.each(['exam', 'answer_key'] as const)(
+    'stops rendering the %s on an unexpected error instead of omitting the question',
+    async (document) => {
+      const error = new Error('Rendering unavailable');
+      mocks.getAndRenderVariant.mockRejectedValueOnce(error);
+
+      await expect(
+        renderAssessmentInstanceQuestionsForPrinting(resLocals, { document }),
+      ).rejects.toBe(error);
+      expect(mocks.getAndRenderVariant).toHaveBeenCalledTimes(1);
+    },
+  );
+
   it.each(['exam', 'answer_key'] as const)(
     'excludes selected questions before rendering the %s and preserves the remaining numbers',
     async (document) => {
