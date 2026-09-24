@@ -762,10 +762,11 @@ def test_single_multi_character_submission_is_normalized() -> None:
 
 def test_grade_normalizes_legacy_single_multi_character_submission() -> None:
     """Test that grading handles a string submission saved before normalization."""
+    all_keys = [chr(ord("a") + index) for index in range(26)] + ["aa"]
     data: dict[str, Any] = {
         "submitted_answers": {"test": "aa"},
         "correct_answers": {"test": [{"key": "aa"}]},
-        "params": {"test": [{"key": "aa"}]},
+        "params": {"test": [{"key": key} for key in all_keys]},
         "partial_scores": {},
     }
     element_html = '<pl-checkbox answers-name="test"></pl-checkbox>'
@@ -773,6 +774,24 @@ def test_grade_normalizes_legacy_single_multi_character_submission() -> None:
     pl_checkbox.grade(element_html, data)
 
     assert data["partial_scores"]["test"]["score"] == pytest.approx(1.0)
+
+
+def test_partial_credit_with_single_multi_character_submission() -> None:
+    """Test partial credit when a multi-character key is one of the correct answers."""
+    all_keys = [chr(ord("a") + index) for index in range(26)] + ["aa"]
+    data: dict[str, Any] = {
+        "submitted_answers": {"test": "aa"},
+        "correct_answers": {"test": [{"key": "aa"}, {"key": "b"}]},
+        "params": {"test": [{"key": key} for key in all_keys]},
+        "partial_scores": {},
+    }
+    element_html = (
+        '<pl-checkbox answers-name="test" partial-credit="net-correct"></pl-checkbox>'
+    )
+
+    pl_checkbox.grade(element_html, data)
+
+    assert data["partial_scores"]["test"]["score"] == pytest.approx(0.5)
 
 
 def test_grade_with_duplicate_submissions_partial_credit() -> None:
