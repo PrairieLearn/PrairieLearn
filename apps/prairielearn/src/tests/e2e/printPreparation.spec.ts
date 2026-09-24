@@ -39,14 +39,28 @@ test('prepares an exam and key with consistent variants and downloads', async ({
   await expect(page.getByRole('button', { name: 'PDF', exact: true })).toBeEnabled({
     timeout: 120_000,
   });
-  // An existing instance can be previewed before a form is selected in the URL.
-  await page.getByRole('button', { name: /^Form A/ }).click();
-  await expect(page).toHaveURL((url) => url.searchParams.has('instance'));
-  const form = new URL(page.url()).searchParams.get('instance');
-  await expect(page.getByRole('button', { name: /^Form A/ })).toHaveAttribute(
-    'aria-pressed',
-    'true',
-  );
+  const previewUrl = await page
+    .getByTitle('Printable document preview', { exact: true })
+    .getAttribute('src');
+  const form = previewUrl!.match(/\/assessment_instance\/(\d+)\/paper\//)![1];
+  // The active form can come from the URL or fall back to the first selected instance.
+  for (const explicitSelection of [false, true]) {
+    const url = new URL(page.url());
+    url.searchParams.set('instances', form);
+    if (explicitSelection) url.searchParams.set('instance', form);
+    else url.searchParams.delete('instance');
+    await page.goto(url.href);
+    await expect(page.getByRole('button', { name: 'PDF', exact: true })).toBeEnabled({
+      timeout: 120_000,
+    });
+    const activeForm = page.getByRole('button', { name: /^Form A/ });
+    await expect(activeForm).toHaveAttribute('aria-pressed', 'true');
+    await activeForm.click();
+    for (const name of ['PDF', 'Word (.docx)', 'Download booklet PDF']) {
+      await expect(page.getByRole('button', { name, exact: true })).toBeEnabled();
+    }
+    await expect(page).toHaveURL(url.href);
+  }
   const frame = page.frameLocator('iframe[title="Printable document preview"]');
   await expect(frame.locator(':root')).toHaveAttribute('data-print-status', 'ready');
   await expect(page.getByRole('heading', { name: /Questions in this form/ })).toBeVisible();

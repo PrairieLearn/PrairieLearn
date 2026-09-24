@@ -208,6 +208,8 @@ function PrintPreparation({
   }
 
   function switchInstance(id: string) {
+    if (id === instanceId) return;
+
     void setSelectedInstance(id);
     const next = settingsForInstance(id);
     setSettings(next);
