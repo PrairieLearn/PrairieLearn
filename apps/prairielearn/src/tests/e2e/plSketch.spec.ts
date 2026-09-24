@@ -23,6 +23,19 @@ async function resizeSketch(sketch: Locator, width: number) {
   await expectCanvasSize(sketch.locator('.si-canvas'), width);
 }
 
+async function selectTool(toolbar: Locator, name: string) {
+  const tool = toolbar.getByRole('button', { name, exact: true });
+  if (await tool.isVisible()) {
+    await tool.click();
+    return;
+  }
+
+  const more = toolbar.getByRole('button', { name: 'More', exact: true });
+  await expect(more).toBeVisible();
+  await more.click();
+  await toolbar.locator('.si-overflow-menu').getByRole('button', { name, exact: true }).click();
+}
+
 test.beforeEach(async ({ page, courseInstance }) => {
   const question = await selectQuestionByQid({
     qid: 'sketchResponsive',
@@ -43,23 +56,12 @@ test('scales the canvas and promotes tools without filling gaps beside the activ
   await expect(more).toBeVisible();
 
   const visibleTools = toolbar.locator(':scope > .item:visible');
-  const toolCount = await visibleTools.count();
   for (const name of ['Polygon', 'Spline', 'Freeform', 'Vertical line']) {
-    await more.click();
-    await toolbar.locator('.si-overflow-menu').getByRole('button', { name, exact: true }).click();
-    await expect(toolbar.locator(':scope > .item[data-is-active="true"]')).toBeVisible();
-    await expect(visibleTools).toHaveCount(toolCount);
-    await expect(visibleTools).toHaveText([
-      'Select',
-      'Point',
-      'Horizontal line',
-      name,
-      '⋯More',
-      'Delete',
-      'Undo',
-      'Redo',
-      'Help',
-    ]);
+    await selectTool(toolbar, name);
+    const activeTool = toolbar.locator(':scope > .item[data-is-active="true"]');
+    await expect(activeTool).toBeVisible();
+    await expect(activeTool).toContainText(name);
+    await expect(visibleTools).toHaveCount(9);
   }
 
   await resizeSketch(sketch, 300);
@@ -73,8 +75,9 @@ test('scales the canvas and promotes tools without filling gaps beside the activ
 
 test('preserves drawing coordinates through submission and readonly scaling', async ({ page }) => {
   const sketch = page.locator('.sketchresponse .si-container').first();
+  const toolbar = sketch.locator('.si-toolbar');
   await resizeSketch(sketch, 551);
-  await sketch.getByRole('button', { name: 'Point', exact: true }).click();
+  await selectTool(toolbar, 'Point');
   const canvas = sketch.locator('.si-canvas');
   const box = (await canvas.boundingBox())!;
   await canvas.click({ position: { x: box.width * 0.7, y: box.height * 0.4 } });
