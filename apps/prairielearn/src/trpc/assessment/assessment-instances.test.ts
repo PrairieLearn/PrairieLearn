@@ -80,4 +80,13 @@ describe('getAssessmentInstanceTimeFields', () => {
       total_time: 'Closed',
     });
   });
+
+  it('shows closed when open is null even with pending grading', () => {
+    expect(
+      getAssessmentInstanceTimeFields(
+        { open: null, date: now, date_limit: null, grading_needed: true },
+        now,
+      ).time_remaining,
+    ).toBe('Closed');
+  });
 });

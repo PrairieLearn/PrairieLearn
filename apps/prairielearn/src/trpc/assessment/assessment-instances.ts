@@ -60,7 +60,7 @@ export function getAssessmentInstanceTimeFields(
     }
   } else if (isOpen) {
     time_remaining = 'Open (no time limit)';
-  } else if (assessmentInstance.grading_needed) {
+  } else if (assessmentInstance.open === false && assessmentInstance.grading_needed) {
     time_remaining = 'Closed (pending grading)';
   } else {
     time_remaining = 'Closed';
