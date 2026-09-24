@@ -3,7 +3,7 @@ import { type PublicFetchInit, publicFetch } from '@prairielearn/public-fetch';
 
 import { config } from './config.js';
 
-export async function ltiFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+export async function ltiFetch(input: RequestInfo | URL, init?: RequestInit) {
   const request = new Request(input, init);
   const url = new URL(request.url);
   if (config.devMode && config.ltiDevAllowedOrigins.includes(url.origin)) {
@@ -13,7 +13,7 @@ export async function ltiFetch(input: RequestInfo | URL, init?: RequestInit): Pr
   try {
     // A Request is also a RequestInit dictionary; retain its inherited getters.
     const options = typeof input === 'string' || input instanceof URL ? init : request;
-    return (await publicFetch(request.url, options as PublicFetchInit)) as unknown as Response;
+    return await publicFetch(request.url, options as PublicFetchInit);
   } catch (error) {
     let cause = error;
     while (cause instanceof Error) {

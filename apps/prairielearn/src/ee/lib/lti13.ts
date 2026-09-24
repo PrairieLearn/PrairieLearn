@@ -645,7 +645,7 @@ export async function fetchRetry(
     retryLeft?: number;
     sleepMs?: number;
   },
-): Promise<Response> {
+): ReturnType<typeof ltiFetch> {
   const fetchRetryOpts = {
     retryLeft: 5,
     sleepMs: 1000,
