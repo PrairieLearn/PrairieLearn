@@ -889,10 +889,9 @@ function PrintPreparation({
                   </>
                 )}
               </Button>
-              {isDirty
-                ? <p className="small text-muted mt-2 mb-0">Apply your changes before downloading.</p>
-                : null}
-              </p>
+              {isDirty && (
+                <p className="small text-muted mt-2 mb-0">Apply your changes before downloading.</p>
+              )}
             </div>
           </div>
           <div className="print-preparation-workspace">
