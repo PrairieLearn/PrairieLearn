@@ -9,19 +9,17 @@ import { assertNever } from '@prairielearn/utils';
 import { getAssessmentLogsUrl, getCourseInstanceJobSequenceUrl } from '../../../lib/client/url.js';
 import type { AssessmentInstancesError } from '../../../trpc/assessment/assessment-instances.js';
 import { useTRPC } from '../../../trpc/assessment/context.js';
-import type { AssessmentInstanceActionRow } from '../instructorAssessmentInstances.types.js';
+import type {
+  AssessmentInstanceActionRow,
+  AssessmentInstanceActionTarget,
+} from '../instructorAssessmentInstances.types.js';
 
 import { PendingRegradeQuestionList } from './PendingRegradeQuestionList.js';
-import { TimeLimitEditForm } from './TimeLimitEditForm.js';
+import { TimeLimitModal } from './TimeLimitModal.js';
 import { useInvalidateAssessmentInstancesList } from './useInvalidateAssessmentInstancesList.js';
 
 type JobAction = 'grade' | 'gradeAndClose';
 type OpenModal = JobAction | 'regrade' | 'delete' | 'timeLimit' | null;
-
-export type AssessmentInstanceActionTarget =
-  | { kind: 'single'; instance: AssessmentInstanceActionRow }
-  | { kind: 'selected'; instances: AssessmentInstanceActionRow[] }
-  | { kind: 'all'; instances: AssessmentInstanceActionRow[] };
 
 function getTargetRows(target: AssessmentInstanceActionTarget): AssessmentInstanceActionRow[] {
   switch (target.kind) {
@@ -179,16 +177,8 @@ export function AssessmentInstanceActions(props: AssessmentInstanceActionsProps)
   const logsUrl = getAssessmentLogsUrl({ courseInstanceId, assessmentId });
   const isAllInstancesTarget = target.kind === 'all';
   const targetRows = getTargetRows(target);
-  const assessmentInstanceIds = getTargetAssessmentInstanceIds(target);
-  const isSingleInstanceTarget = target.kind === 'single';
   const clearSelection = target.kind === 'single' ? undefined : props.clearSelection;
   const count = targetRows.length;
-
-  const hasClosedInstance = targetRows.some((row) => !row.assessment_instance.open);
-  const hasOpenInstance = targetRows.some((row) => row.assessment_instance.open);
-  const hasTimeLimitInstance = targetRows.some(
-    (row) => row.assessment_instance.open && row.time_remaining_sec != null,
-  );
 
   return (
     <>
@@ -269,56 +259,22 @@ export function AssessmentInstanceActions(props: AssessmentInstanceActionsProps)
         }}
       />
 
-      <Modal show={openModal === 'timeLimit'} onHide={() => setOpenModal(null)}>
-        <Modal.Header closeButton>
-          <Modal.Title>
-            {isSingleInstanceTarget && hasClosedInstance ? 'Re-open instance' : 'Change time limit'}
-          </Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          {openModal === 'timeLimit' && (
-            <TimeLimitEditForm
-              mode={isSingleInstanceTarget ? 'single' : 'bulk'}
-              assessmentInstanceIds={assessmentInstanceIds}
-              targetDescription={
-                isAllInstancesTarget
-                  ? 'All instances'
-                  : `${count} ${count === 1 ? 'instance' : 'instances'} selected`
-              }
-              hasOpenInstance={hasOpenInstance}
-              hasClosedInstance={hasClosedInstance}
-              hasTimeLimitInstance={hasTimeLimitInstance}
-              singleRow={
-                target.kind === 'single'
-                  ? {
-                      open: target.instance.assessment_instance.open === true,
-                      total_time: target.instance.total_time,
-                      total_time_sec: target.instance.total_time_sec,
-                      time_remaining: target.instance.time_remaining,
-                      time_remaining_sec: target.instance.time_remaining_sec,
-                      date:
-                        target.instance.assessment_instance.date == null
-                          ? ''
-                          : new Date(target.instance.assessment_instance.date).toISOString(),
-                    }
-                  : undefined
-              }
-              timezone={timezone}
-              onCancel={() => setOpenModal(null)}
-              onSuccess={() => {
-                onActionSuccess({
-                  message: isAllInstancesTarget
-                    ? 'Updated the time limit for all instances.'
-                    : `Updated the time limit for ${count} ${count === 1 ? 'instance' : 'instances'}.`,
-                  action: 'timeLimit',
-                });
-                clearSelection?.();
-                setOpenModal(null);
-              }}
-            />
-          )}
-        </Modal.Body>
-      </Modal>
+      <TimeLimitModal
+        show={openModal === 'timeLimit'}
+        target={target}
+        timezone={timezone}
+        onHide={() => setOpenModal(null)}
+        onSuccess={() => {
+          onActionSuccess({
+            message: isAllInstancesTarget
+              ? 'Updated the time limit for all instances.'
+              : `Updated the time limit for ${count} ${count === 1 ? 'instance' : 'instances'}.`,
+            action: 'timeLimit',
+          });
+          clearSelection?.();
+          setOpenModal(null);
+        }}
+      />
     </>
   );
 }

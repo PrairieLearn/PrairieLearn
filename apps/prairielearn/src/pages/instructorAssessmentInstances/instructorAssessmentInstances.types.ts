@@ -42,6 +42,11 @@ export type AssessmentInstanceActionRow = AssessmentInstanceTimeFields & {
   assessment_instance: Pick<AssessmentInstanceRow['assessment_instance'], 'id' | 'open' | 'date'>;
 };
 
+export type AssessmentInstanceActionTarget =
+  | { kind: 'single'; instance: AssessmentInstanceActionRow }
+  | { kind: 'selected'; instances: AssessmentInstanceActionRow[] }
+  | { kind: 'all'; instances: AssessmentInstanceActionRow[] };
+
 // A question that a regrade of the selected instances would set to full credit:
 // its assessment question has `forceMaxPoints` and at least one selected instance
 // is currently below the maximum. `instance_count` is how many of the selected
