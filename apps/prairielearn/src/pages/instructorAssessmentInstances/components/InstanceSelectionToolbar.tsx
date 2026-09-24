@@ -3,7 +3,17 @@ import type { AssessmentInstanceActionRow } from '../instructorAssessmentInstanc
 import { AssessmentInstanceActions } from './AssessmentInstanceActions.js';
 import { UploadDropdown } from './UploadDropdown.js';
 
-interface InstanceSelectionToolbarProps {
+export function InstanceSelectionToolbar({
+  selectedRows,
+  allRows,
+  clearSelection,
+  courseInstanceId,
+  assessmentId,
+  timezone,
+  onActionSuccess,
+  groupWork,
+  isDevMode,
+}: {
   selectedRows: AssessmentInstanceActionRow[];
   allRows: AssessmentInstanceActionRow[];
   clearSelection: () => void;
@@ -13,20 +23,7 @@ interface InstanceSelectionToolbarProps {
   onActionSuccess: (result: { message: string; action: 'delete' | 'timeLimit' }) => void;
   groupWork: boolean;
   isDevMode: boolean;
-}
-
-export function InstanceSelectionToolbar(props: InstanceSelectionToolbarProps) {
-  const {
-    selectedRows,
-    allRows,
-    clearSelection,
-    courseInstanceId,
-    assessmentId,
-    timezone,
-    onActionSuccess,
-    groupWork,
-    isDevMode,
-  } = props;
+}) {
   const target =
     selectedRows.length > 0
       ? { kind: 'selected' as const, instances: selectedRows }
