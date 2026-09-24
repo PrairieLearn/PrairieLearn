@@ -72,61 +72,14 @@ function describeTargetAssessmentInstances(target: AssessmentInstanceActionTarge
   }
 }
 
-function getJobActionTitle(action: JobAction, target: AssessmentInstanceActionTarget): string {
+function describeTargetForTitle(target: AssessmentInstanceActionTarget): string {
   switch (target.kind) {
     case 'single':
-      switch (action) {
-        case 'grade':
-          return 'Grade this instance';
-        case 'gradeAndClose':
-          return 'Grade and close this instance';
-        default:
-          return assertNever(action);
-      }
+      return 'this instance';
     case 'selected':
-      switch (action) {
-        case 'grade':
-          return 'Grade selected instances';
-        case 'gradeAndClose':
-          return 'Grade and close selected instances';
-        default:
-          return assertNever(action);
-      }
+      return 'selected instances';
     case 'all':
-      switch (action) {
-        case 'grade':
-          return 'Grade all instances';
-        case 'gradeAndClose':
-          return 'Grade and close all instances';
-        default:
-          return assertNever(action);
-      }
-    default:
-      return assertNever(target);
-  }
-}
-
-function getRegradeTitle(target: AssessmentInstanceActionTarget): string {
-  switch (target.kind) {
-    case 'single':
-      return 'Regrade this instance';
-    case 'selected':
-      return 'Regrade selected instances';
-    case 'all':
-      return 'Regrade all instances';
-    default:
-      assertNever(target);
-  }
-}
-
-function getDeleteTitle(target: AssessmentInstanceActionTarget): string {
-  switch (target.kind) {
-    case 'single':
-      return 'Delete this instance';
-    case 'selected':
-      return 'Delete selected instances';
-    case 'all':
-      return 'Delete all instances';
+      return 'all instances';
     default:
       assertNever(target);
   }
@@ -300,12 +253,12 @@ function JobActionModalWithIds({
   }[action];
   const labels = {
     grade: {
-      title: getJobActionTitle(action, target),
+      title: `Grade ${describeTargetForTitle(target)}`,
       body: 'grade pending submissions for',
       confirm: 'Grade',
     },
     gradeAndClose: {
-      title: getJobActionTitle(action, target),
+      title: `Grade and close ${describeTargetForTitle(target)}`,
       body: 'grade and close',
       confirm: 'Grade and close',
     },
@@ -380,7 +333,7 @@ function RegradeInstancesModal({
   return (
     <Modal show={show} onHide={onHide} onExited={() => mutation.reset()}>
       <Modal.Header closeButton>
-        <Modal.Title>{getRegradeTitle(target)}</Modal.Title>
+        <Modal.Title>{`Regrade ${describeTargetForTitle(target)}`}</Modal.Title>
       </Modal.Header>
       <Modal.Body>
         <p>
@@ -449,7 +402,7 @@ function DeleteInstancesModal({
   return (
     <Modal show={show} onHide={onHide} onExited={() => mutation.reset()}>
       <Modal.Header closeButton>
-        <Modal.Title>{getDeleteTitle(target)}</Modal.Title>
+        <Modal.Title>{`Delete ${describeTargetForTitle(target)}`}</Modal.Title>
       </Modal.Header>
       <Modal.Body>
         <p>
