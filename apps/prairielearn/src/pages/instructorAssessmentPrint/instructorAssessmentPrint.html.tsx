@@ -889,10 +889,9 @@ function PrintPreparation({
                   </>
                 )}
               </Button>
-              <p className="small text-muted mt-2 mb-0">
-                {isDirty
-                  ? 'Apply your changes before downloading.'
-                  : 'Layout choices apply to the exam and answer key.'}
+              {isDirty
+                ? <p className="small text-muted mt-2 mb-0">Apply your changes before downloading.</p>
+                : null}
               </p>
             </div>
           </div>
