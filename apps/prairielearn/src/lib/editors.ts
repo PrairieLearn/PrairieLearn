@@ -795,9 +795,13 @@ export class AssessmentAddEditor extends Editor {
       'assessments',
     );
 
-    debug('Get all existing long names');
+    debug('Get existing long names in the same assessment set');
     const assessments = await selectAssessments({ course_instance_id: this.course_instance.id });
-    const oldNamesLong = assessments.map((row) => row.title).filter((title) => title !== null);
+    const oldNamesLong = assessments
+      .filter(
+        (assessment) => assessment.title !== null && assessment.assessment_set.name === this.set,
+      )
+      .map((row) => row.title!);
     const nextAssessmentNumber =
       Math.max(
         0,
