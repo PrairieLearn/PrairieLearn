@@ -726,9 +726,12 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     submitted_key = data["submitted_answers"].get(name, None)
     all_keys = [a["key"] for a in data["params"][name]]
 
-    # Ensure that submitted_key can be converted to a set
+    # Ensure that submitted_key is a list of keys
     if submitted_key is None:
         submitted_key = []
+    elif isinstance(submitted_key, str):
+        submitted_key = [submitted_key]
+    data["submitted_answers"][name] = submitted_key
 
     # Check that the selected options are a subset of the valid options
     submitted_key_set = set(submitted_key)
@@ -765,6 +768,8 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
     partial_credit_mode = get_partial_credit_mode(element)
     number_answers = len(data["params"][name])
     submitted_keys = data["submitted_answers"].get(name, [])
+    if isinstance(submitted_keys, str):
+        submitted_keys = [submitted_keys]
     correct_answer_list = data["correct_answers"].get(name, [])
     correct_keys = [answer["key"] for answer in correct_answer_list]
     feedback = {
