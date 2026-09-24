@@ -158,6 +158,44 @@ test('preserves fitting checkbox images and their different aspect ratios', asyn
   }
 });
 
+for (const element of ['pl-multiple-choice', 'pl-checkbox'] as const) {
+  test(`keeps a full page of ${element} choices at its measured height`, async ({
+    page,
+    imageQuestion,
+  }) => {
+    const preview = await imageQuestion(
+      imageChoices({
+        element,
+        dimensions: Array.from({ length: 4 }, () => ({ width: 60, height: 30 })),
+      }),
+    );
+    await page.addInitScript(() => {
+      // Fill the remaining space after images and fonts settle, just before page planning.
+      // This exercises the page boundary without depending on platform-specific font metrics.
+      Reflect.set(window, '__PL_PRINT_CAPTURE_SOURCE__', (source: HTMLElement) => {
+        const measure = document.createElement('div');
+        measure.className = 'exam-print-page-measure';
+        source.append(measure);
+        const question = source.querySelector<HTMLElement>('.printing-question')!;
+        question.style.paddingTop = `${measure.getBoundingClientRect().height - question.getBoundingClientRect().height}px`;
+        measure.remove();
+      });
+    });
+
+    await page.goto(`${preview}?exclude_question=2&paper_size=Letter&block_size=auto`);
+    await waitForPrintablePage(page);
+    await expect(page.locator('.pagedjs_page')).toHaveCount(2);
+    const question = page.getByRole('region', { name: 'Question 1', exact: true });
+    await expect(question).toHaveCount(1);
+    await expect(question.getByRole('img', { name: /^Image choice / })).toHaveCount(4);
+    const height = await question.evaluate((element) => ({
+      measured: Number(element.dataset.printMeasuredHeight),
+      actual: element.getBoundingClientRect().height,
+    }));
+    expect(height.actual).toBeCloseTo(height.measured, 1);
+  });
+}
+
 test('reports an impossible block size without removing text or images', async ({
   page,
   imageQuestion,
