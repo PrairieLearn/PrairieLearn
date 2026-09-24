@@ -1255,9 +1255,13 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     canvas_width = params["config"]["width"]
     canvas_height = params["config"]["height"]
 
-    submission_state = solution_state
+    submission_state = copy.deepcopy(params["initial_state"])
+    submitted_solution_state = solution_state
     if result == "incorrect":
-        submission_state = _corrupted_drawing_state(solution_state)
+        submitted_solution_state = _corrupted_drawing_state(solution_state)
+
+    for tool_id, drawings in submitted_solution_state.items():
+        submission_state.setdefault(tool_id, []).extend(drawings)
 
     gradeable = _solution_to_gradeable(
         submission_state, tool_data, canvas_width, canvas_height
