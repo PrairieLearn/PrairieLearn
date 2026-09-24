@@ -41,7 +41,7 @@ supportedArchitectures:
     - gnu
 
 minimumReleaseAgeExclude:
-  - '@prairielearn/sketchresponse@0.2.0'
+  - '@prairielearn/sketchresponse@0.2.1'
   - 'typescript-cp@0.1.11'
   - express@4.22.3
   - prettier@3.9.7
