@@ -58,9 +58,7 @@ PrairieLearn recommends "Course Navigation" placements, as described in the conf
 
 ## Local LTI development
 
-Outbound LTI 1.1 and LTI 1.3 requests require public HTTPS destinations by default.
-Private addresses, including localhost and cloud metadata endpoints, are blocked.
-Address-validation failures produce an `SSRF protection` warning in the server logs.
+Outbound LTI 1.1 and LTI 1.3 requests require public HTTPS destinations by default. Private addresses, including localhost and cloud metadata endpoints, are blocked. Address-validation failures produce an `SSRF protection` warning in the server logs.
 
 To use a local LMS, explicitly list its origins in your development configuration:
 
@@ -71,7 +69,4 @@ To use a local LMS, explicitly list its origins in your development configuratio
 }
 ```
 
-The list defaults to empty. Origins must match exactly, including the scheme and port,
-and must not include a path or trailing slash. Requests to an allowed origin return redirect responses without
-following them. Other destinations still use the protected
-client. When `devMode` is false, the allowance is ignored and a warning is logged at configuration load.
+The list defaults to empty. Origins must match exactly, including the scheme and port, and must not include a path or trailing slash. Requests to an allowed origin return redirect responses without following them. Other destinations still use the protected client. When `devMode` is false, the allowance is ignored and a warning is logged at configuration load.
