@@ -613,7 +613,7 @@ export function AssessmentInstancesTable({
       timezone={courseInstance.display_timezone}
       groupWork={assessment.team_work}
       isDevMode={isDevMode}
-      onActionSuccess={setSuccessMessage}
+      onActionSuccess={({ message }) => setSuccessMessage(message)}
     />
   ) : null;
 

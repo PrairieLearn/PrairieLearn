@@ -40,7 +40,7 @@ export function InstructorAssessmentInstanceActions({
           assessmentId={assessmentId}
           timezone={timezone}
           showLogsLink={false}
-          onActionSuccess={(_message, action) => {
+          onActionSuccess={({ action }) => {
             if (action === 'delete') {
               window.location.assign(getAssessmentStudentsUrl({ courseInstanceId, assessmentId }));
             } else {

@@ -151,7 +151,7 @@ interface AssessmentInstanceActionsBaseProps {
   courseInstanceId: string;
   assessmentId: string;
   timezone: string;
-  onActionSuccess: (message: string, action: 'delete' | 'timeLimit') => void;
+  onActionSuccess: (result: { message: string; action: 'delete' | 'timeLimit' }) => void;
   showLogsLink?: boolean;
 }
 
@@ -258,12 +258,12 @@ export function AssessmentInstanceActions(props: AssessmentInstanceActionsProps)
         target={target}
         onHide={() => setOpenModal(null)}
         onSuccess={() => {
-          onActionSuccess(
-            isAllInstancesTarget
+          onActionSuccess({
+            message: isAllInstancesTarget
               ? 'Deleted all instances.'
               : `Deleted ${count} ${count === 1 ? 'instance' : 'instances'}.`,
-            'delete',
-          );
+            action: 'delete',
+          });
           clearSelection?.();
           setOpenModal(null);
         }}
@@ -306,12 +306,12 @@ export function AssessmentInstanceActions(props: AssessmentInstanceActionsProps)
               timezone={timezone}
               onCancel={() => setOpenModal(null)}
               onSuccess={() => {
-                onActionSuccess(
-                  isAllInstancesTarget
+                onActionSuccess({
+                  message: isAllInstancesTarget
                     ? 'Updated the time limit for all instances.'
                     : `Updated the time limit for ${count} ${count === 1 ? 'instance' : 'instances'}.`,
-                  'timeLimit',
-                );
+                  action: 'timeLimit',
+                });
                 clearSelection?.();
                 setOpenModal(null);
               }}

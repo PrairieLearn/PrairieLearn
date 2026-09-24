@@ -10,7 +10,7 @@ interface InstanceSelectionToolbarProps {
   courseInstanceId: string;
   assessmentId: string;
   timezone: string;
-  onActionSuccess: (message: string, action: 'delete' | 'timeLimit') => void;
+  onActionSuccess: (result: { message: string; action: 'delete' | 'timeLimit' }) => void;
   groupWork: boolean;
   isDevMode: boolean;
 }
