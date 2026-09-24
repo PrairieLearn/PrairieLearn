@@ -236,6 +236,8 @@ export function PageLayout({
     enableNavbar?: boolean;
     /** Whether the navbar should hide all controls associated with the current session. */
     hideNavbarSessionControls?: boolean;
+    /** Enables instructor support on pages without a course authorization context. */
+    showInstructorSupport?: boolean;
     /**
      * Forces the side nav to be in a specific state when the page loads,
      * regardless of the user's previous preference.
@@ -371,6 +373,7 @@ export function PageLayout({
                     navbarType: navContext.type,
                     sideNavEnabled,
                     hideSessionControls: resolvedOptions.hideNavbarSessionControls,
+                    showInstructorSupport: resolvedOptions.showInstructorSupport,
                   })}
                 </div>`
               : ''

@@ -248,6 +248,16 @@ export const ConfigSchema = z.object({
   // Slack webhook URLs contain credentials and must be handled as secrets.
   slackOpsWebhookUrl: z.string().nullable().default(null),
   slackCourseRequestWebhookUrl: z.string().nullable().default(null),
+  /** Slack invitation shown to course staff in the Get help dialog. */
+  supportSlackUrl: z
+    .url({ protocol: /^https$/ })
+    .nullable()
+    .default(null),
+  /** Zoom office-hours link shown to course staff in the Get help dialog. */
+  supportOfficeHoursUrl: z
+    .url({ protocol: /^https$/ })
+    .nullable()
+    .default(null),
   githubClientToken: z.string().nullable().default(null),
   githubCourseOwner: z.string().default('PrairieLearn'),
   githubCourseTemplate: z.string().default('pl-template'),

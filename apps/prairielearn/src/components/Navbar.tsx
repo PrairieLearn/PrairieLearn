@@ -9,6 +9,7 @@ import { generateCsrfToken } from '../middlewares/csrfToken.js';
 
 import { Modal } from './Modal.js';
 import type { NavPage, NavSubPage, NavbarType } from './Navbar.types.js';
+import { SupportModal } from './SupportModal.js';
 
 export function Navbar({
   resLocals,
@@ -17,6 +18,7 @@ export function Navbar({
   navbarType,
   sideNavEnabled = false,
   hideSessionControls = false,
+  showInstructorSupport = false,
 }: {
   resLocals: UntypedResLocals;
   navPage?: NavPage;
@@ -28,12 +30,25 @@ export function Navbar({
   sideNavEnabled?: boolean;
   /** Whether to hide all controls associated with the current session. */
   hideSessionControls?: boolean;
+  /** Enables instructor support on pages without a course authorization context. */
+  showInstructorSupport?: boolean;
 }) {
   const navbarResLocals = hideSessionControls ? {} : resLocals;
   const { __csrf_token, course } = navbarResLocals;
   navPage ??= navbarResLocals.navPage;
   navSubPage ??= navbarResLocals.navSubPage;
   navbarType ??= navbarResLocals.navbarType;
+
+  const showSupport =
+    !!navbarResLocals.authn_user &&
+    !navbarResLocals.lockdown_browser &&
+    navbarType !== 'public' &&
+    (showInstructorSupport ||
+      navbarResLocals.authn_is_administrator ||
+      navbarResLocals.is_institution_administrator ||
+      (!course?.example_course &&
+        (navbarResLocals.authz_data?.authn_has_course_permission_preview ||
+          navbarResLocals.authz_data?.authn_has_course_instance_permission_view)));
 
   return html`
     ${
@@ -137,6 +152,21 @@ export function Navbar({
           ${ReportCheatingControl({ resLocals: navbarResLocals, navPage })}
           ${EndExamControl({ resLocals: navbarResLocals })}
           ${
+            showSupport
+              ? html`
+                  <button
+                    type="button"
+                    class="btn btn-outline-light btn-sm ms-md-2 me-md-2 mb-2 mb-md-0"
+                    data-bs-toggle="modal"
+                    data-bs-target="#supportModal"
+                  >
+                    <i class="bi bi-question-circle me-1" aria-hidden="true"></i>
+                    Get help
+                  </button>
+                `
+              : ''
+          }
+          ${
             hideSessionControls
               ? ''
               : UserDropdownMenu({ resLocals: navbarResLocals, navPage, navbarType })
@@ -145,6 +175,7 @@ export function Navbar({
       </div>
     </nav>
 
+    ${showSupport ? SupportModal() : ''}
     ${
       navbarType === 'instructor' && course?.announcement_html && course.announcement_color
         ? html`
