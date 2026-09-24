@@ -123,7 +123,6 @@ export function AssessmentInstanceActions({
     <>
       <Dropdown>
         <Dropdown.Toggle size="sm" variant="light" id="instance-actions">
-          <i className="bi bi-three-dots me-2" aria-hidden="true" />
           Actions
         </Dropdown.Toggle>
         <Dropdown.Menu>
