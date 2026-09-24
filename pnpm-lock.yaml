@@ -2449,6 +2449,37 @@ importers:
         specifier: ^0.1.11
         version: 0.1.11(@typescript/typescript6@6.0.2)
 
+  packages/printing:
+    dependencies:
+      cheerio:
+        specifier: ^1.2.0
+        version: 1.2.0
+      css-tree:
+        specifier: ^3.2.1
+        version: 3.2.1
+      playwright:
+        specifier: ^1.62.1
+        version: 1.62.1
+    devDependencies:
+      '@prairielearn/tsconfig':
+        specifier: workspace:^
+        version: link:../tsconfig
+      '@types/css-tree':
+        specifier: ^3.2.0
+        version: 3.2.0
+      '@types/node':
+        specifier: ^24.13.3
+        version: 24.13.3
+      '@typescript/native':
+        specifier: npm:typescript@^7.0.2
+        version: typescript@7.0.2
+      '@vitest/coverage-v8':
+        specifier: ^5.0.0
+        version: 5.0.1(vitest@5.0.1)
+      vitest:
+        specifier: ^5.0.0
+        version: 5.0.1(@opentelemetry/api@1.9.1)(@types/node@24.13.3)(@vitest/coverage-v8@5.0.1)(jsdom@29.1.1)(vite@8.2.1(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(sass@1.102.0)(tsx@4.23.12)(yaml@2.9.0))
+
   packages/public-fetch:
     dependencies:
       ipaddr.js:
@@ -5483,6 +5514,9 @@ packages:
 
   '@types/css-tree@2.3.11':
     resolution: {integrity: sha512-aEokibJOI77uIlqoBOkVbaQGC9zII0A+JH1kcTNKW2CwyYWD8KM6qdo+4c77wD3wZOQfJuNWAr9M4hdk+YhDIg==}
+
+  '@types/css-tree@3.2.0':
+    resolution: {integrity: sha512-J5KXmk6BFIepOT7280FdFyNs4c5fh0Uee0otjKEvzchrRs38Ii9qminqc4ds0L19X8Zd/rT+brR9jkBthygjWw==}
 
   '@types/d3-array@3.2.2':
     resolution: {integrity: sha512-hOLWVbm7uRza0BYXpIIW5pxfrKe0W+D5lrFiAEYR+pb6w3N2SwSMaJbXdUfSEv+dT4MfHBLtn5js0LAWaO6otw==}
@@ -13657,6 +13691,8 @@ snapshots:
       '@types/node': 24.13.3
 
   '@types/css-tree@2.3.11': {}
+
+  '@types/css-tree@3.2.0': {}
 
   '@types/d3-array@3.2.2': {}
 
