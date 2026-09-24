@@ -11,25 +11,8 @@ export async function ltiFetch(input: RequestInfo | URL, init?: RequestInit): Pr
   }
 
   try {
-    // Preserve replayable bodies for redirects; only adapt Request objects across implementations.
-    const options =
-      typeof input === 'string' || input instanceof URL
-        ? init
-        : {
-            method: request.method,
-            headers: Object.fromEntries(request.headers),
-            body: request.body,
-            duplex: 'half',
-            signal: request.signal,
-            redirect: request.redirect,
-            cache: request.cache,
-            credentials: request.credentials,
-            integrity: request.integrity,
-            keepalive: request.keepalive,
-            mode: request.mode,
-            referrer: request.referrer,
-            referrerPolicy: request.referrerPolicy,
-          };
+    // A Request is also a RequestInit dictionary; retain its inherited getters.
+    const options = typeof input === 'string' || input instanceof URL ? init : request;
     return (await publicFetch(request.url, options as PublicFetchInit)) as unknown as Response;
   } catch (error) {
     let cause = error;

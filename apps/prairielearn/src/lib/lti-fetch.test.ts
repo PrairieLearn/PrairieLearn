@@ -1,7 +1,7 @@
 import express from 'express';
 import * as jose from 'jose';
 import * as client from 'openid-client';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, assert, describe, expect, it, vi } from 'vitest';
 
 import { withServer } from '@prairielearn/express-test-utils';
 import { logger } from '@prairielearn/logger';
@@ -144,5 +144,40 @@ describe('LTI outbound protection', () => {
     await expect(ltiFetch('https://lms.example', { signal: controller.signal })).rejects.toThrow(
       'Caller cancelled',
     );
+  });
+
+  it('adapts Request inputs to Undici with overrides and cancellation intact', async () => {
+    const controller = new AbortController();
+    const originalPublicFetch = publicFetchModule.publicFetch;
+    const publicFetch = vi
+      .spyOn(publicFetchModule, 'publicFetch')
+      .mockImplementation(async (input, init) => {
+        assert(init instanceof Request);
+        const request = init;
+        expect(request.method).toBe('PUT');
+        expect(request.headers.get('content-type')).toBe('text/plain');
+        expect(request.headers.get('x-lti-test')).toBe('override');
+        expect(await request.clone().text()).toBe('grade');
+        expect(request.redirect).toBe('error');
+        controller.abort(new Error('Caller cancelled'));
+        expect(request.signal.aborted).toBe(true);
+        expect(request.signal.reason).toBe(controller.signal.reason);
+        return originalPublicFetch(input, init);
+      });
+    const request = new Request('https://lms.example/grades', {
+      method: 'POST',
+      body: 'grade',
+      headers: { 'x-lti-test': 'original' },
+      signal: controller.signal,
+      redirect: 'error',
+    });
+    await expect(
+      ltiFetch(request, {
+        method: 'PUT',
+        headers: { 'content-type': 'text/plain', 'x-lti-test': 'override' },
+      }),
+    ).rejects.toThrow('Caller cancelled');
+    expect(publicFetch).toHaveBeenCalledTimes(1);
+    expect(publicFetch.mock.calls[0][0]).toBe(request.url);
   });
 });
