@@ -45,6 +45,21 @@ POINT_SKETCH_WITH_INITIAL_HTML = """
     </pl-sketch>
 """
 
+VERTICAL_LINE_SKETCH_HTML = """
+    <pl-sketch answers-name="graph" width="400" height="400">
+        <pl-sketch-tool id="vertical" type="vertical-line"></pl-sketch-tool>
+        <pl-sketch-grade
+            type="match"
+            tool-id="vertical"
+            x="0"
+        ></pl-sketch-grade>
+        <pl-sketch-solution
+            tool-id="vertical"
+            coordinates="0"
+        ></pl-sketch-solution>
+    </pl-sketch>
+"""
+
 
 def _make_question_data() -> dict[str, Any]:
     return {
@@ -142,3 +157,23 @@ def test_generated_incorrect_submission_only_corrupts_solution_drawings(
     assert submitted_points[0] == initial_point
     assert submitted_points[1] != solution_point
     assert config["initialstate"] == submission["data"]
+
+
+def test_generated_incorrect_vertical_line_differs_from_correct(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.chdir(Path(__file__).parent)
+    correct_data, correct_submission, _ = _run_submission_lifecycle(
+        VERTICAL_LINE_SKETCH_HTML, "correct"
+    )
+    incorrect_data, incorrect_submission, incorrect_config = _run_submission_lifecycle(
+        VERTICAL_LINE_SKETCH_HTML, "incorrect"
+    )
+
+    correct_line = correct_submission["data"]["vertical"][0]
+    incorrect_line = incorrect_submission["data"]["vertical"][0]
+    assert incorrect_line["x"] != correct_line["x"]
+    assert incorrect_submission != correct_submission
+    assert correct_data["partial_scores"]["graph"]["score"] == 1
+    assert incorrect_data["partial_scores"]["graph"]["score"] == 0
+    assert incorrect_config["initialstate"] == incorrect_submission["data"]
