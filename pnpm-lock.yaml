@@ -2485,18 +2485,18 @@ importers:
       '@types/node':
         specifier: ^24.13.3
         version: 24.13.3
-      '@typescript/native-preview':
-        specifier: beta
-        version: 7.0.0-dev.20260421.2
+      '@typescript/native':
+        specifier: npm:typescript@^7.0.2
+        version: typescript@7.0.2
       '@vitest/coverage-v8':
-        specifier: ^4.1.10
-        version: 4.1.10(vitest@4.1.10)
+        specifier: ^5.0.0
+        version: 5.0.1(vitest@5.0.1)
       jszip:
         specifier: ^3.10.1
         version: 3.10.1
       vitest:
-        specifier: ^4.1.10
-        version: 4.1.10(@opentelemetry/api@1.9.1)(@types/node@24.13.3)(@vitest/coverage-v8@4.1.10)(jsdom@29.1.1)(vite@8.2.1(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(sass@1.102.0)(tsx@4.23.12)(yaml@2.9.0))
+        specifier: ^5.0.0
+        version: 5.0.1(@opentelemetry/api@1.9.1)(@types/node@24.13.3)(@vitest/coverage-v8@5.0.1)(jsdom@29.1.1)(vite@8.2.1(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(sass@1.102.0)(tsx@4.23.12)(yaml@2.9.0))
 
   packages/public-fetch:
     dependencies:
@@ -2550,18 +2550,18 @@ importers:
       '@types/qrcode':
         specifier: ^1.5.6
         version: 1.5.6
-      '@typescript/native-preview':
-        specifier: beta
-        version: 7.0.0-dev.20260421.2
+      '@typescript/native':
+        specifier: npm:typescript@^7.0.2
+        version: typescript@7.0.2
       '@vitest/coverage-v8':
-        specifier: ^4.1.10
-        version: 4.1.10(vitest@4.1.10)
+        specifier: ^5.0.0
+        version: 5.0.1(vitest@5.0.1)
       pngjs:
         specifier: ^7.0.0
         version: 7.0.0
       vitest:
-        specifier: ^4.1.10
-        version: 4.1.10(@opentelemetry/api@1.9.1)(@types/node@24.13.3)(@vitest/coverage-v8@4.1.10)(jsdom@29.1.1)(vite@8.2.1(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(sass@1.102.0)(tsx@4.23.12)(yaml@2.9.0))
+        specifier: ^5.0.0
+        version: 5.0.1(@opentelemetry/api@1.9.1)(@types/node@24.13.3)(@vitest/coverage-v8@5.0.1)(jsdom@29.1.1)(vite@8.2.1(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(sass@1.102.0)(tsx@4.23.12)(yaml@2.9.0))
 
   packages/question-conversion:
     dependencies:
@@ -9879,18 +9879,13 @@ packages:
     resolution: {integrity: sha512-XyQCIXux1zEIA3NPb0AeR8UMYvXZzWEhgdBgBjH9gO7M48H9uoHzviNz8pXw3UzrAcxRRRn9gxHewAVK7bn9qw==}
     hasBin: true
 
-<<<<<<< HEAD
-  qs@6.16.0:
-    resolution: {integrity: sha512-h6fhOIaRrID2CbEY2fqs+7t+UXZo+MLAnU5gRIq85uFtdiUPCdsApMlHhXogKVM4HM2DVbIjGNTTYH2OcmP1vA==}
-=======
   qrcode@1.5.4:
     resolution: {integrity: sha512-1ca71Zgiu6ORjHqFBDpnSMTR2ReToX4l1Au1VFLyVeBTFavzQnv5JxMFr3ukHVKpSrSA2MCk0lNJSykjUfz7Zg==}
     engines: {node: '>=10.13.0'}
     hasBin: true
 
-  qs@6.15.3:
-    resolution: {integrity: sha512-O9gl3zCl5h5blw1KGUzQKhA5oUXSl8rwUIM5o0S3nCXMliSvy5Dzx7/DJcI+SwgICv+IneSZwhBh1oSyEHA71A==}
->>>>>>> fd99374195 (Identify printed PDF pages with QR codes)
+  qs@6.16.0:
+    resolution: {integrity: sha512-h6fhOIaRrID2CbEY2fqs+7t+UXZo+MLAnU5gRIq85uFtdiUPCdsApMlHhXogKVM4HM2DVbIjGNTTYH2OcmP1vA==}
     engines: {node: '>=0.6'}
 
   queue-microtask@1.2.3:
@@ -18702,17 +18697,13 @@ snapshots:
 
   qrcode-svg@1.1.0: {}
 
-<<<<<<< HEAD
-  qs@6.16.0:
-=======
   qrcode@1.5.4:
     dependencies:
       dijkstrajs: 1.0.3
       pngjs: 5.0.0
       yargs: 15.4.1
 
-  qs@6.15.3:
->>>>>>> fd99374195 (Identify printed PDF pages with QR codes)
+  qs@6.16.0:
     dependencies:
       es-define-property: 1.0.1
       side-channel: 1.1.1

@@ -13,8 +13,8 @@
   },
   "main": "./dist/index.js",
   "scripts": {
-    "build": "tsgo",
-    "dev": "tsgo --watch --preserveWatchOutput",
+    "build": "tsc",
+    "dev": "tsc --watch --preserveWatchOutput",
     "test": "vitest run --coverage"
   },
   "dependencies": {
@@ -26,9 +26,9 @@
     "@types/node": "^24.13.3",
     "@types/pngjs": "^6.0.5",
     "@types/qrcode": "^1.5.6",
-    "@typescript/native-preview": "beta",
-    "@vitest/coverage-v8": "^4.1.10",
+    "@typescript/native": "npm:typescript@^7.0.2",
+    "@vitest/coverage-v8": "^5.0.0",
     "pngjs": "^7.0.0",
-    "vitest": "^4.1.10"
+    "vitest": "^5.0.0"
   }
 }
