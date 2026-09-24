@@ -53,9 +53,25 @@ test.beforeEach(async ({ page, courseInstance }) => {
 test('scales the canvas and promotes tools without filling gaps beside the active tool', async ({
   page,
 }) => {
+  await page.setViewportSize({ width: 1600, height: 720 });
   const sketch = page.locator('.sketchresponse .si-container').first();
   const toolbar = sketch.locator('.si-toolbar');
   const more = toolbar.getByRole('button', { name: 'More', exact: true });
+  await expectCanvasSize(sketch.locator('.si-canvas'), 800);
+  await expect(more).toBeHidden();
+  for (const name of [
+    'Point',
+    'Horizontal line',
+    'Vertical line',
+    'Line segment',
+    'Polygon',
+    'Spline',
+    'Freeform',
+  ]) {
+    await expect(
+      toolbar.locator(':scope > .item:not(.si-more)').filter({ hasText: name }).locator('button'),
+    ).toBeVisible();
+  }
   await resizeSketch(sketch, 551);
   await expect(more).toBeVisible();
 
