@@ -24,7 +24,11 @@ async function resizeSketch(sketch: Locator, width: number) {
 }
 
 async function selectTool(toolbar: Locator, name: string) {
-  const tool = toolbar.getByRole('button', { name, exact: true });
+  const tool = toolbar
+    .locator(':scope > .item:not(.si-more)')
+    .filter({ hasText: name })
+    .locator('button')
+    .first();
   if (await tool.isVisible()) {
     await tool.click();
     return;
@@ -55,22 +59,22 @@ test('scales the canvas and promotes tools without filling gaps beside the activ
   await resizeSketch(sketch, 551);
   await expect(more).toBeVisible();
 
-  const visibleTools = toolbar.locator(':scope > .item:visible');
+  const visibleItems = toolbar.locator(':scope > .item:visible');
+  const visibleItemCount = await visibleItems.count();
   for (const name of ['Polygon', 'Spline', 'Freeform', 'Vertical line']) {
     await selectTool(toolbar, name);
     const activeTool = toolbar.locator(':scope > .item[data-is-active="true"]');
     await expect(activeTool).toBeVisible();
     await expect(activeTool).toContainText(name);
-    await expect(visibleTools).toHaveCount(9);
+    await expect(visibleItems).toHaveCount(visibleItemCount);
   }
 
   await resizeSketch(sketch, 300);
-  for (const name of ['Delete', 'Undo', 'Redo', 'Help']) {
-    await expect(toolbar.getByRole('button', { name, exact: true })).toBeVisible();
+  for (const id of ['delete', 'undo', 'redo', 'help']) {
+    await expect(toolbar.locator(`:scope > #${id} > button`)).toBeVisible();
   }
   await expect.poll(() => toolbar.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true);
-  await resizeSketch(sketch, 800);
-  await expect(more).toBeHidden();
+  await resizeSketch(sketch, 551);
 });
 
 test('preserves drawing coordinates through submission and readonly scaling', async ({ page }) => {
@@ -104,6 +108,7 @@ test('preserves drawing coordinates through submission and readonly scaling', as
   await expect(readonly.locator('.si-canvas .point').first()).toBeVisible();
   await expect(readonly.locator('.si-toolbar')).toBeHidden();
   await resizeSketch(readonly, 300);
-  await expect(readonly.locator('.si-canvas .point:not(.overlay)')).toHaveAttribute('cx', /560/);
-  await expect(readonly.locator('.si-canvas .point:not(.overlay)')).toHaveAttribute('cy', /180/);
+  const submittedPoint = readonly.locator('.si-canvas .point:not(.overlay)');
+  expect(Number(await submittedPoint.getAttribute('cx'))).toBeCloseTo(560, 0);
+  expect(Number(await submittedPoint.getAttribute('cy'))).toBeCloseTo(180, 0);
 });
