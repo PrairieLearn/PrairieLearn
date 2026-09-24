@@ -28,6 +28,9 @@ declare global {
     };
     __PL_PRINT_READINESS_PROMISES__?: Promise<unknown>[];
     __PL_PRINT_READY__: Promise<{ totalPages: number }>;
+    __PL_PRINT_CAPTURE_MATH__?: (source: HTMLElement) => void;
+    __PL_PRINT_CAPTURE_SOURCE__?: (source: HTMLElement) => unknown;
+    __PL_PRINT_DOCX_SOURCE__?: unknown;
   }
 }
 
@@ -521,8 +524,10 @@ async function paginateExam(): Promise<{ totalPages: number }> {
       }
     | undefined;
   await mathJax?.startup?.promise;
+  window.__PL_PRINT_CAPTURE_MATH__?.(source);
   normalizeResponseControls(source);
   await mathJax?.typesetPromise?.([source]);
+  window.__PL_PRINT_CAPTURE_MATH__?.(source);
   await document.fonts.ready;
   replaceCanvasesWithImages(source);
   await waitForImages(source);
@@ -533,6 +538,9 @@ async function paginateExam(): Promise<{ totalPages: number }> {
     fitPrintChoiceImages(source.querySelectorAll<HTMLElement>('.printing-question'), pageHeight);
   }
   keepPrintableGroupsTogether(source, pageHeight);
+  if (window.__PL_PRINT_CAPTURE_SOURCE__) {
+    window.__PL_PRINT_DOCX_SOURCE__ = window.__PL_PRINT_CAPTURE_SOURCE__(source);
+  }
   const layout = layoutQuestions(source);
   placeQuestionGroupBreaks(source, layout.pageHeight);
   await waitForAnimationFrame();
