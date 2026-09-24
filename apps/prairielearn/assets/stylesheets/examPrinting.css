@@ -28,6 +28,13 @@
   color-scheme: light;
 }
 
+.printing-page-code {
+  display: block;
+  width: 0.35in;
+  height: 0.35in;
+  object-fit: contain;
+}
+
 :root[data-print-paper-size='A4'] {
   --exam-print-page-width: 210mm;
   --exam-print-page-height: 297mm;
