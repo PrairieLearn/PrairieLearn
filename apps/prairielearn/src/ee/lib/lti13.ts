@@ -27,7 +27,7 @@ import {
   Lti13InstanceSchema,
   UserSchema,
 } from '../../lib/db-types.js';
-import { getLtiFetch } from '../../lib/lti-fetch.js';
+import { ltiFetch } from '../../lib/lti-fetch.js';
 import { type ServerJob } from '../../lib/server-jobs.js';
 import { selectUsersWithCourseInstanceAccess } from '../../models/course-instances.js';
 import { selectOptionalUserByUin } from '../../models/user.js';
@@ -229,7 +229,7 @@ export async function getOpenidClientConfig(
     ),
   );
 
-  openidClientConfig[client.customFetch] = getLtiFetch() as client.CustomFetch;
+  openidClientConfig[client.customFetch] = ltiFetch as client.CustomFetch;
 
   // Only for testing
   if (config.devMode) {
@@ -652,7 +652,7 @@ export async function fetchRetry(
     ...incomingfetchRetryOpts,
   };
   try {
-    const response = await getLtiFetch()(input, opts);
+    const response = await ltiFetch(input, opts);
 
     if (response.ok) {
       return response;

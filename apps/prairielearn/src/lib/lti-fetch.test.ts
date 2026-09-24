@@ -13,7 +13,7 @@ import * as lti13Instance from '../ee/models/lti13Instance.js';
 import { withConfig } from '../tests/utils/config.js';
 
 import type { Lti13Instance } from './db-types.js';
-import { getLtiFetch } from './lti-fetch.js';
+import { ltiFetch } from './lti-fetch.js';
 import { updateScore } from './ltiOutcomes.js';
 
 afterEach(() => vi.restoreAllMocks());
@@ -83,7 +83,7 @@ describe('LTI outbound protection', () => {
   it('ignores the allowance outside development without repeating the configuration warning', async () => {
     await withConfig({ devMode: false, ltiDevAllowedOrigins: ['https://127.0.0.1'] }, async () => {
       const warning = vi.spyOn(logger, 'warn');
-      await expect(getLtiFetch()('https://127.0.0.1')).rejects.toThrow();
+      await expect(ltiFetch('https://127.0.0.1')).rejects.toThrow();
       expect(warning).not.toHaveBeenCalledWith(
         'Ignoring ltiDevAllowedOrigins because devMode is disabled',
       );
@@ -96,9 +96,9 @@ describe('LTI outbound protection', () => {
     app.get('/', (_req, res) => res.send('local LMS'));
     await withServer(app, async ({ url }) => {
       await withConfig({ devMode: true, ltiDevAllowedOrigins: [new URL(url).origin] }, async () => {
-        const response = await getLtiFetch()(url);
+        const response = await ltiFetch(url);
         expect(await response.text()).toBe('local LMS');
-        await expect(getLtiFetch()('https://127.0.0.1')).rejects.toThrow();
+        await expect(ltiFetch('https://127.0.0.1')).rejects.toThrow();
       });
     });
   });
@@ -114,7 +114,7 @@ describe('LTI outbound protection', () => {
     });
     await withServer(app, async ({ url }) => {
       await withConfig({ devMode: true, ltiDevAllowedOrigins: [new URL(url).origin] }, async () => {
-        const response = await getLtiFetch()(`${url}/redirect`, {
+        const response = await ltiFetch(`${url}/redirect`, {
           method: 'POST',
           headers: { 'Content-Type': 'text/plain' },
           body: 'grade',
@@ -134,15 +134,15 @@ describe('LTI outbound protection', () => {
       }),
     );
     const warning = vi.spyOn(logger, 'warn');
-    await expect(getLtiFetch()('https://lms.example')).rejects.toThrow('fetch failed');
+    await expect(ltiFetch('https://lms.example')).rejects.toThrow('fetch failed');
     expect(warning).not.toHaveBeenCalled();
   });
 
   it('preserves caller cancellation', async () => {
     const controller = new AbortController();
     controller.abort(new Error('Caller cancelled'));
-    await expect(
-      getLtiFetch()('https://lms.example', { signal: controller.signal }),
-    ).rejects.toThrow('Caller cancelled');
+    await expect(ltiFetch('https://lms.example', { signal: controller.signal })).rejects.toThrow(
+      'Caller cancelled',
+    );
   });
 });

@@ -8,7 +8,7 @@ import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
 
 import { AssessmentInstanceSchema, LtiCredentialSchema, LtiOutcomeSchema } from './db-types.js';
-import { getLtiFetch } from './lti-fetch.js';
+import { ltiFetch } from './lti-fetch.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 const parser = new xml2js.Parser({ explicitArray: false });
@@ -113,7 +113,7 @@ export async function updateScore(assessment_instance_id: string) {
     })
     .join(',');
 
-  const res = await getLtiFetch()(info.lis_outcome_service_url, {
+  const res = await ltiFetch(info.lis_outcome_service_url, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/xml',
