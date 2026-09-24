@@ -515,8 +515,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     inline = get_display_type(element) is DisplayType.INLINE
     submitted_keys = data["submitted_answers"].get(name, [])
 
-    # if there is only one key then it is passed as a string,
-    # not as a length-one list, so we fix that next
+    # Keep handling string submissions for backwards compatibility with answers
+    # parsed before single submissions were normalized to lists.
     if isinstance(submitted_keys, str):
         submitted_keys = [submitted_keys]
 
@@ -729,6 +729,8 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     # Ensure that submitted_key is a list of keys
     if submitted_key is None:
         submitted_key = []
+    # If there is only one key then it is passed as a string, not as a
+    # length-one list, so we fix that
     elif isinstance(submitted_key, str):
         submitted_key = [submitted_key]
     data["submitted_answers"][name] = submitted_key
@@ -768,6 +770,8 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
     partial_credit_mode = get_partial_credit_mode(element)
     number_answers = len(data["params"][name])
     submitted_keys = data["submitted_answers"].get(name, [])
+    # Keep handling string submissions for backwards compatibility with answers
+    # parsed before single submissions were normalized to lists.
     if isinstance(submitted_keys, str):
         submitted_keys = [submitted_keys]
     correct_answer_list = data["correct_answers"].get(name, [])
