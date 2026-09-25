@@ -7,7 +7,7 @@ import {
 
 import { config } from '../../../lib/config.js';
 
-const getAiQuestionGenerationRedisClient = memoize(async () => {
+const getChatRedisClients = memoize(async () => {
   if (!config.redisUrl) throw new Error('Redis URL is not configured');
 
   // See note in `socket-server.ts` about the configuration here.
@@ -19,8 +19,8 @@ const getAiQuestionGenerationRedisClient = memoize(async () => {
   return { pub, sub };
 });
 
-export async function getAiQuestionGenerationStreamContext(): Promise<ResumableStreamContext> {
-  const clients = await getAiQuestionGenerationRedisClient();
+export async function getChatStreamContext(): Promise<ResumableStreamContext> {
+  const clients = await getChatRedisClients();
 
   return createResumableStreamContext({
     waitUntil: null,
