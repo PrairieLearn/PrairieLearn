@@ -1,18 +1,20 @@
 # `@prairielearn/printing`
 
-Utilities for rendering printable HTML as PDFs. The PrairieLearn
+Utilities for rendering printable HTML as PDFs and editable Word documents. The PrairieLearn
 application loads and renders assessment questions; this package handles document output and
 namespacing question HTML so the fragments can share a page.
 
-## Rendering PDFs
+## Rendering PDFs and Word documents
 
-`PrintRenderer` turns a paginated printable page into a PDF (`renderPdf`). Create one renderer per process and keep it for the life of the process:
+`PrintRenderer` turns a paginated printable page into a PDF (`renderPdf`) or a Word document
+(`renderDocx`). Create one renderer per process and keep it for the life of the process:
 
 ```ts
 import { PrintRenderer } from '@prairielearn/printing';
 
 const renderer = new PrintRenderer({ browserWSEndpoint: config.printingPlaywrightWsEndpoint });
 const pdf = await renderer.renderPdf({ url: previewUrl, cookieHeader: req.get('cookie') });
+const docx = await renderer.renderDocx({ url: previewUrl, cookieHeader, cover, footerLabel });
 await renderer.close(); // during shutdown
 ```
 
@@ -53,6 +55,23 @@ For outputs that also need metadata from the paginated page, use `renderer.rende
 with a custom `PrintablePageOutput`. Its `produce(page)` callback can inspect the DOM and then call
 `createPdfOutput().produce(page)` to reuse the standard PDF output.
 
+### Word output
+
+The Word document contains native paragraphs, lists, tables, answer spaces, hyperlinks, and
+Office Math equations. Only actual figures (images, SVG diagrams, and canvases) are captured as
+images. Question content is captured before pagination, so Word can reflow edited text and its
+page count can differ from the PDF. The sheet size and margins follow the printable page's CSS.
+
+The renderer installs optional browser hooks to retain MathML before print transforms clone
+typeset equations, then captures normalized HTML before Paged.js fragments the questions.
+`docxBrowser.ts` owns that capture; `docxContent.ts` maps it to native Word objects. The cover and
+footer remain native content built from the caller's `PrintableCover` and `footerLabel`.
+
+`cover` may be a function; it receives the page's root `data-*` attributes so that values which
+are only known after rendering, such as the number of questions that rendered successfully, can be
+placed on the cover. `htmlToTextBlocks` reduces author-provided HTML (for example assessment
+instructions) to headings, paragraphs, and flat lists for the cover.
+
 ## Combining question fragments
 
 Questions are normally rendered in separate documents, so author- and element-generated IDs can
@@ -72,7 +91,7 @@ Generic input placeholders such as "symbolic expression", "integer", and "matrix
 | ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Number, integer, string, units, big-O, symbolic | Empty response lines; preserve labels, suffixes, and tolerance hints. Replace formula editors rather than copying shadow-root controls.                                                                                                                                                                                                                       |
 | Matrix entries                                  | One line per entry in the original row/column structure.                                                                                                                                                                                                                                                                                                      |
-| Radio and checkbox choices                      | Unchecked, high-contrast markers with aligned labels, generous vertical spacing, and light option separators.                                                                                                                                                                                                                                                 |
+| Radio and checkbox choices                      | Unchecked, high-contrast markers with aligned labels, generous vertical spacing, and light option separators. Word keeps each option in a separate editable row.                                                                                                                                                                                              |
 | Dropdown and matching                           | Visible option lists and response lines; retain a matching option bank even when the dropdown originally contained the only copy.                                                                                                                                                                                                                             |
 | Ordering                                        | Blank order-number boxes beside every option and provided block, with boxed "Choose only one block from this group" sets. Tell students to leave unused blocks blank. When indentation is graded, add an Indent box (0 = no indentation) beside the Order box instead of asking students to copy the solution. Label multiple block sets within one question. |
 | File, rich text, workspace                      | Written response space; preserve file names, starter code, and rich-text word-count requirements.                                                                                                                                                                                                                                                             |
@@ -87,7 +106,7 @@ Attributions embedded in a question are arbitrary authored HTML, not reliably di
 
 ### Pagination and answer keys
 
-Long questions start on a fresh page. Subparts that fit on one page receive explicit page boundaries when necessary: Paged.js does not reliably honor nested `break-inside: avoid` rules for all cards and SVGs. Keep the same content width for measurement, HTML and PDF.
+Long questions start on a fresh page. Subparts that fit on one page receive explicit page boundaries when necessary: Paged.js does not reliably honor nested `break-inside: avoid` rules for all cards and SVGs. Keep the same content width for measurement, HTML, PDF, and DOCX capture.
 
 When image answer choices make a question taller than its page or selected question block, reduce the choice images by a common scale before pagination. Preserve their proportions and relative sizes, leave fitting images unchanged, and keep question text and answer markers at their original size. If the remaining content cannot fit even without the images, retain the authored image sizes and apply the usual long-question layout or block-size error.
 
