@@ -5,6 +5,7 @@ import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
+import { StaffUserSchema } from '../../lib/client/safe-db-types.js';
 import { getCourseTrpcUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
@@ -22,23 +23,27 @@ const MAX_UIDS = 100;
 router.get(
   '/',
   createAuthzMiddleware({
-    oneOfPermissions: ['has_course_permission_own'],
+    oneOfPermissions: ['has_course_permission_preview', 'has_course_instance_permission_view'],
     unauthorizedUsers: 'block',
   }),
-  typedAsyncHandler<'course'>(async (req, res) => {
+  typedAsyncHandler<'course' | 'course-instance'>(async (req, res) => {
     const { authz_data: authzData, course } = extractPageContext(res.locals, {
       pageType: 'course',
       accessType: 'instructor',
     });
+
+    const courseUsers = (await selectCourseUsers({ course_id: course.id })).map((row) => ({
+      ...row,
+      user: StaffUserSchema.parse(row.user),
+    }));
 
     const courseInstances = await selectCourseInstancesWithStaffAccess({
       course,
       authzData,
     });
 
-    const courseUsers = await selectCourseUsers({ course_id: res.locals.course.id });
-
-    const trpcUrl = getCourseTrpcUrl(res.locals.course.id);
+    const courseInstanceId = res.locals.course_instance?.id;
+    const trpcUrl = getCourseTrpcUrl(course.id, courseInstanceId);
     const trpcCsrfToken = generatePrefixCsrfToken(
       { url: trpcUrl, authn_user_id: res.locals.authn_user.id },
       config.secretKey,
@@ -61,12 +66,14 @@ router.get(
           <Hydrate fullHeight>
             <StaffTable
               trpcCsrfToken={trpcCsrfToken}
-              courseId={res.locals.course.id}
+              courseId={course.id}
+              courseInstanceId={courseInstanceId}
               courseInstances={courseInstances}
               courseUsers={courseUsers}
               authnUserId={res.locals.authn_user.id}
               userId={res.locals.user.id}
               isAdministrator={authzData.is_administrator || authzData.is_institution_administrator}
+              canEdit={authzData.has_course_permission_own}
               uidsLimit={MAX_UIDS}
               search={getUrl(req).search}
             />
