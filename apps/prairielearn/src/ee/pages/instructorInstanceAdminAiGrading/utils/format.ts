@@ -10,6 +10,14 @@ export interface AiGradingApiKeyCredential {
   dateAdded: string;
 }
 
+export interface AiGradingCustomEndpoint {
+  id: string;
+  name: string;
+  baseUrl: string;
+  apiKeyMasked: string;
+  dateAdded: string;
+}
+
 /** Masks an API key for display, showing only the first 3 and last 4 characters. */
 function maskApiKey(key: string): string {
   if (key.length <= 7) return '.'.repeat(7);
@@ -49,5 +57,43 @@ export function formatCredentialRedacted(
     provider: cred.provider as EnumAiGradingProvider,
     apiKeyMasked: '........',
     dateAdded: formatDateYMD(cred.created_at, displayTimezone),
+  };
+}
+
+export function formatCustomEndpoint(
+  endpoint: {
+    id: string;
+    name: string;
+    base_url: string;
+    encrypted_secret_key: string;
+    created_at: Date;
+  },
+  displayTimezone: string,
+): AiGradingCustomEndpoint {
+  const decrypted = decryptFromStorage(endpoint.encrypted_secret_key);
+  return {
+    id: endpoint.id,
+    name: endpoint.name,
+    baseUrl: endpoint.base_url,
+    apiKeyMasked: maskApiKey(decrypted),
+    dateAdded: formatDateYMD(endpoint.created_at, displayTimezone),
+  };
+}
+
+export function formatCustomEndpointRedacted(
+  endpoint: {
+    id: string;
+    name: string;
+    base_url: string;
+    created_at: Date;
+  },
+  displayTimezone: string,
+): AiGradingCustomEndpoint {
+  return {
+    id: endpoint.id,
+    name: endpoint.name,
+    baseUrl: endpoint.base_url,
+    apiKeyMasked: '........',
+    dateAdded: formatDateYMD(endpoint.created_at, displayTimezone),
   };
 }

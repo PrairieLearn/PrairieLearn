@@ -788,6 +788,19 @@ export type CourseInstanceAiGradingCredential = z.infer<
   typeof CourseInstanceAiGradingCredentialSchema
 >;
 
+export const CourseInstanceAiGradingCustomEndpointSchema = z.object({
+  base_url: z.string(),
+  course_instance_id: IdSchema,
+  created_at: DateFromISOString,
+  created_by: IdSchema,
+  encrypted_secret_key: z.string(),
+  id: IdSchema,
+  name: z.string(),
+});
+export type CourseInstanceAiGradingCustomEndpoint = z.infer<
+  typeof CourseInstanceAiGradingCustomEndpointSchema
+>;
+
 export const CourseInstancePublishingExtensionSchema = z.object({
   course_instance_id: IdSchema,
   end_date: DateFromISOString,
@@ -1803,6 +1816,7 @@ export const TableNames = [
   'client_fingerprints',
   'course_instance_access_rules',
   'course_instance_ai_grading_credentials',
+  'course_instance_ai_grading_custom_endpoints',
   'course_instance_permissions',
   'course_instance_publishing_extension_enrollments',
   'course_instance_publishing_extensions',
