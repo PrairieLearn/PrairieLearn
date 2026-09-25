@@ -419,7 +419,10 @@ export function getAdministratorTrpcUrl(): string {
   return '/pl/administrator/trpc';
 }
 
-export function getCourseTrpcUrl(courseId: string): string {
+export function getCourseTrpcUrl(courseId: string, courseInstanceId?: string): string {
+  if (courseInstanceId) {
+    return `/pl/course_instance/${courseInstanceId}/instructor/course_admin/trpc`;
+  }
   return `/pl/course/${courseId}/trpc`;
 }
 

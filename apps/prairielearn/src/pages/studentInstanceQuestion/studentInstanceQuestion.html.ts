@@ -151,7 +151,7 @@ export function StudentInstanceQuestion({
                   resLocals,
                   questionContext,
                   questionCopyTargets,
-                  showFooter: resLocals.assessment_instance.open ?? false,
+                  showFooter: resLocals.assessment_instance.open,
                 })
           }
         </div>
