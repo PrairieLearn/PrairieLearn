@@ -104,7 +104,7 @@ const WorkspaceOptionsJsonSchema = z
     image: z
       .string()
       .describe(
-        'The Docker image that will be used to serve this question. Should be specified as Dockerhub image.',
+        'The public Docker image that will be used to serve this question. Include the registry hostname for images hosted outside Docker Hub.',
       ),
     port: z
       .number()
@@ -183,7 +183,7 @@ const ExternalGradingOptionsJsonSchema = z
     image: z
       .string()
       .describe(
-        'The Docker image that will be used to grade this question. Should be specified as Dockerhub image.',
+        'The public Docker image that will be used to grade this question. Include the registry hostname for images hosted outside Docker Hub.',
       ),
     entrypoint: z
       .union([z.string(), z.array(z.string())])

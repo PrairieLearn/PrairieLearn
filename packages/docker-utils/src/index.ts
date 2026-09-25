@@ -101,6 +101,17 @@ export class DockerName {
     this.registry = registry;
   }
 
+  setCacheRegistry(registry: string) {
+    // Preserve existing Docker Hub cache paths, but keep other registries distinct.
+    if (
+      this.registry !== undefined &&
+      !['docker.io', 'index.docker.io', 'registry-1.docker.io'].includes(this.registry)
+    ) {
+      this.repository = this.getRegistryRepo();
+    }
+    this.setRegistry(registry);
+  }
+
   getRepository() {
     return this.repository;
   }

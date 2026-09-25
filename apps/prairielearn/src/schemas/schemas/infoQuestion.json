@@ -138,7 +138,7 @@
         },
         "image": {
           "type": "string",
-          "description": "The Docker image that will be used to grade this question. Should be specified as Dockerhub image."
+          "description": "The public Docker image that will be used to grade this question. Include the registry hostname for images hosted outside Docker Hub."
         },
         "entrypoint": {
           "anyOf": [
@@ -283,7 +283,7 @@
         },
         "image": {
           "type": "string",
-          "description": "The Docker image that will be used to serve this question. Should be specified as Dockerhub image."
+          "description": "The public Docker image that will be used to serve this question. Include the registry hostname for images hosted outside Docker Hub."
         },
         "port": {
           "description": "The port number used in the Docker image. If not specified, the port is retrieved from the workspace image labels.",

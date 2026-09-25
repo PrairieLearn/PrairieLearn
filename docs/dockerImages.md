@@ -9,6 +9,8 @@ Docker containers are created from [container images](https://docs.docker.com/ge
 
 Instructors are encouraged to use one of the maintained images, to ensure all security updates and new functionality can be accessed in your questions. Questions may use their own images, though, provided these images allow the question configuration to provide the appropriate functionality needed for external grading and workspaces.
 
+Custom images can be hosted publicly on Docker Hub or another registry such as GitHub Container Registry (GHCR). For Docker Hub, use `org/image:tag`. For other registries, include the hostname in the image name, e.g., `ghcr.io/org/image:tag`. Images must be publicly accessible without authentication.
+
 ## Custom variations of maintained images
 
 Some questions may require additional customization of existing images, such as the installation of OS dependencies, Python packages, or configuration of OS-level settings. In such cases, instructors may create custom images based on the existing images. This may be done by following these steps:

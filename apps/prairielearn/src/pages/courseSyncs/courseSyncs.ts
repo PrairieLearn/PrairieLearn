@@ -51,10 +51,12 @@ router.get(
       ImageRowSchema,
     );
 
-    if (config.cacheImageRegistry) {
+    const { cacheImageRegistry } = config;
+    if (cacheImageRegistry) {
       const ecr = new ECR(makeAwsClientConfig());
       await async.eachLimit(images, 3, async (image) => {
         const repository = new DockerName(image.image);
+        repository.setCacheRegistry(cacheImageRegistry);
         image.tag = repository.getTag() || 'latest (implied)';
         // Default to get overwritten later
         image.pushed_at = null;

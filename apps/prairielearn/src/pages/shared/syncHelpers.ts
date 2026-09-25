@@ -118,7 +118,7 @@ async function pullAndPushToECR(image: string, dockerAuth: DockerAuth, job: Serv
   const repository = new DockerName(image);
   job.info(`Pulling ${repository.getCombined()}`);
   const pullStream = await docker.createImage({
-    fromImage: repository.getRepository(),
+    fromImage: repository.getRegistryRepo(),
     tag: repository.getTag() || 'latest',
   });
 
@@ -145,8 +145,7 @@ async function pullAndPushToECR(image: string, dockerAuth: DockerAuth, job: Serv
   const downloadedImage = repository.getCombined(true);
   const localImage = docker.getImage(downloadedImage);
 
-  // Tag the image to add the new registry
-  repository.setRegistry(cacheImageRegistry);
+  repository.setCacheRegistry(cacheImageRegistry);
 
   const options = {
     repo: repository.getCombined(),
@@ -205,7 +204,7 @@ export async function ecrUpdate(
 
   const serverJob = await createServerJob({
     type: 'images_sync',
-    description: 'Sync Docker images from Docker Hub to PL registry',
+    description: 'Sync Docker images to PL registry',
     userId: locals.user.id,
     authnUserId: locals.authz_data.authn_user.id,
     courseId: locals.course.id,
@@ -213,7 +212,7 @@ export async function ecrUpdate(
 
   serverJob.executeInBackground(async (job) => {
     await async.eachOfSeries(images, async (image) => {
-      job.info(`Pull image from Docker Hub and push to PL registry: ${image.image}`);
+      job.info(`Pull image and push to PL registry: ${image.image}`);
       await pullAndPushToECR(image.image, auth, job);
     });
   });
