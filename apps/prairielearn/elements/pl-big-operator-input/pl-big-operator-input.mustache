@@ -1,0 +1,38 @@
+{{#question}}
+  {{#inline}}
+    <span
+      class="pl-big-operator-input pl-big-operator-input--inline flex-nowrap"
+      role="group"
+      aria-label="Big operator input"
+      style="--pl-big-operator-input-body-size: {{body_size}}ch; --pl-big-operator-input-index-field-size: {{index_field_size}}ch"
+    >
+      {{>question-content}}
+    </span>
+  {{/inline}}
+  {{#block}}
+    <div
+      class="pl-big-operator-input pl-big-operator-input--block flex-nowrap"
+      role="group"
+      aria-label="Big operator input"
+      style="--pl-big-operator-input-body-size: {{body_size}}ch; --pl-big-operator-input-index-field-size: {{index_field_size}}ch"
+    >
+      {{>question-content}}
+    </div>
+  {{/block}}
+{{/question}}
+{{#submission}}
+  {{#inline}}
+    <span
+      class="pl-big-operator-input pl-big-operator-input--inline pl-big-operator-input__submission"
+    >
+      {{>submission-content}}
+    </span>
+  {{/inline}}
+  {{#block}}
+    <div
+      class="pl-big-operator-input pl-big-operator-input--block pl-big-operator-input__submission"
+    >
+      {{>submission-content}}
+    </div>
+  {{/block}}
+{{/submission}}
