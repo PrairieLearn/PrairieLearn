@@ -39,6 +39,7 @@ const CourseOrInstanceContextDataSchema = z.object({
   course: CourseSchema,
   institution: InstitutionSchema,
   course_instance: CourseInstanceSchema.nullable(),
+  is_institution_administrator: z.boolean(),
   course_role: EnumCourseRoleSchema,
   course_instance_role: EnumCourseInstanceRoleSchema,
   enrollment_status: EnumEnrollmentStatusSchema.nullable(),
@@ -273,6 +274,7 @@ export async function constructCourseOrInstanceContext({
   const authzData = {
     user,
     mode,
+    is_institution_administrator: rawAuthzData.is_institution_administrator,
     course_role,
     ...calculateCourseRolePermissions(course_role),
     ...(await run(async () => {

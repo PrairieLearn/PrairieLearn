@@ -6,6 +6,7 @@ import * as sqldb from '@prairielearn/postgres';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 import { getAppError } from '@prairielearn/trpc/client';
 
+import { ensureInstitutionAdministrator } from '../../ee/models/institution-administrator.js';
 import { getCourseTrpcUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
 import {
@@ -20,6 +21,7 @@ import {
   insertCourseInstancePermissions,
   insertCoursePermissionsByUserUid,
 } from '../../models/course-permissions.js';
+import { insertInstitution } from '../../models/institution.js';
 import { createCourseTrpcClient } from '../../trpc/course/client.js';
 import type { CourseStaffError } from '../../trpc/course/course-staff.js';
 import * as helperClient from '../helperClient.js';
@@ -485,6 +487,42 @@ function runTest(context: TestContext) {
     });
     assert.equal(response.status, 200);
     assert.notInclude(response.$('body').text(), 'Add users');
+  });
+
+  test('admin of another institution cannot change own course role', async () => {
+    const institutionId = await insertInstitution({
+      shortName: 'Other',
+      longName: 'Other institution',
+      displayTimezone: 'UTC',
+      uidRegexp: null,
+    });
+    await ensureInstitutionAdministrator({
+      institution_id: institutionId,
+      user_id: context.userId,
+      authn_user_id: '1',
+    });
+    await expect(
+      createClient().courseStaff.updateCourseRole.mutate({
+        userId: context.userId,
+        courseRole: 'None',
+      }),
+    ).rejects.toMatchObject({ data: { code: 'FORBIDDEN' } });
+    await checkPermissions(users);
+  });
+
+  test('emulating an institution admin does not allow changing own course role', async () => {
+    await ensureInstitutionAdministrator({
+      institution_id: '1',
+      user_id: '4',
+      authn_user_id: '1',
+    });
+    const trpc = createClient({
+      cookie: 'pl_test_user=test_instructor; pl2_requested_uid=staff04@example.com',
+    });
+    await expect(
+      trpc.courseStaff.updateCourseRole.mutate({ userId: context.userId, courseRole: 'None' }),
+    ).rejects.toMatchObject({ data: { code: 'FORBIDDEN' } });
+    await checkPermissions(users);
   });
 
   test('non-Owner staff can list safe user data but cannot edit', async () => {
