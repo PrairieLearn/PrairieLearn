@@ -1,11 +1,13 @@
 import importlib
+import json
 import string
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import prairielearn.sympy_utils as psu
 import pytest
 import sympy
+from mathjson import MathJsonExpression
 
 symbolic_input = importlib.import_module("pl-symbolic-input")
 
@@ -292,23 +294,331 @@ def test_trig_no_crash_with_no_simplify(a_sub: str) -> None:
     assert data["submitted_answers"]["test"] is not None
 
 
-def test_formula_editor_initial_value_respects_display_log_as_ln(
+def test_formula_editor_test_submission_includes_mathjson() -> None:
+    x = sympy.Symbol("x")
+    # pyright is not smart enough here
+    expected = cast(
+        sympy.Basic, sympy.Function("test")(sympy.sqrt(sympy.exp(x) / x**2))
+    )
+    element_html = build_element_html(
+        'formula-editor="true"',
+        'variables="x"',
+        'custom-functions="test"',
+    )
+    data = make_question_data(correct_answers={"test": psu.sympy_to_json(expected)})
+    data["test_type"] = "correct"
+
+    symbolic_input.test(element_html, data)
+
+    raw_submitted_answers = data["raw_submitted_answers"]
+    assert raw_submitted_answers["test"] == str(expected)
+    assert isinstance(raw_submitted_answers["test-json"], str)
+
+    parse_data = make_question_data(
+        submitted_answers=raw_submitted_answers,
+        correct_answers={"test": psu.sympy_to_json(expected)},
+    )
+    symbolic_input.parse(element_html, parse_data)
+
+    assert "test" not in parse_data["format_errors"]
+    assert (
+        psu.json_to_sympy(parse_data["submitted_answers"]["test"], allow_sets=True)
+        == expected
+    )
+
+
+@pytest.mark.parametrize("simplify_expression", [False, True])
+@pytest.mark.parametrize(
+    ("submission", "mathjson"),
+    [
+        ("x+x", ["Add", "x", "x"]),
+        ("x*x", ["Multiply", "x", "x"]),
+        ("x*x", ["InvisibleOperator", "x", "x"]),
+        ("x-x", ["Subtract", "x", "x"]),
+        ("x/x", ["Divide", "x", "x"]),
+        ("x^0", ["Power", "x", 0]),
+        ("x-(x+x)", ["Subtract", "x", ["Add", "x", "x"]]),
+        ("-(x+x)", ["Negate", ["Add", "x", "x"]]),
+        ("sin(pi)", ["Sin", "Pi"]),
+        ("sqrt(4)", ["Sqrt", 4]),
+        ("log(1)", ["Log", 1]),
+        ("1/2", ["Divide", 1, 2]),
+        ("sqrt(x+x)", ["Sqrt", ["Add", "x", "x"]]),
+        ("f(x+x)", ["f", ["Add", "x", "x"]]),
+    ],
+)
+def test_mathjson_submission_respects_simplification(
+    submission: str, mathjson: MathJsonExpression, simplify_expression: bool
+) -> None:
+    attributes = (
+        'variables="x"',
+        'custom-functions="f"',
+        f'display-simplified-expression="{str(simplify_expression).lower()}"',
+    )
+    text_data = make_question_data(submitted_answers={"test": submission})
+    symbolic_input.parse(build_element_html(*attributes), text_data)
+    assert text_data["format_errors"] == {}
+
+    formula_data = make_question_data(
+        submitted_answers={"test": submission, "test-json": json.dumps(mathjson)},
+        correct_answers={"test": text_data["submitted_answers"]["test"]},
+    )
+    element_html = build_element_html(*attributes, 'formula-editor="true"')
+    symbolic_input.parse(element_html, formula_data)
+
+    assert formula_data["format_errors"] == {}
+    assert (
+        formula_data["submitted_answers"]["test"]["_value"]
+        == text_data["submitted_answers"]["test"]["_value"]
+    )
+    symbolic_input.grade(element_html, formula_data)
+    assert formula_data["partial_scores"]["test"]["score"] == 1
+
+
+@pytest.mark.parametrize("simplify_expression", [False, True])
+def test_mathjson_submission_reapplies_variable_checks(
+    simplify_expression: bool,
+) -> None:
+    element_html = build_element_html(
+        'formula-editor="true"',
+        'variables="x"',
+        f'display-simplified-expression="{str(simplify_expression).lower()}"',
+    )
+    data = make_question_data(submitted_answers={"test": "y", "test-json": '"y"'})
+
+    symbolic_input.parse(element_html, data)
+
+    assert "test" in data["format_errors"]
+    assert data["submitted_answers"]["test"] is None
+
+
+@pytest.mark.parametrize("simplify_expression", [False, True])
+def test_mathjson_submission_reapplies_custom_function_checks(
+    simplify_expression: bool,
+) -> None:
+    element_html = build_element_html(
+        'formula-editor="true"',
+        'variables="x"',
+        f'display-simplified-expression="{str(simplify_expression).lower()}"',
+    )
+    data = make_question_data(
+        submitted_answers={"test": "f(x)", "test-json": '["Apply", "f", "x"]'}
+    )
+
+    symbolic_input.parse(element_html, data)
+
+    assert "test" in data["format_errors"]
+    assert data["submitted_answers"]["test"] is None
+
+
+@pytest.mark.parametrize(
+    ("simplify_expression", "expected_latex"), [(False, "x + x"), (True, "2 x")]
+)
+def test_mathjson_submission_display_respects_simplification(
     monkeypatch: pytest.MonkeyPatch,
+    simplify_expression: bool,
+    expected_latex: str,
 ) -> None:
     monkeypatch.chdir(Path(__file__).parent)
     element_html = build_element_html(
-        'variables="x"',
         'formula-editor="true"',
-        'display-log-as-ln="true"',
-        'initial-value="log(x)"',
+        'variables="x"',
+        f'display-simplified-expression="{str(simplify_expression).lower()}"',
+    )
+    data = make_question_data(
+        submitted_answers={"test": "x+x", "test-json": '["Add", "x", "x"]'},
+        panel="submission",
+    )
+
+    symbolic_input.parse(element_html, data)
+
+    assert data["format_errors"] == {}
+    assert f"${expected_latex}$" in symbolic_input.render(element_html, data)
+
+
+@pytest.mark.parametrize("raw_mathjson", ["", "   "])
+def test_blank_mathjson_submission_falls_back_to_string_parser(
+    raw_mathjson: str,
+) -> None:
+    element_html = build_element_html('formula-editor="true"', 'variables="x"')
+    data = make_question_data(
+        submitted_answers={"test": "x + 1", "test-json": raw_mathjson}
+    )
+
+    symbolic_input.parse(element_html, data)
+
+    assert "test" not in data["format_errors"]
+    assert psu.json_to_sympy(data["submitted_answers"]["test"]) == sympy.Symbol("x") + 1
+
+
+@pytest.mark.parametrize(
+    ("submission", "expected"),
+    [
+        (
+            "{:s i n(x) + t i m e + m y f u n(x) + f2(x) + x2:}",
+            "sin(x)+time+myfun(x)+f2(x)+x*2",
+        ),
+        ("max(x,1)", "max(x,1)"),
+        ("[0,1]", "[0,1]"),
+        ("x+x", "x+x"),
+    ],
+)
+def test_legacy_formula_editor_submission_populates_reusable_mathjson(
+    monkeypatch: pytest.MonkeyPatch,
+    submission: str,
+    expected: str,
+) -> None:
+    attributes = (
+        'variables="time,x"',
+        'custom-functions="myfun,f2"',
+        'allow-sets="true"',
+        'display-simplified-expression="false"',
+    )
+    expected_data = make_question_data(submitted_answers={"test": expected})
+    symbolic_input.parse(build_element_html(*attributes), expected_data)
+    assert expected_data["format_errors"] == {}
+
+    raw_answers = {"test": submission}
+    data = make_question_data(
+        submitted_answers=raw_answers.copy(),
+        raw_submitted_answers=raw_answers.copy(),
+    )
+    element_html = build_element_html(*attributes, 'formula-editor="true"')
+
+    symbolic_input.parse(element_html, data)
+
+    assert data["format_errors"] == {}
+    assert data["raw_submitted_answers"] == raw_answers
+    assert (
+        data["submitted_answers"]["test"] == expected_data["submitted_answers"]["test"]
+    )
+
+    def fail_legacy_normalization(*args: object) -> None:
+        pytest.fail("The saved MathJSON should bypass legacy normalization")
+
+    monkeypatch.setattr(
+        symbolic_input,
+        "format_formula_editor_submission_for_sympy",
+        fail_legacy_normalization,
+    )
+    symbolic_input.parse(element_html, data)
+
+    assert data["format_errors"] == {}
+    assert (
+        data["submitted_answers"]["test"] == expected_data["submitted_answers"]["test"]
+    )
+
+
+def test_legacy_formula_editor_submission_uses_inferred_variables() -> None:
+    x, time = sympy.symbols("x time")
+    expected = psu.sympy_to_json(x + time)
+    data = make_question_data(
+        submitted_answers={"test": "t i m e + x"},
+        correct_answers={"test": expected},
+    )
+
+    symbolic_input.parse(build_element_html('formula-editor="true"'), data)
+
+    assert data["format_errors"] == {}
+    assert data["submitted_answers"]["test"] == expected
+    assert "test-json" in data["submitted_answers"]
+
+
+def test_legacy_formatting_wrappers_respect_allow_blank() -> None:
+    data = make_question_data(submitted_answers={"test": "{::}"})
+    element_html = build_element_html(
+        'formula-editor="true"', 'allow-blank="true"', 'blank-value="0"'
+    )
+
+    symbolic_input.parse(element_html, data)
+
+    assert data["format_errors"] == {}
+    assert psu.json_to_sympy(data["submitted_answers"]["test"]) == 0
+    assert json.loads(data["submitted_answers"]["test-json"]) == 0
+
+
+def test_raw_input_ignores_mathjson_submission() -> None:
+    element_html = build_element_html('variables="x"')
+    data = make_question_data(submitted_answers={"test": "x", "test-json": '"y"'})
+
+    symbolic_input.parse(element_html, data)
+
+    assert "test" not in data["format_errors"]
+    assert psu.json_to_sympy(data["submitted_answers"]["test"]) == sympy.Symbol("x")
+
+
+def test_mathjson_student_errors_are_shown_directly() -> None:
+    element_html = build_element_html('formula-editor="true"', 'allow-sets="true"')
+    data = make_question_data(
+        submitted_answers={"test": "{1} + 2", "test-json": '["Add", ["Set", 1], 2]'}
+    )
+
+    symbolic_input.parse(element_html, data)
+
+    assert (
+        data["format_errors"]["test"] == "Parse error: Expected a numeric expression."
+    )
+    assert data["submitted_answers"]["test"] is None
+
+
+def test_unexpected_mathjson_composition_errors_use_generic_message() -> None:
+    element_html = build_element_html('formula-editor="true"', 'variables="x"')
+    data = make_question_data(
+        submitted_answers={"test": "x", "test-json": '["Rational", "x"]'}
+    )
+
+    symbolic_input.parse(element_html, data)
+
+    assert data["format_errors"]["test"] == (
+        "Parse error: Could not parse submitted answer."
+    )
+    assert "invalid input" not in data["format_errors"]["test"]
+    assert data["submitted_answers"]["test"] is None
+
+
+def test_mathjson_submission_respects_blank_value() -> None:
+    element_html = build_element_html(
+        'formula-editor="true"', 'allow-blank="true"', 'blank-value="0"'
+    )
+    data = make_question_data(submitted_answers={"test": "", "test-json": '"x"'})
+
+    symbolic_input.parse(element_html, data)
+
+    assert "test" not in data["format_errors"]
+    assert psu.json_to_sympy(data["submitted_answers"]["test"]) == 0
+
+
+def test_formula_editor_set_test_submission_includes_mathjson() -> None:
+    expected = sympy.Union(
+        sympy.Interval(-sympy.oo, sympy.Rational(-1, 2)),
+        sympy.Interval(sympy.Rational(1, 2), sympy.oo),
+    )
+    element_html = build_element_html(
+        'formula-editor="true"',
+        'allow-sets="true"',
+        'correct-answer="(-infty, -1/2] U [1/2, infty)"',
     )
     data = make_question_data()
+    data["test_type"] = "correct"
 
     symbolic_input.prepare(element_html, data)
-    rendered = symbolic_input.render(element_html, data)
+    symbolic_input.test(element_html, data)
 
-    assert "\\ln{\\left(x \\right)}" in rendered
-    assert "\\log{\\left(x \\right)}" not in rendered
+    raw_submitted_answers = data["raw_submitted_answers"]
+    assert raw_submitted_answers["test"] == str(expected)
+    assert isinstance(raw_submitted_answers["test-json"], str)
+
+    parse_data = make_question_data(
+        submitted_answers=raw_submitted_answers,
+        correct_answers=data["correct_answers"],
+    )
+    symbolic_input.parse(element_html, parse_data)
+
+    assert "test" not in parse_data["format_errors"]
+    assert (
+        psu.json_to_sympy(parse_data["submitted_answers"]["test"], allow_sets=True)
+        == expected
+    )
 
 
 @pytest.mark.parametrize(
