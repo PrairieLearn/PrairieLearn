@@ -1255,16 +1255,20 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     canvas_width = params["config"]["width"]
     canvas_height = params["config"]["height"]
 
+    submission_state = copy.deepcopy(params["initial_state"])
+    submitted_solution_state = solution_state
+    if result == "incorrect":
+        submitted_solution_state = _corrupted_drawing_state(solution_state, tool_data)
+
+    for tool_id, drawings in submitted_solution_state.items():
+        submission_state.setdefault(tool_id, []).extend(drawings)
+
     gradeable = _solution_to_gradeable(
-        solution_state, tool_data, canvas_width, canvas_height
+        submission_state, tool_data, canvas_width, canvas_height
     )
 
-    if result == "incorrect":
-        # Try to produce a submission based on the solution that is incorrect
-        gradeable = _mutate_gradeable(gradeable)
-
     data["raw_submitted_answers"][key] = base64.b64encode(
-        json.dumps({"gradeable": gradeable}).encode("utf-8")
+        json.dumps({"data": submission_state, "gradeable": gradeable}).encode("utf-8")
     ).decode("utf-8")
 
     # Setting submitted_answers because it is needed for invoking grading below
@@ -1353,24 +1357,33 @@ def _solution_to_gradeable(
     return gradeable
 
 
-def _mutate_gradeable(
-    gradeable: SketchGradeableData, offset: float = 200
-) -> SketchGradeableData:
-    """Mutate gradeable data to produce an incorrect submission.
+def _corrupted_drawing_state(
+    drawing_state: dict[str, DrawingData],
+    tool_data: dict[str, SketchTool],
+    offset: float = 200,
+) -> dict[str, DrawingData]:
+    """Mutate client drawing state to produce an incorrect submission.
 
     Applies two transformations to break as many grader types as possible:
-    1. Reverses point order within each spline (breaks monotonicity, concavity)
-    2. Shifts all y-coordinates (breaks absolute position checks like match,
-       match-function, greater-than, less-than)
+    1. Reverses point order within each curve (breaks monotonicity, concavity)
+    2. Shifts y-coordinates, or x-coordinates for vertical lines (breaks absolute
+       position checks like match, match-function, greater-than, less-than)
 
     Returns:
-        A mutated copy of the gradeable data.
+        A mutated copy of the client drawing state.
     """
-    mutated = copy.deepcopy(gradeable)
-    for items in mutated.values():
-        for item in items:
-            if "spline" in item:
-                item["spline"] = [[x, y + offset] for x, y in reversed(item["spline"])]
-            if "point" in item:
-                item["point"] = [item["point"][0], item["point"][1] + offset]
+    mutated = copy.deepcopy(drawing_state)
+    for tool_id, drawings in mutated.items():
+        if tool_data[tool_id]["name"] == "vertical-line":
+            for drawing in drawings:
+                drawing["x"] += offset
+            continue
+
+        for drawing in drawings:
+            if isinstance(drawing, list):
+                drawing.reverse()
+                for point in drawing:
+                    point["y"] += offset
+            else:
+                drawing["y"] += offset
     return mutated
