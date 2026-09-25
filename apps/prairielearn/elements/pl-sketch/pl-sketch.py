@@ -16,6 +16,7 @@ from sketchresponse.types import (
     SketchDrawing,
     SketchGradeableData,
     SketchGrader,
+    SketchItem,
     SketchTool,
 )
 from sketchresponse.utils import format_drawing, parse_function_string
@@ -1292,58 +1293,73 @@ def _solution_to_gradeable(
     for tool_id, drawings in solution_state.items():
         tool_name = tool_data[tool_id]["name"]
 
-        if tool_name == "point":
-            # Easy case: just need to convert from {"x": x, "y": y} dict to [x, y] list
-            gradeable[tool_id] = [{"point": [pt["x"], pt["y"]]} for pt in drawings]
+        values: list[SketchItem]
+        match tool_name:
+            case "point":
+                # Easy case: just need to convert from {"x": x, "y": y} dict to [x, y] list
+                values = [{"point": [pt["x"], pt["y"]]} for pt in drawings]
 
-        elif tool_name in ("spline", "freeform", "polyline", "line-segment"):
-            # To convert points into the spline format, we need to add control points in-between each point pair.
-            # Note that line-segment is a special case where len(curve) is exactly 2, but the logic works the same
-            gradeable[tool_id] = []
-            for curve in drawings:
-                pts = []
-                for i in range(len(curve) - 1):
-                    p1 = [curve[i]["x"], curve[i]["y"]]
-                    p2 = [curve[i + 1]["x"], curve[i + 1]["y"]]
-                    ctrl1 = [
-                        p1[0] + (p2[0] - p1[0]) / 3,
-                        p1[1] + (p2[1] - p1[1]) / 3,
-                    ]
-                    ctrl2 = [
-                        p1[0] + 2 * (p2[0] - p1[0]) / 3,
-                        p1[1] + 2 * (p2[1] - p1[1]) / 3,
-                    ]
-                    pts += [p1, ctrl1, ctrl2]
-                pts.append([curve[-1]["x"], curve[-1]["y"]])
-                gradeable[tool_id].append({"spline": pts})
+            case "freeform":
+                # format_drawing() already fits freeform curves to cubic Bézier segments,
+                # so preserve their existing control points.
+                values = [
+                    {"spline": [[point["x"], point["y"]] for point in curve]}
+                    for curve in drawings
+                ]
 
-        elif tool_name == "horizontal-line":
-            # For horizontal lines, we replace the arbitrary y-value with a spline that spans the canvas
-            gradeable[tool_id] = [
-                {
-                    "spline": [
-                        [0, d["y"]],
-                        [canvas_width / 3, d["y"]],
-                        [2 * canvas_width / 3, d["y"]],
-                        [canvas_width, d["y"]],
-                    ]
-                }
-                for d in drawings
-            ]
+            case "spline" | "polyline" | "line-segment":
+                # To convert points into the spline format, we need to add control points in-between each point pair.
+                # Note that line-segment is a special case where len(curve) is exactly 2, but the logic works the same
+                values = []
+                for curve in drawings:
+                    pts = []
+                    for i in range(len(curve) - 1):
+                        p1 = [curve[i]["x"], curve[i]["y"]]
+                        p2 = [curve[i + 1]["x"], curve[i + 1]["y"]]
+                        ctrl1 = [
+                            p1[0] + (p2[0] - p1[0]) / 3,
+                            p1[1] + (p2[1] - p1[1]) / 3,
+                        ]
+                        ctrl2 = [
+                            p1[0] + 2 * (p2[0] - p1[0]) / 3,
+                            p1[1] + 2 * (p2[1] - p1[1]) / 3,
+                        ]
+                        pts += [p1, ctrl1, ctrl2]
+                    pts.append([curve[-1]["x"], curve[-1]["y"]])
+                    values.append({"spline": pts})
 
-        elif tool_name == "vertical-line":
-            # For vertical lines, we replace the arbitrary x-value with a spline that spans the canvas
-            gradeable[tool_id] = [
-                {
-                    "spline": [
-                        [d["x"], 0],
-                        [d["x"], canvas_height / 3],
-                        [d["x"], 2 * canvas_height / 3],
-                        [d["x"], canvas_height],
-                    ]
-                }
-                for d in drawings
-            ]
+            case "horizontal-line":
+                # For horizontal lines, we replace the arbitrary y-value with a spline that spans the canvas
+                values = [
+                    {
+                        "spline": [
+                            [0, d["y"]],
+                            [canvas_width / 3, d["y"]],
+                            [2 * canvas_width / 3, d["y"]],
+                            [canvas_width, d["y"]],
+                        ]
+                    }
+                    for d in drawings
+                ]
+
+            case "vertical-line":
+                # For vertical lines, we replace the arbitrary x-value with a spline that spans the canvas
+                values = [
+                    {
+                        "spline": [
+                            [d["x"], 0],
+                            [d["x"], canvas_height / 3],
+                            [d["x"], 2 * canvas_height / 3],
+                            [d["x"], canvas_height],
+                        ]
+                    }
+                    for d in drawings
+                ]
+
+            case _:
+                continue
+
+        gradeable[tool_id] = values
 
     # Fill empty lists for tools not in solution
     for tid in tool_data:
