@@ -204,12 +204,7 @@ router.post(
       const serverJob = await createServerJob(serverJobOptions);
 
       serverJob.executeInBackground(async (job) => {
-        try {
-          await syncLineitems(instance, job);
-        } catch (err) {
-          logger.error('Error synchronizing LTI 1.3 assignments', err);
-          throw err;
-        }
+        await syncLineitems(instance, job);
       });
       return res.redirect(res.locals.urlPrefix + '/jobSequence/' + serverJob.jobSequenceId);
     } else if (req.body.__action === 'unlink_assessment') {
@@ -220,29 +215,24 @@ router.post(
       const serverJob = await createServerJob(serverJobOptions);
 
       serverJob.executeInBackground(async (job) => {
-        try {
-          const assessment = await queryRow(
-            sql.select_assessment_to_create,
-            {
-              unsafe_assessment_id: req.body.unsafe_assessment_id,
-              course_instance_id: instance.lti13_course_instance.course_instance_id,
-            },
-            AssessmentSchema.extend({
-              label: z.string(),
-            }),
-          );
+        const assessment = await queryRow(
+          sql.select_assessment_to_create,
+          {
+            unsafe_assessment_id: req.body.unsafe_assessment_id,
+            course_instance_id: instance.lti13_course_instance.course_instance_id,
+          },
+          AssessmentSchema.extend({
+            label: z.string(),
+          }),
+        );
 
-          const assessment_metadata = {
-            label: `${assessment.label}: ${assessment.title}`,
-            id: assessment.id,
-            url: `${getCanonicalHost(req)}/pl/course_instance/${assessment.course_instance_id}/assessment/${assessment.id}`,
-          };
+        const assessment_metadata = {
+          label: `${assessment.label}: ${assessment.title}`,
+          id: assessment.id,
+          url: `${getCanonicalHost(req)}/pl/course_instance/${assessment.course_instance_id}/assessment/${assessment.id}`,
+        };
 
-          await createAndLinkLineitem(instance, job, assessment_metadata);
-        } catch (err) {
-          logger.error('Error creating LTI 1.3 assignment', err);
-          throw err;
-        }
+        await createAndLinkLineitem(instance, job, assessment_metadata);
       });
       return res.redirect(res.locals.urlPrefix + '/jobSequence/' + serverJob.jobSequenceId);
     } else if (req.body.__action === 'link_assessment') {
@@ -298,19 +288,14 @@ router.post(
       const serverJob = await createServerJob(serverJobOptions);
 
       serverJob.executeInBackground(async (job) => {
-        try {
-          for (const assessment of assessments) {
-            const assessment_metadata = {
-              label: `${assessment.label}: ${assessment.title}`,
-              id: assessment.id,
-              url: `${getCanonicalHost(req)}/pl/course_instance/${assessment.course_instance_id}/assessment/${assessment.id}`,
-            };
+        for (const assessment of assessments) {
+          const assessment_metadata = {
+            label: `${assessment.label}: ${assessment.title}`,
+            id: assessment.id,
+            url: `${getCanonicalHost(req)}/pl/course_instance/${assessment.course_instance_id}/assessment/${assessment.id}`,
+          };
 
-            await createAndLinkLineitem(instance, job, assessment_metadata);
-          }
-        } catch (err) {
-          logger.error('Error creating LTI 1.3 assignments', err);
-          throw err;
+          await createAndLinkLineitem(instance, job, assessment_metadata);
         }
       });
       return res.redirect(res.locals.urlPrefix + '/jobSequence/' + serverJob.jobSequenceId);
@@ -362,7 +347,6 @@ router.post(
             });
           } catch (err) {
             errorCount++;
-            logger.error('Error sending LTI 1.3 grades', err);
             job.error(
               `Error sending grades to ${targetInstance.lti13_instance.name} course ` +
                 `${getLti13CourseDisplayName(targetInstance.lti13_course_instance)}:\n` +

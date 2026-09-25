@@ -6,10 +6,9 @@ import express from 'express';
 import fetchCookie from 'fetch-cookie';
 import getPort from 'get-port';
 import nodeJose from 'node-jose';
-import { afterAll, afterEach, assert, beforeAll, describe, expect, test, vi } from 'vitest';
+import { afterAll, afterEach, assert, beforeAll, describe, expect, test } from 'vitest';
 import { z } from 'zod';
 
-import { logger } from '@prairielearn/logger';
 import {
   execute,
   queryOptionalRow,
@@ -1195,50 +1194,6 @@ describe('LTI 1.3 course instance linking', { concurrent: false }, () => {
       });
 
       assert.deepEqual(scoredLineitems, ['0', '1']);
-    });
-
-    test('logs the complete score error and continues sending grades', async () => {
-      scoredLineitems = [];
-      const courseInstance = await selectCourseInstanceById('1');
-      const error = new TypeError('fetch failed', {
-        cause: new Error('Host did not resolve to a public address'),
-      });
-      const originalFetch = fetch;
-      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation((input, init) => {
-        if (input === `${lmsCourses[0].lineitemUrl}/scores`) {
-          return Promise.reject(error);
-        }
-        return originalFetch(input, init);
-      });
-      const logSpy = vi.spyOn(logger, 'error');
-      try {
-        await withServer(app, oidcProviderPort, async () => {
-          const serverJob = await createServerJob({
-            type: 'lti13',
-            description: 'LTI score error logging (test)',
-            userId: null,
-            authnUserId: null,
-          });
-          await serverJob.executeUnsafe(async (job) => {
-            for (const { instance } of lmsCourses) {
-              await updateLti13Scores({
-                courseInstance,
-                unsafe_assessment_id: assessmentId,
-                instance,
-                job,
-              });
-            }
-          });
-        });
-        expect(logSpy).toHaveBeenCalledWith('Error sending LTI 1.3 score', error);
-        expect(
-          logSpy.mock.calls.find(([message]) => message === 'Error sending LTI 1.3 score')?.[1],
-        ).toBe(error);
-        expect(scoredLineitems).toEqual(['1']);
-      } finally {
-        fetchSpy.mockRestore();
-        logSpy.mockRestore();
-      }
     });
 
     test('sends grades to every linked LMS course from one action', async () => {

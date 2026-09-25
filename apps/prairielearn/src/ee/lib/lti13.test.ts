@@ -1,11 +1,8 @@
 import express, { type Request, type Response } from 'express';
-import { assert, describe, expect, test, vi } from 'vitest';
+import { assert, describe, expect, test } from 'vitest';
 import { z } from 'zod';
 
 import { withServer } from '@prairielearn/express-test-utils';
-import * as publicFetchModule from '@prairielearn/public-fetch';
-
-import { withConfig } from '../../tests/utils/config.js';
 
 import { fetchRetry, fetchRetryPaginated, findValueByKey } from './lti13.js';
 
@@ -153,28 +150,13 @@ describe('fetchRetry()', { concurrent: false }, () => {
 
   test('resolves relative links against the effective response URL after a redirect', async () => {
     apiCount = 0;
-    // Exercise the production transport boundary while serving the redirect fixture locally.
-    const publicFetch = vi
-      .spyOn(publicFetchModule, 'publicFetch')
-      .mockImplementation(async (input, init) => {
-        return (await fetch(input as string, init as RequestInit)) as unknown as Awaited<
-          ReturnType<typeof publicFetchModule.publicFetch>
-        >;
-      });
-    try {
-      await withConfig({ devMode: false }, async () => {
-        await withServer(app, async ({ url }) => {
-          await expect(fetchRetryPaginated(`${url}/redirect`)).resolves.toEqual([
-            { page: 1 },
-            { page: 2 },
-          ]);
-          expect(publicFetch).toHaveBeenCalledTimes(2);
-          expect(publicFetch).toHaveBeenNthCalledWith(2, `${url}/redirected/2`, undefined);
-        });
-      });
-    } finally {
-      publicFetch.mockRestore();
-    }
+
+    await withServer(app, async ({ url }) => {
+      await expect(fetchRetryPaginated(`${url}/redirect`)).resolves.toEqual([
+        { page: 1 },
+        { page: 2 },
+      ]);
+    });
 
     assert.equal(apiCount, 3);
   });

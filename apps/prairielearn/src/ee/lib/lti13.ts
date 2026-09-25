@@ -7,8 +7,7 @@ import * as jose from 'jose';
 import * as client from 'openid-client';
 import { z } from 'zod';
 
-import { AugmentedError, HttpStatusError } from '@prairielearn/error';
-import { logger } from '@prairielearn/logger';
+import { AugmentedError, HttpStatusError, formatErrorStack } from '@prairielearn/error';
 import {
   execute,
   loadSqlEquiv,
@@ -640,7 +639,7 @@ export function findValueByKey(obj: unknown, targetKey: string): unknown {
  * @returns Node fetch response object
  */
 export async function fetchRetry(
-  input: RequestInfo | URL,
+  input: string | URL,
   opts?: RequestInit,
   incomingfetchRetryOpts?: {
     retryLeft?: number;
@@ -745,7 +744,7 @@ export async function fetchRetry(
  * @returns Array of JSON responses from fetch
  */
 export async function fetchRetryPaginated(
-  input: RequestInfo | URL,
+  input: string | URL,
   opts?: RequestInit,
   incomingfetchRetryOpts?: {
     retryLeft?: number;
@@ -753,9 +752,7 @@ export async function fetchRetryPaginated(
   },
 ): Promise<unknown[]> {
   const output: unknown[] = [];
-  const origin = new URL(
-    typeof input === 'string' ? input : input instanceof URL ? input.href : input.url,
-  ).origin;
+  const origin = new URL(input).origin;
 
   while (true) {
     const res = await fetchRetry(input, opts, incomingfetchRetryOpts);
@@ -967,8 +964,7 @@ export async function updateLti13Scores({
       counts.success++;
     } catch (error: any) {
       counts.error++;
-      logger.error('Error sending LTI 1.3 score', error);
-      job.warn(`\t${error.message}`);
+      job.warn(formatErrorStack(error));
       if (error instanceof AugmentedError && error.data.body) {
         job.verbose(error.data.body);
       }
