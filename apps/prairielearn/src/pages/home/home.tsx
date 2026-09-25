@@ -286,6 +286,7 @@ router.get(
         },
         options: {
           showFooter: true,
+          showInstructorSupport: instructorCourses.some((course) => !course.example_course),
         },
         content: (
           <Home

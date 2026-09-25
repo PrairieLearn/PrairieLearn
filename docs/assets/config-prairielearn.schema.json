@@ -486,6 +486,30 @@
         }
       ]
     },
+    "supportSlackUrl": {
+      "default": null,
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "uri"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "supportOfficeHoursUrl": {
+      "default": null,
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "uri"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
     "githubClientToken": {
       "default": null,
       "anyOf": [
