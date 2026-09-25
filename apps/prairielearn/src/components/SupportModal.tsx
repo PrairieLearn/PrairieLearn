@@ -84,8 +84,7 @@ function SupportOptionCard({
           <a
             class="btn btn-primary mt-auto"
             href="${href}"
-            target="${newTab ? '_blank' : null}"
-            rel="${newTab ? 'noreferrer' : null}"
+            ${newTab ? html`target="_blank" rel="noreferrer"` : ''}
           >
             <i class="bi ${icon} me-1" aria-hidden="true"></i>
             ${action}
