@@ -215,6 +215,7 @@
     "parse5": "^8.0.1",
     "passport": "^0.7.0",
     "passport-azure-ad": "^4.3.5",
+    "pdf-lib": "^1.17.1",
     "pem": "^1.14.8",
     "pg": "^8.22.0",
     "prettier": "^3.9.7",
@@ -271,6 +272,7 @@
   "devDependencies": {
     "@playwright/test": "^1.62.1",
     "@prairielearn/express-list-endpoints": "workspace:^",
+    "@prairielearn/qr-code": "workspace:^",
     "@prairielearn/tsconfig": "workspace:^",
     "@prairielearn/vite-plugin-express": "workspace:^",
     "@sa11y/format": "^8.0.28",

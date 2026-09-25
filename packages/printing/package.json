@@ -12,6 +12,10 @@
     "node": ">=24.0.0"
   },
   "main": "./dist/index.js",
+  "exports": {
+    ".": "./dist/index.js",
+    "./page-code": "./dist/pageCode.js"
+  },
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch --preserveWatchOutput",

@@ -17,9 +17,10 @@ import { parseRequestQuery } from '@prairielearn/zod';
 
 import { renderText as renderAssessmentText } from '../../lib/assessment.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
+import { encodePrintPageIdentity } from '../../lib/client/print-page-code.js';
+import { PrintIdentityFieldsSchema } from '../../lib/client/print-preparation.js';
 import { config } from '../../lib/config.js';
 import type { Assessment } from '../../lib/db-types.js';
-import { encodePrintPageIdentity } from '../../lib/print-page-code.js';
 import {
   type OmittedQuestionWarning,
   PRINT_DOCUMENTS,
@@ -53,11 +54,10 @@ type PrintFormat = keyof typeof PRINT_FORMATS;
 
 const QuestionBlockSizeSchema = z.enum(QUESTION_BLOCK_SIZES);
 const QuestionNumberSchema = z.string().regex(/^[1-9]\d*$/);
-const IdentityFieldSchema = z.string().trim().min(1).max(40);
 const IdentityFieldsSchema = z
-  .union([IdentityFieldSchema, IdentityFieldSchema.array()])
+  .union([z.string(), z.string().array()])
   .transform((fields) => (Array.isArray(fields) ? fields : [fields]))
-  .pipe(IdentityFieldSchema.array().max(6))
+  .pipe(PrintIdentityFieldsSchema)
   .default([]);
 const QuestionBlockSizeOverrideSchema = z
   .string()

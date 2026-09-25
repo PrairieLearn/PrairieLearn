@@ -392,7 +392,6 @@ html[data-print-document='answer_key'] .printing-answer-key-content pre {
 
 .printing-question .printing-selection-option {
   align-items: flex-start !important;
-  border-bottom: 0.5pt solid #ddd;
   display: flex !important;
   gap: 0.1in !important;
   margin: 0 !important;
@@ -400,8 +399,9 @@ html[data-print-document='answer_key'] .printing-answer-key-content pre {
   width: 100%;
 }
 
-.printing-question .printing-selection-option:last-of-type {
-  border-bottom: 0;
+/* Paged.js rewrites :last-of-type with lower specificity, changing measured border heights. */
+.printing-question .printing-selection-option + .printing-selection-option {
+  border-top: 0.5pt solid #ddd;
 }
 
 .printing-question .printing-selection-option .form-check-label {

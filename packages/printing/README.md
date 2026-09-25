@@ -77,6 +77,9 @@ instructions) to headings, paragraphs, and flat lists for the cover.
 `renderPdf` accepts `pageCode: { encodePage(pageNumber) }`. After pagination, it generates a QR
 code for each physical page, including the cover, using the caller's versioned payload. The
 template must reserve a bottom-left margin box and enough space for the code and its quiet zone.
+Browser previews use `addPreviewPageCodes` from `@prairielearn/printing/page-code` to display the
+same codes before reporting that the document is ready. Each preview has its own timestamp and
+export UUID; PDF exports replace those codes with their final export identity.
 The PrairieLearn template reserves 0.7 inches below the content for a 0.35-inch vector code,
 including its four-module quiet zone. This is about 10% of the original 1.1-inch code's area.
 The coverage exam's codes decode from 300 and 600 DPI PDF rasterizations, but not at 150 DPI.
@@ -106,6 +109,13 @@ Name field. Identity labels are trimmed and may contain up to 40 characters.
 `form_label=A` through `form_label=Z` gives an assessment instance a short label on its cover and
 footers. Omitting it preserves the assessment instance's existing numeric Form ID label.
 
+The print preparation page can combine multiple assessment instances and uploaded PDF cover
+pages into a booklet PDF. Each student copy contains the standard cover (including any continuation
+pages), the uploaded PDFs in order, and that instance's questions. Copies cycle through the selected
+forms. After all student copies, the booklet appends one answer key per selected form, in form order,
+even when there are fewer student copies than selected forms. Uploaded covers are included only in
+the student copies. Generated page numbers and identification codes continue to identify pages within the original
+form; uploaded pages retain their own appearance and have no generated identification codes.
 Automatic blocks are measured at the final printable width after asynchronous question content,
 MathJax, fonts, and images have settled, then packed in question order. Explicit blocks reserve an
 exact fraction of the printable content height, including the question's internal spacing. If a

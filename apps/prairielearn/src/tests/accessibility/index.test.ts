@@ -14,6 +14,7 @@ import { dangerousFullSystemAuthz } from '../../lib/authz-data-lib.js';
 import { config } from '../../lib/config.js';
 import { features } from '../../lib/features/index.js';
 import { TEST_COURSE_PATH } from '../../lib/paths.js';
+import { selectAssessmentByTid } from '../../models/assessment.js';
 import { selectCourseInstanceById } from '../../models/course-instances.js';
 import { ensureUncheckedEnrollment } from '../../models/enrollment.js';
 import * as server from '../../server.js';
@@ -438,6 +439,7 @@ function shouldSkipPath(path: string) {
 describe('accessibility', () => {
   let endpoints: Endpoint[] = [];
   let routeParams: Record<string, any> = {};
+  let printAssessmentId: string;
 
   beforeAll(async function () {
     config.cronActive = false;
@@ -455,6 +457,11 @@ describe('accessibility', () => {
       { tid: 'hw1-automaticTestSuite' },
       IdSchema,
     );
+    const printAssessment = await selectAssessmentByTid({
+      course_instance_id: STATIC_ROUTE_PARAMS.course_instance_id,
+      tid: 'exam20-assessmentTools',
+    });
+    printAssessmentId = printAssessment.id;
 
     const question_id = await sqldb.queryScalar(
       'SELECT id FROM questions WHERE qid = $qid',
@@ -533,13 +540,19 @@ describe('accessibility', () => {
         continue;
       }
 
-      const missingParams = getMissingRouteParams(endpoint.path, routeParams);
+      // Print preparation requires an Exam rather than the default Homework assessment.
+      const params =
+        endpoint.path ===
+        '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/print_preparation'
+          ? { ...routeParams, assessment_id: printAssessmentId }
+          : routeParams;
+      const missingParams = getMissingRouteParams(endpoint.path, params);
       if (missingParams.length > 0) {
         missingParamsEndpoints.push(endpoint);
         continue;
       }
 
-      const url = substituteParams(endpoint.path, routeParams);
+      const url = substituteParams(endpoint.path, params);
       const messages = await checkPage(url, endpoint.path);
       if (messages !== '') {
         failingEndpoints.push([endpoint, messages]);

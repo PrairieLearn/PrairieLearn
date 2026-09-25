@@ -1,3 +1,5 @@
+import { randomUUID } from 'node:crypto';
+
 import { html, unsafeHtml } from '@prairielearn/html';
 import type { PaperSize } from '@prairielearn/printing';
 
@@ -8,6 +10,7 @@ import {
   compiledStylesheetTag,
   nodeModulesAssetPath,
 } from '../../lib/assets.js';
+import { encodePrintPageIdentity } from '../../lib/client/print-page-code.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
 
 import {
@@ -47,6 +50,21 @@ export function InstructorAssessmentInstancePrint({
 }) {
   const isAnswerKey = document === 'answer_key';
   const documentLabel = isAnswerKey ? 'Answer key' : 'Exam';
+  const pageIdentity = encodePrintPageIdentity({
+    courseId: resLocals.course.id,
+    assessmentId: resLocals.assessment.id,
+    assessmentInstanceId: resLocals.assessment_instance.id,
+    pageNumber: 1,
+    generatedBy: {
+      userId: resLocals.authn_user.id,
+      uid: resLocals.authn_user.uid,
+      name: resLocals.authn_user.name,
+    },
+    generatedAt: new Date().toISOString(),
+    document,
+    format: 'pdf',
+    exportId: randomUUID(),
+  });
   const footerLabel = getPrintFooterLabel({
     document,
     formId: resLocals.assessment_instance.id,
@@ -59,6 +77,7 @@ export function InstructorAssessmentInstancePrint({
       data-print-document="${document}"
       data-print-form-label="${formLabel ?? ''}"
       data-print-paper-size="${paperSize}"
+      data-print-page-identity="${pageIdentity}"
       data-print-status="loading"
       data-print-question-count="${questionHtmls.length}"
       data-print-omitted-question-count="${omittedQuestionCount}"
@@ -187,14 +206,16 @@ export function InstructorAssessmentInstancePrint({
           assigning their globals, which both breaks the elements that expect the global and
           leaves RequireJS unable to resolve the legacy client modules.
         -->
-        ${hasLegacyQuestions
-          ? html`
-              <script src="${nodeModulesAssetPath('lodash/lodash.min.js')}"></script>
-              <script src="${assetPath('javascripts/require.js')}"></script>
-              <script src="${assetPath('localscripts/question.js')}"></script>
-              <script src="${assetPath('localscripts/questionCalculation.js')}"></script>
-            `
-          : ''}
+        ${
+          hasLegacyQuestions
+            ? html`
+                <script src="${nodeModulesAssetPath('lodash/lodash.min.js')}"></script>
+                <script src="${assetPath('javascripts/require.js')}"></script>
+                <script src="${assetPath('localscripts/question.js')}"></script>
+                <script src="${assetPath('localscripts/questionCalculation.js')}"></script>
+              `
+            : ''
+        }
         ${compiledStylesheetTag('examPrinting.css')}
         <style>
           @page {
@@ -234,28 +255,34 @@ export function InstructorAssessmentInstancePrint({
                 ${resLocals.course.title ?? resLocals.course_instance.long_name ?? ''}
               </div>
               <h1>${resLocals.assessment_label}</h1>
-              ${resLocals.assessment.title
-                ? html`<div class="exam-cover-title">${resLocals.assessment.title}</div>`
-                : ''}
+              ${
+                resLocals.assessment.title
+                  ? html`<div class="exam-cover-title">${resLocals.assessment.title}</div>`
+                  : ''
+              }
               ${isAnswerKey ? html`<div class="exam-cover-document-label">Answer key</div>` : ''}
             </header>
 
-            ${isAnswerKey
-              ? ''
-              : html`
-                  <div class="exam-cover-fields">
-                    ${getPrintCoverFields({
-                      identityFields,
-                      teamWork: resLocals.assessment.team_work,
-                    }).map(
-                      (field) => html`
-                        <div class="exam-cover-field${field.wide ? ' exam-cover-field-wide' : ''}">
-                          <span>${field.label}</span>
-                        </div>
-                      `,
-                    )}
-                  </div>
-                `}
+            ${
+              isAnswerKey
+                ? ''
+                : html`
+                    <div class="exam-cover-fields">
+                      ${getPrintCoverFields({
+                        identityFields,
+                        teamWork: resLocals.assessment.team_work,
+                      }).map(
+                        (field) => html`
+                          <div
+                            class="exam-cover-field${field.wide ? ' exam-cover-field-wide' : ''}"
+                          >
+                            <span>${field.label}</span>
+                          </div>
+                        `,
+                      )}
+                    </div>
+                  `
+            }
 
             <dl class="exam-cover-summary">
               <div>
@@ -276,33 +303,43 @@ export function InstructorAssessmentInstancePrint({
               <h2 id="exam-instructions-heading">
                 ${isAnswerKey ? 'About this answer key' : 'Instructions'}
               </h2>
-              ${isAnswerKey
-                ? html`<p>${answerKeyDescription(resLocals.assessment_instance.id, formLabel)}</p>`
-                : html`<ol>
-                    ${DEFAULT_EXAM_INSTRUCTIONS.map((instruction) => html`<li>${instruction}</li>`)}
-                  </ol>`}
-              ${assessmentTextHtml
-                ? html`<div class="exam-cover-custom-instructions">
-                    ${unsafeHtml(assessmentTextHtml)}
-                  </div>`
-                : ''}
+              ${
+                isAnswerKey
+                  ? html`<p>
+                      ${answerKeyDescription(resLocals.assessment_instance.id, formLabel)}
+                    </p>`
+                  : html`<ol>
+                      ${DEFAULT_EXAM_INSTRUCTIONS.map((instruction) => html`<li>${instruction}</li>`)}
+                    </ol>`
+              }
+              ${
+                assessmentTextHtml
+                  ? html`<div class="exam-cover-custom-instructions">
+                      ${unsafeHtml(assessmentTextHtml)}
+                    </div>`
+                  : ''
+              }
             </section>
 
-            ${!isAnswerKey && resLocals.assessment.require_honor_code
-              ? html`
-                  <section class="exam-cover-honor-code" aria-labelledby="honor-code-heading">
-                    <h2 id="honor-code-heading">Academic integrity pledge</h2>
-                    ${honorCodeHtml
-                      ? unsafeHtml(honorCodeHtml)
-                      : html`<ul>
-                          ${getDefaultHonorCodePledge(resLocals.assessment.team_work).map(
-                            (item) => html`<li>${item}</li>`,
-                          )}
-                        </ul>`}
-                    <div class="exam-cover-signature"><span>Signature</span></div>
-                  </section>
-                `
-              : ''}
+            ${
+              !isAnswerKey && resLocals.assessment.require_honor_code
+                ? html`
+                    <section class="exam-cover-honor-code" aria-labelledby="honor-code-heading">
+                      <h2 id="honor-code-heading">Academic integrity pledge</h2>
+                      ${
+                        honorCodeHtml
+                          ? unsafeHtml(honorCodeHtml)
+                          : html`<ul>
+                              ${getDefaultHonorCodePledge(resLocals.assessment.team_work).map(
+                                (item) => html`<li>${item}</li>`,
+                              )}
+                            </ul>`
+                      }
+                      <div class="exam-cover-signature"><span>Signature</span></div>
+                    </section>
+                  `
+                : ''
+            }
 
             <footer>
               ${resLocals.course_instance.long_name ?? resLocals.course_instance.short_name}
@@ -317,11 +354,13 @@ export function InstructorAssessmentInstancePrint({
           </article>
 
           <div class="exam-questions">
-            ${questionHtmls.length > 0
-              ? questionHtmls.map((questionHtml) => unsafeHtml(questionHtml))
-              : html`<section class="printing-question printing-question-empty">
-                  This exam contains no questions.
-                </section>`}
+            ${
+              questionHtmls.length > 0
+                ? questionHtmls.map((questionHtml) => unsafeHtml(questionHtml))
+                : html`<section class="printing-question printing-question-empty">
+                    This exam contains no questions.
+                  </section>`
+            }
           </div>
         </div>
         <main id="exam-print-pages"></main>
