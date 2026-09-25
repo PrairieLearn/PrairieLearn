@@ -23,7 +23,7 @@ import {
   updateCourseCommitHash,
 } from '../models/course.js';
 import { selectQuestionsForCourseInstanceCopy } from '../models/question.js';
-import { type AssessmentJsonInput } from '../schemas/infoAssessment.js';
+import { type AssessmentJsonInput, type CalculatorType } from '../schemas/infoAssessment.js';
 import * as courseDB from '../sync/course-db.js';
 import * as syncFromDisk from '../sync/syncFromDisk.js';
 
@@ -2694,7 +2694,12 @@ export class MultiEditor extends Editor {
   }
 }
 
-export type AssessmentToolsConfig = { name: string; label: string; enabled: boolean }[];
+export type AssessmentToolsConfig = {
+  name: string;
+  label: string;
+  enabled: boolean;
+  type?: CalculatorType;
+}[];
 
 /** A single question to import, with all file contents as serialized data. */
 export interface QtiImportQuestionData {
