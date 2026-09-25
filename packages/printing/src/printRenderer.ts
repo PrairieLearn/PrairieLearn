@@ -1,6 +1,7 @@
 import { type Browser, type BrowserContext, chromium } from 'playwright';
 
 import { type DocxOutputOptions, createDocxOutput } from './docxOutput.js';
+import type { PageCodeOptions } from './pageCode.js';
 import { createPdfOutput } from './pdfOutput.js';
 import type { PrintablePageOutput } from './printablePageOutput.js';
 
@@ -113,7 +114,7 @@ export interface RenderPageOptions {
   timeoutMs?: number;
 }
 
-export type RenderPdfOptions = RenderPageOptions;
+export type RenderPdfOptions = RenderPageOptions & { pageCode?: PageCodeOptions };
 export type RenderDocxOptions = RenderPageOptions & DocxOutputOptions;
 
 /**
@@ -144,7 +145,7 @@ export class PrintRenderer {
   }
 
   renderPdf(options: RenderPdfOptions): Promise<Buffer> {
-    return this.render(options, createPdfOutput());
+    return this.render(options, createPdfOutput(options.pageCode));
   }
 
   renderDocx({ cover, footerLabel, ...options }: RenderDocxOptions): Promise<Buffer> {
