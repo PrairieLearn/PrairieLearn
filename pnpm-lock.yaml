@@ -621,8 +621,8 @@ importers:
         specifier: workspace:^
         version: link:../../packages/signed-token
       '@prairielearn/sketchresponse':
-        specifier: ^0.1.4
-        version: 0.1.4(stylelint@16.26.1(@typescript/typescript6@6.0.2)(supports-color@7.2.0))
+        specifier: ^0.2.1
+        version: 0.2.1(stylelint@16.26.1(@typescript/typescript6@6.0.2)(supports-color@7.2.0))
       '@prairielearn/tree-sitter-htmlmustache':
         specifier: ^1.4.3
         version: 1.4.3(node-gyp-build@4.8.4)(prettier@3.9.7)
@@ -4831,8 +4831,8 @@ packages:
   '@prairielearn/excalidraw-builds@1.0.0':
     resolution: {integrity: sha512-/4KoKjF0Fbmvy2VsDXdoagP+IFViHHQXfSbRejGdIVIlby3dHJTDetXATMygOqa6IdNo6bFvaX8C6mmsN4X3Xg==}
 
-  '@prairielearn/sketchresponse@0.1.4':
-    resolution: {integrity: sha512-r1Drdji88lmgouB9ergJILFZtPTrnO3Ob2wU16544M1a2MWcqrLOFMUFlKeyRsQSYoKtpeNn9f+XZLHqJKD46A==}
+  '@prairielearn/sketchresponse@0.2.1':
+    resolution: {integrity: sha512-3ZX0Gx6LXkNJQcG7vwF86JNMFJweQVF5Az1Fr3b6sCgV+n9wyCrVZ8hpNJxIk2vqxnFcSeCwnGf2wkEF6w5BlQ==}
 
   '@prairielearn/tree-sitter-htmlmustache@1.4.3':
     resolution: {integrity: sha512-McCgDJUHy+V74YHRlKx4/WuI0SB+vafqYmssYKunzFEXPTnIwQGg9mZ8o7Xumlh0fqJOZiVxr5ia2C0vvpZaew==}
@@ -6747,9 +6747,6 @@ packages:
 
   cjs-module-lexer@2.2.0:
     resolution: {integrity: sha512-4bHTS2YuzUvtoLjdy+98ykbNB5jS0+07EvFNXerqZQJ89F7DI6ET7OQo/HJuW6K0aVsKA9hj9/RVb2kQVOrPDQ==}
-
-  classnames@2.5.1:
-    resolution: {integrity: sha512-saHYOzhIQs6wy2sVxTM6bUDsQO4F50V9RQ22qBpEdCW+I+/Wmke2HOl6lS6dTpdxVhb88/I6+Hs+438c3lfUow==}
 
   client-only@0.0.1:
     resolution: {integrity: sha512-IV3Ou0jSMzZrd3pZ48nLkT9DA7Ag1pnPzaiQhpW7c3RbcqqzvzzVu+L8gfqMp/8IM2MQtSiqaCxrrcfu8I8rMA==}
@@ -13041,15 +13038,13 @@ snapshots:
 
   '@prairielearn/excalidraw-builds@1.0.0': {}
 
-  '@prairielearn/sketchresponse@0.1.4(stylelint@16.26.1(@typescript/typescript6@6.0.2)(supports-color@7.2.0))':
+  '@prairielearn/sketchresponse@0.2.1(stylelint@16.26.1(@typescript/typescript6@6.0.2)(supports-color@7.2.0))':
     dependencies:
       buffer: 6.0.3
-      classnames: 2.5.1
       deep-extend: 0.6.0
       fastclick: 1.0.6
       jsondiffpatch: 0.7.6
       katex: 0.16.47
-      lodash: 4.18.1
       normalize.css: 8.0.1
       pepjs: 0.5.3
       sass: 1.102.0
@@ -14910,8 +14905,6 @@ snapshots:
   ci-info@4.4.0: {}
 
   cjs-module-lexer@2.2.0: {}
-
-  classnames@2.5.1: {}
 
   client-only@0.0.1: {}
 

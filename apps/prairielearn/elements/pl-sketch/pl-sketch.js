@@ -7,16 +7,6 @@ window.SketchInput = function (id, overlay_solution = false) {
       config,
     );
 
-    if (config.readonly) {
-      si.messageBus.on('ready', function () {
-        const container = document.getElementById(id + '-si-container');
-        const canvas = document.getElementById(id + '-si-canvas');
-        // Preserve the coordinate system used by saved drawings while scaling their display.
-        canvas.setAttribute('viewBox', `0 0 ${config.width} ${config.height}`);
-        container.classList.add('pl-sketch-readonly');
-      });
-    }
-
     // Inject overlay toggle button into si-container if it is enabled
     if (overlay_solution) {
       si.messageBus.on('ready', function (_) {
