@@ -33,7 +33,7 @@ The timestamps for each individual phase of the grading process are recorded and
 
 External grading configuration is done on a per-question basis. The question needs to be set to use the 'External' grading method. All configuration may be done using the question settings page, or via the `externalGradingOptions` object in a question's `info.json`. A minimal configuration for an externally-graded question includes the following option:
 
-- `image`: The public Docker image that should be used for the question. Images hosted outside Docker Hub must include the registry hostname, e.g., `ghcr.io/org/image:tag`. This property is required when external grading is enabled.
+- `image`: The public Docker image that should be used for the question. For Docker Hub, use `org/image:tag`. Images hosted outside Docker Hub must include the registry hostname, e.g., `ghcr.io/org/image:tag`. This property is required when external grading is enabled.
 
 Additional options are available for further customization:
 
