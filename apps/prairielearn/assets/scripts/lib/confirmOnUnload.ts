@@ -24,7 +24,7 @@ function skippedFieldsFromForm(form: HTMLFormElement): Set<string> {
   ]);
 }
 
-function getQuestionFormData(form: HTMLFormElement): string {
+export function getQuestionFormData(form: HTMLFormElement): string {
   // Cast FormData since TS does not support this parameter,
   // see https://github.com/microsoft/TypeScript/issues/30584
   const formData = new URLSearchParams(new FormData(form) as any);

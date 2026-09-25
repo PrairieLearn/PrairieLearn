@@ -14,6 +14,7 @@ import type { GradingJobStatus } from '../../src/models/grading-job.js';
 import { confirmOnUnload } from './lib/confirmOnUnload.js';
 import { copyContentModal } from './lib/copyContent.js';
 import { setupCountdown } from './lib/countdown.js';
+import { saveSubmissionDrafts } from './lib/submissionDrafts.js';
 import './behaviors/bootstrap-compat.js';
 
 // We use `selector-observer` throughout this file to handle the case of
@@ -66,8 +67,15 @@ onDocumentReady(() => {
   observe('.question-container form.question-form', {
     constructor: HTMLFormElement,
     initialize(form) {
-      const cleanup = confirmOnUnload(form);
-      return { remove: () => cleanup() };
+      const cleanupConfirmOnUnload = confirmOnUnload(form);
+      const cleanupSubmissionDrafts =
+        'submissionDrafts' in form.dataset ? saveSubmissionDrafts(form) : null;
+      return {
+        remove: () => {
+          cleanupConfirmOnUnload();
+          cleanupSubmissionDrafts?.();
+        },
+      };
     },
   });
 

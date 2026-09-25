@@ -45,6 +45,7 @@ export function QuestionContainer({
   renderSubmissionSearchParams,
   questionCopyTargets = null,
   aiGradingInfo,
+  enableSubmissionDrafts = false,
 }: {
   resLocals: UntypedResLocals;
   questionContext: QuestionContext;
@@ -55,6 +56,8 @@ export function QuestionContainer({
   renderSubmissionSearchParams?: URLSearchParams;
   questionCopyTargets?: CopyTarget[] | null;
   aiGradingInfo?: InstanceQuestionAIGradingInfo;
+  /** Whether the student's unsaved answers should be periodically saved as a draft. */
+  enableSubmissionDrafts?: boolean;
 }) {
   const {
     question,
@@ -91,7 +94,13 @@ export function QuestionContainer({
       ${
         question.type === 'Freeform'
           ? html`
-              <form class="question-form" name="question-form" method="POST" autocomplete="off">
+              <form
+                class="question-form"
+                name="question-form"
+                method="POST"
+                autocomplete="off"
+                ${enableSubmissionDrafts ? 'data-submission-drafts' : ''}
+              >
                 ${QuestionPanel({
                   resLocals,
                   questionContext,

@@ -1,4 +1,5 @@
 import { EncodedData } from '@prairielearn/browser-utils';
+import { formatDateFriendly } from '@prairielearn/formatter';
 import { html, unsafeHtml } from '@prairielearn/html';
 
 import {
@@ -19,7 +20,7 @@ import { QuestionNavSideGroup } from '../../components/QuestionNavigation.js';
 import { QuestionScorePanel } from '../../components/QuestionScore.js';
 import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
 import { type CopyTarget } from '../../lib/copy-content.js';
-import type { AssessmentTool, User } from '../../lib/db-types.js';
+import type { AssessmentTool, SubmissionDraft, User } from '../../lib/db-types.js';
 import { getRoleNamesForUser } from '../../lib/groups.shared.js';
 import type { ResLocalsInstanceQuestionRender } from '../../lib/question-render.types.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
@@ -32,6 +33,8 @@ export function StudentInstanceQuestion({
   lastGrader,
   questionCopyTargets,
   enabledTools = [],
+  submissionDraftsEnabled = false,
+  submissionDraft = null,
 }: {
   resLocals: ResLocalsForPage<'instance-question'>;
   renderState: ResLocalsInstanceQuestionRender | null;
@@ -40,6 +43,8 @@ export function StudentInstanceQuestion({
   lastGrader?: User | null;
   questionCopyTargets?: CopyTarget[] | null;
   enabledTools?: AssessmentTool[];
+  submissionDraftsEnabled?: boolean;
+  submissionDraft?: SubmissionDraft | null;
 }) {
   const questionContext =
     resLocals.assessment.type === 'Exam' ? 'student_exam' : 'student_homework';
@@ -147,12 +152,24 @@ export function StudentInstanceQuestion({
                     </div>
                   </div>
                 `
-              : QuestionContainer({
-                  resLocals,
-                  questionContext,
-                  questionCopyTargets,
-                  showFooter: resLocals.assessment_instance.open,
-                })
+              : html`
+                  ${
+                    submissionDraft
+                      ? SubmissionDraftAlert({
+                          submissionDraft,
+                          timezone: resLocals.course_instance.display_timezone,
+                          csrfToken: resLocals.__csrf_token,
+                        })
+                      : ''
+                  }
+                  ${QuestionContainer({
+                    resLocals,
+                    questionContext,
+                    questionCopyTargets,
+                    showFooter: resLocals.assessment_instance.open,
+                    enableSubmissionDrafts: submissionDraftsEnabled,
+                  })}
+                `
           }
         </div>
 
@@ -272,4 +289,39 @@ export function StudentInstanceQuestion({
       </div>
     `,
   });
+}
+
+function SubmissionDraftAlert({
+  submissionDraft,
+  timezone,
+  csrfToken,
+}: {
+  submissionDraft: SubmissionDraft;
+  timezone: string;
+  csrfToken: string;
+}) {
+  return html`
+    <div class="alert alert-info d-flex flex-wrap align-items-center gap-2">
+      <div class="me-auto">
+        You have an unsaved draft of this question from
+        ${formatDateFriendly(submissionDraft.updated_at, timezone)}. Restoring it will save it as
+        your answer.
+      </div>
+      <form method="POST" class="d-flex gap-2">
+        <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+        <input type="hidden" name="__variant_id" value="${submissionDraft.variant_id}" />
+        <button type="submit" name="__action" value="restore_draft" class="btn btn-sm btn-primary">
+          Restore draft
+        </button>
+        <button
+          type="submit"
+          name="__action"
+          value="discard_draft"
+          class="btn btn-sm btn-outline-secondary"
+        >
+          Discard draft
+        </button>
+      </form>
+    </div>
+  `;
 }

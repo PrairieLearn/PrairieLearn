@@ -16,13 +16,18 @@ import { getQuestionGroupPermissions } from '../../lib/groups.js';
 import { idsEqual } from '../../lib/id.js';
 import { reportIssueFromForm } from '../../lib/issues.js';
 import { getAndRenderVariant, renderPanelsForSubmission } from '../../lib/question-render.js';
-import { processSubmission } from '../../lib/question-submission.js';
+import { getFreeformSubmittedAnswer, processSubmission } from '../../lib/question-submission.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { getCanonicalHost } from '../../lib/url.js';
 import clientFingerprint from '../../middlewares/clientFingerprint.js';
 import { enterpriseOnly } from '../../middlewares/enterpriseOnly.js';
 import { logPageView } from '../../middlewares/logPageView.js';
 import { selectEnabledToolsForInstanceQuestion } from '../../models/assessment.js';
+import {
+  deleteSubmissionDraft,
+  selectOptionalSubmissionDraft,
+  upsertSubmissionDraft,
+} from '../../models/submission-draft.js';
 import { selectUserById } from '../../models/user.js';
 import { selectAndAuthzVariant, selectVariantsByInstanceQuestion } from '../../models/variant.js';
 
@@ -171,7 +176,18 @@ async function processDeleteFile(req: Request, res: Response) {
   return variant.id;
 }
 
-async function validateAndProcessSubmission(req: Request, res: Response) {
+/**
+ * Checks that the student may currently save an answer to this question. Drafts
+ * are subject to the same checks so that a student can only restore a draft
+ * that they could have saved directly.
+ */
+function assertCanSaveSubmission(res: Response) {
+  if (res.locals.assessment.type === 'Exam' && res.locals.authz_result.time_limit_expired) {
+    throw new HttpStatusError(
+      403,
+      'Time limit is expired, please go back and finish your assessment',
+    );
+  }
   if (!res.locals.assessment_instance.open) {
     throw new HttpStatusError(400, 'assessment_instance is closed');
   }
@@ -190,7 +206,28 @@ async function validateAndProcessSubmission(req: Request, res: Response) {
       'Your current group role does not give you permission to submit to this question.',
     );
   }
+}
+
+async function validateAndProcessSubmission(req: Request, res: Response) {
+  assertCanSaveSubmission(res);
   return await processSubmission(req, res, { studentSubmission: true });
+}
+
+async function selectAndAuthzDraftVariant(req: Request, res: Response) {
+  if (res.locals.question.type !== 'Freeform') {
+    throw new HttpStatusError(400, 'Drafts are only supported for Freeform questions');
+  }
+  return await selectAndAuthzVariant({
+    unsafe_variant_id: req.body.__variant_id,
+    variant_course: res.locals.course,
+    question_id: res.locals.question.id,
+    course_instance_id: res.locals.course_instance.id,
+    instance_question_id: res.locals.instance_question.id,
+    authz_data: res.locals.authz_data,
+    authn_user: res.locals.authn_user,
+    user: res.locals.user,
+    is_administrator: res.locals.is_administrator,
+  });
 }
 
 router.post(
@@ -200,22 +237,7 @@ router.post(
       throw new HttpStatusError(403, 'Not authorized');
     }
 
-    if (req.body.__action === 'grade' || req.body.__action === 'save') {
-      if (res.locals.assessment.type === 'Exam') {
-        if (res.locals.authz_result.time_limit_expired) {
-          throw new HttpStatusError(
-            403,
-            'Time limit is expired, please go back and finish your assessment',
-          );
-        }
-        if (
-          req.body.__action === 'grade' &&
-          !res.locals.assessment_question.allow_real_time_grading
-        ) {
-          throw new HttpStatusError(403, 'Real-time grading is not allowed for this question');
-        }
-      }
-      const variant_id = await validateAndProcessSubmission(req, res);
+    const redirectAfterSubmission = (variant_id: string) => {
       if (res.locals.assessment.type === 'Exam') {
         res.redirect(req.originalUrl);
       } else {
@@ -223,6 +245,55 @@ router.post(
           `${res.locals.urlPrefix}/instance_question/${res.locals.instance_question.id}/?variant_id=${variant_id}`,
         );
       }
+    };
+
+    if (req.body.__action === 'grade' || req.body.__action === 'save') {
+      if (
+        res.locals.assessment.type === 'Exam' &&
+        req.body.__action === 'grade' &&
+        !res.locals.assessment_question.allow_real_time_grading
+      ) {
+        throw new HttpStatusError(403, 'Real-time grading is not allowed for this question');
+      }
+      const variant_id = await validateAndProcessSubmission(req, res);
+      redirectAfterSubmission(variant_id);
+    } else if (req.body.__action === 'save_draft') {
+      assertCanSaveSubmission(res);
+      const variant = await selectAndAuthzDraftVariant(req, res);
+      if (!variant.open || variant.broken_at) {
+        throw new HttpStatusError(403, 'This variant is not accepting submissions');
+      }
+      // Drafts are stored unparsed. They are only parsed if the student
+      // restores them, which saves them as a real submission.
+      await upsertSubmissionDraft({
+        variant_id: variant.id,
+        user_id: res.locals.user.id,
+        raw_submitted_answer: getFreeformSubmittedAnswer(req.body),
+      });
+      res.sendStatus(204);
+    } else if (req.body.__action === 'restore_draft') {
+      const variant = await selectAndAuthzDraftVariant(req, res);
+      const draft = await selectOptionalSubmissionDraft({
+        variant_id: variant.id,
+        user_id: res.locals.user.id,
+      });
+      // The draft may have been cleared since the page was loaded, e.g. by a
+      // save in another tab or by a group member. There's nothing to restore,
+      // so we show the question's current state.
+      if (draft == null) {
+        redirectAfterSubmission(variant.id);
+        return;
+      }
+      // `processSubmission` reads the answer from the request body, so we
+      // replay the draft as though the student had clicked "Save". Saving
+      // clears the draft.
+      req.body = { ...draft.raw_submitted_answer, __action: 'save', __variant_id: variant.id };
+      const variant_id = await validateAndProcessSubmission(req, res);
+      redirectAfterSubmission(variant_id);
+    } else if (req.body.__action === 'discard_draft') {
+      const variant = await selectAndAuthzDraftVariant(req, res);
+      await deleteSubmissionDraft({ variant_id: variant.id, user_id: res.locals.user.id });
+      redirectAfterSubmission(variant.id);
     } else if (req.body.__action === 'timeLimitFinish') {
       if (res.locals.assessment.type !== 'Exam') {
         throw new HttpStatusError(400, 'Only exams have a time limit');
@@ -355,6 +426,20 @@ router.get(
 
     const renderState = await getAndRenderVariant(variant_id, null, res.locals);
 
+    // Drafts are only useful when the student could save the answer that the
+    // draft would later restore.
+    const submissionDraftsEnabled =
+      res.locals.question.type === 'Freeform' &&
+      res.locals.authz_result.authorized_edit &&
+      renderState.showSaveButton &&
+      !renderState.disableSaveButton;
+    const submissionDraft = submissionDraftsEnabled
+      ? await selectOptionalSubmissionDraft({
+          variant_id: renderState.variant.id,
+          user_id: res.locals.user.id,
+        })
+      : null;
+
     await logPageView('studentInstanceQuestion', req, res);
     const questionCopyTargets = await getQuestionCopyTargets({
       course: res.locals.course,
@@ -407,6 +492,8 @@ router.get(
         lastGrader,
         questionCopyTargets,
         enabledTools,
+        submissionDraftsEnabled,
+        submissionDraft,
       }),
     );
   }),

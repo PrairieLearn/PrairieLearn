@@ -7,6 +7,14 @@ import { selectAndAuthzVariant } from '../models/variant.js';
 
 import { saveAndGradeSubmission, saveSubmission } from './grading.js';
 
+/**
+ * Extracts a Freeform question's submitted answer from a question form's
+ * fields, which is everything except the form's own control fields.
+ */
+export function getFreeformSubmittedAnswer(body: Record<string, any>): Record<string, any> {
+  return omit(body, ['__action', '__csrf_token', '__variant_id']);
+}
+
 export async function processSubmission(
   req: Request,
   res: Response,
@@ -20,7 +28,7 @@ export async function processSubmission(
   let variant_id: string, submitted_answer: Record<string, any>;
   if (res.locals.question.type === 'Freeform') {
     variant_id = req.body.__variant_id;
-    submitted_answer = omit(req.body, ['__action', '__csrf_token', '__variant_id']);
+    submitted_answer = getFreeformSubmittedAnswer(req.body);
   } else {
     if (!req.body.postData) {
       throw new HttpStatusError(400, 'No postData');

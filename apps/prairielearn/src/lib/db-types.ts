@@ -1572,6 +1572,14 @@ export const StudentLabelEnrollmentSchema = z.object({
 });
 export type StudentLabelEnrollment = z.infer<typeof StudentLabelEnrollmentSchema>;
 
+export const SubmissionDraftSchema = z.object({
+  raw_submitted_answer: z.record(z.string(), z.any()),
+  updated_at: DateFromISOString,
+  user_id: IdSchema,
+  variant_id: IdSchema,
+});
+export type SubmissionDraft = z.infer<typeof SubmissionDraftSchema>;
+
 export const SubmissionSchema = z.object({
   auth_user_id: IdSchema.nullable(),
   broken: z.boolean().nullable(),
@@ -1869,6 +1877,7 @@ export const TableNames = [
   'stripe_checkout_sessions',
   'student_label_enrollments',
   'student_labels',
+  'submission_drafts',
   'submissions',
   'tags',
   'time_series',
