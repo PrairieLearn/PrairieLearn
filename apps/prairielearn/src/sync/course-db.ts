@@ -201,6 +201,18 @@ export interface CourseData {
   courseInstances: Record<string, CourseInstanceData>;
 }
 
+export async function isSharingEnabledForCourse({
+  course_id,
+}: {
+  course_id: string;
+}): Promise<boolean> {
+  const institution = await selectInstitutionForCourse({ course_id });
+  return await features.enabled('question-sharing', {
+    institution_id: institution.id,
+    course_id,
+  });
+}
+
 /**
  * Loads and validates an entire course from a directory on disk.
  * Downstream callers of this function can use
@@ -214,11 +226,7 @@ export async function loadFullCourse(
     // If the course ID is null, the feature can't possibly be enabled.
     if (courseId == null) return false;
 
-    const institution = await selectInstitutionForCourse({ course_id: courseId });
-    return await features.enabled('question-sharing', {
-      institution_id: institution.id,
-      course_id: courseId,
-    });
+    return await isSharingEnabledForCourse({ course_id: courseId });
   });
 
   const questions = await loadQuestions({ coursePath, sharingEnabled });
@@ -703,7 +711,7 @@ async function loadCourseInfo({
   return loadedData;
 }
 
-async function loadAndValidateJson<T extends ZodType>({
+export async function loadAndValidateJson<T extends ZodType>({
   coursePath,
   filePath,
   schema,
@@ -1044,7 +1052,7 @@ function isValidORCID(orcid: string): boolean {
   return digits[15] === checkDigit;
 }
 
-function validateQuestion({
+export function validateQuestion({
   question,
   sharingEnabled,
 }: {
