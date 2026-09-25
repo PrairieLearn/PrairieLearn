@@ -100,7 +100,11 @@ test('preserves drawing coordinates through submission and readonly scaling', as
   await selectTool(toolbar, 'Point');
   const canvas = sketch.locator('.si-canvas');
   const box = (await canvas.boundingBox())!;
-  await canvas.click({ position: { x: box.width * 0.7, y: box.height * 0.4 } });
+  const relativePosition = { x: 0.7, y: 0.4 };
+  const expectedPoint = { x: 800 * relativePosition.x, y: 450 * relativePosition.y };
+  await canvas.click({
+    position: { x: box.width * relativePosition.x, y: box.height * relativePosition.y },
+  });
 
   const requestPromise = page.waitForRequest(
     (request) =>
@@ -116,8 +120,8 @@ test('preserves drawing coordinates through submission and readonly scaling', as
     data: { point: { x: number; y: number }[] };
   };
   expect(saved.data.point).toHaveLength(1);
-  expect(saved.data.point[0].x).toBeCloseTo(560, 0);
-  expect(saved.data.point[0].y).toBeCloseTo(180, 0);
+  expect(saved.data.point[0].x).toBeCloseTo(expectedPoint.x, 0);
+  expect(saved.data.point[0].y).toBeCloseTo(expectedPoint.y, 0);
 
   const submission = page.getByTestId('submission-with-feedback').first();
   const readonly = submission.locator('.si-container');
@@ -125,6 +129,6 @@ test('preserves drawing coordinates through submission and readonly scaling', as
   await expect(readonly.locator('.si-toolbar')).toBeHidden();
   await resizeSketch(readonly, 300);
   const submittedPoint = readonly.locator('.si-canvas .point:not(.overlay)');
-  expect(Number(await submittedPoint.getAttribute('cx'))).toBeCloseTo(560, 0);
-  expect(Number(await submittedPoint.getAttribute('cy'))).toBeCloseTo(180, 0);
+  expect(Number(await submittedPoint.getAttribute('cx'))).toBeCloseTo(expectedPoint.x, 0);
+  expect(Number(await submittedPoint.getAttribute('cy'))).toBeCloseTo(expectedPoint.y, 0);
 });
