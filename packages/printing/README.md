@@ -49,7 +49,7 @@ The caller owns the paginated HTML page. It must set
 `document.documentElement.dataset.printStatus` to `ready` after Paged.js finishes, or to `error`
 with a `data-print-error` message if pagination fails. The page's CSS `@page` rule is authoritative
 for the physical paper size; `PAPER_SIZES` contains the `Letter` and `A4` values accepted by the
-printing package.
+PrairieLearn endpoint.
 
 For outputs that also need metadata from the paginated page, use `renderer.render(options, output)`
 with a custom `PrintablePageOutput`. Its `produce(page)` callback can inspect the DOM and then call
@@ -95,6 +95,35 @@ Word repagination, and Word's `DISPLAYBARCODE` field is not supported in Word fo
 workflow or an explicitly fixed-page document format is needed before promising physical-page
 identification in Word.
 
+### PrairieLearn endpoint parameters
+
+The PrairieLearn print endpoint accepts layout choices as query parameters. `block_size` sets the
+default for every question to `auto`, `third`, `half`, or `full`; it defaults to `auto` when
+omitted. Repeat `question_block_size=<question-number>:<size>` to override individual questions.
+Repeat `identity_field=<label>` to add up to six fill-in lines to the cover alongside its built-in
+Name field. Identity labels are trimmed and may contain up to 40 characters.
+
+`form_label=A` through `form_label=Z` gives an assessment instance a short label on its cover and
+footers. Omitting it preserves the assessment instance's existing numeric Form ID label.
+
+Automatic blocks are measured at the final printable width after asynchronous question content,
+MathJax, fonts, and images have settled, then packed in question order. Explicit blocks reserve an
+exact fraction of the printable content height, including the question's internal spacing. If a
+question's content is taller than its requested block, pagination fails with an error instead of
+clipping the question.
+
+For example, this gives every question automatic sizing except Questions 2 and 5:
+
+```text
+?paper_size=Letter&question_block_size=2:half&question_block_size=5:full
+```
+
+This sets a half-page default and allows Question 3 to size itself automatically:
+
+```text
+?paper_size=A4&block_size=half&question_block_size=3:auto
+```
+
 ## Combining question fragments
 
 Questions are normally rendered in separate documents, so author- and element-generated IDs can
@@ -138,3 +167,7 @@ Do not use comma-containing functional selectors such as `:is(h2, h3)` on `break
 Answer keys use the question's authored answer panel. Simple questions retain their prompt; compound answer panels render their authored sections once. Answers stay at a readable font size and may use different page counts from the student document. Never hide overflow or shrink a whole answer panel to fit a short response line.
 
 A successful export does not imply that the author supplied solutions. Manual questions and developer fixtures may have no answer panel, or intentionally contain instructions/debug content in every panel. Printed keys preserve that authored behavior; they do not invent solutions.
+
+### Regression coverage
+
+The browser tests exercise the E23 coverage assessment, legacy questions, rendering failures, and all three exports. They verify static symbolic inputs, visible matrix entries, complete sketch coordinate systems, intact subparts, and unscaled answer panels. DOM tests cover the additional dropdown, matching, file, and rich-text transforms.
