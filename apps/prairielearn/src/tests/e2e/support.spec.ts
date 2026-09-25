@@ -69,6 +69,14 @@ for (const access of ['course', 'course instance'] as const) {
         '_blank',
       );
       await expect(dialog.getByText('Thursdays, 3–4 p.m. Central Time.')).toBeVisible();
+      await expect(dialog.getByRole('link', { name: 'View documentation' })).toHaveAttribute(
+        'href',
+        'https://docs.prairielearn.com',
+      );
+      await expect(dialog.getByRole('link', { name: 'Send email' })).toHaveAttribute(
+        'href',
+        'mailto:support@prairielearn.com',
+      );
       if (process.env.CAPTURE_SCREENSHOTS) {
         await page.screenshot({ path: testInfo.outputPath('support-desktop.png') });
       }
@@ -86,7 +94,13 @@ for (const access of ['course', 'course instance'] as const) {
       await expect(dialog).toBeFocused();
       await expect(dialog.getByRole('link', { name: 'Join Slack' })).toBeVisible();
       if (process.env.CAPTURE_SCREENSHOTS) {
-        await page.screenshot({ path: testInfo.outputPath('support-mobile.png') });
+        await page.setViewportSize({ width: 390, height: 1120 });
+        await page.mouse.move(0, 0);
+        await page.screenshot({
+          path: testInfo.outputPath('support-mobile.png'),
+          animations: 'disabled',
+        });
+        await page.setViewportSize({ width: 390, height: 844 });
       }
       await dialog.getByRole('button', { name: 'Close', exact: true }).click();
       await expect(dialog).toBeHidden();
@@ -159,8 +173,8 @@ unconfiguredTest(
     const dialog = page.getByRole('dialog', { name: 'Get help', exact: true });
     await expect(dialog.getByRole('link', { name: 'Join Slack' })).toHaveCount(0);
     await expect(dialog.getByRole('link', { name: 'Join office hours' })).toHaveCount(0);
-    await expect(dialog.getByRole('link', { name: 'documentation' })).toBeVisible();
-    await expect(dialog.getByRole('link', { name: 'support@prairielearn.com' })).toHaveAttribute(
+    await expect(dialog.getByRole('link', { name: 'View documentation' })).toBeVisible();
+    await expect(dialog.getByRole('link', { name: 'Send email' })).toHaveAttribute(
       'href',
       'mailto:support@prairielearn.com',
     );
