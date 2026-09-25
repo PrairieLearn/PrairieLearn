@@ -462,7 +462,7 @@ Access permissions for course staff can be configured on the "Staff" tab. Course
 
 !!! note
 
-    Course content and student data access roles do not affect access to the course's Git repository. To change repository permissions, visit the GitHub access settings page for the course. If you require access to the Git repository, please contact the owner of that repository. If you are an owner and do not have GitHub access, contact us on [Slack](https://prairielearn.slack.com) in `#pl-help`.
+    Course staff permissions and GitHub repository permissions are managed separately. Course Owners can grant themselves Admin access to the course's GitHub repository from the "Course settings" page. If you are not an Owner, ask a course Owner for access. You can find the list of Owners on the "Staff" page.
 
 ### Course content access roles
 

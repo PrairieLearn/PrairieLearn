@@ -278,12 +278,36 @@ async function addUserToRepo(
   username: string,
   permission: 'pull' | 'triage' | 'push' | 'maintain' | 'admin',
 ) {
-  await client.repos.addCollaborator({
+  return await client.repos.addCollaborator({
     owner,
     repo,
     username,
     permission,
   });
+}
+
+/** Grants admin access, or creates an invitation that the user must accept. */
+export async function addGithubRepositoryAdmin(owner: string, repo: string, username: string) {
+  const client = getGithubClient();
+  if (client === null) {
+    throw new Error('GitHub integration is not configured on this server.');
+  }
+
+  const response = await addUserToRepo(client, owner, repo, username, 'admin');
+  // Octokit's type omits the 204 response returned for existing collaborators.
+  if ((response.status as number) === 201) {
+    // An existing invitation may have been issued with a lower permission level.
+    if (response.data.permissions !== 'admin') {
+      await client.repos.updateInvitation({
+        owner,
+        repo,
+        invitation_id: response.data.id,
+        permissions: 'admin',
+      });
+    }
+    return { invited: true };
+  }
+  return { invited: false };
 }
 
 export async function addMachineAccessToRepo(
@@ -404,7 +428,7 @@ export async function createCourseRepoJob(
     if (options.github_user) {
       job.info('Adding instructor to repo');
       try {
-        await addUserToRepo(client, owner, options.repo_short_name, options.github_user, 'admin');
+        await addGithubRepositoryAdmin(owner, options.repo_short_name, options.github_user);
         job.info(
           `Added user ${options.github_user} as administrator of repo ${options.repo_short_name}`,
         );

@@ -1,3 +1,5 @@
+import type { ReactNode } from 'react';
+
 import { type Timezone, formatTimezone } from '@prairielearn/utils/timezone';
 
 import { GitHubButton } from '../../components/GitHubButton.js';
@@ -14,6 +16,7 @@ export function InstructorCourseAdminSettings({
   courseInfoExists,
   coursePathExists,
   csrfToken,
+  githubAccess,
   institution,
   origHash,
   urlPrefix,
@@ -27,6 +30,7 @@ export function InstructorCourseAdminSettings({
   courseInfoExists: boolean;
   coursePathExists: boolean;
   csrfToken: string;
+  githubAccess: ReactNode;
   institution: Institution;
   origHash: string;
   urlPrefix: string;
@@ -190,6 +194,7 @@ export function InstructorCourseAdminSettings({
             />
             <small className="form-text text-muted">The git branch used for this course.</small>
           </div>
+          {githubAccess}
           <div className="form-check mb-3">
             <input
               type="checkbox"
