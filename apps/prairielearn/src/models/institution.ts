@@ -17,20 +17,6 @@ const AdminInstitutionWithSettingsRowSchema = z.object({
 
 const sql = loadSqlEquiv(import.meta.url);
 
-export async function selectIsInstitutionAdministrator({
-  institution_id,
-  user_id,
-}: {
-  institution_id: string;
-  user_id: string;
-}): Promise<boolean> {
-  return await queryScalar(
-    sql.select_is_institution_administrator,
-    { institution_id, user_id },
-    z.boolean(),
-  );
-}
-
 /**
  * The short_name of the catch-all institution used for users who are not
  * associated with a specific institution (e.g., users who sign in with a

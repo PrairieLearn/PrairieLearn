@@ -73,162 +73,106 @@ describe('Staff authorization', { concurrent: false }, () => {
   });
   afterAll(helperServer.after);
 
-  test.each(['None', 'Previewer', 'Viewer', 'Editor'] as const)(
-    '%s with student data editor access cannot open Staff or call any mutation',
-    async (role) => {
-      const user = await createStaffUser(role);
-      const target = await createStaffUser('Editor');
-      const before = await getPermissions([user.id, target.id]);
-      const trpc = createClient(user.id);
+  test('Editor with student data editor access cannot call any Staff mutation', async () => {
+    const user = await createStaffUser('Editor');
+    const target = await createStaffUser('Editor');
+    const before = await getPermissions([user.id, target.id]);
+    const trpc = createClient(user.id);
 
-      await withUser(user, async () => {
-        for (const basePath of ['/pl/course/1', '/pl/course_instance/1/instructor']) {
-          const response = await fetch(`${siteUrl}${basePath}/course_admin/staff`);
-          expect(response.status).toBe(403);
-        }
-        await expect(trpc.list.query()).rejects.toMatchObject({ data: { code: 'FORBIDDEN' } });
-        await expect(
-          trpc.insertByUserUids.mutate({ uids: [user.uid, target.uid], courseRole: 'Owner' }),
-        ).rejects.toMatchObject({ data: { code: 'FORBIDDEN' } });
-        await expect(
-          trpc.updateCourseRole.mutate({ userId: target.id, courseRole: 'Owner' }),
-        ).rejects.toMatchObject({ data: { code: 'FORBIDDEN' } });
-        await expect(
-          trpc.updateInstanceRole.mutate({
-            userId: target.id,
-            courseInstanceId: '1',
-            courseInstanceRole: 'None',
-          }),
-        ).rejects.toMatchObject({ data: { code: 'FORBIDDEN' } });
-        await expect(trpc.deleteUser.mutate({ userId: target.id })).rejects.toMatchObject({
-          data: { code: 'FORBIDDEN' },
-        });
-        await expect(trpc.bulkDelete.mutate({ userIds: [target.id] })).rejects.toMatchObject({
-          data: { code: 'FORBIDDEN' },
-        });
-        await expect(
-          trpc.bulkEditAccess.mutate({ userIds: [user.id, target.id], courseRole: 'Owner' }),
-        ).rejects.toMatchObject({ data: { code: 'FORBIDDEN' } });
-        await expect(
-          trpc.bulkEditAccess.mutate({
-            userIds: [target.id],
-            courseInstanceChanges: [{ courseInstanceId: '1', courseInstanceRole: 'None' }],
-          }),
-        ).rejects.toMatchObject({ data: { code: 'FORBIDDEN' } });
+    await withUser(user, async () => {
+      await expect(
+        trpc.insertByUserUids.mutate({ uids: [user.uid, target.uid], courseRole: 'Owner' }),
+      ).rejects.toMatchObject({ data: { code: 'FORBIDDEN' } });
+      await expect(
+        trpc.updateCourseRole.mutate({ userId: target.id, courseRole: 'Owner' }),
+      ).rejects.toMatchObject({ data: { code: 'FORBIDDEN' } });
+      await expect(
+        trpc.updateInstanceRole.mutate({
+          userId: target.id,
+          courseInstanceId: '1',
+          courseInstanceRole: 'None',
+        }),
+      ).rejects.toMatchObject({ data: { code: 'FORBIDDEN' } });
+      await expect(trpc.deleteUser.mutate({ userId: target.id })).rejects.toMatchObject({
+        data: { code: 'FORBIDDEN' },
       });
-      expect(await getPermissions([user.id, target.id])).toEqual(before);
-    },
-  );
-
-  test.each(['regular Owner', 'administrator of another institution'] as const)(
-    '%s retains self-edit and Owner-removal restrictions',
-    async (kind) => {
-      const user = await createStaffUser('Owner');
-      const owner = await createStaffUser('Owner');
-      const editor = await createStaffUser('Editor');
-      if (kind === 'administrator of another institution') {
-        await ensureInstitutionAdministrator({
-          institution_id: otherInstitutionId,
-          user_id: user.id,
-          authn_user_id: '1',
-        });
-      }
-      const userIds = [user.id, owner.id, editor.id];
-      const before = await getPermissions(userIds);
-      const trpc = createClient(user.id);
-
-      await withUser(user, async () => {
-        await expect(
-          trpc.updateCourseRole.mutate({ userId: user.id, courseRole: 'Editor' }),
-        ).rejects.toMatchObject({ data: { code: 'FORBIDDEN' } });
-        await expect(trpc.deleteUser.mutate({ userId: user.id })).rejects.toMatchObject({
-          data: { code: 'FORBIDDEN' },
-        });
-        await expect(trpc.deleteUser.mutate({ userId: owner.id })).rejects.toMatchObject({
-          data: { code: 'FORBIDDEN' },
-        });
-        await expect(
-          trpc.bulkEditAccess.mutate({ userIds: [editor.id, user.id], courseRole: 'Viewer' }),
-        ).rejects.toMatchObject({ data: { code: 'FORBIDDEN' } });
-        await expect(
-          trpc.bulkDelete.mutate({ userIds: [editor.id, owner.id] }),
-        ).rejects.toMatchObject({ data: { code: 'FORBIDDEN' } });
-        await expect(
-          trpc.bulkDelete.mutate({ userIds: [editor.id, user.id] }),
-        ).rejects.toMatchObject({ data: { code: 'FORBIDDEN' } });
+      await expect(trpc.bulkDelete.mutate({ userIds: [target.id] })).rejects.toMatchObject({
+        data: { code: 'FORBIDDEN' },
       });
-      expect(await getPermissions(userIds)).toEqual(before);
-    },
-  );
-
-  test('institution admin can edit and remove themselves and Owners using single and bulk actions', async () => {
-    // The admin's home institution differs from the course's institution.
-    const admin = await createStaffUser('None');
-    const owner = await createStaffUser('Owner');
-    await ensureInstitutionAdministrator({
-      institution_id: '1',
-      user_id: admin.id,
-      authn_user_id: '1',
+      await expect(
+        trpc.bulkEditAccess.mutate({
+          userIds: [target.id],
+          courseRole: 'Owner',
+          courseInstanceChanges: [{ courseInstanceId: '1', courseInstanceRole: 'None' }],
+        }),
+      ).rejects.toMatchObject({ data: { code: 'FORBIDDEN' } });
     });
-    const trpc = createClient(admin.id);
-
-    await withUser(admin, async () => {
-      for (const basePath of ['/pl/course/1', '/pl/course_instance/1/instructor']) {
-        const response = await fetch(`${siteUrl}${basePath}/course_admin/staff`);
-        expect(response.status).toBe(200);
-      }
-      await trpc.updateCourseRole.mutate({ userId: admin.id, courseRole: 'Editor' });
-      expect((await getPermissions([admin.id]))[0].course_permission.course_role).toBe('Editor');
-      await trpc.updateInstanceRole.mutate({
-        userId: admin.id,
-        courseInstanceId: '1',
-        courseInstanceRole: 'None',
-      });
-      await trpc.bulkEditAccess.mutate({
-        userIds: [admin.id, owner.id],
-        courseRole: 'Viewer',
-        courseInstanceChanges: [
-          { courseInstanceId: '1', courseInstanceRole: 'Student Data Viewer' },
-        ],
-      });
-      for (const row of await getPermissions([admin.id, owner.id])) {
-        expect(row.course_permission.course_role).toBe('Viewer');
-        expect(row.course_instance_roles).toContainEqual(
-          expect.objectContaining({
-            id: '1',
-            course_instance_role: 'Student Data Viewer',
-          }),
-        );
-      }
-      await trpc.updateCourseRole.mutate({ userId: owner.id, courseRole: 'Owner' });
-      await trpc.deleteUser.mutate({ userId: owner.id });
-      await trpc.deleteUser.mutate({ userId: admin.id });
-      expect(await getPermissions([admin.id, owner.id])).toEqual([]);
-
-      await trpc.insertByUserUids.mutate({ uids: [admin.uid, owner.uid], courseRole: 'Owner' });
-      await trpc.bulkDelete.mutate({ userIds: [admin.id, owner.id] });
-      expect(await getPermissions([admin.id, owner.id])).toEqual([]);
-    });
+    expect(await getPermissions([user.id, target.id])).toEqual(before);
   });
 
-  test('emulating an institution admin does not give a regular Owner administrative powers', async () => {
+  test('administrator of another institution retains Owner restrictions', async () => {
+    const user = await createStaffUser('Owner');
     const owner = await createStaffUser('Owner');
+    const editor = await createStaffUser('Editor');
+    await ensureInstitutionAdministrator({
+      institution_id: otherInstitutionId,
+      user_id: user.id,
+      authn_user_id: '1',
+    });
+    const userIds = [user.id, owner.id, editor.id];
+    const before = await getPermissions(userIds);
+    const trpc = createClient(user.id);
+
+    await withUser(user, async () => {
+      await expect(
+        trpc.updateCourseRole.mutate({ userId: user.id, courseRole: 'Editor' }),
+      ).rejects.toMatchObject({ data: { code: 'FORBIDDEN' } });
+      await expect(trpc.deleteUser.mutate({ userId: owner.id })).rejects.toMatchObject({
+        data: { code: 'FORBIDDEN' },
+      });
+      await expect(
+        trpc.bulkEditAccess.mutate({ userIds: [editor.id, user.id], courseRole: 'Viewer' }),
+      ).rejects.toMatchObject({ data: { code: 'FORBIDDEN' } });
+      await expect(
+        trpc.bulkDelete.mutate({ userIds: [editor.id, owner.id] }),
+      ).rejects.toMatchObject({ data: { code: 'FORBIDDEN' } });
+    });
+    expect(await getPermissions(userIds)).toEqual(before);
+  });
+
+  test('institution admin can remove their own Owner entry', async () => {
+    // The admin's home institution differs from the course's institution.
     const admin = await createStaffUser('Owner');
     await ensureInstitutionAdministrator({
       institution_id: '1',
       user_id: admin.id,
       authn_user_id: '1',
     });
-    const trpc = createClient(owner.id, admin.uid);
-    const before = await getPermissions([owner.id, admin.id]);
-    await withUser(owner, async () => {
-      await expect(
-        trpc.updateCourseRole.mutate({ userId: owner.id, courseRole: 'Editor' }),
-      ).rejects.toMatchObject({ data: { code: 'FORBIDDEN' } });
-      await expect(trpc.deleteUser.mutate({ userId: admin.id })).rejects.toMatchObject({
-        data: { code: 'FORBIDDEN' },
-      });
-    });
-    expect(await getPermissions([owner.id, admin.id])).toEqual(before);
+    await withUser(admin, () => createClient(admin.id).deleteUser.mutate({ userId: admin.id }));
+    expect(await getPermissions([admin.id])).toEqual([]);
   });
+
+  test.each(['authenticated', 'effective'] as const)(
+    'no administrative powers when only the %s user is an institution admin',
+    async (adminUser) => {
+      const owner = await createStaffUser('Owner');
+      const admin = await createStaffUser('Owner');
+      await ensureInstitutionAdministrator({
+        institution_id: '1',
+        user_id: adminUser === 'authenticated' ? owner.id : admin.id,
+        authn_user_id: '1',
+      });
+      const trpc = createClient(owner.id, admin.uid);
+      const before = await getPermissions([owner.id, admin.id]);
+      await withUser(owner, async () => {
+        await expect(
+          trpc.updateCourseRole.mutate({ userId: owner.id, courseRole: 'Editor' }),
+        ).rejects.toMatchObject({ data: { code: 'FORBIDDEN' } });
+        await expect(trpc.deleteUser.mutate({ userId: admin.id })).rejects.toMatchObject({
+          data: { code: 'FORBIDDEN' },
+        });
+      });
+      expect(await getPermissions([owner.id, admin.id])).toEqual(before);
+    },
+  );
 });

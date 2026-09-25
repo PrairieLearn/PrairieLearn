@@ -7,7 +7,6 @@ import { PageLayout } from '../../components/PageLayout.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
 import { getCourseTrpcUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
-import { hasCourseStaffAdministrativeAccess } from '../../lib/course-staff.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { getUrl } from '../../lib/url.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
@@ -67,7 +66,7 @@ router.get(
               courseUsers={courseUsers}
               authnUserId={res.locals.authn_user.id}
               userId={res.locals.user.id}
-              canAdministerStaff={await hasCourseStaffAdministrativeAccess({ course, authzData })}
+              isAdministrator={authzData.is_administrator || authzData.is_institution_administrator}
               uidsLimit={MAX_UIDS}
               search={getUrl(req).search}
             />
