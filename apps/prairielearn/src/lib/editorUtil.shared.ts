@@ -111,19 +111,23 @@ export function getUniqueNames({
 
   const numberShortName = getNumberShortName(shortNames);
   const numberLongName = getNumberLongName(longNames);
-  const number = Math.max(numberShortName, numberLongName);
 
-  if (number === 1 && shortName !== 'New' && longName !== 'New') {
-    // If there are no existing copies, and the shortName/longName aren't the default ones, no number is needed at the end of the names
+  if (
+    (numberShortName === 1 || numberLongName === 1) &&
+    shortName !== 'New' &&
+    longName !== 'New'
+  ) {
+    // If either QID or name are unique, we only add the suffix where needed.
     return {
-      shortName,
-      longName,
+      shortName: numberShortName === 1 ? shortName : `${shortName}_${numberShortName}`,
+      longName: numberLongName === 1 ? longName : `${longName} (${numberLongName})`,
     };
   } else {
-    // If there are existing copies, a number is needed at the end of the names
+    // If both QID and name are duplicates, we add the same suffix to both.
+    const suffix = Math.max(numberShortName, numberLongName);
     return {
-      shortName: `${shortName}_${number}`,
-      longName: `${longName} (${number})`,
+      shortName: `${shortName}_${suffix}`,
+      longName: `${longName} (${suffix})`,
     };
   }
 }
