@@ -37,9 +37,16 @@ async function waitForExternalGrader($questionsPage: cheerio.CheerioAPI): Promis
   return new Promise<void>((resolve, reject) => {
     socket.on('connect_error', (err) => reject(err));
 
+    // Submissions are returned ordered so the last one is the most recent
+    // submission for the variant. We track its id specifically (rather than
+    // resolving on any graded submission) so that re-submitting to a variant
+    // that already has a graded submission doesn't resolve before the new
+    // submission has actually finished grading.
+    let latestSubmissionId: string | undefined;
+
     function handleStatusChange(msg: any) {
       for (const submission of msg.submissions) {
-        if (submission.grading_job_status === 'graded') {
+        if (submission.id === latestSubmissionId && submission.grading_job_status === 'graded') {
           resolve();
           return;
         }
@@ -51,6 +58,7 @@ async function waitForExternalGrader($questionsPage: cheerio.CheerioAPI): Promis
       { variant_id: variantId.toString(), variant_token: variantToken.toString() },
       (msg: any) => {
         if (!msg) return reject(new Error('Socket initialization failed'));
+        latestSubmissionId = msg.submissions.at(-1)?.id;
         handleStatusChange(msg);
       },
     );
@@ -411,6 +419,81 @@ describe('Grading method(s)', { timeout: 80_000 }, function () {
         });
         it('should NOT result in "grading-block" component being displayed', () => {
           assert.lengthOf($questionsPage('.grading-block:not(.d-none)'), 0);
+        });
+      });
+      describe('"grade" action with partial credit', () => {
+        it('should load page as student', async () => {
+          const hm1Body = await loadHomeworkPage(mockStudents[0]);
+          $hm1Body = cheerio.load(hm1Body);
+          iqUrl =
+            siteUrl +
+            $hm1Body('a:contains("External Grading: Alpine with flexible result")').attr('href');
+          questionsPage = await (await fetch(iqUrl)).text();
+          $questionsPage = cheerio.load(questionsPage);
+          assertQuestionActionButtons($questionsPage, { grade: true, save: true });
+        });
+        it('should accept a partial score of 0.7 as 70% credit', async () => {
+          gradeRes = await saveOrGrade(iqUrl, {}, 'grade', [
+            {
+              name: 'answer.json',
+              contents: Buffer.from(JSON.stringify({ score: 0.7 })).toString('base64'),
+            },
+          ]);
+          assert.equal(gradeRes.status, 200);
+
+          questionsPage = await gradeRes.text();
+          $questionsPage = cheerio.load(questionsPage);
+          await waitForExternalGrader($questionsPage);
+
+          questionsPage = await (await fetch(iqUrl)).text();
+          $questionsPage = cheerio.load(questionsPage);
+          assert.equal(getLatestSubmissionStatus($questionsPage), '70%');
+        });
+      });
+      describe('"grade" action with partial credit disabled', () => {
+        it('should load page as student', async () => {
+          const hm1Body = await loadHomeworkPage(mockStudents[0]);
+          $hm1Body = cheerio.load(hm1Body);
+          iqUrl =
+            siteUrl +
+            $hm1Body('a:contains("External Grading: Alpine with no partial credit")').attr('href');
+          questionsPage = await (await fetch(iqUrl)).text();
+          $questionsPage = cheerio.load(questionsPage);
+          assertQuestionActionButtons($questionsPage, { grade: true, save: true });
+        });
+        it('should set the score to 0 for a partial score of 0.7', async () => {
+          gradeRes = await saveOrGrade(iqUrl, {}, 'grade', [
+            {
+              name: 'answer.json',
+              contents: Buffer.from(JSON.stringify({ score: 0.7 })).toString('base64'),
+            },
+          ]);
+          assert.equal(gradeRes.status, 200);
+
+          questionsPage = await gradeRes.text();
+          $questionsPage = cheerio.load(questionsPage);
+          await waitForExternalGrader($questionsPage);
+
+          questionsPage = await (await fetch(iqUrl)).text();
+          $questionsPage = cheerio.load(questionsPage);
+          assert.equal(getLatestSubmissionStatus($questionsPage), '0%');
+        });
+        it('should give full credit for a score of 1.0', async () => {
+          gradeRes = await saveOrGrade(iqUrl, {}, 'grade', [
+            {
+              name: 'answer.json',
+              contents: Buffer.from(JSON.stringify({ score: 1 })).toString('base64'),
+            },
+          ]);
+          assert.equal(gradeRes.status, 200);
+
+          questionsPage = await gradeRes.text();
+          $questionsPage = cheerio.load(questionsPage);
+          await waitForExternalGrader($questionsPage);
+
+          questionsPage = await (await fetch(iqUrl)).text();
+          $questionsPage = cheerio.load(questionsPage);
+          assert.equal(getLatestSubmissionStatus($questionsPage), '100%');
         });
       });
     });
