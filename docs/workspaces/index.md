@@ -47,7 +47,7 @@ The question's `info.json` should set the `singleVariant` and `workspaceOptions`
 - `"singleVariant": true` will prevent student workspaces from resetting due to new variants being generated
   - Note that new variants will still be generated in `Staff view`
 - `workspaceOptions` contains the following properties:
-  - `image`: Docker Hub image serving the IDE and containing the desired compilers, debuggers, etc.
+  - `image`: Public Docker image serving the IDE and containing the desired compilers, debuggers, etc. Images hosted outside Docker Hub must include the registry hostname, e.g., `ghcr.io/org/image:tag`.
   - `gradedFiles` (optional, default none): list of file paths (relative to the `home` path) that will be copied out of the workspace container when saving a submission. These files can then be used for grading (either auto-grading or manual grading), previewed in the submission panel, and included in instructor submission downloads. Files can be in subdirectories, but the files must be explicitly listed (e.g. `dir/file.txt`) or use wildcards (e.g., `dir/*`). If a file is in a subdirectory, the relative path to the file will be reconstructed inside the autograder. Wildcards are allowed (e.g., you can specify `dir/*.c`) and will match any files in the workspace that match them. Paths with wildcards are considered optional. The following wildcards are supported:
     - `*` matches everything except path separators and hidden files (names starting with `.`).
     - `**` can be used to identify files in all subdirectories of the workspace (e.g., `**/*.py` will copy the files with `.py` extension in the home directory and in all its subdirectories).

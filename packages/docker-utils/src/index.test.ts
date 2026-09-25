@@ -34,4 +34,43 @@ describe('DockerName', () => {
     name.setRegistry(undefined);
     assert.equal(name.getCombined(), 'prairielearn/prairielearn:latest');
   });
+
+  it.each([
+    ['node:24', 'node'],
+    ['library/node:24', 'library/node'],
+    ['docker.io/node:24', 'docker.io/node'],
+    ['docker.io/library/node:24', 'library/node'],
+    ['org/image:v1', 'org/image'],
+    ['docker.io/org/image:v1', 'org/image'],
+    ['index.docker.io/org/image:v1', 'org/image'],
+    ['registry-1.docker.io/org/image:v1', 'org/image'],
+    ['ghcr.io/org/image:v1', 'ghcr.io/org/image'],
+    ['quay.io/org/image:v1', 'quay.io/org/image'],
+    ['registry.gitlab.com/group/project/image:v1', 'registry.gitlab.com/group/project/image'],
+    ['registry.example.com/image:v1', 'registry.example.com/image'],
+  ])('maps %s to its cache repository', (image, cacheRepository) => {
+    const name = new DockerName(image);
+    assert.equal(name.getCombined(), image);
+    assert.equal(name.getRegistryRepo(), image.slice(0, image.lastIndexOf(':')));
+    const tag = name.getTag();
+
+    name.setCacheRegistry('cache.example.com');
+
+    assert.equal(name.getRepository(), cacheRepository);
+    assert.equal(name.getRegistryRepo(), `cache.example.com/${cacheRepository}`);
+    assert.equal(name.getCombined(), `cache.example.com/${cacheRepository}:${tag}`);
+    assert.equal(name.getTag(), tag);
+  });
+
+  it.each(['org/image', 'ghcr.io/org/image'])(
+    'preserves an implicit latest tag for %s',
+    (image) => {
+      const name = new DockerName(image);
+      name.setCacheRegistry('cache.example.com');
+
+      assert.isUndefined(name.getTag());
+      assert.equal(name.getCombined(), `cache.example.com/${image}`);
+      assert.equal(name.getCombined(true), `cache.example.com/${image}:latest`);
+    },
+  );
 });

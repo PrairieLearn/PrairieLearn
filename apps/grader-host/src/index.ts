@@ -422,7 +422,7 @@ async function initDocker(context: Context) {
   logger.info(`Pulling latest version of "${image}" image`);
   const repository = new DockerName(image);
   if (config.cacheImageRegistry) {
-    repository.setRegistry(config.cacheImageRegistry);
+    repository.setCacheRegistry(config.cacheImageRegistry);
   }
   const params = {
     fromImage: repository.getRegistryRepo(),
@@ -528,7 +528,7 @@ async function runJob(
 
   const repository = new DockerName(image);
   if (config.cacheImageRegistry) {
-    repository.setRegistry(config.cacheImageRegistry);
+    repository.setCacheRegistry(config.cacheImageRegistry);
   }
   const runImage = repository.getCombined();
   logger.info(`Run image: ${runImage}`);

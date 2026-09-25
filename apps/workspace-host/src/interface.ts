@@ -665,7 +665,7 @@ async function _getWorkspaceSettings(workspace_id: string | number): Promise<Wor
 
   if (config.cacheImageRegistry) {
     const repository = new DockerName(settings.workspace_image);
-    repository.setRegistry(config.cacheImageRegistry);
+    repository.setCacheRegistry(config.cacheImageRegistry);
     const newImage = repository.getCombined();
     logger.info(`Using ${newImage} for ${settings.workspace_image}`);
     settings.workspace_image = newImage;
@@ -702,7 +702,7 @@ async function _pullImage(workspace: Workspace) {
   logger.info(`Pulling docker image: ${workspace_image}`);
 
   // We only auth if a specific ECR registry is configured. Otherwise, we'll
-  // assume we're pulling from the public Docker Hub registry.
+  // assume we're pulling from a public registry.
   const ecr = new ECRClient(makeAwsClientConfig());
   const auth = config.cacheImageRegistry ? await setupDockerAuth(ecr) : null;
 

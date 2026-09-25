@@ -38,7 +38,7 @@ export default async function pullImages() {
       );
       const repository = new DockerName(image);
       if (config.cacheImageRegistry) {
-        repository.setRegistry(config.cacheImageRegistry);
+        repository.setCacheRegistry(config.cacheImageRegistry);
       }
 
       const stream = await docker.createImage(dockerAuth, {
