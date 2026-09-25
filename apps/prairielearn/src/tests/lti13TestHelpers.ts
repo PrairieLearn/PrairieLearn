@@ -13,7 +13,6 @@ import {
 } from '../models/course-permissions.js';
 
 import { fetchCheerio, getCSRFToken } from './helperClient.js';
-import { withConfig } from './utils/config.js';
 
 export const CLIENT_ID = 'prairielearn_test_lms';
 const sql = loadSqlEquiv(import.meta.url);
@@ -57,7 +56,7 @@ export async function withServer<T>(app: express.Express, port: number, fn: () =
   });
 
   try {
-    return await withConfig({ devMode: true }, fn);
+    return await fn();
   } finally {
     await new Promise<void>((resolve, reject) => {
       server.close((err) => (err ? reject(err) : resolve()));
