@@ -30,6 +30,9 @@ export function computeAiGradingRelativeCosts(
   return Object.fromEntries(
     models.map(({ modelId, cost }) => {
       const multiplier = cost / baselineCost;
+      if (multiplier > 0 && multiplier < 0.1) {
+        return [modelId, '<0.1x'];
+      }
       // Truncate to one decimal place (not rounded).
       const truncated = Math.floor(multiplier * 10) / 10;
       const label =
@@ -51,15 +54,15 @@ export const AI_GRADING_MODELS = [
   },
   {
     provider: 'openai',
-    modelId: 'gpt-5.6-luna',
-    name: 'GPT 5.6 Luna',
+    modelId: 'gpt-6-luna',
+    name: 'GPT 6 Luna',
     sublabel: 'Best for large-scale text grading',
     recommended: true,
   },
   {
     provider: 'openai',
-    modelId: 'gpt-5.6-sol',
-    name: 'GPT 5.6 Sol',
+    modelId: 'gpt-6-sol',
+    name: 'GPT 6 Sol',
     sublabel: 'Best for complex text grading',
     recommended: false,
   },
@@ -121,9 +124,9 @@ export const AI_GRADING_MODEL_IDS: AiGradingModelId[] = AI_GRADING_MODELS.map(
 );
 
 export const AI_GRADING_MODEL_PROVIDERS = {
-  'gpt-5.6-luna': 'openai',
+  'gpt-6-luna': 'openai',
   'gpt-5.6-terra': 'openai',
-  'gpt-5.6-sol': 'openai',
+  'gpt-6-sol': 'openai',
   'gpt-6-astra': 'openai',
   'gemini-3.8-flash': 'google',
   'gemini-3.1-pro-preview': 'google',
