@@ -51,8 +51,8 @@ export const AI_GRADING_MODELS = [
   },
   {
     provider: 'openai',
-    modelId: 'gpt-5.6-luna',
-    name: 'GPT 5.6 Luna',
+    modelId: 'gpt-6-luna',
+    name: 'GPT 6 Luna',
     sublabel: 'Best for large-scale text grading',
     recommended: true,
   },
@@ -121,7 +121,7 @@ export const AI_GRADING_MODEL_IDS: AiGradingModelId[] = AI_GRADING_MODELS.map(
 );
 
 export const AI_GRADING_MODEL_PROVIDERS = {
-  'gpt-5.6-luna': 'openai',
+  'gpt-6-luna': 'openai',
   'gpt-5.6-terra': 'openai',
   'gpt-5.6-sol': 'openai',
   'gpt-6-astra': 'openai',
