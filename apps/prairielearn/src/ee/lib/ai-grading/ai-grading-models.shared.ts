@@ -47,8 +47,8 @@ export function computeAiGradingRelativeCosts(
 export const AI_GRADING_MODELS = [
   {
     provider: 'openai',
-    modelId: 'gpt-5.6-terra',
-    name: 'GPT 5.6 Terra',
+    modelId: 'gpt-6-sol',
+    name: 'GPT 6 Sol',
     sublabel: 'Best for general-purpose text grading',
     recommended: true,
   },
@@ -58,13 +58,6 @@ export const AI_GRADING_MODELS = [
     name: 'GPT 6 Luna',
     sublabel: 'Best for large-scale text grading',
     recommended: true,
-  },
-  {
-    provider: 'openai',
-    modelId: 'gpt-6-sol',
-    name: 'GPT 6 Sol',
-    sublabel: 'Best for complex text grading',
-    recommended: false,
   },
   {
     provider: 'openai',
@@ -125,7 +118,6 @@ export const AI_GRADING_MODEL_IDS: AiGradingModelId[] = AI_GRADING_MODELS.map(
 
 export const AI_GRADING_MODEL_PROVIDERS = {
   'gpt-6-luna': 'openai',
-  'gpt-5.6-terra': 'openai',
   'gpt-6-sol': 'openai',
   'gpt-6-astra': 'openai',
   'gemini-3.8-flash': 'google',
@@ -155,4 +147,4 @@ export const AI_GRADING_PROVIDER_OPTIONS = AI_GRADING_PROVIDERS.map((provider) =
 /**
  * Fallback model used when no prior model has been selected.
  */
-export const DEFAULT_AI_GRADING_MODEL = 'gpt-5.6-terra' as const;
+export const DEFAULT_AI_GRADING_MODEL = 'gpt-6-sol' as const;

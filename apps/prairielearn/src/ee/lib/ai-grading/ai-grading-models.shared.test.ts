@@ -10,13 +10,13 @@ describe('computeAiGradingRelativeCosts', () => {
   it.each([
     { input: 0.1, output: 0.5, expected: '<0.1x' },
     { input: 0, output: 0, expected: '0x' },
-    { input: 0.2, output: 1.2, expected: '0.1x' },
-    { input: 2, output: 12, expected: '1x' },
+    { input: 0.2, output: 1, expected: '0.1x' },
+    { input: 2, output: 10, expected: '1x' },
   ])(
     'formats relative cost as $expected for $input input and $output output',
     ({ input, output, expected }) => {
       const pricing = Object.fromEntries(
-        AI_GRADING_MODELS.map(({ modelId }) => [modelId, { input: 2, output: 12 }]),
+        AI_GRADING_MODELS.map(({ modelId }) => [modelId, { input: 2, output: 10 }]),
       );
       pricing['gpt-6-luna'] = { input, output };
 
