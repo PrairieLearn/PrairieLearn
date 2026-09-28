@@ -72,6 +72,8 @@ are only known after rendering, such as the number of questions that rendered su
 placed on the cover. `htmlToTextBlocks` reduces author-provided HTML (for example assessment
 instructions) to headings, paragraphs, and flat lists for the cover.
 
+Omit the `cover` option to start with questions on the first page.
+
 ## Combining question fragments
 
 Questions are normally rendered in separate documents, so author- and element-generated IDs can

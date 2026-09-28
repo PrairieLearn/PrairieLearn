@@ -68,6 +68,7 @@ export function buildDocxContent(
   figures: DocxFigure[],
   contentWidthPx: number,
   contentHeightPx = 900,
+  startOnNewPage = true,
 ) {
   const $ = load(html, null, false);
   const figureById = new Map(figures.map((figure) => [figure.id, figure]));
@@ -626,7 +627,7 @@ export function buildDocxContent(
         paragraph(
           [text(`Question ${attribute(question, 'data-question-number')}`, { bold: true })],
           {
-            pageBreakBefore: index === 0,
+            pageBreakBefore: startOnNewPage && index === 0,
             keepNext: true,
             spacing: { before: 240, after: 120 },
             border: { bottom: GRID },

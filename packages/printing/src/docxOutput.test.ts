@@ -153,6 +153,19 @@ describe('renderDocx', () => {
     expect(footerXml).toContain('NUMPAGES');
   });
 
+  it('starts with questions without a leading page break when the cover is omitted', async () => {
+    createBrowserHarness();
+    const docx = await new PrintRenderer().renderDocx({
+      url: 'https://localhost:3000/print',
+      footerLabel: 'Form A',
+    });
+    const { documentXml, footerXml } = await readDocx(docx);
+    expect(documentXml).toContain('Find the derivative');
+    expect(documentXml).not.toContain(cover.title);
+    expect(documentXml).not.toContain('<w:pageBreakBefore/>');
+    expect(footerXml).toContain('Form A');
+  });
+
   it('lets the cover depend on the rendered page dataset', async () => {
     createBrowserHarness({ pageDataset: { printQuestionCount: '7', printMaxPoints: '50' } });
     const buildCover = vi.fn(

@@ -24,10 +24,10 @@ import type { PrintablePageOutput } from './printablePageOutput.js';
 
 export interface DocxOutputOptions {
   /**
-   * The cover page content. A function receives the paginated page's root `data-*` attributes,
+   * The optional cover page content. Omit it to start with the questions. A function receives the paginated page's root `data-*` attributes,
    * which lets callers include values that are only known after the page has rendered.
    */
-  cover:
+  cover?:
     | PrintableCover
     | ((pageDataset: Readonly<Record<string, string | undefined>>) => PrintableCover);
   /** Text placed before the page counter in every footer, for example `Form ID 13`. */
@@ -340,7 +340,7 @@ async function buildDocx({
   figures,
 }: {
   geometry: PrintedPageGeometry;
-  cover: PrintableCover;
+  cover: PrintableCover | undefined;
   footerLabel: string;
   source: DocxSource;
   figures: DocxFigure[];
@@ -351,6 +351,7 @@ async function buildDocx({
     figures,
     contentWidthPx,
     geometry.pageHeight - geometry.marginTop - geometry.marginBottom,
+    !!cover,
   );
   const listLevel = (
     format: (typeof LevelFormat)[keyof typeof LevelFormat],
@@ -365,7 +366,7 @@ async function buildDocx({
 
   const document = new Document({
     creator: 'PrairieLearn',
-    title: cover.title,
+    title: cover?.title,
     styles: {
       default: { document: { run: { font: FONT, size: BODY_FONT_SIZE } } },
     },
@@ -392,7 +393,7 @@ async function buildDocx({
           },
         },
         footers: { default: buildFooter(footerLabel) },
-        children: [...buildCover(cover, toDxa(contentWidthPx)), ...content.children],
+        children: [...(cover ? buildCover(cover, toDxa(contentWidthPx)) : []), ...content.children],
       },
     ],
   });
