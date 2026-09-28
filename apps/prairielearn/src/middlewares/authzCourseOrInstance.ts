@@ -304,6 +304,7 @@ interface ResLocalsCourseAuthz {
   user: ResLocalsAuthnUser['authn_user'];
   mode: ConstructedCourseOrInstanceSuccessContext['authzData']['mode'];
   is_administrator: ResLocalsAuthnUser['is_administrator'];
+  is_institution_administrator: boolean;
   course_role: ConstructedCourseOrInstanceSuccessContext['authzData']['course_role'];
   has_course_permission_preview: boolean;
   has_course_permission_view: boolean;
@@ -570,6 +571,7 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
       return {
         authzData: withBrand<PlainAuthzData>({
           user: effectiveUserData ? effectiveUserData.user : authnAuthzData.user,
+          is_institution_administrator: false,
           course_role: 'None',
           ...calculateCourseRolePermissions('None'),
           ...(req.params.course_instance_id
@@ -658,6 +660,10 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
     user: effectiveAuthzData.user,
     mode: effectiveAuthzData.mode,
     is_administrator: effectiveUserData?.is_administrator ?? res.locals.is_administrator,
+    // Emulating an institution administrator must not grant an Owner extra privileges.
+    is_institution_administrator:
+      authnAuthzData.is_institution_administrator &&
+      effectiveAuthzData.is_institution_administrator,
     course_role: effectiveAuthzData.course_role,
     has_course_permission_preview: effectiveAuthzData.has_course_permission_preview,
     has_course_permission_view: effectiveAuthzData.has_course_permission_view,
