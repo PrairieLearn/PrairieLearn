@@ -35,6 +35,7 @@ export interface PrintableCover {
   fields: PrintableCoverField[];
   summary: PrintableCoverSummaryItem[];
   sections: PrintableCoverSection[];
+  gradingTable?: { questionNumbers: string[]; rowsPerColumn: number };
   footer: string;
 }
 

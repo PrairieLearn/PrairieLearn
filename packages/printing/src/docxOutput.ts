@@ -270,6 +270,41 @@ function buildSummary(cover: PrintableCover, widthDxa: number): Table {
   });
 }
 
+function buildGradingTable(
+  gradingTable: NonNullable<PrintableCover['gradingTable']>,
+  widthDxa: number,
+): Table {
+  const labels = [...gradingTable.questionNumbers, 'Total'];
+  const rows = Math.min(gradingTable.rowsPerColumn, labels.length);
+  const columns = Math.ceil(labels.length / rows);
+  const columnWidth = Math.floor(widthDxa / columns);
+  return new Table({
+    width: { size: widthDxa, type: WidthType.DXA },
+    columnWidths: Array.from({ length: columns }, () => columnWidth),
+    rows: Array.from(
+      { length: rows },
+      (_, row) =>
+        new TableRow({
+          height: { value: 420, rule: HeightRule.ATLEAST },
+          children: Array.from({ length: columns }, (_, column) => {
+            const label = labels[column * rows + row];
+            return new TableCell({
+              margins: { left: 100, right: 100, top: 60, bottom: 60 },
+              children: [
+                new Paragraph({
+                  spacing: { after: 0 },
+                  children: label
+                    ? [text(`${label}   __________`, { bold: label === 'Total' })]
+                    : [],
+                }),
+              ],
+            });
+          }),
+        }),
+    ),
+  });
+}
+
 function buildCover(cover: PrintableCover, contentWidthDxa: number): (Paragraph | Table)[] {
   const numbering = new ListNumbering();
   const line = (
@@ -311,6 +346,12 @@ function buildCover(cover: PrintableCover, contentWidthDxa: number): (Paragraph 
           ]
         : []),
     ]),
+    ...(cover.gradingTable
+      ? [
+          line('Grading', { bold: true, size: 24 }, { before: 200, after: 80 }),
+          buildGradingTable(cover.gradingTable, contentWidthDxa),
+        ]
+      : []),
     line(cover.footer, { size: SMALL_FONT_SIZE, color: '555555' }, { before: 400, after: 0 }),
   ];
 }

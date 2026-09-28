@@ -125,6 +125,27 @@ describe('renderDocx', () => {
     vi.clearAllMocks();
   });
 
+  it('keeps cover grading scores blank and fills columns before rows', async () => {
+    createBrowserHarness();
+    const docx = await new PrintRenderer().renderDocx({
+      url: 'https://localhost:3000/print',
+      cover: {
+        ...cover,
+        gradingTable: { questionNumbers: ['1', '2', '3', '4', '5'], rowsPerColumn: 3 },
+      },
+      footerLabel: 'Form A',
+    });
+    const { documentXml } = await readDocx(docx);
+    expect(documentXml.match(/(?:[1-5]|Total) {3}__________/g)).toEqual([
+      '1   __________',
+      '4   __________',
+      '2   __________',
+      '5   __________',
+      '3   __________',
+      'Total   __________',
+    ]);
+  });
+
   it('keeps question text, math, lists, tables, and answer spaces editable', async () => {
     const harness = createBrowserHarness();
     const docx = await new PrintRenderer().renderDocx({
