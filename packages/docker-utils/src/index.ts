@@ -109,6 +109,10 @@ export class DockerName {
     ) {
       this.repository = this.getRegistryRepo();
     }
+
+    // Colons are invalid in ECR repository names. Hostnames cannot contain
+    // underscores, so this keeps ports distinct from similarly named hosts.
+    this.repository = this.repository.replace(/^([^/]+):(\d+)\//, '$1__$2/');
     this.setRegistry(registry);
   }
 

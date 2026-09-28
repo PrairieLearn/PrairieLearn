@@ -48,6 +48,10 @@ describe('DockerName', () => {
     ['quay.io/org/image:v1', 'quay.io/org/image'],
     ['registry.gitlab.com/group/project/image:v1', 'registry.gitlab.com/group/project/image'],
     ['registry.example.com/image:v1', 'registry.example.com/image'],
+    ['registry.example.com:5000/team/image:v1', 'registry.example.com__5000/team/image'],
+    ['registry.example.com:5001/team/image:v1', 'registry.example.com__5001/team/image'],
+    ['registry.example.com-5000/team/image:v1', 'registry.example.com-5000/team/image'],
+    ['registry.example.com:5000/image:v1', 'registry.example.com__5000/image'],
   ])('maps %s to its cache repository', (image, cacheRepository) => {
     const name = new DockerName(image);
     assert.equal(name.getCombined(), image);
@@ -62,15 +66,17 @@ describe('DockerName', () => {
     assert.equal(name.getTag(), tag);
   });
 
-  it.each(['org/image', 'ghcr.io/org/image'])(
-    'preserves an implicit latest tag for %s',
-    (image) => {
-      const name = new DockerName(image);
-      name.setCacheRegistry('cache.example.com');
+  it.each([
+    ['org/image', 'org/image'],
+    ['ghcr.io/org/image', 'ghcr.io/org/image'],
+    ['registry.example.com:5000/team/image', 'registry.example.com__5000/team/image'],
+    ['registry.example.com:5000/image', 'registry.example.com__5000/image'],
+  ])('preserves an implicit latest tag for %s', (image, cacheRepository) => {
+    const name = new DockerName(image);
+    name.setCacheRegistry('cache.example.com');
 
-      assert.isUndefined(name.getTag());
-      assert.equal(name.getCombined(), `cache.example.com/${image}`);
-      assert.equal(name.getCombined(true), `cache.example.com/${image}:latest`);
-    },
-  );
+    assert.isUndefined(name.getTag());
+    assert.equal(name.getCombined(), `cache.example.com/${cacheRepository}`);
+    assert.equal(name.getCombined(true), `cache.example.com/${cacheRepository}:latest`);
+  });
 });
