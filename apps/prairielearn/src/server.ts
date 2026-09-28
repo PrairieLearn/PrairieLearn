@@ -1177,6 +1177,10 @@ export async function initExpress(): Promise<Express> {
   );
 
   // course instance - course admin pages
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/trpc',
+    courseTrpcRouter,
+  );
   app.use(/^(\/pl\/course_instance\/[0-9]+\/instructor\/course_admin)\/?$/, (req, res, _next) => {
     res.redirect(`${req.params[0]}/instances`);
   });
