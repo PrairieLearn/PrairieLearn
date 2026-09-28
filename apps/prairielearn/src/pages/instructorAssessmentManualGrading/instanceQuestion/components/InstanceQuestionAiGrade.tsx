@@ -2,11 +2,11 @@ import { QueryClient, useMutation } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
 import { Alert } from 'react-bootstrap';
 
+import { QueryClientProviderDebug } from '@prairielearn/trpc/react';
 import { useModalState } from '@prairielearn/ui';
 
 import { AiGradingProgressInfo } from '../../../../components/ServerJobProgress/AiGradingProgressInfo.js';
 import { useServerJobProgress } from '../../../../components/ServerJobProgress/useServerJobProgress.js';
-import { QueryClientProviderDebug } from '../../../../lib/client/tanstackQuery.js';
 import type { EnumAiGradingProvider } from '../../../../lib/db-types.js';
 import { JobItemStatus } from '../../../../lib/serverJobProgressSocket.shared.js';
 import { createAssessmentQuestionTrpcClient } from '../../../../trpc/assessmentQuestion/client.js';
@@ -16,8 +16,7 @@ import {
   type AiGradingModelSelectionModalState,
 } from '../../assessmentQuestion/components/AiGradingModelSelectionModal.js';
 import { AI_GRADING_MODAL_OPEN_EVENT } from '../instanceQuestion.shared.js';
-
-import { reloadGradingPanel } from './reloadGradingPanel.js';
+import { reloadGradingPanel } from '../utils/reloadGradingPanel.js';
 
 interface InstanceQuestionAiGradeInnerProps {
   courseInstanceId: string;
@@ -36,7 +35,6 @@ interface InstanceQuestionAiGradeInnerProps {
 export interface InstanceQuestionAiGradeProps extends InstanceQuestionAiGradeInnerProps {
   assessmentQuestionId: string;
   trpcCsrfToken: string;
-  isDevMode: boolean;
 }
 
 function InstanceQuestionAiGradeInner({
@@ -93,9 +91,8 @@ function InstanceQuestionAiGradeInner({
     }
   }, [submissionStatus, courseInstanceId, assessmentId, instanceQuestionId]);
 
-  // Imperatively toggle the AI grade button's disabled state because the
-  // button lives in the server-rendered grading panel — making this
-  // declarative would require porting the entire grading panel to React.
+  // TODO: The AI controls and grading panel are separate React islands. Keep this DOM bridge until
+  // they share a root and can pass the in-progress state declaratively.
   useEffect(() => {
     const button = document.getElementById('ai-grade-button') as HTMLButtonElement | null;
     if (!button) return;
@@ -188,7 +185,7 @@ export function InstanceQuestionAiGrade(props: InstanceQuestionAiGradeProps) {
   );
 
   return (
-    <QueryClientProviderDebug client={queryClient} isDevMode={props.isDevMode}>
+    <QueryClientProviderDebug client={queryClient}>
       <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
         <InstanceQuestionAiGradeInner {...props} />
       </TRPCProvider>

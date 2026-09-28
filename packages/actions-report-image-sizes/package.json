@@ -13,7 +13,7 @@
   },
   "main": "dist/index.js",
   "scripts": {
-    "build": "tsgo"
+    "build": "tsc"
   },
   "dependencies": {
     "@actions/core": "^3.0.1",
@@ -21,7 +21,7 @@
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/node": "^24.13.2",
-    "@typescript/native-preview": "beta"
+    "@types/node": "^24.13.3",
+    "@typescript/native": "npm:typescript@^7.0.2"
   }
 }

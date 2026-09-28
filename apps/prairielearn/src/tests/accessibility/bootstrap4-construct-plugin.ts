@@ -114,6 +114,8 @@ class Bootstrap4ConstructRule extends Rule {
       const { document } = event;
 
       BOOTSTRAP_LEGACY_ATTRIBUTES.forEach((attr) => {
+        // The attribute names come from the fixed list above, and html-validate does not expose CSS.escape().
+        // eslint-disable-next-line unicorn/require-css-escape
         document.querySelectorAll(`[${attr}]`).forEach((node) => {
           // `tom-select` uses a `data-content` attribute on `option` elements.
           // This is unrelated to Bootstrap, so we don't want to do anything with this.

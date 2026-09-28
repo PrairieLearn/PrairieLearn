@@ -3,13 +3,15 @@ import z from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
 import { getCheckedSignedTokenData } from '@prairielearn/signed-token';
+import { IdSchema } from '@prairielearn/zod';
 
 import * as authnLib from '../lib/authn.js';
 import { type LoadUserAuth } from '../lib/authn.types.js';
+import { dangerousFullSystemAuthz } from '../lib/authz-data-lib.js';
 import { config } from '../lib/config.js';
 import { clearCookie, setCookie } from '../lib/cookie.js';
-import { EnrollmentSchema } from '../lib/db-types.js';
-import { insertAuditEvent } from '../models/audit-event.js';
+import { selectCourseInstanceById } from '../models/course-instances.js';
+import { ensureUncheckedEnrollment } from '../models/enrollment.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
@@ -58,22 +60,27 @@ export default asyncHandler(async (req, res, next) => {
       redirect: false,
     });
 
-    // Enroll the load test user in the example course.
-    const enrollment = await sqldb.queryOptionalRow(
-      sql.enroll_user_in_example_course,
+    const loadTestCourseInstance = await sqldb.queryOptionalRow(
+      sql.select_load_test_course_instance,
       { user_id: res.locals.authn_user.id },
-      EnrollmentSchema,
+      z.object({
+        course_instance_id: IdSchema,
+        has_joined_enrollment: z.boolean(),
+      }),
     );
 
-    if (enrollment) {
-      await insertAuditEvent({
-        tableName: 'enrollments',
-        action: 'insert',
+    if (loadTestCourseInstance && !loadTestCourseInstance.has_joined_enrollment) {
+      const courseInstance = await selectCourseInstanceById(
+        loadTestCourseInstance.course_instance_id,
+      );
+
+      // Load-test enrollment is system-initiated setup, so record the system as the audit actor.
+      await ensureUncheckedEnrollment({
+        userId: res.locals.authn_user.id,
+        authzData: dangerousFullSystemAuthz(),
+        courseInstance,
+        requiredRole: ['System'],
         actionDetail: 'implicit_joined',
-        rowId: enrollment.id,
-        newRow: enrollment,
-        agentUserId: res.locals.user.id,
-        agentAuthnUserId: res.locals.authn_user.id,
       });
     }
 

@@ -3,6 +3,8 @@ import * as path from 'node:path';
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
+import { throwAppError } from '@prairielearn/trpc/server';
+
 import { DEFAULT_ASSESSMENT_MODULE_NAME } from '../../lib/assessment-modules.shared.js';
 import { computeScopedJsonHash } from '../../lib/editorUtil.js';
 import { propertyValueWithDefault } from '../../lib/editorUtil.shared.js';
@@ -18,7 +20,6 @@ import {
   selectAssessmentModulesWithAssessmentsForCourse,
 } from '../../models/assessment-module.js';
 import { type CourseJsonInput } from '../../schemas/infoCourse.js';
-import { throwAppError } from '../app-errors.js';
 
 import {
   requireCoursePermissionEdit,

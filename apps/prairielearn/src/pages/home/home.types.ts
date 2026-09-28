@@ -5,9 +5,8 @@ import { DateFromISOString } from '@prairielearn/zod';
 import {
   RawStudentCourseInstanceSchema,
   RawStudentCourseSchema,
-  StudentEnrollmentSchema,
 } from '../../lib/client/safe-db-types.js';
-import { CourseInstancePublishingExtensionSchema } from '../../lib/db-types.js';
+import { CourseInstancePublishingExtensionSchema, EnrollmentSchema } from '../../lib/db-types.js';
 
 export const InstructorHomePageCourseSchema = z.object({
   id: RawStudentCourseSchema.shape.id,
@@ -24,14 +23,29 @@ export const InstructorHomePageCourseSchema = z.object({
 });
 export type InstructorHomePageCourse = z.infer<typeof InstructorHomePageCourseSchema>;
 
-export const StudentHomePageCourseSchema = z.object({
-  course_id: RawStudentCourseSchema.shape.id,
+const StudentHomePageCourseDataSchema = z.object({
+  course: RawStudentCourseSchema,
   course_instance: RawStudentCourseInstanceSchema,
-  course_short_name: RawStudentCourseSchema.shape.short_name,
-  course_title: RawStudentCourseSchema.shape.title,
-  enrollment: StudentEnrollmentSchema,
   start_date: DateFromISOString.nullable(),
   end_date: DateFromISOString.nullable(),
   latest_publishing_extension: CourseInstancePublishingExtensionSchema.nullable(),
 });
-export type StudentHomePageCourse = z.infer<typeof StudentHomePageCourseSchema>;
+export type StudentHomePageCourseData = z.infer<typeof StudentHomePageCourseDataSchema>;
+
+export const StudentHomePageCourseCandidateRowSchema = StudentHomePageCourseDataSchema.extend({
+  enrollment: EnrollmentSchema,
+  matches_bound_user: z.boolean(),
+  matches_institution_uin: z.boolean(),
+  matches_lti13: z.boolean(),
+  matches_pending_uid: z.boolean(),
+});
+export type StudentHomePageCourseCandidateRow = z.infer<
+  typeof StudentHomePageCourseCandidateRowSchema
+>;
+
+export type StudentHomePageCourse = Pick<StudentHomePageCourseData, 'course' | 'course_instance'> &
+  (
+    | { access_type: 'joined' }
+    | { access_type: 'uid_invitation'; invitation_enrollment_id: string }
+    | { access_type: 'institution_access'; invitation_enrollment_id: string }
+  );

@@ -77,7 +77,7 @@ export function OverviewCard({
       <div className="card-body">
         <div className="d-flex flex-column flex-md-row mb-2 mb-md-0 align-items-md-center justify-content-between">
           <h2 className="d-flex align-items-center">
-            {user?.name ?? enrollment.pending_uid}
+            {user?.name ?? user?.uid ?? enrollment.pending_uid}
             {enrollment.status !== 'joined' && (
               <EnrollmentStatusIcon type="badge" className="ms-2 fs-6" status={enrollment.status} />
             )}

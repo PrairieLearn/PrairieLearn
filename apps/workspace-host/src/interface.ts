@@ -5,6 +5,7 @@ import * as http from 'node:http';
 import * as net from 'node:net';
 import * as os from 'node:os';
 import * as path from 'node:path';
+import { pipeline } from 'node:stream/promises';
 
 import { ECRClient } from '@aws-sdk/client-ecr';
 import { S3 } from '@aws-sdk/client-s3';
@@ -17,13 +18,13 @@ import debugfn from 'debug';
 import Docker from 'dockerode';
 import express, { type Response } from 'express';
 import asyncHandler from 'express-async-handler';
-import { type Entry } from 'fast-glob';
 import minimist from 'minimist';
 import * as shlex from 'shlex';
 import { z } from 'zod';
 
 import { cache } from '@prairielearn/cache';
 import { DockerName, setupDockerAuth } from '@prairielearn/docker-utils';
+import { assertSupportedImageRegistry } from '@prairielearn/docker-utils/registry';
 import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
@@ -665,7 +666,7 @@ async function _getWorkspaceSettings(workspace_id: string | number): Promise<Wor
 
   if (config.cacheImageRegistry) {
     const repository = new DockerName(settings.workspace_image);
-    repository.setRegistry(config.cacheImageRegistry);
+    repository.setCacheRegistry(config.cacheImageRegistry);
     const newImage = repository.getCombined();
     logger.info(`Using ${newImage} for ${settings.workspace_image}`);
     settings.workspace_image = newImage;
@@ -702,9 +703,13 @@ async function _pullImage(workspace: Workspace) {
   logger.info(`Pulling docker image: ${workspace_image}`);
 
   // We only auth if a specific ECR registry is configured. Otherwise, we'll
-  // assume we're pulling from the public Docker Hub registry.
+  // assume we're pulling from a public registry.
   const ecr = new ECRClient(makeAwsClientConfig());
   const auth = config.cacheImageRegistry ? await setupDockerAuth(ecr) : null;
+
+  if (!config.cacheImageRegistry) {
+    assertSupportedImageRegistry(workspace_image);
+  }
 
   let percentDisplayed = false;
   let stream: NodeJS.ReadableStream | undefined;
@@ -1156,49 +1161,28 @@ async function sendGradedFilesArchive(workspace_id: string | number, res: Respon
   const zipName = `${workspace.remote_name}-${timestamp}.zip`;
   const workspaceDir = path.join(config.workspaceHostHomeDirRoot, workspace.remote_name, 'current');
 
-  let gradedFiles: Entry[] | undefined;
-  try {
-    gradedFiles = await workspaceUtils.getWorkspaceGradedFiles(
-      workspaceDir,
-      workspace_graded_files,
-      {
-        maxFiles: config.workspaceMaxGradedFilesCount,
-        maxSize: config.workspaceMaxGradedFilesSize,
-      },
-    );
-  } catch (err: any) {
-    res.status(500).send(err.message);
-    return;
-  }
+  await using gradedFiles = await workspaceUtils
+    .openWorkspaceGradedFiles(workspaceDir, workspace_graded_files, {
+      maxFiles: config.workspaceMaxGradedFilesCount,
+      maxSize: config.workspaceMaxGradedFilesSize,
+    })
+    .catch((err: Error) => {
+      res.status(500).send(err.message);
+      return null;
+    });
+  if (gradedFiles == null) return;
 
   // Stream the archive back to the client as it's generated.
   res.attachment(zipName).status(200);
   const archive = new ZipArchive();
-  archive.pipe(res);
-
-  archive.on('error', (err) => {
-    logger.error('Error creating archive', err);
-    Sentry.captureException(err);
-
-    // Since we've probably already sent some data to the client, we can't do
-    // anything to gracefully let them know that we encountered an error.
-    // Instead, we'll just destroy the socket so that they pick up an error
-    // and handle that however they want.
-    res.socket?.destroy();
-  });
+  const archiveCompleted = pipeline(archive, res);
 
   for (const file of gradedFiles) {
-    try {
-      const filePath = path.join(workspaceDir, file.path);
-      archive.file(filePath, { name: file.path });
-      debug(`Sending ${file.path}`);
-    } catch {
-      logger.warn(`Graded file ${file.path} does not exist.`);
-      continue;
-    }
+    archive.append(file.createReadStream(), { name: file.path });
+    debug(`Sending ${file.path}`);
   }
 
-  await archive.finalize();
+  await Promise.all([archive.finalize(), archiveCompleted]);
 }
 
 async function sendLogs(workspaceId: string | number, res: Response) {

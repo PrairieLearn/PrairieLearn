@@ -1,94 +1,71 @@
-import type { Header } from '@tanstack/react-table';
-
-import { MultiSelectColumnFilter, NumericInputColumnFilter } from '@prairielearn/ui';
+import type { ReactNode } from 'react';
 
 import {
+  MultiSelectColumnFilter,
+  NumericInputColumnFilter,
+  type TanstackTableHeader,
+} from '@prairielearn/ui';
+
+import { StudentLabelsFilter } from '../../../../components/StudentLabels.js';
+import type { StaffStudentLabel } from '../../../../lib/client/safe-db-types.js';
+import {
   GRADING_STATUS_VALUES,
-  type GradingStatusValue,
   type InstanceQuestionRowWithAIGradingStats as InstanceQuestionRow,
 } from '../assessmentQuestion.types.js';
 
+type ColumnFilter = (props: { header: TanstackTableHeader<InstanceQuestionRow> }) => ReactNode;
+
 export function createColumnFilters({
   allGraders,
+  studentLabels,
   allSubmissionGroups,
   allAiAgreementItems,
 }: {
   allGraders: string[];
+  studentLabels: StaffStudentLabel[];
   allSubmissionGroups: string[];
   allAiAgreementItems: { number: number; description: string }[];
 }) {
   return {
-    requires_manual_grading: ({
-      header,
-    }: {
-      header: Header<InstanceQuestionRow, GradingStatusValue>;
-    }) => (
+    student_labels: ({ header }) => (
+      <StudentLabelsFilter column={header.column} studentLabels={studentLabels} />
+    ),
+    requires_manual_grading: ({ header }) => (
       <MultiSelectColumnFilter
         column={header.column}
         allColumnValues={[...GRADING_STATUS_VALUES]}
       />
     ),
-    assigned_grader_name: ({
-      header,
-    }: {
-      header: Header<InstanceQuestionRow, InstanceQuestionRow['assigned_grader_name']>;
-    }) => (
+    assigned_grader_name: ({ header }) => (
       <MultiSelectColumnFilter
         column={header.column}
         allColumnValues={[...allGraders, 'Unassigned']}
+        showSearch
       />
     ),
-    last_grader_name: ({
-      header,
-    }: {
-      header: Header<InstanceQuestionRow, InstanceQuestionRow['last_grader_name']>;
-    }) => (
+    last_grader_name: ({ header }) => (
       <MultiSelectColumnFilter
         column={header.column}
         allColumnValues={[...allGraders, 'Unassigned']}
+        showSearch
       />
     ),
-    instance_question_group_name: ({
-      header,
-    }: {
-      header: Header<
-        InstanceQuestionRow,
-        InstanceQuestionRow['instance_question']['instance_question_group_name']
-      >;
-    }) => (
+    instance_question_group_name: ({ header }) => (
       <MultiSelectColumnFilter
         column={header.column}
         allColumnValues={[...allSubmissionGroups, 'No group']}
+        showSearch
       />
     ),
-    manual_points: ({
-      header,
-    }: {
-      header: Header<
-        InstanceQuestionRow,
-        InstanceQuestionRow['instance_question']['manual_points']
-      >;
-    }) => <NumericInputColumnFilter column={header.column} />,
-    auto_points: ({
-      header,
-    }: {
-      header: Header<InstanceQuestionRow, InstanceQuestionRow['instance_question']['auto_points']>;
-    }) => <NumericInputColumnFilter column={header.column} />,
-    points: ({
-      header,
-    }: {
-      header: Header<InstanceQuestionRow, InstanceQuestionRow['instance_question']['points']>;
-    }) => <NumericInputColumnFilter column={header.column} />,
-    score_perc: ({
-      header,
-    }: {
-      header: Header<InstanceQuestionRow, InstanceQuestionRow['instance_question']['score_perc']>;
-    }) => <NumericInputColumnFilter column={header.column} />,
-    rubric_difference: ({ header }: { header: Header<InstanceQuestionRow, string> }) => (
+    manual_points: ({ header }) => <NumericInputColumnFilter column={header.column} />,
+    auto_points: ({ header }) => <NumericInputColumnFilter column={header.column} />,
+    points: ({ header }) => <NumericInputColumnFilter column={header.column} />,
+    score_perc: ({ header }) => <NumericInputColumnFilter column={header.column} />,
+    rubric_difference: ({ header }) => (
       <MultiSelectColumnFilter
         column={header.column}
         allColumnValues={allAiAgreementItems.map((item) => item.description)}
       />
     ),
-  };
+  } satisfies Record<string, ColumnFilter>;
 }

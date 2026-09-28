@@ -132,8 +132,8 @@ function checkUnsupportedTag(ast: DocumentFragment | ChildNode): string[] {
  */
 function dfsCheckParseTree(ast: DocumentFragment | ChildNode, enclosingPanel?: string): DfsResult {
   const tagName = getTagName(ast);
-  let errors = checkUnsupportedTag(ast);
-  let warnings: string[] = [];
+  const errors = checkUnsupportedTag(ast);
+  const warnings: string[] = [];
   const mandatoryPythonCorrectAnswers = new Set<string>();
   let hasTemplatedCorrectAnswer = false;
 
@@ -172,8 +172,8 @@ function dfsCheckParseTree(ast: DocumentFragment | ChildNode, enclosingPanel?: s
   if ('childNodes' in ast) {
     for (const child of ast.childNodes) {
       const childResult = dfsCheckParseTree(child, childPanel);
-      errors = errors.concat(childResult.errors);
-      warnings = warnings.concat(childResult.warnings);
+      errors.push(...childResult.errors);
+      warnings.push(...childResult.warnings);
       hasTemplatedCorrectAnswer ||= childResult.hasTemplatedCorrectAnswer;
       childResult.mandatoryPythonCorrectAnswers.forEach((x) =>
         mandatoryPythonCorrectAnswers.add(x),
@@ -230,7 +230,7 @@ export async function validateHTML(
   const usedTemplateNames = extractMustacheTemplateNames(file);
   const templates = [
     ...usedTemplateNames,
-    ...Array.from(mandatoryPythonCorrectAnswers).map((x) => `correct_answers.${x}`),
+    ...Array.from(mandatoryPythonCorrectAnswers, (x) => `correct_answers.${x}`),
   ];
 
   if (!hasServerPy && templates.length > 0 && !hasTemplatedCorrectAnswer) {

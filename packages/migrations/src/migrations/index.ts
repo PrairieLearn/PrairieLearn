@@ -1,1 +1,1 @@
-export { init } from './migrations.js';
+export { getPendingMigrations, init, type PendingMigration } from './migrations.js';

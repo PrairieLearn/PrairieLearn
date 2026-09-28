@@ -266,15 +266,11 @@ export async function loadExtensions(sourceDir: string, runtimeDir: string) {
     try {
       rawInfo = await fs.readJson(infoPath);
     } catch (err: any) {
-      if (err.code === 'ENOENT') {
+      if (['ENOENT', 'ENOTDIR'].includes(err.code)) {
         // Not an extension directory, skip it.
         return;
-      } else if (err.code === 'ENOTDIR') {
-        // Random file, skip it as well.
-        return;
-      } else {
-        throw err;
       }
+      throw err;
     }
 
     elements[element][extensionDir] = {

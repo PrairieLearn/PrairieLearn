@@ -8,6 +8,7 @@ import {
 } from '../../lib/assessment-access-control/validation.js';
 import { config } from '../../lib/config.js';
 import { StudentLabelSchema } from '../../lib/db-types.js';
+import { parseLocalDateTime } from '../../lib/timezones.js';
 import type { AccessControlJson } from '../../schemas/accessControl.js';
 import type { CourseInstanceData } from '../course-db.js';
 import * as infofile from '../infofile.js';
@@ -78,6 +79,7 @@ function prepareRuleRow(
   rule: AccessControlJson,
   targetType: AccessControlRuleTargetType,
   studentLabelIdByName: Map<string, string>,
+  displayTimezone: string,
 ): {
   ruleRow: string;
   studentLabels: string[];
@@ -116,9 +118,12 @@ function prepareRuleRow(
     // beforeRelease.listed is only configurable on the default rule.
     before_release_listed: isDefaultRule ? (beforeReleaseListed.value ?? false) : null,
     target_type: targetType,
-    date_control_release_date: dateControl.release?.date ?? null,
+    date_control_release_date: parseLocalDateTime(
+      dateControl.release?.date ?? null,
+      displayTimezone,
+    ),
     date_control_due_overridden: dueField.overridden,
-    date_control_due_date: dueField.value?.date ?? null,
+    date_control_due_date: parseLocalDateTime(dueField.value?.date ?? null, displayTimezone),
     date_control_due_credit: dueField.value?.credit ?? null,
     date_control_early_deadlines_overridden: earlyDeadlinesField.overridden,
     date_control_late_deadlines_overridden: lateDeadlinesField.overridden,
@@ -130,10 +135,19 @@ function prepareRuleRow(
     date_control_password_overridden: passwordField.overridden,
     date_control_password: passwordField.value,
     after_complete_questions_hidden: questionsHiddenField.value,
-    after_complete_questions_visible_from_date: afterComplete.questions?.visibleFromDate ?? null,
-    after_complete_questions_visible_until_date: afterComplete.questions?.visibleUntilDate ?? null,
+    after_complete_questions_visible_from_date: parseLocalDateTime(
+      afterComplete.questions?.visibleFromDate ?? null,
+      displayTimezone,
+    ),
+    after_complete_questions_visible_until_date: parseLocalDateTime(
+      afterComplete.questions?.visibleUntilDate ?? null,
+      displayTimezone,
+    ),
     after_complete_score_hidden: scoreHiddenField.value,
-    after_complete_score_visible_from_date: afterComplete.score?.visibleFromDate ?? null,
+    after_complete_score_visible_from_date: parseLocalDateTime(
+      afterComplete.score?.visibleFromDate ?? null,
+      displayTimezone,
+    ),
   });
 
   // Child data arrays identify rules by assessment ID and rule number.
@@ -145,11 +159,23 @@ function prepareRuleRow(
   );
 
   const earlyDeadlines = (earlyDeadlinesField.value ?? []).map((d) =>
-    JSON.stringify([assessmentId, ruleNumber, targetType, d.date, d.credit]),
+    JSON.stringify([
+      assessmentId,
+      ruleNumber,
+      targetType,
+      parseLocalDateTime(d.date, displayTimezone),
+      d.credit,
+    ]),
   );
 
   const lateDeadlines = (lateDeadlinesField.value ?? []).map((d) =>
-    JSON.stringify([assessmentId, ruleNumber, targetType, d.date, d.credit]),
+    JSON.stringify([
+      assessmentId,
+      ruleNumber,
+      targetType,
+      parseLocalDateTime(d.date, displayTimezone),
+      d.credit,
+    ]),
   );
 
   const exams = rule.integrations?.prairieTest?.exams ?? [];
@@ -246,6 +272,7 @@ export async function validateAccessControl(
  */
 export async function syncAccessControl(
   courseInstanceId: string,
+  displayTimezone: string,
   assessments: AccessControlSyncInput[],
 ): Promise<void> {
   if (assessments.length === 0) return;
@@ -270,6 +297,7 @@ export async function syncAccessControl(
           rule,
           targetType,
           studentLabelIdByName,
+          displayTimezone,
         );
 
       allRuleRows.push(ruleRow);

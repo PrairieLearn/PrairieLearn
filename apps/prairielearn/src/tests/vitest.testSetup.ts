@@ -1,14 +1,8 @@
 import { beforeAll } from 'vitest';
 
 beforeAll(async () => {
-  const logger = await import('@prairielearn/logger');
-
-  const consoleTransport = logger.logger.transports.find(
-    // @ts-expect-error - The `TransportStream` type does not include `name`.
-    (transport) => transport.name === 'console',
-  );
-  if (!consoleTransport) throw new Error('Could not find console transport');
-  consoleTransport.level = 'warn';
+  const { logger } = await import('@prairielearn/logger');
+  logger.level = 'warn';
 
   // We can't use `import` here because this is a TS file and our tooling
   // isn't yet set up to do dynamic imports of `.ts` files.

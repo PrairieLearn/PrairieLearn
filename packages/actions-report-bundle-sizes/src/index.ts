@@ -109,13 +109,10 @@ function buildCommentSection(oldSizes: SizesJson | null, newSizes: SizesJson): s
     const netDiff = newTotal - oldTotal;
     const netSign = netDiff > 0 ? '+' : '';
     const largestSign =
-      biggestEntry.kind === 'removed'
+      biggestEntry.kind === 'removed' ||
+      (biggestEntry.kind === 'changed' && biggestEntry.newGzip! < biggestEntry.oldGzip!)
         ? '-'
-        : biggestEntry.kind === 'new'
-          ? '+'
-          : biggestEntry.newGzip! >= biggestEntry.oldGzip!
-            ? '+'
-            : '-';
+        : '+';
     summaryLine = `Net: ${netSign}${formatBytes(netDiff)} (largest: ${largestSign}${formatBytes(biggestEntry.absDiff)})`;
   }
 

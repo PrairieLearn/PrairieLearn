@@ -63,7 +63,7 @@ function extractDynamicFileUrls(html: string, variantId: string) {
   });
 
   return submissionFilenames.concat(
-    Array.from(variantFilenames).map((filename) => ({ filename, submission_id: null })),
+    Array.from(variantFilenames, (filename) => ({ filename, submission_id: null })),
   );
 }
 

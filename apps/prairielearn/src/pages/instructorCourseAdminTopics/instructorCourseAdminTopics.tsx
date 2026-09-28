@@ -7,6 +7,7 @@ import { z } from 'zod';
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import { Hydrate } from '@prairielearn/react/server';
+import { JsonFromStringSchema, parseRequestBody } from '@prairielearn/zod';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { TagsTopicsTable } from '../../components/TagsTopicsTable.js';
@@ -87,24 +88,23 @@ router.post(
         await fs.readFile(path.join(res.locals.course.path, 'infoCourse.json'), 'utf8'),
       );
 
-      const body = z
-        .object({
+      const body = parseRequestBody(
+        req,
+        z.object({
           orig_hash: z.string(),
-          data: z.string().transform((s) =>
-            z
-              .array(
-                TopicSchema.pick({
-                  name: true,
-                  color: true,
-                  description: true,
-                  json_comment: true,
-                  implicit: true,
-                }),
-              )
-              .parse(JSON.parse(s)),
+          data: JsonFromStringSchema.pipe(
+            z.array(
+              TopicSchema.pick({
+                name: true,
+                color: true,
+                description: true,
+                json_comment: true,
+                implicit: true,
+              }),
+            ),
           ),
-        })
-        .parse(req.body);
+        }),
+      );
 
       const origHash = body.orig_hash;
       const resolveTopics = body.data

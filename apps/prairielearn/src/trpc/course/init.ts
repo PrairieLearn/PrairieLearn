@@ -2,9 +2,10 @@ import { TRPCError, initTRPC } from '@trpc/server';
 import type { CreateExpressContextOptions } from '@trpc/server/adapters/express';
 import superjson from 'superjson';
 
+import { appErrorFormatter } from '@prairielearn/trpc/server';
+
 import { extractPageContext } from '../../lib/client/page-context.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
-import { appErrorFormatter } from '../app-errors.js';
 
 export function createContext({ res }: CreateExpressContextOptions) {
   const locals = res.locals as ResLocalsForPage<'course'>;
@@ -36,6 +37,24 @@ export const requireCoursePermissionOwn = t.middleware(async (opts) => {
   }
   return opts.next();
 });
+
+export const requireCoursePermissionPreviewOrCourseInstancePermissionView = t.middleware(
+  async (opts) => {
+    if (
+      !opts.ctx.authz_data.has_course_permission_preview &&
+      !(
+        'has_course_instance_permission_view' in opts.ctx.authz_data &&
+        opts.ctx.authz_data.has_course_instance_permission_view
+      )
+    ) {
+      throw new TRPCError({
+        code: 'FORBIDDEN',
+        message: 'Access denied (must be a member of the course staff)',
+      });
+    }
+    return opts.next();
+  },
+);
 
 export const requireCoursePermissionPreview = t.middleware(async (opts) => {
   if (!opts.ctx.authz_data.has_course_permission_preview) {

@@ -5,8 +5,8 @@ import { z } from 'zod';
 
 import { config } from '../../../lib/config.js';
 import { EnumAiGradingProviderSchema } from '../../../lib/db-types.js';
+import { encryptForStorage } from '../../../lib/encrypted-storage.js';
 import type { ResLocalsForPage } from '../../../lib/res-locals.js';
-import { encryptForStorage } from '../../../lib/storage-crypt.js';
 import {
   deleteCredential,
   updateUseCustomApiKeys,

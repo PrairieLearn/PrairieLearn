@@ -2,12 +2,29 @@ import { assert, describe, it } from 'vitest';
 
 import {
   cleanQuestionHtml,
+  convertCanvasEquationImages,
   convertLatexItemizeToMarkdown,
   extractInlineImages,
   resolveImsFileRefs,
   rewriteImagesAsPlFigure,
   rewritePreAsPlCode,
 } from './html.js';
+
+describe('convertCanvasEquationImages', () => {
+  it('replaces Canvas equation images with escaped inline MathJax source', () => {
+    assert.equal(
+      convertCanvasEquationImages(
+        '<p><img class="equation_image" data-equation-content="x &lt; y + $z$" src="https://canvas.example/equation.svg"></p>',
+      ),
+      '<p>$x &lt; y + \\$z\\$$</p>',
+    );
+  });
+
+  it('passes HTML without Canvas equation images through unchanged', () => {
+    const html = '<p><img src="https://canvas.example/diagram.png"></p>';
+    assert.equal(convertCanvasEquationImages(html), html);
+  });
+});
 
 describe('extractInlineImages', () => {
   it('replaces data URI with file reference', () => {

@@ -1,5 +1,25 @@
 # @prairielearn/cache
 
+## 2.1.17
+
+### Patch Changes
+
+- 8151381: Build with the official TypeScript 7 release instead of the native preview.
+
+## 2.1.16
+
+### Patch Changes
+
+- Updated dependencies [00945c2]
+- Updated dependencies [9757f58]
+  - @prairielearn/logger@4.0.0
+
+## 2.1.15
+
+### Patch Changes
+
+- df28e68: Bump dependencies
+
 ## 2.1.14
 
 ### Patch Changes

@@ -890,9 +890,7 @@ export function validateRule(
 }
 
 function formatValues(values: Set<string> | string[]) {
-  return Array.from(values)
-    .map((v) => `"${v}"`)
-    .join(', ');
+  return Array.from(values, (v) => `"${v}"`).join(', ');
 }
 
 export function getAccessControlRuleTargetType(

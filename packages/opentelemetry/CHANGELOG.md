@@ -1,5 +1,17 @@
 # @prairielearn/opentelemetry
 
+## 4.0.14
+
+### Patch Changes
+
+- 8151381: Build with the official TypeScript 7 release instead of the native preview.
+
+## 4.0.13
+
+### Patch Changes
+
+- df28e68: Bump dependencies
+
 ## 4.0.12
 
 ### Patch Changes

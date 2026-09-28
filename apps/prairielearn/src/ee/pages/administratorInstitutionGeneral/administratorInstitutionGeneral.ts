@@ -4,12 +4,12 @@ import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import { markdownToHtml } from '@prairielearn/markdown';
 import { loadSqlEquiv, queryRow, runInTransactionAsync } from '@prairielearn/postgres';
+import { getCanonicalTimezones } from '@prairielearn/utils/timezone';
 
 import { config } from '../../../lib/config.js';
 import { InstitutionSchema } from '../../../lib/db-types.js';
 import { validateGithubCourseOwner } from '../../../lib/github.js';
 import { typedAsyncHandler } from '../../../lib/res-locals.js';
-import { getCanonicalTimezones } from '../../../lib/timezones.js';
 import { UidRegexpSchema } from '../../../lib/uid-regexp.js';
 import { insertAuditLog } from '../../../models/audit-log.js';
 import {
@@ -36,7 +36,9 @@ router.get(
   '/',
   typedAsyncHandler<'plain'>(async (req, res) => {
     const institution = await getInstitution(req.params.institution_id);
-    const availableTimezones = await getCanonicalTimezones([institution.display_timezone]);
+    const availableTimezones = getCanonicalTimezones({
+      alwaysInclude: [institution.display_timezone],
+    });
     const statistics = await queryRow(
       sql.select_institution_statistics,
       { institution_id: req.params.institution_id },

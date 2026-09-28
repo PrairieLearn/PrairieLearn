@@ -49,6 +49,22 @@ WITH
     GROUP BY
       ls.instance_question_id
   ),
+  student_label_agg AS (
+    SELECT
+      sle.enrollment_id,
+      jsonb_agg(
+        sle.student_label_id
+        ORDER BY
+          sle.student_label_id
+      ) AS student_label_ids
+    FROM
+      student_label_enrollments AS sle
+      JOIN enrollments AS e ON e.id = sle.enrollment_id
+    WHERE
+      e.course_instance_id = $course_instance_id
+    GROUP BY
+      sle.enrollment_id
+  ),
   team_members AS (
     SELECT
       tu.team_id,
@@ -84,7 +100,8 @@ SELECT
   -- https://papers.ssrn.com/sol3/papers.cfm?abstract_id=4603146
   ((iq.id % 21317) * 45989) % 3767 AS iq_stable_order,
   COALESCE(ri.rubric_grading_item_ids, '[]'::jsonb) AS rubric_grading_item_ids,
-  e.id AS enrollment_id
+  e.id AS enrollment_id,
+  COALESCE(sla.student_label_ids, '[]'::jsonb) AS student_label_ids
 FROM
   instance_questions AS iq
   JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
@@ -98,6 +115,7 @@ FROM
     AND e.course_instance_id = a.course_instance_id
   )
   LEFT JOIN team_members AS tm ON (tm.team_id = g.id)
+  LEFT JOIN student_label_agg AS sla ON sla.enrollment_id = e.id
   LEFT JOIN users AS agu ON (agu.id = iq.assigned_grader)
   LEFT JOIN users AS lgu ON (lgu.id = iq.last_grader)
   LEFT JOIN issue_count AS ic ON (ic.instance_question_id = iq.id)

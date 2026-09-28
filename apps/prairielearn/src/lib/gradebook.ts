@@ -3,7 +3,7 @@ import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 import {
   type AuthzDataForAccessControl,
   resolveModernAssessmentAccessResultsBatch,
-  resolverResultToAuthzAssessmentForInstance,
+  resolverResultToAssessmentAuthzResultForInstance,
 } from './assessment-access-control/authz.js';
 import { type CourseInstance } from './db-types.js';
 import {
@@ -50,7 +50,7 @@ async function applyModernAccessControl<
     if (!row.modern_access_control) continue;
     const assessmentAccess = modernAccessByAssessment.get(row.assessment_id);
     if (assessmentAccess) {
-      const authzResult = resolverResultToAuthzAssessmentForInstance({
+      const authzResult = resolverResultToAssessmentAuthzResultForInstance({
         result: assessmentAccess,
         authzMode: params.authzData.mode,
         displayTimezone: params.courseInstance.display_timezone,

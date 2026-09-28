@@ -5,6 +5,10 @@ import fs from 'fs-extra';
 import * as shlex from 'shlex';
 import { z } from 'zod';
 
+import {
+  imageRegistryErrorText,
+  isSupportedImageRegistry,
+} from '@prairielearn/docker-utils/registry';
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import * as sqldb from '@prairielearn/postgres';
@@ -14,6 +18,7 @@ import {
   ArrayFromStringOrArraySchema,
   BooleanFromCheckboxSchema,
   IntegerFromStringOrEmptySchema,
+  parseRequestBody,
 } from '@prairielearn/zod';
 
 import { PageLayout } from '../../components/PageLayout.js';
@@ -26,6 +31,7 @@ import {
   StaffTagSchema,
   StaffTopicSchema,
 } from '../../lib/client/safe-db-types.js';
+import { getQuestionPreviewUrl } from '../../lib/client/url.js';
 import { copyQuestionBetweenCourses } from '../../lib/copy-content.js';
 import { EnumGradingMethodSchema } from '../../lib/db-types.js';
 import { getOriginalHash } from '../../lib/editorUtil.js';
@@ -69,6 +75,12 @@ import {
 
 const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
+
+const ImageSchema = z
+  .string()
+  .trim()
+  .refine(isSupportedImageRegistry, imageRegistryErrorText)
+  .optional();
 
 // This will not correctly handle any filenames that have a comma in them.
 // Currently, we do not have any such filenames in prod so we don't think that
@@ -178,8 +190,9 @@ router.post(
       }
       req.body.preferences = preferencesArray.filter(Boolean);
 
-      const body = z
-        .object({
+      const body = parseRequestBody(
+        req,
+        z.object({
           orig_hash: z.string(),
           qid: z.string(),
           title: z.string(),
@@ -189,7 +202,7 @@ router.post(
           single_variant: BooleanFromCheckboxSchema,
           show_correct_answer: BooleanFromCheckboxSchema,
           partial_credit: BooleanFromCheckboxSchema,
-          workspace_image: z.string().optional(),
+          workspace_image: ImageSchema,
           workspace_port: IntegerFromStringOrEmptySchema.nullable().optional(),
           workspace_home: z.string().optional(),
           workspace_args: ArgumentsSchema,
@@ -238,7 +251,7 @@ router.post(
               });
             })
             .default([]),
-          external_grading_image: z.string().optional(),
+          external_grading_image: ImageSchema,
           external_grading_files: GradedFilesSchema,
           external_grading_entrypoint: ArgumentsSchema,
           external_grading_timeout: IntegerFromStringOrEmptySchema.optional(),
@@ -247,8 +260,8 @@ router.post(
           share_publicly: BooleanFromCheckboxSchema,
           share_source_publicly: BooleanFromCheckboxSchema,
           sharing_sets: ArrayFromStringOrArraySchema.optional(),
-        })
-        .parse(req.body);
+        }),
+      );
 
       const shortNameValidation = validateShortName(body.qid, res.locals.question.qid ?? undefined);
       if (!shortNameValidation.valid) {
@@ -653,6 +666,11 @@ router.get(
 
     const questionGHLink = courseRepoContentUrl(course, `questions/${question.qid}`);
 
+    const publicLink = new URL(
+      getQuestionPreviewUrl({ courseId: course.id, questionId: question.id, isPublic: true }),
+      host,
+    ).href;
+
     const qids = await sqldb.queryScalars(sql.qids, { course_id: course.id }, z.string());
 
     const assessmentsWithQuestion = await sqldb.queryRows(
@@ -669,8 +687,7 @@ router.get(
 
     let sharingSets: QuestionSharingSetRow[] | undefined;
     let sharingConstraints:
-      | Awaited<ReturnType<typeof selectQuestionSharingConstraints>>
-      | undefined;
+      Awaited<ReturnType<typeof selectQuestionSharingConstraints>> | undefined;
     if (sharingEnabled) {
       sharingSets = await selectSharingSetsForQuestion({
         question_id: question.id,
@@ -718,6 +735,7 @@ router.get(
               courseInstance={courseInstance}
               csrfToken={__csrf_token}
               questionGHLink={questionGHLink}
+              publicLink={publicLink}
               questionTest={{ path: questionTestPath, csrfToken: questionTestCsrfToken }}
               questionTags={parsedQuestionTags}
               qids={qids}

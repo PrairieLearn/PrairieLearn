@@ -14,9 +14,7 @@ const DATE_CONTROL_FIELD_NAMES = [
 ] as const;
 
 export type OverridableFieldName =
-  | (typeof DATE_CONTROL_FIELD_NAMES)[number]
-  | 'questionVisibility'
-  | 'scoreVisibility';
+  (typeof DATE_CONTROL_FIELD_NAMES)[number] | 'questionVisibility' | 'scoreVisibility';
 
 export interface DeadlineEntry {
   date: string;
@@ -40,8 +38,7 @@ export interface DueValue {
 }
 
 export type AfterLastDeadlineValue =
-  | { allowSubmissions: false }
-  | { allowSubmissions: true; credit: number };
+  { allowSubmissions: false } | { allowSubmissions: true; credit: number };
 
 export interface QuestionVisibilityValue {
   hidden: boolean;

@@ -9,7 +9,7 @@ import { callScalar } from '@prairielearn/postgres';
 import { Hydrate } from '@prairielearn/react/server';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 import { assertNever } from '@prairielearn/utils';
-import { UniqueUidsFromStringSchema } from '@prairielearn/zod';
+import { UniqueUidsFromStringSchema, parseRequestBody } from '@prairielearn/zod';
 
 import { InsufficientCoursePermissionsCardPage } from '../../components/InsufficientCoursePermissionsCard.js';
 import { PageLayout } from '../../components/PageLayout.js';
@@ -249,7 +249,7 @@ router.post(
       throw new HttpStatusError(400, 'Modern publishing is not enabled for this course instance');
     }
 
-    const body = BodySchema.parse(req.body);
+    const body = parseRequestBody(req, BodySchema);
 
     switch (body.__action) {
       case 'invite_uids': {
@@ -532,7 +532,6 @@ router.get(
         content: (
           <Hydrate fullHeight>
             <InstructorStudents
-              isDevMode={config.devMode}
               authzData={authz_data}
               students={students}
               studentLabels={z.array(StaffStudentLabelSchema).parse(studentLabels)}

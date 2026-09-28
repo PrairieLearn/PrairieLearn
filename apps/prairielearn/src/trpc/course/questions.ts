@@ -4,6 +4,7 @@ import { TRPCError } from '@trpc/server';
 import fs from 'fs-extra';
 import { z } from 'zod';
 
+import { throwAppError } from '@prairielearn/trpc/server';
 import { IdSchema } from '@prairielearn/zod';
 
 import {
@@ -47,7 +48,6 @@ import type {
   ZoneQuestionBlockJsonInput,
 } from '../../schemas/infoAssessment.js';
 import type { QuestionJsonInput } from '../../schemas/infoQuestion.js';
-import { throwAppError } from '../app-errors.js';
 
 import {
   type TRPCContext,
@@ -78,14 +78,11 @@ export interface QuestionsError {
   AddToAssessment: { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
   RemoveFromAssessment: { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
   ChangeTopic:
-    | { code: 'INVALID_TOPIC'; topic: string }
-    | { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
+    { code: 'INVALID_TOPIC'; topic: string } | { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
   AddTags:
-    | { code: 'INVALID_TAGS'; tags: string[] }
-    | { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
+    { code: 'INVALID_TAGS'; tags: string[] } | { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
   RemoveTags:
-    | { code: 'INVALID_TAGS'; tags: string[] }
-    | { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
+    { code: 'INVALID_TAGS'; tags: string[] } | { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
   DeleteQuestions:
     | { code: 'SYNC_JOB_FAILED'; jobSequenceId: string }
     | { code: 'QUESTIONS_USED_IN_OTHER_COURSES'; qids: string[] };
@@ -667,7 +664,7 @@ const previewDeletion = t.procedure
     }
 
     const collator = new Intl.Collator(undefined, { numeric: true });
-    const questionMemberships = [...membershipsByQid].map(([qid, perCourseInstance]) => ({
+    const questionMemberships = Array.from(membershipsByQid, ([qid, perCourseInstance]) => ({
       qid,
       courseInstances: [...perCourseInstance.values()]
         .sort((a, b) => collator.compare(a.courseInstanceShortName, b.courseInstanceShortName))

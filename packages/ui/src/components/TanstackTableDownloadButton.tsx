@@ -1,6 +1,8 @@
-import type { Table } from '@tanstack/react-table';
+import type { RowData } from '@tanstack/react-table';
 
 import { downloadAsCSV, downloadAsJSON } from '@prairielearn/browser-utils';
+
+import type { TanstackTableInstance } from '../tanstack-table.js';
 
 export interface TanstackTableCsvCell {
   value: string | string[] | number | null;
@@ -8,8 +10,8 @@ export interface TanstackTableCsvCell {
   name: string;
 }
 
-export interface TanstackTableDownloadButtonProps<RowDataModel> {
-  table: Table<RowDataModel>;
+export interface TanstackTableDownloadButtonProps<RowDataModel extends RowData> {
+  table: TanstackTableInstance<RowDataModel>;
   filenameBase: string;
   mapRowToData: (row: RowDataModel) => TanstackTableCsvCell[] | null;
   /**
@@ -39,7 +41,7 @@ export interface TanstackTableDownloadButtonProps<RowDataModel> {
  * @param params.hasSelection - Whether the table has selection enabled
  * @param params.additionalMenuItems - Additional menu items to render at the end of the dropdown
  */
-export function TanstackTableDownloadButton<RowDataModel>({
+export function TanstackTableDownloadButton<RowDataModel extends RowData>({
   table,
   filenameBase,
   mapRowToData,

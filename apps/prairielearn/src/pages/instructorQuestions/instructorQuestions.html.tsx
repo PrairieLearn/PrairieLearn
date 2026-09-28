@@ -2,6 +2,7 @@ import { QueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Alert } from 'react-bootstrap';
 
+import { QueryClientProviderDebug } from '@prairielearn/trpc/react';
 import { NuqsAdapter } from '@prairielearn/ui';
 
 import { QuestionsTable } from '../../components/QuestionsTable.js';
@@ -11,7 +12,6 @@ import type {
   PublicTag,
   PublicTopic,
 } from '../../lib/client/safe-db-types.js';
-import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
 import { createCourseTrpcClient } from '../../trpc/course/client.js';
 import { TRPCProvider, useTRPC } from '../../trpc/course/context.js';
 
@@ -32,12 +32,11 @@ interface InstructorQuestionsTableProps {
   qidPrefix?: string;
   trpcCsrfToken: string;
   search: string;
-  isDevMode: boolean;
 }
 
 type InstructorQuestionsTableInnerProps = Omit<
   InstructorQuestionsTableProps,
-  'search' | 'isDevMode' | 'trpcCsrfToken'
+  'search' | 'trpcCsrfToken'
 >;
 
 function InstructorQuestionsTableInner({
@@ -106,7 +105,6 @@ function InstructorQuestionsTableInner({
 
 export function InstructorQuestionsTable({
   search,
-  isDevMode,
   trpcCsrfToken,
   courseId,
   ...innerProps
@@ -118,7 +116,7 @@ export function InstructorQuestionsTable({
 
   return (
     <NuqsAdapter search={search}>
-      <QueryClientProviderDebug client={queryClient} isDevMode={isDevMode}>
+      <QueryClientProviderDebug client={queryClient}>
         <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
           <InstructorQuestionsTableInner courseId={courseId} {...innerProps} />
         </TRPCProvider>

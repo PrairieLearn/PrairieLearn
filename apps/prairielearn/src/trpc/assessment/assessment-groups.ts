@@ -3,6 +3,7 @@ import { z } from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
 import { runInTransactionAsync } from '@prairielearn/postgres';
+import { throwAppError } from '@prairielearn/trpc/server';
 import { IdSchema } from '@prairielearn/zod';
 
 import { StaffGroupConfigSchema } from '../../lib/client/safe-db-types.js';
@@ -32,7 +33,6 @@ import {
   selectUidsNotInGroup,
 } from '../../models/group.js';
 import type { AssessmentJsonInput } from '../../schemas/infoAssessment.js';
-import { throwAppError } from '../app-errors.js';
 
 import {
   type createContext,

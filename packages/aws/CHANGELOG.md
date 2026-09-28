@@ -1,5 +1,21 @@
 # @prairielearn/aws
 
+## 3.2.1
+
+### Patch Changes
+
+- 8151381: Build with the official TypeScript 7 release instead of the native preview.
+
+## 3.2.0
+
+### Minor Changes
+
+- 7b5bb27: Retry Auto Scaling termination lifecycle completion while the action remains active.
+
+### Patch Changes
+
+- df28e68: Bump dependencies
+
 ## 3.1.0
 
 ### Minor Changes

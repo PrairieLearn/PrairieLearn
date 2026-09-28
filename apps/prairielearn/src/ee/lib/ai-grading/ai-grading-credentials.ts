@@ -1,6 +1,6 @@
 import { config } from '../../../lib/config.js';
 import { type CourseInstance, type EnumAiGradingProvider } from '../../../lib/db-types.js';
-import { decryptFromStorage } from '../../../lib/storage-crypt.js';
+import { decryptFromStorage } from '../../../lib/encrypted-storage.js';
 import { selectCredentials } from '../../../models/ai-grading-credentials.js';
 
 interface ResolvedProviderKeys {

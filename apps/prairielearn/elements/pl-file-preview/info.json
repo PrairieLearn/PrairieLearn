@@ -1,14 +1,18 @@
 {
   "controller": "pl-file-preview.py",
   "dependencies": {
-    "elementScripts": ["pl-file-preview.js"],
     "elementStyles": ["pl-file-preview.css"]
   },
   "dynamicDependencies": {
+    "elementScripts": {
+      "pl-file-preview/pl-file-preview.js": "pl-file-preview.js",
+      "pl-file-preview/notebook.css": "notebook.css"
+    },
     "nodeModulesScripts": {
       "dompurify": "dompurify/dist/purify.min.js",
       "notebookjs": "notebookjs/notebook.js",
       "marked": "marked/lib/marked.esm.js",
+      "ansi_up": "ansi_up/ansi_up.js",
       "@prairielearn/marked-mathjax": "@prairielearn/marked-mathjax/dist/index.js"
     }
   }

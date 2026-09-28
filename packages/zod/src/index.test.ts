@@ -9,6 +9,7 @@ import {
   IdSchema,
   IntegerFromStringOrEmptySchema,
   IntervalSchema,
+  JsonFromStringSchema,
   UniqueUidsFromStringSchema,
 } from './index.js';
 
@@ -37,6 +38,16 @@ describe('IdSchema', () => {
     assert.equal(id, '123');
   });
 
+  it('parses a numeric id', () => {
+    const id = IdSchema.parse(123);
+    assert.equal(id, '123');
+  });
+
+  it('parses the largest PostgreSQL id', () => {
+    const id = IdSchema.parse('9223372036854775807');
+    assert.equal(id, '9223372036854775807');
+  });
+
   it('parses a nullable id', () => {
     const id = IdSchema.nullable().parse(null);
     assert.equal(id, null);
@@ -52,8 +63,23 @@ describe('IdSchema', () => {
     assert.isFalse(result.success);
   });
 
+  it('rejects a zero ID', () => {
+    const result = IdSchema.safeParse('0');
+    assert.isFalse(result.success);
+  });
+
   it('rejects a non-numeric ID', () => {
     const result = IdSchema.safeParse('abc');
+    assert.isFalse(result.success);
+  });
+
+  it('rejects a non-scalar ID', () => {
+    const result = IdSchema.safeParse(['1']);
+    assert.isFalse(result.success);
+  });
+
+  it('rejects an ID outside the PostgreSQL range', () => {
+    const result = IdSchema.safeParse('9223372036854775808');
     assert.isFalse(result.success);
   });
 });
@@ -155,6 +181,18 @@ describe('IntegerFromStringOrEmptySchema', () => {
 
   it('rejects a decimal string', () => {
     const result = IntegerFromStringOrEmptySchema.safeParse('123.45');
+    assert.isFalse(result.success);
+  });
+});
+
+describe('JsonFromStringSchema', () => {
+  it('parses JSON strings', () => {
+    const result = JsonFromStringSchema.parse('{"name":"Alice"}');
+    assert.deepEqual(result, { name: 'Alice' });
+  });
+
+  it('rejects malformed JSON', () => {
+    const result = JsonFromStringSchema.safeParse('{');
     assert.isFalse(result.success);
   });
 });

@@ -1,5 +1,9 @@
 # Canvas conversion tool
 
+!!! warning "Legacy tool"
+
+    PrairieLearn now has a built-in [content importer](https://docs.prairielearn.com/importingContent/) for Canvas and other learning management systems. We recommend using the built-in importer instead of this legacy converter. It accepts QTI exports in `.zip` or `.imscc` format directly within PrairieLearn and does not require a Canvas API token.
+
 ## Converting Canvas assessments to PrairieLearn
 
 This directory contains scripts that use the Canvas API to import course assessments into

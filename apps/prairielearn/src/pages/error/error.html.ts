@@ -60,9 +60,11 @@ export function ErrorPage({
 
         <div class="card-body">
           <h2 class="mb-3 h4">${errorHeading}</h2>
-          ${isZodError
-            ? html` <pre class="bg-light border rounded p-2">${zodErrorDetails}</pre> `
-            : ''}
+          ${
+            isZodError
+              ? html` <pre class="bg-light border rounded p-2">${zodErrorDetails}</pre> `
+              : ''
+          }
           ${unsafeHtml(errorInfo ?? '')}
 
           <p><strong>Error ID:</strong> <code>${errorId}</code></p>
@@ -80,48 +82,62 @@ export function ErrorPage({
             </a>
           </div>
 
-          ${outputStderr
-            ? html`
-                <p><strong>Standard error:</strong></p>
-                <pre class="bg-dark text-white rounded p-2">${outputStderr}</pre>
-              `
-            : ''}
-          ${outputStdout
-            ? html`
-                <p><strong>Standard output:</strong></p>
-                <pre class="bg-dark text-white rounded p-2">${outputStdout}</pre>
-              `
-            : ''}
-          ${error.stack
-            ? html`
-                <p class="mt-3"><strong>Stack trace:</strong></p>
-                <pre class="bg-dark text-white rounded p-2">${formatErrorStack(error)}</pre>
-              `
-            : ''}
-          ${formattedSqlQuery
-            ? html`
-                <p><strong>SQL query:</strong></p>
-                <pre class="bg-dark text-white rounded p-2">${formattedSqlQuery}</pre>
-              `
-            : ''}
-          ${!isEmpty(sqlParams)
-            ? html`
-                <p><strong>SQL params:</strong></p>
-                <pre class="bg-dark text-white rounded p-2">${formatJson(sqlParams)}</pre>
-              `
-            : ''}
-          ${!isEmpty(sqlError)
-            ? html`
-                <p><strong>SQL error data:</strong></p>
-                <pre class="bg-dark text-white rounded p-2">${formatJson(sqlError)}</pre>
-              `
-            : ''}
-          ${!isEmpty(restData)
-            ? html`
-                <p><strong>Additional data:</strong></p>
-                <pre class="bg-dark text-white rounded p-2">${formatJson(restData)}</pre>
-              `
-            : ''}
+          ${
+            outputStderr
+              ? html`
+                  <p><strong>Standard error:</strong></p>
+                  <pre class="bg-dark text-white rounded p-2">${outputStderr}</pre>
+                `
+              : ''
+          }
+          ${
+            outputStdout
+              ? html`
+                  <p><strong>Standard output:</strong></p>
+                  <pre class="bg-dark text-white rounded p-2">${outputStdout}</pre>
+                `
+              : ''
+          }
+          ${
+            error.stack
+              ? html`
+                  <p class="mt-3"><strong>Stack trace:</strong></p>
+                  <pre class="bg-dark text-white rounded p-2">${formatErrorStack(error)}</pre>
+                `
+              : ''
+          }
+          ${
+            formattedSqlQuery
+              ? html`
+                  <p><strong>SQL query:</strong></p>
+                  <pre class="bg-dark text-white rounded p-2">${formattedSqlQuery}</pre>
+                `
+              : ''
+          }
+          ${
+            !isEmpty(sqlParams)
+              ? html`
+                  <p><strong>SQL params:</strong></p>
+                  <pre class="bg-dark text-white rounded p-2">${formatJson(sqlParams)}</pre>
+                `
+              : ''
+          }
+          ${
+            !isEmpty(sqlError)
+              ? html`
+                  <p><strong>SQL error data:</strong></p>
+                  <pre class="bg-dark text-white rounded p-2">${formatJson(sqlError)}</pre>
+                `
+              : ''
+          }
+          ${
+            !isEmpty(restData)
+              ? html`
+                  <p><strong>Additional data:</strong></p>
+                  <pre class="bg-dark text-white rounded p-2">${formatJson(restData)}</pre>
+                `
+              : ''
+          }
         </div>
       </div>
     `,

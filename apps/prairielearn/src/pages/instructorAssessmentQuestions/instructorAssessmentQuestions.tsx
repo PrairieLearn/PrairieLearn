@@ -6,7 +6,10 @@ import { HttpStatusError } from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import { Hydrate } from '@prairielearn/react/server';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
+import { JsonFromStringSchema, parseRequestBody } from '@prairielearn/zod';
 
+import { CalculatorPreviewAssets } from '../../components/CalculatorAssets.js';
+import { InsufficientCoursePermissionsCardPage } from '../../components/InsufficientCoursePermissionsCard.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { selectAssessmentQuestions } from '../../lib/assessment-question.js';
 import { compiledScriptTag, compiledStylesheetTag } from '../../lib/assets.js';
@@ -14,6 +17,7 @@ import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
 import { getAssessmentTrpcUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
+import { getCourseOwners } from '../../lib/course.js';
 import { getAssessmentInfoJsonPath, getOriginalHash } from '../../lib/editorUtil.js';
 import { FileModifyEditor } from '../../lib/editors.js';
 import { features } from '../../lib/features/index.js';
@@ -28,7 +32,11 @@ import {
 } from '../../models/group.js';
 import { selectCourseHasQuestions } from '../../models/questions.js';
 import { resetVariantsForAssessmentQuestion } from '../../models/variant.js';
-import { type EnumAssessmentTool, ZoneAssessmentJsonSchema } from '../../schemas/infoAssessment.js';
+import {
+  CalculatorSettingsSchema,
+  type EnumAssessmentTool,
+  ZoneAssessmentJsonSchema,
+} from '../../schemas/infoAssessment.js';
 
 import { AssessmentQuestionsEditor } from './components/AssessmentEditor.js';
 import { serializeZonesForJson } from './utils/dataTransform.js';
@@ -36,16 +44,7 @@ import { buildHierarchicalAssessment } from './utils/questions.js';
 
 const router = Router();
 
-const SaveQuestionsZonesSchema = z
-  .string()
-  .transform((str) => {
-    try {
-      return JSON.parse(str);
-    } catch {
-      throw new Error('Invalid JSON in zones field');
-    }
-  })
-  .pipe(z.array(ZoneAssessmentJsonSchema));
+const SaveQuestionsZonesSchema = JsonFromStringSchema.pipe(z.array(ZoneAssessmentJsonSchema));
 
 const SaveQuestionsSchema = z.object({
   __action: z.literal('save_questions'),
@@ -56,14 +55,30 @@ const SaveQuestionsSchema = z.object({
 router.get(
   '/',
   typedAsyncHandler<'assessment'>(async (req, res) => {
-    if (!res.locals.authz_data.has_course_permission_preview) {
-      throw new HttpStatusError(403, 'Access denied (must be course previewer)');
-    }
-
     const pageContext = extractPageContext(res.locals, {
       pageType: 'assessment',
       accessType: 'instructor',
     });
+
+    if (!pageContext.authz_data.has_course_permission_preview) {
+      // Access denied, but instead of sending them to an error page, we'll show
+      // them an explanatory message and prompt them to get view permissions.
+      const courseOwners = await getCourseOwners(pageContext.course.id);
+      res.status(403).send(
+        InsufficientCoursePermissionsCardPage({
+          resLocals: res.locals,
+          navContext: {
+            type: 'instructor',
+            page: 'assessment',
+            subPage: 'questions',
+          },
+          courseOwners,
+          pageTitle: 'Questions',
+          requiredPermissions: 'Previewer',
+        }),
+      );
+      return;
+    }
 
     const questionRows = await selectAssessmentQuestions({
       assessment_id: res.locals.assessment.id,
@@ -96,7 +111,10 @@ router.get(
     for (const row of zoneToolRows) {
       const zone = jsonZones[row.zone_number - 1];
       zone.tools ??= {};
-      zone.tools[row.tool] = { enabled: row.enabled };
+      zone.tools[row.tool] = {
+        enabled: row.enabled,
+        ...CalculatorSettingsSchema.parse(row.settings),
+      };
     }
 
     // Load assessment-level tool defaults for zone inheritance display.
@@ -135,6 +153,7 @@ router.get(
     res.send(
       PageLayout({
         resLocals: res.locals,
+        postContent: CalculatorPreviewAssets(),
         pageTitle: 'Questions',
         headContent: [
           compiledScriptTag('instructorAssessmentQuestionsClient.ts'),
@@ -159,6 +178,13 @@ router.get(
               jsonZones={jsonZones}
               assessment={pageContext.assessment}
               assessmentToolDefaults={assessmentToolDefaults}
+              assessmentCalculatorType={
+                CalculatorSettingsSchema.parse(
+                  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+                  assessmentToolDefaultRows.find((row) => row.tool === 'calculator')?.settings ??
+                    {},
+                ).type
+              }
               groupsConfigured={groupsConfigured}
               groupRoles={groupRoles}
               assessmentCanView={assessmentCanView}
@@ -208,7 +234,7 @@ router.post(
         throw new HttpStatusError(403, 'Access denied (must be course editor)');
       }
 
-      const body = SaveQuestionsSchema.parse(req.body);
+      const body = parseRequestBody(req, SaveQuestionsSchema);
 
       const assessmentPath = getAssessmentInfoJsonPath(res.locals);
 

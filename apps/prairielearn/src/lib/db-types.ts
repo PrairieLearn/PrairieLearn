@@ -126,11 +126,11 @@ export const QuestionPreferenceValuesSchema = z.record(
 // Result of check_assessment_access sproc
 const SprocCheckAssessmentAccessSchema = z.object({
   active: z.boolean().nullable(),
-  credit: z.union([z.string(), z.literal('None')]),
-  end_date: z.union([z.string(), z.literal('—')]),
+  credit: z.number().nullable(),
+  end_date: DateFromISOString.nullable(),
   mode: EnumModeSchema.nullable(),
-  start_date: z.union([z.string(), z.literal('—')]),
-  time_limit_min: z.union([z.string(), z.literal('—')]),
+  start_date: DateFromISOString.nullable(),
+  time_limit_min: z.number().nullable(),
 });
 
 // Result of users_get_displayed_role sproc
@@ -144,36 +144,24 @@ export const SprocAuthzAssessmentSchema = z.object({
   active: z.boolean(),
   authorized: z.boolean(),
   credit: z.number().nullable(),
-  credit_date_string: z.string().nullable(),
+  credit_end_date: DateFromISOString.nullable(),
   exam_access_end: DateFromISOString.nullable(),
   mode: EnumModeSchema.nullable(),
-  next_active_time: z.string().nullable(),
+  next_active_credit: z.number().nullable(),
+  next_active_date: DateFromISOString.nullable(),
   password: z.string().nullable(),
   show_before_release: z.boolean(),
   show_closed_assessment: z.boolean(),
   show_closed_assessment_score: z.boolean(),
+  staff_override: z.boolean(),
   time_limit_min: z.number().nullable(),
 });
 export type SprocAuthzAssessment = z.infer<typeof SprocAuthzAssessmentSchema>;
 
 // Result of authz_assessment_instance sproc
-export const SprocAuthzAssessmentInstanceSchema = z.object({
-  access_rules: z.array(SprocCheckAssessmentAccessSchema),
-  access_timeline: z.array(AccessTimelineEntrySchema).readonly(),
-  active: z.boolean(),
-  authorized: z.boolean(),
+export const SprocAuthzAssessmentInstanceSchema = SprocAuthzAssessmentSchema.extend({
   authorized_edit: z.boolean(),
-  credit: z.number().nullable(),
-  credit_date_string: z.string().nullable(),
-  exam_access_end: DateFromISOString.nullable(),
-  mode: EnumModeSchema.nullable(),
-  next_active_time: z.string().nullable(),
-  password: z.string().nullable(),
-  show_before_release: z.boolean(),
-  show_closed_assessment: z.boolean(),
-  show_closed_assessment_score: z.boolean(),
   time_limit_expired: z.boolean(),
-  time_limit_min: z.number().nullable(),
 });
 export type SprocAuthzAssessmentInstance = z.infer<typeof SprocAuthzAssessmentInstanceSchema>;
 
@@ -518,7 +506,7 @@ export const AssessmentInstanceSchema = z.object({
   mode: EnumModeSchema.nullable(),
   modified_at: DateFromISOString,
   number: z.number(),
-  open: z.boolean().nullable(),
+  open: z.boolean(),
   points: z.number().nullable(),
   score_perc: z.number().nullable(),
   score_perc_pending: z.number(),
@@ -1556,6 +1544,7 @@ export const RubricItemSchema = z.object({
 export type RubricItem = z.infer<typeof RubricItemSchema>;
 
 export const SamlProviderSchema = z.object({
+  allow_missing_name: z.boolean(),
   certificate: z.string(),
   email_attribute: z.string().nullable(),
   family_name_attribute: z.string().nullable(),
@@ -1721,6 +1710,12 @@ export const UserSessionSchema = z.object({
   user_id: IdSchema.nullable(),
 });
 export type UserSession = z.infer<typeof UserSessionSchema>;
+
+export const UserSettingsSchema = z.object({
+  enable_single_key_shortcuts: z.boolean(),
+  user_id: IdSchema,
+});
+export type UserSettings = z.infer<typeof UserSettingsSchema>;
 
 export const VariantSchema = z.object({
   authn_user_id: IdSchema,
@@ -1937,6 +1932,7 @@ export const TableNames = [
   'time_series',
   'topics',
   'user_sessions',
+  'user_settings',
   'user_shared_state_values',
   'users',
   'variants',

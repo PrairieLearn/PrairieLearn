@@ -114,14 +114,7 @@ export function AdministratorInstitutionCourse({
         </div>
 
         <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
-        <button
-          type="submit"
-          name="__action"
-          value="update_enrollment_limits"
-          class="btn btn-primary"
-        >
-          Save
-        </button>
+        <button type="submit" class="btn btn-primary">Save</button>
       </form>
 
       <h2 class="h4">Course instances</h2>
@@ -145,16 +138,20 @@ export function AdministratorInstitutionCourse({
                         href="/pl/administrator/institution/${institution.id}/course_instance/${course_instance.id}"
                         >${course_instance.short_name}: ${course_instance.long_name ?? '—'}</a
                       >
-                      ${isDeleted
-                        ? html`<span class="badge text-bg-danger ms-2">Deleted</span>`
-                        : ''}
+                      ${
+                        isDeleted
+                          ? html`<span class="badge text-bg-danger ms-2">Deleted</span>`
+                          : ''
+                      }
                     </div>
                   </td>
                   <td>${enrollment_count}</td>
                   <td>
-                    ${course_instance.enrollment_limit ??
-                    course.course_instance_enrollment_limit ??
-                    institution.course_instance_enrollment_limit}
+                    ${
+                      course_instance.enrollment_limit ??
+                      course.course_instance_enrollment_limit ??
+                      institution.course_instance_enrollment_limit
+                    }
                   </td>
                 </tr>
               `;

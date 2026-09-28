@@ -16,6 +16,7 @@ import {
 } from '../load-migrations.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.filename);
+const MIGRATION_EXTENSIONS = ['.sql', '.js', '.ts', '.mjs'];
 
 const MigrationRowSchema = z.object({
   id: z.coerce.string(),
@@ -31,6 +32,34 @@ interface InitOptions {
     beforeTimestamp?: string | null;
     inclusiveBefore?: boolean;
   };
+}
+
+export interface PendingMigration {
+  filename: string;
+  timestamp: string;
+}
+
+export async function getPendingMigrations({
+  directories,
+  project,
+}: {
+  directories: string[];
+  project: string;
+}): Promise<PendingMigration[]> {
+  const migrationFiles = await readAndValidateMigrationsFromDirectories(
+    directories,
+    MIGRATION_EXTENSIONS,
+  );
+  const migrationsTableExists = await sqldb.queryScalar(sql.migrations_table_exists, z.boolean());
+  const appliedMigrations = migrationsTableExists
+    ? await sqldb.queryRows(sql.get_migrations, { project }, MigrationRowSchema)
+    : [];
+
+  assertMigrationsHaveTimestamps(appliedMigrations);
+
+  return getMigrationsToExecute(sortMigrationFiles(migrationFiles), {
+    excludeMigrations: appliedMigrations,
+  }).map(({ filename, timestamp }) => ({ filename, timestamp }));
 }
 
 export async function init({ directories, project, migrationFilters = {} }: InitOptions) {
@@ -95,6 +124,23 @@ export function getMigrationsToExecute(
   );
 }
 
+function assertMigrationsHaveTimestamps(
+  migrations: { filename: string; timestamp: string | null }[],
+) {
+  const migrationsMissingTimestamps = migrations.filter((migration) => !migration.timestamp);
+  if (migrationsMissingTimestamps.length > 0) {
+    throw new Error(
+      [
+        'The following migrations are missing timestamps:',
+        migrationsMissingTimestamps.map((migration) => `  ${migration.filename}`),
+        // This revision was the most recent commit to `master` before the
+        // code handling indexes was removed.
+        'You must deploy revision 1aa43c7348fa24cf636413d720d06a2fa9e38ef2 first.',
+      ].join('\n'),
+    );
+  }
+}
+
 export async function initWithLock({ directories, project, migrationFilters = {} }: InitOptions) {
   const resolvedMigrationFilters = {
     beforeTimestamp: null,
@@ -139,28 +185,15 @@ export async function initWithLock({ directories, project, migrationFilters = {}
     }
 
     let allMigrations = await sqldb.queryRows(sql.get_migrations, { project }, MigrationRowSchema);
-    const migrationFiles = await readAndValidateMigrationsFromDirectories(directories, [
-      '.sql',
-      '.js',
-      '.ts',
-      '.mjs',
-    ]);
+    const migrationFiles = await readAndValidateMigrationsFromDirectories(
+      directories,
+      MIGRATION_EXTENSIONS,
+    );
 
     // Validation: if we not all previously-executed migrations have timestamps,
     // prompt the user to deploy an earlier version that includes both indexes
     // and timestamps.
-    const migrationsMissingTimestamps = allMigrations.filter((m) => !m.timestamp);
-    if (migrationsMissingTimestamps.length > 0) {
-      throw new Error(
-        [
-          'The following migrations are missing timestamps:',
-          migrationsMissingTimestamps.map((m) => `  ${m.filename}`),
-          // This revision was the most recent commit to `master` before the
-          // code handling indexes was removed.
-          'You must deploy revision 1aa43c7348fa24cf636413d720d06a2fa9e38ef2 first.',
-        ].join('\n'),
-      );
-    }
+    assertMigrationsHaveTimestamps(allMigrations);
 
     // Refetch the list of migrations from the database.
     allMigrations = await sqldb.queryRows(sql.get_migrations, { project }, MigrationRowSchema);

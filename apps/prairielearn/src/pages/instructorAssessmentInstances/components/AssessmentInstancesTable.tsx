@@ -1,22 +1,13 @@
 import { useQuery } from '@tanstack/react-query';
 import {
-  type ColumnDef,
   type ColumnPinningState,
   type ColumnSizingState,
-  type FilterFn,
-  type Header,
   type RowSelectionState,
   type SortingState,
-  type Table,
-  createColumnHelper,
-  getCoreRowModel,
-  getFilteredRowModel,
-  getSortedRowModel,
-  useReactTable,
 } from '@tanstack/react-table';
 import { parseAsString, useQueryState } from 'nuqs';
 import { type ReactNode, useMemo, useState } from 'react';
-import { Alert, Modal } from 'react-bootstrap';
+import { Alert } from 'react-bootstrap';
 
 import {
   type ColumnFilterEntry,
@@ -27,9 +18,14 @@ import {
   NumericInputColumnFilter,
   PresetFilterDropdown,
   TanstackTableCard,
+  type TanstackTableColumnDef,
+  type TanstackTableCoreInstance,
   type TanstackTableCsvCell,
   TanstackTableEmptyState,
+  type TanstackTableFilterFn,
+  type TanstackTableHeader,
   applyMultiSelectFilter,
+  createTanstackTableColumnHelper,
   extractLeafColumnIds,
   numericColumnFilterFn,
   parseAsColumnPinningState,
@@ -39,7 +35,7 @@ import {
   parseAsSortingState,
   parseNumericFilter,
   useColumnFilters,
-  useShiftClickCheckbox,
+  useTanstackTable,
 } from '@prairielearn/ui';
 
 import { FriendlyDate } from '../../../components/FriendlyDate.js';
@@ -55,9 +51,11 @@ import type { AssessmentInstanceRow } from '../instructorAssessmentInstances.typ
 
 import { type HelpModalId, HelpModals } from './HelpModals.js';
 import { InstanceSelectionToolbar } from './InstanceSelectionToolbar.js';
-import { TimeLimitEditForm } from './TimeLimitEditForm.js';
+import { TimeLimitModal } from './TimeLimitModal.js';
 
-const columnHelper = createColumnHelper<AssessmentInstanceRow>();
+type ColumnFilter = (props: { header: TanstackTableHeader<AssessmentInstanceRow> }) => ReactNode;
+
+const columnHelper = createTanstackTableColumnHelper<AssessmentInstanceRow>();
 const DEFAULT_SORT: SortingState = [];
 
 const ROLE_VALUES = ['Staff', 'Student', 'None'] as const;
@@ -93,7 +91,9 @@ const SECONDS_PER_MINUTE = 60;
  * dividing the raw value by `rawUnitsPerMinute` (e.g. 60000 for milliseconds,
  * 60 for seconds) before applying the operator.
  */
-function makeMinutesFilterFn(rawUnitsPerMinute: number): FilterFn<AssessmentInstanceRow> {
+function makeMinutesFilterFn(
+  rawUnitsPerMinute: number,
+): TanstackTableFilterFn<AssessmentInstanceRow> {
   return (row, columnId, value: NumericColumnFilterValue) => {
     const raw = row.getValue<number | null>(columnId);
     if (value.emptyOnly) return raw == null;
@@ -175,18 +175,19 @@ function HelpHeader({
   );
 }
 
-function SelectAllCheckbox({ table }: { table: Table<AssessmentInstanceRow> }) {
+function SelectAllCheckbox({ table }: { table: TanstackTableCoreInstance<AssessmentInstanceRow> }) {
+  const allSelected = table.getIsAllPageRowsSelected();
   return (
     <IndeterminateCheckbox
-      checked={table.getIsAllPageRowsSelected()}
-      indeterminate={table.getIsSomePageRowsSelected()}
+      checked={allSelected}
+      indeterminate={table.getIsSomePageRowsSelected() && !allSelected}
       aria-label="Select all instances"
-      onChange={() => table.toggleAllPageRowsSelected()}
+      onChange={table.getToggleAllPageRowsSelectedHandler()}
     />
   );
 }
 
-const globalFilterFn: FilterFn<AssessmentInstanceRow> = (row, _columnId, value) => {
+const globalFilterFn: TanstackTableFilterFn<AssessmentInstanceRow> = (row, _columnId, value) => {
   const search = String(value).toLowerCase();
   if (!search) return true;
   const r = row.original;
@@ -259,7 +260,6 @@ export function AssessmentInstancesTable({
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [helpModal, setHelpModal] = useState<HelpModalId | null>(null);
   const [timeLimitRow, setTimeLimitRow] = useState<AssessmentInstanceRow | null>(null);
-  const { createCheckboxProps } = useShiftClickCheckbox<AssessmentInstanceRow>();
 
   const { data = initialRows } = useQuery({
     ...trpc.assessmentInstances.list.queryOptions(),
@@ -268,18 +268,20 @@ export function AssessmentInstancesTable({
   });
 
   const columns = useMemo(() => {
-    const cols: ColumnDef<AssessmentInstanceRow, any>[] = [];
+    const cols: TanstackTableColumnDef<AssessmentInstanceRow, any>[] = [];
 
     if (canEdit) {
       cols.push(
         columnHelper.display({
           id: 'select',
           header: ({ table }) => <SelectAllCheckbox table={table} />,
-          cell: ({ row, table }) => (
+          cell: ({ row }) => (
             <input
               type="checkbox"
               aria-label={`Select instance ${row.original.assessment_instance.id}`}
-              {...createCheckboxProps(row, table)}
+              checked={row.getIsSelected()}
+              disabled={!row.getCanSelect()}
+              onChange={row.getToggleSelectedHandler()}
             />
           ),
           size: 40,
@@ -319,7 +321,7 @@ export function AssessmentInstancesTable({
             </a>
           );
         },
-        sortingFn: (rowA, rowB) => {
+        sortFn: (rowA, rowB) => {
           const a = rowA.original;
           const b = rowB.original;
           const nameA = (assessment.team_work ? a.group?.name : a.user?.uid) ?? '';
@@ -399,10 +401,8 @@ export function AssessmentInstancesTable({
           header: () => <HelpHeader label="Role" modalId="roles" onShowHelp={setHelpModal} />,
           cell: (info) => info.getValue(),
           meta: { label: 'Role' },
-          filterFn: (row, columnId, filter: MultiSelectFilterValue<RoleValue>) =>
-            applyMultiSelectFilter(filter, (values) =>
-              values.includes(row.getValue<RoleValue>(columnId)),
-            ),
+          filterFn: (row, _columnId, filter: MultiSelectFilterValue<RoleValue>) =>
+            applyMultiSelectFilter(filter, (values) => values.includes(row.original.role)),
           size: 120,
         }),
       );
@@ -433,11 +433,11 @@ export function AssessmentInstancesTable({
           if (!date) return null;
           return (
             <span className="text-nowrap">
-              <FriendlyDate date={date} timezone={courseInstance.display_timezone} tooltip />
+              <FriendlyDate date={date} timezone={courseInstance.display_timezone} />
             </span>
           );
         },
-        sortingFn: 'datetime',
+        sortFn: 'datetime',
         meta: {
           label: 'Date started',
           autoSize: true,
@@ -477,7 +477,7 @@ export function AssessmentInstancesTable({
             </span>
           );
         },
-        sortingFn: (rowA, rowB) => {
+        sortFn: (rowA, rowB) => {
           const a = rowA.original;
           const b = rowB.original;
           return (
@@ -523,7 +523,6 @@ export function AssessmentInstancesTable({
     assessmentSet.abbreviation,
     courseInstance.id,
     courseInstance.display_timezone,
-    createCheckboxProps,
   ]);
 
   const allColumnIds = useMemo(() => extractLeafColumnIds(columns), [columns]);
@@ -544,8 +543,8 @@ export function AssessmentInstancesTable({
   const [columnVisibility, setColumnVisibility] = useQueryState('columns', columnVisibilityParser);
 
   const defaultPinning: ColumnPinningState = {
-    left: canEdit ? ['select', 'identity'] : ['identity'],
-    right: [],
+    start: canEdit ? ['select', 'identity'] : ['identity'],
+    end: [],
   };
   const [columnPinning, setColumnPinning] = useQueryState(
     'frozen',
@@ -553,10 +552,7 @@ export function AssessmentInstancesTable({
   );
 
   const filters = useMemo(() => {
-    const map: Record<
-      string,
-      (props: { header: Header<AssessmentInstanceRow, unknown> }) => ReactNode
-    > = {
+    const map: Record<string, ColumnFilter> = {
       [roleColumnId]: ({ header }) => (
         <MultiSelectColumnFilter column={header.column} allColumnValues={ROLE_VALUES} />
       ),
@@ -568,7 +564,7 @@ export function AssessmentInstancesTable({
     return map;
   }, [roleColumnId]);
 
-  const table = useReactTable({
+  const table = useTanstackTable({
     data,
     columns,
     columnResizeMode: 'onChange',
@@ -595,9 +591,6 @@ export function AssessmentInstancesTable({
     onColumnVisibilityChange: setColumnVisibility,
     onColumnPinningChange: setColumnPinning,
     onRowSelectionChange: setRowSelection,
-    getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
     defaultColumn: {
       minSize: 80,
       size: 150,
@@ -620,7 +613,7 @@ export function AssessmentInstancesTable({
       timezone={courseInstance.display_timezone}
       groupWork={assessment.team_work}
       isDevMode={isDevMode}
-      onActionSuccess={setSuccessMessage}
+      onActionSuccess={({ message }) => setSuccessMessage(message)}
     />
   ) : null;
 
@@ -728,8 +721,9 @@ export function AssessmentInstancesTable({
 
       {timeLimitRow ? (
         <TimeLimitModal
-          row={timeLimitRow}
+          target={{ kind: 'single', instance: timeLimitRow }}
           timezone={courseInstance.display_timezone}
+          show
           onHide={() => setTimeLimitRow(null)}
           onSuccess={() => {
             setSuccessMessage('Updated the time limit.');
@@ -738,50 +732,6 @@ export function AssessmentInstancesTable({
         />
       ) : null}
     </>
-  );
-}
-
-function TimeLimitModal({
-  row,
-  timezone,
-  onHide,
-  onSuccess,
-}: {
-  row: AssessmentInstanceRow;
-  timezone: string;
-  onHide: () => void;
-  onSuccess: () => void;
-}) {
-  const open = row.assessment_instance.open === true;
-  return (
-    <Modal show onHide={onHide}>
-      <Modal.Header closeButton>
-        <Modal.Title>{open ? 'Change time limit' : 'Re-open instance'}</Modal.Title>
-      </Modal.Header>
-      <Modal.Body>
-        <TimeLimitEditForm
-          mode="single"
-          assessmentInstanceIds={[row.assessment_instance.id]}
-          hasOpenInstance={open && row.time_remaining_sec == null}
-          hasClosedInstance={!open}
-          hasTimeLimitInstance={open && row.time_remaining_sec != null}
-          singleRow={{
-            open,
-            total_time: row.total_time,
-            total_time_sec: row.total_time_sec,
-            time_remaining: row.time_remaining,
-            time_remaining_sec: row.time_remaining_sec,
-            date:
-              row.assessment_instance.date != null
-                ? new Date(row.assessment_instance.date).toISOString()
-                : '',
-          }}
-          timezone={timezone}
-          onCancel={onHide}
-          onSuccess={onSuccess}
-        />
-      </Modal.Body>
-    </Modal>
   );
 }
 

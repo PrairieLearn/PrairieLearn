@@ -27,14 +27,9 @@ function makeStatsCsvFilename(locals: ResLocalsForPage<'instructor-question'>) {
 router.get(
   '/',
   typedAsyncHandler<'instructor-question'>(async (req, res) => {
-    // TODO: Support question statistics for shared questions. For now, forbid
-    // access to question statistics if question is shared from another course.
-    if (res.locals.question.course_id !== res.locals.course.id) {
-      throw new error.HttpStatusError(403, 'Access denied');
-    }
     const rows = await sqldb.queryRows(
       sql.assessment_question_stats,
-      { question_id: res.locals.question.id },
+      { course_id: res.locals.course.id, question_id: res.locals.question.id },
       AssessmentQuestionStatsRowSchema,
     );
 
@@ -51,16 +46,10 @@ router.get(
 router.get(
   '/:filename',
   typedAsyncHandler<'instructor-question'>(async (req, res) => {
-    // TODO: Support question statistics for shared questions. For now, forbid
-    // access to question statistics if question is shared from another course.
-    if (res.locals.question.course_id !== res.locals.course.id) {
-      throw new error.HttpStatusError(403, 'Access denied');
-    }
-
     if (req.params.filename === makeStatsCsvFilename(res.locals)) {
       const cursor = await sqldb.queryCursor(
         sql.assessment_question_stats,
-        { question_id: res.locals.question.id },
+        { course_id: res.locals.course.id, question_id: res.locals.question.id },
         AssessmentQuestionStatsRowSchema,
       );
 

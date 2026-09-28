@@ -1,3 +1,5 @@
+import * as cheerio from 'cheerio';
+import { parse as csvParse } from 'csv-parse/sync';
 import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 import { z } from 'zod';
 
@@ -46,6 +48,52 @@ const customElement = {
 };
 const testQuestions = [addNumbers, addVectors, downloadFile, customElement];
 
+function testSharedQuestionStatistics(
+  previewPageInfo: { siteUrl: string; questionBaseUrl: string },
+  question: { id: string; qid: string },
+) {
+  describe(`Question statistics for ${question.qid}`, () => {
+    it('shows the Statistics tab', async () => {
+      const statsUrl = `${previewPageInfo.questionBaseUrl}/${question.id}/statistics`;
+      const res = await fetch(`${previewPageInfo.questionBaseUrl}/${question.id}/preview`);
+      assert.equal(res.status, 200);
+      const page = await res.text();
+      assert.include(page, `${new URL(statsUrl).pathname}`);
+    });
+
+    it('loads the statistics page and CSV download', async () => {
+      const statsUrl = `${previewPageInfo.questionBaseUrl}/${question.id}/statistics`;
+      const res = await fetch(statsUrl);
+      assert.equal(res.status, 200);
+      const page = await res.text();
+      assert.include(page, `Detailed assessment statistics for question ${question.qid}`);
+
+      const $ = cheerio.load(page);
+      const downloadHref = $('a[href$="stats.csv"]').attr('href');
+      assert.isString(downloadHref);
+
+      const csvRes = await fetch(`${previewPageInfo.siteUrl}${downloadHref}`);
+      assert.equal(csvRes.status, 200);
+      const csvRows = csvParse(await csvRes.text(), {
+        columns: true,
+      }) as unknown as Record<string, string>[];
+      assert.lengthOf(csvRows, 1);
+
+      assert.include(page, 'CONSUMING 101');
+      assert.include(page, '91.2');
+      assert.notInclude(page, 'QA 101');
+      assert.notInclude(page, '12.3');
+
+      assert.equal(csvRows[0].Course, 'CONSUMING 101');
+      assert.equal(csvRows[0].Instance, syncUtil.COURSE_INSTANCE_ID);
+      assert.equal(csvRows[0].QID, question.qid);
+      assert.equal(csvRows[0].Mean, '91.2');
+      assert.equal(csvRows[0].Median, '92.3');
+      assert.equal(csvRows[0]['Num. Sub. average'], '3.45');
+    });
+  });
+}
+
 describe('Shared Question Preview', { timeout: 60_000 }, function () {
   beforeAll(helperServer.before());
 
@@ -66,15 +114,53 @@ describe('Shared Question Preview', { timeout: 60_000 }, function () {
   });
 
   beforeAll(async () => {
+    // The consuming course below imports `addNumbers` by sharing name.
+    await updateCourseSharingName({ course_id: '1', sharing_name: 'test-course' });
+    await sqldb.execute(sql.update_share_publicly, { question_id: addNumbers.id });
+
     // Set up another course to consume shared questions from.
     const consumingCourseData = syncUtil.getCourseData();
     consumingCourseData.course.name = 'CONSUMING 101';
+    const courseInstance = consumingCourseData.courseInstances[syncUtil.COURSE_INSTANCE_ID];
+    const assessment = courseInstance.assessments[syncUtil.ASSESSMENT_ID];
+    assert.isDefined(assessment);
+    const zones = assessment.zones;
+    assert.isDefined(zones);
+    const zone = zones[0];
+    assert.isDefined(zone);
+    zone.questions.push({
+      id: '@test-course/addNumbers',
+      points: 10,
+    });
     await syncUtil.writeAndSyncCourseData(consumingCourseData);
   });
 
   beforeAll(async () => {
-    // Set up a sharing_name on the test course for public question previews
-    await updateCourseSharingName({ course_id: '1', sharing_name: 'test-course' });
+    const ownerStatsCount = await sqldb.queryScalar(
+      sql.update_question_stats_for_course,
+      {
+        average_number_submissions: 1.23,
+        mean_question_score: 12.3,
+        median_question_score: 23.4,
+        course_id: '1',
+        question_id: addNumbers.id,
+      },
+      z.number(),
+    );
+    assert.isAbove(ownerStatsCount, 0);
+
+    const consumingStatsCount = await sqldb.queryScalar(
+      sql.update_question_stats_for_course,
+      {
+        average_number_submissions: 3.45,
+        mean_question_score: 91.2,
+        median_question_score: 92.3,
+        course_id: '2',
+        question_id: addNumbers.id,
+      },
+      z.number(),
+    );
+    assert.equal(consumingStatsCount, 1);
   });
 
   describe('Public Question Previews', () => {
@@ -202,6 +288,8 @@ describe('Shared Question Preview', { timeout: 60_000 }, function () {
     testFileDownloads(previewPageInfo, downloadFile, false);
 
     testElementClientFiles(previewPageInfo, customElement);
+
+    testSharedQuestionStatistics(previewPageInfo, addNumbers);
   });
 
   describe('Shared Question Previews Within a Course Instance', () => {
@@ -218,5 +306,7 @@ describe('Shared Question Preview', { timeout: 60_000 }, function () {
     testFileDownloads(previewPageInfo, downloadFile, false);
 
     testElementClientFiles(previewPageInfo, customElement);
+
+    testSharedQuestionStatistics(previewPageInfo, addNumbers);
   });
 });

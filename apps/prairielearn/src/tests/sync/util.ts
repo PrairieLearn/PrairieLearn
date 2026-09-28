@@ -122,6 +122,7 @@ export const PREFERENCES_QUESTION_ID = 'questionPreferencesTest';
 const course = {
   name: 'TEST 101',
   title: 'Test Course',
+  timezone: 'America/Chicago',
   assessmentSets: [
     {
       name: 'TEST',

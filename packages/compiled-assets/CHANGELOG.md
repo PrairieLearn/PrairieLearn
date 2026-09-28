@@ -1,5 +1,41 @@
 # @prairielearn/compiled-assets
 
+## 4.1.15
+
+### Patch Changes
+
+- f61dbe4: Wait for both development asset compiler contexts to finish disposing before `close()` resolves.
+
+## 4.1.14
+
+### Patch Changes
+
+- 8151381: Build with the official TypeScript 7 release instead of the native preview.
+
+## 4.1.13
+
+### Patch Changes
+
+- 73ca8ef: Bump express dependency
+
+## 4.1.12
+
+### Patch Changes
+
+- 439df7c: Use second argument of Array.from
+
+## 4.1.11
+
+### Patch Changes
+
+- 5fcb568: Migrate esbuild target to es2022
+
+## 4.1.10
+
+### Patch Changes
+
+- df28e68: Bump dependencies
+
 ## 4.1.9
 
 ### Patch Changes

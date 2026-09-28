@@ -1,7 +1,7 @@
 import { Writable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 
-import { afterAll, assert, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, assert, beforeAll, describe, expect, it, vi } from 'vitest';
 import { ZodError, z } from 'zod';
 
 import {
@@ -20,6 +20,7 @@ import {
   queryScalar,
   queryScalars,
 } from './default-pool.js';
+import { PostgresPool } from './pool.js';
 import { makePostgresTestUtils } from './test-utils.js';
 
 const postgresTestUtils = makePostgresTestUtils({
@@ -83,6 +84,19 @@ describe('@prairielearn/postgres', function () {
       const rows = execute('SELECT 33;', { unsed_parameter: true });
       await expect(rows).rejects.toThrow('Unused parameter');
     });
+
+    it.each([0, 70_000])(
+      'binds an array with %i elements as one named parameter',
+      async (length) => {
+        const ids = Array.from({ length }, (_, i) => i + 1);
+        const row = await queryRow(
+          'SELECT cardinality($ids::bigint[]) AS count, $marker::int AS marker, cardinality($ids::bigint[]) AS repeated_count',
+          { ids, marker: 42 },
+          z.object({ count: z.number(), marker: z.number(), repeated_count: z.number() }),
+        );
+        assert.deepEqual(row, { count: length, marker: 42, repeated_count: length });
+      },
+    );
   });
 
   describe('queryRows', () => {
@@ -542,6 +556,41 @@ describe('@prairielearn/postgres', function () {
     });
 
     describe('stream', () => {
+      it('does not read another cursor batch while the current batch is backpressured', async () => {
+        const pool = new PostgresPool();
+        const release = vi.fn();
+        let nextId = 1;
+        const read = vi.fn(async (batchSize: number) => {
+          if (nextId > batchSize * 20) return [];
+
+          return Array.from({ length: batchSize }, () => ({ id: String(nextId++) }));
+        });
+        const close = vi.fn(async () => undefined);
+        const client = {
+          query: () => ({ read, close }),
+          release,
+        };
+        vi.spyOn(pool, 'getClientAsync').mockResolvedValue(
+          client as unknown as Awaited<ReturnType<PostgresPool['getClientAsync']>>,
+        );
+
+        const cursor = await pool.queryCursor(
+          'SELECT id FROM workspaces;',
+          z.object({ id: z.string() }),
+        );
+        const stream = cursor.stream(100);
+        const streamIterator = stream[Symbol.asyncIterator]();
+
+        try {
+          await streamIterator.next();
+          await new Promise((resolve) => setImmediate(resolve));
+          expect(read).toHaveBeenCalledOnce();
+        } finally {
+          assert.isFunction(streamIterator.return);
+          await streamIterator.return!();
+        }
+      });
+
       it('validates with provided schema', async () => {
         const cursor = await queryCursor(
           'SELECT * FROM workspaces WHERE id <= 10 ORDER BY id ASC;',

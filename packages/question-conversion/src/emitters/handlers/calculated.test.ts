@@ -86,7 +86,7 @@ describe('calculatedHandler.renderGeneratePy', () => {
   it('converts Canvas formula syntax to Python', () => {
     const py = calculatedHandler.renderGeneratePy!({
       ...baseBody,
-      formula: 'sqrt([x]) + log([y])',
+      formula: 'sqrt([x]) + log([y]) + ln([x])',
       vars: [
         { name: 'x', min: 1, max: 100, decimalPlaces: 0 },
         { name: 'y', min: 1, max: 10, decimalPlaces: 0 },
@@ -94,6 +94,7 @@ describe('calculatedHandler.renderGeneratePy', () => {
     });
     assert.include(py, 'math.sqrt(x)');
     assert.include(py, 'math.log10(y)');
+    assert.include(py, 'math.log(x)');
   });
 
   it('converts exponentiation ^ to **', () => {

@@ -1,5 +1,23 @@
 # @prairielearn/signed-token
 
+## 4.0.1
+
+### Patch Changes
+
+- 8151381: Build with the official TypeScript 7 release instead of the native preview.
+
+## 4.0.0
+
+### Major Changes
+
+- 5734fd1: Allow prefix-based CSRF tokens to authenticate against caller-defined claims.
+
+## 3.2.1
+
+### Patch Changes
+
+- df28e68: Bump dependencies
+
 ## 3.2.0
 
 ### Minor Changes

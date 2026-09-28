@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/node-metrics",
-  "version": "3.0.8",
+  "version": "3.0.10",
   "type": "module",
   "repository": {
     "type": "git",
@@ -12,17 +12,17 @@
   },
   "main": "./dist/index.js",
   "scripts": {
-    "build": "tsgo",
-    "dev": "tsgo --watch --preserveWatchOutput"
+    "build": "tsc",
+    "dev": "tsc --watch --preserveWatchOutput"
   },
   "dependencies": {
-    "@aws-sdk/client-cloudwatch": "^3.1079.0",
+    "@aws-sdk/client-cloudwatch": "^3.1106.0",
     "loopbench": "^2.0.0"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
     "@types/loopbench": "^1.2.4",
-    "@types/node": "^24.13.2",
-    "@typescript/native-preview": "beta"
+    "@types/node": "^24.13.3",
+    "@typescript/native": "npm:typescript@^7.0.2"
   }
 }

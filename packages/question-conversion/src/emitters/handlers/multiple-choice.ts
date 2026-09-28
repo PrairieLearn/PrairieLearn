@@ -2,7 +2,7 @@ import he from 'he';
 
 import type { IRQuestionBody } from '../../types/ir.js';
 import type { BodyEmitHandler } from '../body-emit-handler.js';
-import { deduplicateChoices } from '../pl-emit-utils.js';
+import { deduplicateChoices, escapeMustacheDelimiters } from '../pl-emit-utils.js';
 
 type MCBody = Extract<IRQuestionBody, { type: 'multiple-choice' }>;
 
@@ -29,7 +29,7 @@ export const multipleChoiceHandler: BodyEmitHandler = {
     for (const choice of deduped) {
       // PL forbids feedback attributes when builtin-grading="false".
       const fb = hasCorrect ? perAnswer?.[choice.html] : undefined;
-      const fbAttr = fb ? ` feedback="${he.escape(fb)}"` : '';
+      const fbAttr = fb == null ? '' : ` feedback="${escapeMustacheDelimiters(he.escape(fb))}"`;
       lines.push(`  <pl-answer correct="${choice.correct}"${fbAttr}>${choice.html}</pl-answer>`);
     }
     lines.push('</pl-multiple-choice>');

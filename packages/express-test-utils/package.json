@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/express-test-utils",
-  "version": "2.0.12",
+  "version": "2.0.14",
   "type": "module",
   "repository": {
     "type": "git",
@@ -9,15 +9,15 @@
   },
   "main": "dist/index.js",
   "scripts": {
-    "build": "tsgo",
-    "dev": "tsgo --watch --preserveWatchOutput"
+    "build": "tsc",
+    "dev": "tsc --watch --preserveWatchOutput"
   },
   "dependencies": {
     "@types/express": "^4.17.25 <5"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/node": "^24.13.2",
-    "@typescript/native-preview": "beta"
+    "@types/node": "^24.13.3",
+    "@typescript/native": "npm:typescript@^7.0.2"
   }
 }

@@ -90,7 +90,7 @@ export async function init(newOptions: Partial<CompiledAssetsOptions>): Promise<
 
     esbuildContext = await esbuild.context({
       entryPoints: sourcePaths,
-      target: 'es2017',
+      target: 'es2022',
       format: 'iife',
       sourcemap: 'inline',
       bundle: true,
@@ -124,7 +124,7 @@ export async function init(newOptions: Partial<CompiledAssetsOptions>): Promise<
 
     splitEsbuildContext = await esbuild.context({
       entryPoints: splitSourcePaths,
-      target: 'es2017',
+      target: 'es2022',
       format: 'esm',
       sourcemap: 'inline',
       bundle: true,
@@ -146,8 +146,7 @@ export async function init(newOptions: Partial<CompiledAssetsOptions>): Promise<
  * Shuts down the development assets compiler if it is running.
  */
 export async function close() {
-  esbuildContext?.dispose();
-  splitEsbuildContext?.dispose();
+  await Promise.all([esbuildContext?.dispose(), splitEsbuildContext?.dispose()]);
 }
 
 export function assertConfigured(): void {
@@ -304,7 +303,7 @@ async function buildAssets(sourceDirectory: string, buildDirectory: string): Pro
   const files = [...scriptFiles, ...styleFiles];
   const buildResult = await esbuild.build({
     entryPoints: files,
-    target: 'es2017',
+    target: 'es2022',
     format: 'iife',
     sourcemap: 'linked',
     bundle: true,
@@ -331,7 +330,7 @@ async function buildAssets(sourceDirectory: string, buildDirectory: string): Pro
   );
   const esmBundleBuildResult = await esbuild.build({
     entryPoints: scriptBundleFiles,
-    target: 'es2017',
+    target: 'es2022',
     format: 'esm',
     sourcemap: 'linked',
     bundle: true,
