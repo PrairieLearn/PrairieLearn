@@ -310,16 +310,22 @@ def test_prepare_accepts_allowed_correct_answer_type(correct_answer: str) -> Non
 
 
 @pytest.mark.parametrize(
-    ("allowed_types", "correct_answer"),
+    ("allowed_types", "correct_answer", "expected_type"),
     [
-        ("finite-set", "{1}"),
-        ("interval", "[1, 2]"),
-        ("set", "{1}"),
+        ("expression", "1", sympy.Expr),
+        ("finite-set", "{1}", sympy.FiniteSet),
+        ("interval", "[1, 2]", sympy.Interval),
+        ("set", "{1}", sympy.Set),
+        ("all", "1", sympy.Expr),
     ],
 )
 def test_incorrect_answer_uses_an_allowed_type(
-    allowed_types: str, correct_answer: str
+    monkeypatch: pytest.MonkeyPatch,
+    allowed_types: str,
+    correct_answer: str,
+    expected_type: type[sympy.Basic],
 ) -> None:
+    monkeypatch.setattr(symbolic_input.random, "randint", lambda _start, _end: 5)
     element_html = build_element_html(f'allowed-types="{allowed_types}"')
     data = make_question_data(correct_answers={"test": correct_answer})
     data["test_type"] = "incorrect"
@@ -329,6 +335,10 @@ def test_incorrect_answer_uses_an_allowed_type(
     symbolic_input.parse(element_html, data)
 
     assert "test" not in data["format_errors"]
+    assert isinstance(
+        psu.json_to_sympy(data["submitted_answers"]["test"], allow_sets=True),
+        expected_type,
+    )
     assert data["partial_scores"]["test"]["score"] == 0
 
 
