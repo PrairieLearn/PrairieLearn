@@ -333,7 +333,7 @@ function ImageTable({
                 <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
                 <button type="submit" class="btn btn-sm btn-primary">
                   <i class="fa fa-sync" aria-hidden="true"></i>
-                  Sync all images from Docker Hub to PrairieLearn
+                  Sync all images to PrairieLearn
                 </button>
               </form>
             </div>
