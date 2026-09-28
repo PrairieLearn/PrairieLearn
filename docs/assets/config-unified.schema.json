@@ -797,7 +797,8 @@
       "anyOf": [
         {
           "type": "string",
-          "format": "uri"
+          "format": "uri",
+          "pattern": "^https:\\/\\/.*"
         },
         {
           "type": "null"
@@ -809,7 +810,8 @@
       "anyOf": [
         {
           "type": "string",
-          "format": "uri"
+          "format": "uri",
+          "pattern": "^https:\\/\\/.*"
         },
         {
           "type": "null"
