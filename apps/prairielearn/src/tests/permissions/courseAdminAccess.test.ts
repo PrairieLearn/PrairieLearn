@@ -22,6 +22,7 @@ import {
   insertCoursePermissionsByUserUid,
 } from '../../models/course-permissions.js';
 import { insertInstitution } from '../../models/institution.js';
+import { selectUserById } from '../../models/user.js';
 import { createCourseTrpcClient } from '../../trpc/course/client.js';
 import type { CourseStaffError } from '../../trpc/course/course-staff.js';
 import * as helperClient from '../helperClient.js';
@@ -510,18 +511,24 @@ function runTest(context: TestContext) {
     await checkPermissions(users);
   });
 
-  test('emulating an institution admin does not allow changing own course role', async () => {
+  test.each([
+    ['Owner emulating an institution admin', '2', 'staff04@example.com'],
+    ['Institution admin emulating an Owner', '4', 'instructor@example.com'],
+  ])('%s cannot change own course role', async (_description, authnUserId, effectiveUid) => {
     await ensureInstitutionAdministrator({
       institution_id: '1',
       user_id: '4',
       authn_user_id: '1',
     });
-    const trpc = createClient({
-      cookie: 'pl_test_user=test_instructor; pl2_requested_uid=staff04@example.com',
+    await withUser(await selectUserById(authnUserId), async () => {
+      const trpc = createClient({
+        authnUserId,
+        cookie: `pl2_requested_uid=${effectiveUid}`,
+      });
+      await expect(
+        trpc.courseStaff.updateCourseRole.mutate({ userId: authnUserId, courseRole: 'None' }),
+      ).rejects.toMatchObject({ data: { code: 'FORBIDDEN' } });
     });
-    await expect(
-      trpc.courseStaff.updateCourseRole.mutate({ userId: context.userId, courseRole: 'None' }),
-    ).rejects.toMatchObject({ data: { code: 'FORBIDDEN' } });
     await checkPermissions(users);
   });
 
