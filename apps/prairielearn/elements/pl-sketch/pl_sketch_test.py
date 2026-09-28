@@ -185,18 +185,28 @@ def test_generated_submission_combines_initial_and_solution_drawings(
     assert config["initialstate"] == submission["data"]
 
 
-def test_generated_correct_submission_replaces_editable_initial_curve(
+@pytest.mark.parametrize(
+    ("test_type", "expected_score", "matches_solution"),
+    [
+        ("correct", 1, True),
+        ("incorrect", 0, False),
+    ],
+)
+def test_generated_submission_replaces_editable_initial_curve(
+    test_type: Literal["correct", "incorrect"],
+    expected_score: int,
+    matches_solution: bool,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.chdir(Path(__file__).parent)
     data, submission, config = _run_submission_lifecycle(
-        EDITABLE_INITIAL_CURVE_SKETCH_HTML, "correct"
+        EDITABLE_INITIAL_CURVE_SKETCH_HTML, test_type
     )
 
     solution_curve = data["params"]["graph"]["solution_state"]["curve"]
     assert "graph" not in data["format_errors"]
-    assert data["partial_scores"]["graph"]["score"] == 1
-    assert submission["data"] == {"curve": solution_curve}
+    assert data["partial_scores"]["graph"]["score"] == expected_score
+    assert (submission["data"] == {"curve": solution_curve}) is matches_solution
     assert config["initialstate"] == submission["data"]
 
 
