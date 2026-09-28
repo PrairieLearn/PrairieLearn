@@ -7,7 +7,7 @@
     "node": ">=24.0.0"
   },
   "scripts": {
-    "build": "tsgo && tscp",
+    "build": "tsc && tscp",
     "dev": "tsx watch --clear-screen=false --include \"**/*.sql\" --include \"**/*.json\" --include \"$HOME/.config/prairielearn/config.json\" --include \"../../config.json\" src/index.ts",
     "dev:no-watch": "tsx src/index.ts",
     "start": "node dist/index.js",
@@ -49,10 +49,10 @@
     "@types/dockerode": "^4.0.1",
     "@types/fs-extra": "^11.0.4",
     "@types/node": "^24.13.3",
-    "@typescript/native-preview": "beta",
-    "@vitest/coverage-v8": "^4.1.10",
+    "@typescript/native": "npm:typescript@^7.0.2",
+    "@vitest/coverage-v8": "^5.0.0",
     "tsx": "^4.23.11",
     "typescript-cp": "^0.1.11",
-    "vitest": "^4.1.10"
+    "vitest": "^5.0.0"
   }
 }

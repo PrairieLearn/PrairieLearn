@@ -1,5 +1,17 @@
 # @prairielearn/ui
 
+## 4.1.0
+
+### Minor Changes
+
+- 7b247e1: Add an opt-in non-virtualized rendering mode to TanstackTable that grows with its content without requiring a bounded height.
+
+## 4.0.1
+
+### Patch Changes
+
+- 8151381: Build with the official TypeScript 7 release instead of the native preview.
+
 ## 4.0.0
 
 ### Major Changes

@@ -313,7 +313,6 @@ const CourseUsersRowSchema = z.object({
   course_permission: CoursePermissionSchema,
   course_instance_roles: CourseInstanceRoleRowSchema.array().nullable(),
 });
-export type CourseUsersRow = z.infer<typeof CourseUsersRowSchema>;
 
 /**
  * Returns all users with course permissions for the given course, along with

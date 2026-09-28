@@ -113,7 +113,7 @@ for tsconfig in $tsconfigs; do
 }
 EOF
 
-    pnpm tsgo --project "$TMP" --skipLibCheck --noEmit || exit_code=$?
+    pnpm tsc --project "$TMP" --skipLibCheck --noEmit || exit_code=$?
     rm -f "$TMP"
 done
 

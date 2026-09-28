@@ -206,8 +206,11 @@ export function RubricInput({
               )}
             </>
           ) : (
-            <Form.Group className="w-25">
-              <Form.Label className="small">Adjustment:</Form.Label>
+            <Form.Group className="w-25" controlId={`rubric-adjustment-${context}`}>
+              <Form.Label className="small">
+                Adjustment:
+                <span className="visually-hidden"> {usePercentage ? 'percent' : 'points'}</span>
+              </Form.Label>
               <InputGroup size="sm">
                 <Form.Control
                   key={`adjustment-${usePercentage ? 'percentage' : 'points'}-input`}

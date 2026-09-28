@@ -195,7 +195,8 @@ ORDER BY
 SELECT
   z.number AS zone_number,
   at.tool,
-  at.enabled
+  at.enabled,
+  at.settings
 FROM
   assessment_tools AS at
   JOIN zones AS z ON (at.zone_id = z.id)

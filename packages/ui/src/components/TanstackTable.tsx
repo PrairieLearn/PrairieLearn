@@ -91,6 +91,7 @@ const DefaultEmptyState = (
 interface TanstackTableProps<RowDataModel extends RowData> {
   table: TanstackTableInstance<RowDataModel>;
   title: string;
+  virtualized?: boolean;
   filters?: Record<string, (props: { header: TanstackTableHeader<RowDataModel> }) => ReactNode>;
   rowHeight?: number;
   noResultsState?: ReactNode;
@@ -105,6 +106,7 @@ const DEFAULT_FILTER_MAP = {};
  * @param params
  * @param params.table - The table model
  * @param params.title - The title of the table
+ * @param params.virtualized - Whether to virtualize rows and columns (defaults to true)
  * @param params.filters - The filters for the table
  * @param params.rowHeight - The height of the rows in the table
  * @param params.noResultsState - The no results state for the table
@@ -114,6 +116,7 @@ const DEFAULT_FILTER_MAP = {};
 export function TanstackTable<RowDataModel extends RowData>({
   table,
   title,
+  virtualized = true,
   filters = DEFAULT_FILTER_MAP,
   rowHeight = 42,
   noResultsState = DefaultNoResultsState,
@@ -126,6 +129,7 @@ export function TanstackTable<RowDataModel extends RowData>({
 
   const rows = [...table.getTopRows(), ...table.getCenterRows(), ...table.getBottomRows()];
   const rowVirtualizer = useVirtualizer({
+    enabled: virtualized,
     count: rows.length,
     getScrollElement: () => scrollContainerRef.current,
     estimateSize: () => rowHeight,
@@ -137,6 +141,7 @@ export function TanstackTable<RowDataModel extends RowData>({
   const centerColumns = visibleColumns.filter((col) => !col.getIsPinned());
 
   const columnVirtualizer = useVirtualizer({
+    enabled: virtualized,
     count: centerColumns.length,
     estimateSize: (index) => centerColumns[index]?.getSize(),
     // `useAutoSizeColumns` solves a different problem (happens once when the column set changes)
@@ -149,14 +154,14 @@ export function TanstackTable<RowDataModel extends RowData>({
   const virtualColumns = columnVirtualizer.getVirtualItems();
 
   const virtualPaddingLeft = run(() => {
-    if (columnVirtualizer && virtualColumns?.length > 0) {
+    if (virtualized && virtualColumns.length > 0) {
       return virtualColumns[0]?.start ?? 0;
     }
     return null;
   });
 
   const virtualPaddingRight = run(() => {
-    if (columnVirtualizer && virtualColumns?.length > 0) {
+    if (virtualized && virtualColumns.length > 0) {
       return (
         columnVirtualizer.getTotalSize() - (virtualColumns[virtualColumns.length - 1]?.end ?? 0)
       );
@@ -169,9 +174,9 @@ export function TanstackTable<RowDataModel extends RowData>({
 
   // Create callback for remeasuring after resize
   const handleResizeEnd = useMemo(() => {
-    if (!hasWrappedColumns) return undefined;
+    if (!hasWrappedColumns || !virtualized) return undefined;
     return () => rowVirtualizer.measure();
-  }, [hasWrappedColumns, rowVirtualizer]);
+  }, [hasWrappedColumns, rowVirtualizer, virtualized]);
 
   const getVisibleCells = (row: TanstackTableRow<RowDataModel>) => [
     ...row.getStartVisibleCells(),
@@ -240,6 +245,11 @@ export function TanstackTable<RowDataModel extends RowData>({
     (header) => header.column.getIsPinned() === 'start',
   );
   const centerHeaders = leafHeaderGroup.headers.filter((header) => !header.column.getIsPinned());
+  const centerHeadersToRender = virtualized
+    ? virtualColumns
+        .map((virtualColumn) => centerHeaders[virtualColumn.index])
+        .filter((header): header is TanstackTableHeader<RowDataModel> => header != null)
+    : centerHeaders;
 
   const isTableResizing = leafHeaderGroup.headers.some((header) => header.column.getIsResizing());
 
@@ -252,27 +262,33 @@ export function TanstackTable<RowDataModel extends RowData>({
 
   // Re-measure the virtualizer when auto-sizing completes
   useEffect(() => {
-    if (hasAutoSized) {
+    if (hasAutoSized && virtualized) {
       columnVirtualizer.measure();
     }
-  }, [columnVirtualizer, hasAutoSized]);
+  }, [columnVirtualizer, hasAutoSized, virtualized]);
 
   const displayedCount = table.getRowModel().rows.length;
   const totalCount = table.getCoreRowModel().rows.length;
+  const rowsToRender = virtualized
+    ? virtualRows.map((virtualRow) => ({
+        row: rows[virtualRow.index],
+        rowIdx: virtualRow.index,
+        virtualRow,
+      }))
+    : rows.map((row, rowIdx) => ({ row, rowIdx, virtualRow: undefined }));
 
   return (
-    <div style={{ position: 'relative' }} className="d-flex flex-column h-100">
+    <div
+      style={{ position: 'relative' }}
+      className={clsx('d-flex flex-column', virtualized && 'h-100')}
+    >
       <div
         ref={scrollContainerRef}
         data-testid="table-scroll-container"
         style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          overflow: 'auto',
-          overflowAnchor: 'none',
+          ...(virtualized ? { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 } : {}),
+          overflowX: 'auto',
+          overflowAnchor: virtualized ? 'none' : undefined,
         }}
       >
         <div
@@ -289,7 +305,7 @@ export function TanstackTable<RowDataModel extends RowData>({
             role="grid"
           >
             <thead
-              className="position-sticky top-0 w-100 border-top"
+              className={clsx('w-100 border-top', virtualized && 'position-sticky top-0')}
               style={{
                 display: 'grid',
                 zIndex: 1,
@@ -321,22 +337,16 @@ export function TanstackTable<RowDataModel extends RowData>({
                   <th style={{ display: 'flex', width: virtualPaddingLeft }} />
                 ) : null}
 
-                {/* Virtualized center columns */}
-                {virtualColumns.map((virtualColumn) => {
-                  const header = centerHeaders[virtualColumn.index];
-                  if (!header) return null;
-
-                  return (
-                    <TanstackTableHeaderCell
-                      key={header.id}
-                      header={header}
-                      filters={filters}
-                      table={table}
-                      handleResizeEnd={handleResizeEnd}
-                      isPinned={false}
-                    />
-                  );
-                })}
+                {centerHeadersToRender.map((header) => (
+                  <TanstackTableHeaderCell
+                    key={header.id}
+                    header={header}
+                    filters={filters}
+                    table={table}
+                    handleResizeEnd={handleResizeEnd}
+                    isPinned={false}
+                  />
+                ))}
 
                 {/* Virtual padding for the end side of center columns */}
                 {virtualPaddingRight ? (
@@ -353,28 +363,31 @@ export function TanstackTable<RowDataModel extends RowData>({
               </tr>
             </thead>
             <tbody
-              className="position-relative w-100"
+              className={clsx('w-100', virtualized && 'position-relative')}
               style={{
                 display: 'grid',
-                height: `${rowVirtualizer.getTotalSize()}px`,
+                ...(virtualized ? { height: `${rowVirtualizer.getTotalSize()}px` } : {}),
               }}
             >
-              {virtualRows.map((virtualRow) => {
-                const row = rows[virtualRow.index];
-                const rowIdx = virtualRow.index;
+              {rowsToRender.map(({ row, rowIdx, virtualRow }) => {
                 const startPinnedCells = row.getStartVisibleCells();
                 const centerCells = row.getCenterVisibleCells();
+                const centerCellsToRender = virtualized
+                  ? virtualColumns
+                      .map((virtualColumn) => centerCells[virtualColumn.index])
+                      .filter((cell): cell is TanstackTableCell<RowDataModel> => cell != null)
+                  : centerCells;
 
                 let currentColIdx = 0;
 
                 return (
                   <tr
                     key={row.id}
-                    ref={(node) => rowVirtualizer.measureElement(node)}
-                    data-index={virtualRow.index}
-                    className="d-flex position-absolute w-100"
+                    ref={virtualRow ? (node) => rowVirtualizer.measureElement(node) : undefined}
+                    data-index={virtualRow?.index}
+                    className={clsx('d-flex w-100', virtualRow && 'position-absolute')}
                     style={{
-                      transform: `translateY(${virtualRow.start}px)`,
+                      ...(virtualRow ? { transform: `translateY(${virtualRow.start}px)` } : {}),
                       minWidth: `${table.getTotalSize()}px`,
                     }}
                   >
@@ -402,10 +415,7 @@ export function TanstackTable<RowDataModel extends RowData>({
                       <td style={{ display: 'flex', width: virtualPaddingLeft }} />
                     ) : null}
 
-                    {virtualColumns.map((virtualColumn) => {
-                      const cell = centerCells[virtualColumn.index];
-                      if (!cell) return null;
-
+                    {centerCellsToRender.map((cell) => {
                       const colIdx = currentColIdx++;
                       const canSort = cell.column.getCanSort();
                       const canFilter = cell.column.getCanFilter();
@@ -448,11 +458,9 @@ export function TanstackTable<RowDataModel extends RowData>({
           <div
             className="d-flex flex-column justify-content-center align-items-center p-4"
             style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
+              ...(virtualized
+                ? { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }
+                : {}),
               // Allow pointer events (e.g. scrolling) to reach the underlying table.
               pointerEvents: 'none',
             }}
@@ -549,7 +557,8 @@ export function TanstackTableCard<RowDataModel extends RowData>({
     table.setGlobalFilter(value);
   }, 150);
 
-  // Focus the search input when Ctrl+F is pressed
+  // Keep Cmd/Ctrl+F consistent across table modes by focusing table search first.
+  // When search is already focused, let the browser handle it so a second press opens native find.
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'f') {
