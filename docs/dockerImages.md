@@ -15,13 +15,13 @@ Custom images must be publicly accessible without authentication and hosted on o
 
 | Registry                                          | Image example                                 |
 | ------------------------------------------------- | --------------------------------------------- |
-| Docker Hub (`docker.io`)                          | `org/image:tag`                               |
+| Docker Hub (`docker.io`)                          | `docker.io/org/image:tag`                     |
 | GitHub Container Registry (`ghcr.io`)             | `ghcr.io/org/image:tag`                       |
 | Quay (`quay.io`)                                  | `quay.io/org/image:tag`                       |
 | GitLab Container Registry (`registry.gitlab.com`) | `registry.gitlab.com/group/project/image:tag` |
 | Amazon ECR Public (`public.ecr.aws`)              | `public.ecr.aws/alias/image:tag`              |
 
-For Docker Hub, omit the registry hostname, as in `org/image:tag`. Explicit Docker Hub hostnames `docker.io`, `index.docker.io`, and `registry-1.docker.io` are also supported. For other registries, include the hostname, as in `ghcr.io/org/image:tag`.
+Docker Hub also supports the shorthand `org/image:tag`, which is equivalent to `docker.io/org/image:tag`, and the hostnames `index.docker.io` and `registry-1.docker.io`. For other registries, include the hostname, as in `ghcr.io/org/image:tag`.
 
 Custom registry domains, subdomains of the listed hosts, and explicit registry ports are not supported. Images from unsupported registries are rejected before pulling. This restriction applies to source images; the administrator-configured PrairieLearn cache registry is separate, and existing cache names are unchanged.
 

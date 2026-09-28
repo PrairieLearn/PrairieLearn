@@ -154,7 +154,7 @@ test('validates public registries in both image fields', async ({ page, courseIn
   await images.nth(1).fill('ghcr.io.evil.example/org/image:tag');
   await expect(images.nth(0)).toHaveAccessibleDescription(/Docker Hub.*ghcr.io.*public.ecr.aws/);
   await expect(images.nth(1)).toHaveAccessibleDescription(
-    /org\/image:tag.*ghcr.io\/org\/image:tag/,
+    /docker\.io\/org\/image:tag.*ghcr\.io\/org\/image:tag/,
   );
   await page.getByRole('button', { name: 'Save', exact: true }).click();
   await expect(images.nth(0)).toHaveAttribute('aria-invalid', 'true');

@@ -39,7 +39,7 @@ import type {
 function ImageRegistryHelp({ id }: { id: string }) {
   return (
     <small id={id} className="form-text text-muted">
-      {imageRegistryHelpText} For example, <code>org/image:tag</code> for Docker Hub or{' '}
+      {imageRegistryHelpText} For example, <code>docker.io/org/image:tag</code> for Docker Hub or{' '}
       <code>ghcr.io/org/image:tag</code> for GHCR.
     </small>
   );
