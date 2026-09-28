@@ -1997,6 +1997,206 @@ class TestLifecycleRegressions:
 
         assert big_operator_input._expressions_equivalent(submitted, correct)
 
+    @pytest.mark.parametrize(
+        ("submitted_lower", "submitted_upper", "submitted_body"),
+        [
+            (0, sympy.oo, "16 * (k + 1) * (16*x)**k"),
+            (1, sympy.oo, "k * 16**k * x**(k - 1)"),
+        ],
+    )
+    def test_sum_reindexing_fast_path_handles_infinite_upper_bound(
+        self,
+        submitted_lower: int,
+        submitted_upper: sympy.Basic,
+        submitted_body: str,
+    ) -> None:
+        n = sympy.Symbol("n")
+        k = sympy.Symbol("k")
+        x = sympy.Symbol("x")
+        config = big_operator_input._config(html(operator="Sum", variables="x"))
+        correct = {
+            "lower": sympy.Integer(0),
+            "upper": sympy.oo,
+            "body": (n + 1) * 16 ** (n + 1) * x**n,
+        }
+        submitted = {
+            "lower": sympy.Integer(submitted_lower),
+            "upper": submitted_upper,
+            "body": sympy.sympify(submitted_body),
+        }
+
+        assert big_operator_input._sum_reindexing_equivalent(
+            config,
+            submitted,
+            correct,
+            submitted_index=k,
+            correct_index=n,
+        )
+
+    @pytest.mark.parametrize("shift", [-2, 2])
+    def test_sum_reindexing_fast_path_handles_shifted_finite_bounds(
+        self, shift: int
+    ) -> None:
+        n = sympy.Symbol("n")
+        k = sympy.Symbol("k")
+        config = big_operator_input._config(html(operator="Sum"))
+        correct = {
+            "lower": sympy.Integer(1),
+            "upper": sympy.Integer(5),
+            "body": n**2,
+        }
+        submitted = {
+            "lower": sympy.Integer(1 + shift),
+            "upper": sympy.Integer(5 + shift),
+            "body": (k - shift) ** 2,
+        }
+
+        assert big_operator_input._sum_reindexing_equivalent(
+            config,
+            submitted,
+            correct,
+            submitted_index=k,
+            correct_index=n,
+        )
+
+    def test_sum_reindexing_grading_preserves_renamed_index_assumptions(
+        self,
+    ) -> None:
+        n = sympy.Symbol("n", integer=True)
+        k = sympy.Symbol("k", integer=True)
+        correct = pbo.big_operator_to_json(
+            operator="Sum",
+            indexing="bounds",
+            index=n,
+            lower=0,
+            upper=sympy.oo,
+            body=n**2,
+        )
+        submitted = pbo.big_operator_to_json(
+            operator="Sum",
+            indexing="bounds",
+            index=k,
+            lower=2,
+            upper=sympy.oo,
+            body=(k - 2) ** 2,
+        )
+        markup = html()
+        data = question_data(correct)
+        big_operator_input.prepare(markup, data)
+        data["submitted_answers"]["op"] = submitted
+
+        big_operator_input.grade(markup, data)
+
+        assert data["partial_scores"]["op"] == {"score": 1.0, "weight": 1}
+
+    @pytest.mark.parametrize(
+        ("submitted_lower", "submitted_upper", "submitted_body"),
+        [
+            (1, 5, "k**2 + 1"),
+            (2, 5, "(k - 1)**2"),
+            (sympy.Rational(3, 2), sympy.Rational(11, 2), "(k - 1/2)**2"),
+            (sympy.Symbol("a"), sympy.Symbol("a") + 4, "(k - a + 1)**2"),
+            (1, sympy.oo, "k**2"),
+        ],
+    )
+    def test_sum_reindexing_fast_path_rejects_unproven_cases(
+        self,
+        submitted_lower: sympy.Basic | int,
+        submitted_upper: sympy.Basic | int,
+        submitted_body: str,
+    ) -> None:
+        n = sympy.Symbol("n")
+        k = sympy.Symbol("k")
+        config = big_operator_input._config(html(operator="Sum"))
+        correct = {
+            "lower": sympy.Integer(1),
+            "upper": sympy.Integer(5),
+            "body": n**2,
+        }
+        submitted = {
+            "lower": sympy.sympify(submitted_lower),
+            "upper": sympy.sympify(submitted_upper),
+            "body": sympy.sympify(submitted_body),
+        }
+
+        assert not big_operator_input._sum_reindexing_equivalent(
+            config,
+            submitted,
+            correct,
+            submitted_index=k,
+            correct_index=n,
+        )
+
+    @pytest.mark.parametrize(
+        "config",
+        [
+            big_operator_input._config(html(operator="Product")),
+            big_operator_input._config(html(operator="Sum", indexing="domain")),
+        ],
+    )
+    def test_sum_reindexing_fast_path_only_supports_bounds_form_sums(
+        self, config: Any
+    ) -> None:
+        k = sympy.Symbol("k")
+
+        assert not big_operator_input._sum_reindexing_equivalent(
+            config,
+            {"body": k, "lower": sympy.Integer(1), "upper": sympy.Integer(2)},
+            {"body": k, "lower": sympy.Integer(1), "upper": sympy.Integer(2)},
+            submitted_index=k,
+            correct_index=k,
+        )
+
+    def test_successful_sum_reindexing_skips_full_operator_construction(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        n = sympy.Symbol("n")
+        k = sympy.Symbol("k")
+        config = big_operator_input._config(html(operator="Sum"))
+
+        def unexpected_construct(*args: Any, **kwargs: Any) -> sympy.Basic:
+            raise AssertionError("the full Sum should not be constructed")
+
+        monkeypatch.setattr(big_operator_input, "_construct", unexpected_construct)
+
+        assert big_operator_input._equivalent(
+            config,
+            {"lower": sympy.Integer(2), "upper": sympy.oo, "body": (k - 2) ** 2},
+            {"lower": sympy.Integer(0), "upper": sympy.oo, "body": n**2},
+            left_index=k,
+            right_index=n,
+        )
+
+    def test_unsuccessful_sum_reindexing_falls_through(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        n = sympy.Symbol("n")
+        k = sympy.Symbol("k")
+        a = sympy.Symbol("a")
+        config = big_operator_input._config(html(operator="Sum"))
+        constructed: list[dict[str, sympy.Basic]] = []
+
+        def construct(
+            config: Any,
+            values: dict[str, sympy.Basic],
+            direction: Any = None,
+            *,
+            index: sympy.Symbol | None = None,
+        ) -> sympy.Basic:
+            constructed.append(values)
+            return sympy.Integer(1)
+
+        monkeypatch.setattr(big_operator_input, "_construct", construct)
+
+        assert big_operator_input._equivalent(
+            config,
+            {"lower": a, "upper": a + 4, "body": k**2},
+            {"lower": sympy.Integer(1), "upper": sympy.Integer(5), "body": n**2},
+            left_index=k,
+            right_index=n,
+        )
+        assert len(constructed) == 2
+
     @pytest.mark.parametrize("token", ["k+1", "1", "a.b", "__import__", "'k'"])
     def test_wrapper_index_is_lexically_validated(self, token: str) -> None:
         assert big_operator_input._identifier(token) is None
