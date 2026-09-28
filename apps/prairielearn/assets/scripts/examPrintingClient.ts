@@ -465,11 +465,15 @@ function validatePagedLayout(output: HTMLElement, layout: PrintLayout): void {
   const coverPageIndexes = generatedPages.flatMap((generatedPage, pageIndex) =>
     generatedPage.querySelector('.exam-cover') ? [pageIndex] : [],
   );
-  if (coverPageIndexes.length !== 1 || coverPageIndexes[0] !== 0) {
+  const includeCoverPage = document.documentElement.dataset.printIncludeCover !== 'false';
+  if (includeCoverPage && (coverPageIndexes.length !== 1 || coverPageIndexes[0] !== 0)) {
     throw new Error('The exam cover must occupy the first paginated page by itself');
   }
+  if (!includeCoverPage && coverPageIndexes.length > 0) {
+    throw new Error('The document includes a cover page when it is disabled');
+  }
 
-  let previousLastPageIndex = 0;
+  let previousLastPageIndex = coverPageIndexes.at(-1) ?? -1;
   for (const [plannedPageIndex, allowsFlow] of layout.plannedPageAllowsFlow.entries()) {
     const plannedPage = String(plannedPageIndex + 1);
     const containingPageIndexes = generatedPages.flatMap((generatedPage, pageIndex) =>
