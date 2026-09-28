@@ -343,10 +343,12 @@ function IssuePanel({
   return html`
     <div class="card mb-3">
       <div
-        class="card-header ${issue.open ? 'bg-danger' : 'bg-secondary'} text-white d-flex flex-wrap align-items-center justify-content-between gap-2"
+        class="card-header ${issue.open === true ? 'bg-danger' : 'bg-secondary'} text-white d-flex flex-wrap align-items-center justify-content-between gap-2"
       >
         ${issue.manually_reported ? 'Manually reported issue' : 'Issue'}
-        <span class="badge text-bg-light">${issue.open ? 'Open' : 'Closed'}</span>
+        <span class="badge text-bg-light"
+          >${issue.open === null ? 'Unknown' : issue.open ? 'Open' : 'Closed'}</span
+        >
       </div>
 
       <div class="table-responsive">
