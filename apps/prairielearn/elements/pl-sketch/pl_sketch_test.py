@@ -27,6 +27,11 @@ POINT_SKETCH_HTML = """
 
 POINT_SKETCH_WITH_INITIAL_HTML = """
     <pl-sketch answers-name="graph" width="400" height="400">
+        <pl-sketch-tool
+            id="initial-point"
+            type="point"
+            read-only="true"
+        ></pl-sketch-tool>
         <pl-sketch-tool id="point" type="point"></pl-sketch-tool>
         <pl-sketch-grade
             type="match"
@@ -35,12 +40,32 @@ POINT_SKETCH_WITH_INITIAL_HTML = """
             y="0"
         ></pl-sketch-grade>
         <pl-sketch-initial
-            tool-id="point"
+            tool-id="initial-point"
             coordinates="(-1, -1)"
         ></pl-sketch-initial>
         <pl-sketch-solution
             tool-id="point"
             coordinates="(0, 0)"
+        ></pl-sketch-solution>
+    </pl-sketch>
+"""
+
+EDITABLE_INITIAL_CURVE_SKETCH_HTML = """
+    <pl-sketch answers-name="graph" width="400" height="400">
+        <pl-sketch-tool id="curve" type="spline"></pl-sketch-tool>
+        <pl-sketch-grade
+            type="match-function"
+            tool-id="curve"
+            function="x"
+            x-range="-1,1"
+        ></pl-sketch-grade>
+        <pl-sketch-initial
+            tool-id="curve"
+            coordinates="(-1, 0), (1, 0)"
+        ></pl-sketch-initial>
+        <pl-sketch-solution
+            tool-id="curve"
+            coordinates="(-1, -1), (1, 1)"
         ></pl-sketch-solution>
     </pl-sketch>
 """
@@ -141,17 +166,37 @@ def test_generated_submission_combines_initial_and_solution_drawings(
         POINT_SKETCH_WITH_INITIAL_HTML, test_type
     )
 
-    initial_point = data["params"]["graph"]["initial_state"]["point"][0]
+    initial_point = data["params"]["graph"]["initial_state"]["initial-point"][0]
     solution_point = data["params"]["graph"]["solution_state"]["point"][0]
     expected_solution_point = {
         **solution_point,
         "y": solution_point["y"] + solution_y_offset,
     }
-    expected_points = [initial_point, expected_solution_point]
-    assert submission["data"] == {"point": expected_points}
-    assert submission["gradeable"]["point"] == [
-        {"point": [point["x"], point["y"]]} for point in expected_points
-    ]
+    assert submission["data"] == {
+        "initial-point": [initial_point],
+        "point": [expected_solution_point],
+    }
+    assert submission["gradeable"] == {
+        "initial-point": [{"point": [initial_point["x"], initial_point["y"]]}],
+        "point": [
+            {"point": [expected_solution_point["x"], expected_solution_point["y"]]}
+        ],
+    }
+    assert config["initialstate"] == submission["data"]
+
+
+def test_generated_correct_submission_replaces_editable_initial_curve(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.chdir(Path(__file__).parent)
+    data, submission, config = _run_submission_lifecycle(
+        EDITABLE_INITIAL_CURVE_SKETCH_HTML, "correct"
+    )
+
+    solution_curve = data["params"]["graph"]["solution_state"]["curve"]
+    assert "graph" not in data["format_errors"]
+    assert data["partial_scores"]["graph"]["score"] == 1
+    assert submission["data"] == {"curve": solution_curve}
     assert config["initialstate"] == submission["data"]
 
 

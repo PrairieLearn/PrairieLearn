@@ -1261,7 +1261,10 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
         submitted_solution_state = _corrupted_drawing_state(solution_state, tool_data)
 
     for tool_id, drawings in submitted_solution_state.items():
-        submission_state.setdefault(tool_id, []).extend(drawings)
+        if tool_data[tool_id]["readonly"]:
+            submission_state.setdefault(tool_id, []).extend(drawings)
+        else:
+            submission_state[tool_id] = drawings
 
     gradeable = _solution_to_gradeable(
         submission_state, tool_data, canvas_width, canvas_height
