@@ -23,7 +23,7 @@ Custom images must be publicly accessible without authentication and hosted on o
 
 Docker Hub also supports the shorthand `org/image:tag`, which is equivalent to `docker.io/org/image:tag`, and the hostnames `index.docker.io` and `registry-1.docker.io`. For other registries, include the hostname, as in `ghcr.io/org/image:tag`.
 
-Custom registry domains, subdomains of the listed hosts, and explicit registry ports are not supported. Images from unsupported registries are rejected before pulling. This restriction applies to source images; the administrator-configured PrairieLearn cache registry is separate, and existing cache names are unchanged.
+Custom registry domains, subdomains of the listed hosts, and explicit registry ports are not supported.
 
 ## Custom variations of maintained images
 
