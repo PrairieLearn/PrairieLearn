@@ -6,7 +6,7 @@ import * as shlex from 'shlex';
 import { z } from 'zod';
 
 import {
-  imageRegistryHelpText,
+  imageRegistryErrorText,
   isSupportedImageRegistry,
 } from '@prairielearn/docker-utils/registry';
 import * as error from '@prairielearn/error';
@@ -79,7 +79,7 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 const ImageSchema = z
   .string()
   .trim()
-  .refine(isSupportedImageRegistry, imageRegistryHelpText)
+  .refine(isSupportedImageRegistry, imageRegistryErrorText)
   .optional();
 
 // This will not correctly handle any filenames that have a comma in them.

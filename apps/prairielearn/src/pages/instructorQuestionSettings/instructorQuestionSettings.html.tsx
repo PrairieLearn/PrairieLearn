@@ -4,7 +4,9 @@ import { Form } from 'react-bootstrap';
 import { useController, useForm } from 'react-hook-form';
 
 import {
+  imageRegistryErrorText,
   imageRegistryHelpText,
+  imageRegistryRestrictionsText,
   isSupportedImageRegistry,
 } from '@prairielearn/docker-utils/registry';
 import { ComboBox, type ComboBoxItem, StickySaveBar, TagPicker } from '@prairielearn/ui';
@@ -40,7 +42,7 @@ function ImageRegistryHelp({ id }: { id: string }) {
   return (
     <small id={id} className="form-text text-muted">
       {imageRegistryHelpText} For example, <code>docker.io/org/image:tag</code> for Docker Hub or{' '}
-      <code>ghcr.io/org/image:tag</code> for GHCR.
+      <code>ghcr.io/org/image:tag</code> for GHCR. {imageRegistryRestrictionsText}
     </small>
   );
 }
@@ -672,7 +674,7 @@ export const InstructorQuestionSettingsForm = ({
                     {...register('workspace_image', {
                       required: 'Image is required for workspace',
                       validate: (value) =>
-                        isSupportedImageRegistry(value.trim()) || imageRegistryHelpText,
+                        isSupportedImageRegistry(value.trim()) || imageRegistryErrorText,
                     })}
                   />
                   {errors.workspace_image && (
@@ -903,7 +905,7 @@ export const InstructorQuestionSettingsForm = ({
                     {...register('external_grading_image', {
                       required: 'Image is required for external grading',
                       validate: (value) =>
-                        isSupportedImageRegistry(value.trim()) || imageRegistryHelpText,
+                        isSupportedImageRegistry(value.trim()) || imageRegistryErrorText,
                     })}
                   />
                   {errors.external_grading_image && (

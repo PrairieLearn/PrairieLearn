@@ -1,6 +1,9 @@
 import { z } from 'zod';
 
-import { imageRegistryHelpText } from '@prairielearn/docker-utils/registry';
+import {
+  imageRegistryHelpText,
+  imageRegistryRestrictionsText,
+} from '@prairielearn/docker-utils/registry';
 
 import { CommentJsonSchema } from './comment.js';
 
@@ -106,7 +109,7 @@ const WorkspaceOptionsJsonSchema = z
     image: z
       .string()
       .describe(
-        `The public Docker image that will be used to serve this question. ${imageRegistryHelpText} For example, docker.io/org/image:tag for Docker Hub or ghcr.io/org/image:tag for GHCR. The Docker Hub shorthand org/image:tag is also supported.`,
+        `The public Docker image that will be used to serve this question. ${imageRegistryHelpText} For example, docker.io/org/image:tag for Docker Hub or ghcr.io/org/image:tag for GHCR. ${imageRegistryRestrictionsText}`,
       ),
     port: z
       .number()
@@ -185,7 +188,7 @@ const ExternalGradingOptionsJsonSchema = z
     image: z
       .string()
       .describe(
-        `The public Docker image that will be used to grade this question. ${imageRegistryHelpText} For example, docker.io/org/image:tag for Docker Hub or ghcr.io/org/image:tag for GHCR. The Docker Hub shorthand org/image:tag is also supported.`,
+        `The public Docker image that will be used to grade this question. ${imageRegistryHelpText} For example, docker.io/org/image:tag for Docker Hub or ghcr.io/org/image:tag for GHCR. ${imageRegistryRestrictionsText}`,
       ),
     entrypoint: z
       .union([z.string(), z.array(z.string())])

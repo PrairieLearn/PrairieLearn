@@ -9,7 +9,12 @@ const supportedImageRegistries = new Set([
 ]);
 
 export const imageRegistryHelpText =
-  'Use a public image from Docker Hub (docker.io), GHCR (ghcr.io), Quay (quay.io), GitLab (registry.gitlab.com), or Amazon ECR Public (public.ecr.aws). Custom registry domains and explicit ports are not supported.';
+  'Use a public image from Docker Hub (docker.io), GHCR (ghcr.io), Quay (quay.io), GitLab (registry.gitlab.com), or Amazon ECR Public (public.ecr.aws).';
+
+export const imageRegistryRestrictionsText =
+  'Custom registry domains and explicit ports are not supported.';
+
+export const imageRegistryErrorText = `${imageRegistryHelpText} ${imageRegistryRestrictionsText}`;
 
 /** Checks the source registry without changing the image reference or cache name. */
 export function isSupportedImageRegistry(image: string): boolean {
@@ -25,6 +30,6 @@ export function isSupportedImageRegistry(image: string): boolean {
 
 export function assertSupportedImageRegistry(image: string): void {
   if (!isSupportedImageRegistry(image)) {
-    throw new Error(`Unsupported image registry in "${image}". ${imageRegistryHelpText}`);
+    throw new Error(`Unsupported image registry in "${image}". ${imageRegistryErrorText}`);
   }
 }
