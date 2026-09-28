@@ -9,6 +9,8 @@ import { getAppError, renderAppError } from '@prairielearn/trpc/client';
 import { AppErrorAlert, QueryClientProviderDebug } from '@prairielearn/trpc/react';
 import { StickySaveBar, type StickySaveBarAlert, useModalState } from '@prairielearn/ui';
 
+import { CalculatorPreviewButton } from '../../components/CalculatorPreviewButton.js';
+import { CalculatorTypeInput } from '../../components/CalculatorTypeInput.js';
 import { GitHubButton } from '../../components/GitHubButton.js';
 import { StudentLinkSharing } from '../../components/LinkSharing.js';
 import { ShareSourcePubliclyCard } from '../../components/ShareSourcePubliclyCard.js';
@@ -28,6 +30,7 @@ import {
 } from '../../lib/client/url.js';
 import type { AssessmentToolsConfig } from '../../lib/editors.js';
 import { validateShortName } from '../../lib/short-name.js';
+import { type CalculatorType } from '../../schemas/infoAssessment.js';
 import type {
   AssessmentSettingsError,
   TypeChangeLocation,
@@ -135,6 +138,7 @@ interface SettingsFormValues {
   allow_real_time_grading: boolean;
   grade_rate_minutes: string;
   tools?: Record<string, boolean>;
+  calculatorType: CalculatorType;
   share_source_publicly?: boolean;
 }
 
@@ -722,6 +726,7 @@ function InstructorAssessmentSettingsInner({
     grade_rate_minutes:
       assessment.json_grade_rate_minutes != null ? String(assessment.json_grade_rate_minutes) : '',
     tools: Object.fromEntries(assessmentTools.map(({ name, enabled }) => [name, enabled])),
+    calculatorType: assessmentTools.find((tool) => tool.name === 'calculator')?.type ?? 'advanced',
     share_source_publicly: assessment.share_source_publicly,
   };
 
@@ -1517,21 +1522,37 @@ function InstructorAssessmentSettingsInner({
               {assessmentTools.map(({ name, label, enabled }, i) => (
                 <div
                   key={name}
-                  className={clsx('form-check', i < assessmentTools.length - 1 && 'mb-3')}
+                  className={clsx(
+                    'd-flex flex-wrap align-items-center justify-content-between gap-3',
+                    i < assessmentTools.length - 1 && 'mb-3',
+                  )}
                 >
-                  <input
-                    className="form-check-input"
-                    type="checkbox"
-                    id={`tool_${name}`}
-                    disabled={!canEdit}
-                    defaultChecked={enabled}
-                    {...register(`tools.${name}`)}
-                  />
-                  <label className="form-check-label" htmlFor={`tool_${name}`}>
-                    {label}
-                  </label>
+                  <div className="form-check">
+                    <input
+                      className="form-check-input"
+                      type="checkbox"
+                      id={`tool_${name}`}
+                      disabled={!canEdit}
+                      defaultChecked={enabled}
+                      {...register(`tools.${name}`)}
+                    />
+                    <label className="form-check-label" htmlFor={`tool_${name}`}>
+                      {label}
+                    </label>
+                  </div>
+                  {name === 'calculator' && watch('tools.calculator') && (
+                    <CalculatorPreviewButton type={watch('calculatorType')} />
+                  )}
                 </div>
               ))}
+              {watch('tools.calculator') && (
+                <CalculatorTypeInput
+                  id="calculator-type"
+                  value={watch('calculatorType')}
+                  disabled={!canEdit}
+                  onChange={(value) => setValue('calculatorType', value, { shouldDirty: true })}
+                />
+              )}
             </div>
           </div>
 
