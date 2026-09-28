@@ -707,12 +707,13 @@ async function _pullImage(workspace: Workspace) {
   const ecr = new ECRClient(makeAwsClientConfig());
   const auth = config.cacheImageRegistry ? await setupDockerAuth(ecr) : null;
 
+  if (!config.cacheImageRegistry) {
+    assertSupportedImageRegistry(workspace_image);
+  }
+
   let percentDisplayed = false;
   let stream: NodeJS.ReadableStream | undefined;
   try {
-    if (!config.cacheImageRegistry) {
-      assertSupportedImageRegistry(workspace_image);
-    }
     stream = await docker.pull(workspace_image, { authconfig: auth });
   } catch (err) {
     logger.error(

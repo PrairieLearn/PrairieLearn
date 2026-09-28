@@ -94,8 +94,8 @@ export class ExternalGraderLocal implements Grader {
       }
 
       if (config.externalGradingPullImagesFromDockerHub) {
+        assertSupportedImageRegistry(question.external_grading_image);
         try {
-          assertSupportedImageRegistry(question.external_grading_image);
           logger.info(`Pulling image ${question.external_grading_image}`);
           const stream = await docker.pull(question.external_grading_image);
           await new Promise((resolve, reject) => {
