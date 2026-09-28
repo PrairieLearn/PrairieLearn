@@ -211,10 +211,23 @@ export async function ecrUpdate(
   });
 
   serverJob.executeInBackground(async (job) => {
+    const failedImages: string[] = [];
     await async.eachOfSeries(images, async (image) => {
       job.info(`Pull image and push to PL registry: ${image.image}`);
-      await pullAndPushToECR(image.image, auth, job);
+      try {
+        await pullAndPushToECR(image.image, auth, job);
+      } catch (err) {
+        failedImages.push(image.image);
+        job.error(
+          `Failed to sync ${image.image}: ${err instanceof Error ? (err.stack ?? err.message) : String(err)}`,
+        );
+      }
     });
+    if (failedImages.length > 0) {
+      job.fail(
+        `Failed to sync ${failedImages.length} of ${images.length} images: ${failedImages.join(', ')}`,
+      );
+    }
   });
 
   return serverJob.jobSequenceId;
