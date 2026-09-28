@@ -50,6 +50,30 @@ POINT_SKETCH_WITH_INITIAL_HTML = """
     </pl-sketch>
 """
 
+READ_ONLY_INITIAL_CURVE_SKETCH_HTML = """
+    <pl-sketch answers-name="graph" width="400" height="400">
+        <pl-sketch-tool
+            id="curve"
+            type="spline"
+            read-only="true"
+        ></pl-sketch-tool>
+        <pl-sketch-grade
+            type="match-function"
+            tool-id="curve"
+            function="0"
+            x-range="-1,1"
+        ></pl-sketch-grade>
+        <pl-sketch-initial
+            tool-id="curve"
+            coordinates="(-1, 0), (1, 0)"
+        ></pl-sketch-initial>
+        <pl-sketch-solution
+            tool-id="curve"
+            coordinates="(-1, -1), (1, 1)"
+        ></pl-sketch-solution>
+    </pl-sketch>
+"""
+
 EDITABLE_INITIAL_CURVE_SKETCH_HTML = """
     <pl-sketch answers-name="graph" width="400" height="400">
         <pl-sketch-tool id="curve" type="spline"></pl-sketch-tool>
@@ -207,6 +231,23 @@ def test_generated_submission_replaces_editable_initial_curve(
     assert "graph" not in data["format_errors"]
     assert data["partial_scores"]["graph"]["score"] == expected_score
     assert (submission["data"] == {"curve": solution_curve}) is matches_solution
+    assert config["initialstate"] == submission["data"]
+
+
+def test_generated_submission_preserves_read_only_initial_curve(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.chdir(Path(__file__).parent)
+    data, submission, config = _run_submission_lifecycle(
+        READ_ONLY_INITIAL_CURVE_SKETCH_HTML, "correct"
+    )
+
+    initial_curve = data["params"]["graph"]["initial_state"]["curve"]
+    solution_curve = data["params"]["graph"]["solution_state"]["curve"]
+    assert "graph" not in data["format_errors"]
+    assert data["partial_scores"]["graph"]["score"] == 1
+    assert initial_curve != solution_curve
+    assert submission["data"] == {"curve": initial_curve}
     assert config["initialstate"] == submission["data"]
 
 
