@@ -7,6 +7,7 @@ export interface EnrollmentAndBillingCardProps {
   studentComputeBillingEnabled: boolean;
   enrollmentCount: number;
   capacity: EnrollmentCapacity | null;
+  enrollmentLimitReached: boolean;
 }
 
 export function EnrollmentAndBillingCard({
@@ -14,10 +15,8 @@ export function EnrollmentAndBillingCard({
   studentComputeBillingEnabled,
   enrollmentCount,
   capacity,
+  enrollmentLimitReached,
 }: EnrollmentAndBillingCardProps) {
-  // Large limits are operational safeguards, not instructor-facing allowances.
-  const showAllowance = capacity !== null && capacity.limit < 10_000;
-
   return (
     <Card aria-labelledby="enrollment-and-billing-heading">
       <Card.Body>
@@ -45,7 +44,7 @@ export function EnrollmentAndBillingCard({
             {enrollmentCount === 1 ? 'enrollment' : 'enrollments'}
           </p>
         )}
-        {showAllowance && (
+        {capacity && (
           <div className="mt-3">
             <h3 className="h6">Enrollment allowance</h3>
             <p className="mb-0">
@@ -59,7 +58,7 @@ export function EnrollmentAndBillingCard({
                 enrollment limit over the past year.
               </p>
             )}
-            {enrollmentCount > capacity.used && (
+            {capacity.paid > 0 && (
               <p className="small text-muted mt-2 mb-0">
                 Students with individually purchased or sponsored course access do not use this
                 allowance.
@@ -67,9 +66,9 @@ export function EnrollmentAndBillingCard({
             )}
           </div>
         )}
-        {capacity?.remaining === 0 && (
+        {enrollmentLimitReached && (
           <Alert variant="warning" className="mt-3 mb-0">
-            {showAllowance
+            {capacity
               ? 'The enrollment allowance has been reached. Contact support to increase it.'
               : 'An enrollment limit has been reached. Contact support to enable additional enrollments.'}
           </Alert>

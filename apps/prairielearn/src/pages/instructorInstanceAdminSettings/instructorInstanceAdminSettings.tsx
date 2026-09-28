@@ -113,7 +113,9 @@ router.get(
         studentBillingEnabled,
         studentComputeBillingEnabled,
         enrollmentCount,
-        capacity,
+        // Large limits are operational safeguards; keep their capacity data server-side.
+        capacity: capacity !== null && capacity.limit < 10_000 ? capacity : null,
+        enrollmentLimitReached: capacity?.remaining === 0,
       };
     }
     const host = getCanonicalHost(req);

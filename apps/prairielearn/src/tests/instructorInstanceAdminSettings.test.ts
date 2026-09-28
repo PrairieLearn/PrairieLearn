@@ -1,6 +1,8 @@
 import * as path from 'path';
 
+import type { CheerioAPI } from 'cheerio';
 import fs from 'fs-extra';
+import superjson from 'superjson';
 import { afterAll, afterEach, assert, beforeAll, beforeEach, describe, test } from 'vitest';
 
 import { execute, loadSqlEquiv } from '@prairielearn/postgres';
@@ -14,6 +16,8 @@ import { ensurePlanGrant } from '../ee/models/plan-grants.js';
 import { enableEnterpriseEdition, withoutEnterpriseEdition } from '../ee/tests/ee-helpers.js';
 import { config } from '../lib/config.js';
 import { features } from '../lib/features/index.js';
+import { insertCoursePermissionsByUserUid } from '../models/course-permissions.js';
+import type { EnrollmentAndBillingCardProps } from '../pages/instructorInstanceAdminSettings/components/EnrollmentAndBillingCard.js';
 
 import { fetchCheerio } from './helperClient.js';
 import {
@@ -191,6 +195,13 @@ describe('Course instance enrollment and billing', () => {
   const sql = loadSqlEquiv(import.meta.url);
   const pageUrl = `${siteUrl}/pl/course_instance/1/instructor/instance_admin/settings`;
 
+  function getEnrollmentAndBillingProps($: CheerioAPI) {
+    const props = superjson.parse<{ enrollmentAndBilling: EnrollmentAndBillingCardProps }>(
+      $('script[data-component-props][data-component="InstructorInstanceAdminSettings"]').text(),
+    );
+    return props.enrollmentAndBilling;
+  }
+
   async function setLimits({
     institutionLimit = 10_000,
     courseLimit = null,
@@ -222,6 +233,13 @@ describe('Course instance enrollment and billing', () => {
       assert.include(summary, 'Students can enroll without paying for course access.');
       assert.notInclude(summary, 'Enrollment allowance');
       assert.notInclude(summary, 'remaining');
+      assert.deepEqual(getEnrollmentAndBillingProps($), {
+        studentBillingEnabled: false,
+        studentComputeBillingEnabled: false,
+        enrollmentCount: 1,
+        capacity: null,
+        enrollmentLimitReached: false,
+      });
     },
   );
 
@@ -239,6 +257,7 @@ describe('Course instance enrollment and billing', () => {
     assert.include(summary, `2 of ${expected.toLocaleString('en-US')} enrollments used`);
     assert.include(summary, `${(expected - 2).toLocaleString('en-US')} remaining`);
     assert.notInclude(summary, 'shared enrollment limit');
+    assert.notInclude(summary, 'Students with individually purchased or sponsored course access');
   });
 
   test('hides capacity without enterprise enrollment enforcement', async () => {
@@ -319,6 +338,46 @@ describe('Course instance enrollment and billing', () => {
     assert.include(summary, '3 remaining');
   });
 
+  test.each(['stripe', 'invoice'] as const)(
+    'explains excluded %s enrollments even when another enrolled student becomes staff',
+    async (grantType) => {
+      await enrollRandomUsers('1', 3);
+      const paidUser = await getOrCreateUser({
+        uid: 'student1@example.com',
+        name: 'Paid Student',
+        uin: 'student-0',
+      });
+      await ensurePlanGrant({
+        plan_grant: {
+          institution_id: '1',
+          course_instance_id: '1',
+          user_id: paidUser.id,
+          plan_name: 'basic',
+          type: grantType,
+        },
+        authn_user_id: '1',
+      });
+      await insertCoursePermissionsByUserUid({
+        course_id: '1',
+        uid: 'student3@example.com',
+        course_role: 'Viewer',
+        authn_user_id: '1',
+      });
+      await setLimits({ instanceLimit: 20 });
+
+      const { $, status } = await fetchCheerio(pageUrl);
+      assert.equal(status, 200);
+      assert.equal(getEnrollmentAndBillingProps($).enrollmentCount, 2);
+      const summary = $('[aria-labelledby="enrollment-and-billing-heading"]').text();
+      assert.include(summary, '2 of 20 enrollments used');
+      assert.include(summary, '18 remaining');
+      assert.include(
+        summary,
+        'Students with individually purchased or sponsored course access do not use this allowance.',
+      );
+    },
+  );
+
   test.each([false, true])(
     'shows student billing instead of an allowance (compute: %s)',
     async (compute) => {
@@ -393,6 +452,13 @@ describe('Course instance enrollment and billing', () => {
       assert.notInclude(summary, 'Enrollment allowance');
       assert.notInclude(summary, '10,000');
       assert.notInclude(summary, 'remaining');
+      assert.deepEqual(getEnrollmentAndBillingProps($), {
+        studentBillingEnabled: false,
+        studentComputeBillingEnabled: false,
+        enrollmentCount: 2,
+        capacity: null,
+        enrollmentLimitReached: true,
+      });
     },
   );
 });

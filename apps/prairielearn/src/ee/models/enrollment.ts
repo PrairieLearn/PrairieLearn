@@ -99,6 +99,7 @@ export async function getEnrollmentCountsForCourseInstance(
 export interface EnrollmentCapacity {
   limit: number;
   used: number;
+  paid: number;
   remaining: number;
   annualLimitSource: 'course' | 'institution' | null;
 }
@@ -145,7 +146,7 @@ export async function getEnrollmentCapacity({
         : 'course'
       : null;
 
-  return { limit, used, remaining, annualLimitSource };
+  return { limit, used, paid: courseInstanceEnrollmentCounts.paid, remaining, annualLimitSource };
 }
 
 export enum PotentialEnrollmentStatus {
