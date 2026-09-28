@@ -113,6 +113,7 @@ describe('PrintRenderer', () => {
   });
 
   it('renders PDFs in fresh contexts on one shared Chromium', async () => {
+    vi.spyOn(Date, 'now').mockReturnValue(0);
     const harness = createBrowserHarness();
     const renderer = new PrintRenderer({ timeoutMs: 1234 });
 
