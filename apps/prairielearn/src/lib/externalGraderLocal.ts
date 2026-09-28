@@ -7,6 +7,7 @@ import Docker from 'dockerode';
 import { execa } from 'execa';
 import * as shlex from 'shlex';
 
+import { assertSupportedImageRegistry } from '@prairielearn/docker-utils/registry';
 import { logger } from '@prairielearn/logger';
 import { FileSizeLimitError, contains, readFileWithinDirectory } from '@prairielearn/path-utils';
 import * as sqldb from '@prairielearn/postgres';
@@ -94,6 +95,7 @@ export class ExternalGraderLocal implements Grader {
 
       if (config.externalGradingPullImagesFromDockerHub) {
         try {
+          assertSupportedImageRegistry(question.external_grading_image);
           logger.info(`Pulling image ${question.external_grading_image}`);
           const stream = await docker.pull(question.external_grading_image);
           await new Promise((resolve, reject) => {

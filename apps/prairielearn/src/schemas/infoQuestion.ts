@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { imageRegistryHelpText } from '@prairielearn/docker-utils/registry';
+
 import { CommentJsonSchema } from './comment.js';
 
 // This schema is intentionally a subset of JSON Schema. The `type`, `default`,
@@ -104,7 +106,7 @@ const WorkspaceOptionsJsonSchema = z
     image: z
       .string()
       .describe(
-        'The public Docker image that will be used to serve this question. Include the registry hostname for images hosted outside Docker Hub.',
+        `The public Docker image that will be used to serve this question. ${imageRegistryHelpText} For example, org/image:tag for Docker Hub or ghcr.io/org/image:tag for GHCR.`,
       ),
     port: z
       .number()
@@ -183,7 +185,7 @@ const ExternalGradingOptionsJsonSchema = z
     image: z
       .string()
       .describe(
-        'The public Docker image that will be used to grade this question. Include the registry hostname for images hosted outside Docker Hub.',
+        `The public Docker image that will be used to grade this question. ${imageRegistryHelpText} For example, org/image:tag for Docker Hub or ghcr.io/org/image:tag for GHCR.`,
       ),
     entrypoint: z
       .union([z.string(), z.array(z.string())])

@@ -4,6 +4,7 @@ import Docker from 'dockerode';
 import z from 'zod';
 
 import { DockerName, setupDockerAuth } from '@prairielearn/docker-utils';
+import { assertSupportedImageRegistry } from '@prairielearn/docker-utils/registry';
 import * as sqldb from '@prairielearn/postgres';
 
 import { makeAwsClientConfig } from './aws.js';
@@ -39,6 +40,8 @@ export default async function pullImages() {
       const repository = new DockerName(image);
       if (config.cacheImageRegistry) {
         repository.setCacheRegistry(config.cacheImageRegistry);
+      } else {
+        assertSupportedImageRegistry(repository.getRegistryRepo());
       }
 
       const stream = await docker.createImage(dockerAuth, {

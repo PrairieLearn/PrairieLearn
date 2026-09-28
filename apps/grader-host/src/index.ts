@@ -18,6 +18,7 @@ import * as tmp from 'tmp-promise';
 import z from 'zod';
 
 import { DockerName, setupDockerAuth } from '@prairielearn/docker-utils';
+import { assertSupportedImageRegistry } from '@prairielearn/docker-utils/registry';
 import { FileSizeLimitError, contains, readFileWithinDirectory } from '@prairielearn/path-utils';
 import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
@@ -423,6 +424,8 @@ async function initDocker(context: Context) {
   const repository = new DockerName(image);
   if (config.cacheImageRegistry) {
     repository.setCacheRegistry(config.cacheImageRegistry);
+  } else {
+    assertSupportedImageRegistry(repository.getRegistryRepo());
   }
   const params = {
     fromImage: repository.getRegistryRepo(),

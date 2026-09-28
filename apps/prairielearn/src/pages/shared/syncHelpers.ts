@@ -8,6 +8,7 @@ import * as async from 'async';
 import Docker from 'dockerode';
 
 import { type DockerAuth, DockerName, setupDockerAuth } from '@prairielearn/docker-utils';
+import { assertSupportedImageRegistry } from '@prairielearn/docker-utils/registry';
 import * as Sentry from '@prairielearn/sentry';
 
 import { makeAwsClientConfig } from '../../lib/aws.js';
@@ -116,6 +117,7 @@ async function pullAndPushToECR(image: string, dockerAuth: DockerAuth, job: Serv
   }
 
   const repository = new DockerName(image);
+  assertSupportedImageRegistry(repository.getRegistryRepo());
   job.info(`Pulling ${repository.getCombined()}`);
   const pullStream = await docker.createImage({
     fromImage: repository.getRegistryRepo(),

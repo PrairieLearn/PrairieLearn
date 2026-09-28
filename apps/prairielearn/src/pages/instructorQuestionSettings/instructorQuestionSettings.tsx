@@ -5,6 +5,10 @@ import fs from 'fs-extra';
 import * as shlex from 'shlex';
 import { z } from 'zod';
 
+import {
+  imageRegistryHelpText,
+  isSupportedImageRegistry,
+} from '@prairielearn/docker-utils/registry';
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import * as sqldb from '@prairielearn/postgres';
@@ -71,6 +75,12 @@ import {
 
 const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
+
+const ImageSchema = z
+  .string()
+  .trim()
+  .refine(isSupportedImageRegistry, imageRegistryHelpText)
+  .optional();
 
 // This will not correctly handle any filenames that have a comma in them.
 // Currently, we do not have any such filenames in prod so we don't think that
@@ -192,7 +202,7 @@ router.post(
           single_variant: BooleanFromCheckboxSchema,
           show_correct_answer: BooleanFromCheckboxSchema,
           partial_credit: BooleanFromCheckboxSchema,
-          workspace_image: z.string().optional(),
+          workspace_image: ImageSchema,
           workspace_port: IntegerFromStringOrEmptySchema.nullable().optional(),
           workspace_home: z.string().optional(),
           workspace_args: ArgumentsSchema,
@@ -241,7 +251,7 @@ router.post(
               });
             })
             .default([]),
-          external_grading_image: z.string().optional(),
+          external_grading_image: ImageSchema,
           external_grading_files: GradedFilesSchema,
           external_grading_entrypoint: ArgumentsSchema,
           external_grading_timeout: IntegerFromStringOrEmptySchema.optional(),

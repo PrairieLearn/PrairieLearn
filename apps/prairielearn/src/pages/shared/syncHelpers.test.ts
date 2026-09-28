@@ -14,13 +14,34 @@ import { ecrUpdate } from './syncHelpers.js';
 
 afterEach(() => vi.restoreAllMocks());
 
+function mockImageSyncJob() {
+  vi.spyOn(dockerUtils, 'setupDockerAuth').mockResolvedValue({ username: 'AWS', password: 'test' });
+  const executeInBackground = vi.fn<serverJobs.ServerJobExecutor['executeInBackground']>();
+  vi.spyOn(serverJobs, 'createServerJob').mockResolvedValue({
+    jobSequenceId: '1',
+    execute: vi.fn(),
+    executeUnsafe: vi.fn(),
+    executeInBackground,
+  });
+  const job = {
+    info: vi.fn(),
+    error: vi.fn(),
+    warn: vi.fn(),
+    verbose: vi.fn(),
+    data: {},
+    exec: vi.fn(),
+    stop: vi.fn<serverJobs.ServerJob['stop']>(),
+    fail: vi.fn((message: string): never => {
+      throw new Error(message);
+    }),
+  };
+  return { job, executeInBackground };
+}
+
 it.each([false, true])(
   'syncs all images serially and reports failures at the end (first image fails: %s)',
   async (firstImageFails) => {
-    vi.spyOn(dockerUtils, 'setupDockerAuth').mockResolvedValue({
-      username: 'AWS',
-      password: 'test',
-    });
+    const { job, executeInBackground } = mockImageSyncJob();
     vi.spyOn(ECR.prototype, 'describeRepositories').mockImplementation(async () => ({
       $metadata: {},
       repositories: [{ repositoryName: 'org/first' }, { repositoryName: 'org/second' }],
@@ -35,25 +56,6 @@ it.each([false, true])(
     vi.spyOn(image, 'tag').mockResolvedValue(undefined);
     const push = vi.spyOn(image, 'push').mockImplementation(async () => Readable.from([]));
     vi.spyOn(Docker.prototype, 'getImage').mockReturnValue(image);
-    const executeInBackground = vi.fn<serverJobs.ServerJobExecutor['executeInBackground']>();
-    vi.spyOn(serverJobs, 'createServerJob').mockResolvedValue({
-      jobSequenceId: '1',
-      execute: vi.fn(),
-      executeUnsafe: vi.fn(),
-      executeInBackground,
-    });
-    const job = {
-      info: vi.fn(),
-      error: vi.fn(),
-      warn: vi.fn(),
-      verbose: vi.fn(),
-      data: {},
-      exec: vi.fn(),
-      stop: vi.fn<serverJobs.ServerJob['stop']>(),
-      fail: vi.fn((message: string): never => {
-        throw new Error(message);
-      }),
-    };
 
     await withConfig({ cacheImageRegistry: 'cache.example.com' }, async () => {
       await ecrUpdate([{ image: 'org/first' }, { image: 'org/second' }], {
@@ -85,3 +87,22 @@ it.each([false, true])(
     });
   },
 );
+
+it('rejects unsupported registries before making a Docker request', async () => {
+  const { job, executeInBackground } = mockImageSyncJob();
+  const createImage = vi
+    .spyOn(Docker.prototype, 'createImage')
+    .mockRejectedValue(new Error('Unexpected pull'));
+  await withConfig({ cacheImageRegistry: 'cache.example.com' }, async () => {
+    await ecrUpdate([{ image: 'internal-host:5000/team/image:tag' }], {
+      user: { id: '1' },
+      authz_data: { authn_user: { id: '1' } },
+      course: { id: '1' },
+    });
+    await expect(executeInBackground.mock.calls[0][0](job)).rejects.toThrow(
+      'Failed to sync 1 of 1 images: internal-host:5000/team/image:tag',
+    );
+    expect(job.error).toHaveBeenCalledWith(expect.stringContaining('Unsupported image registry'));
+    expect(createImage).not.toHaveBeenCalled();
+  });
+});

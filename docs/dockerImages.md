@@ -9,7 +9,21 @@ Docker containers are created from [container images](https://docs.docker.com/ge
 
 Instructors are encouraged to use one of the maintained images, to ensure all security updates and new functionality can be accessed in your questions. Questions may use their own images, though, provided these images allow the question configuration to provide the appropriate functionality needed for external grading and workspaces.
 
-Custom images can be hosted publicly on Docker Hub or another registry such as GitHub Container Registry (GHCR). For Docker Hub, use `org/image:tag`. For other registries, include the hostname in the image name, e.g., `ghcr.io/org/image:tag`. Images must be publicly accessible without authentication.
+## Supported registries
+
+Custom images must be publicly accessible without authentication and hosted on one of these registries:
+
+| Registry                                          | Image example                                 |
+| ------------------------------------------------- | --------------------------------------------- |
+| Docker Hub (`docker.io`)                          | `org/image:tag`                               |
+| GitHub Container Registry (`ghcr.io`)             | `ghcr.io/org/image:tag`                       |
+| Quay (`quay.io`)                                  | `quay.io/org/image:tag`                       |
+| GitLab Container Registry (`registry.gitlab.com`) | `registry.gitlab.com/group/project/image:tag` |
+| Amazon ECR Public (`public.ecr.aws`)              | `public.ecr.aws/alias/image:tag`              |
+
+For Docker Hub, omit the registry hostname, as in `org/image:tag`. Explicit Docker Hub hostnames `docker.io`, `index.docker.io`, and `registry-1.docker.io` are also supported. For other registries, include the hostname, as in `ghcr.io/org/image:tag`.
+
+Custom registry domains, subdomains of the listed hosts, and explicit registry ports are not supported. Images from unsupported registries are rejected before pulling. This restriction applies to source images; the administrator-configured PrairieLearn cache registry is separate, and existing cache names are unchanged.
 
 ## Custom variations of maintained images
 

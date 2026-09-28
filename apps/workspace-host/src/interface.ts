@@ -24,6 +24,7 @@ import { z } from 'zod';
 
 import { cache } from '@prairielearn/cache';
 import { DockerName, setupDockerAuth } from '@prairielearn/docker-utils';
+import { assertSupportedImageRegistry } from '@prairielearn/docker-utils/registry';
 import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
@@ -709,6 +710,9 @@ async function _pullImage(workspace: Workspace) {
   let percentDisplayed = false;
   let stream: NodeJS.ReadableStream | undefined;
   try {
+    if (!config.cacheImageRegistry) {
+      assertSupportedImageRegistry(workspace_image);
+    }
     stream = await docker.pull(workspace_image, { authconfig: auth });
   } catch (err) {
     logger.error(
