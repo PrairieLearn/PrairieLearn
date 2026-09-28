@@ -1427,13 +1427,69 @@ def _equivalent(
     right_direction: DirectionName | None = None,
     *,
     index: sympy.Symbol | None = None,
+    left_index: sympy.Symbol | None = None,
+    right_index: sympy.Symbol | None = None,
 ) -> bool:
     try:
+        left_index = left_index if left_index is not None else index
+        right_index = right_index if right_index is not None else index
+        if _sum_reindexing_equivalent(
+            config,
+            left_values,
+            right_values,
+            submitted_index=left_index,
+            correct_index=right_index,
+        ):
+            return True
+
         left, right = (
-            _construct(config, left_values, left_direction, index=index),
-            _construct(config, right_values, right_direction, index=index),
+            _construct(config, left_values, left_direction, index=left_index),
+            _construct(config, right_values, right_direction, index=right_index),
         )
         return _expressions_equivalent(left, right)
+    except (NotImplementedError, TypeError, ValueError, ZeroDivisionError):
+        return False
+
+
+def _sum_reindexing_equivalent(
+    config: RenderConfig,
+    submitted: ResponseValues,
+    correct: ResponseValues,
+    *,
+    submitted_index: sympy.Symbol | None,
+    correct_index: sympy.Symbol | None,
+) -> bool:
+    """Recognize Sum(f(n), (n, a, b)) = Sum(f(k - s), (k, a + s, b + s))."""
+    if (
+        config.operator != "Sum"
+        or config.indexing != "bounds"
+        or submitted_index is None
+        or correct_index is None
+    ):
+        return False
+
+    try:
+        shift = sympy.simplify(submitted["lower"] - correct["lower"])  # type: ignore
+        if (
+            shift.free_symbols
+            or shift.is_integer is not True
+            or shift.is_finite is not True
+        ):
+            return False
+
+        submitted_upper = submitted["upper"]
+        correct_upper = correct["upper"]
+        upper_bounds = (submitted_upper, correct_upper)
+        if any(bound == sympy.oo for bound in upper_bounds):
+            if not all(bound == sympy.oo for bound in upper_bounds):
+                return False
+        elif not _expressions_equivalent(submitted_upper, correct_upper + shift):
+            return False
+
+        expected_submitted_body = correct["body"].xreplace({
+            correct_index: submitted_index - shift
+        })
+        return _expressions_equivalent(submitted["body"], expected_submitted_body)
     except (NotImplementedError, TypeError, ValueError, ZeroDivisionError):
         return False
 
@@ -1474,9 +1530,13 @@ def grade(element_html: str, data: QuestionData) -> None:
         if submitted_json == "" or not isinstance(submitted_json, dict):
             return 0.0, None
         try:
+            submitted_operator, correct_operator = (
+                pbo.json_to_big_operator(submitted_json),
+                pbo.json_to_big_operator(correct_json),
+            )
             submitted, correct = (
-                _values(config, submitted_json),
-                _values(config, correct_json),
+                _get_values(config, submitted_operator),
+                _get_values(config, correct_operator),
             )
         except (KeyError, TypeError, ValueError):
             return 0.0, None
@@ -1514,7 +1574,8 @@ def grade(element_html: str, data: QuestionData) -> None:
                         correct,
                         submitted_json.get("direction"),
                         correct_json.get("direction"),
-                        index=pbo.json_to_big_operator(correct_json)["index"],
+                        left_index=submitted_operator["index"],
+                        right_index=correct_operator["index"],
                     )
                 )
         return score, None
