@@ -1,0 +1,39 @@
+.course-agent-panel {
+  --bs-offcanvas-width: min(38rem, 100vw);
+}
+.course-agent-toggle {
+  position: fixed;
+  right: 0;
+  top: 0;
+  height: 100dvh;
+  width: 3rem;
+  border-radius: 0;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding-top: 1rem;
+  z-index: 1040;
+}
+.course-agent-transcript {
+  min-height: 0;
+  overflow-wrap: anywhere;
+}
+.course-agent-transcript pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.course-agent-diff span {
+  display: block;
+}
+@media (min-width: 1200px) {
+  body:has(.course-agent-panel.show) {
+    padding-right: min(38rem, 45vw);
+  }
+  .course-agent-panel {
+    --bs-offcanvas-width: min(38rem, 45vw);
+  }
+}
+
+body:has(.course-agent-toggle:not([hidden])) {
+  padding-right: 3rem;
+}

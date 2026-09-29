@@ -63,6 +63,28 @@ export const STANDARD_COURSE_DIRS = [
 ];
 
 export const ConfigSchema = z.object({
+  courseAgent: z
+    .object({
+      workerUrl: z.url(),
+      serviceToken: z.string().min(32),
+      publicationTokens: z.record(z.string(), z.string().min(1)),
+      maxConcurrentPerUser: z.number().int().positive().default(2),
+      maxConcurrentPerCourse: z.number().int().positive().default(5),
+      maxRequestsPerHour: z.number().int().positive().default(30),
+      dailyCostLimit: z.number().positive().default(20),
+      pricing: z
+        .record(
+          z.string(),
+          z.object({
+            input: z.number().nonnegative(),
+            cachedInput: z.number().nonnegative(),
+            output: z.number().nonnegative(),
+          }),
+        )
+        .default({}),
+    })
+    .nullable()
+    .default(null),
   startServer: z.boolean().default(true),
   postgresqlUser: z.string().default('postgres'),
   postgresqlPassword: z.string().nullable().default(null),
@@ -772,6 +794,10 @@ export async function loadConfig(paths: string[]) {
         'databaseEncryptionKey must be set to a secure value in production environments',
       );
     }
+  }
+
+  if (config.courseAgent && !config.redisUrl) {
+    throw new Error('redisUrl must be set when courseAgent is configured');
   }
 
   if (config.courseFilesApiTransport === 'network' && !config.trpcSecretKeys?.length) {
