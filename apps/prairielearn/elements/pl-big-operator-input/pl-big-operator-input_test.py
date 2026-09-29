@@ -938,6 +938,15 @@ class TestGradeUnits:
         )
         assert data["partial_scores"]["op"] == {"score": 0.0, "weight": 1}
 
+        root = lxml.html.fragment_fromstring(big_operator_input.render(markup, data))
+        body = root.get_element_by_id("symbolic-input-op-body")
+        assert body.get("aria-invalid") == "true"
+        format_error_links = root.xpath('.//*[@title="Format error"]')
+        assert len(format_error_links) == 1
+        assert big_operator_input.SYMPY_TIMEOUT_FORMAT_ERROR in (
+            format_error_links[0].get("data-bs-content") or ""
+        )
+
     def test_component_score_badges_timeout_without_failing_render(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:

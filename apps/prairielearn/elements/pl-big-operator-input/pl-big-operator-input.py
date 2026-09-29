@@ -875,6 +875,7 @@ def _render_symbolic_input(
     prefix: str | None = None,
     suffix: str | None = None,
     score: float | None = None,
+    format_error: str | None = None,
 ) -> tuple[str, QuestionData]:
     config = psi.RenderConfig(
         # passed-through
@@ -906,6 +907,8 @@ def _render_symbolic_input(
     view = copy.deepcopy(data)
     if score is not None:
         view["partial_scores"][name] = {"score": score}
+    if format_error is not None:
+        view.setdefault("format_errors", {})[name] = format_error
 
     template = SYMBOLIC_INPUT_TEMPLATE_PATH.read_text(encoding="utf-8")
 
@@ -947,6 +950,11 @@ def _symbolic_field(
         prefix=prefix,
         suffix=suffix,
         score=score,
+        format_error=(
+            data.get("format_errors", {}).get(config.answer_name)
+            if component == "body"
+            else None
+        ),
     )
     return {"html": html}
 
