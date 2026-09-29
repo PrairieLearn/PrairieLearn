@@ -32,6 +32,7 @@ import {
 } from '../../models/assessment.js';
 import {
   type AssessmentJsonInput,
+  CalculatorTypeSchema,
   EnumAssessmentToolSchema,
 } from '../../schemas/infoAssessment.js';
 
@@ -341,6 +342,7 @@ const updateAssessment = t.procedure
       ),
       origHash: z.string(),
       tools: z.record(z.string(), z.boolean()).optional(),
+      calculatorType: CalculatorTypeSchema.optional(),
       share_source_publicly: z.boolean().optional(),
     }),
   )
@@ -430,6 +432,13 @@ const updateAssessment = t.procedure
           if (tool in assessmentInfo.tools || enabled) {
             assessmentInfo.tools[tool] = { ...assessmentInfo.tools[tool], enabled };
           }
+        }
+        if (assessmentInfo.tools.calculator && input.calculatorType) {
+          assessmentInfo.tools.calculator.type = propertyValueWithDefault(
+            assessmentInfo.tools.calculator.type,
+            input.calculatorType,
+            'advanced',
+          );
         }
         // If no tools are configured, delete the tools property to avoid storing an empty object.
         if (Object.keys(assessmentInfo.tools).length === 0) {
