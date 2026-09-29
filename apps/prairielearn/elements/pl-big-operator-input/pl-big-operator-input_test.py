@@ -441,7 +441,8 @@ class TestPrepareUnits:
         big_operator_input.prepare(markup, data)
 
         answer = pbo.json_to_big_operator(data["correct_answers"]["op"])
-        assert answer["body"] == sympy.I * sympy.Symbol("k")
+        assert answer["index"].is_integer is True
+        assert answer["body"] == sympy.I * answer["index"]
 
     @pytest.mark.parametrize(
         ("correct_answer", "operator", "indexing", "index", "grading_method"),
@@ -534,7 +535,13 @@ class TestPrepareUnits:
         decoded = pbo.json_to_big_operator(answer)
         assert answer["_type"] == "big_operator"
         assert answer["operator"] == operator
-        assert decoded["body"] == correct_answer.args[0]
+        expected_body = correct_answer.args[0].xreplace({
+            correct_answer.args[1].args[0]: decoded["index"]
+        })
+        assert decoded["body"] == expected_body
+        assert decoded["index"].is_integer is (
+            True if operator in {"Sum", "Product"} else None
+        )
         assert data["params"] == {}
 
     def test_structured_answers_are_recanonicalized(self) -> None:
@@ -897,7 +904,8 @@ class TestParseUnits:
         big_operator_input.parse(markup, data)
 
         decoded = pbo.json_to_big_operator(data["submitted_answers"]["op"])
-        assert decoded["body"] == sympy.Function("f")(sympy.Symbol("k")) + sympy.Symbol(
+        assert decoded["index"].is_integer is True
+        assert decoded["body"] == sympy.Function("f")(decoded["index"]) + sympy.Symbol(
             "x"
         )
 
@@ -1813,6 +1821,119 @@ class TestCorrectAnswerRegressions:
 
 
 class TestLifecycleRegressions:
+    @pytest.mark.parametrize(
+        "operator",
+        ["Sum", "Product", "Union", "Intersection", "DisjointUnion"],
+    )
+    def test_bounded_discrete_operator_defaults_index_to_integer(
+        self, operator: str
+    ) -> None:
+        set_operator = operator in {"Union", "Intersection", "DisjointUnion"}
+        body = "{k}" if set_operator else "k"
+        markup = html(**{
+            "correct-answer": f"{operator}({body}, (k, 1, 2))",
+            "grading-method": "exact",
+        })
+        data = question_data(
+            raw_submitted_answers={
+                "op-lower": "1",
+                "op-upper": "2",
+                "op-body": body,
+            }
+        )
+
+        prepare_parse_grade(markup, data)
+
+        for answer in (
+            data["correct_answers"]["op"],
+            data["submitted_answers"]["op"],
+        ):
+            decoded = pbo.json_to_big_operator(answer)
+            assert decoded["index"].is_integer is True
+            assert all(
+                symbol.is_integer is True for symbol in decoded["body"].free_symbols
+            )
+        assert data["partial_scores"]["op"] == {"score": 1.0, "weight": 1}
+
+    def test_default_integer_assumption_applies_when_correct_body_omits_index(
+        self,
+    ) -> None:
+        k = sympy.Symbol("k")
+        answer = pbo.big_operator_to_json(
+            operator="Sum",
+            indexing="bounds",
+            index=k,
+            lower=1,
+            upper=2,
+            body=1,
+        )
+        markup = html(**{"grading-method": "exact"})
+        data = question_data(
+            answer,
+            raw_submitted_answers={
+                "op-lower": "1",
+                "op-upper": "2",
+                "op-body": "(-1)^(2*k)",
+            },
+        )
+
+        prepare_parse_grade(markup, data)
+
+        correct = pbo.json_to_big_operator(data["correct_answers"]["op"])
+        submitted = pbo.json_to_big_operator(data["submitted_answers"]["op"])
+        assert correct["index"].is_integer is True
+        assert submitted["index"].is_integer is True
+        assert submitted["body"] == 1
+        assert data["partial_scores"]["op"] == {"score": 1.0, "weight": 1}
+
+    @pytest.mark.parametrize(
+        ("operator", "indexing"),
+        [("Sum", "domain"), ("Integral", "bounds"), ("Limit", "approaches")],
+    )
+    def test_non_integer_indexed_operator_does_not_default_index_assumption(
+        self, operator: str, indexing: str
+    ) -> None:
+        markup = html(operator=operator, indexing=indexing)
+        data = question_data()
+
+        big_operator_input.prepare(markup, data)
+
+        decoded = pbo.json_to_big_operator(data["correct_answers"]["op"])
+        assert decoded["index"].is_integer is None
+
+    def test_explicit_non_integer_index_assumption_is_preserved(self) -> None:
+        k = sympy.Symbol("k", integer=False)
+        answer = pbo.big_operator_to_json(
+            operator="Sum",
+            indexing="bounds",
+            index=k,
+            lower=1,
+            upper=2,
+            body=k,
+        )
+        markup = html(**{"grading-method": "exact"})
+        data = question_data(
+            answer,
+            raw_submitted_answers={
+                "op-lower": "1",
+                "op-upper": "2",
+                "op-body": "k",
+            },
+        )
+
+        prepare_parse_grade(markup, data)
+
+        for stored_answer in (
+            data["correct_answers"]["op"],
+            data["submitted_answers"]["op"],
+        ):
+            decoded = pbo.json_to_big_operator(stored_answer)
+            assert decoded["index"].is_integer is False
+            assert all(
+                symbol.is_integer is False for symbol in decoded["body"].free_symbols
+            )
+        assert data["partial_scores"]["op"] == {"score": 1.0, "weight": 1}
+
     @pytest.mark.parametrize("representation", ["sympy", "big_operator"])
     def test_positive_symbol_assumptions_survive_correct_answer_conversion(
         self, representation: str
@@ -2333,7 +2454,8 @@ class TestDocSmoke:
         prepared = self._prepare_parse_render(html(**{"answers-name": "total"}), data)
 
         decoded = pbo.json_to_big_operator(prepared["correct_answers"]["total"])
-        assert decoded["body"] == k + 1
+        assert decoded["index"].is_integer is True
+        assert decoded["body"] == decoded["index"] + 1
 
     def test_custom_python_correct_answer(self) -> None:
         data = question_data()

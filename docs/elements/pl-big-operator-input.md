@@ -101,6 +101,8 @@ For a domain integral, the domain appears by itself below the integral symbol ra
 
 Bounds, limit targets, and most operator bodies accept mathematical expressions. Domains accept set notation, such as `{1, 2}` or `[0, 1]`, as well as a symbol representing a set. Add any non-index symbols to `variables`.
 
+For bounded sums, products, unions, intersections, and disjoint unions, the index variable is assumed to be an integer unless the correct answer explicitly sets `integer=False`. Domain, integral, limit, and custom-operator indices do not receive this assumption automatically.
+
 The bodies of `Union`, `Intersection`, and `DisjointUnion` must also be sets. For example:
 
 ```html title="question.html"

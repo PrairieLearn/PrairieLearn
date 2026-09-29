@@ -84,6 +84,14 @@ OP_METADATA: Final[frozendict[SympyOperator, OperatorMetadata]] = frozendict({
     "Max": OperatorMetadata(r"\max", sympy.Max),
 })
 
+INTEGER_INDEXED_OPERATORS: Final[frozenset[OperatorName]] = frozenset({
+    "Sum",
+    "Product",
+    "Union",
+    "Intersection",
+    "DisjointUnion",
+})
+
 
 DIRECTION_SYMBOLS: Final[frozendict[DirectionName, DirectionSymbol]] = frozendict({
     "two-sided": "+-",
@@ -539,6 +547,21 @@ def _sympy_json(value: sympy.Basic) -> SympyJson:
     )
 
 
+def _uses_integer_index(config: RenderConfig) -> bool:
+    return config.indexing == "bounds" and config.operator in INTEGER_INDEXED_OPERATORS
+
+
+def _with_default_index_assumption(
+    config: RenderConfig,
+    assumptions: psu.AssumptionsDictT | None,
+) -> psu.AssumptionsDictT | None:
+    if not _uses_integer_index(config):
+        return assumptions
+    assumptions = copy.deepcopy(assumptions) if assumptions is not None else {}
+    assumptions.setdefault(config.index, {}).setdefault("integer", True)
+    return assumptions
+
+
 def _canonical_json(
     config: RenderConfig,
     values: ResponseValues,
@@ -692,13 +715,14 @@ def _answer_json(
             f'Correct answer for indexing="{config.indexing}" requires a '
             f"{expected_length}-item indexing tuple."
         )
+    body_assumptions = _with_default_index_assumption(config, assumptions)
     try:
         body = _unchecked_parse_sympy(
             body_source,
             tuple(dict.fromkeys((*config.variables, config.index))),
             config.custom_functions,
             allow_complex=config.allow_complex,
-            assumptions=assumptions,
+            assumptions=body_assumptions,
         )
     except _ParseError as exc:
         raise ValueError(
@@ -754,7 +778,7 @@ def _answer_json(
         raise ValueError(
             "The correct answer contains invalid SymPy data."
         ) from exc._src
-    index = sympy.Symbol(config.index, **(assumptions or {}).get(config.index, {}))
+    index = sympy.Symbol(config.index, **(body_assumptions or {}).get(config.index, {}))
     return _canonical_json(config, values, index=index)
 
 
@@ -762,7 +786,26 @@ def _validate_correct(
     config: RenderConfig, correct: dict[str, Any] | BigOperatorJson
 ) -> BigOperatorJson:
     big_op = pbo.json_to_big_operator(correct)
-    _validate_component_values(config, _get_values(config, big_op))
+    values = _get_values(config, big_op)
+    index = big_op["index"]
+    if _uses_integer_index(config) and index.is_integer is None:
+        integer_index = sympy.Symbol(
+            index.name,
+            **(index.assumptions0 | {"integer": True}),
+        )
+        integer_values: ResponseValues = {}
+        for component in config.components:
+            integer_values[component] = values[component].xreplace({
+                index: integer_index
+            })
+        values = integer_values
+        correct = _canonical_json(
+            config,
+            values,
+            index=integer_index,
+            direction=big_op.get("direction"),
+        )
+    _validate_component_values(config, values)
     return correct  # type: ignore
 
 
@@ -1135,7 +1178,11 @@ def _parse_component_submission(
         allowed_types=_component_allowed_types(config, component),
         allow_complex=config.allow_complex,
         imaginary_unit=config.imaginary_unit,
-        assumptions=assumptions,
+        assumptions=(
+            _with_default_index_assumption(config, assumptions)
+            if component == "body"
+            else assumptions
+        ),
     )
 
 
