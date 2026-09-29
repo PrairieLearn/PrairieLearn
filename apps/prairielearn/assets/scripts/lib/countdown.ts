@@ -48,6 +48,7 @@ export function setupCountdown(options: {
   serverUpdateURL?: string;
   signal?: AbortSignal;
   onTimerOut?: () => void;
+  onUpdate?: (remainingMS: number) => void;
   onRemainingTime?: Record<number, () => void>;
   onServerUpdateFail?: (remainingMS: number) => void;
   getBackgroundColor?: (remainingSec: number) => string;
@@ -126,6 +127,8 @@ export function setupCountdown(options: {
     const remainingMin = Math.floor(remainingSec / 60);
     const perc = 100 - Math.max(0, Math.min(100, (remainingMS / serverTimeLimitMS) * 100));
     const backgroundColor = options.getBackgroundColor?.(remainingSec) || 'bg-info';
+
+    options.onUpdate?.(remainingMS);
 
     countdownProgressBar.style.width = perc + '%';
     countdownProgressBar.className = 'progress-bar ' + backgroundColor;

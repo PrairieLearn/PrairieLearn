@@ -57,6 +57,10 @@ onDocumentReady(() => {
     initialServerRemainingMS: timeLimitData.serverRemainingMS,
     initialServerTimeLimitMS: timeLimitData.serverTimeLimitMS,
     serverUpdateURL: timeLimitData.serverUpdateURL,
+    onUpdate: (remainingMS) => {
+      // The question form is initialized by a separate bundle.
+      document.dispatchEvent(new CustomEvent('exam-time-remaining', { detail: remainingMS }));
+    },
     onTimerOut: () => {
       const countdown = document.querySelector('#countdownDisplay');
       if (countdown) countdown.innerHTML = 'expired';

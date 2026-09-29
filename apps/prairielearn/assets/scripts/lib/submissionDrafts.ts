@@ -1,6 +1,8 @@
 import { getQuestionFormData } from './confirmOnUnload.js';
 
 const DRAFT_INTERVAL_MS = 10_000;
+const DRAFT_FAST_INTERVAL_MS = 2_000;
+const DRAFT_FAST_THRESHOLD_MS = 30_000;
 const DRAFT_RECHECK_INTERVAL_MS = 60_000;
 const SAVED_STATUS_DURATION_MS = 2_000;
 
@@ -22,6 +24,7 @@ export function saveSubmissionDrafts(form: HTMLFormElement): () => void {
   let draftRequested = false;
   let requestInFlight = false;
   let stopped = false;
+  let intervalMs = DRAFT_INTERVAL_MS;
   let statusTimeoutId: ReturnType<typeof setTimeout> | undefined;
 
   function getUnsavedFormData(forceRecheck = false) {
@@ -138,14 +141,28 @@ export function saveSubmissionDrafts(form: HTMLFormElement): () => void {
     }
   }
 
-  const intervalId = setInterval(() => void saveDraft(), DRAFT_INTERVAL_MS);
+  function handleExamTimeRemaining(event: Event) {
+    const remainingMS = (event as CustomEvent<number>).detail;
+    const nextIntervalMs =
+      remainingMS < DRAFT_FAST_THRESHOLD_MS ? DRAFT_FAST_INTERVAL_MS : DRAFT_INTERVAL_MS;
+    if (nextIntervalMs === intervalMs) return;
+
+    intervalMs = nextIntervalMs;
+    clearInterval(intervalId);
+    intervalId = setInterval(() => void saveDraft(), intervalMs);
+    if (intervalMs === DRAFT_FAST_INTERVAL_MS) void saveDraft();
+  }
+
+  let intervalId = setInterval(() => void saveDraft(), intervalMs);
   document.addEventListener('visibilitychange', handleVisibilityChange);
+  document.addEventListener('exam-time-remaining', handleExamTimeRemaining);
 
   function stop() {
     stopped = true;
     clearInterval(intervalId);
     clearTimeout(statusTimeoutId);
     document.removeEventListener('visibilitychange', handleVisibilityChange);
+    document.removeEventListener('exam-time-remaining', handleExamTimeRemaining);
   }
 
   return stop;
