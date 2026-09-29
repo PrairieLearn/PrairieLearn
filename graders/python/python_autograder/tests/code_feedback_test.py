@@ -29,7 +29,7 @@ Test Categories:
 NAME = "test_check_dict"
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture
 def setup_feedback() -> None:
     Feedback.set_name(NAME)
     Feedback.buffer = ""
@@ -68,7 +68,7 @@ def setup_feedback() -> None:
 @patch("code_feedback.Feedback.add_feedback")
 @patch("builtins.open", new_callable=mock_open)
 def test_check_dict_correct_cases(
-    mock_file, mock_add_feedback, ref_dict, student_dict
+    mock_file, mock_add_feedback, ref_dict, student_dict, setup_feedback: None
 ) -> None:
     """Test cases where check_dict should return True and not add feedback."""
     assert Feedback.check_dict(NAME, ref_dict, student_dict, report_success=False)
@@ -173,7 +173,12 @@ def test_check_dict_correct_cases(
 @patch("code_feedback.Feedback.add_feedback")
 @patch("builtins.open", new_callable=mock_open)
 def test_check_dict_incorrect_cases(
-    mock_file, mock_add_feedback, ref_dict, student_dict, expected_feedback
+    mock_file,
+    mock_add_feedback,
+    ref_dict,
+    student_dict,
+    expected_feedback,
+    setup_feedback: None,
 ) -> None:
     """Test cases where check_dict should return False and add specific feedback."""
     assert not Feedback.check_dict(NAME, ref_dict, student_dict, report_success=False)
@@ -230,6 +235,7 @@ def test_check_dict_target_keys(
     target_keys,
     expected_result,
     expected_feedback,
+    setup_feedback: None,
 ) -> None:
     """Test check_dict with the target_keys parameter."""
     result = Feedback.check_dict(
@@ -246,7 +252,7 @@ def test_check_dict_target_keys(
 @patch("code_feedback.Feedback.add_feedback")
 @patch("builtins.open", new_callable=mock_open)
 def test_check_dict_with_partial_key_matching_raises_error(
-    mock_file, mock_add_feedback
+    mock_file, mock_add_feedback, setup_feedback: None
 ) -> None:
     """Test that check_dict raises ValueError when target_keys contains keys not in ref_dict."""
     ref_dict = {"a": 1, "b": 2, "c": 3}
