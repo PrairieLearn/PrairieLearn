@@ -1,0 +1,271 @@
+import base64
+import importlib
+import json
+from pathlib import Path
+from typing import Any, Literal
+
+import lxml.html
+import pytest
+
+pl_sketch = importlib.import_module("pl-sketch")
+
+POINT_SKETCH_HTML = """
+    <pl-sketch answers-name="graph" width="400" height="400">
+        <pl-sketch-tool id="point" type="point"></pl-sketch-tool>
+        <pl-sketch-grade
+            type="match"
+            tool-id="point"
+            x="0"
+            y="0"
+        ></pl-sketch-grade>
+        <pl-sketch-solution
+            tool-id="point"
+            coordinates="(0, 0)"
+        ></pl-sketch-solution>
+    </pl-sketch>
+"""
+
+POINT_SKETCH_WITH_INITIAL_HTML = """
+    <pl-sketch answers-name="graph" width="400" height="400">
+        <pl-sketch-tool
+            id="initial-point"
+            type="point"
+            read-only="true"
+        ></pl-sketch-tool>
+        <pl-sketch-tool id="point" type="point"></pl-sketch-tool>
+        <pl-sketch-grade
+            type="match"
+            tool-id="point"
+            x="0"
+            y="0"
+        ></pl-sketch-grade>
+        <pl-sketch-initial
+            tool-id="initial-point"
+            coordinates="(-1, -1)"
+        ></pl-sketch-initial>
+        <pl-sketch-solution
+            tool-id="point"
+            coordinates="(0, 0)"
+        ></pl-sketch-solution>
+    </pl-sketch>
+"""
+
+READ_ONLY_INITIAL_CURVE_SKETCH_HTML = """
+    <pl-sketch answers-name="graph" width="400" height="400">
+        <pl-sketch-tool
+            id="curve"
+            type="spline"
+            read-only="true"
+        ></pl-sketch-tool>
+        <pl-sketch-grade
+            type="match-function"
+            tool-id="curve"
+            function="0"
+            x-range="-1,1"
+        ></pl-sketch-grade>
+        <pl-sketch-initial
+            tool-id="curve"
+            coordinates="(-1, 0), (1, 0)"
+        ></pl-sketch-initial>
+        <pl-sketch-solution
+            tool-id="curve"
+            coordinates="(-1, -1), (1, 1)"
+        ></pl-sketch-solution>
+    </pl-sketch>
+"""
+
+EDITABLE_INITIAL_CURVE_SKETCH_HTML = """
+    <pl-sketch answers-name="graph" width="400" height="400">
+        <pl-sketch-tool id="curve" type="spline"></pl-sketch-tool>
+        <pl-sketch-grade
+            type="match-function"
+            tool-id="curve"
+            function="x"
+            x-range="-1,1"
+        ></pl-sketch-grade>
+        <pl-sketch-initial
+            tool-id="curve"
+            coordinates="(-1, 0), (1, 0)"
+        ></pl-sketch-initial>
+        <pl-sketch-solution
+            tool-id="curve"
+            coordinates="(-1, -1), (1, 1)"
+        ></pl-sketch-solution>
+    </pl-sketch>
+"""
+
+VERTICAL_LINE_SKETCH_HTML = """
+    <pl-sketch answers-name="graph" width="400" height="400">
+        <pl-sketch-tool id="vertical" type="vertical-line"></pl-sketch-tool>
+        <pl-sketch-grade
+            type="match"
+            tool-id="vertical"
+            x="0"
+        ></pl-sketch-grade>
+        <pl-sketch-solution
+            tool-id="vertical"
+            coordinates="0"
+        ></pl-sketch-solution>
+    </pl-sketch>
+"""
+
+
+def _make_question_data() -> dict[str, Any]:
+    return {
+        "params": {},
+        "correct_answers": {},
+        "submitted_answers": {},
+        "format_errors": {},
+        "partial_scores": {},
+        "feedback": {},
+        "raw_submitted_answers": {},
+        "options": {"question_path": "."},
+        "answers_names": {},
+        "panel": "submission",
+        "editable": False,
+        "correct_answer_shown": False,
+    }
+
+
+def _run_submission_lifecycle(
+    element_html: str, test_type: Literal["correct", "incorrect"]
+) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
+    data = _make_question_data()
+    pl_sketch.prepare(element_html, data)
+    data["test_type"] = test_type
+
+    pl_sketch.test(element_html, data)
+    data["submitted_answers"] = data["raw_submitted_answers"].copy()
+    pl_sketch.parse(element_html, data)
+    pl_sketch.grade(element_html, data)
+    rendered_html = pl_sketch.render(element_html, data)
+
+    raw_submission = data["raw_submitted_answers"]["graph-sketchresponse-submission"]
+    submission = json.loads(base64.b64decode(raw_submission).decode("utf-8"))
+    rendered = lxml.html.fragment_fromstring(rendered_html, create_parent=True)
+    encoded_config = rendered.xpath('.//div[contains(@id, "-sketchresponse-data")]')[
+        0
+    ].text
+    config = json.loads(base64.b64decode(encoded_config).decode("utf-8"))
+
+    return data, submission, config
+
+
+@pytest.mark.parametrize(
+    ("test_type", "expected_score"),
+    [
+        ("correct", 1),
+        ("incorrect", 0),
+    ],
+)
+def test_generated_submission_can_be_parsed_graded_and_rendered(
+    test_type: Literal["correct", "incorrect"],
+    expected_score: int,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.chdir(Path(__file__).parent)
+    data, submission, config = _run_submission_lifecycle(POINT_SKETCH_HTML, test_type)
+
+    assert "graph" not in data["format_errors"]
+    assert data["partial_scores"]["graph"]["score"] == expected_score
+    assert config["initialstate"] == submission["data"]
+    point = submission["data"]["point"][0]
+    assert submission["gradeable"]["point"] == [{"point": [point["x"], point["y"]]}]
+
+
+@pytest.mark.parametrize(
+    ("test_type", "solution_y_offset"),
+    [
+        ("correct", 0),
+        ("incorrect", 200),
+    ],
+)
+def test_generated_submission_combines_initial_and_solution_drawings(
+    test_type: Literal["correct", "incorrect"],
+    solution_y_offset: int,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.chdir(Path(__file__).parent)
+    data, submission, config = _run_submission_lifecycle(
+        POINT_SKETCH_WITH_INITIAL_HTML, test_type
+    )
+
+    initial_point = data["params"]["graph"]["initial_state"]["initial-point"][0]
+    solution_point = data["params"]["graph"]["solution_state"]["point"][0]
+    expected_solution_point = {
+        **solution_point,
+        "y": solution_point["y"] + solution_y_offset,
+    }
+    assert submission["data"] == {
+        "initial-point": [initial_point],
+        "point": [expected_solution_point],
+    }
+    assert submission["gradeable"] == {
+        "initial-point": [{"point": [initial_point["x"], initial_point["y"]]}],
+        "point": [
+            {"point": [expected_solution_point["x"], expected_solution_point["y"]]}
+        ],
+    }
+    assert config["initialstate"] == submission["data"]
+
+
+@pytest.mark.parametrize(
+    ("test_type", "expected_score", "matches_solution"),
+    [
+        ("correct", 1, True),
+        ("incorrect", 0, False),
+    ],
+)
+def test_generated_submission_replaces_editable_initial_curve(
+    test_type: Literal["correct", "incorrect"],
+    expected_score: int,
+    matches_solution: bool,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.chdir(Path(__file__).parent)
+    data, submission, config = _run_submission_lifecycle(
+        EDITABLE_INITIAL_CURVE_SKETCH_HTML, test_type
+    )
+
+    solution_curve = data["params"]["graph"]["solution_state"]["curve"]
+    assert "graph" not in data["format_errors"]
+    assert data["partial_scores"]["graph"]["score"] == expected_score
+    assert (submission["data"] == {"curve": solution_curve}) is matches_solution
+    assert config["initialstate"] == submission["data"]
+
+
+def test_generated_submission_preserves_read_only_initial_curve(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.chdir(Path(__file__).parent)
+    data, submission, config = _run_submission_lifecycle(
+        READ_ONLY_INITIAL_CURVE_SKETCH_HTML, "correct"
+    )
+
+    initial_curve = data["params"]["graph"]["initial_state"]["curve"]
+    solution_curve = data["params"]["graph"]["solution_state"]["curve"]
+    assert "graph" not in data["format_errors"]
+    assert data["partial_scores"]["graph"]["score"] == 1
+    assert initial_curve != solution_curve
+    assert submission["data"] == {"curve": initial_curve}
+    assert config["initialstate"] == submission["data"]
+
+
+def test_generated_incorrect_vertical_line_differs_from_correct(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.chdir(Path(__file__).parent)
+    correct_data, correct_submission, _ = _run_submission_lifecycle(
+        VERTICAL_LINE_SKETCH_HTML, "correct"
+    )
+    incorrect_data, incorrect_submission, incorrect_config = _run_submission_lifecycle(
+        VERTICAL_LINE_SKETCH_HTML, "incorrect"
+    )
+
+    correct_line = correct_submission["data"]["vertical"][0]
+    incorrect_line = incorrect_submission["data"]["vertical"][0]
+    assert incorrect_line["x"] != correct_line["x"]
+    assert incorrect_submission != correct_submission
+    assert correct_data["partial_scores"]["graph"]["score"] == 1
+    assert incorrect_data["partial_scores"]["graph"]["score"] == 0
+    assert incorrect_config["initialstate"] == incorrect_submission["data"]
