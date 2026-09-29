@@ -27,7 +27,11 @@ import type {
   StaffCourseInstance,
 } from '../../../lib/client/safe-db-types.js';
 import { getQuestionCreateUrl } from '../../../lib/client/url.js';
-import type { EnumAssessmentTool, ZoneAssessmentJson } from '../../../schemas/infoAssessment.js';
+import {
+  type CalculatorType,
+  type EnumAssessmentTool,
+  type ZoneAssessmentJson,
+} from '../../../schemas/infoAssessment.js';
 import type { AssessmentQuestionsError } from '../../../trpc/assessment/assessment-questions.js';
 import { createAssessmentTrpcClient } from '../../../trpc/assessment/client.js';
 import { TRPCProvider, useTRPC } from '../../../trpc/assessment/context.js';
@@ -140,6 +144,7 @@ interface AssessmentEditorInnerProps {
   jsonZones: ZoneAssessmentJson[];
   assessment: StaffAssessment;
   assessmentToolDefaults: Partial<Record<EnumAssessmentTool, boolean>>;
+  assessmentCalculatorType?: CalculatorType;
   groupsConfigured: boolean;
   groupRoles: string[];
   assessmentCanView: string[] | undefined;
@@ -163,6 +168,7 @@ function AssessmentEditorInner({
   jsonZones,
   assessment,
   assessmentToolDefaults,
+  assessmentCalculatorType,
   groupsConfigured,
   groupRoles,
   assessmentCanView,
@@ -924,6 +930,7 @@ function AssessmentEditorInner({
       constantQuestionValue: assessment.constant_question_value ?? false,
       assessmentDefaults,
       assessmentToolDefaults,
+      assessmentCalculatorType,
       groupsConfigured,
       groupRoles,
       assessmentCanView,
@@ -941,6 +948,7 @@ function AssessmentEditorInner({
       assessment.constant_question_value,
       assessmentDefaults,
       assessmentToolDefaults,
+      assessmentCalculatorType,
       groupsConfigured,
       groupRoles,
       assessmentCanView,
