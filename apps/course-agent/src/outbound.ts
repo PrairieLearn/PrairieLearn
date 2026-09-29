@@ -39,7 +39,7 @@ export async function forwardOpenAI(
 /** Allow repository reads with injected credentials; pushes require the trusted PL webserver approval path. */
 export async function forwardGitHub(
   request: Request,
-  env: { GITHUB_TOKEN?: string; repository: string },
+  env: { GITHUB_CLIENT_TOKEN?: string; repository: string },
   send: typeof fetch = fetch,
 ): Promise<Response> {
   const repo = env.repository;
@@ -62,9 +62,9 @@ export async function forwardGitHub(
       status: 403,
     });
   }
-  if (!env.GITHUB_TOKEN) return new Response('Git credentials unavailable', { status: 503 });
+  if (!env.GITHUB_CLIENT_TOKEN) return new Response('Git credentials unavailable', { status: 503 });
   const headers = new Headers();
-  headers.set('Authorization', `Basic ${btoa(`x-access-token:${env.GITHUB_TOKEN}`)}`);
+  headers.set('Authorization', `Basic ${btoa(`x-access-token:${env.GITHUB_CLIENT_TOKEN}`)}`);
   for (const name of ['content-type', 'accept', 'git-protocol', 'user-agent']) {
     const value = request.headers.get(name);
     if (value) headers.set(name, value);

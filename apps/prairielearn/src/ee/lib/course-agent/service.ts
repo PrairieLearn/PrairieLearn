@@ -120,11 +120,12 @@ export async function provider(
 }
 
 function publisher(conversation: CourseAgentConversation) {
-  const token = integration().publicationTokens[conversation.repository];
+  integration();
+  const token = config.githubClientToken;
   if (!token) {
     throw new TRPCError({
       code: 'PRECONDITION_FAILED',
-      message: 'Publication credentials are not configured for this repository.',
+      message: 'GitHub integration is not configured on this server.',
     });
   }
   return new Publisher(conversation, { token });

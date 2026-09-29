@@ -67,7 +67,6 @@ export const ConfigSchema = z.object({
     .object({
       workerUrl: z.url(),
       serviceToken: z.string().min(32),
-      publicationTokens: z.record(z.string(), z.string().min(1)),
       maxConcurrentPerUser: z.number().int().positive().default(2),
       maxConcurrentPerCourse: z.number().int().positive().default(5),
       maxRequestsPerHour: z.number().int().positive().default(30),

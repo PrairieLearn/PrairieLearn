@@ -33,7 +33,7 @@ Sandbox.outboundByHost = {
 Sandbox.outboundHandlers = {
   github: (
     request: Request,
-    env: { GITHUB_READ_TOKENS: string },
+    env: { GITHUB_CLIENT_TOKEN?: string },
     context: { params?: unknown },
   ) => {
     if (
@@ -44,10 +44,9 @@ Sandbox.outboundHandlers = {
     ) {
       return new Response('Forbidden', { status: 403 });
     }
-    const tokens: Record<string, string> = JSON.parse(env.GITHUB_READ_TOKENS);
     return forwardGitHub(request, {
       repository: context.params.repository,
-      GITHUB_TOKEN: tokens[context.params.repository],
+      GITHUB_CLIENT_TOKEN: env.GITHUB_CLIENT_TOKEN,
     });
   },
 };

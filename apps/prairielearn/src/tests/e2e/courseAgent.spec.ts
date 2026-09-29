@@ -11,7 +11,6 @@ const test = createTest({
   courseAgent: {
     workerUrl: 'http://localhost:8791',
     serviceToken: 'local-fixture-service-token-not-a-secret',
-    publicationTokens: {},
     pricing: {},
     maxConcurrentPerUser: 2,
     maxConcurrentPerCourse: 5,

@@ -1,11 +1,13 @@
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 
 import { afterAll, beforeAll, expect, it, vi } from 'vitest';
 import { z } from 'zod';
 
+import { proposalContent } from '@prairielearn/course-agent-contract';
 import { loadSqlEquiv, queryRow } from '@prairielearn/postgres';
 
-import { authorize } from '../ee/lib/course-agent/service.js';
+import * as agentEvents from '../ee/lib/course-agent/events.js';
+import { authorize, prepare } from '../ee/lib/course-agent/service.js';
 import { admit, estimatedCost, recordUsage } from '../ee/lib/course-agent/usage.js';
 import {
   createConversation,
@@ -67,7 +69,6 @@ it('scopes conversations and serializes stale/duplicate admissions', async () =>
 const settings = {
   workerUrl: 'http://localhost:8791',
   serviceToken: 'local-fixture-service-token-not-a-secret',
-  publicationTokens: {},
   pricing: { 'fixture-model': { input: 2, cachedInput: 0.5, output: 10 } },
   maxConcurrentPerUser: 1,
   maxConcurrentPerCourse: 1,
@@ -193,5 +194,55 @@ it('serializes admissions, keeps missing usage unknown, and does not double-coun
     });
   } finally {
     mocked.mockRestore();
+  }
+});
+
+it('uses the existing PL GitHub client token for proposal validation', async () => {
+  const { conversation, scope, user } = await setupConversation();
+  await insertCoursePermissionsByUserUid({
+    course_id: scope.course_id,
+    uid: user.uid,
+    course_role: 'Owner',
+    authn_user_id: user.id,
+  });
+  const fetcher = vi
+    .spyOn(globalThis, 'fetch')
+    .mockResolvedValue(new Response(null, { status: 404 }));
+  const notify = vi.spyOn(agentEvents, 'notify').mockResolvedValue();
+  const baseSha = 'a'.repeat(40),
+    proposedSha = 'b'.repeat(40);
+  const files = [
+    { path: 'question.txt', content: 'Changed', mode: '100644', previousMode: '100644' },
+  ];
+  const id = randomUUID();
+  try {
+    await withConfig(
+      { isEnterprise: true, courseAgent: settings, githubClientToken: 'fake-shared-client-token' },
+      async () => {
+        await prepare(scope, conversation, {
+          id,
+          sequence: 1,
+          name: 'push_sync',
+          args: {
+            id,
+            baseSha,
+            proposedSha,
+            files,
+            diff: '',
+            status: 'pending',
+            digest: createHash('sha256')
+              .update(proposalContent(baseSha, proposedSha, files))
+              .digest('hex'),
+          },
+        });
+      },
+    );
+    expect(fetcher).toHaveBeenCalledOnce();
+    const [url, init] = fetcher.mock.calls[0];
+    expect(String(url)).toContain('/repos/org/course/');
+    expect(new Headers(init?.headers).get('Authorization')).toBe('Bearer fake-shared-client-token');
+  } finally {
+    fetcher.mockRestore();
+    notify.mockRestore();
   }
 });

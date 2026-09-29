@@ -138,7 +138,7 @@ export async function connectCodex(
         );
         if (!initialized.success) {
           throw new Error(
-            `Could not initialize Git workspace (exit ${initialized.exitCode}). Check that the configured repository exists and GITHUB_TOKEN has access to it.`,
+            `Could not initialize Git workspace (exit ${initialized.exitCode}). Check that the configured repository exists and GITHUB_CLIENT_TOKEN has access to it.`,
           );
         }
       }

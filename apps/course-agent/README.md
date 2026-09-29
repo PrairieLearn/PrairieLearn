@@ -20,7 +20,7 @@ flowchart LR
 
 - `src/agent.ts`: conversation history, generic pending tools, native execution, cleanup alarms.
 - `src/codex*.ts`, `src/app-server.ts`: the pinned Codex protocol and AI SDK stream adapter.
-- `src/outbound.ts`, `src/sandbox.ts`: repository-scoped read credentials and model credentials outside the sandbox.
+- `src/outbound.ts`, `src/sandbox.ts`: the shared GitHub client token restricted to authorized repository reads, and model credentials outside the sandbox.
 - `apps/prairielearn/src/ee/lib/course-agent`: PL authorization, event subscriptions, proposal completion, GitHub publication, and usage.
 - `apps/prairielearn/src/models/course-agent-*`: Postgres entities. Decisions and their audit events commit together.
 - `packages/course-agent-contract`: private transport types, with no standalone database or prototype server.
@@ -53,7 +53,6 @@ A PL development config can opt in with:
   "courseAgent": {
     "workerUrl": "http://localhost:8791",
     "serviceToken": "local-fixture-service-token-not-a-secret",
-    "publicationTokens": {},
     "pricing": {}
   }
 }
@@ -62,7 +61,7 @@ A PL development config can opt in with:
 Use an editable, non-example course whose repository is `https://github.com/example/course.git`
 and branch is `main`; the authenticated and effective users must both be course owners.
 The browser test creates an isolated copy of PL's existing test course and configures this automatically.
-Keep real publication credentials out of the fixture config.
+Keep `githubClientToken` unset in the fixture config.
 
 ```sh
 # Portable protocol, capture, outbound, and host-tool tests
@@ -79,11 +78,15 @@ pnpm test apps/prairielearn/src/tests/courseAgent.test.ts apps/prairielearn/src/
 ### Real local sandbox
 
 Docker must be running. Copy `.dev.vars.example` to `.dev.vars` in this directory,
-set a shared service token, a model, a model API key, and repository-scoped **read-only** GitHub tokens.
+set a shared service token, a model, a model API key, and `GITHUB_CLIENT_TOKEN`.
+Use the same GitHub token as PL's existing `githubClientToken` setting. PL and the Worker are separate
+processes, so configure the value in both places; PL does not send it through conversation configuration.
+No per-repository token mapping is needed. The trusted outbound handler restricts sandbox access to
+read-only Git operations on the authorized course repository, even if the token can write other repositories.
 Run `pnpm --filter @prairielearn/course-agent dev` and use port 8790 in PL's configuration.
 Set PL's course repository and branch normally; the browser cannot choose the sandbox repository.
-Only configure `publicationTokens` for a disposable course repository you intend to modify.
-These separate write credentials stay in the PL webserver. Git publication uses GitHub APIs;
+Test with a disposable course repository you intend to modify.
+PL uses `config.githubClientToken` to validate proposals and publish approved changes through GitHub APIs;
 only the existing Course Sync operation accesses PL's normal course checkout.
 
 Prices are configured by exact model name as dollars per million tokens, e.g.
