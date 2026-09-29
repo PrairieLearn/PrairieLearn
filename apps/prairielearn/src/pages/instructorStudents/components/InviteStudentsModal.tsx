@@ -173,8 +173,8 @@ export function InviteStudentsModal({
                   ))}
               </div>
               <div className="form-text">
-                Selected labels will be added to each student invited. Students who are already
-                invited or enrolled will be skipped and their labels will not change.
+                Selected labels will be added to new and already invited or enrolled students.
+                Existing labels and enrollment statuses will be preserved.
               </div>
             </fieldset>
           )}

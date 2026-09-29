@@ -95,7 +95,7 @@ describe('Invite students with labels', { concurrent: false }, () => {
     assert.isEmpty(await studentLabels.selectStudentLabelsForEnrollment(enrollment));
   });
 
-  test('leaves existing invited and joined students and their labels unchanged', async () => {
+  test('adds labels to existing invited and joined students without changing status or removing labels', async () => {
     const pendingUid = 'label-invite-existing@example.com';
     const pending = await inviteStudentByUid({
       uid: pendingUid,
@@ -118,16 +118,18 @@ describe('Invite students with labels', { concurrent: false }, () => {
     await studentLabels.addLabelToEnrollment({ enrollment: pending, label: labels[0], authzData });
 
     await finishInvitation(await invite([pendingUid, user.uid], [labels[1].id]));
+    await finishInvitation(await invite([pendingUid, user.uid], [labels[1].id]));
     const stillPending = await findEnrollment(pendingUid);
     const joined = await findEnrollment(user.uid);
     assert.isNotNull(stillPending);
     assert.isNotNull(joined);
     assert.equal(stillPending.status, 'invited');
     assert.equal(joined.status, 'joined');
-    assert.deepEqual(await studentLabels.selectStudentLabelsForEnrollment(stillPending), [
-      labels[0],
-    ]);
-    assert.isEmpty(await studentLabels.selectStudentLabelsForEnrollment(joined));
+    assert.sameMembers(
+      (await studentLabels.selectStudentLabelsForEnrollment(stillPending)).map((label) => label.id),
+      labels.map((label) => label.id),
+    );
+    assert.deepEqual(await studentLabels.selectStudentLabelsForEnrollment(joined), [labels[1]]);
   });
 
   test('rejects missing and cross-course-instance labels before inviting any students', async () => {
@@ -146,27 +148,37 @@ describe('Invite students with labels', { concurrent: false }, () => {
     }
   });
 
-  test('rolls back the invitation and earlier labels when a label fails, then continues the batch', async () => {
-    const failedUid = 'label-invite-rollback@example.com';
-    const successfulUid = 'label-invite-after-failure@example.com';
-    const addLabel = studentLabels.addLabelToEnrollment;
-    const spy = vi
-      .spyOn(studentLabels, 'addLabelToEnrollment')
-      .mockImplementationOnce(addLabel)
-      .mockRejectedValueOnce(new Error('Label assignment failed'));
-    try {
-      await finishInvitation(
-        await invite(
-          [failedUid, successfulUid],
-          labels.map((label) => label.id),
-        ),
-      );
-      assert.isNull(await findEnrollment(failedUid));
-      const enrollment = await findEnrollment(successfulUid);
-      assert.isNotNull(enrollment);
-      assert.lengthOf(await studentLabels.selectStudentLabelsForEnrollment(enrollment), 2);
-    } finally {
-      spy.mockRestore();
-    }
-  });
+  test.each(['new', 'existing'] as const)(
+    'rolls back failed label assignments for a %s student and continues the batch',
+    async (kind) => {
+      const failedUid = `label-invite-rollback-${kind}@example.com`;
+      const successfulUid = `label-invite-after-failure-${kind}@example.com`;
+      if (kind === 'existing') {
+        await finishInvitation(await invite([failedUid]));
+      }
+      const originalEnrollment = await findEnrollment(failedUid);
+      const addLabel = studentLabels.addLabelToEnrollment;
+      const spy = vi
+        .spyOn(studentLabels, 'addLabelToEnrollment')
+        .mockImplementationOnce(addLabel)
+        .mockRejectedValueOnce(new Error('Label assignment failed'));
+      try {
+        await finishInvitation(
+          await invite(
+            [failedUid, successfulUid],
+            labels.map((label) => label.id),
+          ),
+        );
+        assert.deepEqual(await findEnrollment(failedUid), originalEnrollment);
+        if (originalEnrollment) {
+          assert.isEmpty(await studentLabels.selectStudentLabelsForEnrollment(originalEnrollment));
+        }
+        const enrollment = await findEnrollment(successfulUid);
+        assert.isNotNull(enrollment);
+        assert.lengthOf(await studentLabels.selectStudentLabelsForEnrollment(enrollment), 2);
+      } finally {
+        spy.mockRestore();
+      }
+    },
+  );
 });

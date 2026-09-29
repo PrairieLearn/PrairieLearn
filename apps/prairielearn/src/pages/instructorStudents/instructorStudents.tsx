@@ -112,6 +112,7 @@ const SyncStudentsBodySchema = z.object({
 const BodySchema = z.discriminatedUnion('__action', [InviteUidsBodySchema, SyncStudentsBodySchema]);
 
 interface InviteCounts {
+  labeledExisting: number;
   invited: number;
   unblocked: number;
   reenrolled: number;
@@ -174,6 +175,23 @@ async function processInvitations({
         requiredRole: ['Student Data Viewer'],
         authzData,
       });
+
+      if (
+        existingEnrollment &&
+        ['joined', 'invited'].includes(existingEnrollment.status) &&
+        labels.length > 0
+      ) {
+        await runInTransactionAsync(async () => {
+          for (const label of labels) {
+            await addLabelToEnrollment({ enrollment: existingEnrollment, label, authzData });
+          }
+        });
+        job.info(
+          `${uid}: Applied selected labels (already ${existingEnrollment.status === 'joined' ? 'enrolled' : 'invited'})`,
+        );
+        counts.labeledExisting++;
+        continue;
+      }
 
       if (existingEnrollment?.status === 'joined') {
         job.info(`${uid}: Skipped (already enrolled)`);
@@ -293,6 +311,7 @@ router.post(
 
         serverJob.executeInBackground(async (job) => {
           const counts: InviteCounts = {
+            labeledExisting: 0,
             invited: 0,
             unblocked: 0,
             reenrolled: 0,
@@ -318,6 +337,7 @@ router.post(
           job.info('\nSummary:');
           job.info(`  Successfully invited: ${counts.invited}`);
           const summaryLines: [number, string][] = [
+            [counts.labeledExisting, 'Applied selected labels to existing students'],
             [counts.skippedAlreadyJoined, 'Skipped (already enrolled)'],
             [counts.skippedAlreadyInvited, 'Skipped (already invited)'],
             [counts.skippedAlreadyBlocked, 'Skipped (blocked)'],
@@ -349,6 +369,7 @@ router.post(
 
         serverJob.executeInBackground(async (job) => {
           const syncCounts: InviteCounts = {
+            labeledExisting: 0,
             invited: 0,
             unblocked: 0,
             reenrolled: 0,
