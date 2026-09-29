@@ -54,11 +54,9 @@ def get_with_units_atol(
 
     name = pl.get_string_attrib(element, "answers-name")
     correct_answer = data["correct_answers"].get(name)
-    if correct_answer is None:
-        raise ValueError(f"Missing correct answer for {name}")
-    if correct_answer == "":
+    if correct_answer is None or correct_answer == "":
         raise ValueError(
-            'In "with-units" grading with a blank "correct-answer", "atol" units cannot be inferred and must be set for display in the question panel.'
+            'In "with-units" grading without a nonblank correct answer, "atol" units cannot be inferred and must be set.'
         )
     correct_answer_units = str(ureg.Quantity(correct_answer).units)
 
@@ -132,13 +130,22 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 
     # In with-units mode, absolute tolerance must have units. Otherwise just a float
     if grading_mode is GradingMode.WITH_UNITS:
-        parsed_atol = ureg.Quantity(get_with_units_atol(element, data, ureg))
-        if parsed_atol.dimensionless:
-            atol = pl.get_string_attrib(element, "atol")
-            raise ValueError(
-                f'"atol" attribute "{atol}" must have units in "with-units" grading.'
-            )
+        if correct_answer is not None or pl.has_attrib(element, "atol"):
+            parsed_atol = ureg.Quantity(get_with_units_atol(element, data, ureg))
+            if parsed_atol.dimensionless:
+                atol = pl.get_string_attrib(element, "atol")
+                raise ValueError(
+                    f'"atol" attribute "{atol}" must have units in "with-units" grading.'
+                )
 
+            if correct_answer is not None and correct_answer != "":
+                correct_answer_parsed = ureg.Quantity(correct_answer)
+
+                if not correct_answer_parsed.check(parsed_atol.dimensionality):
+                    raise ValueError(
+                        f"Correct answer has dimensionality: {correct_answer_parsed.dimensionality}, "
+                        f"which does not match atol dimensionality: {parsed_atol.dimensionality}."
+                    )
         if pl.has_attrib(element, "comparison"):
             raise ValueError(
                 'Cannot set attribute "comparison" in "with-units" grading.'
@@ -153,16 +160,6 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
                 f'"magnitude-partial-credit" must be in the range [0.0, 1.0], not {partial_credit}'
             )
 
-        if correct_answer != "":
-            if correct_answer is None:
-                raise ValueError(f"Missing correct answer for {name}")
-            correct_answer_parsed = ureg.Quantity(correct_answer)
-
-            if not correct_answer_parsed.check(parsed_atol.dimensionality):
-                raise ValueError(
-                    f"Correct answer has dimensionality: {correct_answer_parsed.dimensionality}, "
-                    f"which does not match atol dimensionality: {parsed_atol.dimensionality}."
-                )
     else:
         atol = pl.get_string_attrib(element, "atol", ATOL_DEFAULT)
         parsed_atol = ureg.Quantity(atol)
@@ -221,6 +218,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             placeholder_text = pl.get_string_attrib(element, "placeholder")
         elif grading_mode is GradingMode.ONLY_UNITS:
             placeholder_text = "Unit"
+        elif data["correct_answers"].get(name) is None:
+            placeholder_text = "Number + Unit"
         elif grading_mode is GradingMode.WITH_UNITS:
             rtol = pl.get_float_attrib(element, "rtol", RTOL_DEFAULT)
             atol = get_with_units_atol(element, data, ureg)

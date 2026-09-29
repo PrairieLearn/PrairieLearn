@@ -41,6 +41,8 @@ This element uses [Pint](https://pint.readthedocs.io/en/stable/index.html) to pa
 
 The element and `pl.get_unit_registry()` also accept `Nm` as shorthand for newton-meters (`N*m`) in answers and tolerances. For example, `7.2Nm` and `7.2 N*m` are equivalent, including in `exact-units` and `only-units` grading modes. Use `number_meter` for the textile unit.
 
+If no correct answer is provided, the element skips correct-answer validation and automatic grading so that `server.py` can implement custom grading. Input parsing and attribute validation still apply. Without a correct answer, `atol` is optional and the default placeholder is “Number + Unit” (or “Unit” in `only-units` mode). Any explicitly supplied `atol` must still follow the units requirements for the grading mode.
+
 ## Example implementations
 
 - [element/unitsInput]
