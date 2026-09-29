@@ -1,0 +1,36 @@
+<pl-question-panel>
+  <p>
+    A field team walks a rectangular study site measuring ${{params.length}}\,\mathrm{m}$ by
+    ${{params.width}}\,\mathrm{m}$. Answer all four parts. Show your calculations.
+  </p>
+</pl-question-panel>
+<pl-card header="A. Area">
+  <pl-number-input
+    answers-name="area"
+    label="Area ="
+    suffix="$\mathrm{m}^2$"
+    comparison="sigfig"
+    digits="3"
+  ></pl-number-input>
+</pl-card>
+<pl-card header="B. Samples">
+  <pl-question-panel>
+    <p>
+      The team takes one soil sample every ${{params.spacing}}$ metres along the long side,
+      including both endpoints. How many samples are taken?
+    </p>
+  </pl-question-panel>
+  <pl-integer-input answers-name="samples" label="Samples ="></pl-integer-input>
+</pl-card>
+<pl-card header="C. Distance">
+  <pl-question-panel><p>Give the perimeter, including units.</p></pl-question-panel>
+  <pl-units-input
+    answers-name="perimeter"
+    label="Perimeter ="
+    correct-answer="{{params.perimeter}} m"
+  ></pl-units-input>
+</pl-card>
+<pl-card header="D. Reporting">
+  <pl-question-panel><p>What is the SI unit symbol for length?</p></pl-question-panel>
+  <pl-string-input answers-name="unit" correct-answer="m" label="Unit symbol ="></pl-string-input>
+</pl-card>

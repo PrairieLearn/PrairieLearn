@@ -1,0 +1,13 @@
+<pl-question-panel>
+  <p>A transformation maps a vector $\mathbf{x}$ to $A\mathbf{x}$, where</p>
+  <p>
+    $$ A=\begin{bmatrix}{{params.a}} &amp; 1\\ -1 &amp; {{params.b}}\end{bmatrix},\qquad
+    \mathbf{x}=\begin{bmatrix}2\\3\end{bmatrix}. $$
+  </p>
+  <p>Calculate $A\mathbf{x}$ and $\det(A)$.</p>
+</pl-question-panel>
+<pl-matrix-component-input
+  answers-name="product"
+  label="$A\mathbf{x} =$"
+></pl-matrix-component-input>
+<pl-number-input answers-name="determinant" label="$\det(A) =$" rtol="0" atol="0"></pl-number-input>

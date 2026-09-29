@@ -1,0 +1,15 @@
+<pl-question-panel>
+  <p>A sensor has calibration function</p>
+  <p>$$ f(x)=\frac{ {{params.a}} }{3}x^3+{{params.b}}x^2-4x+7. $$</p>
+  <p>Differentiate with respect to $x$, then evaluate the derivative at $x=2$.</p>
+</pl-question-panel>
+<pl-symbolic-input
+  answers-name="derivative"
+  variables="x"
+  label="$f'(x) =$"
+  display="block"
+></pl-symbolic-input>
+<pl-number-input answers-name="value" label="$f'(2) =$" rtol="0" atol="0"></pl-number-input>
+<pl-answer-panel>
+  <p>Use the power rule term by term: $f'(x)={{params.a}}x^2+{{params.twob}}x-4$.</p>
+</pl-answer-panel>

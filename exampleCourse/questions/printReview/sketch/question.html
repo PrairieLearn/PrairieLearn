@@ -1,0 +1,18 @@
+<pl-question-panel>
+  <p>
+    Sketch $f(x)=x^2-1$ on $-2\leq x\leq2$. Mark its vertex and both horizontal-axis intercepts.
+  </p>
+</pl-question-panel>
+<pl-sketch answers-name="curve" x-range="-3,3" y-range="-2,4" width="640" height="340">
+  <pl-sketch-tool id="curve" type="spline"></pl-sketch-tool>
+  <pl-sketch-grade
+    type="match-function"
+    tool-id="curve"
+    function="x**2-1"
+    x-range="-2,2"
+  ></pl-sketch-grade>
+  <pl-sketch-solution tool-id="curve" function="x**2-1" x-range="-2,2"></pl-sketch-solution>
+</pl-sketch>
+<pl-answer-panel>
+  <p>The vertex is $(0,-1)$ and the intercepts are $(-1,0)$ and $(1,0)$. The curve opens upward.</p>
+</pl-answer-panel>
