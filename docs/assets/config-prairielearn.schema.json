@@ -1815,6 +1815,18 @@
           "cacheWrite": 12.5,
           "output": 50
         },
+        "gpt-6-luna": {
+          "input": 0.1,
+          "cachedInput": 0.01,
+          "cacheWrite": 0.125,
+          "output": 0.5
+        },
+        "gpt-6-sol": {
+          "input": 2,
+          "cachedInput": 0.2,
+          "cacheWrite": 2.5,
+          "output": 10
+        },
         "gemini-3.8-flash": {
           "input": 0.75,
           "cachedInput": 0.075,
@@ -1994,6 +2006,52 @@
           "additionalProperties": false
         },
         "gpt-5.6-luna": {
+          "type": "object",
+          "properties": {
+            "input": {
+              "type": "number",
+              "minimum": 0
+            },
+            "cachedInput": {
+              "type": "number",
+              "minimum": 0
+            },
+            "cacheWrite": {
+              "type": "number",
+              "minimum": 0
+            },
+            "output": {
+              "type": "number",
+              "minimum": 0
+            }
+          },
+          "required": ["input", "cachedInput", "cacheWrite", "output"],
+          "additionalProperties": false
+        },
+        "gpt-6-luna": {
+          "type": "object",
+          "properties": {
+            "input": {
+              "type": "number",
+              "minimum": 0
+            },
+            "cachedInput": {
+              "type": "number",
+              "minimum": 0
+            },
+            "cacheWrite": {
+              "type": "number",
+              "minimum": 0
+            },
+            "output": {
+              "type": "number",
+              "minimum": 0
+            }
+          },
+          "required": ["input", "cachedInput", "cacheWrite", "output"],
+          "additionalProperties": false
+        },
+        "gpt-6-sol": {
           "type": "object",
           "properties": {
             "input": {
@@ -2323,6 +2381,8 @@
         "gpt-5.4-mini-2026-03-17",
         "gpt-5.4-2026-03-05",
         "gpt-5.6-luna",
+        "gpt-6-luna",
+        "gpt-6-sol",
         "gpt-5.6-terra",
         "gpt-5.6-sol",
         "gpt-6-astra",
