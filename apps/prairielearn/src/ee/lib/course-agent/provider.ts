@@ -7,7 +7,6 @@ import { z } from 'zod';
 
 import {
   type ChatConnection,
-  ChatError,
   type ChatProvider,
   type ChatSnapshot,
   sandboxDiagnosticsSchema,
@@ -15,6 +14,7 @@ import {
 
 import { config } from '../../../lib/config.js';
 
+import { workerResponseError } from './errors.js';
 import { executeHostTool } from './host-tools.js';
 
 // Reuse an existing backend watch socket when possible. A result can also arrive with every browser closed.
@@ -48,10 +48,7 @@ export function createCloudflareProvider(workerUrl: URL, id: string): ChatProvid
       signal: AbortSignal.any([signal, AbortSignal.timeout(REQUEST_TIMEOUT_MS)]),
     });
     if (!response.ok) {
-      throw new ChatError(
-        response.status,
-        `Course agent ${path} failed (${response.status}). Reconnect to inspect the current state before retrying.`,
-      );
+      throw workerResponseError(response.status);
     }
     return response;
   }
@@ -111,6 +108,7 @@ export function createCloudflareProvider(workerUrl: URL, id: string): ChatProvid
           signal: AbortSignal.any([signal, AbortSignal.timeout(CONNECTION_TIMEOUT_MS)]),
         });
       } catch (error) {
+        signal.removeEventListener('abort', close);
         close();
         throw error;
       }

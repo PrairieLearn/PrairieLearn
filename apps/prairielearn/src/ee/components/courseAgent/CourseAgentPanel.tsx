@@ -186,6 +186,10 @@ function Conversation({
   const { register, watch, setValue, handleSubmit } = useForm({ defaultValues: { draft: '' } });
   const draft = watch('draft');
   const [failure, setFailure] = useState('');
+  const [connection, setConnection] = useState<'connecting' | 'connected' | 'disconnected'>(
+    'connecting',
+  );
+  const [connectionAttempt, setConnectionAttempt] = useState(0);
   const [transport] = useState(
     () =>
       new DefaultChatTransport({
@@ -212,9 +216,17 @@ function Conversation({
       if (value.success) pendingRef.current = value.data;
     }
     const source = new EventSource(`${base}/events`);
+    const connectionError = (event: MessageEvent) => {
+      setFailure(JSON.parse(event.data).message);
+      setConnection('disconnected');
+      source.close();
+    };
+    source.addEventListener('connection-error', connectionError);
     source.onmessage = (event) => {
       const next = JSON.parse(event.data) as ChatSnapshot;
       setSnapshot(next);
+      setConnection('connected');
+      setFailure('');
       if (!busyRef.current) {
         setMessages(next.messages);
         if (
@@ -228,14 +240,18 @@ function Conversation({
         }
       }
     };
-    source.onopen = () => setFailure('');
-    source.onerror = () =>
+    source.onerror = () => {
+      setConnection('connecting');
       setFailure('Connection interrupted. Reconnecting; your draft is preserved.');
-    return () => source.close();
-  }, [base, storageKey, setMessages, resumeStream, setValue]);
+    };
+    return () => {
+      source.removeEventListener('connection-error', connectionError);
+      source.close();
+    };
+  }, [base, storageKey, setMessages, resumeStream, setValue, connectionAttempt]);
 
   async function submit() {
-    if (!draft.trim() || snapshot.blocked) return;
+    if (!draft.trim() || snapshot.blocked || connection !== 'connected') return;
     const message =
       pendingRef.current?.text === draft
         ? pendingRef.current
@@ -271,10 +287,31 @@ function Conversation({
   return (
     <>
       <div className="small text-muted mb-2" role="status">
-        {snapshot.blocked ? 'Waiting for tool outcome' : busy ? 'Working…' : 'Ready'}
+        {connection === 'connecting'
+          ? 'Connecting…'
+          : connection === 'disconnected'
+            ? 'Disconnected'
+            : snapshot.blocked
+              ? 'Waiting for tool outcome'
+              : busy
+                ? 'Working…'
+                : 'Ready'}
         {snapshot.diagnostics && ` · ${snapshot.diagnostics.state.replaceAll('_', ' ')}`}
       </div>
-      {failure && <Alert variant="warning">{failure}</Alert>}
+      {failure && (
+        <Alert variant="warning">
+          {failure}{' '}
+          <Button
+            variant="link"
+            onClick={() => {
+              setConnection('connecting');
+              setConnectionAttempt((value) => value + 1);
+            }}
+          >
+            Retry connection
+          </Button>
+        </Alert>
+      )}
       <AppErrorAlert
         error={getAppError<never>(mutationError)}
         render={{ UNKNOWN: ({ message }) => message }}
@@ -420,7 +457,12 @@ function Conversation({
           >
             Stop
           </Button>
-          <Button type="submit" disabled={snapshot.blocked || send.isPending || !draft.trim()}>
+          <Button
+            type="submit"
+            disabled={
+              connection !== 'connected' || snapshot.blocked || send.isPending || !draft.trim()
+            }
+          >
             {busy ? 'Steer' : 'Send'}
           </Button>
         </div>

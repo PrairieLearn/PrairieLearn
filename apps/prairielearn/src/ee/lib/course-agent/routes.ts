@@ -13,6 +13,7 @@ import { extractPageContext } from '../../../lib/client/page-context.js';
 import { typedAsyncHandler } from '../../../lib/res-locals.js';
 import { type AgentScope, selectConversation } from '../../../models/course-agent-conversation.js';
 
+import { connectionFailure } from './errors.js';
 import { subscribe } from './events.js';
 import { dispatchHostTool } from './host-tools.js';
 import { prepare, provider, snapshot } from './service.js';
@@ -45,8 +46,12 @@ router.get(
     let ready = false;
     let running = false;
     let dirty = true;
-    const fail = () => {
-      res.end();
+    const fail = (error?: unknown) => {
+      if (signal.aborted) return;
+      if (!res.destroyed && !res.writableEnded) {
+        res.write(`event: connection-error\ndata: ${JSON.stringify(connectionFailure(error))}\n\n`);
+        res.end();
+      }
       lifetime.abort();
     };
     const refresh = async () => {
@@ -68,21 +73,30 @@ router.get(
             });
           }
         }
-      } catch {
-        fail();
+      } catch (error) {
+        fail(error);
       } finally {
         running = false;
       }
     };
-    const unlisten = await subscribe(conversation_id, () => void refresh());
+    let unlisten: (() => void) | undefined;
     let unwatch: (() => void) | undefined;
     const clean = () => {
       clearTimeout(expiry);
-      unlisten();
+      unlisten?.();
       unwatch?.();
     };
     res.once('close', clean);
+    res.set({
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      'X-Accel-Buffering': 'no',
+    });
+    res.flushHeaders();
     try {
+      unlisten = await subscribe(conversation_id, () => void refresh());
+      // HTTP exposes a safe status before a failed WebSocket upgrade hides its cause.
+      await chat.getSnapshot(signal);
       unwatch = await chat.watch(
         signal,
         () => void refresh(),
@@ -101,17 +115,11 @@ router.get(
         clean();
         return;
       }
-      res.set({
-        'Content-Type': 'text/event-stream',
-        'Cache-Control': 'no-cache',
-        'X-Accel-Buffering': 'no',
-      });
-      res.flushHeaders();
       ready = true;
       await refresh();
     } catch (error) {
+      fail(error);
       clean();
-      throw error;
     }
   }),
 );

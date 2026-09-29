@@ -19,9 +19,10 @@ import { parseGithubRepository } from '../../../lib/github-utils.js';
 import { isEnterprise } from '../../../lib/license.js';
 import { type AgentScope } from '../../../models/course-agent-conversation.js';
 import * as proposals from '../../../models/course-agent-proposal.js';
-import { selectCourseById, selectCoursesWithStaffAccess } from '../../../models/course.js';
-import { selectOptionalUserById } from '../../../models/user.js';
+import { selectCourseById } from '../../../models/course.js';
 
+import { hasCourseAgentOwnerAccess } from './access.js';
+import { workerResponseError } from './errors.js';
 import { notify } from './events.js';
 import { createCloudflareProvider } from './provider.js';
 import { type Publication, PublishRejected, Publisher } from './publish.js';
@@ -64,18 +65,8 @@ export async function authorize(scope: AgentScope, newWork = false) {
       message: 'Course agent is unavailable for this course.',
     });
   }
-  for (const userId of new Set([scope.user_id, scope.authn_user_id])) {
-    const user = await selectOptionalUserById(userId);
-    if (!user) throw new TRPCError({ code: 'FORBIDDEN' });
-    const courses = await selectCoursesWithStaffAccess({
-      user_id: userId,
-      is_administrator: false,
-    });
-    if (
-      !courses.some((c) => c.id === course.id && c.permissions_course.has_course_permission_own)
-    ) {
-      throw new TRPCError({ code: 'FORBIDDEN', message: 'Course owner access is required.' });
-    }
+  if (!(await hasCourseAgentOwnerAccess(scope))) {
+    throw new TRPCError({ code: 'FORBIDDEN', message: 'Course owner access is required.' });
   }
   return course;
 }
@@ -112,7 +103,16 @@ export async function provider(
         signal: AbortSignal.timeout(10000),
       },
     );
-    if (!response.ok) throw new Error('Could not configure the course agent.');
+    if (!response.ok) {
+      if (response.status === 409) {
+        throw new TRPCError({
+          code: 'CONFLICT',
+          message:
+            'This conversation is bound to another repository or branch. Start a new conversation.',
+        });
+      }
+      throw workerResponseError(response.status);
+    }
   } else {
     await authorize(scope);
   }
