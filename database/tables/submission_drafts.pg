@@ -1,5 +1,6 @@
 columns
     client_id: uuid not null
+    is_cleared: boolean not null default false
     raw_submitted_answer: jsonb not null
     revision: bigint not null
     updated_at: timestamp with time zone not null default now()

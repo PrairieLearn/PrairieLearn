@@ -4,6 +4,7 @@ CREATE TABLE IF NOT EXISTS submission_drafts (
   client_id UUID NOT NULL,
   revision BIGINT NOT NULL,
   raw_submitted_answer JSONB NOT NULL,
+  is_cleared BOOLEAN NOT NULL DEFAULT FALSE,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   PRIMARY KEY (variant_id, user_id)
 );

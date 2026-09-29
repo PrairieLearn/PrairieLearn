@@ -19,6 +19,7 @@ export async function upsertSubmissionDraft({
   client_id,
   revision,
   raw_submitted_answer,
+  is_cleared,
 }: {
   variant_id: string;
   user_id: string;
@@ -26,6 +27,7 @@ export async function upsertSubmissionDraft({
   client_id: string;
   revision: number;
   raw_submitted_answer: Record<string, any>;
+  is_cleared: boolean;
 }): Promise<{ saved: true } | { saved: false; latestSubmissionId: string | null }> {
   return await runInTransactionAsync(async () => {
     // A submission uses the same lock before clearing drafts. This prevents a
@@ -42,6 +44,7 @@ export async function upsertSubmissionDraft({
       client_id,
       revision,
       raw_submitted_answer,
+      is_cleared,
     });
     return { saved: true };
   });

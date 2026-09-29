@@ -265,7 +265,7 @@ router.post(
       }
       const variant_id = await validateAndProcessSubmission(req, res);
       redirectAfterSubmission(variant_id);
-    } else if (req.body.__action === 'save_draft') {
+    } else if (req.body.__action === 'save_draft' || req.body.__action === 'clear_draft') {
       const body = parseRequestBody(req, SaveDraftBodySchema);
       assertCanSaveSubmission(res);
       const variant = await selectAndAuthzDraftVariant(body.__variant_id, res);
@@ -280,7 +280,9 @@ router.post(
         base_submission_id: body.__draft_base_submission_id || null,
         client_id: body.__draft_client_id,
         revision: body.__draft_revision,
-        raw_submitted_answer: getFreeformSubmittedAnswer(body),
+        raw_submitted_answer:
+          req.body.__action === 'clear_draft' ? {} : getFreeformSubmittedAnswer(body),
+        is_cleared: req.body.__action === 'clear_draft',
       });
       if (result.saved) {
         res.sendStatus(204);

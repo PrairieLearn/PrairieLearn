@@ -52,7 +52,7 @@ describe('Submission drafts', { timeout: 60_000, concurrent: false }, () => {
         __action: action,
         __csrf_token: csrfToken,
         __variant_id: variantId,
-        ...(action === 'save_draft'
+        ...(action === 'save_draft' || action === 'clear_draft'
           ? {
               __draft_base_submission_id: draftBaseSubmissionId,
               __draft_client_id: draftClientId,
@@ -76,6 +76,14 @@ describe('Submission drafts', { timeout: 60_000, concurrent: false }, () => {
 
     const draft = await selectOptionalSubmissionDraft({ variant_id: variantId, user_id: '1' });
     assert.deepEqual(draft?.raw_submitted_answer, { c: '42' });
+  });
+
+  test('clears a reverted draft even if an older save arrives afterward', async () => {
+    assert.equal((await post('clear_draft', { __draft_revision: '4' })).status, 204);
+    assert.equal((await post('save_draft', { c: '41', __draft_revision: '3' })).status, 204);
+
+    const $ = await loadQuestion();
+    assert.lengthOf($('button[value="restore_draft"]'), 0);
   });
 
   test('offers to restore a saved draft', async () => {
