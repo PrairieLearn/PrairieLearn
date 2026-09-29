@@ -16,11 +16,12 @@ const SAVED_STATUS_DURATION_MS = 2_000;
 export function saveSubmissionDrafts(form: HTMLFormElement): () => void {
   let lastDraftFormData: string | null = null;
   let lastDraftSavedAt = 0;
-  let baseSubmissionId = form.dataset.submissionDraftBase ?? '';
+  const baseSubmissionId = form.dataset.submissionDraftBase ?? '';
   const clientId = crypto.randomUUID();
   let revision = 0;
   let draftRequested = false;
   let requestInFlight = false;
+  let stopped = false;
   let statusTimeoutId: ReturnType<typeof setTimeout> | undefined;
 
   function getUnsavedFormData(forceRecheck = false) {
@@ -69,15 +70,24 @@ export function saveSubmissionDrafts(form: HTMLFormElement): () => void {
     statusTimeoutId = setTimeout(() => status.classList.remove('show'), SAVED_STATUS_DURATION_MS);
   }
 
+  function showConflictStatus() {
+    form.querySelector('.js-submission-draft-status')?.remove();
+    const status = document.createElement('div');
+    status.className = 'alert alert-warning mb-3';
+    status.setAttribute('role', 'alert');
+    status.textContent =
+      'Another answer was saved for this question. Your answer is still on this page. Save it or reload to see the latest answer.';
+    form.prepend(status);
+  }
+
   async function saveDraft(forceRecheck = false) {
-    if (requestInFlight) return;
+    if (requestInFlight || stopped) return;
     const pending = getUnsavedFormData(forceRecheck);
     if (pending == null) return;
 
     requestInFlight = true;
     if (pending.action === 'save_draft') draftRequested = true;
     const { body, requestRevision } = getDraftBody(pending.action);
-    let retryWithLatestSubmission = false;
     try {
       const response = await fetch(form.action, { method: 'POST', body });
       if (response.status === 204) {
@@ -93,12 +103,8 @@ export function saveSubmissionDrafts(form: HTMLFormElement): () => void {
           }
         }
       } else if (response.status === 409) {
-        const { latestSubmissionId } = (await response.json()) as {
-          latestSubmissionId: string | null;
-        };
-        baseSubmissionId = latestSubmissionId ?? '';
-        lastDraftFormData = null;
-        retryWithLatestSubmission = true;
+        showConflictStatus();
+        stop();
       } else if (response.status < 500) {
         // The student can no longer save this question (e.g. the assessment
         // closed), so retrying cannot succeed.
@@ -109,7 +115,7 @@ export function saveSubmissionDrafts(form: HTMLFormElement): () => void {
       // again on the next interval.
     } finally {
       requestInFlight = false;
-      if (retryWithLatestSubmission || getQuestionFormData(form) !== pending.formData) {
+      if (getQuestionFormData(form) !== pending.formData) {
         void saveDraft(true);
       }
     }
@@ -136,6 +142,7 @@ export function saveSubmissionDrafts(form: HTMLFormElement): () => void {
   document.addEventListener('visibilitychange', handleVisibilityChange);
 
   function stop() {
+    stopped = true;
     clearInterval(intervalId);
     clearTimeout(statusTimeoutId);
     document.removeEventListener('visibilitychange', handleVisibilityChange);
