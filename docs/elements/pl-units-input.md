@@ -39,9 +39,7 @@ Fill in the blank field that allows for **numeric** input and accompanying **uni
 
 This element uses [Pint](https://pint.readthedocs.io/en/stable/index.html) to parse and represent units. Any units allowed by Pint are supported by this element. To obtain a `Pint` unit registry, question code can use `pl.get_unit_registry()` to construct a default unit registry. This is recommended over constructing a registry using the constructor provided by `Pint` (as this does not use caching and is slower).
 
-The element and `pl.get_unit_registry()` also accept `Nm` as shorthand for newton-meters (`N*m`) in answers and tolerances. For example, `7.2Nm` and `7.2 N*m` are equivalent, including in `exact-units` and `only-units` grading modes. Use `number_meter` for the textile unit.
-
-If no correct answer is provided, the element skips correct-answer validation and automatic grading so that `server.py` can implement custom grading. Input parsing and attribute validation still apply. Without a correct answer, `atol` is optional and the default placeholder is “Number + Unit” (or “Unit” in `only-units` mode). Any explicitly supplied `atol` must still follow the units requirements for the grading mode.
+The element and `pl.get_unit_registry()` accept `Nm` as shorthand for `N*m` in answers and tolerances in all grading modes. For example, `7.2Nm` and `7.2 N*m` are equivalent. Use `number_meter` for the textile unit.
 
 ## Example implementations
 
