@@ -1,3 +1,4 @@
+import re
 from enum import Enum
 from random import choice
 from typing import Any, assert_never
@@ -53,6 +54,8 @@ def get_with_units_atol(
 
     name = pl.get_string_attrib(element, "answers-name")
     correct_answer = data["correct_answers"].get(name)
+    if correct_answer is None:
+        raise ValueError(f"Missing correct answer for {name}")
     if correct_answer == "":
         raise ValueError(
             'In "with-units" grading with a blank "correct-answer", "atol" units cannot be inferred and must be set for display in the question panel.'
@@ -151,6 +154,8 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
             )
 
         if correct_answer != "":
+            if correct_answer is None:
+                raise ValueError(f"Missing correct answer for {name}")
             correct_answer_parsed = ureg.Quantity(correct_answer)
 
             if not correct_answer_parsed.check(parsed_atol.dimensionality):
@@ -427,6 +432,19 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
     # due to object creation
     ureg = pl.get_unit_registry()
 
+    # Older Pint versions expanded Nm to the textile unit in saved submissions.
+    # Reinterpret only submissions whose original spelling used Nm.
+    if a_sub is not None and "number_meter" in a_sub:
+        raw_answer = data["raw_submitted_answers"].get(name)
+        if raw_answer is not None and re.search(r"(?<![^\W\d])Nm\b", raw_answer):
+            parsed_answer = ureg.Quantity(raw_answer)
+            a_sub = str(
+                parsed_answer.units
+                if grading_mode is GradingMode.ONLY_UNITS
+                else parsed_answer
+            )
+            data["submitted_answers"][name] = a_sub
+
     if a_sub == "" or a_tru == "":
         grading_fn = uu.get_blank_grading_function(correct_ans=a_tru)
     elif grading_mode is GradingMode.ONLY_UNITS:
@@ -488,6 +506,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
 
         data["partial_scores"][name] = {"score": 1, "weight": weight}
     elif result == "incorrect":
+        assert a_tru is not None
         if isinstance(a_tru, str) and a_tru.strip() == "":
             a_tru = "1 meter"
         if grading_mode is GradingMode.ONLY_UNITS:

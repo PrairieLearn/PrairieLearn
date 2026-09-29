@@ -1,5 +1,6 @@
 import math
 
+import prairielearn as pl
 import pytest
 import unit_utils as uu
 from pint import UnitRegistry
@@ -7,7 +8,7 @@ from pint import UnitRegistry
 
 @pytest.fixture(scope="module")
 def ureg() -> UnitRegistry:
-    return UnitRegistry()
+    return pl.get_unit_registry()
 
 
 @pytest.mark.parametrize(
@@ -19,6 +20,8 @@ def ureg() -> UnitRegistry:
         ("ft", "foot", True),
         ("ft", "feet", True),
         ("ft/s", "feet per second", True),
+        ("Nm", "N*m", True),
+        ("Nm**2", "N**2*m**2", True),
         ("m", "cm", False),
         ("ft", "feet/s", False),
     ],
@@ -47,6 +50,8 @@ def test_only_units_grading_fn(
         ("1m", "1 m/s", 0.0, "1cm", False),
         ("1m", "1 second", 0.0, "1cm", False),
         ("1m", "1 us", 0.0, "1cm", False),
+        ("7.2Nm", "720 N*cm", 0.0, "0Nm", True),
+        ("7.2 N*m", "8Nm", 0.0, "1Nm", True),
     ],
 )
 def test_with_units_grading_fn(
@@ -74,6 +79,7 @@ def test_with_units_grading_fn(
         ("1m", 0.42, "1 foot", 0.42),
         ("1m", None, "2 meters", 0.0),
         ("1m", 0.6, "2 meters", 0.4),
+        ("7.2 N*m", None, "7.2Nm", 1.0),
     ],
 )
 def test_exact_units_grading_fn(
