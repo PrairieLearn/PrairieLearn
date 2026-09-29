@@ -33,7 +33,7 @@ The timestamps for each individual phase of the grading process are recorded and
 
 External grading configuration is done on a per-question basis. The question needs to be set to use the 'External' grading method. All configuration may be done using the question settings page, or via the `externalGradingOptions` object in a question's `info.json`. A minimal configuration for an externally-graded question includes the following option:
 
-- `image`: The Docker image that should be used for the question. This can be any image hosted publicly on Docker Hub. This property is required when external grading is enabled.
+- `image`: The public Docker image that should be used for the question. Supported registries are Docker Hub (`docker.io`), GHCR (`ghcr.io`), Quay (`quay.io`), GitLab (`registry.gitlab.com`), and Amazon ECR Public (`public.ecr.aws`). For example, `docker.io/org/image:tag` for Docker Hub or `ghcr.io/org/image:tag` for GHCR. The Docker Hub shorthand `org/image:tag` is also supported. Custom registry domains and explicit ports are not supported. See [Supported registries](dockerImages.md#supported-registries) for details. This property is required when external grading is enabled.
 
 Additional options are available for further customization:
 
