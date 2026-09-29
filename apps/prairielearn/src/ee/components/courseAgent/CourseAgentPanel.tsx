@@ -375,7 +375,11 @@ function Conversation({
                         {snapshot.publication?.syncedSha ? (
                           <code>{snapshot.publication.syncedSha.slice(0, 12)}</code>
                         ) : snapshot.publication?.syncJobSequenceId ? (
-                          'Pending or failed — see completion status'
+                          <a
+                            href={`/pl/course/${courseId}/jobSequence/${snapshot.publication.syncJobSequenceId}`}
+                          >
+                            View Course Sync log
+                          </a>
                         ) : (
                           'Not started'
                         )}

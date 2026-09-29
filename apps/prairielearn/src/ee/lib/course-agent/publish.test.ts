@@ -210,3 +210,39 @@ test('JSONB property reordering preserves the approved digest', async () => {
   });
   assert.equal(await publisher.prepare(value), value.approval.digest);
 });
+
+test('rejects invalid course-instance JSON before preparing publication', async () => {
+  const publication = job();
+  publication.approval.files = [
+    {
+      path: 'courseInstances/Fall2026/infoCourseInstance.json',
+      previousMode: '000000',
+      mode: '100644',
+      content: JSON.stringify({
+        uuid: randomUUID(),
+        longName: 'Fall 2026',
+        timeZone: 'Etc/UTC',
+        allowAccess: [],
+      }),
+    },
+  ];
+  const { baseSha, proposedSha, files } = publication.approval;
+  publication.approval.digest = createHash('sha256')
+    .update(proposalContent(baseSha, proposedSha, files))
+    .digest('hex');
+  const publisher = new Publisher(publication.destination, {
+    token: 'fixture',
+    fetch: async () => Response.json({ truncated: false, tree: [] }),
+  });
+  await assert.rejects(() => publisher.prepare(publication), /timeZone/);
+  publication.approval.files[0].content = JSON.stringify({
+    uuid: randomUUID(),
+    longName: 'Fall 2026',
+    timezone: 'Etc/UTC',
+    allowAccess: [],
+  });
+  publication.approval.digest = createHash('sha256')
+    .update(proposalContent(baseSha, proposedSha, files))
+    .digest('hex');
+  await publisher.prepare(publication);
+});

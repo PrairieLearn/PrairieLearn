@@ -294,7 +294,7 @@ export async function complete(
               const { status } = await proposals.selectSyncStatus(sync.jobSequenceId);
               if (status !== 'Success') {
                 throw new Error(
-                  'Publication succeeded, but Course Sync failed. Retry completion to retry sync only.',
+                  'Publication succeeded, but Course Sync failed. Review the Course Sync log and correct any reported course errors before retrying completion. Retrying only runs sync; it does not republish.',
                 );
               }
             }

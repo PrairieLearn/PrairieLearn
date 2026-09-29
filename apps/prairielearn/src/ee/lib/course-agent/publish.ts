@@ -1,8 +1,14 @@
 import { createHash } from 'node:crypto';
 
 import { createTwoFilesPatch } from 'diff';
+import { z } from 'zod';
 
 import { type Approval, ChatError, proposalContent } from '@prairielearn/course-agent-contract';
+
+import { AssessmentJsonSchema } from '../../../schemas/infoAssessment.js';
+import { CourseJsonSchema } from '../../../schemas/infoCourse.js';
+import { CourseInstanceJsonSchema } from '../../../schemas/infoCourseInstance.js';
+import { QuestionJsonSchema } from '../../../schemas/infoQuestion.js';
 
 const EMPTY_BASE = '0'.repeat(40);
 export interface Destination {
@@ -116,6 +122,34 @@ export class Publisher {
         before = new TextDecoder('utf-8', { fatal: true }).decode(
           Buffer.from(blob.content, 'base64'),
         );
+      }
+      if (file.content !== null) {
+        const schema =
+          file.path === 'infoCourse.json'
+            ? CourseJsonSchema
+            : /^courseInstances\/[^/]+\/infoCourseInstance\.json$/.test(file.path)
+              ? CourseInstanceJsonSchema
+              : /^courseInstances\/[^/]+\/assessments\/.+\/infoAssessment\.json$/.test(file.path)
+                ? AssessmentJsonSchema
+                : /^questions\/.+\/infoQuestion\.json$/.test(file.path)
+                  ? QuestionJsonSchema
+                  : undefined;
+        if (schema) {
+          let value: unknown;
+          try {
+            value = JSON.parse(file.content);
+          } catch {
+            throw new PublishRejected(
+              `${file.path}: invalid JSON. Correct the file and submit a new proposal.`,
+            );
+          }
+          const result = schema.safeParse(value);
+          if (!result.success) {
+            throw new PublishRejected(
+              `${file.path}: ${z.prettifyError(result.error)}. Correct the file and submit a new proposal.`,
+            );
+          }
+        }
       }
       const after = file.content ?? '';
       bytes += Buffer.byteLength(before) + Buffer.byteLength(after);
