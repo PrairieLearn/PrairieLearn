@@ -1,0 +1,45 @@
+.course-agent-panel.offcanvas-end {
+  --bs-offcanvas-width: min(38rem, 100vw);
+  top: var(--course-agent-top, var(--navbar-height));
+  border-left: 1px solid var(--bs-border-color);
+}
+.course-agent-toggle {
+  position: fixed;
+  right: 1.5rem;
+  bottom: 1.5rem;
+  height: 3.5rem;
+  width: 3.5rem;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 1.4rem;
+  box-shadow: 0 0.25rem 0.75rem rgb(0 0 0 / 20%);
+  z-index: 1040;
+}
+.course-agent-transcript {
+  min-height: 0;
+  overflow-wrap: anywhere;
+  background: var(--bs-tertiary-bg);
+  margin: 0 -1rem;
+  padding: 1rem;
+}
+.course-agent-transcript pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.course-agent-diff span {
+  display: block;
+}
+.course-agent-picker,
+.course-agent-composer {
+  flex-shrink: 0;
+}
+@media (min-width: 1200px) {
+  body:has(.course-agent-panel.show) .app-main {
+    margin-right: min(38rem, 45vw);
+  }
+  .course-agent-panel.offcanvas-end {
+    --bs-offcanvas-width: min(38rem, 45vw);
+  }
+}

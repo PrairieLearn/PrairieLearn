@@ -1,0 +1,37 @@
+{
+  "name": "prairielearn-course-agent-fixture",
+  "main": "agent.ts",
+  "compatibility_date": "2026-09-17",
+  "compatibility_flags": ["nodejs_compat"],
+  "vars": {
+    "LOCAL_DEV": "true",
+    "UI_ORIGIN": "http://localhost:4315",
+    "CODEX_API_KEY": "fake-key-no-inference",
+    "PL_SERVICE_TOKEN": "local-fixture-service-token-not-a-secret",
+    "CODEX_MODEL": "fixture-model"
+  },
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "Chat",
+        "class_name": "Chat"
+      },
+      {
+        "name": "TestSandbox",
+        "class_name": "TestSandbox"
+      }
+    ]
+  },
+  "r2_buckets": [
+    {
+      "binding": "BACKUP_BUCKET",
+      "bucket_name": "test-backups"
+    }
+  ],
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": ["Chat", "TestSandbox"]
+    }
+  ]
+}

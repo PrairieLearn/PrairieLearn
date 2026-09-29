@@ -1,6 +1,7 @@
 import { FeatureManager } from './manager.js';
 
 const featureNames = [
+  'course-agent',
   'course-instance-billing',
   'enforce-plan-grants-for-questions',
 

@@ -1,0 +1,28 @@
+columns
+    cached_input_tokens: bigint
+    conversation_id: bigint not null
+    created_at: timestamp with time zone not null default now()
+    estimated_cost: double precision
+    finished_at: timestamp with time zone
+    id: bigint not null default nextval('course_agent_executions_id_seq'::regclass)
+    input_tokens: bigint
+    model: text
+    operation_id: uuid not null
+    output_tokens: bigint
+    pricing: jsonb
+    status: text not null
+
+indexes
+    course_agent_executions_pkey: PRIMARY KEY (id) USING btree (id)
+    course_agent_executions_operation_id_key: UNIQUE (operation_id) USING btree (operation_id)
+    course_agent_executions_conversation_id_idx: USING btree (conversation_id)
+
+check constraints
+    course_agent_executions_cached_input_tokens_check: CHECK (cached_input_tokens >= 0)
+    course_agent_executions_estimated_cost_check: CHECK (estimated_cost >= 0::double precision)
+    course_agent_executions_input_tokens_check: CHECK (input_tokens >= 0)
+    course_agent_executions_output_tokens_check: CHECK (output_tokens >= 0)
+    course_agent_executions_status_check: CHECK (status = ANY (ARRAY['admitted'::text, 'running'::text, 'completed'::text, 'cancelled'::text, 'failed'::text, 'interrupted'::text]))
+
+foreign-key constraints
+    course_agent_executions_conversation_id_fkey: FOREIGN KEY (conversation_id) REFERENCES course_agent_conversations(id) ON UPDATE CASCADE ON DELETE CASCADE

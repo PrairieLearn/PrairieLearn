@@ -756,6 +756,19 @@ export async function initExpress(): Promise<Express> {
   ]);
 
   app.use('/pl/course/:course_id(\\d+)/trpc', courseTrpcRouter);
+  if (isEnterprise()) {
+    app.use(
+      '/pl/course/:course_id(\\d+)/course-agent',
+      (await import('./ee/lib/course-agent/routes.js')).default,
+    );
+  }
+
+  if (isEnterprise()) {
+    app.use(
+      ['/pl/course/:course_id(\\d+)', '/pl/course_instance/:course_instance_id(\\d+)/instructor'],
+      (await import('./ee/middlewares/courseAgentPanel.js')).default,
+    );
+  }
 
   // Serve element statics. As with core PrairieLearn assets and files served
   // from `node_modules`, we include a cachebuster in the URL. This allows
@@ -2755,6 +2768,13 @@ if (shouldStartServer) {
       }
     });
 
+    if (isEnterprise()) {
+      const { stopObservers } = await import('./ee/lib/course-agent/observer.js');
+      stopObservers();
+      const { closeEvents } = await import('./ee/lib/course-agent/events.js');
+      await closeEvents();
+    }
+
     // Then close the database connections now that nothing is using them.
     const dbResults = await Promise.allSettled([namedLocks.close(), sqldb.closeAsync()]);
     dbResults.forEach((r) => {
@@ -2812,6 +2832,12 @@ if (shouldStartServer) {
  * cleaned up here.
  */
 export async function close() {
+  if (isEnterprise()) {
+    const { stopObservers } = await import('./ee/lib/course-agent/observer.js');
+    stopObservers();
+    const { closeEvents } = await import('./ee/lib/course-agent/events.js');
+    await closeEvents();
+  }
   // These are run in the opposite order in which they're initialized/started.
   await cron.stop();
   await serverJobs.stop();

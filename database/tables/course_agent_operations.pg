@@ -1,0 +1,14 @@
+columns
+    conversation_id: bigint not null
+    created_at: timestamp with time zone not null default now()
+    id: bigint not null default nextval('course_agent_operations_id_seq'::regclass)
+    operation_id: uuid not null
+    payload: jsonb not null
+    revision: integer not null
+
+indexes
+    course_agent_operations_pkey: PRIMARY KEY (id) USING btree (id)
+    course_agent_operations_conversation_id_operation_id_key: UNIQUE (conversation_id, operation_id) USING btree (conversation_id, operation_id)
+
+foreign-key constraints
+    course_agent_operations_conversation_id_fkey: FOREIGN KEY (conversation_id) REFERENCES course_agent_conversations(id) ON UPDATE CASCADE ON DELETE CASCADE

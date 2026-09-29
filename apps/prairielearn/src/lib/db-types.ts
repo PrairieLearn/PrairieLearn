@@ -703,6 +703,61 @@ export const ClientFingerprintSchema = z.object({
 });
 export type ClientFingerprint = z.infer<typeof ClientFingerprintSchema>;
 
+export const CourseAgentConversationSchema = z.object({
+  branch: z.string(),
+  course_id: IdSchema,
+  created_at: DateFromISOString,
+  external_id: z.string(),
+  id: IdSchema,
+  repository: z.string(),
+  revision: z.number(),
+  title: z.string(),
+  user_id: IdSchema,
+});
+export type CourseAgentConversation = z.infer<typeof CourseAgentConversationSchema>;
+export const CourseAgentOperationSchema = z.object({
+  conversation_id: IdSchema,
+  created_at: DateFromISOString,
+  id: IdSchema,
+  operation_id: z.string(),
+  payload: z.json(),
+  revision: z.number(),
+});
+export type CourseAgentOperation = z.infer<typeof CourseAgentOperationSchema>;
+export const CourseAgentProposalSchema = z.object({
+  conversation_id: IdSchema,
+  created_at: DateFromISOString,
+  decision: z.boolean().nullable(),
+  delivered: z.boolean(),
+  digest: z.string(),
+  error: z.string().nullable(),
+  id: IdSchema,
+  operation_id: z.string(),
+  outcome: z.string().nullable(),
+  payload: z.json(),
+  prepared: z.boolean(),
+  published_sha: z.string().nullable(),
+  sequence: z.number(),
+  sync_job_sequence_id: IdSchema.nullable(),
+  synced_sha: z.string().nullable(),
+});
+export type CourseAgentProposal = z.infer<typeof CourseAgentProposalSchema>;
+export const CourseAgentExecutionSchema = z.object({
+  cached_input_tokens: z.coerce.number().nullable(),
+  conversation_id: IdSchema,
+  created_at: DateFromISOString,
+  estimated_cost: z.number().nullable(),
+  finished_at: DateFromISOString.nullable(),
+  id: IdSchema,
+  input_tokens: z.coerce.number().nullable(),
+  model: z.string().nullable(),
+  operation_id: z.string(),
+  output_tokens: z.coerce.number().nullable(),
+  pricing: z.json().nullable(),
+  status: z.enum(['admitted', 'running', 'completed', 'cancelled', 'failed', 'interrupted']),
+});
+export type CourseAgentExecution = z.infer<typeof CourseAgentExecutionSchema>;
+
 export const CourseSchema = z.object({
   ai_grading_free_credit_redemptions_used: z.number(),
   announcement_color: z.string().nullable(),
@@ -1768,6 +1823,10 @@ export type Zone = z.infer<typeof ZoneSchema>;
 // *******************************************************************************
 
 export const TableNames = [
+  'course_agent_conversations',
+  'course_agent_operations',
+  'course_agent_proposals',
+  'course_agent_executions',
   'access_tokens',
   'administrators',
   'ai_grading_credit_checkout_sessions',

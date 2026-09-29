@@ -1,0 +1,17 @@
+model_provider = "cloudflare"
+cli_auth_credentials_store = "ephemeral"
+log_dir = "/tmp/codex-logs"
+web_search = "disabled"
+
+[model_providers.cloudflare]
+name = "OpenAI via Cloudflare outbound handler"
+base_url = "http://openai.internal/v1"
+wire_api = "responses"
+requires_openai_auth = false
+supports_websockets = false
+
+[shell_environment_policy]
+inherit = "none"
+[shell_environment_policy.set]
+PATH = "/usr/local/bin:/usr/bin:/bin"
+HOME = "/root"
