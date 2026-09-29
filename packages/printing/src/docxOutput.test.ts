@@ -1,3 +1,4 @@
+import { load } from 'cheerio';
 import JSZip from 'jszip';
 import type { Browser, BrowserContext, Page, Response } from 'playwright';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -117,6 +118,7 @@ async function readDocx(buffer: Buffer) {
     files: Object.keys(zip.files).sort(),
     documentXml: await read('word/document.xml'),
     footerXml: await read('word/footer1.xml'),
+    stylesXml: await read('word/styles.xml'),
   };
 }
 
@@ -153,7 +155,12 @@ describe('renderDocx', () => {
       cover,
       footerLabel: 'Form ID 13',
     });
-    const { files, documentXml, footerXml } = await readDocx(docx);
+    const { files, documentXml, footerXml, stylesXml } = await readDocx(docx);
+    const styles = load(stylesXml, { xmlMode: true });
+    const defaultParagraphStyle = styles('w\\:style[w\\:type="paragraph"][w\\:default="1"]');
+    expect(defaultParagraphStyle).toHaveLength(1);
+    expect(defaultParagraphStyle.attr('w:styleId')).toBe('Normal');
+    expect(defaultParagraphStyle.find('w\\:sz').attr('w:val')).toBe('21');
     expect(harness.page.addInitScript).toHaveBeenCalled();
     expect(harness.page.locator).toHaveBeenCalledWith('.pagedjs_page [data-docx-figure="1"]');
     expect(harness.figure.screenshot).toHaveBeenCalledTimes(1);

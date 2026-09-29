@@ -4,10 +4,12 @@ import {
   Document,
   Footer,
   HeightRule,
+  ImportedXmlComponent,
   LevelFormat,
   Packer,
   PageNumber,
   Paragraph,
+  RunProperties,
   Table,
   TableCell,
   TableRow,
@@ -405,11 +407,21 @@ async function buildDocx({
     style: { paragraph: { indent: { left: 540, hanging: 300 } } },
   });
 
+  // Pages needs an explicit default paragraph style to size imported equations correctly.
+  const normalStyle = new ImportedXmlComponent('w:style', {
+    'w:type': 'paragraph',
+    'w:styleId': 'Normal',
+    'w:default': '1',
+  });
+  normalStyle.push(new ImportedXmlComponent('w:name', { 'w:val': 'Normal' }));
+  normalStyle.push(new RunProperties({ font: FONT, size: BODY_FONT_SIZE }));
+
   const document = new Document({
     creator: 'PrairieLearn',
     title: cover?.title,
     styles: {
       default: { document: { run: { font: FONT, size: BODY_FONT_SIZE } } },
+      importedStyles: [normalStyle],
     },
     numbering: {
       config: [
