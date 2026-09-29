@@ -157,6 +157,11 @@ describe('Invite students with labels', { concurrent: false }, () => {
         await finishInvitation(await invite([failedUid]));
       }
       const originalEnrollment = await findEnrollment(failedUid);
+      if (kind === 'existing') {
+        assert.isNotNull(originalEnrollment);
+      } else {
+        assert.isNull(originalEnrollment);
+      }
       const addLabel = studentLabels.addLabelToEnrollment;
       const spy = vi
         .spyOn(studentLabels, 'addLabelToEnrollment')
@@ -170,7 +175,8 @@ describe('Invite students with labels', { concurrent: false }, () => {
           ),
         );
         assert.deepEqual(await findEnrollment(failedUid), originalEnrollment);
-        if (originalEnrollment) {
+        if (kind === 'existing') {
+          assert.isNotNull(originalEnrollment);
           assert.isEmpty(await studentLabels.selectStudentLabelsForEnrollment(originalEnrollment));
         }
         const enrollment = await findEnrollment(successfulUid);
