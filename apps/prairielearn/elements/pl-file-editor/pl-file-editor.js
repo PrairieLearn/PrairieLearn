@@ -74,9 +74,22 @@ window.PLFileEditor = function (uuid, options) {
   }
   this.setEditorContents(currentContents, { resetUndo: true });
 
+  this.previewVersion = 0;
+  this.previewMath = [];
+  this.previewTimer = undefined;
+  this.pendingPreview = null;
+  this.previewJob = null;
+  this.previewDestroyed = false;
+
   if (options.preview) {
-    this.editor.session.on('change', () => this.updatePreview(options.preview));
-    this.updatePreview(options.preview);
+    const previewType = options.preview;
+    this.editor.session.on('change', () => {
+      this.previewVersion++;
+      clearTimeout(this.previewTimer);
+      this.previewTimer = window.setTimeout(() => this.updatePreview(previewType), 200);
+    });
+    this.editor.on('destroy', () => this.destroyPreview());
+    void this.updatePreview(options.preview);
   }
 
   this.syncSettings();
@@ -108,17 +121,62 @@ window.PLFileEditor.prototype.syncSettings = function () {
   });
 };
 
-window.PLFileEditor.prototype.updatePreview = async function (preview_type) {
-  /** @type {HTMLElement} */
+window.PLFileEditor.prototype.updatePreview = function (preview_type) {
+  clearTimeout(this.previewTimer);
+  if (this.previewDestroyed) return Promise.resolve();
+  this.pendingPreview = {
+    type: preview_type,
+    value: this.editor.getValue(),
+    version: ++this.previewVersion,
+  };
+  if (!this.previewJob) {
+    this.previewJob = this.renderPendingPreviews().finally(() => {
+      this.previewJob = null;
+    });
+  }
+  return this.previewJob;
+};
+
+window.PLFileEditor.prototype.renderPendingPreviews = async function () {
+  while (this.pendingPreview && !this.previewDestroyed) {
+    const request = this.pendingPreview;
+    this.pendingPreview = null;
+    try {
+      await this.renderPreview(request);
+    } catch (error) {
+      // Leave the last completed preview visible and allow the next edit to retry.
+      console.error('Unable to render file editor preview', error);
+    }
+  }
+};
+
+window.PLFileEditor.prototype.destroyPreview = function () {
+  this.previewDestroyed = true;
+  this.previewVersion++;
+  this.pendingPreview = null;
+  this.previewMath = [];
+  clearTimeout(this.previewTimer);
+  void MathJax.startup.promise.then(() =>
+    MathJax.whenReady(() => {
+      const shadowRoot = this.element.find('.preview')[0].shadowRoot;
+      if (shadowRoot) {
+        MathJax.typesetClear(Array.from(shadowRoot.children));
+        shadowRoot.replaceChildren();
+      }
+    }),
+  );
+};
+
+window.PLFileEditor.prototype.renderPreview = async function (request) {
+  await MathJax.startup.promise;
+  const html = request.value ? await this.preview[request.type]?.(request.value) : '';
+  if (request.version !== this.previewVersion || this.previewDestroyed) return;
+
   const preview = this.element.find('.preview')[0];
   let shadowRoot = preview.shadowRoot;
   if (!shadowRoot) {
     shadowRoot = preview.attachShadow({ mode: 'open' });
-    // MathJax includes assistive content that is not visible by default (i.e.,
-    // only readable by screen readers). The hiding of this content is found in
-    // a style tag in the head, but this tag is not applied to the shadow DOM by
-    // default, so we need to manually adopt the MathJax styles.
-    await MathJax.startup.promise;
+    // MathJax's accessibility styles in the document head do not reach shadow roots.
     const mjxStyles = MathJax.svgStylesheet();
     if (mjxStyles) {
       const style = new CSSStyleSheet();
@@ -127,27 +185,86 @@ window.PLFileEditor.prototype.updatePreview = async function (preview_type) {
     }
   }
 
-  const editor_value = this.editor.getValue();
-  const default_preview_text = '<p>Begin typing above to preview</p>';
-  const html_contents = editor_value
-    ? ((await Promise.resolve(this.preview[preview_type]?.(editor_value))) ??
-      `<p>Unknown preview type: <code>${preview_type}</code></p>`)
-    : '';
+  const contents = html ?? `<p>Unknown preview type: <code>${request.type}</code></p>`;
+  // Prepare the next preview off-screen so the current one stays visible until
+  // math is ready. Match its width and shadow-root styles for MathJax layout.
+  const stage = preview.cloneNode(false);
+  stage.classList.remove('preview');
+  stage.classList.add('file-editor-preview-stage');
+  stage.setAttribute('aria-hidden', 'true');
+  stage.style.width = `${preview.getBoundingClientRect().width}px`;
+  const stageRoot = stage.attachShadow({ mode: 'open' });
+  stageRoot.adoptedStyleSheets = shadowRoot.adoptedStyleSheets;
+  const content = document.createElement('div');
+  content.innerHTML = DOMPurify.sanitize(
+    contents.trim() ? contents : '<p>Begin typing above to preview</p>',
+  );
+  stageRoot.append(content);
 
-  if (html_contents.trim().length === 0) {
-    shadowRoot.innerHTML = default_preview_text;
-  } else {
-    const sanitized_contents = DOMPurify.sanitize(html_contents);
-    shadowRoot.innerHTML = sanitized_contents;
-    if (
-      sanitized_contents.includes('$') ||
-      sanitized_contents.includes('\\(') ||
-      sanitized_contents.includes('\\)') ||
-      sanitized_contents.includes('\\[') ||
-      sanitized_contents.includes('\\]')
+  const math = Array.from(content.querySelectorAll('.pl-file-editor-math'), (node) => {
+    // Ancestors can change MathJax processing (e.g. mathjax_ignore) or font/layout.
+    let source = node.outerHTML;
+    for (
+      let parent = node.parentElement;
+      parent && parent !== content;
+      parent = parent.parentElement
     ) {
-      MathJax.typesetPromise(shadowRoot.children);
+      source +=
+        parent.tagName +
+        JSON.stringify(Array.from(parent.attributes, (attr) => [attr.name, attr.value]));
     }
+    return { source, node };
+  });
+  const otherContent = content.cloneNode(true);
+  otherContent.querySelectorAll('.pl-file-editor-math').forEach((node) => node.remove());
+  const hasMath = (value) => /\$|\\[()[\]]/.test(value);
+  // Reuse only an unchanged, ordered math sequence. Changes to definitions,
+  // labels or references can affect expressions elsewhere in the document.
+  // Raw HTML/custom renderers can contain math outside our Markdown tokens.
+  const reuseMath =
+    request.type === 'markdown' &&
+    !hasMath(otherContent.innerHTML) &&
+    math.length === this.previewMath.length &&
+    math.every((item, i) => item.source === this.previewMath[i].source);
+  if (reuseMath) {
+    // Leave placeholders here; moving the existing equations now would make
+    // them disappear from the visible preview before we are ready to commit.
+    math.forEach(({ node }) => node.replaceChildren());
+  }
+
+  // MathJax needs an attached, measurable container even though it is invisible.
+  preview.after(stage);
+  try {
+    if (!reuseMath && hasMath(content.innerHTML)) {
+      await MathJax.typesetPromise([content]);
+    }
+    await MathJax.whenReady(() => {
+      // Typing may have superseded this render while MathJax was working.
+      if (request.version !== this.previewVersion || this.previewDestroyed) return;
+      // Move reusable equations and swap content synchronously so the browser
+      // never paints an intermediate preview containing placeholders or raw TeX.
+      const scrollTop = preview.scrollTop;
+      if (reuseMath) {
+        math.forEach((item, i) => {
+          const existing = this.previewMath[i].node;
+          item.node.replaceWith(existing);
+          item.node = existing;
+        });
+      }
+      // Move reused math out first so clearing outgoing content keeps its MathItems.
+      MathJax.typesetClear(Array.from(shadowRoot.children));
+      shadowRoot.replaceChildren(...content.childNodes);
+      this.previewMath = math;
+      preview.scrollTop = scrollTop;
+    });
+  } finally {
+    // After a successful commit, content is empty because its children moved to
+    // the visible preview. Otherwise, release the discarded/failed render's
+    // MathItems before removing the stage so MathJax does not retain its nodes.
+    await MathJax.whenReady(() => {
+      MathJax.typesetClear([content]);
+      stage.remove();
+    });
   }
 };
 
@@ -312,14 +429,18 @@ window.PLFileEditor.prototype.b64EncodeUnicode = function (str) {
 window.PLFileEditor.prototype.preview = {
   html: (value) => value,
   markdown: (() => {
-    let marked = null;
+    let markedPromise;
     return async (value) => {
-      if (marked == null) {
-        marked = (await import('marked')).marked;
+      markedPromise ??= (async () => {
+        const { Marked } = await import('marked');
+        const marked = new Marked();
         await MathJax.startup.promise;
-        (await import('@prairielearn/marked-mathjax')).addMathjaxExtension(marked, MathJax);
-      }
-      return marked.parse(value);
+        (await import('@prairielearn/marked-mathjax')).addMathjaxExtension(marked, MathJax, {
+          mathClass: 'pl-file-editor-math',
+        });
+        return marked;
+      })();
+      return (await markedPromise).parse(value);
     };
   })(),
   dot: (() => {

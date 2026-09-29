@@ -36,6 +36,8 @@ const RawCoursePageAuthzDataSchema = z.object({
 
   user: RawStaffUserSchema,
   is_administrator: z.boolean(),
+  /** Whether both authenticated and effective users administer this course's institution. */
+  is_institution_administrator: z.boolean(),
   has_course_permission_preview: z.boolean(),
   has_course_permission_view: z.boolean(),
   has_course_permission_edit: z.boolean(),
@@ -97,6 +99,9 @@ export interface DangerousSystemAuthzData {
  */
 interface RawPlainAuthzData {
   user: User;
+
+  /** Whether the user administers this course's institution. */
+  is_institution_administrator: boolean;
 
   course_role: EnumCourseRole;
   has_course_permission_preview: boolean;

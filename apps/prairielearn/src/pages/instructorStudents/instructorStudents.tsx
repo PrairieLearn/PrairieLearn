@@ -5,11 +5,11 @@ import asyncHandler from 'express-async-handler';
 import z from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
-import { callScalar } from '@prairielearn/postgres';
+import { callScalar, runInTransactionAsync } from '@prairielearn/postgres';
 import { Hydrate } from '@prairielearn/react/server';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 import { assertNever } from '@prairielearn/utils';
-import { UniqueUidsFromStringSchema, parseRequestBody } from '@prairielearn/zod';
+import { IdSchema, UniqueUidsFromStringSchema, parseRequestBody } from '@prairielearn/zod';
 
 import { InsufficientCoursePermissionsCardPage } from '../../components/InsufficientCoursePermissionsCard.js';
 import { PageLayout } from '../../components/PageLayout.js';
@@ -19,7 +19,7 @@ import { StaffEnrollmentSchema, StaffStudentLabelSchema } from '../../lib/client
 import { getSelfEnrollmentLinkUrl, getStudentCourseInstanceUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
 import { getCourseOwners } from '../../lib/course.js';
-import type { CourseInstance } from '../../lib/db-types.js';
+import type { CourseInstance, StudentLabel } from '../../lib/db-types.js';
 import { getOriginalHash } from '../../lib/editorUtil.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { type ServerJobLogger, createServerJob } from '../../lib/server-jobs.js';
@@ -33,8 +33,12 @@ import {
   selectOptionalEnrollmentByUid,
   selectUsersAndEnrollmentsForCourseInstance,
 } from '../../models/enrollment.js';
-import { selectStudentLabelsInCourseInstance } from '../../models/student-label.js';
+import {
+  addLabelToEnrollment,
+  selectStudentLabelsInCourseInstance,
+} from '../../models/student-label.js';
 import { selectOptionalUserByUid } from '../../models/user.js';
+import { MAX_STUDENT_LABELS_PER_COURSE_INSTANCE } from '../../schemas/infoCourseInstance.js';
 
 import { InstructorStudents } from './instructorStudents.html.js';
 import { StudentRowSchema } from './instructorStudents.shared.js';
@@ -91,6 +95,11 @@ router.get(
 const InviteUidsBodySchema = z.object({
   __action: z.literal('invite_uids'),
   uids: UniqueUidsFromStringSchema(1000),
+  labelIds: z
+    .array(IdSchema)
+    .max(MAX_STUDENT_LABELS_PER_COURSE_INSTANCE)
+    .default([])
+    .transform((ids) => [...new Set(ids)]),
 });
 
 const SyncStudentsBodySchema = z.object({
@@ -103,6 +112,7 @@ const SyncStudentsBodySchema = z.object({
 const BodySchema = z.discriminatedUnion('__action', [InviteUidsBodySchema, SyncStudentsBodySchema]);
 
 interface InviteCounts {
+  labeledExisting: number;
   invited: number;
   unblocked: number;
   reenrolled: number;
@@ -123,6 +133,7 @@ async function processInvitations({
   skipBlocked,
   allowReenroll,
   actionDetail = 'invited',
+  labels = [],
 }: {
   uids: string[];
   courseInstance: CourseInstance;
@@ -140,6 +151,7 @@ async function processInvitations({
    */
   allowReenroll: boolean;
   actionDetail?: 'invited' | 'invited_by_manual_sync';
+  labels?: StudentLabel[];
 }): Promise<void> {
   for (const uid of uids) {
     try {
@@ -163,6 +175,23 @@ async function processInvitations({
         requiredRole: ['Student Data Viewer'],
         authzData,
       });
+
+      if (
+        existingEnrollment &&
+        ['joined', 'invited'].includes(existingEnrollment.status) &&
+        labels.length > 0
+      ) {
+        await runInTransactionAsync(async () => {
+          for (const label of labels) {
+            await addLabelToEnrollment({ enrollment: existingEnrollment, label, authzData });
+          }
+        });
+        job.info(
+          `${uid}: Applied selected labels (already ${existingEnrollment.status === 'joined' ? 'enrolled' : 'invited'})`,
+        );
+        counts.labeledExisting++;
+        continue;
+      }
 
       if (existingEnrollment?.status === 'joined') {
         job.info(`${uid}: Skipped (already enrolled)`);
@@ -207,12 +236,18 @@ async function processInvitations({
         continue;
       }
 
-      await inviteStudentByUid({
-        courseInstance,
-        uid,
-        requiredRole: ['Student Data Editor'],
-        authzData,
-        actionDetail,
+      // Keep each invitation and its labels atomic while allowing other students in the batch to succeed.
+      await runInTransactionAsync(async () => {
+        const enrollment = await inviteStudentByUid({
+          courseInstance,
+          uid,
+          requiredRole: ['Student Data Editor'],
+          authzData,
+          actionDetail,
+        });
+        for (const label of labels) {
+          await addLabelToEnrollment({ enrollment, label, authzData });
+        }
       });
       job.info(`${uid}: Invited`);
       counts.invited++;
@@ -253,6 +288,18 @@ router.post(
 
     switch (body.__action) {
       case 'invite_uids': {
+        const availableLabels = await selectStudentLabelsInCourseInstance(courseInstance);
+        const labelsById = new Map(availableLabels.map((label) => [label.id, label]));
+        const labels = body.labelIds.map((id) => {
+          const label = labelsById.get(id);
+          if (!label) {
+            throw new HttpStatusError(
+              400,
+              'A selected label is no longer available. Refresh the page and select labels again.',
+            );
+          }
+          return label;
+        });
         const serverJob = await createServerJob({
           type: 'invite_students',
           description: 'Invite students to course instance',
@@ -264,6 +311,7 @@ router.post(
 
         serverJob.executeInBackground(async (job) => {
           const counts: InviteCounts = {
+            labeledExisting: 0,
             invited: 0,
             unblocked: 0,
             reenrolled: 0,
@@ -283,11 +331,13 @@ router.post(
             counts,
             skipBlocked: true,
             allowReenroll: false,
+            labels,
           });
 
           job.info('\nSummary:');
           job.info(`  Successfully invited: ${counts.invited}`);
           const summaryLines: [number, string][] = [
+            [counts.labeledExisting, 'Applied selected labels to existing students'],
             [counts.skippedAlreadyJoined, 'Skipped (already enrolled)'],
             [counts.skippedAlreadyInvited, 'Skipped (already invited)'],
             [counts.skippedAlreadyBlocked, 'Skipped (blocked)'],
@@ -319,6 +369,7 @@ router.post(
 
         serverJob.executeInBackground(async (job) => {
           const syncCounts: InviteCounts = {
+            labeledExisting: 0,
             invited: 0,
             unblocked: 0,
             reenrolled: 0,
