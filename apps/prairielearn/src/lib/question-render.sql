@@ -84,7 +84,8 @@ FROM
 WHERE
   v.id = $variant_id
 ORDER BY
-  s.date DESC;
+  s.date DESC,
+  s.id DESC;
 
 -- BLOCK select_detailed_submissions
 SELECT
@@ -101,7 +102,8 @@ FROM
 WHERE
   s.id = ANY ($submission_ids::bigint[])
 ORDER BY
-  s.date DESC;
+  s.date DESC,
+  s.id DESC;
 
 -- BLOCK select_submission_info
 WITH

@@ -1,6 +1,8 @@
 CREATE TABLE IF NOT EXISTS submission_drafts (
   variant_id BIGINT NOT NULL REFERENCES variants ON UPDATE CASCADE ON DELETE CASCADE,
   user_id BIGINT NOT NULL REFERENCES users ON UPDATE CASCADE ON DELETE CASCADE,
+  client_id UUID NOT NULL,
+  revision BIGINT NOT NULL,
   raw_submitted_answer JSONB NOT NULL,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   PRIMARY KEY (variant_id, user_id)

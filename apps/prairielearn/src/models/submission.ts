@@ -1,4 +1,10 @@
-import { loadSqlEquiv, queryOptionalRow, queryRow, queryScalar } from '@prairielearn/postgres';
+import {
+  loadSqlEquiv,
+  queryOptionalRow,
+  queryOptionalScalar,
+  queryRow,
+  queryScalar,
+} from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
 import { SubmissionSchema } from '../lib/db-types.js';
@@ -28,4 +34,16 @@ export async function selectSubmissionById({ submission_id }: { submission_id: s
 
 export async function selectOptionalSubmissionById({ submission_id }: { submission_id: string }) {
   return await queryOptionalRow(sql.select_submission, { submission_id }, SubmissionSchema);
+}
+
+export async function selectOptionalLatestSubmissionIdForVariant({
+  variant_id,
+}: {
+  variant_id: string;
+}): Promise<string | null> {
+  return await queryOptionalScalar(
+    sql.select_latest_submission_id_for_variant,
+    { variant_id },
+    IdSchema,
+  );
 }

@@ -1573,7 +1573,9 @@ export const StudentLabelEnrollmentSchema = z.object({
 export type StudentLabelEnrollment = z.infer<typeof StudentLabelEnrollmentSchema>;
 
 export const SubmissionDraftSchema = z.object({
+  client_id: z.uuid(),
   raw_submitted_answer: z.record(z.string(), z.any()),
+  revision: z.coerce.number().int().positive(),
   updated_at: DateFromISOString,
   user_id: IdSchema,
   variant_id: IdSchema,

@@ -1,10 +1,11 @@
 import assert from 'assert';
 
 import { type Request, type Response, Router } from 'express';
+import { z } from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
 import { loadSqlEquiv, queryOptionalScalar } from '@prairielearn/postgres';
-import { IdSchema } from '@prairielearn/zod';
+import { IdSchema, parseRequestBody } from '@prairielearn/zod';
 
 import checkPlanGrantsForQuestion from '../../ee/middlewares/checkPlanGrantsForQuestion.js';
 import { gradeAssessmentInstance } from '../../lib/assessment.js';
@@ -36,6 +37,13 @@ import { StudentInstanceQuestion } from './studentInstanceQuestion.html.js';
 const sql = loadSqlEquiv(import.meta.url);
 
 const router = Router({ mergeParams: true });
+
+const DraftActionBodySchema = z.object({ __variant_id: IdSchema });
+const SaveDraftBodySchema = DraftActionBodySchema.extend({
+  __draft_base_submission_id: z.union([IdSchema, z.literal('')]),
+  __draft_client_id: z.uuid(),
+  __draft_revision: z.coerce.number().int().positive(),
+}).loose();
 
 router.use(enterpriseOnly(() => checkPlanGrantsForQuestion));
 router.use((req, res, next) => {
@@ -213,12 +221,12 @@ async function validateAndProcessSubmission(req: Request, res: Response) {
   return await processSubmission(req, res, { studentSubmission: true });
 }
 
-async function selectAndAuthzDraftVariant(req: Request, res: Response) {
+async function selectAndAuthzDraftVariant(variant_id: string, res: Response) {
   if (res.locals.question.type !== 'Freeform') {
     throw new HttpStatusError(400, 'Drafts are only supported for Freeform questions');
   }
   return await selectAndAuthzVariant({
-    unsafe_variant_id: req.body.__variant_id,
+    unsafe_variant_id: variant_id,
     variant_course: res.locals.course,
     question_id: res.locals.question.id,
     course_instance_id: res.locals.course_instance.id,
@@ -258,21 +266,30 @@ router.post(
       const variant_id = await validateAndProcessSubmission(req, res);
       redirectAfterSubmission(variant_id);
     } else if (req.body.__action === 'save_draft') {
+      const body = parseRequestBody(req, SaveDraftBodySchema);
       assertCanSaveSubmission(res);
-      const variant = await selectAndAuthzDraftVariant(req, res);
+      const variant = await selectAndAuthzDraftVariant(body.__variant_id, res);
       if (!variant.open || variant.broken_at) {
         throw new HttpStatusError(403, 'This variant is not accepting submissions');
       }
       // Drafts are stored unparsed. They are only parsed if the student
       // restores them, which saves them as a real submission.
-      await upsertSubmissionDraft({
+      const result = await upsertSubmissionDraft({
         variant_id: variant.id,
         user_id: res.locals.user.id,
-        raw_submitted_answer: getFreeformSubmittedAnswer(req.body),
+        base_submission_id: body.__draft_base_submission_id || null,
+        client_id: body.__draft_client_id,
+        revision: body.__draft_revision,
+        raw_submitted_answer: getFreeformSubmittedAnswer(body),
       });
-      res.sendStatus(204);
+      if (result.saved) {
+        res.sendStatus(204);
+      } else {
+        res.status(409).json({ latestSubmissionId: result.latestSubmissionId });
+      }
     } else if (req.body.__action === 'restore_draft') {
-      const variant = await selectAndAuthzDraftVariant(req, res);
+      const body = parseRequestBody(req, DraftActionBodySchema);
+      const variant = await selectAndAuthzDraftVariant(body.__variant_id, res);
       const draft = await selectOptionalSubmissionDraft({
         variant_id: variant.id,
         user_id: res.locals.user.id,
@@ -291,7 +308,8 @@ router.post(
       const variant_id = await validateAndProcessSubmission(req, res);
       redirectAfterSubmission(variant_id);
     } else if (req.body.__action === 'discard_draft') {
-      const variant = await selectAndAuthzDraftVariant(req, res);
+      const body = parseRequestBody(req, DraftActionBodySchema);
+      const variant = await selectAndAuthzDraftVariant(body.__variant_id, res);
       await deleteSubmissionDraft({ variant_id: variant.id, user_id: res.locals.user.id });
       redirectAfterSubmission(variant.id);
     } else if (req.body.__action === 'timeLimitFinish') {

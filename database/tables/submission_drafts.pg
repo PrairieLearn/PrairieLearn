@@ -1,5 +1,7 @@
 columns
+    client_id: uuid not null
     raw_submitted_answer: jsonb not null
+    revision: bigint not null
     updated_at: timestamp with time zone not null default now()
     user_id: bigint not null
     variant_id: bigint not null

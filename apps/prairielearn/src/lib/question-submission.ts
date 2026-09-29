@@ -12,7 +12,14 @@ import { saveAndGradeSubmission, saveSubmission } from './grading.js';
  * fields, which is everything except the form's own control fields.
  */
 export function getFreeformSubmittedAnswer(body: Record<string, any>): Record<string, any> {
-  return omit(body, ['__action', '__csrf_token', '__variant_id']);
+  return omit(body, [
+    '__action',
+    '__csrf_token',
+    '__variant_id',
+    '__draft_base_submission_id',
+    '__draft_client_id',
+    '__draft_revision',
+  ]);
 }
 
 export async function processSubmission(

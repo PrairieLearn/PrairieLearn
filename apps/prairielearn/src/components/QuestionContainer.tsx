@@ -99,7 +99,12 @@ export function QuestionContainer({
                 name="question-form"
                 method="POST"
                 autocomplete="off"
-                ${enableSubmissionDrafts ? 'data-submission-drafts' : ''}
+                ${
+                  enableSubmissionDrafts
+                    ? html`data-submission-drafts
+                      data-submission-draft-base="${submissions[0]?.id ?? ''}"`
+                    : ''
+                }
               >
                 ${QuestionPanel({
                   resLocals,

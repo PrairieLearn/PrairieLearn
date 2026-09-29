@@ -1,6 +1,7 @@
 import { getQuestionFormData } from './confirmOnUnload.js';
 
 const DRAFT_INTERVAL_MS = 10_000;
+const DRAFT_RECHECK_INTERVAL_MS = 60_000;
 const SAVED_STATUS_DURATION_MS = 2_000;
 
 /**
@@ -14,12 +15,23 @@ const SAVED_STATUS_DURATION_MS = 2_000;
  */
 export function saveSubmissionDrafts(form: HTMLFormElement): () => void {
   let lastDraftFormData: string | null = null;
+  let lastDraftSavedAt = 0;
+  let baseSubmissionId = form.dataset.submissionDraftBase ?? '';
+  const clientId = crypto.randomUUID();
+  let revision = 0;
   let requestInFlight = false;
   let statusTimeoutId: ReturnType<typeof setTimeout> | undefined;
 
-  function getUnsavedFormData() {
+  function getUnsavedFormData(forceRecheck = false) {
     const formData = getQuestionFormData(form);
-    if (formData === form.dataset.originalFormData || formData === lastDraftFormData) return null;
+    if (formData === form.dataset.originalFormData) return null;
+    if (
+      !forceRecheck &&
+      formData === lastDraftFormData &&
+      Date.now() - lastDraftSavedAt < DRAFT_RECHECK_INTERVAL_MS
+    ) {
+      return null;
+    }
     return formData;
   }
 
@@ -30,6 +42,9 @@ export function saveSubmissionDrafts(form: HTMLFormElement): () => void {
     // see https://github.com/microsoft/TypeScript/issues/30584
     const body = new URLSearchParams(new FormData(form) as any);
     body.set('__action', 'save_draft');
+    body.set('__draft_base_submission_id', baseSubmissionId);
+    body.set('__draft_client_id', clientId);
+    body.set('__draft_revision', String(++revision));
     return body;
   }
 
@@ -51,17 +66,27 @@ export function saveSubmissionDrafts(form: HTMLFormElement): () => void {
     statusTimeoutId = setTimeout(() => status.classList.remove('show'), SAVED_STATUS_DURATION_MS);
   }
 
-  async function saveDraft() {
+  async function saveDraft(forceRecheck = false) {
     if (requestInFlight) return;
-    const formData = getUnsavedFormData();
+    const formData = getUnsavedFormData(forceRecheck);
     if (formData == null) return;
 
     requestInFlight = true;
+    let retryWithLatestSubmission = false;
     try {
       const response = await fetch(form.action, { method: 'POST', body: getDraftBody() });
-      if (response.ok) {
+      if (response.status === 204) {
+        const answerChanged = formData !== lastDraftFormData;
         lastDraftFormData = formData;
-        showSavedStatus();
+        lastDraftSavedAt = Date.now();
+        if (answerChanged) showSavedStatus();
+      } else if (response.status === 409) {
+        const { latestSubmissionId } = (await response.json()) as {
+          latestSubmissionId: string | null;
+        };
+        baseSubmissionId = latestSubmissionId ?? '';
+        lastDraftFormData = null;
+        retryWithLatestSubmission = true;
       } else if (response.status < 500) {
         // The student can no longer save this question (e.g. the assessment
         // closed), so retrying cannot succeed.
@@ -72,18 +97,20 @@ export function saveSubmissionDrafts(form: HTMLFormElement): () => void {
       // again on the next interval.
     } finally {
       requestInFlight = false;
+      if (retryWithLatestSubmission) void saveDraft();
     }
   }
 
   // Leaving the page or switching away from it may be the last chance to save
-  // a draft, e.g. if a mobile browser discards the tab. `sendBeacon` survives
-  /** the page unloading, but we can't observe its result. */
+  // a draft, e.g. if a mobile browser discards the tab. A queued beacon does
+  /** not confirm that the server saved it, so the next interval still retries. */
   function handleVisibilityChange() {
-    if (document.visibilityState !== 'hidden') return;
-    const formData = getUnsavedFormData();
-    if (formData == null) return;
-    if (navigator.sendBeacon(form.action, getDraftBody())) {
-      lastDraftFormData = formData;
+    if (document.visibilityState === 'hidden') {
+      if (getUnsavedFormData(true) != null) {
+        navigator.sendBeacon(form.action, getDraftBody());
+      }
+    } else {
+      void saveDraft(true);
     }
   }
 

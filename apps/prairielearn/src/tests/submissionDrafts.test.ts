@@ -3,6 +3,7 @@ import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 import { gradeAssessmentInstance } from '../lib/assessment.js';
 import { config } from '../lib/config.js';
 import { selectAssessmentByTid } from '../models/assessment.js';
+import { selectOptionalSubmissionDraft } from '../models/submission-draft.js';
 
 import * as helperClient from './helperClient.js';
 import * as helperServer from './helperServer.js';
@@ -15,6 +16,9 @@ describe('Submission drafts', { timeout: 60_000, concurrent: false }, () => {
   let questionUrl: string;
   let csrfToken: string;
   let variantId: string;
+  let draftBaseSubmissionId: string;
+  const draftClientId = crypto.randomUUID();
+  let draftRevision = 0;
 
   beforeAll(helperServer.before());
   afterAll(helperServer.after);
@@ -37,6 +41,7 @@ describe('Submission drafts', { timeout: 60_000, concurrent: false }, () => {
     assert.isTrue(response.ok);
     csrfToken = helperClient.getCSRFToken(response.$('.question-form'));
     variantId = response.$('.question-container').attr('data-variant-id')!;
+    draftBaseSubmissionId = response.$('.question-form').attr('data-submission-draft-base')!;
     return response.$;
   }
 
@@ -47,6 +52,13 @@ describe('Submission drafts', { timeout: 60_000, concurrent: false }, () => {
         __action: action,
         __csrf_token: csrfToken,
         __variant_id: variantId,
+        ...(action === 'save_draft'
+          ? {
+              __draft_base_submission_id: draftBaseSubmissionId,
+              __draft_client_id: draftClientId,
+              __draft_revision: String(++draftRevision),
+            }
+          : {}),
         ...answer,
       }),
     });
@@ -56,6 +68,14 @@ describe('Submission drafts', { timeout: 60_000, concurrent: false }, () => {
     const $ = await loadQuestion();
     assert.lengthOf($('form.question-form[data-submission-drafts]'), 1);
     assert.lengthOf($('button[value="restore_draft"]'), 0);
+  });
+
+  test('keeps the newer draft when requests from one page arrive out of order', async () => {
+    assert.equal((await post('save_draft', { c: '42', __draft_revision: '2' })).status, 204);
+    assert.equal((await post('save_draft', { c: '41', __draft_revision: '1' })).status, 204);
+
+    const draft = await selectOptionalSubmissionDraft({ variant_id: variantId, user_id: '1' });
+    assert.deepEqual(draft?.raw_submitted_answer, { c: '42' });
   });
 
   test('offers to restore a saved draft', async () => {
@@ -77,9 +97,18 @@ describe('Submission drafts', { timeout: 60_000, concurrent: false }, () => {
 
   test('saving an answer clears the draft', async () => {
     assert.equal((await post('save_draft', { c: '43' })).status, 204);
+    const staleBaseSubmissionId = draftBaseSubmissionId;
     assert.isTrue((await post('save', { c: '44' })).ok);
 
+    const staleDraftResponse = await post('save_draft', {
+      c: '43',
+      __draft_base_submission_id: staleBaseSubmissionId,
+    });
+    assert.equal(staleDraftResponse.status, 409);
+    const { latestSubmissionId } = await staleDraftResponse.json();
+
     const $ = await loadQuestion();
+    assert.equal(draftBaseSubmissionId, latestSubmissionId);
     assert.lengthOf($('button[value="restore_draft"]'), 0);
     assert.equal($('input[name="c"]').val(), '44');
   });

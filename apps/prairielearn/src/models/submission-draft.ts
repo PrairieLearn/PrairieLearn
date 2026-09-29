@@ -1,19 +1,50 @@
-import { execute, loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
+import {
+  execute,
+  loadSqlEquiv,
+  queryOptionalRow,
+  runInTransactionAsync,
+} from '@prairielearn/postgres';
 
 import { type SubmissionDraft, SubmissionDraftSchema } from '../lib/db-types.js';
+
+import { selectOptionalLatestSubmissionIdForVariant } from './submission.js';
+import { lockVariant } from './variant.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
 export async function upsertSubmissionDraft({
   variant_id,
   user_id,
+  base_submission_id,
+  client_id,
+  revision,
   raw_submitted_answer,
 }: {
   variant_id: string;
   user_id: string;
+  base_submission_id: string | null;
+  client_id: string;
+  revision: number;
   raw_submitted_answer: Record<string, any>;
-}) {
-  await execute(sql.upsert_submission_draft, { variant_id, user_id, raw_submitted_answer });
+}): Promise<{ saved: true } | { saved: false; latestSubmissionId: string | null }> {
+  return await runInTransactionAsync(async () => {
+    // A submission uses the same lock before clearing drafts. This prevents a
+    // draft from an older page from being written after that submission.
+    await lockVariant({ variant_id });
+    const latestSubmissionId = await selectOptionalLatestSubmissionIdForVariant({ variant_id });
+    if (latestSubmissionId !== base_submission_id) {
+      return { saved: false, latestSubmissionId };
+    }
+
+    await execute(sql.upsert_submission_draft, {
+      variant_id,
+      user_id,
+      client_id,
+      revision,
+      raw_submitted_answer,
+    });
+    return { saved: true };
+  });
 }
 
 export async function selectOptionalSubmissionDraft({

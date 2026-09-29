@@ -1,12 +1,29 @@
 -- BLOCK upsert_submission_draft
 INSERT INTO
-  submission_drafts (variant_id, user_id, raw_submitted_answer)
+  submission_drafts (
+    variant_id,
+    user_id,
+    client_id,
+    revision,
+    raw_submitted_answer
+  )
 VALUES
-  ($variant_id, $user_id, $raw_submitted_answer)
+  (
+    $variant_id,
+    $user_id,
+    $client_id,
+    $revision,
+    $raw_submitted_answer
+  )
 ON CONFLICT (variant_id, user_id) DO UPDATE
 SET
+  client_id = EXCLUDED.client_id,
+  revision = EXCLUDED.revision,
   raw_submitted_answer = EXCLUDED.raw_submitted_answer,
-  updated_at = now();
+  updated_at = now()
+WHERE
+  submission_drafts.client_id != EXCLUDED.client_id
+  OR submission_drafts.revision < EXCLUDED.revision;
 
 -- BLOCK select_submission_draft
 SELECT
