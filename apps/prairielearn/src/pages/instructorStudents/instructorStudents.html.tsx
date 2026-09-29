@@ -316,11 +316,12 @@ function StudentsCard({
     window.location.href = getCourseInstanceJobSequenceUrl(courseInstance.id, job_sequence_id);
   };
 
-  const inviteStudents = async (uids: string[]): Promise<void> => {
+  const inviteStudents = async (uids: string[], labelIds: string[]): Promise<void> => {
     const body = {
       __action: 'invite_uids',
       __csrf_token: csrfToken,
       uids: uids.join(','),
+      labelIds,
     };
     const res = await fetch(window.location.href, {
       method: 'POST',
@@ -839,6 +840,7 @@ function StudentsCard({
       <InviteStudentsModal
         show={showInvite}
         courseInstance={courseInstance}
+        studentLabels={studentLabels}
         selfEnrollLink={selfEnrollLink}
         onHide={() => setShowInvite(false)}
         onSubmit={inviteStudents}
