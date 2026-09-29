@@ -5,6 +5,7 @@ import * as sqldb from '@prairielearn/postgres';
 import { Hydrate } from '@prairielearn/react/server';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
+import { CalculatorPreviewAssets } from '../../components/CalculatorAssets.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
 import {
@@ -32,6 +33,7 @@ import {
 } from '../../models/assessment.js';
 import {
   type AssessmentJsonInput,
+  CalculatorSettingsSchema,
   EnumAssessmentToolSchema,
 } from '../../schemas/infoAssessment.js';
 import { settingsScope } from '../../trpc/assessment/assessment-settings.js';
@@ -83,11 +85,12 @@ router.get(
       selectAssessmentZonePointsRange({ assessment_id: assessment.id }),
       selectAssessmentHasInstances(assessment.id),
     ]);
-    const enabledTools = new Set(toolDefaultRows.filter((r) => r.enabled).map((r) => r.tool));
+    const toolDefaults = new Map(toolDefaultRows.map((row) => [row.tool, row]));
     const assessmentTools: AssessmentToolsConfig = EnumAssessmentToolSchema.options.map((tool) => ({
       name: tool,
       label: tool.charAt(0).toUpperCase() + tool.slice(1),
-      enabled: enabledTools.has(tool),
+      enabled: toolDefaults.get(tool)?.enabled ?? false,
+      type: CalculatorSettingsSchema.parse(toolDefaults.get(tool)?.settings ?? {}).type,
     }));
 
     const assessmentGHLink = courseRepoContentUrl(
@@ -120,6 +123,7 @@ router.get(
     res.send(
       PageLayout({
         resLocals: res.locals,
+        postContent: CalculatorPreviewAssets(),
         pageTitle: 'Settings',
         navContext: {
           type: 'instructor',

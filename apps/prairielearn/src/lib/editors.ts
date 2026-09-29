@@ -23,7 +23,7 @@ import {
   updateCourseCommitHash,
 } from '../models/course.js';
 import { selectQuestionsForCourseInstanceCopy } from '../models/question.js';
-import { type AssessmentJsonInput } from '../schemas/infoAssessment.js';
+import { type AssessmentJsonInput, type CalculatorType } from '../schemas/infoAssessment.js';
 import * as courseDB from '../sync/course-db.js';
 import * as syncFromDisk from '../sync/syncFromDisk.js';
 
@@ -795,9 +795,13 @@ export class AssessmentAddEditor extends Editor {
       'assessments',
     );
 
-    debug('Get all existing long names');
+    debug('Get existing long names in the same assessment set');
     const assessments = await selectAssessments({ course_instance_id: this.course_instance.id });
-    const oldNamesLong = assessments.map((row) => row.title).filter((title) => title !== null);
+    const oldNamesLong = assessments
+      .filter(
+        (assessment) => assessment.title !== null && assessment.assessment_set.name === this.set,
+      )
+      .map((row) => row.title!);
     const nextAssessmentNumber =
       Math.max(
         0,
@@ -2690,7 +2694,12 @@ export class MultiEditor extends Editor {
   }
 }
 
-export type AssessmentToolsConfig = { name: string; label: string; enabled: boolean }[];
+export type AssessmentToolsConfig = {
+  name: string;
+  label: string;
+  enabled: boolean;
+  type?: CalculatorType;
+}[];
 
 /** A single question to import, with all file contents as serialized data. */
 export interface QtiImportQuestionData {

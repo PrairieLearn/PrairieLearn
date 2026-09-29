@@ -83,7 +83,6 @@ const sideNavPagesTabs = {
       urlSuffix: '/course_admin/staff',
       iconClasses: 'fas fa-users',
       tabLabel: 'Staff',
-      renderCondition: ({ authz_data }) => authz_data.has_course_permission_own,
     },
     {
       activePages: ['course_admin'],

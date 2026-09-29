@@ -596,6 +596,9 @@ importers:
       '@prairielearn/postgres-tools':
         specifier: workspace:^
         version: link:../../packages/postgres-tools
+      '@prairielearn/public-fetch':
+        specifier: workspace:^
+        version: link:../../packages/public-fetch
       '@prairielearn/question-conversion':
         specifier: workspace:^
         version: link:../../packages/question-conversion

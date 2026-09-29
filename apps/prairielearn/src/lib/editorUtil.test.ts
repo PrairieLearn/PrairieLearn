@@ -29,7 +29,7 @@ describe('editor utils', () => {
     });
 
     describe('Duplicated short_name without number, unique long_name', () => {
-      it('should append _2 to the short_name and (2) to the long_name', () => {
+      it('should append _2 only to the short_name', () => {
         const names = getUniqueNames({
           shortNames: ['Fa18', 'Fa19'],
           longNames: ['Fall 2018', 'Fall 2019'],
@@ -37,12 +37,12 @@ describe('editor utils', () => {
           longName: 'Fall 2019 Section 1',
         });
         assert.equal(names.shortName, 'Fa19_2');
-        assert.equal(names.longName, 'Fall 2019 Section 1 (2)');
+        assert.equal(names.longName, 'Fall 2019 Section 1');
       });
     });
 
     describe('Duplicated short_name with number, unique long_name', () => {
-      it('should increment the number for the short_name and append it to both short_name and long_name', () => {
+      it('should increment the number only for the short_name', () => {
         const names = getUniqueNames({
           shortNames: ['Fa18', 'Fa19', 'Fa19_2', 'Fa19_3', 'Fa19_4'],
           longNames: [
@@ -57,12 +57,12 @@ describe('editor utils', () => {
         });
 
         assert.equal(names.shortName, 'Fa19_5');
-        assert.equal(names.longName, 'Fall 2019 Section 2 (5)');
+        assert.equal(names.longName, 'Fall 2019 Section 2');
       });
     });
 
     describe('Unique short_name, duplicated long_name without number', () => {
-      it('should append _2 to the short_name and (2) to the long_name', () => {
+      it('should append (2) only to the long_name', () => {
         const names = getUniqueNames({
           shortNames: ['Fa18', 'Fa19'],
           longNames: ['Fall 2018', 'Fall 2019'],
@@ -70,13 +70,13 @@ describe('editor utils', () => {
           longName: 'Fall 2019',
         });
 
-        assert.equal(names.shortName, 'Fall19_2');
+        assert.equal(names.shortName, 'Fall19');
         assert.equal(names.longName, 'Fall 2019 (2)');
       });
     });
 
     describe('Unique short_name, duplicated long_name with number', () => {
-      it('should increment the number for the long_name and append it to both short_name and long_name', () => {
+      it('should increment the number only for the long_name', () => {
         const names = getUniqueNames({
           shortNames: ['Fa18', 'Fa19', 'Fall19_2', 'Fall19_3'],
           longNames: ['Fall 2018', 'Fall 2019', 'Fall 2019 (2)', 'Fall 2019 (3)'],
@@ -84,7 +84,7 @@ describe('editor utils', () => {
           longName: 'Fall 2019',
         });
 
-        assert.equal(names.shortName, 'Fall_19_4');
+        assert.equal(names.shortName, 'Fall_19');
         assert.equal(names.longName, 'Fall 2019 (4)');
       });
     });
@@ -145,8 +145,8 @@ describe('editor utils', () => {
       });
     });
 
-    describe('Duplicated short_name without number with different casing, unique long_name', () => {
-      it('should append _2 to the short_name and (2) to the long_name', () => {
+    describe('Duplicated short_name without number with different casing, duplicated long_name', () => {
+      it('should append _2 and (2) to both names', () => {
         const names = getUniqueNames({
           shortNames: ['Fa18', 'Fa19'],
           longNames: ['Fall 2018', 'Fall 2019'],
@@ -160,7 +160,7 @@ describe('editor utils', () => {
     });
 
     describe('Duplicated short_name with number with different casing, unique long_name', () => {
-      it('should increment the number for the short_name and append it to both short_name and long_name', () => {
+      it('should increment the number only for the short_name', () => {
         const names = getUniqueNames({
           shortNames: ['Fa18', 'Fa19', 'Fa19_2', 'Fa19_3'],
           longNames: [
@@ -174,7 +174,7 @@ describe('editor utils', () => {
         });
 
         assert.equal(names.shortName, 'fa19_4');
-        assert.equal(names.longName, 'Fall 2019 Section 2 (4)');
+        assert.equal(names.longName, 'Fall 2019 Section 2');
       });
     });
 
@@ -189,7 +189,7 @@ describe('editor utils', () => {
         });
 
         assert.equal(names.shortName, 'a.b_2');
-        assert.equal(names.longName, 'Test 4 (2)');
+        assert.equal(names.longName, 'Test 4');
       });
 
       it('should escape regex special characters in longName', () => {
@@ -201,7 +201,7 @@ describe('editor utils', () => {
           longName: 'Calc I + II',
         });
 
-        assert.equal(names.shortName, 'CalcII_3');
+        assert.equal(names.shortName, 'CalcII');
         assert.equal(names.longName, 'Calc I + II (3)');
       });
     });

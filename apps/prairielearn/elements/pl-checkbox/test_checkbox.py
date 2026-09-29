@@ -738,6 +738,82 @@ def test_grade_with_duplicate_submissions() -> None:
     assert data["partial_scores"]["test"]["score"] == pytest.approx(1.0)
 
 
+def test_single_multi_character_submission_is_normalized() -> None:
+    """Test that a single multi-character checkbox key is handled as one key."""
+    all_keys = [chr(ord("a") + index) for index in range(26)] + ["aa"]
+    data: dict[str, Any] = {
+        "submitted_answers": {"test": "aa"},
+        "correct_answers": {"test": [{"key": "aa"}]},
+        "params": {"test": [{"key": key} for key in all_keys]},
+        "format_errors": {},
+        "partial_scores": {},
+    }
+    element_html = '<pl-checkbox answers-name="test"></pl-checkbox>'
+
+    pl_checkbox.parse(element_html, data)
+
+    assert data["submitted_answers"]["test"] == ["aa"]
+    assert data["format_errors"] == {}
+
+    pl_checkbox.grade(element_html, data)
+
+    assert data["partial_scores"]["test"]["score"] == pytest.approx(1.0)
+
+
+def test_min_select_counts_single_multi_character_submission_as_one() -> None:
+    """Test that a single multi-character key counts as one selected option."""
+    all_keys = [chr(ord("a") + index) for index in range(26)] + ["aa"]
+    data: dict[str, Any] = {
+        "submitted_answers": {"test": "aa"},
+        "correct_answers": {"test": [{"key": "aa"}]},
+        "params": {"test": [{"key": key} for key in all_keys]},
+        "format_errors": {},
+        "partial_scores": {},
+    }
+    element_html = '<pl-checkbox answers-name="test" min-select="2"></pl-checkbox>'
+
+    pl_checkbox.parse(element_html, data)
+
+    assert data["submitted_answers"]["test"] == ["aa"]
+    assert data["format_errors"]["test"] == (
+        f"You must select between <b>2</b> and <b>{len(all_keys)}</b> options."
+    )
+
+
+def test_grade_normalizes_legacy_single_multi_character_submission() -> None:
+    """Test that grading handles a string submission saved before normalization."""
+    all_keys = [chr(ord("a") + index) for index in range(26)] + ["aa"]
+    data: dict[str, Any] = {
+        "submitted_answers": {"test": "aa"},
+        "correct_answers": {"test": [{"key": "aa"}]},
+        "params": {"test": [{"key": key} for key in all_keys]},
+        "partial_scores": {},
+    }
+    element_html = '<pl-checkbox answers-name="test"></pl-checkbox>'
+
+    pl_checkbox.grade(element_html, data)
+
+    assert data["partial_scores"]["test"]["score"] == pytest.approx(1.0)
+
+
+def test_partial_credit_with_single_multi_character_submission() -> None:
+    """Test partial credit when a multi-character key is one of the correct answers."""
+    all_keys = [chr(ord("a") + index) for index in range(26)] + ["aa"]
+    data: dict[str, Any] = {
+        "submitted_answers": {"test": "aa"},
+        "correct_answers": {"test": [{"key": "aa"}, {"key": "b"}]},
+        "params": {"test": [{"key": key} for key in all_keys]},
+        "partial_scores": {},
+    }
+    element_html = (
+        '<pl-checkbox answers-name="test" partial-credit="net-correct"></pl-checkbox>'
+    )
+
+    pl_checkbox.grade(element_html, data)
+
+    assert data["partial_scores"]["test"]["score"] == pytest.approx(0.5)
+
+
 def test_grade_with_duplicate_submissions_partial_credit() -> None:
     """Test partial credit grading with duplicate submissions."""
     # Test NET_CORRECT (PC) mode with duplicates

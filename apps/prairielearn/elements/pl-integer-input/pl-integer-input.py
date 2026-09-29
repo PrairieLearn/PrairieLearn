@@ -131,7 +131,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "uuid": pl.get_uuid(),
             display.value: True,
             "parse_error": parse_error,
-            "use_numeric": 1 <= base <= 10,
             "raw_submitted_answer": raw_submitted_answer,
         }
 

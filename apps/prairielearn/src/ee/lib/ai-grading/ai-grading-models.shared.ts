@@ -30,6 +30,9 @@ export function computeAiGradingRelativeCosts(
   return Object.fromEntries(
     models.map(({ modelId, cost }) => {
       const multiplier = cost / baselineCost;
+      if (multiplier > 0 && multiplier < 0.1) {
+        return [modelId, '<0.1x'];
+      }
       // Truncate to one decimal place (not rounded).
       const truncated = Math.floor(multiplier * 10) / 10;
       const label =
@@ -44,31 +47,17 @@ export function computeAiGradingRelativeCosts(
 export const AI_GRADING_MODELS = [
   {
     provider: 'openai',
-    modelId: 'gpt-5.6-terra',
-    name: 'GPT 5.6 Terra',
+    modelId: 'gpt-6-sol',
+    name: 'GPT 6 Sol',
     sublabel: 'Best for general-purpose text grading',
     recommended: true,
   },
   {
     provider: 'openai',
-    modelId: 'gpt-5.6-luna',
-    name: 'GPT 5.6 Luna',
-    sublabel: 'Best for large-scale text grading',
+    modelId: 'gpt-6-luna',
+    name: 'GPT 6 Luna',
+    sublabel: 'Simple text grading',
     recommended: true,
-  },
-  {
-    provider: 'openai',
-    modelId: 'gpt-5.6-sol',
-    name: 'GPT 5.6 Sol',
-    sublabel: 'Best for complex text grading',
-    recommended: false,
-  },
-  {
-    provider: 'openai',
-    modelId: 'gpt-6-astra',
-    name: 'GPT 6 Astra',
-    sublabel: 'Best for demanding text grading',
-    recommended: false,
   },
   {
     provider: 'google',
@@ -78,38 +67,38 @@ export const AI_GRADING_MODELS = [
     recommended: true,
   },
   {
-    provider: 'google',
-    modelId: 'gemini-3.1-pro-preview',
-    name: 'Gemini 3.1 Pro',
-    sublabel: 'Advanced handwriting and image grading',
-    recommended: false,
+    provider: 'openai',
+    modelId: 'gpt-6-astra',
+    name: 'GPT 6 Astra',
+    sublabel: 'The most intelligent GPT model',
+    recommended: true,
   },
   {
     provider: 'anthropic',
     modelId: 'claude-haiku-4-5',
     name: 'Claude Haiku 4.5',
-    sublabel: 'Fast code grading',
+    sublabel: 'The cheapest and fastest Claude model',
     recommended: false,
   },
   {
     provider: 'anthropic',
     modelId: 'claude-sonnet-5',
     name: 'Claude Sonnet 5',
-    sublabel: 'Best for general-purpose code grading',
+    sublabel: 'The medium-intelligence Claude model',
     recommended: false,
   },
   {
     provider: 'anthropic',
     modelId: 'claude-opus-5',
     name: 'Claude Opus 5',
-    sublabel: 'Best for complex code grading',
+    sublabel: 'The high-intelligence Claude model',
     recommended: false,
   },
   {
     provider: 'anthropic',
     modelId: 'claude-fable-5-1',
     name: 'Claude Fable 5.1',
-    sublabel: 'Best for demanding code grading',
+    sublabel: 'The most intelligent Claude model',
     recommended: false,
   },
 ] as const;
@@ -121,12 +110,10 @@ export const AI_GRADING_MODEL_IDS: AiGradingModelId[] = AI_GRADING_MODELS.map(
 );
 
 export const AI_GRADING_MODEL_PROVIDERS = {
-  'gpt-5.6-luna': 'openai',
-  'gpt-5.6-terra': 'openai',
-  'gpt-5.6-sol': 'openai',
+  'gpt-6-luna': 'openai',
+  'gpt-6-sol': 'openai',
   'gpt-6-astra': 'openai',
   'gemini-3.8-flash': 'google',
-  'gemini-3.1-pro-preview': 'google',
   'claude-haiku-4-5': 'anthropic',
   'claude-sonnet-5': 'anthropic',
   'claude-opus-5': 'anthropic',
@@ -152,4 +139,4 @@ export const AI_GRADING_PROVIDER_OPTIONS = AI_GRADING_PROVIDERS.map((provider) =
 /**
  * Fallback model used when no prior model has been selected.
  */
-export const DEFAULT_AI_GRADING_MODEL = 'gpt-5.6-terra' as const;
+export const DEFAULT_AI_GRADING_MODEL = 'gpt-6-sol' as const;
