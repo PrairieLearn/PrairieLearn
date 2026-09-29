@@ -157,11 +157,13 @@ export function Navbar({
                   <button
                     type="button"
                     class="btn btn-outline-light btn-sm ms-md-2 me-md-2 mb-2 mb-md-0"
-                    data-bs-toggle="modal"
+                    style="--bs-btn-color: var(--bs-navbar-color); --bs-btn-border-color: var(--bs-navbar-color)"
+                    data-bs-toggle="modal tooltip"
                     data-bs-target="#supportModal"
+                    data-bs-title="Get help with PrairieLearn"
+                    aria-label="Get help"
                   >
-                    <i class="bi bi-question-circle me-1" aria-hidden="true"></i>
-                    Get help
+                    <i class="bi bi-question-circle" aria-hidden="true"></i>
                   </button>
                 `
               : ''
