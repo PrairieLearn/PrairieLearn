@@ -157,7 +157,7 @@ export function InstructorAssessmentInstancePrint({
             font-size: 10pt;
           }
           .exam-grading-score {
-            flex: 1;
+            flex: 0 1 150px;
             border-bottom: 1px solid #111;
             margin-bottom: 3px;
           }
