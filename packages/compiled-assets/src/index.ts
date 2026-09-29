@@ -146,8 +146,7 @@ export async function init(newOptions: Partial<CompiledAssetsOptions>): Promise<
  * Shuts down the development assets compiler if it is running.
  */
 export async function close() {
-  esbuildContext?.dispose();
-  splitEsbuildContext?.dispose();
+  await Promise.all([esbuildContext?.dispose(), splitEsbuildContext?.dispose()]);
 }
 
 export function assertConfigured(): void {

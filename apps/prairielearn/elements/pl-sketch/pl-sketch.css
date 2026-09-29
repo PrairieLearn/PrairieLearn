@@ -11,3 +11,13 @@
   width: 2rem;
   height: 2rem;
 }
+
+.sketchresponse .si-container.pl-sketch-readonly {
+  margin-inline: 0;
+  max-width: 100%;
+}
+
+.pl-sketch-readonly > .si-canvas {
+  width: 100%;
+  height: auto;
+}

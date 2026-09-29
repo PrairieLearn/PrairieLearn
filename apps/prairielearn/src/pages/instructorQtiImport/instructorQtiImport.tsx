@@ -364,8 +364,7 @@ router.post(
 );
 
 type ConvertEntryResult =
-  | { ok: true; value: SerializedEntryResult }
-  | { ok: false; warning: ParseWarning };
+  { ok: true; value: SerializedEntryResult } | { ok: false; warning: ParseWarning };
 
 interface SerializedEntryResult {
   result: StoredSerializedConversionResult;

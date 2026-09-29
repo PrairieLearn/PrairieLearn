@@ -18,6 +18,7 @@ In PrairieLearn there are two types of checks that determine whether a student h
 
 The general format of `allowAccess` is:
 
+<!-- prettier-ignore -->
 ```json
 {
   "allowAccess": [

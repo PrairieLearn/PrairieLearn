@@ -1,5 +1,11 @@
 # @prairielearn/react
 
+## 2.1.5
+
+### Patch Changes
+
+- 8151381: Build with the official TypeScript 7 release instead of the native preview.
+
 ## 2.1.4
 
 ### Patch Changes

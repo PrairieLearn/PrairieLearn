@@ -159,7 +159,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             # TODO: Remove after upgrading to Pandas 3.0, where this becomes the default.
             copy=False,  # type: ignore
         )
-        other = descriptors.style.map(lambda v: "font-weight: bold;")
+        other = descriptors.style.map(lambda v: "font-weight: bold;")  # ruff:ignore[unused-lambda-argument]
         frame_style.set_table_styles([
             {"selector": ".foot_row0", "props": "border-top: 1px solid black;"}
         ])

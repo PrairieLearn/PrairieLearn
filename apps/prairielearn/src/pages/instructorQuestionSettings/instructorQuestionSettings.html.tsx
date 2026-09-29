@@ -3,6 +3,12 @@ import { useMemo, useRef } from 'react';
 import { Form } from 'react-bootstrap';
 import { useController, useForm } from 'react-hook-form';
 
+import {
+  imageRegistryErrorText,
+  imageRegistryHelpText,
+  imageRegistryRestrictionsText,
+  isSupportedImageRegistry,
+} from '@prairielearn/docker-utils/registry';
 import { ComboBox, type ComboBoxItem, StickySaveBar, TagPicker } from '@prairielearn/ui';
 
 import { PublicLinkSharing } from '../../components/LinkSharing.js';
@@ -31,6 +37,15 @@ import type {
   QuestionSettingsFormValues,
   SelectedAssessments,
 } from './instructorQuestionSettings.types.js';
+
+function ImageRegistryHelp({ id }: { id: string }) {
+  return (
+    <small id={id} className="form-text text-muted">
+      {imageRegistryHelpText} For example, <code>docker.io/org/image:tag</code> for Docker Hub or{' '}
+      <code>ghcr.io/org/image:tag</code> for GHCR. {imageRegistryRestrictionsText}
+    </small>
+  );
+}
 
 function AssessmentBadges({
   assessmentsWithQuestion,
@@ -381,6 +396,22 @@ export const InstructorQuestionSettingsForm = ({
             <h2 className="h5 card-title mb-3">General</h2>
             <div className="row">
               <div className="col-md-6 mb-3">
+                <label className="form-label" htmlFor="title">
+                  Title
+                </label>
+                <input
+                  type="text"
+                  className="form-control"
+                  id="title"
+                  disabled={!canEdit}
+                  defaultValue={defaultValues.title}
+                  {...register('title')}
+                />
+                <small className="form-text text-muted">
+                  The title of the question (e.g., "Add two numbers").
+                </small>
+              </div>
+              <div className="col-md-6 mb-3">
                 <label className="form-label" htmlFor="qid">
                   QID
                 </label>
@@ -415,22 +446,6 @@ export const InstructorQuestionSettingsForm = ({
                 )}
                 <small className="form-text text-muted">
                   <QuestionShortNameDescription />
-                </small>
-              </div>
-              <div className="col-md-6 mb-3">
-                <label className="form-label" htmlFor="title">
-                  Title
-                </label>
-                <input
-                  type="text"
-                  className="form-control"
-                  id="title"
-                  disabled={!canEdit}
-                  defaultValue={defaultValues.title}
-                  {...register('title')}
-                />
-                <small className="form-text text-muted">
-                  The title of the question (e.g., "Add two numbers").
                 </small>
               </div>
             </div>
@@ -651,12 +666,15 @@ export const InstructorQuestionSettingsForm = ({
                     type="text"
                     className={clsx('form-control', errors.workspace_image && 'is-invalid')}
                     id="workspace_image"
+                    aria-describedby="workspace_image-help"
                     disabled={!canEdit}
                     aria-invalid={!!errors.workspace_image || undefined}
                     defaultValue={defaultValues.workspace_image}
                     aria-errormessage={errors.workspace_image ? 'workspace_image-error' : undefined}
                     {...register('workspace_image', {
                       required: 'Image is required for workspace',
+                      validate: (value) =>
+                        isSupportedImageRegistry(value.trim()) || imageRegistryErrorText,
                     })}
                   />
                   {errors.workspace_image && (
@@ -664,10 +682,7 @@ export const InstructorQuestionSettingsForm = ({
                       {errors.workspace_image.message}
                     </div>
                   )}
-                  <small className="form-text text-muted">
-                    The Docker image that will be used to serve this workspace. Only images from the
-                    Dockerhub registry are supported.
-                  </small>
+                  <ImageRegistryHelp id="workspace_image-help" />
                 </div>
 
                 <div className="mb-3">
@@ -880,6 +895,7 @@ export const InstructorQuestionSettingsForm = ({
                     type="text"
                     className={clsx('form-control', errors.external_grading_image && 'is-invalid')}
                     id="external_grading_image"
+                    aria-describedby="external_grading_image-help"
                     disabled={!canEdit}
                     aria-invalid={!!errors.external_grading_image || undefined}
                     defaultValue={defaultValues.external_grading_image}
@@ -888,6 +904,8 @@ export const InstructorQuestionSettingsForm = ({
                     }
                     {...register('external_grading_image', {
                       required: 'Image is required for external grading',
+                      validate: (value) =>
+                        isSupportedImageRegistry(value.trim()) || imageRegistryErrorText,
                     })}
                   />
                   {errors.external_grading_image && (
@@ -895,10 +913,7 @@ export const InstructorQuestionSettingsForm = ({
                       {errors.external_grading_image.message}
                     </div>
                   )}
-                  <small className="form-text text-muted">
-                    The Docker image that will be used to grade this question. Only images from the
-                    Dockerhub registry are supported.
-                  </small>
+                  <ImageRegistryHelp id="external_grading_image-help" />
                 </div>
 
                 <div className="mb-3">

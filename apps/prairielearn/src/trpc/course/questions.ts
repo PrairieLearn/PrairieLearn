@@ -78,14 +78,11 @@ export interface QuestionsError {
   AddToAssessment: { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
   RemoveFromAssessment: { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
   ChangeTopic:
-    | { code: 'INVALID_TOPIC'; topic: string }
-    | { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
+    { code: 'INVALID_TOPIC'; topic: string } | { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
   AddTags:
-    | { code: 'INVALID_TAGS'; tags: string[] }
-    | { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
+    { code: 'INVALID_TAGS'; tags: string[] } | { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
   RemoveTags:
-    | { code: 'INVALID_TAGS'; tags: string[] }
-    | { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
+    { code: 'INVALID_TAGS'; tags: string[] } | { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
   DeleteQuestions:
     | { code: 'SYNC_JOB_FAILED'; jobSequenceId: string }
     | { code: 'QUESTIONS_USED_IN_OTHER_COURSES'; qids: string[] };

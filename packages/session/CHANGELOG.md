@@ -1,5 +1,17 @@
 # @prairielearn/session
 
+## 4.0.12
+
+### Patch Changes
+
+- 8151381: Build with the official TypeScript 7 release instead of the native preview.
+
+## 4.0.11
+
+### Patch Changes
+
+- 73ca8ef: Bump express dependency
+
 ## 4.0.10
 
 ### Patch Changes

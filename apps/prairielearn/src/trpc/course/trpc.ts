@@ -4,6 +4,7 @@ import { handleTrpcError } from '../../lib/trpc.js';
 
 import { assessmentModulesRouter } from './assessment-modules.js';
 import { courseStaffRouter } from './course-staff.js';
+import { githubAccessRouter } from './github-access.js';
 import { createContext, t } from './init.js';
 import { qtiImportRouter } from './qti-import.js';
 import { questionsRouter } from './questions.js';
@@ -12,6 +13,7 @@ import { sharingRouter } from './sharing.js';
 const courseRouter = t.router({
   assessmentModules: assessmentModulesRouter,
   courseStaff: courseStaffRouter,
+  githubAccess: githubAccessRouter,
   qtiImport: qtiImportRouter,
   questions: questionsRouter,
   sharing: sharingRouter,

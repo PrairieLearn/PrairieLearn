@@ -26,6 +26,7 @@ import {
   getCourseInstanceSettingsUrl,
 } from '../../../lib/client/url.js';
 import { DUPLICATE_COURSE_INSTANCE_SHORT_NAME_ERROR } from '../../../lib/course-instances.shared.js';
+import { getNamesForCopy } from '../../../lib/editorUtil.shared.js';
 import { validateShortName } from '../../../lib/short-name.js';
 import { useTRPC } from '../../../trpc/courseInstance/context.js';
 import type { InstanceAdminSettingsError } from '../../../trpc/courseInstance/instance-admin-settings.js';
@@ -40,6 +41,7 @@ interface CopyFormValues
   extends PublishingFormValues, SelfEnrollmentFormValues, PermissionsFormValues {
   short_name: string;
   long_name: string;
+  self_enrollment_restrict_to_institution: boolean;
   access_control_strategy: 'migrate' | 'keep' | 'clear';
   clear_incompatible: boolean;
 }
@@ -50,6 +52,7 @@ export function CopyCourseInstanceModal({
   csrfToken,
   courseInstance,
   courseShortName,
+  institutionLongName,
   isAdministrator,
   accessControlMigrationNeeded,
   names,
@@ -59,9 +62,10 @@ export function CopyCourseInstanceModal({
   csrfToken: string;
   courseInstance: PageContext<'courseInstance', 'instructor'>['course_instance'];
   courseShortName: string;
+  institutionLongName: string;
   isAdministrator: boolean;
   accessControlMigrationNeeded: boolean;
-  names: { short_name: string }[];
+  names: { short_name: string; long_name: string | null }[];
 }) {
   const [step, setStep] = useState<Step>('settings');
 
@@ -72,15 +76,24 @@ export function CopyCourseInstanceModal({
     () => new Set(names.map((name) => name.short_name.toLowerCase())),
   );
 
+  const defaultNames = getNamesForCopy(
+    courseInstance.short_name,
+    names.map((name) => name.short_name),
+    courseInstance.long_name,
+    names.flatMap((name) => (name.long_name === null ? [] : [name.long_name])),
+  );
+
   const trpc = useTRPC();
   const methods = useForm<CopyFormValues>({
     defaultValues: {
-      short_name: '',
-      long_name: '',
+      short_name: defaultNames.shortName,
+      long_name: defaultNames.longName,
       start_date: '',
       end_date: '',
       self_enrollment_enabled: courseInstance.self_enrollment_enabled,
       self_enrollment_use_enrollment_code: courseInstance.self_enrollment_use_enrollment_code,
+      self_enrollment_restrict_to_institution:
+        courseInstance.self_enrollment_restrict_to_institution,
       course_instance_permission: isAdministrator ? 'None' : 'Student Data Editor',
       access_control_strategy: accessControlMigrationNeeded ? 'migrate' : 'keep',
       clear_incompatible: true,
@@ -124,6 +137,7 @@ export function CopyCourseInstanceModal({
         end_date: data.end_date,
         self_enrollment_enabled: data.self_enrollment_enabled,
         self_enrollment_use_enrollment_code: data.self_enrollment_use_enrollment_code,
+        self_enrollment_restrict_to_institution: data.self_enrollment_restrict_to_institution,
         course_instance_permission: data.course_instance_permission,
         access_control_strategy: data.access_control_strategy,
         clear_incompatible: data.clear_incompatible,
@@ -215,9 +229,12 @@ export function CopyCourseInstanceModal({
             <SettingsStep
               courseInstance={courseInstance}
               courseShortName={courseShortName}
+              institutionLongName={institutionLongName}
+              control={control}
               errors={errors}
               register={register}
               takenShortNames={takenShortNames}
+              defaultNames={defaultNames}
             />
           )}
           {step === 'access-control' && (
@@ -284,16 +301,28 @@ CopyCourseInstanceModal.displayName = 'CopyCourseInstanceModal';
 function SettingsStep({
   courseInstance,
   courseShortName,
+  institutionLongName,
   errors,
   register,
   takenShortNames,
+  defaultNames,
+  control,
 }: {
   courseInstance: PageContext<'courseInstance', 'instructor'>['course_instance'];
   courseShortName: string;
+  institutionLongName: string;
   errors: ReturnType<typeof useForm<CopyFormValues>>['formState']['errors'];
   register: ReturnType<typeof useForm<CopyFormValues>>['register'];
   takenShortNames: Set<string>;
+  defaultNames: { shortName: string; longName: string };
+  control: ReturnType<typeof useForm<CopyFormValues>>['control'];
 }) {
+  const selfEnrollmentEnabled = useWatch({ control, name: 'self_enrollment_enabled' });
+  const selfEnrollmentRestrictToInstitution = useWatch({
+    control,
+    name: 'self_enrollment_restrict_to_institution',
+  });
+
   return (
     <Modal.Body>
       <div className="mb-3">
@@ -307,7 +336,7 @@ function SettingsStep({
           aria-describedby="copy-long-name-help"
           aria-invalid={!!errors.long_name}
           aria-errormessage={errors.long_name ? 'copy-long-name-error' : undefined}
-          defaultValue=""
+          defaultValue={defaultNames.longName}
           {...register('long_name', {
             required: 'Long name is required',
           })}
@@ -335,7 +364,7 @@ function SettingsStep({
           aria-describedby="copy-short-name-help"
           aria-invalid={!!errors.short_name}
           aria-errormessage={errors.short_name ? 'copy-short-name-error' : undefined}
-          defaultValue=""
+          defaultValue={defaultNames.shortName}
           {...register('short_name', {
             required: 'Short name is required',
             validate: {
@@ -384,6 +413,15 @@ function SettingsStep({
       </p>
 
       <CourseInstanceSelfEnrollmentForm formId="copy-course-instance" />
+
+      <Form.Check
+        className={clsx('mb-3', !selfEnrollmentEnabled && 'd-none')}
+        type="checkbox"
+        id="copy-self-enrollment-restrict-to-institution"
+        defaultChecked={selfEnrollmentRestrictToInstitution}
+        {...register('self_enrollment_restrict_to_institution')}
+        label={`Restrict self-enrollment to institution "${institutionLongName}"`}
+      />
 
       <hr />
 

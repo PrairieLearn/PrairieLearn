@@ -1,5 +1,11 @@
 # @prairielearn/aws
 
+## 3.2.1
+
+### Patch Changes
+
+- 8151381: Build with the official TypeScript 7 release instead of the native preview.
+
 ## 3.2.0
 
 ### Minor Changes

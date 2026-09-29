@@ -15,6 +15,12 @@ import { parseRequestBody } from '@prairielearn/zod';
 
 import { DeleteCourseInstanceModal } from '../../components/DeleteCourseInstanceModal.js';
 import { PageLayout } from '../../components/PageLayout.js';
+import {
+  getPlanGrantsForPartialContexts,
+  getRequiredPlansForCourseInstance,
+  planGrantsMatchFeatures,
+} from '../../ee/lib/billing/plans.js';
+import { getEnrollmentCapacity } from '../../ee/models/enrollment.js';
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
 import {
@@ -36,6 +42,7 @@ import {
 } from '../../lib/editors.js';
 import { courseRepoContentUrl } from '../../lib/github.js';
 import { getPaths } from '../../lib/instructorFiles.js';
+import { isEnterprise } from '../../lib/license.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import {
@@ -49,8 +56,22 @@ import { insertCourseInstancePermissions } from '../../models/course-permissions
 import type { CourseInstanceJsonInput } from '../../schemas/index.js';
 import { uniqueEnrollmentCode } from '../../sync/fromDisk/courseInstances.js';
 
+import type { EnrollmentAndBillingCardProps } from './components/EnrollmentAndBillingCard.js';
 import { InstructorInstanceAdminSettings } from './instructorInstanceAdminSettings.html.js';
 import { SettingsFormBodySchema } from './instructorInstanceAdminSettings.types.js';
+
+const CopyCourseInstanceBodySchema = z.object({
+  short_name: z.string().trim(),
+  long_name: z.string().trim(),
+  start_date: z.string(),
+  end_date: z.string(),
+  self_enrollment_enabled: z.boolean(),
+  self_enrollment_use_enrollment_code: z.boolean(),
+  self_enrollment_restrict_to_institution: z.boolean(),
+  course_instance_permission: EnumCourseInstanceRoleSchema.optional().default('None'),
+  access_control_strategy: z.enum(['migrate', 'keep', 'clear']).optional().default('clear'),
+  clear_incompatible: z.boolean().optional().default(false),
+});
 
 const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -73,13 +94,43 @@ router.get(
     const names = await sqldb.queryRows(
       sql.select_names,
       { course_id: course.id },
-      z.object({ short_name: z.string() }),
+      z.object({ short_name: z.string(), long_name: z.string().nullable() }),
     );
     const enrollmentCount = await sqldb.queryScalar(
       sql.select_enrollment_count,
       { course_instance_id: courseInstance.id },
       z.number(),
     );
+    let enrollmentAndBilling: EnrollmentAndBillingCardProps | null = null;
+    if (isEnterprise()) {
+      const requiredPlans = await getRequiredPlansForCourseInstance(courseInstance.id);
+      const studentBillingEnabled = requiredPlans.includes('basic');
+      const studentComputeBillingEnabled =
+        requiredPlans.includes('compute') &&
+        !planGrantsMatchFeatures(
+          await getPlanGrantsForPartialContexts({
+            institution_id: institution.id,
+            course_instance_id: courseInstance.id,
+          }),
+          ['external-grading', 'workspaces'],
+        );
+      // Annual limits are server-only fields omitted from the client page context.
+      const capacity = studentBillingEnabled
+        ? null
+        : await getEnrollmentCapacity({
+            institution: res.locals.institution,
+            course: res.locals.course,
+            courseInstance,
+          });
+      enrollmentAndBilling = {
+        studentBillingEnabled,
+        studentComputeBillingEnabled,
+        enrollmentCount,
+        // Large limits are operational safeguards; keep their capacity data server-side.
+        capacity: capacity !== null && capacity.limit < 10_000 ? capacity : null,
+        enrollmentLimitReached: capacity?.remaining === 0,
+      };
+    }
     const host = getCanonicalHost(req);
     const studentLink = new URL(`/pl/course_instance/${courseInstance.id}`, host).href;
     const publicLink = new URL(`/pl/public/course_instance/${courseInstance.id}/assessments`, host)
@@ -170,6 +221,7 @@ router.get(
                 nonPublicAssessmentsInCourseInstance={nonPublicAssessmentsInCourseInstance}
                 questionSharingEnabled={questionSharingEnabled}
                 accessControlMigrationNeeded={accessControlMigrationNeeded}
+                enrollmentAndBilling={enrollmentAndBilling}
               />
             </Hydrate>
             <Hydrate>
@@ -206,23 +258,11 @@ router.post(
         end_date,
         self_enrollment_enabled,
         self_enrollment_use_enrollment_code,
+        self_enrollment_restrict_to_institution,
         course_instance_permission,
         access_control_strategy,
         clear_incompatible,
-      } = parseRequestBody(
-        req,
-        z.object({
-          short_name: z.string().trim(),
-          long_name: z.string().trim(),
-          start_date: z.string(),
-          end_date: z.string(),
-          self_enrollment_enabled: z.boolean(),
-          self_enrollment_use_enrollment_code: z.boolean(),
-          course_instance_permission: EnumCourseInstanceRoleSchema.optional().default('None'),
-          access_control_strategy: z.enum(['migrate', 'keep', 'clear']).optional().default('clear'),
-          clear_incompatible: z.boolean().optional().default(false),
-        }),
-      );
+      } = parseRequestBody(req, CopyCourseInstanceBodySchema);
 
       if (!short_name) {
         throw new error.HttpStatusError(400, 'Short name is required');
@@ -239,7 +279,7 @@ router.post(
       const existingNames = await sqldb.queryRows(
         sql.select_names,
         { course_id: course.id },
-        z.object({ short_name: z.string() }),
+        z.object({ short_name: z.string(), long_name: z.string().nullable() }),
       );
       const existingShortNames = existingNames.map((name) => name.short_name.toLowerCase());
 
@@ -275,11 +315,20 @@ router.post(
         false,
       );
 
+      const selfEnrollmentRestrictToInstitution = propertyValueWithDefault(
+        undefined,
+        self_enrollment_restrict_to_institution,
+        true,
+      );
+
       const resolvedSelfEnrollment =
-        (selfEnrollmentEnabled ?? selfEnrollmentUseEnrollmentCode) !== undefined
+        (selfEnrollmentEnabled ??
+          selfEnrollmentUseEnrollmentCode ??
+          selfEnrollmentRestrictToInstitution) !== undefined
           ? {
               enabled: selfEnrollmentEnabled,
               useEnrollmentCode: selfEnrollmentUseEnrollmentCode,
+              restrictToInstitution: selfEnrollmentRestrictToInstitution,
             }
           : undefined;
 

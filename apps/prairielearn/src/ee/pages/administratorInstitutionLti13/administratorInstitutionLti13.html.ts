@@ -171,10 +171,12 @@ function LTI13Instance({
 
       <hr />
       <h5>Name:</h5>
-      ${instance.tool_platform_name
-        ? html` The LMS has referred to itself as:
-            <strong>${instance.tool_platform_name}</strong>`
-        : ''}
+      ${
+        instance.tool_platform_name
+          ? html` The LMS has referred to itself as:
+              <strong>${instance.tool_platform_name}</strong>`
+          : ''
+      }
       <form class="form" method="POST">
         <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
         <input type="hidden" name="__action" value="update_name" />
@@ -207,15 +209,17 @@ function LTI13Instance({
         <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
         <input type="hidden" name="__action" value="update_platform" />
 
-        ${platformConfigurationLocked
-          ? html`
-              <div class="alert alert-info">
-                Platform configuration is locked while roster syncing is allowed.
-                <a href="#roster-sync-controls">Disallow roster syncing below</a> before changing
-                these options.
-              </div>
-            `
-          : ''}
+        ${
+          platformConfigurationLocked
+            ? html`
+                <div class="alert alert-info">
+                  Platform configuration is locked while roster syncing is allowed.
+                  <a href="#roster-sync-controls">Disallow roster syncing below</a> before changing
+                  these options.
+                </div>
+              `
+            : ''
+        }
 
         <div class="mb-3">
           <label class="form-label" for="choosePlatform">Platform type: </label>
@@ -260,8 +264,7 @@ function LTI13Instance({
             spellcheck="false"
             ${platformConfigurationLocked ? 'disabled' : ''}
           >
-${JSON.stringify(instance.issuer_params, null, 3)}</textarea
-          >
+${JSON.stringify(instance.issuer_params, null, 3)}</textarea>
         </div>
 
         <div class="mb-3 mt-2">
@@ -291,8 +294,7 @@ ${JSON.stringify(instance.issuer_params, null, 3)}</textarea
             spellcheck="false"
             ${platformConfigurationLocked ? 'disabled' : ''}
           >
-${JSON.stringify(instance.custom_fields, null, 3)}</textarea
-          >
+${JSON.stringify(instance.custom_fields, null, 3)}</textarea>
           <small id="custom_fieldsHelp" class="form-text text-muted">
             Provide suggestions to the LMS in the config JSON for how to setup LTI 1.3 custom
             fields.
@@ -411,9 +413,9 @@ ${JSON.stringify(instance.custom_fields, null, 3)}</textarea
             name="uin_attribute"
             id="uin_attribute"
             value="${instance.uin_attribute ?? ''}"
-            aria-describedby="uinAttributeHelp${instance.roster_sync_allowed
-              ? ' uinAttributeLockedHelp'
-              : ''}"
+            aria-describedby="uinAttributeHelp${
+              instance.roster_sync_allowed ? ' uinAttributeLockedHelp' : ''
+            }"
             ${instance.roster_sync_allowed ? 'disabled' : ''}
           />
           <small id="uinAttributeHelp" class="form-text text-muted">
@@ -423,15 +425,17 @@ ${JSON.stringify(instance.custom_fields, null, 3)}</textarea
             <code>["https://purl.imsglobal.org/spec/lti/claim/lis"]["person_sourcedid"]</code> or
             <code>["https://purl.imsglobal.org/spec/lti/claim/custom"]["uin"]</code>
           </small>
-          ${instance.roster_sync_allowed
-            ? html`
-                <small id="uinAttributeLockedHelp" class="form-text text-muted d-block">
-                  This attribute is locked while roster syncing is allowed.
-                  <a href="#roster-sync-controls">Disallow roster syncing below</a>
-                  before changing it.
-                </small>
-              `
-            : ''}
+          ${
+            instance.roster_sync_allowed
+              ? html`
+                  <small id="uinAttributeLockedHelp" class="form-text text-muted d-block">
+                    This attribute is locked while roster syncing is allowed.
+                    <a href="#roster-sync-controls">Disallow roster syncing below</a>
+                    before changing it.
+                  </small>
+                `
+              : ''
+          }
         </div>
 
         <div class="mb-3">
@@ -520,76 +524,78 @@ function RosterSyncControls({
 }) {
   return html`
     <h5 id="roster-sync-controls">Roster syncing</h5>
-    ${instance.roster_sync_allowed
-      ? html`
-          <div class="alert alert-success">
-            Roster syncing is allowed for this LTI 1.3 instance. Its platform and UIN settings, and
-            the institution's SAML identity settings, are locked to protect user matching.
-          </div>
-          <form method="POST">
-            <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
-            <input type="hidden" name="__action" value="disallow_roster_sync" />
-            <button
-              type="submit"
-              class="btn btn-outline-danger"
-              onclick="return confirm('Disallow roster syncing for this instance?')"
-            >
-              Disallow roster syncing
-            </button>
-          </form>
-        `
-      : rosterSyncPrerequisiteIssues.length > 0
+    ${
+      instance.roster_sync_allowed
         ? html`
-            <div class="alert alert-warning mb-0">
-              <p>Roster syncing cannot be allowed until the following prerequisites are met:</p>
-              <ul>
-                ${rosterSyncPrerequisiteIssues.map((issue) => html`<li>${issue}</li>`)}
-              </ul>
-              <p class="mb-0">
-                Update the UIN attribute above or the institution's
-                <a href="${resLocals.urlPrefix}/saml">SAML</a> and
-                <a href="${resLocals.urlPrefix}/sso">single sign-on</a> settings as needed.
-              </p>
+            <div class="alert alert-success">
+              Roster syncing is allowed for this LTI 1.3 instance. Its platform and UIN settings,
+              and the institution's SAML identity settings, are locked to protect user matching.
             </div>
-          `
-        : html`
-            <p>
-              Allow roster syncing only after confirming that SAML and LTI identify users with the
-              same immutable UIN.
-            </p>
             <form method="POST">
               <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
-              <input type="hidden" name="__action" value="allow_roster_sync" />
-              <div class="form-check mb-2">
-                <input
-                  class="form-check-input"
-                  type="checkbox"
-                  id="lti13-roster-sync-same-canonical-uin"
-                  name="${LTI13_ROSTER_SYNC_CONFIRMATION_FIELDS.sameCanonicalUin}"
-                  value="1"
-                  required
-                />
-                <label class="form-check-label" for="lti13-roster-sync-same-canonical-uin">
-                  I confirm that SAML and LTI provide the same canonical UIN for each user.
-                </label>
-              </div>
-              <div class="form-check mb-3">
-                <input
-                  class="form-check-input"
-                  type="checkbox"
-                  id="lti13-roster-sync-users-backfilled"
-                  name="${LTI13_ROSTER_SYNC_CONFIRMATION_FIELDS.usersBackfilled}"
-                  value="1"
-                  required
-                />
-                <label class="form-check-label" for="lti13-roster-sync-users-backfilled">
-                  I confirm that existing users who may be roster-synced have been backfilled with
-                  this UIN.
-                </label>
-              </div>
-              <button type="submit" class="btn btn-primary">Allow roster syncing</button>
+              <input type="hidden" name="__action" value="disallow_roster_sync" />
+              <button
+                type="submit"
+                class="btn btn-outline-danger"
+                onclick="return confirm('Disallow roster syncing for this instance?')"
+              >
+                Disallow roster syncing
+              </button>
             </form>
-          `}
+          `
+        : rosterSyncPrerequisiteIssues.length > 0
+          ? html`
+              <div class="alert alert-warning mb-0">
+                <p>Roster syncing cannot be allowed until the following prerequisites are met:</p>
+                <ul>
+                  ${rosterSyncPrerequisiteIssues.map((issue) => html`<li>${issue}</li>`)}
+                </ul>
+                <p class="mb-0">
+                  Update the UIN attribute above or the institution's
+                  <a href="${resLocals.urlPrefix}/saml">SAML</a> and
+                  <a href="${resLocals.urlPrefix}/sso">single sign-on</a> settings as needed.
+                </p>
+              </div>
+            `
+          : html`
+              <p>
+                Allow roster syncing only after confirming that SAML and LTI identify users with the
+                same immutable UIN.
+              </p>
+              <form method="POST">
+                <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+                <input type="hidden" name="__action" value="allow_roster_sync" />
+                <div class="form-check mb-2">
+                  <input
+                    class="form-check-input"
+                    type="checkbox"
+                    id="lti13-roster-sync-same-canonical-uin"
+                    name="${LTI13_ROSTER_SYNC_CONFIRMATION_FIELDS.sameCanonicalUin}"
+                    value="1"
+                    required
+                  />
+                  <label class="form-check-label" for="lti13-roster-sync-same-canonical-uin">
+                    I confirm that SAML and LTI provide the same canonical UIN for each user.
+                  </label>
+                </div>
+                <div class="form-check mb-3">
+                  <input
+                    class="form-check-input"
+                    type="checkbox"
+                    id="lti13-roster-sync-users-backfilled"
+                    name="${LTI13_ROSTER_SYNC_CONFIRMATION_FIELDS.usersBackfilled}"
+                    value="1"
+                    required
+                  />
+                  <label class="form-check-label" for="lti13-roster-sync-users-backfilled">
+                    I confirm that existing users who may be roster-synced have been backfilled with
+                    this UIN.
+                  </label>
+                </div>
+                <button type="submit" class="btn btn-primary">Allow roster syncing</button>
+              </form>
+            `
+    }
   `;
 }
 
@@ -608,9 +614,11 @@ function RosterInspector({
       link. This exposes every member's <code>sub</code>, email, and UIN. No enrollments or users
       are created or modified.
     </p>
-    ${linkedCourseInstances.length === 0
-      ? html`<p>No course instances are linked to this LTI 1.3 instance yet.</p>`
-      : linkedCourseInstances.map((linked) => RosterInspectorForm({ linked, resLocals }))}
+    ${
+      linkedCourseInstances.length === 0
+        ? html`<p>No course instances are linked to this LTI 1.3 instance yet.</p>`
+        : linkedCourseInstances.map((linked) => RosterInspectorForm({ linked, resLocals }))
+    }
   `;
 }
 
@@ -639,44 +647,48 @@ function RosterInspectorForm({
           </a>
           <span class="text-muted fw-normal">(${getLti13CourseDisplayName(lci)})</span>
         </h6>
-        ${lci.context_memberships_url === null
-          ? html`
-              <p class="text-muted mb-0">
-                No <code>context_memberships_url</code> stored yet. Have an instructor launch
-                PrairieLearn from this course in the LMS to populate it.
-              </p>
-            `
-          : html`
-              <form method="POST" class="row g-2 align-items-end">
-                <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
-                <input type="hidden" name="__action" value="inspect_roster" />
-                <input type="hidden" name="lti13_course_instance_id" value="${lci.id}" />
-                <div class="col-md-9">
-                  <label class="form-label" for="rlid-${lci.id}">Resource link</label>
-                  <select class="form-select" id="rlid-${lci.id}" name="rlid">
-                    <option value="">None (plain roster, no custom claims)</option>
-                    ${lci.resource_link_id
-                      ? html`
-                          <option value="${lci.resource_link_id}">
-                            Course navigation (${lci.resource_link_id})
+        ${
+          lci.context_memberships_url === null
+            ? html`
+                <p class="text-muted mb-0">
+                  No <code>context_memberships_url</code> stored yet. Have an instructor launch
+                  PrairieLearn from this course in the LMS to populate it.
+                </p>
+              `
+            : html`
+                <form method="POST" class="row g-2 align-items-end">
+                  <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+                  <input type="hidden" name="__action" value="inspect_roster" />
+                  <input type="hidden" name="lti13_course_instance_id" value="${lci.id}" />
+                  <div class="col-md-9">
+                    <label class="form-label" for="rlid-${lci.id}">Resource link</label>
+                    <select class="form-select" id="rlid-${lci.id}" name="rlid">
+                      <option value="">None (plain roster, no custom claims)</option>
+                      ${
+                        lci.resource_link_id
+                          ? html`
+                              <option value="${lci.resource_link_id}">
+                                Course navigation (${lci.resource_link_id})
+                              </option>
+                            `
+                          : ''
+                      }
+                      ${linked.lineitem_resource_links.map(
+                        (li) => html`
+                          <option value="${li.resource_link_id}">
+                            Assessment: ${li.assessment_title ?? li.label ?? li.resource_link_id}
+                            (${li.resource_link_id})
                           </option>
-                        `
-                      : ''}
-                    ${linked.lineitem_resource_links.map(
-                      (li) => html`
-                        <option value="${li.resource_link_id}">
-                          Assessment: ${li.assessment_title ?? li.label ?? li.resource_link_id}
-                          (${li.resource_link_id})
-                        </option>
-                      `,
-                    )}
-                  </select>
-                </div>
-                <div class="col-md-3">
-                  <button type="submit" class="btn btn-primary w-100">Dump roster</button>
-                </div>
-              </form>
-            `}
+                        `,
+                      )}
+                    </select>
+                  </div>
+                  <div class="col-md-3">
+                    <button type="submit" class="btn btn-primary w-100">Dump roster</button>
+                  </div>
+                </form>
+              `
+        }
       </div>
     </div>
   `;

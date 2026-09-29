@@ -1,5 +1,11 @@
 # @prairielearn/browser-utils
 
+## 2.7.5
+
+### Patch Changes
+
+- 8151381: Build with the official TypeScript 7 release instead of the native preview.
+
 ## 2.7.4
 
 ### Patch Changes

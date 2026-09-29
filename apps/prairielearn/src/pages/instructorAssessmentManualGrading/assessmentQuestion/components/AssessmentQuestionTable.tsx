@@ -34,6 +34,7 @@ import type {
   StaffAssessment,
   StaffAssessmentQuestion,
   StaffInstanceQuestionGroup,
+  StaffStudentLabel,
   StaffUser,
 } from '../../../../lib/client/safe-db-types.js';
 import type { EnumAiGradingProvider } from '../../../../lib/db-types.js';
@@ -75,6 +76,8 @@ const DEFAULT_ASSIGNED_GRADER_FILTER: MultiSelectFilterValue = { values: [], mod
 const DEFAULT_GRADED_BY_FILTER: MultiSelectFilterValue = { values: [], mode: 'include' };
 const DEFAULT_SUBMISSION_GROUP_FILTER: MultiSelectFilterValue = { values: [], mode: 'include' };
 const DEFAULT_AI_AGREEMENT_FILTER: MultiSelectFilterValue = { values: [], mode: 'include' };
+const DEFAULT_STUDENT_LABELS_FILTER: MultiSelectFilterValue = { values: [], mode: 'include' };
+
 const EMPTY_NUMERIC_FILTER: NumericColumnFilterValue = { filterValue: '', emptyOnly: false };
 
 interface AssessmentQuestionTableProps {
@@ -92,6 +95,7 @@ interface AssessmentQuestionTableProps {
   rubricData: RubricData | null;
   instanceQuestionGroups: StaffInstanceQuestionGroup[];
   courseStaff: StaffUser[];
+  studentLabels: StaffStudentLabel[];
   aiGradingStats: AiGradingGeneralStats | null;
   initialOngoingJobSequenceTokens: Record<string, string> | null;
   availableAiGradingProviders: EnumAiGradingProvider[];
@@ -145,6 +149,7 @@ export function AssessmentQuestionTable({
   rubricData,
   instanceQuestionGroups,
   courseStaff,
+  studentLabels,
   course,
   courseInstance,
   aiGradingStats,
@@ -171,6 +176,11 @@ export function AssessmentQuestionTable({
 
   const filterRegistry = useMemo(
     () => ({
+      student_labels: {
+        parser: parseAsMultiSelectFilter(),
+        defaultValue: DEFAULT_STUDENT_LABELS_FILTER,
+        enabled: !assessment.team_work,
+      },
       requires_manual_grading: {
         urlKey: 'status',
         parser: parseAsMultiSelectFilter(GRADING_STATUS_VALUES),
@@ -225,7 +235,13 @@ export function AssessmentQuestionTable({
         enabled: !aiGradingMode,
       },
     }),
-    [aiGradingMode, instanceQuestionGroups.length, assessmentQuestion.max_auto_points, rubricData],
+    [
+      aiGradingMode,
+      instanceQuestionGroups.length,
+      assessmentQuestion.max_auto_points,
+      rubricData,
+      assessment.team_work,
+    ],
   );
 
   const { columnFilters, onColumnFiltersChange, onResetColumnFilters } =
@@ -361,6 +377,7 @@ export function AssessmentQuestionTable({
         urlPrefix,
         csrfToken,
         courseInstanceId: courseInstance.id,
+        studentLabels,
         scrollRef,
         onEditPointsSuccess: () => {
           void queryClientInstance.invalidateQueries({
@@ -381,6 +398,7 @@ export function AssessmentQuestionTable({
       urlPrefix,
       csrfToken,
       courseInstance.id,
+      studentLabels,
       scrollRef,
       queryClientInstance,
       trpc.manualGrading.instances,
@@ -411,7 +429,15 @@ export function AssessmentQuestionTable({
           return [[col.id, aiGradingMode]];
         }
         // Some columns are always hidden by default.
-        if (['user_or_group_name', 'uid', 'points', 'rubric_grading_item_ids'].includes(col.id)) {
+        if (
+          [
+            'user_or_group_name',
+            'uid',
+            'student_labels',
+            'points',
+            'rubric_grading_item_ids',
+          ].includes(col.id)
+        ) {
           return [[col.id, false]];
         }
 
@@ -491,10 +517,14 @@ export function AssessmentQuestionTable({
     const nameVisible = visibility.user_or_group_name;
     const uidVisible = visibility.uid;
 
-    if (nameVisible && uidVisible) return 'checked';
-    if (nameVisible || uidVisible) return 'indeterminate';
+    const labelsVisible = visibility.student_labels;
+
+    if (nameVisible && uidVisible && (assessment.team_work || labelsVisible)) return 'checked';
+    if (nameVisible || uidVisible || (!assessment.team_work && labelsVisible)) {
+      return 'indeterminate';
+    }
     return 'unchecked';
-  }, [columnVisibility]);
+  }, [columnVisibility, assessment.team_work]);
 
   // Ref for the student info checkbox to handle indeterminate state
   const studentInfoCheckboxRef = useRef<HTMLInputElement>(null);
@@ -504,32 +534,34 @@ export function AssessmentQuestionTable({
     }
   }, [studentInfoCheckboxState]);
 
-  // Handle student info checkbox click - toggles between checked (both visible) and unchecked (both hidden)
+  // Handle student info checkbox click - toggles between checked (all visible) and unchecked (all hidden)
   const handleStudentInfoCheckboxClick = useCallback(() => {
     const currentState = studentInfoCheckboxState;
     const currentVisibility = table.state.columnVisibility;
 
     let newVisibility: ColumnVisibilityState;
     if (currentState === 'checked') {
-      // Checked -> Unchecked (hide both)
+      // Checked -> Unchecked (hide all)
       newVisibility = {
         ...currentVisibility,
         user_or_group_name: false,
         uid: false,
+        student_labels: false,
       };
     } else {
-      // Unchecked or Indeterminate -> Checked (show both)
+      // Unchecked or Indeterminate -> Checked (show all)
       newVisibility = {
         ...currentVisibility,
         user_or_group_name: true,
         uid: true,
+        student_labels: !assessment.team_work,
       };
     }
 
     void setColumnVisibility(newVisibility);
-  }, [studentInfoCheckboxState, table, setColumnVisibility]);
+  }, [studentInfoCheckboxState, table, setColumnVisibility, assessment.team_work]);
 
-  const selectedRows = table.getSelectedRowModel().rows;
+  const selectedRows = table.getFilteredSelectedRowModel().rows;
   const selectedIds = selectedRows.map((row) => row.original.instance_question.id);
 
   // Calculate counts for AI grading dropdown
@@ -572,6 +604,7 @@ export function AssessmentQuestionTable({
   } = mutations;
 
   const columnFiltersComponents = createColumnFilters({
+    studentLabels,
     allGraders,
     allSubmissionGroups,
     allAiAgreementItems,

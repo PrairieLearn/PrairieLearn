@@ -1,5 +1,23 @@
 # @prairielearn/compiled-assets
 
+## 4.1.15
+
+### Patch Changes
+
+- f61dbe4: Wait for both development asset compiler contexts to finish disposing before `close()` resolves.
+
+## 4.1.14
+
+### Patch Changes
+
+- 8151381: Build with the official TypeScript 7 release instead of the native preview.
+
+## 4.1.13
+
+### Patch Changes
+
+- 73ca8ef: Bump express dependency
+
 ## 4.1.12
 
 ### Patch Changes

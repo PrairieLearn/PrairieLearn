@@ -361,33 +361,38 @@ export function PageLayout({
             resolvedOptions.showFooter && 'flex-grow-1',
           )}"
         >
-          ${resolvedOptions.enableNavbar
-            ? html`<div class="app-top-nav">
-                ${Navbar({
-                  resLocals,
-                  navPage: navContext.page,
-                  navSubPage: navContext.subPage,
-                  navbarType: navContext.type,
-                  sideNavEnabled,
-                  hideSessionControls: resolvedOptions.hideNavbarSessionControls,
-                })}
-              </div>`
-            : ''}
-          ${sideNavEnabled
-            ? html`
-                <nav class="app-side-nav bg-light border-end" aria-label="Course navigation">
-                  <div class="app-side-nav-scroll">
-                    ${SideNav({
-                      resLocals,
-                      page: navContext.page,
-                      subPage: navContext.subPage,
-                      sideNavExpanded,
-                      persistToggleState: resolvedOptions.forcedInitialNavToggleState === undefined,
-                    })}
-                  </div>
-                </nav>
-              `
-            : ''}
+          ${
+            resolvedOptions.enableNavbar
+              ? html`<div class="app-top-nav">
+                  ${Navbar({
+                    resLocals,
+                    navPage: navContext.page,
+                    navSubPage: navContext.subPage,
+                    navbarType: navContext.type,
+                    sideNavEnabled,
+                    hideSessionControls: resolvedOptions.hideNavbarSessionControls,
+                  })}
+                </div>`
+              : ''
+          }
+          ${
+            sideNavEnabled
+              ? html`
+                  <nav class="app-side-nav bg-light border-end" aria-label="Course navigation">
+                    <div class="app-side-nav-scroll">
+                      ${SideNav({
+                        resLocals,
+                        page: navContext.page,
+                        subPage: navContext.subPage,
+                        sideNavExpanded,
+                        persistToggleState:
+                          resolvedOptions.forcedInitialNavToggleState === undefined,
+                      })}
+                    </div>
+                  </nav>
+                `
+              : ''
+          }
           <div class="${clsx(sideNavEnabled && 'app-main', resolvedOptions.fullHeight && 'h-100')}">
             <div
               class="${clsx(
