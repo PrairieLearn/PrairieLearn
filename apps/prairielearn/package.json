@@ -212,6 +212,7 @@
     "on-headers": "^1.1.0",
     "openid-client": "^6.8.4",
     "p-memoize": "^8.0.0",
+    "pagedjs": "^0.4.3",
     "parse5": "^8.0.1",
     "passport": "^0.7.0",
     "passport-azure-ad": "^4.3.5",
@@ -271,6 +272,7 @@
   "devDependencies": {
     "@playwright/test": "^1.62.1",
     "@prairielearn/express-list-endpoints": "workspace:^",
+    "@prairielearn/qr-code": "workspace:^",
     "@prairielearn/tsconfig": "workspace:^",
     "@prairielearn/vite-plugin-express": "workspace:^",
     "@sa11y/format": "^8.0.28",
