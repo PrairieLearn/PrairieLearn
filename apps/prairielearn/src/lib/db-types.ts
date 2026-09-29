@@ -704,7 +704,6 @@ export const ClientFingerprintSchema = z.object({
 export type ClientFingerprint = z.infer<typeof ClientFingerprintSchema>;
 
 export const CourseAgentConversationSchema = z.object({
-  archived_at: DateFromISOString.nullable(),
   branch: z.string(),
   course_id: IdSchema,
   created_at: DateFromISOString,

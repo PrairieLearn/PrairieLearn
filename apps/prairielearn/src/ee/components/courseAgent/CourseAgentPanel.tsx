@@ -2,7 +2,7 @@
 import { useChat } from '@ai-sdk/react';
 import { QueryClient, useMutation, useQuery } from '@tanstack/react-query';
 import { DefaultChatTransport, type UIMessage } from 'ai';
-import { useEffect, useRef, useState } from 'react';
+import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { Alert, Button, Form, Modal, Offcanvas } from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
 
@@ -22,7 +22,7 @@ import { ReasoningSummary } from '../ai/ReasoningSummary.js';
 import { ToolCall } from '../ai/ToolCall.js';
 import { ToolCallGroup } from '../ai/ToolCallGroup.js';
 
-import { isVisibleMessage } from './message-parts.js';
+import { buildTranscript } from './message-parts.js';
 import { readPanelState, savePanelState, usePanelState } from './panelState.js';
 
 export function CourseAgentPanel({
@@ -52,16 +52,7 @@ function Panel({ courseId, userId }: { courseId: string; userId: string }) {
   const setOpen = (value: boolean) => savePanelState(key + ':open', String(value));
   const selected = usePanelState(key + ':selected');
   const setSelected = (value: string) => savePanelState(key + ':selected', value);
-  const [renaming, setRenaming] = useState(false);
   const conversations = useQuery(trpc.courseAgent.list.queryOptions());
-  const edit = useMutation(
-    trpc.courseAgent.edit.mutationOptions({
-      onSuccess: async () => {
-        setRenaming(false);
-        await conversations.refetch();
-      },
-    }),
-  );
   const create = useMutation(
     trpc.courseAgent.create.mutationOptions({
       onSuccess: async (row) => {
@@ -76,6 +67,23 @@ function Panel({ courseId, userId }: { courseId: string; userId: string }) {
     setOpen(value);
     savePanelState(key + ':open', String(value));
   }
+  // The global navbar can wrap at narrower widths; keep the panel below its actual bottom edge.
+  useEffect(() => {
+    const navbar = document.querySelector('.app-top-nav');
+    if (!navbar) return;
+    const updateTop = () =>
+      document.documentElement.style.setProperty(
+        '--course-agent-top',
+        `${navbar.getBoundingClientRect().bottom}px`,
+      );
+    const observer = new ResizeObserver(updateTop);
+    observer.observe(navbar);
+    updateTop();
+    return () => {
+      observer.disconnect();
+      document.documentElement.style.removeProperty('--course-agent-top');
+    };
+  }, []);
   const current = conversations.data?.find((c) => c.id === selected);
   const valid = !!current;
   return (
@@ -98,11 +106,11 @@ function Panel({ courseId, userId }: { courseId: string; userId: string }) {
         scroll
         onHide={() => toggle(false)}
       >
-        <Offcanvas.Header closeButton>
+        <Offcanvas.Header className="border-bottom" closeButton>
           <Offcanvas.Title>Course agent</Offcanvas.Title>
         </Offcanvas.Header>
         <Offcanvas.Body className="d-flex flex-column p-3 overflow-hidden">
-          <div className="d-flex gap-2 mb-3">
+          <div className="d-flex gap-2 mb-3 course-agent-picker">
             <Form.Select
               aria-label="Conversation"
               value={valid ? selected : ''}
@@ -121,38 +129,13 @@ function Panel({ courseId, userId }: { courseId: string; userId: string }) {
             <Button
               variant="outline-primary"
               disabled={create.isPending}
-              onClick={() => create.mutate({ title: 'New conversation' })}
+              onClick={() => create.mutate()}
             >
               New
             </Button>
           </div>
-          {current && (
-            <div className="d-flex gap-2 mb-2">
-              <Button size="sm" variant="link" onClick={() => setRenaming(true)}>
-                Rename
-              </Button>
-              <Button
-                size="sm"
-                variant="link"
-                disabled={edit.isPending}
-                onClick={() =>
-                  edit.mutate({ conversationId: selected, title: null, archive: true })
-                }
-              >
-                Archive
-              </Button>
-            </div>
-          )}
-          {renaming && current && (
-            <RenameConversation
-              title={current.title}
-              busy={edit.isPending}
-              onHide={() => setRenaming(false)}
-              onSave={(title) => edit.mutate({ conversationId: selected, title, archive: false })}
-            />
-          )}
           <AppErrorAlert
-            error={getAppError<never>(conversations.error ?? create.error ?? edit.error)}
+            error={getAppError<never>(conversations.error ?? create.error)}
             render={{ UNKNOWN: ({ message }) => message }}
           />
           {valid ? (
@@ -185,6 +168,7 @@ function Conversation({
   const [snapshot, setSnapshot] = useState<ChatSnapshot>({ messages: [], revision: 0 });
   const { register, watch, setValue, handleSubmit } = useForm({ defaultValues: { draft: '' } });
   const draft = watch('draft');
+  const [statisticsOpen, setStatisticsOpen] = useState(false);
   const [failure, setFailure] = useState('');
   const [connection, setConnection] = useState<'connecting' | 'connected' | 'disconnected'>(
     'connecting',
@@ -286,18 +270,6 @@ function Conversation({
     send.error ?? cancel.error ?? decision.error ?? prepare.error ?? cleanup.error;
   return (
     <>
-      <div className="small text-muted mb-2" role="status">
-        {connection === 'connecting'
-          ? 'Connecting…'
-          : connection === 'disconnected'
-            ? 'Disconnected'
-            : snapshot.blocked
-              ? 'Waiting for tool outcome'
-              : busy
-                ? 'Working…'
-                : 'Ready'}
-        {snapshot.diagnostics && ` · ${snapshot.diagnostics.state.replaceAll('_', ' ')}`}
-      </div>
       {failure && (
         <Alert variant="warning">
           {failure}{' '}
@@ -327,122 +299,153 @@ function Conversation({
         </Alert>
       )}
       <div className="flex-grow-1 overflow-auto course-agent-transcript">
-        <Transcript messages={messages} />
-        {snapshot.approvals?.map((approval) => (
-          <section key={approval.id} className="card mb-3">
-            <div className="card-body">
-              <strong>
-                {approval.status === 'pending'
-                  ? 'Approval required'
-                  : `Approval ${approval.status}`}
-              </strong>
-              <details>
-                <summary>Review exact changes</summary>
-                <pre className="course-agent-diff">
-                  {approval.diff.split('\n').map((line, index) => (
-                    <span
-                      key={`${index}:${line}`}
-                      className={
-                        line.startsWith('+')
-                          ? 'bg-success-subtle'
-                          : line.startsWith('-')
-                            ? 'bg-danger-subtle'
-                            : ''
-                      }
-                    >
-                      {line}
-                      {'\n'}
-                    </span>
-                  ))}
-                </pre>
-              </details>
-              {approval.result && <p>{approval.result}</p>}
-              {snapshot.approval?.id === approval.id && (
-                <>
-                  <p className="text-danger">{snapshot.publication?.error}</p>
-                  {approval.status === 'approved' && (
-                    <dl className="small">
-                      <dt>GitHub publication</dt>
-                      <dd>
-                        {snapshot.publication?.publishedSha ? (
-                          <code>{snapshot.publication.publishedSha.slice(0, 12)}</code>
-                        ) : (
-                          'Not confirmed'
-                        )}
-                      </dd>
-                      <dt>Course Sync</dt>
-                      <dd>
-                        {snapshot.publication?.syncedSha ? (
-                          <code>{snapshot.publication.syncedSha.slice(0, 12)}</code>
-                        ) : snapshot.publication?.syncJobSequenceId ? (
-                          <a
-                            href={`/pl/course/${courseId}/jobSequence/${snapshot.publication.syncJobSequenceId}`}
-                          >
-                            View Course Sync log
-                          </a>
-                        ) : (
-                          'Not started'
-                        )}
-                      </dd>
-                    </dl>
-                  )}
-                  {approval.status === 'pending' ? (
-                    <>
-                      <Button
-                        disabled={decision.isPending || snapshot.publication?.status === 'invalid'}
-                        onClick={() => decide(approval, true)}
+        <Transcript
+          messages={messages}
+          approvals={snapshot.approvals ?? []}
+          renderCodeChange={(approval) => (
+            <section className="card mb-3">
+              <div className="card-body">
+                <strong>
+                  {approval.status === 'pending'
+                    ? 'Code change · Review requested'
+                    : approval.status === 'approved'
+                      ? 'Code change · Approved'
+                      : 'Code change · Rejected'}
+                </strong>
+                <details>
+                  <summary>Review exact changes</summary>
+                  <pre className="course-agent-diff">
+                    {approval.diff.split('\n').map((line, index) => (
+                      <span
+                        key={`${index}:${line}`}
+                        className={
+                          line.startsWith('+')
+                            ? 'bg-success-subtle'
+                            : line.startsWith('-')
+                              ? 'bg-danger-subtle'
+                              : ''
+                        }
                       >
-                        Approve and sync
-                      </Button>{' '}
-                      <Button
-                        variant="outline-secondary"
-                        disabled={decision.isPending}
-                        onClick={() => decide(approval, false)}
-                      >
-                        Deny
-                      </Button>
-                      {snapshot.publication?.status === 'invalid' && (
+                        {line}
+                        {'\n'}
+                      </span>
+                    ))}
+                  </pre>
+                </details>
+                {approval.result && <p>{approval.result}</p>}
+                {snapshot.approval?.id === approval.id && (
+                  <>
+                    <p className="text-danger">{snapshot.publication?.error}</p>
+                    {approval.status === 'approved' && (
+                      <dl className="small">
+                        <dt>GitHub publication</dt>
+                        <dd>
+                          {snapshot.publication?.publishedSha ? (
+                            <code>{snapshot.publication.publishedSha.slice(0, 12)}</code>
+                          ) : (
+                            'Not confirmed'
+                          )}
+                        </dd>
+                        <dt>Course Sync</dt>
+                        <dd>
+                          {snapshot.publication?.syncedSha ? (
+                            <code>{snapshot.publication.syncedSha.slice(0, 12)}</code>
+                          ) : snapshot.publication?.syncJobSequenceId ? (
+                            <a
+                              href={`/pl/course/${courseId}/jobSequence/${snapshot.publication.syncJobSequenceId}`}
+                            >
+                              View Course Sync log
+                            </a>
+                          ) : (
+                            'Not started'
+                          )}
+                        </dd>
+                      </dl>
+                    )}
+                    {approval.status === 'pending' ? (
+                      <>
                         <Button
-                          variant="link"
-                          onClick={() =>
-                            prepare.mutate({ conversationId: id, operationId: approval.id })
+                          disabled={
+                            decision.isPending || snapshot.publication?.status === 'invalid'
                           }
+                          onClick={() => decide(approval, true)}
                         >
-                          Retry preparation
+                          Approve and sync
+                        </Button>{' '}
+                        <Button
+                          variant="outline-secondary"
+                          disabled={decision.isPending}
+                          onClick={() => decide(approval, false)}
+                        >
+                          Reject
                         </Button>
-                      )}
-                    </>
-                  ) : (
-                    snapshot.blocked && (
-                      <Button
-                        disabled={decision.isPending}
-                        onClick={() => decide(approval, approval.status === 'approved')}
-                      >
-                        Retry completion
-                      </Button>
-                    )
-                  )}
-                </>
-              )}
-            </div>
-          </section>
-        ))}
+                        {snapshot.publication?.status === 'invalid' && (
+                          <Button
+                            variant="link"
+                            onClick={() =>
+                              prepare.mutate({ conversationId: id, operationId: approval.id })
+                            }
+                          >
+                            Retry preparation
+                          </Button>
+                        )}
+                      </>
+                    ) : (
+                      snapshot.blocked && (
+                        <Button
+                          disabled={decision.isPending}
+                          onClick={() => decide(approval, approval.status === 'approved')}
+                        >
+                          Retry completion
+                        </Button>
+                      )
+                    )}
+                  </>
+                )}
+              </div>
+            </section>
+          )}
+        />
       </div>
-      <div className="small text-muted">
-        Estimated cost:{' '}
-        {snapshot.usage?.estimatedCost == null
-          ? 'Unknown'
-          : `$${snapshot.usage.estimatedCost.toFixed(4)}`}{' '}
-        · Tokens: {snapshot.usage?.input ?? 'Unknown'} input / {snapshot.usage?.output ?? 'Unknown'}{' '}
-        output
-      </div>
-      <Form className="mt-2" onSubmit={handleSubmit(submit)}>
-        <Form.Label htmlFor={`course-agent-input-${id}`}>Ask about your course</Form.Label>
+      <Modal
+        show={statisticsOpen}
+        aria-labelledby="course-agent-statistics-title"
+        onHide={() => setStatisticsOpen(false)}
+      >
+        <Modal.Header closeButton>
+          <Modal.Title as="h2" id="course-agent-statistics-title">
+            Conversation statistics
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <dl>
+            <dt>Estimated cost</dt>
+            <dd>
+              {snapshot.usage?.estimatedCost == null
+                ? 'Unknown'
+                : `$${snapshot.usage.estimatedCost.toFixed(4)}`}
+            </dd>
+            <dt>Input tokens</dt>
+            <dd>{snapshot.usage?.input ?? 'Unknown'}</dd>
+            <dt>Output tokens</dt>
+            <dd>{snapshot.usage?.output ?? 'Unknown'}</dd>
+          </dl>
+        </Modal.Body>
+      </Modal>
+      <Form className="course-agent-composer border-top pt-3 mt-2" onSubmit={handleSubmit(submit)}>
         <Form.Control
           id={`course-agent-input-${id}`}
+          aria-label="Message"
+          placeholder="Ask anything about your course…"
           as="textarea"
           rows={3}
           defaultValue=""
+          onKeyDown={(event) => {
+            if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) {
+              event.preventDefault();
+              if (!send.isPending) void handleSubmit(submit)();
+            }
+          }}
           {...register('draft', {
             onChange: (event) => {
               savePanelState(storageKey + ':draft', event.target.value);
@@ -453,16 +456,23 @@ function Conversation({
             },
           })}
         />
-        <div className="d-flex justify-content-between mt-2">
-          <Button
-            variant="outline-secondary"
-            disabled={cancel.isPending}
-            onClick={() => cancel.mutate({ conversationId: id })}
-          >
-            Stop
+        <div className="d-flex gap-2 mt-2">
+          <Button size="sm" variant="outline-secondary" onClick={() => setStatisticsOpen(true)}>
+            <i className="bi bi-bar-chart me-1" aria-hidden="true" />
+            Statistics
           </Button>
+          {busy && (
+            <Button
+              variant="outline-secondary"
+              disabled={cancel.isPending}
+              onClick={() => cancel.mutate({ conversationId: id })}
+            >
+              Stop
+            </Button>
+          )}
           <Button
             type="submit"
+            className="ms-auto"
             disabled={
               connection !== 'connected' || snapshot.blocked || send.isPending || !draft.trim()
             }
@@ -475,97 +485,59 @@ function Conversation({
   );
 }
 
-function Transcript({ messages }: { messages: UIMessage[] }) {
-  return messages.filter(isVisibleMessage).map((message) => {
-    const tools = message.parts.filter(
-      (p) => p.type === 'dynamic-tool' || p.type.startsWith('tool-'),
-    );
-    return (
-      <ChatMessage key={message.id} messageRole={message.role}>
-        {message.parts.map((part, index) => {
-          if (part.type === 'text') return <MemoizedMarkdown key={index} content={part.text} />;
-          if (part.type === 'reasoning') return <ReasoningSummary key={index} text={part.text} />;
-          if (
-            part.type === 'data-steering' &&
-            part.data &&
-            typeof part.data === 'object' &&
-            'text' in part.data
-          ) {
-            return <blockquote key={index}>{String(part.data.text)}</blockquote>;
-          }
-          return null;
-        })}
-        {tools.length > 0 && (
-          <ToolCallGroup count={tools.length}>
-            {tools.map((part, index) => (
-              <ToolCall
-                key={index}
-                title={'toolName' in part ? String(part.toolName).replaceAll('_', ' ') : part.type}
-                state={
-                  'state' in part && part.state === 'output-error'
-                    ? 'error'
-                    : 'state' in part && part.state === 'output-available'
-                      ? 'success'
-                      : 'streaming'
-                }
-              >
-                <pre>{toolDetails(part)}</pre>
-              </ToolCall>
-            ))}
-          </ToolCallGroup>
-        )}
-      </ChatMessage>
-    );
-  });
-}
-
-function RenameConversation({
-  title,
-  busy,
-  onSave,
-  onHide,
+function Transcript({
+  messages,
+  approvals,
+  renderCodeChange,
 }: {
-  title: string;
-  busy: boolean;
-  onSave: (title: string) => void;
-  onHide: () => void;
+  messages: UIMessage[];
+  approvals: ApprovalDisplay[];
+  renderCodeChange: (approval: ApprovalDisplay) => ReactNode;
 }) {
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm({ defaultValues: { title } });
-  return (
-    <Modal show onHide={onHide}>
-      <Form onSubmit={handleSubmit((value) => onSave(value.title))}>
-        <Modal.Header closeButton>
-          <Modal.Title>Rename conversation</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <Form.Label htmlFor="course-agent-title">Title</Form.Label>
-          <Form.Control
-            id="course-agent-title"
-            defaultValue={title}
-            {...register('title', {
-              required: true,
-              maxLength: 200,
-              validate: (value) => !!value.trim(),
-            })}
-            aria-invalid={!!errors.title}
-            aria-errormessage={errors.title ? 'course-agent-title-error' : undefined}
-          />
-          {errors.title && (
-            <p id="course-agent-title-error">Enter a title of up to 200 characters.</p>
-          )}
-        </Modal.Body>
-        <Modal.Footer>
-          <Button type="submit" disabled={busy}>
-            Save
-          </Button>
-        </Modal.Footer>
-      </Form>
-    </Modal>
-  );
+  return buildTranscript(messages, approvals).map((entry) => (
+    <ChatMessage key={entry.id} messageRole={entry.role}>
+      {entry.parts.map((part, index) => {
+        if (part.kind === 'code-change') {
+          return <div key={part.approval.id}>{renderCodeChange(part.approval)}</div>;
+        }
+        if (part.kind === 'tools') {
+          return (
+            <ToolCallGroup key={index} count={part.parts.length}>
+              {part.parts.map((tool) => (
+                <ToolCall
+                  key={'toolCallId' in tool ? String(tool.toolCallId) : index}
+                  title={
+                    'toolName' in tool ? String(tool.toolName).replaceAll('_', ' ') : tool.type
+                  }
+                  state={
+                    'state' in tool && tool.state === 'output-error'
+                      ? 'error'
+                      : 'state' in tool && tool.state === 'output-available'
+                        ? 'success'
+                        : 'streaming'
+                  }
+                >
+                  <pre>{toolDetails(tool)}</pre>
+                </ToolCall>
+              ))}
+            </ToolCallGroup>
+          );
+        }
+        const value = part.part;
+        if (value.type === 'text') return <MemoizedMarkdown key={index} content={value.text} />;
+        if (value.type === 'reasoning') return <ReasoningSummary key={index} text={value.text} />;
+        if (
+          value.type === 'data-steering' &&
+          value.data &&
+          typeof value.data === 'object' &&
+          'text' in value.data
+        ) {
+          return <blockquote key={index}>{String(value.data.text)}</blockquote>;
+        }
+        return null;
+      })}
+    </ChatMessage>
+  ));
 }
 
 function toolDetails(part: UIMessage['parts'][number]) {

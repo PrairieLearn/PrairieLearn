@@ -6,6 +6,7 @@ import {
   approvalDecisionSchema,
   sendRequestSchema,
 } from '@prairielearn/course-agent-contract';
+import { formatDate } from '@prairielearn/formatter';
 import { IdSchema } from '@prairielearn/zod';
 
 import { CourseAgentConversationSchema } from '../../lib/db-types.js';
@@ -13,7 +14,6 @@ import { isEnterprise } from '../../lib/license.js';
 import {
   type AgentScope,
   createConversation,
-  editConversation,
   selectConversation,
   selectConversations,
 } from '../../models/course-agent-conversation.js';
@@ -49,19 +49,18 @@ const newWorkProcedure = procedure.use(async ({ ctx, next }) => {
   return next();
 });
 export const courseAgentRouter = t.router({
-  list: procedure.output(z.array(CatalogSchema)).query(({ ctx }) => selectConversations(ctx.scope)),
-  create: newWorkProcedure
-    .input(z.object({ title: z.string().trim().min(1).max(200) }))
-    .output(CatalogSchema)
-    .mutation(({ ctx, input }) =>
-      createConversation(ctx.scope, { ...input, ...ctx.service.destination(ctx.course) }),
-    ),
-  edit: procedure
-    .input(id.extend({ title: z.string().trim().min(1).max(200).nullable(), archive: z.boolean() }))
-    .output(CatalogSchema)
-    .mutation(({ ctx, input }) =>
-      editConversation(ctx.scope, input.conversationId, input.title, input.archive),
-    ),
+  list: procedure.output(z.array(CatalogSchema)).query(async ({ ctx }) =>
+    (await selectConversations(ctx.scope)).map((row) => ({
+      ...row,
+      title: formatDate(row.created_at, ctx.course.display_timezone),
+    })),
+  ),
+  create: newWorkProcedure.output(CatalogSchema).mutation(({ ctx }) =>
+    createConversation(ctx.scope, {
+      title: formatDate(new Date(), ctx.course.display_timezone),
+      ...ctx.service.destination(ctx.course),
+    }),
+  ),
   send: newWorkProcedure
     .input(id.extend({ message: sendRequestSchema }))
     .mutation(async ({ ctx, input }) => {

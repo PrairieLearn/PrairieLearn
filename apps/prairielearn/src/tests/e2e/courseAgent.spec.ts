@@ -40,20 +40,30 @@ test('conversation and unsent draft persist across course pages', async ({
   await page.goto(`/pl/course/${courseId}/course_admin/settings`);
   await page.getByRole('button', { name: 'Open course agent' }).click();
   await page.getByRole('button', { name: 'New', exact: true }).click();
-  const composer = page.getByLabel('Ask about your course');
+  const composer = page.getByLabel('Message', { exact: true });
   await expect(composer).toBeVisible();
   await composer.fill('Please inspect the course.');
-  await page.getByRole('button', { name: 'Send', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Send', exact: true })).toBeEnabled();
+  await composer.press('Enter');
   await expect(page.getByText('Please inspect the course.', { exact: true })).toBeVisible();
   await composer.fill('Keep this draft.');
   await page.goto(`/pl/course/${courseId}/course_admin/questions`);
   await expect(composer).toHaveValue('Keep this draft.');
   await expect(page.getByText('Please inspect the course.', { exact: true })).toBeVisible();
   await expect(page.getByText('Finished.', { exact: false })).toBeVisible({ timeout: 20000 });
-  await page.getByRole('button', { name: 'Rename', exact: true }).click();
-  await page.getByLabel('Title', { exact: true }).fill('Course review');
-  await page.getByRole('dialog').getByRole('button', { name: 'Save', exact: true }).click();
-  await expect(page.getByLabel('Conversation')).toContainText('Course review');
+  await expect(page.getByRole('button', { name: 'Rename', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Archive', exact: true })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Statistics', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Conversation statistics' })).toBeVisible();
+  await page
+    .getByRole('dialog')
+    .filter({ has: page.getByRole('heading', { name: 'Conversation statistics' }) })
+    .getByRole('button', { name: 'Close' })
+    .click();
+  await expect(page.getByRole('heading', { name: 'Conversation statistics' })).toBeHidden();
+  const navbar = await page.getByRole('navigation', { name: 'Global navigation' }).boundingBox();
+  const panel = await page.getByRole('dialog').boundingBox();
+  expect(panel!.y).toBeGreaterThanOrEqual(navbar!.y + navbar!.height);
   await page.screenshot({ path: testInfo.outputPath('course-agent.png'), fullPage: true });
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(composer).toBeVisible();
@@ -61,10 +71,6 @@ test('conversation and unsent draft persist across course pages', async ({
   await page.keyboard.press('Escape');
   await expect(page.getByRole('button', { name: 'Open course agent' })).toBeVisible();
   await page.getByRole('button', { name: 'Open course agent' }).click();
-  await page.getByRole('button', { name: 'Archive', exact: true }).click();
-  await expect(
-    page.getByText('Choose or create a conversation to edit your course.'),
-  ).toBeVisible();
 });
 
 test('denial after sandbox shutdown remains durable and resumes through a hidden continuation', async ({
@@ -88,7 +94,7 @@ test('denial after sandbox shutdown remains durable and resumes through a hidden
   await page.goto(`/pl/course/${courseId}/course_admin/settings`);
   await page.getByRole('button', { name: 'Open course agent' }).click();
   await page.getByRole('button', { name: 'New', exact: true }).click();
-  await page.getByLabel('Ask about your course').fill('Prepare a change.');
+  await page.getByLabel('Message', { exact: true }).fill('Prepare a change.');
   await page.getByRole('button', { name: 'Send', exact: true }).click();
   await expect(page.getByText('Prepare a change.', { exact: true })).toBeVisible();
   const [conversation] = await selectConversations({
@@ -103,21 +109,21 @@ test('denial after sandbox shutdown remains durable and resumes through a hidden
   };
   const approval = await fetch(`${root}/test/approval`, { method: 'POST', headers, body: '{}' });
   expect(approval.ok).toBe(true);
-  await expect(page.getByText('Approval required', { exact: true })).toBeVisible();
+  await expect(page.getByText('Code change · Review requested', { exact: true })).toBeVisible();
   const expire = await fetch(`${root}/test/advance`, {
     method: 'POST',
     headers,
     body: JSON.stringify({ milliseconds: 10 * 60_000 + 1000 }),
   });
   expect(expire.ok).toBe(true);
-  await page.getByRole('button', { name: 'Deny', exact: true }).click();
-  await expect(page.getByText('Approval denied', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Reject', exact: true }).click();
+  await expect(page.getByText('Code change · Rejected', { exact: true })).toBeVisible();
   await expect(
     page.getByText('The user denied this proposal. Nothing was published.', { exact: true }),
   ).toBeVisible();
-  await page.getByLabel('Ask about your course').fill('Next request');
+  await page.getByLabel('Message', { exact: true }).fill('Next request');
   await expect(page.getByRole('button', { name: /^(Send|Steer)$/ })).toBeEnabled();
   await page.reload();
-  await expect(page.getByText('Approval denied', { exact: true })).toBeVisible();
+  await expect(page.getByText('Code change · Rejected', { exact: true })).toBeVisible();
   await expect(page.getByText(/push_sync result for operation/)).toHaveCount(0);
 });

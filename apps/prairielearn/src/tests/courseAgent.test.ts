@@ -11,7 +11,6 @@ import { authorize, prepare } from '../ee/lib/course-agent/service.js';
 import { admit, estimatedCost, recordUsage } from '../ee/lib/course-agent/usage.js';
 import {
   createConversation,
-  editConversation,
   reserveOperation,
   selectConversation,
 } from '../models/course-agent-conversation.js';
@@ -100,9 +99,6 @@ it('persists a single decision, gates new work, and allows an identical stale re
   await expect(
     reserveOperation(conversation, randomUUID(), { kind: 'message' }, 0),
   ).rejects.toThrow('pending proposal');
-  await expect(editConversation(scope, conversation.id, null, true)).rejects.toThrow(
-    'pending proposal',
-  );
   await decideProposal(scope, conversation, proposal, false, 0);
   const saved = (await selectOptionalProposal(conversation.id, operation_id))!;
   expect(saved.decision).toBe(false);

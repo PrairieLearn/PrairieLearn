@@ -7,7 +7,6 @@ CREATE TABLE course_agent_conversations (
   repository TEXT NOT NULL,
   branch TEXT NOT NULL,
   revision INTEGER NOT NULL DEFAULT 0 CHECK (revision >= 0),
-  archived_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 

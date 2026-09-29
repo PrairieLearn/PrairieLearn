@@ -6,7 +6,6 @@ FROM
 WHERE
   course_id = $course_id
   AND user_id = $user_id
-  AND archived_at IS NULL
 ORDER BY
   created_at DESC;
 
@@ -18,8 +17,7 @@ FROM
 WHERE
   id = $id
   AND course_id = $course_id
-  AND user_id = $user_id
-  AND archived_at IS NULL;
+  AND user_id = $user_id;
 
 -- BLOCK lock
 SELECT
@@ -49,19 +47,6 @@ VALUES
     $repository,
     $branch
   )
-RETURNING
-  *;
-
--- BLOCK edit
-UPDATE course_agent_conversations
-SET
-  title = COALESCE($title, title),
-  archived_at = CASE
-    WHEN $archive THEN now()
-    ELSE archived_at
-  END
-WHERE
-  id = $id
 RETURNING
   *;
 

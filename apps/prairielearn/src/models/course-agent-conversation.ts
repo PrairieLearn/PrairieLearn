@@ -63,39 +63,6 @@ export async function createConversation(
     return row;
   });
 }
-export async function editConversation(
-  scope: AgentScope,
-  id: string,
-  title: string | null,
-  archive: boolean,
-) {
-  return runInTransactionAsync(async () => {
-    const old = await selectConversation(scope, id);
-    await queryRow(sql.lock, { id }, CourseAgentConversationSchema);
-    if (
-      archive &&
-      (await queryRow(sql.pending, { id }, z.object({ pending: z.boolean() }))).pending
-    ) {
-      throw new TRPCError({
-        code: 'CONFLICT',
-        message: 'Resolve the pending proposal before archiving.',
-      });
-    }
-    const row = await queryRow(sql.edit, { id, title, archive }, CourseAgentConversationSchema);
-    await insertAuditEvent({
-      tableName: 'course_agent_conversations',
-      action: 'update',
-      actionDetail: archive ? 'archive' : 'rename',
-      rowId: id,
-      agentUserId: scope.user_id,
-      agentAuthnUserId: scope.authn_user_id,
-      courseId: scope.course_id,
-      oldRow: old,
-      newRow: row,
-    });
-    return row;
-  });
-}
 export const selectOptionalOperation = (id: string, operation_id: string) =>
   queryOptionalRow(sql.operation, { id, operation_id }, CourseAgentOperationSchema);
 export async function reserveOperation(
