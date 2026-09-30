@@ -22,7 +22,7 @@
   "dependencies": {
     "@prairielearn/browser-utils": "workspace:^",
     "@prairielearn/run": "workspace:^",
-    "@tanstack/match-sorter-utils": "^8.19.4",
+    "@tanstack/match-sorter-utils": "^9.1.2",
     "@tanstack/react-table": "^9.1.2",
     "@tanstack/react-virtual": "^3.14.9",
     "@types/react": "^19.2.18",
