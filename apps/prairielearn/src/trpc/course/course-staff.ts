@@ -51,13 +51,21 @@ type StaffAuthzData = Awaited<ReturnType<typeof createContext>>['authz_data'];
 const InsertableInstanceRoleSchema = z.enum(['Student Data Viewer', 'Student Data Editor']);
 
 function assertCanModifyUser(authzData: StaffAuthzData, userId: string, action: string) {
-  if (idsEqual(userId, authzData.user.id) && !authzData.is_administrator) {
+  if (
+    idsEqual(userId, authzData.user.id) &&
+    !authzData.is_administrator &&
+    !authzData.is_institution_administrator
+  ) {
     throw new TRPCError({
       code: 'FORBIDDEN',
       message: `Only administrators can ${action}`,
     });
   }
-  if (idsEqual(userId, authzData.authn_user.id) && !authzData.is_administrator) {
+  if (
+    idsEqual(userId, authzData.authn_user.id) &&
+    !authzData.is_administrator &&
+    !authzData.is_institution_administrator
+  ) {
     throw new TRPCError({
       code: 'FORBIDDEN',
       message: `Only administrators can ${action} while emulating another user`,
@@ -67,7 +75,7 @@ function assertCanModifyUser(authzData: StaffAuthzData, userId: string, action: 
 
 async function assertCanDeleteUser(authzData: StaffAuthzData, userId: string, courseId: string) {
   assertCanModifyUser(authzData, userId, 'remove themselves from the course staff');
-  if (!authzData.is_administrator) {
+  if (!authzData.is_administrator && !authzData.is_institution_administrator) {
     const role = await selectCoursePermissionForUser({ course_id: courseId, user_id: userId });
     if (role === 'Owner') {
       throw new TRPCError({

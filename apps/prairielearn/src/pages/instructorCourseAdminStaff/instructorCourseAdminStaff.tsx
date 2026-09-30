@@ -72,7 +72,7 @@ router.get(
               courseUsers={courseUsers}
               authnUserId={res.locals.authn_user.id}
               userId={res.locals.user.id}
-              isAdministrator={res.locals.is_administrator}
+              isAdministrator={authzData.is_administrator || authzData.is_institution_administrator}
               canEdit={authzData.has_course_permission_own}
               uidsLimit={MAX_UIDS}
               search={getUrl(req).search}

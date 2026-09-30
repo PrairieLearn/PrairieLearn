@@ -7,9 +7,10 @@ import {
   RegenerateInstanceModal,
 } from '../../components/AssessmentRegenerate.js';
 import { AssessmentScorePanel } from '../../components/AssessmentScorePanel.js';
+import { CalculatorDrawerHeadScripts } from '../../components/CalculatorAssets.js';
 import {
+  CALCULATOR_PRESETS,
   CalculatorDrawer,
-  CalculatorDrawerHeadScripts,
   CalculatorDrawerToggle,
 } from '../../components/CalculatorDrawer.js';
 import { InstructorInfoPanel } from '../../components/InstructorInfoPanel.js';
@@ -24,6 +25,7 @@ import type { AssessmentTool, SubmissionDraft, User } from '../../lib/db-types.j
 import { getRoleNamesForUser } from '../../lib/groups.shared.js';
 import type { ResLocalsInstanceQuestionRender } from '../../lib/question-render.types.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
+import { CalculatorSettingsSchema } from '../../schemas/infoAssessment.js';
 
 export function StudentInstanceQuestion({
   resLocals,
@@ -50,7 +52,7 @@ export function StudentInstanceQuestion({
     resLocals.assessment.type === 'Exam' ? 'student_exam' : 'student_homework';
   // TODO: support more tools
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-  const hasCalculator = enabledTools.some((t) => t.tool === 'calculator');
+  const calculator = enabledTools.find((t) => t.tool === 'calculator');
 
   return PageLayout({
     resLocals,
@@ -64,7 +66,7 @@ export function StudentInstanceQuestion({
         name="mathjax-fonts-path"
         content="${nodeModulesAssetPath('@mathjax/mathjax-newcm-font')}"
       />
-      ${compiledScriptTag('question.ts')} ${hasCalculator ? CalculatorDrawerHeadScripts() : ''}
+      ${compiledScriptTag('question.ts')} ${calculator ? CalculatorDrawerHeadScripts() : ''}
       ${
         resLocals.assessment.type === 'Exam'
           ? html`
@@ -113,9 +115,13 @@ export function StudentInstanceQuestion({
           : ''
       }
     `,
-    postContent: hasCalculator
+    postContent: calculator
       ? CalculatorDrawer({
           storageKey: `calculator-${resLocals.assessment.uuid}-${resLocals.assessment_instance.id}`,
+          features:
+            CALCULATOR_PRESETS[
+              CalculatorSettingsSchema.parse(calculator.settings).type ?? 'advanced'
+            ],
         })
       : '',
     content: html`
@@ -265,7 +271,7 @@ export function StudentInstanceQuestion({
                 })
               : ''
           }
-          ${hasCalculator ? CalculatorDrawerToggle() : ''}
+          ${calculator ? CalculatorDrawerToggle() : ''}
           ${InstructorInfoPanel({
             course: resLocals.course,
             course_instance: resLocals.course_instance,
