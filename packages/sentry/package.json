@@ -22,7 +22,6 @@
     "execa": "^9.6.1"
   },
   "devDependencies": {
-    "@opentelemetry/sdk-trace-base": "^2.10.0",
     "@prairielearn/opentelemetry": "workspace:^",
     "@prairielearn/tsconfig": "workspace:^",
     "@types/node": "^24.13.3",

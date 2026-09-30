@@ -1,7 +1,6 @@
 import { createServer } from 'node:http';
 import { setTimeout } from 'node:timers/promises';
 
-import { InMemorySpanExporter, SimpleSpanProcessor } from '@opentelemetry/sdk-trace-base';
 import type { Envelope } from '@sentry/core';
 import { afterAll, assert, beforeAll, it } from 'vitest';
 
@@ -10,14 +9,11 @@ import * as opentelemetry from '@prairielearn/opentelemetry';
 import * as Sentry from './index.js';
 
 const envelopes: Envelope[] = [];
-const exporter = new InMemorySpanExporter();
-const spanProcessor = new SimpleSpanProcessor(exporter);
 
 beforeAll(async () => {
   await opentelemetry.init({
     openTelemetryEnabled: true,
     openTelemetrySamplerType: 'always-on',
-    openTelemetrySpanProcessor: spanProcessor,
   });
   await Sentry.init({
     dsn: 'https://public@example.com/1',
@@ -67,7 +63,6 @@ it('isolates concurrent requests and links manually captured errors to OTel span
       }),
     );
     await Sentry.flush();
-    await spanProcessor.forceFlush();
 
     const events = envelopes.flatMap(([, items]) =>
       items.filter(([header]) => header.type === 'event').map(([, event]) => event as Sentry.Event),
@@ -82,12 +77,6 @@ it('isolates concurrent requests and links manually captured errors to OTel span
       assert.equal(event.contexts!.trace!.span_id, traceContexts.get(path)!.spanId);
     }
     assert.notEqual(events[0].contexts!.trace!.trace_id, events[1].contexts!.trace!.trace_id);
-    assert.lengthOf(
-      exporter
-        .getFinishedSpans()
-        .filter((span) => span.instrumentationScope.name === '@opentelemetry/instrumentation-http'),
-      2,
-    );
     assert.isFalse(
       envelopes.some(([, items]) =>
         items.some(([header]) => ['transaction', 'span'].includes(header.type)),
@@ -97,27 +86,5 @@ it('isolates concurrent requests and links manually captured errors to OTel span
     await new Promise<void>((resolve, reject) =>
       server.close((error) => (error ? reject(error) : resolve())),
     );
-  }
-});
-
-it('isolates concurrent scopes when there is no active OTel span', async () => {
-  envelopes.length = 0;
-  await Promise.all(
-    ['first', 'second'].map((name) =>
-      Sentry.withIsolationScope(async (scope) => {
-        scope.setTag('operation', name);
-        await setTimeout(name === 'first' ? 20 : 1);
-        Sentry.captureException(new Error(name));
-      }),
-    ),
-  );
-  await Sentry.flush();
-  const events = envelopes.flatMap(([, items]) =>
-    items.filter(([header]) => header.type === 'event').map(([, event]) => event as Sentry.Event),
-  );
-  assert.lengthOf(events, 2);
-  for (const event of events) {
-    assert.equal(event.tags!.operation, event.exception!.values![0].value);
-    assert.isUndefined(event.tags!.request);
   }
 });

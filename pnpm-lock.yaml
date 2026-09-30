@@ -2647,9 +2647,6 @@ importers:
         specifier: ^9.6.1
         version: 9.6.1
     devDependencies:
-      '@opentelemetry/sdk-trace-base':
-        specifier: ^2.10.0
-        version: 2.10.0(@opentelemetry/api@1.9.1)
       '@prairielearn/opentelemetry':
         specifier: workspace:^
         version: link:../opentelemetry
