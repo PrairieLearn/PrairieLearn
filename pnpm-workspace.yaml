@@ -10,7 +10,7 @@ overrides:
   'dependency-cruiser>enhanced-resolve': ^5.22.1
   'dependency-cruiser>picomatch': ^4.0.4
   'dependency-cruiser>semver': ^7.8.1
-  'jsdoc-type-pratt-parser>@types/node': ^24.13.3
+  'jsdoc-type-pratt-parser>@types/node': ^24
   'linkinator>marked': ^18
   'markdownlint-cli2>smol-toml': ^1
   'notebookjs>jsdom': '*'
