@@ -3,6 +3,9 @@ packages:
   - 'packages/*'
 
 overrides:
+  # These tools need the JS compiler API, which TypeScript 7 does not provide.
+  'typescript-cp>typescript': npm:@typescript/typescript6@^6.0.2
+  'cosmiconfig>typescript': npm:@typescript/typescript6@^6.0.2
   '@aws-sdk/xml-builder>fast-xml-parser': ^5.7.3
   '@sa11y/common>axe-core': ^4
   '@sa11y/format>axe-core': ^4

@@ -24,13 +24,13 @@
   "dependencies": {
     "@js-temporal/polyfill": "^0.5.1",
     "extract-zip": "^2.0.1",
-    "yauzl": "^2.10.0"
+    "yauzl": "^3.4.0"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
     "@types/archiver": "^8.0.0",
     "@types/node": "^24.13.3",
-    "@types/yauzl": "^2.10.3",
+    "@types/yauzl": "^3.4.0",
     "@typescript/native": "npm:typescript@^7.0.2",
     "@vitest/coverage-v8": "^5.0.0",
     "archiver": "^8.0.0",
