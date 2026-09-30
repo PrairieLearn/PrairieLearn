@@ -161,9 +161,8 @@ export function Navbar({
                     data-bs-toggle="modal tooltip"
                     data-bs-target="#supportModal"
                     data-bs-title="Get help with PrairieLearn"
-                    aria-label="Get help"
                   >
-                    <i class="bi bi-question-circle" aria-hidden="true"></i>
+                    Get help
                   </button>
                 `
               : ''
