@@ -109,12 +109,6 @@ export async function init() {
       module: await import('./cleanTimeSeries.js'),
       intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalCleanTimeSeriesSec,
     },
-    {
-      name: 'cleanSubmissionDrafts',
-      module: await import('./cleanSubmissionDrafts.js'),
-      intervalSec:
-        config.cronOverrideAllIntervalsSec || config.cronIntervalCleanSubmissionDraftsSec,
-    },
   ];
 
   if (config.newsFeedUrl) {

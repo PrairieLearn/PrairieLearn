@@ -94,8 +94,3 @@ WHERE
 DELETE FROM submission_drafts
 WHERE
   variant_id = $variant_id;
-
--- BLOCK delete_expired_submission_drafts
-DELETE FROM submission_drafts
-WHERE
-  updated_at < now() - make_interval(secs => $retention_period_sec);

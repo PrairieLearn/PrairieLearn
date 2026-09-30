@@ -412,10 +412,6 @@
       "default": 600,
       "type": "number"
     },
-    "cronIntervalCleanSubmissionDraftsSec": {
-      "default": 3600,
-      "type": "number"
-    },
     "cronIntervalFetchNewsItemsSec": {
       "default": 300,
       "type": "number"

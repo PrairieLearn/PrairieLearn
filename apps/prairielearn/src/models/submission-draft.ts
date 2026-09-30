@@ -115,11 +115,3 @@ export async function deleteSubmissionDraft({
 export async function deleteSubmissionDraftsForVariant({ variant_id }: { variant_id: string }) {
   await execute(sql.delete_submission_drafts_for_variant, { variant_id });
 }
-
-export async function deleteExpiredSubmissionDrafts({
-  retention_period_sec,
-}: {
-  retention_period_sec: number;
-}): Promise<number> {
-  return await execute(sql.delete_expired_submission_drafts, { retention_period_sec });
-}
