@@ -16890,7 +16890,7 @@ snapshots:
       mime: 4.1.0
       saxes: 6.0.0
       srcset: 5.0.3
-      undici: 8.10.0
+      undici: 8.11.2
 
   locate-path@6.0.0:
     dependencies:
@@ -17533,7 +17533,7 @@ snapshots:
       semver: 7.8.5
       tar: 7.5.22
       tinyglobby: 0.2.17
-      undici: 8.10.0
+      undici: 8.11.2
       which: 7.0.0
 
   node-int64@0.4.0: {}
