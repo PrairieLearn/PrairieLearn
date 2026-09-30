@@ -2763,6 +2763,9 @@ importers:
       '@types/react':
         specifier: ^19.3.0
         version: 19.3.0
+      react:
+        specifier: ^19.2.8
+        version: 19.3.0
       react-bootstrap:
         specifier: 3.0.0-beta.5
         version: 3.0.0-beta.5(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
@@ -2785,9 +2788,6 @@ importers:
       jsdom:
         specifier: ^29.1.1
         version: 29.1.1
-      react:
-        specifier: ^19.3.0
-        version: 19.3.0
       react-dom:
         specifier: ^19.3.0
         version: 19.3.0(react@19.3.0)
