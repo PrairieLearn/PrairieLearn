@@ -20,29 +20,38 @@ export async function init(options: Sentry.NodeOptions) {
 
   Sentry.init({
     release,
+    // Dependencies load before configuration provides the DSN. Keep our OTel
+    // instrumentation and manual Express capture instead of Sentry's module hooks.
     enableRuntimeChannelInjection: false,
+    // Preserve v10's HTTP data collection policy; v11 collects more by default.
+    // This controls automatic collection, not data explicitly
+    // attached by requestHandler() or application event processors.
+    // https://github.com/getsentry/sentry-javascript/blob/11.0.0/MIGRATION.md#senddefaultpii-is-replaced-by-datacollection
     dataCollection: {
       userInfo: false,
       cookies: false,
-      httpHeaders: {
-        request: { deny: ['forwarded', '-ip', 'remote-', 'via', '-user'] },
-        response: { deny: ['forwarded', '-ip', 'remote-', 'via', '-user'] },
-      },
+      // Retain v10's IP/user-related filtering alongside Sentry's built-in
+      // secret filtering. Deny terms match case-insensitive key substrings.
+      httpHeaders: { deny: ['forwarded', '-ip', 'remote-', 'via', '-user'] },
       httpBodies: [],
+      // The same deny terms preserve v10's query parameter filtering.
       urlQueryParams: { deny: ['forwarded', '-ip', 'remote-', 'via', '-user'] },
-      genAI: { inputs: false, outputs: false },
-      databaseQueryData: false,
-      queues: false,
-      graphQL: { document: false, variables: false },
     },
-    // Keep manual Express error capture and OTel instrumentation in charge.
+    // Keep the standard error handlers and diagnostic enrichment, while leaving
+    // performance instrumentation to our independently configured OTel provider.
     defaultIntegrations: [
       ...Sentry.getDefaultIntegrationsWithoutPerformance().filter(
+        // Framework capture would run before PL assigns error IDs and maps SQL
+        // errors to HTTP status codes. Replace HTTP/fetch below with tracing off.
         (integration) =>
           !['Express', 'Fastify', 'Hapi', 'Koa', 'Http', 'NodeFetch'].includes(integration.name),
       ),
+      // Retain HTTP/fetch breadcrumbs without Sentry spans or outgoing Sentry
+      // trace headers; OTel owns span creation and W3C propagation.
       Sentry.httpIntegration({ spans: false, tracePropagation: false }),
       Sentry.nativeNodeFetchIntegration({ spans: false, tracePropagation: false }),
+      // Link errors to the active OTel trace/span without registering a provider
+      // or exporting OTel spans to Sentry.
       Sentry.openTelemetryIntegration(),
     ],
     ...options,
