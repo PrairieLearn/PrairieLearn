@@ -29,24 +29,24 @@
     "@prairielearn/public-fetch": "workspace:^",
     "@prairielearn/utils": "workspace:^",
     "@vscode/vscode-languagedetection": "^1.0.23",
-    "@zip.js/zip.js": "^2.8.35",
+    "@zip.js/zip.js": "^2.18.2",
     "cheerio": "^1.2.0",
     "commander": "^15.0.0",
     "domhandler": "^5.0.3",
-    "fast-xml-parser": "^5.10.1",
-    "file-type": "^22.0.1",
+    "fast-xml-parser": "^5.11.1",
+    "file-type": "^22.1.1",
     "he": "^1.2.0",
     "mime": "^4.1.0",
-    "uuid": "^14.0.1"
+    "uuid": "^14.0.2"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
     "@types/he": "^1.2.3",
-    "@types/node": "^24.13.3",
+    "@types/node": "^24.19.0",
     "@typescript/native": "npm:typescript@^7.0.2",
-    "@vitest/coverage-v8": "^5.0.0",
-    "undici": "^8.10.0",
-    "vitest": "^5.0.0",
-    "zod": "^4.4.3"
+    "@vitest/coverage-v8": "^5.0.2",
+    "undici": "^8.11.2",
+    "vitest": "^5.0.2",
+    "zod": "^4.6.5"
   }
 }
