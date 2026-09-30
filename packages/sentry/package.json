@@ -19,7 +19,7 @@
   "dependencies": {
     "@sentry/core": "^11.0.0",
     "@sentry/node": "^11.0.0",
-    "execa": "^9.6.1"
+    "execa": "^10.0.1"
   },
   "devDependencies": {
     "@prairielearn/opentelemetry": "workspace:^",

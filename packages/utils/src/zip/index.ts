@@ -24,7 +24,9 @@ export interface ExtractZipArchiveOptions {
   maxExtractedBytes: number | null;
 }
 
-function isSymlinkEntry({ externalFileAttributes }: yauzl.Entry): boolean {
+function isSymlinkEntry({
+  externalFileAttributes,
+}: Pick<yauzl.Entry, 'externalFileAttributes'>): boolean {
   const mode = (externalFileAttributes >> 16) & 0xffff;
   return (mode & fs.constants.S_IFMT) === fs.constants.S_IFLNK;
 }

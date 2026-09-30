@@ -6,7 +6,7 @@
     "packages/*"
   ],
   "engines": {
-    "node": ">=24.0.0",
+    "node": ">=24.15.0",
     "pnpm": "^11.19.0"
   },
   "devEngines": {
@@ -17,7 +17,7 @@
     },
     "runtime": {
       "name": "node",
-      "version": ">=24.0.0"
+      "version": ">=24.15.0"
     }
   },
   "scripts": {
