@@ -23,6 +23,10 @@ const DependencyJsonSchema = z
       .array(z.string().describe('A .js file located in /node_modules.'))
       .describe('The scripts required by this element from /node_modules.')
       .optional(),
+    compiledScripts: z
+      .array(z.string().describe('A JavaScript or TypeScript entry point in /assets/scripts.'))
+      .describe('Standalone compiled scripts required by this core element.')
+      .optional(),
     elementStyles: z
       .array(z.string().describe("A .css file located in the element's directory."))
       .describe("The styles required by this element from the element's directory.")

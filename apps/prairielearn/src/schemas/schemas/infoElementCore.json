@@ -57,6 +57,14 @@
           },
           "description": "The scripts required by this element from /node_modules."
         },
+        "compiledScripts": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "description": "A JavaScript or TypeScript entry point in /assets/scripts."
+          },
+          "description": "Standalone compiled scripts required by this core element."
+        },
         "elementStyles": {
           "type": "array",
           "items": {

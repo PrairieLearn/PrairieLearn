@@ -1,0 +1,24 @@
+<pl-question-panel>
+  <p>
+    Complete the budget model. Enter a quantity of <strong>3</strong>, a unit price of
+    <strong>4</strong>, and the formula <code>=B2*C2</code> for the line total.
+  </p>
+  <p>
+    The headings and summary sheet are locked. The summary demonstrates a locked
+    cross-sheet formula. You can use the formula bar, paste values, or use the Fill
+    down and Fill right controls.
+  </p>
+</pl-question-panel>
+
+<pl-spreadsheet
+  answers-name="model"
+  params-name="workbook"
+  aria-label="Budget model"
+  height="420px"
+></pl-spreadsheet>
+
+<pl-submission-panel>
+  {{#feedback.model}}
+    <div class="alert alert-info">{{feedback.model}}</div>
+  {{/feedback.model}}
+</pl-submission-panel>
