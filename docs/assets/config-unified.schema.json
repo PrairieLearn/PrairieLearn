@@ -670,6 +670,10 @@
       "default": 600,
       "type": "number"
     },
+    "cronIntervalFinishTimedOutExamsSec": {
+      "default": 60,
+      "type": "number"
+    },
     "cronIntervalErrorAbandonedJobsSec": {
       "default": 600,
       "type": "number"

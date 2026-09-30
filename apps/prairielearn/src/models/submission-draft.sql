@@ -81,7 +81,7 @@ WHERE
     )
   )
 ORDER BY
-  qo.row_order,
+  qo.row_order ASC,
   sd.updated_at DESC;
 
 -- BLOCK delete_submission_draft

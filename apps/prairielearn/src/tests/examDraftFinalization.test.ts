@@ -31,7 +31,12 @@ describe('Exam draft finalization', { timeout: 60_000, concurrent: false }, () =
   let assessment: Awaited<ReturnType<typeof selectAssessmentByTid>>;
   let userId: string;
 
-  beforeAll(helperServer.before());
+  beforeAll(async () => {
+    // These exams are dated in the past, so background cron could close them during the test.
+    config.cronActive = false;
+    await helperServer.before()();
+    config.cronActive = true;
+  });
   afterAll(helperServer.after);
 
   beforeAll(async () => {
