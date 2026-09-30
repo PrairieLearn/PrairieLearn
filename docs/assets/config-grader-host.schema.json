@@ -24,14 +24,7 @@
     },
     "cacheImageRegistry": {
       "default": null,
-      "anyOf": [
-        {
-          "type": "string"
-        },
-        {
-          "type": "null"
-        }
-      ]
+      "type": ["string", "null"]
     },
     "parallelInitPulls": {
       "default": 5,
@@ -95,14 +88,7 @@
     },
     "jobsQueueUrl": {
       "default": null,
-      "anyOf": [
-        {
-          "type": "string"
-        },
-        {
-          "type": "null"
-        }
-      ]
+      "type": ["string", "null"]
     },
     "resultsQueueName": {
       "default": "grading_results_dev",
@@ -110,14 +96,7 @@
     },
     "resultsQueueUrl": {
       "default": null,
-      "anyOf": [
-        {
-          "type": "string"
-        },
-        {
-          "type": "null"
-        }
-      ]
+      "type": ["string", "null"]
     },
     "timeoutOverhead": {
       "default": 300,
@@ -137,14 +116,7 @@
     },
     "postgresqlPassword": {
       "default": null,
-      "anyOf": [
-        {
-          "type": "string"
-        },
-        {
-          "type": "null"
-        }
-      ]
+      "type": ["string", "null"]
     },
     "postgresqlPoolSize": {
       "default": 2,
@@ -167,34 +139,13 @@
               "type": "boolean"
             },
             "ca": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ]
+              "type": ["string", "null"]
             },
             "key": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ]
+              "type": ["string", "null"]
             },
             "cert": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ]
+              "type": ["string", "null"]
             }
           },
           "additionalProperties": false
@@ -203,25 +154,11 @@
     },
     "autoScalingGroupName": {
       "default": null,
-      "anyOf": [
-        {
-          "type": "string"
-        },
-        {
-          "type": "null"
-        }
-      ]
+      "type": ["string", "null"]
     },
     "autoScalingTerminatingLifecycleHookName": {
       "default": null,
-      "anyOf": [
-        {
-          "type": "string"
-        },
-        {
-          "type": "null"
-        }
-      ]
+      "type": ["string", "null"]
     },
     "instanceId": {
       "default": "server",
@@ -229,14 +166,7 @@
     },
     "sentryDsn": {
       "default": null,
-      "anyOf": [
-        {
-          "type": "string"
-        },
-        {
-          "type": "null"
-        }
-      ]
+      "type": ["string", "null"]
     },
     "sentryEnvironment": {
       "default": "development",
