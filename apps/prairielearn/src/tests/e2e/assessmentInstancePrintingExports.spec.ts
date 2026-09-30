@@ -220,7 +220,7 @@ test('exports the broad printing fixture with inline, ordering, sketch, and disp
   await expect(
     responseHints.filter({ hasText: /^(symbolic expression|asymptotic expression|integer)$/i }),
   ).toHaveCount(0);
-  expect(await responseHints.allTextContents()).toContain('number (3 sig figs)');
+  expect(await responseHints.allTextContents()).toContain('3 significant figures');
   expect(await responseHints.allTextContents()).toContain('symbolic expression (blank is allowed)');
   const displayQuestion = questions.filter({
     has: page.locator('[data-print-answer-name="number_block"]'),

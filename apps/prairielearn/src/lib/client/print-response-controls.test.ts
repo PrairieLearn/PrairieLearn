@@ -49,7 +49,7 @@ describe('printable response controls', () => {
     expect(first).not.toBe(second);
     expect(first?.textContent).not.toContain('Shared introduction');
   });
-  it('replaces text and symbolic editors with empty lines while preserving labels, suffixes, and tolerances', () => {
+  it('replaces text and symbolic editors with empty lines while preserving labels and suffixes', () => {
     const question = printQuestion(`
       <h3>pl-number-input</h3>
       <span class="input-group"><span>Force =</span><input name="force" value="123" placeholder="number ±1%" size="35"><span>N</span></span>
@@ -58,7 +58,7 @@ describe('printable response controls', () => {
     expect(question.querySelectorAll('[data-print-response-line]')).toHaveLength(2);
     expect(question.querySelector('input, math-field')).toBeNull();
     expect(question.textContent).toContain('Force =');
-    expect(question.textContent).toContain('number ±1%');
+    expect(question.textContent).not.toContain('number ±1%');
     expect(question.textContent).toContain('Derivative =');
     expect(question.textContent).not.toContain('symbolic expression');
     expect(question.textContent).not.toContain('123');
@@ -67,18 +67,25 @@ describe('printable response controls', () => {
     expect(question.querySelector('[data-print-response-area]')).toBeNull();
   });
 
-  it('omits generic field types while preserving custom instructions and answer requirements', () => {
+  it('omits grading descriptors while preserving useful paper instructions', () => {
     const question = printQuestion(`
       <input placeholder="integer">
       <input placeholder="Number">
       <input placeholder="matrix">
       <input placeholder="Unit">
       <input placeholder="Number + Unit">
+      <input placeholder="number (exact)">
+      <input placeholder="real or complex (exact)">
+      <input placeholder="number ±1%">
+      <input placeholder="matrix (rtol=0.01, atol=1e-8)">
       <input placeholder="string">
       <textarea placeholder=" text "></textarea>
       <math-field placeholder="asymptotic expression"></math-field>
       <math-field data-placeholder-text="Symbolic expression"></math-field>
       <input placeholder="number (3 sig figs)">
+      <input placeholder="matrix (3 significant figures)">
+      <input placeholder="Number (rtol=0.01, atol=1e-8 meter) + Unit">
+      <input placeholder="Number (exact) + Unit">
       <input placeholder="integer in base 2">
       <math-field data-placeholder-text="symbolic expression (blank is allowed)"></math-field>
       <input placeholder="Enter the name of the enzyme">
@@ -88,12 +95,15 @@ describe('printable response controls', () => {
         (hint) => hint.textContent,
       ),
     ).toEqual([
-      'number (3 sig figs)',
+      '3 significant figures',
+      '3 significant figures per entry',
+      'Include units',
+      'Include units',
       'integer in base 2',
       'symbolic expression (blank is allowed)',
       'Enter the name of the enzyme',
     ]);
-    expect(question.querySelectorAll('[data-print-response-line]')).toHaveLength(12);
+    expect(question.querySelectorAll('[data-print-response-line]')).toHaveLength(19);
     expect(question.querySelectorAll('.printing-textarea-response')).toHaveLength(1);
   });
 
