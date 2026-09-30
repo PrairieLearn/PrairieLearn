@@ -209,6 +209,7 @@ export const ConfigSchema = z.object({
   cronDisabledJobs: z.array(z.string()).nullable().default(null),
   cronOverrideAllIntervalsSec: z.number().nullable().default(null),
   cronIntervalAutoFinishExamsSec: z.number().default(10 * 60),
+  cronIntervalFinishTimedOutExamsSec: z.number().default(60),
   cronIntervalErrorAbandonedJobsSec: z.number().default(10 * 60),
   cronIntervalExternalGraderLoadSec: z.number().default(8),
   cronIntervalServerLoadSec: z.number().default(8),

@@ -3,12 +3,16 @@ import fetchCookie from 'fetch-cookie';
 import { afterAll, assert, beforeAll, describe, it, test } from 'vitest';
 import z from 'zod';
 
-import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
 import { AssessmentInstanceSchema } from '../lib/db-types.js';
 import { selectAssessmentByTid } from '../models/assessment.js';
 import { generateAndEnrollUsers } from '../models/enrollment.js';
+import {
+  selectOptionalLatestSubmissionIdForVariant,
+  selectSubmissionById,
+} from '../models/submission.js';
 
 import { assertAlert } from './helperClient.js';
 import * as helperServer from './helperServer.js';
@@ -284,6 +288,58 @@ describe('Group based exam assessments', { timeout: 20_000, concurrent: false },
       await switchUserAndLoadAssessment(studentUsers[1], assessmentUrl, null);
       const secondMemberResponse = await fetch(assessmentInstanceURL);
       assert.isOk(secondMemberResponse.ok);
+
+      await switchUserAndLoadAssessment(studentUsers[0], assessmentUrl, null);
+      const firstMemberOverview = cheerio.load(await (await fetch(assessmentInstanceURL)).text());
+      const questionPath = firstMemberOverview('a:contains("Question 1")').attr('href');
+      assert.isString(questionPath);
+      const questionUrl = `${siteUrl}${questionPath}`;
+      const questionPage = cheerio.load(await (await fetch(questionUrl)).text());
+      const questionForm = questionPage('.question-form');
+      const variantId = questionPage('.question-container').attr('data-variant-id')!;
+      assert.isString(variantId);
+      const draftResponse = await fetch(questionUrl, {
+        method: 'POST',
+        body: new URLSearchParams({
+          __action: 'save_draft',
+          __csrf_token: String(questionForm.find('input[name="__csrf_token"]').val()),
+          __variant_id: variantId,
+          __draft_base_submission_id: String(questionForm.attr('data-submission-draft-base')),
+          __draft_client_id: crypto.randomUUID(),
+          __draft_revision: '1',
+          c: '42',
+        }),
+      });
+      assert.equal(draftResponse.status, 204);
+
+      await execute(sql.expire_assessment_instance, {
+        assessment_instance_id: assessmentInstanceId,
+      });
+      await switchUserAndLoadAssessment(studentUsers[1], assessmentUrl, null);
+      const promptResponse = await fetch(assessmentInstanceURL);
+      assert.isOk(promptResponse.ok);
+      assert.include(promptResponse.url, '/finalize_drafts');
+      const prompt = cheerio.load(await promptResponse.text());
+      assert.include(prompt('option[value!=""]').text(), studentUsers[0].uid);
+      const draftChoice = prompt('option[value!=""]').val();
+      assert.equal(draftChoice, `${variantId}:${studentUsers[0].id}`);
+
+      const finishResponse = await fetch(promptResponse.url, {
+        method: 'POST',
+        body: new URLSearchParams({
+          __csrf_token: String(prompt('form input[name="__csrf_token"]').val()),
+          selected_drafts: String(draftChoice),
+        }),
+      });
+      assert.include(finishResponse.url, 'timeLimitExpired=true');
+      const submissionId = await selectOptionalLatestSubmissionIdForVariant({
+        variant_id: variantId,
+      });
+      assert.isNotNull(submissionId);
+      assert.deepEqual(
+        (await selectSubmissionById({ submission_id: submissionId })).raw_submitted_answer,
+        { c: '42' },
+      );
     });
   });
 });

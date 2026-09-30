@@ -62,6 +62,11 @@ export async function init() {
       intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalAutoFinishExamsSec,
     },
     {
+      name: 'finishTimedOutExams',
+      module: await import('./finishTimedOutExams.js'),
+      intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalFinishTimedOutExamsSec,
+    },
+    {
       name: 'errorAbandonedJobs',
       module: await import('./errorAbandonedJobs.js'),
       intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalErrorAbandonedJobsSec,

@@ -234,6 +234,7 @@ export async function updateAssessmentInstance(
  * @param params.ignoreGradeRateLimit - Whether to ignore grade rate limits.
  * @param params.ignoreRealTimeGradingDisabled - Whether to ignore real-time grading disabled checks.
  * @param params.client_fingerprint_id - The client fingerprint ID.
+ * @param params.beforeClose - Optional work to commit with the exam closure while it is locked.
  */
 export async function gradeAssessmentInstance({
   assessment_instance_id,
@@ -244,6 +245,7 @@ export async function gradeAssessmentInstance({
   ignoreGradeRateLimit,
   ignoreRealTimeGradingDisabled,
   client_fingerprint_id,
+  beforeClose,
 }: {
   assessment_instance_id: string;
   user_id: string | null;
@@ -253,6 +255,7 @@ export async function gradeAssessmentInstance({
   ignoreGradeRateLimit: boolean;
   ignoreRealTimeGradingDisabled: boolean;
   client_fingerprint_id: string | null;
+  beforeClose?: (assessmentInstance: AssessmentInstance) => Promise<void>;
 }): Promise<void> {
   debug('gradeAssessmentInstance()');
   ignoreGradeRateLimit = close || ignoreGradeRateLimit;
@@ -273,6 +276,7 @@ export async function gradeAssessmentInstance({
       }
 
       if (close) {
+        await beforeClose?.(assessmentInstance);
         // If we're supposed to close the assessment, do it *before* we
         // we start grading. This avoids a race condition where the student
         // makes an additional submission while grading is already in progress.

@@ -7,7 +7,10 @@ import { logger } from '@prairielearn/logger';
 import { getCheckedSignedTokenData } from '@prairielearn/signed-token';
 
 import { deleteAssessmentInstance } from '../lib/assessment.js';
-import { canDeleteAssessmentInstance } from '../lib/assessment.shared.js';
+import {
+  canDeleteAssessmentInstance,
+  isWithinExamDraftGracePeriod,
+} from '../lib/assessment.shared.js';
 import { config } from '../lib/config.js';
 import { setCookie } from '../lib/cookie.js';
 
@@ -17,6 +20,33 @@ export function checkStudentAssessmentAccess(req: Request, res: Response): boole
   const showClosedAssessment = res.locals.authz_result?.show_closed_assessment ?? true;
   const assessmentInstanceOpen = res.locals.assessment_instance?.open ?? true;
   const assessmentActive = res.locals.authz_result?.active ?? true;
+
+  const assessmentInstance = res.locals.assessment_instance;
+  const draftFinalizationUrl = assessmentInstance
+    ? `${res.locals.urlPrefix}/assessment_instance/${assessmentInstance.id}/finalize_drafts`
+    : null;
+  const requestPath = req.originalUrl.split('?')[0].replace(/\/$/, '');
+  const canAccessFinalization =
+    assessmentInstance != null &&
+    res.locals.assessment?.type === 'Exam' &&
+    res.locals.authz_result?.authorized_edit &&
+    res.locals.assessment_instance_time_limit_expired;
+  if (
+    canAccessFinalization &&
+    assessmentInstance.open &&
+    isWithinExamDraftGracePeriod(assessmentInstance.date_limit, res.locals.req_date) &&
+    req.method === 'GET' &&
+    draftFinalizationUrl != null
+  ) {
+    const assessmentInstanceUrl = `${res.locals.urlPrefix}/assessment_instance/${assessmentInstance.id}`;
+    const questionUrl = res.locals.instance_question
+      ? `${res.locals.urlPrefix}/instance_question/${res.locals.instance_question.id}`
+      : null;
+    if (requestPath === assessmentInstanceUrl || requestPath === questionUrl) {
+      res.redirect(draftFinalizationUrl);
+      return false;
+    }
+  }
 
   // Show the blocked assessment view when the selected access rule says the
   // completed assessment should be hidden and either:
@@ -35,7 +65,8 @@ export function checkStudentAssessmentAccess(req: Request, res: Response): boole
   if (
     !showClosedAssessment &&
     (!assessmentInstanceOpen || !assessmentActive) &&
-    !isExpiredTimeLimitFinish(req, res)
+    !isExpiredTimeLimitFinish(req, res) &&
+    !(canAccessFinalization && requestPath === draftFinalizationUrl)
   ) {
     res.status(403).send(
       StudentAssessmentAccess({

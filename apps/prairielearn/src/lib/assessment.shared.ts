@@ -15,6 +15,16 @@ export interface AssessmentInstanceTimeLimit {
   assessment_instance_time_limit_expired: boolean;
 }
 
+export const EXAM_DRAFT_GRACE_PERIOD_MS = 5 * 60 * 1000;
+
+export function isWithinExamDraftGracePeriod(dateLimit: Date | null, reqDate: Date): boolean {
+  return (
+    dateLimit !== null &&
+    dateLimit <= reqDate &&
+    reqDate.getTime() < dateLimit.getTime() + EXAM_DRAFT_GRACE_PERIOD_MS
+  );
+}
+
 /**
  * Computes the time-limit display values for an assessment instance from its
  * resolved access result. The effective end is the earlier of the PrairieTest

@@ -1,9 +1,10 @@
 import { type Request, type Response, Router } from 'express';
 import asyncHandler from 'express-async-handler';
+import { z } from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
 import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
-import { IdSchema } from '@prairielearn/zod';
+import { IdSchema, parseRequestBody } from '@prairielearn/zod';
 
 import {
   crossLockpoint,
@@ -11,9 +12,13 @@ import {
   renderText,
   updateAssessmentInstance,
 } from '../../lib/assessment.js';
-import { canDeleteAssessmentInstance } from '../../lib/assessment.shared.js';
+import {
+  canDeleteAssessmentInstance,
+  isWithinExamDraftGracePeriod,
+} from '../../lib/assessment.shared.js';
 import type { File } from '../../lib/db-types.js';
 import { deleteFile, uploadFile } from '../../lib/file-store.js';
+import { saveSubmission } from '../../lib/grading.js';
 import {
   getGroupConfig,
   getGroupInfo,
@@ -24,19 +29,33 @@ import {
 import { canUserAssignGroupRoles } from '../../lib/groups.shared.js';
 import { idsEqual } from '../../lib/id.js';
 import { type ResLocalsForPage, typedAsyncHandler } from '../../lib/res-locals.js';
-import clientFingerprint from '../../middlewares/clientFingerprint.js';
+import clientFingerprint, { getClientFingerprintId } from '../../middlewares/clientFingerprint.js';
 import logPageView from '../../middlewares/logPageView.js';
 import selectAndAuthzAssessmentInstance from '../../middlewares/selectAndAuthzAssessmentInstance.js';
 import studentAssessmentAccess from '../../middlewares/studentAssessmentAccess.js';
 import { selectAssessmentInstanceById } from '../../models/assessment-instance.js';
 import { computeNextAllowedGradingTimeMs } from '../../models/instance-question.js';
+import {
+  type AssessmentInstanceSubmissionDraft,
+  selectSubmissionDraftsForAssessmentInstance,
+} from '../../models/submission-draft.js';
 import { selectVariantsByInstanceQuestion } from '../../models/variant.js';
 
+import { FinalizeExamDrafts } from './finalizeExamDrafts.html.js';
 import { StudentAssessmentInstance } from './studentAssessmentInstance.html.js';
 import { InstanceQuestionRowSchema } from './studentAssessmentInstance.types.js';
 
 const router = Router({ mergeParams: true });
 const sql = loadSqlEquiv(import.meta.url);
+
+const FinalizeDraftsBodySchema = z.object({
+  selected_drafts: z
+    .preprocess(
+      (value) => (value == null ? [] : Array.isArray(value) ? value : [value]),
+      z.array(z.union([z.string().regex(/^\d+:\d+$/), z.literal('')])),
+    )
+    .transform((ids) => ids.filter((id) => id !== '')),
+});
 
 router.use(selectAndAuthzAssessmentInstance);
 router.use(studentAssessmentAccess);
@@ -51,6 +70,156 @@ async function ensureUpToDate(locals: ResLocalsForPage<'assessment-instance'>) {
     locals.assessment_instance = await selectAssessmentInstanceById(locals.assessment_instance.id);
   }
 }
+
+async function getDraftSubmissionPermissions(
+  drafts: AssessmentInstanceSubmissionDraft[],
+  res: Response,
+): Promise<Map<string, boolean>> {
+  const permissions = new Map<string, boolean>();
+  const teamId = res.locals.assessment_instance.team_id;
+  const hasRoles = teamId != null && (await getGroupConfig(res.locals.assessment.id)).has_roles;
+
+  for (const draft of drafts) {
+    const questionId = draft.instance_question.id;
+    if (permissions.has(questionId)) continue;
+    permissions.set(
+      questionId,
+      !hasRoles ||
+        res.locals.authz_data.has_course_instance_permission_view ||
+        (await getQuestionGroupPermissions(questionId, teamId, res.locals.authz_data.user.id))
+          .can_submit,
+    );
+  }
+  return permissions;
+}
+
+router.get(
+  '/finalize_drafts',
+  typedAsyncHandler<'assessment-instance'>(async (req, res) => {
+    if (
+      res.locals.assessment.type !== 'Exam' ||
+      !res.locals.authz_result.authorized_edit ||
+      !res.locals.assessment_instance_time_limit_expired
+    ) {
+      throw new HttpStatusError(403, 'This exam is not awaiting draft finalization');
+    }
+    const assessmentUrl = `${res.locals.urlPrefix}/assessment_instance/${res.locals.assessment_instance.id}`;
+    if (!res.locals.assessment_instance.open) {
+      res.redirect(`${assessmentUrl}?timeLimitExpired=true`);
+      return;
+    }
+    const drafts = isWithinExamDraftGracePeriod(
+      res.locals.assessment_instance.date_limit,
+      res.locals.req_date,
+    )
+      ? await selectSubmissionDraftsForAssessmentInstance({
+          assessment_instance_id: res.locals.assessment_instance.id,
+        })
+      : [];
+    if (drafts.length === 0) {
+      await gradeAssessmentInstance({
+        assessment_instance_id: res.locals.assessment_instance.id,
+        user_id: res.locals.user.id,
+        authn_user_id: res.locals.authn_user.id,
+        requireOpen: true,
+        close: true,
+        ignoreGradeRateLimit: true,
+        ignoreRealTimeGradingDisabled: true,
+        client_fingerprint_id: null,
+      });
+      res.redirect(`${assessmentUrl}?timeLimitExpired=true`);
+      return;
+    }
+    res.send(
+      FinalizeExamDrafts({
+        drafts,
+        permissions: await getDraftSubmissionPermissions(drafts, res),
+        resLocals: res.locals,
+      }),
+    );
+  }),
+);
+
+router.post(
+  '/finalize_drafts',
+  typedAsyncHandler<'assessment-instance'>(async (req, res) => {
+    if (
+      res.locals.assessment.type !== 'Exam' ||
+      !res.locals.authz_result.authorized_edit ||
+      !res.locals.assessment_instance_time_limit_expired
+    ) {
+      throw new HttpStatusError(403, 'This exam is not awaiting draft finalization');
+    }
+    const { selected_drafts } = parseRequestBody(req, FinalizeDraftsBodySchema);
+    const clientFingerprintId = await getClientFingerprintId(req, res);
+    const assessmentUrl = `${res.locals.urlPrefix}/assessment_instance/${res.locals.assessment_instance.id}`;
+    if (!res.locals.assessment_instance.open) {
+      res.redirect(`${assessmentUrl}?timeLimitExpired=true`);
+      return;
+    }
+
+    await gradeAssessmentInstance({
+      assessment_instance_id: res.locals.assessment_instance.id,
+      user_id: res.locals.user.id,
+      authn_user_id: res.locals.authn_user.id,
+      requireOpen: true,
+      close: true,
+      ignoreGradeRateLimit: true,
+      ignoreRealTimeGradingDisabled: true,
+      client_fingerprint_id: clientFingerprintId,
+      beforeClose: async (assessmentInstance) => {
+        if (
+          assessmentInstance.date_limit == null ||
+          assessmentInstance.date_limit > res.locals.req_date
+        ) {
+          throw new HttpStatusError(409, 'The exam time limit has changed. Reload the exam.');
+        }
+        if (!isWithinExamDraftGracePeriod(assessmentInstance.date_limit, res.locals.req_date)) {
+          return;
+        }
+
+        const drafts = await selectSubmissionDraftsForAssessmentInstance({
+          assessment_instance_id: assessmentInstance.id,
+        });
+        const selected = selected_drafts.map((id) =>
+          drafts.find((draft) => `${draft.draft.variant_id}:${draft.draft.user_id}` === id),
+        );
+        if (selected.some((draft) => draft == null)) {
+          throw new HttpStatusError(
+            409,
+            'A selected draft is no longer available. Reload the page.',
+          );
+        }
+        const selectedDrafts = selected as AssessmentInstanceSubmissionDraft[];
+        const questionIds = selectedDrafts.map((draft) => draft.instance_question.id);
+        if (new Set(questionIds).size !== questionIds.length) {
+          throw new HttpStatusError(400, 'Choose at most one draft per question.');
+        }
+        const permissions = await getDraftSubmissionPermissions(selectedDrafts, res);
+        if (selectedDrafts.some((draft) => !permissions.get(draft.instance_question.id))) {
+          throw new HttpStatusError(403, 'Your group role cannot submit to a selected question.');
+        }
+        for (const draft of selectedDrafts) {
+          await saveSubmission(
+            {
+              variant_id: draft.variant.id,
+              user_id: res.locals.user.id,
+              auth_user_id: res.locals.authn_user.id,
+              submitted_answer: draft.draft.raw_submitted_answer,
+              credit: res.locals.authz_result.credit,
+              mode: res.locals.authz_data.mode,
+              client_fingerprint_id: clientFingerprintId,
+            },
+            draft.variant,
+            draft.question,
+            res.locals.course,
+          );
+        }
+      },
+    });
+    res.redirect(`${assessmentUrl}?timeLimitExpired=true`);
+  }),
+);
 
 async function processFileUpload(req: Request, res: Response) {
   if (!res.locals.assessment_instance.open) {
@@ -158,6 +327,22 @@ router.post(
         // Only close if the timer expired due to time limit, not for access end
         if (!res.locals.assessment_instance_time_limit_expired) {
           return res.redirect(req.originalUrl);
+        }
+        if (
+          isWithinExamDraftGracePeriod(
+            res.locals.assessment_instance.date_limit,
+            res.locals.req_date,
+          ) &&
+          (
+            await selectSubmissionDraftsForAssessmentInstance({
+              assessment_instance_id: res.locals.assessment_instance.id,
+            })
+          ).length > 0
+        ) {
+          res.redirect(
+            `${res.locals.urlPrefix}/assessment_instance/${res.locals.assessment_instance.id}/finalize_drafts`,
+          );
+          return;
         }
       }
 

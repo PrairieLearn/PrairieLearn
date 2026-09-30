@@ -9,7 +9,10 @@ import { IdSchema, parseRequestBody } from '@prairielearn/zod';
 
 import checkPlanGrantsForQuestion from '../../ee/middlewares/checkPlanGrantsForQuestion.js';
 import { gradeAssessmentInstance } from '../../lib/assessment.js';
-import { canDeleteAssessmentInstance } from '../../lib/assessment.shared.js';
+import {
+  canDeleteAssessmentInstance,
+  isWithinExamDraftGracePeriod,
+} from '../../lib/assessment.shared.js';
 import { getQuestionCopyTargets } from '../../lib/copy-content.js';
 import { type File } from '../../lib/db-types.js';
 import { deleteFile, uploadFile } from '../../lib/file-store.js';
@@ -27,6 +30,7 @@ import { selectEnabledToolsForInstanceQuestion } from '../../models/assessment.j
 import {
   deleteSubmissionDraft,
   selectOptionalSubmissionDraft,
+  selectSubmissionDraftsForAssessmentInstance,
   upsertSubmissionDraft,
 } from '../../models/submission-draft.js';
 import { selectUserById } from '../../models/user.js';
@@ -321,6 +325,23 @@ router.post(
       // Only close if the timer expired due to time limit, not for access end
       if (!res.locals.assessment_instance_time_limit_expired) {
         return res.redirect(req.originalUrl);
+      }
+
+      if (
+        isWithinExamDraftGracePeriod(
+          res.locals.assessment_instance.date_limit,
+          res.locals.req_date,
+        ) &&
+        (
+          await selectSubmissionDraftsForAssessmentInstance({
+            assessment_instance_id: res.locals.assessment_instance.id,
+          })
+        ).length > 0
+      ) {
+        res.redirect(
+          `${res.locals.urlPrefix}/assessment_instance/${res.locals.assessment_instance.id}/finalize_drafts`,
+        );
+        return;
       }
 
       await gradeAssessmentInstance({

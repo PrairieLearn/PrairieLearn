@@ -13,3 +13,10 @@ SELECT
   ai.*
 FROM
   assessment_instances AS ai;
+
+-- BLOCK expire_assessment_instance
+UPDATE assessment_instances
+SET
+  date_limit = CURRENT_TIMESTAMP - INTERVAL '1 minute'
+WHERE
+  id = $assessment_instance_id;
