@@ -1,10 +1,12 @@
 /* eslint-disable jsdoc/check-param-names */
 // This is a fork of Sentry's Express integration, lightly modified to remove
 // unused code and conform to PrairieLearn's coding style. We retain this manual
-// integration because applications load Express before the asynchronously loaded
-// configuration provides the Sentry DSN, and use their own OpenTelemetry
-// instrumentation. Sentry's automatic Express instrumentation is disabled to
-// keep this middleware responsible for error capture.
+// integration so PrairieLearn can assign error IDs and translate Postgres errors
+// into HTTP status codes before capture. Sentry v11's automatic Express capture
+// runs earlier, before that application middleware. Applications also load Express
+// before configuration provides the Sentry DSN and own their OTel instrumentation.
+// Sentry's automatic Express instrumentation is disabled to keep this middleware
+// responsible for error capture.
 //
 // See this package's `README.md` for more information about our Sentry and
 // OpenTelemetry setup.

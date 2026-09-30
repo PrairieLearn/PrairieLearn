@@ -20,9 +20,7 @@ export async function init(options: Sentry.NodeOptions) {
 
   Sentry.init({
     release,
-    enableOpenTelemetrySetup: false,
     enableRuntimeChannelInjection: false,
-    attachStacktrace: false,
     dataCollection: {
       userInfo: false,
       cookies: false,
@@ -36,7 +34,6 @@ export async function init(options: Sentry.NodeOptions) {
       databaseQueryData: false,
       queues: false,
       graphQL: { document: false, variables: false },
-      frameContextLines: 7,
     },
     // Keep manual Express error capture and OTel instrumentation in charge.
     defaultIntegrations: [

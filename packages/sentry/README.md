@@ -15,9 +15,9 @@ await init({
 
 OpenTelemetry owns tracing, instrumentation, context propagation, sampling, and exporters. Initialize the application's OpenTelemetry provider before calling `init`. The default `openTelemetryIntegration` links Sentry errors to the active OTel trace without exporting spans to Sentry. Leave `tracesSampleRate` and `tracesSampler` unset. No Sentry tracer provider, span processor, propagator, or context manager is required.
 
-Sentry v11 uses its own AsyncLocalStorage for scope isolation. Applications can continue using `requestHandler()` before Express routes and `expressErrorHandler()` after routes. Framework auto-instrumentation and runtime channel injection are disabled by default because applications load frameworks before the Sentry DSN is available. This also keeps manual error capture in charge. HTTP and fetch breadcrumbs remain enabled, with Sentry spans and outgoing trace propagation disabled so they do not compete with OTel.
+Sentry v11 uses its own AsyncLocalStorage for scope isolation. Applications can continue using `requestHandler()` before Express routes and `expressErrorHandler()` after routes. Framework auto-instrumentation and runtime channel injection are disabled by default because applications load frameworks before the Sentry DSN is available. This also keeps manual error capture in charge: PrairieLearn assigns error IDs and translates Postgres errors into HTTP status codes before capture, whereas automatic Express capture would run earlier. HTTP and fetch breadcrumbs remain enabled, with Sentry spans and outgoing trace propagation disabled so they do not compete with OTel.
 
-The wrapper preserves v10's restrictive SDK data collection defaults and message stack trace behavior. Explicit request data and user information added by application middleware are still included; these defaults do not scrub manually attached event data. Callers can override SDK options when needed.
+The wrapper preserves v10's restrictive SDK data collection defaults, while accepting v11's message stack traces and five lines of source context. Explicit request data and user information added by application middleware are still included; these defaults do not scrub manually attached event data. Callers can override SDK options when needed.
 
 ## Migrating from Sentry v10
 
