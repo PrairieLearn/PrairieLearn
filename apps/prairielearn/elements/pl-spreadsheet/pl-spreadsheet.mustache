@@ -1,0 +1,62 @@
+<div class="pl-spreadsheet card mb-3">
+  <div class="card-header">{{aria_label}}</div>
+  {{#format_errors}}
+    <div class="alert alert-danger m-3" role="alert">{{.}}</div>
+  {{/format_errors}}
+
+  {{#editable}}
+    <input
+      type="hidden"
+      name="{{answer_name}}"
+      value="{{initial_submission}}"
+      data-deferred-initial-value="true"
+      class="js-pl-spreadsheet-input"
+    />
+    <div
+      class="pl-spreadsheet-root"
+      data-options="{{options}}"
+      style="height: {{height}}"
+    >
+      <div class="alert alert-secondary m-3" role="status">Loading spreadsheet…</div>
+    </div>
+    <noscript>
+      <div class="alert alert-danger m-3" role="alert">
+        JavaScript is required to edit this spreadsheet.
+      </div>
+    </noscript>
+  {{/editable}}
+
+  {{#read_only}}
+    <div class="card-body">
+      {{#sheets}}
+        <section class="mb-4" aria-label="Sheet {{name}}">
+          <div class="table-responsive">
+            <table class="table table-sm table-bordered mb-0 pl-spreadsheet-table">
+              <caption>{{name}}</caption>
+              <thead>
+                <tr>
+                  <th scope="col" aria-label="Row number"></th>
+                  {{#columns}}<th scope="col">{{name}}</th>{{/columns}}
+                </tr>
+              </thead>
+              <tbody>
+                {{#rows}}
+                  <tr>
+                    <th scope="row">{{number}}</th>
+                    {{#cells}}<td aria-label="Cell {{address}}">{{display}}</td>{{/cells}}
+                  </tr>
+                {{/rows}}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      {{/sheets}}
+    </div>
+  {{/read_only}}
+
+  {{#answer}}
+    <div class="card-body text-muted">
+      This spreadsheet has no built-in correct answer. Its grading is defined by the question.
+    </div>
+  {{/answer}}
+</div>

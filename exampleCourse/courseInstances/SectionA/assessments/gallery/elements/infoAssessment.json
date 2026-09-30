@@ -29,6 +29,7 @@
         { "id": "demo/matrixComplexAlgebra", "autoPoints": 2, "maxAutoPoints": 10 },
         { "id": "element/richTextEditor", "manualPoints": 2 },
         { "id": "element/fileEditor", "autoPoints": 2, "maxAutoPoints": 10 },
+        { "id": "element/spreadsheet", "autoPoints": 2, "maxAutoPoints": 10 },
         { "id": "element/fileUpload", "manualPoints": 2 },
         { "id": "element/codeDocumentation", "autoPoints": 2, "maxAutoPoints": 10 },
         { "id": "element/excalidraw", "manualPoints": 2 },

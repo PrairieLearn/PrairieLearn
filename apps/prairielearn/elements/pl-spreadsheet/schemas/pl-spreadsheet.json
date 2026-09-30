@@ -1,0 +1,24 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "allow-blank": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "answers-name": {
+      "type": "string"
+    },
+    "aria-label": {
+      "type": "string"
+    },
+    "height": {
+      "type": "string"
+    },
+    "params-name": {
+      "type": "string"
+    }
+  },
+  "required": ["answers-name", "params-name"],
+  "additionalProperties": false
+}

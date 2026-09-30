@@ -1,0 +1,67 @@
+.pl-spreadsheet-root {
+  min-height: 16rem;
+}
+
+.pl-spreadsheet-editor {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 16rem;
+}
+
+.pl-spreadsheet-toolbar,
+.pl-spreadsheet-sheet-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.5rem;
+}
+
+.pl-spreadsheet-formula-bar {
+  display: grid;
+  grid-template-columns: auto minmax(8rem, 1fr);
+  gap: 0.5rem;
+  align-items: center;
+  padding: 0 0.5rem 0.5rem;
+}
+
+.pl-spreadsheet-grid {
+  flex: 1;
+  min-height: 10rem;
+}
+
+.pl-spreadsheet-cell-readonly {
+  background-color: var(--bs-secondary-bg);
+}
+
+.pl-spreadsheet-row-header {
+  color: var(--bs-secondary-color);
+  font-weight: 600;
+}
+
+.pl-spreadsheet-cell-error {
+  color: var(--bs-danger-text-emphasis);
+  font-weight: 600;
+}
+
+.pl-spreadsheet-table caption {
+  caption-side: top;
+  color: inherit;
+  font-weight: 600;
+}
+
+@media (forced-colors: active) {
+  .pl-spreadsheet-cell-readonly {
+    border: 2px dashed GrayText;
+  }
+
+  .pl-spreadsheet-cell-error {
+    outline: 2px solid LinkText;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pl-spreadsheet * {
+    scroll-behavior: auto !important;
+  }
+}

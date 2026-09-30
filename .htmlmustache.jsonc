@@ -218,6 +218,10 @@
       ]
     },
     {
+      "name": "pl-spreadsheet",
+      "schema": "./apps/prairielearn/elements/pl-spreadsheet/schemas/pl-spreadsheet.json"
+    },
+    {
       "name": "pl-string-input",
       "schema": "./apps/prairielearn/elements/pl-string-input/schemas/pl-string-input.json"
     },

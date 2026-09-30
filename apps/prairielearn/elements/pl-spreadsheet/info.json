@@ -1,0 +1,8 @@
+{
+  "controller": "pl-spreadsheet.py",
+  "dependencies": {
+    "compiledScripts": ["plSpreadsheet.tsx"],
+    "nodeModulesStyles": ["react-data-grid/lib/styles.css"],
+    "elementStyles": ["pl-spreadsheet.css"]
+  }
+}

@@ -36,6 +36,7 @@ When the response is a number — integer, decimal, value with units, or a matri
 - [`pl-units-input`](pl-units-input.md): Fill in a number with units such as "1.5 m", "14 ms", "6.3 ft", and so on.
 - [`pl-matrix-component-input`](pl-matrix-component-input.md): Fill in a matrix using a grid with one input per cell.
 - [`pl-matrix-input`](pl-matrix-input.md): Supply a matrix in a supported programming language format.
+- [`pl-spreadsheet`](pl-spreadsheet.md): Edit values and formulas in a fixed-structure, multi-sheet workbook.
 
 ??? note "Decision flowchart"
 
@@ -186,6 +187,7 @@ For showing what the student submitted and the results that come back from gradi
 | [`pl-question-panel`](pl-question-panel.md)                       | Panel          | Show only in the question panel.              |
 | [`pl-rich-text-editor`](pl-rich-text-editor.md)                   | Submission     | Formattable text editor for essays.           |
 | [`pl-sketch`](pl-sketch.md)                                       | Submission     | Sketch curves and math objects.               |
+| [`pl-spreadsheet`](pl-spreadsheet.md)                             | Submission     | Fixed-structure workbook with formulas.       |
 | [`pl-string-input`](pl-string-input.md)                           | Submission     | String value.                                 |
 | [`pl-submission-panel`](pl-submission-panel.md)                   | Panel          | Show only in the submission panel.            |
 | [`pl-symbolic-input`](pl-symbolic-input.md)                       | Submission     | Symbolic math expression.                     |

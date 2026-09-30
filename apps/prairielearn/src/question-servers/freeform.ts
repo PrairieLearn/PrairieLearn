@@ -25,6 +25,7 @@ import { idsEqual } from '../lib/id.js';
 import { isEnterprise } from '../lib/license.js';
 import * as markdown from '../lib/markdown.js';
 import { APP_ROOT_PATH } from '../lib/paths.js';
+import { getSpreadsheetLogMetadata, normalizeSpreadsheetAnswers } from '../lib/spreadsheet.js';
 import { getOrUpdateCourseCommitHash } from '../models/course.js';
 import {
   type ElementCoreJson,
@@ -1243,6 +1244,7 @@ export async function render({
       const dependencies = {
         coreStyles: [] as string[],
         coreScripts: [] as string[],
+        compiledScripts: [] as string[],
         nodeModulesStyles: [] as string[],
         nodeModulesScripts: [] as string[],
         coreElementStyles: [] as string[],
@@ -1457,6 +1459,9 @@ export async function render({
       dependencies.coreScripts.forEach((file) =>
         coreScriptUrls.push(assets.assetPath(`javascripts/${file}`)),
       );
+      dependencies.compiledScripts.forEach((file) =>
+        coreScriptUrls.push(assets.compiledScriptPath(file)),
+      );
       dependencies.nodeModulesStyles.forEach((file) =>
         styleUrls.push(assets.nodeModulesAssetPath(file)),
       );
@@ -1638,11 +1643,28 @@ export async function parse(
       caller,
     });
 
+    const params = variant.params ?? {};
+    let submittedAnswers: Record<string, unknown>;
+    try {
+      submittedAnswers = normalizeSpreadsheetAnswers({
+        params,
+        submittedAnswers: submission.submitted_answer ?? {},
+      });
+    } catch (err) {
+      logger.error('Unexpected error normalizing spreadsheet submission', {
+        variant_id: variant.id,
+        question_id: question.id,
+        error_type: err instanceof Error ? err.name : 'unknown',
+        ...getSpreadsheetLogMetadata(params),
+      });
+      throw err;
+    }
+
     const data = {
       // These should never be null, but that can't be encoded in the schema.
-      params: variant.params ?? {},
+      params,
       correct_answers: variant.true_answer ?? {},
-      submitted_answers: submission.submitted_answer ?? {},
+      submitted_answers: submittedAnswers,
       feedback: submission.feedback ?? {},
       format_errors: submission.format_errors ?? {},
       variant_seed: Number.parseInt(variant.variant_seed, 36),
