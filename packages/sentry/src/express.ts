@@ -1,6 +1,13 @@
 /* eslint-disable jsdoc/check-param-names */
-// Keep manual error capture because applications load Express before the Sentry
-// DSN is available and use their own OpenTelemetry instrumentation.
+// This is a fork of Sentry's Express integration, lightly modified to remove
+// unused code and conform to PrairieLearn's coding style. We retain this manual
+// integration because applications load Express before the asynchronously loaded
+// configuration provides the Sentry DSN, and use their own OpenTelemetry
+// instrumentation. Sentry's automatic Express instrumentation is disabled to
+// keep this middleware responsible for error capture.
+//
+// See this package's `README.md` for more information about our Sentry and
+// OpenTelemetry setup.
 //
 // This was forked from the following file on 2025-07-30:
 // https://github.com/getsentry/sentry-javascript/blob/12ac49a9956fd1b64b3f8ad4b2b8f1da426a1efd/packages/node/src/integrations/tracing/express.ts
