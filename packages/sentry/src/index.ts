@@ -1,5 +1,5 @@
 import { httpRequestToRequestData, stripUrlQueryAndFragment } from '@sentry/core';
-import * as Sentry from '@sentry/node-core';
+import * as Sentry from '@sentry/node';
 import { execa } from 'execa';
 
 /**
@@ -20,6 +20,34 @@ export async function init(options: Sentry.NodeOptions) {
 
   Sentry.init({
     release,
+    enableOpenTelemetrySetup: false,
+    enableRuntimeChannelInjection: false,
+    attachStacktrace: false,
+    dataCollection: {
+      userInfo: false,
+      cookies: false,
+      httpHeaders: {
+        request: { deny: ['forwarded', '-ip', 'remote-', 'via', '-user'] },
+        response: { deny: ['forwarded', '-ip', 'remote-', 'via', '-user'] },
+      },
+      httpBodies: [],
+      urlQueryParams: { deny: ['forwarded', '-ip', 'remote-', 'via', '-user'] },
+      genAI: { inputs: false, outputs: false },
+      databaseQueryData: false,
+      queues: false,
+      graphQL: { document: false, variables: false },
+      frameContextLines: 7,
+    },
+    // Keep manual Express error capture and OTel instrumentation in charge.
+    defaultIntegrations: [
+      ...Sentry.getDefaultIntegrationsWithoutPerformance().filter(
+        (integration) =>
+          !['Express', 'Fastify', 'Hapi', 'Koa', 'Http', 'NodeFetch'].includes(integration.name),
+      ),
+      Sentry.httpIntegration({ spans: false, tracePropagation: false }),
+      Sentry.nativeNodeFetchIntegration({ spans: false, tracePropagation: false }),
+      Sentry.openTelemetryIntegration(),
+    ],
     ...options,
   });
 }
@@ -47,17 +75,9 @@ function extractTransaction(req: any) {
 }
 
 /**
- * Sentry v8 switched from simple, manual instrumentation to "automatic"
- * instrumentation based on OpenTelemetry. However, this interferes with
- * the way that our applications asynchronously load their configuration,
- * specifically the Sentry DSN. Sentry's automatic request isolation and
- * request data extraction requires that `Sentry.init` be called before
- * any other code is loaded, but our application startup structure is such
- * that we import most of our own code before we can load the Sentry DSN.
- *
- * Rather than jumping through hoops to restructure our application to
- * support this, this small function can be added as Express middleware to
- * isolate requests and set request data for Sentry.
+ * Applications load Express before their asynchronously loaded configuration
+ * provides the Sentry DSN. Isolate requests explicitly instead of relying on
+ * Sentry's framework instrumentation, and extract the Express request data.
  */
 export function requestHandler() {
   return (req: any, _res: any, next: any) => {
@@ -100,7 +120,7 @@ export type {
   Stacktrace,
   Thread,
   User,
-} from '@sentry/node-core';
+} from '@sentry/node';
 
 export {
   addBreadcrumb,
@@ -118,7 +138,6 @@ export {
   NodeClient,
   Scope,
   SDK_VERSION,
-  SentryContextManager,
   setContext,
   setExtra,
   setExtras,
@@ -130,6 +149,6 @@ export {
   startSpanManual,
   withIsolationScope,
   withScope,
-} from '@sentry/node-core';
+} from '@sentry/node';
 
 export { expressErrorHandler, setupExpressErrorHandler } from './express.js';
