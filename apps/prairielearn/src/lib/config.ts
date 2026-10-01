@@ -50,6 +50,9 @@ function makeKeyRingSchema(keySchema: z.ZodString) {
 const KeyRingSchema = makeKeyRingSchema(z.string());
 const DatabaseEncryptionKeyRingSchema = makeKeyRingSchema(z.string().regex(/^[0-9a-f]{64}$/i));
 
+// startsWith replaces Zod's URL format, so restore it for generated JSON Schema.
+const HttpsUrlSchema = z.url().startsWith('https://').meta({ format: 'uri' });
+
 export const STANDARD_COURSE_DIRS = [
   '/course',
   '/course2',
@@ -249,9 +252,9 @@ export const ConfigSchema = z.object({
   slackOpsWebhookUrl: z.string().nullable().default(null),
   slackCourseRequestWebhookUrl: z.string().nullable().default(null),
   /** Slack invitation shown to course staff in the Get help dialog. */
-  supportSlackUrl: z.url().startsWith('https://').nullable().default(null),
+  supportSlackUrl: HttpsUrlSchema.nullable().default(null),
   /** Zoom office-hours link shown to course staff in the Get help dialog. */
-  supportOfficeHoursUrl: z.url().startsWith('https://').nullable().default(null),
+  supportOfficeHoursUrl: HttpsUrlSchema.nullable().default(null),
   githubClientToken: z.string().nullable().default(null),
   githubCourseOwner: z.string().default('PrairieLearn'),
   githubCourseTemplate: z.string().default('pl-template'),
