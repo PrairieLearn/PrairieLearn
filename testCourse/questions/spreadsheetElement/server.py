@@ -4,7 +4,7 @@ import prairielearn as pl
 
 def generate(data: pl.QuestionData) -> None:
     data["params"]["workbook"] = {
-        "schema_version": 1,
+        "schema_version": 2,
         "sheets": [
             {
                 "name": "Inputs",
@@ -33,7 +33,7 @@ def generate(data: pl.QuestionData) -> None:
         ],
     }
     data["correct_answers"]["model"] = {
-        "schema_version": 1,
+        "schema_version": 2,
         "sheets": [
             {
                 "name": "Checks",
@@ -66,22 +66,22 @@ def grade(data: pl.QuestionData) -> None:
     csv_workbook = pl.SpreadsheetBook(data["submitted_answers"]["csv_model"])
     csv_budget = csv_workbook["CsvBudget"]
     csv_workbook_correct = (
-        csv_budget.cell("B2").value == 3
-        and csv_budget.cell("C2").value == 4
-        and csv_budget.cell("D2").formula == "=B2*C2"
+        csv_budget.cell("A1").value == 3
+        and csv_budget.cell("B1").value == 4
+        and csv_budget.cell("C1").formula == "=A1*B1"
         and csv_workbook.outputs["is_correct"].value is True
     )
 
     tsv_workbook = pl.SpreadsheetBook(data["submitted_answers"]["tsv_model"])
     tsv_workbook_correct = (
-        tsv_workbook["Rates"].cell("D2").value == 10
+        tsv_workbook["Rates"].cell("C1").value == 10
         and tsv_workbook["RateSummary"].cell("B1").value == 22
         and tsv_workbook.outputs["is_correct"].value is True
     )
 
     xlsx_workbook = pl.SpreadsheetBook(data["submitted_answers"]["xlsx_model"])
     xlsx_workbook_correct = (
-        xlsx_workbook["XlsxInputs"].cell("D2").value == 10
+        xlsx_workbook["XlsxInputs"].cell("C1").value == 10
         and xlsx_workbook["XlsxSummary"].cell("B1").value == 22
         and xlsx_workbook.outputs["is_correct"].value is True
     )

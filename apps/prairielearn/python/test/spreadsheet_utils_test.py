@@ -13,12 +13,12 @@ from prairielearn import spreadsheet_utils
 
 def snapshot() -> pl.SpreadsheetSnapshot:
     return {
-        "schema_version": 1,
+        "schema_version": 2,
         "template_hash": "template-hash",
         "engine": {
             "name": "hyperformula",
             "version": "3.4.0",
-            "configuration_version": 1,
+            "configuration_version": 2,
         },
         "sheets": [
             {
@@ -72,7 +72,7 @@ def snapshot() -> pl.SpreadsheetSnapshot:
             },
         ],
         "grading": {
-            "schema_version": 1,
+            "schema_version": 2,
             "grader_hash": "grader-hash",
             "outputs": {
                 "total": {"type": "number", "value": 6},
@@ -425,34 +425,57 @@ def test_spreadsheet_wrapper_addresses_cells_and_sheets() -> None:
     assert error.error_value == "#DIV/0!"
 
 
-def test_spreadsheet_wrapper_constrains_offset_student_range() -> None:
-    offset_snapshot = snapshot()
-    sheet = offset_snapshot["sheets"][0]
-    sheet["student_range"] = "B1:C2"
-    sheet["cells"].pop("A1")
+def test_spreadsheet_address_space_translates_bounded_addresses_and_ranges() -> None:
+    space = pl.SpreadsheetAddressSpace.from_source_range("C5:F20")
 
-    inputs = pl.SpreadsheetBook(offset_snapshot)["Inputs"]
-    assert inputs.shape == (2, 2)
-    assert tuple(cell.address for cell in inputs) == ("B1", "C1", "B2", "C2")
-    assert tuple(
-        cell.address for cell in inputs.query(lambda cell: cell.is_formula)
-    ) == (
-        "B1",
-        "C1",
+    assert space.shape == (16, 4)
+    assert space.student_range.address == "A1:D16"
+    assert space.to_student_address("C5").address == "A1"
+    assert space.to_student_address("D6").address == "B2"
+    assert space.to_source_address("D16").address == "F20"
+    assert space.to_student_range("D6:F8").address == "B2:D4"
+    assert space.to_source_range("B2:D4").address == "D6:F8"
+
+    with pytest.raises(ValueError, match="outside"):
+        space.to_student_address("B5")
+    with pytest.raises(ValueError, match="outside"):
+        space.to_source_address("E1")
+
+
+def test_rebase_spreadsheet_formula_uses_student_local_coordinates() -> None:
+    spaces = pl.SpreadsheetAddressSpaces({"Inputs": "C5:F20", "Rates": "B2:C10"})
+
+    assert (
+        pl.rebase_spreadsheet_formula(
+            "=$C5*D$6+Rates!$B$2",
+            current_sheet="Inputs",
+            address_spaces=spaces,
+        )
+        == "=$A1*B$2+Rates!$A$1"
     )
-    assert inputs.cell("B1").value == 6
-    with pytest.raises(ValueError, match="outside the sheet"):
-        inputs["A1"]
-    with pytest.raises(ValueError, match="outside the sheet"):
-        pl.get_spreadsheet_cell(offset_snapshot, "Inputs", "A1")
-
-    forged_snapshot = snapshot()
-    forged_snapshot["sheets"][0]["student_range"] = "B1:C2"
-    with pytest.raises(ValueError, match="outside the student range"):
-        pl.SpreadsheetBook(forged_snapshot)
+    assert (
+        pl.rebase_spreadsheet_formula(
+            "=SUM(C:F,5:20)",
+            current_sheet="Inputs",
+            address_spaces=spaces,
+        )
+        == "=SUM(A:D,1:16)"
+    )
+    with pytest.raises(ValueError, match="outside"):
+        pl.rebase_spreadsheet_formula(
+            "=B5",
+            current_sheet="Inputs",
+            address_spaces=spaces,
+        )
 
 
 def test_spreadsheet_validates_and_copies_snapshot_at_construction() -> None:
+    old_snapshot = cast(pl.SpreadsheetSnapshot, {**snapshot(), "schema_version": 1})
+    with pytest.raises(ValueError, match="schema version 2"):
+        pl.SpreadsheetBook(old_snapshot)
+    with pytest.raises(ValueError, match="schema version 2"):
+        pl.get_spreadsheet_cell(old_snapshot, "Inputs", "A1")
+
     invalid_input = snapshot()
     invalid_input["sheets"][0]["cells"]["A1"]["input"] = cast(
         pl.SpreadsheetInput,

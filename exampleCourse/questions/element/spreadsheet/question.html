@@ -28,8 +28,8 @@
 <section aria-labelledby="csv-workbook-heading" class="mb-5">
   <h2 id="csv-workbook-heading" class="h4">CSV-backed workbook</h2>
   <p>
-    The student sees only A2:D3 of <code>inventory.csv</code>. The private row and
-    grading check in E3 remain on the server.
+    The student sees only A2:D3 of <code>inventory.csv</code>, presented as A1:D2 in
+    the editor. The private row and grading check in E3 remain on the server.
   </p>
   <pl-spreadsheet answers-name="inventory" aria-label="CSV inventory model" height="300px">
     <pl-spreadsheet-data
@@ -51,7 +51,7 @@
   <h2 id="tsv-workbook-heading" class="h4">TSV-backed workbook</h2>
   <p>
     This uses the same authoring pattern with tab-separated data in
-    <code>labor.tsv</code> and an offset student-visible range.
+    <code>labor.tsv</code>. Its offset source range also appears to students from A1.
   </p>
   <pl-spreadsheet answers-name="labor" aria-label="TSV labor model" height="300px">
     <pl-spreadsheet-data

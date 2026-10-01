@@ -17,7 +17,7 @@ PrairieLearn before `server.py` or an external grader receives the answer.
 ```python title="server.py"
 def generate(data):
     data["params"]["workbook"] = {
-        "schema_version": 1,
+        "schema_version": 2,
         "sheets": [
             {
                 "name": "Budget",
@@ -57,7 +57,7 @@ Exactly one source mode is required: either set `params-name` with no child
 declarations, or add one or more `pl-spreadsheet-data` children without
 `params-name`.
 
-The template must have `schema_version: 1` and one or more sheets. Sheet names must
+The template must have `schema_version: 2` and one or more sheets. Sheet names must
 be unique without regard to case, contain 1 to 31 Unicode characters, and have no
 leading or trailing whitespace. They may not contain `!`, `:`, `<`, `>`, `{`, `}`,
 `[`, `]`, or the null character (`\0`). All other Unicode characters are allowed.
@@ -70,7 +70,17 @@ Each Python-defined sheet contains:
 - `editable_ranges`: an array of A1 ranges. All other cells are read-only.
 - `student_range`: an optional contiguous A1 range. Only this range is rendered,
   accepted in submissions, and exposed to grading code. If omitted, the complete
-  `A1:<last-cell>` sheet is visible for compatibility.
+  `A1:<last-cell>` sheet is visible.
+
+Template addresses use source-workbook coordinates. PrairieLearn rebases each
+`student_range` into a student-local address space whose top-left cell is `A1`.
+For example, an authored range `C5:F20` is displayed and submitted as `A1:D16`;
+an authored formula `=C5*D5` becomes `=A1*B1`. The formula bar, row and column
+headings, fill behavior, normalized snapshots, and Python grading APIs all use
+these student-local addresses. The element's browser configuration and normalized
+snapshot do not contain the source mapping. File-backed mappings remain private;
+the original object selected by `params-name` is still part of student-visible
+`data["params"]`, as noted above.
 
 Cell inputs may be finite numbers, booleans, text, or formulas beginning with `=`.
 Students cannot create, delete, or rename sheets; add or remove rows and columns;
@@ -122,13 +132,15 @@ a visible cell, a hidden cell, or an undeclared XLSX worksheet. Only the typed n
 result enters the normalized answer.
 
 The complete source workbook is authoritative during grading. PrairieLearn clears
-each `student-range`, overlays the normalized public template and student changes
-(including explicitly cleared cells), adds manually configured private sheets, and
-then recalculates the named outputs. A hidden source formula may reference visible
-or hidden cells. A visible formula may reference only cells inside the union of
-declared student ranges; direct, transitive, cross-sheet, whole-row, and
-whole-column references that escape that boundary are rejected both when the
-variant is generated and when a submission is normalized.
+each `student-range`, connects it to a private student-local mirror, overlays the
+normalized public template and student changes (including explicitly cleared
+cells), adds manually configured private sheets, and then recalculates the named
+outputs. Student formulas execute only in the local mirror; controlled bridge cells
+carry their results into the authoritative source workbook. A hidden source formula
+may reference visible or hidden cells. A visible formula may reference only cells
+inside the union of declared student ranges; direct, transitive, cross-sheet,
+whole-row, and whole-column references that escape that boundary are rejected both
+when the variant is generated and when a submission is normalized.
 
 File ingest imports cell values and formulas, not XLSX styles, merged cells,
 comments, charts, or macros.
@@ -164,9 +176,13 @@ NA conversion. XLSX formulas are loaded as formulas. The same workbook, formula,
 text, and payload limits apply after ingest.
 
 `SpreadsheetAddress`, `SpreadsheetAddressRange`, `SpreadsheetQualifiedAddress`,
-and `SpreadsheetQualifiedAddressRange` are public immutable coordinate types.
-Ranges support A1 parsing, containment, intersection, and conversion between
-range-relative grid coordinates and source-sheet coordinates.
+`SpreadsheetQualifiedAddressRange`, `SpreadsheetAddressSpace`, and
+`SpreadsheetAddressSpaces` are public immutable coordinate types. Ranges support
+A1 parsing, containment, and intersection. Address spaces provide checked
+source-to-student and student-to-source conversion for cells and ranges.
+`rebase_spreadsheet_formula()` rewrites source-coordinate formula references into
+the corresponding student-local address spaces and rejects references outside
+those spaces.
 
 ## Grading snapshots
 
@@ -176,12 +192,12 @@ contains a versioned snapshot like this:
 
 ```json
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "template_hash": "…",
   "engine": {
     "name": "hyperformula",
     "version": "3.4.0",
-    "configuration_version": 1
+    "configuration_version": 2
   },
   "sheets": [
     {
@@ -224,7 +240,7 @@ calculation engine, and stores only the named outputs:
 def generate(data):
     # Define data["params"]["workbook"] as above.
     data["correct_answers"]["model"] = {
-        "schema_version": 1,
+        "schema_version": 2,
         "sheets": [
             {
                 "name": "Checks",
@@ -248,6 +264,11 @@ replace student cells or reuse a student sheet name. They use the same sheet-nam
 and formula policies and independently receive the workbook limits below. A private
 workbook may export at most 100 named outputs.
 
+Private sheet formulas and `pl-spreadsheet-output` declarations use authoritative
+source-workbook coordinates. Grading code that reads the normalized student
+snapshot uses A1-based student-local coordinates. `SpreadsheetAddressSpace` can
+translate between those two coordinate systems when a rubric needs both.
+
 Each output may set `"required": True` to reject the submission during parsing
 when that output evaluates to a typed `empty` or `error` result. The option
 defaults to `False`; numeric zero, `False`, and string values are not empty.
@@ -259,7 +280,7 @@ typed outputs:
 ```json
 {
   "grading": {
-    "schema_version": 1,
+    "schema_version": 2,
     "grader_hash": "…",
     "outputs": {
       "total": { "type": "number", "value": 24 },
@@ -318,9 +339,10 @@ provide rectangular `inputs`, `results`, `values`, and `formulas` projections,
 row-major iteration, and predicate-based `query()` methods. The views are read-only
 and do not recalculate the snapshot.
 
-For a sheet with `student_range`, `shape`, iteration, and `query()` cover only the
-visible rectangle while every cell retains its original source address. Looking up
-a hidden address raises an out-of-range error.
+`shape`, iteration, `query()`, cell lookup, and range lookup all use the A1-based
+student-local address space. Source-workbook addresses are intentionally absent
+from the normalized snapshot; use the public address-space helpers only when
+authoring or grading code must relate local cells back to a known source range.
 
 The functional API remains available for lower-level access:
 `get_spreadsheet_cell()` returns the complete typed cell,

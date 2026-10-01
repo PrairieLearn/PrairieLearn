@@ -3,7 +3,7 @@ import prairielearn as pl
 
 def generate(data):
     data["params"]["workbook"] = {
-        "schema_version": 1,
+        "schema_version": 2,
         "sheets": [
             {
                 "name": "Inputs",
@@ -34,7 +34,7 @@ def generate(data):
         ],
     }
     data["correct_answers"]["model"] = {
-        "schema_version": 1,
+        "schema_version": 2,
         "sheets": [
             {
                 "name": "Checks",

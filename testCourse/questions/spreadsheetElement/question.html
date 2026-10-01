@@ -11,7 +11,8 @@
   <h2 id="parameter-workbook-heading" class="h4">Parameter and DataFrame workbook</h2>
   <p>
     Demonstrates a Python-defined multi-sheet workbook, DataFrame conversion,
-    formulas, editable ranges, a non-A1 visible range, and a private grading sheet.
+    formulas, editable ranges, transparent rebasing of a non-A1 source range, and a
+    private grading sheet.
   </p>
   <pl-spreadsheet
     answers-name="model"
@@ -24,9 +25,9 @@
 <section aria-labelledby="csv-workbook-heading" class="mb-5">
   <h2 id="csv-workbook-heading" class="h4">CSV source with a hidden output</h2>
   <p>
-    Only B2:D3 is exposed from <code>budget.csv</code>. Column E contains a grading
-    formula that is evaluated on the server and returned only as the named output
-    <code>is_correct</code>.
+    Only B2:D3 is exposed from <code>budget.csv</code>, and it appears as A1:C2 to the
+    student. Column E contains a grading formula that is evaluated on the server and
+    returned only as the named output <code>is_correct</code>.
   </p>
   <pl-spreadsheet answers-name="csv_model" aria-label="CSV budget workbook" height="300px">
     <pl-spreadsheet-data
