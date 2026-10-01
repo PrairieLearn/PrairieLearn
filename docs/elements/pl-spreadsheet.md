@@ -199,8 +199,9 @@ def grade(data):
 ```
 
 Use `sheet.cell("D2")` or `sheet.range("A2:D9")` when the expected return type is
-known. Indexing remains available when either kind is acceptable. A sheet retains
-its parent workbook, so a qualified reference such as
+known. `workbook["Budget"]` returns a read-only `pl.Sheet`; indexing that sheet
+remains available when either cell or range is acceptable. A sheet retains its
+parent workbook, so a qualified reference such as
 `summary.range("Budget!A2:D9")` resolves to the `Budget` sheet.
 Excel-style quoted names and escaped apostrophes are supported, for example
 `sheet["'Input Data'!A2:D9"]` and `sheet["'Bob''s Data'!A1"]`.

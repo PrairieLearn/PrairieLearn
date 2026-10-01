@@ -58,7 +58,7 @@ def generate(data):
 def grade(data):
     # External graders read this same object from
     # data["submitted_answers"]["model"] in /grade/data/data.json.
-    workbook = pl.Spreadsheet(data["submitted_answers"]["model"])
+    workbook = pl.SpreadsheetBook(data["submitted_answers"]["model"])
     inputs = workbook["Summary"].range("Inputs!B2:D2")
     line_total = inputs["D2"]
 

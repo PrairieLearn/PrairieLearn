@@ -119,11 +119,12 @@ def test_query_errors_are_explicit() -> None:
 
 
 def test_spreadsheet_wrapper_addresses_cells_and_sheets() -> None:
-    workbook = pl.Spreadsheet(snapshot())
+    workbook = pl.SpreadsheetBook(snapshot())
 
     assert workbook.sheet_names == ("Inputs", "Input Data", "Bob's Data")
     inputs = workbook["Inputs"]
-    assert inputs.workbook is workbook
+    assert isinstance(inputs, pl.Spreadsheet)
+    assert inputs.book is workbook
     assert inputs.name == "Inputs"
     assert inputs.shape == (3, 3)
     assert inputs.rows == 3
@@ -150,8 +151,31 @@ def test_spreadsheet_wrapper_addresses_cells_and_sheets() -> None:
     assert empty.is_empty
 
 
+def test_spreadsheet_validates_and_copies_snapshot_at_construction() -> None:
+    invalid_input = snapshot()
+    invalid_input["sheets"][0]["cells"]["A1"]["input"] = {
+        "type": "number",
+        "value": "not a number",
+    }
+    with pytest.raises(TypeError, match="invalid input"):
+        pl.SpreadsheetBook(invalid_input)
+
+    invalid_output = snapshot()
+    invalid_output["grading"]["outputs"]["total"] = {
+        "type": "number",
+        "value": "not a number",
+    }
+    with pytest.raises(TypeError, match="invalid result"):
+        pl.SpreadsheetBook(invalid_output)
+
+    original = snapshot()
+    workbook = pl.SpreadsheetBook(original)
+    original["sheets"][0]["cells"]["A1"]["result"]["value"] = 99
+    assert workbook["Inputs"].cell("A1").value == 3
+
+
 def test_spreadsheet_wrapper_views_are_frozen_slots_dataclasses() -> None:
-    workbook = pl.Spreadsheet(snapshot())
+    workbook = pl.SpreadsheetBook(snapshot())
     sheet = workbook["Inputs"]
     cell = sheet["A1"]
     cell_range = sheet["A1:B2"]
@@ -175,7 +199,7 @@ def test_spreadsheet_wrapper_views_are_frozen_slots_dataclasses() -> None:
 
 
 def test_spreadsheet_wrapper_resolves_cross_sheet_references() -> None:
-    workbook = pl.Spreadsheet(snapshot())
+    workbook = pl.SpreadsheetBook(snapshot())
     inputs = workbook["Inputs"]
 
     other_range = inputs.range("'Input Data'!A1:B2")
@@ -212,7 +236,7 @@ def test_spreadsheet_wrapper_resolves_cross_sheet_references() -> None:
 def test_spreadsheet_wrapper_rejects_invalid_references(
     reference: str, error: str
 ) -> None:
-    inputs = pl.Spreadsheet(snapshot())["Inputs"]
+    inputs = pl.SpreadsheetBook(snapshot())["Inputs"]
 
     with pytest.raises(ValueError, match=error):
         inputs[reference]
@@ -224,7 +248,7 @@ def test_spreadsheet_wrapper_rejects_invalid_references(
 
 
 def test_spreadsheet_range_projections_queries_and_indexing() -> None:
-    inputs = pl.Spreadsheet(snapshot())["Inputs"]
+    inputs = pl.SpreadsheetBook(snapshot())["Inputs"]
     cell_range = inputs["A1:B2"]
     assert isinstance(cell_range, pl.SpreadsheetRange)
 
@@ -272,7 +296,7 @@ def test_spreadsheet_range_projections_queries_and_indexing() -> None:
 
 
 def test_spreadsheet_cell_formula_matching() -> None:
-    inputs = pl.Spreadsheet(snapshot())["Inputs"]
+    inputs = pl.SpreadsheetBook(snapshot())["Inputs"]
     formula = inputs["B1"]
     assert isinstance(formula, pl.SpreadsheetCellView)
 
@@ -288,7 +312,7 @@ def test_spreadsheet_cell_formula_matching() -> None:
 
 
 def test_spreadsheet_output_views() -> None:
-    workbook = pl.Spreadsheet(snapshot())
+    workbook = pl.SpreadsheetBook(snapshot())
 
     assert tuple(workbook.outputs) == ("total", "failed_check")
     total = workbook.outputs["total"]
@@ -312,7 +336,7 @@ def test_spreadsheet_output_views() -> None:
 
     without_outputs = snapshot()
     without_outputs.pop("grading")
-    outputs = pl.Spreadsheet(without_outputs).outputs
+    outputs = pl.SpreadsheetBook(without_outputs).outputs
     assert len(outputs) == 0
     with pytest.raises(KeyError, match="does not contain private grading outputs"):
         outputs["total"]
