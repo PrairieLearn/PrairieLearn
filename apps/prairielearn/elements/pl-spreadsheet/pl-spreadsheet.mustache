@@ -27,7 +27,7 @@
   {{/editable}}
 
   {{#read_only}}
-    <div class="card-body">
+    <div class="card-body pl-spreadsheet-read-only">
       {{#sheets}}
         <section class="mb-4" aria-label="Sheet {{name}}">
           <div class="table-responsive">
@@ -43,7 +43,12 @@
                 {{#rows}}
                   <tr>
                     <th scope="row">{{number}}</th>
-                    {{#cells}}<td aria-label="Cell {{address}}">{{display}}</td>{{/cells}}
+                    {{#cells}}
+                      <td aria-label="Cell {{address}}">
+                        <span data-spreadsheet-view="values">{{value}}</span>
+                        <span data-spreadsheet-view="formulas" hidden>{{formula}}</span>
+                      </td>
+                    {{/cells}}
                   </tr>
                 {{/rows}}
               </tbody>
@@ -51,6 +56,19 @@
           </div>
         </section>
       {{/sheets}}
+      <div class="d-flex align-items-center justify-content-end gap-2">
+        <span>Values</span>
+        <div class="form-check form-switch m-0">
+          <input
+            id="pl-spreadsheet-formula-toggle-{{uuid}}"
+            class="form-check-input js-pl-spreadsheet-formula-toggle"
+            type="checkbox"
+            role="switch"
+            aria-label="Show formulas for {{aria_label}}"
+          />
+        </div>
+        <label for="pl-spreadsheet-formula-toggle-{{uuid}}">Formulas</label>
+      </div>
     </div>
   {{/read_only}}
 

@@ -468,7 +468,8 @@ keyboard navigation, direct formula-bar editing, copy/paste, relative-reference
 fill down/right, and undo/redo. The sheet tabs and fill controls are keyboard
 accessible. Editable and read-only cells are distinguished with text and
 accessibility state, not color alone. Submission and manual-grading views use native
-HTML tables.
+HTML tables. These tables show calculated values by default and provide a
+Values/Formulas switch for viewing every cell's original input.
 
 The editor displays spreadsheet errors such as `#DIV/0!`, `#CYCLE!`, `#REF!`, and
 `#ERROR!` in their cells while retaining the entered formula in the cell editor and

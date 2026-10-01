@@ -28,10 +28,19 @@
 .pl-spreadsheet-grid {
   flex: 1;
   min-height: 10rem;
+  user-select: none;
+}
+
+.pl-spreadsheet-grid input {
+  user-select: text;
 }
 
 .pl-spreadsheet-cell-readonly {
   background-color: var(--bs-secondary-bg);
+}
+
+.pl-spreadsheet-cell-selected {
+  background-color: var(--bs-primary-bg-subtle);
 }
 
 .pl-spreadsheet-row-header {
@@ -57,6 +66,10 @@
 
   .pl-spreadsheet-cell-error {
     outline: 2px solid LinkText;
+  }
+
+  .pl-spreadsheet-cell-selected {
+    outline: 2px solid Highlight;
   }
 }
 
