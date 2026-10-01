@@ -48,8 +48,8 @@ export function buildTranscript(messages: UIMessage[], approvals: ApprovalDispla
       if (part.type === 'dynamic-tool' || part.type.startsWith('tool-')) {
         // The durable marker renders the full code-change card for this call.
         if (
-          'toolName' in part &&
-          part.toolName === 'push_sync' &&
+          (part.type === 'tool-push_sync' ||
+            ('toolName' in part && part.toolName === 'push_sync')) &&
           message.parts.some((p) => toolMarkerId(p, 'data-tool'))
         ) {
           continue;

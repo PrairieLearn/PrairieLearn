@@ -7,7 +7,9 @@
   flex-direction: column;
   background: var(--bs-body-bg);
   z-index: 1030;
-  top: var(--course-agent-top, var(--navbar-height));
+  top: 0;
+  transform: translateX(100%);
+  visibility: hidden;
   border-left: 1px solid var(--bs-border-color);
 }
 .course-agent-toggle {
@@ -42,17 +44,54 @@
 .course-agent-composer {
   flex-shrink: 0;
 }
-@media (min-width: 1200px) {
-  body:has(.course-agent-panel:not([hidden])) .app-main {
-    margin-right: min(38rem, 45vw);
+@media (min-width: 768px) {
+  body:has(.course-agent-panel) {
+    --course-agent-width: min(38rem, 45vw);
+  }
+  body:has(.course-agent-panel[data-open='true']) .app-container {
+    width: calc(100% - var(--course-agent-width));
   }
   .course-agent-panel {
-    width: min(38rem, 45vw);
+    width: var(--course-agent-width);
   }
 }
-
-.course-agent-panel[hidden] {
-  display: none;
+.course-agent-panel[data-open='true'] {
+  transform: translateX(0);
+  visibility: visible;
+}
+.course-agent-panel-animate {
+  transition:
+    transform 300ms,
+    visibility 300ms;
+}
+body:has(.course-agent-panel-animate) .app-container {
+  transition:
+    width 300ms,
+    grid-template-columns 300ms;
+}
+@media (prefers-reduced-motion: reduce) {
+  .course-agent-panel-animate,
+  body:has(.course-agent-panel-animate) .app-container {
+    transition: none;
+  }
+}
+.course-agent-panel .spinner-border-text {
+  margin: 0.1em;
+  --bs-spinner-width: 0.8em;
+  --bs-spinner-height: 0.8em;
+  --bs-spinner-border-width: 0.15em;
+}
+.course-agent-selector,
+.course-agent-selector:is(:hover, :focus, :active, .show) {
+  background: var(--bs-body-bg);
+  color: var(--bs-body-color);
+  border-color: var(--bs-border-color);
+}
+.course-agent-unread {
+  width: 0.375rem;
+  height: 0.375rem;
+  border-radius: 50%;
+  flex-shrink: 0;
 }
 .course-agent-user-message {
   max-width: 90%;
@@ -68,4 +107,32 @@
 
 .course-agent-transcript summary > .d-flex {
   display: inline-flex !important;
+}
+
+body:has(.course-agent-panel) .app-main {
+  min-width: 0;
+}
+.course-agent-tool summary {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  list-style: none;
+}
+.course-agent-tool summary::-webkit-details-marker {
+  display: none;
+}
+.course-agent-tool summary::before {
+  content: '›';
+  font-size: 1rem;
+}
+.course-agent-tool[open] summary::before {
+  transform: rotate(90deg);
+}
+.course-agent-tool summary > div {
+  min-width: 0;
+}
+.course-agent-tool summary > div > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }

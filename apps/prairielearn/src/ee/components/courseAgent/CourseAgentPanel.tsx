@@ -2,6 +2,7 @@
 import { useChat } from '@ai-sdk/react';
 import { QueryClient, useMutation, useQuery } from '@tanstack/react-query';
 import { DefaultChatTransport, type UIMessage } from 'ai';
+import clsx from 'clsx';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { Alert, Button, Dropdown, Form, Modal } from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
@@ -23,7 +24,6 @@ import { ActivityStatus } from '../ai/ActivityStatus.js';
 import { ChatMessage } from '../ai/ChatMessage.js';
 import { MemoizedMarkdown } from '../ai/MemoizedMarkdown.js';
 import { ReasoningSummary } from '../ai/ReasoningSummary.js';
-import { ToolCall } from '../ai/ToolCall.js';
 
 import { buildTranscript } from './message-parts.js';
 import { readPanelState, savePanelState, usePanelState } from './panelState.js';
@@ -76,6 +76,7 @@ function Panel({
   const trpc = useTRPC();
   const key = `course-agent:${userId}:${courseId}`;
   const [panel, setPanel] = useState(initialPanelState);
+  const [animate, setAnimate] = useState(false);
   const panelRef = useRef(panel);
   panelRef.current = panel;
   const settings = useMutation(trpc.courseAgent.panel.mutationOptions());
@@ -95,28 +96,12 @@ function Panel({
   }, [panel.open, panel.selected, current?.finishedAt, key, readVersion]);
 
   function changePanel(change: Partial<CourseAgentPanelState>) {
+    if (change.open !== undefined) setAnimate(true);
     const next = { ...panelRef.current, ...change };
     panelRef.current = next;
     setPanel(next);
     settings.mutate(next);
   }
-  // The navbar can wrap; the sidebar starts below its actual bottom edge.
-  useEffect(() => {
-    const navbar = document.querySelector('.app-top-nav');
-    if (!navbar) return;
-    const updateTop = () =>
-      document.documentElement.style.setProperty(
-        '--course-agent-top',
-        `${navbar.getBoundingClientRect().bottom}px`,
-      );
-    const observer = new ResizeObserver(updateTop);
-    observer.observe(navbar);
-    updateTop();
-    return () => {
-      observer.disconnect();
-      document.documentElement.style.removeProperty('--course-agent-top');
-    };
-  }, []);
   return (
     <>
       <Button
@@ -129,9 +114,15 @@ function Panel({
       >
         <i className="bi bi-stars" aria-hidden="true" />
       </Button>
-      <aside hidden={!panel.open} className="course-agent-panel" aria-label="Course agent">
+      <aside
+        data-open={panel.open}
+        inert={!panel.open}
+        aria-hidden={!panel.open}
+        className={clsx('course-agent-panel', animate && 'course-agent-panel-animate')}
+        aria-label="Course agent"
+      >
         <div className="d-flex align-items-center justify-content-between border-bottom p-3">
-          <h2 className="h5 mb-0">
+          <h2 className="h6 mb-0">
             <i className="bi bi-stars me-2 text-primary" aria-hidden="true" />
             Course agent
           </h2>
@@ -148,8 +139,8 @@ function Panel({
           <div className="d-flex gap-2 mb-3 course-agent-picker">
             <Dropdown className="flex-grow-1">
               <Dropdown.Toggle
-                variant="outline-secondary"
-                className="w-100 d-flex justify-content-between align-items-center text-start"
+                variant="light"
+                className="course-agent-selector w-100 d-flex justify-content-between align-items-center text-start"
                 aria-label="Conversation"
               >
                 {current?.title ?? panel.title}
@@ -176,9 +167,10 @@ function Panel({
                           aria-label="Working"
                         />
                       ) : c.finishedAt && readPanelState(`${key}:read:${c.id}`) !== c.finishedAt ? (
-                        <span className="text-primary" aria-label="New response">
-                          ●
-                        </span>
+                        <span
+                          className="course-agent-unread bg-primary"
+                          aria-label="New response"
+                        />
                       ) : null}
                     </span>
                   </Dropdown.Item>
@@ -498,14 +490,14 @@ function Conversation({
             </section>
           )}
         />
-      </div>
-      <div role="status" aria-live="polite">
-        {(send.isPending ||
-          create.isPending ||
-          busy ||
-          (!snapshot.blocked && snapshot.diagnostics?.state === 'waiting_for_agent')) && (
-          <ActivityStatus state="streaming" statusText="Working…" />
-        )}
+        <div role="status" aria-live="polite" className="px-3 pb-3">
+          {(send.isPending ||
+            create.isPending ||
+            (!snapshot.blocked && busy) ||
+            (!snapshot.blocked && snapshot.diagnostics?.state === 'waiting_for_agent')) && (
+            <ActivityStatus state="streaming" statusText="Working…" />
+          )}
+        </div>
       </div>
       <Modal
         show={statisticsOpen}
@@ -557,9 +549,14 @@ function Conversation({
           })}
         />
         <div className="d-flex gap-2 mt-2">
-          <Button size="sm" variant="outline-secondary" onClick={() => setStatisticsOpen(true)}>
-            <i className="bi bi-bar-chart me-1" aria-hidden="true" />
-            Statistics
+          <Button
+            size="sm"
+            variant="outline-secondary"
+            aria-label="Statistics"
+            title="Statistics"
+            onClick={() => setStatisticsOpen(true)}
+          >
+            <i className="bi bi-bar-chart" aria-hidden="true" />
           </Button>
           {busy && (
             <Button
@@ -572,6 +569,8 @@ function Conversation({
           )}
           <Button
             type="submit"
+            aria-label={busy ? 'Steer' : 'Send'}
+            title={busy ? 'Steer' : 'Send'}
             className="ms-auto"
             disabled={
               connection !== 'connected' ||
@@ -581,7 +580,7 @@ function Conversation({
               !draft.trim()
             }
           >
-            {busy ? 'Steer' : 'Send'}
+            <i className="bi bi-send-fill" aria-hidden="true" />
           </Button>
         </div>
       </Form>
@@ -637,21 +636,23 @@ function Transcript({
           if (part.kind === 'tools') {
             return (
               <div key={index} className="d-flex flex-column gap-2 my-2">
-                {part.parts.map((tool) => (
-                  <ToolCall
-                    key={'toolCallId' in tool ? String(tool.toolCallId) : index}
-                    title={toolTitle(tool)}
-                    state={
-                      'state' in tool && tool.state === 'output-error'
-                        ? 'error'
-                        : 'state' in tool && tool.state === 'output-available'
-                          ? 'success'
-                          : 'streaming'
-                    }
-                  >
-                    <pre>{toolDetails(tool)}</pre>
-                  </ToolCall>
-                ))}
+                {part.parts.map((tool) => {
+                  const state = toolState(tool);
+                  return (
+                    <details
+                      className="course-agent-tool"
+                      key={'toolCallId' in tool ? String(tool.toolCallId) : index}
+                      open={state === 'error'}
+                    >
+                      <summary>
+                        <ActivityStatus state={state} statusText={toolTitle(tool)} />
+                      </summary>
+                      <pre className="small mt-2 mb-0 p-2 bg-body border rounded">
+                        {toolDetails(tool)}
+                      </pre>
+                    </details>
+                  );
+                })}
               </div>
             );
           }
@@ -675,16 +676,31 @@ function Transcript({
   );
 }
 
+function toolState(part: UIMessage['parts'][number]): 'streaming' | 'success' | 'error' {
+  if ('state' in part && part.state === 'output-error') return 'error';
+  if (!('state' in part) || part.state !== 'output-available') return 'streaming';
+  const output = 'output' in part ? part.output : undefined;
+  if (
+    output &&
+    typeof output === 'object' &&
+    (('exitCode' in output && typeof output.exitCode === 'number' && output.exitCode !== 0) ||
+      ('status' in output && output.status === 'failed'))
+  )
+    return 'error';
+  return 'success';
+}
+
 function toolTitle(part: UIMessage['parts'][number]) {
-  const running =
-    'state' in part && !['output-available', 'output-error'].includes(String(part.state));
+  const running = toolState(part) === 'streaming';
   const name = 'toolName' in part ? String(part.toolName) : part.type.replace(/^tool-/, '');
   if (name === 'command_execution') {
+    const input = 'input' in part ? part.input : undefined;
+    const command =
+      input && typeof input === 'object' && 'command' in input ? String(input.command) : '';
+    if (command) return `${running ? 'Running' : 'Command'}: ${command}`;
     return running ? 'Running command…' : 'Ran command';
   }
-  if (name === 'file_change') {
-    return running ? 'Editing files…' : 'Edited files';
-  }
+  if (name === 'file_change') return running ? 'Editing files…' : 'Edited files';
   return name.replaceAll('_', ' ');
 }
 

@@ -86,7 +86,8 @@ test('conversation and unsent draft persist across course pages', async ({
   await expect(page.getByRole('heading', { name: 'Conversation statistics' })).toBeHidden();
   const navbar = await page.getByRole('navigation', { name: 'Global navigation' }).boundingBox();
   const panel = await page.getByRole('complementary', { name: 'Course agent' }).boundingBox();
-  expect(panel!.y).toBeGreaterThanOrEqual(navbar!.y + navbar!.height);
+  expect(panel!.y).toBe(0);
+  expect(navbar!.x + navbar!.width).toBeLessThanOrEqual(panel!.x + 1);
   await page.screenshot({ path: testInfo.outputPath('course-agent.png'), fullPage: true });
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(composer).toBeVisible();
@@ -136,6 +137,8 @@ test('denial after sandbox shutdown remains durable and resumes through a hidden
   const approval = await fetch(`${root}/test/approval`, { method: 'POST', headers, body: '{}' });
   expect(approval.ok).toBe(true);
   await expect(page.getByText('Code change · Review requested', { exact: true })).toBeVisible();
+  await page.getByLabel('Message', { exact: true }).fill('Wait for approval');
+  await expect(page.getByRole('button', { name: /^(Send|Steer)$/ })).toBeDisabled();
   const expire = await fetch(`${root}/test/advance`, {
     method: 'POST',
     headers,

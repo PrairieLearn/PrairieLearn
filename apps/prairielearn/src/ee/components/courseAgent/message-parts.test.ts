@@ -92,3 +92,34 @@ it('keeps an actionable proposal visible when its stream marker has not arrived'
   };
   expect(buildTranscript([], [approval])[0].parts).toEqual([{ kind: 'code-change', approval }]);
 });
+
+it('uses the durable card instead of a static push-sync tool row after suspension', () => {
+  const approval: ApprovalDisplay = {
+    id: 'change',
+    baseSha: 'a'.repeat(40),
+    proposedSha: 'b'.repeat(40),
+    digest: 'digest',
+    diff: 'diff',
+    status: 'approved',
+  };
+  const entries = buildTranscript(
+    [
+      {
+        id: 'assistant',
+        role: 'assistant',
+        parts: [
+          {
+            type: 'tool-push_sync',
+            toolCallId: 'native-call',
+            state: 'output-error',
+            input: {},
+            errorText: 'Codex stopped before reporting a result.',
+          },
+          { type: 'data-tool', data: { id: 'change', name: 'push_sync' } },
+        ],
+      },
+    ],
+    [approval],
+  );
+  expect(entries[0].parts).toEqual([{ kind: 'code-change', approval }]);
+});
