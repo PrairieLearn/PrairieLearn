@@ -59,8 +59,7 @@ def grade(data):
     # External graders read this same object from
     # data["submitted_answers"]["model"] in /grade/data/data.json.
     workbook = pl.Spreadsheet(data["submitted_answers"]["model"])
-    inputs = workbook["Summary"]["Inputs!B2:D2"]
-    assert isinstance(inputs, pl.SpreadsheetRange)
+    inputs = workbook["Summary"].range("Inputs!B2:D2")
     line_total = inputs["D2"]
 
     checks = [

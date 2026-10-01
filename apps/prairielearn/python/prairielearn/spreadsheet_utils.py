@@ -880,6 +880,20 @@ class SpreadsheetSheet:
             parsed.end.column,
         )
 
+    def cell(self, reference: str) -> SpreadsheetCellView:
+        """Resolve an A1 cell reference."""
+        cell = self[reference]
+        if not isinstance(cell, SpreadsheetCellView):
+            raise TypeError(f'Spreadsheet reference "{reference}" is not a cell.')
+        return cell
+
+    def range(self, reference: str) -> SpreadsheetRange:
+        """Resolve an A1 range reference."""
+        cell_range = self[reference]
+        if not isinstance(cell_range, SpreadsheetRange):
+            raise TypeError(f'Spreadsheet reference "{reference}" is not a range.')
+        return cell_range
+
     def query(
         self,
         predicate: Callable[[SpreadsheetCellView], bool],

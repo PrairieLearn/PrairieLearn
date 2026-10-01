@@ -183,8 +183,7 @@ import prairielearn as pl
 def grade(data):
     workbook = pl.Spreadsheet(data["submitted_answers"]["model"])
     budget = workbook["Budget"]
-    formula_cell = budget["D2"]
-    assert isinstance(formula_cell, pl.SpreadsheetCellView)
+    formula_cell = budget.cell("D2")
 
     checks = [
         formula_cell.formula == "=B2*C2",  # Exact-text grading when required.
@@ -199,9 +198,10 @@ def grade(data):
     pl.set_weighted_score_data(data)
 ```
 
-Index a sheet with a cell address such as `sheet["D2"]` or a rectangular range
-such as `sheet["A2:D9"]`. A sheet retains its parent workbook, so a qualified
-reference such as `summary["Budget!A2:D9"]` resolves to the `Budget` sheet.
+Use `sheet.cell("D2")` or `sheet.range("A2:D9")` when the expected return type is
+known. Indexing remains available when either kind is acceptable. A sheet retains
+its parent workbook, so a qualified reference such as
+`summary.range("Budget!A2:D9")` resolves to the `Budget` sheet.
 Excel-style quoted names and escaped apostrophes are supported, for example
 `sheet["'Input Data'!A2:D9"]` and `sheet["'Bob''s Data'!A1"]`.
 
