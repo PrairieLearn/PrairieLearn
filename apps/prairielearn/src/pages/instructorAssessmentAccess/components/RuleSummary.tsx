@@ -999,8 +999,7 @@ export function AfterCompleteTableView({
       </div>
       {hasPrairieTest && (
         <div className="access-summary-card-footer">
-          These settings apply outside an active PrairieTest reservation. During a reservation, the
-          PrairieTest exam settings control what students see after finishing.
+          During active PrairieTest reservations, the exam’s visibility settings apply instead.
         </div>
       )}
       {errors.length > 0 && (
