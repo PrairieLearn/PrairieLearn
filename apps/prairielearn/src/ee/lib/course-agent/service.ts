@@ -17,7 +17,10 @@ import { type Course, type CourseAgentConversation } from '../../../lib/db-types
 import { features } from '../../../lib/features/index.js';
 import { parseGithubRepository } from '../../../lib/github-utils.js';
 import { isEnterprise } from '../../../lib/license.js';
-import { type AgentScope } from '../../../models/course-agent-conversation.js';
+import {
+  type AgentScope,
+  selectConversationOperations,
+} from '../../../models/course-agent-conversation.js';
 import * as proposals from '../../../models/course-agent-proposal.js';
 import { selectCourseById } from '../../../models/course.js';
 
@@ -193,6 +196,7 @@ export async function prepare(
 }
 export async function snapshot(conversation: CourseAgentConversation, value: ChatSnapshot) {
   const rows = await proposals.selectProposals(conversation.id);
+  const operations = await selectConversationOperations(conversation.id);
   const current = rows.find((r) => !r.delivered) ?? rows.at(-1);
   const approvals = rows.map((r) => ({
     ...approvalDisplaySchema.parse(r.payload),
@@ -207,6 +211,18 @@ export async function snapshot(conversation: CourseAgentConversation, value: Cha
   }));
   return {
     ...value,
+    messages: value.messages.map((message) => {
+      const operation = operations.find((operation) => operation.operation_id === message.id);
+      return operation
+        ? {
+            ...message,
+            metadata: {
+              ...(typeof message.metadata === 'object' ? message.metadata : {}),
+              created_at: operation.created_at.toISOString(),
+            },
+          }
+        : message;
+    }),
     revision: conversation.revision,
     approvals,
     approval: approvals.find((a) => a.id === current?.operation_id),

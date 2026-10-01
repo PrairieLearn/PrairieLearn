@@ -94,3 +94,48 @@ SELECT
       conversation_id = $id
       AND NOT delivered
   ) AS pending;
+
+-- BLOCK activity
+SELECT
+  to_jsonb(c.*) AS conversation,
+  EXISTS (
+    SELECT
+      1
+    FROM
+      course_agent_executions e
+    WHERE
+      e.conversation_id = c.id
+      AND e.status IN ('admitted', 'running')
+  ) AS running,
+  (
+    SELECT
+      max(e.finished_at)
+    FROM
+      course_agent_executions e
+    WHERE
+      e.conversation_id = c.id
+  ) AS finished_at
+FROM
+  course_agent_conversations c
+WHERE
+  c.course_id = $course_id
+  AND c.user_id = $user_id
+ORDER BY
+  c.created_at DESC;
+
+-- BLOCK name
+UPDATE course_agent_conversations
+SET
+  title = $title
+WHERE
+  id = $id
+  AND title = 'New conversation';
+
+-- BLOCK operations
+SELECT
+  *
+FROM
+  course_agent_operations
+WHERE
+  conversation_id = $id
+  AND payload ->> 'kind' = 'message';

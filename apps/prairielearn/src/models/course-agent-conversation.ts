@@ -122,3 +122,17 @@ export async function reserveOperation(
     return revision;
   });
 }
+
+export const selectConversationActivity = (scope: AgentScope) =>
+  queryRows(
+    sql.activity,
+    { course_id: scope.course_id, user_id: scope.user_id },
+    z.object({
+      conversation: CourseAgentConversationSchema,
+      running: z.boolean(),
+      finished_at: z.coerce.date().nullable(),
+    }),
+  );
+export const nameConversation = (id: string, title: string) => execute(sql.name, { id, title });
+export const selectConversationOperations = (id: string) =>
+  queryRows(sql.operations, { id }, CourseAgentOperationSchema);

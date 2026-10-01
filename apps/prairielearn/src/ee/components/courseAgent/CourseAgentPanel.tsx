@@ -3,7 +3,7 @@ import { useChat } from '@ai-sdk/react';
 import { QueryClient, useMutation, useQuery } from '@tanstack/react-query';
 import { DefaultChatTransport, type UIMessage } from 'ai';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
-import { Alert, Button, Form, Modal, Offcanvas } from 'react-bootstrap';
+import { Alert, Button, Dropdown, Form, Modal } from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
 
 import {
@@ -11,16 +11,19 @@ import {
   type ChatSnapshot,
   sendRequestSchema,
 } from '@prairielearn/course-agent-contract';
+import { formatDate } from '@prairielearn/formatter';
 import { getAppError } from '@prairielearn/trpc/client';
 import { AppErrorAlert, QueryClientProviderDebug } from '@prairielearn/trpc/react';
 
+import type { CourseAgentPanelState } from '../../../lib/course-agent-panel.js';
 import { createCourseTrpcClient } from '../../../trpc/course/client.js';
 import { TRPCProvider, useTRPC } from '../../../trpc/course/context.js';
+import type { CourseAgentError } from '../../../trpc/course/course-agent.js';
+import { ActivityStatus } from '../ai/ActivityStatus.js';
 import { ChatMessage } from '../ai/ChatMessage.js';
 import { MemoizedMarkdown } from '../ai/MemoizedMarkdown.js';
 import { ReasoningSummary } from '../ai/ReasoningSummary.js';
 import { ToolCall } from '../ai/ToolCall.js';
-import { ToolCallGroup } from '../ai/ToolCallGroup.js';
 
 import { buildTranscript } from './message-parts.js';
 import { readPanelState, savePanelState, usePanelState } from './panelState.js';
@@ -29,45 +32,75 @@ export function CourseAgentPanel({
   courseId,
   userId,
   csrfToken,
+  userName,
+  timezone,
+  initialPanelState,
 }: {
   courseId: string;
   userId: string;
   csrfToken: string;
+  userName: string;
+  timezone: string;
+  initialPanelState: CourseAgentPanelState;
 }) {
   const [queryClient] = useState(() => new QueryClient());
   const [client] = useState(() => createCourseTrpcClient({ courseId, csrfToken }));
   return (
     <QueryClientProviderDebug client={queryClient}>
       <TRPCProvider trpcClient={client} queryClient={queryClient}>
-        <Panel courseId={courseId} userId={userId} />
+        <Panel
+          courseId={courseId}
+          userId={userId}
+          userName={userName}
+          timezone={timezone}
+          initialPanelState={initialPanelState}
+        />
       </TRPCProvider>
     </QueryClientProviderDebug>
   );
 }
 
-function Panel({ courseId, userId }: { courseId: string; userId: string }) {
+function Panel({
+  courseId,
+  userId,
+  userName,
+  timezone,
+  initialPanelState,
+}: {
+  courseId: string;
+  userId: string;
+  userName: string;
+  timezone: string;
+  initialPanelState: CourseAgentPanelState;
+}) {
   const trpc = useTRPC();
   const key = `course-agent:${userId}:${courseId}`;
-  const open = usePanelState(key + ':open') === 'true';
-  const setOpen = (value: boolean) => savePanelState(key + ':open', String(value));
-  const selected = usePanelState(key + ':selected');
-  const setSelected = (value: string) => savePanelState(key + ':selected', value);
-  const conversations = useQuery(trpc.courseAgent.list.queryOptions());
-  const create = useMutation(
-    trpc.courseAgent.create.mutationOptions({
-      onSuccess: async (row) => {
-        setSelected(row.id);
-        savePanelState(key + ':selected', row.id);
-        await conversations.refetch();
-      },
-    }),
-  );
+  const [panel, setPanel] = useState(initialPanelState);
+  const panelRef = useRef(panel);
+  panelRef.current = panel;
+  const settings = useMutation(trpc.courseAgent.panel.mutationOptions());
+  // Catalog refresh only observes persisted execution status; it never retries publication or starts work.
+  const conversations = useQuery({
+    ...trpc.courseAgent.list.queryOptions(),
+    refetchInterval: 3000,
+  });
+  const [sending, setSending] = useState('');
+  const current = conversations.data?.find((c) => c.id === panel.selected);
+  const readVersion = usePanelState(`${key}:read:${panel.selected}`);
+  // A completion is read only while its conversation is visible.
+  useEffect(() => {
+    if (panel.open && current?.finishedAt && readVersion !== current.finishedAt) {
+      savePanelState(`${key}:read:${panel.selected}`, current.finishedAt);
+    }
+  }, [panel.open, panel.selected, current?.finishedAt, key, readVersion]);
 
-  function toggle(value: boolean) {
-    setOpen(value);
-    savePanelState(key + ':open', String(value));
+  function changePanel(change: Partial<CourseAgentPanelState>) {
+    const next = { ...panelRef.current, ...change };
+    panelRef.current = next;
+    setPanel(next);
+    settings.mutate(next);
   }
-  // The global navbar can wrap at narrower widths; keep the panel below its actual bottom edge.
+  // The navbar can wrap; the sidebar starts below its actual bottom edge.
   useEffect(() => {
     const navbar = document.querySelector('.app-top-nav');
     if (!navbar) return;
@@ -84,72 +117,105 @@ function Panel({ courseId, userId }: { courseId: string; userId: string }) {
       document.documentElement.style.removeProperty('--course-agent-top');
     };
   }, []);
-  const current = conversations.data?.find((c) => c.id === selected);
-  const valid = !!current;
   return (
     <>
       <Button
-        hidden={open}
+        hidden={panel.open}
         title="Open course agent"
         className="course-agent-toggle"
         variant="primary"
         aria-label="Open course agent"
-        onClick={() => toggle(true)}
+        onClick={() => changePanel({ open: true })}
       >
-        <i className="bi bi-stars" /> <span className="visually-hidden">Course agent</span>
+        <i className="bi bi-stars" aria-hidden="true" />
       </Button>
-      <Offcanvas
-        show={open}
-        placement="end"
-        backdrop={false}
-        className="course-agent-panel"
-        scroll
-        onHide={() => toggle(false)}
-      >
-        <Offcanvas.Header className="border-bottom" closeButton>
-          <Offcanvas.Title>Course agent</Offcanvas.Title>
-        </Offcanvas.Header>
-        <Offcanvas.Body className="d-flex flex-column p-3 overflow-hidden">
+      <aside hidden={!panel.open} className="course-agent-panel" aria-label="Course agent">
+        <div className="d-flex align-items-center justify-content-between border-bottom p-3">
+          <h2 className="h5 mb-0">
+            <i className="bi bi-stars me-2 text-primary" aria-hidden="true" />
+            Course agent
+          </h2>
+          <Button
+            variant="link"
+            className="p-0 text-muted"
+            aria-label="Close course agent"
+            onClick={() => changePanel({ open: false })}
+          >
+            <i className="bi bi-x-lg" aria-hidden="true" />
+          </Button>
+        </div>
+        <div className="d-flex flex-column flex-grow-1 p-3 overflow-hidden">
           <div className="d-flex gap-2 mb-3 course-agent-picker">
-            <Form.Select
-              aria-label="Conversation"
-              value={valid ? selected : ''}
-              onChange={(event) => {
-                setSelected(event.target.value);
-                savePanelState(key + ':selected', event.target.value);
-              }}
-            >
-              <option value="">Choose a conversation</option>
-              {conversations.data?.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.title}
-                </option>
-              ))}
-            </Form.Select>
+            <Dropdown className="flex-grow-1">
+              <Dropdown.Toggle
+                variant="outline-secondary"
+                className="w-100 d-flex justify-content-between align-items-center text-start"
+                aria-label="Conversation"
+              >
+                {current?.title ?? panel.title}
+              </Dropdown.Toggle>
+              <Dropdown.Menu className="w-100 course-agent-conversations">
+                <Dropdown.Item
+                  active={!panel.selected}
+                  onClick={() => changePanel({ selected: '', title: 'New conversation' })}
+                >
+                  New conversation
+                </Dropdown.Item>
+                {conversations.data?.map((c) => (
+                  <Dropdown.Item
+                    key={c.id}
+                    active={c.id === panel.selected}
+                    onClick={() => changePanel({ selected: c.id, title: c.title })}
+                  >
+                    <span className="d-flex align-items-center justify-content-between gap-2">
+                      {c.title}
+                      {c.running || sending === c.id ? (
+                        <span
+                          className="spinner-border spinner-border-sm"
+                          role="status"
+                          aria-label="Working"
+                        />
+                      ) : c.finishedAt && readPanelState(`${key}:read:${c.id}`) !== c.finishedAt ? (
+                        <span className="text-primary" aria-label="New response">
+                          ●
+                        </span>
+                      ) : null}
+                    </span>
+                  </Dropdown.Item>
+                ))}
+              </Dropdown.Menu>
+            </Dropdown>
             <Button
               variant="outline-primary"
-              disabled={create.isPending}
-              onClick={() => create.mutate()}
+              onClick={() => changePanel({ selected: '', title: 'New conversation' })}
             >
               New
             </Button>
           </div>
           <AppErrorAlert
-            error={getAppError<never>(conversations.error ?? create.error)}
+            error={getAppError<CourseAgentError['List' | 'Panel']>(
+              conversations.error ?? settings.error,
+            )}
             render={{ UNKNOWN: ({ message }) => message }}
           />
-          {valid ? (
-            <Conversation
-              key={selected}
-              courseId={courseId}
-              id={selected}
-              storageKey={`${key}:${selected}`}
-            />
-          ) : (
-            <p>Choose or create a conversation to edit your course.</p>
-          )}
-        </Offcanvas.Body>
-      </Offcanvas>
+          <Conversation
+            key={panel.selected || 'new'}
+            courseId={courseId}
+            id={panel.selected}
+            storageKey={`${key}:${panel.selected || 'new'}`}
+            userName={userName}
+            timezone={timezone}
+            onCreated={(id, title) => {
+              if (!panelRef.current.selected) changePanel({ selected: id, title });
+              void conversations.refetch();
+            }}
+            onSending={(id) => {
+              setSending(id);
+              void conversations.refetch();
+            }}
+          />
+        </div>
+      </aside>
     </>
   );
 }
@@ -158,10 +224,18 @@ function Conversation({
   courseId,
   id,
   storageKey,
+  userName,
+  timezone,
+  onCreated,
+  onSending,
 }: {
   courseId: string;
   id: string;
   storageKey: string;
+  userName: string;
+  timezone: string;
+  onCreated: (id: string, title: string) => void;
+  onSending: (id: string) => void;
 }) {
   const trpc = useTRPC();
   const base = `/pl/course/${courseId}/course-agent/${id}`;
@@ -171,7 +245,7 @@ function Conversation({
   const [statisticsOpen, setStatisticsOpen] = useState(false);
   const [failure, setFailure] = useState('');
   const [connection, setConnection] = useState<'connecting' | 'connected' | 'disconnected'>(
-    'connecting',
+    id ? 'connecting' : 'connected',
   );
   const [connectionAttempt, setConnectionAttempt] = useState(0);
   const [transport] = useState(
@@ -185,6 +259,9 @@ function Conversation({
   const busy = status === 'streaming' || status === 'submitted';
   const busyRef = useRef(busy);
   busyRef.current = busy;
+  const create = useMutation(trpc.courseAgent.create.mutationOptions());
+  const createdIdRef = useRef(id);
+  const [optimistic, setOptimistic] = useState<UIMessage | null>(null);
   const send = useMutation(trpc.courseAgent.send.mutationOptions());
   const cancel = useMutation(trpc.courseAgent.stop.mutationOptions());
   const cleanup = useMutation(trpc.courseAgent.cleanup.mutationOptions());
@@ -199,6 +276,7 @@ function Conversation({
       const value = sendRequestSchema.safeParse(JSON.parse(saved));
       if (value.success) pendingRef.current = value.data;
     }
+    if (!id) return;
     const source = new EventSource(`${base}/events`);
     const connectionError = (event: MessageEvent) => {
       setFailure(JSON.parse(event.data).message);
@@ -232,7 +310,7 @@ function Conversation({
       source.removeEventListener('connection-error', connectionError);
       source.close();
     };
-  }, [base, storageKey, setMessages, resumeStream, setValue, connectionAttempt]);
+  }, [base, id, storageKey, setMessages, resumeStream, setValue, connectionAttempt]);
 
   async function submit() {
     if (!draft.trim() || snapshot.blocked || connection !== 'connected') return;
@@ -242,16 +320,41 @@ function Conversation({
         : { id: crypto.randomUUID(), text: draft, expectedRevision: snapshot.revision };
     pendingRef.current = message;
     savePanelState(storageKey + ':pending', JSON.stringify(message));
+    setValue('draft', '');
+    savePanelState(storageKey + ':draft', '');
+    setOptimistic({
+      id: message.id,
+      role: 'user',
+      parts: [{ type: 'text', text: message.text }],
+      metadata: { created_at: new Date().toISOString() },
+    });
     try {
-      await send.mutateAsync({ conversationId: id, message });
+      const conversationId = createdIdRef.current || (await create.mutateAsync()).id;
+      createdIdRef.current = conversationId;
+      onSending(conversationId);
+      const result = await send.mutateAsync({ conversationId, message });
       pendingRef.current = null;
       savePanelState(storageKey + ':pending', '');
-      setValue('draft', '');
-      savePanelState(storageKey + ':draft', '');
-      await stop();
-      void resumeStream();
+      if (!id) {
+        savePanelState(
+          storageKey.replace(/:new$/, `:${conversationId}`) + ':draft',
+          readPanelState(storageKey + ':draft'),
+        );
+        savePanelState(storageKey + ':draft', '');
+        onCreated(conversationId, result.title);
+      } else {
+        await stop();
+        void resumeStream();
+      }
     } catch {
-      /* The mutation alert retains the draft and the original request identity. */
+      setOptimistic(null);
+      // Restore the failed send only if the user has not started another draft.
+      if (!readPanelState(storageKey + ':draft')) {
+        setValue('draft', message.text);
+        savePanelState(storageKey + ':draft', message.text);
+      }
+    } finally {
+      onSending('');
     }
   }
 
@@ -267,7 +370,7 @@ function Conversation({
     });
   }
   const mutationError =
-    send.error ?? cancel.error ?? decision.error ?? prepare.error ?? cleanup.error;
+    create.error ?? send.error ?? cancel.error ?? decision.error ?? prepare.error ?? cleanup.error;
   return (
     <>
       {failure && (
@@ -285,7 +388,9 @@ function Conversation({
         </Alert>
       )}
       <AppErrorAlert
-        error={getAppError<never>(mutationError)}
+        error={getAppError<
+          CourseAgentError['Create' | 'Send' | 'Stop' | 'Decide' | 'Prepare' | 'Cleanup']
+        >(mutationError)}
         render={{ UNKNOWN: ({ message }) => message }}
       />
       {(snapshot.diagnostics?.cleanup?.error || snapshot.diagnostics?.checkpointError) && (
@@ -299,8 +404,21 @@ function Conversation({
         </Alert>
       )}
       <div className="flex-grow-1 overflow-auto course-agent-transcript">
+        {messages.length === 0 && !optimistic && (
+          <div className="course-agent-empty text-center text-muted py-5 px-3">
+            <i className="bi bi-stars fs-1 text-primary" aria-hidden="true" />
+            <h3 className="h5 mt-3 text-body">What would you like to work on?</h3>
+            <p>Set up your course, improve a question, or build an assessment.</p>
+          </div>
+        )}
         <Transcript
-          messages={messages}
+          userName={userName}
+          timezone={timezone}
+          messages={
+            optimistic && !messages.some((m) => m.id === optimistic.id)
+              ? [...messages, optimistic]
+              : messages
+          }
           approvals={snapshot.approvals ?? []}
           renderCodeChange={(approval) => (
             <section className="card mb-3">
@@ -312,7 +430,7 @@ function Conversation({
                       ? 'Code change · Approved'
                       : 'Code change · Rejected'}
                 </strong>
-                <details>
+                <details open>
                   <summary>Review exact changes</summary>
                   <pre className="course-agent-diff">
                     {approval.diff.split('\n').map((line, index) => (
@@ -332,36 +450,10 @@ function Conversation({
                     ))}
                   </pre>
                 </details>
-                {approval.result && <p>{approval.result}</p>}
+
                 {snapshot.approval?.id === approval.id && (
                   <>
                     <p className="text-danger">{snapshot.publication?.error}</p>
-                    {approval.status === 'approved' && (
-                      <dl className="small">
-                        <dt>GitHub publication</dt>
-                        <dd>
-                          {snapshot.publication?.publishedSha ? (
-                            <code>{snapshot.publication.publishedSha.slice(0, 12)}</code>
-                          ) : (
-                            'Not confirmed'
-                          )}
-                        </dd>
-                        <dt>Course Sync</dt>
-                        <dd>
-                          {snapshot.publication?.syncedSha ? (
-                            <code>{snapshot.publication.syncedSha.slice(0, 12)}</code>
-                          ) : snapshot.publication?.syncJobSequenceId ? (
-                            <a
-                              href={`/pl/course/${courseId}/jobSequence/${snapshot.publication.syncJobSequenceId}`}
-                            >
-                              View Course Sync log
-                            </a>
-                          ) : (
-                            'Not started'
-                          )}
-                        </dd>
-                      </dl>
-                    )}
                     {approval.status === 'pending' ? (
                       <>
                         <Button
@@ -407,6 +499,14 @@ function Conversation({
           )}
         />
       </div>
+      <div role="status" aria-live="polite">
+        {(send.isPending ||
+          create.isPending ||
+          busy ||
+          (!snapshot.blocked && snapshot.diagnostics?.state === 'waiting_for_agent')) && (
+          <ActivityStatus state="streaming" statusText="Working…" />
+        )}
+      </div>
       <Modal
         show={statisticsOpen}
         aria-labelledby="course-agent-statistics-title"
@@ -443,7 +543,7 @@ function Conversation({
           onKeyDown={(event) => {
             if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) {
               event.preventDefault();
-              if (!send.isPending) void handleSubmit(submit)();
+              if (!send.isPending && !create.isPending) void handleSubmit(submit)();
             }
           }}
           {...register('draft', {
@@ -474,7 +574,11 @@ function Conversation({
             type="submit"
             className="ms-auto"
             disabled={
-              connection !== 'connected' || snapshot.blocked || send.isPending || !draft.trim()
+              connection !== 'connected' ||
+              snapshot.blocked ||
+              send.isPending ||
+              create.isPending ||
+              !draft.trim()
             }
           >
             {busy ? 'Steer' : 'Send'}
@@ -489,55 +593,99 @@ function Transcript({
   messages,
   approvals,
   renderCodeChange,
+  userName,
+  timezone,
 }: {
   messages: UIMessage[];
   approvals: ApprovalDisplay[];
   renderCodeChange: (approval: ApprovalDisplay) => ReactNode;
+  userName: string;
+  timezone: string;
 }) {
-  return buildTranscript(messages, approvals).map((entry) => (
-    <ChatMessage key={entry.id} messageRole={entry.role}>
-      {entry.parts.map((part, index) => {
-        if (part.kind === 'code-change') {
-          return <div key={part.approval.id}>{renderCodeChange(part.approval)}</div>;
-        }
-        if (part.kind === 'tools') {
-          return (
-            <ToolCallGroup key={index} count={part.parts.length}>
-              {part.parts.map((tool) => (
-                <ToolCall
-                  key={'toolCallId' in tool ? String(tool.toolCallId) : index}
-                  title={
-                    'toolName' in tool ? String(tool.toolName).replaceAll('_', ' ') : tool.type
-                  }
-                  state={
-                    'state' in tool && tool.state === 'output-error'
-                      ? 'error'
-                      : 'state' in tool && tool.state === 'output-available'
-                        ? 'success'
-                        : 'streaming'
-                  }
-                >
-                  <pre>{toolDetails(tool)}</pre>
-                </ToolCall>
-              ))}
-            </ToolCallGroup>
-          );
-        }
-        const value = part.part;
-        if (value.type === 'text') return <MemoizedMarkdown key={index} content={value.text} />;
-        if (value.type === 'reasoning') return <ReasoningSummary key={index} text={value.text} />;
-        if (
-          value.type === 'data-steering' &&
-          value.data &&
-          typeof value.data === 'object' &&
-          'text' in value.data
-        ) {
-          return <blockquote key={index}>{String(value.data.text)}</blockquote>;
-        }
-        return null;
-      })}
-    </ChatMessage>
-  ));
+  return buildTranscript(messages, approvals).map((entry) =>
+    entry.role === 'user' ? (
+      <ChatMessage
+        key={entry.id}
+        messageRole="user"
+        className="d-flex flex-column align-items-end mb-3"
+        label={`Message from ${userName}`}
+      >
+        <div className="p-3 rounded bg-secondary-subtle course-agent-user-message">
+          {entry.parts
+            .flatMap((p) => (p.kind === 'part' && p.part.type === 'text' ? [p.part.text] : []))
+            .join('\n')}
+        </div>
+        <div className="small text-muted px-1 mt-1">
+          {userName}
+          {(() => {
+            const metadata = messages.find((m) => m.id === entry.id)?.metadata;
+            return metadata &&
+              typeof metadata === 'object' &&
+              'created_at' in metadata &&
+              typeof metadata.created_at === 'string' ? (
+              <> · {formatDate(new Date(metadata.created_at), timezone, { includeTz: false })}</>
+            ) : null;
+          })()}
+        </div>
+      </ChatMessage>
+    ) : (
+      <ChatMessage key={entry.id} messageRole={entry.role}>
+        {entry.parts.map((part, index) => {
+          if (part.kind === 'code-change') {
+            return <div key={part.approval.id}>{renderCodeChange(part.approval)}</div>;
+          }
+          if (part.kind === 'tools') {
+            return (
+              <div key={index} className="d-flex flex-column gap-2 my-2">
+                {part.parts.map((tool) => (
+                  <ToolCall
+                    key={'toolCallId' in tool ? String(tool.toolCallId) : index}
+                    title={toolTitle(tool)}
+                    state={
+                      'state' in tool && tool.state === 'output-error'
+                        ? 'error'
+                        : 'state' in tool && tool.state === 'output-available'
+                          ? 'success'
+                          : 'streaming'
+                    }
+                  >
+                    <pre>{toolDetails(tool)}</pre>
+                  </ToolCall>
+                ))}
+              </div>
+            );
+          }
+          const value = part.part;
+          if (value.type === 'text') return <MemoizedMarkdown key={index} content={value.text} />;
+          if (value.type === 'reasoning') {
+            return <ReasoningSummary key={index} text={value.text} state={value.state} />;
+          }
+          if (
+            value.type === 'data-steering' &&
+            value.data &&
+            typeof value.data === 'object' &&
+            'text' in value.data
+          ) {
+            return <blockquote key={index}>{String(value.data.text)}</blockquote>;
+          }
+          return null;
+        })}
+      </ChatMessage>
+    ),
+  );
+}
+
+function toolTitle(part: UIMessage['parts'][number]) {
+  const running =
+    'state' in part && !['output-available', 'output-error'].includes(String(part.state));
+  const name = 'toolName' in part ? String(part.toolName) : part.type.replace(/^tool-/, '');
+  if (name === 'command_execution') {
+    return running ? 'Running command…' : 'Ran command';
+  }
+  if (name === 'file_change') {
+    return running ? 'Editing files…' : 'Edited files';
+  }
+  return name.replaceAll('_', ' ');
 }
 
 function toolDetails(part: UIMessage['parts'][number]) {

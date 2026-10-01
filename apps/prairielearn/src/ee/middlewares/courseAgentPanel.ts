@@ -1,4 +1,5 @@
 import { config } from '../../lib/config.js';
+import { CourseAgentPanelStateSchema } from '../../lib/course-agent-panel.js';
 import { features } from '../../lib/features/index.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { selectConversations } from '../../models/course-agent-conversation.js';
@@ -29,6 +30,11 @@ export default typedAsyncHandler<'course'>(async (req, res, next) => {
       res.locals.course.id,
       res.locals.user.id,
       res.locals.authz_data.authn_user.id,
+      res.locals.user.name ?? res.locals.user.uid,
+      res.locals.course.display_timezone,
+      CourseAgentPanelStateSchema.parse(
+        req.session.course_agent_panels?.[`${res.locals.course.id}:${res.locals.user.id}`] ?? {},
+      ),
     );
   }
   next();

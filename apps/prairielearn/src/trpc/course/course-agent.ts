@@ -9,13 +9,15 @@ import {
 import { formatDate } from '@prairielearn/formatter';
 import { IdSchema } from '@prairielearn/zod';
 
+import { CourseAgentPanelStateSchema } from '../../lib/course-agent-panel.js';
 import { CourseAgentConversationSchema } from '../../lib/db-types.js';
 import { isEnterprise } from '../../lib/license.js';
 import {
   type AgentScope,
   createConversation,
+  nameConversation,
   selectConversation,
-  selectConversations,
+  selectConversationActivity,
 } from '../../models/course-agent-conversation.js';
 import { rejectExecution } from '../../models/course-agent-execution.js';
 import { selectOptionalProposal } from '../../models/course-agent-proposal.js';
@@ -49,15 +51,31 @@ const newWorkProcedure = procedure.use(async ({ ctx, next }) => {
   return next();
 });
 export const courseAgentRouter = t.router({
-  list: procedure.output(z.array(CatalogSchema)).query(async ({ ctx }) =>
-    (await selectConversations(ctx.scope)).map((row) => ({
-      ...row,
-      title: formatDate(row.created_at, ctx.course.display_timezone),
-    })),
-  ),
+  panel: procedure.input(CourseAgentPanelStateSchema).mutation(({ ctx, input }) => {
+    const key = `${ctx.course.id}:${ctx.scope.user_id}`;
+    ctx.session.course_agent_panels ??= {};
+    ctx.session.course_agent_panels[key] = input;
+  }),
+  list: procedure
+    .output(
+      z.array(CatalogSchema.extend({ running: z.boolean(), finishedAt: z.string().nullable() })),
+    )
+    .query(async ({ ctx }) =>
+      (await selectConversationActivity(ctx.scope)).map(
+        ({ conversation, running, finished_at }) => ({
+          ...conversation,
+          title:
+            conversation.title === 'New conversation'
+              ? conversation.title
+              : formatDate(conversation.created_at, ctx.course.display_timezone),
+          running,
+          finishedAt: finished_at?.toISOString() ?? null,
+        }),
+      ),
+    ),
   create: newWorkProcedure.output(CatalogSchema).mutation(({ ctx }) =>
     createConversation(ctx.scope, {
-      title: formatDate(new Date(), ctx.course.display_timezone),
+      title: 'New conversation',
       ...ctx.service.destination(ctx.course),
     }),
   ),
@@ -69,6 +87,8 @@ export const courseAgentRouter = t.router({
       const { admit, recordUsage } = await import('../../ee/lib/course-agent/usage.js');
       await recordUsage(c, await chat.getSnapshot(AbortSignal.timeout(10000)));
       await admit(c, input.message);
+      const title = formatDate(c.created_at, ctx.course.display_timezone);
+      await nameConversation(c.id, title);
       const { observe } = await import('../../ee/lib/course-agent/observer.js');
       await observe(c, chat, (tool) => ctx.service.prepare(ctx.scope, c, tool));
       try {
@@ -79,6 +99,7 @@ export const courseAgentRouter = t.router({
         }
         throw error;
       }
+      return { title };
     }),
   stop: procedure.input(id).mutation(async ({ ctx, input }) => {
     const chat = await ctx.service.provider(
@@ -117,3 +138,14 @@ export const courseAgentRouter = t.router({
       });
     }),
 });
+
+export interface CourseAgentError {
+  Panel: never;
+  List: never;
+  Create: never;
+  Send: never;
+  Stop: never;
+  Cleanup: never;
+  Decide: never;
+  Prepare: never;
+}

@@ -1,5 +1,12 @@
-.course-agent-panel.offcanvas-end {
-  --bs-offcanvas-width: min(38rem, 100vw);
+.course-agent-panel {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  width: min(38rem, 100vw);
+  display: flex;
+  flex-direction: column;
+  background: var(--bs-body-bg);
+  z-index: 1030;
   top: var(--course-agent-top, var(--navbar-height));
   border-left: 1px solid var(--bs-border-color);
 }
@@ -36,10 +43,29 @@
   flex-shrink: 0;
 }
 @media (min-width: 1200px) {
-  body:has(.course-agent-panel.show) .app-main {
+  body:has(.course-agent-panel:not([hidden])) .app-main {
     margin-right: min(38rem, 45vw);
   }
-  .course-agent-panel.offcanvas-end {
-    --bs-offcanvas-width: min(38rem, 45vw);
+  .course-agent-panel {
+    width: min(38rem, 45vw);
   }
+}
+
+.course-agent-panel[hidden] {
+  display: none;
+}
+.course-agent-user-message {
+  max-width: 90%;
+  white-space: pre-wrap;
+}
+.course-agent-conversations {
+  max-height: 20rem;
+  overflow-y: auto;
+}
+.course-agent-transcript article p:last-child {
+  margin-bottom: 0;
+}
+
+.course-agent-transcript summary > .d-flex {
+  display: inline-flex !important;
 }
