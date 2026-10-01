@@ -624,6 +624,32 @@
       "default": null,
       "type": ["string", "null"]
     },
+    "supportSlackUrl": {
+      "default": null,
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "uri",
+          "pattern": "^https:\\/\\/.*"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "supportOfficeHoursUrl": {
+      "default": null,
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "uri",
+          "pattern": "^https:\\/\\/.*"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
     "githubClientToken": {
       "default": null,
       "type": ["string", "null"]
