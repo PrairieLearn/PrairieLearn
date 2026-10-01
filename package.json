@@ -71,7 +71,7 @@
     "prettier-plugin-pkg": "^0.22.1",
     "prettier-plugin-sh": "^0.20.2",
     "prettier-plugin-sql": "^0.20.0",
-    "prettier-plugin-toml": "^2.0.6",
+    "prettier-plugin-toml": "^3.0.2",
     "pyright": "^1.1.414",
     "s3rver": "^3.7.1",
     "turbo": "^2.11.4",
