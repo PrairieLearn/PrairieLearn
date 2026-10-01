@@ -10,6 +10,7 @@ import {
   SpreadsheetSubmissionError,
   createSpreadsheetAddressSpace,
   evaluateSpreadsheet,
+  evaluateSpreadsheetForEditor,
   getRelativeFillInput,
   getSpreadsheetLogMetadata,
   intersectRanges,
@@ -231,6 +232,77 @@ describe('evaluateSpreadsheet', () => {
     if (result.type !== 'error') assert.fail('Expected an error result.');
     assert.equal(result.value, '#CYCLE!');
     evaluation.engine.destroy();
+  });
+
+  it('returns calculation errors for display without reporting editor issues', () => {
+    const evaluation = evaluateSpreadsheetForEditor(
+      makeConfig(),
+      makeSubmission({ Inputs: { A2: '=1/0' } }),
+    );
+
+    assert.deepEqual(evaluation.snapshot.sheets[0].cells.A2, {
+      input: { type: 'formula', value: '=1/0' },
+      result: { type: 'error', value: '#DIV/0!', error_type: 'DIV_BY_ZERO' },
+    });
+    assert.deepEqual(evaluation.issues, {});
+    evaluation.engine.destroy();
+  });
+
+  it('preserves invalid formulas and reports cell-addressed editor issues', () => {
+    const cases = [
+      {
+        formula: '=1+',
+        value: '#ERROR!',
+        errorType: 'ERROR',
+        message: /outside declared student ranges/,
+      },
+      {
+        formula: '=MISSING_NAME',
+        value: '#NAME?',
+        errorType: 'NAME',
+        message: /outside declared student ranges/,
+      },
+      {
+        formula: '=RAND()',
+        value: '#ERROR!',
+        errorType: 'ERROR',
+        message: /RAND is not supported/,
+      },
+    ];
+
+    for (const { formula, value, errorType, message } of cases) {
+      const evaluation = evaluateSpreadsheetForEditor(
+        makeConfig(),
+        makeSubmission({ Inputs: { A2: formula } }),
+      );
+      assert.deepEqual(evaluation.snapshot.sheets[0].cells.A2, {
+        input: { type: 'formula', value: formula },
+        result: { type: 'error', value, error_type: errorType },
+      });
+      assert.match(evaluation.issues.Inputs!.A2!.message, message);
+      evaluation.engine.destroy();
+      assert.throws(() =>
+        evaluateSpreadsheet(makeConfig(), makeSubmission({ Inputs: { A2: formula } })),
+      );
+    }
+  });
+
+  it('shows references outside the student address space as reference errors', () => {
+    const evaluation = evaluateSpreadsheetForEditor(
+      makeOffsetConfig(),
+      makeSubmission({ Inputs: { A1: '=C1' } }),
+    );
+
+    assert.deepEqual(evaluation.snapshot.sheets[0].cells.A1, {
+      input: { type: 'formula', value: '=C1' },
+      result: { type: 'error', value: '#REF!', error_type: 'REF' },
+    });
+    assert.match(evaluation.issues.Inputs!.A1!.message, /outside declared student ranges/);
+    evaluation.engine.destroy();
+    assert.throws(
+      () => evaluateSpreadsheet(makeOffsetConfig(), makeSubmission({ Inputs: { A1: '=C1' } })),
+      /outside declared student ranges/,
+    );
   });
 
   it('evaluates private sheets and persists only named typed outputs', () => {

@@ -12,8 +12,8 @@ async function editCell(grid: Locator, address: string, value: string) {
     name: new RegExp(`^${address}, editable`),
   });
   await cell.click();
-  await cell.press('Enter');
   const editor = grid.getByRole('textbox', { name: `Edit cell ${address}` });
+  await expect(editor).toBeVisible();
   await editor.press('ControlOrMeta+A');
   await editor.fill(value);
   await editor.press('Enter');
@@ -106,6 +106,7 @@ test('supports accessible local editing and trusted submission', async ({
   await editCell(grid, 'B2', '3');
   await editCell(grid, 'C2', '4');
   await editCell(grid, 'D2', '=1/0');
+  await expect(grid.getByRole('gridcell', { name: /^D2, editable/ })).toContainText('#DIV/0!');
   await expect(parameterDemo.getByRole('status')).toContainText('#DIV/0!');
   await editCell(grid, 'D2', '=B2*C2');
 
@@ -117,7 +118,15 @@ test('supports accessible local editing and trusted submission', async ({
   await page.evaluate(() => navigator.clipboard.writeText('7'));
   const b3 = grid.getByRole('gridcell', { name: /^B3, editable/ });
   await b3.click();
-  await b3.press('ControlOrMeta+V');
+  await grid.getByRole('textbox', { name: 'Edit cell B3' }).press('Escape');
+  const formulaBar = parameterDemo.getByLabel('Formula for B3');
+  await formulaBar.fill('17');
+  await expect(rawAnswer).toHaveValue(/"B3":17/);
+  await formulaBar.press('Escape');
+  await expect(rawAnswer).not.toHaveValue(/"B3"/);
+
+  await b3.click();
+  await grid.getByRole('textbox', { name: 'Edit cell B3' }).press('ControlOrMeta+V');
   await expect(rawAnswer).toHaveValue(/"B3":7/);
   await parameterDemo.getByRole('button', { name: 'Undo' }).click();
   await expect(rawAnswer).not.toHaveValue(/"B3"/);
@@ -140,7 +149,9 @@ test('supports accessible local editing and trusted submission', async ({
   const summaryGrid = parameterDemo.getByRole('grid', {
     name: 'Spreadsheet test, sheet Summary',
   });
-  await summaryGrid.getByRole('gridcell', { name: /^A1, read-only/ }).click();
+  const readOnlyCell = summaryGrid.getByRole('gridcell', { name: /^A1, read-only/ });
+  await readOnlyCell.click();
+  await expect(summaryGrid.getByRole('textbox', { name: 'Edit cell A1' })).toHaveCount(0);
   await expect(parameterDemo.getByLabel('Formula for A1')).toBeDisabled();
   await expect(parameterDemo.getByRole('status')).toContainText('A1, read-only');
 
@@ -152,7 +163,8 @@ test('supports accessible local editing and trusted submission', async ({
 
   const lastCell = grid.getByRole('gridcell', { name: /^D4, editable/ });
   await lastCell.click();
-  await lastCell.press('Tab');
+  await grid.getByRole('textbox', { name: 'Edit cell D4' }).press('Escape');
+  await grid.getByRole('gridcell', { name: /^D4, editable/ }).press('Tab');
   expect(await grid.evaluate((element) => element.contains(document.activeElement))).toBe(false);
 
   await page.addScriptTag({ content: axe.source });
@@ -181,6 +193,58 @@ test('supports accessible local editing and trusted submission', async ({
   await page.reload();
   await expect(rawAnswer).toHaveValue(/"B2":3/);
   expect(thirdPartyRequests).toEqual([]);
+});
+
+test('persists active formula drafts and rejected formulas', async ({ page, courseInstance }) => {
+  const question = await selectQuestionByQid({
+    qid: 'spreadsheetElement',
+    course_id: courseInstance.course_id,
+  });
+  await page.goto(
+    `/pl/course_instance/${courseInstance.id}/instructor/question/${question.id}/preview`,
+  );
+
+  const parameterDemo = page.getByRole('region', {
+    name: 'Parameter and DataFrame workbook',
+  });
+  const grid = parameterDemo.getByRole('grid', {
+    name: 'Spreadsheet test, sheet Inputs',
+  });
+  const rawAnswer = page.locator('input.js-pl-spreadsheet-input[name="model"]');
+
+  await grid.getByRole('gridcell', { name: /^D2, editable/ }).click();
+  const editor = grid.getByRole('textbox', { name: 'Edit cell D2' });
+  await editor.fill('=1/0');
+  await expect(rawAnswer).toHaveValue(/[=]1\/0/);
+  const formDataAnswer = await rawAnswer.evaluate((input: HTMLInputElement) => {
+    input.value = 'stale';
+    return new FormData(input.form!).get(input.name);
+  });
+  expect(formDataAnswer).toContain('=1/0');
+  await page.getByRole('button', { name: /Save & Grade/ }).click();
+
+  const submissionTable = page.getByRole('table', { name: 'Inputs', exact: true }).first();
+  await expect(submissionTable.getByRole('cell', { name: 'Cell D2' })).toHaveText('#DIV/0!');
+  await expect(rawAnswer).toHaveValue(/[=]1\/0/);
+
+  const currentGrid = parameterDemo.getByRole('grid', {
+    name: 'Spreadsheet test, sheet Inputs',
+  });
+  await currentGrid.getByRole('gridcell', { name: /^D2, editable/ }).click();
+  const rejectedEditor = currentGrid.getByRole('textbox', { name: 'Edit cell D2' });
+  await rejectedEditor.fill('=RAND()');
+  await page.getByRole('button', { name: /Save & Grade/ }).click();
+
+  await expect(page.getByText('Function RAND is not supported.').first()).toBeVisible();
+  await expect(
+    parameterDemo.getByRole('gridcell', { name: /^D2, editable, #ERROR!/ }),
+  ).toContainText('#ERROR!');
+  await expect(rawAnswer).toHaveValue(/[=]RAND\(\)/);
+
+  await page.reload();
+  await expect(rawAnswer).toHaveValue(/[=]RAND\(\)/);
+  await parameterDemo.getByRole('gridcell', { name: /^D2, editable, #ERROR!/ }).click();
+  await expect(parameterDemo.getByRole('textbox', { name: 'Edit cell D2' })).toHaveValue('=RAND()');
 });
 
 test('keeps file-backed grading cells outside the student range private', async ({

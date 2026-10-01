@@ -1,5 +1,6 @@
 import {
   DetailedCellError,
+  ErrorType,
   HyperFormula,
   type RawCellContent,
   type SimpleCellAddress,
@@ -273,6 +274,16 @@ const SpreadsheetSubmissionErrorSchema = z
 export interface SpreadsheetEvaluation {
   snapshot: SpreadsheetSnapshot;
   engine: HyperFormula;
+}
+
+export interface SpreadsheetEditorCellIssue {
+  message: string;
+  value: string;
+  error_type: string;
+}
+
+export interface SpreadsheetEditorEvaluation extends SpreadsheetEvaluation {
+  issues: Partial<Record<string, Partial<Record<string, SpreadsheetEditorCellIssue>>>>;
 }
 
 export class SpreadsheetSubmissionError extends Error {}
@@ -775,6 +786,7 @@ function validateGradingConfig(
 function mergeSubmission(
   config: SpreadsheetElementConfig,
   submission: SpreadsheetRawSubmission,
+  issues?: SpreadsheetEditorEvaluation['issues'],
 ): Record<string, Record<string, SpreadsheetCellInput>> {
   const merged = Object.fromEntries(
     config.template.sheets.map((sheet) => [sheet.name, { ...sheet.cells }]),
@@ -831,7 +843,14 @@ function mergeSubmission(
       } else {
         if (typeof input === 'string' && input.startsWith('=')) {
           const formulaError = validateFormula(input);
-          if (formulaError) throw new SpreadsheetSubmissionError(formulaError);
+          if (formulaError) {
+            if (!issues) throw new SpreadsheetSubmissionError(formulaError);
+            setSpreadsheetEditorIssue(issues, sheetName, address, {
+              message: formulaError,
+              value: '#ERROR!',
+              error_type: 'ERROR',
+            });
+          }
           formulas += 1;
         }
         merged[sheetName][address] = input;
@@ -908,10 +927,24 @@ const HYPERFORMULA_CONFIG = {
   useWildcards: false,
 } as const;
 
+function setSpreadsheetEditorIssue(
+  issues: SpreadsheetEditorEvaluation['issues'],
+  sheetName: string,
+  address: string,
+  issue: SpreadsheetEditorCellIssue,
+  overwrite = false,
+): void {
+  issues[sheetName] ??= {};
+  if (overwrite || !Object.hasOwn(issues[sheetName], address)) {
+    issues[sheetName][address] = issue;
+  }
+}
+
 function validateStudentFormulaReferences(
   engine: HyperFormula,
   template: SpreadsheetTemplate,
   studentSheetData: Record<string, RawCellContent[][]>,
+  issues?: SpreadsheetEditorEvaluation['issues'],
 ): void {
   const templateBySheetId = new Map<number, SpreadsheetTemplate['sheets'][number]>();
   for (const sheet of template.sheets) {
@@ -919,20 +952,45 @@ function validateStudentFormulaReferences(
     if (sheetId !== undefined) templateBySheetId.set(sheetId, sheet);
   }
 
-  const outsideStudentRange = (): never => {
-    throw new SpreadsheetSubmissionError(
-      'Student-visible formulas cannot reference cells outside declared student ranges.',
+  function outsideStudentRange(): never;
+  function outsideStudentRange(
+    sheetName: string,
+    address: string,
+    result?: DetailedCellError,
+  ): void;
+
+  function outsideStudentRange(
+    sheetName?: string,
+    address?: string,
+    result?: DetailedCellError,
+  ): void {
+    const message =
+      'Student-visible formulas cannot reference cells outside declared student ranges.';
+    if (!issues || !sheetName || !address) {
+      throw new SpreadsheetSubmissionError(message);
+    }
+    setSpreadsheetEditorIssue(
+      issues,
+      sheetName,
+      address,
+      {
+        message,
+        value: result?.value ?? '#REF!',
+        error_type: result?.type ?? 'REF',
+      },
+      result?.type === ErrorType.REF,
     );
-  };
+  }
 
   for (const sheet of template.sheets) {
     const sheetId = engine.getSheetId(sheet.name) ?? outsideStudentRange();
     for (const [row, values] of studentSheetData[sheet.name].entries()) {
       for (const [col, input] of values.entries()) {
         if (typeof input !== 'string' || !input.startsWith('=')) continue;
+        const address = cellAddress(row, col);
         const result = engine.getCellValue({ sheet: sheetId, row, col });
         if (result instanceof DetailedCellError && ['NAME', 'ERROR', 'REF'].includes(result.type)) {
-          outsideStudentRange();
+          outsideStudentRange(sheet.name, address, result);
         }
         const precedents = engine.getCellPrecedents({ sheet: sheetId, row, col });
         for (const precedent of precedents) {
@@ -949,7 +1007,7 @@ function validateStudentFormulaReferences(
               endColumn: end.col,
             })
           ) {
-            outsideStudentRange();
+            outsideStudentRange(sheet.name, address);
           }
         }
       }
@@ -1063,13 +1121,30 @@ export function evaluateSpreadsheet(
   submission: SpreadsheetRawSubmission,
   gradingConfig?: SpreadsheetGradingConfig,
 ): SpreadsheetEvaluation {
+  return evaluateSpreadsheetInternal(config, submission, gradingConfig);
+}
+
+export function evaluateSpreadsheetForEditor(
+  config: SpreadsheetElementConfig,
+  submission: SpreadsheetRawSubmission,
+): SpreadsheetEditorEvaluation {
+  const issues: SpreadsheetEditorEvaluation['issues'] = {};
+  return { ...evaluateSpreadsheetInternal(config, submission, undefined, issues), issues };
+}
+
+function evaluateSpreadsheetInternal(
+  config: SpreadsheetElementConfig,
+  submission: SpreadsheetRawSubmission,
+  gradingConfig?: SpreadsheetGradingConfig,
+  issues?: SpreadsheetEditorEvaluation['issues'],
+): SpreadsheetEvaluation {
   validateTemplate(config.template);
   if (submission.template_hash !== config.template_hash) {
     throw new SpreadsheetSubmissionError(
       'The spreadsheet template changed. Reload the question and try again.',
     );
   }
-  const merged = mergeSubmission(config, submission);
+  const merged = mergeSubmission(config, submission, issues);
   const sheetData: Record<string, RawCellContent[][]> = {};
   for (const sheet of config.template.sheets) {
     sheetData[sheet.name] = buildSheetRows(sheet.rows, sheet.columns, merged[sheet.name]);
@@ -1078,20 +1153,29 @@ export function evaluateSpreadsheet(
   const engine = HyperFormula.buildFromSheets(sheetData, HYPERFORMULA_CONFIG);
 
   try {
-    validateStudentFormulaReferences(engine, config.template, sheetData);
+    validateStudentFormulaReferences(engine, config.template, sheetData, issues);
     const sheets = config.template.sheets.map((sheet, sheetIndex) => {
       const cells: Record<string, z.infer<typeof SpreadsheetSnapshotCellSchema>> = {};
       for (const [address, input] of Object.entries(merged[sheet.name])) {
         const parsedAddress = parseCellAddress(address);
         if (!parsedAddress) continue;
-        const result = snapshotResult(
+        let result = snapshotResult(
           engine.getCellValue({
             sheet: sheetIndex,
             row: parsedAddress.row,
             col: parsedAddress.column,
           }),
         );
+        const issue = issues?.[sheet.name]?.[address];
+        if (issue) {
+          result = {
+            type: 'error',
+            value: issue.value,
+            error_type: issue.error_type,
+          };
+        }
         if (
+          !issues &&
           result.type === 'error' &&
           (result.error_type === 'NAME' || result.error_type === 'ERROR')
         ) {

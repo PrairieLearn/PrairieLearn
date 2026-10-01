@@ -16,13 +16,13 @@ import { onDocumentReady } from '@prairielearn/browser-utils';
 
 import {
   type SpreadsheetCellInput,
+  type SpreadsheetEditorEvaluation,
   type SpreadsheetElementConfig,
   type SpreadsheetEvaluation,
   type SpreadsheetRawSubmission,
   SpreadsheetRawSubmissionSchema,
-  SpreadsheetSubmissionError,
   cellAddress,
-  evaluateSpreadsheet,
+  evaluateSpreadsheetForEditor,
   getRelativeFillInput,
   isCellEditable,
   parseCellAddress,
@@ -132,23 +132,37 @@ function resultText(result: SpreadsheetSnapshotCell | undefined) {
   return String(result.result.value);
 }
 
-function CellEditor({ row, column, onRowChange, onClose }: RenderEditCellProps<SpreadsheetRow>) {
+function CellEditor({
+  row,
+  column,
+  onRowChange,
+  onClose,
+  onDraftChange,
+  onCancel,
+}: RenderEditCellProps<SpreadsheetRow> & {
+  onDraftChange: (value: string) => void;
+  onCancel: () => void;
+}) {
   const value = row.inputs[column.key] ?? '';
   return (
     <input
       className="form-control form-control-sm h-100 rounded-0"
       aria-label={`Edit cell ${column.key}${row.rowIndex + 1}`}
       value={value}
-      onChange={(event) =>
+      onChange={(event) => {
+        onDraftChange(event.currentTarget.value);
         onRowChange({
           ...row,
           inputs: { ...row.inputs, [column.key]: event.currentTarget.value },
-        })
-      }
+        });
+      }}
       onBlur={() => onClose(true)}
       onKeyDown={(event) => {
         if (event.key === 'Enter') onClose(true);
-        if (event.key === 'Escape') onClose(false);
+        if (event.key === 'Escape') {
+          onCancel();
+          onClose(false);
+        }
       }}
     />
   );
@@ -188,7 +202,7 @@ function SpreadsheetEditor({
   };
   const initialStateRef = useRef<{
     submission: SpreadsheetRawSubmission;
-    evaluation: SpreadsheetEvaluation;
+    evaluation: SpreadsheetEditorEvaluation;
     error: string;
   } | null>(null);
   if (initialStateRef.current === null) {
@@ -201,13 +215,13 @@ function SpreadsheetEditor({
     try {
       initialStateRef.current = {
         submission: initialSubmission,
-        evaluation: evaluateSpreadsheet(config, initialSubmission),
+        evaluation: evaluateSpreadsheetForEditor(config, initialSubmission),
         error: '',
       };
     } catch (error) {
       initialStateRef.current = {
-        submission: emptySubmission,
-        evaluation: evaluateSpreadsheet(config, emptySubmission),
+        submission: initialSubmission,
+        evaluation: evaluateSpreadsheetForEditor(config, emptySubmission),
         error: error instanceof Error ? error.message : 'The spreadsheet could not be loaded.',
       };
     }
@@ -225,6 +239,7 @@ function SpreadsheetEditor({
   const editorRef = useRef<HTMLDivElement>(null);
   const skipFormulaBlurRef = useRef(false);
   const rawSubmissionRef = useRef(rawSubmission);
+  const committedSubmissionRef = useRef(rawSubmission);
 
   const sheet = config.template.sheets[activeSheetIndex];
   const instructionsId = `pl-spreadsheet-instructions-${options.uuid}`;
@@ -235,16 +250,28 @@ function SpreadsheetEditor({
     message: string,
     recordHistory = true,
   ) {
+    const previousSubmission = committedSubmissionRef.current;
     if (recordHistory) {
-      setPast((history) => [...history.slice(-99), rawSubmission]);
+      setPast((history) => [...history.slice(-99), previousSubmission]);
       setFuture([]);
     }
+    committedSubmissionRef.current = nextSubmission;
     rawSubmissionRef.current = nextSubmission;
     setRawSubmission(nextSubmission);
     syncHiddenInput(hiddenInput, nextSubmission);
     try {
-      const nextEvaluation = evaluateSpreadsheet(config, nextSubmission);
+      const nextEvaluation = evaluateSpreadsheetForEditor(config, nextSubmission);
       setEvaluation(nextEvaluation);
+      let editorError = '';
+      for (const [sheetName, sheetIssues] of Object.entries(nextEvaluation.issues)) {
+        if (!sheetIssues) continue;
+        for (const [address, issue] of Object.entries(sheetIssues)) {
+          if (!issue) continue;
+          editorError = `${sheetName}!${address}: ${issue.message}`;
+          break;
+        }
+        if (editorError) break;
+      }
       let calculationError = '';
       for (const evaluatedSheet of nextEvaluation.snapshot.sheets) {
         for (const [address, cell] of Object.entries(evaluatedSheet.cells)) {
@@ -255,14 +282,29 @@ function SpreadsheetEditor({
         }
         if (calculationError) break;
       }
-      setAnnouncement(calculationError || message);
+      setAnnouncement(editorError || calculationError || message);
     } catch (error) {
       setAnnouncement(
-        error instanceof SpreadsheetSubmissionError
-          ? error.message
-          : 'The spreadsheet could not be recalculated.',
+        error instanceof Error ? error.message : 'The spreadsheet could not be recalculated.',
       );
     }
+  }
+
+  function updateDraft(row: number, column: number, inputText: string) {
+    const nextSubmission = updateOverride({
+      config,
+      rawSubmission: committedSubmissionRef.current,
+      sheetName: sheet.name,
+      address: cellAddress(row, column),
+      input: parseEditorInput(inputText),
+    });
+    rawSubmissionRef.current = nextSubmission;
+    syncHiddenInput(hiddenInput, nextSubmission);
+  }
+
+  function cancelDraft() {
+    rawSubmissionRef.current = committedSubmissionRef.current;
+    syncHiddenInput(hiddenInput, committedSubmissionRef.current);
   }
 
   function commitCell(row: number, column: number, inputText: string, message = 'Cell updated.') {
@@ -271,13 +313,18 @@ function SpreadsheetEditor({
       return;
     }
     const address = cellAddress(row, column);
+    const input = parseEditorInput(inputText);
+    if (Object.is(input, finalInput(config, committedSubmissionRef.current, sheet.name, address))) {
+      cancelDraft();
+      return;
+    }
     applySubmission(
       updateOverride({
         config,
-        rawSubmission,
+        rawSubmission: committedSubmissionRef.current,
         sheetName: sheet.name,
         address,
-        input: parseEditorInput(inputText),
+        input,
       }),
       `${address}: ${message}`,
     );
@@ -286,16 +333,18 @@ function SpreadsheetEditor({
   function undo() {
     const previous = past.at(-1);
     if (!previous) return;
+    const currentSubmission = committedSubmissionRef.current;
     setPast((history) => history.slice(0, -1));
-    setFuture((history) => [rawSubmission, ...history].slice(0, 100));
+    setFuture((history) => [currentSubmission, ...history].slice(0, 100));
     applySubmission(previous, 'Undid the last spreadsheet change.', false);
   }
 
   function redo() {
     const next = future[0];
     if (future.length === 0) return;
+    const currentSubmission = committedSubmissionRef.current;
     setFuture((history) => history.slice(1));
-    setPast((history) => [...history.slice(-99), rawSubmission]);
+    setPast((history) => [...history.slice(-99), currentSubmission]);
     applySubmission(next, 'Redid the spreadsheet change.', false);
   }
 
@@ -352,15 +401,22 @@ function SpreadsheetEditor({
           isCellEditable(sheet, row.rowIndex, columnIndex)
             ? undefined
             : 'pl-spreadsheet-cell-readonly',
-        renderEditCell: (props) => <CellEditor {...props} />,
+        renderEditCell: (props) => (
+          <CellEditor
+            {...props}
+            onDraftChange={(value) => updateDraft(props.row.rowIndex, columnIndex, value)}
+            onCancel={cancelDraft}
+          />
+        ),
         renderCell: ({ row }) => {
           const address = `${columnName}${row.rowIndex + 1}`;
           const editable = isCellEditable(sheet, row.rowIndex, columnIndex);
+          const issue = evaluation.issues[sheet.name]?.[address];
           return (
             <span
               className={row.errors[columnName] ? 'pl-spreadsheet-cell-error' : undefined}
               aria-label={`${address}, ${editable ? 'editable' : 'read-only'}, ${row.results[columnName] || 'blank'}`}
-              title={editable ? undefined : 'Read-only cell'}
+              title={issue?.message ?? (editable ? undefined : 'Read-only cell')}
             >
               {row.results[columnName]}
               {!editable && <span className="visually-hidden"> Read-only</span>}
@@ -377,11 +433,16 @@ function SpreadsheetEditor({
     syncHiddenInput(hiddenInput, rawSubmissionRef.current);
     if (!form) return;
     const flush = () => syncHiddenInput(hiddenInput, rawSubmissionRef.current);
+    const flushFormData = (event: FormDataEvent) => {
+      const value = JSON.stringify(rawSubmissionRef.current);
+      hiddenInput.value = value;
+      event.formData.set(hiddenInput.name, value);
+    };
     form.addEventListener('submit', flush);
-    form.addEventListener('formdata', flush);
+    form.addEventListener('formdata', flushFormData);
     return () => {
       form.removeEventListener('submit', flush);
-      form.removeEventListener('formdata', flush);
+      form.removeEventListener('formdata', flushFormData);
     };
   }, [hiddenInput]);
 
@@ -461,7 +522,7 @@ function SpreadsheetEditor({
   return (
     <div ref={editorRef} className="pl-spreadsheet-editor">
       <p id={instructionsId} className="visually-hidden">
-        Use arrow keys to navigate cells, Enter or F2 to edit, Escape to cancel, and Tab to leave
+        Click a cell or use arrow keys and Enter or F2 to edit, Escape to cancel, and Tab to leave
         the grid at its boundaries. Read-only cells are announced.
       </p>
       <div className="pl-spreadsheet-toolbar" role="toolbar" aria-label="Spreadsheet actions">
@@ -513,7 +574,12 @@ function SpreadsheetEditor({
           aria-describedby={instructionsId}
           disabled={!activeCell || !isCellEditable(sheet, activeCell.row, activeCell.column)}
           value={formulaText}
-          onChange={(event) => setFormulaText(event.currentTarget.value)}
+          onChange={(event) => {
+            setFormulaText(event.currentTarget.value);
+            if (activeCell) {
+              updateDraft(activeCell.row, activeCell.column, event.currentTarget.value);
+            }
+          }}
           onBlur={() => {
             if (skipFormulaBlurRef.current) {
               skipFormulaBlurRef.current = false;
@@ -533,11 +599,12 @@ function SpreadsheetEditor({
             } else if (event.key === 'Escape' && activeCell) {
               event.preventDefault();
               skipFormulaBlurRef.current = true;
+              cancelDraft();
               setFormulaText(
                 displayInput(
                   finalInput(
                     config,
-                    rawSubmission,
+                    committedSubmissionRef.current,
                     sheet.name,
                     cellAddress(activeCell.row, activeCell.column),
                   ),
@@ -598,6 +665,9 @@ function SpreadsheetEditor({
         rowKeyGetter={(row) => row.rowIndex}
         onRowsChange={handleRowsChange}
         onFill={handleFill}
+        onCellClick={({ column, setActivePosition }) => {
+          if (column.key !== '__row') setActivePosition(true);
+        }}
         onCellCopy={({ row, column }, event) => {
           if (column.key === '__row') return;
           event.clipboardData.setData('text/plain', row.inputs[column.key] ?? '');
@@ -620,10 +690,17 @@ function SpreadsheetEditor({
           const sourceRow = rows[rowIdx].rowIndex;
           setActiveCell({ row: sourceRow, column: parsedColumn.column });
           const address = cellAddress(sourceRow, parsedColumn.column);
-          setFormulaText(displayInput(finalInput(config, rawSubmission, sheet.name, address)));
+          setFormulaText(
+            displayInput(finalInput(config, committedSubmissionRef.current, sheet.name, address)),
+          );
           const editable = isCellEditable(sheet, sourceRow, parsedColumn.column);
           const snapshotCell = getSnapshotCell(evaluation, activeSheetIndex, address);
-          if (snapshotCell?.result.type === 'error') {
+          const issue = evaluation.issues[sheet.name]?.[address];
+          if (issue) {
+            setAnnouncement(
+              `${address}, ${editable ? 'editable' : 'read-only'}, contains ${issue.value}. ${issue.message}`,
+            );
+          } else if (snapshotCell?.result.type === 'error') {
             setAnnouncement(
               `${address}, ${editable ? 'editable' : 'read-only'}, contains ${snapshotCell.result.value}.`,
             );

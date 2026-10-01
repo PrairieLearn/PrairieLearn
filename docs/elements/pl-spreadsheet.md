@@ -463,11 +463,19 @@ submission payload.
 
 ## Interaction and saved work
 
-The editor supports keyboard navigation, direct cell and formula-bar editing,
-copy/paste, relative-reference fill down/right, and undo/redo. The sheet tabs and
-fill controls are keyboard accessible. Editable and read-only cells are
-distinguished with text and accessibility state, not color alone. Submission and
-manual-grading views use native HTML tables.
+Clicking an editable cell opens its editor immediately. The editor also supports
+keyboard navigation, direct formula-bar editing, copy/paste, relative-reference
+fill down/right, and undo/redo. The sheet tabs and fill controls are keyboard
+accessible. Editable and read-only cells are distinguished with text and
+accessibility state, not color alone. Submission and manual-grading views use native
+HTML tables.
+
+The editor displays spreadsheet errors such as `#DIV/0!`, `#CYCLE!`, `#REF!`, and
+`#ERROR!` in their cells while retaining the entered formula in the cell editor and
+formula bar. Save and Grade includes the latest text even if the editor is still
+open. Formulas rejected by PrairieLearn's formula or reference policies remain
+format errors and are not graded, but their raw text is retained so the student can
+correct it after saving or reloading.
 
 With group assessments, saved answers use the ordinary PrairieLearn group
 submission. A teammate sees the latest successfully saved spreadsheet after
