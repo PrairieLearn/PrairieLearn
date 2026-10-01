@@ -219,7 +219,17 @@
     },
     {
       "name": "pl-spreadsheet",
-      "schema": "./apps/prairielearn/elements/pl-spreadsheet/schemas/pl-spreadsheet.json"
+      "schema": "./apps/prairielearn/elements/pl-spreadsheet/schemas/pl-spreadsheet.json",
+      "children": [
+        {
+          "name": "pl-spreadsheet-data",
+          "schema": "./apps/prairielearn/elements/pl-spreadsheet/schemas/pl-spreadsheet-data.json"
+        },
+        {
+          "name": "pl-spreadsheet-output",
+          "schema": "./apps/prairielearn/elements/pl-spreadsheet/schemas/pl-spreadsheet-output.json"
+        }
+      ]
     },
     {
       "name": "pl-string-input",

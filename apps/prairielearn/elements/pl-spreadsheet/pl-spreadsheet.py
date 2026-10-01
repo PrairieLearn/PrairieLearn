@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import base64
 import hashlib
 import json
@@ -10,7 +12,7 @@ import chevron
 import lxml.html
 import prairielearn as pl
 
-SCHEMA_PATH = pathlib.Path(__file__).parent / "schemas" / "pl-spreadsheet.json"
+SCHEMA_MANIFEST_PATH = pathlib.Path(__file__).parent / "schema.json"
 
 DEFAULT_ARIA_LABEL = "Spreadsheet"
 DEFAULT_HEIGHT = "500px"
@@ -132,20 +134,11 @@ def _parse_address(address: str) -> tuple[int, int] | None:
     return int(match.group(2)) - 1, _column_index(match.group(1))
 
 
-def _parse_range(range_text: str) -> tuple[int, int, int, int] | None:
-    parts = range_text.upper().split(":")
-    if len(parts) > 2:
+def _parse_range(range_text: str) -> pl.SpreadsheetAddressRange | None:
+    try:
+        return pl.SpreadsheetAddressRange.from_a1(range_text)
+    except (TypeError, ValueError):
         return None
-    start = _parse_address(parts[0])
-    end = _parse_address(parts[-1])
-    if start is None or end is None:
-        return None
-    return (
-        min(start[0], end[0]),
-        max(start[0], end[0]),
-        min(start[1], end[1]),
-        max(start[1], end[1]),
-    )
 
 
 def _strip_formula_strings(formula: str) -> str:
@@ -235,7 +228,6 @@ def _normalize_template(raw_template: Any) -> dict[str, Any]:
     total_addressable = 0
     total_populated = 0
     total_formulas = 0
-    has_editable_cell = False
 
     for sheet_index, raw_sheet in enumerate(raw_sheets, start=1):
         if not isinstance(raw_sheet, dict):
@@ -264,6 +256,25 @@ def _normalize_template(raw_template: Any) -> dict[str, Any]:
             )
         total_addressable += rows * columns
 
+        raw_student_range = raw_sheet.get("student_range")
+        if raw_student_range is None:
+            student_range = pl.SpreadsheetAddressRange(
+                pl.SpreadsheetAddress(row=0, column=0),
+                pl.SpreadsheetAddress(row=rows - 1, column=columns - 1),
+            )
+        elif not isinstance(raw_student_range, str):
+            raise TypeError(f'Sheet "{name}" student_range must be a string.')
+        else:
+            student_range = _parse_range(raw_student_range)
+            if (
+                student_range is None
+                or student_range.end_row >= rows
+                or student_range.end_column >= columns
+            ):
+                raise ValueError(
+                    f'Student range "{raw_student_range}" is outside sheet "{name}".'
+                )
+
         raw_cells = raw_sheet.get("cells", {})
         if not isinstance(raw_cells, dict):
             raise TypeError(f'Sheet "{name}" cells must be an object.')
@@ -275,6 +286,10 @@ def _normalize_template(raw_template: Any) -> dict[str, Any]:
             position = _parse_address(address)
             if position is None or position[0] >= rows or position[1] >= columns:
                 raise ValueError(f'Cell "{raw_address}" is outside sheet "{name}".')
+            if not student_range.contains_cell(*position):
+                raise ValueError(
+                    f'Cell "{raw_address}" is outside the student range for sheet "{name}".'
+                )
             if address in cells:
                 raise ValueError(f'Cell "{address}" is duplicated in sheet "{name}".')
             cells[address] = _normalize_cell_value(value, f"{name}!{address}")
@@ -294,25 +309,25 @@ def _normalize_template(raw_template: Any) -> dict[str, Any]:
             parsed_range = _parse_range(raw_range)
             if (
                 parsed_range is None
-                or parsed_range[1] >= rows
-                or parsed_range[3] >= columns
+                or parsed_range.end_row >= rows
+                or parsed_range.end_column >= columns
+                or not student_range.contains_range(parsed_range)
             ):
                 raise ValueError(
-                    f'Editable range "{raw_range}" is outside sheet "{name}".'
+                    f'Editable range "{raw_range}" is outside the student range for sheet "{name}".'
                 )
-            start_row, end_row, start_column, end_column = parsed_range
-            editable_ranges.append(
-                f"{_column_name(start_column)}{start_row + 1}:{_column_name(end_column)}{end_row + 1}"
-            )
-            has_editable_cell = True
+            editable_ranges.append(parsed_range.address)
 
-        normalized_sheets.append({
+        normalized_sheet = {
             "name": name,
             "rows": rows,
             "columns": columns,
             "cells": cells,
             "editable_ranges": editable_ranges,
-        })
+        }
+        if raw_student_range is not None:
+            normalized_sheet["student_range"] = student_range.address
+        normalized_sheets.append(normalized_sheet)
 
     if total_addressable > MAX_ADDRESSABLE_CELLS:
         raise ValueError(
@@ -326,11 +341,6 @@ def _normalize_template(raw_template: Any) -> dict[str, Any]:
         raise ValueError(
             f"Spreadsheet templates may contain at most {MAX_FORMULAS} formulas."
         )
-    if not has_editable_cell:
-        raise ValueError(
-            "The spreadsheet template must contain at least one editable cell."
-        )
-
     return {"schema_version": 1, "sheets": normalized_sheets}
 
 
@@ -348,86 +358,120 @@ def _normalize_grading_config(
         raise ValueError(
             'The private spreadsheet grading workbook must be an object with "schema_version": 1.'
         )
-    raw_sheets = raw_config.get("sheets")
-    if not isinstance(raw_sheets, list) or not 1 <= len(raw_sheets) <= MAX_SHEETS:
+    raw_sheets = raw_config.get("sheets", [])
+    raw_source_sheets = raw_config.get("source_sheets", [])
+    if not isinstance(raw_sheets, list) or not isinstance(raw_source_sheets, list):
+        raise TypeError("Private spreadsheet grading sheets must be lists.")
+    if not 1 <= len(raw_sheets) + len(raw_source_sheets) <= MAX_SHEETS:
         raise ValueError(
             f"The private spreadsheet grading workbook must contain 1 to {MAX_SHEETS} sheets."
         )
 
-    public_names = {
-        sheet.get("name", "").casefold() for sheet in template.get("sheets", [])
+    public_by_name = {
+        sheet.get("name", "").casefold(): sheet for sheet in template.get("sheets", [])
     }
-    grading_names: set[str] = set()
+    public_names = set(public_by_name)
+    all_names: set[str] = set()
     normalized_sheets: list[dict[str, Any]] = []
+    normalized_source_sheets: list[dict[str, Any]] = []
     total_addressable = 0
     total_populated = 0
     total_formulas = 0
 
-    for sheet_index, raw_sheet in enumerate(raw_sheets, start=1):
-        if not isinstance(raw_sheet, dict):
-            raise TypeError(f"Private grading sheet {sheet_index} must be an object.")
-        name = _normalize_sheet_name(
-            raw_sheet.get("name"), f"Private grading sheet {sheet_index}"
-        )
-        folded_name = name.casefold()
-        if folded_name in public_names:
-            raise ValueError(
-                f'Private grading sheet "{name}" conflicts with a student sheet.'
+    def normalize_sheets(
+        source: list[Any], *, description: str, allow_public_names: bool
+    ) -> list[dict[str, Any]]:
+        nonlocal total_addressable, total_populated, total_formulas
+        normalized: list[dict[str, Any]] = []
+        for sheet_index, raw_sheet in enumerate(source, start=1):
+            if not isinstance(raw_sheet, dict):
+                raise TypeError(f"{description} {sheet_index} must be an object.")
+            name = _normalize_sheet_name(
+                raw_sheet.get("name"), f"{description} {sheet_index}"
             )
-        if folded_name in grading_names:
-            raise ValueError(f'Private grading sheet name "{name}" is duplicated.')
-        grading_names.add(folded_name)
-
-        rows = raw_sheet.get("rows")
-        columns = raw_sheet.get("columns")
-        if (
-            isinstance(rows, bool)
-            or not isinstance(rows, int)
-            or not 1 <= rows <= MAX_ROWS
-        ):
-            raise ValueError(
-                f'Private grading sheet "{name}" rows must be between 1 and {MAX_ROWS}.'
-            )
-        if (
-            isinstance(columns, bool)
-            or not isinstance(columns, int)
-            or not 1 <= columns <= MAX_COLUMNS
-        ):
-            raise ValueError(
-                f'Private grading sheet "{name}" columns must be between 1 and {MAX_COLUMNS}.'
-            )
-        total_addressable += rows * columns
-
-        raw_cells = raw_sheet.get("cells", {})
-        if not isinstance(raw_cells, dict):
-            raise TypeError(f'Private grading sheet "{name}" cells must be an object.')
-        cells: dict[str, str | float | bool] = {}
-        for raw_address, value in raw_cells.items():
-            if not isinstance(raw_address, str):
-                raise TypeError(
-                    f'Cell addresses in private grading sheet "{name}" must be strings.'
-                )
-            address = raw_address.upper()
-            position = _parse_address(address)
-            if position is None or position[0] >= rows or position[1] >= columns:
+            folded_name = name.casefold()
+            if not allow_public_names and folded_name in public_names:
                 raise ValueError(
-                    f'Cell "{raw_address}" is outside private grading sheet "{name}".'
+                    f'{description} "{name}" conflicts with a student sheet.'
                 )
-            if address in cells:
+            public_sheet = public_by_name.get(folded_name)
+            if allow_public_names and public_sheet and name != public_sheet["name"]:
                 raise ValueError(
-                    f'Cell "{address}" is duplicated in private grading sheet "{name}".'
+                    f'{description} "{name}" must use the exact student sheet name "{public_sheet["name"]}".'
                 )
-            cells[address] = _normalize_cell_value(value, f"{name}!{address}")
-            total_populated += 1
-            if isinstance(value, str) and value.startswith("="):
-                total_formulas += 1
+            if folded_name in all_names:
+                raise ValueError(f'Private grading sheet name "{name}" is duplicated.')
+            all_names.add(folded_name)
 
-        normalized_sheets.append({
-            "name": name,
-            "rows": rows,
-            "columns": columns,
-            "cells": cells,
-        })
+            rows = raw_sheet.get("rows")
+            columns = raw_sheet.get("columns")
+            if (
+                isinstance(rows, bool)
+                or not isinstance(rows, int)
+                or not 1 <= rows <= MAX_ROWS
+            ):
+                raise ValueError(
+                    f'{description} "{name}" rows must be between 1 and {MAX_ROWS}.'
+                )
+            if (
+                isinstance(columns, bool)
+                or not isinstance(columns, int)
+                or not 1 <= columns <= MAX_COLUMNS
+            ):
+                raise ValueError(
+                    f'{description} "{name}" columns must be between 1 and {MAX_COLUMNS}.'
+                )
+            if (
+                allow_public_names
+                and public_sheet
+                and (rows < public_sheet["rows"] or columns < public_sheet["columns"])
+            ):
+                raise ValueError(
+                    f'{description} "{name}" must cover its complete student range.'
+                )
+            total_addressable += rows * columns
+
+            raw_cells = raw_sheet.get("cells", {})
+            if not isinstance(raw_cells, dict):
+                raise TypeError(f'{description} "{name}" cells must be an object.')
+            cells: dict[str, str | float | bool] = {}
+            for raw_address, value in raw_cells.items():
+                if not isinstance(raw_address, str):
+                    raise TypeError(
+                        f'Cell addresses in {description.lower()} "{name}" must be strings.'
+                    )
+                address = raw_address.upper()
+                position = _parse_address(address)
+                if position is None or position[0] >= rows or position[1] >= columns:
+                    raise ValueError(
+                        f'Cell "{raw_address}" is outside {description.lower()} "{name}".'
+                    )
+                if address in cells:
+                    raise ValueError(
+                        f'Cell "{address}" is duplicated in {description.lower()} "{name}".'
+                    )
+                cells[address] = _normalize_cell_value(value, f"{name}!{address}")
+                total_populated += 1
+                if isinstance(value, str) and value.startswith("="):
+                    total_formulas += 1
+            normalized.append({
+                "name": name,
+                "rows": rows,
+                "columns": columns,
+                "cells": cells,
+            })
+        return normalized
+
+    normalized_source_sheets = normalize_sheets(
+        raw_source_sheets,
+        description="Private source sheet",
+        allow_public_names=True,
+    )
+    normalized_sheets = normalize_sheets(
+        raw_sheets,
+        description="Private grading sheet",
+        allow_public_names=False,
+    )
 
     if total_addressable > MAX_ADDRESSABLE_CELLS:
         raise ValueError(
@@ -450,7 +494,10 @@ def _normalize_grading_config(
         raise ValueError(
             f"Private spreadsheet grading workbooks must define 1 to {MAX_GRADING_OUTPUTS} outputs."
         )
-    sheets_by_name = {sheet["name"]: sheet for sheet in normalized_sheets}
+    sheets_by_name = {
+        sheet["name"]: sheet
+        for sheet in [*normalized_source_sheets, *normalized_sheets]
+    }
     outputs: dict[str, dict[str, str | bool]] = {}
     for output_name, raw_output in raw_outputs.items():
         if (
@@ -496,11 +543,13 @@ def _normalize_grading_config(
             output["required"] = required
         outputs[output_name] = output
 
-    normalized = {
+    normalized: dict[str, Any] = {
         "schema_version": 1,
         "sheets": normalized_sheets,
         "outputs": outputs,
     }
+    if raw_source_sheets:
+        normalized["source_sheets"] = normalized_source_sheets
     normalized_size = len(
         json.dumps(
             normalized, ensure_ascii=False, separators=(",", ":"), sort_keys=True
@@ -511,6 +560,293 @@ def _normalize_grading_config(
             f"Private spreadsheet grading workbooks must be at most {MAX_PAYLOAD_BYTES} bytes."
         )
     return {**normalized, "grader_hash": _template_hash(normalized)}
+
+
+def _source_path(child: lxml.html.HtmlElement, data: pl.QuestionData) -> pathlib.Path:
+    directory = pl.get_string_attrib(child, "directory", ".")
+    source_file = pl.get_string_attrib(child, "source-file")
+    relative_path = pathlib.Path(source_file)
+    if relative_path.is_absolute():
+        raise ValueError('Spreadsheet attribute "source-file" must be relative.')
+    if directory == "serverFilesCourse":
+        base_value = data["options"].get("server_files_course_path")
+    else:
+        base_value = data["options"].get("question_path")
+    if not isinstance(base_value, str):
+        raise TypeError(f'Spreadsheet directory "{directory}" is unavailable.')
+    base_path = pathlib.Path(base_value).resolve()
+    file_path = (base_path / relative_path).resolve()
+    if not file_path.is_relative_to(base_path):
+        raise ValueError(
+            'Spreadsheet attribute "source-file" may not leave its directory.'
+        )
+    if not file_path.is_file():
+        raise ValueError(f'Unknown spreadsheet source file "{source_file}".')
+    if file_path.suffix.lower() not in {".csv", ".tsv", ".xlsx"}:
+        raise ValueError("Spreadsheet source files must use .csv, .tsv, or .xlsx.")
+    return file_path
+
+
+def _formula_nodes(node: pl.FormulaAstNode) -> list[pl.FormulaAstNode]:
+    if isinstance(node, pl.FormulaFunctionNode):
+        return list(node.arguments)
+    if isinstance(node, pl.FormulaUnaryNode | pl.FormulaPostfixNode):
+        return [node.operand]
+    if isinstance(node, pl.FormulaBinaryNode):
+        return [node.left, node.right]
+    if isinstance(node, pl.FormulaGroupNode):
+        return [node.expression]
+    return []
+
+
+def _reference_sheet_name(current_sheet: str, *sheet_names: str | None) -> str:
+    qualified = {name.casefold(): name for name in sheet_names if name is not None}
+    if len(qualified) > 1:
+        raise ValueError("Spreadsheet ranges cannot span multiple sheets.")
+    return next(iter(qualified.values()), current_sheet)
+
+
+def _validate_visible_formula_references(
+    template: dict[str, Any], source_sheets: list[dict[str, Any]]
+) -> None:
+    public_ranges: dict[str, tuple[str, pl.SpreadsheetAddressRange]] = {}
+    for sheet in template.get("sheets", []):
+        student_range = _parse_range(
+            sheet.get(
+                "student_range",
+                f"A1:{_column_name(sheet['columns'] - 1)}{sheet['rows']}",
+            )
+        )
+        if student_range is None:
+            raise ValueError(f'Sheet "{sheet["name"]}" has an invalid student range.')
+        public_ranges[sheet["name"].casefold()] = (sheet["name"], student_range)
+    source_by_name = {sheet["name"].casefold(): sheet for sheet in source_sheets}
+
+    def validate_reference(
+        current_sheet: str,
+        start: pl.FormulaReferenceEndpoint,
+        end: pl.FormulaReferenceEndpoint | None = None,
+    ) -> None:
+        endpoints = (start,) if end is None else (start, end)
+        sheet_name = _reference_sheet_name(
+            current_sheet, *(endpoint.sheet for endpoint in endpoints)
+        )
+        public = public_ranges.get(sheet_name.casefold())
+        source = source_by_name.get(sheet_name.casefold())
+        if public is None or source is None:
+            raise ValueError(
+                f'Formula in student-visible sheet "{current_sheet}" references a non-visible sheet.'
+            )
+        student_range = public[1]
+        if isinstance(start, pl.FormulaCellReference):
+            cell_end = end if isinstance(end, pl.FormulaCellReference) else start
+            referenced = pl.SpreadsheetAddressRange(
+                pl.SpreadsheetAddress(
+                    row=min(start.row, cell_end.row) - 1,
+                    column=min(
+                        _column_index(start.column), _column_index(cell_end.column)
+                    ),
+                ),
+                pl.SpreadsheetAddress(
+                    row=max(start.row, cell_end.row) - 1,
+                    column=max(
+                        _column_index(start.column), _column_index(cell_end.column)
+                    ),
+                ),
+            )
+        elif isinstance(start, pl.FormulaColumnReference):
+            column_end = end if isinstance(end, pl.FormulaColumnReference) else start
+            referenced = pl.SpreadsheetAddressRange(
+                pl.SpreadsheetAddress(
+                    row=0,
+                    column=min(
+                        _column_index(start.column), _column_index(column_end.column)
+                    ),
+                ),
+                pl.SpreadsheetAddress(
+                    row=source["rows"] - 1,
+                    column=max(
+                        _column_index(start.column), _column_index(column_end.column)
+                    ),
+                ),
+            )
+        else:
+            row_end = end if isinstance(end, pl.FormulaRowReference) else start
+            if not isinstance(start, pl.FormulaRowReference) or not isinstance(
+                row_end, pl.FormulaRowReference
+            ):
+                raise TypeError("Spreadsheet formula range endpoints are incompatible.")
+            referenced = pl.SpreadsheetAddressRange(
+                pl.SpreadsheetAddress(row=min(start.row, row_end.row) - 1, column=0),
+                pl.SpreadsheetAddress(
+                    row=max(start.row, row_end.row) - 1,
+                    column=source["columns"] - 1,
+                ),
+            )
+        if not student_range.contains_range(referenced):
+            raise ValueError(
+                f'Formula in student-visible sheet "{current_sheet}" references a cell outside declared student ranges.'
+            )
+
+    for sheet in template.get("sheets", []):
+        for value in sheet.get("cells", {}).values():
+            if not isinstance(value, str) or not value.startswith("="):
+                continue
+            ast = pl.parse_spreadsheet_formula(value)
+            pending = [ast.root]
+            while pending:
+                node = pending.pop()
+                if isinstance(node, pl.FormulaReferenceNode):
+                    validate_reference(sheet["name"], node.reference)
+                elif isinstance(
+                    node,
+                    pl.FormulaCellRangeNode
+                    | pl.FormulaColumnRangeNode
+                    | pl.FormulaRowRangeNode,
+                ):
+                    validate_reference(sheet["name"], node.start, node.end)
+                else:
+                    pending.extend(_formula_nodes(node))
+
+
+def _prepare_file_template(
+    element: lxml.html.HtmlElement, data: pl.QuestionData, answer_name: str
+) -> tuple[dict[str, Any], dict[str, Any] | None]:
+    data_children = element.xpath("./pl-spreadsheet-data")
+    output_children = element.xpath("./pl-spreadsheet-output")
+    loaded: dict[pathlib.Path, pl.SpreadsheetSourceBook] = {}
+    added_files: set[pathlib.Path] = set()
+    source_sheets: list[dict[str, Any]] = []
+    source_by_name: dict[str, dict[str, Any]] = {}
+    public_sheets: list[dict[str, Any]] = []
+
+    def add_source(sheet: dict[str, Any]) -> None:
+        folded_name = sheet["name"].casefold()
+        if folded_name in source_by_name:
+            raise ValueError(
+                f'Spreadsheet source sheet "{sheet["name"]}" is duplicated.'
+            )
+        source_by_name[folded_name] = sheet
+        source_sheets.append(sheet)
+
+    for child in data_children:
+        if child.text and child.text.strip():
+            raise ValueError("pl-spreadsheet-data may not contain text.")
+        file_path = _source_path(child, data)
+        sheet_name = pl.get_string_attrib(child, "sheet-name")
+        if file_path not in loaded:
+            loaded[file_path] = pl.read_spreadsheet(file_path, sheet_name=sheet_name)
+        source = loaded[file_path]
+        source_file_sheets = source.get("sheets", [])
+        if not isinstance(source_file_sheets, list):
+            raise TypeError(
+                "The spreadsheet source reader returned an invalid sheetbook."
+            )
+        selected_source: dict[str, Any]
+        if file_path.suffix.lower() in {".csv", ".tsv"}:
+            if file_path in added_files:
+                raise ValueError(
+                    f'Single-sheet source file "{file_path.name}" may be declared only once.'
+                )
+            selected_source = dict(source_file_sheets[0])
+            selected_source.pop("editable_ranges", None)
+            add_source(selected_source)
+        else:
+            selected = next(
+                (
+                    sheet
+                    for sheet in source_file_sheets
+                    if sheet.get("name") == sheet_name
+                ),
+                None,
+            )
+            if selected is None:
+                raise ValueError(
+                    f'XLSX source file "{file_path.name}" has no sheet named "{sheet_name}".'
+                )
+            if file_path not in added_files:
+                for workbook_sheet in source_file_sheets:
+                    normalized_source = dict(workbook_sheet)
+                    normalized_source.pop("editable_ranges", None)
+                    add_source(normalized_source)
+            selected_source = source_by_name[sheet_name.casefold()]
+        added_files.add(file_path)
+
+        raw_student_range = pl.get_string_attrib(child, "student-range")
+        student_range = _parse_range(raw_student_range)
+        if student_range is None:
+            raise ValueError(f'Invalid student range "{raw_student_range}".')
+        selected_source["rows"] = max(
+            selected_source["rows"], student_range.end_row + 1
+        )
+        selected_source["columns"] = max(
+            selected_source["columns"], student_range.end_column + 1
+        )
+
+        editable_ranges: list[str] = []
+        raw_editable_ranges = pl.get_string_attrib(child, "editable-ranges", "")
+        for raw_range in raw_editable_ranges.split(","):
+            if not raw_range.strip():
+                continue
+            editable_range = _parse_range(raw_range.strip())
+            if editable_range is None or not student_range.contains_range(
+                editable_range
+            ):
+                raise ValueError(
+                    f'Editable range "{raw_range.strip()}" is outside student range "{student_range.address}".'
+                )
+            editable_ranges.append(editable_range.address)
+
+        public_sheets.append({
+            "name": sheet_name,
+            "rows": student_range.end_row + 1,
+            "columns": student_range.end_column + 1,
+            "cells": {
+                address: value
+                for address, value in selected_source["cells"].items()
+                if (position := _parse_address(address)) is not None
+                and student_range.contains_cell(*position)
+            },
+            "editable_ranges": editable_ranges,
+            "student_range": student_range.address,
+        })
+
+    template = _normalize_template({"schema_version": 1, "sheets": public_sheets})
+    _validate_visible_formula_references(template, source_sheets)
+
+    raw_grading_config = data["correct_answers"].get(answer_name)
+    if raw_grading_config is not None and not isinstance(raw_grading_config, dict):
+        raise TypeError(
+            f'data["correct_answers"]["{answer_name}"] must be a spreadsheet grading object.'
+        )
+    if raw_grading_config is None and not output_children:
+        return template, None
+
+    grading_config = dict(raw_grading_config or {})
+    grading_config["schema_version"] = 1
+    grading_config["source_sheets"] = [
+        *grading_config.get("source_sheets", []),
+        *source_sheets,
+    ]
+    grading_config.setdefault("sheets", [])
+    outputs = dict(grading_config.get("outputs", {}))
+    for child in output_children:
+        if child.text and child.text.strip():
+            raise ValueError("pl-spreadsheet-output may not contain text.")
+        output_name = pl.get_string_attrib(child, "name")
+        if output_name in outputs:
+            raise ValueError(
+                f'Spreadsheet grading output "{output_name}" is duplicated.'
+            )
+        output: dict[str, str | bool] = {
+            "sheet": pl.get_string_attrib(child, "sheet-name"),
+            "cell": pl.get_string_attrib(child, "cell"),
+        }
+        if pl.has_attrib(child, "required"):
+            output["required"] = pl.get_boolean_attrib(child, "required")
+        outputs[output_name] = output
+    grading_config["outputs"] = outputs
+    return template, _normalize_grading_config(grading_config, template)
 
 
 def _get_config(
@@ -524,20 +860,35 @@ def _get_config(
 
 def prepare(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
-    pl.validate_element(element, SCHEMA_PATH)
+    pl.validate_element_tree(element, SCHEMA_MANIFEST_PATH)
 
     answer_name = pl.get_string_attrib(element, "answers-name")
-    params_name = pl.get_string_attrib(element, "params-name")
+    params_name = pl.get_string_attrib(element, "params-name", None)
+    data_children = element.xpath("./pl-spreadsheet-data")
+    output_children = element.xpath("./pl-spreadsheet-output")
     pl.check_answers_names(data, answer_name)
 
-    if params_name not in data["params"]:
-        raise ValueError(f'No value was found in data["params"]["{params_name}"].')
-    template = _normalize_template(data["params"].get(params_name))
-    raw_grading_config = data["correct_answers"].get(answer_name)
-    if raw_grading_config is not None:
-        data["correct_answers"][answer_name] = _normalize_grading_config(
-            raw_grading_config, template
-        )
+    if params_name is not None:
+        if data_children or output_children:
+            raise ValueError(
+                'Attribute "params-name" cannot be combined with pl-spreadsheet-data or pl-spreadsheet-output children.'
+            )
+        if params_name not in data["params"]:
+            raise ValueError(f'No value was found in data["params"]["{params_name}"].')
+        template = _normalize_template(data["params"].get(params_name))
+        raw_grading_config = data["correct_answers"].get(answer_name)
+        if raw_grading_config is not None:
+            data["correct_answers"][answer_name] = _normalize_grading_config(
+                raw_grading_config, template
+            )
+    else:
+        if not data_children:
+            raise ValueError(
+                'pl-spreadsheet requires either "params-name" or at least one pl-spreadsheet-data child.'
+            )
+        template, grading_config = _prepare_file_template(element, data, answer_name)
+        if grading_config is not None:
+            data["correct_answers"][answer_name] = grading_config
     height = pl.get_string_attrib(element, "height", DEFAULT_HEIGHT)
     if not CSS_SIZE_RE.fullmatch(height.strip()):
         raise ValueError(
@@ -575,6 +926,21 @@ def _result_value(cell: dict[str, Any]) -> str:
     return str(value)
 
 
+def _student_range(sheet: dict[str, Any]) -> pl.SpreadsheetAddressRange:
+    range_text = sheet.get("student_range")
+    if isinstance(range_text, str):
+        parsed = _parse_range(range_text)
+        if parsed is not None:
+            return parsed
+    return pl.SpreadsheetAddressRange(
+        pl.SpreadsheetAddress(row=0, column=0),
+        pl.SpreadsheetAddress(
+            row=sheet.get("rows", 1) - 1,
+            column=sheet.get("columns", 1) - 1,
+        ),
+    )
+
+
 def _table_data(config: dict[str, Any], snapshot: Any) -> list[dict[str, Any]]:
     snapshot_sheets = {}
     if isinstance(snapshot, dict):
@@ -588,10 +954,13 @@ def _table_data(config: dict[str, Any], snapshot: Any) -> list[dict[str, Any]]:
         snapshot_sheet = snapshot_sheets.get(sheet.get("name"), {})
         snapshot_cells = snapshot_sheet.get("cells", {})
         template_cells = sheet.get("cells", {})
+        student_range = _student_range(sheet)
         rows = []
-        for row_index in range(sheet.get("rows", 0)):
+        for row_index in range(student_range.start_row, student_range.end_row + 1):
             cells = []
-            for column_index in range(sheet.get("columns", 0)):
+            for column_index in range(
+                student_range.start_column, student_range.end_column + 1
+            ):
                 address = f"{_column_name(column_index)}{row_index + 1}"
                 snapshot_cell = snapshot_cells.get(address)
                 if isinstance(snapshot_cell, dict):
@@ -604,7 +973,9 @@ def _table_data(config: dict[str, Any], snapshot: Any) -> list[dict[str, Any]]:
             "name": sheet.get("name", "Spreadsheet"),
             "columns": [
                 {"name": _column_name(index)}
-                for index in range(sheet.get("columns", 0))
+                for index in range(
+                    student_range.start_column, student_range.end_column + 1
+                )
             ],
             "rows": rows,
         })
@@ -682,10 +1053,7 @@ def _is_editable(config: dict[str, Any], sheet_name: str, address: str) -> bool:
             parsed_range = _parse_range(range_text)
             if parsed_range is None:
                 continue
-            if (
-                parsed_range[0] <= position[0] <= parsed_range[1]
-                and parsed_range[2] <= position[1] <= parsed_range[3]
-            ):
+            if parsed_range.contains_cell(*position):
                 return True
     return False
 
@@ -735,6 +1103,10 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         return
 
     if not config.get("allow_blank", DEFAULT_ALLOW_BLANK):
+        has_editable_range = any(
+            sheet.get("editable_ranges")
+            for sheet in config.get("template", {}).get("sheets", [])
+        )
         has_editable_input = False
         for sheet in sheets:
             if not isinstance(sheet, dict) or not isinstance(sheet.get("cells"), dict):
@@ -751,7 +1123,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
                 ):
                     has_editable_input = True
                     break
-        if not has_editable_input:
+        if has_editable_range and not has_editable_input:
             _add_format_error(
                 data, answer_name, "The spreadsheet answer may not be blank."
             )
@@ -763,9 +1135,10 @@ def _first_editable_cell(config: dict[str, Any]) -> tuple[str, str]:
         if ranges:
             parsed_range = _parse_range(ranges[0])
             if parsed_range is not None:
-                return sheet[
-                    "name"
-                ], f"{_column_name(parsed_range[2])}{parsed_range[0] + 1}"
+                return sheet["name"], (
+                    f"{_column_name(parsed_range.start_column)}"
+                    f"{parsed_range.start_row + 1}"
+                )
     raise ValueError("The spreadsheet has no editable cell.")
 
 

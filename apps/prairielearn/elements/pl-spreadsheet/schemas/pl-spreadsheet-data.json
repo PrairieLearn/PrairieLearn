@@ -2,23 +2,23 @@
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
   "properties": {
-    "allow-blank": {
+    "directory": {
       "type": "string",
-      "format": "boolean"
+      "enum": [".", "serverFilesCourse"]
     },
-    "answers-name": {
+    "editable-ranges": {
       "type": "string"
     },
-    "aria-label": {
+    "sheet-name": {
       "type": "string"
     },
-    "height": {
+    "source-file": {
       "type": "string"
     },
-    "params-name": {
+    "student-range": {
       "type": "string"
     }
   },
-  "required": ["answers-name"],
+  "required": ["sheet-name", "source-file", "student-range"],
   "additionalProperties": false
 }

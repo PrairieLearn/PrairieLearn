@@ -1,9 +1,9 @@
 # `pl-spreadsheet` element
 
 The `pl-spreadsheet` element provides a local, fixed-structure spreadsheet. Authors
-choose the sheets, dimensions, initial cells, and editable ranges. Students can edit
-only those ranges; formulas and calculated values are recomputed by PrairieLearn
-before `server.py` or an external grader receives the answer.
+can construct its sheets in Python or load CSV, TSV, and XLSX source files. Students
+can edit only declared ranges; formulas and calculated values are recomputed by
+PrairieLearn before `server.py` or an external grader receives the answer.
 
 ```html title="question.html"
 <pl-spreadsheet
@@ -46,29 +46,127 @@ def generate(data):
 | Attribute      | Type     | Default         | Description                                                                                                               |
 | -------------- | -------- | --------------- | ------------------------------------------------------------------------------------------------------------------------- |
 | `answers-name` | string   | —               | Required. Name of the normalized workbook snapshot in `data["submitted_answers"]`. It must be unique within the question. |
-| `params-name`  | string   | —               | Required. Name of the workbook template in `data["params"]`.                                                              |
+| `params-name`  | string   | —               | Name of the workbook template in `data["params"]`. Omit it when using `pl-spreadsheet-data` children.                     |
 | `allow-blank`  | boolean  | `false`         | Whether every editable cell may be empty. A cell containing a formula is not empty.                                       |
 | `aria-label`   | string   | `"Spreadsheet"` | Accessible name shown in the element header and announced for the grid.                                                   |
 | `height`       | CSS size | `"500px"`       | Editor height. Accepts a non-negative number with `px`, `rem`, `em`, `vh`, `vw`, `vmin`, `vmax`, or `%`.                  |
 
 ## Workbook template
 
+Exactly one source mode is required: either set `params-name` with no child
+declarations, or add one or more `pl-spreadsheet-data` children without
+`params-name`.
+
 The template must have `schema_version: 1` and one or more sheets. Sheet names must
 be unique without regard to case, contain 1 to 31 Unicode characters, and have no
 leading or trailing whitespace. They may not contain `!`, `:`, `<`, `>`, `{`, `}`,
 `[`, `]`, or the null character (`\0`). All other Unicode characters are allowed.
 
-Each sheet contains:
+Each Python-defined sheet contains:
 
 - `name`: the sheet name.
 - `rows` and `columns`: fixed sheet dimensions.
 - `cells`: a sparse object mapping A1 addresses to initial inputs.
 - `editable_ranges`: an array of A1 ranges. All other cells are read-only.
+- `student_range`: an optional contiguous A1 range. Only this range is rendered,
+  accepted in submissions, and exposed to grading code. If omitted, the complete
+  `A1:<last-cell>` sheet is visible for compatibility.
 
 Cell inputs may be finite numbers, booleans, text, or formulas beginning with `=`.
 Students cannot create, delete, or rename sheets; add or remove rows and columns;
 change styles; define names; use external workbook references; or import/export XLSX.
 Rich formatting is not supported.
+
+## File sources and private grading cells
+
+Place source files in the question directory (the default) or in
+`serverFilesCourse`. Source files are read only while PrairieLearn generates the
+variant; they are never sent to the browser.
+
+```html title="question.html"
+<pl-spreadsheet answers-name="model" aria-label="Budget model">
+  <pl-spreadsheet-data
+    source-file="workbook.csv"
+    sheet-name="Inputs"
+    student-range="A1:D100"
+    editable-ranges="B2:D100"
+  ></pl-spreadsheet-data>
+  <pl-spreadsheet-output
+    name="score"
+    sheet-name="Inputs"
+    cell="E2"
+    required="true"
+  ></pl-spreadsheet-output>
+</pl-spreadsheet>
+```
+
+`pl-spreadsheet-data` has these attributes:
+
+| Attribute         | Required | Description                                                                                                   |
+| ----------------- | -------- | ------------------------------------------------------------------------------------------------------------- |
+| `source-file`     | yes      | Relative `.csv`, `.tsv`, or `.xlsx` path. Absolute paths and traversal outside the selected root are invalid. |
+| `sheet-name`      | yes      | Assigns the CSV/TSV sheet name or selects an exact XLSX worksheet name.                                       |
+| `student-range`   | yes      | Contiguous A1 range that forms the hard visibility and formula-reference boundary.                            |
+| `editable-ranges` | no       | Comma-separated ranges contained by `student-range`. The default is read-only.                                |
+| `directory`       | no       | `.` (the question directory) or `serverFilesCourse`; defaults to `.`.                                         |
+
+CSV and TSV sources contain one sheet and may be declared once. For XLSX files,
+repeat `pl-spreadsheet-data` for every worksheet students should see. PrairieLearn
+reads each workbook once and retains undeclared worksheets only in the private
+grading copy. Sheet names from all sources must be unique without regard to case.
+
+Each `pl-spreadsheet-output` allowlists one result that may leave the private
+workbook. Its required `name`, `sheet-name`, and `cell` attributes identify the
+output; `required="true"` rejects an empty or error result. An output may reference
+a visible cell, a hidden cell, or an undeclared XLSX worksheet. Only the typed named
+result enters the normalized answer.
+
+The complete source workbook is authoritative during grading. PrairieLearn clears
+each `student-range`, overlays the normalized public template and student changes
+(including explicitly cleared cells), adds manually configured private sheets, and
+then recalculates the named outputs. A hidden source formula may reference visible
+or hidden cells. A visible formula may reference only cells inside the union of
+declared student ranges; direct, transitive, cross-sheet, whole-row, and
+whole-column references that escape that boundary are rejected both when the
+variant is generated and when a submission is normalized.
+
+File ingest imports cell values and formulas, not XLSX styles, merged cells,
+comments, charts, or macros.
+
+## DataFrames and public ingest helpers
+
+The public `prairielearn` Python library exposes:
+
+```python
+sheet = pl.dataframe_to_spreadsheet_sheet(
+    dataframe,
+    name="Inputs",
+    start_cell="C5",
+    include_columns=False,
+    include_index=False,
+    editable_ranges=("C5:F20",),
+)
+book = pl.dataframes_to_spreadsheet_book({"Inputs": dataframe})
+
+book = pl.read_spreadsheet("workbook.xlsx")
+csv_book = pl.read_spreadsheet_csv("workbook.csv", sheet_name="Inputs")
+tsv_book = pl.read_spreadsheet_tsv("workbook.tsv", sheet_name="Inputs")
+xlsx_book = pl.read_spreadsheet_xlsx("workbook.xlsx")
+```
+
+The helpers return plain dictionaries in the versioned sheet/book schema. By
+default, `dataframe.iloc[0, 0]` maps to `A1`; column and index labels are opt-in.
+`None`, `NaN`, `NaT`, and `pd.NA` are omitted, NumPy scalar values become Python
+scalars, and strings beginning with `=` remain formulas. Non-finite numbers,
+date/time values, complex values, nested objects, and requested multi-index labels
+raise an actionable exception. CSV and TSV are read headerless without automatic
+NA conversion. XLSX formulas are loaded as formulas. The same workbook, formula,
+text, and payload limits apply after ingest.
+
+`SpreadsheetAddress`, `SpreadsheetAddressRange`, `SpreadsheetQualifiedAddress`,
+and `SpreadsheetQualifiedAddressRange` are public immutable coordinate types.
+Ranges support A1 parsing, containment, intersection, and conversion between
+range-relative grid coordinates and source-sheet coordinates.
 
 ## Grading snapshots
 
@@ -178,7 +276,7 @@ configuration is an authoring error.
 ### Grading in `server.py`
 
 `pl-spreadsheet` does not assign a score. Wrap the submitted snapshot with
-`pl.Spreadsheet` to inspect cells and private outputs, then set `score` or
+`pl.SpreadsheetBook` to inspect cells and private outputs, then set `score` or
 `partial_scores` in the question's `grade()` function:
 
 ```python title="server.py"
@@ -186,7 +284,7 @@ import prairielearn as pl
 
 
 def grade(data):
-    workbook = pl.Spreadsheet(data["submitted_answers"]["model"])
+    workbook = pl.SpreadsheetBook(data["submitted_answers"]["model"])
     budget = workbook["Budget"]
     formula_cell = budget.cell("D2")
 
@@ -204,7 +302,7 @@ def grade(data):
 ```
 
 Use `sheet.cell("D2")` or `sheet.range("A2:D9")` when the expected return type is
-known. `workbook["Budget"]` returns a read-only `pl.Sheet`; indexing that sheet
+known. `workbook["Budget"]` returns a read-only `pl.Spreadsheet`; indexing that sheet
 remains available when either cell or range is acceptable. A sheet retains its
 parent workbook, so a qualified reference such as
 `summary.range("Budget!A2:D9")` resolves to the `Budget` sheet.
@@ -219,6 +317,10 @@ normal result states: `value` is `None` for both empty and error results, while
 provide rectangular `inputs`, `results`, `values`, and `formulas` projections,
 row-major iteration, and predicate-based `query()` methods. The views are read-only
 and do not recalculate the snapshot.
+
+For a sheet with `student_range`, `shape`, iteration, and `query()` cover only the
+visible rectangle while every cell retains its original source address. Looking up
+a hidden address raises an out-of-range error.
 
 The functional API remains available for lower-level access:
 `get_spreadsheet_cell()` returns the complete typed cell,

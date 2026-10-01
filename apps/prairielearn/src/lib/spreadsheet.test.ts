@@ -10,7 +10,11 @@ import {
   evaluateSpreadsheet,
   getRelativeFillInput,
   getSpreadsheetLogMetadata,
+  intersectRanges,
   normalizeSpreadsheetAnswers,
+  parseRange,
+  toRelativeAddress,
+  toSourceAddress,
 } from './spreadsheet.js';
 
 function makeConfig(): SpreadsheetElementConfig {
@@ -78,9 +82,71 @@ function makeGradingConfig(): SpreadsheetGradingConfig {
   };
 }
 
+function makeOffsetConfig(): SpreadsheetElementConfig {
+  return {
+    schema_version: 1,
+    template_hash: 'template-hash',
+    template: {
+      schema_version: 1,
+      sheets: [
+        {
+          name: 'Inputs',
+          rows: 3,
+          columns: 4,
+          student_range: 'B2:C3',
+          cells: { B2: 2, C2: '=B2*2' },
+          editable_ranges: ['B2:B3'],
+        },
+      ],
+    },
+  };
+}
+
+function makeSourceGradingConfig(): SpreadsheetGradingConfig {
+  return {
+    schema_version: 1,
+    grader_hash: 'source-grader-hash',
+    source_sheets: [
+      {
+        name: 'Inputs',
+        rows: 3,
+        columns: 4,
+        cells: {
+          A1: 'HIDDEN_SENTINEL',
+          B2: 99,
+          C2: '=B2*2',
+          D2: '=ISBLANK(B2)',
+        },
+      },
+    ],
+    sheets: [],
+    outputs: { cleared: { sheet: 'Inputs', cell: 'D2', required: true } },
+  };
+}
+
 function makeSubmission(sheets: SpreadsheetRawSubmission['sheets'] = {}): SpreadsheetRawSubmission {
   return { schema_version: 1, template_hash: 'template-hash', sheets };
 }
+
+describe('spreadsheet ranges', () => {
+  it('converts between local-grid and source coordinates', () => {
+    const range = parseRange('D5:B3');
+    assert.deepEqual(range, { startRow: 2, endRow: 4, startColumn: 1, endColumn: 3 });
+    assert.deepEqual(toSourceAddress(range!, { row: 1, column: 2 }), { row: 3, column: 3 });
+    assert.deepEqual(toRelativeAddress(range!, { row: 4, column: 2 }), { row: 2, column: 1 });
+    assert.deepEqual(
+      intersectRanges(range!, {
+        startRow: 4,
+        endRow: 6,
+        startColumn: 3,
+        endColumn: 5,
+      }),
+      { startRow: 4, endRow: 4, startColumn: 3, endColumn: 3 },
+    );
+    assert.throws(() => toSourceAddress(range!, { row: 3, column: 0 }), RangeError);
+    assert.throws(() => toRelativeAddress(range!, { row: 2, column: 0 }), RangeError);
+  });
+});
 
 describe('evaluateSpreadsheet', () => {
   it('recomputes formulas from submitted inputs', () => {
@@ -132,6 +198,44 @@ describe('evaluateSpreadsheet', () => {
     evaluation.engine.destroy();
   });
 
+  it('clears and overlays student ranges onto authoritative source sheets', () => {
+    const evaluation = evaluateSpreadsheet(
+      makeOffsetConfig(),
+      makeSubmission({ Inputs: { B2: null } }),
+      makeSourceGradingConfig(),
+    );
+
+    assert.deepEqual(evaluation.snapshot.grading?.outputs.cleared, {
+      type: 'boolean',
+      value: true,
+    });
+    assert.equal(evaluation.snapshot.sheets[0].student_range, 'B2:C3');
+    assert.notInclude(JSON.stringify(evaluation.snapshot), 'HIDDEN_SENTINEL');
+    assert.notInclude(JSON.stringify(evaluation.snapshot), 'ISBLANK');
+    evaluation.engine.destroy();
+  });
+
+  it('rejects forged edits and formula references outside the student range', () => {
+    assert.throws(
+      () => evaluateSpreadsheet(makeOffsetConfig(), makeSubmission({ Inputs: { A1: 5 } })),
+      /outside the student range/,
+    );
+    assert.throws(
+      () => evaluateSpreadsheet(makeOffsetConfig(), makeSubmission({ Inputs: { B2: '=D2' } })),
+      /outside declared student ranges/,
+    );
+    assert.throws(
+      () =>
+        evaluateSpreadsheet(makeOffsetConfig(), makeSubmission({ Inputs: { B2: '=SUM(2:2)' } })),
+      /outside declared student ranges/,
+    );
+    assert.throws(
+      () =>
+        evaluateSpreadsheet(makeOffsetConfig(), makeSubmission({ Inputs: { B2: '=SUM(B:B)' } })),
+      /outside declared student ranges/,
+    );
+  });
+
   it('rejects required private outputs that are empty or contain an error', () => {
     for (const outputName of ['error', 'empty'] as const) {
       const gradingConfig = makeGradingConfig();
@@ -166,7 +270,7 @@ describe('evaluateSpreadsheet', () => {
           makeSubmission({ Inputs: { A2: '=Checks!A1' } }),
           makeGradingConfig(),
         ),
-      /cannot reference private grading sheets/,
+      /outside declared student ranges/,
     );
   });
 
@@ -195,6 +299,7 @@ describe('evaluateSpreadsheet', () => {
     ]) {
       const config = makeConfig();
       config.template.sheets[0].name = name;
+      config.template.sheets[1].cells.B1 = '=1';
       assert.isTrue(SpreadsheetElementConfigSchema.safeParse(config).success);
       evaluateSpreadsheet(config, makeSubmission()).engine.destroy();
     }

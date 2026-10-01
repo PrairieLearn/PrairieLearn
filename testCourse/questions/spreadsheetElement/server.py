@@ -1,5 +1,6 @@
 from typing import Any
 
+import pandas as pd
 import prairielearn as pl
 
 
@@ -24,11 +25,12 @@ def generate(data: dict[str, Any]) -> None:
                 "editable_ranges": ["B2:D4"],
             },
             {
-                "name": "Summary",
-                "rows": 2,
-                "columns": 2,
-                "cells": {"A1": "Total", "B1": "=SUM(Inputs!D2:D4)"},
-                "editable_ranges": [],
+                **pl.dataframe_to_spreadsheet_sheet(
+                    pd.DataFrame([["=SUM(Inputs!D2:D4)"]]),
+                    name="Summary",
+                    start_cell="B1",
+                ),
+                "student_range": "B1:B1",
             },
         ],
     }

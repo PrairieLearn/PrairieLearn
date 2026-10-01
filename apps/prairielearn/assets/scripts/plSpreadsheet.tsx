@@ -26,6 +26,8 @@ import {
   getRelativeFillInput,
   isCellEditable,
   parseCellAddress,
+  studentRange,
+  toRelativeAddress,
 } from '../../src/lib/spreadsheet.js';
 
 interface SpreadsheetOptions {
@@ -227,6 +229,7 @@ function SpreadsheetEditor({
   const rawSubmissionRef = useRef(rawSubmission);
 
   const sheet = config.template.sheets[activeSheetIndex];
+  const visibleRange = studentRange(sheet);
   const instructionsId = `pl-spreadsheet-instructions-${options.uuid}`;
   const errorId = `pl-spreadsheet-error-${options.uuid}`;
 
@@ -312,23 +315,28 @@ function SpreadsheetEditor({
     const targetAddress = { sheet: activeSheetIndex, row: targetRow, col: targetColumn };
     const input = getRelativeFillInput(evaluation.engine, sourceAddress, targetAddress);
     commitCell(targetRow, targetColumn, displayInput(input), 'filled from the active cell.');
-    gridRef.current?.setActivePosition({ idx: targetColumn + 1, rowIdx: targetRow });
+    const target = toRelativeAddress(visibleRange, { row: targetRow, column: targetColumn });
+    gridRef.current?.setActivePosition({ idx: target.column + 1, rowIdx: target.row });
   }
 
-  const rows: SpreadsheetRow[] = Array.from({ length: sheet.rows }, (_, rowIndex) => {
-    const inputs: Record<string, string> = {};
-    const results: Record<string, string> = {};
-    const errors: Record<string, boolean> = {};
-    for (let column = 0; column < sheet.columns; column += 1) {
-      const columnName = cellAddress(0, column).replace(/1$/, '');
-      const address = cellAddress(rowIndex, column);
-      inputs[columnName] = displayInput(finalInput(config, rawSubmission, sheet.name, address));
-      const snapshotCell = getSnapshotCell(evaluation, activeSheetIndex, address);
-      results[columnName] = resultText(snapshotCell);
-      errors[columnName] = snapshotCell?.result.type === 'error';
-    }
-    return { rowIndex, inputs, results, errors };
-  });
+  const rows: SpreadsheetRow[] = Array.from(
+    { length: visibleRange.endRow - visibleRange.startRow + 1 },
+    (_, localRowIndex) => {
+      const rowIndex = visibleRange.startRow + localRowIndex;
+      const inputs: Record<string, string> = {};
+      const results: Record<string, string> = {};
+      const errors: Record<string, boolean> = {};
+      for (let column = visibleRange.startColumn; column <= visibleRange.endColumn; column += 1) {
+        const columnName = cellAddress(0, column).replace(/1$/, '');
+        const address = cellAddress(rowIndex, column);
+        inputs[columnName] = displayInput(finalInput(config, rawSubmission, sheet.name, address));
+        const snapshotCell = getSnapshotCell(evaluation, activeSheetIndex, address);
+        results[columnName] = resultText(snapshotCell);
+        errors[columnName] = snapshotCell?.result.type === 'error';
+      }
+      return { rowIndex, inputs, results, errors };
+    },
+  );
 
   const columns: readonly Column<SpreadsheetRow>[] = [
     {
@@ -340,35 +348,39 @@ function SpreadsheetEditor({
         <span className="pl-spreadsheet-row-header">{row.rowIndex + 1}</span>
       ),
     },
-    ...Array.from({ length: sheet.columns }, (_, columnIndex): Column<SpreadsheetRow> => {
-      const columnName = cellAddress(0, columnIndex).replace(/1$/, '');
-      return {
-        key: columnName,
-        name: columnName,
-        minWidth: 96,
-        resizable: true,
-        editable: (row) => isCellEditable(sheet, row.rowIndex, columnIndex),
-        cellClass: (row) =>
-          isCellEditable(sheet, row.rowIndex, columnIndex)
-            ? undefined
-            : 'pl-spreadsheet-cell-readonly',
-        renderEditCell: (props) => <CellEditor {...props} />,
-        renderCell: ({ row }) => {
-          const address = `${columnName}${row.rowIndex + 1}`;
-          const editable = isCellEditable(sheet, row.rowIndex, columnIndex);
-          return (
-            <span
-              className={row.errors[columnName] ? 'pl-spreadsheet-cell-error' : undefined}
-              aria-label={`${address}, ${editable ? 'editable' : 'read-only'}, ${row.results[columnName] || 'blank'}`}
-              title={editable ? undefined : 'Read-only cell'}
-            >
-              {row.results[columnName]}
-              {!editable && <span className="visually-hidden"> Read-only</span>}
-            </span>
-          );
-        },
-      };
-    }),
+    ...Array.from(
+      { length: visibleRange.endColumn - visibleRange.startColumn + 1 },
+      (_, localColumnIndex): Column<SpreadsheetRow> => {
+        const columnIndex = visibleRange.startColumn + localColumnIndex;
+        const columnName = cellAddress(0, columnIndex).replace(/1$/, '');
+        return {
+          key: columnName,
+          name: columnName,
+          minWidth: 96,
+          resizable: true,
+          editable: (row) => isCellEditable(sheet, row.rowIndex, columnIndex),
+          cellClass: (row) =>
+            isCellEditable(sheet, row.rowIndex, columnIndex)
+              ? undefined
+              : 'pl-spreadsheet-cell-readonly',
+          renderEditCell: (props) => <CellEditor {...props} />,
+          renderCell: ({ row }) => {
+            const address = `${columnName}${row.rowIndex + 1}`;
+            const editable = isCellEditable(sheet, row.rowIndex, columnIndex);
+            return (
+              <span
+                className={row.errors[columnName] ? 'pl-spreadsheet-cell-error' : undefined}
+                aria-label={`${address}, ${editable ? 'editable' : 'read-only'}, ${row.results[columnName] || 'blank'}`}
+                title={editable ? undefined : 'Read-only cell'}
+              >
+                {row.results[columnName]}
+                {!editable && <span className="visually-hidden"> Read-only</span>}
+              </span>
+            );
+          },
+        };
+      },
+    ),
   ];
 
   // Flush the latest state for both normal form submission and the FormData event path.
@@ -410,10 +422,11 @@ function SpreadsheetEditor({
 
   function handleRowsChange(nextRows: SpreadsheetRow[], data: RowsChangeData<SpreadsheetRow>) {
     if (data.column.key === '__row') return;
-    const rowIndex = data.indexes[0];
+    const localRowIndex = data.indexes[0];
     const parsedColumn = parseCellAddress(`${data.column.key}1`);
     if (!parsedColumn) return;
-    commitCell(rowIndex, parsedColumn.column, nextRows[rowIndex].inputs[data.column.key]);
+    const row = nextRows[localRowIndex];
+    commitCell(row.rowIndex, parsedColumn.column, row.inputs[data.column.key]);
   }
 
   function handleFill(event: FillEvent<SpreadsheetRow>): SpreadsheetRow {
@@ -453,7 +466,7 @@ function SpreadsheetEditor({
     if (args.mode !== 'ACTIVE' || event.key !== 'Tab' || !args.column) return;
     const firstCell = args.rowIdx === 0 && args.column.idx === 1 && event.shiftKey;
     const lastCell =
-      args.rowIdx === sheet.rows - 1 && args.column.idx === sheet.columns && !event.shiftKey;
+      args.rowIdx === rows.length - 1 && args.column.idx === columns.length - 1 && !event.shiftKey;
     if (firstCell || lastCell) event.preventGridDefault();
   }
 
@@ -483,7 +496,7 @@ function SpreadsheetEditor({
         <button
           type="button"
           className="btn btn-sm btn-outline-secondary"
-          disabled={!activeCell || activeCell.row + 1 >= sheet.rows}
+          disabled={!activeCell || activeCell.row >= visibleRange.endRow}
           onClick={() => activeCell && fillTo(activeCell.row + 1, activeCell.column)}
         >
           Fill down
@@ -491,7 +504,7 @@ function SpreadsheetEditor({
         <button
           type="button"
           className="btn btn-sm btn-outline-secondary"
-          disabled={!activeCell || activeCell.column + 1 >= sheet.columns}
+          disabled={!activeCell || activeCell.column >= visibleRange.endColumn}
           onClick={() => activeCell && fillTo(activeCell.row, activeCell.column + 1)}
         >
           Fill right
@@ -525,10 +538,8 @@ function SpreadsheetEditor({
               event.preventDefault();
               skipFormulaBlurRef.current = true;
               commitCell(activeCell.row, activeCell.column, formulaText);
-              gridRef.current?.setActivePosition({
-                idx: activeCell.column + 1,
-                rowIdx: activeCell.row,
-              });
+              const active = toRelativeAddress(visibleRange, activeCell);
+              gridRef.current?.setActivePosition({ idx: active.column + 1, rowIdx: active.row });
             } else if (event.key === 'Escape' && activeCell) {
               event.preventDefault();
               skipFormulaBlurRef.current = true;
@@ -542,10 +553,8 @@ function SpreadsheetEditor({
                   ),
                 ),
               );
-              gridRef.current?.setActivePosition({
-                idx: activeCell.column + 1,
-                rowIdx: activeCell.row,
-              });
+              const active = toRelativeAddress(visibleRange, activeCell);
+              gridRef.current?.setActivePosition({ idx: active.column + 1, rowIdx: active.row });
             }
           }}
         />
@@ -616,10 +625,11 @@ function SpreadsheetEditor({
           }
           const parsedColumn = parseCellAddress(`${column.key}1`);
           if (!parsedColumn) return;
-          setActiveCell({ row: rowIdx, column: parsedColumn.column });
-          const address = cellAddress(rowIdx, parsedColumn.column);
+          const sourceRow = rows[rowIdx].rowIndex;
+          setActiveCell({ row: sourceRow, column: parsedColumn.column });
+          const address = cellAddress(sourceRow, parsedColumn.column);
           setFormulaText(displayInput(finalInput(config, rawSubmission, sheet.name, address)));
-          const editable = isCellEditable(sheet, rowIdx, parsedColumn.column);
+          const editable = isCellEditable(sheet, sourceRow, parsedColumn.column);
           const snapshotCell = getSnapshotCell(evaluation, activeSheetIndex, address);
           if (snapshotCell?.result.type === 'error') {
             setAnnouncement(

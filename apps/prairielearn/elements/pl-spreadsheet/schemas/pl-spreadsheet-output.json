@@ -2,23 +2,20 @@
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
   "properties": {
-    "allow-blank": {
+    "cell": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "required": {
       "type": "string",
       "format": "boolean"
     },
-    "answers-name": {
-      "type": "string"
-    },
-    "aria-label": {
-      "type": "string"
-    },
-    "height": {
-      "type": "string"
-    },
-    "params-name": {
+    "sheet-name": {
       "type": "string"
     }
   },
-  "required": ["answers-name"],
+  "required": ["cell", "name", "sheet-name"],
   "additionalProperties": false
 }

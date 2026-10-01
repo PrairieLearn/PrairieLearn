@@ -117,6 +117,7 @@ const SpreadsheetSheetTemplateSchema = z
     columns: z.number().int().min(1).max(SPREADSHEET_MAX_COLUMNS),
     cells: z.record(z.string(), CellInputSchema),
     editable_ranges: z.array(z.string()).max(100),
+    student_range: z.string().optional(),
   })
   .strict();
 
@@ -164,12 +165,22 @@ export const SpreadsheetGradingConfigSchema = z
   .object({
     schema_version: z.literal(1),
     grader_hash: z.string().min(1),
-    sheets: z.array(SpreadsheetGradingSheetSchema).min(1).max(SPREADSHEET_MAX_SHEETS),
+    sheets: z.array(SpreadsheetGradingSheetSchema).max(SPREADSHEET_MAX_SHEETS),
+    source_sheets: z.array(SpreadsheetGradingSheetSchema).max(SPREADSHEET_MAX_SHEETS).optional(),
     outputs: z
       .record(z.string().min(1).max(128), SpreadsheetGradingOutputSchema)
       .refine((outputs) => Object.keys(outputs).length <= SPREADSHEET_MAX_GRADING_OUTPUTS),
   })
-  .strict();
+  .strict()
+  .refine(
+    (config) => config.sheets.length + (config.source_sheets?.length ?? 0) >= 1,
+    'A private spreadsheet grading workbook must contain at least one sheet.',
+  )
+  .refine(
+    (config) =>
+      config.sheets.length + (config.source_sheets?.length ?? 0) <= SPREADSHEET_MAX_SHEETS,
+    `A private spreadsheet grading workbook may contain at most ${SPREADSHEET_MAX_SHEETS} sheets.`,
+  );
 
 export type SpreadsheetGradingConfig = z.infer<typeof SpreadsheetGradingConfigSchema>;
 
@@ -226,6 +237,7 @@ export const SpreadsheetSnapshotSchema = z
           rows: z.number().int(),
           columns: z.number().int(),
           cells: z.record(z.string(), SpreadsheetSnapshotCellSchema),
+          student_range: z.string().optional(),
         })
         .strict(),
     ),
@@ -283,7 +295,12 @@ export function columnIndexToName(column: number): string {
   return name;
 }
 
-export function parseCellAddress(address: string): { row: number; column: number } | null {
+export interface SpreadsheetCellAddress {
+  row: number;
+  column: number;
+}
+
+export function parseCellAddress(address: string): SpreadsheetCellAddress | null {
   const match = /^([A-Z]+)([1-9][0-9]*)$/.exec(address.toUpperCase());
   if (!match) return null;
   let column = 0;
@@ -297,8 +314,19 @@ export function cellAddress(row: number, column: number): string {
   return `${columnIndexToName(column)}${row + 1}`;
 }
 
-function parseRange(range: string) {
-  const [startText, endText = startText] = range.toUpperCase().split(':');
+export interface SpreadsheetCellRange {
+  startRow: number;
+  endRow: number;
+  startColumn: number;
+  endColumn: number;
+}
+
+export function parseRange(range: string): SpreadsheetCellRange | null {
+  const parts = range.toUpperCase().split(':');
+  if (parts.length > 2) return null;
+  const startText = parts[0];
+  if (!startText) return null;
+  const endText = parts[1] ?? startText;
   const start = parseCellAddress(startText);
   const end = parseCellAddress(endText);
   if (!start || !end) return null;
@@ -308,6 +336,98 @@ function parseRange(range: string) {
     startColumn: Math.min(start.column, end.column),
     endColumn: Math.max(start.column, end.column),
   };
+}
+
+export function studentRange(
+  sheet: Pick<SpreadsheetTemplate['sheets'][number], 'rows' | 'columns' | 'student_range'>,
+): SpreadsheetCellRange {
+  if (sheet.student_range !== undefined) {
+    const parsed = parseRange(sheet.student_range);
+    if (!parsed) throw new SpreadsheetSubmissionError('The student range is invalid.');
+    return parsed;
+  }
+  return {
+    startRow: 0,
+    endRow: sheet.rows - 1,
+    startColumn: 0,
+    endColumn: sheet.columns - 1,
+  };
+}
+
+export function isRangeContained(
+  outer: SpreadsheetCellRange,
+  inner: SpreadsheetCellRange,
+): boolean {
+  return (
+    outer.startRow <= inner.startRow &&
+    outer.endRow >= inner.endRow &&
+    outer.startColumn <= inner.startColumn &&
+    outer.endColumn >= inner.endColumn
+  );
+}
+
+export function intersectRanges(
+  first: SpreadsheetCellRange,
+  second: SpreadsheetCellRange,
+): SpreadsheetCellRange | null {
+  const intersection = {
+    startRow: Math.max(first.startRow, second.startRow),
+    endRow: Math.min(first.endRow, second.endRow),
+    startColumn: Math.max(first.startColumn, second.startColumn),
+    endColumn: Math.min(first.endColumn, second.endColumn),
+  };
+  return intersection.startRow <= intersection.endRow &&
+    intersection.startColumn <= intersection.endColumn
+    ? intersection
+    : null;
+}
+
+export function toSourceAddress(
+  range: SpreadsheetCellRange,
+  relative: SpreadsheetCellAddress,
+): SpreadsheetCellAddress {
+  const source = {
+    row: range.startRow + relative.row,
+    column: range.startColumn + relative.column,
+  };
+  if (
+    source.row > range.endRow ||
+    source.column > range.endColumn ||
+    relative.row < 0 ||
+    relative.column < 0
+  ) {
+    throw new RangeError('Relative spreadsheet address is outside its range.');
+  }
+  return source;
+}
+
+export function toRelativeAddress(
+  range: SpreadsheetCellRange,
+  source: SpreadsheetCellAddress,
+): SpreadsheetCellAddress {
+  if (
+    source.row < range.startRow ||
+    source.row > range.endRow ||
+    source.column < range.startColumn ||
+    source.column > range.endColumn
+  ) {
+    throw new RangeError('Spreadsheet address is outside its range.');
+  }
+  return { row: source.row - range.startRow, column: source.column - range.startColumn };
+}
+
+export function isCellVisible(
+  sheet: SpreadsheetTemplate['sheets'][number],
+  row: number,
+  column: number,
+): boolean {
+  const range = studentRange(sheet);
+  return (
+    row >= range.startRow &&
+    row <= range.endRow &&
+    column >= range.startColumn &&
+    column <= range.endColumn
+  );
 }
 
 export function isCellEditable(
@@ -397,6 +517,15 @@ function validateTemplate(template: SpreadsheetTemplate): void {
     }
     sheetNames.add(foldedName);
     addressableCells += sheet.rows * sheet.columns;
+    const visibleRange = studentRange(sheet);
+    if (
+      visibleRange.endRow >= sheet.rows ||
+      visibleRange.endColumn >= sheet.columns ||
+      visibleRange.startRow < 0 ||
+      visibleRange.startColumn < 0
+    ) {
+      throw new SpreadsheetSubmissionError(`Student range is outside sheet ${sheet.name}.`);
+    }
 
     for (const [address, input] of Object.entries(sheet.cells)) {
       const parsedAddress = parseCellAddress(address);
@@ -406,6 +535,11 @@ function validateTemplate(template: SpreadsheetTemplate): void {
         parsedAddress.column >= sheet.columns
       ) {
         throw new SpreadsheetSubmissionError(`Cell ${address} is outside sheet ${sheet.name}.`);
+      }
+      if (!isCellVisible(sheet, parsedAddress.row, parsedAddress.column)) {
+        throw new SpreadsheetSubmissionError(
+          `Cell ${address} is outside the student range for sheet ${sheet.name}.`,
+        );
       }
       populatedCells += 1;
       if (typeof input === 'string' && input.startsWith('=')) {
@@ -417,9 +551,14 @@ function validateTemplate(template: SpreadsheetTemplate): void {
 
     for (const rangeText of sheet.editable_ranges) {
       const range = parseRange(rangeText);
-      if (!range || range.endRow >= sheet.rows || range.endColumn >= sheet.columns) {
+      if (
+        !range ||
+        range.endRow >= sheet.rows ||
+        range.endColumn >= sheet.columns ||
+        !isRangeContained(visibleRange, range)
+      ) {
         throw new SpreadsheetSubmissionError(
-          `Editable range ${rangeText} is outside sheet ${sheet.name}.`,
+          `Editable range ${rangeText} is outside the student range for sheet ${sheet.name}.`,
         );
       }
     }
@@ -457,44 +596,68 @@ function validateGradingConfig(
   let addressableCells = 0;
   let populatedCells = 0;
   let formulas = 0;
-  const publicSheetNames = new Set(
-    template.sheets.map((sheet) => sheet.name.toLocaleLowerCase('en-US')),
+  const publicSheetsByName = new Map(
+    template.sheets.map((sheet) => [sheet.name.toLocaleLowerCase('en-US'), sheet]),
   );
   const gradingSheetNames = new Set<string>();
 
-  for (const sheet of config.sheets) {
-    if (!isValidSheetName(sheet.name)) {
-      throw new Error(
-        `Private grading sheet ${sheet.name} must have a non-empty name of at most 31 characters without leading or trailing whitespace. The characters !, :, <, >, {, }, [, ], and null are not allowed.`,
-      );
-    }
-    const foldedName = sheet.name.toLocaleLowerCase('en-US');
-    if (publicSheetNames.has(foldedName)) {
-      throw new Error(`Private grading sheet ${sheet.name} conflicts with a student sheet.`);
-    }
-    if (gradingSheetNames.has(foldedName)) {
-      throw new Error(`Private grading sheet name ${sheet.name} is duplicated.`);
-    }
-    gradingSheetNames.add(foldedName);
-    addressableCells += sheet.rows * sheet.columns;
-
-    for (const [address, input] of Object.entries(sheet.cells)) {
-      const parsedAddress = parseCellAddress(address);
+  const validateSheets = (
+    sheets: SpreadsheetGradingConfig['sheets'],
+    description: string,
+    allowPublicNames: boolean,
+  ) => {
+    for (const sheet of sheets) {
+      if (!isValidSheetName(sheet.name)) {
+        throw new Error(
+          `${description} ${sheet.name} must have a non-empty name of at most 31 characters without leading or trailing whitespace. The characters !, :, <, >, {, }, [, ], and null are not allowed.`,
+        );
+      }
+      const foldedName = sheet.name.toLocaleLowerCase('en-US');
+      const publicSheet = publicSheetsByName.get(foldedName);
+      if (!allowPublicNames && publicSheet) {
+        throw new Error(`${description} ${sheet.name} conflicts with a student sheet.`);
+      }
+      if (allowPublicNames && publicSheet && publicSheet.name !== sheet.name) {
+        throw new Error(
+          `Private source sheet ${sheet.name} must use the exact student sheet name ${publicSheet.name}.`,
+        );
+      }
       if (
-        !parsedAddress ||
-        parsedAddress.row >= sheet.rows ||
-        parsedAddress.column >= sheet.columns
+        allowPublicNames &&
+        publicSheet &&
+        (sheet.rows < publicSheet.rows || sheet.columns < publicSheet.columns)
       ) {
-        throw new Error(`Cell ${address} is outside private grading sheet ${sheet.name}.`);
+        throw new Error(
+          `Private source sheet ${sheet.name} must cover its complete student range.`,
+        );
       }
-      populatedCells += 1;
-      if (typeof input === 'string' && input.startsWith('=')) {
-        formulas += 1;
-        const formulaError = validateFormula(input);
-        if (formulaError) throw new Error(formulaError);
+      if (gradingSheetNames.has(foldedName)) {
+        throw new Error(`Private grading sheet name ${sheet.name} is duplicated.`);
+      }
+      gradingSheetNames.add(foldedName);
+      addressableCells += sheet.rows * sheet.columns;
+
+      for (const [address, input] of Object.entries(sheet.cells)) {
+        const parsedAddress = parseCellAddress(address);
+        if (
+          !parsedAddress ||
+          parsedAddress.row >= sheet.rows ||
+          parsedAddress.column >= sheet.columns
+        ) {
+          throw new Error(`Cell ${address} is outside ${description.toLowerCase()} ${sheet.name}.`);
+        }
+        populatedCells += 1;
+        if (typeof input === 'string' && input.startsWith('=')) {
+          formulas += 1;
+          const formulaError = validateFormula(input);
+          if (formulaError) throw new Error(formulaError);
+        }
       }
     }
-  }
+  };
+
+  validateSheets(config.source_sheets ?? [], 'Private source sheet', true);
+  validateSheets(config.sheets, 'Private grading sheet', false);
 
   if (addressableCells > SPREADSHEET_MAX_ADDRESSABLE_CELLS) {
     throw new Error(
@@ -512,7 +675,9 @@ function validateGradingConfig(
     );
   }
 
-  const sheetsByName = new Map(config.sheets.map((sheet) => [sheet.name, sheet]));
+  const sheetsByName = new Map(
+    [...(config.source_sheets ?? []), ...config.sheets].map((sheet) => [sheet.name, sheet]),
+  );
   for (const [outputName, output] of Object.entries(config.outputs)) {
     const sheet = sheetsByName.get(output.sheet);
     if (!sheet) {
@@ -568,6 +733,11 @@ function mergeSubmission(
         parsedAddress.column >= sheet.columns
       ) {
         throw new SpreadsheetSubmissionError(`Cell ${rawAddress} is outside sheet ${sheetName}.`);
+      }
+      if (!isCellVisible(sheet, parsedAddress.row, parsedAddress.column)) {
+        throw new SpreadsheetSubmissionError(
+          `Cell ${sheetName}!${address} is outside the student range.`,
+        );
       }
       if (!isCellEditable(sheet, parsedAddress.row, parsedAddress.column)) {
         throw new SpreadsheetSubmissionError(`Cell ${sheetName}!${address} is read-only.`);
@@ -660,52 +830,91 @@ const HYPERFORMULA_CONFIG = {
   useWildcards: false,
 } as const;
 
+function validateStudentFormulaReferences(
+  engine: HyperFormula,
+  template: SpreadsheetTemplate,
+  studentSheetData: Record<string, RawCellContent[][]>,
+): void {
+  const templateBySheetId = new Map<number, SpreadsheetTemplate['sheets'][number]>();
+  for (const sheet of template.sheets) {
+    const sheetId = engine.getSheetId(sheet.name);
+    if (sheetId !== undefined) templateBySheetId.set(sheetId, sheet);
+  }
+
+  const outsideStudentRange = (): never => {
+    throw new SpreadsheetSubmissionError(
+      'Student-visible formulas cannot reference cells outside declared student ranges.',
+    );
+  };
+
+  for (const sheet of template.sheets) {
+    const sheetId = engine.getSheetId(sheet.name) ?? outsideStudentRange();
+    for (const [row, values] of studentSheetData[sheet.name].entries()) {
+      for (const [col, input] of values.entries()) {
+        if (typeof input !== 'string' || !input.startsWith('=')) continue;
+        const result = engine.getCellValue({ sheet: sheetId, row, col });
+        if (result instanceof DetailedCellError && ['NAME', 'ERROR', 'REF'].includes(result.type)) {
+          outsideStudentRange();
+        }
+        const precedents = engine.getCellPrecedents({ sheet: sheetId, row, col });
+        for (const precedent of precedents) {
+          const start = 'start' in precedent ? precedent.start : precedent;
+          const end = 'end' in precedent ? precedent.end : precedent;
+          const targetSheet = templateBySheetId.get(start.sheet);
+          if (
+            !targetSheet ||
+            end.sheet !== start.sheet ||
+            !isRangeContained(studentRange(targetSheet), {
+              startRow: start.row,
+              endRow: end.row,
+              startColumn: start.col,
+              endColumn: end.col,
+            })
+          ) {
+            outsideStudentRange();
+          }
+        }
+      }
+    }
+  }
+}
+
 function evaluateGradingOutputs(
   config: SpreadsheetGradingConfig,
   template: SpreadsheetTemplate,
   studentSheetData: Record<string, RawCellContent[][]>,
 ): Record<string, z.infer<typeof SpreadsheetSnapshotResultSchema>> {
   validateGradingConfig(config, template);
-  const gradingSheetData = Object.fromEntries(
-    Object.entries(studentSheetData).map(([name, rows]) => [name, rows.map((row) => [...row])]),
+  const sourceSheets = config.source_sheets ?? [];
+  const gradingSheetData: Record<string, RawCellContent[][]> = Object.fromEntries(
+    sourceSheets.map((sheet) => [
+      sheet.name,
+      buildSheetRows(sheet.rows, sheet.columns, sheet.cells),
+    ]),
   );
+  for (const sheet of template.sheets) {
+    if (!Object.hasOwn(gradingSheetData, sheet.name)) {
+      gradingSheetData[sheet.name] = studentSheetData[sheet.name].map((row) => [...row]);
+      continue;
+    }
+    const sourceRows = gradingSheetData[sheet.name];
+    const visibleRange = studentRange(sheet);
+    for (let row = visibleRange.startRow; row <= visibleRange.endRow; row += 1) {
+      for (let column = visibleRange.startColumn; column <= visibleRange.endColumn; column += 1) {
+        sourceRows[row][column] = studentSheetData[sheet.name][row]?.[column] ?? null;
+      }
+    }
+  }
   for (const sheet of config.sheets) {
     gradingSheetData[sheet.name] = buildSheetRows(sheet.rows, sheet.columns, sheet.cells);
   }
 
   const engine = HyperFormula.buildFromSheets(gradingSheetData, HYPERFORMULA_CONFIG);
   try {
-    const privateSheetIds = new Set(
-      config.sheets.map((sheet) => {
-        const sheetId = engine.getSheetId(sheet.name);
-        if (sheetId === undefined) {
-          throw new Error(`Private grading sheet ${sheet.name} is missing.`);
-        }
-        return sheetId;
-      }),
-    );
-    for (const sheet of template.sheets) {
-      const sheetId = engine.getSheetId(sheet.name);
-      if (sheetId === undefined) throw new Error(`Student sheet ${sheet.name} is missing.`);
-      for (const [row, values] of studentSheetData[sheet.name].entries()) {
-        for (const [col, input] of values.entries()) {
-          if (typeof input !== 'string' || !input.startsWith('=')) continue;
-          const precedents = engine.getCellPrecedents({ sheet: sheetId, row, col });
-          if (
-            precedents.some((precedent) =>
-              privateSheetIds.has('sheet' in precedent ? precedent.sheet : precedent.start.sheet),
-            )
-          ) {
-            throw new SpreadsheetSubmissionError(
-              'Student formulas cannot reference private grading sheets.',
-            );
-          }
-        }
-      }
-    }
+    validateStudentFormulaReferences(engine, template, studentSheetData);
 
     // Enforce result limits for all populated grading cells, not only exported outputs.
-    for (const sheet of config.sheets) {
+    for (const sheet of [...sourceSheets, ...config.sheets]) {
       const sheetId = engine.getSheetId(sheet.name);
       if (sheetId === undefined) throw new Error(`Private grading sheet ${sheet.name} is missing.`);
       for (const address of Object.keys(sheet.cells)) {
@@ -764,6 +973,7 @@ export function evaluateSpreadsheet(
   const engine = HyperFormula.buildFromSheets(sheetData, HYPERFORMULA_CONFIG);
 
   try {
+    validateStudentFormulaReferences(engine, config.template, sheetData);
     const sheets = config.template.sheets.map((sheet, sheetIndex) => {
       const cells: Record<string, z.infer<typeof SpreadsheetSnapshotCellSchema>> = {};
       for (const [address, input] of Object.entries(merged[sheet.name])) {
@@ -786,7 +996,13 @@ export function evaluateSpreadsheet(
         }
         cells[address] = { input: snapshotInput(input), result };
       }
-      return { name: sheet.name, rows: sheet.rows, columns: sheet.columns, cells };
+      return {
+        name: sheet.name,
+        rows: sheet.rows,
+        columns: sheet.columns,
+        cells,
+        ...(sheet.student_range === undefined ? {} : { student_range: sheet.student_range }),
+      };
     });
 
     const grading = gradingConfig
@@ -924,9 +1140,13 @@ export function getSpreadsheetLogMetadata(
     }
     const gradingConfig = SpreadsheetGradingConfigSchema.safeParse(correctAnswers[answerName]);
     if (!gradingConfig.success) continue;
-    metadata.spreadsheet_grading_sheets += gradingConfig.data.sheets.length;
+    const gradingSheets = [
+      ...(gradingConfig.data.source_sheets ?? []),
+      ...gradingConfig.data.sheets,
+    ];
+    metadata.spreadsheet_grading_sheets += gradingSheets.length;
     metadata.spreadsheet_grading_outputs += Object.keys(gradingConfig.data.outputs).length;
-    for (const sheet of gradingConfig.data.sheets) {
+    for (const sheet of gradingSheets) {
       metadata.spreadsheet_grading_addressable_cells += sheet.rows * sheet.columns;
       metadata.spreadsheet_grading_populated_cells += Object.keys(sheet.cells).length;
       metadata.spreadsheet_grading_formulas += Object.values(sheet.cells).filter(

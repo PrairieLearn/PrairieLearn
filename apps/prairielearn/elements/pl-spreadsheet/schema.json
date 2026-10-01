@@ -1,4 +1,14 @@
 {
   "tag": "pl-spreadsheet",
-  "schema": "./schemas/pl-spreadsheet.json"
+  "schema": "./schemas/pl-spreadsheet.json",
+  "children": [
+    {
+      "tag": "pl-spreadsheet-data",
+      "schema": "./schemas/pl-spreadsheet-data.json"
+    },
+    {
+      "tag": "pl-spreadsheet-output",
+      "schema": "./schemas/pl-spreadsheet-output.json"
+    }
+  ]
 }
