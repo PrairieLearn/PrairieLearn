@@ -172,8 +172,8 @@ configuration is an authoring error.
 
 ### Grading in `server.py`
 
-`pl-spreadsheet` does not assign a score. Use the spreadsheet helpers from the
-`prairielearn` module to inspect cells and private outputs, then set `score` or
+`pl-spreadsheet` does not assign a score. Wrap the submitted snapshot with
+`pl.Spreadsheet` to inspect cells and private outputs, then set `score` or
 `partial_scores` in the question's `grade()` function:
 
 ```python title="server.py"
@@ -181,16 +181,16 @@ import prairielearn as pl
 
 
 def grade(data):
-    workbook = data["submitted_answers"]["model"]
-    formula = pl.get_spreadsheet_formula(workbook, "Budget", "D2")
-    formula_ast = pl.get_spreadsheet_formula_ast(workbook, "Budget", "D2")
-    expected_ast = pl.parse_spreadsheet_formula("=B2*C2")
-    total = pl.get_spreadsheet_grading_output(workbook, "total")
+    workbook = pl.Spreadsheet(data["submitted_answers"]["model"])
+    budget = workbook["Budget"]
+    formula_cell = budget["D2"]
+    assert isinstance(formula_cell, pl.SpreadsheetCellView)
 
     checks = [
-        formula == "=B2*C2",  # Exact-text grading when required.
-        formula_ast is not None and formula_ast["root"] == expected_ast["root"],
-        total == {"type": "number", "value": 24},
+        formula_cell.formula == "=B2*C2",  # Exact-text grading when required.
+        formula_cell.matches_formula("=B2*C2", structural=True),
+        formula_cell.value == 24,
+        workbook.outputs["total"].value == 24,
     ]
     data["partial_scores"]["model"] = {
         "score": sum(checks) / len(checks),
@@ -199,18 +199,35 @@ def grade(data):
     pl.set_weighted_score_data(data)
 ```
 
+Index a sheet with a cell address such as `sheet["D2"]` or a rectangular range
+such as `sheet["A2:D9"]`. A sheet retains its parent workbook, so a qualified
+reference such as `summary["Budget!A2:D9"]` resolves to the `Budget` sheet.
+Excel-style quoted names and escaped apostrophes are supported, for example
+`sheet["'Input Data'!A2:D9"]` and `sheet["'Bob''s Data'!A1"]`.
+
+Cell views expose `input`, `result`, `value`, `formula`, and `formula_ast`, together
+with `is_empty`, `is_formula`, and `is_error`. Range views provide rectangular
+`inputs`, `results`, `values`, and `formulas` projections, row-major iteration, and
+predicate-based `query()` methods. The views are read-only and do not recalculate
+the snapshot.
+
+The functional API remains available for lower-level access:
 `get_spreadsheet_cell()` returns the complete typed cell,
-`get_spreadsheet_result()` returns its typed result, and
-`get_spreadsheet_value()` returns a scalar or `None`. The latter raises
-`SpreadsheetCellError` for spreadsheet errors so they cannot be mistaken for text.
+`get_spreadsheet_result()` returns its typed result,
+`get_spreadsheet_value()` returns a scalar or `None`, and
+`get_spreadsheet_grading_output()` returns a typed private output. Scalar access
+raises `SpreadsheetCellError` or `SpreadsheetOutputError` for spreadsheet errors
+so they cannot be mistaken for text.
 
 Formula ASTs have their own `schema_version`. They normalize function names and
 operators while preserving grouping, sheet names, ranges, and absolute-reference
 flags. HyperFormula remains authoritative for validation and calculation; the AST
 is an inspection tool for question-defined structural grading.
 
-`parse_spreadsheet_formula()` returns an object with `schema_version: 1`, the exact
-original `formula`, and a `root` node. Nodes form this discriminated union:
+`parse_spreadsheet_formula()` returns a frozen, slot-based `FormulaAst` dataclass
+with `schema_version`, the exact original `formula`, and a `root` node. Access these
+with attributes such as `ast.formula` and `ast.root`. Nodes form this discriminated
+union of frozen dataclasses:
 
 | Node `type` | Fields                                                               |
 | ----------- | -------------------------------------------------------------------- |
@@ -234,9 +251,10 @@ A reference endpoint is a typed union discriminated by `kind`:
 
 `sheet` is a decoded sheet name or `None`. Range nodes are likewise typed as cell,
 column, or row ranges, with `start` and `end` guaranteed to have the same endpoint
-kind. AST nodes are plain dictionaries, so graders can compare a whole subtree or
-inspect only the structure relevant to the rubric. A future AST shape change will
-use a new schema version.
+kind. Graders can compare immutable nodes directly or inspect only the attributes
+relevant to the rubric. The AST is constructed on demand in Python; it is not part
+of the transported or persisted spreadsheet snapshot. A future AST shape change
+will use a new schema version.
 
 External graders receive the same object at
 `data["submitted_answers"][answers_name]` in `/grade/data/data.json`. They may read

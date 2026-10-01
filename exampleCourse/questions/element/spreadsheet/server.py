@@ -58,23 +58,20 @@ def generate(data):
 def grade(data):
     # External graders read this same object from
     # data["submitted_answers"]["model"] in /grade/data/data.json.
-    snapshot = data["submitted_answers"]["model"]
-    formula = pl.get_spreadsheet_formula(snapshot, "Inputs", "D2")
-    formula_ast = pl.get_spreadsheet_formula_ast(snapshot, "Inputs", "D2")
-    expected_ast = pl.parse_spreadsheet_formula("=B2*C2")
-    grading_error = pl.get_spreadsheet_grading_output(snapshot, "example_error")
+    workbook = pl.Spreadsheet(data["submitted_answers"]["model"])
+    inputs = workbook["Summary"]["Inputs!B2:D2"]
+    assert isinstance(inputs, pl.SpreadsheetRange)
+    line_total = inputs["D2"]
 
     checks = [
-        pl.get_spreadsheet_value(snapshot, "Inputs", "B2") == 3,
-        pl.get_spreadsheet_value(snapshot, "Inputs", "C2") == 4,
-        formula == "=B2*C2",
-        formula_ast is not None and formula_ast["root"] == expected_ast["root"],
-        pl.get_spreadsheet_value(snapshot, "Inputs", "D2") == 12,
-        pl.get_spreadsheet_grading_output(snapshot, "line_total")
-        == {"type": "number", "value": 12},
-        pl.get_spreadsheet_grading_output(snapshot, "line_total_is_correct")
-        == {"type": "boolean", "value": True},
-        grading_error.get("type") == "error",
+        inputs["B2"].value == 3,
+        inputs["C2"].value == 4,
+        line_total.formula == "=B2*C2",
+        line_total.matches_formula("=B2*C2", structural=True),
+        line_total.value == 12,
+        workbook.outputs["line_total"].value == 12,
+        workbook.outputs["line_total_is_correct"].value is True,
+        workbook.outputs["example_error"].is_error,
     ]
     score = sum(checks) / len(checks)
     data["partial_scores"]["model"] = {"score": score, "weight": 1}
