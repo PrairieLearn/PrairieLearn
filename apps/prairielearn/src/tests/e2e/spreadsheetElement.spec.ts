@@ -34,8 +34,10 @@ test('uses spreadsheet-style click and typing behavior', async ({ page, courseIn
   const grid = parameterDemo.getByRole('grid', {
     name: 'Spreadsheet test, sheet Inputs',
   });
+  const rawAnswer = page.locator('input.js-pl-spreadsheet-input[name="model"]');
   const b2 = grid.getByRole('gridcell', { name: /^B2, editable/ });
   const b2CellEditor = grid.getByRole('textbox', { name: 'Edit cell B2' });
+  const b2FormulaBar = parameterDemo.getByLabel('Formula for B2');
 
   await b2.click();
   await expect(b2).toBeFocused();
@@ -43,6 +45,14 @@ test('uses spreadsheet-style click and typing behavior', async ({ page, courseIn
 
   await b2.press('F2');
   await expect(b2CellEditor).toHaveCount(0);
+
+  await b2.press('9');
+  await expect(b2CellEditor).toHaveValue('9');
+  await expect(rawAnswer).toHaveValue(/"B2":9/);
+  await b2CellEditor.press('Escape');
+  await expect(b2).toContainText('1');
+  await expect(b2FormulaBar).toHaveValue('1');
+  await expect(rawAnswer).not.toHaveValue(/"B2"/);
 
   await b2.press('9');
   await expect(b2CellEditor).toHaveValue('9');
@@ -93,6 +103,7 @@ test('supports accessible local editing and trusted submission', async ({
   const grid = parameterDemo.getByRole('grid', {
     name: 'Spreadsheet test, sheet Inputs',
   });
+  const rawAnswer = page.locator('input.js-pl-spreadsheet-input[name="model"]');
   await expect(grid).toBeVisible();
   await expect(parameterDemo.getByRole('tab', { name: 'Inputs' })).toHaveAttribute(
     'aria-selected',
@@ -154,6 +165,15 @@ test('supports accessible local editing and trusted submission', async ({
   await b2FormulaBar.press('Enter');
   await expect(b2).toContainText('31');
 
+  await b2.dblclick();
+  const canceledB2Editor = grid.getByRole('textbox', { name: 'Edit cell B2' });
+  await canceledB2Editor.fill('999');
+  await expect(rawAnswer).toHaveValue(/"B2":999/);
+  await canceledB2Editor.press('Escape');
+  await expect(b2).toContainText('31');
+  await expect(b2FormulaBar).toHaveValue('31');
+  await expect(rawAnswer).toHaveValue(/"B2":31/);
+
   await b2.press('Enter');
   const b3 = grid.getByRole('gridcell', { name: /^B3, editable/ });
   await expect(b3).toBeFocused();
@@ -183,7 +203,6 @@ test('supports accessible local editing and trusted submission', async ({
   await expect(parameterDemo.getByRole('status')).toContainText('#DIV/0!');
   await editCell(grid, 'D2', '=B2*C2');
 
-  const rawAnswer = page.locator('input.js-pl-spreadsheet-input[name="model"]');
   await expect(rawAnswer).toHaveValue(/"B2":3/);
   await expect(rawAnswer).not.toHaveValue(/"D2"/);
 
