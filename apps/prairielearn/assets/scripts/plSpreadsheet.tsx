@@ -169,6 +169,8 @@ function CellEditor({
 }) {
   const [value, setValue] = useState(initialValue ?? row.inputs[column.key]);
   const initialValueAppliedRef = useRef(false);
+  const initialValueRef = useRef(row.inputs[column.key] ?? '');
+  const canceledRef = useRef(false);
 
   // Relay the key that opened the editor into React Data Grid's draft row.
   useEffect(() => {
@@ -196,9 +198,13 @@ function CellEditor({
           inputs: { ...row.inputs, [column.key]: nextValue },
         });
       }}
-      onBlur={() => onClose(true)}
+      onBlur={() => onClose(!canceledRef.current)}
       onKeyDown={(event) => {
         if (event.key === 'Escape') {
+          event.preventDefault();
+          event.stopPropagation();
+          canceledRef.current = true;
+          setValue(initialValueRef.current);
           onCancel();
           onClose(false);
         }
@@ -360,9 +366,21 @@ function SpreadsheetEditor({
     syncHiddenInput(hiddenInput, nextSubmission);
   }
 
-  function cancelDraft() {
+  function cancelDraft(formulaCell = activeCell) {
     rawSubmissionRef.current = committedSubmissionRef.current;
     syncHiddenInput(hiddenInput, committedSubmissionRef.current);
+    if (formulaCell) {
+      setFormulaText(
+        displayInput(
+          finalInput(
+            config,
+            committedSubmissionRef.current,
+            sheet.name,
+            cellAddress(formulaCell.row, formulaCell.column),
+          ),
+        ),
+      );
+    }
   }
 
   function commitCell(row: number, column: number, inputText: string, message = 'Cell updated.') {
@@ -374,8 +392,7 @@ function SpreadsheetEditor({
     const input = parseEditorInput(inputText);
     const committedInput = finalInput(config, committedSubmissionRef.current, sheet.name, address);
     if (Object.is(input, committedInput)) {
-      cancelDraft();
-      setFormulaText(displayInput(committedInput));
+      cancelDraft({ row, column });
       return;
     }
     applySubmission(
@@ -502,7 +519,7 @@ function SpreadsheetEditor({
               initialEditValueRef.current = null;
             }}
             onDraftChange={(value) => updateDraft(props.row.rowIndex, columnIndex, value)}
-            onCancel={cancelDraft}
+            onCancel={() => cancelDraft({ row: props.row.rowIndex, column: columnIndex })}
           />
         ),
         renderCell: ({ row }) => {
@@ -836,16 +853,6 @@ function SpreadsheetEditor({
               event.preventDefault();
               skipFormulaBlurRef.current = true;
               cancelDraft();
-              setFormulaText(
-                displayInput(
-                  finalInput(
-                    config,
-                    committedSubmissionRef.current,
-                    sheet.name,
-                    cellAddress(activeCell.row, activeCell.column),
-                  ),
-                ),
-              );
               gridRef.current?.setActivePosition({
                 idx: activeCell.column + 1,
                 rowIdx: activeCell.row,
