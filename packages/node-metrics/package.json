@@ -16,13 +16,13 @@
     "dev": "tsc --watch --preserveWatchOutput"
   },
   "dependencies": {
-    "@aws-sdk/client-cloudwatch": "^3.1106.0",
+    "@aws-sdk/client-cloudwatch": "^3.1141.0",
     "loopbench": "^2.0.0"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
     "@types/loopbench": "^1.2.4",
-    "@types/node": "^24.13.3",
+    "@types/node": "^24.19.0",
     "@typescript/native": "npm:typescript@^7.0.2"
   }
 }

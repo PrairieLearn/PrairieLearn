@@ -24,13 +24,13 @@
     "typescript": "npm:@typescript/typescript6@^6.0.2"
   },
   "devDependencies": {
-    "@html-eslint/parser": "^0.64.0",
+    "@html-eslint/parser": "^0.66.1",
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/node": "^24.13.3",
+    "@types/node": "^24.19.0",
     "@typescript-eslint/rule-tester": "^8.70.1",
     "@typescript-eslint/types": "^8.70.1",
     "@typescript/native": "npm:typescript@^7.0.2",
-    "@vitest/coverage-v8": "^5.0.0",
-    "vitest": "^5.0.0"
+    "@vitest/coverage-v8": "^5.0.2",
+    "vitest": "^5.0.2"
   }
 }

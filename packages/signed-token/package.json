@@ -19,14 +19,14 @@
   "dependencies": {
     "base64url": "^3.0.1",
     "debug": "^4.4.3",
-    "es-toolkit": "^1.50.0"
+    "es-toolkit": "^1.52.0"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
     "@types/debug": "^4.1.13",
-    "@types/node": "^24.13.3",
+    "@types/node": "^24.19.0",
     "@typescript/native": "npm:typescript@^7.0.2",
-    "@vitest/coverage-v8": "^5.0.0",
-    "vitest": "^5.0.0"
+    "@vitest/coverage-v8": "^5.0.2",
+    "vitest": "^5.0.2"
   }
 }
