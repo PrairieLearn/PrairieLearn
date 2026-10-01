@@ -29,14 +29,14 @@
     "@prairielearn/tsconfig": "workspace:^",
     "@types/cookie": "^0.6.0 <1",
     "@types/cookie-signature": "^1.1.2",
-    "@types/node": "^24.13.3",
+    "@types/node": "^24.19.0",
     "@types/on-headers": "^1.0.4",
     "@types/uid-safe": "^2.1.5",
     "@typescript/native": "npm:typescript@^7.0.2",
-    "@vitest/coverage-v8": "^5.0.0",
+    "@vitest/coverage-v8": "^5.0.2",
     "express": "^4.22.3 <5",
     "fetch-cookie": "^3.2.0",
     "set-cookie-parser": "^3.1.2",
-    "vitest": "^5.0.0"
+    "vitest": "^5.0.2"
   }
 }
