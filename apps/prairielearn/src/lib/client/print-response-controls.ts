@@ -137,8 +137,14 @@ function moveResponseControlPlaceholders(source: HTMLElement): void {
     helper.className = 'printing-response-placeholder';
     helper.textContent = placeholder;
 
-    const inputGroup = control.closest<HTMLElement>('.input-group');
-    (inputGroup ?? control).before(helper);
+    if (control.tagName === 'TEXTAREA') {
+      control.after(helper);
+    } else {
+      const field = document.createElement('span');
+      field.className = 'printing-response-field';
+      control.replaceWith(field);
+      field.append(control, helper);
+    }
   }
 }
 
@@ -162,7 +168,11 @@ function replaceTextControls(source: HTMLElement): void {
     line.setAttribute('aria-label', control.getAttribute('aria-label') ?? 'Answer');
     if (control.id) line.id = control.id;
     const size = Number(control.getAttribute('size') ?? 26);
-    line.style.setProperty('--printing-response-width', `${Math.max(8, Math.min(size, 35))}ch`);
+    const width = `${Math.max(8, Math.min(size, 35))}ch`;
+    line.style.setProperty('--printing-response-width', width);
+    control
+      .closest<HTMLElement>('.printing-response-field')
+      ?.style.setProperty('--printing-response-width', width);
     control.replaceWith(line);
   }
   for (const textarea of source.querySelectorAll('textarea')) {

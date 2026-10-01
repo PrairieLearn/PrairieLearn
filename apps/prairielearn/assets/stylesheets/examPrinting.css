@@ -428,13 +428,23 @@ html[data-print-document='answer_key'] .printing-answer-key-content pre {
 }
 
 .printing-response-placeholder {
-  break-after: avoid;
   color: #555;
   display: block;
   font-size: 7.5pt;
   font-style: italic;
   line-height: 1.2;
-  margin: 0 0 0.025in;
+  margin-top: 0.025in;
+  text-align: left;
+}
+
+.printing-response-field {
+  align-items: stretch;
+  break-inside: avoid;
+  display: inline-flex;
+  flex-direction: column;
+  inline-size: var(--printing-response-width, 26ch);
+  max-inline-size: 100%;
+  vertical-align: baseline;
 }
 
 .printing-choice-list {
@@ -603,9 +613,14 @@ html[data-print-document='answer_key'] .printing-answer-key-content pre {
   white-space: normal;
 }
 
-.printing-question .question-body .input-group > .printing-response-line {
+.printing-question .question-body .input-group > .printing-response-line,
+.printing-question .question-body .input-group > .printing-response-field {
   flex: 1 1 var(--printing-response-width);
   min-inline-size: 0.6in;
+}
+
+.printing-response-field > .printing-response-line {
+  inline-size: 100%;
 }
 
 .printing-response-line {

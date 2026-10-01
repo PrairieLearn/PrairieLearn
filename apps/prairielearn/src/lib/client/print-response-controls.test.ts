@@ -105,6 +105,13 @@ describe('printable response controls', () => {
     ]);
     expect(question.querySelectorAll('[data-print-response-line]')).toHaveLength(19);
     expect(question.querySelectorAll('.printing-textarea-response')).toHaveLength(1);
+    for (const field of question.querySelectorAll('.printing-response-field')) {
+      const line = field.querySelector('.printing-response-line');
+      const hint = field.querySelector('.printing-response-placeholder');
+      expect(line).not.toBeNull();
+      expect(hint).not.toBeNull();
+      expect(line!.nextElementSibling).toBe(hint);
+    }
   });
 
   it('preserves each matrix entry and its row and column label', () => {
