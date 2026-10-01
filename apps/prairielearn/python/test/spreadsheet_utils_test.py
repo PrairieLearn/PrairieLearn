@@ -1,4 +1,4 @@
-from dataclasses import FrozenInstanceError
+from dataclasses import FrozenInstanceError, is_dataclass
 from typing import Any, cast
 
 import prairielearn as pl
@@ -149,6 +149,30 @@ def test_spreadsheet_wrapper_addresses_cells_and_sheets() -> None:
     assert empty.result == {"type": "empty"}
     assert empty.value is None
     assert empty.is_empty
+
+
+def test_spreadsheet_wrapper_views_are_frozen_slots_dataclasses() -> None:
+    workbook = pl.Spreadsheet(snapshot())
+    sheet = workbook["Inputs"]
+    cell = sheet["A1"]
+    cell_range = sheet["A1:B2"]
+    assert isinstance(cell, pl.SpreadsheetCellView)
+    assert isinstance(cell_range, pl.SpreadsheetRange)
+
+    views = (
+        workbook,
+        sheet,
+        cell,
+        cell_range,
+        workbook.outputs,
+        workbook.outputs["total"],
+    )
+    assert all(is_dataclass(view) for view in views)
+    assert all(not hasattr(view, "__dict__") for view in views)
+
+    set_attribute = setattr
+    with pytest.raises(FrozenInstanceError):
+        set_attribute(sheet, "name", "Other")
 
 
 def test_spreadsheet_wrapper_resolves_cross_sheet_references() -> None:
