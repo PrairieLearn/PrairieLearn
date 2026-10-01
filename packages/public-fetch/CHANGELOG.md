@@ -1,5 +1,11 @@
 # @prairielearn/public-fetch
 
+## 1.1.2
+
+### Patch Changes
+
+- c71261f: Upgrade all JavaScript dependencies
+
 ## 1.1.1
 
 ### Patch Changes
