@@ -1,5 +1,6 @@
 import pandas as pd
 import prairielearn as pl
+import prairielearn.spreadsheet_utils as psp
 
 
 def generate(data: pl.QuestionData) -> None:
@@ -23,7 +24,7 @@ def generate(data: pl.QuestionData) -> None:
                 "editable_ranges": ["B2:D4"],
             },
             {
-                **pl.dataframe_to_spreadsheet_sheet(
+                **psp.dataframe_to_spreadsheet_sheet(
                     pd.DataFrame([["=SUM(Inputs!D2:D4)"]]),
                     name="Summary",
                     start_cell="B1",
@@ -50,7 +51,7 @@ def generate(data: pl.QuestionData) -> None:
 
 
 def grade(data: pl.QuestionData) -> None:
-    workbook = pl.SpreadsheetBook(data["submitted_answers"]["model"])
+    workbook = psp.Book(data["submitted_answers"]["model"])
     inputs = workbook["Summary"].range("Inputs!B2:D2")
     line_total = inputs["D2"]
     parameter_workbook_correct = (
@@ -63,7 +64,7 @@ def grade(data: pl.QuestionData) -> None:
         and workbook.outputs["total_is_correct"].value is True
     )
 
-    csv_workbook = pl.SpreadsheetBook(data["submitted_answers"]["csv_model"])
+    csv_workbook = psp.Book(data["submitted_answers"]["csv_model"])
     csv_budget = csv_workbook["CsvBudget"]
     csv_workbook_correct = (
         csv_budget.cell("A1").value == 3
@@ -72,14 +73,14 @@ def grade(data: pl.QuestionData) -> None:
         and csv_workbook.outputs["is_correct"].value is True
     )
 
-    tsv_workbook = pl.SpreadsheetBook(data["submitted_answers"]["tsv_model"])
+    tsv_workbook = psp.Book(data["submitted_answers"]["tsv_model"])
     tsv_workbook_correct = (
         tsv_workbook["Rates"].cell("C1").value == 10
         and tsv_workbook["RateSummary"].cell("B1").value == 22
         and tsv_workbook.outputs["is_correct"].value is True
     )
 
-    xlsx_workbook = pl.SpreadsheetBook(data["submitted_answers"]["xlsx_model"])
+    xlsx_workbook = psp.Book(data["submitted_answers"]["xlsx_model"])
     xlsx_workbook_correct = (
         xlsx_workbook["XlsxInputs"].cell("C1").value == 10
         and xlsx_workbook["XlsxSummary"].cell("B1").value == 22
