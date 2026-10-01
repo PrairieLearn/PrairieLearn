@@ -103,13 +103,20 @@ def test_public_type_names_are_concise_in_module_namespace() -> None:
         "Book",
         "Cell",
         "CellRange",
+        "Definition",
+        "GradingBook",
         "Input",
         "Output",
+        "OutputInput",
+        "OutputSpec",
         "Result",
         "Sheet",
+        "SheetInput",
+        "SheetSpec",
         "Snapshot",
         "SourceBook",
         "Value",
+        "create_spreadsheet",
     }
 
     assert expected <= set(psp.__all__)
@@ -128,6 +135,16 @@ def test_normalized_address_accepts_case_insensitive_columns(
     address: str, expected: tuple[str, int, int]
 ) -> None:
     assert psp._normalized_address(address) == expected
+
+
+def test_qualified_address_parses_quoted_sheet_names() -> None:
+    address = psp.QualifiedAddress.from_a1("'Bob''s Data'!b2")
+
+    assert address == psp.QualifiedAddress(
+        local=psp.Address(row=1, column=1),
+        sheet_name="Bob's Data",
+    )
+    assert address.address == "'Bob''s Data'!B2"
 
 
 def test_ranges_report_shape_and_containment() -> None:
@@ -217,6 +234,103 @@ def test_address_ranges_parse_and_translate_relative_coordinates() -> None:
     assert cell_range.to_relative(psp.Address.from_a1("C5")) == (psp.Address(2, 1))
     with pytest.raises(ValueError, match="outside"):
         cell_range.to_source(psp.Address(3, 0))
+
+
+def test_create_spreadsheet_builds_versioned_books_from_relaxed_sheets() -> None:
+    workbook = psp.create_spreadsheet({
+        "Inputs": {
+            "cells": {
+                "a1": "Quantity",
+                "B2": np.int64(3),
+                "C3": None,
+            },
+            "rows": 6,
+            "columns": 5,
+            "editable_ranges": ("b2:d4",),
+            "student_range": "A1:E6",
+        },
+        "Summary": {"b2": "=SUM(Inputs!B2:B6)"},
+    })
+
+    assert workbook == {
+        "schema_version": 2,
+        "sheets": [
+            {
+                "name": "Inputs",
+                "rows": 6,
+                "columns": 5,
+                "cells": {"A1": "Quantity", "B2": 3},
+                "editable_ranges": ["B2:D4"],
+                "student_range": "A1:E6",
+            },
+            {
+                "name": "Summary",
+                "rows": 2,
+                "columns": 2,
+                "cells": {"B2": "=SUM(Inputs!B2:B6)"},
+            },
+        ],
+    }
+
+
+def test_create_spreadsheet_adds_normalized_output_declarations() -> None:
+    workbook = psp.create_spreadsheet(
+        {"Checks": {"A1": "=1+1", "A2": "=A1=2"}},
+        outputs={
+            "score": "Checks!a1",
+            "is_correct": {
+                "cell": "Checks!A2",
+                "required": True,
+            },
+            "split_address": {"sheet": "Checks", "cell": "A1"},
+        },
+    )
+
+    assert workbook == {
+        "schema_version": 2,
+        "sheets": [
+            {
+                "name": "Checks",
+                "rows": 2,
+                "columns": 1,
+                "cells": {"A1": "=1+1", "A2": "=A1=2"},
+            }
+        ],
+        "outputs": {
+            "score": {"sheet": "Checks", "cell": "A1"},
+            "is_correct": {
+                "sheet": "Checks",
+                "cell": "A2",
+                "required": True,
+            },
+            "split_address": {"sheet": "Checks", "cell": "A1"},
+        },
+    }
+
+
+def test_create_spreadsheet_rejects_ambiguous_output_addresses() -> None:
+    with pytest.raises(ValueError, match="must provide a sheet"):
+        psp.create_spreadsheet({"Checks": {"A1": 1}}, outputs={"score": "A1"})
+
+    with pytest.raises(ValueError, match="conflicts"):
+        psp.create_spreadsheet(
+            {"Checks": {"A1": 1}},
+            outputs={
+                "score": {"sheet": "Checks", "cell": "Other!A1"},
+            },
+        )
+
+
+def test_create_spreadsheet_rejects_inconsistent_bounds() -> None:
+    with pytest.raises(ValueError, match="does not contain"):
+        psp.create_spreadsheet({
+            "Inputs": {"cells": {"B2": 1}, "rows": 1, "columns": 2}
+        })
+
+    with pytest.raises(ValueError, match="outside the student range"):
+        psp.create_spreadsheet({
+            "Inputs": {"cells": {"B2": 1}, "student_range": "A1:A1"}
+        })
 
 
 def test_dataframe_conversion_is_sparse_json_safe_and_offset() -> None:

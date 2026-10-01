@@ -15,25 +15,24 @@ PrairieLearn before `server.py` or an external grader receives the answer.
 ```
 
 ```python title="server.py"
+import prairielearn.spreadsheet_utils as psp
+
+
 def generate(data):
-    data["params"]["workbook"] = {
-        "schema_version": 2,
-        "sheets": [
-            {
-                "name": "Budget",
-                "rows": 40,
-                "columns": 8,
-                "cells": {
-                    "A1": "Item",
-                    "B1": "Quantity",
-                    "C1": "Unit price",
-                    "D1": "Total",
-                    "D2": "=B2*C2",
-                },
-                "editable_ranges": ["A2:C40"],
-            }
-        ],
-    }
+    data["params"]["workbook"] = psp.create_spreadsheet({
+        "Budget": {
+            "rows": 40,
+            "columns": 8,
+            "cells": {
+                "A1": "Item",
+                "B1": "Quantity",
+                "C1": "Unit price",
+                "D1": "Total",
+                "D2": "=B2*C2",
+            },
+            "editable_ranges": ["A2:C40"],
+        }
+    })
 ```
 
 !!! warning
@@ -145,13 +144,24 @@ when the variant is generated and when a submission is normalized.
 File ingest imports cell values and formulas, not XLSX styles, merged cells,
 comments, charts, or macros.
 
-## DataFrames and public ingest helpers
+## Python authoring and ingest helpers
 
 The public `prairielearn` Python library exposes:
 
 ```python
 import prairielearn.spreadsheet_utils as psp
 
+
+template = psp.create_spreadsheet({
+    "Inputs": {
+        "cells": {"A1": "Quantity", "B2": 3},
+        "rows": 20,
+        "columns": 4,
+        "editable_ranges": ("B2:D20",),
+    },
+    # A direct address-to-value mapping infers the smallest sheet dimensions.
+    "Summary": {"A1": "=SUM(Inputs!B2:B20)"},
+})
 
 sheet = psp.dataframe_to_spreadsheet_sheet(
     dataframe,
@@ -169,8 +179,23 @@ tsv_book = psp.read_spreadsheet_tsv("workbook.tsv", sheet_name="Inputs")
 xlsx_book = psp.read_spreadsheet_xlsx("workbook.xlsx")
 ```
 
-The helpers return plain dictionaries in the versioned sheet/book schema. By
-default, `dataframe.iloc[0, 0]` maps to `A1`; column and index labels are opt-in.
+`psp.create_spreadsheet()` returns a versioned `psp.Definition` accepted by
+`data["params"]`. Each sheet may be a direct address-to-value mapping or a
+`psp.SheetSpec` with optional `cells`, `rows`, `columns`, `editable_ranges`, and
+`student_range`. It infers omitted dimensions, defaults omitted cells and editable
+ranges to empty, and omits optional fields whose defaults apply. Pass a non-empty
+`outputs` mapping to return a `psp.GradingBook` suitable for
+`data["correct_answers"]`. Each output may be a qualified address string such as
+`"Checks!A1"`, or a mapping whose `cell` is either qualified or paired with a
+separate `sheet`. Output `required` defaults to `False`.
+
+These authoring definitions are distinct from `psp.Snapshot`, the evaluated,
+hash-bound submission that PrairieLearn creates after calculation. Authoring code
+should use `psp.create_spreadsheet()` rather than writing schema versions directly.
+
+The ingest helpers also return plain dictionaries in the versioned sheet/book
+schema. By default, `dataframe.iloc[0, 0]` maps to `A1`; column and index labels
+are opt-in.
 `None`, `NaN`, `NaT`, and `pd.NA` are omitted, NumPy scalar values become Python
 scalars, and strings beginning with `=` remain formulas. Non-finite numbers,
 date/time values, complex values, nested objects, and requested multi-index labels
@@ -245,26 +270,23 @@ from that element under their original names, adds the private sheets in a separ
 calculation engine, and stores only the named outputs:
 
 ```python title="server.py"
+import prairielearn.spreadsheet_utils as psp
+
+
 def generate(data):
     # Define data["params"]["workbook"] as above.
-    data["correct_answers"]["model"] = {
-        "schema_version": 2,
-        "sheets": [
-            {
-                "name": "Checks",
-                "rows": 2,
-                "columns": 1,
-                "cells": {
-                    "A1": "=Budget!D2",
-                    "A2": "=A1=24",
-                },
+    data["correct_answers"]["model"] = psp.create_spreadsheet(
+        {
+            "Checks": {
+                "A1": "=Budget!D2",
+                "A2": "=A1=24",
             }
-        ],
-        "outputs": {
-            "total": {"sheet": "Checks", "cell": "A1", "required": True},
-            "total_is_correct": {"sheet": "Checks", "cell": "A2"},
         },
-    }
+        outputs={
+            "total": {"cell": "Checks!A1", "required": True},
+            "total_is_correct": "Checks!A2",
+        },
+    )
 ```
 
 Private sheets may reference student sheets and other private sheets, but cannot

@@ -4,50 +4,38 @@ import prairielearn.spreadsheet_utils as psp
 
 
 def generate(data: pl.QuestionData) -> None:
-    data["params"]["workbook"] = {
-        "schema_version": 2,
-        "sheets": [
-            {
-                "name": "Inputs",
-                "rows": 4,
-                "columns": 4,
-                "cells": {
-                    "A1": "Item",
-                    "B1": "Quantity",
-                    "C1": "Unit price",
-                    "D1": "Line total",
-                    "A2": "Markers",
-                    "B2": 1,
-                    "C2": 2,
-                    "D2": "=B2*C2",
-                },
-                "editable_ranges": ["B2:D4"],
+    data["params"]["workbook"] = psp.create_spreadsheet({
+        "Inputs": {
+            "rows": 4,
+            "columns": 4,
+            "cells": {
+                "A1": "Item",
+                "B1": "Quantity",
+                "C1": "Unit price",
+                "D1": "Line total",
+                "A2": "Markers",
+                "B2": 1,
+                "C2": 2,
+                "D2": "=B2*C2",
             },
-            {
-                **psp.dataframe_to_spreadsheet_sheet(
-                    pd.DataFrame([["=SUM(Inputs!D2:D4)"]]),
-                    name="Summary",
-                    start_cell="B1",
-                ),
-                "student_range": "B1:B1",
-            },
-        ],
-    }
-    data["correct_answers"]["model"] = {
-        "schema_version": 2,
-        "sheets": [
-            {
-                "name": "Checks",
-                "rows": 2,
-                "columns": 1,
-                "cells": {"A1": "=Inputs!D2", "A2": "=A1=12"},
-            }
-        ],
-        "outputs": {
-            "line_total": {"sheet": "Checks", "cell": "A1"},
-            "total_is_correct": {"sheet": "Checks", "cell": "A2"},
+            "editable_ranges": ["B2:D4"],
         },
-    }
+        "Summary": {
+            **psp.dataframe_to_spreadsheet_sheet(
+                pd.DataFrame([["=SUM(Inputs!D2:D4)"]]),
+                name="Summary",
+                start_cell="B1",
+            ),
+            "student_range": "B1:B1",
+        },
+    })
+    data["correct_answers"]["model"] = psp.create_spreadsheet(
+        {"Checks": {"A1": "=Inputs!D2", "A2": "=A1=12"}},
+        outputs={
+            "line_total": "Checks!A1",
+            "total_is_correct": {"cell": "Checks!A2"},
+        },
+    )
 
 
 def grade(data: pl.QuestionData) -> None:
