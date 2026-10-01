@@ -26,18 +26,13 @@
   },
   "scripts/calculatorClient.ts": {
     "raw": 3058468,
-    "gzip": 852369,
-    "brotli": 676931
-  },
-  "scripts/calculatorInput.ts": {
-    "raw": 2206703,
-    "gzip": 620950,
-    "brotli": 492751
+    "gzip": 852367,
+    "brotli": 677007
   },
   "scripts/calculatorPreviewClient.ts": {
     "raw": 3590577,
-    "gzip": 964103,
-    "brotli": 768100
+    "gzip": 964102,
+    "brotli": 768240
   },
   "scripts/examTimeLimitCountdown.ts": {
     "raw": 6682,
