@@ -51,8 +51,7 @@ def generate(data: dict[str, Any]) -> None:
 
 def grade(data: dict[str, Any]) -> None:
     workbook = pl.Spreadsheet(data["submitted_answers"]["model"])
-    inputs = workbook["Summary"]["Inputs!B2:D2"]
-    assert isinstance(inputs, pl.SpreadsheetRange)
+    inputs = workbook["Summary"].range("Inputs!B2:D2")
     line_total = inputs["D2"]
     correct = (
         inputs["B2"].value == 3

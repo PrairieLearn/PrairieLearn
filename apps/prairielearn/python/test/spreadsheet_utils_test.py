@@ -129,8 +129,7 @@ def test_spreadsheet_wrapper_addresses_cells_and_sheets() -> None:
     assert inputs.rows == 3
     assert inputs.columns == 3
 
-    cell = inputs["a1"]
-    assert isinstance(cell, pl.SpreadsheetCellView)
+    cell = inputs.cell("a1")
     assert cell.sheet is inputs
     assert cell.address == "A1"
     assert cell.qualified_address == "Inputs!A1"
@@ -179,8 +178,7 @@ def test_spreadsheet_wrapper_resolves_cross_sheet_references() -> None:
     workbook = pl.Spreadsheet(snapshot())
     inputs = workbook["Inputs"]
 
-    other_range = inputs["'Input Data'!A1:B2"]
-    assert isinstance(other_range, pl.SpreadsheetRange)
+    other_range = inputs.range("'Input Data'!A1:B2")
     assert other_range.sheet is workbook["Input Data"]
     assert other_range.address == "A1:B2"
     assert other_range.qualified_address == "'Input Data'!A1:B2"
@@ -193,6 +191,11 @@ def test_spreadsheet_wrapper_resolves_cross_sheet_references() -> None:
     assert isinstance(quoted_cell, pl.SpreadsheetCellView)
     assert quoted_cell.value == "quoted"
     assert quoted_cell.qualified_address == "'Bob''s Data'!A1"
+
+    with pytest.raises(TypeError, match="is not a cell"):
+        inputs.cell("A1:B2")
+    with pytest.raises(TypeError, match="is not a range"):
+        inputs.range("A1")
 
 
 @pytest.mark.parametrize(
