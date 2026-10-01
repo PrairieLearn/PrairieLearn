@@ -16,7 +16,7 @@ export const StudentRowSchema = z.object({
 
 export type StudentRow = z.infer<typeof StudentRowSchema>;
 
-export const SyncLabelUpdateSchema = z.object({
+const SyncLabelUpdateSchema = z.object({
   uid: z.email(),
   expected: z
     .object({
