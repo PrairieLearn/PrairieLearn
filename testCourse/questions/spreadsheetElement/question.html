@@ -71,3 +71,31 @@
     ></pl-spreadsheet-output>
   </pl-spreadsheet>
 </section>
+
+<section aria-labelledby="xlsx-workbook-heading" class="mb-5">
+  <h2 id="xlsx-workbook-heading" class="h4">XLSX workbook with a private worksheet</h2>
+  <p>
+    Two worksheets from <code>workbook.xlsx</code> are disclosed. The third worksheet
+    is retained only in the authoritative grading copy and contributes the named
+    <code>is_correct</code> output.
+  </p>
+  <pl-spreadsheet answers-name="xlsx_model" aria-label="XLSX workbook" height="300px">
+    <pl-spreadsheet-data
+      source-file="workbook.xlsx"
+      sheet-name="XlsxInputs"
+      student-range="B2:D3"
+      editable-ranges="B2:C3"
+    ></pl-spreadsheet-data>
+    <pl-spreadsheet-data
+      source-file="workbook.xlsx"
+      sheet-name="XlsxSummary"
+      student-range="A1:B1"
+    ></pl-spreadsheet-data>
+    <pl-spreadsheet-output
+      name="is_correct"
+      sheet-name="XlsxChecks"
+      cell="A1"
+      required="true"
+    ></pl-spreadsheet-output>
+  </pl-spreadsheet>
+</section>

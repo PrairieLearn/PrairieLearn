@@ -1,7 +1,7 @@
 import datetime
 from dataclasses import FrozenInstanceError, is_dataclass
 from pathlib import Path
-from typing import Any, cast
+from typing import cast
 
 import numpy as np
 import pandas as pd
@@ -11,7 +11,7 @@ from openpyxl import Workbook
 from prairielearn import spreadsheet_utils
 
 
-def snapshot() -> dict[str, Any]:
+def snapshot() -> pl.SpreadsheetSnapshot:
     return {
         "schema_version": 1,
         "template_hash": "template-hash",
@@ -84,6 +84,15 @@ def snapshot() -> dict[str, Any]:
             },
         },
     }
+
+
+def snapshot_grading(
+    spreadsheet_snapshot: pl.SpreadsheetSnapshot,
+) -> spreadsheet_utils.SpreadsheetSnapshotGrading:
+    return cast(
+        spreadsheet_utils.SpreadsheetSnapshotGrading,
+        spreadsheet_snapshot.get("grading"),
+    )
 
 
 @pytest.mark.parametrize(
@@ -445,24 +454,26 @@ def test_spreadsheet_wrapper_constrains_offset_student_range() -> None:
 
 def test_spreadsheet_validates_and_copies_snapshot_at_construction() -> None:
     invalid_input = snapshot()
-    invalid_input["sheets"][0]["cells"]["A1"]["input"] = {
-        "type": "number",
-        "value": "not a number",
-    }
+    invalid_input["sheets"][0]["cells"]["A1"]["input"] = cast(
+        pl.SpreadsheetInput,
+        {"type": "number", "value": "not a number"},
+    )
     with pytest.raises(TypeError, match="invalid input"):
         pl.SpreadsheetBook(invalid_input)
 
     invalid_output = snapshot()
-    invalid_output["grading"]["outputs"]["total"] = {
-        "type": "number",
-        "value": "not a number",
-    }
+    snapshot_grading(invalid_output)["outputs"]["total"] = cast(
+        pl.SpreadsheetResult,
+        {"type": "number", "value": "not a number"},
+    )
     with pytest.raises(TypeError, match="invalid result"):
         pl.SpreadsheetBook(invalid_output)
 
     original = snapshot()
     workbook = pl.SpreadsheetBook(original)
-    original["sheets"][0]["cells"]["A1"]["result"]["value"] = 99
+    original_result = original["sheets"][0]["cells"]["A1"]["result"]
+    assert original_result["type"] == "number"
+    original_result["value"] = 99
     assert workbook["Inputs"].cell("A1").value == 3
 
 
@@ -636,7 +647,7 @@ def test_spreadsheet_output_views() -> None:
     assert failed.error_value == "#N/A"
 
     empty_snapshot = snapshot()
-    empty_snapshot["grading"]["outputs"]["empty_check"] = {"type": "empty"}
+    snapshot_grading(empty_snapshot)["outputs"]["empty_check"] = {"type": "empty"}
     empty = pl.SpreadsheetBook(empty_snapshot).outputs["empty_check"]
     assert empty.value is None
     assert empty.is_empty
