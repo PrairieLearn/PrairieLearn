@@ -57,7 +57,7 @@ test('conversation and unsent draft persist across course pages', async ({
   const conversationTitle = await page
     .getByRole('button', { name: 'Conversation', exact: true })
     .innerText();
-  await page.getByRole('button', { name: 'New', exact: true }).click();
+  await page.getByRole('button', { name: 'New conversation', exact: true }).click();
   await page.getByRole('button', { name: 'Conversation', exact: true }).click();
   await expect(page.getByLabel('Working', { exact: true })).toBeVisible();
   await expect(page.getByLabel('New response', { exact: true })).toBeVisible({ timeout: 20000 });
@@ -86,11 +86,19 @@ test('conversation and unsent draft persist across course pages', async ({
   await expect(page.getByRole('heading', { name: 'Conversation statistics' })).toBeHidden();
   const navbar = await page.getByRole('navigation', { name: 'Global navigation' }).boundingBox();
   const panel = await page.getByRole('complementary', { name: 'Course agent' }).boundingBox();
-  expect(panel!.y).toBe(0);
-  expect(navbar!.x + navbar!.width).toBeLessThanOrEqual(panel!.x + 1);
+  expect(panel!.y).toBeGreaterThanOrEqual(navbar!.y + navbar!.height);
+  const statistics = await page
+    .getByRole('button', { name: 'Statistics', exact: true })
+    .boundingBox();
+  const send = await page.getByRole('button', { name: 'Send', exact: true }).boundingBox();
+  expect(statistics!.width).toBe(send!.width);
+  expect(statistics!.height).toBe(send!.height);
   await page.screenshot({ path: testInfo.outputPath('course-agent.png'), fullPage: true });
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(composer).toBeVisible();
+  const mobilePanel = page.getByRole('complementary', { name: 'Course agent' });
+  await expect(mobilePanel).toHaveCSS('transform', 'none');
+  expect(await mobilePanel.boundingBox()).toMatchObject({ x: 0, y: 0, width: 390, height: 844 });
   await page.screenshot({ path: testInfo.outputPath('course-agent-mobile.png'), fullPage: true });
   await page.getByRole('button', { name: 'Close course agent' }).click();
   await expect(page.getByRole('button', { name: 'Open course agent' })).toBeVisible();
@@ -117,7 +125,7 @@ test('denial after sandbox shutdown remains durable and resumes through a hidden
   await updateCourseColumn({ courseId, columnName: 'branch', value: 'main', authnUserId: '1' });
   await page.goto(`/pl/course/${courseId}/course_admin/settings`);
   await page.getByRole('button', { name: 'Open course agent' }).click();
-  await page.getByRole('button', { name: 'New', exact: true }).click();
+  await page.getByRole('button', { name: 'New conversation', exact: true }).click();
   await page.getByLabel('Message', { exact: true }).fill('Prepare a change.');
   await page.getByRole('button', { name: 'Send', exact: true }).click();
   await expect(page.getByText('Prepare a change.', { exact: true })).toBeVisible();

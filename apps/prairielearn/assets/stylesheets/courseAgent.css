@@ -48,11 +48,12 @@
   body:has(.course-agent-panel) {
     --course-agent-width: min(38rem, 45vw);
   }
-  body:has(.course-agent-panel[data-open='true']) .app-container {
-    width: calc(100% - var(--course-agent-width));
+  body:has(.course-agent-panel[data-open='true']) .app-main {
+    margin-right: var(--course-agent-width);
   }
   .course-agent-panel {
     width: var(--course-agent-width);
+    top: var(--course-agent-top, var(--navbar-height));
   }
 }
 .course-agent-panel[data-open='true'] {
@@ -64,14 +65,29 @@
     transform 300ms,
     visibility 300ms;
 }
-body:has(.course-agent-panel-animate) .app-container {
-  transition:
-    width 300ms,
-    grid-template-columns 300ms;
+body:has(.course-agent-panel-animate) .app-main {
+  transition: margin-right 300ms;
+}
+@media (max-width: 767.98px) {
+  .course-agent-panel,
+  .course-agent-panel[data-open='true'] {
+    width: 100vw;
+    transform: none;
+    opacity: 0;
+    z-index: 1050;
+  }
+  .course-agent-panel[data-open='true'] {
+    opacity: 1;
+  }
+  .course-agent-panel-animate {
+    transition:
+      opacity 300ms,
+      visibility 300ms;
+  }
 }
 @media (prefers-reduced-motion: reduce) {
   .course-agent-panel-animate,
-  body:has(.course-agent-panel-animate) .app-container {
+  body:has(.course-agent-panel-animate) .app-main {
     transition: none;
   }
 }
@@ -135,4 +151,13 @@ body:has(.course-agent-panel) .app-main {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.course-agent-action {
+  width: 2.5rem;
+  height: 2.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
 }

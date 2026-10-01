@@ -95,6 +95,24 @@ function Panel({
     }
   }, [panel.open, panel.selected, current?.finishedAt, key, readVersion]);
 
+  // Keep the desktop panel below the navbar even when its contents wrap.
+  useEffect(() => {
+    const navbar = document.querySelector('.app-top-nav');
+    if (!navbar) return;
+    const updateTop = () =>
+      document.documentElement.style.setProperty(
+        '--course-agent-top',
+        `${navbar.getBoundingClientRect().bottom}px`,
+      );
+    const observer = new ResizeObserver(updateTop);
+    observer.observe(navbar);
+    updateTop();
+    return () => {
+      observer.disconnect();
+      document.documentElement.style.removeProperty('--course-agent-top');
+    };
+  }, []);
+
   function changePanel(change: Partial<CourseAgentPanelState>) {
     if (change.open !== undefined) setAnimate(true);
     const next = { ...panelRef.current, ...change };
@@ -179,9 +197,11 @@ function Panel({
             </Dropdown>
             <Button
               variant="outline-primary"
+              aria-label="New conversation"
+              title="New conversation"
               onClick={() => changePanel({ selected: '', title: 'New conversation' })}
             >
-              New
+              <i className="bi bi-plus-lg" aria-hidden="true" />
             </Button>
           </div>
           <AppErrorAlert
@@ -524,7 +544,7 @@ function Conversation({
           </dl>
         </Modal.Body>
       </Modal>
-      <Form className="course-agent-composer border-top pt-3 mt-2" onSubmit={handleSubmit(submit)}>
+      <Form className="course-agent-composer pt-3 mt-2" onSubmit={handleSubmit(submit)}>
         <Form.Control
           id={`course-agent-input-${id}`}
           aria-label="Message"
@@ -550,7 +570,7 @@ function Conversation({
         />
         <div className="d-flex gap-2 mt-2">
           <Button
-            size="sm"
+            className="course-agent-action"
             variant="outline-secondary"
             aria-label="Statistics"
             title="Statistics"
@@ -571,7 +591,7 @@ function Conversation({
             type="submit"
             aria-label={busy ? 'Steer' : 'Send'}
             title={busy ? 'Steer' : 'Send'}
-            className="ms-auto"
+            className="course-agent-action ms-auto"
             disabled={
               connection !== 'connected' ||
               snapshot.blocked ||
@@ -640,8 +660,8 @@ function Transcript({
                   const state = toolState(tool);
                   return (
                     <details
-                      className="course-agent-tool"
                       key={'toolCallId' in tool ? String(tool.toolCallId) : index}
+                      className="course-agent-tool"
                       open={state === 'error'}
                     >
                       <summary>
@@ -685,8 +705,9 @@ function toolState(part: UIMessage['parts'][number]): 'streaming' | 'success' | 
     typeof output === 'object' &&
     (('exitCode' in output && typeof output.exitCode === 'number' && output.exitCode !== 0) ||
       ('status' in output && output.status === 'failed'))
-  )
+  ) {
     return 'error';
+  }
   return 'success';
 }
 
