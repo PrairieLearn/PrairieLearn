@@ -156,6 +156,7 @@ const SpreadsheetGradingOutputSchema = z
   .object({
     sheet: z.string().min(1),
     cell: z.string().min(1),
+    required: z.boolean().optional(),
   })
   .strict();
 
@@ -727,12 +728,15 @@ function evaluateGradingOutputs(
         if (sheetId === undefined || !address) {
           throw new Error(`Private grading output ${name} has an invalid reference.`);
         }
-        return [
-          name,
-          snapshotResult(
-            engine.getCellValue({ sheet: sheetId, row: address.row, col: address.column }),
-          ),
-        ];
+        const result = snapshotResult(
+          engine.getCellValue({ sheet: sheetId, row: address.row, col: address.column }),
+        );
+        if (output.required && (result.type === 'empty' || result.type === 'error')) {
+          throw new SpreadsheetSubmissionError(
+            `Required spreadsheet output "${name}" must not be empty or contain an error.`,
+          );
+        }
+        return [name, result];
       }),
     );
   } finally {
