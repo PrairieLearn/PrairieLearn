@@ -416,14 +416,16 @@ function AfterCompleteCard({
           Control question and score visibility once students can no longer make submissions to the
           assessment.
         </div>
+      </div>
+      <div className="d-flex flex-column gap-3">
         {hasPrairieTest && (
-          <div className="text-muted small mt-1">
+          <Alert variant="info" className="mb-0">
             These settings apply outside an active PrairieTest reservation. During a reservation,
             the PrairieTest exam settings control what students see after finishing.
-          </div>
+          </Alert>
         )}
+        {children}
       </div>
-      <div className="d-flex flex-column gap-3">{children}</div>
     </div>
   );
 }
