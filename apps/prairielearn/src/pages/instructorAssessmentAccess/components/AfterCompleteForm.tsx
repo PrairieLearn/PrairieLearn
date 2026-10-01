@@ -389,9 +389,11 @@ const infoPopoverConfig = {
 
 function AfterCompleteCard({
   title = 'After completion',
+  hasPrairieTest,
   children,
 }: {
   title?: string;
+  hasPrairieTest: boolean;
   children: React.ReactNode;
 }) {
   return (
@@ -414,6 +416,12 @@ function AfterCompleteCard({
           Control question and score visibility once students can no longer make submissions to the
           assessment.
         </div>
+        {hasPrairieTest && (
+          <div className="text-muted small mt-1">
+            These settings apply outside an active PrairieTest reservation. During a reservation,
+            the PrairieTest exam settings control what students see after finishing.
+          </div>
+        )}
       </div>
       <div className="d-flex flex-column gap-3">{children}</div>
     </div>
@@ -485,7 +493,7 @@ export function DefaultAfterCompleteForm({
     : 'a due date, time limit, late deadline, or PrairieTest exam';
 
   return (
-    <AfterCompleteCard title={title}>
+    <AfterCompleteCard title={title} hasPrairieTest={hasPrairieTest}>
       {!hasCompletionMechanism && (
         <Alert variant="info" className="mb-0">
           Without {automaticCompletionMechanisms}, these settings will only take effect if an
@@ -588,7 +596,7 @@ export function OverrideAfterCompleteForm({
   });
 
   return (
-    <AfterCompleteCard title={title}>
+    <AfterCompleteCard title={title} hasPrairieTest={hasPrairieTest}>
       <div>
         <FieldWrapper
           isOverridden={svOverridden}
