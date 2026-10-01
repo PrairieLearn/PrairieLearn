@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import math
 import re
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Iterator, Mapping
+from dataclasses import dataclass, field
 from typing import Literal, Protocol, TypedDict, cast
 
 from openpyxl.formula import Tokenizer
@@ -31,10 +32,17 @@ __all__ = [
     "FormulaRowRangeNode",
     "FormulaRowReference",
     "FormulaUnaryNode",
+    "Spreadsheet",
     "SpreadsheetCell",
     "SpreadsheetCellError",
+    "SpreadsheetCellView",
     "SpreadsheetFormulaParseError",
+    "SpreadsheetOutputError",
+    "SpreadsheetOutputView",
+    "SpreadsheetRange",
     "SpreadsheetResult",
+    "SpreadsheetResultError",
+    "SpreadsheetSheet",
     "get_spreadsheet_cell",
     "get_spreadsheet_formula",
     "get_spreadsheet_formula_ast",
@@ -84,27 +92,30 @@ class SpreadsheetCell(TypedDict):
     result: SpreadsheetResult
 
 
-class FormulaCellReference(TypedDict):
-    kind: Literal["cell"]
+@dataclass(frozen=True, slots=True)
+class FormulaCellReference:
     sheet: str | None
     column: str
     row: int
     column_absolute: bool
     row_absolute: bool
+    kind: Literal["cell"] = field(default="cell", init=False)
 
 
-class FormulaColumnReference(TypedDict):
-    kind: Literal["column"]
+@dataclass(frozen=True, slots=True)
+class FormulaColumnReference:
     sheet: str | None
     column: str
     column_absolute: bool
+    kind: Literal["column"] = field(default="column", init=False)
 
 
-class FormulaRowReference(TypedDict):
-    kind: Literal["row"]
+@dataclass(frozen=True, slots=True)
+class FormulaRowReference:
     sheet: str | None
     row: int
     row_absolute: bool
+    kind: Literal["row"] = field(default="row", init=False)
 
 
 type FormulaReferenceEndpoint = (
@@ -112,33 +123,38 @@ type FormulaReferenceEndpoint = (
 )
 
 
-class FormulaLiteralNode(TypedDict):
-    type: Literal["literal"]
+@dataclass(frozen=True, slots=True)
+class FormulaLiteralNode:
     value_type: Literal["number", "string", "boolean", "error"]
-    value: object
+    value: bool | int | float | str
+    type: Literal["literal"] = field(default="literal", init=False)
 
 
-class FormulaReferenceNode(TypedDict):
-    type: Literal["reference"]
+@dataclass(frozen=True, slots=True)
+class FormulaReferenceNode:
     reference: FormulaReferenceEndpoint
+    type: Literal["reference"] = field(default="reference", init=False)
 
 
-class FormulaCellRangeNode(TypedDict):
-    type: Literal["range"]
+@dataclass(frozen=True, slots=True)
+class FormulaCellRangeNode:
     start: FormulaCellReference
     end: FormulaCellReference
+    type: Literal["range"] = field(default="range", init=False)
 
 
-class FormulaColumnRangeNode(TypedDict):
-    type: Literal["range"]
+@dataclass(frozen=True, slots=True)
+class FormulaColumnRangeNode:
     start: FormulaColumnReference
     end: FormulaColumnReference
+    type: Literal["range"] = field(default="range", init=False)
 
 
-class FormulaRowRangeNode(TypedDict):
-    type: Literal["range"]
+@dataclass(frozen=True, slots=True)
+class FormulaRowRangeNode:
     start: FormulaRowReference
     end: FormulaRowReference
+    type: Literal["range"] = field(default="range", init=False)
 
 
 type FormulaRangeNode = (
@@ -146,38 +162,49 @@ type FormulaRangeNode = (
 )
 
 
-class FormulaFunctionNode(TypedDict):
-    type: Literal["function"]
+@dataclass(frozen=True, slots=True)
+class FormulaFunctionNode:
     name: str
-    arguments: list[FormulaAstNode]
+    arguments: tuple[FormulaAstNode, ...]
+    type: Literal["function"] = field(default="function", init=False)
 
 
-class FormulaUnaryNode(TypedDict):
-    type: Literal["unary"]
+@dataclass(frozen=True, slots=True)
+class FormulaUnaryNode:
     operator: Literal["+", "-"]
     operand: FormulaAstNode
+    type: Literal["unary"] = field(default="unary", init=False)
 
 
-class FormulaPostfixNode(TypedDict):
-    type: Literal["postfix"]
+@dataclass(frozen=True, slots=True)
+class FormulaPostfixNode:
     operator: Literal["%"]
     operand: FormulaAstNode
+    type: Literal["postfix"] = field(default="postfix", init=False)
 
 
-class FormulaBinaryNode(TypedDict):
-    type: Literal["binary"]
-    operator: Literal["+", "-", "*", "/", "^", "&", "=", "<>", "<", ">", "<=", ">="]
+type _FormulaBinaryOperator = Literal[
+    "+", "-", "*", "/", "^", "&", "=", "<>", "<", ">", "<=", ">="
+]
+
+
+@dataclass(frozen=True, slots=True)
+class FormulaBinaryNode:
+    operator: _FormulaBinaryOperator
     left: FormulaAstNode
     right: FormulaAstNode
+    type: Literal["binary"] = field(default="binary", init=False)
 
 
-class FormulaGroupNode(TypedDict):
-    type: Literal["group"]
+@dataclass(frozen=True, slots=True)
+class FormulaGroupNode:
     expression: FormulaAstNode
+    type: Literal["group"] = field(default="group", init=False)
 
 
-class FormulaEmptyNode(TypedDict):
-    type: Literal["empty"]
+@dataclass(frozen=True, slots=True)
+class FormulaEmptyNode:
+    type: Literal["empty"] = field(default="empty", init=False)
 
 
 type FormulaAstNode = (
@@ -193,13 +220,23 @@ type FormulaAstNode = (
 )
 
 
-class FormulaAst(TypedDict):
-    schema_version: Literal[1]
+@dataclass(frozen=True, slots=True)
+class FormulaAst:
     formula: str
     root: FormulaAstNode
+    schema_version: Literal[1] = field(default=1, init=False)
 
 
-class SpreadsheetCellError(ValueError):
+class SpreadsheetResultError(ValueError):
+    """Base exception for scalar access to an error-valued result."""
+
+    def __init__(self, error_type: str, error_value: str, message: str) -> None:
+        self.error_type = error_type
+        self.error_value = error_value
+        super().__init__(message)
+
+
+class SpreadsheetCellError(SpreadsheetResultError):
     """Raised when a scalar value is requested from an error-valued cell."""
 
     def __init__(
@@ -207,10 +244,23 @@ class SpreadsheetCellError(ValueError):
     ) -> None:
         self.sheet_name = sheet_name
         self.address = address
-        self.error_type = error_type
-        self.error_value = error_value
         super().__init__(
-            f"Spreadsheet cell {sheet_name}!{address} has error {error_value} ({error_type})."
+            error_type,
+            error_value,
+            f"Spreadsheet cell {sheet_name}!{address} has error {error_value} ({error_type}).",
+        )
+
+
+class SpreadsheetOutputError(SpreadsheetResultError):
+    """Raised when a scalar value is requested from an error-valued output."""
+
+    def __init__(self, output_name: str, error_type: str, error_value: str) -> None:
+        self.output_name = output_name
+        super().__init__(
+            error_type,
+            error_value,
+            f'Spreadsheet grading output "{output_name}" has error '
+            f"{error_value} ({error_type}).",
         )
 
 
@@ -370,45 +420,46 @@ def _parse_reference_endpoint(text: str) -> FormulaReferenceEndpoint:
 
     cell_match = _REFERENCE_CELL_RE.fullmatch(reference)
     if cell_match is not None:
-        return {
-            "kind": "cell",
-            "sheet": sheet,
-            "column": cell_match.group(2),
-            "row": int(cell_match.group(4)),
-            "column_absolute": cell_match.group(1) == "$",
-            "row_absolute": cell_match.group(3) == "$",
-        }
+        return FormulaCellReference(
+            sheet=sheet,
+            column=cell_match.group(2),
+            row=int(cell_match.group(4)),
+            column_absolute=cell_match.group(1) == "$",
+            row_absolute=cell_match.group(3) == "$",
+        )
     column_match = _REFERENCE_COLUMN_RE.fullmatch(reference)
     if column_match is not None:
-        return {
-            "kind": "column",
-            "sheet": sheet,
-            "column": column_match.group(2),
-            "column_absolute": column_match.group(1) == "$",
-        }
+        return FormulaColumnReference(
+            sheet=sheet,
+            column=column_match.group(2),
+            column_absolute=column_match.group(1) == "$",
+        )
     row_match = _REFERENCE_ROW_RE.fullmatch(reference)
     if row_match is not None:
-        return {
-            "kind": "row",
-            "sheet": sheet,
-            "row": int(row_match.group(2)),
-            "row_absolute": row_match.group(1) == "$",
-        }
+        return FormulaRowReference(
+            sheet=sheet,
+            row=int(row_match.group(2)),
+            row_absolute=row_match.group(1) == "$",
+        )
     raise SpreadsheetFormulaParseError(f'Unsupported spreadsheet reference "{text}".')
 
 
 def _parse_reference(text: str) -> FormulaReferenceNode | FormulaRangeNode:
     if ":" not in text:
-        return {"type": "reference", "reference": _parse_reference_endpoint(text)}
+        return FormulaReferenceNode(reference=_parse_reference_endpoint(text))
     start_text, end_text = text.split(":", 1)
     start = _parse_reference_endpoint(start_text)
     end = _parse_reference_endpoint(end_text)
-    if start["kind"] == "cell" and end["kind"] == "cell":
-        return {"type": "range", "start": start, "end": end}
-    if start["kind"] == "column" and end["kind"] == "column":
-        return {"type": "range", "start": start, "end": end}
-    if start["kind"] == "row" and end["kind"] == "row":
-        return {"type": "range", "start": start, "end": end}
+    if isinstance(start, FormulaCellReference) and isinstance(
+        end, FormulaCellReference
+    ):
+        return FormulaCellRangeNode(start=start, end=end)
+    if isinstance(start, FormulaColumnReference) and isinstance(
+        end, FormulaColumnReference
+    ):
+        return FormulaColumnRangeNode(start=start, end=end)
+    if isinstance(start, FormulaRowReference) and isinstance(end, FormulaRowReference):
+        return FormulaRowRangeNode(start=start, end=end)
     raise SpreadsheetFormulaParseError(
         f'Spreadsheet range "{text}" has incompatible endpoint types.'
     )
@@ -416,7 +467,9 @@ def _parse_reference(text: str) -> FormulaReferenceNode | FormulaRangeNode:
 
 class _FormulaParser:
     def __init__(self, tokens: list[_FormulaToken]) -> None:
-        self.tokens = [token for token in tokens if token.type != "WSPACE"]
+        self.tokens = [
+            token for token in tokens if token.type not in {"WSPACE", "WHITE-SPACE"}
+        ]
         self.position = 0
 
     def parse(self) -> FormulaAstNode:
@@ -443,7 +496,7 @@ class _FormulaParser:
     def _parse_binary(
         self,
         operand_parser: Callable[[], FormulaAstNode],
-        operators: set[str],
+        operators: set[_FormulaBinaryOperator],
     ) -> FormulaAstNode:
         result = operand_parser()
         while True:
@@ -456,14 +509,10 @@ class _FormulaParser:
                 return result
             operator = self._take().value
             right = operand_parser()
-            result = cast(
-                FormulaBinaryNode,
-                {
-                    "type": "binary",
-                    "operator": operator,
-                    "left": result,
-                    "right": right,
-                },
+            result = FormulaBinaryNode(
+                operator=cast(_FormulaBinaryOperator, operator),
+                left=result,
+                right=right,
             )
 
     def _parse_comparison(self) -> FormulaAstNode:
@@ -491,13 +540,9 @@ class _FormulaParser:
             and token.value in {"+", "-"}
         ):
             operator = self._take().value
-            return cast(
-                FormulaUnaryNode,
-                {
-                    "type": "unary",
-                    "operator": operator,
-                    "operand": self._parse_prefix(),
-                },
+            return FormulaUnaryNode(
+                operator=cast(Literal["+", "-"], operator),
+                operand=self._parse_prefix(),
             )
         return self._parse_postfix()
 
@@ -508,10 +553,7 @@ class _FormulaParser:
             if token is None or token.type != "OPERATOR-POSTFIX" or token.value != "%":
                 return result
             self._take()
-            result = cast(
-                FormulaPostfixNode,
-                {"type": "postfix", "operator": "%", "operand": result},
-            )
+            result = FormulaPostfixNode(operator="%", operand=result)
 
     def _parse_primary(self) -> FormulaAstNode:
         token = self._take()
@@ -522,7 +564,7 @@ class _FormulaParser:
                 raise SpreadsheetFormulaParseError(
                     "Unclosed spreadsheet formula group."
                 )
-            return {"type": "group", "expression": expression}
+            return FormulaGroupNode(expression=expression)
         if token.type == "FUNC" and token.subtype == "OPEN":
             return self._parse_function(token)
         if token.type != "OPERAND":
@@ -543,26 +585,16 @@ class _FormulaParser:
                     "Spreadsheet number literals must be finite."
                 )
             number_value: int | float = int(number) if number.is_integer() else number
-            return {"type": "literal", "value_type": "number", "value": number_value}
+            return FormulaLiteralNode(value_type="number", value=number_value)
         if token.subtype == "TEXT":
             string_value = token.value[1:-1].replace('""', '"')
-            return {
-                "type": "literal",
-                "value_type": "string",
-                "value": string_value,
-            }
+            return FormulaLiteralNode(value_type="string", value=string_value)
         if token.subtype == "LOGICAL":
-            return {
-                "type": "literal",
-                "value_type": "boolean",
-                "value": token.value.upper() == "TRUE",
-            }
+            return FormulaLiteralNode(
+                value_type="boolean", value=token.value.upper() == "TRUE"
+            )
         if token.subtype == "ERROR":
-            return {
-                "type": "literal",
-                "value_type": "error",
-                "value": token.value.upper(),
-            }
+            return FormulaLiteralNode(value_type="error", value=token.value.upper())
         raise SpreadsheetFormulaParseError(
             f'Unsupported spreadsheet operand "{token.value}".'
         )
@@ -572,11 +604,9 @@ class _FormulaParser:
         token = self._current()
         if token is not None and token.type == "FUNC" and token.subtype == "CLOSE":
             self._take()
-            return {
-                "type": "function",
-                "name": opening.value[:-1].upper(),
-                "arguments": arguments,
-            }
+            return FormulaFunctionNode(
+                name=opening.value[:-1].upper(), arguments=tuple(arguments)
+            )
 
         while True:
             token = self._current()
@@ -585,11 +615,11 @@ class _FormulaParser:
                     "Unclosed spreadsheet function call."
                 )
             if token.type == "SEP" and token.subtype == "ARG":
-                arguments.append({"type": "empty"})
+                arguments.append(FormulaEmptyNode())
                 self._take()
                 continue
             if token.type == "FUNC" and token.subtype == "CLOSE":
-                arguments.append({"type": "empty"})
+                arguments.append(FormulaEmptyNode())
                 self._take()
                 break
             arguments.append(self._parse_comparison())
@@ -605,11 +635,9 @@ class _FormulaParser:
                     "Unclosed spreadsheet function call."
                 )
 
-        return {
-            "type": "function",
-            "name": opening.value[:-1].upper(),
-            "arguments": arguments,
-        }
+        return FormulaFunctionNode(
+            name=opening.value[:-1].upper(), arguments=tuple(arguments)
+        )
 
 
 def parse_spreadsheet_formula(formula: str) -> FormulaAst:
@@ -635,7 +663,7 @@ def parse_spreadsheet_formula(formula: str) -> FormulaAst:
         raise SpreadsheetFormulaParseError(
             "The spreadsheet formula could not be parsed."
         ) from exc
-    return {"schema_version": 1, "formula": formula, "root": root}
+    return FormulaAst(formula=formula, root=root)
 
 
 def get_spreadsheet_formula_ast(
@@ -644,3 +672,508 @@ def get_spreadsheet_formula_ast(
     """Return the versioned AST for a formula cell, or ``None`` otherwise."""
     formula = get_spreadsheet_formula(snapshot, sheet_name, address)
     return None if formula is None else parse_spreadsheet_formula(formula)
+
+
+@dataclass(frozen=True)
+class _CellAddress:
+    address: str
+    row: int
+    column: int
+    sheet_name: str | None
+
+
+@dataclass(frozen=True)
+class _SnapshotReference:
+    start: _CellAddress
+    end: _CellAddress | None
+    sheet_name: str | None
+
+
+def _decode_snapshot_sheet_name(sheet_text: str, reference: str) -> str:
+    if not sheet_text:
+        raise ValueError(f'Invalid spreadsheet reference "{reference}".')
+    if sheet_text.startswith("'") or sheet_text.endswith("'"):
+        if not (sheet_text.startswith("'") and sheet_text.endswith("'")):
+            raise ValueError(f'Invalid spreadsheet reference "{reference}".')
+        inner = sheet_text[1:-1]
+        if not inner or "'" in inner.replace("''", ""):
+            raise ValueError(f'Invalid spreadsheet reference "{reference}".')
+        return inner.replace("''", "'")
+    if "'" in sheet_text:
+        raise ValueError(f'Invalid spreadsheet reference "{reference}".')
+    return sheet_text
+
+
+def _parse_snapshot_endpoint(text: str, reference: str) -> _CellAddress:
+    if "!" in text:
+        sheet_text, address_text = text.rsplit("!", 1)
+        sheet_name = _decode_snapshot_sheet_name(sheet_text, reference)
+    else:
+        address_text = text
+        sheet_name = None
+    try:
+        address, row, column = _normalized_address(address_text)
+    except ValueError as exc:
+        raise ValueError(f'Invalid spreadsheet reference "{reference}".') from exc
+    return _CellAddress(
+        address=address,
+        row=row,
+        column=column,
+        sheet_name=sheet_name,
+    )
+
+
+def _parse_snapshot_reference(reference: str) -> _SnapshotReference:
+    if not isinstance(reference, str) or not reference:
+        raise ValueError(f'Invalid spreadsheet reference "{reference}".')
+    if reference.count(":") > 1:
+        raise ValueError(f'Invalid spreadsheet reference "{reference}".')
+
+    if ":" in reference:
+        start_text, end_text = reference.split(":", 1)
+        start = _parse_snapshot_endpoint(start_text, reference)
+        end = _parse_snapshot_endpoint(end_text, reference)
+        if (
+            start.sheet_name is not None
+            and end.sheet_name is not None
+            and start.sheet_name != end.sheet_name
+        ):
+            raise ValueError(
+                f'Spreadsheet range "{reference}" cannot span multiple sheets.'
+            )
+        if start.row > end.row or start.column > end.column:
+            raise ValueError(
+                f'Spreadsheet range "{reference}" must run from top-left to bottom-right.'
+            )
+        return _SnapshotReference(
+            start=start,
+            end=end,
+            sheet_name=start.sheet_name,
+        )
+
+    start = _parse_snapshot_endpoint(reference, reference)
+    return _SnapshotReference(
+        start=start,
+        end=None,
+        sheet_name=start.sheet_name,
+    )
+
+
+def _column_name(column: int) -> str:
+    result = ""
+    value = column + 1
+    while value > 0:
+        value, remainder = divmod(value - 1, 26)
+        result = chr(ord("A") + remainder) + result
+    return result
+
+
+def _qualified_address(sheet_name: str, address: str) -> str:
+    if re.fullmatch(r"[A-Za-z_][A-Za-z0-9_.]*", sheet_name):
+        encoded_sheet_name = sheet_name
+    else:
+        encoded_sheet_name = f"'{sheet_name.replace("'", "''")}'"
+    return f"{encoded_sheet_name}!{address}"
+
+
+class Spreadsheet:
+    """Read-only, spreadsheet-native view of a normalized snapshot."""
+
+    def __init__(self, snapshot: Mapping[str, object]) -> None:
+        if not isinstance(snapshot, Mapping):
+            raise TypeError("A spreadsheet snapshot must be a mapping.")
+        self._snapshot = snapshot
+        self._sheet_views: dict[str, SpreadsheetSheet] = {}
+        self._outputs = _SpreadsheetOutputs(self)
+
+    @property
+    def sheet_names(self) -> tuple[str, ...]:
+        sheets = self._snapshot.get("sheets", [])
+        if not isinstance(sheets, list):
+            raise TypeError("The spreadsheet snapshot has an invalid sheets field.")
+        names: list[str] = []
+        for sheet in sheets:
+            if not isinstance(sheet, Mapping):
+                raise TypeError("The spreadsheet snapshot contains an invalid sheet.")
+            name = sheet.get("name")
+            if not isinstance(name, str):
+                raise TypeError("The spreadsheet snapshot contains an invalid sheet.")
+            names.append(name)
+        return tuple(names)
+
+    @property
+    def outputs(self) -> Mapping[str, SpreadsheetOutputView]:
+        return self._outputs
+
+    def __getitem__(self, sheet_name: str) -> SpreadsheetSheet:
+        """Return the sheet with the given name."""
+        _get_sheet(self._snapshot, sheet_name)
+        if sheet_name not in self._sheet_views:
+            self._sheet_views[sheet_name] = SpreadsheetSheet(self, sheet_name)
+        return self._sheet_views[sheet_name]
+
+
+class SpreadsheetSheet:
+    """Read-only view of one sheet in a :class:`Spreadsheet`."""
+
+    def __init__(self, workbook: Spreadsheet, name: str) -> None:
+        self._workbook = workbook
+        self._name = name
+
+    @property
+    def workbook(self) -> Spreadsheet:
+        return self._workbook
+
+    @property
+    def name(self) -> str:
+        return self._name
+
+    def _dimensions(self) -> tuple[int, int]:
+        sheet = _get_sheet(self._workbook._snapshot, self._name)
+        rows = sheet.get("rows")
+        columns = sheet.get("columns")
+        if (
+            isinstance(rows, bool)
+            or not isinstance(rows, int)
+            or isinstance(columns, bool)
+            or not isinstance(columns, int)
+        ):
+            raise TypeError(f'Spreadsheet sheet "{self._name}" has invalid dimensions.')
+        return rows, columns
+
+    @property
+    def rows(self) -> int:
+        return self._dimensions()[0]
+
+    @property
+    def columns(self) -> int:
+        return self._dimensions()[1]
+
+    @property
+    def shape(self) -> tuple[int, int]:
+        return self._dimensions()
+
+    def __getitem__(self, reference: str) -> SpreadsheetCellView | SpreadsheetRange:
+        """Resolve an A1 cell or range reference."""
+        parsed = _parse_snapshot_reference(reference)
+        target_sheet = self._workbook[parsed.sheet_name or self._name]
+        get_spreadsheet_cell(
+            self._workbook._snapshot, target_sheet.name, parsed.start.address
+        )
+        if parsed.end is None:
+            return SpreadsheetCellView(target_sheet, parsed.start.address)
+        if (
+            parsed.end.sheet_name is not None
+            and parsed.end.sheet_name != target_sheet.name
+        ):
+            raise ValueError(
+                f'Spreadsheet range "{reference}" cannot span multiple sheets.'
+            )
+        get_spreadsheet_cell(
+            self._workbook._snapshot, target_sheet.name, parsed.end.address
+        )
+        return SpreadsheetRange(
+            target_sheet,
+            parsed.start.address,
+            parsed.end.address,
+            parsed.start.row,
+            parsed.start.column,
+            parsed.end.row,
+            parsed.end.column,
+        )
+
+    def query(
+        self,
+        predicate: Callable[[SpreadsheetCellView], bool],
+        *,
+        include_empty: bool = False,
+    ) -> tuple[SpreadsheetCellView, ...]:
+        rows, columns = self._dimensions()
+        end_address = f"{_column_name(columns - 1)}{rows}"
+        sheet_range = cast(SpreadsheetRange, self[f"A1:{end_address}"])
+        return sheet_range.query(predicate, include_empty=include_empty)
+
+
+class SpreadsheetCellView:
+    """Read-only view of one in-bounds cell in a spreadsheet snapshot."""
+
+    def __init__(self, sheet: SpreadsheetSheet, address: str) -> None:
+        self._sheet = sheet
+        self._address = address
+
+    @property
+    def sheet(self) -> SpreadsheetSheet:
+        return self._sheet
+
+    @property
+    def address(self) -> str:
+        return self._address
+
+    @property
+    def qualified_address(self) -> str:
+        return _qualified_address(self._sheet.name, self._address)
+
+    @property
+    def row(self) -> int:
+        return _normalized_address(self._address)[1] + 1
+
+    @property
+    def column(self) -> str:
+        match = _CELL_ADDRESS_RE.fullmatch(self._address)
+        assert match is not None
+        return match.group(1)
+
+    @property
+    def input(self) -> dict[str, object] | None:
+        cell = get_spreadsheet_cell(
+            self._sheet.workbook._snapshot, self._sheet.name, self._address
+        )
+        if cell is None:
+            return None
+        cell_input = cell.get("input")
+        if not isinstance(cell_input, dict):
+            raise TypeError(
+                f'Spreadsheet cell "{self.qualified_address}" has an invalid input.'
+            )
+        return dict(cell_input)
+
+    @property
+    def result(self) -> SpreadsheetResult:
+        result = get_spreadsheet_result(
+            self._sheet.workbook._snapshot, self._sheet.name, self._address
+        )
+        return cast(SpreadsheetResult, dict(result))
+
+    @property
+    def value(self) -> bool | int | float | str | None:
+        return get_spreadsheet_value(
+            self._sheet.workbook._snapshot, self._sheet.name, self._address
+        )
+
+    @property
+    def formula(self) -> str | None:
+        return get_spreadsheet_formula(
+            self._sheet.workbook._snapshot, self._sheet.name, self._address
+        )
+
+    @property
+    def formula_ast(self) -> FormulaAst | None:
+        return get_spreadsheet_formula_ast(
+            self._sheet.workbook._snapshot, self._sheet.name, self._address
+        )
+
+    @property
+    def is_empty(self) -> bool:
+        return (
+            get_spreadsheet_cell(
+                self._sheet.workbook._snapshot, self._sheet.name, self._address
+            )
+            is None
+        )
+
+    @property
+    def is_formula(self) -> bool:
+        return self.formula is not None
+
+    @property
+    def is_error(self) -> bool:
+        return self.result["type"] == "error"
+
+    def matches_formula(self, expected: str, *, structural: bool = False) -> bool:
+        formula = self.formula
+        if formula is None:
+            return False
+        if not structural:
+            return formula == expected
+        return (
+            parse_spreadsheet_formula(formula).root
+            == parse_spreadsheet_formula(expected).root
+        )
+
+
+class SpreadsheetRange:
+    """Read-only rectangular cell range on one sheet."""
+
+    def __init__(
+        self,
+        sheet: SpreadsheetSheet,
+        start_address: str,
+        end_address: str,
+        start_row: int,
+        start_column: int,
+        end_row: int,
+        end_column: int,
+    ) -> None:
+        self._sheet = sheet
+        self._start_address = start_address
+        self._end_address = end_address
+        self._start_row = start_row
+        self._start_column = start_column
+        self._end_row = end_row
+        self._end_column = end_column
+
+    @property
+    def sheet(self) -> SpreadsheetSheet:
+        return self._sheet
+
+    @property
+    def address(self) -> str:
+        return f"{self._start_address}:{self._end_address}"
+
+    @property
+    def qualified_address(self) -> str:
+        return _qualified_address(self._sheet.name, self.address)
+
+    @property
+    def shape(self) -> tuple[int, int]:
+        return (
+            self._end_row - self._start_row + 1,
+            self._end_column - self._start_column + 1,
+        )
+
+    @property
+    def cells(self) -> tuple[tuple[SpreadsheetCellView, ...], ...]:
+        return tuple(
+            tuple(
+                SpreadsheetCellView(self._sheet, f"{_column_name(column)}{row + 1}")
+                for column in range(self._start_column, self._end_column + 1)
+            )
+            for row in range(self._start_row, self._end_row + 1)
+        )
+
+    @property
+    def inputs(self) -> tuple[tuple[dict[str, object] | None, ...], ...]:
+        return tuple(tuple(cell.input for cell in row) for row in self.cells)
+
+    @property
+    def results(self) -> tuple[tuple[SpreadsheetResult, ...], ...]:
+        return tuple(tuple(cell.result for cell in row) for row in self.cells)
+
+    @property
+    def values(
+        self,
+    ) -> tuple[tuple[bool | int | float | str | None, ...], ...]:
+        return tuple(tuple(cell.value for cell in row) for row in self.cells)
+
+    @property
+    def formulas(self) -> tuple[tuple[str | None, ...], ...]:
+        return tuple(tuple(cell.formula for cell in row) for row in self.cells)
+
+    def iter_cells(
+        self, *, include_empty: bool = True
+    ) -> Iterator[SpreadsheetCellView]:
+        for row in self.cells:
+            for cell in row:
+                if include_empty or not cell.is_empty:
+                    yield cell
+
+    def query(
+        self,
+        predicate: Callable[[SpreadsheetCellView], bool],
+        *,
+        include_empty: bool = False,
+    ) -> tuple[SpreadsheetCellView, ...]:
+        return tuple(
+            cell
+            for cell in self.iter_cells(include_empty=include_empty)
+            if predicate(cell)
+        )
+
+    def __getitem__(self, reference: str) -> SpreadsheetCellView:
+        """Return a cell within this range."""
+        parsed = _parse_snapshot_reference(reference)
+        if parsed.end is not None:
+            raise ValueError("Spreadsheet ranges can only be indexed by a single cell.")
+        target_sheet_name = parsed.sheet_name or self._sheet.name
+        if target_sheet_name != self._sheet.name:
+            raise ValueError(
+                f'Spreadsheet cell "{reference}" is outside range '
+                f'"{self.qualified_address}".'
+            )
+        if not (
+            self._start_row <= parsed.start.row <= self._end_row
+            and self._start_column <= parsed.start.column <= self._end_column
+        ):
+            raise ValueError(
+                f'Spreadsheet cell "{reference}" is outside range '
+                f'"{self.qualified_address}".'
+            )
+        return SpreadsheetCellView(self._sheet, parsed.start.address)
+
+
+class SpreadsheetOutputView:
+    """Read-only view of a named private grading output."""
+
+    def __init__(self, workbook: Spreadsheet, name: str) -> None:
+        self._workbook = workbook
+        self._name = name
+
+    @property
+    def name(self) -> str:
+        return self._name
+
+    @property
+    def result(self) -> SpreadsheetResult:
+        result = get_spreadsheet_grading_output(self._workbook._snapshot, self._name)
+        return cast(SpreadsheetResult, dict(result))
+
+    @property
+    def value(self) -> bool | int | float | str | None:
+        result = self.result
+        if result["type"] == "empty":
+            return None
+        if result["type"] == "error":
+            raise SpreadsheetOutputError(
+                self._name,
+                result["error_type"],
+                result["value"],
+            )
+        return result["value"]
+
+    @property
+    def is_error(self) -> bool:
+        return self.result["type"] == "error"
+
+    @property
+    def error_type(self) -> str | None:
+        result = self.result
+        return result["error_type"] if result["type"] == "error" else None
+
+    @property
+    def error_value(self) -> str | None:
+        result = self.result
+        return result["value"] if result["type"] == "error" else None
+
+
+class _SpreadsheetOutputs(Mapping[str, SpreadsheetOutputView]):
+    def __init__(self, workbook: Spreadsheet) -> None:
+        self._workbook = workbook
+
+    def _output_names(self) -> tuple[str, ...]:
+        grading = self._workbook._snapshot.get("grading")
+        if grading is None:
+            return ()
+        if not isinstance(grading, Mapping):
+            raise TypeError(
+                "The spreadsheet snapshot has invalid private grading outputs."
+            )
+        outputs = grading.get("outputs")
+        if not isinstance(outputs, Mapping):
+            raise TypeError(
+                "The spreadsheet snapshot has invalid private grading outputs."
+            )
+        if not all(isinstance(name, str) for name in outputs):
+            raise TypeError(
+                "The spreadsheet snapshot has invalid private grading outputs."
+            )
+        return tuple(cast(str, name) for name in outputs)
+
+    def __getitem__(self, name: str) -> SpreadsheetOutputView:
+        get_spreadsheet_grading_output(self._workbook._snapshot, name)
+        return SpreadsheetOutputView(self._workbook, name)
+
+    def __iter__(self) -> Iterator[str]:
+        return iter(self._output_names())
+
+    def __len__(self) -> int:
+        return len(self._output_names())

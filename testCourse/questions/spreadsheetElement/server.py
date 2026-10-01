@@ -50,18 +50,17 @@ def generate(data: dict[str, Any]) -> None:
 
 
 def grade(data: dict[str, Any]) -> None:
-    snapshot = data["submitted_answers"]["model"]
-    formula_ast = pl.get_spreadsheet_formula_ast(snapshot, "Inputs", "D2")
-    line_total = pl.get_spreadsheet_grading_output(snapshot, "line_total")
-    total_is_correct = pl.get_spreadsheet_grading_output(snapshot, "total_is_correct")
+    workbook = pl.Spreadsheet(data["submitted_answers"]["model"])
+    inputs = workbook["Summary"]["Inputs!B2:D2"]
+    assert isinstance(inputs, pl.SpreadsheetRange)
+    line_total = inputs["D2"]
     correct = (
-        pl.get_spreadsheet_value(snapshot, "Inputs", "B2") == 3
-        and pl.get_spreadsheet_value(snapshot, "Inputs", "C2") == 4
-        and pl.get_spreadsheet_formula(snapshot, "Inputs", "D2") == "=B2*C2"
-        and formula_ast is not None
-        and formula_ast["root"]["type"] == "binary"
-        and formula_ast["root"]["operator"] == "*"
-        and line_total == {"type": "number", "value": 12}
-        and total_is_correct == {"type": "boolean", "value": True}
+        inputs["B2"].value == 3
+        and inputs["C2"].value == 4
+        and line_total.formula == "=B2*C2"
+        and line_total.matches_formula("=B2*C2", structural=True)
+        and line_total.value == 12
+        and workbook.outputs["line_total"].value == 12
+        and workbook.outputs["total_is_correct"].value is True
     )
     data["score"] = 1 if correct else 0
