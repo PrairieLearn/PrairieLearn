@@ -7,7 +7,7 @@ import {
 import * as z from 'zod/v4';
 
 export const SPREADSHEET_ENGINE_VERSION = '3.4.0';
-export const SPREADSHEET_CONFIGURATION_VERSION = 1;
+export const SPREADSHEET_CONFIGURATION_VERSION = 2;
 export const SPREADSHEET_MAX_SHEETS = 10;
 export const SPREADSHEET_MAX_ROWS = 1000;
 export const SPREADSHEET_MAX_COLUMNS = 100;
@@ -18,6 +18,7 @@ export const SPREADSHEET_MAX_FORMULA_LENGTH = 2048;
 export const SPREADSHEET_MAX_TEXT_LENGTH = 32 * 1024;
 export const SPREADSHEET_MAX_PAYLOAD_BYTES = 1024 * 1024;
 export const SPREADSHEET_MAX_GRADING_OUTPUTS = 100;
+export const SPREADSHEET_INTERNAL_SHEET_PREFIX = '__PL_STUDENT_';
 
 export const SPREADSHEET_ALLOWED_FUNCTIONS = new Set([
   'ABS',
@@ -106,6 +107,7 @@ function isValidSheetName(name: string): boolean {
     characters.length > 0 &&
     characters.length <= 31 &&
     name.trim() === name &&
+    !name.toLocaleUpperCase('en-US').startsWith(SPREADSHEET_INTERNAL_SHEET_PREFIX) &&
     !characters.some((character) => BLOCKED_SHEET_NAME_CHARACTERS.has(character))
   );
 }
@@ -117,13 +119,12 @@ const SpreadsheetSheetTemplateSchema = z
     columns: z.number().int().min(1).max(SPREADSHEET_MAX_COLUMNS),
     cells: z.record(z.string(), CellInputSchema),
     editable_ranges: z.array(z.string()).max(100),
-    student_range: z.string().optional(),
   })
   .strict();
 
 export const SpreadsheetTemplateSchema = z
   .object({
-    schema_version: z.literal(1),
+    schema_version: z.literal(2),
     sheets: z.array(SpreadsheetSheetTemplateSchema).min(1).max(SPREADSHEET_MAX_SHEETS),
   })
   .strict();
@@ -133,7 +134,7 @@ export type SpreadsheetCellInput = z.infer<typeof CellInputSchema>;
 
 export const SpreadsheetElementConfigSchema = z
   .object({
-    schema_version: z.literal(1),
+    schema_version: z.literal(2),
     template_hash: z.string().min(1),
     template: SpreadsheetTemplateSchema,
     allow_blank: z.boolean().optional(),
@@ -161,24 +162,32 @@ const SpreadsheetGradingOutputSchema = z
   })
   .strict();
 
+const SpreadsheetStudentOverlaySchema = z
+  .object({
+    student_sheet: z.string().min(1),
+    source_sheet: z.string().min(1),
+    source_range: z.string().min(1),
+  })
+  .strict();
+
 export const SpreadsheetGradingConfigSchema = z
   .object({
-    schema_version: z.literal(1),
+    schema_version: z.literal(2),
     grader_hash: z.string().min(1),
     sheets: z.array(SpreadsheetGradingSheetSchema).max(SPREADSHEET_MAX_SHEETS),
-    source_sheets: z.array(SpreadsheetGradingSheetSchema).max(SPREADSHEET_MAX_SHEETS).optional(),
+    source_sheets: z.array(SpreadsheetGradingSheetSchema).max(SPREADSHEET_MAX_SHEETS),
+    student_overlays: z.array(SpreadsheetStudentOverlaySchema).min(1).max(SPREADSHEET_MAX_SHEETS),
     outputs: z
       .record(z.string().min(1).max(128), SpreadsheetGradingOutputSchema)
       .refine((outputs) => Object.keys(outputs).length <= SPREADSHEET_MAX_GRADING_OUTPUTS),
   })
   .strict()
   .refine(
-    (config) => config.sheets.length + (config.source_sheets?.length ?? 0) >= 1,
+    (config) => config.sheets.length + config.source_sheets.length >= 1,
     'A private spreadsheet grading workbook must contain at least one sheet.',
   )
   .refine(
-    (config) =>
-      config.sheets.length + (config.source_sheets?.length ?? 0) <= SPREADSHEET_MAX_SHEETS,
+    (config) => config.sheets.length + config.source_sheets.length <= SPREADSHEET_MAX_SHEETS,
     `A private spreadsheet grading workbook may contain at most ${SPREADSHEET_MAX_SHEETS} sheets.`,
   );
 
@@ -186,7 +195,7 @@ export type SpreadsheetGradingConfig = z.infer<typeof SpreadsheetGradingConfigSc
 
 export const SpreadsheetRawSubmissionSchema = z
   .object({
-    schema_version: z.literal(1),
+    schema_version: z.literal(2),
     template_hash: z.string(),
     sheets: z.record(z.string(), z.record(z.string(), RawCellInputSchema)),
   })
@@ -221,7 +230,7 @@ const SpreadsheetSnapshotCellSchema = z
 
 export const SpreadsheetSnapshotSchema = z
   .object({
-    schema_version: z.literal(1),
+    schema_version: z.literal(2),
     template_hash: z.string(),
     engine: z
       .object({
@@ -237,13 +246,12 @@ export const SpreadsheetSnapshotSchema = z
           rows: z.number().int(),
           columns: z.number().int(),
           cells: z.record(z.string(), SpreadsheetSnapshotCellSchema),
-          student_range: z.string().optional(),
         })
         .strict(),
     ),
     grading: z
       .object({
-        schema_version: z.literal(1),
+        schema_version: z.literal(2),
         grader_hash: z.string(),
         outputs: z.record(z.string(), SpreadsheetSnapshotResultSchema),
       })
@@ -256,7 +264,7 @@ export type SpreadsheetSnapshot = z.infer<typeof SpreadsheetSnapshotSchema>;
 
 const SpreadsheetSubmissionErrorSchema = z
   .object({
-    schema_version: z.literal(1),
+    schema_version: z.literal(2),
     template_hash: z.string(),
     error: z.string(),
   })
@@ -338,19 +346,45 @@ export function parseRange(range: string): SpreadsheetCellRange | null {
   };
 }
 
-export function studentRange(
-  sheet: Pick<SpreadsheetTemplate['sheets'][number], 'rows' | 'columns' | 'student_range'>,
+export function sheetRange(
+  sheet: Pick<SpreadsheetTemplate['sheets'][number], 'rows' | 'columns'>,
 ): SpreadsheetCellRange {
-  if (sheet.student_range !== undefined) {
-    const parsed = parseRange(sheet.student_range);
-    if (!parsed) throw new SpreadsheetSubmissionError('The student range is invalid.');
-    return parsed;
-  }
   return {
     startRow: 0,
     endRow: sheet.rows - 1,
     startColumn: 0,
     endColumn: sheet.columns - 1,
+  };
+}
+
+export interface SpreadsheetAddressSpace {
+  sourceRange: SpreadsheetCellRange;
+  studentRange: SpreadsheetCellRange;
+}
+
+export function isValidCellRange(range: SpreadsheetCellRange): boolean {
+  return (
+    range.startRow >= 0 &&
+    range.startColumn >= 0 &&
+    range.startRow <= range.endRow &&
+    range.startColumn <= range.endColumn
+  );
+}
+
+export function createSpreadsheetAddressSpace(
+  sourceRange: SpreadsheetCellRange,
+): SpreadsheetAddressSpace {
+  if (!isValidCellRange(sourceRange)) {
+    throw new RangeError('Spreadsheet source range is invalid.');
+  }
+  return {
+    sourceRange: { ...sourceRange },
+    studentRange: {
+      startRow: 0,
+      endRow: sourceRange.endRow - sourceRange.startRow,
+      startColumn: 0,
+      endColumn: sourceRange.endColumn - sourceRange.startColumn,
+    },
   };
 }
 
@@ -383,28 +417,30 @@ export function intersectRanges(
 }
 
 export function toSourceAddress(
-  range: SpreadsheetCellRange,
-  relative: SpreadsheetCellAddress,
+  addressSpace: SpreadsheetAddressSpace,
+  student: SpreadsheetCellAddress,
 ): SpreadsheetCellAddress {
+  const range = addressSpace.sourceRange;
   const source = {
-    row: range.startRow + relative.row,
-    column: range.startColumn + relative.column,
+    row: range.startRow + student.row,
+    column: range.startColumn + student.column,
   };
   if (
     source.row > range.endRow ||
     source.column > range.endColumn ||
-    relative.row < 0 ||
-    relative.column < 0
+    student.row < 0 ||
+    student.column < 0
   ) {
-    throw new RangeError('Relative spreadsheet address is outside its range.');
+    throw new RangeError('Student spreadsheet address is outside its address space.');
   }
   return source;
 }
 
 export function toRelativeAddress(
-  range: SpreadsheetCellRange,
+  addressSpace: SpreadsheetAddressSpace,
   source: SpreadsheetCellAddress,
 ): SpreadsheetCellAddress {
+  const range = addressSpace.sourceRange;
   if (
     source.row < range.startRow ||
     source.row > range.endRow ||
@@ -416,12 +452,58 @@ export function toRelativeAddress(
   return { row: source.row - range.startRow, column: source.column - range.startColumn };
 }
 
+export function toSourceRange(
+  addressSpace: SpreadsheetAddressSpace,
+  student: SpreadsheetCellRange,
+): SpreadsheetCellRange {
+  if (!isValidCellRange(student) || !isRangeContained(addressSpace.studentRange, student)) {
+    throw new RangeError('Student spreadsheet range is outside its address space.');
+  }
+  const start = toSourceAddress(addressSpace, {
+    row: student.startRow,
+    column: student.startColumn,
+  });
+  const end = toSourceAddress(addressSpace, {
+    row: student.endRow,
+    column: student.endColumn,
+  });
+  return {
+    startRow: start.row,
+    endRow: end.row,
+    startColumn: start.column,
+    endColumn: end.column,
+  };
+}
+
+export function toRelativeRange(
+  addressSpace: SpreadsheetAddressSpace,
+  source: SpreadsheetCellRange,
+): SpreadsheetCellRange {
+  if (!isValidCellRange(source) || !isRangeContained(addressSpace.sourceRange, source)) {
+    throw new RangeError('Spreadsheet source range is outside its address space.');
+  }
+  const start = toRelativeAddress(addressSpace, {
+    row: source.startRow,
+    column: source.startColumn,
+  });
+  const end = toRelativeAddress(addressSpace, {
+    row: source.endRow,
+    column: source.endColumn,
+  });
+  return {
+    startRow: start.row,
+    endRow: end.row,
+    startColumn: start.column,
+    endColumn: end.column,
+  };
+}
+
 export function isCellVisible(
   sheet: SpreadsheetTemplate['sheets'][number],
   row: number,
   column: number,
 ): boolean {
-  const range = studentRange(sheet);
+  const range = sheetRange(sheet);
   return (
     row >= range.startRow &&
     row <= range.endRow &&
@@ -517,15 +599,7 @@ function validateTemplate(template: SpreadsheetTemplate): void {
     }
     sheetNames.add(foldedName);
     addressableCells += sheet.rows * sheet.columns;
-    const visibleRange = studentRange(sheet);
-    if (
-      visibleRange.endRow >= sheet.rows ||
-      visibleRange.endColumn >= sheet.columns ||
-      visibleRange.startRow < 0 ||
-      visibleRange.startColumn < 0
-    ) {
-      throw new SpreadsheetSubmissionError(`Student range is outside sheet ${sheet.name}.`);
-    }
+    const visibleRange = sheetRange(sheet);
 
     for (const [address, input] of Object.entries(sheet.cells)) {
       const parsedAddress = parseCellAddress(address);
@@ -535,11 +609,6 @@ function validateTemplate(template: SpreadsheetTemplate): void {
         parsedAddress.column >= sheet.columns
       ) {
         throw new SpreadsheetSubmissionError(`Cell ${address} is outside sheet ${sheet.name}.`);
-      }
-      if (!isCellVisible(sheet, parsedAddress.row, parsedAddress.column)) {
-        throw new SpreadsheetSubmissionError(
-          `Cell ${address} is outside the student range for sheet ${sheet.name}.`,
-        );
       }
       populatedCells += 1;
       if (typeof input === 'string' && input.startsWith('=')) {
@@ -558,7 +627,7 @@ function validateTemplate(template: SpreadsheetTemplate): void {
         !isRangeContained(visibleRange, range)
       ) {
         throw new SpreadsheetSubmissionError(
-          `Editable range ${rangeText} is outside the student range for sheet ${sheet.name}.`,
+          `Editable range ${rangeText} is outside sheet ${sheet.name}.`,
         );
       }
     }
@@ -596,16 +665,9 @@ function validateGradingConfig(
   let addressableCells = 0;
   let populatedCells = 0;
   let formulas = 0;
-  const publicSheetsByName = new Map(
-    template.sheets.map((sheet) => [sheet.name.toLocaleLowerCase('en-US'), sheet]),
-  );
   const gradingSheetNames = new Set<string>();
 
-  const validateSheets = (
-    sheets: SpreadsheetGradingConfig['sheets'],
-    description: string,
-    allowPublicNames: boolean,
-  ) => {
+  const validateSheets = (sheets: SpreadsheetGradingConfig['sheets'], description: string) => {
     for (const sheet of sheets) {
       if (!isValidSheetName(sheet.name)) {
         throw new Error(
@@ -613,24 +675,6 @@ function validateGradingConfig(
         );
       }
       const foldedName = sheet.name.toLocaleLowerCase('en-US');
-      const publicSheet = publicSheetsByName.get(foldedName);
-      if (!allowPublicNames && publicSheet) {
-        throw new Error(`${description} ${sheet.name} conflicts with a student sheet.`);
-      }
-      if (allowPublicNames && publicSheet && publicSheet.name !== sheet.name) {
-        throw new Error(
-          `Private source sheet ${sheet.name} must use the exact student sheet name ${publicSheet.name}.`,
-        );
-      }
-      if (
-        allowPublicNames &&
-        publicSheet &&
-        (sheet.rows < publicSheet.rows || sheet.columns < publicSheet.columns)
-      ) {
-        throw new Error(
-          `Private source sheet ${sheet.name} must cover its complete student range.`,
-        );
-      }
       if (gradingSheetNames.has(foldedName)) {
         throw new Error(`Private grading sheet name ${sheet.name} is duplicated.`);
       }
@@ -656,8 +700,42 @@ function validateGradingConfig(
     }
   };
 
-  validateSheets(config.source_sheets ?? [], 'Private source sheet', true);
-  validateSheets(config.sheets, 'Private grading sheet', false);
+  const sourceSheets = config.source_sheets;
+  validateSheets(sourceSheets, 'Private source sheet');
+  validateSheets(config.sheets, 'Private grading sheet');
+
+  const publicSheetsByName = new Map(template.sheets.map((sheet) => [sheet.name, sheet]));
+  const sourceSheetsByName = new Map(sourceSheets.map((sheet) => [sheet.name, sheet]));
+  const overlaidStudentSheets = new Set<string>();
+  for (const overlay of config.student_overlays) {
+    const publicSheet = publicSheetsByName.get(overlay.student_sheet);
+    if (!publicSheet) {
+      throw new Error(`Student overlay references unknown sheet ${overlay.student_sheet}.`);
+    }
+    if (overlaidStudentSheets.has(overlay.student_sheet)) {
+      throw new Error(`Student sheet ${overlay.student_sheet} has more than one overlay.`);
+    }
+    overlaidStudentSheets.add(overlay.student_sheet);
+    const sourceSheet = sourceSheetsByName.get(overlay.source_sheet);
+    if (!sourceSheet) {
+      throw new Error(`Student overlay references unknown source sheet ${overlay.source_sheet}.`);
+    }
+    const sourceRange = parseRange(overlay.source_range);
+    if (
+      !sourceRange ||
+      sourceRange.endRow >= sourceSheet.rows ||
+      sourceRange.endColumn >= sourceSheet.columns ||
+      sourceRange.endRow - sourceRange.startRow + 1 !== publicSheet.rows ||
+      sourceRange.endColumn - sourceRange.startColumn + 1 !== publicSheet.columns
+    ) {
+      throw new Error(
+        `Student overlay for ${overlay.student_sheet} must be within ${overlay.source_sheet} and have the same shape.`,
+      );
+    }
+  }
+  if (overlaidStudentSheets.size !== template.sheets.length) {
+    throw new Error('Every student sheet must have exactly one private source overlay.');
+  }
 
   if (addressableCells > SPREADSHEET_MAX_ADDRESSABLE_CELLS) {
     throw new Error(
@@ -676,7 +754,7 @@ function validateGradingConfig(
   }
 
   const sheetsByName = new Map(
-    [...(config.source_sheets ?? []), ...config.sheets].map((sheet) => [sheet.name, sheet]),
+    [...sourceSheets, ...config.sheets].map((sheet) => [sheet.name, sheet]),
   );
   for (const [outputName, output] of Object.entries(config.outputs)) {
     const sheet = sheetsByName.get(output.sheet);
@@ -864,7 +942,7 @@ function validateStudentFormulaReferences(
           if (
             !targetSheet ||
             end.sheet !== start.sheet ||
-            !isRangeContained(studentRange(targetSheet), {
+            !isRangeContained(sheetRange(targetSheet), {
               startRow: start.row,
               endRow: end.row,
               startColumn: start.col,
@@ -885,33 +963,60 @@ function evaluateGradingOutputs(
   studentSheetData: Record<string, RawCellContent[][]>,
 ): Record<string, z.infer<typeof SpreadsheetSnapshotResultSchema>> {
   validateGradingConfig(config, template);
-  const sourceSheets = config.source_sheets ?? [];
-  const gradingSheetData: Record<string, RawCellContent[][]> = Object.fromEntries(
+  const sourceSheets = config.source_sheets;
+  const sourceSheetData: Record<string, RawCellContent[][]> = Object.fromEntries(
     sourceSheets.map((sheet) => [
       sheet.name,
       buildSheetRows(sheet.rows, sheet.columns, sheet.cells),
     ]),
   );
-  for (const sheet of template.sheets) {
-    if (!Object.hasOwn(gradingSheetData, sheet.name)) {
-      gradingSheetData[sheet.name] = studentSheetData[sheet.name].map((row) => [...row]);
-      continue;
-    }
-    const sourceRows = gradingSheetData[sheet.name];
-    const visibleRange = studentRange(sheet);
-    for (let row = visibleRange.startRow; row <= visibleRange.endRow; row += 1) {
-      for (let column = visibleRange.startColumn; column <= visibleRange.endColumn; column += 1) {
-        sourceRows[row][column] = studentSheetData[sheet.name][row]?.[column] ?? null;
-      }
-    }
-  }
-  for (const sheet of config.sheets) {
-    gradingSheetData[sheet.name] = buildSheetRows(sheet.rows, sheet.columns, sheet.cells);
-  }
-
-  const engine = HyperFormula.buildFromSheets(gradingSheetData, HYPERFORMULA_CONFIG);
+  const engine = HyperFormula.buildFromSheets(studentSheetData, HYPERFORMULA_CONFIG);
   try {
     validateStudentFormulaReferences(engine, template, studentSheetData);
+
+    const internalSheetNames = new Map<string, string>();
+    for (const [index, sheet] of template.sheets.entries()) {
+      const sheetId = engine.getSheetId(sheet.name);
+      if (sheetId === undefined) throw new Error(`Student sheet ${sheet.name} is missing.`);
+      const internalName = `${SPREADSHEET_INTERNAL_SHEET_PREFIX}${index}`;
+      engine.renameSheet(sheetId, internalName);
+      internalSheetNames.set(sheet.name, internalName);
+    }
+
+    for (const overlay of config.student_overlays) {
+      const sourceRange = parseRange(overlay.source_range);
+      const sourceRows = sourceSheetData[overlay.source_sheet];
+      const studentRows = studentSheetData[overlay.student_sheet];
+      const internalName = internalSheetNames.get(overlay.student_sheet);
+      if (!sourceRange || !internalName) {
+        throw new Error(`Student overlay for ${overlay.student_sheet} is invalid.`);
+      }
+      for (const [row, values] of studentRows.entries()) {
+        for (const [column, input] of values.entries()) {
+          sourceRows[sourceRange.startRow + row][sourceRange.startColumn + column] =
+            typeof input === 'string' && input.startsWith('=')
+              ? `=${internalName}!${cellAddress(row, column)}`
+              : input;
+        }
+      }
+    }
+
+    for (const sheet of sourceSheets) {
+      engine.addSheet(sheet.name);
+    }
+    for (const sheet of config.sheets) {
+      engine.addSheet(sheet.name);
+    }
+    for (const sheet of sourceSheets) {
+      const sheetId = engine.getSheetId(sheet.name);
+      if (sheetId === undefined) throw new Error(`Private source sheet ${sheet.name} is missing.`);
+      engine.setSheetContent(sheetId, sourceSheetData[sheet.name]);
+    }
+    for (const sheet of config.sheets) {
+      const sheetId = engine.getSheetId(sheet.name);
+      if (sheetId === undefined) throw new Error(`Private grading sheet ${sheet.name} is missing.`);
+      engine.setSheetContent(sheetId, buildSheetRows(sheet.rows, sheet.columns, sheet.cells));
+    }
 
     // Enforce result limits for all populated grading cells, not only exported outputs.
     for (const sheet of [...sourceSheets, ...config.sheets]) {
@@ -1001,19 +1106,18 @@ export function evaluateSpreadsheet(
         rows: sheet.rows,
         columns: sheet.columns,
         cells,
-        ...(sheet.student_range === undefined ? {} : { student_range: sheet.student_range }),
       };
     });
 
     const grading = gradingConfig
       ? {
-          schema_version: 1 as const,
+          schema_version: 2 as const,
           grader_hash: gradingConfig.grader_hash,
           outputs: evaluateGradingOutputs(gradingConfig, config.template, sheetData),
         }
       : undefined;
     const snapshot = SpreadsheetSnapshotSchema.parse({
-      schema_version: 1,
+      schema_version: 2,
       template_hash: config.template_hash,
       engine: {
         name: 'hyperformula',
@@ -1046,7 +1150,7 @@ export function normalizeSpreadsheetAnswers({
   correctAnswers: Record<string, unknown>;
   submittedAnswers: Record<string, unknown>;
 }): Record<string, unknown> {
-  const rawConfigs = params._pl_spreadsheet_v1;
+  const rawConfigs = params._pl_spreadsheet_v2;
   if (rawConfigs == null || typeof rawConfigs !== 'object' || Array.isArray(rawConfigs)) {
     return submittedAnswers;
   }
@@ -1096,7 +1200,7 @@ export function normalizeSpreadsheetAnswers({
     } catch (error) {
       if (!(error instanceof SpreadsheetSubmissionError)) throw error;
       normalizedAnswers[answerName] = SpreadsheetSubmissionErrorSchema.parse({
-        schema_version: 1,
+        schema_version: 2,
         template_hash: config.template_hash,
         error: error.message,
       });
@@ -1109,7 +1213,7 @@ export function getSpreadsheetLogMetadata(
   params: Record<string, unknown>,
   correctAnswers: Record<string, unknown> = {},
 ) {
-  const rawConfigs = params._pl_spreadsheet_v1;
+  const rawConfigs = params._pl_spreadsheet_v2;
   const metadata = {
     spreadsheet_elements: 0,
     spreadsheet_sheets: 0,
@@ -1140,10 +1244,7 @@ export function getSpreadsheetLogMetadata(
     }
     const gradingConfig = SpreadsheetGradingConfigSchema.safeParse(correctAnswers[answerName]);
     if (!gradingConfig.success) continue;
-    const gradingSheets = [
-      ...(gradingConfig.data.source_sheets ?? []),
-      ...gradingConfig.data.sheets,
-    ];
+    const gradingSheets = [...gradingConfig.data.source_sheets, ...gradingConfig.data.sheets];
     metadata.spreadsheet_grading_sheets += gradingSheets.length;
     metadata.spreadsheet_grading_outputs += Object.keys(gradingConfig.data.outputs).length;
     for (const sheet of gradingSheets) {

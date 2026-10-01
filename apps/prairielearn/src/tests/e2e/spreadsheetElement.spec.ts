@@ -67,10 +67,9 @@ test('supports accessible local editing and trusted submission', async ({
   const csvGrid = csvDemo.getByRole('grid', {
     name: 'CSV budget workbook, sheet CsvBudget',
   });
-  await expect(csvGrid.getByRole('columnheader', { name: 'B', exact: true })).toBeVisible();
-  await expect(csvGrid.getByRole('columnheader', { name: 'D', exact: true })).toBeVisible();
-  await expect(csvGrid.getByRole('columnheader', { name: 'A', exact: true })).toHaveCount(0);
-  await expect(csvGrid.getByRole('columnheader', { name: 'E', exact: true })).toHaveCount(0);
+  await expect(csvGrid.getByRole('columnheader', { name: 'A', exact: true })).toBeVisible();
+  await expect(csvGrid.getByRole('columnheader', { name: 'C', exact: true })).toBeVisible();
+  await expect(csvGrid.getByRole('columnheader', { name: 'D', exact: true })).toHaveCount(0);
   const csvOptions = await csvDemo
     .locator('.pl-spreadsheet-root')
     .evaluate((element) => atob((element as HTMLElement).dataset.options ?? ''));
@@ -141,9 +140,9 @@ test('supports accessible local editing and trusted submission', async ({
   const summaryGrid = parameterDemo.getByRole('grid', {
     name: 'Spreadsheet test, sheet Summary',
   });
-  await summaryGrid.getByRole('gridcell', { name: /^B1, read-only/ }).click();
-  await expect(parameterDemo.getByLabel('Formula for B1')).toBeDisabled();
-  await expect(parameterDemo.getByRole('status')).toContainText('B1, read-only');
+  await summaryGrid.getByRole('gridcell', { name: /^A1, read-only/ }).click();
+  await expect(parameterDemo.getByLabel('Formula for A1')).toBeDisabled();
+  await expect(parameterDemo.getByRole('status')).toContainText('A1, read-only');
 
   await inputsTab.click();
   const firstCell = grid.getByRole('gridcell', { name: /^A1, read-only/ });
@@ -199,10 +198,9 @@ test('keeps file-backed grading cells outside the student range private', async 
   const grid = page.getByRole('grid', {
     name: 'File-backed spreadsheet test, sheet Inputs',
   });
+  await expect(grid.getByRole('columnheader', { name: 'A', exact: true })).toBeVisible();
   await expect(grid.getByRole('columnheader', { name: 'B', exact: true })).toBeVisible();
-  await expect(grid.getByRole('columnheader', { name: 'C', exact: true })).toBeVisible();
-  await expect(grid.getByRole('columnheader', { name: 'A', exact: true })).toHaveCount(0);
-  await expect(grid.getByRole('columnheader', { name: 'D', exact: true })).toHaveCount(0);
+  await expect(grid.getByRole('columnheader', { name: 'C', exact: true })).toHaveCount(0);
 
   const decodedOptions = await page
     .locator('.pl-spreadsheet-root')
@@ -215,20 +213,17 @@ test('keeps file-backed grading cells outside the student range private', async 
   expect(elementHtml).not.toContain('HIDDEN_SENTINEL');
   expect(elementHtml).not.toContain('=C2=6');
 
-  await editCell(grid, 'B2', '3');
+  await editCell(grid, 'A1', '3');
   const rawAnswer = page.locator('input.js-pl-spreadsheet-input[name="model"]');
-  await expect(rawAnswer).toHaveValue(/"B2":3/);
-  await expect(rawAnswer).not.toHaveValue(/A1|D2|HIDDEN_SENTINEL/);
+  await expect(rawAnswer).toHaveValue(/"A1":3/);
+  await expect(rawAnswer).not.toHaveValue(/D2|HIDDEN_SENTINEL/);
   await page.getByRole('button', { name: /Save & Grade/ }).click();
   await expect(page.getByText(/100%/).first()).toBeVisible();
 
   const submissionTable = page.getByRole('table', { name: 'Inputs' });
+  await expect(submissionTable.getByRole('columnheader', { name: 'A', exact: true })).toBeVisible();
   await expect(submissionTable.getByRole('columnheader', { name: 'B', exact: true })).toBeVisible();
-  await expect(submissionTable.getByRole('columnheader', { name: 'C', exact: true })).toBeVisible();
-  await expect(submissionTable.getByRole('columnheader', { name: 'A', exact: true })).toHaveCount(
-    0,
-  );
-  await expect(submissionTable.getByRole('columnheader', { name: 'D', exact: true })).toHaveCount(
+  await expect(submissionTable.getByRole('columnheader', { name: 'C', exact: true })).toHaveCount(
     0,
   );
   await expect(submissionTable).not.toContainText('HIDDEN_SENTINEL');
@@ -249,7 +244,7 @@ test('rejects a file-backed formula that references a hidden cell', async ({
   const grid = page.getByRole('grid', {
     name: 'File-backed spreadsheet test, sheet Inputs',
   });
-  await editCell(grid, 'B2', '=D2');
+  await editCell(grid, 'A1', '=C1');
   await expect(page.getByRole('status')).toContainText('outside declared student ranges');
 });
 

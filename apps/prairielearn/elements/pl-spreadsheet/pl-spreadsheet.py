@@ -28,6 +28,7 @@ MAX_FORMULA_LENGTH = 2048
 MAX_TEXT_LENGTH = 32 * 1024
 MAX_PAYLOAD_BYTES = 1024 * 1024
 MAX_GRADING_OUTPUTS = 100
+INTERNAL_SHEET_PREFIX = "__PL_STUDENT_"
 
 CELL_ADDRESS_RE = re.compile(r"^([A-Z]+)([1-9][0-9]*)$")
 BLOCKED_SHEET_NAME_CHARACTERS = frozenset("!:<>{}[]\0")
@@ -209,13 +210,17 @@ def _normalize_sheet_name(value: Any, description: str) -> str:
         raise ValueError(
             f"{description} must have a non-empty name of at most 31 characters without leading or trailing whitespace. The characters !, :, <, >, {{, }}, [, ], and null are not allowed."
         )
+    if value.casefold().startswith(INTERNAL_SHEET_PREFIX.casefold()):
+        raise ValueError(
+            f'{description} may not begin with the reserved prefix "{INTERNAL_SHEET_PREFIX}".'
+        )
     return value
 
 
 def _normalize_template(raw_template: Any) -> dict[str, Any]:
-    if not isinstance(raw_template, dict) or raw_template.get("schema_version") != 1:
+    if not isinstance(raw_template, dict) or raw_template.get("schema_version") != 2:
         raise ValueError(
-            'The spreadsheet template must be an object with "schema_version": 1.'
+            'The spreadsheet template must be an object with "schema_version": 2.'
         )
     raw_sheets = raw_template.get("sheets")
     if not isinstance(raw_sheets, list) or not 1 <= len(raw_sheets) <= MAX_SHEETS:
@@ -341,12 +346,12 @@ def _normalize_template(raw_template: Any) -> dict[str, Any]:
         raise ValueError(
             f"Spreadsheet templates may contain at most {MAX_FORMULAS} formulas."
         )
-    return {"schema_version": 1, "sheets": normalized_sheets}
+    return {"schema_version": 2, "sheets": normalized_sheets}
 
 
-def _template_hash(template: dict[str, Any]) -> str:
+def _content_hash(value: Any) -> str:
     serialized = json.dumps(
-        template, ensure_ascii=False, separators=(",", ":"), sort_keys=True
+        value, ensure_ascii=False, separators=(",", ":"), sort_keys=True
     )
     return hashlib.sha256(serialized.encode("utf-8")).hexdigest()
 
@@ -354,9 +359,9 @@ def _template_hash(template: dict[str, Any]) -> str:
 def _normalize_grading_config(
     raw_config: Any, template: dict[str, Any]
 ) -> dict[str, Any]:
-    if not isinstance(raw_config, dict) or raw_config.get("schema_version") != 1:
+    if not isinstance(raw_config, dict) or raw_config.get("schema_version") != 2:
         raise ValueError(
-            'The private spreadsheet grading workbook must be an object with "schema_version": 1.'
+            'The private spreadsheet grading workbook must be an object with "schema_version": 2.'
         )
     raw_sheets = raw_config.get("sheets", [])
     raw_source_sheets = raw_config.get("source_sheets", [])
@@ -421,14 +426,6 @@ def _normalize_grading_config(
                 raise ValueError(
                     f'{description} "{name}" columns must be between 1 and {MAX_COLUMNS}.'
                 )
-            if (
-                allow_public_names
-                and public_sheet
-                and (rows < public_sheet["rows"] or columns < public_sheet["columns"])
-            ):
-                raise ValueError(
-                    f'{description} "{name}" must cover its complete student range.'
-                )
             total_addressable += rows * columns
 
             raw_cells = raw_sheet.get("cells", {})
@@ -472,6 +469,59 @@ def _normalize_grading_config(
         description="Private grading sheet",
         allow_public_names=False,
     )
+
+    raw_student_overlays = raw_config.get("student_overlays", [])
+    if not isinstance(raw_student_overlays, list):
+        raise TypeError("Private spreadsheet student overlays must be a list.")
+    source_by_name = {sheet["name"]: sheet for sheet in normalized_source_sheets}
+    student_overlays: list[dict[str, str]] = []
+    overlaid_students: set[str] = set()
+    for overlay_index, raw_overlay in enumerate(raw_student_overlays, start=1):
+        if not isinstance(raw_overlay, dict):
+            raise TypeError(f"Student overlay {overlay_index} must be an object.")
+        student_sheet = raw_overlay.get("student_sheet")
+        source_sheet = raw_overlay.get("source_sheet")
+        source_range_text = raw_overlay.get("source_range")
+        if not isinstance(student_sheet, str) or student_sheet not in {
+            sheet["name"] for sheet in template["sheets"]
+        }:
+            raise ValueError(
+                f"Student overlay {overlay_index} references an unknown student sheet."
+            )
+        if student_sheet in overlaid_students:
+            raise ValueError(f'Student sheet "{student_sheet}" has multiple overlays.')
+        if not isinstance(source_sheet, str) or source_sheet not in source_by_name:
+            raise ValueError(
+                f"Student overlay {overlay_index} references an unknown source sheet."
+            )
+        if not isinstance(source_range_text, str):
+            raise TypeError(f"Student overlay {overlay_index} range must be a string.")
+        source_range = _parse_range(source_range_text)
+        source = source_by_name[source_sheet]
+        student = next(
+            sheet for sheet in template["sheets"] if sheet["name"] == student_sheet
+        )
+        if (
+            source_range is None
+            or source_range.end_row >= source["rows"]
+            or source_range.end_column >= source["columns"]
+            or source_range.shape != (student["rows"], student["columns"])
+        ):
+            raise ValueError(
+                f'Student overlay for "{student_sheet}" must be an in-bounds source range with the same shape as the student sheet.'
+            )
+        overlaid_students.add(student_sheet)
+        student_overlays.append({
+            "student_sheet": student_sheet,
+            "source_sheet": source_sheet,
+            "source_range": source_range.address,
+        })
+    expected_students = {sheet["name"] for sheet in template["sheets"]}
+    if overlaid_students != expected_students:
+        missing = sorted(expected_students - overlaid_students)
+        raise ValueError(
+            f"Private spreadsheet grading configuration is missing overlays for: {', '.join(missing)}."
+        )
 
     if total_addressable > MAX_ADDRESSABLE_CELLS:
         raise ValueError(
@@ -544,8 +594,9 @@ def _normalize_grading_config(
         outputs[output_name] = output
 
     normalized: dict[str, Any] = {
-        "schema_version": 1,
+        "schema_version": 2,
         "sheets": normalized_sheets,
+        "student_overlays": student_overlays,
         "outputs": outputs,
     }
     if raw_source_sheets:
@@ -559,7 +610,7 @@ def _normalize_grading_config(
         raise ValueError(
             f"Private spreadsheet grading workbooks must be at most {MAX_PAYLOAD_BYTES} bytes."
         )
-    return {**normalized, "grader_hash": _template_hash(normalized)}
+    return {**normalized, "grader_hash": _content_hash(normalized)}
 
 
 def _source_path(child: lxml.html.HtmlElement, data: pl.QuestionData) -> pathlib.Path:
@@ -709,9 +760,58 @@ def _validate_visible_formula_references(
                     pending.extend(_formula_nodes(node))
 
 
+def _student_relative_template(
+    source_template: dict[str, Any], source_sheets: list[dict[str, Any]]
+) -> tuple[dict[str, Any], list[dict[str, str]]]:
+    """Crop source-coordinate sheets into A1-relative student worksheets."""
+    _validate_visible_formula_references(source_template, source_sheets)
+    address_spaces = pl.SpreadsheetAddressSpaces({
+        sheet["name"]: sheet.get(
+            "student_range",
+            f"A1:{_column_name(sheet['columns'] - 1)}{sheet['rows']}",
+        )
+        for sheet in source_template["sheets"]
+    })
+    student_sheets: list[dict[str, Any]] = []
+    overlays: list[dict[str, str]] = []
+    for sheet in source_template["sheets"]:
+        name = sheet["name"]
+        address_space = address_spaces[name]
+        rows, columns = address_space.shape
+        cells: dict[str, str | float | bool] = {}
+        for source_address, value in sheet["cells"].items():
+            student_address = address_space.to_student_address(source_address).address
+            cells[student_address] = (
+                pl.rebase_spreadsheet_formula(
+                    value,
+                    current_sheet=name,
+                    address_spaces=address_spaces,
+                )
+                if isinstance(value, str) and value.startswith("=")
+                else value
+            )
+        editable_ranges = [
+            address_space.to_student_range(range_text).address
+            for range_text in sheet["editable_ranges"]
+        ]
+        student_sheets.append({
+            "name": name,
+            "rows": rows,
+            "columns": columns,
+            "cells": cells,
+            "editable_ranges": editable_ranges,
+        })
+        overlays.append({
+            "student_sheet": name,
+            "source_sheet": name,
+            "source_range": address_space.source_range.address,
+        })
+    return {"schema_version": 2, "sheets": student_sheets}, overlays
+
+
 def _prepare_file_template(
     element: lxml.html.HtmlElement, data: pl.QuestionData, answer_name: str
-) -> tuple[dict[str, Any], dict[str, Any] | None]:
+) -> tuple[dict[str, Any], list[dict[str, str]], dict[str, Any] | None]:
     data_children = element.xpath("./pl-spreadsheet-data")
     output_children = element.xpath("./pl-spreadsheet-output")
     loaded: dict[pathlib.Path, pl.SpreadsheetSourceBook] = {}
@@ -811,8 +911,13 @@ def _prepare_file_template(
             "student_range": student_range.address,
         })
 
-    template = _normalize_template({"schema_version": 1, "sheets": public_sheets})
-    _validate_visible_formula_references(template, source_sheets)
+    source_template = _normalize_template({
+        "schema_version": 2,
+        "sheets": public_sheets,
+    })
+    template, student_overlays = _student_relative_template(
+        source_template, source_sheets
+    )
 
     raw_grading_config = data["correct_answers"].get(answer_name)
     if raw_grading_config is not None and not isinstance(raw_grading_config, dict):
@@ -820,13 +925,17 @@ def _prepare_file_template(
             f'data["correct_answers"]["{answer_name}"] must be a spreadsheet grading object.'
         )
     if raw_grading_config is None and not output_children:
-        return template, None
+        return template, student_overlays, None
 
     grading_config = dict(raw_grading_config or {})
-    grading_config["schema_version"] = 1
+    grading_config["schema_version"] = 2
     grading_config["source_sheets"] = [
         *grading_config.get("source_sheets", []),
         *source_sheets,
+    ]
+    grading_config["student_overlays"] = [
+        *grading_config.get("student_overlays", []),
+        *student_overlays,
     ]
     grading_config.setdefault("sheets", [])
     outputs = dict(grading_config.get("outputs", {}))
@@ -846,14 +955,18 @@ def _prepare_file_template(
             output["required"] = pl.get_boolean_attrib(child, "required")
         outputs[output_name] = output
     grading_config["outputs"] = outputs
-    return template, _normalize_grading_config(grading_config, template)
+    return (
+        template,
+        student_overlays,
+        _normalize_grading_config(grading_config, template),
+    )
 
 
 def _get_config(
     element: lxml.html.HtmlElement, data: pl.QuestionData
 ) -> tuple[str, dict[str, Any]]:
     answer_name = pl.get_string_attrib(element, "answers-name")
-    configs = data["params"].get("_pl_spreadsheet_v1", {})
+    configs = data["params"].get("_pl_spreadsheet_v2", {})
     config = configs.get(answer_name, {}) if isinstance(configs, dict) else {}
     return answer_name, config
 
@@ -875,18 +988,46 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
             )
         if params_name not in data["params"]:
             raise ValueError(f'No value was found in data["params"]["{params_name}"].')
-        template = _normalize_template(data["params"].get(params_name))
+        source_template = _normalize_template(data["params"].get(params_name))
+        source_sheets = [
+            {
+                "name": sheet["name"],
+                "rows": sheet["rows"],
+                "columns": sheet["columns"],
+                "cells": sheet["cells"],
+            }
+            for sheet in source_template["sheets"]
+        ]
+        template, student_overlays = _student_relative_template(
+            source_template, source_sheets
+        )
         raw_grading_config = data["correct_answers"].get(answer_name)
         if raw_grading_config is not None:
+            if not isinstance(raw_grading_config, dict):
+                raise TypeError(
+                    f'data["correct_answers"]["{answer_name}"] must be a spreadsheet grading object.'
+                )
+            grading_config = dict(raw_grading_config)
+            grading_config["schema_version"] = 2
+            grading_config["source_sheets"] = [
+                *grading_config.get("source_sheets", []),
+                *source_sheets,
+            ]
+            grading_config["student_overlays"] = [
+                *grading_config.get("student_overlays", []),
+                *student_overlays,
+            ]
             data["correct_answers"][answer_name] = _normalize_grading_config(
-                raw_grading_config, template
+                grading_config, template
             )
     else:
         if not data_children:
             raise ValueError(
                 'pl-spreadsheet requires either "params-name" or at least one pl-spreadsheet-data child.'
             )
-        template, grading_config = _prepare_file_template(element, data, answer_name)
+        template, student_overlays, grading_config = _prepare_file_template(
+            element, data, answer_name
+        )
         if grading_config is not None:
             data["correct_answers"][answer_name] = grading_config
     height = pl.get_string_attrib(element, "height", DEFAULT_HEIGHT)
@@ -895,12 +1036,15 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
             'Attribute "height" must be 0 or a non-negative CSS size such as "500px" or "40rem".'
         )
 
-    configs = data["params"].get("_pl_spreadsheet_v1", {})
+    configs = data["params"].get("_pl_spreadsheet_v2", {})
     if not isinstance(configs, dict):
         configs = {}
     configs[answer_name] = {
-        "schema_version": 1,
-        "template_hash": _template_hash(template),
+        "schema_version": 2,
+        "template_hash": _content_hash({
+            "template": template,
+            "student_overlays": student_overlays,
+        }),
         "template": template,
         "allow_blank": pl.get_boolean_attrib(
             element, "allow-blank", DEFAULT_ALLOW_BLANK
@@ -908,7 +1052,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         "aria_label": pl.get_string_attrib(element, "aria-label", DEFAULT_ARIA_LABEL),
         "height": height,
     }
-    data["params"]["_pl_spreadsheet_v1"] = configs
+    data["params"]["_pl_spreadsheet_v2"] = configs
 
 
 def _input_value(cell: dict[str, Any]) -> Any:
@@ -926,21 +1070,6 @@ def _result_value(cell: dict[str, Any]) -> str:
     return str(value)
 
 
-def _student_range(sheet: dict[str, Any]) -> pl.SpreadsheetAddressRange:
-    range_text = sheet.get("student_range")
-    if isinstance(range_text, str):
-        parsed = _parse_range(range_text)
-        if parsed is not None:
-            return parsed
-    return pl.SpreadsheetAddressRange(
-        pl.SpreadsheetAddress(row=0, column=0),
-        pl.SpreadsheetAddress(
-            row=sheet.get("rows", 1) - 1,
-            column=sheet.get("columns", 1) - 1,
-        ),
-    )
-
-
 def _table_data(config: dict[str, Any], snapshot: Any) -> list[dict[str, Any]]:
     snapshot_sheets = {}
     if isinstance(snapshot, dict):
@@ -954,13 +1083,10 @@ def _table_data(config: dict[str, Any], snapshot: Any) -> list[dict[str, Any]]:
         snapshot_sheet = snapshot_sheets.get(sheet.get("name"), {})
         snapshot_cells = snapshot_sheet.get("cells", {})
         template_cells = sheet.get("cells", {})
-        student_range = _student_range(sheet)
         rows = []
-        for row_index in range(student_range.start_row, student_range.end_row + 1):
+        for row_index in range(sheet.get("rows", 1)):
             cells = []
-            for column_index in range(
-                student_range.start_column, student_range.end_column + 1
-            ):
+            for column_index in range(sheet.get("columns", 1)):
                 address = f"{_column_name(column_index)}{row_index + 1}"
                 snapshot_cell = snapshot_cells.get(address)
                 if isinstance(snapshot_cell, dict):
@@ -973,9 +1099,7 @@ def _table_data(config: dict[str, Any], snapshot: Any) -> list[dict[str, Any]]:
             "name": sheet.get("name", "Spreadsheet"),
             "columns": [
                 {"name": _column_name(index)}
-                for index in range(
-                    student_range.start_column, student_range.end_column + 1
-                )
+                for index in range(sheet.get("columns", 1))
             ],
             "rows": rows,
         })
@@ -1003,7 +1127,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     elif data["panel"] == "question" and data["editable"]:
         initial_submission = json.dumps(
             {
-                "schema_version": 1,
+                "schema_version": 2,
                 "template_hash": config.get("template_hash", ""),
                 "sheets": {},
             },
@@ -1077,7 +1201,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     if isinstance(submission_error, str):
         _add_format_error(data, answer_name, submission_error)
         return
-    if submission.get("schema_version") != 1:
+    if submission.get("schema_version") != 2:
         _add_format_error(
             data, answer_name, "The spreadsheet answer has an invalid version."
         )
@@ -1151,7 +1275,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     sheet_name, address = _first_editable_cell(config)
     data["raw_submitted_answers"][answer_name] = json.dumps(
         {
-            "schema_version": 1,
+            "schema_version": 2,
             "template_hash": config.get("template_hash", ""),
             "sheets": {sheet_name: {address: f"Test {data['test_type']}"}},
         },

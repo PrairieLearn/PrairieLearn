@@ -1,12 +1,14 @@
 import { assert, describe, it } from 'vitest';
 
 import {
+  SPREADSHEET_INTERNAL_SHEET_PREFIX,
   type SpreadsheetElementConfig,
   SpreadsheetElementConfigSchema,
   type SpreadsheetGradingConfig,
   SpreadsheetGradingConfigSchema,
   type SpreadsheetRawSubmission,
   SpreadsheetSubmissionError,
+  createSpreadsheetAddressSpace,
   evaluateSpreadsheet,
   getRelativeFillInput,
   getSpreadsheetLogMetadata,
@@ -14,18 +16,20 @@ import {
   normalizeSpreadsheetAnswers,
   parseRange,
   toRelativeAddress,
+  toRelativeRange,
   toSourceAddress,
+  toSourceRange,
 } from './spreadsheet.js';
 
 function makeConfig(): SpreadsheetElementConfig {
   return {
-    schema_version: 1,
+    schema_version: 2,
     template_hash: 'template-hash',
     allow_blank: false,
     aria_label: 'Test spreadsheet',
     height: '500px',
     template: {
-      schema_version: 1,
+      schema_version: 2,
       sheets: [
         {
           name: 'Inputs',
@@ -48,9 +52,33 @@ function makeConfig(): SpreadsheetElementConfig {
 
 function makeGradingConfig(): SpreadsheetGradingConfig {
   return {
-    schema_version: 1,
+    schema_version: 2,
     grader_hash: 'grader-hash',
+    source_sheets: [
+      {
+        name: 'Summary',
+        rows: 2,
+        columns: 2,
+        cells: { A1: 'Total', B1: '=Inputs!A2*Inputs!B2' },
+      },
+      {
+        name: 'Inputs',
+        rows: 4,
+        columns: 3,
+        cells: { A1: 'Quantity', B1: 'Price', A2: 2, B2: 4 },
+      },
+    ],
+    student_overlays: [
+      { student_sheet: 'Inputs', source_sheet: 'Inputs', source_range: 'A1:C4' },
+      { student_sheet: 'Summary', source_sheet: 'Summary', source_range: 'A1:B2' },
+    ],
     sheets: [
+      {
+        name: 'Derived',
+        rows: 1,
+        columns: 1,
+        cells: { A1: '=Checks!A1+1' },
+      },
       {
         name: 'Checks',
         rows: 3,
@@ -62,12 +90,6 @@ function makeGradingConfig(): SpreadsheetGradingConfig {
           B1: '=CONCATENATE("o","k")',
           B2: '=B2',
         },
-      },
-      {
-        name: 'Derived',
-        rows: 1,
-        columns: 1,
-        cells: { A1: '=Checks!A1+1' },
       },
     ],
     outputs: {
@@ -84,18 +106,17 @@ function makeGradingConfig(): SpreadsheetGradingConfig {
 
 function makeOffsetConfig(): SpreadsheetElementConfig {
   return {
-    schema_version: 1,
+    schema_version: 2,
     template_hash: 'template-hash',
     template: {
-      schema_version: 1,
+      schema_version: 2,
       sheets: [
         {
           name: 'Inputs',
-          rows: 3,
-          columns: 4,
-          student_range: 'B2:C3',
-          cells: { B2: 2, C2: '=B2*2' },
-          editable_ranges: ['B2:B3'],
+          rows: 2,
+          columns: 2,
+          cells: { A1: 2, B1: '=A1*2' },
+          editable_ranges: ['A1:A2'],
         },
       ],
     },
@@ -104,7 +125,7 @@ function makeOffsetConfig(): SpreadsheetElementConfig {
 
 function makeSourceGradingConfig(): SpreadsheetGradingConfig {
   return {
-    schema_version: 1,
+    schema_version: 2,
     grader_hash: 'source-grader-hash',
     source_sheets: [
       {
@@ -116,24 +137,54 @@ function makeSourceGradingConfig(): SpreadsheetGradingConfig {
           B2: 99,
           C2: '=B2*2',
           D2: '=ISBLANK(B2)',
+          D3: '=B2=4',
         },
       },
     ],
+    student_overlays: [{ student_sheet: 'Inputs', source_sheet: 'Inputs', source_range: 'B2:C3' }],
     sheets: [],
-    outputs: { cleared: { sheet: 'Inputs', cell: 'D2', required: true } },
+    outputs: {
+      cleared: { sheet: 'Inputs', cell: 'D2', required: true },
+      bridged: { sheet: 'Inputs', cell: 'D3', required: true },
+    },
   };
 }
 
 function makeSubmission(sheets: SpreadsheetRawSubmission['sheets'] = {}): SpreadsheetRawSubmission {
-  return { schema_version: 1, template_hash: 'template-hash', sheets };
+  return { schema_version: 2, template_hash: 'template-hash', sheets };
 }
 
 describe('spreadsheet ranges', () => {
   it('converts between local-grid and source coordinates', () => {
     const range = parseRange('D5:B3');
     assert.deepEqual(range, { startRow: 2, endRow: 4, startColumn: 1, endColumn: 3 });
-    assert.deepEqual(toSourceAddress(range!, { row: 1, column: 2 }), { row: 3, column: 3 });
-    assert.deepEqual(toRelativeAddress(range!, { row: 4, column: 2 }), { row: 2, column: 1 });
+    const addressSpace = createSpreadsheetAddressSpace(range!);
+    assert.deepEqual(toSourceAddress(addressSpace, { row: 1, column: 2 }), {
+      row: 3,
+      column: 3,
+    });
+    assert.deepEqual(toRelativeAddress(addressSpace, { row: 4, column: 2 }), {
+      row: 2,
+      column: 1,
+    });
+    assert.deepEqual(
+      toSourceRange(addressSpace, {
+        startRow: 0,
+        endRow: 1,
+        startColumn: 1,
+        endColumn: 2,
+      }),
+      { startRow: 2, endRow: 3, startColumn: 2, endColumn: 3 },
+    );
+    assert.deepEqual(
+      toRelativeRange(addressSpace, {
+        startRow: 2,
+        endRow: 3,
+        startColumn: 2,
+        endColumn: 3,
+      }),
+      { startRow: 0, endRow: 1, startColumn: 1, endColumn: 2 },
+    );
     assert.deepEqual(
       intersectRanges(range!, {
         startRow: 4,
@@ -143,8 +194,18 @@ describe('spreadsheet ranges', () => {
       }),
       { startRow: 4, endRow: 4, startColumn: 3, endColumn: 3 },
     );
-    assert.throws(() => toSourceAddress(range!, { row: 3, column: 0 }), RangeError);
-    assert.throws(() => toRelativeAddress(range!, { row: 2, column: 0 }), RangeError);
+    assert.throws(() => toSourceAddress(addressSpace, { row: 3, column: 0 }), RangeError);
+    assert.throws(() => toRelativeAddress(addressSpace, { row: 2, column: 0 }), RangeError);
+    assert.throws(
+      () =>
+        createSpreadsheetAddressSpace({
+          startRow: 2,
+          endRow: 1,
+          startColumn: 0,
+          endColumn: 0,
+        }),
+      RangeError,
+    );
   });
 });
 
@@ -180,7 +241,7 @@ describe('evaluateSpreadsheet', () => {
     );
 
     assert.deepEqual(evaluation.snapshot.grading, {
-      schema_version: 1,
+      schema_version: 2,
       grader_hash: 'grader-hash',
       outputs: {
         total: { type: 'number', value: 15 },
@@ -201,7 +262,7 @@ describe('evaluateSpreadsheet', () => {
   it('clears and overlays student ranges onto authoritative source sheets', () => {
     const evaluation = evaluateSpreadsheet(
       makeOffsetConfig(),
-      makeSubmission({ Inputs: { B2: null } }),
+      makeSubmission({ Inputs: { A1: null } }),
       makeSourceGradingConfig(),
     );
 
@@ -209,31 +270,69 @@ describe('evaluateSpreadsheet', () => {
       type: 'boolean',
       value: true,
     });
-    assert.equal(evaluation.snapshot.sheets[0].student_range, 'B2:C3');
+    assert.deepEqual(evaluation.snapshot.sheets[0].cells.B1, {
+      input: { type: 'formula', value: '=A1*2' },
+      result: { type: 'number', value: 0 },
+    });
     assert.notInclude(JSON.stringify(evaluation.snapshot), 'HIDDEN_SENTINEL');
     assert.notInclude(JSON.stringify(evaluation.snapshot), 'ISBLANK');
     evaluation.engine.destroy();
   });
 
-  it('rejects forged edits and formula references outside the student range', () => {
+  it('bridges student-local formulas into source-coordinate grading cells', () => {
+    const evaluation = evaluateSpreadsheet(
+      makeOffsetConfig(),
+      makeSubmission({ Inputs: { A1: '=2+2' } }),
+      makeSourceGradingConfig(),
+    );
+
+    assert.deepEqual(evaluation.snapshot.grading?.outputs.bridged, {
+      type: 'boolean',
+      value: true,
+    });
+    assert.notInclude(JSON.stringify(evaluation.snapshot), SPREADSHEET_INTERNAL_SHEET_PREFIX);
+    evaluation.engine.destroy();
+  });
+
+  it('rejects forged edits and formula references outside the student address space', () => {
     assert.throws(
-      () => evaluateSpreadsheet(makeOffsetConfig(), makeSubmission({ Inputs: { A1: 5 } })),
-      /outside the student range/,
+      () => evaluateSpreadsheet(makeOffsetConfig(), makeSubmission({ Inputs: { C1: 5 } })),
+      /outside sheet/,
     );
     assert.throws(
-      () => evaluateSpreadsheet(makeOffsetConfig(), makeSubmission({ Inputs: { B2: '=D2' } })),
+      () => evaluateSpreadsheet(makeOffsetConfig(), makeSubmission({ Inputs: { A1: '=C1' } })),
       /outside declared student ranges/,
     );
     assert.throws(
       () =>
-        evaluateSpreadsheet(makeOffsetConfig(), makeSubmission({ Inputs: { B2: '=SUM(2:2)' } })),
+        evaluateSpreadsheet(makeOffsetConfig(), makeSubmission({ Inputs: { A1: '=Hidden!A1' } })),
+      /outside declared student ranges/,
+    );
+    const transitiveEscape = makeOffsetConfig();
+    transitiveEscape.template.sheets[0].cells.B1 = '=C1';
+    assert.throws(
+      () => evaluateSpreadsheet(transitiveEscape, makeSubmission({ Inputs: { A1: '=B1' } })),
       /outside declared student ranges/,
     );
     assert.throws(
       () =>
-        evaluateSpreadsheet(makeOffsetConfig(), makeSubmission({ Inputs: { B2: '=SUM(B:B)' } })),
+        evaluateSpreadsheet(makeOffsetConfig(), makeSubmission({ Inputs: { A1: '=SUM(3:3)' } })),
       /outside declared student ranges/,
     );
+    assert.throws(
+      () =>
+        evaluateSpreadsheet(makeOffsetConfig(), makeSubmission({ Inputs: { A1: '=SUM(C:C)' } })),
+      /outside declared student ranges/,
+    );
+    assert.throws(
+      () =>
+        evaluateSpreadsheet(makeOffsetConfig(), makeSubmission({ Inputs: { A1: '=SUM(B:B)' } })),
+      /outside declared student ranges/,
+    );
+    evaluateSpreadsheet(
+      makeOffsetConfig(),
+      makeSubmission({ Inputs: { A1: '=SUM(B1:B2)' } }),
+    ).engine.destroy();
   });
 
   it('rejects required private outputs that are empty or contain an error', () => {
@@ -279,7 +378,7 @@ describe('evaluateSpreadsheet', () => {
     collision.sheets[0].name = 'inputs';
     assert.throws(
       () => evaluateSpreadsheet(makeConfig(), makeSubmission(), collision),
-      /conflicts with a student sheet/,
+      /duplicated/,
     );
 
     const invalidOutput = makeGradingConfig();
@@ -316,6 +415,7 @@ describe('evaluateSpreadsheet', () => {
       'Input\0',
       ' Input',
       '😀'.repeat(32),
+      '__PL_STUDENT_0',
     ]) {
       const config = makeConfig();
       config.template.sheets[0].name = name;
@@ -419,7 +519,7 @@ describe('evaluateSpreadsheet', () => {
       ]),
     );
     const gradingConfig: SpreadsheetGradingConfig = {
-      schema_version: 1,
+      ...makeGradingConfig(),
       grader_hash: 'large-grader',
       sheets: [{ name: 'Large', rows: 1, columns: 1, cells: { A1: largeValue } }],
       outputs,
@@ -435,7 +535,7 @@ describe('evaluateSpreadsheet', () => {
 describe('normalizeSpreadsheetAnswers', () => {
   it('replaces raw input with a trusted snapshot', () => {
     const normalized = normalizeSpreadsheetAnswers({
-      params: { _pl_spreadsheet_v1: { answer: makeConfig() } },
+      params: { _pl_spreadsheet_v2: { answer: makeConfig() } },
       correctAnswers: {},
       submittedAnswers: {
         answer: JSON.stringify(makeSubmission({ Inputs: { A2: 6 } })),
@@ -450,7 +550,7 @@ describe('normalizeSpreadsheetAnswers', () => {
 
   it('adds server-owned grading evidence to the trusted snapshot', () => {
     const normalized = normalizeSpreadsheetAnswers({
-      params: { _pl_spreadsheet_v1: { answer: makeConfig() } },
+      params: { _pl_spreadsheet_v2: { answer: makeConfig() } },
       correctAnswers: { answer: makeGradingConfig() },
       submittedAnswers: {
         answer: JSON.stringify(makeSubmission({ Inputs: { A2: 3, B2: 5 } })),
@@ -464,7 +564,7 @@ describe('normalizeSpreadsheetAnswers', () => {
     const gradingConfig = makeGradingConfig();
     gradingConfig.outputs.empty.required = true;
     const normalized = normalizeSpreadsheetAnswers({
-      params: { _pl_spreadsheet_v1: { answer: makeConfig() } },
+      params: { _pl_spreadsheet_v2: { answer: makeConfig() } },
       correctAnswers: { answer: gradingConfig },
       submittedAnswers: { answer: JSON.stringify(makeSubmission()) },
     });
@@ -477,13 +577,13 @@ describe('normalizeSpreadsheetAnswers', () => {
 
   it('rejects browser-supplied grading evidence', () => {
     const normalized = normalizeSpreadsheetAnswers({
-      params: { _pl_spreadsheet_v1: { answer: makeConfig() } },
+      params: { _pl_spreadsheet_v2: { answer: makeConfig() } },
       correctAnswers: {},
       submittedAnswers: {
         answer: JSON.stringify({
           ...makeSubmission(),
           grading: {
-            schema_version: 1,
+            schema_version: 2,
             grader_hash: 'spoofed',
             outputs: { total: { type: 'number', value: 1_000_000 } },
           },
@@ -496,7 +596,7 @@ describe('normalizeSpreadsheetAnswers', () => {
 
 describe('getSpreadsheetLogMetadata', () => {
   it('returns only structural counts', () => {
-    assert.deepEqual(getSpreadsheetLogMetadata({ _pl_spreadsheet_v1: { answer: makeConfig() } }), {
+    assert.deepEqual(getSpreadsheetLogMetadata({ _pl_spreadsheet_v2: { answer: makeConfig() } }), {
       spreadsheet_elements: 1,
       spreadsheet_sheets: 2,
       spreadsheet_addressable_cells: 16,
@@ -513,7 +613,7 @@ describe('getSpreadsheetLogMetadata', () => {
   it('counts private grading structure without logging contents', () => {
     assert.deepEqual(
       getSpreadsheetLogMetadata(
-        { _pl_spreadsheet_v1: { answer: makeConfig() } },
+        { _pl_spreadsheet_v2: { answer: makeConfig() } },
         { answer: makeGradingConfig() },
       ),
       {
@@ -522,10 +622,10 @@ describe('getSpreadsheetLogMetadata', () => {
         spreadsheet_addressable_cells: 16,
         spreadsheet_populated_cells: 6,
         spreadsheet_formulas: 1,
-        spreadsheet_grading_sheets: 2,
-        spreadsheet_grading_addressable_cells: 7,
-        spreadsheet_grading_populated_cells: 6,
-        spreadsheet_grading_formulas: 6,
+        spreadsheet_grading_sheets: 4,
+        spreadsheet_grading_addressable_cells: 23,
+        spreadsheet_grading_populated_cells: 12,
+        spreadsheet_grading_formulas: 7,
         spreadsheet_grading_outputs: 7,
       },
     );

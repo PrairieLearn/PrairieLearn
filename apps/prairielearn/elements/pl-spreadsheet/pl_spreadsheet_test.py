@@ -45,7 +45,7 @@ FILE_ELEMENT_HTML = """
 
 def template() -> dict[str, Any]:
     return {
-        "schema_version": 1,
+        "schema_version": 2,
         "sheets": [
             {
                 "name": "Inputs",
@@ -60,7 +60,7 @@ def template() -> dict[str, Any]:
 
 def grading_config() -> dict[str, Any]:
     return {
-        "schema_version": 1,
+        "schema_version": 2,
         "sheets": [
             {
                 "name": "Checks",
@@ -112,7 +112,7 @@ def file_question_data(question_path: Path, **overrides: Any) -> dict[str, Any]:
 def snapshot(
     data: dict[str, Any], *, include_editable_input: bool = True
 ) -> dict[str, Any]:
-    config = data["params"]["_pl_spreadsheet_v1"]["model"]
+    config = data["params"]["_pl_spreadsheet_v2"]["model"]
     cells = {
         "A1": {
             "input": {"type": "string", "value": "Quantity"},
@@ -129,12 +129,12 @@ def snapshot(
             "result": {"type": "number", "value": 3},
         }
     return {
-        "schema_version": 1,
+        "schema_version": 2,
         "template_hash": config["template_hash"],
         "engine": {
             "name": "hyperformula",
             "version": "3.4.0",
-            "configuration_version": 1,
+            "configuration_version": 2,
         },
         "sheets": [{"name": "Inputs", "rows": 3, "columns": 3, "cells": cells}],
     }
@@ -149,9 +149,9 @@ def element_directory(monkeypatch: pytest.MonkeyPatch) -> None:
 
 def test_prepare_persists_normalized_versioned_config(element_directory: None) -> None:
     data = prepare_data()
-    config = data["params"]["_pl_spreadsheet_v1"]["model"]
+    config = data["params"]["_pl_spreadsheet_v2"]["model"]
 
-    assert config["schema_version"] == 1
+    assert config["schema_version"] == 2
     assert len(config["template_hash"]) == 64
     assert config["template"]["sheets"][0]["editable_ranges"] == ["A2:A3"]
     assert data["answers_names"] == {"model": True}
@@ -178,7 +178,7 @@ def test_prepare_normalizes_private_grading_config(element_directory: None) -> N
     spreadsheet.prepare(ELEMENT_HTML, data)
 
     grader = data["correct_answers"]["model"]
-    assert grader["schema_version"] == 1
+    assert grader["schema_version"] == 2
     assert len(grader["grader_hash"]) == 64
     assert grader["outputs"]["calculated"] == {
         "sheet": "Checks",
@@ -197,15 +197,14 @@ def test_prepare_csv_keeps_hidden_source_cells_server_only(tmp_path: Path) -> No
 
     spreadsheet.prepare(FILE_ELEMENT_HTML, data)
 
-    config = data["params"]["_pl_spreadsheet_v1"]["model"]
+    config = data["params"]["_pl_spreadsheet_v2"]["model"]
     public_sheet = config["template"]["sheets"][0]
     assert public_sheet == {
         "name": "Inputs",
-        "rows": 3,
-        "columns": 3,
-        "cells": {"B2": "2", "C2": "=B2*2", "B3": "3", "C3": "=B3*2"},
-        "editable_ranges": ["B2:B3"],
-        "student_range": "B2:C3",
+        "rows": 2,
+        "columns": 2,
+        "cells": {"A1": "2", "B1": "=A1*2", "A2": "3", "B2": "=A2*2"},
+        "editable_ranges": ["A1:A2"],
     }
     assert "HIDDEN_SENTINEL" not in json.dumps(config)
     assert "=C2=4" not in json.dumps(config)
@@ -215,10 +214,17 @@ def test_prepare_csv_keeps_hidden_source_cells_server_only(tmp_path: Path) -> No
     assert grader["outputs"] == {
         "score": {"sheet": "Inputs", "cell": "D2", "required": True}
     }
+    assert grader["student_overlays"] == [
+        {
+            "student_sheet": "Inputs",
+            "source_sheet": "Inputs",
+            "source_range": "B2:C3",
+        }
+    ]
 
     table = spreadsheet._table_data(config, None)[0]
-    assert [column["name"] for column in table["columns"]] == ["B", "C"]
-    assert [row["number"] for row in table["rows"]] == [2, 3]
+    assert [column["name"] for column in table["columns"]] == ["A", "B"]
+    assert [row["number"] for row in table["rows"]] == [1, 2]
 
 
 def test_prepare_rejects_visible_formula_references_outside_student_range(
@@ -277,6 +283,11 @@ def test_sheet_name_blocklist_rejects_unsafe_characters_and_long_names(
         spreadsheet._normalize_sheet_name(name, "Sheet 1")
 
 
+def test_sheet_names_cannot_use_the_private_student_mirror_prefix() -> None:
+    with pytest.raises(ValueError, match="reserved prefix"):
+        spreadsheet._normalize_sheet_name("__pl_student_0", "Sheet 1")
+
+
 def test_private_grader_hash_changes_with_configuration(
     element_directory: None,
 ) -> None:
@@ -291,6 +302,47 @@ def test_private_grader_hash_changes_with_configuration(
     assert (
         first["correct_answers"]["model"]["grader_hash"]
         != second["correct_answers"]["model"]["grader_hash"]
+    )
+
+
+def test_template_hash_includes_the_private_source_address_space(
+    element_directory: None,
+) -> None:
+    first_template = {
+        "schema_version": 2,
+        "sheets": [
+            {
+                "name": "Inputs",
+                "rows": 2,
+                "columns": 2,
+                "cells": {"A1": 1},
+                "editable_ranges": ["A1"],
+                "student_range": "A1",
+            }
+        ],
+    }
+    second_template = {
+        "schema_version": 2,
+        "sheets": [
+            {
+                "name": "Inputs",
+                "rows": 2,
+                "columns": 2,
+                "cells": {"B2": 1},
+                "editable_ranges": ["B2"],
+                "student_range": "B2",
+            }
+        ],
+    }
+    first = question_data(params={"workbook": first_template})
+    second = question_data(params={"workbook": second_template})
+
+    spreadsheet.prepare(ELEMENT_HTML, first)
+    spreadsheet.prepare(ELEMENT_HTML, second)
+
+    assert (
+        first["params"]["_pl_spreadsheet_v2"]["model"]["template_hash"]
+        != second["params"]["_pl_spreadsheet_v2"]["model"]["template_hash"]
     )
 
 
@@ -402,8 +454,8 @@ def test_parse_rejects_blank_and_error_envelopes(element_directory: None) -> Non
 
     data["format_errors"] = {}
     data["submitted_answers"]["model"] = {
-        "schema_version": 1,
-        "template_hash": data["params"]["_pl_spreadsheet_v1"]["model"]["template_hash"],
+        "schema_version": 2,
+        "template_hash": data["params"]["_pl_spreadsheet_v2"]["model"]["template_hash"],
         "error": "Cell Inputs!A1 is read-only.",
     }
     spreadsheet.parse(ELEMENT_HTML, data)
@@ -451,10 +503,10 @@ def test_render_does_not_expose_private_grading_config(element_directory: None) 
 
 def test_render_restores_a_prior_raw_submission(element_directory: None) -> None:
     data = prepare_data()
-    config = data["params"]["_pl_spreadsheet_v1"]["model"]
+    config = data["params"]["_pl_spreadsheet_v2"]["model"]
     prior = json.dumps(
         {
-            "schema_version": 1,
+            "schema_version": 2,
             "template_hash": config["template_hash"],
             "sheets": {"Inputs": {"A2": 3}},
         },
@@ -467,11 +519,11 @@ def test_render_restores_a_prior_raw_submission(element_directory: None) -> None
     assert rendered.xpath('//input[@name="model"]/@value') == [prior]
 
 
-def test_missing_optional_persisted_fields_use_defaults(
+def test_missing_optional_display_fields_use_defaults(
     element_directory: None,
 ) -> None:
     data = prepare_data()
-    config = data["params"]["_pl_spreadsheet_v1"]["model"]
+    config = data["params"]["_pl_spreadsheet_v2"]["model"]
     del config["aria_label"]
     del config["height"]
     del config["allow_blank"]

@@ -48,6 +48,8 @@ __all__ = [
     "Spreadsheet",
     "SpreadsheetAddress",
     "SpreadsheetAddressRange",
+    "SpreadsheetAddressSpace",
+    "SpreadsheetAddressSpaces",
     "SpreadsheetBook",
     "SpreadsheetCell",
     "SpreadsheetCellView",
@@ -74,6 +76,7 @@ __all__ = [
     "read_spreadsheet_csv",
     "read_spreadsheet_tsv",
     "read_spreadsheet_xlsx",
+    "rebase_spreadsheet_formula",
 ]
 
 
@@ -165,17 +168,16 @@ class SpreadsheetSnapshotSheet(TypedDict):
     rows: int
     columns: int
     cells: dict[str, SpreadsheetCell]
-    student_range: NotRequired[str]
 
 
 class SpreadsheetSnapshotGrading(TypedDict):
-    schema_version: Literal[1]
+    schema_version: Literal[2]
     grader_hash: str
     outputs: dict[str, SpreadsheetResult]
 
 
 class SpreadsheetSnapshot(TypedDict):
-    schema_version: Literal[1]
+    schema_version: Literal[2]
     template_hash: str
     engine: SpreadsheetSnapshotEngine
     sheets: list[SpreadsheetSnapshotSheet]
@@ -348,10 +350,18 @@ def _normalized_address(address: str) -> tuple[str, int, int]:
     return normalized, int(match.group(2)) - 1, _column_index(match.group(1))
 
 
+def _validated_snapshot(snapshot: object) -> Mapping[str, object]:
+    if not isinstance(snapshot, Mapping):
+        raise TypeError("A spreadsheet snapshot must be a mapping.")
+    if snapshot.get("schema_version") != 2:
+        raise ValueError("The spreadsheet snapshot must use schema version 2.")
+    return snapshot
+
+
 def _get_sheet(
     snapshot: SpreadsheetSnapshot, sheet_name: SheetName
 ) -> Mapping[str, object]:
-    sheets = snapshot.get("sheets", [])
+    sheets = _validated_snapshot(snapshot).get("sheets", [])
     if not isinstance(sheets, list):
         raise TypeError("The spreadsheet snapshot has an invalid sheets field.")
     for sheet in sheets:
@@ -379,26 +389,6 @@ def get_spreadsheet_cell(
         raise ValueError(
             f'Spreadsheet cell "{sheet_name}!{normalized}" is outside the sheet.'
         )
-    raw_student_range = sheet.get("student_range")
-    if raw_student_range is not None:
-        if not isinstance(raw_student_range, str):
-            raise TypeError(
-                f'Spreadsheet sheet "{sheet_name}" has an invalid student range.'
-            )
-        try:
-            visible_range = SpreadsheetAddressRange.from_a1(raw_student_range)
-        except ValueError as exc:
-            raise TypeError(
-                f'Spreadsheet sheet "{sheet_name}" has an invalid student range.'
-            ) from exc
-        if visible_range.end.row >= rows or visible_range.end.column >= columns:
-            raise ValueError(
-                f'Spreadsheet student range "{sheet_name}!{visible_range}" is outside the sheet.'
-            )
-        if SpreadsheetAddress(row=row, column=column) not in visible_range:
-            raise ValueError(
-                f'Spreadsheet cell "{sheet_name}!{normalized}" is outside the sheet.'
-            )
     cells = sheet.get("cells", {})
     if not isinstance(cells, Mapping):
         raise TypeError(f'Spreadsheet sheet "{sheet_name}" has invalid cells.')
@@ -456,18 +446,20 @@ def get_spreadsheet_grading_output(
     snapshot: SpreadsheetSnapshot, output_name: str
 ) -> SpreadsheetResult:
     """Return a named private-workbook output from a normalized snapshot."""
-    grading = snapshot.get("grading")
+    grading = _validated_snapshot(snapshot).get("grading")
     if not isinstance(grading, Mapping):
         raise KeyError(
             "The spreadsheet snapshot does not contain private grading outputs."
         )
+    if grading.get("schema_version") != 2:
+        raise ValueError("Spreadsheet grading outputs must use schema version 2.")
     outputs = grading.get("outputs")
     if not isinstance(outputs, Mapping) or output_name not in outputs:
         raise KeyError(f'Unknown spreadsheet grading output "{output_name}".')
     result = outputs[output_name]
     if not isinstance(result, dict) or not isinstance(result.get("type"), str):
         raise TypeError(f'Spreadsheet grading output "{output_name}" is invalid.')
-    return result
+    return cast(SpreadsheetResult, result)
 
 
 def _decode_sheet_name(sheet_text: str) -> SheetName:
@@ -931,6 +923,212 @@ class SpreadsheetAddressRange:
 
 
 @dataclass(frozen=True, slots=True)
+class SpreadsheetAddressSpace:
+    """A bounded mapping between source-workbook and student-local addresses."""
+
+    source_range: SpreadsheetAddressRange
+
+    @classmethod
+    def from_source_range(
+        cls, source_range: str | SpreadsheetAddressRange
+    ) -> SpreadsheetAddressSpace:
+        """Create an address space from an A1 source range."""
+        if isinstance(source_range, str):
+            source_range = SpreadsheetAddressRange.from_a1(source_range)
+        return cls(source_range=source_range)
+
+    @property
+    def shape(self) -> tuple[int, int]:
+        return self.source_range.shape
+
+    @property
+    def student_range(self) -> SpreadsheetAddressRange:
+        rows, columns = self.shape
+        return SpreadsheetAddressRange(
+            SpreadsheetAddress(row=0, column=0),
+            SpreadsheetAddress(row=rows - 1, column=columns - 1),
+        )
+
+    def to_student_address(
+        self, source: str | SpreadsheetAddress
+    ) -> SpreadsheetAddress:
+        """Translate a bounded source address into the student coordinate space."""
+        if isinstance(source, str):
+            source = SpreadsheetAddress.from_a1(source)
+        return self.source_range.to_relative(source)
+
+    def to_source_address(
+        self, student: str | SpreadsheetAddress
+    ) -> SpreadsheetAddress:
+        """Translate a bounded student address into the source coordinate space."""
+        if isinstance(student, str):
+            student = SpreadsheetAddress.from_a1(student)
+        return self.source_range.to_source(student)
+
+    def to_student_range(
+        self, source: str | SpreadsheetAddressRange
+    ) -> SpreadsheetAddressRange:
+        """Translate a bounded source range into the student coordinate space."""
+        if isinstance(source, str):
+            source = SpreadsheetAddressRange.from_a1(source)
+        return SpreadsheetAddressRange(
+            self.to_student_address(source.start),
+            self.to_student_address(source.end),
+        )
+
+    def to_source_range(
+        self, student: str | SpreadsheetAddressRange
+    ) -> SpreadsheetAddressRange:
+        """Translate a bounded student range into the source coordinate space."""
+        if isinstance(student, str):
+            student = SpreadsheetAddressRange.from_a1(student)
+        if student not in self.student_range:
+            raise ValueError("Student spreadsheet range is outside its address space.")
+        return SpreadsheetAddressRange(
+            self.to_source_address(student.start),
+            self.to_source_address(student.end),
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class SpreadsheetAddressSpaces:
+    """Case-insensitive sheet address spaces for a student-visible workbook."""
+
+    spaces: Mapping[SheetName, SpreadsheetAddressSpace | str]
+    _by_name: dict[str, tuple[SheetName, SpreadsheetAddressSpace]] = field(init=False)
+
+    def __post_init__(self) -> None:
+        """Validate and index the case-insensitive sheet names."""
+        by_name: dict[str, tuple[SheetName, SpreadsheetAddressSpace]] = {}
+        for name, value in self.spaces.items():
+            folded = name.casefold()
+            if folded in by_name:
+                raise ValueError(f'Spreadsheet address space "{name}" is duplicated.')
+            space = (
+                SpreadsheetAddressSpace.from_source_range(value)
+                if isinstance(value, str)
+                else value
+            )
+            by_name[folded] = (name, space)
+        object.__setattr__(self, "_by_name", by_name)
+
+    def __getitem__(self, sheet_name: SheetName) -> SpreadsheetAddressSpace:
+        """Return the bounded address space for a sheet name."""
+        try:
+            return self._by_name[sheet_name.casefold()][1]
+        except KeyError:
+            raise KeyError(
+                f'Unknown student-visible spreadsheet sheet "{sheet_name}".'
+            ) from None
+
+    def canonical_name(self, sheet_name: SheetName) -> SheetName:
+        try:
+            return self._by_name[sheet_name.casefold()][0]
+        except KeyError:
+            raise KeyError(
+                f'Unknown student-visible spreadsheet sheet "{sheet_name}".'
+            ) from None
+
+
+def _render_formula_reference_endpoint(
+    endpoint: FormulaReferenceEndpoint,
+    address_spaces: SpreadsheetAddressSpaces,
+    current_sheet: SheetName,
+) -> str:
+    target_sheet = endpoint.sheet or current_sheet
+    space = address_spaces[target_sheet]
+    prefix = (
+        f"{_safe_sheet_name(address_spaces.canonical_name(target_sheet))}!"
+        if endpoint.sheet
+        else ""
+    )
+    if isinstance(endpoint, FormulaCellReference):
+        student = space.to_student_address(
+            SpreadsheetAddress(
+                row=endpoint.row - 1,
+                column=_column_index(endpoint.column),
+            )
+        )
+        column = (
+            f"{'$' if endpoint.column_absolute else ''}{_column_name(student.column)}"
+        )
+        row = f"{'$' if endpoint.row_absolute else ''}{student.row + 1}"
+        return f"{prefix}{column}{row}"
+    if isinstance(endpoint, FormulaColumnReference):
+        source = SpreadsheetAddress(
+            row=space.source_range.start.row,
+            column=_column_index(endpoint.column),
+        )
+        student = space.to_student_address(source)
+        return f"{prefix}{'$' if endpoint.column_absolute else ''}{_column_name(student.column)}"
+    source = SpreadsheetAddress(
+        row=endpoint.row - 1,
+        column=space.source_range.start.column,
+    )
+    student = space.to_student_address(source)
+    return f"{prefix}{'$' if endpoint.row_absolute else ''}{student.row + 1}"
+
+
+def _rebase_formula_reference(
+    reference: FormulaReferenceNode | FormulaRangeNode,
+    address_spaces: SpreadsheetAddressSpaces,
+    current_sheet: SheetName,
+) -> str:
+    if isinstance(reference, FormulaReferenceNode):
+        return _render_formula_reference_endpoint(
+            reference.reference, address_spaces, current_sheet
+        )
+    target_sheets = {
+        endpoint.sheet.casefold()
+        for endpoint in (reference.start, reference.end)
+        if endpoint.sheet is not None
+    }
+    if len(target_sheets) > 1:
+        raise ValueError("Spreadsheet ranges cannot span multiple sheets.")
+    start = _render_formula_reference_endpoint(
+        reference.start, address_spaces, current_sheet
+    )
+    end = _render_formula_reference_endpoint(
+        reference.end, address_spaces, reference.start.sheet or current_sheet
+    )
+    return f"{start}:{end}"
+
+
+def rebase_spreadsheet_formula(
+    formula: str,
+    *,
+    current_sheet: SheetName,
+    address_spaces: SpreadsheetAddressSpaces
+    | Mapping[SheetName, SpreadsheetAddressSpace | str],
+) -> str:
+    """Rewrite source-workbook formula references into student-local coordinates."""
+    spaces = (
+        address_spaces
+        if isinstance(address_spaces, SpreadsheetAddressSpaces)
+        else SpreadsheetAddressSpaces(address_spaces)
+    )
+    try:
+        tokens = cast(list[_FormulaToken], Tokenizer(formula).items)
+        rendered: list[str] = ["="]
+        for token in tokens:
+            if token.type == "OPERAND" and token.subtype == "RANGE":
+                rendered.append(
+                    _rebase_formula_reference(
+                        _parse_reference(token.value), spaces, current_sheet
+                    )
+                )
+            else:
+                rendered.append(token.value)
+        return "".join(rendered)
+    except (KeyError, ValueError, SpreadsheetFormulaParseError):
+        raise
+    except Exception as exc:
+        raise SpreadsheetFormulaParseError(
+            "The spreadsheet formula could not be rebased."
+        ) from exc
+
+
+@dataclass(frozen=True, slots=True)
 class SpreadsheetQualifiedAddressRange:
     """Rectangular cell range qualified by its sheet name."""
 
@@ -980,10 +1178,11 @@ class SpreadsheetSourceSheet(TypedDict):
     columns: int
     cells: dict[str, SpreadsheetSourceCellValue]
     editable_ranges: NotRequired[list[str]]
+    student_range: NotRequired[str]
 
 
 class SpreadsheetSourceBook(TypedDict):
-    schema_version: Literal[1]
+    schema_version: Literal[2]
     sheets: list[SpreadsheetSourceSheet]
 
 
@@ -1111,7 +1310,7 @@ def dataframes_to_spreadsheet_book(
                 include_index=include_index,
             )
         )
-    return {"schema_version": 1, "sheets": sheets}
+    return {"schema_version": 2, "sheets": sheets}
 
 
 def read_spreadsheet_csv(
@@ -1340,10 +1539,9 @@ class SpreadsheetBook:
 
     def __post_init__(self, snapshot: SpreadsheetSnapshot) -> None:
         """Validate and index the normalized snapshot."""
-        if not isinstance(snapshot, Mapping):
-            raise TypeError("A spreadsheet snapshot must be a mapping.")
+        validated_snapshot = _validated_snapshot(snapshot)
 
-        raw_sheets = snapshot.get("sheets", [])
+        raw_sheets = validated_snapshot.get("sheets", [])
         if not isinstance(raw_sheets, list):
             raise TypeError("The spreadsheet snapshot has an invalid sheets field.")
         sheets: dict[SheetName, _SparseCellsData] = {}
@@ -1370,27 +1568,10 @@ class SpreadsheetBook:
                 raise ValueError(f'Duplicate spreadsheet sheet "{name}".')
             normalized_sheet_names.add(normalized_sheet_name)
 
-            raw_student_range = raw_sheet.get("student_range")
-            if raw_student_range is None:
-                visible_range = SpreadsheetAddressRange(
-                    SpreadsheetAddress(row=0, column=0),
-                    SpreadsheetAddress(row=rows - 1, column=columns - 1),
-                )
-            else:
-                if not isinstance(raw_student_range, str):
-                    raise TypeError(
-                        f'Spreadsheet sheet "{name}" has an invalid student range.'
-                    )
-                try:
-                    visible_range = SpreadsheetAddressRange.from_a1(raw_student_range)
-                except ValueError as exc:
-                    raise TypeError(
-                        f'Spreadsheet sheet "{name}" has an invalid student range.'
-                    ) from exc
-                if visible_range.end.row >= rows or visible_range.end.column >= columns:
-                    raise ValueError(
-                        f'Spreadsheet student range "{name}!{visible_range}" is outside the sheet.'
-                    )
+            visible_range = SpreadsheetAddressRange(
+                SpreadsheetAddress(row=0, column=0),
+                SpreadsheetAddress(row=rows - 1, column=columns - 1),
+            )
 
             raw_cells = raw_sheet.get("cells", {})
             if not isinstance(raw_cells, Mapping):
@@ -1409,10 +1590,6 @@ class SpreadsheetBook:
                     raise ValueError(
                         f'Spreadsheet cell "{name}!{address}" is outside the sheet.'
                     )
-                if SpreadsheetAddress(row=row, column=column) not in visible_range:
-                    raise ValueError(
-                        f'Spreadsheet cell "{name}!{address}" is outside the student range.'
-                    )
                 if address in cells:
                     raise ValueError(f'Duplicate spreadsheet cell "{name}!{address}".')
                 context = f'Spreadsheet cell "{name}!{address}"'
@@ -1428,12 +1605,16 @@ class SpreadsheetBook:
                 addressed_data=cells,
             )
 
-        grading = snapshot.get("grading")
+        grading = validated_snapshot.get("grading")
         grading_outputs: dict[str, SpreadsheetResult] = {}
         if grading is not None:
             if not isinstance(grading, Mapping):
                 raise TypeError(
                     "The spreadsheet snapshot has invalid private grading outputs."
+                )
+            if grading.get("schema_version") != 2:
+                raise ValueError(
+                    "Spreadsheet grading outputs must use schema version 2."
                 )
             raw_outputs = grading.get("outputs")
             if not isinstance(raw_outputs, Mapping):
