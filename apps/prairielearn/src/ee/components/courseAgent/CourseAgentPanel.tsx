@@ -163,7 +163,7 @@ function Panel({
               >
                 {current?.title ?? panel.title}
               </Dropdown.Toggle>
-              <Dropdown.Menu className="w-100 course-agent-conversations">
+              <Dropdown.Menu className="w-100 course-agent-conversations" align={{ sm: 'start' }}>
                 <Dropdown.Item
                   active={!panel.selected}
                   onClick={() => changePanel({ selected: '', title: 'New conversation' })}
@@ -279,6 +279,12 @@ function Conversation({
   const cleanup = useMutation(trpc.courseAgent.cleanup.mutationOptions());
   const decision = useMutation(trpc.courseAgent.decide.mutationOptions());
   const prepare = useMutation(trpc.courseAgent.prepare.mutationOptions());
+  const working =
+    !snapshot.blocked &&
+    (send.isPending ||
+      create.isPending ||
+      busy ||
+      snapshot.diagnostics?.state === 'waiting_for_agent');
   const pendingRef = useRef<{ id: string; text: string; expectedRevision: number } | null>(null);
   // Stream observation is re-established after navigation; closing it never stops native execution.
   useEffect(() => {
@@ -511,12 +517,7 @@ function Conversation({
           )}
         />
         <div role="status" aria-live="polite" className="px-3 pb-3">
-          {(send.isPending ||
-            create.isPending ||
-            (!snapshot.blocked && busy) ||
-            (!snapshot.blocked && snapshot.diagnostics?.state === 'waiting_for_agent')) && (
-            <ActivityStatus state="streaming" statusText="Working…" />
-          )}
+          {working && <ActivityStatus state="streaming" statusText="Working…" />}
         </div>
       </div>
       <Modal
@@ -578,30 +579,31 @@ function Conversation({
           >
             <i className="bi bi-bar-chart" aria-hidden="true" />
           </Button>
-          {busy && (
+          {working ? (
             <Button
-              variant="outline-secondary"
-              disabled={cancel.isPending}
-              onClick={() => cancel.mutate({ conversationId: id })}
+              type="button"
+              className="course-agent-action ms-auto"
+              variant="primary"
+              aria-label="Stop"
+              title="Stop"
+              disabled={
+                cancel.isPending || create.isPending || send.isPending || !createdIdRef.current
+              }
+              onClick={() => cancel.mutate({ conversationId: createdIdRef.current })}
             >
-              Stop
+              <i className="bi bi-stop-fill" aria-hidden="true" />
+            </Button>
+          ) : (
+            <Button
+              type="submit"
+              aria-label="Send"
+              title="Send"
+              className="course-agent-action ms-auto"
+              disabled={connection !== 'connected' || snapshot.blocked || !draft.trim()}
+            >
+              <i className="bi bi-send-fill" aria-hidden="true" />
             </Button>
           )}
-          <Button
-            type="submit"
-            aria-label={busy ? 'Steer' : 'Send'}
-            title={busy ? 'Steer' : 'Send'}
-            className="course-agent-action ms-auto"
-            disabled={
-              connection !== 'connected' ||
-              snapshot.blocked ||
-              send.isPending ||
-              create.isPending ||
-              !draft.trim()
-            }
-          >
-            <i className="bi bi-send-fill" aria-hidden="true" />
-          </Button>
         </div>
       </Form>
     </>

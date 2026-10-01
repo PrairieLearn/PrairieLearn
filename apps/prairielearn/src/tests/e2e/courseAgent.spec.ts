@@ -54,13 +54,27 @@ test('conversation and unsent draft persist across course pages', async ({
     'New conversation',
   );
   await expect(page.getByText('Working…', { exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Stop', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Send', exact: true })).toHaveCount(0);
   const conversationTitle = await page
     .getByRole('button', { name: 'Conversation', exact: true })
     .innerText();
   await page.getByRole('button', { name: 'New conversation', exact: true }).click();
   await page.getByRole('button', { name: 'Conversation', exact: true }).click();
   await expect(page.getByLabel('Working', { exact: true })).toBeVisible();
-  await expect(page.getByLabel('New response', { exact: true })).toBeVisible({ timeout: 20000 });
+  const unread = page.getByLabel('New response', { exact: true });
+  await expect(unread).toBeVisible({ timeout: 20000 });
+  const dot = await unread.boundingBox();
+  expect(dot!.width).toBe(dot!.height);
+  const selector = await page
+    .getByRole('button', { name: 'Conversation', exact: true })
+    .boundingBox();
+  const menu = await page
+    .getByRole('button', { name: conversationTitle, exact: false })
+    .locator('..')
+    .boundingBox();
+  expect(menu!.x).toBeCloseTo(selector!.x, 0);
+  expect(menu!.width).toBeCloseTo(selector!.width, 0);
   await page.getByRole('button', { name: conversationTitle, exact: false }).click();
   await composer.fill('Keep this draft.');
   await page.getByRole('link', { name: 'Questions', exact: true }).click();
@@ -103,6 +117,12 @@ test('conversation and unsent draft persist across course pages', async ({
   await page.getByRole('button', { name: 'Close course agent' }).click();
   await expect(page.getByRole('button', { name: 'Open course agent' })).toBeVisible();
   await page.getByRole('button', { name: 'Open course agent' }).click();
+  await composer.fill('Stop this request.');
+  await composer.press('Enter');
+  const stopButton = page.getByRole('button', { name: 'Stop', exact: true });
+  await expect(stopButton).toBeEnabled();
+  await stopButton.click();
+  await expect(page.getByRole('button', { name: 'Send', exact: true })).toBeVisible();
 });
 
 test('denial after sandbox shutdown remains durable and resumes through a hidden continuation', async ({
@@ -159,7 +179,9 @@ test('denial after sandbox shutdown remains durable and resumes through a hidden
     page.getByText('The user denied this proposal. Nothing was published.', { exact: true }),
   ).toHaveCount(0);
   await page.getByLabel('Message', { exact: true }).fill('Next request');
-  await expect(page.getByRole('button', { name: /^(Send|Steer)$/ })).toBeEnabled();
+  await expect(page.getByRole('button', { name: 'Send', exact: true })).toBeEnabled({
+    timeout: 20000,
+  });
   await page.reload();
   await expect(page.getByText('Code change · Rejected', { exact: true })).toBeVisible();
   await expect(page.getByText(/push_sync result for operation/)).toHaveCount(0);
