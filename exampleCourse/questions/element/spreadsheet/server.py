@@ -74,6 +74,16 @@ def grade(data):
     ]
     score = sum(checks) / len(checks)
     data["partial_scores"]["model"] = {"score": score, "weight": 1}
+    inventory = pl.SpreadsheetBook(data["submitted_answers"]["inventory"])
+    data["partial_scores"]["inventory"] = {
+        "score": int(inventory.outputs["is_correct"].value is True),
+        "weight": 1,
+    }
+    labor = pl.SpreadsheetBook(data["submitted_answers"]["labor"])
+    data["partial_scores"]["labor"] = {
+        "score": int(labor.outputs["is_correct"].value is True),
+        "weight": 1,
+    }
     pl.set_weighted_score_data(data)
     data["feedback"]["model"] = (
         "The inputs, formula structure, and private grading outputs are correct."

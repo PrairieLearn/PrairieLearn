@@ -1,10 +1,73 @@
 <pl-question-panel>
-  <p>Enter 3 in B2, 4 in C2, and <code>=B2*C2</code> in D2.</p>
+  <p>
+    This question is a sandbox for the spreadsheet element's authoring modes. In
+    the first workbook, enter 3 in B2, 4 in C2, and <code>=B2*C2</code> in D2. The
+    file-backed examples start with correct values so that they can be explored
+    without changing them.
+  </p>
 </pl-question-panel>
 
-<pl-spreadsheet
-  answers-name="model"
-  params-name="workbook"
-  aria-label="Spreadsheet test"
-  height="400px"
-></pl-spreadsheet>
+<section aria-labelledby="parameter-workbook-heading" class="mb-5">
+  <h2 id="parameter-workbook-heading" class="h4">Parameter and DataFrame workbook</h2>
+  <p>
+    Demonstrates a Python-defined multi-sheet workbook, DataFrame conversion,
+    formulas, editable ranges, a non-A1 visible range, and a private grading sheet.
+  </p>
+  <pl-spreadsheet
+    answers-name="model"
+    params-name="workbook"
+    aria-label="Spreadsheet test"
+    height="400px"
+  ></pl-spreadsheet>
+</section>
+
+<section aria-labelledby="csv-workbook-heading" class="mb-5">
+  <h2 id="csv-workbook-heading" class="h4">CSV source with a hidden output</h2>
+  <p>
+    Only B2:D3 is exposed from <code>budget.csv</code>. Column E contains a grading
+    formula that is evaluated on the server and returned only as the named output
+    <code>is_correct</code>.
+  </p>
+  <pl-spreadsheet answers-name="csv_model" aria-label="CSV budget workbook" height="300px">
+    <pl-spreadsheet-data
+      source-file="budget.csv"
+      sheet-name="CsvBudget"
+      student-range="B2:D3"
+      editable-ranges="B2:C3"
+    ></pl-spreadsheet-data>
+    <pl-spreadsheet-output
+      name="is_correct"
+      sheet-name="CsvBudget"
+      cell="E2"
+      required="true"
+    ></pl-spreadsheet-output>
+  </pl-spreadsheet>
+</section>
+
+<section aria-labelledby="tsv-workbook-heading" class="mb-5">
+  <h2 id="tsv-workbook-heading" class="h4">TSV sources combined as a sheetbook</h2>
+  <p>
+    Two single-sheet TSV files form one workbook. The locked summary formula refers
+    to the visible range in the editable Rates sheet, while its grading check stays
+    outside the student range.
+  </p>
+  <pl-spreadsheet answers-name="tsv_model" aria-label="TSV rate workbook" height="300px">
+    <pl-spreadsheet-data
+      source-file="rates.tsv"
+      sheet-name="Rates"
+      student-range="B2:D3"
+      editable-ranges="B2:C3"
+    ></pl-spreadsheet-data>
+    <pl-spreadsheet-data
+      source-file="rate-summary.tsv"
+      sheet-name="RateSummary"
+      student-range="A1:B1"
+    ></pl-spreadsheet-data>
+    <pl-spreadsheet-output
+      name="is_correct"
+      sheet-name="RateSummary"
+      cell="C1"
+      required="true"
+    ></pl-spreadsheet-output>
+  </pl-spreadsheet>
+</section>
