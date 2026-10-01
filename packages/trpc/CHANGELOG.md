@@ -1,5 +1,11 @@
 # @prairielearn/trpc
 
+## 1.0.2
+
+### Patch Changes
+
+- c71261f: Upgrade all JavaScript dependencies
+
 ## 1.0.1
 
 ### Patch Changes
