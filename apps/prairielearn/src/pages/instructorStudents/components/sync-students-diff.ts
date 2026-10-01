@@ -1,20 +1,24 @@
 import type { EnumEnrollmentStatus } from '../../../lib/db-types.js';
+import type { SyncLabelUpdate } from '../instructorStudents.shared.js';
 
 export interface StudentSyncItem {
   uid: string;
   currentStatus: EnumEnrollmentStatus | null;
   enrollmentId: string | null;
   name?: string | null;
+  labelUpdate?: SyncLabelUpdate;
 }
 
 export interface SyncPreview {
   toInvite: StudentSyncItem[];
   toCancelInvitation: StudentSyncItem[];
   toRemove: StudentSyncItem[];
+  toUpdateLabels: StudentSyncItem[];
   unchangedCount: number;
 }
 
 export interface SyncEnrollmentInfo {
+  student_label_ids: string[];
   enrollment: {
     id: string;
     status: EnumEnrollmentStatus;
@@ -37,6 +41,7 @@ export interface SyncEnrollmentInfo {
 export function computeSyncDiff(
   inputUids: string[],
   currentEnrollments: SyncEnrollmentInfo[],
+  labelsByUid = new Map<string, string[] | undefined>(),
 ): SyncPreview {
   const inputUidSet = new Set(inputUids);
   const currentUidMap = new Map<string, SyncEnrollmentInfo>();
@@ -51,23 +56,41 @@ export function computeSyncDiff(
   const toInvite: StudentSyncItem[] = [];
   const toCancelInvitation: StudentSyncItem[] = [];
   const toRemove: StudentSyncItem[] = [];
+  const toUpdateLabels: StudentSyncItem[] = [];
   let unchangedCount = 0;
 
   for (const uid of inputUids) {
     const existing = currentUidMap.get(uid);
-    if (!existing) {
-      toInvite.push({
-        uid,
-        currentStatus: null,
-        enrollmentId: null,
-      });
-    } else if (!['joined', 'invited'].includes(existing.enrollment.status)) {
-      toInvite.push({
-        uid: existing.user?.uid ?? existing.enrollment.pending_uid ?? uid,
-        currentStatus: existing.enrollment.status,
-        enrollmentId: existing.enrollment.id,
-        name: existing.user?.name,
-      });
+    const labelIds = labelsByUid.get(uid);
+    const labelUpdate =
+      labelIds === undefined
+        ? undefined
+        : {
+            uid,
+            expected: existing
+              ? {
+                  enrollmentId: existing.enrollment.id,
+                  status: existing.enrollment.status,
+                  labelIds: existing.student_label_ids,
+                }
+              : null,
+            labelIds,
+          };
+    const item: StudentSyncItem = {
+      uid,
+      currentStatus: existing?.enrollment.status ?? null,
+      enrollmentId: existing?.enrollment.id ?? null,
+      name: existing?.user?.name,
+      labelUpdate,
+    };
+    if (!existing || !['joined', 'invited'].includes(existing.enrollment.status)) {
+      toInvite.push(item);
+    } else if (
+      labelUpdate &&
+      (new Set(labelUpdate.labelIds).size !== new Set(existing.student_label_ids).size ||
+        labelUpdate.labelIds.some((id) => !existing.student_label_ids.includes(id)))
+    ) {
+      toUpdateLabels.push(item);
     } else {
       unchangedCount++;
     }
@@ -91,5 +114,5 @@ export function computeSyncDiff(
     }
   }
 
-  return { toInvite, toCancelInvitation, toRemove, unchangedCount };
+  return { toInvite, toCancelInvitation, toRemove, toUpdateLabels, unchangedCount };
 }

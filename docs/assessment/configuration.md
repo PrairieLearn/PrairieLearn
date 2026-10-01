@@ -832,17 +832,34 @@ Assessment tools provide students with utilities they can use while working on q
 
 ### Available tools
 
-| Tool                        | Description                                                                      |
-| --------------------------- | -------------------------------------------------------------------------------- |
-| [`calculator`](#calculator) | A scientific calculator with expression evaluation, history, and deg/rad toggle. |
+| Tool                        | Description                                                                       |
+| --------------------------- | --------------------------------------------------------------------------------- |
+| [`calculator`](#calculator) | A calculator with Basic, Scientific, and Advanced presets and persistent history. |
 
 #### Calculator
 
-The calculator tool is a scientific calculator with expression evaluation, history, and deg/rad toggle. The calculator history is persistent across the assessment.
+The calculator tool supports expression evaluation and persistent history. By default, it uses the unrestricted Advanced preset, which supports assignments and the evaluation of integrals and derivatives. Instructors can choose a restricted Basic or Scientific preset in the assessment settings or in `infoAssessment.json`. Zone overrides are also available in the question editor.
 
-| Property  | Type    | Description                                           |
-| --------- | ------- | ----------------------------------------------------- |
-| `enabled` | boolean | Whether the calculator is enabled. (default: `false`) |
+| Property  | Type    | Description                                                              |
+| --------- | ------- | ------------------------------------------------------------------------ |
+| `enabled` | boolean | Whether the calculator is enabled. (default: `false`)                    |
+| `type`    | string  | Calculator preset: `"basic"`, `"scientific"`, or `"advanced"` (default). |
+
+- **Basic**: arithmetic, parentheses, fractions, percentages, and the previous answer (the `ans` button). Letter input and constants such as π and e are unavailable.
+- **Scientific**: all Basic operations plus powers, roots, logarithms, trigonometric and inverse trigonometric functions, absolute value, π, e, and the deg/rad toggle.
+- **Advanced**: an unrestricted calculator with alphabet and function panels.
+
+Basic and Scientific each provide a single keypad panel. Both reject integrals, sums, assignments, and arbitrary variables and functions, whether typed or pasted. Custom panel combinations and fine-grained function settings are not currently supported.
+
+```json title="infoAssessment.json"
+{
+  "tools": {
+    "calculator": { "enabled": true, "type": "basic" }
+  }
+}
+```
+
+When the calculator is enabled, use the **Calculator** button to preview the selected preset without saving your changes.
 
 ### Enabling tools for an entire assessment
 
@@ -860,7 +877,7 @@ To enable a tool for all questions in an assessment, add a `tools` property to t
 
 ### Overriding tools per zone
 
-Zone-level tool configuration override the assessment-level configuration on a per-tool basis. For example, you can enable the calculator for the entire assessment but disable it in a specific zone:
+Zone-level tool settings override the assessment-level settings on a per-tool basis. For example, you can enable the calculator for the entire assessment but disable it in a specific zone:
 
 ```json title="infoAssessment.json"
 {

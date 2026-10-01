@@ -25,10 +25,11 @@ $(function() {
     />
     <input
       type="file"
-      accept="image/jpeg,image/png"
+      accept="image/jpeg,image/png,image/heic,image/heif,.heic,.heif"
       class="js-manual-upload-input d-none"
       aria-label="Upload image"
     />
+    <div class="js-manual-upload-message small px-2 py-1 d-none" role="status" aria-label="Image upload"></div>
     {{/editable}}
     <div class="position-relative">
       <div class="js-uploaded-image-container position-relative">

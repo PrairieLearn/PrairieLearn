@@ -799,8 +799,9 @@ const rateLimiter = new RedisRateLimiter({
       // This error could happen during a specific request, but we shouldn't
       // associate it with that request - we just happened to try to set up
       // Redis during a given request. We'll use a fresh scope to capture this.
-      Sentry.withScope((scope) => {
-        scope.clear();
+      const scope = new Sentry.Scope();
+      scope.setClient(Sentry.getCurrentScope().getClient());
+      Sentry.withScope(scope, () => {
         Sentry.captureException(err);
       });
     });

@@ -138,7 +138,7 @@
         },
         "image": {
           "type": "string",
-          "description": "The Docker image that will be used to grade this question. Should be specified as Dockerhub image."
+          "description": "The public Docker image that will be used to grade this question. Use a public image from Docker Hub (docker.io), GHCR (ghcr.io), Quay (quay.io), GitLab (registry.gitlab.com), or Amazon ECR Public (public.ecr.aws). For example, docker.io/org/image:tag for Docker Hub or ghcr.io/org/image:tag for GHCR. Custom registry domains and explicit ports are not supported."
         },
         "entrypoint": {
           "anyOf": [
@@ -283,7 +283,7 @@
         },
         "image": {
           "type": "string",
-          "description": "The Docker image that will be used to serve this question. Should be specified as Dockerhub image."
+          "description": "The public Docker image that will be used to serve this question. Use a public image from Docker Hub (docker.io), GHCR (ghcr.io), Quay (quay.io), GitLab (registry.gitlab.com), or Amazon ECR Public (public.ecr.aws). For example, docker.io/org/image:tag for Docker Hub or ghcr.io/org/image:tag for GHCR. Custom registry domains and explicit ports are not supported."
         },
         "port": {
           "description": "The port number used in the Docker image. If not specified, the port is retrieved from the workspace image labels.",
@@ -334,14 +334,7 @@
             "type": "string"
           },
           "additionalProperties": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "type": ["string", "null"]
           },
           "description": "Environment variables to set inside the workspace container. Use a null value to unset a variable."
         },
@@ -391,29 +384,12 @@
             "enum": ["string", "number", "boolean"]
           },
           "default": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "number"
-              },
-              {
-                "type": "boolean"
-              }
-            ]
+            "type": ["string", "number", "boolean"]
           },
           "enum": {
             "type": "array",
             "items": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "number"
-                }
-              ]
+              "type": ["string", "number"]
             }
           }
         },
