@@ -33,7 +33,7 @@
     "@vitest/eslint-plugin": "^1.6.27",
     "eslint-import-resolver-typescript": "^4.4.5",
     "eslint-plugin-import-x": "^4.17.1",
-    "eslint-plugin-jsdoc": "^63.3.3",
+    "eslint-plugin-jsdoc": "^64.5.4",
     "eslint-plugin-jsx-a11y-x": "^0.2.0",
     "eslint-plugin-no-floating-promise": "^2.0.0",
     "eslint-plugin-perfectionist": "^5.12.1",
