@@ -17,6 +17,7 @@ export const SPREADSHEET_MAX_FORMULAS = 1000;
 export const SPREADSHEET_MAX_FORMULA_LENGTH = 2048;
 export const SPREADSHEET_MAX_TEXT_LENGTH = 32 * 1024;
 export const SPREADSHEET_MAX_PAYLOAD_BYTES = 1024 * 1024;
+export const SPREADSHEET_MAX_GRADING_OUTPUTS = 100;
 
 export const SPREADSHEET_ALLOWED_FUNCTIONS = new Set([
   'ABS',
@@ -136,6 +137,40 @@ export const SpreadsheetElementConfigSchema = z
 
 export type SpreadsheetElementConfig = z.infer<typeof SpreadsheetElementConfigSchema>;
 
+const SpreadsheetGradingSheetSchema = z
+  .object({
+    name: z
+      .string()
+      .min(1)
+      .max(31)
+      .regex(/^[^\\/*?:[\]]+$/)
+      .refine((name) => name.trim() === name),
+    rows: z.number().int().min(1).max(SPREADSHEET_MAX_ROWS),
+    columns: z.number().int().min(1).max(SPREADSHEET_MAX_COLUMNS),
+    cells: z.record(z.string(), CellInputSchema),
+  })
+  .strict();
+
+const SpreadsheetGradingOutputSchema = z
+  .object({
+    sheet: z.string().min(1),
+    cell: z.string().min(1),
+  })
+  .strict();
+
+export const SpreadsheetGradingConfigSchema = z
+  .object({
+    schema_version: z.literal(1),
+    grader_hash: z.string().min(1),
+    sheets: z.array(SpreadsheetGradingSheetSchema).min(1).max(SPREADSHEET_MAX_SHEETS),
+    outputs: z
+      .record(z.string().min(1).max(128), SpreadsheetGradingOutputSchema)
+      .refine((outputs) => Object.keys(outputs).length <= SPREADSHEET_MAX_GRADING_OUTPUTS),
+  })
+  .strict();
+
+export type SpreadsheetGradingConfig = z.infer<typeof SpreadsheetGradingConfigSchema>;
+
 export const SpreadsheetRawSubmissionSchema = z
   .object({
     schema_version: z.literal(1),
@@ -153,7 +188,7 @@ const SnapshotInputSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('formula'), value: z.string() }).strict(),
 ]);
 
-const SnapshotResultSchema = z.discriminatedUnion('type', [
+export const SpreadsheetSnapshotResultSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('empty') }).strict(),
   z.object({ type: z.literal('number'), value: z.number() }).strict(),
   z.object({ type: z.literal('string'), value: z.string() }).strict(),
@@ -168,7 +203,7 @@ const SnapshotResultSchema = z.discriminatedUnion('type', [
 ]);
 
 const SpreadsheetSnapshotCellSchema = z
-  .object({ input: SnapshotInputSchema, result: SnapshotResultSchema })
+  .object({ input: SnapshotInputSchema, result: SpreadsheetSnapshotResultSchema })
   .strict();
 
 export const SpreadsheetSnapshotSchema = z
@@ -192,6 +227,14 @@ export const SpreadsheetSnapshotSchema = z
         })
         .strict(),
     ),
+    grading: z
+      .object({
+        schema_version: z.literal(1),
+        grader_hash: z.string(),
+        outputs: z.record(z.string(), SpreadsheetSnapshotResultSchema),
+      })
+      .strict()
+      .optional(),
   })
   .strict();
 
@@ -392,6 +435,88 @@ function validateTemplate(template: SpreadsheetTemplate): void {
   }
 }
 
+function validateGradingConfig(
+  config: SpreadsheetGradingConfig,
+  template: SpreadsheetTemplate,
+): void {
+  if (new TextEncoder().encode(JSON.stringify(config)).byteLength > SPREADSHEET_MAX_PAYLOAD_BYTES) {
+    throw new Error(
+      `Private spreadsheet grading workbooks must be at most ${SPREADSHEET_MAX_PAYLOAD_BYTES} bytes.`,
+    );
+  }
+  if (Object.keys(config.outputs).length === 0) {
+    throw new Error('Private spreadsheet grading workbooks must define at least one output.');
+  }
+  let addressableCells = 0;
+  let populatedCells = 0;
+  let formulas = 0;
+  const publicSheetNames = new Set(
+    template.sheets.map((sheet) => sheet.name.toLocaleLowerCase('en-US')),
+  );
+  const gradingSheetNames = new Set<string>();
+
+  for (const sheet of config.sheets) {
+    const foldedName = sheet.name.toLocaleLowerCase('en-US');
+    if (publicSheetNames.has(foldedName)) {
+      throw new Error(`Private grading sheet ${sheet.name} conflicts with a student sheet.`);
+    }
+    if (gradingSheetNames.has(foldedName)) {
+      throw new Error(`Private grading sheet name ${sheet.name} is duplicated.`);
+    }
+    gradingSheetNames.add(foldedName);
+    addressableCells += sheet.rows * sheet.columns;
+
+    for (const [address, input] of Object.entries(sheet.cells)) {
+      const parsedAddress = parseCellAddress(address);
+      if (
+        !parsedAddress ||
+        parsedAddress.row >= sheet.rows ||
+        parsedAddress.column >= sheet.columns
+      ) {
+        throw new Error(`Cell ${address} is outside private grading sheet ${sheet.name}.`);
+      }
+      populatedCells += 1;
+      if (typeof input === 'string' && input.startsWith('=')) {
+        formulas += 1;
+        const formulaError = validateFormula(input);
+        if (formulaError) throw new Error(formulaError);
+      }
+    }
+  }
+
+  if (addressableCells > SPREADSHEET_MAX_ADDRESSABLE_CELLS) {
+    throw new Error(
+      `Private grading workbooks may contain at most ${SPREADSHEET_MAX_ADDRESSABLE_CELLS} cells.`,
+    );
+  }
+  if (populatedCells > SPREADSHEET_MAX_POPULATED_CELLS) {
+    throw new Error(
+      `Private grading workbooks may contain at most ${SPREADSHEET_MAX_POPULATED_CELLS} populated cells.`,
+    );
+  }
+  if (formulas > SPREADSHEET_MAX_FORMULAS) {
+    throw new Error(
+      `Private grading workbooks may contain at most ${SPREADSHEET_MAX_FORMULAS} formulas.`,
+    );
+  }
+
+  const sheetsByName = new Map(config.sheets.map((sheet) => [sheet.name, sheet]));
+  for (const [outputName, output] of Object.entries(config.outputs)) {
+    const sheet = sheetsByName.get(output.sheet);
+    if (!sheet) {
+      throw new Error(
+        `Private grading output ${outputName} references unknown sheet ${output.sheet}.`,
+      );
+    }
+    const address = parseCellAddress(output.cell);
+    if (!address || address.row >= sheet.rows || address.column >= sheet.columns) {
+      throw new Error(
+        `Private grading output ${outputName} references a cell outside sheet ${output.sheet}.`,
+      );
+    }
+  }
+}
+
 function mergeSubmission(
   config: SpreadsheetElementConfig,
   submission: SpreadsheetRawSubmission,
@@ -495,9 +620,119 @@ function snapshotResult(value: ReturnType<HyperFormula['getCellValue']>) {
   return { type: 'string' as const, value };
 }
 
+function buildSheetRows(
+  rows: number,
+  columns: number,
+  cells: Record<string, SpreadsheetCellInput>,
+): RawCellContent[][] {
+  const data: RawCellContent[][] = Array.from({ length: rows }, () =>
+    Array.from({ length: columns }, () => null),
+  );
+  for (const [address, input] of Object.entries(cells)) {
+    const parsedAddress = parseCellAddress(address);
+    if (!parsedAddress) continue;
+    data[parsedAddress.row][parsedAddress.column] = input;
+  }
+  return data;
+}
+
+const HYPERFORMULA_CONFIG = {
+  language: 'enGB',
+  licenseKey: 'gpl-v3',
+  maxRows: SPREADSHEET_MAX_ROWS,
+  maxColumns: SPREADSHEET_MAX_COLUMNS,
+  nullDate: { year: 1899, month: 12, day: 30 },
+  undoLimit: 100,
+  useArrayArithmetic: false,
+  useRegularExpressions: false,
+  useWildcards: false,
+} as const;
+
+function evaluateGradingOutputs(
+  config: SpreadsheetGradingConfig,
+  template: SpreadsheetTemplate,
+  studentSheetData: Record<string, RawCellContent[][]>,
+): Record<string, z.infer<typeof SpreadsheetSnapshotResultSchema>> {
+  validateGradingConfig(config, template);
+  const gradingSheetData = Object.fromEntries(
+    Object.entries(studentSheetData).map(([name, rows]) => [name, rows.map((row) => [...row])]),
+  );
+  for (const sheet of config.sheets) {
+    gradingSheetData[sheet.name] = buildSheetRows(sheet.rows, sheet.columns, sheet.cells);
+  }
+
+  const engine = HyperFormula.buildFromSheets(gradingSheetData, HYPERFORMULA_CONFIG);
+  try {
+    const privateSheetIds = new Set(
+      config.sheets.map((sheet) => {
+        const sheetId = engine.getSheetId(sheet.name);
+        if (sheetId === undefined) {
+          throw new Error(`Private grading sheet ${sheet.name} is missing.`);
+        }
+        return sheetId;
+      }),
+    );
+    for (const sheet of template.sheets) {
+      const sheetId = engine.getSheetId(sheet.name);
+      if (sheetId === undefined) throw new Error(`Student sheet ${sheet.name} is missing.`);
+      for (const [row, values] of studentSheetData[sheet.name].entries()) {
+        for (const [col, input] of values.entries()) {
+          if (typeof input !== 'string' || !input.startsWith('=')) continue;
+          const precedents = engine.getCellPrecedents({ sheet: sheetId, row, col });
+          if (
+            precedents.some((precedent) =>
+              privateSheetIds.has('sheet' in precedent ? precedent.sheet : precedent.start.sheet),
+            )
+          ) {
+            throw new SpreadsheetSubmissionError(
+              'Student formulas cannot reference private grading sheets.',
+            );
+          }
+        }
+      }
+    }
+
+    // Enforce result limits for all populated grading cells, not only exported outputs.
+    for (const sheet of config.sheets) {
+      const sheetId = engine.getSheetId(sheet.name);
+      if (sheetId === undefined) throw new Error(`Private grading sheet ${sheet.name} is missing.`);
+      for (const address of Object.keys(sheet.cells)) {
+        const parsedAddress = parseCellAddress(address);
+        if (!parsedAddress) continue;
+        snapshotResult(
+          engine.getCellValue({
+            sheet: sheetId,
+            row: parsedAddress.row,
+            col: parsedAddress.column,
+          }),
+        );
+      }
+    }
+
+    return Object.fromEntries(
+      Object.entries(config.outputs).map(([name, output]) => {
+        const sheetId = engine.getSheetId(output.sheet);
+        const address = parseCellAddress(output.cell);
+        if (sheetId === undefined || !address) {
+          throw new Error(`Private grading output ${name} has an invalid reference.`);
+        }
+        return [
+          name,
+          snapshotResult(
+            engine.getCellValue({ sheet: sheetId, row: address.row, col: address.column }),
+          ),
+        ];
+      }),
+    );
+  } finally {
+    engine.destroy();
+  }
+}
+
 export function evaluateSpreadsheet(
   config: SpreadsheetElementConfig,
   submission: SpreadsheetRawSubmission,
+  gradingConfig?: SpreadsheetGradingConfig,
 ): SpreadsheetEvaluation {
   validateTemplate(config.template);
   if (submission.template_hash !== config.template_hash) {
@@ -508,28 +743,10 @@ export function evaluateSpreadsheet(
   const merged = mergeSubmission(config, submission);
   const sheetData: Record<string, RawCellContent[][]> = {};
   for (const sheet of config.template.sheets) {
-    const rows: RawCellContent[][] = Array.from({ length: sheet.rows }, () =>
-      Array.from({ length: sheet.columns }, () => null),
-    );
-    for (const [address, input] of Object.entries(merged[sheet.name])) {
-      const parsedAddress = parseCellAddress(address);
-      if (!parsedAddress) continue;
-      rows[parsedAddress.row][parsedAddress.column] = input;
-    }
-    sheetData[sheet.name] = rows;
+    sheetData[sheet.name] = buildSheetRows(sheet.rows, sheet.columns, merged[sheet.name]);
   }
 
-  const engine = HyperFormula.buildFromSheets(sheetData, {
-    language: 'enGB',
-    licenseKey: 'gpl-v3',
-    maxRows: SPREADSHEET_MAX_ROWS,
-    maxColumns: SPREADSHEET_MAX_COLUMNS,
-    nullDate: { year: 1899, month: 12, day: 30 },
-    undoLimit: 100,
-    useArrayArithmetic: false,
-    useRegularExpressions: false,
-    useWildcards: false,
-  });
+  const engine = HyperFormula.buildFromSheets(sheetData, HYPERFORMULA_CONFIG);
 
   try {
     const sheets = config.template.sheets.map((sheet, sheetIndex) => {
@@ -557,6 +774,13 @@ export function evaluateSpreadsheet(
       return { name: sheet.name, rows: sheet.rows, columns: sheet.columns, cells };
     });
 
+    const grading = gradingConfig
+      ? {
+          schema_version: 1 as const,
+          grader_hash: gradingConfig.grader_hash,
+          outputs: evaluateGradingOutputs(gradingConfig, config.template, sheetData),
+        }
+      : undefined;
     const snapshot = SpreadsheetSnapshotSchema.parse({
       schema_version: 1,
       template_hash: config.template_hash,
@@ -566,6 +790,7 @@ export function evaluateSpreadsheet(
         configuration_version: SPREADSHEET_CONFIGURATION_VERSION,
       },
       sheets,
+      grading,
     });
     if (
       new TextEncoder().encode(JSON.stringify(snapshot)).byteLength > SPREADSHEET_MAX_PAYLOAD_BYTES
@@ -583,9 +808,11 @@ export function evaluateSpreadsheet(
 
 export function normalizeSpreadsheetAnswers({
   params,
+  correctAnswers,
   submittedAnswers,
 }: {
   params: Record<string, unknown>;
+  correctAnswers: Record<string, unknown>;
   submittedAnswers: Record<string, unknown>;
 }): Record<string, unknown> {
   const rawConfigs = params._pl_spreadsheet_v1;
@@ -600,6 +827,14 @@ export function normalizeSpreadsheetAnswers({
       throw new Error(`Invalid persisted pl-spreadsheet configuration for ${answerName}`);
     }
     const config = parsedConfig.data;
+    const rawGradingConfig = correctAnswers[answerName];
+    const parsedGradingConfig =
+      rawGradingConfig === undefined
+        ? undefined
+        : SpreadsheetGradingConfigSchema.safeParse(rawGradingConfig);
+    if (parsedGradingConfig && !parsedGradingConfig.success) {
+      throw new Error(`Invalid persisted pl-spreadsheet grading configuration for ${answerName}`);
+    }
     try {
       const rawAnswer = submittedAnswers[answerName];
       if (typeof rawAnswer !== 'string') {
@@ -620,7 +855,11 @@ export function normalizeSpreadsheetAnswers({
       if (!parsedSubmission.success) {
         throw new SpreadsheetSubmissionError('The spreadsheet answer has an invalid structure.');
       }
-      const { snapshot, engine } = evaluateSpreadsheet(config, parsedSubmission.data);
+      const { snapshot, engine } = evaluateSpreadsheet(
+        config,
+        parsedSubmission.data,
+        parsedGradingConfig?.data,
+      );
       engine.destroy();
       normalizedAnswers[answerName] = snapshot;
     } catch (error) {
@@ -635,7 +874,10 @@ export function normalizeSpreadsheetAnswers({
   return normalizedAnswers;
 }
 
-export function getSpreadsheetLogMetadata(params: Record<string, unknown>) {
+export function getSpreadsheetLogMetadata(
+  params: Record<string, unknown>,
+  correctAnswers: Record<string, unknown> = {},
+) {
   const rawConfigs = params._pl_spreadsheet_v1;
   const metadata = {
     spreadsheet_elements: 0,
@@ -643,13 +885,18 @@ export function getSpreadsheetLogMetadata(params: Record<string, unknown>) {
     spreadsheet_addressable_cells: 0,
     spreadsheet_populated_cells: 0,
     spreadsheet_formulas: 0,
+    spreadsheet_grading_sheets: 0,
+    spreadsheet_grading_addressable_cells: 0,
+    spreadsheet_grading_populated_cells: 0,
+    spreadsheet_grading_formulas: 0,
+    spreadsheet_grading_outputs: 0,
   };
   if (rawConfigs == null || typeof rawConfigs !== 'object' || Array.isArray(rawConfigs)) {
     return metadata;
   }
 
   metadata.spreadsheet_elements = Object.keys(rawConfigs).length;
-  for (const rawConfig of Object.values(rawConfigs)) {
+  for (const [answerName, rawConfig] of Object.entries(rawConfigs)) {
     const config = SpreadsheetElementConfigSchema.safeParse(rawConfig);
     if (!config.success) continue;
     metadata.spreadsheet_sheets += config.data.template.sheets.length;
@@ -657,6 +904,17 @@ export function getSpreadsheetLogMetadata(params: Record<string, unknown>) {
       metadata.spreadsheet_addressable_cells += sheet.rows * sheet.columns;
       metadata.spreadsheet_populated_cells += Object.keys(sheet.cells).length;
       metadata.spreadsheet_formulas += Object.values(sheet.cells).filter(
+        (value) => typeof value === 'string' && value.startsWith('='),
+      ).length;
+    }
+    const gradingConfig = SpreadsheetGradingConfigSchema.safeParse(correctAnswers[answerName]);
+    if (!gradingConfig.success) continue;
+    metadata.spreadsheet_grading_sheets += gradingConfig.data.sheets.length;
+    metadata.spreadsheet_grading_outputs += Object.keys(gradingConfig.data.outputs).length;
+    for (const sheet of gradingConfig.data.sheets) {
+      metadata.spreadsheet_grading_addressable_cells += sheet.rows * sheet.columns;
+      metadata.spreadsheet_grading_populated_cells += Object.keys(sheet.cells).length;
+      metadata.spreadsheet_grading_formulas += Object.values(sheet.cells).filter(
         (value) => typeof value === 'string' && value.startsWith('='),
       ).length;
     }

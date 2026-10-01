@@ -41,6 +41,24 @@ def template() -> dict[str, Any]:
     }
 
 
+def grading_config() -> dict[str, Any]:
+    return {
+        "schema_version": 1,
+        "sheets": [
+            {
+                "name": "Checks",
+                "rows": 2,
+                "columns": 1,
+                "cells": {"A1": "=Inputs!B2", "A2": "=A1=6"},
+            }
+        ],
+        "outputs": {
+            "calculated": {"sheet": "Checks", "cell": "a1"},
+            "is_correct": {"sheet": "Checks", "cell": "A2"},
+        },
+    }
+
+
 def question_data(**overrides: Any) -> dict[str, Any]:
     data = {
         "params": {"workbook": template()},
@@ -109,6 +127,76 @@ def test_prepare_persists_normalized_versioned_config(element_directory: None) -
     assert len(config["template_hash"]) == 64
     assert config["template"]["sheets"][0]["editable_ranges"] == ["A2:A3"]
     assert data["answers_names"] == {"model": True}
+
+
+def test_prepare_normalizes_private_grading_config(element_directory: None) -> None:
+    data = question_data(correct_answers={"model": grading_config()})
+
+    spreadsheet.prepare(ELEMENT_HTML, data)
+
+    grader = data["correct_answers"]["model"]
+    assert grader["schema_version"] == 1
+    assert len(grader["grader_hash"]) == 64
+    assert grader["outputs"]["calculated"] == {"sheet": "Checks", "cell": "A1"}
+    assert grader["sheets"][0]["cells"]["A1"] == "=Inputs!B2"
+
+
+def test_private_grader_hash_changes_with_configuration(
+    element_directory: None,
+) -> None:
+    first = question_data(correct_answers={"model": grading_config()})
+    second_grader = grading_config()
+    second_grader["sheets"][0]["cells"]["A2"] = "=A1=7"
+    second = question_data(correct_answers={"model": second_grader})
+
+    spreadsheet.prepare(ELEMENT_HTML, first)
+    spreadsheet.prepare(ELEMENT_HTML, second)
+
+    assert (
+        first["correct_answers"]["model"]["grader_hash"]
+        != second["correct_answers"]["model"]["grader_hash"]
+    )
+
+
+@pytest.mark.parametrize(
+    ("mutate", "message"),
+    [
+        (lambda value: value["sheets"][0].update(name="inputs"), "conflicts"),
+        (lambda value: value["sheets"][0].update(rows=1001), "rows must be between"),
+        (
+            lambda value: value["sheets"][0]["cells"].update({"A1": "=RAND()"}),
+            "unsupported function RAND",
+        ),
+        (
+            lambda value: value["outputs"]["calculated"].update(cell="B1"),
+            "outside sheet",
+        ),
+        (lambda value: value.update(outputs={}), "define 1 to 100 outputs"),
+    ],
+)
+def test_prepare_rejects_invalid_private_grading_config(
+    mutate: Any, message: str, element_directory: None
+) -> None:
+    grader = grading_config()
+    mutate(grader)
+    data = question_data(correct_answers={"model": grader})
+
+    with pytest.raises(ValueError, match=message):
+        spreadsheet.prepare(ELEMENT_HTML, data)
+
+
+def test_prepare_rejects_oversized_private_grading_config(
+    element_directory: None,
+) -> None:
+    grader = grading_config()
+    grader["sheets"][0].update(
+        rows=33,
+        cells={f"A{index + 1}": "x" * (32 * 1024) for index in range(33)},
+    )
+    data = question_data(correct_answers={"model": grader})
+
+    with pytest.raises(ValueError, match="at most 1048576 bytes"):
+        spreadsheet.prepare(ELEMENT_HTML, data)
 
 
 @pytest.mark.parametrize(
@@ -194,6 +282,16 @@ def test_render_editable_and_read_only_views(element_directory: None) -> None:
     data["panel"] = "answer"
     answer_html = spreadsheet.render(ELEMENT_HTML, data)
     assert "grading is defined by the question" in answer_html
+
+
+def test_render_does_not_expose_private_grading_config(element_directory: None) -> None:
+    data = question_data(correct_answers={"model": grading_config()})
+    spreadsheet.prepare(ELEMENT_HTML, data)
+
+    rendered = spreadsheet.render(ELEMENT_HTML, data)
+
+    assert "Checks" not in rendered
+    assert "=Inputs!B2" not in rendered
 
 
 def test_render_restores_a_prior_raw_submission(element_directory: None) -> None:

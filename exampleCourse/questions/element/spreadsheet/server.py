@@ -1,4 +1,4 @@
-from typing import Any
+import prairielearn as pl
 
 
 def generate(data):
@@ -33,30 +33,54 @@ def generate(data):
             },
         ],
     }
-
-
-def _cell(snapshot: dict[str, Any], sheet_name: str, address: str) -> dict[str, Any]:
-    sheet = next(sheet for sheet in snapshot["sheets"] if sheet["name"] == sheet_name)
-    return sheet["cells"][address]
+    data["correct_answers"]["model"] = {
+        "schema_version": 1,
+        "sheets": [
+            {
+                "name": "Checks",
+                "rows": 3,
+                "columns": 1,
+                "cells": {
+                    "A1": "=Inputs!D2",
+                    "A2": "=A1=12",
+                    "A3": "=1/0",
+                },
+            }
+        ],
+        "outputs": {
+            "line_total": {"sheet": "Checks", "cell": "A1"},
+            "line_total_is_correct": {"sheet": "Checks", "cell": "A2"},
+            "example_error": {"sheet": "Checks", "cell": "A3"},
+        },
+    }
 
 
 def grade(data):
+    # External graders read this same object from
+    # data["submitted_answers"]["model"] in /grade/data/data.json.
     snapshot = data["submitted_answers"]["model"]
-    quantity = _cell(snapshot, "Inputs", "B2")
-    unit_price = _cell(snapshot, "Inputs", "C2")
-    line_total = _cell(snapshot, "Inputs", "D2")
-    summary_total = _cell(snapshot, "Summary", "B1")
+    formula = pl.get_spreadsheet_formula(snapshot, "Inputs", "D2")
+    formula_ast = pl.get_spreadsheet_formula_ast(snapshot, "Inputs", "D2")
+    expected_ast = pl.parse_spreadsheet_formula("=B2*C2")
+    grading_error = pl.get_spreadsheet_grading_output(snapshot, "example_error")
 
-    correct = (
-        quantity["input"] == {"type": "number", "value": 3}
-        and unit_price["input"] == {"type": "number", "value": 4}
-        and line_total["input"] == {"type": "formula", "value": "=B2*C2"}
-        and line_total["result"] == {"type": "number", "value": 12}
-        and summary_total["result"] == {"type": "number", "value": 12}
-    )
-    data["score"] = 1 if correct else 0
+    checks = [
+        pl.get_spreadsheet_value(snapshot, "Inputs", "B2") == 3,
+        pl.get_spreadsheet_value(snapshot, "Inputs", "C2") == 4,
+        formula == "=B2*C2",
+        formula_ast is not None and formula_ast["root"] == expected_ast["root"],
+        pl.get_spreadsheet_value(snapshot, "Inputs", "D2") == 12,
+        pl.get_spreadsheet_grading_output(snapshot, "line_total")
+        == {"type": "number", "value": 12},
+        pl.get_spreadsheet_grading_output(snapshot, "line_total_is_correct")
+        == {"type": "boolean", "value": True},
+        grading_error.get("type") == "error",
+    ]
+    score = sum(checks) / len(checks)
+    data["partial_scores"]["model"] = {"score": score, "weight": 1}
+    pl.set_weighted_score_data(data)
     data["feedback"]["model"] = (
-        "The formula input and both calculated values are correct."
-        if correct
-        else "Check the two inputs, the exact formula, and the calculated totals."
+        "The inputs, formula structure, and private grading outputs are correct."
+        if score == 1
+        else "Check the inputs, formula, and calculated line total."
     )

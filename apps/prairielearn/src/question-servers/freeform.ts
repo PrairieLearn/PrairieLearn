@@ -1644,10 +1644,12 @@ export async function parse(
     });
 
     const params = variant.params ?? {};
+    const correctAnswers = variant.true_answer ?? {};
     let submittedAnswers: Record<string, unknown>;
     try {
       submittedAnswers = normalizeSpreadsheetAnswers({
         params,
+        correctAnswers,
         submittedAnswers: submission.submitted_answer ?? {},
       });
     } catch (err) {
@@ -1655,7 +1657,7 @@ export async function parse(
         variant_id: variant.id,
         question_id: question.id,
         error_type: err instanceof Error ? err.name : 'unknown',
-        ...getSpreadsheetLogMetadata(params),
+        ...getSpreadsheetLogMetadata(params, correctAnswers),
       });
       throw err;
     }
@@ -1663,7 +1665,7 @@ export async function parse(
     const data = {
       // These should never be null, but that can't be encoded in the schema.
       params,
-      correct_answers: variant.true_answer ?? {},
+      correct_answers: correctAnswers,
       submitted_answers: submittedAnswers,
       feedback: submission.feedback ?? {},
       format_errors: submission.format_errors ?? {},

@@ -8,6 +8,7 @@ from prairielearn.grading_utils import *  # ruff:ignore[undefined-local-with-imp
 from prairielearn.html_utils import *  # ruff:ignore[undefined-local-with-import-star]
 from prairielearn.misc_utils import *  # ruff:ignore[undefined-local-with-import-star]
 from prairielearn.question_utils import *  # ruff:ignore[undefined-local-with-import-star]
+from prairielearn.spreadsheet_utils import *  # ruff:ignore[undefined-local-with-import-star]
 
 # TODO: Update this in a future PR
 # from prairielearn.colors import *

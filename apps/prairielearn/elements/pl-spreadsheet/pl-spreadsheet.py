@@ -24,6 +24,8 @@ MAX_POPULATED_CELLS = 2500
 MAX_FORMULAS = 1000
 MAX_FORMULA_LENGTH = 2048
 MAX_TEXT_LENGTH = 32 * 1024
+MAX_PAYLOAD_BYTES = 1024 * 1024
+MAX_GRADING_OUTPUTS = 100
 
 CELL_ADDRESS_RE = re.compile(r"^([A-Z]+)([1-9][0-9]*)$")
 SHEET_NAME_RE = re.compile(r"^[^\\/*?:\[\]]{1,31}$")
@@ -334,6 +336,176 @@ def _template_hash(template: dict[str, Any]) -> str:
     return hashlib.sha256(serialized.encode("utf-8")).hexdigest()
 
 
+def _normalize_grading_config(
+    raw_config: Any, template: dict[str, Any]
+) -> dict[str, Any]:
+    if not isinstance(raw_config, dict) or raw_config.get("schema_version") != 1:
+        raise ValueError(
+            'The private spreadsheet grading workbook must be an object with "schema_version": 1.'
+        )
+    raw_sheets = raw_config.get("sheets")
+    if not isinstance(raw_sheets, list) or not 1 <= len(raw_sheets) <= MAX_SHEETS:
+        raise ValueError(
+            f"The private spreadsheet grading workbook must contain 1 to {MAX_SHEETS} sheets."
+        )
+
+    public_names = {
+        sheet.get("name", "").casefold() for sheet in template.get("sheets", [])
+    }
+    grading_names: set[str] = set()
+    normalized_sheets: list[dict[str, Any]] = []
+    total_addressable = 0
+    total_populated = 0
+    total_formulas = 0
+
+    for sheet_index, raw_sheet in enumerate(raw_sheets, start=1):
+        if not isinstance(raw_sheet, dict):
+            raise TypeError(f"Private grading sheet {sheet_index} must be an object.")
+        name = raw_sheet.get("name")
+        if (
+            not isinstance(name, str)
+            or name.strip() != name
+            or not SHEET_NAME_RE.fullmatch(name)
+        ):
+            raise ValueError(
+                f"Private grading sheet {sheet_index} must have a non-empty Excel-safe name of at most 31 characters."
+            )
+        folded_name = name.casefold()
+        if folded_name in public_names:
+            raise ValueError(
+                f'Private grading sheet "{name}" conflicts with a student sheet.'
+            )
+        if folded_name in grading_names:
+            raise ValueError(f'Private grading sheet name "{name}" is duplicated.')
+        grading_names.add(folded_name)
+
+        rows = raw_sheet.get("rows")
+        columns = raw_sheet.get("columns")
+        if (
+            isinstance(rows, bool)
+            or not isinstance(rows, int)
+            or not 1 <= rows <= MAX_ROWS
+        ):
+            raise ValueError(
+                f'Private grading sheet "{name}" rows must be between 1 and {MAX_ROWS}.'
+            )
+        if (
+            isinstance(columns, bool)
+            or not isinstance(columns, int)
+            or not 1 <= columns <= MAX_COLUMNS
+        ):
+            raise ValueError(
+                f'Private grading sheet "{name}" columns must be between 1 and {MAX_COLUMNS}.'
+            )
+        total_addressable += rows * columns
+
+        raw_cells = raw_sheet.get("cells", {})
+        if not isinstance(raw_cells, dict):
+            raise TypeError(f'Private grading sheet "{name}" cells must be an object.')
+        cells: dict[str, str | float | bool] = {}
+        for raw_address, value in raw_cells.items():
+            if not isinstance(raw_address, str):
+                raise TypeError(
+                    f'Cell addresses in private grading sheet "{name}" must be strings.'
+                )
+            address = raw_address.upper()
+            position = _parse_address(address)
+            if position is None or position[0] >= rows or position[1] >= columns:
+                raise ValueError(
+                    f'Cell "{raw_address}" is outside private grading sheet "{name}".'
+                )
+            if address in cells:
+                raise ValueError(
+                    f'Cell "{address}" is duplicated in private grading sheet "{name}".'
+                )
+            cells[address] = _normalize_cell_value(value, f"{name}!{address}")
+            total_populated += 1
+            if isinstance(value, str) and value.startswith("="):
+                total_formulas += 1
+
+        normalized_sheets.append({
+            "name": name,
+            "rows": rows,
+            "columns": columns,
+            "cells": cells,
+        })
+
+    if total_addressable > MAX_ADDRESSABLE_CELLS:
+        raise ValueError(
+            f"Private grading workbooks may contain at most {MAX_ADDRESSABLE_CELLS} addressable cells."
+        )
+    if total_populated > MAX_POPULATED_CELLS:
+        raise ValueError(
+            f"Private grading workbooks may contain at most {MAX_POPULATED_CELLS} populated cells."
+        )
+    if total_formulas > MAX_FORMULAS:
+        raise ValueError(
+            f"Private grading workbooks may contain at most {MAX_FORMULAS} formulas."
+        )
+
+    raw_outputs = raw_config.get("outputs")
+    if (
+        not isinstance(raw_outputs, dict)
+        or not 1 <= len(raw_outputs) <= MAX_GRADING_OUTPUTS
+    ):
+        raise ValueError(
+            f"Private spreadsheet grading workbooks must define 1 to {MAX_GRADING_OUTPUTS} outputs."
+        )
+    sheets_by_name = {sheet["name"]: sheet for sheet in normalized_sheets}
+    outputs: dict[str, dict[str, str]] = {}
+    for output_name, raw_output in raw_outputs.items():
+        if (
+            not isinstance(output_name, str)
+            or output_name.strip() != output_name
+            or not 1 <= len(output_name) <= 128
+        ):
+            raise ValueError(
+                "Private spreadsheet grading output names must be non-empty strings of at most 128 characters."
+            )
+        if not isinstance(raw_output, dict):
+            raise TypeError(
+                f'Private grading output "{output_name}" must be an object.'
+            )
+        sheet_name = raw_output.get("sheet")
+        address_value = raw_output.get("cell")
+        if not isinstance(sheet_name, str) or sheet_name not in sheets_by_name:
+            raise ValueError(
+                f'Private grading output "{output_name}" references an unknown private sheet.'
+            )
+        if not isinstance(address_value, str):
+            raise TypeError(
+                f'Private grading output "{output_name}" cell must be a string.'
+            )
+        address = address_value.upper()
+        position = _parse_address(address)
+        output_sheet = sheets_by_name[sheet_name]
+        if (
+            position is None
+            or position[0] >= output_sheet["rows"]
+            or position[1] >= output_sheet["columns"]
+        ):
+            raise ValueError(
+                f'Private grading output "{output_name}" references a cell outside sheet "{sheet_name}".'
+            )
+        outputs[output_name] = {"sheet": sheet_name, "cell": address}
+
+    normalized = {
+        "schema_version": 1,
+        "sheets": normalized_sheets,
+        "outputs": outputs,
+    }
+    normalized_size = len(
+        json.dumps(
+            normalized, ensure_ascii=False, separators=(",", ":"), sort_keys=True
+        ).encode("utf-8")
+    )
+    if normalized_size > MAX_PAYLOAD_BYTES:
+        raise ValueError(
+            f"Private spreadsheet grading workbooks must be at most {MAX_PAYLOAD_BYTES} bytes."
+        )
+    return {**normalized, "grader_hash": _template_hash(normalized)}
+
+
 def _get_config(
     element: lxml.html.HtmlElement, data: pl.QuestionData
 ) -> tuple[str, dict[str, Any]]:
@@ -354,6 +526,11 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     if params_name not in data["params"]:
         raise ValueError(f'No value was found in data["params"]["{params_name}"].')
     template = _normalize_template(data["params"].get(params_name))
+    raw_grading_config = data["correct_answers"].get(answer_name)
+    if raw_grading_config is not None:
+        data["correct_answers"][answer_name] = _normalize_grading_config(
+            raw_grading_config, template
+        )
     height = pl.get_string_attrib(element, "height", DEFAULT_HEIGHT)
     if not CSS_SIZE_RE.fullmatch(height.strip()):
         raise ValueError(
