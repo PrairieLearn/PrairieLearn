@@ -55,7 +55,7 @@ def grade(data: dict[str, Any]) -> None:
     workbook = pl.SpreadsheetBook(data["submitted_answers"]["model"])
     inputs = workbook["Summary"].range("Inputs!B2:D2")
     line_total = inputs["D2"]
-    correct = (
+    parameter_workbook_correct = (
         inputs["B2"].value == 3
         and inputs["C2"].value == 4
         and line_total.formula == "=B2*C2"
@@ -64,4 +64,33 @@ def grade(data: dict[str, Any]) -> None:
         and workbook.outputs["line_total"].value == 12
         and workbook.outputs["total_is_correct"].value is True
     )
-    data["score"] = 1 if correct else 0
+
+    csv_workbook = pl.SpreadsheetBook(data["submitted_answers"]["csv_model"])
+    csv_budget = csv_workbook["CsvBudget"]
+    csv_workbook_correct = (
+        csv_budget["B2"].value == 3
+        and csv_budget["C2"].value == 4
+        and csv_budget["D2"].formula == "=B2*C2"
+        and csv_workbook.outputs["is_correct"].value is True
+    )
+
+    tsv_workbook = pl.SpreadsheetBook(data["submitted_answers"]["tsv_model"])
+    tsv_workbook_correct = (
+        tsv_workbook["Rates"]["D2"].value == 10
+        and tsv_workbook["RateSummary"]["B1"].value == 22
+        and tsv_workbook.outputs["is_correct"].value is True
+    )
+
+    data["partial_scores"]["model"] = {
+        "score": int(parameter_workbook_correct),
+        "weight": 1,
+    }
+    data["partial_scores"]["csv_model"] = {
+        "score": int(csv_workbook_correct),
+        "weight": 1,
+    }
+    data["partial_scores"]["tsv_model"] = {
+        "score": int(tsv_workbook_correct),
+        "weight": 1,
+    }
+    pl.set_weighted_score_data(data)

@@ -43,14 +43,51 @@ test('supports accessible local editing and trusted submission', async ({
     `/pl/course_instance/${courseInstance.id}/instructor/question/${question.id}/preview`,
   );
 
-  const grid = page.getByRole('grid', { name: 'Spreadsheet test, sheet Inputs' });
+  const parameterDemo = page.getByRole('region', {
+    name: 'Parameter and DataFrame workbook',
+  });
+  const csvDemo = page.getByRole('region', {
+    name: 'CSV source with a hidden output',
+  });
+  const tsvDemo = page.getByRole('region', {
+    name: 'TSV sources combined as a sheetbook',
+  });
+  const grid = parameterDemo.getByRole('grid', {
+    name: 'Spreadsheet test, sheet Inputs',
+  });
   await expect(grid).toBeVisible();
-  await expect(page.getByRole('tab', { name: 'Inputs' })).toHaveAttribute('aria-selected', 'true');
+  await expect(parameterDemo.getByRole('tab', { name: 'Inputs' })).toHaveAttribute(
+    'aria-selected',
+    'true',
+  );
+
+  const csvGrid = csvDemo.getByRole('grid', {
+    name: 'CSV budget workbook, sheet CsvBudget',
+  });
+  await expect(csvGrid.getByRole('columnheader', { name: 'B', exact: true })).toBeVisible();
+  await expect(csvGrid.getByRole('columnheader', { name: 'D', exact: true })).toBeVisible();
+  await expect(csvGrid.getByRole('columnheader', { name: 'A', exact: true })).toHaveCount(0);
+  await expect(csvGrid.getByRole('columnheader', { name: 'E', exact: true })).toHaveCount(0);
+  const csvOptions = await csvDemo
+    .locator('.pl-spreadsheet-root')
+    .evaluate((element) => atob((element as HTMLElement).dataset.options ?? ''));
+  expect(csvOptions).not.toContain('SERVER_ONLY_CSV');
+  expect(csvOptions).not.toContain('=D2=12');
+
+  const tsvGrid = tsvDemo.getByRole('grid', {
+    name: 'TSV rate workbook, sheet Rates',
+  });
+  await expect(tsvGrid).toBeVisible();
+  await expect(tsvDemo.getByRole('tab', { name: 'Rates' })).toHaveAttribute(
+    'aria-selected',
+    'true',
+  );
+  await expect(tsvDemo.getByRole('tab', { name: 'RateSummary' })).toBeVisible();
 
   await editCell(grid, 'B2', '3');
   await editCell(grid, 'C2', '4');
   await editCell(grid, 'D2', '=1/0');
-  await expect(page.getByRole('status')).toContainText('#DIV/0!');
+  await expect(parameterDemo.getByRole('status')).toContainText('#DIV/0!');
   await editCell(grid, 'D2', '=B2*C2');
 
   const rawAnswer = page.locator('input.js-pl-spreadsheet-input[name="model"]');
@@ -63,30 +100,30 @@ test('supports accessible local editing and trusted submission', async ({
   await b3.click();
   await b3.press('ControlOrMeta+V');
   await expect(rawAnswer).toHaveValue(/"B3":7/);
-  await page.getByRole('button', { name: 'Undo' }).click();
+  await parameterDemo.getByRole('button', { name: 'Undo' }).click();
   await expect(rawAnswer).not.toHaveValue(/"B3"/);
 
   await grid.getByRole('gridcell', { name: /^D2, editable/ }).click();
-  await page.getByRole('button', { name: 'Fill down' }).click();
+  await parameterDemo.getByRole('button', { name: 'Fill down' }).click();
   await expect(rawAnswer).toHaveValue(/[=]B3\*C3/);
-  await page.getByRole('button', { name: 'Undo' }).click();
+  await parameterDemo.getByRole('button', { name: 'Undo' }).click();
   await expect(rawAnswer).not.toHaveValue(/[=]B3\*C3/);
-  await page.getByRole('button', { name: 'Redo' }).click();
+  await parameterDemo.getByRole('button', { name: 'Redo' }).click();
   await expect(rawAnswer).toHaveValue(/[=]B3\*C3/);
-  await page.getByRole('button', { name: 'Undo' }).click();
+  await parameterDemo.getByRole('button', { name: 'Undo' }).click();
 
-  const inputsTab = page.getByRole('tab', { name: 'Inputs' });
-  const summaryTab = page.getByRole('tab', { name: 'Summary' });
+  const inputsTab = parameterDemo.getByRole('tab', { name: 'Inputs' });
+  const summaryTab = parameterDemo.getByRole('tab', { name: 'Summary' });
   await inputsTab.focus();
   await inputsTab.press('ArrowRight');
   await expect(summaryTab).toBeFocused();
   await expect(summaryTab).toHaveAttribute('aria-selected', 'true');
-  const summaryGrid = page.getByRole('grid', {
+  const summaryGrid = parameterDemo.getByRole('grid', {
     name: 'Spreadsheet test, sheet Summary',
   });
   await summaryGrid.getByRole('gridcell', { name: /^B1, read-only/ }).click();
-  await expect(page.getByLabel('Formula for B1')).toBeDisabled();
-  await expect(page.getByRole('status')).toContainText('B1, read-only');
+  await expect(parameterDemo.getByLabel('Formula for B1')).toBeDisabled();
+  await expect(parameterDemo.getByRole('status')).toContainText('B1, read-only');
 
   await inputsTab.click();
   const firstCell = grid.getByRole('gridcell', { name: /^A1, read-only/ });
