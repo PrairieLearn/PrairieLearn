@@ -7,7 +7,7 @@ import re
 import string
 from collections.abc import Callable, Iterator, Mapping
 from dataclasses import InitVar, dataclass, field
-from typing import Literal, Protocol, TypedDict, cast
+from typing import Literal, NotRequired, Protocol, TypedDict, cast
 
 from openpyxl.formula import Tokenizer
 
@@ -46,6 +46,7 @@ __all__ = [
     "SpreadsheetOutputView",
     "SpreadsheetRange",
     "SpreadsheetResult",
+    "SpreadsheetSnapshot",
     "get_spreadsheet_cell",
     "get_spreadsheet_formula",
     "get_spreadsheet_formula_ast",
@@ -131,6 +132,33 @@ def _spreadsheet_result_value(result: SpreadsheetResult) -> CellValue:
 class SpreadsheetCell(TypedDict):
     input: SpreadsheetInput
     result: SpreadsheetResult
+
+
+class SpreadsheetSnapshotEngine(TypedDict):
+    name: Literal["hyperformula"]
+    version: str
+    configuration_version: int
+
+
+class SpreadsheetSnapshotSheet(TypedDict):
+    name: SheetName
+    rows: int
+    columns: int
+    cells: dict[str, SpreadsheetCell]
+
+
+class SpreadsheetSnapshotGrading(TypedDict):
+    schema_version: Literal[1]
+    grader_hash: str
+    outputs: dict[str, SpreadsheetResult]
+
+
+class SpreadsheetSnapshot(TypedDict):
+    schema_version: Literal[1]
+    template_hash: str
+    engine: SpreadsheetSnapshotEngine
+    sheets: list[SpreadsheetSnapshotSheet]
+    grading: NotRequired[SpreadsheetSnapshotGrading]
 
 
 @dataclass(frozen=True, slots=True)
@@ -300,7 +328,7 @@ def _normalized_address(address: str) -> tuple[str, int, int]:
 
 
 def _get_sheet(
-    snapshot: Mapping[str, object], sheet_name: SheetName
+    snapshot: SpreadsheetSnapshot, sheet_name: SheetName
 ) -> Mapping[str, object]:
     sheets = snapshot.get("sheets", [])
     if not isinstance(sheets, list):
@@ -312,7 +340,7 @@ def _get_sheet(
 
 
 def get_spreadsheet_cell(
-    snapshot: Mapping[str, object], sheet_name: SheetName, address: str
+    snapshot: SpreadsheetSnapshot, sheet_name: SheetName, address: str
 ) -> SpreadsheetCell | None:
     """Return a normalized cell, or ``None`` when the in-bounds cell is empty."""
     sheet = _get_sheet(snapshot, sheet_name)
@@ -342,7 +370,7 @@ def get_spreadsheet_cell(
 
 
 def get_spreadsheet_result(
-    snapshot: Mapping[str, object], sheet_name: SheetName, address: str
+    snapshot: SpreadsheetSnapshot, sheet_name: SheetName, address: str
 ) -> SpreadsheetResult:
     """Return the typed calculated result for a cell."""
     cell = get_spreadsheet_cell(snapshot, sheet_name, address)
@@ -357,7 +385,7 @@ def get_spreadsheet_result(
 
 
 def get_spreadsheet_value(
-    snapshot: Mapping[str, object], sheet_name: SheetName, address: str
+    snapshot: SpreadsheetSnapshot, sheet_name: SheetName, address: str
 ) -> CellValue:
     """Return a scalar calculated value, or ``None`` for empty or error results."""
     return _spreadsheet_result_value(
@@ -366,7 +394,7 @@ def get_spreadsheet_value(
 
 
 def get_spreadsheet_formula(
-    snapshot: Mapping[str, object], sheet_name: SheetName, address: str
+    snapshot: SpreadsheetSnapshot, sheet_name: SheetName, address: str
 ) -> str | None:
     """Return the exact submitted formula text, or ``None`` for a non-formula cell."""
     cell = get_spreadsheet_cell(snapshot, sheet_name, address)
@@ -384,7 +412,7 @@ def get_spreadsheet_formula(
 
 
 def get_spreadsheet_grading_output(
-    snapshot: Mapping[str, object], output_name: str
+    snapshot: SpreadsheetSnapshot, output_name: str
 ) -> SpreadsheetResult:
     """Return a named private-workbook output from a normalized snapshot."""
     grading = snapshot.get("grading")
@@ -398,7 +426,7 @@ def get_spreadsheet_grading_output(
     result = outputs[output_name]
     if not isinstance(result, dict) or not isinstance(result.get("type"), str):
         raise TypeError(f'Spreadsheet grading output "{output_name}" is invalid.')
-    return cast(SpreadsheetResult, result)
+    return result
 
 
 def _decode_sheet_name(sheet_text: str) -> SheetName:
@@ -672,7 +700,7 @@ def parse_spreadsheet_formula(formula: str) -> FormulaAst:
 
 
 def get_spreadsheet_formula_ast(
-    snapshot: Mapping[str, object], sheet_name: SheetName, address: str
+    snapshot: SpreadsheetSnapshot, sheet_name: SheetName, address: str
 ) -> FormulaAst | None:
     """Return the versioned AST for a formula cell, or ``None`` otherwise."""
     formula = get_spreadsheet_formula(snapshot, sheet_name, address)
@@ -989,7 +1017,7 @@ def _column_name(column: int) -> str:
 class SpreadsheetBook:
     """Read-only, spreadsheet-native view of a normalized snapshot."""
 
-    snapshot: InitVar[Mapping[str, object]]
+    snapshot: InitVar[SpreadsheetSnapshot]
     _sheets: dict[SheetName, _SparseCellsData] = field(init=False)
     _sheet_views: dict[SheetName, Spreadsheet] = field(init=False)
     _grading_outputs: dict[str, SpreadsheetResult] = field(init=False)
@@ -997,7 +1025,7 @@ class SpreadsheetBook:
     sheet_names: tuple[SheetName, ...] = field(init=False)
     outputs: Mapping[str, SpreadsheetOutputView] = field(init=False)
 
-    def __post_init__(self, snapshot: Mapping[str, object]) -> None:
+    def __post_init__(self, snapshot: SpreadsheetSnapshot) -> None:
         """Validate and index the normalized snapshot."""
         if not isinstance(snapshot, Mapping):
             raise TypeError("A spreadsheet snapshot must be a mapping.")

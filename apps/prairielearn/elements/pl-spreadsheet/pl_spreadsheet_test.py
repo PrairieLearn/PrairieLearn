@@ -53,7 +53,7 @@ def grading_config() -> dict[str, Any]:
             }
         ],
         "outputs": {
-            "calculated": {"sheet": "Checks", "cell": "a1"},
+            "calculated": {"sheet": "Checks", "cell": "a1", "required": True},
             "is_correct": {"sheet": "Checks", "cell": "A2"},
         },
     }
@@ -137,7 +137,12 @@ def test_prepare_normalizes_private_grading_config(element_directory: None) -> N
     grader = data["correct_answers"]["model"]
     assert grader["schema_version"] == 1
     assert len(grader["grader_hash"]) == 64
-    assert grader["outputs"]["calculated"] == {"sheet": "Checks", "cell": "A1"}
+    assert grader["outputs"]["calculated"] == {
+        "sheet": "Checks",
+        "cell": "A1",
+        "required": True,
+    }
+    assert grader["outputs"]["is_correct"] == {"sheet": "Checks", "cell": "A2"}
     assert grader["sheets"][0]["cells"]["A1"] == "=Inputs!B2"
 
 
@@ -222,6 +227,17 @@ def test_prepare_rejects_invalid_private_grading_config(
     data = question_data(correct_answers={"model": grader})
 
     with pytest.raises(ValueError, match=message):
+        spreadsheet.prepare(ELEMENT_HTML, data)
+
+
+def test_prepare_rejects_non_boolean_required_output(
+    element_directory: None,
+) -> None:
+    grader = grading_config()
+    grader["outputs"]["calculated"]["required"] = "true"
+    data = question_data(correct_answers={"model": grader})
+
+    with pytest.raises(TypeError, match="required must be a boolean"):
         spreadsheet.prepare(ELEMENT_HTML, data)
 
 

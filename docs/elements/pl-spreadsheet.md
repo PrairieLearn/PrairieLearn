@@ -139,7 +139,7 @@ def generate(data):
             }
         ],
         "outputs": {
-            "total": {"sheet": "Checks", "cell": "A1"},
+            "total": {"sheet": "Checks", "cell": "A1", "required": True},
             "total_is_correct": {"sheet": "Checks", "cell": "A2"},
         },
     }
@@ -149,6 +149,10 @@ Private sheets may reference student sheets and other private sheets, but cannot
 replace student cells or reuse a student sheet name. They use the same sheet-name
 and formula policies and independently receive the workbook limits below. A private
 workbook may export at most 100 named outputs.
+
+Each output may set `"required": True` to reject the submission during parsing
+when that output evaluates to a typed `empty` or `error` result. The option
+defaults to `False`; numeric zero, `False`, and string values are not empty.
 
 The private workbook definition is server-owned and is not included in the editor,
 submission display, or normalized answer. The answer contains only its hash and

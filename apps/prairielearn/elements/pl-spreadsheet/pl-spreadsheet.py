@@ -451,7 +451,7 @@ def _normalize_grading_config(
             f"Private spreadsheet grading workbooks must define 1 to {MAX_GRADING_OUTPUTS} outputs."
         )
     sheets_by_name = {sheet["name"]: sheet for sheet in normalized_sheets}
-    outputs: dict[str, dict[str, str]] = {}
+    outputs: dict[str, dict[str, str | bool]] = {}
     for output_name, raw_output in raw_outputs.items():
         if (
             not isinstance(output_name, str)
@@ -486,7 +486,15 @@ def _normalize_grading_config(
             raise ValueError(
                 f'Private grading output "{output_name}" references a cell outside sheet "{sheet_name}".'
             )
-        outputs[output_name] = {"sheet": sheet_name, "cell": address}
+        output: dict[str, str | bool] = {"sheet": sheet_name, "cell": address}
+        if "required" in raw_output:
+            required = raw_output["required"]
+            if not isinstance(required, bool):
+                raise TypeError(
+                    f'Private grading output "{output_name}" required must be a boolean.'
+                )
+            output["required"] = required
+        outputs[output_name] = output
 
     normalized = {
         "schema_version": 1,

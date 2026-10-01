@@ -67,9 +67,9 @@ function makeGradingConfig(): SpreadsheetGradingConfig {
       },
     ],
     outputs: {
-      total: { sheet: 'Checks', cell: 'A1' },
+      total: { sheet: 'Checks', cell: 'A1', required: true },
       correct: { sheet: 'Checks', cell: 'A2' },
-      error: { sheet: 'Checks', cell: 'A3' },
+      error: { sheet: 'Checks', cell: 'A3', required: false },
       text: { sheet: 'Checks', cell: 'B1' },
       cycle: { sheet: 'Checks', cell: 'B2' },
       empty: { sheet: 'Checks', cell: 'B3' },
@@ -130,6 +130,32 @@ describe('evaluateSpreadsheet', () => {
     assert.notInclude(serialized, 'Checks');
     assert.notInclude(serialized, '=PRODUCT(Inputs!A2,Inputs!B2)');
     evaluation.engine.destroy();
+  });
+
+  it('rejects required private outputs that are empty or contain an error', () => {
+    for (const outputName of ['error', 'empty'] as const) {
+      const gradingConfig = makeGradingConfig();
+      gradingConfig.outputs[outputName].required = true;
+
+      assert.throws(
+        () => evaluateSpreadsheet(makeConfig(), makeSubmission(), gradingConfig),
+        new RegExp(`Required spreadsheet output "${outputName}"`),
+      );
+    }
+  });
+
+  it('validates the required private output option', () => {
+    const gradingConfig = makeGradingConfig();
+    assert.isTrue(SpreadsheetGradingConfigSchema.safeParse(gradingConfig).success);
+
+    const invalidConfig: unknown = {
+      ...gradingConfig,
+      outputs: {
+        ...gradingConfig.outputs,
+        total: { ...gradingConfig.outputs.total, required: 'true' },
+      },
+    };
+    assert.isFalse(SpreadsheetGradingConfigSchema.safeParse(invalidConfig).success);
   });
 
   it('evaluates student formulas before private sheets exist', () => {
@@ -327,6 +353,21 @@ describe('normalizeSpreadsheetAnswers', () => {
     });
     const answer = normalized.answer as { grading: { outputs: Record<string, unknown> } };
     assert.deepEqual(answer.grading.outputs.total, { type: 'number', value: 15 });
+  });
+
+  it('turns an invalid required output into a parse error', () => {
+    const gradingConfig = makeGradingConfig();
+    gradingConfig.outputs.empty.required = true;
+    const normalized = normalizeSpreadsheetAnswers({
+      params: { _pl_spreadsheet_v1: { answer: makeConfig() } },
+      correctAnswers: { answer: gradingConfig },
+      submittedAnswers: { answer: JSON.stringify(makeSubmission()) },
+    });
+
+    assert.match(
+      (normalized.answer as { error: string }).error,
+      /Required spreadsheet output "empty"/,
+    );
   });
 
   it('rejects browser-supplied grading evidence', () => {
