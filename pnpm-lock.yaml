@@ -207,6 +207,7 @@ overrides:
   typescript-cp>typescript: npm:@typescript/typescript6@^6.0.2
   cosmiconfig>typescript: npm:@typescript/typescript6@^6.0.2
   '@aws-sdk/xml-builder>fast-xml-parser': ^5.7.3
+  '@prairielearn/tree-sitter-htmlmustache@1.4.3>web-tree-sitter': ^0.27.0
   '@sa11y/common>axe-core': ^4
   '@sa11y/format>axe-core': ^4
   dependency-cruiser>acorn: ^8.16.0
@@ -216,6 +217,8 @@ overrides:
   jsdoc-type-pratt-parser>@types/node: ^24
   linkinator>marked: ^18
   markdownlint-cli2>smol-toml: ^1
+  css-tree@3.2.1>mdn-data: 2.29.0
+  stylelint-scss@6.14.0>mdn-data: 2.29.0
   notebookjs>jsdom: '*'
 
 importers:
@@ -492,8 +495,8 @@ importers:
         specifier: ^3.1141.0
         version: 3.1141.0(@aws-sdk/client-s3@3.1141.0)
       '@cortex-js/compute-engine':
-        specifier: ^0.139.0
-        version: 0.139.0
+        specifier: ^0.102.0
+        version: 0.102.0
       '@dnd-kit/core':
         specifier: ^6.3.1
         version: 6.3.1(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
@@ -3072,9 +3075,6 @@ packages:
   '@arnog/colors@0.5.0':
     resolution: {integrity: sha512-NB7yqrO7qvInsqJdqz6C6mDU+2oiKmbBbk3czMS0E7KkGxLRy538tEHCsB5TKqmaxxXpi6/U120TnGl8NsDePg==}
 
-  '@arnog/colors@0.7.1':
-    resolution: {integrity: sha512-uEXGib4QnvKNMv30pROfEfuE/7odwMXc66YVGbyedKNQK/gKGDZ8gcOxJ7iu824eUZVQ/ATbxr8C/G2YaDUE7A==}
-
   '@asamuzakjp/css-color@7.1.2':
     resolution: {integrity: sha512-99DHAnXDB5z6EEK+9GMpVI7Mw4oxj97dY5bpOzMnjADQWxI8rN6TvTduuFLUhUMlS7/CfVZ06tcZsus6cltnNw==}
     engines: {node: ^22.22.2 || ^24.15.0 || >=26.0.0}
@@ -3369,9 +3369,9 @@ packages:
     resolution: {integrity: sha512-Ir+AOibqzrIsL6ajt3Rz3LskB7OiMVHqltZmspbW/TJuTVuyOMirVqAkjfY6JISiLHgyNqicAC8AyHHGzNd/dA==}
     engines: {node: '>=0.1.90'}
 
-  '@cortex-js/compute-engine@0.139.0':
-    resolution: {integrity: sha512-/bwQMSl647Zrvo1acmnIPWAIu04K7xb0ApiuhmVVehtFFkLBlBmcR2vEuFbl7B32qX1leLlKYrIgHy7Vtu/d+A==}
-    engines: {node: '>=22.3.0', npm: '>=10.5.0'}
+  '@cortex-js/compute-engine@0.102.0':
+    resolution: {integrity: sha512-TSTxCjiLjFcEqCgcJN5e2pUulH91aYNllnPy3d/TPJ+cHcBm8eFG2eg2mDuFwkENjXhUUbjSLsGbWMZD4b5cAQ==}
+    engines: {node: '>=21.7.3', npm: '>=10.5.0'}
     hasBin: true
 
   '@cortex-js/compute-engine@0.58.0':
@@ -8800,14 +8800,8 @@ packages:
   mdast-util-to-string@4.0.0:
     resolution: {integrity: sha512-0H44vDimn51F0YwvxSJSm0eCDOJTRlmN0R1yBh4HLj9wiV1Dn0QoXGbvFAWj2hSItVTlCmBF1hqKlIyUBVFLPg==}
 
-  mdn-data@2.27.1:
-    resolution: {integrity: sha512-9Yubnt3e8A0OKwxYSXyhLymGW4sCufcLG6VdiDdUGVkPhpqLxlvP5vl1983gQjJl3tqbrM731mjaZaP68AgosQ==}
-
   mdn-data@2.29.0:
     resolution: {integrity: sha512-pVxQFCcaYUEAH853+v7yoI/qzhxXSq1bTb9obMYGYAN1c3Hen+XDCEvr296XhstrwlSTNgOR7mCSD4JPjbJe5A==}
-
-  mdn-data@2.37.0:
-    resolution: {integrity: sha512-x7slLzWOddYdvLY3lFDtNvgYXUhGxy0BPa0ZQaBHXaem6S/MtPisKVQMNAcbmqutFDFTw2q1FRyl2miSGlOHxw==}
 
   mdurl@2.1.0:
     resolution: {integrity: sha512-1+HBaOx0zi/dQWht8rNv9MYf9qqpqL/kxI0hXImU6Y547zM6Sni8BQibt7ifgMcYtQg41ao3Ivd6cnSM86inpg==}
@@ -10751,9 +10745,6 @@ packages:
     resolution: {integrity: sha512-d2JWLCivmZYTSIoge9MsgFCZrt571BikcWGYkjC1khllbTeDlGqZ2D8vD8E/lJa8WGWbb7Plm8/XJYV7IJHZZw==}
     engines: {node: '>= 8'}
 
-  web-tree-sitter@0.26.13:
-    resolution: {integrity: sha512-5bUZ7vbQ1kcondet96wzP974+JfCZDeQ7bTpacICm2nnvHpa5cO0ByRsoMcAhUP+743vpkb4m0BFlVSm+Ye9VA==}
-
   web-tree-sitter@0.27.0:
     resolution: {integrity: sha512-XK08gj6RwTMQatAG7uVRP8MunqotL/XC19vHgkSPKmELgbGPBj4ECvB8haHOUnyj6ls2B8t42UTro14zxGgAHg==}
 
@@ -11077,8 +11068,6 @@ snapshots:
       - zod
 
   '@arnog/colors@0.5.0': {}
-
-  '@arnog/colors@0.7.1': {}
 
   '@asamuzakjp/css-color@7.1.2':
     dependencies:
@@ -11635,9 +11624,9 @@ snapshots:
 
   '@colors/colors@1.6.0': {}
 
-  '@cortex-js/compute-engine@0.139.0':
+  '@cortex-js/compute-engine@0.102.0':
     dependencies:
-      '@arnog/colors': 0.7.1
+      '@arnog/colors': 0.5.0
       complex-esm: 2.1.1-esm1
 
   '@cortex-js/compute-engine@0.58.0':
@@ -13038,7 +13027,7 @@ snapshots:
       chalk: 5.6.2
       editorconfig: 3.0.2
       vscode-languageserver-textdocument: 1.0.12
-      web-tree-sitter: 0.26.13
+      web-tree-sitter: 0.27.0
       zod: 4.6.5
     optionalDependencies:
       node-gyp-build: 4.8.4
@@ -14998,7 +14987,7 @@ snapshots:
 
   css-tree@3.2.1:
     dependencies:
-      mdn-data: 2.27.1
+      mdn-data: 2.29.0
       source-map-js: 1.2.1
 
   css-what@6.2.2: {}
@@ -17189,11 +17178,7 @@ snapshots:
     dependencies:
       '@types/mdast': 4.0.4
 
-  mdn-data@2.27.1: {}
-
   mdn-data@2.29.0: {}
-
-  mdn-data@2.37.0: {}
 
   mdurl@2.1.0: {}
 
@@ -18868,7 +18853,7 @@ snapshots:
       css-tree: 3.2.1
       is-plain-object: 5.1.0
       known-css-properties: 0.37.0
-      mdn-data: 2.37.0
+      mdn-data: 2.29.0
       postcss-media-query-parser: 0.2.3
       postcss-resolve-nested-selector: 0.1.6
       postcss-selector-parser: 7.1.6
@@ -19415,8 +19400,6 @@ snapshots:
   watskeburt@6.0.0: {}
 
   web-streams-polyfill@3.3.3: {}
-
-  web-tree-sitter@0.26.13: {}
 
   web-tree-sitter@0.27.0: {}
 

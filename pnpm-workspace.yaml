@@ -7,6 +7,7 @@ overrides:
   'typescript-cp>typescript': npm:@typescript/typescript6@^6.0.2
   'cosmiconfig>typescript': npm:@typescript/typescript6@^6.0.2
   '@aws-sdk/xml-builder>fast-xml-parser': ^5.7.3
+  '@prairielearn/tree-sitter-htmlmustache@1.4.3>web-tree-sitter': ^0.27.0
   '@sa11y/common>axe-core': ^4
   '@sa11y/format>axe-core': ^4
   'dependency-cruiser>acorn': ^8.16.0
@@ -16,6 +17,9 @@ overrides:
   'jsdoc-type-pratt-parser>@types/node': ^24
   'linkinator>marked': ^18
   'markdownlint-cli2>smol-toml': ^1
+  # mdn-data 2.37.0 references <param()>, which these CSS-tree grammar patches do not define.
+  'css-tree@3.2.1>mdn-data': 2.29.0
+  'stylelint-scss@6.14.0>mdn-data': 2.29.0
   'notebookjs>jsdom': '*'
 
 # Delay newly published npm packages for 3 days.
