@@ -10,7 +10,16 @@ import string
 from collections.abc import Callable, Iterator, Mapping, Sequence
 from dataclasses import InitVar, dataclass, field
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Literal, NotRequired, Protocol, TypedDict, cast
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Literal,
+    NotRequired,
+    Protocol,
+    TypedDict,
+    cast,
+    overload,
+)
 
 import numpy as np
 import pandas as pd
@@ -23,6 +32,7 @@ SPREADSHEET_FORMULA_AST_VERSION = 1
 _COLUMN_LETTERS = string.ascii_uppercase
 
 type SheetName = str
+"""Worksheet name used to qualify spreadsheet addresses."""
 
 __all__ = [
     "SPREADSHEET_FORMULA_AST_VERSION",
@@ -35,6 +45,7 @@ __all__ = [
     "BooleanResult",
     "Cell",
     "CellRange",
+    "Definition",
     "EmptyResult",
     "ErrorResult",
     "FormulaAst",
@@ -57,15 +68,20 @@ __all__ = [
     "FormulaRowRangeNode",
     "FormulaRowReference",
     "FormulaUnaryNode",
+    "GradingBook",
     "Input",
     "NumberInput",
     "NumberResult",
     "Output",
+    "OutputInput",
+    "OutputSpec",
     "QualifiedAddress",
     "QualifiedAddressRange",
     "Result",
     "Sheet",
+    "SheetInput",
     "SheetName",
+    "SheetSpec",
     "Snapshot",
     "SnapshotCell",
     "SnapshotEngine",
@@ -77,6 +93,7 @@ __all__ = [
     "StringInput",
     "StringResult",
     "Value",
+    "create_spreadsheet",
     "dataframe_to_spreadsheet_sheet",
     "dataframes_to_spreadsheet_book",
     "get_spreadsheet_cell",
@@ -95,56 +112,77 @@ __all__ = [
 
 
 class NumberInput(TypedDict):
+    """Literal numeric input stored in a spreadsheet cell."""
+
     type: Literal["number"]
     value: int | float
 
 
 class StringInput(TypedDict):
+    """Literal text input stored in a spreadsheet cell."""
+
     type: Literal["string"]
     value: str
 
 
 class BooleanInput(TypedDict):
+    """Literal Boolean input stored in a spreadsheet cell."""
+
     type: Literal["boolean"]
     value: bool
 
 
 class FormulaInput(TypedDict):
+    """Formula input stored in a spreadsheet cell."""
+
     type: Literal["formula"]
     value: str
 
 
 type Input = NumberInput | StringInput | BooleanInput | FormulaInput
+"""Any supported typed spreadsheet cell input."""
 
 
 class EmptyResult(TypedDict):
+    """Calculated result representing an empty cell."""
+
     type: Literal["empty"]
 
 
 class NumberResult(TypedDict):
+    """Calculated numeric cell result."""
+
     type: Literal["number"]
     value: int | float
 
 
 class StringResult(TypedDict):
+    """Calculated text cell result."""
+
     type: Literal["string"]
     value: str
 
 
 class BooleanResult(TypedDict):
+    """Calculated Boolean cell result."""
+
     type: Literal["boolean"]
     value: bool
 
 
 class ErrorResult(TypedDict):
+    """Calculated spreadsheet error result."""
+
     type: Literal["error"]
     value: str
     error_type: str
 
 
 type Result = EmptyResult | NumberResult | StringResult | BooleanResult | ErrorResult
+"""Any supported typed spreadsheet calculation result."""
 
 type Value = bool | int | float | str | None
+"""Plain Python value exposed by a cell or grading output."""
 
 
 def _spreadsheet_result_value(result: Result) -> Value:
@@ -156,17 +194,23 @@ def _spreadsheet_result_value(result: Result) -> Value:
 
 
 class SnapshotCell(TypedDict):
+    """Normalized input and authoritative result for one populated cell."""
+
     input: Input
     result: Result
 
 
 class SnapshotEngine(TypedDict):
+    """Calculation-engine identity persisted with a normalized snapshot."""
+
     name: Literal["hyperformula"]
     version: str
     configuration_version: int
 
 
 class SnapshotSheet(TypedDict):
+    """Student-visible sheet persisted in a normalized snapshot."""
+
     name: SheetName
     rows: int
     columns: int
@@ -174,12 +218,16 @@ class SnapshotSheet(TypedDict):
 
 
 class SnapshotGrading(TypedDict):
+    """Named private grading results persisted with a normalized snapshot."""
+
     schema_version: Literal[2]
     grader_hash: str
     outputs: dict[str, Result]
 
 
 class Snapshot(TypedDict):
+    """Validated, calculated spreadsheet submission used by graders."""
+
     schema_version: Literal[2]
     template_hash: str
     engine: SnapshotEngine
@@ -189,6 +237,8 @@ class Snapshot(TypedDict):
 
 @dataclass(frozen=True, slots=True)
 class FormulaCellReference:
+    """Parsed reference to one cell in a spreadsheet formula."""
+
     sheet: SheetName | None
     column: str
     row: int
@@ -199,6 +249,8 @@ class FormulaCellReference:
 
 @dataclass(frozen=True, slots=True)
 class FormulaColumnReference:
+    """Parsed reference to one entire column in a spreadsheet formula."""
+
     sheet: SheetName | None
     column: str
     column_absolute: bool
@@ -207,6 +259,8 @@ class FormulaColumnReference:
 
 @dataclass(frozen=True, slots=True)
 class FormulaRowReference:
+    """Parsed reference to one entire row in a spreadsheet formula."""
+
     sheet: SheetName | None
     row: int
     row_absolute: bool
@@ -216,10 +270,13 @@ class FormulaRowReference:
 type FormulaReferenceEndpoint = (
     FormulaCellReference | FormulaColumnReference | FormulaRowReference
 )
+"""A parsed cell, column, or row reference endpoint."""
 
 
 @dataclass(frozen=True, slots=True)
 class FormulaLiteralNode:
+    """Literal value node in a spreadsheet formula AST."""
+
     value_type: Literal["number", "string", "boolean", "error"]
     value: bool | int | float | str
     type: Literal["literal"] = field(default="literal", init=False)
@@ -227,12 +284,16 @@ class FormulaLiteralNode:
 
 @dataclass(frozen=True, slots=True)
 class FormulaReferenceNode:
+    """Single-reference node in a spreadsheet formula AST."""
+
     reference: FormulaReferenceEndpoint
     type: Literal["reference"] = field(default="reference", init=False)
 
 
 @dataclass(frozen=True, slots=True)
 class FormulaCellRangeNode:
+    """Cell-range node in a spreadsheet formula AST."""
+
     start: FormulaCellReference
     end: FormulaCellReference
     type: Literal["range"] = field(default="range", init=False)
@@ -240,6 +301,8 @@ class FormulaCellRangeNode:
 
 @dataclass(frozen=True, slots=True)
 class FormulaColumnRangeNode:
+    """Whole-column range node in a spreadsheet formula AST."""
+
     start: FormulaColumnReference
     end: FormulaColumnReference
     type: Literal["range"] = field(default="range", init=False)
@@ -247,6 +310,8 @@ class FormulaColumnRangeNode:
 
 @dataclass(frozen=True, slots=True)
 class FormulaRowRangeNode:
+    """Whole-row range node in a spreadsheet formula AST."""
+
     start: FormulaRowReference
     end: FormulaRowReference
     type: Literal["range"] = field(default="range", init=False)
@@ -255,10 +320,13 @@ class FormulaRowRangeNode:
 type FormulaRangeNode = (
     FormulaCellRangeNode | FormulaColumnRangeNode | FormulaRowRangeNode
 )
+"""Any parsed range node in a spreadsheet formula AST."""
 
 
 @dataclass(frozen=True, slots=True)
 class FormulaFunctionNode:
+    """Function-call node in a spreadsheet formula AST."""
+
     name: str
     arguments: tuple[FormulaAstNode, ...]
     type: Literal["function"] = field(default="function", init=False)
@@ -266,6 +334,8 @@ class FormulaFunctionNode:
 
 @dataclass(frozen=True, slots=True)
 class FormulaUnaryNode:
+    """Prefix unary-operator node in a spreadsheet formula AST."""
+
     operator: Literal["+", "-"]
     operand: FormulaAstNode
     type: Literal["unary"] = field(default="unary", init=False)
@@ -273,6 +343,8 @@ class FormulaUnaryNode:
 
 @dataclass(frozen=True, slots=True)
 class FormulaPostfixNode:
+    """Postfix unary-operator node in a spreadsheet formula AST."""
+
     operator: Literal["%"]
     operand: FormulaAstNode
     type: Literal["postfix"] = field(default="postfix", init=False)
@@ -285,6 +357,8 @@ type _FormulaBinaryOperator = Literal[
 
 @dataclass(frozen=True, slots=True)
 class FormulaBinaryNode:
+    """Binary-operator node in a spreadsheet formula AST."""
+
     operator: _FormulaBinaryOperator
     left: FormulaAstNode
     right: FormulaAstNode
@@ -293,12 +367,16 @@ class FormulaBinaryNode:
 
 @dataclass(frozen=True, slots=True)
 class FormulaGroupNode:
+    """Parenthesized-expression node in a spreadsheet formula AST."""
+
     expression: FormulaAstNode
     type: Literal["group"] = field(default="group", init=False)
 
 
 @dataclass(frozen=True, slots=True)
 class FormulaEmptyNode:
+    """Missing-argument node in a spreadsheet formula AST."""
+
     type: Literal["empty"] = field(default="empty", init=False)
 
 
@@ -313,10 +391,13 @@ type FormulaAstNode = (
     | FormulaGroupNode
     | FormulaEmptyNode
 )
+"""Any node in a parsed spreadsheet formula AST."""
 
 
 @dataclass(frozen=True, slots=True)
 class FormulaAst:
+    """Versioned abstract syntax tree for a spreadsheet formula."""
+
     formula: str
     root: FormulaAstNode
     schema_version: Literal[1] = field(default=1, init=False)
@@ -539,6 +620,7 @@ class _FormulaParser:
         ]
 
     def parse(self) -> FormulaAstNode:
+        """Parse all remaining tokens into one formula AST node."""
         result = self._parse_comparison()
         token = self._current()
         if token is not None:
@@ -748,14 +830,17 @@ class Address:
 
     @property
     def address(self) -> str:
+        """The normalized A1 address."""
         return f"{_column_name(self.column)}{self.row + 1}"
 
     @property
     def local_address(self) -> Address:
+        """This unqualified address."""
         return self
 
     @property
     def sheet_name(self) -> None:
+        """No sheet name because this address is unqualified."""
         return None
 
     def __str__(self) -> str:
@@ -783,13 +868,30 @@ class QualifiedAddress:
     local: Address
     sheet_name: SheetName
 
+    @classmethod
+    def from_a1(cls, address: str) -> QualifiedAddress:
+        """Parse a sheet-qualified A1 address."""
+        if "!" not in address:
+            raise ValueError(f'Invalid qualified spreadsheet address "{address}".')
+        sheet_text, local_text = address.rsplit("!", 1)
+        try:
+            sheet_name = _decode_snapshot_sheet_name(sheet_text, address)
+            local = Address.from_a1(local_text)
+        except ValueError as exc:
+            raise ValueError(
+                f'Invalid qualified spreadsheet address "{address}".'
+            ) from exc
+        return cls(local=local, sheet_name=sheet_name)
+
     @property
     def address(self) -> str:
+        """The normalized, safely quoted qualified A1 address."""
         name = _safe_sheet_name(self.sheet_name)
         return f"{name}!{self.local}"
 
     @property
     def local_address(self) -> Address:
+        """The unqualified portion of this address."""
         return self.local
 
     def __str__(self) -> str:
@@ -829,26 +931,32 @@ class AddressRange:
 
     @property
     def address(self) -> str:
+        """The normalized A1 range."""
         return str(self)
 
     @property
     def start_row(self) -> int:
+        """The zero-based first row index."""
         return self.start.row
 
     @property
     def end_row(self) -> int:
+        """The zero-based last row index, inclusive."""
         return self.end.row
 
     @property
     def start_column(self) -> int:
+        """The zero-based first column index."""
         return self.start.column
 
     @property
     def end_column(self) -> int:
+        """The zero-based last column index, inclusive."""
         return self.end.column
 
     @property
     def shape(self) -> tuple[int, int]:
+        """The range dimensions as ``(rows, columns)``."""
         return (
             self.end.row - self.start.row + 1,
             self.end.column - self.start.column + 1,
@@ -864,12 +972,15 @@ class AddressRange:
         return ref.start in self and ref.end in self
 
     def contains_cell(self, row: int, column: int) -> bool:
+        """Return whether the zero-based cell coordinates are inside the range."""
         return Address(row=row, column=column) in self
 
     def contains_range(self, other: AddressRange) -> bool:
+        """Return whether another range is fully inside this range."""
         return other in self
 
     def intersection(self, other: _Range) -> AddressRange | None:
+        """Return the overlap with another range, if any."""
         if isinstance(other, QualifiedAddressRange):
             other = other.local
         start = Address(
@@ -920,10 +1031,12 @@ class AddressSpace:
 
     @property
     def shape(self) -> tuple[int, int]:
+        """The address-space dimensions as ``(rows, columns)``."""
         return self.source_range.shape
 
     @property
     def student_range(self) -> AddressRange:
+        """The zero-origin range exposed to the student."""
         rows, columns = self.shape
         return AddressRange(
             Address(row=0, column=0),
@@ -995,6 +1108,7 @@ class AddressSpaceMap:
             ) from None
 
     def canonical_name(self, sheet_name: SheetName) -> SheetName:
+        """Return the original spelling of a case-insensitive sheet name."""
         try:
             return self._by_name[sheet_name.casefold()][0]
         except KeyError:
@@ -1109,6 +1223,7 @@ class QualifiedAddressRange:
 
     @property
     def shape(self) -> tuple[int, int]:
+        """The range dimensions as ``(rows, columns)``."""
         return self.local.shape
 
     def __contains__(self, ref: _Address | _Range) -> bool:
@@ -1118,6 +1233,7 @@ class QualifiedAddressRange:
         return ref in self.local
 
     def intersection(self, other: _Range) -> QualifiedAddressRange | None:
+        """Return the same-sheet overlap with another range, if any."""
         if isinstance(other, QualifiedAddressRange):
             if other.sheet_name != self.sheet_name:
                 return None
@@ -1129,6 +1245,7 @@ class QualifiedAddressRange:
 
     @property
     def address(self) -> str:
+        """The normalized, safely quoted qualified A1 range."""
         name = _safe_sheet_name(self.sheet_name)
         return f"{name}!{self.local}"
 
@@ -1140,9 +1257,12 @@ class QualifiedAddressRange:
 type _Range = AddressRange | QualifiedAddressRange
 
 type SourceValue = bool | int | float | str
+"""JSON-safe value accepted in an authoring or imported source sheet."""
 
 
 class SourceSheet(TypedDict):
+    """Normalized source-sheet definition used to author a workbook."""
+
     name: str
     rows: int
     columns: int
@@ -1152,8 +1272,48 @@ class SourceSheet(TypedDict):
 
 
 class SourceBook(TypedDict):
+    """Versioned public workbook definition without grading outputs."""
+
     schema_version: Literal[2]
     sheets: list[SourceSheet]
+
+
+class OutputSpec(TypedDict):
+    """Normalized declaration of one named private grading output."""
+
+    sheet: SheetName
+    cell: str
+    required: NotRequired[bool]
+
+
+type OutputInput = str | Mapping[str, object] | OutputSpec
+"""Relaxed authoring input accepted for one named grading output."""
+
+
+class GradingBook(TypedDict):
+    """Versioned private workbook definition with named grading outputs."""
+
+    schema_version: Literal[2]
+    sheets: list[SourceSheet]
+    outputs: dict[str, OutputSpec]
+
+
+type Definition = SourceBook | GradingBook
+"""Any versioned workbook definition accepted by ``pl-spreadsheet``."""
+
+
+class SheetSpec(TypedDict):
+    """Relaxed options for authoring one spreadsheet sheet."""
+
+    cells: NotRequired[Mapping[str, object]]
+    rows: NotRequired[int]
+    columns: NotRequired[int]
+    editable_ranges: NotRequired[Sequence[str]]
+    student_range: NotRequired[str]
+
+
+type SheetInput = Mapping[str, object] | SheetSpec | SourceSheet
+"""Relaxed direct-cell or structured input accepted for one sheet."""
 
 
 def _is_missing_spreadsheet_value(value: object) -> bool:
@@ -1189,6 +1349,264 @@ def _json_spreadsheet_cell_value(value: object, location: str) -> SourceValue | 
     raise TypeError(
         f"Spreadsheet value at {location} must be a string, finite real number, boolean, or missing value."
     )
+
+
+_SHEET_INPUT_KEYS = {
+    "name",
+    "cells",
+    "rows",
+    "columns",
+    "editable_ranges",
+    "student_range",
+}
+
+
+def _source_sheet_from_input(name: SheetName, raw_sheet: SheetInput) -> SourceSheet:
+    is_structured = any(key in raw_sheet for key in _SHEET_INPUT_KEYS)
+    if is_structured:
+        unknown_keys = set(raw_sheet) - _SHEET_INPUT_KEYS
+        if unknown_keys:
+            unknown = min(str(key) for key in unknown_keys)
+            raise ValueError(
+                f'Spreadsheet sheet "{name}" has unknown option "{unknown}".'
+            )
+        supplied_name = raw_sheet.get("name")
+        if supplied_name is not None and supplied_name != name:
+            raise ValueError(
+                f'Spreadsheet sheet "{name}" does not match its supplied name "{supplied_name}".'
+            )
+        raw_cells = raw_sheet.get("cells", {})
+        raw_rows = raw_sheet.get("rows")
+        raw_columns = raw_sheet.get("columns")
+        raw_editable_ranges = raw_sheet.get("editable_ranges", ())
+        raw_student_range = raw_sheet.get("student_range")
+    else:
+        raw_cells = raw_sheet
+        raw_rows = None
+        raw_columns = None
+        raw_editable_ranges = ()
+        raw_student_range = None
+
+    if not isinstance(raw_cells, Mapping):
+        raise TypeError(f'Spreadsheet sheet "{name}" cells must be a mapping.')
+    cells: dict[str, SourceValue] = {}
+    seen_addresses: set[str] = set()
+    bounds = Address(row=0, column=0)
+    for raw_address, value in raw_cells.items():
+        if not isinstance(raw_address, str):
+            raise TypeError(
+                f'Spreadsheet cell addresses in sheet "{name}" must be strings.'
+            )
+        try:
+            address = Address.from_a1(raw_address)
+        except ValueError as exc:
+            raise ValueError(
+                f'Invalid spreadsheet cell address "{raw_address}" in sheet "{name}".'
+            ) from exc
+        canonical_address = address.address
+        if canonical_address in seen_addresses:
+            raise ValueError(
+                f'Spreadsheet cell "{canonical_address}" is duplicated in sheet "{name}".'
+            )
+        seen_addresses.add(canonical_address)
+        bounds = Address(
+            row=max(bounds.row, address.row),
+            column=max(bounds.column, address.column),
+        )
+        normalized = _json_spreadsheet_cell_value(value, f"{name}!{canonical_address}")
+        if normalized is not None:
+            cells[canonical_address] = normalized
+
+    if isinstance(raw_editable_ranges, str) or not isinstance(
+        raw_editable_ranges, Sequence
+    ):
+        raise TypeError(
+            f'Spreadsheet sheet "{name}" editable_ranges must be a sequence of ranges.'
+        )
+    editable_ranges: list[str] = []
+    parsed_editable_ranges: list[AddressRange] = []
+    for raw_range in raw_editable_ranges:
+        if not isinstance(raw_range, str):
+            raise TypeError(
+                f'Editable ranges in spreadsheet sheet "{name}" must be strings.'
+            )
+        try:
+            parsed_range = AddressRange.from_a1(raw_range)
+        except ValueError as exc:
+            raise ValueError(
+                f'Invalid editable range "{raw_range}" in spreadsheet sheet "{name}".'
+            ) from exc
+        parsed_editable_ranges.append(parsed_range)
+        editable_ranges.append(parsed_range.address)
+        bounds = Address(
+            row=max(bounds.row, parsed_range.end.row),
+            column=max(bounds.column, parsed_range.end.column),
+        )
+
+    student_range: AddressRange | None = None
+    if raw_student_range is not None:
+        if not isinstance(raw_student_range, str):
+            raise TypeError(
+                f'Spreadsheet sheet "{name}" student_range must be a string.'
+            )
+        try:
+            student_range = AddressRange.from_a1(raw_student_range)
+        except ValueError as exc:
+            raise ValueError(
+                f'Invalid student range "{raw_student_range}" in spreadsheet sheet "{name}".'
+            ) from exc
+        bounds = Address(
+            row=max(bounds.row, student_range.end.row),
+            column=max(bounds.column, student_range.end.column),
+        )
+        for address in cells:
+            if Address.from_a1(address) not in student_range:
+                raise ValueError(
+                    f'Spreadsheet cell "{address}" is outside the student range for sheet "{name}".'
+                )
+        for editable_range in parsed_editable_ranges:
+            if editable_range not in student_range:
+                raise ValueError(
+                    f'Editable range "{editable_range}" is outside the student range for sheet "{name}".'
+                )
+
+    def dimension(value: object, inferred: int, dimension_name: str) -> int:
+        if value is None:
+            return inferred
+        if isinstance(value, bool) or not isinstance(value, int) or value < 1:
+            raise ValueError(
+                f'Spreadsheet sheet "{name}" {dimension_name} must be a positive integer.'
+            )
+        if value < inferred:
+            raise ValueError(
+                f'Spreadsheet sheet "{name}" {dimension_name} does not contain its cells and ranges.'
+            )
+        return value
+
+    sheet: SourceSheet = {
+        "name": name,
+        "rows": dimension(raw_rows, bounds.row + 1, "rows"),
+        "columns": dimension(raw_columns, bounds.column + 1, "columns"),
+        "cells": cells,
+    }
+    if editable_ranges:
+        sheet["editable_ranges"] = editable_ranges
+    if student_range is not None:
+        sheet["student_range"] = student_range.address
+    return sheet
+
+
+@overload
+def create_spreadsheet(
+    sheets: Mapping[SheetName, SheetInput],
+    *,
+    outputs: None = None,
+) -> SourceBook: ...
+
+
+@overload
+def create_spreadsheet(
+    sheets: Mapping[SheetName, SheetInput],
+    *,
+    outputs: Mapping[str, OutputInput],
+) -> GradingBook: ...
+
+
+def create_spreadsheet(
+    sheets: Mapping[SheetName, SheetInput],
+    *,
+    outputs: Mapping[str, OutputInput] | None = None,
+) -> Definition:
+    """Build a versioned authoring workbook from relaxed sheet dictionaries."""
+    if not isinstance(sheets, Mapping):
+        raise TypeError("create_spreadsheet() requires a mapping of sheets.")
+    if not 1 <= len(sheets) <= 10:
+        raise ValueError("A spreadsheet workbook must contain 1 to 10 sheets.")
+
+    normalized_names: set[str] = set()
+    normalized_sheets: list[SourceSheet] = []
+    for name, raw_sheet in sheets.items():
+        if not isinstance(name, str):
+            raise TypeError("Spreadsheet sheet names must be strings.")
+        normalized_name = name.casefold()
+        if normalized_name in normalized_names:
+            raise ValueError(f'Spreadsheet sheet name "{name}" is duplicated.')
+        normalized_names.add(normalized_name)
+        if not isinstance(raw_sheet, Mapping):
+            raise TypeError(f'Spreadsheet sheet "{name}" must be a mapping.')
+        normalized_sheets.append(_source_sheet_from_input(name, raw_sheet))
+
+    if outputs is None:
+        return {"schema_version": 2, "sheets": normalized_sheets}
+    if not isinstance(outputs, Mapping) or not 1 <= len(outputs) <= 100:
+        raise ValueError(
+            "A private spreadsheet grading workbook must contain 1 to 100 outputs."
+        )
+
+    normalized_outputs: dict[str, OutputSpec] = {}
+    for name, raw_output in outputs.items():
+        if not isinstance(name, str) or not name:
+            raise TypeError("Spreadsheet output names must be non-empty strings.")
+        if isinstance(raw_output, str):
+            sheet_name: object = None
+            cell = raw_output
+            required: object = False
+        elif isinstance(raw_output, Mapping):
+            unknown_keys = set(raw_output) - {"sheet", "cell", "required"}
+            if unknown_keys:
+                unknown = min(str(key) for key in unknown_keys)
+                raise ValueError(
+                    f'Spreadsheet output "{name}" has unknown option "{unknown}".'
+                )
+            sheet_name = raw_output.get("sheet")
+            cell = raw_output.get("cell")
+            required = raw_output.get("required", False)
+        else:
+            raise TypeError(
+                f'Spreadsheet output "{name}" must be a qualified address string or mapping.'
+            )
+
+        if sheet_name is not None and not isinstance(sheet_name, str):
+            raise TypeError(f'Spreadsheet output "{name}" sheet must be a string.')
+        if not isinstance(cell, str):
+            raise TypeError(f'Spreadsheet output "{name}" cell must be a string.')
+        if "!" in cell:
+            try:
+                qualified_cell = QualifiedAddress.from_a1(cell)
+            except ValueError as exc:
+                raise ValueError(
+                    f'Spreadsheet output "{name}" has invalid qualified cell address "{cell}".'
+                ) from exc
+            if sheet_name is not None and sheet_name != qualified_cell.sheet_name:
+                raise ValueError(
+                    f'Spreadsheet output "{name}" sheet "{sheet_name}" conflicts with cell address "{cell}".'
+                )
+            sheet_name = qualified_cell.sheet_name
+            normalized_cell = qualified_cell.local.address
+        else:
+            if sheet_name is None:
+                raise ValueError(
+                    f'Spreadsheet output "{name}" must provide a sheet or use a qualified cell address.'
+                )
+            try:
+                normalized_cell = Address.from_a1(cell).address
+            except ValueError as exc:
+                raise ValueError(
+                    f'Spreadsheet output "{name}" has invalid cell address "{cell}".'
+                ) from exc
+        if not isinstance(required, bool):
+            raise TypeError(f'Spreadsheet output "{name}" required must be a boolean.')
+        assert isinstance(sheet_name, str)
+        output: OutputSpec = {"sheet": sheet_name, "cell": normalized_cell}
+        if required:
+            output["required"] = True
+        normalized_outputs[name] = output
+
+    return {
+        "schema_version": 2,
+        "sheets": normalized_sheets,
+        "outputs": normalized_outputs,
+    }
 
 
 def dataframe_to_spreadsheet_sheet(
@@ -1357,6 +1775,7 @@ class _SparseSheet:
     addressed_data: dict[str, _EvaluatedCell]
 
     def __contains__(self, ref: _Address) -> bool:
+        """Return whether an address lies inside this sheet's visible range."""
         return ref in QualifiedAddressRange(self.visible_range, self.name)
 
 
@@ -1641,18 +2060,22 @@ class Sheet:
 
     @property
     def name(self) -> SheetName:
+        """The sheet name."""
         return self._cells.name
 
     @property
     def rows(self) -> int:
+        """The number of student-visible rows."""
         return self._cells.visible_range.shape[0]
 
     @property
     def columns(self) -> int:
+        """The number of student-visible columns."""
         return self._cells.visible_range.shape[1]
 
     @property
     def shape(self) -> tuple[int, int]:
+        """The visible sheet dimensions as ``(rows, columns)``."""
         return (self.rows, self.columns)
 
     def __iter__(self) -> Iterator[Cell]:
@@ -1708,6 +2131,7 @@ class Sheet:
         *,
         include_empty: bool = False,
     ) -> tuple[Cell, ...]:
+        """Return visible cells that satisfy a predicate in row-major order."""
         sheet_range = CellRange(self, self._cells.visible_range)
         return sheet_range.query(predicate, include_empty=include_empty)
 
@@ -1727,69 +2151,84 @@ class Cell:
 
     @property
     def row(self) -> int:
+        """The one-based row number."""
         return self._location.row + 1
 
     @property
     def column(self) -> str:
+        """The column name."""
         return _column_name(self._location.column)
 
     @property
     def address(self) -> str:
+        """The unqualified A1 address."""
         return self._location.address
 
     @property
     def qualified_address(self) -> str:
+        """The sheet-qualified A1 address."""
         return str(QualifiedAddress(self._location, self.sheet.name))
 
     @property
     def formula(self) -> str | None:
+        """The cell formula, or ``None`` for a literal or empty cell."""
         if self._cell is None or self._cell.input["type"] != "formula":
             return None
         return self._cell.input["value"]
 
     @property
     def is_empty(self) -> bool:
+        """Whether the calculated result is empty."""
         return self._cell is None or self._cell.result["type"] == "empty"
 
     @property
     def is_formula(self) -> bool:
+        """Whether the cell input is a formula."""
         return self.formula is not None
 
     @property
     def is_error(self) -> bool:
+        """Whether calculation produced a spreadsheet error."""
         return self._cell is not None and self._cell.result["type"] == "error"
 
     @property
     def error_type(self) -> str | None:
+        """The calculation engine's error type, if present."""
         result = self.result
         return result["error_type"] if result["type"] == "error" else None
 
     @property
     def error_value(self) -> str | None:
+        """The displayed spreadsheet error value, if present."""
         result = self.result
         return result["value"] if result["type"] == "error" else None
 
     @property
     def input(self) -> Input | None:
+        """A copy of the typed input, or ``None`` for an empty cell."""
         if self._cell is None:
             return None
         return self._cell.input.copy()
 
     @property
     def result(self) -> Result:
+        """A copy of the authoritative typed calculation result."""
         if self._cell is None:
             return {"type": "empty"}
         return self._cell.result.copy()
 
     @property
     def value(self) -> Value:
+        """The plain calculated value, or ``None`` for empty and error results."""
         return _spreadsheet_result_value(self.result)
 
     @property
     def formula_ast(self) -> FormulaAst | None:
+        """The parsed formula AST, or ``None`` when the cell is not a formula."""
         return None if self.formula is None else parse_spreadsheet_formula(self.formula)
 
     def matches_formula(self, expected: str, *, structural: bool = False) -> bool:
+        """Return whether the formula matches textually or structurally."""
         formula = self.formula
         if not structural:
             return formula is not None and formula == expected
@@ -1801,6 +2240,14 @@ class Cell:
         except FormulaParseError:
             return False
         return actual_root == expected_root
+
+    def __str__(self) -> str:
+        """Return a human-readable representation of the calculated value."""
+        if self.is_empty:
+            return ""
+        if err := self.error_value:
+            return f"#ERROR({err!r})"
+        return str(self.value)
 
 
 @dataclass(frozen=True, slots=True, eq=False, repr=False)
@@ -1816,18 +2263,22 @@ class CellRange:
 
     @property
     def range_address(self) -> str:
+        """The unqualified A1 range."""
         return str(self._range)
 
     @property
     def qualified_range_address(self) -> str:
+        """The sheet-qualified A1 range."""
         return str(QualifiedAddressRange(self._range, self.sheet.name))
 
     @property
     def shape(self) -> tuple[int, int]:
+        """The range dimensions as ``(rows, columns)``."""
         return self._range.shape
 
     @property
     def cells(self) -> tuple[tuple[Cell, ...], ...]:
+        """The cells as an immutable row-major matrix."""
         return tuple(
             tuple(
                 Cell(self.sheet, Address(row, column))
@@ -1840,23 +2291,28 @@ class CellRange:
 
     @property
     def inputs(self) -> tuple[tuple[Input | None, ...], ...]:
+        """Typed cell inputs as an immutable row-major matrix."""
         return tuple(tuple(cell.input for cell in row) for row in self.cells)
 
     @property
     def results(self) -> tuple[tuple[Result, ...], ...]:
+        """Typed calculation results as an immutable row-major matrix."""
         return tuple(tuple(cell.result for cell in row) for row in self.cells)
 
     @property
     def values(
         self,
     ) -> tuple[tuple[Value, ...], ...]:
+        """Plain calculated values as an immutable row-major matrix."""
         return tuple(tuple(cell.value for cell in row) for row in self.cells)
 
     @property
     def formulas(self) -> tuple[tuple[str | None, ...], ...]:
+        """Formulas as an immutable row-major matrix."""
         return tuple(tuple(cell.formula for cell in row) for row in self.cells)
 
     def iter_cells(self, *, include_empty: bool = True) -> Iterator[Cell]:
+        """Iterate over cells in row-major order, optionally skipping empty cells."""
         for row in self.cells:
             for cell in row:
                 if include_empty or not cell.is_empty:
@@ -1868,6 +2324,7 @@ class CellRange:
         *,
         include_empty: bool = False,
     ) -> tuple[Cell, ...]:
+        """Return cells that satisfy a predicate in row-major order."""
         return tuple(
             cell
             for cell in self.iter_cells(include_empty=include_empty)
@@ -1899,26 +2356,32 @@ class Output:
 
     @property
     def is_empty(self) -> bool:
+        """Whether the grading output is empty."""
         return self._result["type"] == "empty"
 
     @property
     def is_error(self) -> bool:
+        """Whether the grading output is a spreadsheet error."""
         return self._result["type"] == "error"
 
     @property
     def error_type(self) -> str | None:
+        """The calculation engine's error type, if present."""
         return self._result["error_type"] if self._result["type"] == "error" else None
 
     @property
     def error_value(self) -> str | None:
+        """The displayed spreadsheet error value, if present."""
         return self._result["value"] if self._result["type"] == "error" else None
 
     @property
     def result(self) -> Result:
+        """A copy of the authoritative typed grading result."""
         return self._result.copy()
 
     @property
     def value(self) -> Value:
+        """The plain value, or ``None`` for empty and error results."""
         return _spreadsheet_result_value(self.result)
 
 
@@ -1929,11 +2392,14 @@ class _Outputs(Mapping[str, Output]):
     _spreadsheet: Book
 
     def __getitem__(self, name: str) -> Output:
+        """Return a named private grading output."""
         self._spreadsheet._grading_output(name)
         return Output(self._spreadsheet, name)
 
     def __iter__(self) -> Iterator[str]:
+        """Iterate over private grading output names."""
         return iter(self._spreadsheet._grading_output_names())
 
     def __len__(self) -> int:
+        """Return the number of private grading outputs."""
         return len(self._spreadsheet._grading_output_names())

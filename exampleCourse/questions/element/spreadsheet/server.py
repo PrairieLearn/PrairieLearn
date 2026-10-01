@@ -3,57 +3,45 @@ import prairielearn.spreadsheet_utils as psp
 
 
 def generate(data):
-    data["params"]["workbook"] = {
-        "schema_version": 2,
-        "sheets": [
-            {
-                "name": "Inputs",
-                "rows": 6,
-                "columns": 4,
-                "cells": {
-                    "A1": "Item",
-                    "B1": "Quantity",
-                    "C1": "Unit price",
-                    "D1": "Line total",
-                    "A2": "Markers",
-                    "B2": 1,
-                    "C2": 2,
-                    "D2": "=B2*C2",
-                },
-                "editable_ranges": ["B2:D6"],
+    data["params"]["workbook"] = psp.create_spreadsheet({
+        "Inputs": {
+            "rows": 6,
+            "columns": 4,
+            "cells": {
+                "A1": "Item",
+                "B1": "Quantity",
+                "C1": "Unit price",
+                "D1": "Line total",
+                "A2": "Markers",
+                "B2": 1,
+                "C2": 2,
+                "D2": "=B2*C2",
             },
-            {
-                "name": "Summary",
-                "rows": 4,
-                "columns": 2,
-                "cells": {
-                    "A1": "Budget total",
-                    "B1": "=SUM(Inputs!D2:D6)",
-                },
-                "editable_ranges": [],
-            },
-        ],
-    }
-    data["correct_answers"]["model"] = {
-        "schema_version": 2,
-        "sheets": [
-            {
-                "name": "Checks",
-                "rows": 3,
-                "columns": 1,
-                "cells": {
-                    "A1": "=Inputs!D2",
-                    "A2": "=A1=12",
-                    "A3": "=1/0",
-                },
-            }
-        ],
-        "outputs": {
-            "line_total": {"sheet": "Checks", "cell": "A1"},
-            "line_total_is_correct": {"sheet": "Checks", "cell": "A2"},
-            "example_error": {"sheet": "Checks", "cell": "A3"},
+            "editable_ranges": ["B2:D6"],
         },
-    }
+        "Summary": {
+            "rows": 4,
+            "columns": 2,
+            "cells": {
+                "A1": "Budget total",
+                "B1": "=SUM(Inputs!D2:D6)",
+            },
+        },
+    })
+    data["correct_answers"]["model"] = psp.create_spreadsheet(
+        {
+            "Checks": {
+                "A1": "=Inputs!D2",
+                "A2": "=A1=12",
+                "A3": "=1/0",
+            }
+        },
+        outputs={
+            "line_total": "Checks!A1",
+            "line_total_is_correct": {"cell": "Checks!A2"},
+            "example_error": "Checks!A3",
+        },
+    )
 
 
 def grade(data):
