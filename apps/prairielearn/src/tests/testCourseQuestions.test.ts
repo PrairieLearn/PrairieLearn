@@ -13,6 +13,7 @@ const qidsTestCourse = [
   'positionTimeGraph',
   'prairieDrawFigure',
   'orderBlocks',
+  'sketchTest',
 ];
 
 describe('Auto-test questions in testCourse', { timeout: 60_000 }, function () {

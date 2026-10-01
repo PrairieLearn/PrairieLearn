@@ -6,15 +6,15 @@ requires-python = ">=3.13,<3.14"
 classifiers = ["Private :: Do Not Upload"]
 
 dependencies = [
-  "ansi2html==1.9.2",
+  "ansi2html==1.9.5",
   "automata-lib==9.2.0",
   "chevron==0.14.0",
-  "coloraide==8.10",
-  "faker==40.36.0",
+  "coloraide==8.12.1",
+  "faker==40.39.0",
   "jinja2==3.1.6",
   "jsonschema==4.26.0",
-  "lxml==6.1.1",
-  "matplotlib==3.11.1",
+  "lxml==6.1.3",
+  "matplotlib==3.11.2",
   "networkx==3.6.1",
   "nltk==3.10.3",
   "numpy==2.4.6",
@@ -24,21 +24,21 @@ dependencies = [
   "pint==0.25.3",
   "psutil==7.2.2",
   "pulp==3.3.2",
-  "pyarrow==25.0.0",
+  "pyarrow==25.0.1",
   "pycryptodome==3.23.0",
-  "pygments==2.20.0",
+  "pygments==2.21.0",
   "pygments-ansi-color==0.3.0",
   "pygraphviz==1.14",
   "pyquaternion==0.9.9",
-  "regex==2026.7.19",
+  "regex==2026.9.10",
   "requests==2.34.2",
   "rich==15.0.0",
   "schemdraw==0.23",
-  "scikit-learn==1.9.0",
-  "scipy==1.18.0",
+  "scikit-learn==1.9.1",
+  "scipy==1.18.1",
   "seaborn==0.13.2",
   "sketchresponse==0.1.5",
-  "statsmodels==0.14.6",
+  "statsmodels==0.15.0",
   "sympy==1.14.0",
   "text-unidecode==1.3",
   "typing-extensions==4.16.0",
@@ -52,13 +52,13 @@ dev = [
   "pytest-cov==7.1.0",
   "pytest-github-actions-annotate-failures==0.4.2",
   "pytest-repeat==0.9.4",
-  "ruff==0.16.2",
+  "ruff==0.16.7",
   "sqlfluff==4.3.0",
-  "squawk-cli==2.62.0",
+  "squawk-cli==2.65.0",
   "tomlkit==0.15.1",
   "types-chevron==0.14.2.20260408",
   "types-lxml==2026.2.16",
-  "types-pygments==2.20.0.20260728",
+  "types-pygments==2.21.0.20260819",
 ]
 
 docs = [
@@ -71,13 +71,13 @@ docs = [
   "mkdocs-literate-nav==0.6.3",
   "mkdocs-material==9.7.7",
   "mkdocstrings==1.0.6",
-  "mkdocstrings-python==2.0.5",
-  "pymdown-extensions==11.0.1",
+  "mkdocstrings-python==2.0.8",
+  "pymdown-extensions==11.0.2",
   # https://github.com/pygments/pygments/issues/3076
-  "pygments==2.20.0",
+  "pygments==2.21.0",
   # mkdocstrings-python will format the docstrings using ruff
   # https://mkdocstrings.github.io/python/usage/configuration/signatures/#line_length
-  "ruff==0.16.2",
+  "ruff==0.16.7",
 ]
 
 # We only use pyproject.toml for the Python dependencies, so we don't need to
@@ -100,22 +100,23 @@ extend-exclude = [
 ]
 target-version = "py313"
 preview = true
+
 [tool.ruff.lint]
 select = ["ALL"]
 
 ignore = [
   # These rules provide little value to us
-  "EM",                         # flake8-errmsg
-  "EXE",                        # flake8-executable
-  "FIX",                        # flake8-fixme
-  "S",                          # flake8-bandit (security rules)
-  "TD",                         # flake8-todos
-  "PTH",                        # flake8-use-pathlib
+  "EM",  # flake8-errmsg
+  "EXE",  # flake8-executable
+  "FIX",  # flake8-fixme
+  "S",  # flake8-bandit (security rules)
+  "TD",  # flake8-todos
+  "PTH",  # flake8-use-pathlib
   "blind-except",
   "missing-trailing-comma",
   "missing-copyright-notice",
   "complex-structure",
-  "commented-out-code",         # too many false positives
+  "commented-out-code",  # too many false positives
   "line-too-long",
   "implicit-namespace-package",
   "private-member-access",
@@ -129,16 +130,16 @@ ignore = [
   "undocumented-public-init",
   "incorrect-blank-line-before-class",
   "multi-line-summary-first-line",
-  "missing-blank-line-after-summary",  #  we use a multi-line description instead of summaries sometimes
+  "missing-blank-line-after-summary",  # we use a multi-line description instead of summaries sometimes
   "missing-trailing-period",
   "missing-terminal-punctuation",
   "docstring-missing-yields",
   "read-whole-file",
   "write-whole-file",
-  "reimplemented-operator",            # confusing
-  "reimplemented-starmap",             # confusing
+  "reimplemented-operator",  # confusing
+  "reimplemented-starmap",  # confusing
   "explicit-string-concatenation",
-  "numpy-legacy-random",               # we use `np.random.*` in many places
+  "numpy-legacy-random",  # we use `np.random.*` in many places
   "import-outside-top-level",
   "compare-to-empty-string",
   "import-private-name",
@@ -150,7 +151,7 @@ ignore = [
   "too-many-statements",
   "too-many-boolean-expressions",
   "too-many-positional-arguments",
-  "literal-membership",                # pyright doesn't understand assert_never with sets
+  "literal-membership",  # pyright doesn't understand assert_never with sets
   "magic-value-comparison",
   "no-self-use",
   "too-many-statements-in-try-clause",
@@ -160,9 +161,9 @@ ignore = [
   "superfluous-else-return",
   "if-else-block-instead-of-if-exp",
   "runtime-cast-value",
-  "try-consider-else",                 # returns in try blocks
+  "try-consider-else",  # returns in try blocks
   "raise-within-try",
-  "raise-vanilla-args",                # long messages in raise statements
+  "raise-vanilla-args",  # long messages in raise statements
 
   # These rules need to be enabled
   # TODO: D103,D104 (https://github.com/astral-sh/ruff/issues/12434)
@@ -267,17 +268,19 @@ include = [
   "./scripts",
 ]
 ignore = [
-  "./apps/prairielearn/elements/pl-drawing",            # requires refactor
-  "./apps/prairielearn/elements/pl-prairiedraw-figure", # deprecated
-  "./exampleCourse/questions/**/tests",                 # autograder tests, use different dependencies
+  "./apps/prairielearn/elements/pl-drawing",  # requires refactor
+  "./apps/prairielearn/elements/pl-prairiedraw-figure",  # deprecated
+  "./exampleCourse/questions/**/tests",  # autograder tests, use different dependencies
 ]
 extraPaths = ["./apps/prairielearn/python"]
 pythonVersion = "3.13"
 executionEnvironments = [
   # TODO: after https://github.com/tamasfe/taplo/issues/332, split with newlines
   { root = "./graders/python", reportUntypedNamedTuple = "none", reportUntypedFunctionDecorator = "none", reportUnnecessaryComparison = "none", reportUnnecessaryIsInstance = "none", reportMissingTypeArgument = "none", extraPaths = [
+
   ] },
   { root = "./graders/c", reportArgumentType = "none", reportOperatorIssue = "none", reportAttributeAccessIssue = "none", reportIndexIssue = "none", reportCallIssue = "none", reportMissingTypeArgument = "none", extraPaths = [
+
   ] },
   { root = "./exampleCourse/questions", reportArgumentType = "none", reportUnknownParameterType = "none", reportMissingParameterType = "none", reportOperatorIssue = "none", reportCallIssue = "none", reportConstantRedefinition = "none" },
 ]
