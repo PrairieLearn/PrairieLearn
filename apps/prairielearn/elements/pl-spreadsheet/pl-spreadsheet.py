@@ -28,7 +28,7 @@ MAX_PAYLOAD_BYTES = 1024 * 1024
 MAX_GRADING_OUTPUTS = 100
 
 CELL_ADDRESS_RE = re.compile(r"^([A-Z]+)([1-9][0-9]*)$")
-SHEET_NAME_RE = re.compile(r"^[^\\/*?:\[\]]{1,31}$")
+BLOCKED_SHEET_NAME_CHARACTERS = frozenset("!:<>{}[]\0")
 CSS_SIZE_RE = re.compile(
     r"^(?:0|(?:\d+(?:\.\d+)?|\.\d+)(?:px|rem|em|vh|vw|vmin|vmax|%))$",
     re.IGNORECASE,
@@ -206,6 +206,19 @@ def _normalize_cell_value(value: Any, location: str) -> str | float | bool:
     return value
 
 
+def _normalize_sheet_name(value: Any, description: str) -> str:
+    if (
+        not isinstance(value, str)
+        or not 1 <= len(value) <= 31
+        or value.strip() != value
+        or any(character in BLOCKED_SHEET_NAME_CHARACTERS for character in value)
+    ):
+        raise ValueError(
+            f"{description} must have a non-empty name of at most 31 characters without leading or trailing whitespace. The characters !, :, <, >, {{, }}, [, ], and null are not allowed."
+        )
+    return value
+
+
 def _normalize_template(raw_template: Any) -> dict[str, Any]:
     if not isinstance(raw_template, dict) or raw_template.get("schema_version") != 1:
         raise ValueError(
@@ -227,15 +240,7 @@ def _normalize_template(raw_template: Any) -> dict[str, Any]:
     for sheet_index, raw_sheet in enumerate(raw_sheets, start=1):
         if not isinstance(raw_sheet, dict):
             raise TypeError(f"Sheet {sheet_index} must be an object.")
-        name = raw_sheet.get("name")
-        if (
-            not isinstance(name, str)
-            or name.strip() != name
-            or not SHEET_NAME_RE.fullmatch(name)
-        ):
-            raise ValueError(
-                f"Sheet {sheet_index} must have a non-empty Excel-safe name of at most 31 characters."
-            )
+        name = _normalize_sheet_name(raw_sheet.get("name"), f"Sheet {sheet_index}")
         folded_name = name.casefold()
         if folded_name in names:
             raise ValueError(f'Sheet name "{name}" is duplicated.')
@@ -361,15 +366,9 @@ def _normalize_grading_config(
     for sheet_index, raw_sheet in enumerate(raw_sheets, start=1):
         if not isinstance(raw_sheet, dict):
             raise TypeError(f"Private grading sheet {sheet_index} must be an object.")
-        name = raw_sheet.get("name")
-        if (
-            not isinstance(name, str)
-            or name.strip() != name
-            or not SHEET_NAME_RE.fullmatch(name)
-        ):
-            raise ValueError(
-                f"Private grading sheet {sheet_index} must have a non-empty Excel-safe name of at most 31 characters."
-            )
+        name = _normalize_sheet_name(
+            raw_sheet.get("name"), f"Private grading sheet {sheet_index}"
+        )
         folded_name = name.casefold()
         if folded_name in public_names:
             raise ValueError(

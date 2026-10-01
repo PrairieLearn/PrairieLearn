@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import math
 import re
+import string
 from collections.abc import Callable, Iterator, Mapping
 from dataclasses import InitVar, dataclass, field
 from typing import Literal, Protocol, TypedDict, cast
@@ -11,6 +12,9 @@ from typing import Literal, Protocol, TypedDict, cast
 from openpyxl.formula import Tokenizer
 
 SPREADSHEET_FORMULA_AST_VERSION = 1
+_COLUMN_LETTERS = string.ascii_uppercase
+
+type SheetName = str
 
 __all__ = [
     "SPREADSHEET_FORMULA_AST_VERSION",
@@ -32,17 +36,16 @@ __all__ = [
     "FormulaRowRangeNode",
     "FormulaRowReference",
     "FormulaUnaryNode",
+    "SheetName",
     "Spreadsheet",
     "SpreadsheetBook",
     "SpreadsheetCell",
-    "SpreadsheetCellError",
     "SpreadsheetCellView",
     "SpreadsheetFormulaParseError",
-    "SpreadsheetOutputError",
+    "SpreadsheetInput",
     "SpreadsheetOutputView",
     "SpreadsheetRange",
     "SpreadsheetResult",
-    "SpreadsheetResultError",
     "get_spreadsheet_cell",
     "get_spreadsheet_formula",
     "get_spreadsheet_formula_ast",
@@ -51,6 +54,34 @@ __all__ = [
     "get_spreadsheet_value",
     "parse_spreadsheet_formula",
 ]
+
+
+class SpreadsheetNumberInput(TypedDict):
+    type: Literal["number"]
+    value: int | float
+
+
+class SpreadsheetStringInput(TypedDict):
+    type: Literal["string"]
+    value: str
+
+
+class SpreadsheetBooleanInput(TypedDict):
+    type: Literal["boolean"]
+    value: bool
+
+
+class SpreadsheetFormulaInput(TypedDict):
+    type: Literal["formula"]
+    value: str
+
+
+type SpreadsheetInput = (
+    SpreadsheetNumberInput
+    | SpreadsheetStringInput
+    | SpreadsheetBooleanInput
+    | SpreadsheetFormulaInput
+)
 
 
 class SpreadsheetEmptyResult(TypedDict):
@@ -86,15 +117,25 @@ type SpreadsheetResult = (
     | SpreadsheetErrorResult
 )
 
+type CellValue = bool | int | float | str | None
+
+
+def _spreadsheet_result_value(result: SpreadsheetResult) -> CellValue:
+    if result["type"] == "empty":
+        return None
+    if result["type"] == "error":
+        return None
+    return result["value"]
+
 
 class SpreadsheetCell(TypedDict):
-    input: dict[str, object]
+    input: SpreadsheetInput
     result: SpreadsheetResult
 
 
 @dataclass(frozen=True, slots=True)
 class FormulaCellReference:
-    sheet: str | None
+    sheet: SheetName | None
     column: str
     row: int
     column_absolute: bool
@@ -104,7 +145,7 @@ class FormulaCellReference:
 
 @dataclass(frozen=True, slots=True)
 class FormulaColumnReference:
-    sheet: str | None
+    sheet: SheetName | None
     column: str
     column_absolute: bool
     kind: Literal["column"] = field(default="column", init=False)
@@ -112,7 +153,7 @@ class FormulaColumnReference:
 
 @dataclass(frozen=True, slots=True)
 class FormulaRowReference:
-    sheet: str | None
+    sheet: SheetName | None
     row: int
     row_absolute: bool
     kind: Literal["row"] = field(default="row", init=False)
@@ -227,43 +268,6 @@ class FormulaAst:
     schema_version: Literal[1] = field(default=1, init=False)
 
 
-class SpreadsheetResultError(ValueError):
-    """Base exception for scalar access to an error-valued result."""
-
-    def __init__(self, error_type: str, error_value: str, message: str) -> None:
-        self.error_type = error_type
-        self.error_value = error_value
-        super().__init__(message)
-
-
-class SpreadsheetCellError(SpreadsheetResultError):
-    """Raised when a scalar value is requested from an error-valued cell."""
-
-    def __init__(
-        self, sheet_name: str, address: str, error_type: str, error_value: str
-    ) -> None:
-        self.sheet_name = sheet_name
-        self.address = address
-        super().__init__(
-            error_type,
-            error_value,
-            f"Spreadsheet cell {sheet_name}!{address} has error {error_value} ({error_type}).",
-        )
-
-
-class SpreadsheetOutputError(SpreadsheetResultError):
-    """Raised when a scalar value is requested from an error-valued output."""
-
-    def __init__(self, output_name: str, error_type: str, error_value: str) -> None:
-        self.output_name = output_name
-        super().__init__(
-            error_type,
-            error_value,
-            f'Spreadsheet grading output "{output_name}" has error '
-            f"{error_value} ({error_type}).",
-        )
-
-
 class SpreadsheetFormulaParseError(ValueError):
     """Raised when a formula cannot be represented by the grading AST."""
 
@@ -295,7 +299,9 @@ def _normalized_address(address: str) -> tuple[str, int, int]:
     return normalized, int(match.group(2)) - 1, _column_index(match.group(1))
 
 
-def _get_sheet(snapshot: Mapping[str, object], sheet_name: str) -> Mapping[str, object]:
+def _get_sheet(
+    snapshot: Mapping[str, object], sheet_name: SheetName
+) -> Mapping[str, object]:
     sheets = snapshot.get("sheets", [])
     if not isinstance(sheets, list):
         raise TypeError("The spreadsheet snapshot has an invalid sheets field.")
@@ -306,7 +312,7 @@ def _get_sheet(snapshot: Mapping[str, object], sheet_name: str) -> Mapping[str, 
 
 
 def get_spreadsheet_cell(
-    snapshot: Mapping[str, object], sheet_name: str, address: str
+    snapshot: Mapping[str, object], sheet_name: SheetName, address: str
 ) -> SpreadsheetCell | None:
     """Return a normalized cell, or ``None`` when the in-bounds cell is empty."""
     sheet = _get_sheet(snapshot, sheet_name)
@@ -336,7 +342,7 @@ def get_spreadsheet_cell(
 
 
 def get_spreadsheet_result(
-    snapshot: Mapping[str, object], sheet_name: str, address: str
+    snapshot: Mapping[str, object], sheet_name: SheetName, address: str
 ) -> SpreadsheetResult:
     """Return the typed calculated result for a cell."""
     cell = get_spreadsheet_cell(snapshot, sheet_name, address)
@@ -351,24 +357,16 @@ def get_spreadsheet_result(
 
 
 def get_spreadsheet_value(
-    snapshot: Mapping[str, object], sheet_name: str, address: str
-) -> bool | int | float | str | None:
-    """Return a scalar calculated value, or raise for a spreadsheet error."""
-    result = get_spreadsheet_result(snapshot, sheet_name, address)
-    if result["type"] == "empty":
-        return None
-    if result["type"] == "error":
-        raise SpreadsheetCellError(
-            sheet_name,
-            address.upper(),
-            result["error_type"],
-            result["value"],
-        )
-    return result["value"]
+    snapshot: Mapping[str, object], sheet_name: SheetName, address: str
+) -> CellValue:
+    """Return a scalar calculated value, or ``None`` for empty or error results."""
+    return _spreadsheet_result_value(
+        get_spreadsheet_result(snapshot, sheet_name, address)
+    )
 
 
 def get_spreadsheet_formula(
-    snapshot: Mapping[str, object], sheet_name: str, address: str
+    snapshot: Mapping[str, object], sheet_name: SheetName, address: str
 ) -> str | None:
     """Return the exact submitted formula text, or ``None`` for a non-formula cell."""
     cell = get_spreadsheet_cell(snapshot, sheet_name, address)
@@ -403,7 +401,7 @@ def get_spreadsheet_grading_output(
     return cast(SpreadsheetResult, result)
 
 
-def _decode_sheet_name(sheet_text: str) -> str:
+def _decode_sheet_name(sheet_text: str) -> SheetName:
     if len(sheet_text) >= 2 and sheet_text.startswith("'") and sheet_text.endswith("'"):
         return sheet_text[1:-1].replace("''", "'")
     return sheet_text
@@ -467,6 +465,8 @@ def _parse_reference(text: str) -> FormulaReferenceNode | FormulaRangeNode:
 
 @dataclass(slots=True)
 class _FormulaParser:
+    """Stateful recursive-descent parser for tokenized spreadsheet formulas."""
+
     tokens: list[_FormulaToken]
     position: int = field(default=0, init=False)
 
@@ -672,7 +672,7 @@ def parse_spreadsheet_formula(formula: str) -> FormulaAst:
 
 
 def get_spreadsheet_formula_ast(
-    snapshot: Mapping[str, object], sheet_name: str, address: str
+    snapshot: Mapping[str, object], sheet_name: SheetName, address: str
 ) -> FormulaAst | None:
     """Return the versioned AST for a formula cell, or ``None`` otherwise."""
     formula = get_spreadsheet_formula(snapshot, sheet_name, address)
@@ -680,38 +680,179 @@ def get_spreadsheet_formula_ast(
 
 
 @dataclass(frozen=True, slots=True)
-class _CellAddress:
+class _LocalAddress:
+    """Zero-based cell address within a sheet."""
+
     row: int
     column: int
-    sheet_name: str | None
 
     @property
     def address(self) -> str:
         return f"{_column_name(self.column)}{self.row + 1}"
 
+    @property
+    def local_address(self) -> _LocalAddress:
+        return self
+
+    @property
+    def sheet_name(self) -> None:
+        return None
+
+    def __str__(self) -> str:
+        return self.address
+
+
+_SAFE_NAME_RE = re.compile(r"[A-Za-z_][A-Za-z0-9_.]*", re.ASCII)
+
+
+@dataclass(frozen=True, slots=True)
+class _QualifiedAddress:
+    """Cell address qualified by its sheet name."""
+
+    local: _LocalAddress
+    sheet_name: SheetName
+
+    @property
+    def address(self) -> str:
+        name = self.sheet_name
+        if not _SAFE_NAME_RE.fullmatch(name):
+            name = f"'{name.replace("'", "''")}'"
+        return f"{name}!{self.local}"
+
+    @property
+    def local_address(self) -> _LocalAddress:
+        return self.local
+
+    def __str__(self) -> str:
+        return self.address
+
+
+type _Address = _LocalAddress | _QualifiedAddress
+
+
+@dataclass(frozen=True, slots=True)
+class _LocalRange:
+    """Rectangular range of zero-based addresses within a sheet."""
+
+    start: _LocalAddress
+    end: _LocalAddress
+
+    def __post_init__(self) -> None:
+        if self.start.row > self.end.row or self.start.column > self.end.column:
+            raise ValueError(
+                f'Spreadsheet range "{self}" must run from top-left to bottom-right.'
+            )
+
+    @property
+    def shape(self) -> tuple[int, int]:
+        return (
+            self.end.row - self.start.row + 1,
+            self.end.column - self.start.column + 1,
+        )
+
+    def __contains__(self, ref: _LocalAddress | _LocalRange) -> bool:
+        if isinstance(ref, _LocalAddress):
+            return (
+                self.start.row <= ref.row <= self.end.row
+                and self.start.column <= ref.column <= self.end.column
+            )
+        return ref.start in self and ref.end in self
+
+    def intersection(self, other: _Range) -> _LocalRange | None:
+        if isinstance(other, _QualifiedRange):
+            other = other.local
+        start = _LocalAddress(
+            row=max(self.start.row, other.start.row),
+            column=max(self.start.column, other.start.column),
+        )
+        end = _LocalAddress(
+            row=min(self.end.row, other.end.row),
+            column=min(self.end.column, other.end.column),
+        )
+        if start.row > end.row or start.column > end.column:
+            return None
+        return _LocalRange(start, end)
+
+    def __str__(self) -> str:
+        return f"{self.start.address}:{self.end.address}"
+
+
+@dataclass(frozen=True, slots=True)
+class _QualifiedRange:
+    """Rectangular cell range qualified by its sheet name."""
+
+    local: _LocalRange
+    sheet_name: SheetName
+
+    @property
+    def shape(self) -> tuple[int, int]:
+        return self.local.shape
+
+    def __contains__(self, ref: _Address | _Range) -> bool:
+        if isinstance(ref, _QualifiedAddress | _QualifiedRange):
+            return ref.sheet_name == self.sheet_name and ref.local in self.local
+        return ref in self.local
+
+    def intersection(self, other: _Range) -> _QualifiedRange | None:
+        if isinstance(other, _QualifiedRange):
+            if other.sheet_name != self.sheet_name:
+                return None
+            other = other.local
+        intersection = self.local.intersection(other)
+        if intersection is None:
+            return None
+        return _QualifiedRange(intersection, self.sheet_name)
+
+    @property
+    def address(self) -> str:
+        name = self.sheet_name
+        if not _SAFE_NAME_RE.fullmatch(name):
+            name = f"'{name.replace("'", "''")}'"
+        return f"{name}!{self.local}"
+
+    def __str__(self) -> str:
+        return self.address
+
+
+type _Range = _LocalRange | _QualifiedRange
+
 
 @dataclass(frozen=True, slots=True)
 class _SnapshotReference:
-    start: _CellAddress
-    end: _CellAddress | None
-    sheet_name: str | None
+    """Parsed cell or range reference from a spreadsheet snapshot."""
+
+    start: _Address
+    end: _Address | None
 
 
 @dataclass(frozen=True, slots=True)
 class _SpreadsheetCellData:
-    input: dict[str, object]
+    """Validated input and calculated result for a populated cell."""
+
+    input: SpreadsheetInput
     result: SpreadsheetResult
 
 
 @dataclass(frozen=True, slots=True)
-class _SpreadsheetCells:
-    name: str
+class _SparseCellsData:
+    """Validated dimensions and sparse populated-cell data for one sheet."""
+
+    name: SheetName
     rows: int
     columns: int
-    cells: dict[str, _SpreadsheetCellData]
+    addressed_data: dict[str, _SpreadsheetCellData]
+
+    def __contains__(self, ref: _Address) -> bool:
+        return ref in _QualifiedRange(
+            _LocalRange(
+                _LocalAddress(row=0, column=0),
+                _LocalAddress(row=self.rows - 1, column=self.columns - 1),
+            ),
+            self.name,
+        )
 
 
-def _validated_snapshot_input(value: object, context: str) -> dict[str, object]:
+def _validated_snapshot_input(value: object, context: str) -> SpreadsheetInput:
     if not isinstance(value, dict):
         raise TypeError(f"{context} has an invalid input.")
     input_type = value.get("type")
@@ -723,17 +864,20 @@ def _validated_snapshot_input(value: object, context: str) -> dict[str, object]:
             or not math.isfinite(input_value)
         ):
             raise TypeError(f"{context} has an invalid input.")
-    elif input_type in {"string", "formula"}:
+        return {"type": "number", "value": input_value}
+    if input_type == "string":
         if not isinstance(input_value, str):
             raise TypeError(f"{context} has an invalid input.")
-        if input_type == "formula" and not input_value.startswith("="):
+        return {"type": "string", "value": input_value}
+    if input_type == "formula":
+        if not isinstance(input_value, str) or not input_value.startswith("="):
             raise TypeError(f"{context} has an invalid input.")
-    elif input_type == "boolean":
+        return {"type": "formula", "value": input_value}
+    if input_type == "boolean":
         if not isinstance(input_value, bool):
             raise TypeError(f"{context} has an invalid input.")
-    else:
-        raise TypeError(f"{context} has an invalid input.")
-    return {"type": input_type, "value": input_value}
+        return {"type": "boolean", "value": input_value}
+    raise TypeError(f"{context} has an invalid input.")
 
 
 def _validated_snapshot_result(value: object, context: str) -> SpreadsheetResult:
@@ -767,7 +911,7 @@ def _validated_snapshot_result(value: object, context: str) -> SpreadsheetResult
     raise TypeError(f"{context} has an invalid result.")
 
 
-def _decode_snapshot_sheet_name(sheet_text: str, reference: str) -> str:
+def _decode_snapshot_sheet_name(sheet_text: str, reference: str) -> SheetName:
     if not sheet_text:
         raise ValueError(f'Invalid spreadsheet reference "{reference}".')
     if sheet_text.startswith("'") or sheet_text.endswith("'"):
@@ -782,7 +926,7 @@ def _decode_snapshot_sheet_name(sheet_text: str, reference: str) -> str:
     return sheet_text
 
 
-def _parse_snapshot_endpoint(text: str, reference: str) -> _CellAddress:
+def _parse_snapshot_endpoint(text: str, reference: str) -> _Address:
     if "!" in text:
         sheet_text, address_text = text.rsplit("!", 1)
         sheet_name = _decode_snapshot_sheet_name(sheet_text, reference)
@@ -793,11 +937,10 @@ def _parse_snapshot_endpoint(text: str, reference: str) -> _CellAddress:
         _, row, column = _normalized_address(address_text)
     except ValueError as exc:
         raise ValueError(f'Invalid spreadsheet reference "{reference}".') from exc
-    return _CellAddress(
-        row=row,
-        column=column,
-        sheet_name=sheet_name,
-    )
+    local = _LocalAddress(row=row, column=column)
+    if sheet_name is not None:
+        return _QualifiedAddress(local=local, sheet_name=sheet_name)
+    return local
 
 
 def _parse_snapshot_reference(reference: str) -> _SnapshotReference:
@@ -818,49 +961,28 @@ def _parse_snapshot_reference(reference: str) -> _SnapshotReference:
             raise ValueError(
                 f'Spreadsheet range "{reference}" cannot span multiple sheets.'
             )
-        if start.row > end.row or start.column > end.column:
+        start_local = start.local_address
+        end_local = end.local_address
+        if start_local.row > end_local.row or start_local.column > end_local.column:
             raise ValueError(
                 f'Spreadsheet range "{reference}" must run from top-left to bottom-right.'
             )
-        return _SnapshotReference(
-            start=start,
-            end=end,
-            sheet_name=start.sheet_name,
-        )
+        return _SnapshotReference(start=start, end=end)
 
     start = _parse_snapshot_endpoint(reference, reference)
-    return _SnapshotReference(
-        start=start,
-        end=None,
-        sheet_name=start.sheet_name,
-    )
+    return _SnapshotReference(start=start, end=None)
 
 
 def _column_name(column: int) -> str:
+    assert column >= 0, f"Invalid column index: {column + 1}"
+    if column < len(_COLUMN_LETTERS):
+        return _COLUMN_LETTERS[column]
     result = ""
     value = column + 1
     while value > 0:
         value, remainder = divmod(value - 1, 26)
-        result = chr(ord("A") + remainder) + result
+        result = _COLUMN_LETTERS[remainder] + result
     return result
-
-
-def _address_from_indices(
-    row: int, column: int, sheet_name: str | None = None
-) -> _CellAddress:
-    return _CellAddress(
-        row=row,
-        column=column,
-        sheet_name=sheet_name,
-    )
-
-
-def _qualified_address(sheet_name: str, address: str) -> str:
-    if re.fullmatch(r"[A-Za-z_][A-Za-z0-9_.]*", sheet_name):
-        encoded_sheet_name = sheet_name
-    else:
-        encoded_sheet_name = f"'{sheet_name.replace("'", "''")}'"
-    return f"{encoded_sheet_name}!{address}"
 
 
 @dataclass(frozen=True, slots=True, eq=False, repr=False)
@@ -868,11 +990,11 @@ class SpreadsheetBook:
     """Read-only, spreadsheet-native view of a normalized snapshot."""
 
     snapshot: InitVar[Mapping[str, object]]
-    _sheets: dict[str, _SpreadsheetCells] = field(init=False)
-    _sheet_views: dict[str, Spreadsheet] = field(init=False)
+    _sheets: dict[SheetName, _SparseCellsData] = field(init=False)
+    _sheet_views: dict[SheetName, Spreadsheet] = field(init=False)
     _grading_outputs: dict[str, SpreadsheetResult] = field(init=False)
     _has_grading: bool = field(init=False)
-    sheet_names: tuple[str, ...] = field(init=False)
+    sheet_names: tuple[SheetName, ...] = field(init=False)
     outputs: Mapping[str, SpreadsheetOutputView] = field(init=False)
 
     def __post_init__(self, snapshot: Mapping[str, object]) -> None:
@@ -883,7 +1005,7 @@ class SpreadsheetBook:
         raw_sheets = snapshot.get("sheets", [])
         if not isinstance(raw_sheets, list):
             raise TypeError("The spreadsheet snapshot has an invalid sheets field.")
-        sheets: dict[str, _SpreadsheetCells] = {}
+        sheets: dict[SheetName, _SparseCellsData] = {}
         normalized_sheet_names: set[str] = set()
         for raw_sheet in raw_sheets:
             if not isinstance(raw_sheet, Mapping):
@@ -931,11 +1053,11 @@ class SpreadsheetBook:
                     input=_validated_snapshot_input(raw_cell.get("input"), context),
                     result=_validated_snapshot_result(raw_cell.get("result"), context),
                 )
-            sheets[name] = _SpreadsheetCells(
+            sheets[name] = _SparseCellsData(
                 name=name,
                 rows=rows,
                 columns=columns,
-                cells=cells,
+                addressed_data=cells,
             )
 
         grading = snapshot.get("grading")
@@ -966,7 +1088,7 @@ class SpreadsheetBook:
         object.__setattr__(self, "sheet_names", tuple(sheets))
         object.__setattr__(self, "outputs", _SpreadsheetOutputs(self))
 
-    def _sheet_data(self, sheet_name: str) -> _SpreadsheetCells:
+    def _sheet_data(self, sheet_name: SheetName) -> _SparseCellsData:
         try:
             return self._sheets[sheet_name]
         except KeyError:
@@ -985,7 +1107,7 @@ class SpreadsheetBook:
     def _grading_output_names(self) -> tuple[str, ...]:
         return tuple(self._grading_outputs)
 
-    def __getitem__(self, sheet_name: str) -> Spreadsheet:
+    def __getitem__(self, sheet_name: SheetName) -> Spreadsheet:
         """Return the sheet with the given name."""
         data = self._sheet_data(sheet_name)
         if sheet_name not in self._sheet_views:
@@ -998,10 +1120,10 @@ class Spreadsheet:
     """Read-only view of one sheet in a :class:`Spreadsheet`."""
 
     book: SpreadsheetBook
-    _cells: _SpreadsheetCells
+    _cells: _SparseCellsData
 
     @property
-    def name(self) -> str:
+    def name(self) -> SheetName:
         return self._cells.name
 
     @property
@@ -1016,30 +1138,36 @@ class Spreadsheet:
     def shape(self) -> tuple[int, int]:
         return (self.rows, self.columns)
 
-    def _validate_address(self, address: _CellAddress) -> None:
-        if not (0 <= address.row < self.rows and 0 <= address.column < self.columns):
+    def _validate_address(self, address: _LocalAddress) -> None:
+        if address not in self._cells:
             raise ValueError(
                 f'Spreadsheet cell "{self.name}!{address.address}" is outside the sheet.'
             )
 
-    def _cell_data(self, address: _CellAddress) -> _SpreadsheetCellData | None:
+    def _cell_data(self, address: _LocalAddress) -> _SpreadsheetCellData | None:
         self._validate_address(address)
-        return self._cells.cells.get(address.address)
+        return self._cells.addressed_data.get(address.address)
+
+    def _validate_range(self, r: _LocalRange) -> None:
+        self._validate_address(r.start)
+        self._validate_address(r.end)
 
     def __getitem__(self, reference: str) -> SpreadsheetCellView | SpreadsheetRange:
         """Resolve an A1 cell or range reference."""
         parsed = _parse_snapshot_reference(reference)
-        target_sheet = self.book[parsed.sheet_name or self.name]
+        target_sheet_name = parsed.start.sheet_name or self.name
+        target_sheet = self.book[target_sheet_name]
+        start = parsed.start.local_address
         if parsed.end is None:
-            return SpreadsheetCellView(target_sheet, parsed.start)
-        if (
-            parsed.end.sheet_name is not None
-            and parsed.end.sheet_name != target_sheet.name
-        ):
+            return SpreadsheetCellView(target_sheet, start)
+        end_sheet_name = parsed.end.sheet_name or target_sheet_name
+        if end_sheet_name != target_sheet.name:
             raise ValueError(
                 f'Spreadsheet range "{reference}" cannot span multiple sheets.'
             )
-        return SpreadsheetRange(target_sheet, parsed.start, parsed.end)
+        return SpreadsheetRange(
+            target_sheet, _LocalRange(start, parsed.end.local_address)
+        )
 
     def cell(self, reference: str) -> SpreadsheetCellView:
         """Resolve an A1 cell reference."""
@@ -1071,17 +1199,21 @@ class SpreadsheetCellView:
     """Read-only view of one in-bounds cell in a spreadsheet snapshot."""
 
     sheet: Spreadsheet
-    _location: _CellAddress
-    row: int = field(init=False)
-    column: str = field(init=False)
+    _location: _LocalAddress
     _cell: _SpreadsheetCellData | None = field(init=False)
 
     def __post_init__(self) -> None:
         """Validate the address and cache the cell's derived metadata."""
         cell = self.sheet._cell_data(self._location)
-        object.__setattr__(self, "row", self._location.row + 1)
-        object.__setattr__(self, "column", _column_name(self._location.column))
         object.__setattr__(self, "_cell", cell)
+
+    @property
+    def row(self) -> int:
+        return self._location.row + 1
+
+    @property
+    def column(self) -> str:
+        return _column_name(self._location.column)
 
     @property
     def address(self) -> str:
@@ -1089,17 +1221,17 @@ class SpreadsheetCellView:
 
     @property
     def qualified_address(self) -> str:
-        return _qualified_address(self.sheet.name, self.address)
+        return str(_QualifiedAddress(self._location, self.sheet.name))
 
     @property
     def formula(self) -> str | None:
         if self._cell is None or self._cell.input["type"] != "formula":
             return None
-        return cast(str, self._cell.input["value"])
+        return self._cell.input["value"]
 
     @property
     def is_empty(self) -> bool:
-        return self._cell is None
+        return self._cell is None or self._cell.result["type"] == "empty"
 
     @property
     def is_formula(self) -> bool:
@@ -1110,30 +1242,30 @@ class SpreadsheetCellView:
         return self._cell is not None and self._cell.result["type"] == "error"
 
     @property
-    def input(self) -> dict[str, object] | None:
+    def error_type(self) -> str | None:
+        result = self.result
+        return result["error_type"] if result["type"] == "error" else None
+
+    @property
+    def error_value(self) -> str | None:
+        result = self.result
+        return result["value"] if result["type"] == "error" else None
+
+    @property
+    def input(self) -> SpreadsheetInput | None:
         if self._cell is None:
             return None
-        return dict(self._cell.input)
+        return self._cell.input.copy()
 
     @property
     def result(self) -> SpreadsheetResult:
         if self._cell is None:
             return {"type": "empty"}
-        return cast(SpreadsheetResult, dict(self._cell.result))
+        return self._cell.result.copy()
 
     @property
-    def value(self) -> bool | int | float | str | None:
-        result = self.result
-        if result["type"] == "empty":
-            return None
-        if result["type"] == "error":
-            raise SpreadsheetCellError(
-                self.sheet.name,
-                self.address,
-                result["error_type"],
-                result["value"],
-            )
-        return result["value"]
+    def value(self) -> CellValue:
+        return _spreadsheet_result_value(self.result)
 
     @property
     def formula_ast(self) -> FormulaAst | None:
@@ -1141,14 +1273,16 @@ class SpreadsheetCellView:
 
     def matches_formula(self, expected: str, *, structural: bool = False) -> bool:
         formula = self.formula
+        if not structural:
+            return formula is not None and formula == expected
+        expected_root = parse_spreadsheet_formula(expected).root
         if formula is None:
             return False
-        if not structural:
-            return formula == expected
-        return (
-            parse_spreadsheet_formula(formula).root
-            == parse_spreadsheet_formula(expected).root
-        )
+        try:
+            actual_root = parse_spreadsheet_formula(formula).root
+        except SpreadsheetFormulaParseError:
+            return False
+        return actual_root == expected_root
 
 
 @dataclass(frozen=True, slots=True, eq=False, repr=False)
@@ -1156,46 +1290,38 @@ class SpreadsheetRange:
     """Read-only rectangular cell range on one sheet."""
 
     sheet: Spreadsheet
-    _start: _CellAddress
-    _end: _CellAddress
+    _range: _LocalRange
 
     def __post_init__(self) -> None:
         """Validate the range endpoints."""
-        self.sheet._validate_address(self._start)
-        self.sheet._validate_address(self._end)
-        if self._start.row > self._end.row or self._start.column > self._end.column:
-            raise ValueError(
-                f'Spreadsheet range "{self._start.address}:{self._end.address}" '
-                "must run from top-left to bottom-right."
-            )
+        self.sheet._validate_range(self._range)
 
     @property
-    def address(self) -> str:
-        return f"{self._start.address}:{self._end.address}"
+    def range_address(self) -> str:
+        return str(self._range)
 
     @property
-    def qualified_address(self) -> str:
-        return _qualified_address(self.sheet.name, self.address)
+    def qualified_range_address(self) -> str:
+        return str(_QualifiedRange(self._range, self.sheet.name))
 
     @property
     def shape(self) -> tuple[int, int]:
-        return (
-            self._end.row - self._start.row + 1,
-            self._end.column - self._start.column + 1,
-        )
+        return self._range.shape
 
     @property
     def cells(self) -> tuple[tuple[SpreadsheetCellView, ...], ...]:
         return tuple(
             tuple(
-                SpreadsheetCellView(self.sheet, _address_from_indices(row, column))
-                for column in range(self._start.column, self._end.column + 1)
+                SpreadsheetCellView(self.sheet, _LocalAddress(row, column))
+                for column in range(
+                    self._range.start.column, self._range.end.column + 1
+                )
             )
-            for row in range(self._start.row, self._end.row + 1)
+            for row in range(self._range.start.row, self._range.end.row + 1)
         )
 
     @property
-    def inputs(self) -> tuple[tuple[dict[str, object] | None, ...], ...]:
+    def inputs(self) -> tuple[tuple[SpreadsheetInput | None, ...], ...]:
         return tuple(tuple(cell.input for cell in row) for row in self.cells)
 
     @property
@@ -1205,7 +1331,7 @@ class SpreadsheetRange:
     @property
     def values(
         self,
-    ) -> tuple[tuple[bool | int | float | str | None, ...], ...]:
+    ) -> tuple[tuple[CellValue, ...], ...]:
         return tuple(tuple(cell.value for cell in row) for row in self.cells)
 
     @property
@@ -1237,21 +1363,11 @@ class SpreadsheetRange:
         parsed = _parse_snapshot_reference(reference)
         if parsed.end is not None:
             raise ValueError("Spreadsheet ranges can only be indexed by a single cell.")
-        target_sheet_name = parsed.sheet_name or self.sheet.name
-        if target_sheet_name != self.sheet.name:
+        if parsed.start not in _QualifiedRange(self._range, self.sheet.name):
             raise ValueError(
-                f'Spreadsheet cell "{reference}" is outside range '
-                f'"{self.qualified_address}".'
+                f'Spreadsheet cell "{reference}" is outside range "{self.qualified_range_address}".'
             )
-        if not (
-            self._start.row <= parsed.start.row <= self._end.row
-            and self._start.column <= parsed.start.column <= self._end.column
-        ):
-            raise ValueError(
-                f'Spreadsheet cell "{reference}" is outside range '
-                f'"{self.qualified_address}".'
-            )
-        return SpreadsheetCellView(self.sheet, parsed.start)
+        return SpreadsheetCellView(self.sheet, parsed.start.local_address)
 
 
 @dataclass(frozen=True, slots=True, eq=False, repr=False)
@@ -1260,12 +1376,14 @@ class SpreadsheetOutputView:
 
     _spreadsheet: SpreadsheetBook
     name: str
-    _result: SpreadsheetResult = field(init=False)
 
-    def __post_init__(self) -> None:
-        """Resolve and cache the named output."""
-        result = self._spreadsheet._grading_output(self.name)
-        object.__setattr__(self, "_result", result)
+    @property
+    def _result(self) -> SpreadsheetResult:
+        return self._spreadsheet._grading_output(self.name)
+
+    @property
+    def is_empty(self) -> bool:
+        return self._result["type"] == "empty"
 
     @property
     def is_error(self) -> bool:
@@ -1281,27 +1399,21 @@ class SpreadsheetOutputView:
 
     @property
     def result(self) -> SpreadsheetResult:
-        return cast(SpreadsheetResult, dict(self._result))
+        return self._result.copy()
 
     @property
-    def value(self) -> bool | int | float | str | None:
-        result = self.result
-        if result["type"] == "empty":
-            return None
-        if result["type"] == "error":
-            raise SpreadsheetOutputError(
-                self.name,
-                result["error_type"],
-                result["value"],
-            )
-        return result["value"]
+    def value(self) -> CellValue:
+        return _spreadsheet_result_value(self.result)
 
 
 @dataclass(frozen=True, slots=True, eq=False, repr=False)
 class _SpreadsheetOutputs(Mapping[str, SpreadsheetOutputView]):
+    """Read-only mapping view of private grading outputs."""
+
     _spreadsheet: SpreadsheetBook
 
     def __getitem__(self, name: str) -> SpreadsheetOutputView:
+        self._spreadsheet._grading_output(name)
         return SpreadsheetOutputView(self._spreadsheet, name)
 
     def __iter__(self) -> Iterator[str]:
