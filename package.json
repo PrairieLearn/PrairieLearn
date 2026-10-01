@@ -65,7 +65,7 @@
     "htmlhint": "^1.9.2",
     "ignore": "^7.0.10",
     "knip": "^6.38.0",
-    "linkinator": "^7.6.1",
+    "linkinator": "^8.1.0",
     "markdownlint-cli2": "^0.23.3",
     "prettier": "^3.9.9",
     "prettier-plugin-pkg": "^0.22.1",
