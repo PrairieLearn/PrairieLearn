@@ -114,6 +114,135 @@ Formula errors such as division by zero and circular references are valid typed
 results with `type: "error"`. Malformed submissions, changed template hashes,
 out-of-range or read-only edits, and disallowed formulas produce a format error.
 
+## Private grading workbook
+
+To calculate question-specific grading evidence, define a private workbook in
+`data["correct_answers"][answers_name]`. PrairieLearn imports all student sheets
+from that element under their original names, adds the private sheets in a separate
+calculation engine, and stores only the named outputs:
+
+```python title="server.py"
+def generate(data):
+    # Define data["params"]["workbook"] as above.
+    data["correct_answers"]["model"] = {
+        "schema_version": 1,
+        "sheets": [
+            {
+                "name": "Checks",
+                "rows": 2,
+                "columns": 1,
+                "cells": {
+                    "A1": "=Budget!D2",
+                    "A2": "=A1=24",
+                },
+            }
+        ],
+        "outputs": {
+            "total": {"sheet": "Checks", "cell": "A1"},
+            "total_is_correct": {"sheet": "Checks", "cell": "A2"},
+        },
+    }
+```
+
+Private sheets may reference student sheets and other private sheets, but cannot
+replace student cells or reuse a student sheet name. They use the same formula
+policy and independently receive the workbook limits below. A private workbook may
+export at most 100 named outputs.
+
+The private workbook definition is server-owned and is not included in the editor,
+submission display, or normalized answer. The answer contains only its hash and
+typed outputs:
+
+```json
+{
+  "grading": {
+    "schema_version": 1,
+    "grader_hash": "…",
+    "outputs": {
+      "total": { "type": "number", "value": 24 },
+      "total_is_correct": { "type": "boolean", "value": true }
+    }
+  }
+}
+```
+
+Calculation errors in private sheets are preserved as typed error outputs so that
+question-specific grading code can decide what they mean. Invalid private workbook
+configuration is an authoring error.
+
+### Grading in `server.py`
+
+`pl-spreadsheet` does not assign a score. Use the spreadsheet helpers from the
+`prairielearn` module to inspect cells and private outputs, then set `score` or
+`partial_scores` in the question's `grade()` function:
+
+```python title="server.py"
+import prairielearn as pl
+
+
+def grade(data):
+    workbook = data["submitted_answers"]["model"]
+    formula = pl.get_spreadsheet_formula(workbook, "Budget", "D2")
+    formula_ast = pl.get_spreadsheet_formula_ast(workbook, "Budget", "D2")
+    expected_ast = pl.parse_spreadsheet_formula("=B2*C2")
+    total = pl.get_spreadsheet_grading_output(workbook, "total")
+
+    checks = [
+        formula == "=B2*C2",  # Exact-text grading when required.
+        formula_ast is not None and formula_ast["root"] == expected_ast["root"],
+        total == {"type": "number", "value": 24},
+    ]
+    data["partial_scores"]["model"] = {
+        "score": sum(checks) / len(checks),
+        "weight": 1,
+    }
+    pl.set_weighted_score_data(data)
+```
+
+`get_spreadsheet_cell()` returns the complete typed cell,
+`get_spreadsheet_result()` returns its typed result, and
+`get_spreadsheet_value()` returns a scalar or `None`. The latter raises
+`SpreadsheetCellError` for spreadsheet errors so they cannot be mistaken for text.
+
+Formula ASTs have their own `schema_version`. They normalize function names and
+operators while preserving grouping, sheet names, ranges, and absolute-reference
+flags. HyperFormula remains authoritative for validation and calculation; the AST
+is an inspection tool for question-defined structural grading.
+
+`parse_spreadsheet_formula()` returns an object with `schema_version: 1`, the exact
+original `formula`, and a `root` node. Nodes form this discriminated union:
+
+| Node `type` | Fields                                                               |
+| ----------- | -------------------------------------------------------------------- |
+| `literal`   | `value_type` (`number`, `string`, `boolean`, or `error`) and `value` |
+| `reference` | `reference`, an endpoint described below                             |
+| `range`     | `start` and `end` reference endpoints                                |
+| `function`  | uppercase `name` and ordered `arguments`                             |
+| `unary`     | `operator` (`+` or `-`) and `operand`                                |
+| `postfix`   | `operator` (`%`) and `operand`                                       |
+| `binary`    | normalized `operator`, `left`, and `right`                           |
+| `group`     | grouped `expression`                                                 |
+| `empty`     | no additional fields; represents an omitted function argument        |
+
+A reference endpoint is a typed union discriminated by `kind`:
+
+| Endpoint `kind` | Required fields                                                 |
+| --------------- | --------------------------------------------------------------- |
+| `cell`          | `sheet`, `column`, `row`, `column_absolute`, and `row_absolute` |
+| `column`        | `sheet`, `column`, and `column_absolute`                        |
+| `row`           | `sheet`, `row`, and `row_absolute`                              |
+
+`sheet` is a decoded sheet name or `None`. Range nodes are likewise typed as cell,
+column, or row ranges, with `start` and `end` guaranteed to have the same endpoint
+kind. AST nodes are plain dictionaries, so graders can compare a whole subtree or
+inspect only the structure relevant to the rubric. A future AST shape change will
+use a new schema version.
+
+External graders receive the same object at
+`data["submitted_answers"][answers_name]` in `/grade/data/data.json`. They may read
+the documented JSON directly, including exact formula inputs and named private
+outputs.
+
 ## Formula behavior
 
 Formulas use English function names, `.` for decimals, `,` for argument separators,
@@ -141,7 +270,9 @@ for other engine compatibility details.
 A workbook is limited to 10 sheets, 1,000 rows and 100 columns per sheet, 10,000
 total addressable cells, 2,500 populated cells, and 1,000 formulas. Each formula may
 contain at most 2 KiB; text and string results may contain at most 32 KiB. Both raw
-and normalized submissions are limited to 1 MiB.
+and normalized submissions are limited to 1 MiB. A private grading workbook has an
+independent copy of these limits; only its named outputs count toward the normalized
+submission payload.
 
 ## Interaction and saved work
 

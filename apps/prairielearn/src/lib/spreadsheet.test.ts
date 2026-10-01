@@ -2,6 +2,7 @@ import { assert, describe, it } from 'vitest';
 
 import {
   type SpreadsheetElementConfig,
+  type SpreadsheetGradingConfig,
   type SpreadsheetRawSubmission,
   SpreadsheetSubmissionError,
   evaluateSpreadsheet,
@@ -39,6 +40,42 @@ function makeConfig(): SpreadsheetElementConfig {
   };
 }
 
+function makeGradingConfig(): SpreadsheetGradingConfig {
+  return {
+    schema_version: 1,
+    grader_hash: 'grader-hash',
+    sheets: [
+      {
+        name: 'Checks',
+        rows: 3,
+        columns: 2,
+        cells: {
+          A1: '=PRODUCT(Inputs!A2,Inputs!B2)',
+          A2: '=A1=15',
+          A3: '=1/0',
+          B1: '=CONCATENATE("o","k")',
+          B2: '=B2',
+        },
+      },
+      {
+        name: 'Derived',
+        rows: 1,
+        columns: 1,
+        cells: { A1: '=Checks!A1+1' },
+      },
+    ],
+    outputs: {
+      total: { sheet: 'Checks', cell: 'A1' },
+      correct: { sheet: 'Checks', cell: 'A2' },
+      error: { sheet: 'Checks', cell: 'A3' },
+      text: { sheet: 'Checks', cell: 'B1' },
+      cycle: { sheet: 'Checks', cell: 'B2' },
+      empty: { sheet: 'Checks', cell: 'B3' },
+      derived: { sheet: 'Derived', cell: 'A1' },
+    },
+  };
+}
+
 function makeSubmission(sheets: SpreadsheetRawSubmission['sheets'] = {}): SpreadsheetRawSubmission {
   return { schema_version: 1, template_hash: 'template-hash', sheets };
 }
@@ -65,6 +102,60 @@ describe('evaluateSpreadsheet', () => {
     if (result.type !== 'error') assert.fail('Expected an error result.');
     assert.equal(result.value, '#CYCLE!');
     evaluation.engine.destroy();
+  });
+
+  it('evaluates private sheets and persists only named typed outputs', () => {
+    const evaluation = evaluateSpreadsheet(
+      makeConfig(),
+      makeSubmission({ Inputs: { A2: 3, B2: 5 } }),
+      makeGradingConfig(),
+    );
+
+    assert.deepEqual(evaluation.snapshot.grading, {
+      schema_version: 1,
+      grader_hash: 'grader-hash',
+      outputs: {
+        total: { type: 'number', value: 15 },
+        correct: { type: 'boolean', value: true },
+        error: { type: 'error', value: '#DIV/0!', error_type: 'DIV_BY_ZERO' },
+        text: { type: 'string', value: 'ok' },
+        cycle: { type: 'error', value: '#CYCLE!', error_type: 'CYCLE' },
+        empty: { type: 'empty' },
+        derived: { type: 'number', value: 16 },
+      },
+    });
+    const serialized = JSON.stringify(evaluation.snapshot);
+    assert.notInclude(serialized, 'Checks');
+    assert.notInclude(serialized, '=PRODUCT(Inputs!A2,Inputs!B2)');
+    evaluation.engine.destroy();
+  });
+
+  it('evaluates student formulas before private sheets exist', () => {
+    assert.throws(
+      () =>
+        evaluateSpreadsheet(
+          makeConfig(),
+          makeSubmission({ Inputs: { A2: '=Checks!A1' } }),
+          makeGradingConfig(),
+        ),
+      /cannot reference private grading sheets/,
+    );
+  });
+
+  it('rejects invalid private workbook references and sheet collisions', () => {
+    const collision = makeGradingConfig();
+    collision.sheets[0].name = 'inputs';
+    assert.throws(
+      () => evaluateSpreadsheet(makeConfig(), makeSubmission(), collision),
+      /conflicts with a student sheet/,
+    );
+
+    const invalidOutput = makeGradingConfig();
+    invalidOutput.outputs.total = { sheet: 'Checks', cell: 'C1' };
+    assert.throws(
+      () => evaluateSpreadsheet(makeConfig(), makeSubmission(), invalidOutput),
+      /outside sheet Checks/,
+    );
   });
 
   it('represents clearing a populated editable template cell', () => {
@@ -144,12 +235,34 @@ describe('evaluateSpreadsheet', () => {
       /at most 2048 characters/,
     );
   });
+
+  it('includes private outputs in the normalized payload limit', () => {
+    const largeValue = 'x'.repeat(32 * 1024);
+    const outputs = Object.fromEntries(
+      Array.from({ length: 33 }, (_, index) => [
+        `output_${index + 1}`,
+        { sheet: 'Large', cell: 'A1' },
+      ]),
+    );
+    const gradingConfig: SpreadsheetGradingConfig = {
+      schema_version: 1,
+      grader_hash: 'large-grader',
+      sheets: [{ name: 'Large', rows: 1, columns: 1, cells: { A1: largeValue } }],
+      outputs,
+    };
+
+    assert.throws(
+      () => evaluateSpreadsheet(makeConfig(), makeSubmission(), gradingConfig),
+      /1048576 bytes/,
+    );
+  });
 });
 
 describe('normalizeSpreadsheetAnswers', () => {
   it('replaces raw input with a trusted snapshot', () => {
     const normalized = normalizeSpreadsheetAnswers({
       params: { _pl_spreadsheet_v1: { answer: makeConfig() } },
+      correctAnswers: {},
       submittedAnswers: {
         answer: JSON.stringify(makeSubmission({ Inputs: { A2: 6 } })),
         other: 'untouched',
@@ -161,13 +274,30 @@ describe('normalizeSpreadsheetAnswers', () => {
     assert.equal(normalized.other, 'untouched');
   });
 
-  it('discards a spoofed result and returns a format-error envelope', () => {
+  it('adds server-owned grading evidence to the trusted snapshot', () => {
     const normalized = normalizeSpreadsheetAnswers({
       params: { _pl_spreadsheet_v1: { answer: makeConfig() } },
+      correctAnswers: { answer: makeGradingConfig() },
+      submittedAnswers: {
+        answer: JSON.stringify(makeSubmission({ Inputs: { A2: 3, B2: 5 } })),
+      },
+    });
+    const answer = normalized.answer as { grading: { outputs: Record<string, unknown> } };
+    assert.deepEqual(answer.grading.outputs.total, { type: 'number', value: 15 });
+  });
+
+  it('rejects browser-supplied grading evidence', () => {
+    const normalized = normalizeSpreadsheetAnswers({
+      params: { _pl_spreadsheet_v1: { answer: makeConfig() } },
+      correctAnswers: {},
       submittedAnswers: {
         answer: JSON.stringify({
           ...makeSubmission(),
-          results: { Summary: { B1: 1_000_000 } },
+          grading: {
+            schema_version: 1,
+            grader_hash: 'spoofed',
+            outputs: { total: { type: 'number', value: 1_000_000 } },
+          },
         }),
       },
     });
@@ -183,6 +313,32 @@ describe('getSpreadsheetLogMetadata', () => {
       spreadsheet_addressable_cells: 16,
       spreadsheet_populated_cells: 6,
       spreadsheet_formulas: 1,
+      spreadsheet_grading_sheets: 0,
+      spreadsheet_grading_addressable_cells: 0,
+      spreadsheet_grading_populated_cells: 0,
+      spreadsheet_grading_formulas: 0,
+      spreadsheet_grading_outputs: 0,
     });
+  });
+
+  it('counts private grading structure without logging contents', () => {
+    assert.deepEqual(
+      getSpreadsheetLogMetadata(
+        { _pl_spreadsheet_v1: { answer: makeConfig() } },
+        { answer: makeGradingConfig() },
+      ),
+      {
+        spreadsheet_elements: 1,
+        spreadsheet_sheets: 2,
+        spreadsheet_addressable_cells: 16,
+        spreadsheet_populated_cells: 6,
+        spreadsheet_formulas: 1,
+        spreadsheet_grading_sheets: 2,
+        spreadsheet_grading_addressable_cells: 7,
+        spreadsheet_grading_populated_cells: 6,
+        spreadsheet_grading_formulas: 6,
+        spreadsheet_grading_outputs: 7,
+      },
+    );
   });
 });
